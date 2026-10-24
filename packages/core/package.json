@@ -13,6 +13,10 @@
     "./visualizationMath": {
       "types": "./src/visualizationMath.d.ts",
       "import": "./src/visualizationMath.js"
+    },
+    "./motion/spring": {
+      "types": "./src/motion/spring.ts",
+      "import": "./src/motion/spring.ts"
     }
   }
 }

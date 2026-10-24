@@ -39,15 +39,17 @@ test('theme selector follows the operating system and persists explicit modes', 
       lobeElevated: styles.getPropertyValue('--lobe-color-bg-elevated').trim(),
     };
   });
-  expect(darkPalette.page).toBe('#000000');
+  // The dark canvas is a near-black, never pure #000 — see the surface
+  // ladder in styles/themes.css.
+  expect(darkPalette.page).toBe('#080808');
   expect(darkPalette.sidebar).toBe('#0d0d0d');
-  expect(darkPalette.raised).toBe('#0d0d0d');
-  expect(darkPalette.surface).toBe('#1a1a1a');
+  expect(darkPalette.raised).toBe('#131313');
+  expect(darkPalette.surface).toBe('#181818');
   // Computed custom properties resolve var() aliases to the canonical value.
   expect(darkPalette.cgPage).toBe(darkPalette.page);
   expect(darkPalette.chatgptPage).toBe(darkPalette.page);
   expect(darkPalette.conversationPage).toBe(darkPalette.page);
-  expect(darkPalette.legacyPage).toBe('0 0% 0%');
+  expect(darkPalette.legacyPage).toBe('0 0% 3.14%');
   expect(darkPalette.lobeLayout).toBe(darkPalette.page);
   expect(darkPalette.lobeContainer).toBe(darkPalette.raised);
   expect(darkPalette.lobeElevated).toBe(darkPalette.surface);
@@ -66,8 +68,11 @@ test('theme selector follows the operating system and persists explicit modes', 
       border: styles.getPropertyValue('--ui-border-default').trim(),
     };
   });
+  /* The light ladder: the canvas is L2 (#fafafa) and the paper (L1,
+     #ffffff) is what raised and overlay surfaces are cut from — so the
+     composer and the menus read as lighter than the page they stand on. */
   expect(lightPalette).toEqual({
-    page: '#ffffff',
+    page: '#fafafa',
     raised: '#ffffff',
     elevated: '#ffffff',
     text: '#111111',

@@ -1,16 +1,16 @@
 /**
  * tokens.js — JS adapter for `src/ui/tokens.ts`.
  *
- * Legacy JavaScript modules need the exact first-frame page colors without
- * importing the TypeScript token module. Socrates Design System v2 follows
- * Lobe UI's default `colorBgLayout` values for these fallbacks.
+ * Legacy JavaScript modules need the exact page colors without importing the
+ * TypeScript token module. These are the ladder's L1 canvas tones, kept in
+ * lockstep with `styles/themes.css` and `packages/theme/src/tokens.ts`.
  */
 
-/** Dark mode page background; Lobe default colorBgLayout. */
-export const DARK_PAGE_BACKGROUND = '#000000';
+/** Dark mode page background — ladder L1, a near-black rather than pure #000. */
+export const DARK_PAGE_BACKGROUND = '#080808';
 
-/** Light mode page background; Lobe default colorBgLayout. */
-export const LIGHT_PAGE_BACKGROUND = '#f8f8f8';
+/** Light mode page background — ladder L2, one step below the paper. */
+export const LIGHT_PAGE_BACKGROUND = '#fafafa';
 
 /** Default fallback for the dark-mode user picker. */
 export const DEFAULT_DARK_PICKER = DARK_PAGE_BACKGROUND;

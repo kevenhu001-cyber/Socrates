@@ -21,14 +21,14 @@
 
 /* Tabs: quiet underline tabs, muted → primary. */
 .auth-tabs { border-bottom: 1px solid var(--ui-border-subtle); }
-.auth-tab { color: var(--ui-text-muted); font-weight: 500; }
+.auth-tab { color: var(--ui-text-muted); font-weight: var(--ui-font-weight-medium); }
 .auth-tab:hover { color: var(--ui-text-secondary); }
 .auth-tab.active { color: var(--ui-text-primary); }
 
 /* Labels: small-caps microcopy, muted. */
 .auth-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
   letter-spacing: 0.05em;
   color: var(--ui-text-muted);
 }
@@ -42,12 +42,12 @@
 }
 .auth-input:focus {
   border-color: var(--ui-border-strong);
-  box-shadow: 0 0 0 3px var(--ui-bg-control);
+  box-shadow: var(--ui-focus-shadow);
 }
 
 .auth-btn {
   border-radius: var(--ui-radius-control);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   transition: filter var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 .auth-btn.primary:hover { filter: brightness(0.92); }
@@ -102,5 +102,4 @@
   cursor: pointer;
 }
 .browser-login-handoff .auth-btn:hover { background: var(--ui-bg-hover); }
-.browser-login-handoff .auth-btn:focus-visible { outline: 2px solid var(--ui-text-primary); outline-offset: 2px; }
 .browser-login-handoff .auth-btn:disabled { opacity: .5; cursor: wait; }

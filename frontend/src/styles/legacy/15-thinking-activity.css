@@ -83,7 +83,7 @@ body.composer-tools-open::after{
 }
 .socrates-cookie-consent-title{
   font-size:calc(14px * var(--app-font-scale,1));
-  font-weight:600;
+  font-weight:var(--ui-font-weight-semibold);
   color:hsl(var(--text-100));
 }
 .socrates-cookie-consent-message{
@@ -103,7 +103,7 @@ body.composer-tools-open::after{
   background:transparent;
   color:hsl(var(--text-100));
   font-size:calc(12.5px * var(--app-font-scale,1));
-  font-weight:500;
+  font-weight:var(--ui-font-weight-medium);
   cursor:pointer;
   transition:background .12s ease,border-color .12s ease;
 }
@@ -188,7 +188,7 @@ body.composer-tools-open::after{
 }
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:focus-visible,
 .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:focus-visible{
-  outline:1.5px solid hsl(var(--accent-000)/0.65);
+  outline:2px solid transparent;
   outline-offset:1px;
 }
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon,
@@ -210,7 +210,7 @@ body.composer-tools-open::after{
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg,
 .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon svg{width:15px;height:15px;stroke-width:1.5}
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-name{min-width:0;color:inherit;font-size:calc(13px * var(--app-font-scale, 1));font-weight:450}
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-name{min-width:0;color:inherit;font-size:calc(13px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium)}
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
 .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input{
   min-width:0;
@@ -329,7 +329,7 @@ body.composer-tools-open::after{
 .agent-run-summary::-webkit-details-marker{display:none}
 .agent-run-summary::marker{content:""}
 .agent-run-summary:hover{color:var(--tool-activity-row-hover)}
-.agent-run-summary:focus-visible{outline:2px solid var(--tool-activity-focus);outline-offset:3px;border-radius:6px}
+.agent-run-summary:focus-visible{outline:2px solid transparent;outline-offset:3px;border-radius:6px}
 .agent-run-chev{
   width:8px;height:8px;
   border:solid currentColor;
@@ -357,7 +357,7 @@ body.composer-tools-open::after{
 .agent-step-head::-webkit-details-marker{display:none}
 .agent-step-head::marker{content:""}
 .agent-step-head:hover{color:var(--tool-activity-row-hover)}
-.agent-step-head:focus-visible{outline:2px solid var(--tool-activity-focus);outline-offset:3px;border-radius:6px}
+.agent-step-head:focus-visible{outline:2px solid transparent;outline-offset:3px;border-radius:6px}
 .agent-step.is-flat > .agent-step-head{cursor:default}
 .agent-step-icon{
   display:inline-flex;align-items:center;justify-content:center;
@@ -368,7 +368,7 @@ body.composer-tools-open::after{
 .agent-step-label{
   flex:0 0 auto;
   font-size:13.5px;
-  font-weight:450;
+  font-weight:var(--ui-font-weight-medium);
   line-height:1.45;
   white-space:nowrap;
   overflow:hidden;
@@ -444,7 +444,7 @@ body.composer-tools-open::after{
   border-radius:10px;
   background:var(--tool-activity-code-bg);
 }
-.agent-plan-head{display:flex;align-items:center;gap:8px;color:var(--tool-activity-text);font-size:13px;font-weight:500}
+.agent-plan-head{display:flex;align-items:center;gap:8px;color:var(--tool-activity-text);font-size:13px;font-weight:var(--ui-font-weight-medium)}
 .agent-plan-icon{display:inline-flex;flex:0 0 16px;width:16px;height:16px}
 .agent-plan-icon svg{width:15px;height:15px;stroke-width:1.5}
 .agent-plan-list{

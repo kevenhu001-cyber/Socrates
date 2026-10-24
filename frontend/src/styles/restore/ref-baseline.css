@@ -177,7 +177,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    -------------------------------------------------------------------------- */
 @media (min-width: 769px) {
 #appShell #topicSetup .topic-title.greeting {
-  font-weight: 400;
+  font-weight: var(--ui-font-weight-regular);
   letter-spacing: -0.01em;
   /* text-wrap: balance keeps multi-line greeting headings from leaving a
      short orphan on the second line. Chrome < 114 falls back to the
@@ -355,7 +355,7 @@ body.workspace-active #appShell .main-page {
   border-radius: 9999px !important;
   padding: 5px 16px !important;
   font-size: 14px !important;
-  font-weight: 500 !important;
+  font-weight: var(--ui-font-weight-medium) !important;
   color: #6b7280 !important;
 }
 }
@@ -495,7 +495,7 @@ body.workspace-active #appShell .main-page {
   #appShell .workspace-page-head h1,
   #appShell .plugin-directory-heading h2 {
     margin: 0;
-    font-weight: 500 !important;
+    font-weight: var(--ui-font-weight-medium) !important;
     line-height: 36px !important;
     letter-spacing: -0.01em !important;
   }
@@ -799,7 +799,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   color: var(--cg-text-muted) !important;
   border-radius: 999px !important;
   font-family: var(--cg-font);
-  font-weight: 400 !important;
+  font-weight: var(--ui-font-weight-regular) !important;
 }
 }
 
@@ -834,7 +834,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .plugin-directory-heading h2 {
   color: var(--cg-text) !important;
   font-family: var(--cg-font);
-  font-weight: 600 !important;
+  font-weight: var(--ui-font-weight-semibold) !important;
   letter-spacing: -0.025em !important;
 }
 
@@ -876,14 +876,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .task-row .workspace-row-copy strong {
   color: var(--cg-text) !important;
   font-size: 16px !important;
-  font-weight: 500 !important;
+  font-weight: var(--ui-font-weight-medium) !important;
   line-height: 1.4 !important;
 }
 
 @media (min-width: 769px) {
   #appShell .plugin-directory-row .workspace-row-copy strong {
     font-size: 16px;
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
     line-height: 1.4;
   }
 }
@@ -1026,7 +1026,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   background: transparent !important;
   font-family: var(--cg-font) !important;
   font-size: 14px !important;
-  font-weight: 450 !important;
+  font-weight: var(--ui-font-weight-medium) !important;
   line-height: 20px !important;
   white-space: nowrap !important;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -1035,7 +1035,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .projects-filter-tabs button.active {
   color: var(--cg-text) !important;
   background: var(--cg-surface-hover) !important;
-  font-weight: 500 !important;
+  font-weight: var(--ui-font-weight-medium) !important;
 }
 
 #appShell .projects-list-heading {

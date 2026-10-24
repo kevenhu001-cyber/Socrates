@@ -185,7 +185,7 @@
 }
 .code-block-copy:hover,
 .code-block-copy:focus-visible{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.code-block-copy:focus-visible{outline:2px solid hsl(var(--text-400)/.4);outline-offset:1px}
+.code-block-copy:focus-visible{outline:2px solid transparent;outline-offset:1px}
 .code-block-copy svg{width:12px;height:12px;display:block}
 .code-block-copy.copied{color:hsl(var(--accent-000))}
 .code-block-copy.copy-failed{color:var(--chat-tool-error)}
@@ -260,7 +260,7 @@
 }
 .msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-label{
   font-size:13.5px!important;
-  font-weight:440!important;
+  font-weight:var(--ui-font-weight-medium)!important;
   letter-spacing:-.005em;
 }
 .msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-meta{visibility:hidden}
@@ -408,7 +408,7 @@
 }
 .msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-label{
   font-size:13.5px!important;
-  font-weight:430!important;
+  font-weight:var(--ui-font-weight-medium)!important;
   line-height:1.45!important;
   color:inherit!important;
 }
@@ -460,7 +460,7 @@ a.has-site-favicon{
 }
 .agent-step-icon{width:18px;height:18px;flex-basis:18px}
 .agent-step-icon svg{width:17px;height:17px;stroke-width:1.55}
-.agent-step-label{font-size:13.5px;font-weight:430}
+.agent-step-label{font-size:13.5px;font-weight:var(--ui-font-weight-medium)}
 .agent-step-cmd,.agent-step-meta{display:none!important}
 
 .msg.assistant .agent-tool-card .agent-tool-head{

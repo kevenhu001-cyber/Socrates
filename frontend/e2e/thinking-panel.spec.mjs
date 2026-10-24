@@ -200,7 +200,8 @@ for (const theme of ['light', 'dark']) {
       await expect(process).toHaveCSS('font-size', type.size);
       expect(parseFloat(type.size)).toBe(14);
       expect(type.whiteSpace).toBe('normal');
-      await expect(process).toHaveCSS('font-weight', '500');
+      /* Medium steps down one step on the dark canvas (500 → 450). */
+      await expect(process).toHaveCSS('font-weight', theme === 'dark' ? '450' : '500');
       if (mobile) expect(type.height).toBeGreaterThan(30);
       const overflow = await bubble.evaluate((node) => node.scrollWidth - node.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);

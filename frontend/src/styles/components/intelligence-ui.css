@@ -238,10 +238,6 @@
   background: var(--ui-bg-hover-ghost);
   color: var(--ui-text-primary);
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button, .intui-toggle input):focus-visible {
-  outline: 2px solid var(--ui-border-strong);
-  outline-offset: 2px;
-}
 .msg.assistant .msg-body.is-declarative .intui-choice-options button.is-selected {
   border-color: var(--ui-border-strong);
   background: var(--ui-bg-pill-selected);
@@ -489,11 +485,6 @@
 .intui .intui-tab-list button.is-selected::after {
   border-block-end-color: var(--ui-text-primary);
 }
-.intui .intui-tab-list button:focus-visible,
-.intui .intui-tab-panel:focus-visible {
-  outline: 2px solid var(--ui-border-strong);
-  outline-offset: 2px;
-}
 .intui .intui-tab-panel {
   display: grid;
   gap: var(--ui-space-md);
@@ -667,10 +658,6 @@
   border-color: var(--ui-border-default);
   background: var(--ui-bg-hover-ghost);
   color: var(--ui-text-primary);
-}
-.intui-surface-toolbar :is(button, select):focus-visible {
-  outline: 2px solid var(--ui-border-strong);
-  outline-offset: 2px;
 }
 .intui-surface-label { display: inline-flex; align-items: center; gap: var(--ui-space-sm); min-width: 0; margin-right: auto; color: var(--ui-text-secondary); font-size: var(--ui-font-size-xs); font-weight: var(--ui-font-weight-medium); }
 .intui-surface-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: var(--ui-control-sm); height: var(--ui-control-sm); border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-md); background: var(--ui-bg-raised); }

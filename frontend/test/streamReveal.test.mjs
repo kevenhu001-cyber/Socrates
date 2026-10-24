@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { createStreamReveal } from '../src/render/streamReveal.ts';
+import { createStreamReveal, revealDelay, revealTier } from '../src/render/streamReveal.ts';
 
 function fixture() {
   const dom = new JSDOM('<div id="root"></div>');
@@ -75,4 +75,48 @@ test('reduced motion skips decoration and history never accumulates', () => {
     assert.ok(reveal(root, '字'.repeat(i), i) <= 12);
     assert.equal(root.textContent, '字'.repeat(i));
   }
+});
+
+test('the reveal plan is a pure function of the arrival times', () => {
+  /* Nothing arrived yet: the first segment leads its group. */
+  assert.equal(revealTier([], 100), 0);
+  /* One arrival in the same tick: the newcomer is the second of the pair. */
+  assert.equal(revealTier([100], 100), 1);
+  assert.equal(revealTier([100, 104], 105), 2);
+  /* An arrival from an earlier tick is a different group. */
+  assert.equal(revealTier([100, 200], 205), 1);
+
+  /* The delay resumes the animation at the segment's own age, so text that
+     has already been revealed never re-fades — and the tier pushes a
+     same-tick arrival 30ms later. */
+  assert.equal(revealDelay(50, 0), -50);
+  assert.equal(revealDelay(50, 1), -20);
+  assert.equal(revealDelay(0, 2), 60);
+});
+
+test('segments that arrive together are staggered 30ms apart', () => {
+  const { root, reveal } = fixture();
+  root.innerHTML = '<p>甲</p>';
+  reveal(root, '甲', 0);
+  root.innerHTML = '<p>甲乙</p>';
+  reveal(root, '甲乙', 5);
+  const delays = [...root.querySelectorAll('.stream-append-reveal')].map((el) => el.style.animationDelay);
+  /* The first segment resumes from its own age; the one that landed in the
+     same tick is pushed a whole stagger later, so a burst reads as a wave
+     travelling forward instead of one flat flash. */
+  assert.ok(delays.includes('-5ms'), delays.join(','));
+  assert.ok(delays.includes('30ms'), delays.join(','));
+});
+
+test('only the newest run carries the blur', () => {
+  const { root, reveal } = fixture();
+  root.innerHTML = '<p>甲</p>';
+  reveal(root, '甲', 0);
+  root.innerHTML = '<p>甲乙</p>';
+  reveal(root, '甲乙', 50);
+  const spans = [...root.querySelectorAll('.stream-append-reveal')];
+  /* A filter forces an offscreen pass, so the aged run finishes its opacity
+     without one and only the newest run is blurred. */
+  assert.equal(spans.filter((el) => el.classList.contains('stream-append-aged')).length, 1);
+  assert.equal(spans.filter((el) => !el.classList.contains('stream-append-aged')).length, 1);
 });

@@ -205,9 +205,11 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
   });
 
   expect(normal).not.toBeNull();
-  expect(normal.thinkingLabel).toBe('ui-activity-highlight');
+  expect(normal.thinkingLabel).toBe('ui-activity-breathe');
   expect(normal.thinkingIcon).toBe('none');
-  expect(normal.thinkingBackground).toContain('linear-gradient');
+  /* The caption cue is compositor-only now: no travelling gradient is
+     painted on the text, so nothing has to repaint it every frame. */
+  expect(normal.thinkingBackground).toBe('none');
   expect(normal.inlineLabel).toBe('none');
   expect(normal.inlineIcon).toBe('none');
   expect(normal.agentLabel).toBe('none');

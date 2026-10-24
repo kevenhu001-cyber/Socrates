@@ -18,10 +18,27 @@ body {
 button, input, textarea, select { color: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 
+/* Focus contract: one double ring for every focusable surface.
+ *
+ * The indicator is the two-layer --ui-focus-shadow — a 2px page-coloured gap
+ * and a 2px ring — so it reads as a deliberate detail rather than a browser
+ * default. It lives in a box-shadow because a single outline cannot carry
+ * both rings, and because the gap ring needs the page colour underneath it.
+ *
+ * The transparent outline is the high-contrast fallback: in forced-colors
+ * mode the UA forces outline-color to the system colour and drops
+ * box-shadow, so the indicator survives where the shadow cannot.
+ *
+ * Because the contract is a box-shadow, a surface that sets one on :focus
+ * would replace the ring outright. Every such surface now names the contract
+ * token itself — the legacy form fields, the errored settings field, the
+ * composer tools, the account name, the workspace fields — so there is
+ * exactly one ring in the product and this layer stays the single place
+ * that defines its shape. */
 :focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--ui-text-primary) 55%, transparent);
+  outline: 2px solid transparent;
   outline-offset: 2px;
-  transition: outline-color var(--ui-duration-micro, 80ms) ease;
+  box-shadow: var(--ui-focus-shadow);
 }
 
 /* Minimalist scrollbar — Apple-inspired pill with smooth hover transition */
@@ -74,9 +91,18 @@ button { -webkit-tap-highlight-color: transparent; }
   transform: translateY(-200%);
   transition: transform var(--ui-duration-fast) var(--ui-ease-out);
 }
-.skip-link:focus-visible { transform: translateY(0); }
+/* The skip link carries its own menu shadow; the focus contract is a
+   box-shadow too, so the two are composed rather than one replacing
+   the other. */
+.skip-link:focus-visible {
+  transform: translateY(0);
+  box-shadow: var(--ui-shadow-menu, 0 8px 28px rgb(0 0 0 / 20%)), var(--ui-focus-shadow);
+}
 #mainContent:focus,
-#mainContent:focus-visible { outline: none; }
+#mainContent:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -47,7 +47,7 @@
   border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--ui-text-secondary);
-  font: 400 var(--ui-text-ui) / 20px var(--font-sans, system-ui, sans-serif);
+  font: var(--ui-font-weight-regular) var(--ui-text-ui) / 20px var(--font-sans, system-ui, sans-serif);
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
@@ -62,11 +62,6 @@
 .btn:hover {
   background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
-}
-
-.btn:focus-visible {
-  outline: 2px solid var(--ui-border-strong, currentColor);
-  outline-offset: 2px;
 }
 
 .btn:disabled,
@@ -131,11 +126,6 @@
 .btn-icon:hover {
   background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
-}
-
-.btn-icon:focus-visible {
-  outline: 2px solid var(--ui-border-strong, currentColor);
-  outline-offset: 2px;
 }
 
 .btn-icon:disabled,

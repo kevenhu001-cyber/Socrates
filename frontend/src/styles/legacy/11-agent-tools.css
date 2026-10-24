@@ -40,8 +40,8 @@
 .agent-tool-card.open{box-shadow:0 2px 10px hsl(220 30% 50%/0.05)}
 .agent-tool-head{display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s ease}
 .agent-tool-head:hover{background:var(--tool-card-bg-hover)}
-.agent-tool-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:var(--tool-card-radius)}
-.agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:var(--tool-card-icon);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:calc(11px * var(--app-font-scale, 1));line-height:1;letter-spacing:-0.02em}
+.agent-tool-head:focus-visible{outline:2px solid transparent;outline-offset:-2px;border-radius:var(--tool-card-radius)}
+.agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:var(--tool-card-icon);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:var(--ui-font-weight-bold);font-size:calc(11px * var(--app-font-scale, 1));line-height:1;letter-spacing:-0.02em}
 .agent-tool-icon svg{display:block;width:14px;height:14px}
 /* Grayscale tool icons — every tool reads as a neutral glyph; the
    tool name carries the identity. No per-tool colour chips. */
@@ -70,7 +70,7 @@
 .agent-tool-card.code .agent-tool-name::after{
   content:" · py";
   color:hsl(var(--text-500));
-  font-weight:500;
+  font-weight:var(--ui-font-weight-medium);
   font-size:calc(10px * var(--app-font-scale, 1));
   letter-spacing:0.5px;
   margin-left:2px;
@@ -86,7 +86,7 @@
 [data-theme=socrates][data-mode=dark] .agent-tool-card.websearch .agent-tool-icon,
 [data-theme=socrates][data-mode=dark] .agent-tool-card.codeint .agent-tool-icon,
 [data-theme=socrates][data-mode=dark] .agent-tool-card.code     .agent-tool-icon{background:hsl(var(--bg-200));color:hsl(var(--text-400))}
-.agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(12px * var(--app-font-scale, 1));flex-shrink:0;letter-spacing:-0.005em}
+.agent-tool-name{font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100));font-size:calc(12px * var(--app-font-scale, 1));flex-shrink:0;letter-spacing:-0.005em}
 .agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:var(--tool-card-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;opacity:.8}
 .agent-tool-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:var(--tool-card-text-subtle);transition:transform .2s cubic-bezier(.4,0,.2,1);flex-shrink:0;opacity:.6;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px}
 .agent-tool-chev svg{display:block;width:14px;height:14px}
@@ -177,7 +177,7 @@
    chevron. Empty by default (display:none) so other tool cards pay no
    visual cost. The 4 runtime statuses map to ✓ / ✗ / ⏱ / – with a
    color cue that survives on both cream and dark backgrounds. */
-.agent-tool-status{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:6px;border-radius:3px;font-size:calc(9.5px * var(--app-font-scale, 1));font-family:var(--font-mono);font-weight:700;line-height:1}
+.agent-tool-status{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:6px;border-radius:3px;font-size:calc(9.5px * var(--app-font-scale, 1));font-family:var(--font-mono);font-weight:var(--ui-font-weight-bold);line-height:1}
 .agent-tool-status:empty{display:none}
 .agent-tool-status.ok   {background:hsl(var(--bg-300));color:hsl(var(--text-400))}
 .agent-tool-status.err  {background:hsl(0 60% 92%);color:hsl(0 60% 42%)}
@@ -227,12 +227,12 @@
 .wsr-item{display:flex;gap:10px;padding:8px 12px;border-radius:0;transition:background .12s}
 .wsr-item:hover{background:hsl(var(--accent-000)/0.04)}
 .wsr-item + .wsr-item{border-top:0.5px solid hsl(var(--border-300)/0.18)}
-.wsr-index{flex-shrink:0;width:18px;height:18px;border-radius:4px;background:hsl(var(--bg-300));color:hsl(var(--text-400));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;line-height:1;margin-top:1px}
+.wsr-index{flex-shrink:0;width:18px;height:18px;border-radius:4px;background:hsl(var(--bg-300));color:hsl(var(--text-400));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);line-height:1;margin-top:1px}
 .wsr-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.wsr-title{display:block;font-family:var(--font-sans,system-ui);font-size:calc(12.5px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));text-decoration:none;line-height:1.35;word-break:break-word;letter-spacing:-0.005em}
+.wsr-title{display:block;font-family:var(--font-sans,system-ui);font-size:calc(12.5px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--accent-000));text-decoration:none;line-height:1.35;word-break:break-word;letter-spacing:-0.005em}
 .wsr-title:hover{text-decoration:underline;text-underline-offset:2px}
 .wsr-meta{display:flex;align-items:center;gap:6px;font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));overflow:hidden}
-.wsr-host{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.wsr-host{font-weight:var(--ui-font-weight-medium);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
 .wsr-date{color:hsl(var(--text-500));font-style:italic;flex-shrink:0}
 .wsr-date::before{content:"·";margin-right:6px;color:hsl(var(--text-500)/0.6)}
 .wsr-snippet{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));margin-top:2px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -251,11 +251,11 @@
 /* Codex project workspace history — intentionally compact so the project
    dialog stays useful on a phone as well as on desktop. */
 .project-run-history{margin-top:16px;padding-top:13px;border-top:0.5px solid hsl(var(--border-300)/.28)}
-.project-runtime-heading{margin-bottom:7px;color:hsl(var(--text-200));font-size:12px;font-weight:600}
+.project-runtime-heading{margin-bottom:7px;color:hsl(var(--text-200));font-size:12px;font-weight:var(--ui-font-weight-semibold)}
 .project-run-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/.2)}
 .project-run-row:last-child{border-bottom:0}
 .project-run-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}
-.project-run-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-200));font-size:12px;font-weight:520}
+.project-run-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-200));font-size:12px;font-weight:var(--ui-font-weight-semibold)}
 .project-run-copy span{color:hsl(var(--text-500));font-size:10.5px}
 .project-run-open{opacity:1;flex:0 0 auto}
 .agent-run-details{display:flex;flex-direction:column;gap:10px}
@@ -264,7 +264,7 @@
 .agent-run-details-section-title{margin-top:4px;color:hsl(var(--text-300));font-size:11px}
 .agent-run-artifacts{display:flex;flex-direction:column;gap:4px;margin:0;padding-left:18px;color:hsl(var(--accent-000));font:11px var(--font-mono)}
 .agent-run-details-activity{margin-top:3px;border-top:0.5px solid hsl(var(--border-300)/.25);padding-top:8px;color:hsl(var(--text-400));font-size:11px}
-.agent-run-details-activity summary{cursor:pointer;color:hsl(var(--text-300));font-weight:550}
+.agent-run-details-activity summary{cursor:pointer;color:hsl(var(--text-300));font-weight:var(--ui-font-weight-semibold)}
 .agent-run-details-activity ol{display:flex;max-height:220px;flex-direction:column;gap:5px;overflow:auto;margin:8px 0 0;padding-left:18px;font-family:var(--font-mono);font-size:10px;line-height:1.45}
 @media(max-width:480px){.project-run-row{align-items:flex-start}.project-run-open{padding-inline:4px}.agent-run-details-activity ol{max-height:180px}}
 
@@ -287,7 +287,7 @@
   color:var(--tool-card-icon)!important;
   font-size:calc(9.5px * var(--app-font-scale, 1));
 }
-.agent-tool-name{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
+.agent-tool-name{font-size:calc(12px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100))}
 .agent-tool-input{font-size:calc(10.5px * var(--app-font-scale, 1));opacity:.7;color:hsl(var(--text-400))}
 .agent-tool-status{
   min-width:0;
@@ -297,7 +297,7 @@
   background:transparent!important;
   color:var(--tool-card-text-subtle)!important;
   font-size:calc(10.5px * var(--app-font-scale, 1));
-  font-weight:500;
+  font-weight:var(--ui-font-weight-medium);
   white-space:nowrap;
   font-variant-numeric:tabular-nums;
 }
@@ -336,7 +336,7 @@
   cursor:pointer;
 }
 .agent-tool-action:hover,.agent-tool-action:focus-visible{color:hsl(var(--text-200));text-decoration:underline;text-underline-offset:2px}
-.agent-tool-action:focus-visible{outline:2px solid hsl(var(--text-400)/.4);outline-offset:2px;border-radius:2px}
+.agent-tool-action:focus-visible{outline:2px solid transparent;outline-offset:2px;border-radius:2px}
 .agent-tool-code,.agent-tool-out{
   background:hsl(var(--bg-000)/.32);
   border-top:0;
@@ -415,20 +415,20 @@
 }
 .agent-tool-card[data-tool-state="complete"] .agent-tool-state-icon::before{
   content:"✓";display:flex;align-items:center;justify-content:center;width:15px;height:15px;
-  border-radius:50%;background:hsl(var(--text-400));color:hsl(var(--bg-100));font-size:10px;font-weight:700;
+  border-radius:50%;background:hsl(var(--text-400));color:hsl(var(--bg-100));font-size:10px;font-weight:var(--ui-font-weight-bold);
 }
 .agent-tool-card[data-tool-state="error"] .agent-tool-state-icon::before{
   content:"!";display:flex;align-items:center;justify-content:center;width:15px;height:15px;
-  border-radius:50%;background:hsl(0 58% 52%);color:white;font-size:10px;font-weight:700;
+  border-radius:50%;background:hsl(0 58% 52%);color:white;font-size:10px;font-weight:var(--ui-font-weight-bold);
 }
 .agent-tool-card[data-tool-state="cancelled"] .agent-tool-state-icon::before{
   content:"■";font-size:10px;color:hsl(var(--text-500));
 }
 .agent-tool-name,.tool-run-list .agent-tool-name{
-  flex:0 0 auto;font-size:calc(13px * var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-200));
+  flex:0 0 auto;font-size:calc(13px * var(--app-font-scale,1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-200));
 }
 .agent-tool-input{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:1}
-.agent-tool-status{font-size:calc(11px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-500))!important}
+.agent-tool-status{font-size:calc(11px * var(--app-font-scale,1));font-weight:var(--ui-font-weight-regular);color:hsl(var(--text-500))!important}
 .agent-tool-chev{font-size:10px;color:hsl(var(--text-500));transition:transform .2s}
 .agent-tool-body{
   margin:0;padding:10px 12px;
@@ -438,7 +438,7 @@
 .agent-tool-section + .agent-tool-section{margin-top:10px}
 .agent-tool-section-head{
   min-height:20px;margin-bottom:5px;padding:0 1px;display:flex;align-items:center;gap:8px;
-  color:var(--tool-card-text-subtle);font:500 calc(10px * var(--app-font-scale,1))/1 var(--font-sans);
+  color:var(--tool-card-text-subtle);font:var(--ui-font-weight-medium) calc(10px * var(--app-font-scale,1))/1 var(--font-sans);
   letter-spacing:.06em;text-transform:uppercase;
 }
 .agent-tool-section-head .agent-tool-action{margin-left:auto;text-transform:none;letter-spacing:0}
@@ -475,7 +475,7 @@
   cursor:pointer;
 }
 .wsr-copy-all:hover,.wsr-copy-all:focus-visible{text-decoration:underline;text-underline-offset:2px}
-.wsr-copy-all:focus-visible{outline:2px solid hsl(var(--accent-000)/.3);outline-offset:2px;border-radius:2px}
+.wsr-copy-all:focus-visible{outline:2px solid transparent;outline-offset:2px;border-radius:2px}
 .wsr-item{padding:9px 12px;gap:9px}
 .wsr-item:hover{background:var(--tool-card-bg-hover)}
 .wsr-index{
@@ -491,11 +491,11 @@
   line-height:18px;
 }
 .wsr-item-muted{opacity:.72}
-.wsr-title{color:hsl(var(--text-100));font-weight:600;line-height:1.36}
+.wsr-title{color:hsl(var(--text-100));font-weight:var(--ui-font-weight-semibold);line-height:1.36}
 .wsr-title:hover{color:hsl(var(--text-300))}
 .wsr-title.is-disabled{color:hsl(var(--text-400));pointer-events:none}
 .wsr-meta{gap:7px}
-.wsr-host{max-width:72%;font-weight:500;color:hsl(var(--text-400))}
+.wsr-host{max-width:72%;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-400))}
 .wsr-source{font-family:var(--font-mono);font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:lowercase}
 .wsr-source::before{content:"·";margin-right:7px;color:hsl(var(--text-500)/.55)}
 .wsr-snippet{font-size:calc(11.5px * var(--app-font-scale, 1));line-height:1.48}
@@ -525,11 +525,11 @@
 [data-theme=socrates][data-mode=dark] .link-card{background:hsl(var(--bg-100));border-color:hsl(var(--border-300)/0.4)}
 [data-theme=socrates][data-mode=dark] .link-card.err{background:hsl(0 30% 18%);border-color:hsl(0 40% 35%)}
 .link-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400))}
-.link-card-host{font-weight:600;letter-spacing:-.01em;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-card-host{font-weight:var(--ui-font-weight-semibold);letter-spacing:-.01em;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .link-card-status{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-variant-numeric:tabular-nums}
-.link-card-status.err{color:hsl(0 50% 45%);font-weight:500}
+.link-card-status.err{color:hsl(0 50% 45%);font-weight:var(--ui-font-weight-medium)}
 [data-theme=socrates][data-mode=dark] .link-card-status.err{color:hsl(0 55% 70%)}
-.link-card-title{color:hsl(var(--accent-000));text-decoration:none;font-weight:500;font-size:calc(13px * var(--app-font-scale, 1));line-height:1.35;word-break:break-word}
+.link-card-title{color:hsl(var(--accent-000));text-decoration:none;font-weight:var(--ui-font-weight-medium);font-size:calc(13px * var(--app-font-scale, 1));line-height:1.35;word-break:break-word}
 .link-card-title:hover{text-decoration:underline}
 .link-card-excerpt{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5;margin-top:2px;max-height:3.6em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical}
 
@@ -543,7 +543,7 @@
 
 /* Final run footer — small status chip below the last assistant
    message. */
-.agent-run-footer{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 10px;border-radius:10px;background:hsl(var(--bg-200));color:hsl(var(--text-400));font-size:calc(10.5px * var(--app-font-scale, 1));font-weight:500;letter-spacing:.02em}
+.agent-run-footer{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 10px;border-radius:10px;background:hsl(var(--bg-200));color:hsl(var(--text-400));font-size:calc(10.5px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);letter-spacing:.02em}
 .agent-run-footer.error{background:hsl(0 50% 95%);color:hsl(0 60% 40%)}
 .agent-run-footer.stopped{background:hsl(45 50% 92%);color:hsl(36 60% 32%)}
 [data-theme=socrates][data-mode=dark] .agent-run-footer.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
@@ -585,10 +585,10 @@
   display:flex;align-items:center;gap:8px;
   min-height:34px;
   padding:7px 10px;
-  font-weight:500;letter-spacing:0;
+  font-weight:var(--ui-font-weight-medium);letter-spacing:0;
   color:hsl(var(--text-300));
 }
-.search-progress-head:focus-visible{outline:2px solid hsl(var(--accent-000)/.5);outline-offset:-2px;border-radius:7px}
+.search-progress-head:focus-visible{outline:2px solid transparent;outline-offset:-2px;border-radius:7px}
 .search-progress-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
 /* UI-align: open-webui shimmer sweep across the status text while a
    search is in flight — gradient-clipped text, opacity only. */
@@ -658,7 +658,7 @@
   width:12px;
   text-align:center;
   color:hsl(var(--text-500));
-  font-weight:500;
+  font-weight:var(--ui-font-weight-medium);
 }
 .search-progress-step.running .icon,
 .search-progress-step.ok .icon,

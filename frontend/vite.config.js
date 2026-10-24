@@ -377,6 +377,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      /* The sub-path aliases have to come before the package alias: Vite
+         matches string aliases by prefix, so a bare `@socrates/core` would
+         swallow `@socrates/core/motion/spring` and look for it *inside*
+         index.ts. */
+      '@socrates/core/motion/spring': fileURLToPath(new URL('../packages/core/src/motion/spring.ts', import.meta.url)),
       '@socrates/core/visualizationMath': fileURLToPath(new URL('../packages/core/src/visualizationMath.js', import.meta.url)),
       '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),

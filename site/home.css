@@ -28,30 +28,18 @@
   font-family: 'Geist Sans';
   font-style: normal;
   font-display: swap;
-  font-weight: 400;
-  src: url('/media/fonts/geist-sans-latin-400-normal.woff2') format('woff2');
+  font-weight: 100 900;
+  src: url('/media/fonts/geist-sans-variable.woff2') format('woff2');
 }
-@font-face {
-  font-family: 'Geist Sans';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url('/media/fonts/geist-sans-latin-500-normal.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Geist Sans';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url('/media/fonts/geist-sans-latin-600-normal.woff2') format('woff2');
-}
+
 @font-face {
   font-family: 'Geist Mono';
   font-style: normal;
   font-display: swap;
-  font-weight: 400;
-  src: url('/media/fonts/geist-mono-latin-400-normal.woff2') format('woff2');
+  font-weight: 100 900;
+  src: url('/media/fonts/geist-mono-variable.woff2') format('woff2');
 }
+
 
 :root {
   --paper: #f5f2e9;

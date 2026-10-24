@@ -67,7 +67,7 @@
     background: transparent;
     color: var(--chatgpt-text);
     font-size: 14px;
-    font-weight: 400;
+    font-weight: var(--ui-font-weight-regular);
     line-height: 20px;
     /* padding/gap moved on — the desktop compact-directory rhythm lives in
        polish/composer.css and needs no !important. */

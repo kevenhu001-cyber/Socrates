@@ -72,7 +72,7 @@
   display: block !important;
   color: var(--cg-text-muted) !important;
   font-size: 11px !important;
-  font-weight: 600 !important;
+  font-weight: var(--ui-font-weight-semibold) !important;
   line-height: 16px;
 }
 
@@ -258,15 +258,37 @@
    hard opaque white rectangle around every focused input — the "white box
    inside the pill" seen on the scheduled composer, the search fields and
    every other text control. Use the same translucent treatment as the
-   baseline so the ring reads as focus rather than as a border. */
+   baseline so the ring reads as focus rather than as a border.
+
+   2026-10-24 — the outline is now transparent on purpose. The visible focus
+   indicator is the two-layer box-shadow in --ui-focus-shadow (a page-coloured
+   gap plus a ring); a single outline on top of it would read as a third,
+   uneven ring rather than as one deliberate detail. This rule keeps its
+   !important and its specificity so it still outranks the legacy `outline: 0`
+   declarations — it just stops painting. */
 #appShell#appShell#appShell button:focus-visible,
 #appShell#appShell#appShell a:focus-visible,
 #appShell#appShell#appShell [role="button"]:focus-visible,
 #appShell#appShell#appShell input:focus-visible,
 #appShell#appShell#appShell textarea:focus-visible,
 #appShell#appShell#appShell select:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--ui-text-primary) 55%, transparent) !important;
+  outline: 2px solid transparent !important;
   outline-offset: 2px !important;
+}
+
+/* Forced colours strips box-shadow, so the contract's ring disappears there.
+   The transparent outline above is the fallback in normal modes; here it has
+   to become the system focus colour explicitly. */
+@media (forced-colors: active) {
+  #appShell#appShell#appShell button:focus-visible,
+  #appShell#appShell#appShell a:focus-visible,
+  #appShell#appShell#appShell [role="button"]:focus-visible,
+  #appShell#appShell#appShell input:focus-visible,
+  #appShell#appShell#appShell textarea:focus-visible,
+  #appShell#appShell#appShell select:focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
 }
 
 /* ==========================================================================

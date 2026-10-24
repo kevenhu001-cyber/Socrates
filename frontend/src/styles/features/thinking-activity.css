@@ -88,12 +88,11 @@
   background: transparent;
   color: var(--ui-text-primary);
   font: inherit;
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   cursor: pointer;
   transition: background-color var(--ui-duration-fast) ease;
 }
 .msg-retry-btn:hover:not(:disabled) { background: var(--ui-bg-hover); }
-.msg-retry-btn:focus-visible { outline: 2px solid var(--ui-focus-ring); outline-offset: 2px; }
 .msg-retry-btn:disabled { opacity: var(--ui-disabled-opacity, 0.5); cursor: wait; }
 @media (max-width: 768px) {
   .msg-retry-btn { min-height: var(--ui-control-touch); }
@@ -131,14 +130,14 @@
   font-size: var(--ui-font-size-sm);
 }
 .thinking-accordion[data-answer-started="true"] .thinking-accordion-title {
-  font-weight: 450;
+  font-weight: var(--ui-font-weight-medium);
 }
 .thinking-status-context {
   max-width: 22rem;
   overflow: hidden;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
-  font-weight: 400;
+  font-weight: var(--ui-font-weight-regular);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -165,7 +164,7 @@
   border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-text-muted, var(--ui-text-secondary));
-  font: 500 var(--ui-font-size-sm) / 1.4 var(--font-sans);
+  font: var(--ui-font-weight-medium) var(--ui-font-size-sm) / 1.4 var(--font-sans);
   text-align: start;
   cursor: pointer;
   touch-action: manipulation;
@@ -175,11 +174,6 @@
 .thinking-accordion-toggle:hover {
   background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
-}
-
-.thinking-accordion-toggle:focus-visible {
-  outline: 2px solid var(--ui-border-strong);
-  outline-offset: 1px;
 }
 
 .thinking-accordion-left {
@@ -200,7 +194,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   font-size: var(--ui-font-size-sm);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   color: inherit;
 }
 
@@ -227,15 +221,11 @@
   transform: rotate(180deg);
 }
 
-/* Only the active caption has a soft travelling highlight. Tool history and
-   completed thoughts remain still; the palette continues to come from themes. */
-@supports (background-clip: text) {
-  .thinking-accordion[data-live="true"] .thinking-status-label {
-    background-image: linear-gradient(100deg, var(--ui-text-muted) 35%, var(--ui-text-primary) 50%, var(--ui-text-muted) 65%);
-    background-size: 250% 100%;
-    background-clip: text;
-    color: transparent;
-  }
+/* The live caption is a plain palette colour that breathes (polish/motion.css
+   owns the cue). It used to be a travelling gradient clipped to the glyphs;
+   the sweep repainted the text on every frame of the shimmer. */
+.thinking-accordion[data-live="true"] .thinking-status-label {
+  color: var(--ui-text-secondary);
 }
 
 .thinking-accordion-body {

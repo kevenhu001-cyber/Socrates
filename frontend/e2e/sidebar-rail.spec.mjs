@@ -1,7 +1,7 @@
 // e2e/sidebar-rail.spec.mjs — desktop sidebar geometry and palette.
 // The geometry is chatgpt.com parity (docs/ref/chatgpt-parity.md): 36px rows,
 // single-line history, a 52px icon rail when collapsed. The palette is the
-// marketing-site foundation: a quiet #f7f7f7 rail on a white canvas.
+// light ladder: a quiet #f6f6f6 rail one rung below the #fafafa canvas.
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -55,11 +55,11 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.modeBadgeVisible).toBe(false);
-  /* Share the marketing site's quiet navigation material. */
-  expect(rows.sidebarBg).toBe('rgb(247, 247, 247)');
-  /* --ui-sidebar-border → --ui-bg-pill-selected (#eeeeee): a neutral hairline,
+  /* The rail is one rung below the canvas on the light ladder. */
+  expect(rows.sidebarBg).toBe('rgb(246, 246, 246)');
+  /* --ui-sidebar-border → --ui-bg-panel (#f0f0f0): a neutral hairline,
      not the translucent black chatgpt.com uses. */
-  expect(rows.sidebarBorder).toBe('1px rgb(238, 238, 238)');
+  expect(rows.sidebarBorder).toBe('1px rgb(240, 240, 240)');
   expect(rows.headerH).toBe(52);
   expect(rows.logoFontSize).toBe('18px');
   expect(rows.footerBorderTop).toBe('0px');

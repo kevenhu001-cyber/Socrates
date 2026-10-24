@@ -25,6 +25,25 @@ function rgb(value) {
   const parts = (String(value).match(/[\d.]+/g) ?? []).map(Number);
   return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
 }
+/* Chrome serialises a color-mix() with alpha as `color(srgb r g b / a)`; the
+   rgb() helper above reads that as 0–1 channels. */
+function parseColor(value) {
+  const raw = String(value).trim();
+  const parts = (raw.match(/[\d.]+/g) ?? []).map(Number);
+  if (raw.startsWith('color(')) {
+    return { r: parts[0] * 255, g: parts[1] * 255, b: parts[2] * 255, a: parts[3] ?? 1 };
+  }
+  return { r: parts[0], g: parts[1], b: parts[2], a: parts[3] ?? 1 };
+}
+/* Composite a translucent colour over an opaque backdrop. */
+function over(fg, bg) {
+  return {
+    r: fg.r * fg.a + bg.r * (1 - fg.a),
+    g: fg.g * fg.a + bg.g * (1 - fg.a),
+    b: fg.b * fg.a + bg.b * (1 - fg.a),
+    a: 1,
+  };
+}
 function luminance({ r, g, b }) {
   const [R, G, B] = [r, g, b].map((c) => {
     const n = c / 255;
@@ -160,6 +179,127 @@ test('light palette roles clear AA on every light surface they sit on', async ({
   /* "muted" is an alias of "tertiary" — one de-emphasised text colour, not
    * two near-identical ones (the dark theme has always aliased them). */
   expect(probe.text.muted).toBe(probe.text.tertiary);
+});
+
+test('dark palette roles clear AA on every dark surface they sit on', async ({ page }) => {
+  await openApp(page, { mode: 'dark' });
+  const probe = await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.setAttribute('aria-hidden', 'true');
+    host.style.cssText = 'position:fixed;left:-9999px;top:0;';
+    document.body.appendChild(host);
+    const resolve = (expr, property) => {
+      const node = document.createElement('span');
+      node.style[property] = expr;
+      host.appendChild(node);
+      const value = getComputedStyle(node)[property];
+      node.remove();
+      return value;
+    };
+    const color = (token) => resolve(`var(${token})`, 'color');
+    const surface = (token) => resolve(`var(${token})`, 'backgroundColor');
+    const pick = (selector) => {
+      const node = document.querySelector(selector);
+      return node ? getComputedStyle(node).color : null;
+    };
+    const out = {
+      page: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
+      sidebar: getComputedStyle(document.getElementById('sidebar')).backgroundColor,
+      disclaimer: pick('#topicDisclaimer'),
+      sectionLabel: pick('#recentsList .recents-time-label'),
+      surfaces: {
+        page: surface('--ui-bg-page'),
+        rail: surface('--ui-bg-rail'),
+        panel: surface('--ui-bg-panel'),
+        elevated: surface('--ui-bg-elevated'),
+        bubble: surface('--ui-bg-bubble'),
+        control: surface('--ui-bg-control'),
+      },
+      text: {
+        primary: color('--ui-text-primary'),
+        secondary: color('--ui-text-secondary'),
+        tertiary: color('--ui-text-tertiary'),
+        muted: color('--ui-text-muted'),
+      },
+      tone: {
+        danger: color('--ui-danger'),
+        success: color('--ui-success'),
+        info: color('--ui-info'),
+        warning: color('--ui-warning'),
+      },
+      focusRing: color('--ui-focus-ring'),
+    };
+    host.remove();
+    return out;
+  });
+
+  /* The dark ladder is deliberately low-contrast — four surfaces one step
+     apart. That is a surface-to-surface relationship, not a text one: every
+     text role still has to clear AA on every rung of the ladder. */
+  for (const [name, value] of Object.entries(probe.text)) {
+    expect.soft(contrast(rgb(value), rgb(probe.page)), `--ui-text-${name} on the page`).toBeGreaterThanOrEqual(4.5);
+    for (const [surfaceName, surfaceValue] of Object.entries(probe.surfaces)) {
+      expect.soft(contrast(rgb(value), rgb(surfaceValue)), `--ui-text-${name} on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(4.5);
+    }
+  }
+
+  /* The semantic tones are text colours too. They sit on the ladder and on
+     their own tint — the tool-card error value and the metric-delta chip
+     paint them on 6–16% of themselves over the page, so the tint is the
+     worst background they ever meet. */
+  const tint = (fg, pct, bg) => {
+    const f = rgb(fg);
+    const b = rgb(bg);
+    const p = pct / 100;
+    return { r: f.r * p + b.r * (1 - p), g: f.g * p + b.g * (1 - p), b: f.b * p + b.b * (1 - p) };
+  };
+  for (const [name, value] of Object.entries(probe.tone)) {
+    for (const surfaceName of ['page', 'rail', 'panel', 'elevated']) {
+      expect.soft(contrast(rgb(value), rgb(probe.surfaces[surfaceName])), `--ui-${name} on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(4.5);
+    }
+    const onTint = tint(value, 16, probe.surfaces.page);
+    expect.soft(contrast(rgb(value), onTint), `--ui-${name} on its own 16% tint`).toBeGreaterThanOrEqual(4.5);
+  }
+
+  /* Non-text: the focus ring is the one boundary that must read as a
+     boundary. It carries alpha, so it is composited over the surface it
+     sits on before the ratio is taken. */
+  const ring = parseColor(probe.focusRing);
+  for (const surfaceName of ['page', 'elevated']) {
+    const composited = over(ring, rgb(probe.surfaces[surfaceName]));
+    expect.soft(contrast(composited, rgb(probe.surfaces[surfaceName])), `--ui-focus-ring on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(3);
+  }
+
+  /* Muted labels clear AA on the dark canvas and the dark rail. */
+  expect(probe.disclaimer).not.toBeNull();
+  expect(probe.sectionLabel).not.toBeNull();
+  expect(contrast(rgb(probe.disclaimer), rgb(probe.page))).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(rgb(probe.sectionLabel), rgb(probe.sidebar))).toBeGreaterThanOrEqual(4.5);
+
+  /* "muted" is an alias of "tertiary" in both themes. */
+  expect(probe.text.muted).toBe(probe.text.tertiary);
+});
+
+test('dark dialogs are elevated cards over a flat token scrim', async ({ page }) => {
+  await openApp(page, { mode: 'dark' });
+  await page.evaluate(() => window.openSettings());
+  await expect(page.locator('#settingsOverlay')).toBeVisible();
+  const settings = await page.evaluate(() => {
+    const overlay = getComputedStyle(document.getElementById('settingsOverlay'));
+    const card = document.querySelector('#settingsOverlay .settings-modal, #settingsOverlay .modal, #settingsOverlay [role="dialog"]');
+    return {
+      scrim: overlay.backgroundColor,
+      blur: overlay.backdropFilter,
+      card: card ? getComputedStyle(card).backgroundColor : null,
+      cardText: card ? getComputedStyle(card).color : null,
+    };
+  });
+  expect(rgb(settings.scrim).a).toBeLessThanOrEqual(0.5);
+  expect(settings.blur).toBe('none');
+  if (settings.card) {
+    expect(luminance(rgb(settings.card))).toBeLessThan(0.1);
+    expect(contrast(rgb(settings.cardText), rgb(settings.card))).toBeGreaterThanOrEqual(4.5);
+  }
 });
 
 test('light dialogs are white cards over a flat token scrim', async ({ page }) => {

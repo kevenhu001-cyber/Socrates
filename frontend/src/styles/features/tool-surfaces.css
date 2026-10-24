@@ -25,11 +25,11 @@
   --tool-card-pad-y:12px;
   --tool-card-pad-x:14px;
   --tool-card-title-size:14px;
-  --tool-card-title-weight:600;
+  --tool-card-title-weight:var(--ui-font-weight-semibold);
   --tool-card-desc-size:12.5px;
-  --tool-card-desc-weight:400;
+  --tool-card-desc-weight:var(--ui-font-weight-regular);
   --tool-card-meta-size:11px;
-  --tool-card-meta-weight:400;
+  --tool-card-meta-weight:var(--ui-font-weight-regular);
   --tool-card-focus:hsl(0 0% 0%/.36);
   --tool-card-shadow:0 8px 24px hsl(0 0% 0%/.08);
   --tool-card-danger:hsl(0 58% 46%);
@@ -67,8 +67,7 @@
   transition:color .16s ease
 }
 .composer-tools-item:hover,
-.composer-tools-item:focus-visible{color:var(--tool-card-text);outline:0}
-.composer-tools-item:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:2px;box-shadow:none}
+.composer-tools-item:focus-visible {color:var(--tool-card-text)}
 .composer-tools-item:active{color:var(--tool-card-text);transform:none}
 .composer-tools-icon{width:22px;height:22px;color:var(--tool-card-icon)}
 .composer-tools-item:hover .composer-tools-icon,

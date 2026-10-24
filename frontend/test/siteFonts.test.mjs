@@ -9,7 +9,15 @@ test('app Chinese fonts use the marketing site glyph subsets, weights and unicod
   assert.equal(app, chineseFontStyles(source));
   const faces = [...app.matchAll(/@font-face\s*\{[^}]+\}/g)].map(([face]) => face);
   assert.ok(faces.length > 100, 'keep unicode subsetting instead of downloading a full CJK face');
-  assert.deepEqual([...new Set(faces.map((face) => face.match(/font-weight:\s*(\d+)/)[1]))], ['400', '500', '600', '700']);
+  /* One variable face per unicode subset: the weight axis runs the whole
+     100–900 range so the dark canvas can step down to a half step (450)
+     instead of declaring a weight the browser snaps back to 500. */
+  assert.ok(
+    faces.every((face) => /font-weight:\s*100 900;/.test(face)),
+    'every Chinese face declares the full variable weight range',
+  );
+  const ranges = new Set(faces.map((face) => face.match(/unicode-range:\s*([^;]+);/)[1]));
+  assert.equal(ranges.size, faces.length, 'one face per unicode range');
   for (const face of faces) {
     assert.match(face, /unicode-range:/);
     assert.match(face, /font-display:\s*swap/);

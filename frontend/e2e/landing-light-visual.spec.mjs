@@ -66,9 +66,11 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
-  // Match site/'s white paper canvas and quiet gray navigation rail.
-  expect(geometry.pageBackground).toBe('rgb(255, 255, 255)');
-  expect(geometry.sidebarBackground).toBe('rgb(247, 247, 247)');
+  // The light ladder runs paper → canvas: the page sits on L2 (#fafafa) and
+  // the quiet navigation rail one rung below it (#f6f6f6). The composer is
+  // the paper itself (#ffffff), so it reads as raised against the page.
+  expect(geometry.pageBackground).toBe('rgb(250, 250, 250)');
+  expect(geometry.sidebarBackground).toBe('rgb(246, 246, 246)');
   expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
   expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);

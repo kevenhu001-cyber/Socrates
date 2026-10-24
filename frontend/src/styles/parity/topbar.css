@@ -81,7 +81,7 @@
   color: var(--ui-text-secondary);
   font: inherit;
   font-size: var(--ui-text-ui);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   line-height: var(--ui-text-ui-line);
   white-space: nowrap;
   cursor: pointer;
@@ -89,10 +89,6 @@
 }
 #appShell .top-mode-switch-option:hover { color: var(--ui-text-primary); }
 #appShell .top-mode-switch-option.is-active { color: var(--ui-text-primary); }
-#appShell .top-mode-switch-option:focus-visible {
-  outline: 2px solid var(--ui-focus-ring);
-  outline-offset: 2px;
-}
 
 .top-model-switcher-settings { display: none; }
 
@@ -147,14 +143,14 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     opacity: var(--press-opacity, var(--ui-press-opacity, 0.82));
   }
   body[data-conversation-active="true"] #appShell .top-model-switcher-name {
-    font-weight: 600;
+    font-weight: var(--ui-font-weight-semibold);
     font-size: 15px;
   }
   body[data-conversation-active="true"] #appShell .top-model-switcher-model {
     min-width: 0;
     overflow: hidden;
     color: var(--ui-text-tertiary);
-    font-weight: 400;
+    font-weight: var(--ui-font-weight-regular);
     font-size: var(--ui-font-size-xs);
     text-overflow: ellipsis;
   }
@@ -246,15 +242,14 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   }
   #appShell #topModelSwitcher:hover,
   #appShell #topModelSwitcher[aria-expanded="true"] { background: var(--ui-bg-hover); }
-  #appShell #topModelSwitcher:focus-visible { outline: 2px solid var(--ui-border-strong); outline-offset: 1px; }
-  #appShell .top-model-switcher-name { font-weight: 600; }
+  #appShell .top-model-switcher-name { font-weight: var(--ui-font-weight-semibold); }
   #appShell .top-model-switcher-model {
     min-width: 0;
     overflow: hidden;
     /* The model is the switcher's value, not de-emphasised metadata: the
        reference switcher is a single 18px/600 label. */
     color: var(--ui-text-secondary);
-    font-weight: 600;
+    font-weight: var(--ui-font-weight-semibold);
     text-overflow: ellipsis;
   }
   #appShell .top-model-switcher-model:empty { display: none; }
@@ -282,7 +277,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     color: var(--ui-text-primary);
     font: inherit;
     font-size: var(--ui-text-ui);
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
     line-height: var(--ui-text-ui-line);
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) ease;

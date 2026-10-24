@@ -31,16 +31,17 @@
   animation-timing-function: var(--ui-ease-out);
 }
 
-/* One soft text highlight is the sole persistent cue for a live turn.
-   Tool glyphs and text stay still inside the activity history. */
-@supports (background-clip: text) {
-  #appShell .thinking-accordion[data-live="true"] .thinking-status-label {
-    animation: ui-activity-highlight var(--ui-duration-shimmer) linear infinite;
-  }
+/* One soft breathing cue is the sole persistent cue for a live turn.
+   Tool glyphs and text stay still inside the activity history.
+   The cue animates opacity instead of a travelling gradient: sweeping
+   `background-position` over clipped glyphs repainted the text on every
+   frame, and this policy only allows compositor-friendly cues. */
+#appShell .thinking-accordion[data-live="true"] .thinking-status-label {
+  animation: ui-activity-breathe var(--ui-duration-shimmer) ease-in-out infinite;
 }
-@keyframes ui-activity-highlight {
-  from { background-position: 150% 0; }
-  to { background-position: -100% 0; }
+@keyframes ui-activity-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 #appShell .turn-activity-surface :is(.tool-inline-tool-icon, .agent-step-icon, .tool-inline-label, .tool-run-summary-label, .agent-step-label) {
   animation: none;

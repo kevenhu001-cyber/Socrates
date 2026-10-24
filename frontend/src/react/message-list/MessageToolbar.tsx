@@ -1,6 +1,8 @@
 import React from 'react';
 import { getIconDescriptor } from '../../ui/iconRegistry';
 import { INTERFACE_ICON_STROKE } from '../../ui/icons/interfaceIcons';
+import { animateSpring, readScale } from '../../ui/motion/spring';
+import { SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { MessageOverflow } from './MessageOverflow';
 import type { LegacyChatMessage } from '../types/domain';
 import { useMessageToolbarCallbacks } from './useMessageActions';
@@ -14,6 +16,8 @@ interface IconButtonProps {
   active?: boolean;
   /** Extra class for a state that CSS keys off, e.g. the copied check. */
   modifier?: string;
+  /** A handle on the button, for the controls that animate themselves. */
+  buttonRef?: React.Ref<HTMLButtonElement>;
 }
 
 const CopyIcon = getIconDescriptor('copy').children;
@@ -28,10 +32,16 @@ const BranchIcon = getIconDescriptor('branch').children;
 const ReExplainIcon = getIconDescriptor('bulb').children;
 const ReadAloudIcon = getIconDescriptor('speaker').children;
 
-function IconButton({ label, onClick, children, svgInner, active, modifier }: IconButtonProps): React.ReactElement {
+/* The reaction pop: one visible overshoot of roughly 19% that settles back.
+ * The number is the spring's own — stiffness 380 / damping 18 give ζ = 0.46
+ * and a peak of 19.5% — so the curve and the amplitude are one decision. */
+const LIKE_OVERSHOOT = 0.195;
+
+function IconButton({ label, onClick, children, svgInner, active, modifier, buttonRef }: IconButtonProps): React.ReactElement {
   return (
     <button
       type="button"
+      ref={buttonRef}
       className={`btn btn-icon btn-touch msg-toolbar-btn${active ? ' active' : ''}${modifier ? ` ${modifier}` : ''}`}
       aria-label={label}
       onClick={onClick}
@@ -100,11 +110,15 @@ interface MessageToolbarProps {
 function MessageToolbar({ message, role, pending = false }: MessageToolbarProps): React.ReactElement | null {
   const c = useMessageToolbarCallbacks(message);
   const [copied, setCopied] = React.useState(false);
+  const [liked, setLiked] = React.useState(false);
+  const likeButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const likeAnimationRef = React.useRef<Animation | null>(null);
   const [, refreshLanguage] = React.useReducer((revision: number) => revision + 1, 0);
   React.useEffect(() => {
     document.addEventListener('socrates:langchange', refreshLanguage);
     return () => document.removeEventListener('socrates:langchange', refreshLanguage);
   }, []);
+  React.useEffect(() => () => { likeAnimationRef.current?.cancel(); }, []);
   const id = typeof message.id === 'string' ? message.id
     : typeof message.clientId === 'string' ? message.clientId
     : '';
@@ -113,6 +127,38 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
     c.onCopy?.();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  /**
+   * Pop the reaction icon. The icon is scaled rather than the button: the
+   * button carries the active pill, and growing the pill 19% would read as
+   * the whole row moving.
+   *
+   * The pop starts from wherever the icon currently is, and the kick is
+   * scaled by the distance still left to the peak — so a second click in the
+   * middle of the first pop settles the icon back instead of stacking a
+   * second overshoot on top of it.
+   */
+  const playLikePop = () => {
+    const button = likeButtonRef.current;
+    const icon = button?.querySelector('svg');
+    if (!icon) return;
+    const current = readScale(icon);
+    likeAnimationRef.current?.cancel();
+    likeAnimationRef.current = animateSpring(icon, {
+      config: SPRING_PRESETS.like,
+      from: current,
+      to: 1,
+      overshoot: Math.max(0, LIKE_OVERSHOOT - (current - 1)),
+      property: 'scale',
+    });
+  };
+
+  const handleThumbsUp = () => {
+    c.onThumbsUp?.();
+    const next = !liked;
+    setLiked(next);
+    if (next) playLikePop();
   };
 
   // Reserve the same toolbar geometry during playback without mounting any
@@ -170,7 +216,9 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
           <span className="msg-toolbar-feedback">
           <IconButton
             label={i18n('message.helpful', 'Helpful')}
-            onClick={() => c.onThumbsUp?.()}
+            onClick={handleThumbsUp}
+            active={liked}
+            buttonRef={likeButtonRef}
           >
             {ThumbsUpIcon}
           </IconButton>

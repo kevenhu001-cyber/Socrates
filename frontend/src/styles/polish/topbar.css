@@ -77,13 +77,13 @@ body.plugins-active #appShell .mobile-newchat-btn {
 #appShell #pluginWorkspaceTabs .plugin-workspace-tab {
   border-radius: var(--ui-radius-pill);
   font-size: var(--ui-font-size-xs);
-  font-weight: 450;
+  font-weight: var(--ui-font-weight-medium);
   color: var(--ui-text-tertiary);
   transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
   color: var(--ui-text-primary);
-  font-weight: 550;
+  font-weight: var(--ui-font-weight-semibold);
 }
 [data-mode="dark"] #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
   background: rgb(255 255 255 / 10%);
@@ -96,7 +96,7 @@ body.plugins-active #appShell .mobile-newchat-btn {
 
 /* In-chat affordances (share/find/model) keep the same quiet skin. */
 @media (max-width: 768px) {
-#appShell .top-bar-right .share-btn .share-btn-label { font-weight: 500; }
+#appShell .top-bar-right .share-btn .share-btn-label { font-weight: var(--ui-font-weight-medium); }
 }
 
 /* Phone mode menu reuses the existing functional dropdown. */

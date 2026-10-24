@@ -283,7 +283,7 @@ body,
   border-radius: var(--cg-radius-pill);
   color: var(--cg-text-muted);
   font-size: 14px;
-  font-weight: 550;
+  font-weight: var(--ui-font-weight-semibold);
 }
 }
 
@@ -398,7 +398,7 @@ body,
   color: var(--cg-text);
   background: var(--cg-surface-hover);
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--ui-font-weight-bold);
 }
 
 .composer-plugin-mark svg {
@@ -453,14 +453,14 @@ body,
   gap: 12px;
   color: var(--cg-text);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 
 .scheduled-section-heading > span:last-child {
   color: var(--cg-text-muted);
   font-size: 11px;
-  font-weight: 450;
+  font-weight: var(--ui-font-weight-medium);
 }
 
 .composer-tools-search {
@@ -498,7 +498,7 @@ body,
   outline: 0;
   color: var(--cg-text);
   background: transparent;
-  font: 400 13px/20px var(--cg-font);
+  font: var(--ui-font-weight-regular) 13px/20px var(--cg-font);
 }
 
 .composer-tools-search input::placeholder,
@@ -553,7 +553,7 @@ body,
 .composer-tools-plugin-name {
   color: var(--cg-text);
   font-size: 12px;
-  font-weight: 550;
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 
@@ -645,7 +645,7 @@ body,
   flex: 1 1 auto;
   min-width: 0;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   color: var(--cg-text);
 }
 
@@ -807,7 +807,7 @@ body.workspace-active #appShell .workspace-secondary:hover{
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
-  font-weight: 550;
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 .scheduled-recommendation-copy small {
@@ -829,7 +829,7 @@ body.workspace-active #appShell .workspace-secondary:hover{
   border-radius: 50%;
   color: var(--cg-text-muted);
   font-size: 22px;
-  font-weight: 300;
+  font-weight: var(--ui-font-weight-regular);
 }
 
 .scheduled-task-list {
@@ -918,8 +918,7 @@ body.workspace-active #appShell .workspace-row:hover {
 .workspace-field select:focus {
   border-color: var(--cg-border-strong) !important;
   border-color: color-mix(in srgb, var(--cg-accent) 62%, var(--cg-border-strong)) !important;
-  box-shadow: 0 0 0 3px var(--cg-accent) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 13%, transparent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
 }
 
 .auth-btn.primary,
@@ -1135,7 +1134,7 @@ body.workspace-active #appShell #mainInner {
   margin: 0;
   color: var(--cg-text);
   font-size: 32px;
-  font-weight: 560;
+  font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -.035em;
   line-height: 1.15;
 }
@@ -1183,7 +1182,7 @@ body.workspace-active #appShell #mainInner {
   outline: 0;
   color: var(--cg-text);
   background: transparent;
-  font: 400 14px/22px var(--cg-font);
+  font: var(--ui-font-weight-regular) 14px/22px var(--cg-font);
 }
 
 .workspace-search-field input::placeholder,
@@ -1202,12 +1201,12 @@ body.workspace-active #appShell #mainInner {
   border-radius: 24px;
   color: var(--cg-page);
   background: var(--cg-text);
-  font: 550 14px/1 var(--cg-font);
+  font: var(--ui-font-weight-semibold) 14px/1 var(--cg-font);
   cursor: pointer;
 }
 
 .workspace-create-button:hover { opacity: .88; }
-.workspace-create-button:focus-visible { outline: 2px solid var(--cg-accent); outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent); outline-offset: 2px; }
+.workspace-create-button:focus-visible { outline: 2px solid transparent; outline: 2px solid transparent; outline-offset: 2px; }
 .workspace-create-button svg { width: 18px; height: 18px; }
 
 .workspace-toolbar {
@@ -1234,7 +1233,7 @@ body.workspace-active #appShell #mainInner {
   border-radius: 20px;
   color: var(--cg-text-muted);
   background: transparent;
-  font: 500 14px/22px var(--cg-font);
+  font: var(--ui-font-weight-medium) 14px/22px var(--cg-font);
   cursor: pointer;
 }
 
@@ -1245,7 +1244,7 @@ body.workspace-active #appShell #mainInner {
 .plugin-directory-tabs button.active {
   color: var(--cg-text);
   background: var(--cg-surface-hover);
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 .workspace-table { width: 100%; }
@@ -1273,7 +1272,7 @@ body.workspace-active #appShell .library-row {
 .library-file-icon { width: 42px; height: 42px; border: 1px solid var(--cg-border); border-radius: 10px; background: var(--cg-surface-raised); cursor: pointer; }
 .library-file-icon svg { width: 19px; height: 19px; }
 .library-row .workspace-row-copy { align-self: center; gap: 3px; cursor: pointer; }
-.library-row .workspace-row-copy strong { color: var(--cg-text); font-size: 14px; font-weight: 520; }
+.library-row .workspace-row-copy strong { color: var(--cg-text); font-size: 14px; font-weight: var(--ui-font-weight-semibold); }
 .library-mobile-meta { display: none; }
 .library-updated,
 .library-size { align-self: center; color: var(--cg-text-secondary); font-size: 13px; }
@@ -1292,7 +1291,7 @@ body.workspace-active #appShell .project-row {
 .project-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--cg-surface-hover); background: color-mix(in srgb, currentColor 13%, transparent); }
 .project-icon svg { width: 24px; height: 24px; }
 .project-row .workspace-row-copy { gap: 5px; }
-.project-row .workspace-row-copy strong { color: var(--cg-text); font-size: 15px; font-weight: 560; }
+.project-row .workspace-row-copy strong { color: var(--cg-text); font-size: 15px; font-weight: var(--ui-font-weight-semibold); }
 .project-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 13px; }
 .workspace-icon-action { display: grid; place-items: center; padding: 0; }
 .workspace-icon-action svg { width: 18px; height: 18px; }

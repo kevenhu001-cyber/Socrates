@@ -9,7 +9,7 @@
   background: var(--chatgpt-page, #212121) !important;
 }
 #appShell .creation-header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:30px; }
-#appShell .creation-header h1 { margin:0; font-size:28px; line-height:36px; font-weight:500; letter-spacing:-.025em; }
+#appShell .creation-header h1 { margin:0; font-size:28px; line-height:36px; font-weight:var(--ui-font-weight-medium); letter-spacing:-.025em; }
 #appShell #sitesPanel { margin:0 auto; }
 #appShell .creation-sites-header { margin-bottom:62px; }
 #appShell #sitesPanel .creation-sites-header input { width:240px; min-height:36px; border-radius:20px; background:var(--chatgpt-composer, #303030); font-size:13px; }
@@ -19,9 +19,9 @@
 #appShell .creation-site-banner { display:flex; align-items:center; gap:14px; min-height:96px; box-sizing:border-box; padding:20px; border:1px solid var(--chatgpt-line, #444); border-radius:17px; background:var(--chatgpt-composer, #303030); }
 #appShell .creation-site-banner-icon { display:grid; place-items:center; flex:none; width:38px; height:38px; border:1px solid var(--chatgpt-line, #444); border-radius:10px; font-size:22px; }
 #appShell .creation-site-banner strong, #appShell .creation-site-banner small { display:block; }
-#appShell .creation-site-banner strong { font-size:15px; font-weight:600; }
+#appShell .creation-site-banner strong { font-size:15px; font-weight:var(--ui-font-weight-semibold); }
 #appShell .creation-site-banner small { margin-top:3px; color:var(--chatgpt-muted, #a0a0a0); font-size:14px; }
-#appShell .creation-site-banner button { margin-left:auto; min-height:34px; border-radius:18px; font-size:13px; font-weight:500; }
+#appShell .creation-site-banner button { margin-left:auto; min-height:34px; border-radius:18px; font-size:13px; font-weight:var(--ui-font-weight-medium); }
 #appShell .creation-sites-table { margin-top:24px; border:0; }
 #appShell .creation-sites-table .creation-table-head, #appShell .creation-sites-table .creation-row { grid-template-columns:minmax(0,1fr) 150px 114px; border:0; padding:14px 16px; }
 #appShell .creation-sites-table .creation-table-head { padding-top:12px; padding-bottom:10px; }
@@ -49,15 +49,15 @@
 #appShell .creation-header .workspace-search-field input {
   min-height:0; padding:0; border:0; border-radius:0;
   color:var(--cg-text); background:transparent;
-  font:400 14px/22px var(--cg-font);
+  font:var(--ui-font-weight-regular) 14px/22px var(--cg-font);
 }
-#appShell .creation-primary { min-height:38px; border:0; border-radius:9px; padding:8px 15px; color:var(--chatgpt-page, #212121); background:var(--chatgpt-text, #f4f4f4); font:inherit; font-weight:600; cursor:pointer; white-space:nowrap; }
+#appShell .creation-primary { min-height:38px; border:0; border-radius:9px; padding:8px 15px; color:var(--chatgpt-page, #212121); background:var(--chatgpt-text, #f4f4f4); font:inherit; font-weight:var(--ui-font-weight-semibold); cursor:pointer; white-space:nowrap; }
 #appShell .creation-primary:disabled { opacity:.55; cursor:wait; }
 #appShell .creation-empty { padding:68px 20px; border-top:1px solid var(--chatgpt-line, #444); text-align:center; color:var(--chatgpt-muted, #a0a0a0); font-size:14px; }
 #appShell .creation-table { border-top:1px solid var(--chatgpt-line, #444); }
 #appShell .creation-table-head, #appShell .creation-row { display:grid; grid-template-columns:1fr auto; align-items:center; gap:18px; padding:14px 12px; border-bottom:1px solid var(--chatgpt-line, #444); }
 #appShell .creation-table-head { color:var(--chatgpt-muted, #a0a0a0); font-size:13px; }
-#appShell .creation-row strong { display:block; font-size:14px; font-weight:500; }
+#appShell .creation-row strong { display:block; font-size:14px; font-weight:var(--ui-font-weight-medium); }
 #appShell .creation-row small { display:block; margin-top:5px; color:var(--chatgpt-muted, #a0a0a0); font-size:12px; }
 #appShell .creation-row-actions { display:flex; gap:5px; }
 #appShell .creation-row-actions button, #appShell .creation-publish-controls button { border:0; border-radius:7px; padding:7px 10px; background:transparent; color:var(--chatgpt-muted, #a0a0a0); font:inherit; font-size:13px; cursor:pointer; }
@@ -76,7 +76,7 @@
 #appShell .creation-image-reference img { width:38px; height:38px; border-radius:6px; object-fit:cover; }
 #appShell .creation-image-reference button { margin-left:auto; border:0; color:inherit; background:transparent; font-size:20px; cursor:pointer; }
 .creation-editor header, .creation-editor footer, .creation-publish-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.creation-editor h2 { margin:0; font-size:20px; font-weight:600; }
+.creation-editor h2 { margin:0; font-size:20px; font-weight:var(--ui-font-weight-semibold); }
 .creation-editor header button { border:0; color:inherit; background:transparent; font-size:26px; cursor:pointer; }
 .creation-editor label { display:flex; flex-direction:column; gap:7px; color:var(--chatgpt-muted, #a0a0a0); font-size:13px; }
 .creation-editor textarea { resize:vertical; min-height:130px; }

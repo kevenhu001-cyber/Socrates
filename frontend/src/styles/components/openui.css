@@ -72,7 +72,6 @@
 .intui-openui .iui-button-lg { min-height: var(--ui-control-touch); }
 .intui-openui .iui-block { width: 100%; }
 .intui-openui button:disabled { opacity: .5; cursor: default; }
-.intui-openui :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--ui-text-tertiary); outline-offset: 2px; }
 .intui-openui .iui-field { display: flex; flex-direction: column; gap: var(--ui-space-xs); min-width: 0; }
 .intui-openui .iui-input { width: 100%; min-width: 0; }
 .intui-openui .iui-textarea { resize: vertical; }

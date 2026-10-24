@@ -5,6 +5,11 @@
 // .sidebar used to shadow that value, so dragging updated the variable but
 // the rail stayed pinned at 260px. These assertions pin the contract:
 // drag → variable → computed rail + main gutter, and the width persists.
+//
+// The drag runs on the shared spring (stiffness 1200 / damping 80), so the
+// panel keeps converging for a moment after the pointer is released. The
+// cases therefore wait for the rail to come to rest instead of reading it
+// on the same tick as the mouseup.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -22,6 +27,12 @@ async function railMetrics(page) {
       collapsed: sidebar.classList.contains('collapsed'),
     };
   });
+}
+
+/* Wait for the spring to come to rest on `width` and read the rail. */
+async function railAtRest(page, width) {
+  await expect.poll(async () => (await railMetrics(page)).varValue).toBe(`${width}px`);
+  return railMetrics(page);
 }
 
 test('sidebar resize handle drags the rail and persists the width', async ({ page }) => {
@@ -46,7 +57,7 @@ test('sidebar resize handle drags the rail and persists the width', async ({ pag
   await page.mouse.move(startX + 80, startY, { steps: 8 });
   await page.mouse.up();
 
-  const after = await railMetrics(page);
+  const after = await railAtRest(page, before.sidebarWidth + 80);
   expect(after.sidebarWidth).toBe(before.sidebarWidth + 80);
   expect(after.mainPadLeft).toBe(after.sidebarWidth);
   expect(after.varValue).toBe(`${after.sidebarWidth}px`);
@@ -77,7 +88,7 @@ test('sidebar resize handle clamps to its min/max range', async ({ page }) => {
   await page.mouse.down();
   await page.mouse.move(startX + 5000, startY, { steps: 4 });
   await page.mouse.up();
-  const maxed = await railMetrics(page);
+  const maxed = await railAtRest(page, 480);
   expect(maxed.sidebarWidth).toBe(480);
   expect(start.varValue).not.toBe('480px');
 
@@ -85,6 +96,7 @@ test('sidebar resize handle clamps to its min/max range', async ({ page }) => {
   await page.mouse.down();
   await page.mouse.move(-5000, startY, { steps: 4 });
   await page.mouse.up();
-  const min = await railMetrics(page);
+  const min = await railAtRest(page, 200);
   expect(min.sidebarWidth).toBe(200);
 });
+

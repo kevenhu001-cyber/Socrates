@@ -81,7 +81,7 @@
     min-width: 0;
     color: inherit;
     font-size: var(--ui-text-ui);
-    font-weight: 400;
+    font-weight: var(--ui-font-weight-regular);
     line-height: var(--ui-text-ui-line);
   }
 
@@ -131,11 +131,6 @@
     color: var(--ui-text-primary);
   }
 
-  #appShell .home-quick-action-dismiss:focus-visible {
-    outline: 2px solid var(--ui-border-strong);
-    outline-offset: 1px;
-  }
-
   #appShell .home-quick-action[hidden] { display: none; }
 }
 
@@ -161,7 +156,7 @@
     margin: 0 0 12px 12px;
     color: var(--ui-text-secondary);
     font-size: var(--ui-font-size-sm);
-    font-weight: 400;
+    font-weight: var(--ui-font-weight-regular);
     line-height: 1.5;
   }
   #appShell .home-tutor-grid {
@@ -197,7 +192,7 @@
   #appShell .home-tutor-card strong {
     color: var(--ui-text-primary);
     font-size: var(--ui-text-ui);
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
   }
   #appShell .home-tutor-card-icon {
     display: grid;
@@ -208,10 +203,6 @@
     color: var(--ui-text-primary);
     font-size: 24px;
     line-height: 1;
-  }
-  #appShell :is(.home-tutor-card, .home-quick-action-primary):focus-visible {
-    outline: 2px solid var(--ui-focus-ring);
-    outline-offset: 3px;
   }
   #appShell .home-quick-action:has([aria-pressed="true"]) {
     color: var(--ui-tool-chip-text);

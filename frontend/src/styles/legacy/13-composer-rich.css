@@ -36,21 +36,21 @@
 .rich-composer-tool{
   flex:0 0 auto;min-width:27px;height:27px;padding:0 6px;border:0;border-radius:7px;
   display:inline-flex;align-items:center;justify-content:center;background:transparent;
-  color:inherit;font:500 calc(11px * var(--app-font-scale,1)) var(--font-sans);
+  color:inherit;font:var(--ui-font-weight-medium) calc(11px * var(--app-font-scale,1)) var(--font-sans);
   cursor:pointer;transition:background .15s,color .15s,transform .12s;
 }
 .rich-composer-tool:hover{background:hsl(var(--bg-200)/.7);color:hsl(var(--text-100))}
 .rich-composer-tool.active{background:hsl(var(--accent-000)/.11);color:hsl(var(--accent-000))}
 .rich-composer-tool:disabled{opacity:.3;cursor:default}
-.rich-composer-tool:focus-visible{outline:2px solid hsl(var(--accent-000)/.55);outline-offset:1px}
+.rich-composer-tool:focus-visible{outline:2px solid transparent;outline-offset:1px}
 .rich-composer-divider{flex:0 0 1px;width:1px;height:17px;margin:0 3px;background:hsl(var(--border-300)/.38)}
-.rich-composer .tiptap h1,.rich-composer .tiptap h2,.rich-composer .tiptap h3{margin:.2em 0;font-weight:650;line-height:1.3}
+.rich-composer .tiptap h1,.rich-composer .tiptap h2,.rich-composer .tiptap h3{margin:.2em 0;font-weight:var(--ui-font-weight-bold);line-height:1.3}
 .rich-composer .tiptap h1{font-size:1.35em}.rich-composer .tiptap h2{font-size:1.2em}.rich-composer .tiptap h3{font-size:1.08em}
 .rich-composer .tiptap ul,.rich-composer .tiptap ol{margin:.35em 0;padding-left:1.45em}
 .rich-composer .tiptap ul[data-type="taskList"]{list-style:none;padding-left:.25em}
 .rich-composer .tiptap ul[data-type="taskList"] li{display:flex;gap:7px}
 .rich-composer .tiptap blockquote{margin:.35em 0;padding-left:10px;border-left:2px solid hsl(var(--border-300));color:hsl(var(--text-300))}
-.rich-composer .tiptap pre{margin:.4em 0;padding:8px 10px;border-radius:8px;background:hsl(var(--bg-200));font:400 .86em/1.5 var(--font-mono);white-space:pre-wrap}
+.rich-composer .tiptap pre{margin:.4em 0;padding:8px 10px;border-radius:8px;background:hsl(var(--bg-200));font:var(--ui-font-weight-regular) .86em/1.5 var(--font-mono);white-space:pre-wrap}
 .rich-composer .tiptap a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
 /* Desktop chat composer: mirror the compact, single-row conversation
    composer in the visual reference. The topic composer and phone layout
@@ -193,7 +193,7 @@
 
 /* Greeting — Newsreader serif, large, like ChatGPT */
 @media (min-width: 769px){
-.topic-title.greeting{font-family:var(--font-display);font-weight:400;font-size:calc(clamp(2rem, 1.5rem + 2vw, 2.75rem) * var(--app-font-scale, 1));color:hsl(var(--text-100));letter-spacing:-.02em;line-height:1.15;margin:0 0 24px}}
+.topic-title.greeting{font-family:var(--font-display);font-weight:var(--ui-font-weight-regular);font-size:calc(clamp(2rem, 1.5rem + 2vw, 2.75rem) * var(--app-font-scale, 1));color:hsl(var(--text-100));letter-spacing:-.02em;line-height:1.15;margin:0 0 24px}}
 
 /* Suggestion chips under the input (removed 2026-07-20 per user request) */
 

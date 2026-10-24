@@ -75,11 +75,11 @@ html.vt-scoped-swap::view-transition-group(*){animation-duration:.18s;animation-
   --tool-card-pad-y:10px;
   --tool-card-pad-x:13px;
   --tool-card-title-size:14px;
-  --tool-card-title-weight:550;
+  --tool-card-title-weight:var(--ui-font-weight-semibold);
   --tool-card-desc-size:12.5px;
-  --tool-card-desc-weight:400;
+  --tool-card-desc-weight:var(--ui-font-weight-regular);
   --tool-card-meta-size:11px;
-  --tool-card-meta-weight:400;
+  --tool-card-meta-weight:var(--ui-font-weight-regular);
   --tool-card-danger:hsl(0,60%,62%);
   --tool-card-danger-soft:hsla(0,60%,62%,.12);
   --tool-card-danger-soft-strong:hsla(0,60%,62%,.22);
@@ -128,8 +128,13 @@ button{border:none;background:none;cursor:pointer;outline:none;font-weight:inher
    WCAG 2.4.7 violation. We restore a visible ring only for keyboard
    navigation via `:focus-visible`, so mouse clicks stay clean. This rule
    intentionally sits below per-element `:focus-visible` overrides so
-   they win for components that already have a custom ring. */
-button:focus-visible,a:focus-visible{outline:2px solid hsl(var(--accent-000)/.85);outline-offset:2px;border-radius:4px}
+   they win for components that already have a custom ring.
+   2026-10-24 — the ring itself is no longer painted here. The visible
+   indicator is the two-layer box-shadow in --ui-focus-shadow (a page-coloured
+   gap plus a ring), and one outline on top of it would read as a third,
+   uneven ring. This rule keeps the transparent outline so the per-element
+   overrides below still win, and so forced-colours mode has a fallback. */
+button:focus-visible,a:focus-visible{outline:2px solid transparent;outline-offset:2px;border-radius:4px}
 a{color:inherit;text-decoration:none}
 ::selection{background:hsl(var(--accent-000)/0.3);color:hsl(var(--text-000))}
 /* ──────────────────────────────────────────────────────────────────

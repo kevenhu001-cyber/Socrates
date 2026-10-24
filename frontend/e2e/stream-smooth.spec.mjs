@@ -161,7 +161,9 @@ test('live prose softly reveals new chunks without animating whole paragraphs', 
   expect(state.spans).toBeLessThanOrEqual(24);
   expect(state.nested).toBe(0);
   expect(state.opacity).toBe('1');
-  expect(state.names.every((name) => name === 'stream-append-reveal')).toBe(true);
+  /* The newest run carries the blur; the older ones only finish their
+     opacity, because a filter on a settled span forces an offscreen pass. */
+  expect(state.names.every((name) => name === 'stream-append-reveal' || name === 'stream-append-age')).toBe(true);
 });
 
 test('reduced motion displays streamed prose immediately', async ({ page }) => {

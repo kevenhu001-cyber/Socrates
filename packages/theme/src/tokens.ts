@@ -199,63 +199,73 @@ export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
     strong: '0 0% 93.3%',
-    soft: '0 0% 6.7%',
-    surface: '0 0% 6.7%',
+    soft: '0 0% 7.45%',
+    surface: '0 0% 7.45%',
   },
   bg: {
-    page: '0 0% 12.94%',
-    raised: '0 0% 18.82%',
-    overlay: '0 0% 18.43%',
-    hover: '0 0% 20%',
-    sunken: '0 0% 9.02%',
+    /* Four-step ladder: L1 3.14% → L2 5.1% → L3 7.45% → L4 9.41%.
+     * Perceived-lightness steps are 1.96% / 2.35% / 1.96%, all inside the
+     * 1.5%-3% band. The canvas is a near-black, never pure #000 — pure
+     * black crushes shadow detail and lets the lowest layer read as a hole
+     * punched through the UI. */
+    page: '0 0% 3.14%',     // #080808  L1
+    raised: '0 0% 7.45%',   // #131313  L3 — cards on the canvas
+    overlay: '0 0% 9.41%',  // #181818  L4 — floating bars, menus
+    hover: '0 0% 19.6%',    // #323232  selected/hover tint (off-ladder)
+    sunken: '0 0% 3.14%',   // #080808  L1 — inset wells ride the canvas
   },
   text: {
-    primary: '0 0% 92.55%',
+    primary: '0 0% 95.29%',
     secondary: '0 0% 70.6%',
     tertiary: '0 0% 60.8%',
     muted: '0 0% 60.8%',
-    disabled: '0 0% 46.7%',
+    disabled: '0 0% 60.8%',
   },
   border: {
-    subtle: '0 0% 16.1%',
-    default: '0 0% 22%',
-    strong: '0 0% 27.1%',
+    subtle: '0 0% 9.41%',
+    default: '0 0% 12.5%',
+    strong: '0 0% 17.6%',
   },
   danger: '1 78% 61%',
   success: '90 58% 49%',
   muted: '0 0% 60.8%',
-  onAccent: '0 0% 0%',
+  onAccent: '0 0% 3.14%',
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 13.33%',
-    soft: '0 0% 95.69%',
-    surface: '0 0% 95.69%',
+    strong: '0 0% 6.67%',
+    soft: '0 0% 94.12%',
+    surface: '0 0% 94.12%',
   },
   bg: {
-    page: '0 0% 100%',
-    raised: '0 0% 100%',
-    overlay: '0 0% 100%',
-    hover: '0 0% 95.69%',
-    sunken: '0 0% 97.84%',
+    /* Same four-step ladder, running the other way: L1 100% → L2 98.04%
+     * → L3 96.47% → L4 94.12%. The canvas is L2 — the paper (L1) is what
+     * raised and overlay surfaces are cut from, so they read as *lighter*
+     * than the page they stand on instead of relying on a shadow alone.
+     * The lower rungs spend themselves on recess and control. */
+    page: '0 0% 98.04%',    // #fafafa  L2 — the canvas
+    raised: '0 0% 100%',    // #ffffff  L1 — cards on the canvas
+    overlay: '0 0% 100%',   // #ffffff  L1 — floating bars, menus
+    hover: '0 0% 89.8%',    // #e5e5e5  selected/hover tint (off-ladder)
+    sunken: '0 0% 94.12%',  // #f0f0f0  L4 — inset wells
   },
   text: {
-    primary: '0 0% 12%',
-    secondary: '0 0% 40%',
-    tertiary: '0 0% 45%',
-    muted: '0 0% 45%',
-    disabled: '0 0% 69%',
+    primary: '0 0% 6.67%',
+    secondary: '0 0% 34.9%',
+    tertiary: '0 0% 42%',
+    muted: '0 0% 42%',
+    disabled: '0 0% 56.1%',
   },
   border: {
-    subtle: '0 0% 93.33%',
-    default: '0 0% 89.02%',
-    strong: '0 0% 86.67%',
+    subtle: '0 0% 94.12%',
+    default: '0 0% 89.8%',
+    strong: '0 0% 83.1%',
   },
   danger: '10 88% 58%',
   success: '144 100% 31%',
-  muted: '0 0% 45%',
+  muted: '0 0% 42%',
   onAccent: '0 0% 100%',
 };
 
@@ -270,5 +280,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
 
 /** Background color used for first paint by each theme mode. */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#ffffff' : '#212121';
+  return mode === 'light' ? '#fafafa' : '#080808';
 }

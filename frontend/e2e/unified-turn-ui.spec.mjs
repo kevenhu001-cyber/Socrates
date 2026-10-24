@@ -108,7 +108,7 @@ test('a live turn has one text highlight and reduced motion disables it', async 
   const activity = page.locator('.turn-activity-surface');
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  await expect(activity.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-highlight');
+  await expect(activity.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-breathe');
   await activity.locator('button').first().click();
   await expect(activity.locator('.tool-inline .tool-inline-tool-icon')).toHaveCSS('animation-name', 'none');
   await page.emulateMedia({ reducedMotion: 'reduce' });

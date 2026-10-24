@@ -25,7 +25,7 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
   const status = message.locator('.thinking-status');
   await expect(status).toHaveCount(1);
-  await expect(status.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-highlight');
+  await expect(status.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-breathe');
   await expect(status.locator('.thinking-status-label')).not.toHaveClass(/shimmer-text/);
   const before = await status.boundingBox();
 
@@ -104,7 +104,7 @@ test('streaming actions are absent and running tools own the activity surface', 
   await expect(message.locator('.tool-inline[data-state="running"]')).toHaveCount(1);
   await expect(message.locator('.thinking-status')).toHaveCount(1);
   await expect(message.locator('.turn-activity-surface')).toHaveCount(1);
-  await expect(message.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-highlight');
+  await expect(message.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-breathe');
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 

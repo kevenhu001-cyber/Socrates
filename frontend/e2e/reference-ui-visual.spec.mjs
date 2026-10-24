@@ -92,7 +92,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(mobileGeometry.plus?.width).toBe(36);
   expect(mobileGeometry.send?.width).toBe(36);
   /* The mobile canvas shares the Lobe-aligned page surface with desktop. */
-  expect(mobileGeometry.background).toBe('rgb(0, 0, 0)');
+  expect(mobileGeometry.background).toBe('rgb(8, 8, 8)');
 
   await page.locator('#composerToolsBtn').click();
   const toolsMenu = page.locator('#composerToolsMenu');

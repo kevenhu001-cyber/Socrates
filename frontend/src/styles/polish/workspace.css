@@ -38,7 +38,7 @@
   }
   #appShell .projects-directory .workspace-empty strong {
     font-size: var(--ui-font-size-md);
-    font-weight: 550;
+    font-weight: var(--ui-font-weight-semibold);
     letter-spacing: -0.01em;
   }
   #appShell .projects-directory .workspace-empty > span {
@@ -121,7 +121,7 @@
     min-height: 40px !important;
     padding: 0 16px;
     font-size: var(--ui-font-size-md);
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
   }
 
   #appShell .projects-directory .workspace-search-field {
@@ -179,7 +179,7 @@
   margin: 0;
   font-size: 28px;
   line-height: 36px;
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.02em;
   color: var(--ui-text-primary);
 }
@@ -211,7 +211,7 @@
   border: 1px solid var(--ui-border-default);
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   cursor: pointer;
 }
 
@@ -348,7 +348,7 @@
 
 #appShell .library-filter-option.is-active {
   color: var(--ui-text-primary);
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
 }
 
 #appShell .library-toolbar-divider {
@@ -438,7 +438,7 @@
 #appShell .library-chip.active {
   background: var(--ui-bg-raised);
   color: var(--ui-text-primary);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   border-color: var(--ui-border-default);
 }
 
@@ -494,7 +494,7 @@
   background: transparent;
   color: var(--ui-text-secondary);
   font-size: 14.5px;
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   cursor: pointer;
   transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
@@ -558,7 +558,7 @@
 #appShell .plugin-detail-title-row h2 {
   margin: 0;
   font-size: 22px;
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
   color: var(--ui-text-primary);
   line-height: 1.25;
 }
@@ -602,7 +602,7 @@
 
 #appShell .plugin-detail-status-pill.connected {
   color: rgb(34 197 94);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
 }
 
 #appShell .plugin-detail-cta-bar {
@@ -624,7 +624,7 @@
   background: var(--ui-text-primary);
   color: var(--ui-on-accent);
   font-size: 14.5px;
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
   border: none;
   cursor: pointer;
   display: flex;
@@ -650,7 +650,7 @@
   background: var(--cg-surface-raised);
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   border: 1px solid var(--ui-border-default);
   cursor: pointer;
   display: flex;
@@ -676,7 +676,7 @@
 
 #appShell .plugin-detail-section-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
   color: var(--ui-text-primary);
   margin: 0 0 10px;
   letter-spacing: -0.01em;
@@ -775,7 +775,7 @@
 
 #appShell .plugin-detail-security-value {
   color: var(--ui-text-primary);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
 }
 
 #appShell .plugin-detail-privacy-note {
@@ -857,7 +857,7 @@
 
 #appShell .workspace-loading-banner-text strong {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
   color: var(--ui-text-primary);
 }
 
@@ -887,7 +887,6 @@
   -webkit-background-clip: text;
   background-clip: text;
   animation: workspaceTextShimmer 1.35s linear infinite;
-  will-change: background-position;
 }
 
 #appShell .workspace-skeleton-container {
@@ -912,7 +911,6 @@
   background-size: 240% 100%;
   background-position: 150% 0;
   animation: workspaceSkeletonShimmer var(--ui-duration-shimmer) linear infinite;
-  will-change: background-position;
 }
 
 #appShell .workspace-skeleton-strip {

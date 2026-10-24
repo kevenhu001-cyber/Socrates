@@ -5,47 +5,60 @@
  * input / textarea rules.
  *
  * ── Focus contract ───────────────────────────────────────────────────────
- * Two rules govern focus in this app and they used to disagree:
+ * foundations/base.css owns the focus indicator: one double ring painted as
+ * a two-layer box-shadow (`--ui-focus-shadow`). restore/fixes.css keeps the
+ * matching `!important` outline transparent, so the only painted indicator
+ * is that ring.
  *
- *   1. foundations/base.css `:focus-visible` — a soft ring,
- *      `color-mix(in srgb, var(--ui-text-primary) 55%, transparent)`.
- *   2. restore/fixes.css `#appShell#appShell#appShell :focus-visible` —
- *      the same geometry in `--ui-accent-strong`, which is a *surface-fill*
- *      token (white in the dark theme, near-black in light). Painting a ring
- *      with it produced a hard opaque rectangle on every focused control.
+ * This file handles the remaining half of the problem: an input that is
+ * embedded in a container which already reacts to focus must not draw a ring
+ * of its own. The container's border / background / glow *is* the focus
+ * indicator, and a second rectangle inside it reads as a border, not as
+ * focus — the "white frame inside the pill" that showed up on the scheduled
+ * task composer.
  *
- * fixes.css now uses the translucent treatment, so the harsh white box is
- * gone everywhere. This file handles the remaining half of the problem: an
- * input that is embedded in a container which already reacts to focus must
- * not draw a ring of its own. The container's border / background / glow
- * *is* the focus indicator, and a second rectangle inside it reads as a
- * border, not as focus — the "white frame inside the pill" that showed up
- * on the scheduled-task composer.
+ * Scope is deliberately narrow: only fields whose container carries a
+ * verified focus treatment are listed. `.workspace-field input` is NOT in
+ * this list — it reacts to focus on its own (border colour plus a
+ * background step) and keeps the shared ring, like every other field.
+ * Standalone inputs (the auth gate lives outside #appShell, and `.exam-input`
+ * has no focus styling of its own) keep the ring too, so keyboard focus is
+ * never made invisible. Intelligent UI ranges draw their keyboard focus
+ * ring on the thumb, so the native input must not add one.
  *
- * Scope is deliberately narrow: only fields with a verified focus treatment
- * are listed. Standalone inputs (the auth gate lives outside #appShell, and
- * `.exam-input` has no focus styling of its own) keep the soft ring, so
- * keyboard focus is never made invisible.
- * Intelligent UI ranges draw their keyboard focus ring on the thumb, so the
- * native input must not add the compatibility rule's rectangular outline.
+ * The rule clears `box-shadow` rather than `outline`: the indicator lives in
+ * a box-shadow now, so an outline rule would no longer suppress it.
  *
- * Specificity follows the convention documented in polish/index.css: to beat
- * a restore/ `!important`, keep `!important` and preserve its id-level
- * specificity without repeating the same id. The impossible :not() ids are
- * specificity shims only; they do not change which root element matches.
- * The field tails live inside :is() so #appShell and the !important override
- * each appear only once in the full rule, keeping both debt counters flat.
+ * Specificity follows the convention documented in polish/index.css: the
+ * impossible :not() ids are specificity shims only — they do not change
+ * which root element matches. The field tails live inside :is() so #appShell
+ * and the id-level specificity each appear only once in the full rule,
+ * keeping both debt counters flat. No `!important` is needed here: the
+ * transparent outline restore/fixes.css already applies wins on its own, and
+ * that leaves the forced-colours fallback there in charge of the outline.
  */
 
 :root:not(#_focus-a):not(#_focus-b) #appShell :is(
   .workspace-search-field input,
   .plugin-directory-search input,
-  .workspace-field input,
-  .workspace-field textarea,
-  .workspace-field select,
   .intui-slider input[type="range"]
 ):focus-visible {
   outline: none !important;
+  box-shadow: none;
+}
+
+/* Forced colours strip box-shadow, so the contract's double ring disappears
+   there — and this rule's `!important` also beats the UA's forced-colours
+   outline. Without a counterpart, these fields would have no focus cue at
+   all in high-contrast mode. */
+@media (forced-colors: active) {
+  :root:not(#_focus-a):not(#_focus-b) #appShell :is(
+    .workspace-search-field input,
+    .plugin-directory-search input,
+    .intui-slider input[type="range"]
+  ):focus-visible {
+    outline: 2px solid Highlight !important;
+  }
 }
 
 /* `.sidebar-search input` is deliberately absent: the sidebar surface is

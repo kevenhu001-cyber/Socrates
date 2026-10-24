@@ -39,7 +39,7 @@
 /* Quiz: question line followed by tappable options. Options are
    the only "buttony" thing in the card — give them real button
    borders so selected / correct / wrong states are unmistakable. */
-.inline-quiz-q{font-weight:600;margin-bottom:8px;color:hsl(var(--text-100))}
+.inline-quiz-q{font-weight:var(--ui-font-weight-semibold);margin-bottom:8px;color:hsl(var(--text-100))}
 
 .inline-quiz-opts{display:flex;flex-direction:column;gap:5px;margin-top:6px}
 .inline-quiz-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-100));font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-align:left;width:100%;cursor:pointer;transition:background .12s,border-color .12s,color .12s;line-height:1.45;font-family:inherit}
@@ -52,7 +52,7 @@
    at the top of the row while the formula sits at the middle, and the
    two read as misaligned. `align-items:center` on the row + resetting
    `.katex` vertical-align keeps them on a single horizontal line. */
-.inline-quiz-opt-letter{flex-shrink:0;min-width:18px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:600;line-height:1;align-self:center;font-variant-numeric:tabular-nums}
+.inline-quiz-opt-letter{flex-shrink:0;min-width:18px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:var(--ui-font-weight-semibold);line-height:1;align-self:center;font-variant-numeric:tabular-nums}
 .inline-quiz-opt-text{display:inline-block;line-height:1.55}
 .inline-quiz-opt-text .katex{vertical-align:baseline}
 .inline-quiz-opt.selected{background:hsl(var(--accent-000)/0.10);border-color:hsl(var(--accent-000)/0.45);color:hsl(var(--text-100))}
@@ -69,11 +69,11 @@
    longer a bare text link — students need to know it's
    tappable). The solution block gets a left rule for visual
    punctuation inside the card. */
-.inline-example-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+.inline-example-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:var(--ui-font-weight-medium)}
 .inline-example-problem{margin-bottom:8px}
 .inline-example-solution{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200))}
 .inline-example-solution .label,
-.inline-example-problem .label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-right:4px;font-weight:500}
+.inline-example-problem .label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-right:4px;font-weight:var(--ui-font-weight-medium)}
 .inline-example-reveal{display:inline-block;margin-top:8px;padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
 .inline-example-reveal:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
 
@@ -84,7 +84,7 @@
 
 .inline-practice-problem{margin-bottom:8px}
 .inline-practice-hint{margin-top:6px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200));font-size:calc(12.5px * var(--app-font-scale, 1))}
-.inline-practice-hint .label{color:hsl(var(--text-500));margin-right:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500}
+.inline-practice-hint .label{color:hsl(var(--text-500));margin-right:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium)}
 .inline-practice-hint-toggle{display:inline-block;margin-top:8px;padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
 .inline-practice-hint-toggle:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
 .inline-practice-form{margin-top:10px;display:flex;flex-direction:column;gap:8px}
@@ -95,7 +95,7 @@
 .inline-practice-reveal{padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
 .inline-practice-reveal:hover:not(:disabled){background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
 .inline-practice-reveal:disabled{opacity:0.5;cursor:default}
-.inline-practice-submit{padding:5px 14px;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;font-family:inherit;transition:background .12s,opacity .12s}
+.inline-practice-submit{padding:5px 14px;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:background .12s,opacity .12s}
 .inline-practice-submit:hover:not(:disabled){background:hsl(var(--accent-100))}
 .inline-practice-submit:disabled{opacity:0.5;cursor:default}
 .inline-practice-feedback{margin-top:4px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
@@ -106,14 +106,14 @@
 /* Definition: a single quiet term-on-top line + body. The
    term gets a hair more weight so you can scan a list of
    definitions in a long answer. */
-.inline-definition-term{font-weight:600;color:hsl(var(--text-100));margin-bottom:4px;font-size:calc(14px * var(--app-font-scale, 1))}
+.inline-definition-term{font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100));margin-bottom:4px;font-size:calc(14px * var(--app-font-scale, 1))}
 .inline-definition-body{color:hsl(var(--text-200))}
 
 /* Step list: just a numbered ordered list. No title, no card
    chrome — the steps are inherently structured already. */
 
 .inline-step{display:flex;gap:10px;margin:6px 0;line-height:1.55;align-items:flex-start}
-.inline-step-n{flex-shrink:0;color:hsl(var(--text-500));min-width:20px;font-variant-numeric:tabular-nums;font-weight:600;margin-top:1px}
+.inline-step-n{flex-shrink:0;color:hsl(var(--text-500));min-width:20px;font-variant-numeric:tabular-nums;font-weight:var(--ui-font-weight-semibold);margin-top:1px}
 .inline-step-body{flex:1}
 
 /* Flashcard: front and back are just two stacked prose blocks.
@@ -148,27 +148,32 @@
 
 /* Proof — italicized body, accent left border, quiet title. */
 .inline-proof{border-left:2px solid hsl(var(--accent-000)/0.5)}
-.inline-proof-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+.inline-proof-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:var(--ui-font-weight-medium)}
 .inline-proof-body{font-style:italic;color:hsl(var(--text-200))}
 
 /* Theorem — authoritative: 2px accent top border, statement is the
    focal point, nested proof is slightly subdued and (for long proofs)
    collapsible. */
 .inline-theorem{border-top:2px solid hsl(var(--accent-000)/0.55);background:linear-gradient(hsl(var(--bg-200)/0.55),hsl(var(--bg-200)/0.4))}
-.inline-theorem-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));margin-bottom:6px;font-weight:600;letter-spacing:0.02em;text-transform:none}
+.inline-theorem-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));margin-bottom:6px;font-weight:var(--ui-font-weight-semibold);letter-spacing:0.02em;text-transform:none}
 .inline-theorem-statement{margin-bottom:8px;color:hsl(var(--text-100))}
-.inline-theorem-proof{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1))}
-.inline-theorem-proof.collapsed{display:none}
+/* The proof collapses on grid-template-rows (foundations/collapse.css): the
+   block used to switch to display:none, which gave the toggle no transition.
+   The visual box lives on the inner child so the closed state has no padding
+   or border left behind. */
+.inline-theorem-proof{margin-top:0;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1))}
+.inline-theorem-proof>.ui-collapse-inner{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0}
+.inline-theorem-proof.collapsed>.ui-collapse-inner{margin-top:0}
 .inline-theorem-proof-toggle{display:inline-block;margin-top:6px;padding:4px 10px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-300));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
 .inline-theorem-proof-toggle:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
 
 /* Key Point — pops out: thicker accent border, soft accent wash. */
 .inline-key-point{border:1px solid hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
-.inline-key-point-label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));margin-bottom:4px;font-weight:600;letter-spacing:0.02em}
+.inline-key-point-label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));margin-bottom:4px;font-weight:var(--ui-font-weight-semibold);letter-spacing:0.02em}
 .inline-key-point-body{color:hsl(var(--text-100))}
 
 /* Derivation — monospaced body for multi-line algebra; quiet title. */
-.inline-derivation-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:6px;font-weight:500}
+.inline-derivation-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:6px;font-weight:var(--ui-font-weight-medium)}
 .inline-derivation-body{font-family:var(--font-mono,monospace);font-size:calc(12.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-200));white-space:pre-wrap;word-break:break-word}
 .inline-derivation-body .katex{font-family:var(--font-mono,monospace)}
 
@@ -178,30 +183,30 @@
    with a small uppercase label so the reader can tell "this is a
    scaffold, the final widget will replace it momentarily". */
 .scaffold-stream{margin:10px 0;padding:8px 10px 9px;border:0.5px dashed hsl(var(--border-300)/0.4);border-radius:6px;background:hsl(var(--bg-200)/0.25);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
-.scaffold-stream-label{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:4px;background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-400));font-size:calc(10.5px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.04em;text-transform:uppercase;vertical-align:1px}
+.scaffold-stream-label{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:4px;background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-400));font-size:calc(10.5px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);letter-spacing:0.04em;text-transform:uppercase;vertical-align:1px}
 .scaffold-stream-unclosed{font-style:italic;color:hsl(var(--text-400))}
 .scaffold-stream-live{border-style:solid;color:hsl(var(--text-200))}
 .scaffold-stream-live>.scaffold-stream-label{margin-bottom:6px}
 .inline-key-point.scaffold-stream-live>.scaffold-stream-label{background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000))}
 
 .scaffold-stream-live button,.scaffold-stream-live textarea{pointer-events:none}
-.scaffold-stream-step-number{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-right:6px;border-radius:50%;background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-400));font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;vertical-align:middle}
+.scaffold-stream-step-number{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-right:6px;border-radius:50%;background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-400));font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);vertical-align:middle}
 .scaffold-stream-placeholder{color:hsl(var(--text-400))}
 
 /* Knowledge boundary detail panel */
 .kb-node{cursor:pointer}
 .kb-section-title{display:flex;align-items:center;gap:6px}
-.kb-section-count{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));background:hsl(var(--bg-300));padding:1px 6px;border-radius:6px;font-weight:500;letter-spacing:0}
+.kb-section-count{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));background:hsl(var(--bg-300));padding:1px 6px;border-radius:6px;font-weight:var(--ui-font-weight-medium);letter-spacing:0}
 .kb-node-detail{margin:4px 0 10px;padding:10px 12px 12px;background:hsl(var(--bg-100)/0.6);border:0.5px solid hsl(var(--border-300)/0.18);border-radius:10px;display:flex;flex-direction:column;gap:10px}
 .kb-detail-head{display:flex;align-items:center;justify-content:space-between}
-.kb-detail-status{font-size:calc(10px * var(--app-font-scale, 1));text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:6px;font-weight:600}
+.kb-detail-status{font-size:calc(10px * var(--app-font-scale, 1));text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:6px;font-weight:var(--ui-font-weight-semibold)}
 .kb-detail-status-internalized{background:hsl(145 50% 50%/0.18);color:hsl(145 50% 65%)}
 .kb-detail-status-fuzzy{background:hsl(43 77% 62%/0.18);color:hsl(43 77% 70%)}
 .kb-detail-status-blank{background:hsl(var(--bg-300));color:hsl(var(--text-400))}
 .kb-go-btn{font-size:calc(11px * var(--app-font-scale, 1));padding:3px 9px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);cursor:pointer;transition:background-color .1s,color .1s}
 .kb-go-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .kb-detail-row{display:flex;flex-direction:column;gap:4px}
-.kb-detail-label{font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
+.kb-detail-label{font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
 .kb-conf-row{display:flex;gap:4px;align-items:center}
 .kb-conf-dot{width:14px;height:14px;border-radius:50%;background:transparent;border:1.5px solid hsl(var(--text-500));cursor:pointer;padding:0;transition:background-color .12s,border-color .12s}
 .kb-conf-dot:hover{border-color:hsl(var(--accent-000))}
@@ -222,7 +227,7 @@
 .kb-history-empty{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
 
 /* Tab badge for mistakes */
-.tab-badge{display:inline-block;min-width:16px;height:16px;line-height:14px;padding:0 4px;margin-left:4px;border-radius:8px;background:hsl(0 60% 50%/0.18);color:hsl(0 60% 70%);font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;text-align:center;vertical-align:middle;transition:background .15s,color .15s}
+.tab-badge{display:inline-block;min-width:16px;height:16px;line-height:14px;padding:0 4px;margin-left:4px;border-radius:8px;background:hsl(0 60% 50%/0.18);color:hsl(0 60% 70%);font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);text-align:center;vertical-align:middle;transition:background .15s,color .15s}
 .tab-badge:empty{display:none}
 
 
@@ -232,19 +237,19 @@
 /* Mistake book */
 .mistake-card{margin:0 4px 8px;padding:10px 12px;background:hsl(0 60% 12%/0.35);border:0.5px solid hsl(0 60% 30%/0.4);border-radius:10px;border-left:3px solid hsl(0 60% 55%)}
 .mistake-meta{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
-.mistake-type{text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:1px 6px;border-radius:4px;background:hsl(0 60% 30%/0.4);color:hsl(0 60% 75%)}
-.mistake-topic{color:hsl(var(--text-400));font-weight:500}
+.mistake-type{text-transform:uppercase;letter-spacing:.06em;font-weight:var(--ui-font-weight-semibold);padding:1px 6px;border-radius:4px;background:hsl(0 60% 30%/0.4);color:hsl(0 60% 75%)}
+.mistake-topic{color:hsl(var(--text-400));font-weight:var(--ui-font-weight-medium)}
 .mistake-time{margin-left:auto}
 .mistake-q{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-100));line-height:1.5;margin-bottom:8px}
 .mistake-opts{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
 .mistake-opt{display:flex;align-items:flex-start;gap:8px;font-size:calc(11.5px * var(--sidebar-font-scale));color:hsl(var(--text-300));padding:5px 8px;border-radius:6px;line-height:1.4}
 .mistake-opt.correct-tag{background:hsl(145 50% 45%/0.12);color:hsl(145 50% 75%)}
 .mistake-opt.wrong-tag{background:hsl(0 60% 50%/0.14);color:hsl(0 60% 75%)}
-.mistake-opt-letter{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-400))}
+.mistake-opt-letter{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:calc(9px * var(--sidebar-font-scale));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-400))}
 .mistake-opt.correct-tag .mistake-opt-letter{border-color:hsl(145 50% 55%);background:hsl(145 50% 55%);color:white}
 .mistake-opt.wrong-tag .mistake-opt-letter{border-color:hsl(0 60% 60%);background:hsl(0 60% 60%);color:white}
 .mistake-redo-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));margin-bottom:6px}
-.mistake-redo-btn{width:100%;padding:6px 10px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);font-size:calc(11px * var(--sidebar-font-scale));font-weight:500;cursor:pointer;transition:background-color .1s,color .1s}
+.mistake-redo-btn{width:100%;padding:6px 10px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);font-size:calc(11px * var(--sidebar-font-scale));font-weight:var(--ui-font-weight-medium);cursor:pointer;transition:background-color .1s,color .1s}
 .mistake-redo-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 
 
@@ -270,7 +275,7 @@
   background:hsl(var(--bg-300)/0.55);
 }
 .thinking-dot-clickable:focus-visible{
-  outline:1.5px solid hsl(var(--accent-000)/0.65);
+  outline:2px solid transparent;
   outline-offset:1px;
 }
 .thinking-dot-clickable:active{
@@ -290,7 +295,6 @@
   -webkit-background-clip:text;
   background-clip:text;
   animation:neutralTextWave 3.2s linear infinite;
-  will-change:background-position;
 }
 @keyframes neutralTextWave{
   /* Travel stays inside 0% ↔ 100% so the 260%-wide background covers the

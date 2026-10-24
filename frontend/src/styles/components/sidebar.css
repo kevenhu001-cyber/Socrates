@@ -47,7 +47,7 @@
 #appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn.active { font-weight: 400; }
+#appShell .sidebar-nav-btn.active { font-weight: var(--ui-font-weight-regular); }
 }
 /* The landing surface IS the new-chat surface — keep its row raised like
    the reference drawer does, until another surface takes over. */
@@ -213,18 +213,28 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     transition: opacity var(--ui-duration-normal) ease;
   }
   #appShell .sidebar-header .compose-btn { display: none; }
+  /* The mobile drawer collapses the search row on grid-template-rows; the
+     old 54px max-height was a guess at the content height. The clip margin
+     drops to zero while the row is closed so the closing content does not
+     spill past the shrinking track, and the closed row leaves the
+     accessibility tree — the search field inside it used to stay focusable
+     while invisible. */
   #appShell .sidebar-search-row {
-    max-height: 0;
+    --sidebar-search-rows: 0fr;
+    --sidebar-search-clip-margin: 0px;
     padding-top: 0;
     padding-bottom: 0;
-    overflow: hidden;
     opacity: 0;
-    transition: max-height var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-fast) ease, padding var(--ui-duration-normal) ease;
+    visibility: hidden;
+    transition: grid-template-rows var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-fast) ease, padding var(--ui-duration-normal) ease, visibility 0s linear var(--ui-duration-normal);
   }
   #appShell .sidebar.search-open .sidebar-search-row {
-    max-height: 54px;
+    --sidebar-search-rows: 1fr;
+    --sidebar-search-clip-margin: 6px;
     padding-bottom: 8px;
     opacity: 1;
+    visibility: visible;
+    transition: grid-template-rows var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-fast) ease, padding var(--ui-duration-normal) ease, visibility 0s;
   }
   #appShell .sidebar:not(.search-open) .sidebar-search-row { pointer-events: none; }
   #appShell .sidebar-nav { padding-top: 4px; }
@@ -300,7 +310,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   cursor: pointer;
 }
 #appShell .recents-organize-menu button:hover { background: var(--ui-bg-hover); }
-#appShell .recents-organize-menu button:focus-visible { outline: 2px solid var(--ui-focus-ring); outline-offset: -2px; }
 #appShell .recents-organize-menu svg { width: 20px; height: 20px; flex: 0 0 20px; }
 #appShell .recents-organize-menu .organize-menu-check { margin-inline-start: auto; width: 16px; height: 16px; flex-basis: 16px; }
 #appShell .recents-organize-menu hr { margin: 6px 8px; border: 0; border-top: 1px solid var(--ui-border-subtle); }
@@ -309,7 +318,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   overflow: hidden;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -323,7 +332,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
    opened from that row, so the badge read two different sizes depending on
    whether the menu was open. Mobile keeps its own 14px step
    (polish/mobile-sidebar.css:78), which is a separate density. */
-#appShell .sidebar-account-menu .tier-badge { padding: 0; background: transparent; color: var(--ui-text-muted); font-size: var(--ui-font-size-xxs); font-weight: 400; line-height: 16px; text-transform: none; }
+#appShell .sidebar-account-menu .tier-badge { padding: 0; background: transparent; color: var(--ui-text-muted); font-size: var(--ui-font-size-xxs); font-weight: var(--ui-font-weight-regular); line-height: 16px; text-transform: none; }
 @media (max-width: 768px) {
   #appShell .recent-item-menu .recent-item-action-text { font-size: var(--ui-font-size-sm); }
 }

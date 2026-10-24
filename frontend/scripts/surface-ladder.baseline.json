@@ -1,0 +1,29 @@
+{
+  "dark": {
+    "page": "#080808",
+    "rail": "#0d0d0d",
+    "panel": "#131313",
+    "elevated": "#181818"
+  },
+  "light": {
+    "page": "#fafafa",
+    "rail": "#f6f6f6",
+    "panel": "#f0f0f0",
+    "elevated": "#ffffff"
+  },
+  "legacyChannels": {
+    "dark": {
+      "--bg-000": "page",
+      "--bg-100": "rail",
+      "--bg-200": "panel",
+      "--bg-300": "elevated"
+    },
+    "light": {
+      "--bg-000": "elevated",
+      "--bg-100": "page",
+      "--bg-200": "rail",
+      "--bg-300": "panel"
+    }
+  },
+  "generatedBy": "check-surface-ladder.mjs --update"
+}

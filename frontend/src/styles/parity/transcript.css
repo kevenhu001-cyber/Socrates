@@ -101,11 +101,11 @@
   #appShell #msgList .msg-body > :first-child > :where(h1, h2, h3, h4, p):first-child { margin-top: 0; }
   #appShell #msgList .msg-body p { margin: 0 0 12px; }
   #appShell #msgList .msg-body p:last-child { margin-bottom: 0; }
-  #appShell #msgList .msg-body strong { font-weight: 600; }
+  #appShell #msgList .msg-body strong { font-weight: var(--ui-font-weight-semibold); }
   #appShell #msgList .msg-body :where(h1, h2, h3, h4) {
     color: var(--ui-text-primary);
     font-family: var(--font-sans);
-    font-weight: 600;
+    font-weight: var(--ui-font-weight-semibold);
     letter-spacing: normal;
   }
   #appShell #msgList .msg-body h1 { margin: 28px 0 12px; font-size: calc(24px * var(--app-type-scale)); line-height: 1.33; }
@@ -124,7 +124,7 @@
   }
   #appShell #msgList .msg-body a:not(.code-block-copy) {
     color: inherit;
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
     text-decoration: underline;
     text-decoration-color: var(--ui-border-strong);
     text-decoration-thickness: 1px;
@@ -149,7 +149,7 @@
     color: var(--ui-text-primary);
     font-family: var(--font-mono);
     font-size: 0.875em;
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
   }
 
   /* ── Code blocks: one rounded card, label + copy in a quiet header ───── */
@@ -237,7 +237,7 @@
   }
   #appShell #msgList .msg-body th:not(.intui-table th) {
     border-bottom-color: var(--ui-border-strong);
-    font-weight: 600;
+    font-weight: var(--ui-font-weight-semibold);
   }
   #appShell #msgList .msg-body tr:last-child td:not(.intui-table *) { border-bottom: 0; }
 
@@ -245,12 +245,26 @@
 
 /* Newly published prose on desktop and mobile; settled paragraphs stay still. */
 .tool-run-prose.is-live .stream-append-reveal {
-  animation: stream-append-reveal 180ms ease-out both;
+  animation: stream-append-reveal 120ms ease-out backwards;
+}
+
+/* Older runs have already revealed themselves and only need the opacity to
+   finish. A blur filter forces an offscreen pass, so the filter stays on
+   the newest run alone — and `backwards` drops it again the moment the
+   animation ends instead of leaving a filter on the element for the rest
+   of the message's life. */
+.tool-run-prose.is-live .stream-append-reveal.stream-append-aged {
+  animation-name: stream-append-age;
 }
 
 @keyframes stream-append-reveal {
+  from { opacity: 0.25; filter: blur(6px); }
+  to   { opacity: 1;    filter: blur(0); }
+}
+
+@keyframes stream-append-age {
   from { opacity: 0.25; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -205,65 +205,72 @@ export const breakpoints = {
 export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
-    strong: '0 0% 93%',       // #eeeeee
-    soft: '0 0% 7%',          // #111111
-    surface: '0 0% 7%',       // #111111
+    strong: '0 0% 93.3%',      // #eeeeee
+    soft: '0 0% 7.45%',        // #131313
+    surface: '0 0% 7.45%',     // #131313
   },
   bg: {
-    page: '0 0% 0%',          // #000000  colorBgLayout
-    raised: '0 0% 5%',        // #0d0d0d  colorBgContainer
-    overlay: '0 0% 10%',      // #1a1a1a  colorBgElevated
-    hover: '0 0% 13%',        // #202020  neutral hover step
-    sunken: '0 0% 2%',        // #060606  containerSecondary
+    /* Four-step ladder: L1 3.14% → L2 5.1% → L3 7.45% → L4 9.41%.
+     * Perceived-lightness steps are 1.96% / 2.35% / 1.96%, all inside the
+     * 1.5%-3% band. The canvas is a near-black, never pure #000. */
+    page: '0 0% 3.14%',        // #080808  L1
+    raised: '0 0% 7.45%',      // #131313  L3 — cards on the canvas
+    overlay: '0 0% 9.41%',     // #181818  L4 — floating bars, menus
+    hover: '0 0% 19.6%',       // #323232  selected/hover tint
+    sunken: '0 0% 3.14%',      // #080808  L1 — inset wells
   },
   text: {
-    primary: '0 0% 90%',      // #e6e6e6
-    secondary: '0 0% 71%',    // #b4b4b4
-    tertiary: '0 0% 56%',     // #8f8f8f
-    muted: '0 0% 56%',        // description / idle icon role
-    disabled: '0 0% 42%',     // #6b6b6b
+    primary: '0 0% 95.29%',    // #f3f3f3
+    secondary: '0 0% 70.6%',   // #b4b4b4
+    tertiary: '0 0% 60.8%',    // #9b9b9b
+    muted: '0 0% 60.8%',       // description / idle icon role
+    disabled: '0 0% 60.8%',    // #9b9b9b
   },
   border: {
-    subtle: '0 0% 10%',       // #1a1a1a
-    default: '0 0% 13%',      // #202020
-    strong: '0 0% 18%',       // #2d2d2d
+    subtle: '0 0% 9.41%',      // #181818
+    default: '0 0% 12.5%',     // #202020
+    strong: '0 0% 17.6%',      // #2d2d2d
   },
   danger: '1 78% 61%',        // #e95350
   success: '90 58% 49%',      // #80c933
-  muted: '0 0% 56%',
-  onAccent: '0 0% 0%',
+  muted: '0 0% 60.8%',
+  onAccent: '0 0% 3.14%',     // #080808
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 13%',       // #222222
-    soft: '0 0% 96%',         // #f5f5f5
-    surface: '0 0% 96%',      // #f5f5f5
+    strong: '0 0% 6.67%',      // #111111
+    soft: '0 0% 94.12%',       // #f0f0f0
+    surface: '0 0% 94.12%',    // #f0f0f0
   },
   bg: {
-    page: '0 0% 97%',         // #f8f8f8  colorBgLayout
-    raised: '0 0% 100%',      // #ffffff  colorBgContainer
-    overlay: '0 0% 100%',     // #ffffff  colorBgElevated
-    hover: '0 0% 93%',        // #eeeeee  neutral hover step
-    sunken: '0 0% 98%',       // #fbfbfb  containerSecondary
+    /* Same four-step ladder as dark mode, running the other way:
+     * L1 100% → L2 98.04% → L3 96.47% → L4 94.12%. The canvas is L2 — the
+     * paper (L1) is what raised and overlay surfaces are cut from, so they
+     * read as *lighter* than the page they stand on. */
+    page: '0 0% 98.04%',     // #fafafa  L2 — the canvas
+    raised: '0 0% 100%',       // #ffffff  L1 — cards on the canvas
+    overlay: '0 0% 100%',      // #ffffff  L1 — floating bars, menus
+    hover: '0 0% 89.8%',       // #e5e5e5  selected/hover tint
+    sunken: '0 0% 94.12%',     // #f0f0f0  L4 — inset wells
   },
   text: {
-    primary: '0 0% 12%',      // #1f1f1f
-    secondary: '0 0% 40%',    // #666666
-    tertiary: '0 0% 54%',     // #8a8a8a
-    muted: '0 0% 54%',
-    disabled: '0 0% 69%',     // #b0b0b0
+    primary: '0 0% 6.67%',     // #111111
+    secondary: '0 0% 34.9%',   // #595959
+    tertiary: '0 0% 42%',      // #6b6b6b
+    muted: '0 0% 42%',
+    disabled: '0 0% 56.1%',    // #8f8f8f
   },
   border: {
-    subtle: '0 0% 93%',       // #eeeeee
-    default: '0 0% 89%',      // #e3e3e3
-    strong: '0 0% 87%',       // #dddddd
+    subtle: '0 0% 94.12%',     // #f0f0f0
+    default: '0 0% 89.8%',     // #e5e5e5
+    strong: '0 0% 83.1%',      // #d4d4d4
   },
-  danger: '10 88% 58%',       // #f35837
-  success: '144 100% 31%',    // #00a03f
-  muted: '0 0% 54%',
-  onAccent: '0 0% 100%',
+  danger: '10 88% 58%',        // #f35837
+  success: '144 100% 31%',     // #00a03f
+  muted: '0 0% 42%',
+  onAccent: '0 0% 100%',       // #ffffff
 };
 
 export const palettes: Readonly<Record<ThemeMode, ThemePalette>> = {
@@ -280,5 +287,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
  * `styles/themes.css`, preventing a flash before the stylesheet parses.
  */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#f8f8f8' : '#000000';
+  return mode === 'light' ? '#fafafa' : '#080808';
 }

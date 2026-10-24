@@ -57,7 +57,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   color: var(--ui-text-primary);
   font-family: var(--font-sans);
   font-size: calc(15px * var(--app-font-scale, 1));
-  font-weight: 400;
+  font-weight: var(--ui-font-weight-regular);
   line-height: 1.65;
   letter-spacing: -.006em;
 }
@@ -242,7 +242,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .msg.assistant[data-stream-settled] .msg-toolbar{opacity:1;transition:opacity var(--ui-duration-fast) var(--ui-ease-out)}
 .msg-toolbar-btn{position:relative;width:var(--ui-control-sm);min-height:var(--ui-control-sm);display:flex;align-items:center;justify-content:center;border-radius:var(--ui-radius-md);background:transparent;color:var(--ui-text-secondary);cursor:pointer;transition:background-color var(--ui-duration-hover) ease,color var(--ui-duration-hover) ease;border:0;padding:0}
 .msg-toolbar-btn:hover{background:var(--ui-bg-hover-ghost);color:var(--ui-text-primary)}
-.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ui-bg-overlay);color:var(--ui-text-primary);font-size:var(--ui-font-size-xxs);font-weight:500;line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--ui-duration-hover) ease .35s;z-index:var(--ui-z-menu)}
+.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ui-bg-overlay);color:var(--ui-text-primary);font-size:var(--ui-font-size-xxs);font-weight:var(--ui-font-weight-medium);line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--ui-duration-hover) ease .35s;z-index:var(--ui-z-menu)}
 .msg-toolbar-btn:hover::after{opacity:1}
 .msg-toolbar-btn.active{color:var(--ui-text-primary);background:var(--ui-bg-hover)}
 .msg-toolbar-btn.active:hover{background:var(--ui-bg-hover)}
@@ -384,7 +384,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
 .msg-branch-counter {
   padding: 0 4px;
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   color: var(--ui-text-secondary);
   white-space: nowrap;
 }

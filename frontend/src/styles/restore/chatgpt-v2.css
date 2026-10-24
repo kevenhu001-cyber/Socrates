@@ -59,7 +59,7 @@
 .workspace-page-head,
 .plugin-directory-head { margin-bottom: 24px; }
 .workspace-page-head h1,
-.plugin-directory-head h2 { font-size: 27px; font-weight: 500; }
+.plugin-directory-head h2 { font-size: 27px; font-weight: var(--ui-font-weight-medium); }
 
 .workspace-search-field,
 .plugin-directory-search { font-size: 12px; }

@@ -36,6 +36,7 @@ test('new Chinese prose fades in while completed paragraphs and final text stay 
       nested: tail.querySelectorAll('.stream-append-reveal .stream-append-reveal').length,
       opacities: spans.map((span) => Number(getComputedStyle(span).opacity)),
       names: spans.map((span) => getComputedStyle(span).animationName),
+      filters: spans.map((span) => getComputedStyle(span).filter),
     };
   });
   expect(evidence.prefixSame).toBe(true);
@@ -44,11 +45,23 @@ test('new Chinese prose fades in while completed paragraphs and final text stay 
   expect(evidence.spans).toBeGreaterThan(0);
   expect(evidence.spans).toBeLessThanOrEqual(24);
   expect(evidence.nested).toBe(0);
-  expect(evidence.names.every((name) => name === 'stream-append-reveal')).toBe(true);
+  /* The blur belongs to the newest run alone; the aged runs finish their
+     opacity without a filter, so the offscreen pass stays bounded. A single
+     run can span several text leaves, so the bound is "no more blurred
+     spans than revealing spans" — not a fixed count. */
+  const revealing = evidence.names.filter((name) => name === 'stream-append-reveal').length;
+  const blurred = evidence.filters.filter((filter) => filter !== 'none').length;
+  expect(revealing).toBeGreaterThan(0);
+  expect(blurred).toBeGreaterThan(0);
+  expect(blurred).toBeLessThanOrEqual(revealing);
+  expect(evidence.names.every((name, index) => name !== 'stream-append-age' || evidence.filters[index] === 'none')).toBe(true);
   expect(evidence.opacities.some((opacity) => opacity > 0.25 && opacity < 1)).toBe(true);
   await page.screenshot({ path: 'test-results/stream-reveal-desktop.png' });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(bubble.locator('.stream-append-reveal').first()).toHaveCSS('animation-name', 'stream-append-reveal');
+  /* The newest run is the last one in document order — the reveal splits
+     the tail from the end backwards, so the first span belongs to the
+     oldest run and has already aged to the opacity-only animation. */
+  await expect(bubble.locator('.stream-append-reveal').last()).toHaveCSS('animation-name', 'stream-append-reveal');
   await page.screenshot({ path: 'test-results/stream-reveal-mobile.png' });
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'session/update-message', index: 1, clientId: 'reveal-answer', patch: { type: 'assistant' } });

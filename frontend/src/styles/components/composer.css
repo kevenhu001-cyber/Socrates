@@ -50,13 +50,13 @@
 #appShell .voice-recording-label {
   overflow: hidden;
   color: inherit;
-  font: 600 13px/18px var(--font-sans);
+  font: var(--ui-font-weight-semibold) 13px/18px var(--font-sans);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 #appShell .voice-recording-timer {
   color: var(--ui-text-muted);
-  font: 500 11px/15px var(--font-mono);
+  font: var(--ui-font-weight-medium) 11px/15px var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 #appShell .voice-recording-live {
@@ -64,7 +64,7 @@
   overflow: hidden;
   max-width: 180px;
   color: var(--ui-text-muted);
-  font: 400 11px/15px var(--font-sans);
+  font: var(--ui-font-weight-regular) 11px/15px var(--font-sans);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -27,7 +27,7 @@
 }
 .composer-tools-item + .composer-tools-item{margin-top:1px}
 .composer-tools-item:hover{color:var(--tool-card-text)}
-.composer-tools-item:focus-visible{color:var(--tool-card-text);outline:0;box-shadow:inset 0 0 0 1px var(--tool-card-border-strong)}
+.composer-tools-item:focus-visible{color:var(--tool-card-text);outline:0;box-shadow:var(--ui-focus-shadow)}
 .composer-tools-item:active{color:var(--tool-card-text)}
 .composer-tools-icon{
   display:grid;place-items:center;
@@ -78,7 +78,7 @@
    border-radius:999px;background:hsl(var(--border-300)/.9);
  }
  .composer-tools-item{
-   min-height:52px;padding:10px 14px;border-radius:14px;gap:16px;font-size:calc(16px * var(--app-font-scale,1));font-weight:500;
+   min-height:52px;padding:10px 14px;border-radius:14px;gap:16px;font-size:calc(16px * var(--app-font-scale,1));font-weight:var(--ui-font-weight-medium);
    transition:background .22s var(--ease-out),color .22s var(--ease-out),transform .18s var(--ease-out);
  }
  .composer-tools-item + .composer-tools-item{margin-top:2px}
@@ -108,7 +108,7 @@
   display:inline-flex;align-items:center;gap:5px;vertical-align:baseline;
   max-width:min(100%,220px);padding:1px 4px 1px 6px;border-radius:6px;
   color:hsl(var(--accent-000));
-  font:500 calc(12px * var(--app-font-scale,1))/1.4 var(--font-sans);
+  font:var(--ui-font-weight-medium) calc(12px * var(--app-font-scale,1))/1.4 var(--font-sans);
   white-space:nowrap;-webkit-user-select:none;user-select:none;animation:composer-extension-token-in .24s var(--ease-out) both;
 }
 .composer-extension-inline{display:inline-flex;align-items:baseline;max-width:100%;margin:0 4px 1px 0;vertical-align:baseline;white-space:nowrap;animation:composer-extension-token-in .24s var(--ease-out) both}
@@ -118,14 +118,14 @@
 .composer-extension-token-remove{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;padding:0;border:0;border-radius:50%;background:transparent;color:hsl(var(--accent-000)/.6);cursor:pointer;opacity:.7}
 .composer-extension-token-remove svg{width:11px;height:11px}
 .composer-extension-token-remove:hover{background:hsl(var(--accent-000)/.14);color:hsl(var(--accent-000));opacity:1}
-.composer-extension-token-remove:focus-visible{outline:2px solid hsl(var(--accent-000)/.7);outline-offset:1px}
+.composer-extension-token-remove:focus-visible{outline:2px solid transparent;outline-offset:1px}
 @keyframes composer-extension-token-in{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
 
 /* Sending stays the familiar arrow while idle; active voice capture replaces
    the full composer with the recording bar defined at the end of this file. */
 .display-prefs-row{display:flex;flex-direction:column;gap:4px}
-.display-prefs-label{display:flex;justify-content:space-between;align-items:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
-.display-prefs-label .value{color:hsl(var(--text-200));font-weight:600;text-transform:none;letter-spacing:0}
+.display-prefs-label{display:flex;justify-content:space-between;align-items:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
+.display-prefs-label .value{color:hsl(var(--text-200));font-weight:var(--ui-font-weight-semibold);text-transform:none;letter-spacing:0}
 /* Text-size & content-width segmented controls inside the display
    prefs popover. Both have N buttons (font: 4, width: 4) and share
    the same .display-prefs-segs chrome. The active segment is
@@ -174,8 +174,8 @@
 
 
 
-.user-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100))}.user-plan{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;align-items:center;gap:4px}
-.tier-badge{font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:3px}
+.user-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:calc(12px * var(--sidebar-font-scale));font-weight:var(--ui-font-weight-semibold);background:hsl(var(--text-200));color:hsl(var(--bg-100))}.user-plan{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;align-items:center;gap:4px}
+.tier-badge{font-size:calc(9px * var(--sidebar-font-scale));font-weight:var(--ui-font-weight-semibold);text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:3px}
 .tier-badge.tier-diophantus{background:hsl(var(--bg-300));color:hsl(var(--text-400))}
 .tier-badge.tier-riemann{background:hsl(var(--bg-300));color:hsl(var(--text-300))}
 .tier-badge.tier-descartes{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
@@ -206,7 +206,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .top-bar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s;flex-shrink:0}
 .toggle-sidebar:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.toggle-sidebar svg{width:16px;height:16px}
-.share-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:background-color .18s var(--ease-out),color .18s var(--ease-out),border-color .18s var(--ease-out);cursor:pointer;line-height:1;flex-shrink:0}
+.share-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:background-color .18s var(--ease-out),color .18s var(--ease-out),border-color .18s var(--ease-out);cursor:pointer;line-height:1;flex-shrink:0}
 .share-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
 .share-btn svg{stroke:currentColor}
 /* P0.2 — in-session Find button (top bar, next to Share). Square icon
@@ -238,7 +238,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   background:hsl(var(--bg-000));
   color:hsl(var(--text-200));
   font-size:12px;
-  font-weight:500;
+  font-weight:var(--ui-font-weight-medium);
   letter-spacing:0.01em;
   cursor:pointer;
   -webkit-user-select:none;
@@ -260,7 +260,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 }
 .new-reply-pill:hover{filter:brightness(1.08);transform:translateY(-2px) scale(1);box-shadow:0 6px 20px -2px hsl(var(--shadow-color,0 0% 0%)/0.32),0 2px 4px hsl(var(--shadow-color,0 0% 0%)/0.14)}
 .new-reply-pill:active{transform:translateY(0)}
-.new-reply-pill:focus-visible{outline:2px solid hsl(var(--accent-200));outline-offset:2px}
+.new-reply-pill:focus-visible{outline:2px solid transparent;outline-offset:2px}
 /* P_pill-anchor-composer — anchor the new-reply pill to the composer's
    top edge instead of chat-view's top edge. Earlier the pill floated
    relative to chat-view (the composer + find-bar wrapper), which meant

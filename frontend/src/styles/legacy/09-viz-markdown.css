@@ -70,7 +70,7 @@
 .viz:hover .viz-btn,.viz:focus-within .viz-btn{opacity:1}
 .viz-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.95);transform:translateY(-1px)}
 
-.viz-btn:focus-visible{opacity:1;outline:2px solid hsl(var(--accent-000)/.45);outline-offset:1px}
+.viz-btn:focus-visible{opacity:1;outline:2px solid transparent;outline-offset:1px}
 .viz-btn svg{width:13px;height:13px;display:block}
 /* Preview / Code segmented toggle. Unlike the icon buttons it stays
    visible without hover — discoverability is the point: teaching code
@@ -90,7 +90,7 @@
 }
 .viz-seg-btn:hover{color:hsl(var(--text-200))}
 .viz-seg-btn.is-on{background:hsl(var(--bg-300)/0.95);color:hsl(var(--text-100))}
-.viz-seg-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.45);outline-offset:-1px}
+.viz-seg-btn:focus-visible{outline:2px solid transparent;outline-offset:-1px}
 /* Code view: hide the live iframe + loading skeleton, show the source
    pane. Error banners are siblings of the iframe inside .viz-body, so
    they remain visible in both views. */
@@ -187,7 +187,7 @@
   flex-shrink:0;width:16px;height:16px;
   display:flex;align-items:center;justify-content:center;
   border-radius:50%;background:hsl(30 70% 50%/0.2);color:hsl(30 70% 45%);
-  font-size:calc(10px * var(--app-font-scale, 1));font-weight:700;margin-top:2px;
+  font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-bold);margin-top:2px;
 }
 .viz-error-btn{
   font:inherit;font-size:calc(11px * var(--app-font-scale, 1));
@@ -227,7 +227,7 @@
   border-bottom:0.5px solid hsl(var(--border-300)/0.1);
   flex-shrink:0;
 }
-.viz-modal-title{font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;flex:1}
+.viz-modal-title{font-size:calc(13px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);flex:1}
 .viz-modal-close{
   width:26px;height:26px;border:0;border-radius:6px;
   background:transparent;color:hsl(var(--text-400));
@@ -252,7 +252,7 @@
   cursor:pointer;
 }
 .viz-source-copy:hover{background:hsl(var(--bg-300)/.65)}
-.viz-source-copy:focus-visible{outline:2px solid hsl(var(--accent-000)/.45);outline-offset:1px}
+.viz-source-copy:focus-visible{outline:2px solid transparent;outline-offset:1px}
 .viz-source-body{overflow:auto;background:hsl(var(--bg-100)/.72)}
 .viz-source-code{
   min-height:100%;
@@ -281,23 +281,23 @@
 
 
 /* Markdown rendered content */
-.msg-body h1{font-size:1.4em;font-weight:500;color:hsl(var(--text-000));margin:16px 0 8px;line-height:1.3}
-.msg-body h2{font-size:1.2em;font-weight:500;color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
+.msg-body h1{font-size:1.4em;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-000));margin:16px 0 8px;line-height:1.3}
+.msg-body h2{font-size:1.2em;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
 /* P_h3-cjk-contrast — the previous 1.05em + weight 500 + --text-100 was
    visually indistinguishable from body text in CJK runs (Chinese chars
    look almost identical at 1.05em vs 1em, and `--text-100` matches body
    colour on the dark canvas). Bumping to 1.18em + weight 600 +
    `--text-000` makes `### 标题` read as a heading without changing the
    h1/h2/h4–h6 hierarchy. */
-.msg-body h3{font-size:1.18em;font-weight:600;color:hsl(var(--text-000));letter-spacing:-0.005em;margin:14px 0 6px;line-height:1.3}
-.msg-body h4,.msg-body h5,.msg-body h6{font-size:1em;font-weight:500;color:hsl(var(--text-100));margin:10px 0 4px}
+.msg-body h3{font-size:1.18em;font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-000));letter-spacing:-0.005em;margin:14px 0 6px;line-height:1.3}
+.msg-body h4,.msg-body h5,.msg-body h6{font-size:1em;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-100));margin:10px 0 4px}
 .msg-body ul,.msg-body ol{padding-left:20px;margin:6px 0 10px}
 .msg-body li{margin-bottom:3px}
 .msg-body li::marker{color:hsl(var(--text-500))}
 .msg-body blockquote{border-left:2px solid hsl(var(--accent-000)/0.4);padding:4px 0 4px 14px;margin:8px 0;color:hsl(var(--text-300));font-style:italic}
 .msg-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:calc(13px * var(--app-font-scale, 1))}
 .msg-body th,.msg-body td{border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));padding:8px 12px;text-align:left}
-.msg-body th{background:hsl(var(--bg-200));font-weight:600;color:hsl(var(--text-100))}
+.msg-body th{background:hsl(var(--bg-200));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100))}
 .msg-body td{color:hsl(var(--text-200))}
 .msg-body hr{border:none;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));margin:14px 0}
 .msg-body a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
@@ -358,7 +358,7 @@
   padding:1px 6px;
   border-radius:var(--ui-radius-xs);
   background:hsl(var(--surface-250)/.6);
-  font-weight:500;
+  font-weight:var(--ui-font-weight-medium);
 }
 
 /* Tables and formulas are rendered only once the splitter has closed them
@@ -422,7 +422,7 @@ html[data-boot-state="app"] .boot-loading-dots::before,
 html[data-boot-state="app"] .boot-loading-dots::after,
 html[data-boot-state="auth"] .boot-loading-dots::before,
 html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
-.boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:600;font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
+.boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:var(--ui-font-weight-semibold);font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
 .boot-loading-logo svg,.boot-loading-logo img{flex-shrink:0;color:hsl(var(--brand-000))}
 .boot-loading-dots{display:inline-flex;align-items:center;margin-left:6px;width:16px;height:16px;position:relative}
 .boot-loading-dots span{display:none}
@@ -443,24 +443,24 @@ html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
   max-width:420px;
   border:0.5px solid hsl(var(--accent-000)/0.4);
 }
-.auth-brand{display:flex;align-items:center;gap:8px;justify-content:center;font-weight:600;font-size:calc(17px * var(--app-font-scale, 1));margin-bottom:24px}
+.auth-brand{display:flex;align-items:center;gap:8px;justify-content:center;font-weight:var(--ui-font-weight-semibold);font-size:calc(17px * var(--app-font-scale, 1));margin-bottom:24px}
 .auth-brand svg{color:hsl(var(--accent-000))}
 .auth-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.18);margin-bottom:22px}
-.auth-tab{appearance:none;flex:1;text-align:center;padding:10px 0;font:500 calc(13px * var(--app-font-scale, 1))/1.2 var(--font-sans);color:hsl(var(--text-400));border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer;font-weight:500;transition:color .1s,border-color .1s}
+.auth-tab{appearance:none;flex:1;text-align:center;padding:10px 0;font:var(--ui-font-weight-medium) calc(13px * var(--app-font-scale, 1))/1.2 var(--font-sans);color:hsl(var(--text-400));border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer;font-weight:var(--ui-font-weight-medium);transition:color .1s,border-color .1s}
 .auth-tab:hover{color:hsl(var(--text-200))}
 .auth-tab.active{color:hsl(var(--text-100));border-bottom-color:hsl(var(--accent-000))}
 .auth-view{display:flex;flex-direction:column;gap:6px}
 .auth-lede{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.55;margin:0 0 12px;text-align:center}
-.auth-title{font-family:var(--font-display);font-size:calc(20px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));text-align:center;margin:4px 0 8px;line-height:1.3}
+.auth-title{font-family:var(--font-display);font-size:calc(20px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-100));text-align:center;margin:4px 0 8px;line-height:1.3}
 .auth-icon{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:hsl(var(--accent-000)/0.1);color:hsl(var(--accent-000));margin:0 auto 12px}
 .auth-icon-warn{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 65%)}
 .auth-icon-ok{background:hsl(145 50% 50%/0.15);color:hsl(145 50% 65%)}
-.auth-label{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin:6px 0 2px}
+.auth-label{font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin:6px 0 2px}
 .auth-input{width:100%;padding:10px 12px;font-size:calc(14px * var(--app-font-scale, 1));outline:none;margin-bottom:4px}
 .auth-input:focus{border-color:hsl(var(--accent-000)/0.5)}
 .auth-input::placeholder{color:hsl(var(--text-500))}
 .auth-error{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(0 60% 70%);min-height:14px;line-height:1.4;padding:2px 0}
-.auth-btn{padding:10px 18px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background .1s,color .1s;border:0;margin-top:10px}
+.auth-btn{padding:10px 18px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);cursor:pointer;transition:background .1s,color .1s;border:0;margin-top:10px}
 .auth-guest-label{display:flex;align-items:center;gap:8px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-top:12px;cursor:pointer;-webkit-user-select:none;user-select:none}
 .auth-guest-label input[type=checkbox]{width:15px;height:15px;accent-color:hsl(var(--accent-000));cursor:pointer;flex-shrink:0}
 .auth-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
@@ -476,7 +476,7 @@ html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
 .auth-inline-link:hover{text-decoration:underline}
 .auth-back-link{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-decoration:none;cursor:pointer;display:flex;align-items:center;gap:3px;margin-bottom:6px}
 .auth-back-link:hover{color:hsl(var(--text-200))}
-.auth-code-input{font-family:var(--font-mono,monospace);font-size:calc(22px * var(--app-font-scale, 1));letter-spacing:8px;text-align:center;padding:10px 12px;font-weight:600}
+.auth-code-input{font-family:var(--font-mono,monospace);font-size:calc(22px * var(--app-font-scale, 1));letter-spacing:8px;text-align:center;padding:10px 12px;font-weight:var(--ui-font-weight-semibold)}
 .auth-view-separator{text-align:center;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin:10px 0 6px;position:relative}
 .auth-view-separator::before,.auth-view-separator::after{content:"";position:absolute;top:50%;width:calc(50% - 24px);height:0.5px;background:hsl(var(--border-300)/0.18)}
 .auth-view-separator::before{left:0}

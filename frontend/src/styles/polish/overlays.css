@@ -268,7 +268,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 .settings-modal--full .settings-body { display:block; min-height:0; overflow:auto; padding:var(--ui-space-xl); }
 .settings-modal--full .settings-pane[hidden] { display:none; }
 .settings-modal--full .settings-pane { display:flex; flex-direction:column; gap:18px; }
-.settings-modal--full .settings-pane > h2 { margin:0 0 10px; color:var(--ui-text-primary); font-size:var(--ui-font-size-xl); font-weight:600; }
+.settings-modal--full .settings-pane > h2 { margin:0 0 10px; color:var(--ui-text-primary); font-size:var(--ui-font-size-xl); font-weight:var(--ui-font-weight-semibold); }
 .settings-modal--full .settings-pane > p { margin:0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-sm); }
 .settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:55px; border-bottom:1px solid var(--ui-border-default); color:var(--ui-text-primary); font-size:var(--ui-font-size-sm); }
 .settings-modal--full .settings-choice select { min-width:130px; min-height:var(--ui-control-desktop); padding:var(--ui-space-xs) var(--ui-space-sm); border:1px solid var(--ui-border-default); border-radius:var(--ui-radius-control); color:var(--ui-text-primary); background:var(--ui-bg-composer); font:inherit; }
@@ -353,7 +353,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   margin: 0;
   background: transparent;
   color: var(--ui-text-primary);
-  font: 600 16px/1.3 var(--cg-font);
+  font: var(--ui-font-weight-semibold) 16px/1.3 var(--cg-font);
   outline: none;
   border-radius: var(--ui-radius-xs, 4px);
   min-width: 0;
@@ -395,7 +395,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   background: transparent;
   color: var(--ui-text-tertiary);
   font-size: 12.5px;
-  font-weight: 550;
+  font-weight: var(--ui-font-weight-semibold);
   cursor: pointer;
 }
 .settings-pane .display-prefs-seg.on,
@@ -480,7 +480,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 }
 .settings-memory-key {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--ui-font-weight-semibold);
   padding: 2px 6px;
   border-radius: var(--ui-radius-xs);
   background: var(--ui-bg-chip);

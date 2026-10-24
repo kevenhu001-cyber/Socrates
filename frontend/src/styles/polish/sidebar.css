@@ -28,7 +28,7 @@
     gap: 8px;
     height: 36px;
     padding: 0 6px;
-    font-weight: 600;
+    font-weight: var(--ui-font-weight-semibold);
     line-height: 20px;
     letter-spacing: -0.01em;
   }
@@ -76,7 +76,7 @@
   #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"] {
     background: var(--ui-bg-hover);
     color: var(--ui-text-primary);
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
   }
   /* Grouping comes from breathing room, not another line in the rail. */
   #appShell #sidebar .sidebar-nav-sep {
@@ -135,13 +135,13 @@
   #appShell #sidebar .recents-title {
     color: var(--ui-text-muted);
     font-size: var(--ui-font-size-xxs);
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
     line-height: 16px;
   }
   #appShell #sidebar .recents-time-label {
     padding: 12px 8px 4px;
     color: var(--ui-text-muted);
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
     line-height: 15px;
     letter-spacing: 0.02em;
   }
@@ -176,7 +176,7 @@
   }
   #appShell #sidebar .recent-item.active .recent-item-text,
   #appShell #sidebar .recent-item[aria-current="true"] .recent-item-text {
-    font-weight: 500;
+    font-weight: var(--ui-font-weight-medium);
   }
   #appShell #sidebar .recent-item-actions {
     margin-inline-start: 4px;
@@ -440,7 +440,7 @@
      so the same "Today" group header changed size with the viewport. */
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xxs);
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   letter-spacing: 0.04em;
 }
 #appShell .recents-title {
@@ -625,8 +625,13 @@
    already shifts its border, background and glow, so the forced app-wide
    focus ring would draw a second rectangle inside it. See the focus contract
    in components/input.css; the rule lives here because the sidebar surface is
-   owned by this file per check-surface-ownership.mjs. */
+   owned by this file per check-surface-ownership.mjs.
+   The ring lives in a box-shadow now, so that is what has to be cleared.
+   The outline needs no `!important`: the transparent one restore/fixes.css
+   already applies paints nothing either, so the result is the same and the
+   forced-colours fallback there stays in charge of the outline. */
 #appShell#appShell#appShell .sidebar-search input:focus-visible {
-  outline: none !important;
+  outline: none;
+  box-shadow: none;
 }
 }

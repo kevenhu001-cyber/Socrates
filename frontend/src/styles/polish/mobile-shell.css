@@ -57,7 +57,6 @@
   }
   body:not([data-conversation-active="true"]) #appShell #topModelSwitcher :is(.top-model-switcher-name, .top-model-switcher-model, .top-model-switcher-caret) { display: none; }
   body:not([data-conversation-active="true"]) #appShell .top-model-switcher-settings { display: block; width: 22px; height: 22px; }
-  #appShell #topModelSwitcher:focus-visible { outline: 2px solid var(--ui-focus-ring); outline-offset: 2px; }
   #appShell #mobileMode { position: absolute; left: 58px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); }
   #appShell #mobileModeTrigger {
     display: inline-flex;
@@ -68,7 +67,7 @@
     background: transparent;
     color: var(--ui-text-primary);
     font-size: var(--ui-font-size-lg);
-    font-weight: 600;
+    font-weight: var(--ui-font-weight-semibold);
     line-height: 24px;
   }
   #appShell #mobileModeTrigger svg { width: 16px; height: 16px; }
@@ -98,7 +97,7 @@
     animation: none;
     font-family: var(--font-sans);
     font-size: calc(23px * var(--app-type-scale));
-    font-weight: 400;
+    font-weight: var(--ui-font-weight-regular);
     line-height: 30px;
     letter-spacing: 0;
     color: var(--ui-text-primary);

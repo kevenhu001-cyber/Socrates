@@ -78,7 +78,7 @@ for (const mobile of [false, true]) {
     const surface = page.locator('.thinking-accordion');
     const caption = surface.locator('.thinking-status-label');
     await expect(surface).toHaveAttribute('data-live', 'true');
-    await expect(caption).toHaveCSS('animation-name', 'ui-activity-highlight');
+    await expect(caption).toHaveCSS('animation-name', 'ui-activity-breathe');
     await expect(surface.locator('.turn-activity-dot')).toHaveCount(0);
     await expect(surface.locator('.thinking-accordion-left > .tool-inline-tool-icon')).toBeVisible();
     await page.mouse.move(0, 0);

@@ -4,10 +4,44 @@ const MAX_CHARS = 256;
 const MAX_NODES = 64;
 const MAX_RUNS = 12;
 const MAX_SPANS = 24;
+/** How long a run stays in flight — a margin over the 120ms reveal. */
 export const STREAM_REVEAL_MS = 180;
+/** Segments that arrive together are spread this far apart. */
+export const REVEAL_STAGGER_MS = 30;
+/** Two arrivals closer together than this happened in the same tick. */
+const SAME_TICK_MS = 8;
 const OPAQUE = 'pre,code,button,script,style,svg,math,.katex,.viz,.mermaid,.code-block-header';
-interface Run { length: number; at: number }
+interface Run { length: number; at: number; tier: number }
 interface Leaf { node: Text; start: number; end: number }
+
+/**
+ * The index a segment takes inside the group of segments that arrived in
+ * the same tick.
+ *
+ * Segments that land together would otherwise fade in as one flat flash.
+ * The tier spreads them apart in reading order, so a burst reads as a wave
+ * travelling through the text rather than as a single blink.
+ */
+export function revealTier(arrivals: number[], now: number): number {
+  let tier = 0;
+  for (let i = arrivals.length - 1; i >= 0; i -= 1) {
+    if (now - arrivals[i] > SAME_TICK_MS) break;
+    tier += 1;
+  }
+  return tier;
+}
+
+/**
+ * The animation delay for a revealed segment, in milliseconds.
+ *
+ * `age` is how long ago the segment arrived: the animation resumes from
+ * there, so already-revealed text never re-fades. `tier` is the segment's
+ * index inside its arrival group, which pushes it 30ms later than the one
+ * before it.
+ */
+export function revealDelay(age: number, tier: number): number {
+  return tier * REVEAL_STAGGER_MS - Math.max(0, Math.round(age));
+}
 
 function previous(node: Node, root: Element): Node | null {
   while (node !== root) {
@@ -72,7 +106,13 @@ export function createStreamReveal() {
     source = nextSource;
     suffix = next.text;
     runs = runs.filter((run) => now - run.at < STREAM_REVEAL_MS);
-    if (added) runs.push({ length: added, at: now });
+    if (added) {
+      runs.push({
+        length: added,
+        at: now,
+        tier: revealTier(runs.map((run) => run.at), now),
+      });
+    }
     runs = runs.slice(-MAX_RUNS);
 
     let spans = 0;
@@ -93,8 +133,12 @@ export function createStreamReveal() {
         const part = leaf.node.splitText(from);
         part.splitText(to - from);
         const span = root.ownerDocument.createElement('span');
-        span.className = 'stream-append-reveal';
-        span.style.animationDelay = `-${Math.max(0, Math.round(now - run.at))}ms`;
+        /* Only the newest run carries the blur: a filter forces an offscreen
+           pass, and the older runs are already on their way out. */
+        span.className = i === runs.length - 1
+          ? 'stream-append-reveal'
+          : 'stream-append-reveal stream-append-aged';
+        span.style.animationDelay = `${revealDelay(now - run.at, run.tier)}ms`;
         part.replaceWith(span);
         span.appendChild(part);
         // Splits shorten the original node, so adjust its end-distance for

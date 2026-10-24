@@ -2,52 +2,25 @@
 
 /* Match site/: Geist Sans for UI, Noto Sans SC for Chinese fallback,
    Geist Mono for code. These are the marketing site's local font assets.
-   Swap keeps text visible while a face loads; no third-party requests. */
+   Swap keeps text visible while a face loads; no third-party requests.
+
+   Geist ships as a variable font so the dark canvas can step a weight down
+   to a half step — 500 → 450 — instead of declaring a weight the browser
+   silently snaps back to 500. The two faces are subset to exactly the
+   characters the previous static files covered, so coverage is unchanged. */
 
 @font-face {
   font-family: 'Geist Sans';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 900;
   font-display: swap;
-  src: url('../../assets/fonts/geist-sans-latin-400-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Geist Sans';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('../../assets/fonts/geist-sans-latin-500-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Geist Sans';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('../../assets/fonts/geist-sans-latin-600-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Geist Sans';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('../../assets/fonts/geist-sans-latin-700-normal.woff2') format('woff2');
+  src: url('../../assets/fonts/geist-sans-variable.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 'Geist Mono';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 900;
   font-display: swap;
-  src: url('../../assets/fonts/geist-mono-latin-400-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Geist Mono';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('../../assets/fonts/geist-mono-latin-500-normal.woff2') format('woff2');
+  src: url('../../assets/fonts/geist-mono-variable.woff2') format('woff2');
 }

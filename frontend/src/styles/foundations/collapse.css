@@ -1,0 +1,56 @@
+/*
+ * foundations/collapse.css — the one collapse pattern.
+ *
+ * A collapsible block is a grid container with exactly one child:
+ *
+ *   <div class="ui-collapse collapsed">
+ *     <div class="ui-collapse-inner">…</div>
+ *   </div>
+ *
+ * The row track is sized by its content (`0fr` → `1fr`), so the open height
+ * is exactly the content height and no magic `max-height` number is needed.
+ * The inner child carries `overflow: hidden` and `min-height: 0` — that is
+ * what lets a `0fr` track collapse to zero at all, and what clips the
+ * content while the track is between the two sizes.
+ *
+ * Contract:
+ *   - `.collapsed` is the closed state. The container is also
+ *     `visibility: hidden`, so the closed content is not reachable by
+ *     keyboard or screen reader while it is closed;
+ *   - visibility flips at the end of the close and at the start of the open,
+ *     so an interrupted transition never leaves a half-hidden block;
+ *   - one child only. Several children would land in implicit rows that the
+ *     `0fr` track does not control, so a wrapper is mandatory;
+ *   - reduced motion drops the transition — the block still toggles, it just
+ *     does not animate.
+ */
+
+.ui-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--ui-duration-overlay) var(--ui-ease-out),
+    visibility 0s;
+}
+
+.ui-collapse > .ui-collapse-inner {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ui-collapse.collapsed {
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--ui-duration-overlay) var(--ui-ease-out),
+    visibility 0s linear var(--ui-duration-overlay);
+}
+
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  .ui-collapse,
+  .ui-collapse.collapsed {
+    transition: none;
+  }
+}

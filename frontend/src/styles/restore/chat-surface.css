@@ -68,7 +68,7 @@ body,
 #appShell#appShell .top-mode-tabs .app-mode-toggle {
   border-radius: 999px !important;
   color: var(--conversation-text-muted) !important;
-  font-weight: 500 !important;
+  font-weight: var(--ui-font-weight-medium) !important;
 }
 }
 
@@ -531,7 +531,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 .chat-config-row strong {
   overflow: hidden;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: var(--ui-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -539,7 +539,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 .chat-config-row small {
   color: var(--chat-muted);
   font-size: 12px;
-  font-weight: 400;
+  font-weight: var(--ui-font-weight-regular);
 }
 
 .chat-config-row > svg { width: 20px; height: 20px; flex: 0 0 auto; }
