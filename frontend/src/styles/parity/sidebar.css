@@ -302,6 +302,13 @@
   }
   #appShell #sidebarSearch::placeholder { color: var(--ui-text-primary); opacity: 1; }
   #appShell #sidebarSearch:focus::placeholder { color: var(--ui-text-placeholder); }
+  /* The search field is a bare input inside a ghost pill — it has no frame
+     of its own, so the global focus contract painted a hard ring around
+     something that looks like a label, and the ring read as a box drawn
+     around the sidebar (the "black frame" report). The pill carries the
+     focus treatment instead; see polish/sidebar.css .sidebar-search:
+     focus-within. */
+  #appShell #sidebar .sidebar-search input:focus-visible { box-shadow: none; }
 
   /* ── History ─────────────────────────────────────────────────────────── */
   #appShell #recentsPanel {

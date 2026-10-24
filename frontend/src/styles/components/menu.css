@@ -101,30 +101,6 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   .composer-tools-desktop-items { display: block; }
   .composer-tools-mobile-items { display: none; }
   body #composerToolsMenu.composer-tools-menu { width: 252px; min-width: 252px; }
-  /* The footer search is 34px so it shares a row height with the desktop
-     "+" cards above it (polish/composer.css:88-92, also 34px). It used to be
-     38px here while polish/composer.css set 34px on the same selector; polish
-     won by import order, so the 38px never shipped — the popover had two
-     declared heights for one control. */
-  #composerToolsMenu .composer-tools-footer-search {
-    display: flex;
-    align-items: center;
-    min-height: 34px;
-    margin-top: 6px;
-    padding: 4px 10px;
-    border-top: 1px solid var(--ui-border-subtle);
-  }
-  #composerToolsMenu .composer-tools-footer-search input {
-    width: 100%;
-    min-width: 0;
-    min-height: 30px;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: var(--ui-text-primary);
-    font: inherit;
-    font-size: var(--ui-font-size-xs);
-  }
 }
 
 @media (max-width: 768px) {
@@ -154,5 +130,4 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   [data-mode="dark"] #composerToolsMenu .composer-tools-icon { background: var(--ui-bg-control); }
   #composerToolsMenu .composer-tools-icon svg { width: 22px; height: 22px; }
   #composerToolsMenu .composer-tools-copy > span { font-size: var(--ui-font-size-md); }
-  #composerToolsMenu .composer-tools-footer-search { display: none; }
 }

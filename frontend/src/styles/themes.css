@@ -287,11 +287,18 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-shadow-modal: var(--ui-shadow-dialog);
   --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
   --ui-focus-ring: color-mix(in srgb, var(--ui-text-primary) 55%, transparent);
-  /* The focus indicator is a two-layer shadow: a 2px page-coloured gap and
-   * a 2px ring in --ui-focus-ring. The ring composites over the surface it
-   * sits on, and clears 4:1 against every rung of the background ladder
-   * (5.7:1 dark, 4.2:1 light, 4.0:1 on the deepest light surface). */
-  --ui-focus-shadow: 0 0 0 2px var(--ui-bg-page), 0 0 0 4px var(--ui-focus-ring);
+  /* 2026-10-25 — the indicator used to be a two-layer shadow: a 2px
+     page-coloured gap plus a 2px ring. The gap was always the *page*
+     colour, so on every other rung of the ladder (the sidebar rail, an
+     inset well, a menu) it painted a colour that did not belong there,
+     and the four-pixel total read as a hard frame around the control —
+     a black box in light mode, a white one in dark mode.
+     The indicator is now one 2px ring that hugs the control, with a 1px
+     ambient bloom outside it. The ring composites over the surface it
+     sits on and clears 4:1 against every rung of the background ladder
+     (5.7:1 dark, 4.2:1 light, 4.0:1 on the deepest light surface). */
+  --ui-focus-glow: color-mix(in srgb, var(--ui-text-primary) 12%, transparent);
+  --ui-focus-shadow: 0 0 0 2px var(--ui-focus-ring), 0 0 0 3px var(--ui-focus-glow);
 
   --chatgpt-font: var(--cg-font);
   --chatgpt-page: var(--ui-bg-page);

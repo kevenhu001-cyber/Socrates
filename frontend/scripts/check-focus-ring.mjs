@@ -2,22 +2,29 @@
 /*
  * scripts/check-focus-ring.mjs — focus-indicator ratchet.
  *
- * The product contract for keyboard focus is one double ring, painted as a
- * two-layer box-shadow:
+ * The product contract for keyboard focus is one deliberate indicator, painted
+ * as a two-layer box-shadow:
  *
- *   layer 1  a 2px gap in the page colour
- *   layer 2  a 2px ring in --ui-focus-ring
+ *   layer 1  a 2px ring in --ui-focus-ring   (the indicator itself)
+ *   layer 2  a 1px ambient bloom in --ui-focus-glow (the halo outside it)
  *
  * Four properties make it a contract rather than a convention:
  *
  *   1. the shape lives in one token, so there is exactly one ring to reason
  *      about and every focusable surface shows the same detail;
- *   2. the indicator is a box-shadow, so the gap can carry the page colour
- *      underneath the ring — a single outline cannot express two layers;
+ *   2. the indicator is a box-shadow, so the bloom can sit outside the ring
+ *      without a second element or a pseudo-element;
  *   3. the ring clears 3:1 against every rung of the background ladder in
  *      both modes, so it is an indicator and not decoration;
  *   4. nothing else paints a focus ring. A stray outline or a focus-time
- *      box-shadow turns the double ring into a lopsided third one.
+ *      box-shadow turns the indicator into a lopsided third one.
+ *
+ * 2026-10-25 — the inner layer used to be a 2px gap in the *page* colour.
+ * That gap is the wrong colour on every other rung of the ladder (the
+ * sidebar rail, an inset well, a menu), and the four-pixel total read as a
+ * hard frame: a black box in light mode, a white one in dark mode. The
+ * indicator is now a single 2px ring that hugs the control plus a 1px
+ * bloom, so it reads as focus rather than as a border.
  *
  * The check resolves the palette, composites the ring the way the browser
  * does, and fails when the contract is broken or when a surface starts
@@ -218,23 +225,26 @@ function main() {
     const layers = focusShadow.split(/,(?![^(]*\))/).map((part) => part.trim()).filter(Boolean);
     if (layers.length !== 2) {
       failures.push(
-        `themes.css: --ui-focus-shadow has ${layers.length} layer(s), expected 2 (a page-coloured gap plus a ring)`,
+        `themes.css: --ui-focus-shadow has ${layers.length} layer(s), expected 2 (the ring plus its bloom)`,
       );
     }
-    if (!/var\(--ui-bg-page\)/.test(layers[0] || '')) {
-      failures.push('themes.css: the inner layer of --ui-focus-shadow must be the page colour — it is the gap between the two rings');
+    if (!/var\(--ui-focus-ring\)/.test(layers[0] || '')) {
+      failures.push('themes.css: the inner layer of --ui-focus-shadow must be --ui-focus-ring — it is the indicator itself');
     }
-    if (!/var\(--ui-focus-ring\)/.test(layers[1] || '')) {
-      failures.push('themes.css: the outer layer of --ui-focus-shadow must be --ui-focus-ring');
+    if (!/var\(--ui-focus-glow\)/.test(layers[1] || '')) {
+      failures.push('themes.css: the outer layer of --ui-focus-shadow must be --ui-focus-glow — it is the bloom around the ring');
     }
     const spreads = layers.map((layer) => Number.parseFloat((/(\d+(?:\.\d+)?)px/.exec(layer) || [])[1]));
     if (spreads.some((value) => !Number.isFinite(value))) {
       failures.push('themes.css: every layer of --ui-focus-shadow needs an explicit px spread');
     } else if (spreads[1] <= spreads[0]) {
       failures.push(
-        `themes.css: the ring layer (${spreads[1]}px) must sit outside the gap layer (${spreads[0]}px)`,
+        `themes.css: the bloom layer (${spreads[1]}px) must sit outside the ring layer (${spreads[0]}px)`,
       );
     }
+  }
+  if (!focusVars.get('--ui-focus-glow')) {
+    failures.push('themes.css: --ui-focus-glow is missing — the indicator has no bloom token');
   }
 
   /* ---------- 2. the ring colour and its contrast ---------- */

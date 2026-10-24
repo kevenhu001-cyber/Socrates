@@ -657,29 +657,6 @@ body,
   color: var(--cg-accent);
 }
 
-#composerToolsMenu .composer-tools-footer-search.composer-tools-search {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  height: 36px;
-  margin: 0;
-  padding: 0 10px;
-  border: 0;
-  border-bottom: 1px solid var(--cg-border);
-  border-radius: 0;
-  background: var(--cg-surface);
-  box-shadow: none;
-}
-
-#composerToolsMenu .composer-tools-footer-search.composer-tools-search:focus-within {
-  border-color: transparent;
-  box-shadow: none;
-}
-
-#composerToolsMenu .composer-tools-footer-search input::placeholder {
-  color: var(--cg-text-muted);
-}
-
 #composerToolsMenu {
   overscroll-behavior: contain;
 }

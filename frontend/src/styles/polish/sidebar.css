@@ -101,10 +101,14 @@
     background: var(--ui-bg-hover);
     color: var(--ui-text-primary);
   }
+  /* The pill carries the focus treatment for its bare input (the input has
+     no frame of its own, so a ring around it read as a box drawn around the
+     sidebar). A filled surface plus a one-pixel inner stroke plus the
+     ambient bloom reads as focus without the hard frame. */
   #appShell #sidebar .sidebar-search:focus-within {
     background: var(--ui-bg-surface);
     color: var(--ui-text-primary);
-    box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
+    box-shadow: inset 0 0 0 1px var(--ui-border-strong), 0 0 0 3px var(--ui-focus-glow);
   }
   #appShell #sidebar .sidebar-search svg {
     width: 18px;
@@ -572,10 +576,10 @@
 }
 
 /* Free-tier upgrade pill — removed. The sidebar drawer footer no longer
-   carries an Upgrade button; the pricing entry point lives in the account
-   menu (SidebarFooter.tsx "Upgrade plan"), which reads the same on desktop
-   and phone instead of the two competing presentations the pill had
-   (solid blue in parity/sidebar.css, outlined here). */
+   carries an Upgrade button, and the account menu no longer carries the
+   pricing entry point either, so the drawer has no upgrade surface at all
+   (the pill had two competing presentations: solid blue in
+   parity/sidebar.css, outlined here). */
 @media (max-width: 768px) {
 #appShell #navAssistants,
 #appShell #navSites,

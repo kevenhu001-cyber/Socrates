@@ -1,5 +1,4 @@
-import { Icon } from '../../ui/Icon';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { repositionComposerTools } from '../../ui/composerTools';
 import { useComposerPluginSelectionSnapshot } from './pluginSelection';
@@ -7,7 +6,6 @@ import { ComposerPluginItems } from './ComposerPluginItems';
 import { MenuItem, MobileMenuItem } from './ComposerToolItems';
 import {
   i18n,
-  menuCopy,
   MOBILE_GROUP_ORDER,
   MOBILE_MENU_ITEMS,
   MOBILE_THINKING_SPEC,
@@ -28,36 +26,19 @@ export function ComposerToolMenuItems({
   isOpen: boolean;
   mode: 'topic' | 'chat' | null;
 }) {
-  const [query, setQuery] = useState('');
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
   const selectedPluginCount = mode ? selectionSnapshot[mode].length : 0;
-
-  useEffect(() => {
-    if (!isOpen) setQuery('');
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
     const frame = window.requestAnimationFrame(() => repositionComposerTools());
     return () => window.cancelAnimationFrame(frame);
-  }, [isOpen, query, selectedPluginCount]);
+  }, [isOpen, selectedPluginCount]);
 
   const definitions = toolDefinitions();
-  const normalizedQuery = query.trim().toLowerCase();
-  const matchesQuery = (spec: MenuItemSpec): boolean => {
-    if (!normalizedQuery) return true;
-    const { label, description } = menuCopy(spec);
-    return [label, description, spec.key].join(' ').toLowerCase().includes(normalizedQuery);
-  };
   const findTools = (actions: ReadonlyArray<string>) => actions
     .map((key) => definitions.find((spec) => spec.key === key))
-    .filter((spec): spec is MenuItemSpec => Boolean(spec))
-    .filter(matchesQuery);
-  const footerPlaceholder = i18n('composer.tools.searchFooter', 'Search tools and connected apps');
-  const mobileStaticItems = MOBILE_MENU_ITEMS.filter((item) => {
-    if (!normalizedQuery) return true;
-    return [i18n(item.labelKey, item.label), item.action].join(' ').toLowerCase().includes(normalizedQuery);
-  });
+    .filter((spec): spec is MenuItemSpec => Boolean(spec));
   const groups = TOOL_GROUPS.map((group) => ({
     ...group,
     label: i18n(group.labelKey, group.label),
@@ -68,22 +49,12 @@ export function ComposerToolMenuItems({
     label: i18n(group.labelKey, group.label),
     tools: [
       ...findTools(group.actions),
-      ...(group.key === 'workflows' && matchesQuery(MOBILE_THINKING_SPEC) ? [MOBILE_THINKING_SPEC] : []),
+      ...(group.key === 'workflows' ? [MOBILE_THINKING_SPEC] : []),
     ],
   }));
-  const hasMobileToolMatch = mobileStaticItems.length > 0 || mobileGroupTools.some((group) => group.tools.length > 0);
 
   return (
     <>
-      <label className="composer-tools-header-search composer-tools-search composer-tools-footer-search">
-        <Icon name="search" />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={footerPlaceholder}
-          aria-label={footerPlaceholder}
-        />
-      </label>
       <div className="composer-tools-desktop-items composer-tools-expanded">
         {groups.map((group) => group.tools.length ? (
           <div className="composer-tools-group" role="group" aria-label={group.label} key={group.key}>
@@ -93,14 +64,11 @@ export function ComposerToolMenuItems({
             ))}
           </div>
         ) : null)}
-        {normalizedQuery && groups.every((group) => group.tools.length === 0) ? (
-          <div className="composer-tools-plugin-state" role="status">{i18n('composer.tools.noMatch', 'No matching actions.')}</div>
-        ) : null}
       </div>
       <div className="composer-tools-mobile-items">
         {mobileGroupTools.map((group) => {
           const staticItems = group.key === 'context'
-            ? mobileStaticItems.filter((item) => item.action === 'camera' || item.action === 'photos')
+            ? MOBILE_MENU_ITEMS.filter((item) => item.action === 'camera' || item.action === 'photos')
             : [];
           if (!staticItems.length && !group.tools.length) return null;
           return (
@@ -115,11 +83,8 @@ export function ComposerToolMenuItems({
             </div>
           );
         })}
-        {normalizedQuery && !hasMobileToolMatch ? (
-          <div className="composer-tools-plugin-state" role="status">{i18n('composer.tools.noMatch', 'No matching actions.')}</div>
-        ) : null}
       </div>
-      <ComposerPluginItems isOpen={isOpen} mode={mode} query={query} onPick={onPick} />
+      <ComposerPluginItems isOpen={isOpen} mode={mode} onPick={onPick} />
     </>
   );
 }

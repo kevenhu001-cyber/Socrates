@@ -242,7 +242,17 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     line-height: 28px;
     white-space: nowrap;
     cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease;
+    /* The focus ring is painted from a transparent baseline so it fades in
+       instead of snapping on. A ring that pops on a control this small
+       reads as a jump rather than as focus. */
+    box-shadow: 0 0 0 2px transparent, 0 0 0 3px transparent;
+    transition: background-color var(--ui-duration-hover) ease,
+                box-shadow var(--ui-duration-hover) ease;
+  }
+  /* The baseline above outranks the global :focus-visible contract, so the
+     ring is re-declared here against the same token. */
+  #appShell #topModelSwitcher:focus-visible {
+    box-shadow: var(--ui-focus-shadow);
   }
   #appShell #topModelSwitcher:hover,
   #appShell #topModelSwitcher[aria-expanded="true"] { background: var(--ui-bg-hover); }

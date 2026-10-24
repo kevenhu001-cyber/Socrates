@@ -52,12 +52,10 @@ function ComposerPluginItem({
 export function ComposerPluginItems({
   isOpen,
   mode,
-  query,
   onPick,
 }: {
   isOpen: boolean;
   mode: 'topic' | 'chat' | null;
-  query: string;
   onPick: (action: ComposerToolsAction) => void;
 }) {
   const [plugins, setPlugins] = useState<ReadonlyArray<PluginCatalogEntry>>([]);
@@ -82,17 +80,10 @@ export function ComposerPluginItems({
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  const connectedPlugins = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return plugins.filter((plugin) => {
-      if (plugin.connectionStatus !== 'connected') return false;
-      if (!normalized) return true;
-      return [plugin.name, plugin.description, ...plugin.capabilities]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalized);
-    });
-  }, [plugins, query]);
+  const connectedPlugins = useMemo(
+    () => plugins.filter((plugin) => plugin.connectionStatus === 'connected'),
+    [plugins],
+  );
 
   const togglePlugin = (plugin: PluginCatalogEntry) => {
     if (!mode) return;
@@ -148,14 +139,6 @@ export function ComposerPluginItems({
         <div className="composer-tools-plugin-state">
           <span>{i18n('composer.tools.plugins.empty', 'No connected apps yet.')}</span>
           <small>{i18n('composer.tools.plugins.emptyHint', 'Connect an app to add its context to a chat.')}</small>
-          <button type="button" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
-            {i18n('composer.tools.plugins.manage', 'Manage apps')}
-          </button>
-        </div>
-      ) : null}
-      {loadState === 'ready' && connectedCount > 0 && connectedPlugins.length === 0 ? (
-        <div className="composer-tools-plugin-state" role="status">
-          <span>{i18n('composer.tools.plugins.noMatch', 'No connected apps match this search.')}</span>
           <button type="button" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
             {i18n('composer.tools.plugins.manage', 'Manage apps')}
           </button>

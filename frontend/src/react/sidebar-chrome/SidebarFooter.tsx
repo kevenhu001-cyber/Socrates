@@ -1,6 +1,6 @@
 import { Icon } from '../../ui/Icon';
 import { useCallback, useState } from 'react';
-import { CircleUserRound, LifeBuoy, LogOut, Sparkles } from 'lucide-react';
+import { CircleUserRound, LifeBuoy, LogOut } from 'lucide-react';
 import { useUserInfo } from './sidebarChrome.bridge';
 import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
@@ -25,10 +25,9 @@ export function SidebarFooter() {
       label={label('账户', 'Account')}
       trigger={<button type="button" className="sidebar-account-trigger"
         title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}>{identity}</button>}>
-      {({ FoundationMenuItem, FoundationMenuLink }) => <>
+      {({ FoundationMenuItem }) => <>
       <FoundationMenuItem className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<Icon name="chevronRight" /></FoundationMenuItem>
       <hr />
-      <FoundationMenuLink href="https://topodrive.top/pricing"><Sparkles strokeWidth={1.75} aria-hidden="true" />{label('升级套餐', 'Upgrade plan')}</FoundationMenuLink>
       <FoundationMenuItem onClick={() => navigate('personalization')}><Icon name="sliders" />{label('个性化', 'Personalization')}</FoundationMenuItem>
       <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}><CircleUserRound strokeWidth={1.75} aria-hidden="true" />{label('个人资料', 'Profile')}</FoundationMenuItem>
       <FoundationMenuItem onClick={() => navigate('general')}><Icon name="gear" />{label('设置', 'Settings')}</FoundationMenuItem>
