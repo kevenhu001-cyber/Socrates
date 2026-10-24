@@ -72,7 +72,9 @@
   overflow: visible;
   border: 1px solid var(--ui-composer-border);
   border-radius: var(--ui-radius-composer-desktop);
-  background: var(--ui-bg-composer);
+  background: var(--ui-bg-composer-glass);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   background-clip: padding-box;
   color: var(--ui-text-primary);
   box-shadow: var(--ui-composer-shadow);

@@ -59,7 +59,7 @@ test('push does not paint synchronously; frames paint the visible prefix', () =>
   assert.equal(frames[frames.length - 1].text, 'Hello, world!');
 });
 
-test('a burst reveals gradually across frames, never all in the first frame', () => {
+test('later bursts reveal gradually across frames', () => {
   const h = harness();
   const frames = [];
   const big = 'x'.repeat(1000);
@@ -68,6 +68,9 @@ test('a burst reveals gradually across frames, never all in the first frame', ()
     now: h.now,
     raf: h.raf, delay: h.delay,
   });
+  player.push('Opening.');
+  h.run(1);
+  frames.length = 0;
   player.push(big);
   // Run a handful of frames; the burst must NOT be fully revealed at once.
   h.run(3);
@@ -80,7 +83,78 @@ test('a burst reveals gradually across frames, never all in the first frame', ()
     assert.ok(len >= prev, 'visible length is monotonic');
     prev = len;
   }
-  assert.equal(frames[frames.length - 1], 1000);
+  assert.equal(frames[frames.length - 1], 1008);
+});
+
+test('the first batch is fully visible on the first frame without ending playback', () => {
+  const h = harness();
+  const frames = [];
+  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+    onFrame: (text) => frames.push(text),
+  });
+  const first = '第一段正文。'.repeat(80);
+  player.push(first);
+  assert.equal(frames.length, 0, 'coalesce work until the next paint');
+  h.run(1);
+  assert.deepEqual(frames, [first]);
+  assert.equal(player.getState(), 'playing');
+  player.push('接着回答');
+  h.run(20);
+  assert.equal(frames.at(-1), first + '接着回答');
+  player.dispose();
+});
+
+test('hidden tabs catch up without animation frames and remove their listener at finish', () => {
+  const h = harness();
+  let hidden = false;
+  let visibilityChanged;
+  let removed = 0;
+  const frames = [];
+  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+    isHidden: () => hidden,
+    onVisibilityChange(cb) { visibilityChanged = cb; return () => { removed++; }; },
+    onFrame: (text) => frames.push(text),
+  });
+  player.push('开头');
+  h.run(1);
+  player.push('长正文'.repeat(1000));
+  hidden = true;
+  visibilityChanged();
+  assert.equal(player.playedLen(), player.totalLen());
+  player.push('后台继续收到的内容');
+  assert.equal(player.playedLen(), player.totalLen(), 'no rAF required while hidden');
+  hidden = false;
+  visibilityChanged();
+  player.push('返回前台');
+  player.flushNow();
+  h.run(20);
+  assert.equal(frames.at(-1), '开头' + '长正文'.repeat(1000) + '后台继续收到的内容返回前台');
+  assert.equal(removed, 1);
+  player.dispose();
+  assert.equal(removed, 1);
+});
+
+test('a player resumed after a tool handoff restores its visibility subscription', () => {
+  const h = harness();
+  let hidden = false;
+  let visibilityChanged;
+  let subscribed = 0;
+  let removed = 0;
+  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+    isHidden: () => hidden,
+    onVisibilityChange(cb) { subscribed++; visibilityChanged = cb; return () => { removed++; }; },
+    onFrame() {},
+  });
+  player.push('第一段');
+  h.run(1);
+  player.dispose();
+  player.push('工具返回后继续'.repeat(100));
+  assert.equal(subscribed, 2);
+  hidden = true;
+  visibilityChanged();
+  assert.equal(player.playedLen(), player.totalLen());
+  player.flushNow();
+  assert.equal(removed, 2);
 });
 
 test('upstream stall drives a starved state change once buffer drains', () => {

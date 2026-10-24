@@ -118,6 +118,10 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
     return res.status(err.status).json({
       code: err.code,
       message: err.message,
+      ...(err.code === 'LLM_UPSTREAM_ERROR' ? {
+        upstreamStatus: err.status, retryable: false,
+        ...(Number.isFinite(err.retryAfterMs) ? { retryAfterMs: err.retryAfterMs } : {}),
+      } : {}),
       detail: err.detail || undefined,
       ...(typeof err.retryable === 'boolean' ? { retryable: err.retryable } : {}),
     });
@@ -134,6 +138,8 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
       // The server already spent its provider retry budget; replaying here
       // would just repeat the same paid failure.
       retryable: false,
+      upstreamStatus: err.status,
+      ...(Number.isFinite(err.retryAfterMs) ? { retryAfterMs: err.retryAfterMs } : {}),
     });
   }
 
@@ -162,6 +168,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   return res.status(500).json({
     code: 'INTERNAL_ERROR',
     message: 'An unexpected error occurred',
+    ...(err?.retryable === false ? { retryable: false } : {}),
   });
 }
 

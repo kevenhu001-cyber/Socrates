@@ -73,11 +73,11 @@
     padding: 0;
   }
   #appShell #msgList > .msg.user { align-items: flex-end; }
-  #appShell #msgList > .msg + .msg { margin-top: 20px; }
+  #appShell #msgList > .msg + .msg { margin-top: 24px; }
   #appShell #msgList > .msg.assistant + .msg.user { margin-top: 40px; }
 
   #appShell #msgList .msg-body {
-    color: var(--ui-text-primary);
+    color: var(--ui-text-prose);
     font-family: var(--font-sans);
     font-size: var(--prose-size);
     line-height: var(--prose-line);
@@ -87,6 +87,7 @@
 
   /* User bubble */
   #appShell #msgList .msg.user .msg-body {
+    color: var(--ui-text-primary);
     max-width: 70%;
     padding: 10px 16px;
     border: 0;
@@ -99,7 +100,7 @@
   #appShell #msgList .msg.assistant .msg-body { padding: 0; border: 0; border-radius: 0; background: transparent; }
   #appShell #msgList .msg-body :where(p, ul, ol, pre, table, blockquote, .code-block-header):first-child,
   #appShell #msgList .msg-body > :first-child > :where(h1, h2, h3, h4, p):first-child { margin-top: 0; }
-  #appShell #msgList .msg-body p { margin: 0 0 12px; }
+  #appShell #msgList .msg-body p { margin: 0 0 16px; }
   #appShell #msgList .msg-body p:last-child { margin-bottom: 0; }
   #appShell #msgList .msg-body strong { font-weight: var(--ui-font-weight-semibold); }
   #appShell #msgList .msg-body :where(h1, h2, h3, h4) {
@@ -109,8 +110,8 @@
     letter-spacing: normal;
   }
   #appShell #msgList .msg-body h1 { margin: 28px 0 12px; font-size: calc(24px * var(--app-type-scale)); line-height: 1.33; }
-  #appShell #msgList .msg-body h2 { margin: 24px 0 8px; font-size: calc(20px * var(--app-type-scale)); line-height: 1.4; }
-  #appShell #msgList .msg-body h3 { margin: 20px 0 6px; font-size: calc(18px * var(--app-type-scale)); line-height: 1.55; }
+  #appShell #msgList .msg-body h2 { margin: 24px 0 12px; font-size: calc(20px * var(--app-type-scale)); line-height: 1.4; }
+  #appShell #msgList .msg-body h3 { margin: 20px 0 8px; font-size: calc(18px * var(--app-type-scale)); line-height: 1.55; }
   #appShell #msgList .msg-body h4 { margin: 16px 0 4px; font-size: var(--prose-size); line-height: var(--prose-line); }
   #appShell #msgList .msg-body :where(ul, ol) { margin: 0 0 12px; padding-left: 26px; }
   #appShell #msgList .msg-body li { margin: 0 0 4px; padding-left: 2px; }

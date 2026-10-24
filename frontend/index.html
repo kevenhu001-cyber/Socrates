@@ -97,6 +97,9 @@
   document.documentElement.setAttribute('data-mode', initialMode);
 })();
 </script>
+<!-- Fetch the shared variable UI face before stylesheet discovery. CJK
+     remains download-first and unicode-subset; code fonts stay on demand. -->
+<link rel="preload" href="/src/assets/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
 <!-- P_perf-self-host — fonts (Inter/Newsreader/Noto Sans SC),
      KaTeX CSS, marked,
      DOMPurify, KaTeX, highlight.js, and fuse.js are bundled by Vite from

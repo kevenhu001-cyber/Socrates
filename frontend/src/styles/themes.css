@@ -13,6 +13,9 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --font-display: var(--font-sans);
   --font-serif: var(--font-sans);
   --font-mono: "Geist Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --ui-text-prose: color-mix(in srgb, var(--ui-text-primary) 88%, var(--ui-text-secondary));
+  --ui-bg-header-glass: color-mix(in srgb, var(--ui-bg-page) 90%, transparent);
+  --ui-bg-composer-glass: color-mix(in srgb, var(--ui-bg-composer) 94%, transparent);
 
   /* Base 4 / 6 / 8 / 12 radii already match the Lobe foundation. */
   --lobe-border-radius-xs: var(--ui-radius-xs);

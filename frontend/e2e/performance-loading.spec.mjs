@@ -6,6 +6,38 @@ import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
+test('download-first UI fonts preload one variable face without duplicate transfers', async ({ page }) => {
+  await mockAuthedApp(page);
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await gotoAndSettle(page, '/');
+  await login(page);
+  // The browser fixture starts in English. Exercise actual CJK glyphs before
+  // checking their font; an English-only landing must not fetch CJK subsets.
+  await page.locator('#composerInputWrap .tiptap').fill('中文字体优先下载');
+  await expect.poll(() => page.evaluate(() => [...document.fonts].some(
+    (font) => font.family.replace(/["']/g, '') === 'Noto Sans SC' && font.status === 'loaded',
+  ))).toBe(true);
+  await page.evaluate(() => document.fonts.ready);
+  const result = await page.evaluate(() => {
+    const fonts = performance.getEntriesByType('resource').filter((entry) => /geist-sans.*\.woff2/.test(entry.name));
+    return {
+      count: fonts.length,
+      initiator: fonts[0]?.initiatorType,
+      preload: document.querySelectorAll('link[rel="preload"][as="font"]').length,
+      family: getComputedStyle(document.documentElement).getPropertyValue('--font-sans'),
+      cjkTransfers: performance.getEntriesByType('resource').filter((entry) => /noto-sans-sc-.*\.woff2/.test(entry.name)).length,
+    };
+  });
+  expect(result.count).toBe(1);
+  expect(result.initiator).toBe('link');
+  expect(result.preload).toBe(1);
+  expect(result.family.indexOf('Noto Sans SC')).toBeLessThan(result.family.indexOf('PingFang SC'));
+  expect(result.cjkTransfers).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+  await page.screenshot({ path: 'test-results/download-first-fonts.png' });
+});
+
 test('ordinary prose defers rich UI; slow renderer loading preserves prose and latest tool data', async ({ page }) => {
   const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
   const renderer = report.modules.find((item) => item.id === 'src/react/intelligence-ui/IntelligenceUiNodes.tsx');

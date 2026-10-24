@@ -627,11 +627,8 @@ export function addStreamingMessage(opts){
       }
       state.full+=delta;
       if(wasFirst){
-        /* P_smooth-stream — the first delta retires the waiting/retrying
-           status line, but the TEXT is revealed by the playback clock like
-           any other, not dumped synchronously. In fallback mode (_smooth
-           off) the player reveals everything each frame, so the behaviour
-           matches the old immediate paint. */
+        /* The player reveals the first batch in full on the next frame,
+           then paces later arrivals with the bounded playback clock. */
         var _curSt=statusChrome.liveMessage()&&statusChrome.liveMessage()._liveStatus;
         var _clearWaiting=_curSt&&(_curSt.phase==="waiting"||_curSt.phase==="retrying"||_curSt.phase==="thinking"||_curSt.phase==="tool-running");
         if(_clearWaiting){

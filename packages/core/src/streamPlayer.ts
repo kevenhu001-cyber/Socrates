@@ -111,6 +111,8 @@ export interface PlaybackClock {
   push(totalLen: number, nowMs?: number): void;
   /** Advance the visual cursor to `nowMs`. Returns the post-tick snapshot. */
   tick(nowMs: number): TickResult;
+  /** Reveal arrived text without ending the stream (first paint/background). */
+  revealNow(nowMs: number): TickResult;
   /** finish() was called upstream: flush the remaining buffer, then go done. */
   beginDrain(): void;
   /** Publish all arrived content and enter the terminal state immediately. */
@@ -240,8 +242,14 @@ export function createPlaybackClock(
     push(totalLen: number, nowMs = lastTickMs): void {
       const next = Math.max(total, Math.floor(totalLen) || 0);
       if (next > total) {
+        if (!started) {
+          // Provider startup is not part of the token arrival rate.
+          sampledAt = nowMs;
+          sampledTotal = next;
+        }
         total = next;
         started = true;
+        sampleArrival(nowMs);
         if (cfg.maxLagMs > 0) {
           const at = Math.max(lastTickMs, nowMs);
           const last = arrivals[arrivals.length - 1];
@@ -253,10 +261,6 @@ export function createPlaybackClock(
     tick(nowMs: number): TickResult {
       const dtMs = Math.max(0, nowMs - lastTickMs);
       lastTickMs = nowMs;
-      /* Sample the upstream rate before advancing, using the elapsed time
-         since the previous arrival, so a burst that arrived between frames
-         contributes its real cadence rather than a synthetic one. */
-      sampleArrival(nowMs);
       const before = played;
       if (pending() > 0) {
         const cps = computeCps(pending(), cfg, draining, smoothedArrivalCps);
@@ -294,6 +298,16 @@ export function createPlaybackClock(
         ? computeCps(total - before, cfg, draining, smoothedArrivalCps)
         : 0;
       return { playedLen: played, revealed: played - before, cps, state };
+    },
+    revealNow(nowMs: number): TickResult {
+      const before = played;
+      played = total;
+      carry = 0;
+      lastTickMs = nowMs;
+      lastActiveMs = nowMs;
+      arrivals = [];
+      arrivalHead = 0;
+      return { playedLen: played, revealed: played - before, cps: 0, state: currentState(nowMs) };
     },
     beginDrain(): void {
       draining = true;

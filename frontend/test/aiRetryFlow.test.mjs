@@ -76,6 +76,20 @@ test('stream never replays an exhausted server-side provider retry budget', asyn
   }
 });
 
+test('HTTP and SSE cooldowns reach the error UI without a second request', async () => {
+  const body = { message: 'model busy', status: 429, code: 'LLM_UPSTREAM_ERROR', retryable: false, retryAfterMs: 30_001 };
+  for (const response of [
+    { status: 429, body },
+    { chunks: [`event: error\ndata: ${JSON.stringify(body)}\n\ndata: [DONE]\n\n`] },
+  ]) {
+    const env = installStreamEnvironment([response]);
+    await runStream();
+    assert.equal(env.calls(), 1);
+    const { stateStore } = await import('../src/state/store.js');
+    assert.match(stateStore.read('lastCallError'), /31s/);
+  }
+});
+
 test('stream retries a transient HTTP failure once before visible output', async () => {
   const notices = [];
   const env = installStreamEnvironment([

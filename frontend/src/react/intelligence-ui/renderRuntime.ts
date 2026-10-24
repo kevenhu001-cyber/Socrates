@@ -8,6 +8,7 @@ import {
 import type { MouseEvent } from 'react';
 
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
+import { normalizeChineseProse } from '../../util/chineseTypography.ts';
 
 /** Shared state and callbacks consumed by every node renderer. */
 export interface RenderContext {
@@ -39,6 +40,11 @@ export function asNumber(value: unknown, fallback: number): number {
 
 export function asText(value: unknown): string {
   return displayIntelligenceUiValue(value);
+}
+
+/** Display labels only. Actions, bindings and data values still use asText. */
+export function asProse(value: unknown): string {
+  return normalizeChineseProse(asText(value));
 }
 
 export function childMap(nodes: ReadonlyArray<IntelligenceUiNode>): Map<string, IntelligenceUiNode[]> {

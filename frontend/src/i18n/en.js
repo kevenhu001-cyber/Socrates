@@ -1,5 +1,6 @@
 /* English locale table. Kept synchronous because it is the fallback for all locales. */
 export const en = {
+    "chat.modelBusyCooldown": "The model is busy. Try again in about {seconds}s, or switch models.",
     "sidebar.organize": "Organize chats",
     "sidebar.organize.list": "As a list",
     "sidebar.organize.projects": "Group by project",

@@ -10,6 +10,8 @@
  * `closeConfirm(true/false)` via `__socratesLegacy.confirm`.
  */
 
+import { normalizeChineseProse } from '../util/chineseTypography.ts';
+
 var _confirmResolve = null;
 var _state = { open: false, title: "", msg: "", danger: false };
 var _bridgePromise = null;
@@ -56,8 +58,8 @@ function showConfirm(title, msg, isDanger) {
     _confirmResolve = resolve;
     _state = {
       open: true,
-      title: title || "",
-      msg: msg || "",
+      title: normalizeChineseProse(String(title || "")),
+      msg: normalizeChineseProse(String(msg || "")),
       danger: !!isDanger,
     };
     _publishConfirmState();

@@ -5,8 +5,8 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 /**
  * P_smooth-stream — the playback clock decouples network arrival from visual
  * playback. These specs assert the reader-facing consequences:
- *   1. a single upstream BURST is revealed gradually (visible < arrived for a
- *      while), never dumped in one frame;
+ *   1. the first batch appears in full on its first paint; later bursts are
+ *      paced within the display-lag budget;
  *   2. an upstream STALL with an empty buffer shows the starved cursor (one
  *      slowed dot) rather than freezing or fabricating content;
  *   3. the kill switch restores the old "paint everything" behaviour;
@@ -100,7 +100,7 @@ for (const holdOpenMs of [2000, 0]) {
   });
 }
 
-test('a burst paces its opening and catches up once the display deadline expires', async ({ page }) => {
+test('the first batch is fully visible on its first DOM paint', async ({ page }) => {
   // Capture the first DOM update inside the page. A later automation round
   // trip may arrive after the 120ms deadline, when catching up is required.
   const big = 'Lorem ipsum dolor sit amet '.repeat(60); // ~1600 chars in one burst
@@ -125,8 +125,7 @@ test('a burst paces its opening and catches up once the display deadline expires
   }));
   expect(opening.length).toBeGreaterThan(0);
   expect(opening.delayMs).toBeLessThan(500);
-  // If the browser missed the pacing window, a full first paint is correct.
-  if (opening.delayMs < 120) expect(opening.length).toBeLessThan(big.trimEnd().length);
+  expect(opening.length).toBe(big.trimEnd().length);
 
   // It eventually catches up to the whole burst (measured on the bubble, since
   // once playback completes the tail is a settled block, not the live region).

@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import dns from 'node:dns';
 import { Agent, EnvHttpProxyAgent, ProxyAgent, type Dispatcher } from 'undici';
 import { applyProviderControls, isPermanentQuotaError, permitsCompatibilityFallback, providerHeaders, providerPayloadFailure } from './llmProtocol.js';
+import { createUpstreamRetryBudget } from '../../lib/upstreamRetryBudget.js';
 
 /* ─── High-performance LLM HTTP Dispatcher ────────────────────────────────
  * Keeps connections alive across turns and tools (60s idle timeout), enables
@@ -166,7 +167,7 @@ export class LlmProviderError extends Error {
   /** Provider retries are exhausted here; the browser must not replay them. */
   readonly retryable = false;
 
-  constructor(status: number, body: string) {
+  constructor(status: number, body: string, readonly retryAfterMs?: number) {
     const compactBody = body.slice(0, 200);
     super(`LLM API error ${status}: ${compactBody}`);
     this.name = 'LlmProviderError';
@@ -183,12 +184,9 @@ export class LlmProviderError extends Error {
  * with the number of steps — which is why this used to read as "multi-step
  * turns always 429".
  *
- * The old policy treated a 429 like a hiccup: 3 attempts with 1 s / 2 s
- * waits, i.e. ~3 s of total patience. An RPM window is normally ~60 s, so the
- * retries all landed inside the same exhausted window and the turn died with
- * the error the user sees. Rate limiting is therefore given its own, much
- * longer schedule; transient 5xx keeps a short one because those clear in
- * seconds.
+ * Short provider recovery is owned here. All attempts and compatibility
+ * variants share an eight-second backoff budget. A longer provider cooldown
+ * is reported to the caller instead of keeping the answer spinner running.
  *
  * 500 is retryable here but 524 is not (it means the gateway gave up waiting
  * for a response that is still running upstream — replaying it would double
@@ -202,9 +200,6 @@ const RATE_LIMIT_ATTEMPTS = 5;
 /** Attempts for a transient upstream failure: initial + 2 retries. */
 const TRANSIENT_ATTEMPTS = 3;
 
-/** Ceiling on an upstream Retry-After we are willing to sit through. */
-const RETRY_AFTER_CEILING_MS = 30_000;
-
 function isRetryableUpstreamStatus(status: number): boolean {
   return status === RATE_LIMIT_STATUS || TRANSIENT_RETRYABLE_STATUS.has(status);
 }
@@ -216,9 +211,9 @@ export function attemptsForUpstreamStatus(status: number): number {
 /**
  * Delay before the next attempt. A provider-sent `Retry-After` wins — it is
  * the only number that actually describes the window we are locked out of —
- * but it is capped so a hostile or misconfigured gateway cannot park a turn
- * indefinitely. Without one we escalate, with jitter: several tool hops
- * running per turn would otherwise retry in lockstep against the same
+ * and is never shortened. The call's retry budget decides whether we can
+ * wait; otherwise the cooldown is surfaced. Without one we escalate, with
+ * jitter: several tool hops would otherwise retry in lockstep against the same
  * exhausted window and burn the remaining attempts simultaneously.
  */
 export function upstreamRetryDelayMs(status: number, attempt: number, retryAfterHeader: string | null): number {
@@ -556,6 +551,7 @@ export async function streamChatCompletion(
   onToolCallDelta?: (delta: { index: number; id?: string; name?: string; argumentsDelta?: string; arguments: string; final?: boolean }) => void,
 ) {
   const { apiBase, apiKey, signal, tools } = opts;
+  const retryBudget = createUpstreamRetryBudget();
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 
   try {
@@ -574,9 +570,8 @@ export async function streamChatCompletion(
        turn. We never retry mid-stream: once streaming has started the
        caller has already forwarded content to the client.
 
-       P_rpm-backoff: the attempt budget is now chosen per failure kind — a
-       429 gets five attempts over ~30 s so the retry outlasts the RPM
-       window instead of colliding with it. See upstreamRetryDelayMs. */
+       Attempts are also bounded by one elapsed/backoff budget, shared across
+       payload variants. A long Retry-After is reported without sleeping. */
     let lastError: Error | null = null;
     const variants = requestBodyVariants(opts, true);
     let successfulVariant: (typeof variants)[number] | null = null;
@@ -607,7 +602,9 @@ export async function streamChatCompletion(
           }
 
           const errBody = await response.text().catch(() => '');
-          lastError = new LlmProviderError(response.status, errBody);
+          const delayMs = upstreamRetryDelayMs(response.status, attempt, response.headers.get('retry-after'));
+          lastError = new LlmProviderError(response.status, errBody,
+            response.status === RATE_LIMIT_STATUS && !isPermanentQuotaError(errBody) ? delayMs : undefined);
           const fallbackIndex = response.status === 400 ? nextCompatibilityVariant(variants, variantIndex, errBody) : -1;
           if (fallbackIndex >= 0) {
             tryNextVariant = true;
@@ -631,8 +628,7 @@ export async function streamChatCompletion(
              sized to the failure kind (see upstreamRetryDelayMs). */
           const total = attemptsForUpstreamStatus(response.status);
           if (attempt >= total - 1) break;
-          const delayMs = upstreamRetryDelayMs(response.status, attempt, response.headers.get('retry-after'));
-          if (delayMs > RETRY_AFTER_CEILING_MS) break;
+          if (!retryBudget.reserve(delayMs)) break;
           console.warn('[LLM] upstream ' + response.status + '; retrying', JSON.stringify({
             attempt: attempt + 1,
             of: total,
@@ -647,11 +643,11 @@ export async function streamChatCompletion(
         } catch (err) {
           if ((err as Error).name === 'AbortError') throw err; // let the outer catch classify it
           lastError = err as Error;
-          if (attempt < TRANSIENT_ATTEMPTS - 1) {
+          if (attempt < TRANSIENT_ATTEMPTS - 1 && retryBudget.reserve(1000)) {
             await sleep(1000, signal);
             continue;
           }
-          throw err;
+          throw Object.assign(err as Error, { retryable: false });
         }
       }
       if (response?.ok) break;
@@ -994,6 +990,7 @@ export async function streamChatCompletion(
  * and returns the raw upstream payload.
  */
 export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
+  const retryBudget = createUpstreamRetryBudget();
   const { apiBase, apiKey, signal, tools } = opts;
 
   let response: Response | undefined;
@@ -1020,7 +1017,9 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
         } as unknown as RequestInit);
       } catch (err) {
         if ((err as Error).name === 'AbortError') throw err;
-        if (attempt >= TRANSIENT_ATTEMPTS - 1) throw err;
+        if (attempt >= TRANSIENT_ATTEMPTS - 1 || !retryBudget.reserve(1000)) {
+          throw Object.assign(err as Error, { retryable: false });
+        }
         await sleep(1000, signal);
         continue;
       }
@@ -1041,10 +1040,13 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
       }
       const delayMs = upstreamRetryDelayMs(response.status, attempt, response.headers.get('retry-after'));
       if (!isRetryableUpstreamStatus(response.status) || isPermanentQuotaError(errBody)
-          || attempt >= attemptsForUpstreamStatus(response.status) - 1 || delayMs > RETRY_AFTER_CEILING_MS) {
+          || attempt >= attemptsForUpstreamStatus(response.status) - 1 || !retryBudget.reserve(delayMs)) {
         const { ApiError } = await import('../../lib/errors.js');
         console.warn('[LLM] completion failed', JSON.stringify({ status: response.status, attempts: attempt + 1 }));
-        throw Object.assign(new ApiError(response.status, 'LLM_UPSTREAM_ERROR', `LLM API error ${response.status}. Try again later or switch model.`), { retryable: false });
+        throw Object.assign(new ApiError(response.status, 'LLM_UPSTREAM_ERROR', `LLM API error ${response.status}. Try again later or switch model.`), {
+          retryable: false,
+          ...(response.status === RATE_LIMIT_STATUS && !isPermanentQuotaError(errBody) ? { retryAfterMs: delayMs } : {}),
+        });
       }
       console.warn('[LLM] upstream ' + response.status + ' on the non-streaming path; retrying', JSON.stringify({
         attempt: attempt + 1,

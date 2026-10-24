@@ -141,12 +141,12 @@
     display: flex;
     flex: 0 0 auto;
     flex-direction: column;
-    gap: 0;
+    gap: var(--ui-space-xxs);
     margin: 0;
     /* P_sidebar-parity — the reference rail breathes between destinations:
        a little air above, more below, instead of one packed list. Only the
        nav block gets it; the conversation list below stays dense. */
-    padding: 4px 6px 8px;
+    padding: var(--ui-space-xs) var(--ui-space-sm) var(--ui-space-md);
   }
   /* P_sidebar-parity — hairline between the destination block and the
      conversation history, inset to the icon gutter so it reads as a
@@ -172,17 +172,17 @@
        different x and the rail reads as ragged. The collapsed icon rail
        re-centres on purpose (see the .collapsed block below). */
     justify-content: flex-start;
-    gap: 6px;
+    gap: var(--ui-space-md);
     box-sizing: border-box;
     width: 100%;
     min-height: var(--sidebar-row);
     height: var(--sidebar-row);
     margin: 0;
-    padding: 6px 10px;
+    padding: 6px var(--ui-space-md);
     border: 0;
     border-radius: var(--ui-radius-row);
     background: transparent;
-    color: var(--ui-text-primary);
+    color: var(--ui-text-secondary);
     font: inherit;
     font-size: var(--ui-text-ui);
     font-weight: var(--ui-font-weight-regular);
@@ -198,12 +198,14 @@
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within {
     background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
   }
   #appShell #sidebarNav .sidebar-nav-btn.active,
   #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"],
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current="true"] {
     background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
   }
   #appShell #sidebarNav .sidebar-nav-btn svg {
     flex: 0 0 20px;

@@ -105,22 +105,6 @@ export function formatMsgProgressive(
   }
 }
 
-function normalizeChinesePunctuation(str: string): string {
-  return str
-    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*,/g, '$1，')
-    .replace(/,\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '，$1')
-    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*\./g, '$1。')
-    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*!/g, '$1！')
-    .replace(/!\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '！$1')
-    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*\?/g, '$1？')
-    .replace(/\?\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '？$1')
-    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*:(?!\/\/)/g, '$1：')
-    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*;/g, '$1；')
-    .replace(/;\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '；$1')
-    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*\(/g, '$1（')
-    .replace(/\)\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '）$1');
-}
-
 function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): string {
   let s = preprocessMarkdownForStreaming(t, opts);
   if (s.charCodeAt(s.length - 1) === 10) { s = s.slice(0, -1); }
@@ -309,7 +293,6 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
     });
   }
 
-  s = normalizeChinesePunctuation(s);
   s = inlineCodeGuard.restore(s);
 
   if (!opts?.complete) {
@@ -330,7 +313,7 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
     return blocks[parseInt(id)];
   });
 
-  const sanitized = sanitizeHtml(html);
+  const sanitized = sanitizeHtml(html, { chineseProse: true });
   return sanitized.replace(vizRe, function (_, id: string) {
     return vizBlocks[parseInt(id)];
   });
@@ -374,9 +357,8 @@ function _formatMsg(t: string): string {
     raw = raw.replace(/```(viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, function (_, lang: string, body: string) {
       return saveFallbackViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang, String(body || '').trim()) }));
     });
-    raw = normalizeChinesePunctuation(raw);
     const fallbackHtml = '<p>' + esc(raw).replace(/```(\w*)\r?\n?([\s\S]*?)```/g, function (_, _l: string, c: string) { return '<pre><code>' + esc(c.trim()) + '</code></pre>'; }).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
-    return fallbackHtml.replace(/XVIZFALLBACK(\d+)X/g, function (_, id: string) { return fallbackViz[parseInt(id, 10)] || ''; });
+    return sanitizeHtml(fallbackHtml, { chineseProse: true }).replace(/XVIZFALLBACK(\d+)X/g, function (_, id: string) { return fallbackViz[parseInt(id, 10)] || ''; });
   }
   const blocks: string[] = [];
   const msgNonce = Math.random().toString(36).slice(2, 10);
@@ -520,7 +502,6 @@ function _formatMsg(t: string): string {
     });
   }
 
-  procT = normalizeChinesePunctuation(procT);
   procT = inlineCodeGuard.restore(procT);
 
   let html = marked.parse(procT, { breaks: true, gfm: true });
@@ -536,7 +517,7 @@ function _formatMsg(t: string): string {
        even when the node is not in the document, so an
        `<img onerror=…>` payload would run against the live page
        before the final sanitize pass. */
-    const clean = sanitizeHtml(html);
+    const clean = sanitizeHtml(html, { chineseProse: true });
     /* P_single-sanitize — the auto-render pass exists for math the regex
        passes above did not claim. With no delimiter left in the markup it
        cannot change anything, and `clean` is already the final sanitized
@@ -572,7 +553,7 @@ function _formatMsg(t: string): string {
     }
   }
 
-  const sanitized = sanitizeHtml(html);
+  const sanitized = sanitizeHtml(html, { chineseProse: true });
   return sanitized.replace(msgVizRe, function (_, id: string) {
     return vizBlocks[parseInt(id)];
   });

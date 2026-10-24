@@ -1,6 +1,7 @@
 /* Shared HTML sanitizer for rendered Markdown and Canvas content. */
 import { escHTML } from './helpers.ts';
 import bundledDomPurify from 'dompurify';
+import { normalizeChineseFragment } from './chineseTypography.ts';
 
 /* ── DOMPurify configuration ──────────────────────────────────────
    Used by both formatMsg and formatMsgProgressive to sanitise the
@@ -34,20 +35,27 @@ const PURIFY_CONFIG: {
 };
 
 interface DomPurifyLike {
-  sanitize: (html: string, config?: unknown) => string;
+  sanitize: (html: string, config?: unknown) => string | DocumentFragment;
 }
 
 /* Try the shared global and bundled copy. If neither can sanitize, fail
    closed by returning escaped text: sanitizeUrls only rewrites URL
    attributes and is not an HTML/XSS sanitizer. */
-export function sanitizeHtml(html: string): string {
+export function sanitizeHtml(html: string, options: { chineseProse?: boolean } = {}): string {
   const bundled = bundledDomPurify as unknown as DomPurifyLike;
   const globalPurify = (globalThis as { DOMPurify?: DomPurifyLike }).DOMPurify;
   const candidates = globalPurify === bundled ? [bundled] : [globalPurify, bundled];
   for (const dp of candidates) {
     if (!dp || typeof dp.sanitize !== 'function') continue;
     try {
-      return dp.sanitize(html, PURIFY_CONFIG);
+      const normalize = options.chineseProse && /\p{Script=Han}/u.test(html) && typeof document !== 'undefined';
+      const clean = dp.sanitize(html, normalize ? { ...PURIFY_CONFIG, RETURN_DOM_FRAGMENT: true } : PURIFY_CONFIG);
+      if (!normalize && typeof clean === 'string') return clean;
+      const host = document.createElement('template');
+      if (typeof clean === 'string') host.innerHTML = clean;
+      else host.content.appendChild(clean);
+      if (normalize) normalizeChineseFragment(host.content);
+      return host.innerHTML;
     } catch (e) {
       console.warn('[sanitizeHtml] DOMPurify instance failed:', e && (e as Error).message);
     }

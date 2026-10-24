@@ -5,7 +5,8 @@
  * the player decouples the two streams:
  *
  *   push(delta)  — upstream writes into the buffer only (advances totalLen)
- *   rAF tick     — the core PlaybackClock advances a visual cursor at an
+ *   first frame  — reveal the first arrived batch in full.
+ *   later ticks  — the core PlaybackClock advances a visual cursor at an
  *                  adaptive rate; when it moves, onFrame() paints the VISIBLE
  *                  PREFIX `full.slice(0, playedLen)` — a smoothly growing
  *                  string even when upstream bursts or stalls.
@@ -60,6 +61,9 @@ export interface StreamPlayerOptions {
   raf?: (cb: () => void) => void;
   /** Schedule a one-shot idle wake; returns a cancellation callback. */
   delay?: (cb: () => void, ms: number) => () => void;
+  isHidden?: () => boolean;
+  /** Subscribe to tab visibility; returns a teardown callback. */
+  onVisibilityChange?: (cb: () => void) => () => void;
 }
 
 export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
@@ -68,6 +72,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   const onFrame = options.onFrame;
   const onDone = options.onDone;
   const onStateChange = options.onStateChange;
+  const isHidden = options.isHidden || (() => typeof document !== 'undefined' && document.visibilityState === 'hidden');
   const delay = options.delay || ((cb: () => void, ms: number) => {
     const timer = setTimeout(cb, ms);
     return () => clearTimeout(timer);
@@ -81,6 +86,29 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   let generation = 0;
   let doneFired = false;
   let lastState: PlaybackState = 'idle';
+  let firstPaint = true;
+  const subscribeVisibility = options.onVisibilityChange || ((cb: () => void) => {
+    if (typeof document === 'undefined') return () => {};
+    document.addEventListener('visibilitychange', cb);
+    return () => document.removeEventListener('visibilitychange', cb);
+  });
+  function handleVisibility(): void {
+    clearIdle();
+    if (isHidden()) paintHidden();
+    else if (!clock.isDone()) schedule();
+  }
+  let unsubscribeVisibility: (() => void) | null = subscribeVisibility(handleVisibility);
+  function stopVisibility(): void {
+    unsubscribeVisibility?.();
+    unsubscribeVisibility = null;
+  }
+  function paintHidden(): void {
+    // A queued foreground frame may survive the tab switch. Invalidate it
+    // before catching up synchronously, so it cannot re-arm a second loop.
+    generation += 1;
+    scheduled = false;
+    tick(generation)();
+  }
 
   function emitStateMaybe(state: PlaybackState): void {
     if (state !== lastState) {
@@ -95,7 +123,8 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
          dispose() schedule with the fresh generation. */
       if (captured !== generation) return;
       scheduled = false;
-      const r = clock.tick(now());
+      const r = firstPaint || isHidden() ? clock.revealNow(now()) : clock.tick(now());
+      if (r.revealed > 0) firstPaint = false;
       if (r.revealed > 0) {
         onFrame(full.slice(0, r.playedLen), {
           state: r.state,
@@ -105,6 +134,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       }
       emitStateMaybe(r.state);
       if (clock.isDone()) {
+        stopVisibility();
         if (!doneFired) {
           doneFired = true;
           try { onDone?.(); } catch (_) { /* listener threw */ }
@@ -138,20 +168,25 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   return {
     push(delta: string): void {
       if (!delta) return;
+      // Tool handoffs can cancel a scheduled render and resume this player.
+      if (!unsubscribeVisibility) unsubscribeVisibility = subscribeVisibility(handleVisibility);
       clearIdle();
       // Idle time must not become playback credit for a new network burst.
       if (clock.playedLen() === clock.totalLen()) clock.tick(now());
       full += delta;
       clock.push(full.length, now());
-      schedule();
+      if (isHidden()) paintHidden();
+      else schedule();
     },
     beginDrain(): void {
       clearIdle();
       clock.beginDrain();
-      schedule();
+      if (isHidden()) paintHidden();
+      else schedule();
     },
     flushNow(): void {
       clearIdle();
+      stopVisibility();
       /* End-of-turn safety: make everything visible and paint synchronously,
          bypassing the adaptive rate. Used by abort/teardown paths that must
          not animate. */
@@ -185,6 +220,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     },
     dispose(): void {
       clearIdle();
+      stopVisibility();
       generation += 1;
       scheduled = false;
     },

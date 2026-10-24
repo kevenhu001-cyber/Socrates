@@ -3114,6 +3114,15 @@ paths:
         Instant uses the same provider-specific no-thinking controls as `/api/chat`.
         A successful priority-service fallback emits `preference_fallback`
         before content frames.
+        Provider retries share an eight-second automatic backoff budget per
+        upstream call, including compatibility variants. A longer Retry-After
+        is reported without waiting or retrying before the provider cooldown.
+        Named `error` frames retain `status`, `code`, `message`, and `retryable`;
+        provider failures additionally carry optional `upstreamStatus` and
+        `retryAfterMs` (milliseconds, a retry hint rather than guaranteed
+        availability). Exhausted provider retries set `retryable: false` so
+        clients do not replay the whole turn. Older clients may ignore the
+        additional fields. The same fields are used by JSON provider errors.
         Optional `turn_event` frames provide the version 1 public turn runtime.
         Every event has `version: 1`, `turnId`, strictly increasing `seq`, `at`
         (Unix milliseconds), and `type`. Payloads are `activity.upsert` with

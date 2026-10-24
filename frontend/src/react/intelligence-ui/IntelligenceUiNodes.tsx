@@ -12,6 +12,7 @@ import { useState, type CSSProperties, type KeyboardEvent, type ReactNode } from
 
 import {
   asNumber,
+  asProse,
   asText,
   executeAction,
   isRecord,
@@ -28,8 +29,8 @@ function renderChildren(node: IntelligenceUiNode, context: RenderContext): React
 }
 
 function UiPanel({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
-  const title = asText(resolve(node.title, context));
-  const description = asText(resolve(node.description, context));
+  const title = asProse(resolve(node.title, context));
+  const description = asProse(resolve(node.description, context));
   return (
     <section className="intui-panel" data-intui-id={node.id}>
       {title || description ? (
@@ -58,7 +59,7 @@ function UiGrid({ node, context }: { node: IntelligenceUiNode; context: RenderCo
 }
 
 function UiText({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
-  const text = asText(resolve(node.text ?? node.value, context));
+  const text = asProse(resolve(node.text ?? node.value, context));
   if (!text) return null;
   return <p className="intui-text" data-intui-id={node.id}>{text}</p>;
 }
@@ -71,7 +72,7 @@ function inferredMetricTrend(deltaText: string): IntelligenceUiTrend | null {
 }
 
 function UiMetric({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
-  const label = asText(resolve(node.label, context));
+  const label = asProse(resolve(node.label, context));
   const value = asText(resolve(node.value, context));
   const prefix = asText(resolve(node.prefix, context));
   const suffix = asText(resolve(node.suffix, context));
@@ -93,12 +94,12 @@ function UiMetric({ node, context }: { node: IntelligenceUiNode; context: Render
 }
 
 function UiProgress({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
-  const label = asText(resolve(node.label, context));
+  const label = asProse(resolve(node.label, context));
   const rawValue = asNumber(resolve(node.value, context), 0);
   const max = Math.max(1, asNumber(resolve(node.max, context), 100));
   const value = Math.max(0, Math.min(max, rawValue));
   const percent = value / max * 100;
-  const valueText = asText(resolve(node.displayValue, context)) || `${Math.round(percent)}%`;
+  const valueText = asProse(resolve(node.displayValue, context)) || `${Math.round(percent)}%`;
   const tone = normalizeIntelligenceUiTone(resolve(node.tone, context));
   return (
     <div className="intui-progress" data-intui-id={node.id} data-tone={tone}>
@@ -122,8 +123,8 @@ function UiProgress({ node, context }: { node: IntelligenceUiNode; context: Rend
 }
 
 function UiCallout({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
-  const title = asText(resolve(node.title, context));
-  const text = asText(resolve(node.text, context));
+  const title = asProse(resolve(node.title, context));
+  const text = asProse(resolve(node.text, context));
   const tone = normalizeIntelligenceUiTone(resolve(node.tone, context));
   return (
     <aside className="intui-callout" data-intui-id={node.id} data-tone={tone} role="note">
@@ -141,8 +142,8 @@ function UiSlider({ node, context }: { node: IntelligenceUiNode; context: Render
   const max = Math.max(min, asNumber(resolve(node.max, context), 100));
   const step = Math.max(Number.EPSILON, asNumber(resolve(node.step, context), 1));
   const value = Math.max(min, Math.min(max, asNumber(context.state[bind], min)));
-  const label = asText(resolve(node.label, context));
-  const valueText = asText(resolve(node.displayValue, context)) || asText(value);
+  const label = asProse(resolve(node.label, context));
+  const valueText = asProse(resolve(node.displayValue, context)) || asText(value);
   return (
     <label className="intui-slider" data-intui-id={node.id}>
       <span className="intui-control-head">
@@ -166,7 +167,7 @@ function UiSlider({ node, context }: { node: IntelligenceUiNode; context: Render
 function UiChoice({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const bind = typeof node.bind === 'string' ? node.bind : '';
   if (!isSafeIntelligenceUiStateKey(bind) || !Array.isArray(node.options)) return null;
-  const label = asText(resolve(node.label, context));
+  const label = asProse(resolve(node.label, context));
   const options = node.options.slice(0, 8).filter(isRecord);
   return (
     <fieldset className="intui-choice" data-intui-id={node.id}>
@@ -174,7 +175,7 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
       <div className="intui-choice-options">
         {options.map((option, index) => {
           const optionValue = resolve(option.value, context);
-          const optionLabel = asText(resolve(option.label ?? option.value, context));
+          const optionLabel = asProse(resolve(option.label ?? option.value, context));
           const selected = context.state[bind] === optionValue;
           return (
             <button
@@ -196,8 +197,8 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
 function UiToggle({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const bind = typeof node.bind === 'string' ? node.bind : '';
   if (!isSafeIntelligenceUiStateKey(bind)) return null;
-  const label = asText(resolve(node.label, context));
-  const description = asText(resolve(node.description, context));
+  const label = asProse(resolve(node.label, context));
+  const description = asProse(resolve(node.description, context));
   const bound = context.state[bind];
   const checked = typeof bound === 'boolean' ? bound : node.checked === true;
   return (
@@ -219,7 +220,7 @@ function UiToggle({ node, context }: { node: IntelligenceUiNode; context: Render
 }
 
 function UiButton({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
-  const label = asText(resolve(node.label, context));
+  const label = asProse(resolve(node.label, context));
   const action = isRecord(node.action) ? node.action as UiAction : null;
   if (!label || !action) return null;
   const promptDisabled = context.readOnly && action.type === 'prompt';
@@ -240,12 +241,12 @@ function UiTable({ node, context }: { node: IntelligenceUiNode; context: RenderC
   const columns = Array.isArray(node.columns) ? node.columns.slice(0, 8) : [];
   const rows = Array.isArray(node.rows) ? node.rows.slice(0, 24) : [];
   if (!columns.length || !rows.length) return null;
-  const caption = asText(resolve(node.caption ?? node.label ?? node.title, context));
+  const caption = asProse(resolve(node.caption ?? node.label ?? node.title, context));
   const normalizedColumns = columns.map((column, index) => {
     if (typeof column === 'string') return { key: column, label: column };
     if (isRecord(column)) {
       const key = typeof column.key === 'string' ? column.key : `col-${index}`;
-      return { key, label: asText(resolve(column.label ?? key, context)) };
+      return { key, label: asProse(resolve(column.label ?? key, context)) };
     }
     return { key: `col-${index}`, label: '' };
   });
@@ -286,7 +287,7 @@ function resolvedChartPoints(node: IntelligenceUiNode, context: RenderContext): 
     const value = asNumber(resolve(rawPoint.value, context), Number.NaN);
     if (!Number.isFinite(value)) continue;
     points.push({
-      label: asText(resolve(rawPoint.label, context)) || String(points.length + 1),
+      label: asProse(resolve(rawPoint.label, context)) || String(points.length + 1),
       value,
     });
   }
@@ -296,7 +297,7 @@ function resolvedChartPoints(node: IntelligenceUiNode, context: RenderContext): 
 function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const points = resolvedChartPoints(node, context);
   if (!points.length) return null;
-  const title = asText(resolve(node.title, context));
+  const title = asProse(resolve(node.title, context));
   const kind = node.kind === 'line' ? 'line' : 'bar';
   const [domainMin, domainMax] = intelligenceUiChartDomain(points.map((point) => point.value));
   const range = Math.max(Number.EPSILON, domainMax - domainMin);
@@ -332,7 +333,7 @@ function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderC
               height={rectHeight}
               rx={2}
             >
-              <title>{`${point.label}: ${asText(point.value)}`}</title>
+              <title>{asProse(`${point.label}: ${asText(point.value)}`)}</title>
             </rect>
           );
         }) : (
@@ -346,7 +347,7 @@ function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderC
                 cy={yAt(point.value)}
                 r={2.5}
               >
-                <title>{`${point.label}: ${asText(point.value)}`}</title>
+                <title>{asProse(`${point.label}: ${asText(point.value)}`)}</title>
               </circle>
             ))}
           </>
@@ -378,7 +379,7 @@ function normalizedTabs(node: IntelligenceUiNode, context: RenderContext): TabIt
     const id = typeof rawTab.id === 'string' ? rawTab.id.trim() : '';
     if (!isSafeIntelligenceUiStateKey(id) || seen.has(id)) continue;
     seen.add(id);
-    tabs.push({ id, label: asText(resolve(rawTab.label ?? id, context)) || id });
+    tabs.push({ id, label: asProse(resolve(rawTab.label ?? id, context)) || id });
   }
   return tabs;
 }
@@ -418,7 +419,7 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
       <div
         className="intui-tab-list"
         role="tablist"
-        aria-label={asText(resolve(node.label, context)) || 'Views'}
+        aria-label={asProse(resolve(node.label, context)) || 'Views'}
         aria-orientation="horizontal"
       >
         {tabs.map((tab, index) => (
@@ -450,14 +451,14 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
 }
 
 function UiEntity({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
-  const title = asText(resolve(node.title, context));
-  const subtitle = asText(resolve(node.subtitle, context));
-  const description = asText(resolve(node.description, context));
+  const title = asProse(resolve(node.title, context));
+  const subtitle = asProse(resolve(node.subtitle, context));
+  const description = asProse(resolve(node.description, context));
   const imageUrl = normalizeIntelligenceUiImageUrl(resolve(node.image, context));
-  const imageAlt = asText(resolve(node.imageAlt, context)) || title;
+  const imageAlt = asProse(resolve(node.imageAlt, context)) || title;
   const fields = Array.isArray(node.fields) ? node.fields.slice(0, 6).filter(isRecord) : [];
   const action = isRecord(node.action) ? node.action as UiAction : null;
-  const actionLabel = asText(resolve(node.actionLabel, context));
+  const actionLabel = asProse(resolve(node.actionLabel, context));
   const promptDisabled = context.readOnly && action?.type === 'prompt';
   if (!title && !subtitle && !description && !imageUrl && !fields.length) return null;
 
@@ -483,7 +484,7 @@ function UiEntity({ node, context }: { node: IntelligenceUiNode; context: Render
         {fields.length ? (
           <dl className="intui-entity-fields">
             {fields.map((field, index) => {
-              const label = asText(resolve(field.label, context));
+              const label = asProse(resolve(field.label, context));
               const value = asText(resolve(field.value, context));
               if (!label && !value) return null;
               return (
@@ -524,10 +525,10 @@ function resolvedGalleryImages(node: IntelligenceUiNode, context: RenderContext)
     if (!isRecord(rawImage)) continue;
     const src = normalizeIntelligenceUiImageUrl(resolve(rawImage.src, context));
     if (!src) continue;
-    const caption = asText(resolve(rawImage.caption, context));
+    const caption = asProse(resolve(rawImage.caption, context));
     images.push({
       src,
-      alt: asText(resolve(rawImage.alt, context)) || caption,
+      alt: asProse(resolve(rawImage.alt, context)) || caption,
       caption,
     });
   }
@@ -539,7 +540,7 @@ function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: 
   if (!images.length) return null;
   const columns = Math.min(3, Math.max(1, Math.round(asNumber(resolve(node.columns, context), images.length === 1 ? 1 : 2))));
   const style = { '--intui-gallery-columns': columns } as CSSProperties;
-  const label = asText(resolve(node.label, context));
+  const label = asProse(resolve(node.label, context));
   return (
     <section className="intui-image-gallery-wrap" data-intui-id={node.id} aria-label={label || 'Image gallery'}>
       {label ? <div className="intui-gallery-label">{label}</div> : null}

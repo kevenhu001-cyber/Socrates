@@ -9,6 +9,11 @@ import { recoverDetachedTurn } from './detachedTurnRecovery.ts';
 import { createStreamFrameProcessor, makeStreamError } from './streamFrameProcessor.ts';
 import { isUserAbort } from './retryPolicy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { providerErrorMessage } from './providerErrorMessage.ts';
+
+function failureMessage(error) {
+  return providerErrorMessage(error, typeof window !== 'undefined' ? window.t : undefined);
+}
 
 function completed(result) {
   return { kind: 'success', result };
@@ -61,7 +66,7 @@ async function retryOrCancel(context, error) {
 async function retryThenFail(context, error) {
   const retryOutcome = await retryOrCancel(context, error);
   if (retryOutcome) return retryOutcome;
-  context.setLastCallError(error.message || 'stream request failed');
+  context.setLastCallError(failureMessage(error));
   return failed();
 }
 
@@ -118,7 +123,7 @@ async function requestStream(context, signal) {
     const retryOutcome = await retryOrCancel(context, requestError);
     if (retryOutcome) return retryOutcome;
     console.error('[API stream] request failed:', error);
-    context.setLastCallError(requestError.message);
+    context.setLastCallError(failureMessage(requestError));
     return failed();
   }
 }
@@ -274,7 +279,7 @@ async function finishStreamResponse(processor, stream, context) {
       return failed();
     }
     if (!processor.semanticActivity) return retryThenFail(context, processor.streamError);
-    context.setLastCallError(processor.streamError.message || 'stream request failed');
+    context.setLastCallError(failureMessage(processor.streamError));
     return failed();
   }
 

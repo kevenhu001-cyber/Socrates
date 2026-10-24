@@ -102,7 +102,7 @@ for (const mode of ['stream-network', 'stream-429', 'sync-network', 'sync-429'])
     globalThis.fetch = async () => {
       calls += 1;
       if (mode.endsWith('network')) throw new TypeError('connection reset');
-      return new Response('rate limited', { status: 429, headers: { 'retry-after': '30' } });
+      return new Response('rate limited', { status: 429, headers: { 'retry-after': '1' } });
     };
     globalThis.setTimeout = (callback, delay, ...args) => {
       const timer = originalSetTimeout(callback, delay, ...args);

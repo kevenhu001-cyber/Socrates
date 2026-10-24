@@ -6,6 +6,8 @@
  */
 
 export class ApiError extends Error {
+  /** Provider cooldown hint; set only by the upstream request owner. */
+  retryAfterMs?: number;
   status: number;
   code: string;
   detail: unknown | null;

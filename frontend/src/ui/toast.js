@@ -6,12 +6,14 @@
 
    opts.variant  "error" adds .msg-toast-error (session save failures).
    opts.duration visible time in ms (default 1800). */
+import { normalizeChineseProse } from '../util/chineseTypography.ts';
 export function showToast(msg, opts){
   try{
     var o=opts||{};
     var el=document.createElement("div");
     el.className=o.variant==="error"?"msg-toast msg-toast-error":"msg-toast";
-    el.textContent=msg;
+    el.setAttribute('role',o.variant==="error"?'alert':'status');
+    el.textContent=normalizeChineseProse(String(msg||''));
     document.body.appendChild(el);
     /* Commit the hidden starting style before adding .visible. A class added
        in the next rAF lands before the element's first style recalc, so the

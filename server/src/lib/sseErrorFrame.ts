@@ -6,6 +6,8 @@ export interface SseErrorFrame {
   status?: number;
   code: string;
   retryable?: boolean;
+  upstreamStatus?: number;
+  retryAfterMs?: number;
 }
 
 /**
@@ -28,7 +30,7 @@ export interface SseErrorFrame {
  * (numeric status) or `ApiError` (curated message).
  */
 export function buildSseErrorFrame(err: unknown, options: { fallbackCode?: string } = {}): SseErrorFrame {
-  const failure = err as (Error & { status?: number; code?: string; retryable?: boolean }) | null | undefined;
+  const failure = err as (Error & { status?: number; code?: string; retryable?: boolean; retryAfterMs?: number }) | null | undefined;
   const status = typeof failure?.status === 'number' ? failure.status : undefined;
   const code = failure?.code || (err instanceof ApiError ? err.code : undefined) || options.fallbackCode || 'INTERNAL';
 
@@ -52,6 +54,10 @@ export function buildSseErrorFrame(err: unknown, options: { fallbackCode?: strin
     // An upstream failure that survived the server's own retry budget must
     // not become a fresh whole-turn budget in the browser.
     frame.retryable = status === undefined;
+  }
+  if (code === 'LLM_UPSTREAM_ERROR' && status !== undefined) frame.upstreamStatus = status;
+  if (typeof failure?.retryAfterMs === 'number' && Number.isFinite(failure.retryAfterMs) && failure.retryAfterMs >= 0) {
+    frame.retryAfterMs = Math.round(failure.retryAfterMs);
   }
   // A curated ApiError without an explicit opinion keeps the client's
   // status-based default, so a 503 that is worth retrying still is.

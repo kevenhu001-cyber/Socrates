@@ -50,3 +50,20 @@ test('built-in and BYOK paths share typography and keep the final constraints la
   }
   assert.match(insertResponseTypography('Legacy prompt without a final marker'), /full-width Chinese punctuation/);
 });
+
+test('saved formatting blocks upgrade without changing frozen context or provider identity', () => {
+  const prefix = 'Frozen persona\nSaved memories\nInitialized yesterday\n\n';
+  const identity = '<!-- @beagle-system-prompt -->\nKeep this provider identity';
+  const snapshot = prefix + RESPONSE_TYPOGRAPHY_MARKER + '\nOld formatting policy\n\n' + identity + '\n\n' +
+    FINAL_OUTPUT_CONSTRAINTS_MARKER + '\nOld final constraints';
+  const outbound = insertResponseTypography(snapshot);
+  assert.ok(outbound.startsWith(prefix));
+  assert.ok(outbound.includes(identity));
+  assert.ok(outbound.endsWith(FINAL_OUTPUT_CONSTRAINTS));
+  assert.equal(outbound.split(RESPONSE_TYPOGRAPHY_MARKER).length, 2);
+  assert.match(outbound, /revision 2/);
+  assert.match(outbound, /他说：“先理解‘概念’，再练习。”/);
+  assert.match(outbound, /点击“Settings”（设置）继续。/);
+  assert.doesNotMatch(outbound, /Old formatting|Old final constraints|你好!|见到你,/);
+  assert.equal(insertResponseTypography(outbound), outbound);
+});

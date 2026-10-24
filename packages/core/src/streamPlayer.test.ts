@@ -15,6 +15,35 @@ import {
 
 const CFG: PlaybackConfig = { ...DEFAULT_PLAYBACK_CONFIG };
 
+test('arrival-rate sampling is independent of render cadence', () => {
+  const config = { maxLagMs: 0, arrivalEmaAlpha: 1, baseCps: 1, maxCps: 10_000,
+    maxSmoothedCps: 10_000, minSmoothedCps: 1, catchUpPending: Number.MAX_SAFE_INTEGER };
+  const stalled = createPlaybackClock(config, 10_000);
+  const frequent = createPlaybackClock(config, 10_000);
+  for (const clock of [stalled, frequent]) clock.push(1000, 10_000);
+  frequent.tick(10_100);
+  for (const clock of [stalled, frequent]) clock.push(2000, 10_200);
+  frequent.tick(10_200);
+  frequent.tick(10_300);
+  for (const clock of [stalled, frequent]) clock.push(3000, 10_400);
+  const slowRate = stalled.tick(10_400).cps;
+  const fastRate = frequent.tick(10_400).cps;
+  // Three network arrivals are identical, even when one renderer never ran.
+  assert.ok(Math.abs(slowRate - 5000) < 0.000001, `unexpected arrival rate ${slowRate}`);
+  assert.ok(Math.abs(slowRate - fastRate) < 0.000001);
+});
+
+test('revealNow catches up without completing the stream', () => {
+  const clock = createPlaybackClock();
+  clock.push(1000, 50);
+  const frame = clock.revealNow(50);
+  assert.equal(frame.revealed, 1000);
+  assert.equal(clock.isDone(), false);
+  clock.push(1200, 60);
+  assert.equal(clock.totalLen(), 1200);
+  assert.equal(clock.playedLen(), 1000);
+});
+
 describe('computeCps', () => {
   test('is baseCps at empty buffer and maxCps at/after catchUpPending', () => {
     assert.equal(computeCps(0, CFG, false), CFG.baseCps);

@@ -179,9 +179,12 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     height: 52px;
     min-height: 52px;
     margin: 0;
-    padding: 0 8px;
+    padding: 0 var(--ui-space-md);
     border: 0;
-    background: var(--ui-bg-page);
+    border-bottom: 1px solid var(--ui-border-subtle);
+    background: var(--ui-bg-header-glass);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
     color: var(--ui-text-primary);
     font-family: var(--font-sans);
     font-size: var(--ui-text-ui);
@@ -247,10 +250,9 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   #appShell .top-model-switcher-model {
     min-width: 0;
     overflow: hidden;
-    /* The model is the switcher's value, not de-emphasised metadata: the
-       reference switcher is a single 18px/600 label. */
+    /* Brand and current value share a baseline; weight separates their roles. */
     color: var(--ui-text-secondary);
-    font-weight: var(--ui-font-weight-semibold);
+    font-weight: var(--ui-font-weight-medium);
     text-overflow: ellipsis;
   }
   #appShell .top-model-switcher-model:empty { display: none; }

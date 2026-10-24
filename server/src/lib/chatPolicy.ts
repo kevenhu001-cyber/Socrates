@@ -61,12 +61,13 @@ export const FINAL_OUTPUT_CONSTRAINTS = `# FINAL HARD RULE (highest priority; re
 ## 1. Full-width Chinese punctuation (MANDATORY)
 In Chinese text, you MUST always use full-width Chinese punctuation marks: ，。！？；：（） and paired quotation marks “…” / ‘…’.
 - NEVER mix half-width ASCII punctuation (such as \`,\`, \`.\`, \`!\`, \`?\`, \`:\`, \`;\`, \`(\`, \`)\`, \`"\`, \`'\`) into Chinese sentences.
-- Example: write “你好！很高兴见到你，今天想探讨什么问题呢？” instead of “你好!很高兴见到你,今天想探讨什么问题呢?”.
+- Use matched Chinese quotes even around English product names in a Chinese sentence. Nested quotations use ‘…’ inside “…”; parentheses must be paired as （…）. This applies to prose, headings, tables, and generated interface labels.
+- Examples: 你好！今天想探讨什么问题呢？ 他说：“先理解‘概念’，再练习。” 点击“Settings”（设置）继续。
 - Do NOT insert Western-style spaces after Chinese punctuation marks.
-- Keep English passages in English punctuation. Preserve code, formulas/LaTeX ($...$), JSON, URLs, and file paths in their exact ASCII form.
+- Keep English passages in English punctuation. Preserve code, formulas/LaTeX ($...$), JSON, URLs, file paths, decimal points, version numbers, and exact source quotations verbatim. Chinese strings generated inside structured data use Chinese punctuation, while its keys, delimiters and syntax stay unchanged. Honor explicit requests for verbatim output or a different punctuation style.
 
 ## 2. Minimize dash punctuation by default
-Minimize dash punctuation by default, including Chinese dash punctuation. Prefer commas, semicolons, parentheses, or separate sentences over an em dash (\u2014), en dash (\u2013), or ASCII double hyphen (\`--\`) as a sentence break. For example, write "他迟到了，因为他堵车了" instead of "他迟到了\u2014\u2014因为他堵车了"; write "We waited, but no one came" instead of "We waited\u2014but no one came". Use a dash only when the user explicitly asks for one, or when the dash is a real syntactic token:
+Minimize dash punctuation by default, including Chinese dash punctuation. Prefer commas, semicolons, parentheses, or separate sentences over an em dash (\u2014), en dash (\u2013), or ASCII double hyphen (\`--\`) as a sentence break. For Chinese, prefer 他迟到了，因为堵车了。 For English, write "We waited, but no one came" instead of "We waited\u2014but no one came". Use a dash only when the user explicitly asks for one, or when the dash is a real syntactic token:
 
 hyphens inside words (state-of-the-art), minus signs and numeric hyphens in code, math, file names, CLI flags, identifiers, and ranges (1990-2000); Markdown structural syntax such as a standalone \`---\` horizontal rule; or dashes preserved verbatim inside quoted source material and tool output. A standalone \`---\` line is formatting, not punctuation.`;
 
@@ -80,9 +81,11 @@ export function appendFinalOutputConstraints(messages: ChatMessage[]): ChatMessa
 }
 
 export const RESPONSE_TYPOGRAPHY_MARKER = '[Server policy: response-typography]';
-const RESPONSE_TYPOGRAPHY = `## Language-appropriate punctuation
+const RESPONSE_TYPOGRAPHY = `## Language-appropriate punctuation (revision 2)
 
 In Chinese prose, use full-width Chinese punctuation: ，。！？；：（） and paired Chinese quotation marks “…” and ‘…’. This includes headings, explanations, table prose, and human-readable labels and descriptions in interactive UI cards. For example, write “结论：先理解概念，再练习。准备好了吗？” rather than mixing ASCII commas, periods, colons, parentheses, or question marks into Chinese sentences. Do not insert Western-style spaces after Chinese punctuation.
+
+Chinese quotations remain Chinese even around an English label: 点击“Settings”（设置）继续。 Use matched opening and closing marks, with ‘…’ for nested quotations inside “…”: 他说：“先理解‘概念’，再练习。” Chinese explanatory text generated inside JSON or UI properties follows the same rule; JSON keys, delimiters, and syntax stay unchanged.
 
 Keep English passages in normal English punctuation. Preserve code, inline code, JSON and OpenUI syntax, identifiers, URLs, email addresses, file paths, version numbers, decimal points, mathematical notation, exact quotations, and original tool data verbatim. Markdown structural syntax must remain ASCII. Apply Chinese punctuation only to natural-language prose, never by globally replacing symbols in code or structured output. Follow an explicit user request for different punctuation.`;
 
@@ -90,8 +93,18 @@ Keep English passages in normal English punctuation. Preserve code, inline code,
  * sessions keep their frozen prefix, but must receive this correction without
  * rewriting their saved persona, memories, or initialization date. */
 export function insertResponseTypography(systemPrompt: string): string {
-  if (systemPrompt.includes(RESPONSE_TYPOGRAPHY_MARKER)) return systemPrompt;
+  // Refresh only server-owned formatting blocks in an old snapshot. Persona,
+  // memories, identity and initialization context remain byte-for-byte intact.
+  const finalAt = systemPrompt.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
+  if (finalAt !== -1) systemPrompt = `${systemPrompt.slice(0, finalAt)}${FINAL_OUTPUT_CONSTRAINTS_MARKER}\n${FINAL_OUTPUT_CONSTRAINTS}`;
   const block = `${RESPONSE_TYPOGRAPHY_MARKER}\n${RESPONSE_TYPOGRAPHY}`;
+  const existingAt = systemPrompt.indexOf(RESPONSE_TYPOGRAPHY_MARKER);
+  if (existingAt !== -1) {
+    const after = existingAt + RESPONSE_TYPOGRAPHY_MARKER.length;
+    const boundary = systemPrompt.slice(after).search(/\n\n(?=\[Server policy:|<!-- @beagle-system-prompt -->)/);
+    const end = boundary === -1 ? systemPrompt.length : after + boundary;
+    return `${systemPrompt.slice(0, existingAt)}${block}${systemPrompt.slice(end)}`;
+  }
   const markerAt = systemPrompt.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
   if (markerAt === -1) return `${systemPrompt}\n\n${block}`;
   return `${systemPrompt.slice(0, markerAt)}${block}\n\n${systemPrompt.slice(markerAt)}`;
