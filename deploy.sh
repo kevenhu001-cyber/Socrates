@@ -520,7 +520,14 @@ fi
 #                             operator override or dry-run bypasses this gate.
 # Treats "no run found for this commit" as a failure: an unpushed or
 # force-pushed commit has no gate result, which is exactly the case to catch.
-REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-CI Security}"
+#
+# The names below are the `name:` of the workflow files, NOT their file names.
+# "CI Security" was never one of them: `gh run list --workflow "CI Security"`
+# exits non-zero with "could not find any workflows named CI Security", so the
+# gate could never verify anything and always failed closed. The workflows that
+# actually gate a release are ci.yml ("CI"), server-ci.yml ("Server CI") and
+# security.yml ("Security").
+REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-CI Server CI Security}"
 ci_gate_check() {
   local source_dir="$1"
   local skip="${DEPLOY_SKIP_CI_CHECK:-0}"

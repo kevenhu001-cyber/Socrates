@@ -40,6 +40,13 @@
           "direct": false,
           "range": "*",
           "reason": "Upstream GHSA-86w9-cpqp-85rv in node-forge <= 1.4.0; build/signing tooling only; unblocks on upstream Expo/node-forge patch."
+        },
+        {
+          "name": "zod",
+          "severity": "high",
+          "direct": false,
+          "range": "<4.6.6",
+          "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6; Expo CLI pins zod ^3.25.76 and the newest @expo/cli (58.1.15) still does, so no upstream fix exists. The copy is build/CI tooling of @expo/cli only \u2014 it never validates a user-supplied collection, so the oversized-collection DoS it describes is not reachable here; unblocks on an upstream Expo zod bump."
         }
       ]
     }

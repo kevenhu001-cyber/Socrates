@@ -92,7 +92,16 @@ test('query-only session scope shares the same snapshot and conflicting body sco
   const frozen = await resolveSessionPrompt(owner.id, s.id, async () => 'query session prompt');
   const req = { userId: owner.id, user: owner, query: { sessionId: s.id }, body: { messages: [{ role: 'user', content: 'continue' }] } };
   const res = { status() { return this; }, json() { return this; } };
-  assert.equal((await prepareChatRequest(req, res)).payload.messages[0].content, frozen);
+  /* The outbound system prompt is the frozen snapshot plus the server-owned
+     typography rule (P_response-typography), so it is deliberately not
+     byte-identical to the stored snapshot. What this test owns is that the
+     query scope and the body scope resolve the SAME snapshot — not that the
+     outbound prompt equals the stored bytes. */
+  const viaQuery = (await prepareChatRequest(req, res)).payload.messages[0].content;
+  assert.ok(viaQuery.startsWith(frozen), viaQuery);
+  assert.match(viaQuery, /\[Server policy: response-typography\]/);
+  req.body.sessionId = s.id;
+  assert.equal((await prepareChatRequest(req, res)).payload.messages[0].content, viaQuery);
   req.body.sessionId = randomUUID();
   await assert.rejects(() => prepareChatRequest(req, res), { status: 400 });
 });

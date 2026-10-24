@@ -199,7 +199,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # 2026-10-25: the job was killed at the 35-minute mark while the
+    # Playwright smoke suite was still running (the gate cancelled the
+    # "End-to-end smoke tests" step and the job reported "cancelled", not
+    # "failed"). The steps before it are already expensive: the Rust WASM
+    # build, lint, bundle, unit tests, the coverage floor and the parity
+    # geometry gate (72 scenarios) run first, and the full smoke suite is
+    # ~600 specs on a single worker. 60 minutes leaves headroom without
+    # letting a genuinely hung job sit forever.
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: frontend

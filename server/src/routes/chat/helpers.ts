@@ -630,7 +630,7 @@ export const ChatPayloadSchema = z.object({
      decided from the user's intent by the model; this field is accepted but
      ignored so stale clients cannot force a worker run. */
   agentMode: z.boolean().optional(),
-  extra_body: z.record(z.any()).optional(),
+  extra_body: z.record(z.string(), z.any()).optional(),
 }).passthrough();
 
 /** A single chat message; content is either plain text or multimodal parts. */

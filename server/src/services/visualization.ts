@@ -564,7 +564,7 @@ export function validateVisualizationSpec(input: unknown) {
 
   if (semanticIssues.length) return { ok: false as const, stage: 'semantic', template: parsed.data.template, issues: semanticIssues.slice(0, 8) };
   if (['svg_illustration', 'interactive_simulation'].includes(parsed.data.template)) {
-    const source = payload.data.source;
+    const source = data.source;
     /* P_interactive-sim-scripts — match the frontend's
        extensionIsSafe() split exactly. `interactive_simulation`
        allows inline <script> and event handlers: the extension

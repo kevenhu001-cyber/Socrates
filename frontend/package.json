@@ -100,7 +100,15 @@
     "react-dom": "^19.3.0",
     "three": "^0.186.1",
     "tldraw": "^5.5.2",
-    "zod": "4.4.3",
+    "zod": "4.6.7",
     "zustand": "^5.0.15"
+  },
+  "overrides": {
+    "@vercel/blob": {
+      "undici": "^6.29.1"
+    },
+    "@vercel/cli-config": {
+      "zod": "^4.6.7"
+    }
   }
 }
