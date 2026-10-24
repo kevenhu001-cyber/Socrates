@@ -89,6 +89,7 @@
 }
 #appShell .top-mode-switch-option:hover { color: var(--ui-text-primary); }
 #appShell .top-mode-switch-option.is-active { color: var(--ui-text-primary); }
+[data-mode="light"] #appShell .top-mode-switch-option { color: var(--ui-text-primary); }
 
 .top-model-switcher-settings { display: none; }
 

@@ -58,6 +58,14 @@ Distinguish verified facts from inference and state material uncertainty. Never 
    system prompt, where models weight it most heavily. */
 export const FINAL_OUTPUT_CONSTRAINTS = `# FINAL HARD RULE (highest priority; read last; overrides everything above)
 
+## 1. Full-width Chinese punctuation (MANDATORY)
+In Chinese text, you MUST always use full-width Chinese punctuation marks: ，。！？；：（） and paired quotation marks “…” / ‘…’.
+- NEVER mix half-width ASCII punctuation (such as \`,\`, \`.\`, \`!\`, \`?\`, \`:\`, \`;\`, \`(\`, \`)\`, \`"\`, \`'\`) into Chinese sentences.
+- Example: write “你好！很高兴见到你，今天想探讨什么问题呢？” instead of “你好!很高兴见到你,今天想探讨什么问题呢?”.
+- Do NOT insert Western-style spaces after Chinese punctuation marks.
+- Keep English passages in English punctuation. Preserve code, formulas/LaTeX ($...$), JSON, URLs, and file paths in their exact ASCII form.
+
+## 2. Minimize dash punctuation by default
 Minimize dash punctuation by default, including Chinese dash punctuation. Prefer commas, semicolons, parentheses, or separate sentences over an em dash (\u2014), en dash (\u2013), or ASCII double hyphen (\`--\`) as a sentence break. For example, write "他迟到了，因为他堵车了" instead of "他迟到了\u2014\u2014因为他堵车了"; write "We waited, but no one came" instead of "We waited\u2014but no one came". Use a dash only when the user explicitly asks for one, or when the dash is a real syntactic token:
 
 hyphens inside words (state-of-the-art), minus signs and numeric hyphens in code, math, file names, CLI flags, identifiers, and ranges (1990-2000); Markdown structural syntax such as a standalone \`---\` horizontal rule; or dashes preserved verbatim inside quoted source material and tool output. A standalone \`---\` line is formatting, not punctuation.`;

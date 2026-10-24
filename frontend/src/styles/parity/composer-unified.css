@@ -163,6 +163,11 @@
   padding: 4px 12px 10px;
 }
 #appShell .composer-shell .rich-composer-editor[contenteditable="false"] { opacity: 0.65; cursor: not-allowed; }
+#appShell .composer-shell :is(.rich-composer-editor, textarea, input):focus,
+#appShell .composer-shell :is(.rich-composer-editor, textarea, input):focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 
 /* Draft content (Markdown shortcuts still produce rich blocks). */
 #appShell .composer-shell .rich-composer-editor p { margin: 0; }
@@ -367,6 +372,7 @@
   opacity: var(--press-opacity);
 }
 #appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.3; cursor: default; }
+[data-mode="light"] #appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.9; }
 #appShell .composer-shell .composer-primary-btn > span { display: grid; place-items: center; }
 #appShell .composer-shell .composer-primary-btn svg { display: block; width: 20px; height: 20px; }
 
@@ -425,6 +431,9 @@
   border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-text-secondary);
+}
+[data-mode="light"] #appShell .composer-shell .effort-trigger {
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-regular);
   line-height: 20px;

@@ -253,6 +253,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 #appShell#appShell .msg-toolbar {
   color: var(--ui-text-tertiary);
 }
+[data-mode="light"] .msg-toolbar-btn,
+[data-mode="light"] #appShell .msg-toolbar {
+  color: var(--ui-text-primary);
+}
 @media (min-width: 769px) {
   #appShell #msgList .msg-toolbar {
     gap: 0;

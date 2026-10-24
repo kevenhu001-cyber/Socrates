@@ -45,15 +45,12 @@ test('new Chinese prose fades in while completed paragraphs and final text stay 
   expect(evidence.spans).toBeGreaterThan(0);
   expect(evidence.spans).toBeLessThanOrEqual(24);
   expect(evidence.nested).toBe(0);
-  /* The blur belongs to the newest run alone; the aged runs finish their
-     opacity without a filter, so the offscreen pass stays bounded. A single
-     run can span several text leaves, so the bound is "no more blurred
-     spans than revealing spans" — not a fixed count. */
+  /* Blur filter is removed per user request: prose streams cleanly without
+     an offscreen blur pass while keeping the gentle opacity reveal. */
   const revealing = evidence.names.filter((name) => name === 'stream-append-reveal').length;
   const blurred = evidence.filters.filter((filter) => filter !== 'none').length;
   expect(revealing).toBeGreaterThan(0);
-  expect(blurred).toBeGreaterThan(0);
-  expect(blurred).toBeLessThanOrEqual(revealing);
+  expect(blurred).toBe(0);
   expect(evidence.names.every((name, index) => name !== 'stream-append-age' || evidence.filters[index] === 'none')).toBe(true);
   expect(evidence.opacities.some((opacity) => opacity > 0.25 && opacity < 1)).toBe(true);
   await page.screenshot({ path: 'test-results/stream-reveal-desktop.png' });

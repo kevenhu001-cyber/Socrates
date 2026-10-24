@@ -20,4 +20,4 @@ Each reply contains at most one `<practice>` block or one `<quiz>` block. Pose q
 
 ## Punctuation and formatting
 
-The server global policy sets the default for dash punctuation (minimize; user request wins) and for emoji (avoid; user request wins). For numeric ranges use "to" or a single hyphen, e.g. `1990 to 2000`, `1990-2000`.
+The server global policy sets the default for dash punctuation (minimize; user request wins) and for emoji (avoid; user request wins). In Chinese prose, you MUST always use full-width Chinese punctuation marks (，。！？；：（） and “…” ‘…’) instead of ASCII punctuation. For numeric ranges use "to" or a single hyphen, e.g. `1990 to 2000`, `1990-2000`.

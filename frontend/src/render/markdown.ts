@@ -105,6 +105,22 @@ export function formatMsgProgressive(
   }
 }
 
+function normalizeChinesePunctuation(str: string): string {
+  return str
+    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*,/g, '$1，')
+    .replace(/,\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '，$1')
+    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*\./g, '$1。')
+    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*!/g, '$1！')
+    .replace(/!\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '！$1')
+    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*\?/g, '$1？')
+    .replace(/\?\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '？$1')
+    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*:(?!\/\/)/g, '$1：')
+    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*;/g, '$1；')
+    .replace(/;\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '；$1')
+    .replace(/([\u4e00-\u9fa5\u3040-\u30ff])\s*\(/g, '$1（')
+    .replace(/\)\s*([\u4e00-\u9fa5\u3040-\u30ff])/g, '）$1');
+}
+
 function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): string {
   let s = preprocessMarkdownForStreaming(t, opts);
   if (s.charCodeAt(s.length - 1) === 10) { s = s.slice(0, -1); }
@@ -293,6 +309,7 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
     });
   }
 
+  s = normalizeChinesePunctuation(s);
   s = inlineCodeGuard.restore(s);
 
   if (!opts?.complete) {
@@ -357,6 +374,7 @@ function _formatMsg(t: string): string {
     raw = raw.replace(/```(viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, function (_, lang: string, body: string) {
       return saveFallbackViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang, String(body || '').trim()) }));
     });
+    raw = normalizeChinesePunctuation(raw);
     const fallbackHtml = '<p>' + esc(raw).replace(/```(\w*)\r?\n?([\s\S]*?)```/g, function (_, _l: string, c: string) { return '<pre><code>' + esc(c.trim()) + '</code></pre>'; }).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
     return fallbackHtml.replace(/XVIZFALLBACK(\d+)X/g, function (_, id: string) { return fallbackViz[parseInt(id, 10)] || ''; });
   }
@@ -502,6 +520,7 @@ function _formatMsg(t: string): string {
     });
   }
 
+  procT = normalizeChinesePunctuation(procT);
   procT = inlineCodeGuard.restore(procT);
 
   let html = marked.parse(procT, { breaks: true, gfm: true });

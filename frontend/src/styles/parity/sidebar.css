@@ -451,6 +451,10 @@
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
   #appShell #sidebarFooter .icon-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+  [data-mode="light"] :is(#newChatBtn, #sidebarCloseBtn),
+  [data-mode="light"] #sidebarFooter .icon-btn {
+    color: var(--ui-text-primary);
+  }
 
   /* ── Collapsed: 52px icon rail ───────────────────────────────────────── */
   #appShell #sidebar.collapsed {

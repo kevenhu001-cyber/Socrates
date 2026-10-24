@@ -128,6 +128,11 @@
   color: var(--ui-text-primary);
 }
 
+[data-mode="light"] .btn,
+[data-mode="light"] .btn-icon {
+  color: var(--ui-text-primary);
+}
+
 .btn-icon:disabled,
 .btn-icon[aria-disabled="true"] {
   opacity: 0.35;

@@ -61,7 +61,7 @@ const SHADOW_EXEMPTIONS = [
   { match: /#mainContent/, why: 'scroll surface, not a control' },
   { match: /\.sidebar-resize-handle/, why: '10px handle draws the ring inward at 1px' },
   {
-    match: /workspace-search-field input|plugin-directory-search input|sidebar-search input/,
+    match: /workspace-search-field input|plugin-directory-search input|sidebar-search input|rich-composer-editor/,
     why: 'the container carries the focus treatment',
   },
   { match: /intui-slider input/, why: 'the range thumb carries the focus ring' },
