@@ -64,7 +64,29 @@ hyphens inside words (state-of-the-art), minus signs and numeric hyphens in code
 
 export const FINAL_OUTPUT_CONSTRAINTS_MARKER = '[Server policy: final-output-constraints]';
 export function appendFinalOutputConstraints(messages: ChatMessage[]): ChatMessage[] {
-  return appendServerPolicy(messages, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS);
+  const result = appendServerPolicy(messages, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS);
+  const first = result[0];
+  if (!first || first.role !== 'system' || typeof first.content !== 'string') return result;
+  const content = insertResponseTypography(first.content);
+  return content === first.content ? result : [{ ...first, content }, ...result.slice(1)];
+}
+
+export const RESPONSE_TYPOGRAPHY_MARKER = '[Server policy: response-typography]';
+const RESPONSE_TYPOGRAPHY = `## Language-appropriate punctuation
+
+In Chinese prose, use full-width Chinese punctuation: ，。！？；：（） and paired Chinese quotation marks “…” and ‘…’. This includes headings, explanations, table prose, and human-readable labels and descriptions in interactive UI cards. For example, write “结论：先理解概念，再练习。准备好了吗？” rather than mixing ASCII commas, periods, colons, parentheses, or question marks into Chinese sentences. Do not insert Western-style spaces after Chinese punctuation.
+
+Keep English passages in normal English punctuation. Preserve code, inline code, JSON and OpenUI syntax, identifiers, URLs, email addresses, file paths, version numbers, decimal points, mathematical notation, exact quotations, and original tool data verbatim. Markdown structural syntax must remain ASCII. Apply Chinese punctuation only to natural-language prose, never by globally replacing symbols in code or structured output. Follow an explicit user request for different punctuation.`;
+
+/** Apply the current typography rule to the outbound prompt too: existing
+ * sessions keep their frozen prefix, but must receive this correction without
+ * rewriting their saved persona, memories, or initialization date. */
+export function insertResponseTypography(systemPrompt: string): string {
+  if (systemPrompt.includes(RESPONSE_TYPOGRAPHY_MARKER)) return systemPrompt;
+  const block = `${RESPONSE_TYPOGRAPHY_MARKER}\n${RESPONSE_TYPOGRAPHY}`;
+  const markerAt = systemPrompt.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
+  if (markerAt === -1) return `${systemPrompt}\n\n${block}`;
+  return `${systemPrompt.slice(0, markerAt)}${block}\n\n${systemPrompt.slice(markerAt)}`;
 }
 
 /* P_provider-identity-not-session-state — the built-in provider's identity

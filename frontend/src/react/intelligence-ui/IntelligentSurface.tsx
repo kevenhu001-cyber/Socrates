@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Maximize2, PanelsTopLeft, X } from 'lucide-react';
+import { ChevronDown, Maximize2, PanelsTopLeft, X } from 'lucide-react';
 import { i18n } from '../legacy/gateway';
 
 export type IntelligentDisplayMode = 'inline' | 'compact' | 'carousel' | 'fullscreen' | 'pip';
@@ -32,8 +32,8 @@ export function IntelligentSurface({ children, displayMode = 'inline' }: { child
     role={mode === 'fullscreen' ? 'dialog' : 'region'} aria-label={i18n('intui.surface', 'Interactive result')}
     onCancel={(event) => { event.preventDefault(); exit(); }}>
     <div className="intui-surface-toolbar">
-      <span className="intui-surface-label"><PanelsTopLeft size={16} aria-hidden />{i18n('intui.surface', 'Interactive result')}</span>
-      {mode !== 'fullscreen' ? <label>
+      <span className="intui-surface-label"><span className="intui-surface-icon"><PanelsTopLeft size={16} aria-hidden /></span>{i18n('intui.surface', 'Interactive result')}</span>
+      {mode !== 'fullscreen' ? <label className="intui-surface-mode">
         <span className="sr-only">{i18n('intui.displayMode', 'Display mode')}</span>
         <select value={mode} onChange={(event) => setChoice(event.currentTarget.value as IntelligentDisplayMode)}>
           <option value="inline">{i18n('intui.inline', 'Inline')}</option>
@@ -41,6 +41,7 @@ export function IntelligentSurface({ children, displayMode = 'inline' }: { child
           <option value="carousel">{i18n('intui.carousel', 'Carousel')}</option>
           <option value="pip">{i18n('intui.pip', 'Floating')}</option>
         </select>
+        <ChevronDown size={14} aria-hidden />
       </label> : null}
       <button type="button" className="intui-surface-expand" aria-label={mode === 'fullscreen' ? i18n('dialog.close', 'Close') : i18n('chrome.fullscreen', 'Fullscreen')} title={mode === 'fullscreen' ? i18n('dialog.close', 'Close') : i18n('chrome.fullscreen', 'Fullscreen')} onClick={() => {
         if (mode === 'fullscreen') exit();

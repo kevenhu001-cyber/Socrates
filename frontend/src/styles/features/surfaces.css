@@ -1,5 +1,11 @@
 /* Shared visual language for non-chat feature surfaces. Layout remains owned
    by each feature; this file only normalizes materials and typography. */
+@media (min-width: 769px) {
+  #appShell :is(.library-directory, .projects-directory, .scheduled-directory) .workspace-page-head h1 {
+    font-size: var(--ui-text-page);
+    line-height: 1.35;
+  }
+}
 #appShell .main-page,
 #appShell .workspace-surface,
 #appShell .exam-view,
@@ -349,7 +355,7 @@
   #appShell#appShell #sitesPanel .creation-header h1 {
     margin: 0;
     color: var(--ui-text-primary);
-    font-size: 28px;
+    font-size: var(--ui-text-page);
     font-weight: 600;
     line-height: 36px;
     letter-spacing: -.025em;
@@ -384,7 +390,7 @@
 @media (min-width: 769px) {
   #appShell .plugin-directory { max-width: 1120px; padding-top: 42px; }
   #appShell .plugin-directory-head { flex-direction: column; align-items: stretch; gap: 20px; margin-bottom: 26px; }
-  #appShell .plugin-directory-heading h2 { margin-bottom: 6px; font-size: 28px; letter-spacing: -.02em; }
+  #appShell .plugin-directory-heading h2 { margin-bottom: 6px; font-size: var(--ui-text-page); letter-spacing: -.02em; }
   #appShell .plugin-directory-desc { margin: 0; color: var(--ui-text-secondary); font-size: 15px; line-height: 1.5; }
   #appShell .plugin-directory-tools { gap: 10px; width: 100%; }
   /* Desktop search pill = the shared 42px workspace search field (same box as

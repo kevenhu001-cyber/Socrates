@@ -26,6 +26,8 @@
  * are listed. Standalone inputs (the auth gate lives outside #appShell, and
  * `.exam-input` has no focus styling of its own) keep the soft ring, so
  * keyboard focus is never made invisible.
+ * Intelligent UI ranges draw their keyboard focus ring on the thumb, so the
+ * native input must not add the compatibility rule's rectangular outline.
  *
  * Specificity follows the convention documented in polish/index.css: to beat
  * a restore/ `!important`, keep `!important` and preserve its id-level
@@ -40,7 +42,8 @@
   .plugin-directory-search input,
   .workspace-field input,
   .workspace-field textarea,
-  .workspace-field select
+  .workspace-field select,
+  .intui-slider input[type="range"]
 ):focus-visible {
   outline: none !important;
 }

@@ -171,6 +171,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
 @media (min-width: 769px) {
   #appShell .top-bar {
     position: relative;
+    container: app-topbar / inline-size;
     z-index: var(--ui-z-header);
     display: flex;
     flex: 0 0 auto;
@@ -205,6 +206,23 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     padding: 0;
   }
   #appShell .top-bar-right { margin-left: auto; }
+
+  /* A wide sidebar or a narrow laptop must not put the model label under
+     the centered mode switch. Reflow based on the available header width. */
+  @container app-topbar (max-width: 64rem) {
+    #appShell .top-bar-left { flex: 1 1 0; }
+    #appShell .top-bar-left #topModelSwitcher { max-width: 100%; }
+    #appShell .top-mode-switch {
+      position: relative;
+      left: auto;
+      top: auto;
+      flex: 0 0 auto;
+      transform: none;
+      margin-inline-start: 0;
+    }
+    #appShell .top-mode-switch-option { min-width: 76px; }
+    #appShell .top-bar-right { flex: 1 1 0; justify-content: flex-end; margin-left: 0; }
+  }
 
   /* ── Model switcher ──────────────────────────────────────────────────── */
   #appShell #topModelSwitcher {

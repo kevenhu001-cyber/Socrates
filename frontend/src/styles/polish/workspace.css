@@ -161,6 +161,10 @@
     margin: 0 auto;
     padding: 42px 32px 64px;
   }
+  #appShell .library-directory .library-head-left h1 {
+    font-size: var(--ui-text-page);
+    line-height: 1.35;
+  }
 }
 
 #appShell .library-head {

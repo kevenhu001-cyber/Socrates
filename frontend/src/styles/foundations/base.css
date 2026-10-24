@@ -7,6 +7,8 @@ body, button, input, textarea, select {
 
 body {
   color: var(--ui-text-primary);
+  font-size: var(--ui-text-ui);
+  line-height: var(--ui-text-ui-line);
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

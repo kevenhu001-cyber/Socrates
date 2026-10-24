@@ -1,3 +1,5 @@
+@import './fonts-cjk.css';
+
 /* Match site/: Geist Sans for UI, Noto Sans SC for Chinese fallback,
    Geist Mono for code. These are the marketing site's local font assets.
    Swap keeps text visible while a face loads; no third-party requests. */
@@ -48,36 +50,4 @@
   font-weight: 500;
   font-display: swap;
   src: url('../../assets/fonts/geist-mono-latin-500-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Noto Sans SC';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('../../assets/fonts/noto-sans-sc-chinese-simplified-400-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Noto Sans SC';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('../../assets/fonts/noto-sans-sc-chinese-simplified-500-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Noto Sans SC';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('../../assets/fonts/noto-sans-sc-chinese-simplified-600-normal.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Noto Sans SC';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('../../assets/fonts/noto-sans-sc-chinese-simplified-700-normal.woff2') format('woff2');
 }

@@ -12,7 +12,7 @@ import { isUuid } from '../lib/validate.js';
 import { BadRequest } from '../lib/errors.js';
 import { resolveSessionPromptOrAssemble } from '../services/core/sessionPromptSnapshot.js';
 import { splitPromptContext, appendTurnContext } from '../lib/chatPromptContext.js';
-import { insertProviderIdentity } from '../lib/chatPolicy.js';
+import { insertProviderIdentity, insertResponseTypography } from '../lib/chatPolicy.js';
 import { buildSseErrorFrame } from '../lib/sseErrorFrame.js';
 
 const router = Router();
@@ -71,7 +71,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       initialized = appendFinalOutputConstraints(initialized);
       return initialized[0].content as string;
     });
-    systemPrompt = insertProviderIdentity(systemPrompt, await getBeagleSystemPrompt());
+    systemPrompt = insertProviderIdentity(insertResponseTypography(systemPrompt), await getBeagleSystemPrompt());
     let messages = transformMessagesForModel([
       { role: 'system', content: systemPrompt },
       ...appendTurnContext(context.conversation, context.turnInstructions, null),

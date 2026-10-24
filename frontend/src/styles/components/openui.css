@@ -41,11 +41,14 @@
 .intui-openui .iui-flow { gap: var(--ui-space-lg); }
 .intui-openui .iui-grid { display: grid; min-width: 0; }
 .intui-openui .iui-spacer { flex: 1; }
-.intui-openui .iui-card { padding: var(--ui-space-xl); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-xl); background: var(--iui-canvas); }
+.intui-openui .iui-card { padding: clamp(var(--ui-space-lg), 4cqi, var(--ui-space-xl)); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-lg); background: var(--iui-canvas); }
 .intui-openui .iui-card-soft { background: var(--iui-surface); }
+/* Renderer supplies busy and visibility wrappers; the outer shell already
+   frames a single root card. Nested and deliberately filled cards keep theirs. */
+.intui-surface-document > .intui-openui > .iui-program > [aria-busy] > div > .iui-card:not(.iui-card-soft) { padding: 0; border: 0; border-radius: 0; }
 .intui-openui .iui-form { gap: var(--ui-space-md); }
 .intui-openui .iui-divider { width: 100%; border: 0; border-top: 1px solid var(--iui-border); }
-.intui-openui .iui-title { font-weight: var(--ui-font-weight-semibold); line-height: 1.3; font-variant-numeric: tabular-nums; }
+.intui-openui .iui-title { margin: 0; font-weight: var(--ui-font-weight-semibold); line-height: 1.3; letter-spacing: -.015em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .intui-openui .iui-title-sm { font-size: var(--ui-font-size-sm); }
 .intui-openui .iui-title-md { font-size: var(--ui-font-size-md); }
 .intui-openui .iui-title-lg { font-size: var(--ui-font-size-lg); }

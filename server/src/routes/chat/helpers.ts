@@ -1,5 +1,5 @@
 import { ContentPartSchema, MessageSchema, type ChatMessage } from '../../lib/chatMessageSchema.js';
-import { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS_MARKER, appendServerPolicy, appendFinalOutputConstraints, injectUserContext, insertProviderIdentity } from '../../lib/chatPolicy.js';
+import { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS_MARKER, appendServerPolicy, appendFinalOutputConstraints, injectUserContext, insertProviderIdentity, insertResponseTypography } from '../../lib/chatPolicy.js';
 export { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS, appendFinalOutputConstraints, injectUserContext } from '../../lib/chatPolicy.js';
 /**
  * Chat route helpers.
@@ -917,7 +917,7 @@ export async function prepareChatRequest(
   for (const p of [providerPromise, ragPromise, promptPromise]) p.catch(() => {});
   const [systemPrompt, ragBlock] = await Promise.all([promptPromise, ragPromise]);
   let conversation = appendTurnContext(context.conversation, context.turnInstructions, ragBlock?.prompt ?? null);
-  let finalMessages: ChatMessage[] = [{ role: 'system', content: systemPrompt }, ...conversation];
+  let finalMessages: ChatMessage[] = [{ role: 'system', content: insertResponseTypography(systemPrompt) }, ...conversation];
 
   // Windowing can replace old conversation with a rolling summary, never
   // regenerate or compress away the frozen system prefix. Include its real

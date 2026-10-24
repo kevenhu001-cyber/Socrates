@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
 import { invalidateApiKeyCache } from '../src/services/core/apiKey.js';
 import { getLlmDispatcher } from '../src/services/core/llm.js';
-import { BEAGLE_IDENTITY_MARKER } from '../src/lib/chatPolicy.js';
+import { BEAGLE_IDENTITY_MARKER, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS, RESPONSE_TYPOGRAPHY_MARKER } from '../src/lib/chatPolicy.js';
 
 const f = appRouteFixture();
 let upstream;
@@ -58,6 +58,28 @@ test('built-in proxy and shared chat send byte-identical session prompts to a lo
   assert.equal(prompts[1], prompts[2]);
   assert.match(prompts[0], /first settings/);
   assert.doesNotMatch(prompts[0], /changed settings|third settings/);
+});
+
+test('both chat transports correct typography for old sessions without rewriting the saved prompt', async () => {
+  const session = await newSession();
+  const savedPrompt = `Frozen role, memories and initialization date\n\n${FINAL_OUTPUT_CONSTRAINTS_MARKER}\n${FINAL_OUTPUT_CONSTRAINTS}`;
+  await f.db.insert(sessionPromptSnapshots).values({ sessionId: session.id, userId: f.owner.id, systemPrompt: savedPrompt });
+  const start = requests.length;
+  for (const path of ['/api/v2/chat', '/api/v2/minimax/v1/chat/completions']) {
+    const response = await f.request(path, { method: 'POST', body: body(session.id, '请使用中文解释。') });
+    assert.equal(response.status, 200, response.text);
+  }
+  const prompts = requests.slice(start).map((request) => request.messages[0].content);
+  assert.equal(prompts.length, 2);
+  assert.equal(prompts[0], prompts[1]);
+  for (const prompt of prompts) {
+    assert.ok(prompt.startsWith('Frozen role, memories and initialization date'));
+    assert.match(prompt, /full-width Chinese punctuation: ，。！？；：（）/);
+    assert.equal(prompt.split(RESPONSE_TYPOGRAPHY_MARKER).length, 2);
+    assert.ok(prompt.endsWith(FINAL_OUTPUT_CONSTRAINTS));
+  }
+  const [stored] = await f.db.select().from(sessionPromptSnapshots).where(eq(sessionPromptSnapshots.sessionId, session.id));
+  assert.equal(stored.systemPrompt, savedPrompt);
 });
 
 test('the shared snapshot stays provider-independent; the built-in identity is resolved per request', async () => {

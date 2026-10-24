@@ -8,6 +8,7 @@
   "type": "module",
   "description": "Socrates — single-page learning app (Vite-bundled)",
   "scripts": {
+    "sync:site-fonts": "node scripts/sync-site-fonts.mjs",
     "dev": "vite",
     "build": "node scripts/build.mjs",
     "audit:entry": "node scripts/entry-graph.mjs",

@@ -185,6 +185,7 @@
   --ui-text-ui-line: calc(20px * var(--app-type-scale));
   --ui-text-body: calc(var(--ui-foundation-font-size-lg) * var(--app-type-scale));
   --ui-text-body-line: calc(28px * var(--app-type-scale));
+  --ui-text-page: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
   --ui-text-hero: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
   --app-type-scale: calc(var(--app-font-scale, 1.125) / 1.125);
 

@@ -91,13 +91,13 @@
     border-radius: var(--ui-radius-row);
     color: var(--ui-text-primary);
     font-family: var(--font-sans);
-    font-size: var(--ui-font-size-xl);
-    font-weight: 650;
+    font-size: var(--ui-font-size-lg);
+    font-weight: var(--ui-font-weight-semibold);
     line-height: 26px;
     letter-spacing: -0.015em;
     white-space: nowrap;
   }
-  #appShell #sidebarHeader .sidebar-logo-img { width: 26px; height: 26px; border-radius: var(--ui-radius-sm); }
+  #appShell #sidebarHeader .sidebar-logo-img { width: var(--ui-space-xl); height: var(--ui-space-xl); border-radius: var(--ui-radius-sm); }
   #appShell #sidebarHeader .sidebar-logo > span { font: inherit; }
   #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader > div:last-child,

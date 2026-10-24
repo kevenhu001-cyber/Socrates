@@ -495,7 +495,6 @@ body.workspace-active #appShell .main-page {
   #appShell .workspace-page-head h1,
   #appShell .plugin-directory-heading h2 {
     margin: 0;
-    font-size: 30px !important;
     font-weight: 500 !important;
     line-height: 36px !important;
     letter-spacing: -0.01em !important;
@@ -590,7 +589,6 @@ body.workspace-active #appShell .main-page {
 
   #appShell .workspace-page-head h1,
   #appShell .plugin-directory-heading h2 {
-    font-size: 28px !important;
     line-height: 36px !important;
   }
 

@@ -33,17 +33,17 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-overlay: var(--ui-bg-surface);
   --ui-bg-control: #2d2d2d;
   --ui-bg-hover: rgb(255 255 255 / 6%);
-  --ui-bg-selected: #111111;
+  --ui-bg-selected: var(--ui-bg-control);
   --ui-bg-pill-selected: #333333;
   --ui-bg-hover-ghost: var(--ui-bg-hover);
   --ui-sidebar-border: var(--ui-bg-surface);
 
   /* Lobe text neutral roles. */
-  --ui-text-primary: #e6e6e6;
+  --ui-text-primary: #f3f3f3;
   --ui-text-secondary: #b4b4b4;
-  --ui-text-tertiary: #8f8f8f;
+  --ui-text-tertiary: #9b9b9b;
   --ui-text-muted: var(--ui-text-tertiary);
-  --ui-text-placeholder: #6b6b6b;
+  --ui-text-placeholder: var(--ui-text-tertiary);
   --ui-text-disabled: var(--ui-text-placeholder);
   --ui-sidebar-glyph: var(--ui-text-primary);
 

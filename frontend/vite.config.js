@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
@@ -490,6 +490,12 @@ export default defineConfig({
     createEntryGraphPlugin(),
   ],
   server: {
+    fs: {
+      allow: [
+        searchForWorkspaceRoot(fileURLToPath(new URL('.', import.meta.url))),
+        fileURLToPath(new URL('../site/media/fonts', import.meta.url)),
+      ],
+    },
     port: 5173,
     strictPort: false,
     proxy: (LOCAL_AUTH_BYPASS ? {
