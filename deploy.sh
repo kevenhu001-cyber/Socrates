@@ -521,13 +521,15 @@ fi
 # Treats "no run found for this commit" as a failure: an unpushed or
 # force-pushed commit has no gate result, which is exactly the case to catch.
 #
-# The names below are the `name:` of the workflow files, NOT their file names.
-# "CI Security" was never one of them: `gh run list --workflow "CI Security"`
-# exits non-zero with "could not find any workflows named CI Security", so the
-# gate could never verify anything and always failed closed. The workflows that
-# actually gate a release are ci.yml ("CI"), server-ci.yml ("Server CI") and
-# security.yml ("Security").
-REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-CI Server CI Security}"
+# The names below are workflow FILE names, not the `name:` shown in the UI.
+# Two reasons: "CI Security" was never one of them, so
+# `gh run list --workflow "CI Security"` exits non-zero with "could not find
+# any workflows named CI Security" and the gate could never verify anything;
+# and the list is space separated, while the Server CI workflow is *named*
+# "Server CI" — a name with a space would split into "Server" and "CI", and
+# "Server" is not a workflow either. The file names contain no spaces.
+# gh accepts either form; the file names are the unambiguous one.
+REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-ci.yml server-ci.yml security.yml}"
 ci_gate_check() {
   local source_dir="$1"
   local skip="${DEPLOY_SKIP_CI_CHECK:-0}"
