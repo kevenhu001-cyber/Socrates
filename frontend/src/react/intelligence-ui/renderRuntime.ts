@@ -18,6 +18,7 @@ export interface RenderContext {
   tools: ReadonlyArray<ToolCallRecord>;
   readOnly: boolean;
   streaming?: boolean;
+  surfaceRootId?: string;
 }
 
 export type UiAction = {

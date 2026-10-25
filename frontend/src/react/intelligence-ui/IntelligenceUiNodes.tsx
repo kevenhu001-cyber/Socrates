@@ -1,4 +1,8 @@
 import { LazyOpenUiBlock } from './LazyOpenUiBlock';
+import { Ellipsis } from 'lucide-react';
+import { DeferredMenu } from '../menu/DeferredMenu';
+import { i18n } from '../legacy/gateway';
+import { useExpandedSurfaceState } from './IntelligentSurface';
 import {
   intelligenceUiChartDomain,
   isSafeIntelligenceUiStateKey,
@@ -29,17 +33,37 @@ function renderChildren(node: IntelligenceUiNode, context: RenderContext): React
 }
 
 function UiPanel({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
+  const [moreOpen, setMoreOpen] = useState(false);
   const title = asProse(resolve(node.title, context));
   const description = asProse(resolve(node.description, context));
+  const children = context.children.get(node.id) || [];
+  const actions = children.filter((child) => child.type === 'button' && asProse(resolve(child.label, context)) && isRecord(child.action));
+  const content = children.filter((child) => child.type !== 'button');
+  const primary = actions.find((child) => child.primary === true);
+  const secondary = actions.find((child) => child !== primary && child.primary !== true) || actions.find((child) => child !== primary);
+  const visibleActions = primary
+    ? [secondary, primary].filter((child): child is IntelligenceUiNode => Boolean(child))
+    : actions.slice(0, 2);
+  const overflowActions = actions.filter((child) => !visibleActions.includes(child));
   return (
     <section className="intui-panel" data-intui-id={node.id}>
-      {title || description ? (
+      {(title || description) && node.id !== context.surfaceRootId ? (
         <header className="intui-panel-head">
           {title ? <div className="intui-panel-title">{title}</div> : null}
           {description ? <div className="intui-panel-description">{description}</div> : null}
         </header>
       ) : null}
-      <div className="intui-panel-body">{renderChildren(node, context)}</div>
+      <div className="intui-panel-body">{content.map((child) => <UiNode key={child.id} node={child} context={context} />)}</div>
+      {actions.length ? <footer className="intui-panel-actions">
+        {visibleActions.map((child) => <UiNode key={child.id} node={child} context={context} />)}
+        {overflowActions.length ? <DeferredMenu open={moreOpen} onOpenChange={setMoreOpen} className="intui-surface-menu"
+          label={i18n('session.moreActions', 'More actions')}
+          trigger={<button type="button" className="intui-panel-more" aria-label={i18n('session.moreActions', 'More actions')}><Ellipsis size={18} aria-hidden /></button>}>
+          {({ FoundationMenuItem }) => overflowActions.map((child) => <FoundationMenuItem key={child.id}
+            disabled={context.readOnly && (child.action as UiAction).type === 'prompt'}
+            onClick={(event) => executeAction(child.action as UiAction, context, event)}>{asProse(resolve(child.label, context))}</FoundationMenuItem>)}
+        </DeferredMenu> : null}
+      </footer> : null}
     </section>
   );
 }
@@ -385,6 +409,7 @@ function normalizedTabs(node: IntelligenceUiNode, context: RenderContext): TabIt
 }
 
 function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
+  const expanded = useExpandedSurfaceState();
   const tabs = normalizedTabs(node, context);
   const [localTab, setLocalTab] = useState(() => tabs[0]?.id || '');
   if (!tabs.length) return null;
@@ -416,7 +441,7 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
 
   return (
     <section className="intui-tabs" data-intui-id={node.id}>
-      <div
+      {expanded ? <div
         className="intui-tab-list"
         role="tablist"
         aria-label={asProse(resolve(node.label, context)) || 'Views'}
@@ -438,8 +463,11 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
             {tab.label}
           </button>
         ))}
-      </div>
-      <div className="intui-tab-panel" id={panelId} role="tabpanel" aria-labelledby={activeTabId} tabIndex={0}>
+      </div> : <div className="intui-tabs-preview">
+        <span id={activeTabId}>{tabs.find((tab) => tab.id === active)?.label}</span>
+        <span>{i18n('intui.expandToExplore', 'Expand to explore views')}</span>
+      </div>}
+      <div className="intui-tab-panel" id={panelId} role={expanded ? 'tabpanel' : 'region'} aria-labelledby={activeTabId} tabIndex={expanded ? 0 : undefined}>
         {children.map((child) => {
           const childTab = typeof child.tab === 'string' ? child.tab : '';
           if (childTab && childTab !== active) return null;

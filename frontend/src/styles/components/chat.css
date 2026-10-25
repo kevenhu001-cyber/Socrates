@@ -59,7 +59,13 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   font-size: calc(15px * var(--app-font-scale, 1));
   font-weight: var(--ui-font-weight-regular);
   line-height: 1.65;
-  letter-spacing: -.006em;
+  letter-spacing: normal;
+}
+
+/* Headings keep the same semantic weight as the desktop reading column. */
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body :is(h1, h2) {
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-semibold);
 }
 }
 

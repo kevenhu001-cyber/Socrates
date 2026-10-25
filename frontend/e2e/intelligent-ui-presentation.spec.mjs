@@ -38,7 +38,10 @@ for (const format of ['native', 'openui']) {
       await expect(page.locator('vite-error-overlay')).toHaveCount(0);
       const shell = page.locator('.intui-surface-shell');
       await expect(shell).toBeVisible();
-      await expect(shell.locator('.intui-surface-label')).toHaveText('交互结果');
+      if (format === 'native') {
+        await expect(shell.getByRole('heading', { name: '本周学习计划', exact: true })).toHaveCount(1);
+        await expect(shell).toHaveAccessibleName('本周学习计划');
+      } else await expect(shell.locator('.intui-surface-label')).toHaveText('交互结果');
       await expect(shell).toContainText('本周学习计划');
       const slider = shell.getByRole('slider', { name: '每日学习时长' });
       await slider.focus();
@@ -64,8 +67,27 @@ for (const format of ['native', 'openui']) {
       await page.screenshot({ path: `test-results/intui-${encodeURIComponent(format)}-${encodeURIComponent(mode)}.png` });
       await expand.click();
       await expect(shell).toHaveAttribute('data-display-mode', 'fullscreen');
-      expect(await shell.evaluate((node) => node.matches(':modal'))).toBe(true);
+      expect(await shell.evaluate((node) => node.matches(':modal'))).toBe(false);
+      await expect(shell).toHaveAttribute('aria-modal', 'false');
       await expect(slider).toHaveValue('3');
+      const editor = page.locator('#composerRoot .rich-composer-editor');
+      await editor.fill('根据当前计划，帮我调整下一步。');
+      await expect(editor).toBeFocused();
+      const composerBox = await page.locator('.composer-shell').boundingBox();
+      const surfaceBox = await shell.boundingBox();
+      expect(surfaceBox.y + surfaceBox.height).toBeLessThanOrEqual(composerBox.y + 1);
+      await page.locator('#composerToolsBtn').click();
+      const tools = page.locator('#composerToolsMenu');
+      await expect(tools).toBeVisible();
+      const tool = tools.getByRole('button').first();
+      await expect(tool).toBeVisible();
+      expect(await tool.evaluate((node) => {
+        const rect = node.getBoundingClientRect();
+        return node.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
+      })).toBe(true);
+      await page.keyboard.press('Escape');
+      await expect(tools).toBeHidden();
+      await expect(shell).toHaveAttribute('data-display-mode', 'fullscreen');
       expect(await shell.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
       await page.screenshot({ path: `test-results/intui-${encodeURIComponent(format)}-${encodeURIComponent(mode)}-fullscreen.png` });
       await page.keyboard.press('Escape');

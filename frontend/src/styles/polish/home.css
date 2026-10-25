@@ -24,9 +24,9 @@
     min-height: var(--ui-control-touch);
     padding: 4px 34px 4px 14px;
     gap: 8px;
-    border: 1px solid var(--ui-border-default);
+    border: 1px solid transparent;
     border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-surface);
+    background: transparent;
     color: var(--ui-text-secondary);
     text-align: left;
     cursor: pointer;
@@ -38,17 +38,7 @@
   #appShell .home-quick-action:hover,
   #appShell .home-quick-action:focus-within {
     background: var(--ui-bg-hover);
-    border-color: var(--ui-border-default);
     color: var(--ui-text-primary);
-  }
-
-  [data-mode="light"] #appShell .home-quick-action {
-    color: var(--ui-text-primary);
-    border-color: var(--ui-border-strong);
-  }
-  [data-mode="light"] #appShell .home-quick-action-icon {
-    color: var(--ui-text-primary);
-    background: var(--ui-bg-panel);
   }
 
   #appShell .home-quick-action-primary {
@@ -75,7 +65,7 @@
     width: var(--ui-control-xs);
     height: var(--ui-control-xs);
     border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-control);
+    background: transparent;
     color: var(--ui-text-secondary);
   }
 

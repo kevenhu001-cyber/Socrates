@@ -122,6 +122,7 @@ export const zh = {
     "intui.routeDriving":"OSRM / OpenStreetMap 驾车路线概览，不适用于步行或逐向导航。",
     "intui.surface":"交互结果",
     "intui.displayMode":"展示模式",
+    "intui.expandToExplore":"展开后切换视图",
     "intui.inline":"内嵌",
     "intui.compact":"紧凑",
     "intui.carousel":"横向浏览",

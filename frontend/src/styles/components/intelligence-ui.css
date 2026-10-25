@@ -116,6 +116,11 @@
 .msg.assistant .msg-body.is-declarative .intui-callout[data-tone="success"] { --intui-tone: var(--ui-success); }
 .msg.assistant .msg-body.is-declarative .intui-callout[data-tone="warning"] { --intui-tone: var(--ui-warning); }
 .msg.assistant .msg-body.is-declarative .intui-callout[data-tone="danger"] { --intui-tone: var(--ui-danger); }
+.msg.assistant .msg-body.is-declarative .intui-callout[data-tone="neutral"] {
+  border-color: transparent;
+  border-inline-start-color: var(--ui-border-strong);
+  background: var(--ui-bg-page);
+}
 .msg.assistant .msg-body.is-declarative .intui-callout:not([data-tone="neutral"]) .intui-callout-title {
   color: var(--intui-tone);
 }
@@ -233,7 +238,7 @@
   cursor: pointer;
   transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease, opacity var(--ui-duration-hover) ease;
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button):hover {
+.msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button):hover:not(:disabled) {
   border-color: var(--ui-border-strong);
   background: var(--ui-bg-hover-ghost);
   color: var(--ui-text-primary);
@@ -248,7 +253,14 @@
   background: var(--ui-accent-strong);
   color: var(--ui-on-accent);
 }
-.msg.assistant .msg-body.is-declarative .intui-button.is-primary:hover {
+.msg.assistant .msg-body.is-declarative .intui-button {
+  min-height: var(--ui-control-md);
+  padding-inline: var(--ui-space-lg);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-normal);
+  touch-action: manipulation;
+}
+.msg.assistant .msg-body.is-declarative .intui-button.is-primary:hover:not(:disabled) {
   opacity: var(--ui-press-opacity);
   background: var(--ui-accent-strong);
   color: var(--ui-on-accent);
@@ -257,7 +269,22 @@
   border-color: var(--ui-border-subtle);
   color: var(--ui-text-disabled);
   cursor: default;
-  opacity: .7;
+  opacity: .5;
+}
+.msg.assistant .msg-body.is-declarative .intui-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ui-space-sm);
+  margin-top: var(--ui-foundation-space-md);
+  padding-top: var(--ui-space-lg);
+  border-top: 1px solid var(--ui-border-subtle);
+}
+/* A result has one visually primary action, even if multiple hints arrive. */
+.msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-button.is-primary ~ .intui-button.is-primary {
+  border-color: var(--ui-border-default);
+  background: transparent;
+  color: var(--ui-text-primary);
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle {
   display: flex;
@@ -617,8 +644,18 @@
 }
 
 /* Presentation belongs to the shell; nodes and their state remain mounted. */
+.msg.assistant .msg-body.is-declarative .intui:has(> .intui-surface-shell[data-display-mode="fullscreen"]) {
+  /* Size containment would make the fixed surface relative to its inline
+     card. Release it only for expansion; ordinary cards retain containment. */
+  container-type: normal;
+}
+.msg.assistant:has(.intui-surface-shell[data-display-mode="fullscreen"]) {
+  content-visibility: visible;
+  contain: none;
+}
 .intui-surface-shell {
-  position: static;
+  --intui-action-size: var(--ui-control-sm);
+  position: relative;
   width: 100%;
   max-width: none;
   max-height: none;
@@ -627,53 +664,114 @@
   min-width: 0;
   box-sizing: border-box;
   border: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-raised);
   color: var(--ui-text-primary);
   font: inherit;
+  text-align: start;
 }
+.intui-surface-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-md);
+  padding: var(--ui-foundation-space-md) var(--ui-foundation-space-md) 0;
+}
+.intui-surface-heading {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-block: calc((var(--intui-action-size) - var(--ui-space-xl)) / 2);
+}
+#appShell #msgList .msg-body .intui-surface-title {
+  margin: 0;
+  color: var(--ui-text-primary);
+  font: var(--ui-font-weight-semibold) var(--ui-font-size-md) / var(--ui-line-height-normal) var(--font-sans);
+  letter-spacing: normal;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.intui-surface-description { margin-top: var(--ui-space-xs); }
 .intui-surface-toolbar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--ui-space-sm);
-  padding: var(--ui-space-xs) var(--ui-space-md);
-  border-bottom: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
+  gap: var(--ui-space-xs);
+  flex: 0 0 auto;
+  padding: 0;
   background: var(--ui-bg-raised);
 }
-.intui-surface-toolbar :is(button, select) {
-  min-height: var(--ui-control-sm);
-  padding: 0 var(--ui-space-sm);
-  border: 1px solid transparent;
+.intui-surface-toolbar button {
+  min-height: var(--intui-action-size);
+  padding: 0;
+  border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--ui-text-secondary);
   font: inherit;
   font-size: var(--ui-font-size-sm);
   cursor: pointer;
-  transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  touch-action: manipulation;
+  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
 }
-.intui-surface-toolbar :is(button, select):hover {
-  border-color: var(--ui-border-default);
+.intui-surface-toolbar button:hover {
   background: var(--ui-bg-hover-ghost);
   color: var(--ui-text-primary);
 }
-.intui-surface-label { display: inline-flex; align-items: center; gap: var(--ui-space-sm); min-width: 0; margin-right: auto; color: var(--ui-text-secondary); font-size: var(--ui-font-size-xs); font-weight: var(--ui-font-weight-medium); }
-.intui-surface-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: var(--ui-control-sm); height: var(--ui-control-sm); border: 0; border-radius: var(--ui-radius-md); background: transparent; }
-.intui-surface-mode { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
-.intui-surface-mode select { appearance: none; max-width: 10rem; padding-inline-end: var(--ui-space-xl); font-size: var(--ui-font-size-xs); }
-.intui-surface-mode > svg { position: absolute; inset-inline-end: var(--ui-space-sm); pointer-events: none; color: var(--ui-text-tertiary); }
-.intui-surface-expand { display: inline-flex; align-items: center; justify-content: center; width: var(--ui-control-sm); }
+.intui-surface-label { display: block; color: var(--ui-text-secondary); font-size: var(--ui-font-size-xs); line-height: var(--ui-space-xl); font-weight: var(--ui-font-weight-regular); }
+.intui-surface-expand,
+.intui-surface-return,
+.intui-surface-options { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: var(--intui-action-size); }
+.intui-surface-menu {
+  min-width: 10rem;
+  padding: var(--ui-space-xs);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-popover);
+  background: var(--ui-bg-overlay);
+  color: var(--ui-text-primary);
+  box-shadow: var(--ui-shadow-popover);
+}
+.intui-surface-menu :is([role="menuitemradio"], [role="menuitem"]) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-xl);
+  width: 100%;
+  min-height: var(--ui-control-desktop);
+  padding: var(--ui-space-xs) var(--ui-space-sm);
+  border: 0;
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  cursor: pointer;
+}
+.intui-surface-menu :is([role="menuitemradio"], [role="menuitem"])[data-highlighted] { background: var(--ui-bg-hover); }
+.intui-surface-menu [aria-disabled="true"] { color: var(--ui-text-disabled); cursor: default; }
+.msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--intui-action-size);
+  min-height: var(--ui-control-md);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  cursor: pointer;
+}
+.msg.assistant .msg-body.is-declarative .intui-panel-more:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+.intui-tabs-preview { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--ui-space-sm); color: var(--ui-text-secondary); font-size: var(--ui-font-size-xs); }
+.intui-surface-menu [aria-checked="false"] .intui-surface-selected { visibility: hidden; }
 .intui-surface-document { display: grid; align-content: start; gap: var(--ui-space-lg); min-width: 0; padding: var(--ui-foundation-space-md); container-type: inline-size; }
 .intui-surface-document > * { min-width: 0; }
 .msg.assistant .msg-body.is-declarative .intui-surface-document > .intui-panel { padding: 0; border: 0; border-radius: 0; background: transparent; }
 .intui-surface-shell[data-display-mode="compact"] .intui-surface-document {
-  max-height: 18rem;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
+  /* Compact changes density, keeping the conversation as the scroll owner. */
+  gap: var(--ui-space-md);
+  padding: var(--ui-space-lg);
 }
+.msg.assistant .msg-body.is-declarative .intui-surface-shell[data-display-mode="compact"] .intui-panel-body { gap: var(--ui-space-md); }
 .intui-surface-shell[data-display-mode="carousel"] .intui-surface-document {
   display: flex;
   overflow-x: auto;
@@ -688,11 +786,13 @@
 }
 .intui-surface-shell[data-display-mode="fullscreen"] {
   position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  height: 100dvh;
-  max-height: 100%;
+  inset: auto;
+  top: var(--intui-expanded-top, 0px);
+  left: var(--intui-expanded-left, 0px);
+  width: var(--intui-expanded-width, 100vw);
+  height: var(--intui-expanded-height, 80dvh);
+  max-height: none;
+  z-index: var(--ui-z-panel);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -700,23 +800,23 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
-.intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-toolbar {
+.intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-header {
   position: sticky;
   top: 0;
   z-index: var(--ui-z-panel);
-  padding: var(--ui-space-md) max(var(--ui-space-lg), calc((100% - 64rem) / 2));
-  border-radius: 0;
-  background: var(--ui-bg-raised);
+  padding: var(--ui-space-md) max(var(--ui-foundation-space-md), calc((100% - var(--ui-content-chat)) / 2));
+  background: var(--ui-bg-page);
   border-bottom: 1px solid var(--ui-border-subtle);
 }
+.intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-toolbar { background: var(--ui-bg-page); }
 .intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-document {
   box-sizing: border-box;
   width: 100%;
-  max-width: 64rem;
+  max-width: calc(var(--ui-content-chat) + 2 * var(--ui-foundation-space-md));
   margin: auto;
-  padding-block: var(--ui-space-xxl);
+  padding-block: var(--ui-space-xl);
 }
-.intui-surface-shell::backdrop { background: var(--ui-bg-page); }
+.intui-surface-shell::backdrop { background: transparent; pointer-events: none; }
 .intui-surface-shell[data-display-mode="pip"] {
   position: fixed;
   inset: auto var(--ui-space-sm) var(--ui-space-sm) auto;
@@ -729,4 +829,13 @@
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-popover);
+}
+
+@media (max-width: 768px) {
+  .intui-surface-shell { --intui-action-size: var(--ui-control-touch); }
+  .intui-surface-header { padding-inline: var(--ui-space-lg); }
+  .intui-surface-document { padding: var(--ui-space-lg); }
+  .intui-surface-menu :is([role="menuitemradio"], [role="menuitem"]) { min-height: var(--ui-control-touch); }
+  .msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more { min-height: var(--ui-control-touch); }
+  .msg.assistant .msg-body.is-declarative :is(.intui-button, .intui-choice-options button, .intui-slider input[type="range"]) { min-height: var(--ui-control-touch); }
 }

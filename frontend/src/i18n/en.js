@@ -119,6 +119,7 @@ export const en = {
     "intui.routeDriving":"Driving route overview from OSRM / OpenStreetMap; not walking or turn-by-turn directions.",
     "intui.surface":"Interactive result",
     "intui.displayMode":"Display mode",
+    "intui.expandToExplore":"Expand to explore views",
     "intui.inline":"Inline",
     "intui.compact":"Compact",
     "intui.carousel":"Carousel",

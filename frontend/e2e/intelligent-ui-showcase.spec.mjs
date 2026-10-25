@@ -65,6 +65,8 @@ test('v2 Intelligent UI showcase renders trusted components and local tab state'
   await expect(notify).not.toBeChecked();
 
   const tabs = ui.locator('.intui-tabs');
+  await expect(tabs.getByRole('tab')).toHaveCount(0);
+  await ui.locator('.intui-surface-expand').click();
   const overviewTab = tabs.getByRole('tab', { name: 'Overview' });
   const detailsTab = tabs.getByRole('tab', { name: 'Details' });
   await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
@@ -81,6 +83,7 @@ test('v2 Intelligent UI showcase renders trusted components and local tab state'
   await expect(detailsTab).toHaveAttribute('aria-selected', 'true');
   await expect(tabs.getByText('Details content')).toBeVisible();
   await expect(tabs.getByText('Overview content')).toHaveCount(0);
+  await page.keyboard.press('Escape');
 
   const table = ui.locator('.intui-table');
   await expect(table.locator('caption')).toHaveText('Runtime modes');

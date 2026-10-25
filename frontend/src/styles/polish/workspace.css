@@ -27,6 +27,7 @@
 }
 #appShell .workspace-page-head p {
   max-width: 52ch;
+  text-wrap: balance;
 }
 
 @media (min-width: 769px) {

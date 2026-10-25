@@ -361,7 +361,7 @@
   color: var(--ui-on-accent);
   font-weight: var(--ui-font-weight-medium);
 }
-#appShell .composer-shell .composer-primary-btn:hover { opacity: var(--ui-press-opacity); }
+#appShell .composer-shell .composer-primary-btn:hover:not(:disabled) { opacity: var(--ui-press-opacity); }
 /* Paint-only feedback for compact composer controls; polish/press.css keeps
    their circles and SVG geometry fixed throughout the press. They dim a
    step further than wide buttons so the 36px disc still reads as pressed. */
@@ -374,7 +374,6 @@
   opacity: var(--press-opacity);
 }
 #appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.3; cursor: default; }
-[data-mode="light"] #appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.9; }
 #appShell .composer-shell .composer-primary-btn > span { display: grid; place-items: center; }
 #appShell .composer-shell .composer-primary-btn svg { display: block; width: 20px; height: 20px; }
 

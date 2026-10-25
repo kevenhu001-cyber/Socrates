@@ -173,3 +173,9 @@
 
 /* Keep inputs editable, but never present a known-invalid value as a result. */
 .intui-openui .iui-program[data-invalid-result="true"] :is(.iui-text, .iui-title, .iui-chart, .iui-table-wrap, .iui-svg, [data-openui-visualization]) { display: none; }
+
+/* Touch controls and editable text use the same host metrics as native cards. */
+@media (max-width: 768px) {
+  .intui-openui :is(.iui-button, .iui-input, .iui-segmented button, .iui-choice, .iui-check) { min-height: var(--ui-control-touch); }
+  .intui-openui :is(.iui-input, .iui-textarea) { font-size: max(16px, var(--ui-font-size-md)); }
+}

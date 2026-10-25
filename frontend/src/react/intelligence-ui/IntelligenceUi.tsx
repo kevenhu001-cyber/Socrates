@@ -8,7 +8,7 @@ import {
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { IntelligentSurface, type IntelligentDisplayMode } from './IntelligentSurface';
 import { UiNode } from './IntelligenceUiNodes';
-import { childMap, mergeDefaults, type RenderContext } from './renderRuntime';
+import { asProse, childMap, mergeDefaults, resolve, type RenderContext } from './renderRuntime';
 
 interface IntelligenceUiBlockProps {
   source: string;
@@ -39,11 +39,15 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
     tools,
     readOnly,
     streaming: open,
+    surfaceRootId: roots.length === 1 && roots[0].type === 'panel' ? roots[0].id : undefined,
   };
+  const root = context.surfaceRootId ? roots[0] : undefined;
+  const title = root ? asProse(resolve(root.title, context)) : undefined;
+  const description = root ? asProse(resolve(root.description, context)) : undefined;
 
   return (
     <div className="intui" data-intui-streaming={open ? 'true' : 'false'}>
-      <IntelligentSurface displayMode={displayMode}>
+      <IntelligentSurface displayMode={displayMode} title={title} description={description}>
         {roots.map((node) => <UiNode key={node.id} node={node} context={context} />)}
       </IntelligentSurface>
       {open && showActivityCue ? <span className="intui-stream-dot" aria-hidden="true" /> : null}

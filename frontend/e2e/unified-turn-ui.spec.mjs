@@ -76,17 +76,27 @@ test('display modes preserve node identity, edited values and tabs across fullsc
   const count = page.locator('[data-intui-id="count"]');
   await page.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect(count).toContainText('3');
+  await expect(page.getByRole('tab')).toHaveCount(0);
+  await shell.locator('.intui-surface-expand').click();
   await page.getByRole('tab', { name: 'Second', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(shell).toHaveAttribute('data-display-mode', 'inline');
   await count.evaluate((node) => { window.__originalMetricNode = node; });
   for (const mode of ['compact', 'carousel', 'pip', 'inline']) {
-    await shell.locator('select').selectOption(mode);
+    await shell.getByRole('button', { name: 'Display mode', exact: true }).click();
+    await page.getByRole('menuitemradio', { name: { compact: 'Compact', carousel: 'Carousel', pip: 'Floating', inline: 'Inline' }[mode], exact: true }).click();
     await expect(shell).toHaveAttribute('data-display-mode', mode);
     await expect(count).toContainText('3');
   }
+  await shell.getByRole('button', { name: 'Display mode', exact: true }).click();
+  await page.getByRole('menuitemradio', { name: 'Floating', exact: true }).click();
+  await shell.getByRole('button', { name: 'Inline', exact: true }).click();
+  await expect(shell).toHaveAttribute('data-display-mode', 'inline');
+  await expect(count).toContainText('3');
   const expand = shell.locator('.intui-surface-toolbar > button').first();
   await expand.click();
   await expect(shell).toHaveAttribute('data-display-mode', 'fullscreen');
-  expect(await shell.evaluate((node) => node.matches(':modal'))).toBe(true);
+  expect(await shell.evaluate((node) => node.matches(':modal'))).toBe(false);
   await expect(page.getByRole('tab', { name: 'Second', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('Second view', { exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/intelligent-ui-fullscreen.png' });
