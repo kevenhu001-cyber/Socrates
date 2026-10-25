@@ -16,8 +16,8 @@ interface MermaidItem {
   validated?: boolean;
 }
 
-let _rememberLiveVizCard = function (_id: string, _el: Element): void {};
-let _processPendingVizActions = function (): void {};
+let _rememberLiveVizCard: ((id: string, el: Element) => void) | undefined;
+let _processPendingVizActions: (() => void) | undefined;
 export function configureVizMermaidQueue(handlers: {
   rememberLiveVizCard?: (id: string, el: Element) => void;
   processPendingVizActions?: () => void;
@@ -57,7 +57,7 @@ function renderMermaidFallback(item: MermaidItem): void {
   if (!body) return;
   body.innerHTML = '<pre><code class="language-mermaid">' + esc(item.code) + '</code></pre>';
   el.setAttribute('data-viz-state', 'ready');
-  _rememberLiveVizCard(item.id, el);
+  _rememberLiveVizCard?.(item.id, el);
 }
 
 /* P_mermaid-frame-budget — every mermaid.render pays a synchronous
@@ -205,7 +205,7 @@ function renderPendingMermaidItem(item: MermaidItem): void {
         if (!body) return;
         body.innerHTML = result.svg;
         el.setAttribute('data-viz-state', 'ready');
-        _rememberLiveVizCard(item.id, el);
+        _rememberLiveVizCard?.(item.id, el);
         if (result.bindFunctions) result.bindFunctions(body);
         const svg = body.querySelector('svg') as SVGElement | null;
         if (svg) { svg.style.maxWidth = '100%'; svg.style.height = 'auto'; }
@@ -219,7 +219,7 @@ function renderPendingMermaidItem(item: MermaidItem): void {
         const src = esc(item.code || '');
         body.innerHTML = vizErrorHtml(msg, src);
         el.setAttribute('data-viz-state', 'error');
-        _rememberLiveVizCard(item.id, el);
+        _rememberLiveVizCard?.(item.id, el);
       })
       .then(function () {
         delete _mermaidInFlight[item.id];
@@ -233,9 +233,14 @@ function renderPendingMermaidItem(item: MermaidItem): void {
     const src = esc(item.code || '');
     body.innerHTML = vizErrorHtml(msg, src);
     el.setAttribute('data-viz-state', 'error');
-    _rememberLiveVizCard(item.id, el);
+    _rememberLiveVizCard?.(item.id, el);
     delete _mermaidInFlight[item.id];
   }
+}
+
+function holdOffscreenMermaidItem(item: MermaidItem): boolean {
+  const el = item ? document.getElementById(item.id) : null;
+  return Boolean(el && !_mermaidCardIsNearViewport(el) && _holdMermaidUntilVisible(item, el));
 }
 
 export function processPendingMermaid(): void {
@@ -260,18 +265,15 @@ export function processPendingMermaid(): void {
        it. An off-screen card stays at the head for a later pass; the
        observer wakes us when it nears the viewport. A bounded scan keeps
        one long off-screen run from spinning here. */
-    const headEl = item ? document.getElementById(item.id) : null;
-    if (headEl && !_mermaidCardIsNearViewport(headEl)) {
-      if (_holdMermaidUntilVisible(item, headEl)) {
-        held++;
-        /* Skip this item for this frame but keep the rest of the queue
-           moving — a visible diagram further down must not wait behind
-           an off-screen one. */
-        _pendingMermaid.shift();
-        _pendingMermaid.push(item);
-        if (held >= MERMAID_GATE_SCAN_MAX) break;
-        continue;
-      }
+    if (holdOffscreenMermaidItem(item)) {
+      held++;
+      /* Skip this item for this frame but keep the rest of the queue
+         moving — a visible diagram further down must not wait behind
+         an off-screen one. */
+      _pendingMermaid.shift();
+      _pendingMermaid.push(item);
+      if (held >= MERMAID_GATE_SCAN_MAX) break;
+      continue;
     }
     _pendingMermaid.shift();
     renderPendingMermaidItem(item);
@@ -289,7 +291,7 @@ export function processPendingMermaid(): void {
      element was replaced by a message re-render under the same id). */
   if (_pendingMermaid.length && (rendered > 0 || !held)) schedulePendingMermaid();
   if (held) armMermaidIdleDrain();
-  try { _processPendingVizActions(); } catch (e) { reportSwallow(e, 'viz.processPendingMermaid.drainActions'); }
+  try { _processPendingVizActions?.(); } catch (e) { reportSwallow(e, 'viz.processPendingMermaid.drainActions'); }
 }
 
 /* P_mermaid-coalesce — processPendingMermaid() works off the global

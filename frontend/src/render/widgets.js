@@ -1,19 +1,14 @@
 
 
 import { esc } from './helpers.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 let runtime = {
   formatMsg: (value) => String(value ?? ''),
   t: (key) => key,
   esc,
-  submitChatMessage: () => {},
-  stateStore: { read: () => undefined, dispatch: () => {} },
-  recordMistake: () => {},
-  removeMistakeForQuizSlot: () => {},
-  handleQuizPick: () => {},
+  stateStore: { read: () => undefined },
   shouldRequestTutorAfterQuiz: () => false,
-  updateKB: () => {},
-  saveCurrentSession: () => {},
 };
 
 export function configureWidgetRuntime(nextRuntime) {
@@ -131,7 +126,7 @@ export function mountPracticeWidget(slot, parsed) {
     submit.disabled = true;
     if (reveal) reveal.disabled = true;
     textarea.disabled = true;
-    submitChatMessage(t('tutor.practicePrefix') + answer, { origin: 'practice' });
+    submitChatMessage?.(t('tutor.practicePrefix') + answer, { origin: 'practice' });
     if (!parsed.correct) {
       feedback.className = 'inline-practice-feedback recorded';
       feedback.textContent = t('tutor.practiceSent');
@@ -142,9 +137,9 @@ export function mountPracticeWidget(slot, parsed) {
     feedback.className = `inline-practice-feedback ${isCorrect ? 'ok' : 'bad'}`;
     feedback.textContent = isCorrect ? t('tutor.practiceSelfCorrect') : `${t('tutor.practiceSelfWrong')} ${parsed.correct}`;
     if (isCorrect) {
-      stateStore.dispatch({ type: 'state/set', key: 'practiceAttempts', value: 0 });
+      stateStore.dispatch?.({ type: 'state/set', key: 'practiceAttempts', value: 0 });
     } else {
-      recordMistake({ type: 'practice', q: parsed.problem, options: [], correct: parsed.correct, userAnswer: answer, judgedAnswer: parsed.correct, practiceSlotId: parsed.slotId || null });
+      recordMistake?.({ type: 'practice', q: parsed.problem, options: [], correct: parsed.correct, userAnswer: answer, judgedAnswer: parsed.correct, practiceSlotId: parsed.slotId || null });
     }
   };
   reveal?.addEventListener('click', () => {
@@ -174,7 +169,7 @@ export function mountQuizWidget(slot, parsed) {
     button.className = 'inline-quiz-opt';
     button.setAttribute('data-letter', option.letter);
     button.innerHTML = `<span class="inline-quiz-opt-letter">${option.letter}.</span><span class="inline-quiz-opt-text">${formatMsg(option.text)}</span>`;
-    button.onclick = () => handleQuizPick(card, options, feedback, buttons, option, parsed);
+    button.onclick = () => handleQuizPick?.(card, options, feedback, buttons, option, parsed);
     options.appendChild(button);
     buttons.push(button);
   });
@@ -185,38 +180,59 @@ export function mountQuizWidget(slot, parsed) {
   slot.replaceWith(card);
 }
 
-export function handleQuizPick(card, options, feedback, buttons, picked, parsed) {
-  const { t, esc: escape, recordMistake, removeMistakeForQuizSlot, stateStore, shouldRequestTutorAfterQuiz, updateKB, saveCurrentSession, submitChatMessage } = runtime;
+function showQuizFeedback(feedback, buttons, picked, correct, isRight, services) {
+  const { t, esc: escape } = services;
   buttons.forEach((button) => { button.disabled = true; });
   const chosen = buttons.find((button) => button.getAttribute('data-letter') === picked.letter);
   chosen?.classList.add('selected');
-  const correct = parsed.correct;
-  const isRight = Boolean(correct) && picked.letter === correct;
   chosen?.classList.add(isRight ? 'correct' : 'wrong');
   if (correct && !isRight) buttons.find((button) => button.getAttribute('data-letter') === correct)?.classList.add('correct');
   if (correct) feedback.classList.add(isRight ? 'ok' : 'bad');
   feedback.textContent = correct
     ? (isRight ? t('tutor.quizCorrect') : t('tutor.quizWrong')).replace('{answer}', escape(correct))
     : t('tutor.quizRecorded').replace('{letter}', picked.letter);
-  if (correct && !isRight) {
-    recordMistake({ type: 'quiz', q: parsed.q, options: parsed.options.map((option) => ({ letter: option.letter, text: option.text })), correct, userAnswer: picked.letter, quizSlotId: parsed.slotId || null });
+}
+
+function recordQuizOutcome(parsed, picked, isRight, services) {
+  if (parsed.correct && !isRight) {
+    services.recordMistake?.({ type: 'quiz', q: parsed.q, options: parsed.options.map((option) => ({ letter: option.letter, text: option.text })), correct: parsed.correct, userAnswer: picked.letter, quizSlotId: parsed.slotId || null });
   } else if (isRight && parsed.slotId) {
-    removeMistakeForQuizSlot(parsed.slotId);
+    services.removeMistakeForQuizSlot?.(parsed.slotId);
   }
+}
+
+function updateQuizStage(stateStore, isRight) {
   const stage = stateStore.read('teachingStage');
   if (stage === 'exercise') {
-    stateStore.dispatch(isRight
+    stateStore.dispatch?.(isRight
       ? { type: 'state/batch', patch: { teachingStage: 'check', practiceAttempts: 0 } }
       : { type: 'state/set', key: 'practiceAttempts', value: (stateStore.read('practiceAttempts') || 0) + 1 });
   } else if (stage === 'check') {
-    stateStore.dispatch({ type: 'state/set', key: 'practiceAttempts', value: isRight ? 0 : (stateStore.read('practiceAttempts') || 0) + 1 });
+    stateStore.dispatch?.({ type: 'state/set', key: 'practiceAttempts', value: isRight ? 0 : (stateStore.read('practiceAttempts') || 0) + 1 });
   }
-  if (!shouldRequestTutorAfterQuiz(correct, isRight)) {
-    try { updateKB(); } catch {}
-    try { saveCurrentSession(); } catch {}
+}
+
+function persistQuizOutcome(services) {
+  // These writes are independent: a KB failure must not prevent saving the
+  // session, and neither failure should discard the feedback already shown.
+  try { services.updateKB?.(); }
+  catch (error) { reportSwallow(error, 'widgets.quiz.updateKB'); }
+  try { services.saveCurrentSession?.(); }
+  catch (error) { reportSwallow(error, 'widgets.quiz.saveCurrentSession'); }
+}
+
+export function handleQuizPick(card, options, feedback, buttons, picked, parsed) {
+  const services = runtime;
+  const correct = parsed.correct;
+  const isRight = Boolean(correct) && picked.letter === correct;
+  showQuizFeedback(feedback, buttons, picked, correct, isRight, services);
+  recordQuizOutcome(parsed, picked, isRight, services);
+  updateQuizStage(services.stateStore, isRight);
+  if (!services.shouldRequestTutorAfterQuiz(correct, isRight)) {
+    persistQuizOutcome(services);
     return;
   }
   let text = `I chose ${picked.letter}. ${picked.text}`;
   if (correct) text += ` (Result: ${isRight ? 'correct' : `incorrect, correct is ${correct}`}.)`;
-  submitChatMessage(text, { origin: 'quiz' });
+  services.submitChatMessage?.(text, { origin: 'quiz' });
 }

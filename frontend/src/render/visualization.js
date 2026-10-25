@@ -46,7 +46,8 @@ function cleanupCard(card) {
   var cleanup = card._visualizationCleanup;
   card._visualizationCleanup = null;
   if (typeof cleanup === 'function') {
-    try { cleanup(); } catch (_) {}
+    try { cleanup(); }
+    catch (error) { reportSwallow(error, 'visualization.cleanupCard'); }
   }
 }
 
@@ -127,7 +128,6 @@ function dataUrlExtension(dataUrl) {
    the chart renderers provide so the Download button is never a dead end. */
 function svgStageChart(stage) {
   return {
-    dispatchAction: function () {},
     getDataURL: function () {
       var svg = stage.querySelector('svg');
       return svg ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg)) : '';
@@ -137,6 +137,12 @@ function svgStageChart(stage) {
 
 function hideAction(btn) {
   if (btn) { btn.hidden = true; btn.setAttribute('aria-hidden', 'true'); }
+}
+
+function renderCardMath(card) {
+  try {
+    if (typeof renderMathInElement === 'function') renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
+  } catch (error) { reportSwallow(error, 'visualization.renderCardMath'); }
 }
 
 function bindCard(card, spec, chart, opts) {
@@ -160,14 +166,14 @@ function bindCard(card, spec, chart, opts) {
        card. The toast uses the existing notify channel if any
        is exposed, otherwise a console warn. */
     card.requestFullscreen().catch(function (err) {
-      try { console.warn('[visualization] fullscreen failed', err); } catch (_) {}
+      reportSwallow(err, 'visualization.fullscreen');
     });
   });
   var reset = card.querySelector('[data-viz-action="reset"]');
-  if (!chart || opts.noReset) hideAction(reset);
+  if (opts.noReset || (!opts.onReset && typeof chart?.dispatchAction !== 'function')) hideAction(reset);
   if (reset) reset.addEventListener('click', function () {
     if (opts.onReset) { opts.onReset(); return; }
-    if (chart) chart.dispatchAction({ type: 'restore' });
+    chart?.dispatchAction?.({ type: 'restore' });
   });
   var download = card.querySelector('[data-viz-action="download"]');
   if (!chart) hideAction(download);
@@ -191,7 +197,7 @@ function vizT(key, fallback) {
       var value = window.t(key);
       if (typeof value === 'string' && value && value !== key) return value;
     }
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'visualization.translate'); }
   return fallback;
 }
 
@@ -240,7 +246,7 @@ export async function mountVisualization(spec, host, options) {
   card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" aria-label="' + esc(actionTable) + '" title="' + esc(actionTable) + '">' + esc(actionTable) + '</button><button type="button" data-viz-action="reset" aria-label="' + esc(actionReset) + '" title="' + esc(actionReset) + '">' + esc(actionReset) + '</button><button type="button" data-viz-action="download" aria-label="' + esc(actionDownload) + '" title="' + esc(actionDownload) + '">' + esc(actionDownload) + '</button><button type="button" data-viz-action="fullscreen" aria-label="' + esc(actionFullscreen) + '" title="' + esc(actionFullscreen) + '">' + esc(actionFullscreen) + '</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
   host.appendChild(card);
   mounting.delete(cardId);
-  try { if (typeof renderMathInElement === 'function') renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] }); } catch (_) {}
+  renderCardMath(card);
   var stage = card.querySelector('.visualization-stage'), chart = null, liveEntry = null;
   try {
     // Model-provided table data must share the chart's per-card recovery boundary.
@@ -253,7 +259,7 @@ export async function mountVisualization(spec, host, options) {
       /* Register cleanup before any cancellation check so a torn-down mount
          releases whatever the adapter already created (RAF, observers,
          controls, WebGL context). */
-      card._visualizationCleanup = specialized.cleanup || function () {};
+      card._visualizationCleanup = specialized.cleanup;
       if (isCancelled()) { disposeCard(card); return null; }
       chart = specialized.chart || null;
       card.dataset.visualizationRenderer = spec.template === 'function' || spec.template === 'paper_chart'
@@ -497,7 +503,7 @@ function _refreshCharts() {
    * attribute each time to avoid keeping strong references ourselves. */
   if (typeof renderMathInElement === 'function') {
     document.querySelectorAll('.visualization-card').forEach(function (card) {
-      try { renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] }); } catch (_) {}
+      renderCardMath(card);
     });
   }
 }

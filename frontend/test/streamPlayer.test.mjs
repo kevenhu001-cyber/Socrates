@@ -408,3 +408,38 @@ test('dispose cancels the delayed idle wake', () => {
   assert.equal(states.length, count);
   assert.equal(h.hasQueued, false);
 });
+
+test('default visibility subscription is removed on disposal and reinstalled for a resumed player', (context) => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  context.after(() => {
+    if (previous) Object.defineProperty(globalThis, 'document', previous);
+    else delete globalThis.document;
+  });
+  const listeners = new Set();
+  let subscriptions = 0;
+  globalThis.document = {
+    visibilityState: 'visible',
+    addEventListener(name, listener) {
+      assert.equal(name, 'visibilitychange');
+      subscriptions += 1;
+      listeners.add(listener);
+    },
+    removeEventListener(name, listener) {
+      assert.equal(name, 'visibilitychange');
+      listeners.delete(listener);
+    },
+  };
+  const h = harness(), frames = [];
+  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay, onFrame: (text) => frames.push(text) });
+  assert.equal(listeners.size, 1);
+  player.push('First');
+  player.dispose();
+  assert.equal(listeners.size, 0);
+  player.push(' resumed');
+  assert.equal(listeners.size, 1);
+  assert.equal(subscriptions, 2);
+  player.beginDrain();
+  h.run(100);
+  assert.equal(frames.at(-1), 'First resumed');
+  assert.equal(listeners.size, 0);
+});

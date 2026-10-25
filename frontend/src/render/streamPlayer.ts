@@ -66,6 +66,12 @@ export interface StreamPlayerOptions {
   onVisibilityChange?: (cb: () => void) => () => void;
 }
 
+function subscribeDocumentVisibility(cb: () => void): (() => void) | undefined {
+  if (typeof document === 'undefined') return;
+  document.addEventListener('visibilitychange', cb);
+  return () => document.removeEventListener('visibilitychange', cb);
+}
+
 export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   const now = options.now || (() => performance.now());
   const raf = options.raf || ((cb: () => void) => { requestAnimationFrame(cb); });
@@ -87,17 +93,13 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   let doneFired = false;
   let lastState: PlaybackState = 'idle';
   let firstPaint = true;
-  const subscribeVisibility = options.onVisibilityChange || ((cb: () => void) => {
-    if (typeof document === 'undefined') return () => {};
-    document.addEventListener('visibilitychange', cb);
-    return () => document.removeEventListener('visibilitychange', cb);
-  });
+  const subscribeVisibility = options.onVisibilityChange || subscribeDocumentVisibility;
   function handleVisibility(): void {
     clearIdle();
     if (isHidden()) paintHidden();
     else if (!clock.isDone()) schedule();
   }
-  let unsubscribeVisibility: (() => void) | null = subscribeVisibility(handleVisibility);
+  let unsubscribeVisibility: (() => void) | null = subscribeVisibility(handleVisibility) ?? null;
   function stopVisibility(): void {
     unsubscribeVisibility?.();
     unsubscribeVisibility = null;
@@ -169,7 +171,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     push(delta: string): void {
       if (!delta) return;
       // Tool handoffs can cancel a scheduled render and resume this player.
-      if (!unsubscribeVisibility) unsubscribeVisibility = subscribeVisibility(handleVisibility);
+      if (!unsubscribeVisibility) unsubscribeVisibility = subscribeVisibility(handleVisibility) ?? null;
       clearIdle();
       // Idle time must not become playback credit for a new network burst.
       if (clock.playedLen() === clock.totalLen()) clock.tick(now());

@@ -48,7 +48,7 @@ export interface AssistantHtmlDeps {
   recordMistake: (rec: PracticeMistakeRecord) => void;
 }
 
-let deps: AssistantHtmlDeps = { recordMistake: () => {} };
+let deps: AssistantHtmlDeps | undefined;
 
 /** Provide the mistake-book writer owned by main.js. */
 export function configureAssistantHtml(next: AssistantHtmlDeps): void {
@@ -113,10 +113,58 @@ export function stripTrailingSources(text: string): string {
   return text;
 }
 
-/**
- * Build the final message-body HTML for one assistant raw text,
- * scheduling widget mounts for the placeholder slots.
- */
+function replaceQuizSlots(text: string, slots: SlotEntry<ParsedQuiz>[]): string {
+  return text.replace(/<quiz\b[^>]*>([\s\S]*?)<\/quiz>/gi, (raw: string, inner: string) => {
+    const parsed = parseQuizInner(inner);
+    if (slots.length) return '\n\n' + esc(parsed?.q || raw) + '\n\n';
+    if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
+    const id = 'quiz-' + (slots.length + 1) + '-' + randomSuffix();
+    slots.push({ id, parsed });
+    return '\n\n<div class="quiz-slot" data-quiz-id="' + id + '"></div>\n\n';
+  });
+}
+
+function replaceExampleSlots(text: string, slots: SlotEntry<ParsedExample>[]): string {
+  return text.replace(/<example\b[^>]*>([\s\S]*?)<\/example>/gi, (_raw: string, inner: string) => {
+    const parsed = parseExampleInner(inner);
+    if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
+    const id = 'ex-' + (slots.length + 1) + '-' + randomSuffix();
+    slots.push({ id, parsed });
+    return '\n\n<div class="example-slot" data-example-id="' + id + '"></div>\n\n';
+  });
+}
+
+function replacePracticeSlots(text: string, slots: SlotEntry<PracticeParsed>[]): string {
+  return text.replace(/<practice\b([^>]*)>([\s\S]*?)<\/practice>/gi, (raw: string, attrs: string, inner: string) => {
+    const parsed: PracticeParsed | null = parsePracticeInner(inner);
+    if (slots.length) return '\n\n' + esc(parsed?.problem || raw) + '\n\n';
+    if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
+    const correct = attrs.match(/correct="([^"]+)"/i);
+    if (correct) parsed.correct = correct[1];
+    const id = 'pr-' + (slots.length + 1) + '-' + randomSuffix();
+    slots.push({ id, parsed });
+    return '\n\n<div class="practice-slot" data-practice-id="' + id + '"></div>\n\n';
+  });
+}
+
+function recordInlineMistakes(text: string, practices: SlotEntry<PracticeParsed>[]): string {
+  return text.replace(/<mistake\b([^>]*)>([\s\S]*?)<\/mistake>/gi, (_raw: string, attrs: string, inner: string) => {
+    const type = attrs.match(/type="([^"]+)"/i)?.[1] || 'practice';
+    const correct = attrs.match(/correct="([^"]+)"/i)?.[1] || '';
+    if (type === 'practice' && correct) {
+      // An empty tag may refer to the first practice in this answer, but
+      // never create a mistake record without a usable question.
+      const question = stripTags(decodeEntities(inner)).trim() || practices[0]?.parsed.problem || '';
+      if (question) deps?.recordMistake({
+        type: 'practice', q: question, options: [], correct,
+        userAnswer: null, judgedAnswer: correct,
+      });
+    }
+    return '';
+  });
+}
+
+/** Build final message HTML and schedule mounts for its widget slots. */
 export function buildAssistantHtml(rawText: unknown): string {
   /* Never render provider scratch work, including historical messages that
      were saved before this policy changed. */
@@ -142,135 +190,12 @@ export function buildAssistantHtml(rawText: unknown): string {
   const examplePH: SlotEntry<ParsedExample>[] = [];
   const practicePH: SlotEntry<PracticeParsed>[] = [];
 
-  /* Pass 1: <quiz>…</quiz> → interactive multiple-choice widget.
-     One-question-per-turn rule: only the FIRST <quiz> block becomes a
-     tappable widget; any extra <quiz> blocks the model emitted are
-     stripped to escaped plain text so they read as prose instead of
-     trying to mount a second widget. */
-  const quizRe = /<quiz\b[^>]*>([\s\S]*?)<\/quiz>/gi;
-  let m: RegExpExecArray | null;
-  let qi = 0;
-  let quizCount = 0;
-  while ((m = quizRe.exec(text)) !== null) {
-    const raw = m[0];
-    if (quizCount >= 1) {
-      /* Convert to escaped plain text — show the question stem, not
-         the answer options, so the user can read what the model said
-         without seeing answer choices hanging in the air. */
-      const parsedLate = parseQuizInner(m[1]);
-      const replacement = parsedLate && parsedLate.q ? esc(parsedLate.q) : esc(raw);
-      text = text.slice(0, m.index) + '\n\n' + replacement + '\n\n' + text.slice(quizRe.lastIndex);
-      quizRe.lastIndex = m.index + replacement.length + 4;
-      continue;
-    }
-    const parsed = parseQuizInner(m[1]);
-    if (!parsed) {
-      const fbHtml = fallbackBlock(m[1]);
-      text = text.slice(0, m.index) + '\n\n' + fbHtml + '\n\n' + text.slice(quizRe.lastIndex);
-      quizRe.lastIndex = m.index + fbHtml.length + 4;
-      continue;
-    }
-    const id = 'quiz-' + ++qi + '-' + randomSuffix();
-    const slot = '<div class="quiz-slot" data-quiz-id="' + id + '"></div>';
-    text = text.slice(0, m.index) + '\n\n' + slot + '\n\n' + text.slice(quizRe.lastIndex);
-    quizRe.lastIndex = m.index + slot.length + 4;
-    quizPH.push({ id, parsed });
-    quizCount++;
-  }
-
-  /* Pass 2: <example>…</example> → worked-example card with hidden solution
-     behind a reveal button (added in change 3). */
-  const exampleRe = /<example\b[^>]*>([\s\S]*?)<\/example>/gi;
-  let em: RegExpExecArray | null;
-  let ei = 0;
-  while ((em = exampleRe.exec(text)) !== null) {
-    const parsedEx = parseExampleInner(em[1]);
-    if (!parsedEx) {
-      const fbHtml = fallbackBlock(em[1]);
-      text = text.slice(0, em.index) + '\n\n' + fbHtml + '\n\n' + text.slice(exampleRe.lastIndex);
-      exampleRe.lastIndex = em.index + fbHtml.length + 4;
-      continue;
-    }
-    const eId = 'ex-' + ++ei + '-' + randomSuffix();
-    const eSlot = '<div class="example-slot" data-example-id="' + eId + '"></div>';
-    text = text.slice(0, em.index) + '\n\n' + eSlot + '\n\n' + text.slice(exampleRe.lastIndex);
-    exampleRe.lastIndex = em.index + eSlot.length + 4;
-    examplePH.push({ id: eId, parsed: parsedEx });
-  }
-
-  /* Pass 3: <practice>…</practice> → interactive practice card with a
-     textarea + Submit button (added in change 2). The optional
-     `correct="…"` attribute on the opening tag enables self-grading
-     and a Reveal-answer button.
-     One-question-per-turn rule: only the FIRST <practice> block becomes
-     a tappable widget; extras are stripped to escaped plain text. */
-  const practiceRe = /<practice\b([^>]*)>([\s\S]*?)<\/practice>/gi;
-  let pm: RegExpExecArray | null;
-  let pi = 0;
-  let practiceCount = 0;
-  while ((pm = practiceRe.exec(text)) !== null) {
-    const pAttrs = pm[1] || '';
-    const pCorrectM = pAttrs.match(/correct="([^"]+)"/i);
-    if (practiceCount >= 1) {
-      const parsedLate = parsePracticeInner(pm[2]);
-      const replacement =
-        parsedLate && parsedLate.problem ? esc(parsedLate.problem) : esc(pm[0]);
-      text = text.slice(0, pm.index) + '\n\n' + replacement + '\n\n' + text.slice(practiceRe.lastIndex);
-      practiceRe.lastIndex = pm.index + replacement.length + 4;
-      continue;
-    }
-    const parsedPr: PracticeParsed | null = parsePracticeInner(pm[2]);
-    if (!parsedPr) {
-      const fbHtml = fallbackBlock(pm[2]);
-      text = text.slice(0, pm.index) + '\n\n' + fbHtml + '\n\n' + text.slice(practiceRe.lastIndex);
-      practiceRe.lastIndex = pm.index + fbHtml.length + 4;
-      continue;
-    }
-    if (pCorrectM) {
-      parsedPr.correct = pCorrectM[1];
-    }
-    const pId = 'pr-' + ++pi + '-' + randomSuffix();
-    const pSlot = '<div class="practice-slot" data-practice-id="' + pId + '"></div>';
-    text = text.slice(0, pm.index) + '\n\n' + pSlot + '\n\n' + text.slice(practiceRe.lastIndex);
-    practiceRe.lastIndex = pm.index + pSlot.length + 4;
-    practicePH.push({ id: pId, parsed: parsedPr });
-    practiceCount++;
-  }
-
-  /* Pass 4: <mistake>…</mistake> → record to mistake book, strip from prose. */
-  const mistakeRe = /<mistake\b([^>]*)>([\s\S]*?)<\/mistake>/gi;
-  let mm: RegExpExecArray | null;
-  while ((mm = mistakeRe.exec(text)) !== null) {
-    const attrs = mm[1] || '';
-    const typeM = attrs.match(/type="([^"]+)"/i);
-    const correctM = attrs.match(/correct="([^"]+)"/i);
-    const mistakeType = typeM ? typeM[1] : 'practice';
-    const correctVal = correctM ? correctM[1] : '';
-    if (mistakeType === 'practice' && correctVal) {
-      /* U-L4 — capture the actual problem text instead of a placeholder.
-         Prefer the tag's inner content; fall back to the first <practice>
-         problem parsed from this same message (Pass 3 runs before us).
-         Skip recording entirely when neither exists — a card with no
-         question is useless in the mistake book and Redo would mount
-         an empty widget. */
-      let mistakeQ = stripTags(decodeEntities(mm[2] || '')).trim();
-      if (!mistakeQ && practicePH.length) {
-        mistakeQ = practicePH[0].parsed.problem || '';
-      }
-      if (mistakeQ) {
-        deps.recordMistake({
-          type: 'practice',
-          q: mistakeQ,
-          options: [],
-          correct: correctVal,
-          userAnswer: null,
-          judgedAnswer: correctVal,
-        });
-      }
-    }
-    text = text.slice(0, mm.index) + text.slice(mistakeRe.lastIndex);
-    mistakeRe.lastIndex = mm.index;
-  }
+  // Preserve pass order and one interactive question of each kind per turn.
+  // Malformed blocks stay readable; later questions become escaped prose.
+  text = replaceQuizSlots(text, quizPH);
+  text = replaceExampleSlots(text, examplePH);
+  text = replacePracticeSlots(text, practicePH);
+  text = recordInlineMistakes(text, practicePH);
 
   const scaffoldPH = extractScaffoldWidgets(text, { t, esc });
   text = scaffoldPH.text as string;

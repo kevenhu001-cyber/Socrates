@@ -1,6 +1,7 @@
 import { whenFontsReady } from './helpers.ts';
 import { VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { ensureMermaid, ensurePlotly } from '../vendor/lazy.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 let plotlyPromise;
 let mermaidPromise;
@@ -30,13 +31,14 @@ function cssColor(name, fallback) {
    light, and vice versa. ECharts cards re-theme in visualization.js; this is
    the same hook for the specialised renderers. Returns a disconnect fn. */
 function watchTheme(onChange) {
-  if (typeof MutationObserver === 'undefined') return () => {};
+  if (typeof MutationObserver === 'undefined') return;
   let last = document.documentElement.getAttribute('data-mode');
   const observer = new MutationObserver(() => {
     const mode = document.documentElement.getAttribute('data-mode');
     if (mode === last) return;
     last = mode;
-    try { onChange(mode); } catch (_) { /* a failed re-theme keeps the old colours */ }
+    try { onChange(mode); }
+    catch (error) { reportSwallow(error, 'visualizationAdapters.themeChange'); }
   });
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode', 'data-theme'] });
   return () => observer.disconnect();
@@ -97,7 +99,6 @@ export function plotlyTracesForVisualization(spec, colors, sampleFunctionImpl) {
 
 function downloadSvgAdapter(stage) {
   return {
-    dispatchAction() {},
     getDataURL() {
       const svg = stage.querySelector('svg');
       if (!svg) return '';
@@ -143,7 +144,7 @@ async function mountPlotly(spec, stage, helpers) {
       dispatchAction() { Plotly.relayout(stage, { 'xaxis.autorange': true, 'yaxis.autorange': true }); },
       getDataURL() { return Plotly.toImage(stage, { format: 'png', width: 1400, height: 820, scale: 1 }); },
     },
-    cleanup() { stopWatchingTheme(); Plotly.purge(stage); },
+    cleanup() { stopWatchingTheme?.(); Plotly.purge(stage); },
   };
 }
 
@@ -213,11 +214,13 @@ async function mountMermaid(spec, stage) {
   };
   await whenFontsReady('Geist Sans');
   await draw();
-  const stopWatchingTheme = watchTheme(() => { draw().catch(() => {}); });
+  const stopWatchingTheme = watchTheme(() => {
+    draw().catch((error) => { reportSwallow(error, 'visualizationAdapters.mermaid.themeRender'); });
+  });
   return {
     handled: true,
     chart: downloadSvgAdapter(stage),
-    cleanup() { disposed = true; stopWatchingTheme(); stage.replaceChildren(); },
+    cleanup() { disposed = true; stopWatchingTheme?.(); stage.replaceChildren(); },
   };
 }
 
@@ -400,7 +403,7 @@ async function mountWhiteboard(spec, stage) {
 
 /**
  * Unified adapter contract — every branch returns
- *   { handled: boolean, chart: { dispatchAction, getDataURL } | null, cleanup(): void }
+ *   { handled: boolean, chart: { dispatchAction?, getDataURL } | null, cleanup(): void }
  * `cleanup` releases every resource the adapter created (ResizeObserver, RAF,
  * OrbitControls, WebGL context, tldraw root, message listeners) and is invoked
  * through `disposeCard`, which guards against double disposal. The React host

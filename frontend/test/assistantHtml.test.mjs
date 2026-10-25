@@ -106,6 +106,39 @@ test('unparseable quiz renders the fallback card', () => {
   assert.doesNotMatch(html, /data-quiz-id/);
 });
 
+test('invalid questions do not consume the one interactive quiz or practice slot', () => {
+  const quiz = '<quiz><q>Pick?</q><o letter="A">x</o><o letter="B">y</o><correct>A</correct></quiz>';
+  const html = buildAssistantHtml('<quiz>invalid</quiz>' + quiz + quiz + '<practice>invalid</practice><practice><problem>First</problem></practice><practice><problem>Later</problem></practice>');
+  assert.equal((html.match(/data-quiz-id="/g) || []).length, 1);
+  assert.equal((html.match(/data-practice-id="/g) || []).length, 1);
+  assert.equal((html.match(/inline-block-fallback-label/g) || []).length, 2);
+  assert.match(html, /Pick\?/);
+  assert.match(html, /Later/);
+});
+
+test('multiple examples retain independent slots and preserve surrounding prose', () => {
+  const example = '<example><problem>P</problem><solution>S</solution></example>';
+  const html = buildAssistantHtml('Before\n' + example + '\nMiddle\n' + example + '\nAfter');
+  const ids = [...html.matchAll(/data-example-id="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(ids.length, 2);
+  assert.equal(new Set(ids).size, 2);
+  assert.match(html, /Before[\s\S]*Middle[\s\S]*After/);
+});
+
+test('empty mistake tags use the first practice question and ignore unusable records', () => {
+  const seen = [];
+  configureAssistantHtml({ recordMistake: (entry) => seen.push(entry) });
+  try {
+    const html = buildAssistantHtml('<practice><problem>First question?</problem></practice><mistake correct="42"></mistake><mistake type="quiz" correct="A">Ignored</mistake><mistake>No answer</mistake>');
+    assert.doesNotMatch(html, /<mistake|Ignored|No answer/);
+    assert.deepEqual(seen, [{ type: 'practice', q: 'First question?', options: [], correct: '42', userAnswer: null, judgedAnswer: '42' }]);
+    buildAssistantHtml('<mistake correct="42"></mistake>');
+    assert.equal(seen.length, 1);
+  } finally {
+    configureAssistantHtml({ recordMistake: () => {} });
+  }
+});
+
 test('example and practice blocks become slots', () => {
   const html = buildAssistantHtml(
     '<example><title>T</title><problem>P</problem><solution>S</solution></example>',

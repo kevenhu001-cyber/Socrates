@@ -7,7 +7,7 @@ interface ParkableVizCard extends HTMLElement {
   __vizParkTimer?: ReturnType<typeof setTimeout> | null;
 }
 
-let _processPendingViz = function () {};
+let _processPendingViz: (() => void) | undefined;
 export function configureVizCardRegistry(processPendingViz: () => void): void {
   if (typeof processPendingViz === 'function') _processPendingViz = processPendingViz;
 }
@@ -118,7 +118,7 @@ function _unparkVizCard(card: ParkableVizCard | null | undefined): void {
   if (card.id && !_pendingViz.some(function (item: { id: string }) { return item.id === card.id; })) {
     _pendingViz.push({ id: card.id });
   }
-  try { _processPendingViz(); } catch (e) { reportSwallow(e, 'viz._unparkVizCard.processPendingViz'); /* ignore */ }
+  try { _processPendingViz?.(); } catch (e) { reportSwallow(e, 'viz._unparkVizCard.processPendingViz'); /* ignore */ }
 }
 
 /* Test hooks — the IntersectionObserver path needs a real layout
