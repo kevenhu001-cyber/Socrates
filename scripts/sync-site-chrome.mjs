@@ -6,7 +6,11 @@ import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../site/', import.meta.url));
-const version = '20261023u7';
+// Bump whenever chrome.css / public.css / fonts.css / chrome.js / motion.js /
+// locale.js change: the site serves them with `cache-control: immutable,
+// max-age=604800`, so a returning browser keeps the old bytes for a week
+// unless the query string changes.
+const version = '20261025u1';
 const appPages = new Set(['account', 'profile', 'api-keys', 'checkout']);
 const appURL = 'https://app.topodrive.top';
 const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
