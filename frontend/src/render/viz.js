@@ -175,7 +175,7 @@ export function processPendingViz(root) {
         var card = entry.card;
         if (!card || card.getAttribute('data-viz-state') === 'ready') return;
         if (!card.isConnected) return;
-        try { iframe.contentWindow && iframe.contentWindow.postMessage({ type: 'viz-ping', vizId: item.id }, '*'); }
+  try { if (iframe.contentWindow) iframe.contentWindow.postMessage({ type: 'viz-ping', vizId: item.id }, '*'); }
         catch (e) { reportSwallow(e, 'viz.processPendingViz.pingCard'); /* cannot even post → the grace window lapses into the banner */ }
         entry.pingTimer = setTimeout(function () {
           // A ping answer arrives as an ordinary viz-ready; if the

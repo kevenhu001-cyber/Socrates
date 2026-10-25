@@ -13,6 +13,17 @@ import type { TurnRuntimeState } from './runtimeState.ts';
 import type { FinishRender, FinishRenderResult } from './finishRender.ts';
 import type { FinishViewport } from './finishViewport.ts';
 
+interface BranchState {
+  currentIndex: number;
+  variants: Array<{
+    rawText?: string;
+    html?: string | null;
+    reasoningContent?: string | null;
+    toolCalls?: unknown;
+    turnRuntime?: unknown;
+  }>;
+}
+
 export interface FinishLifecycle {
   finish(): void;
 }
@@ -100,8 +111,8 @@ export function createFinishLifecycle(
 
     /* Branch variant update — commit final text & html into active variant */
     const currentMsg = readTurnMessage(state.msgIdx);
-    if (currentMsg && currentMsg.branchInfo && Array.isArray((currentMsg.branchInfo as any).variants)) {
-      const bInfo = currentMsg.branchInfo as any;
+    const bInfo = currentMsg?.branchInfo as BranchState | undefined;
+    if (currentMsg && bInfo && Array.isArray(bInfo.variants)) {
       const currIdx = bInfo.currentIndex;
       if (bInfo.variants[currIdx]) {
         bInfo.variants[currIdx].rawText = state.full;
@@ -134,7 +145,7 @@ export function createFinishLifecycle(
       if (nextPrompt) {
         setTimeout(() => {
           try {
-            const win = window as any;
+            const win = window as Window & { submitChatMessage?: (text: string, options: { bypassQueue: boolean }) => unknown };
             if (typeof win.submitChatMessage === 'function') {
               void win.submitChatMessage(nextPrompt.text, { bypassQueue: true });
             }

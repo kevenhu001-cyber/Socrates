@@ -137,7 +137,7 @@ export function mountPracticeWidget(slot, parsed) {
       feedback.textContent = t('tutor.practiceSent');
       return;
     }
-    const normalize = (value) => String(value).toLowerCase().replace(/[\s.,;:!?()[\]'\"]+/g, '').trim();
+    const normalize = (value) => String(value).toLowerCase().replace(/[\s.,;:!?()[\]'"]+/g, '').trim();
     const isCorrect = normalize(answer) === normalize(parsed.correct);
     feedback.className = `inline-practice-feedback ${isCorrect ? 'ok' : 'bad'}`;
     feedback.textContent = isCorrect ? t('tutor.practiceSelfCorrect') : `${t('tutor.practiceSelfWrong')} ${parsed.correct}`;

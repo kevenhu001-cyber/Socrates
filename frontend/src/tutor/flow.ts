@@ -194,7 +194,7 @@ export function buildFollowUpMessages(
      answers we know `stateStore.read("practiceAttempts")` was bumped on wrong
      attempts; a fresh attempts===0 in the exercise stage implies
      the user just got it right. */
-  let stageGuidance = '';
+  let stageGuidance: string;
   if (stage === 'exercise') {
     stageGuidance =
       attempts > 0

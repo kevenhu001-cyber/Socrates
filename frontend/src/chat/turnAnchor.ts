@@ -589,9 +589,9 @@ export function scheduleActiveTurnToTop(
     if (!list) return;
     const styles = getComputedStyle(list);
     const bottomPadding = parseFloat(styles.paddingBottom) || 0;
-    let anchor: Element | null = null;
+    let anchor: Element | null;
     let targetOffset = TURN_ANCHOR_TOP_OFFSET;
-    let reserve = TURN_ANCHOR_MIN_RESERVE;
+    let reserve: number;
     if (retryViewport) {
       /* Re-running the positioning pass must be idempotent. Clear the
          previous leading-space correction before measuring; otherwise the

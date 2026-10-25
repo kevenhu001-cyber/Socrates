@@ -19,7 +19,7 @@ export interface MockDiagTemplate {
 }
 
 export function aiGenerate(topic: string): { domain: string; nodes: unknown[]; diagQuestions: MockDiagQuestion[] } {
-  let clean=topic.replace(/^(i want to |i'd like to |i would like to |learn about |learn |understand |study |explore )/i,"").replace(/[.!?]+$/,"").trim();
+  const clean=topic.replace(/^(i want to |i'd like to |i would like to |learn about |learn |understand |study |explore )/i,"").replace(/[.!?]+$/,"").trim();
   let domain=clean.length>30?clean.substring(0,27)+"...":clean;
   domain=domain.charAt(0).toUpperCase()+domain.slice(1);
 
@@ -39,7 +39,7 @@ export function aiGenerate(topic: string): { domain: string; nodes: unknown[]; d
     {name:"Critical analysis and advanced "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]}
   ];
 
-  let diagQs=generateMockDiagQs(domain);
+  const diagQs=generateMockDiagQs(domain);
   return {domain:domain,nodes:nodes,diagQuestions:diagQs};
 }
 
@@ -51,7 +51,7 @@ export function generateMockDiagQs(domain: string): MockDiagQuestion[] {
   /* The 5 fixed mock KB node names — used both to name the subareas and
      to seed the KB so the question's nodeIdx actually lines up.
      P_cold-start-coverage — aligned with the 5 knowledge dimensions. */
-  let subareaNames=["Basic concepts of "+domain,"Core principles of "+domain,"Practical applications of "+domain,"Common problems and pitfalls in "+domain,"Critical analysis and advanced "+domain];
+  const subareaNames=["Basic concepts of "+domain,"Core principles of "+domain,"Practical applications of "+domain,"Common problems and pitfalls in "+domain,"Critical analysis and advanced "+domain];
   const templates: MockDiagTemplate[] = [
     {knowledgePoint:"core definitions and key vocabulary",subarea:subareaNames[0],nodeIdx:0,
      q:["How familiar are you with the core concepts of "+domain+"?","What is your current level of understanding of "+domain+"'s core ideas?"],

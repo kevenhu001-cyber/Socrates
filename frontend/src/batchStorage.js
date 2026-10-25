@@ -96,7 +96,7 @@ function _overrideStorageInstances() {
 
 (function _probeStorage() {
   if (typeof window === "undefined") return;
-  var inIframe = false;
+  var inIframe;
   try { inIframe = window.self !== window.top; } catch (_) { inIframe = true; }
   if (inIframe) { _overrideStorageInstances(); _notifyStorageBlockedOnce(); return; }
   var probeKey = "__socrates_probe__";

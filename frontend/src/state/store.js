@@ -197,9 +197,9 @@ var stateStore = (function () {
             continue;
           }
           if (inner.type === 'state/set') {
-            var setPath = pathFor(inner.key);
+            const setPath = pathFor(inner.key);
             if (!setPath) throw new TypeError('Unknown state key: ' + inner.key);
-            var setParts = setPath.split('.');
+            const setParts = setPath.split('.');
             dispatchToNamespace(setParts[0], {
               type: setParts[0] + '/set',
               key: setParts[1],

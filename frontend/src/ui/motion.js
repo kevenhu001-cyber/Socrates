@@ -217,7 +217,7 @@ export function smoothDampStep(current, target, velocity, smoothTime, dt) {
   const change = current - target;
   const temp = (velocity + omega * change) * dt;
   const nextVelocity = (velocity - omega * temp) * exp;
-  let next = target + (change + temp) * exp;
+  const next = target + (change + temp) * exp;
   /* Overshoot guard: a step that crosses the target lands exactly on
      it — an arrival, not a bounce. */
   if ((target - current > 0) === (next > target)) {

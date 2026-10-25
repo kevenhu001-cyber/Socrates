@@ -73,7 +73,7 @@ export function stripCitationMarkers(s: string): string {
      so "with [1]." becomes "with." not "with .". A following "(" or ":"
      cancels the strip so markdown links "[1](url)" and reference
      definitions "[1]: url" survive. */
-  t = t.replace(/[ \t]?((?:[\[【]\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}[\]】])+)(?!\s*[(（:\[])/g,
+  t = t.replace(/[ \t]?((?:[[【]\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}[\]】])+)(?!\s*[(（:[])/g,
     (m, run: string) => {
       // Every group must pair the same bracket style; a stray "[1】" or
       // mixed "[1】【2]" run stays as-is.

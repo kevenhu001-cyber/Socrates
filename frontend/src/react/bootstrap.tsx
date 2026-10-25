@@ -6,7 +6,7 @@ import { mountRegistryList } from './lib/boot/specs';
 import { mountAssistantTurn, releaseAssistantTurns } from './tool-run';
 import type { LegacyChatMessage } from './types/domain';
 
-export function bootstrapReactCompatibilityRuntime(): Root {
+export function bootstrapReactCompatibilityRuntime(): Root | null {
   window.__socratesMountAssistantTurn = (container, message, options) =>
     mountAssistantTurn(container, message as LegacyChatMessage, options);
   window.__socratesReleaseAssistantTurns = releaseAssistantTurns;
@@ -23,8 +23,12 @@ export function bootstrapReactCompatibilityRuntime(): Root {
      registry is idempotent, so a second call only mounts hosts that were
      deferred. */
   runMountRegistry(document, { labels: new Set(['sidebar-nav']) });
-  (window as any).__socratesMountReactCompatibility = () => {
+  const runtime = window as Window & {
+    __socratesMountReactCompatibility?: () => void;
+    __socratesPillRoot?: Root | null;
+  };
+  runtime.__socratesMountReactCompatibility = () => {
     runMountRegistry(document);
   };
-  return (window as any).__socratesPillRoot ?? null;
+  return runtime.__socratesPillRoot ?? null;
 }

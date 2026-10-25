@@ -57,10 +57,10 @@ export function useSettingsDialogA11y(
 
   useEffect(() => {
     if (!open) return;
-    const trigger = captureTrigger(overlayRef.current);
+    const overlay = overlayRef.current;
+    const trigger = captureTrigger(overlay);
     setModalOpen('settingsOverlay', true, trigger);
     const timeoutId = window.setTimeout(() => {
-      const overlay = overlayRef.current;
       const explicit = overlay?.querySelector('[data-initial-focus]') as HTMLElement | null;
       if (!explicit) return;
       const active = document.activeElement;
@@ -82,7 +82,7 @@ export function useSettingsDialogA11y(
       /* Release the shell first: the trigger lives inside it and stays
          unfocusable while it is inert. */
       setModalOpen('settingsOverlay', false);
-      restoreTriggerFocus(trigger, overlayRef.current);
+      restoreTriggerFocus(trigger, overlay);
     };
   }, [open, overlayRef]);
 }

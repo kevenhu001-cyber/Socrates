@@ -189,8 +189,8 @@ export function switchMessageBranch(messageId: string, targetIndex: number): boo
     rawText: target.rawText || '',
     html: target.html || null,
     attachments: target.attachments || [],
-    toolCalls: (target.toolCalls as any) || [],
-    turnRuntime: target.turnRuntime as any,
+    toolCalls: (target.toolCalls as LegacyChatMessage['toolCalls']) || [],
+    turnRuntime: target.turnRuntime as LegacyChatMessage['turnRuntime'],
     reasoningContent: target.reasoningContent || null,
     branchInfo: updatedBranchInfo,
   };

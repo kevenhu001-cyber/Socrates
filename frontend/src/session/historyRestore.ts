@@ -240,7 +240,7 @@ export function restoreInterruptedResponse(session: RestorableSession, msgList: 
     if (lastUserMessage && typeof win.askChatTurn === 'function') {
       /* askChatTurn slices this user turn out of history; carry multimodal
          parts explicitly so retry preserves its attachments. */
-      let lastUserParts: unknown = null;
+      let lastUserParts: unknown;
       try { lastUserParts = buildUserContentParts(lastUserMessage, lastUserEntry && lastUserEntry.attachments); } catch { lastUserParts = null; }
       quietTurn(win.askChatTurn(lastUserMessage, lastUserParts));
     } else {

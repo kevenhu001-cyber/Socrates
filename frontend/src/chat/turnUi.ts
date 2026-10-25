@@ -47,7 +47,7 @@ function messages(): TurnMessage[] {
 export function isExpectedTurnAbort(e: unknown): boolean {
   if (!e) return true;
   const error = e as { reason?: unknown; message?: unknown; name?: unknown };
-  let s = '';
+  let s: string;
   try { s = String((error.reason != null ? error.reason : '') + ' ' + (error.message || e)).toLowerCase(); } catch { return false; }
   if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(s)) return true;
   let nm = '';
@@ -109,7 +109,7 @@ export function resendLastUserMessage(): boolean {
     /* Resend rewinds to the last user turn, so askChatTurn slices that
        entry out of history and re-appends the explicit content — rebuild
        its multimodal parts here or the resend loses image/PDF/text. */
-    let parts: unknown = null;
+    let parts: unknown;
     try { parts = buildUserContentParts(text, attachments); } catch { parts = null; }
     quietTurn(win.askChatTurn(text, parts));
     return true;

@@ -193,7 +193,7 @@ export async function callAPIStream(
         if (!rebindsSameTurn) abandonServerTurn(activeTurn.current);
         /* Renew clientTurnId so attempt 2 does not collide with attempt 1's
            turn execution claim on the server. */
-        if (opts && typeof opts === 'object' && opts.clientTurn && typeof (opts.clientTurn as any).id === 'string') {
+        if (opts && typeof opts === 'object' && opts.clientTurn && typeof (opts.clientTurn as { id?: unknown }).id === 'string') {
           (opts.clientTurn as { id: string }).id = newClientTurnId();
         }
         activeTurn.current = null;

@@ -39,7 +39,7 @@ export function renderLinkPreviews(targetEl, urls, results) {
     const fetched = (results && results[i]) || null;
     const card = document.createElement('div');
     card.className = 'link-card ' + (fetched && fetched.ok ? 'ok' : 'err');
-    let host = '';
+    let host;
     try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (_) { host = url; }
     const title = (fetched && fetched.title) || url;
     const excerpt = fetched && fetched.content

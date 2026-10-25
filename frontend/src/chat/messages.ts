@@ -105,7 +105,7 @@ export function addMessage(
      state/batch-actions so the listener walk happens once at the end of
      the batch and React commits a single coherent snapshot. */
   const _batchActions: Array<Record<string, unknown>> = [{ type: 'session/append-message', payload: entry }];
-  let _curIdx = -1;
+  let _curIdx: number;
   let _curNode: { status?: string; questions?: number } | undefined | null;
   if (role === 'user') {
     _batchActions.push({ type: 'state/set', key: '_userScrolledAway', value: false });

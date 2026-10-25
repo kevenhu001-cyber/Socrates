@@ -19,7 +19,7 @@ const PURIFY_CONFIG: {
 } = {
   ADD_TAGS: ['theorem', 'proof', 'key-point', 'derivation'],
   ADD_ATTR: ['target', 'rel'],
-  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
   KEEP_CONTENT: true,
   RETURN_DOM_FRAGMENT: false,
   RETURN_DOM: false,

@@ -117,7 +117,7 @@ function vizRuntime(vizId) {
         'document.addEventListener("DOMContentLoaded",ready)' +
       '}' +
     '})();' +
-  '<\/script>';
+  '</script>';
 }
 
 /* Session-level view preference for the Preview/Code toggle. Once a
@@ -274,7 +274,7 @@ function guardUserScripts(html, vizId) {
       'try{window.parent.postMessage({type:"viz-error",vizId:' + idJson + ',message:window.__vizErr},"*")}catch(_){}' +
       '}' +
     '}).call(this);';
-    return '<script' + (attrs || '') + '>' + safe + '<\/script>';
+    return '<script' + (attrs || '') + '>' + safe + '</script>';
   });
 }
 
@@ -304,7 +304,7 @@ export function renderViz(htmlStr, opts) {
   // user's inline <script>s.
   var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
-    '<script>window.__vizId=' + JSON.stringify(id) + ';<\/script>' +
+    '<script>window.__vizId=' + JSON.stringify(id) + ';</script>' +
     '</head><body>' + guardUserScripts(cleaned, id) + vizRuntime(id) + '</body></html>';
   var srcdoc = encodeSrcdoc(doc);
   var bodyHtml =
@@ -458,16 +458,16 @@ export function renderPlot(spec, opts) {
         'ctx.fillStyle=axisColor;ctx.font="italic "+Math.floor(11*dpr)+"px sans-serif";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillText("f(x) = "+p.expr,left,Math.floor(6*dpr));' +
       '}' +
       'draw();' +
-    '})();<\/script>';
+    '})();</script>';
   // CRITICAL: set window.__plot BEFORE the canvas init script runs.
   // The previous version placed the setAttribute call AFTER the
   // canvas init, which made the canvas read null and silently fail
   // to draw. We use a <script> at the TOP of <body> that runs
   // synchronously before any subsequent <script>.
-  var setupScript = '<script>window.__plot=' + payloadJson + ';<\/script>';
+  var setupScript = '<script>window.__plot=' + payloadJson + ';</script>';
   var doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
-    '<script>window.__vizId=' + JSON.stringify(id) + ';<\/script>' +
+    '<script>window.__vizId=' + JSON.stringify(id) + ';</script>' +
     '</head><body>' + setupScript + innerHtml + vizRuntime(id) + '</body></html>';
   var srcdoc = encodeSrcdoc(doc);
   var bodyHtml =

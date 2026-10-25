@@ -5,6 +5,12 @@
 import { stateStore } from '../state/store.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 
+type ChatResultWindow = Window & {
+  askChatTurn(text: string): Promise<unknown>;
+  isExpectedTurnAbort?: (error: unknown) => boolean;
+  addMessage?: (role: string, text: string) => string;
+};
+
 /* Detect a tool envelope in the model's response. Returns:
       null — not a tool call
       {tool:"web_search", query:"..."} — a real tool call
@@ -39,7 +45,7 @@ function parseToolCall(text: string): { tool: string; query: string } | null {
   if (bare) {
     return { tool: 'web_search', query: bare[1].slice(0, 200) };
   }
-  const lenient = text.match(/\{\s*["']?tool["']?\s*:\s*["']?web_search["']?\s*,\s*["']?query["']?\s*:\s*["']?([^"'\}\s][^"'\}]*?)["']?\s*\}/i);
+  const lenient = text.match(/\{\s*["']?tool["']?\s*:\s*["']?web_search["']?\s*,\s*["']?query["']?\s*:\s*["']?([^"'}\s][^"'}]*?)["']?\s*\}/i);
   if (lenient) {
     return { tool: 'web_search', query: lenient[1].slice(0, 200) };
   }
@@ -127,10 +133,10 @@ function handleChatApiResult(
         try {
           const p = (typeof retry === 'function'
             ? retry()
-            : (window as any).askChatTurn(userText)) as Promise<unknown> | undefined;
+            : (window as unknown as ChatResultWindow).askChatTurn(userText)) as Promise<unknown> | undefined;
           if (p && typeof p.catch === 'function') {
             p.catch((e: unknown) => {
-              const quiet = (window as any).isExpectedTurnAbort;
+              const quiet = (window as unknown as ChatResultWindow).isExpectedTurnAbort;
               if (typeof quiet === 'function' ? !quiet(e) : true) console.error('[chat] retry turn failed:', e);
             });
           }
@@ -140,8 +146,9 @@ function handleChatApiResult(
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
       ctl.abort();
       console.warn('[chat] stream returned no result with no error. result=', result, 'lastCallError=', lastCallError);
-      if ((window as any).addMessage) {
-        const clientId = (window as any).addMessage('assistant', '(response interrupted — no content received)');
+      const runtime = window as unknown as ChatResultWindow;
+      if (runtime.addMessage) {
+        const clientId = runtime.addMessage('assistant', '(response interrupted — no content received)');
         const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
         scheduleTurnToTopForMessage(list, clientId);
       }

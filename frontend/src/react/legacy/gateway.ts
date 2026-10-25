@@ -12,6 +12,28 @@
 //   const label = t('settings.title');
 
 import type { LegacyActions } from './types';
+import type { apiFetch } from '../../util/api';
+
+type ApiFetchFn = typeof apiFetch;
+
+/** Standalone globals already published by windowExports.js. Keep their
+ * compatibility shapes local to this boundary instead of bypassing types. */
+interface StandaloneGlobals {
+  getConnectorIconMarkup?: (id: string) => string;
+  webSearchOn?: boolean;
+  _activeTemplate?: { extensionKey?: unknown } | null;
+  deepResearchOn?: boolean;
+  extensiveThinkingOn?: boolean;
+  _currentLang?: string;
+  apiFetch?: ApiFetchFn;
+  _nextProjectId?: string | null;
+  __activeProject?: Record<string, unknown> | null;
+  CURRENT_USER?: unknown;
+}
+
+function standaloneWindow(): Window & StandaloneGlobals {
+  return window as Window & StandaloneGlobals;
+}
 
 /**
  * Lazy singleton — resolves window.__socratesLegacy once and caches the
@@ -27,7 +49,7 @@ let _bridge: LegacyActions | null = null;
 
 function resolveBridge(): LegacyActions {
   if (_bridge) return _bridge;
-  const b = (window as any).__socratesLegacy as LegacyActions | undefined;
+  const b = window.__socratesLegacy;
   if (!b) {
     throw new Error(
       '[legacy-gateway] window.__socratesLegacy not initialized. ' +
@@ -52,7 +74,7 @@ export function getLegacyActions(): LegacyActions {
  * throwing when the bridge is absent (late boot, teardown, tests).
  */
 export function getLegacyActionsOrNull(): LegacyActions | null {
-  return ((window as any).__socratesLegacy as LegacyActions | undefined) ?? null;
+  return window.__socratesLegacy ?? null;
 }
 
 /**
@@ -70,7 +92,7 @@ export function resetBridgeCache(): void {
  * Falls back to the key itself if the translation function is unavailable.
  */
 export function t(key: string, ...args: unknown[]): string {
-  const fn = (window as any).t;
+  const fn = window.t;
   if (typeof fn === 'function') return fn(key, ...args);
   return key;
 }
@@ -100,7 +122,7 @@ export function i18n(key: string, fallback: string): string {
  * in this file instead of scattering it across React components.
  */
 export function getConnectorIconMarkupFn(): ((id: string) => string) | null {
-  const fn = (window as any).getConnectorIconMarkup;
+  const fn = standaloneWindow().getConnectorIconMarkup;
   return typeof fn === 'function' ? fn : null;
 }
 
@@ -113,12 +135,12 @@ export function getConnectorIconMarkupFn(): ((id: string) => string) | null {
  * `socrates:websearchchange`; callers subscribe to that event for updates.
  */
 export function isWebSearchOn(): boolean {
-  return Boolean((window as any).webSearchOn);
+  return Boolean(standaloneWindow().webSearchOn);
 }
 
 /** Active extension mode selected in the legacy template system, if any. */
 export function getActiveTemplateExtensionKey(): string | null {
-  const template = (window as any)._activeTemplate as { extensionKey?: unknown } | null | undefined;
+  const template = standaloneWindow()._activeTemplate;
   return template && typeof template.extensionKey === 'string'
     ? template.extensionKey
     : null;
@@ -126,43 +148,38 @@ export function getActiveTemplateExtensionKey(): string | null {
 
 /** Legacy deep-research toggle used by the composer tools menu. */
 export function isDeepResearchOn(): boolean {
-  return Boolean((window as any).deepResearchOn);
+  return Boolean(standaloneWindow().deepResearchOn);
 }
 
 /** Legacy extensive-thinking toggle used by the composer tools menu. */
 export function isExtensiveThinkingOn(): boolean {
-  return Boolean((window as any).extensiveThinkingOn);
+  return Boolean(standaloneWindow().extensiveThinkingOn);
 }
 
 /** Active UI language code tracked by the legacy i18n layer (defaults to zh). */
 export function getCurrentLang(): 'zh' | 'en' {
-  return (window as any)._currentLang === 'en' ? 'en' : 'zh';
+  return standaloneWindow()._currentLang === 'en' ? 'en' : 'zh';
 }
-
-type ApiFetchFn = (
-  url: string,
-  init?: Record<string, unknown>,
-) => Promise<any>;
 
 /**
  * Legacy authenticated fetch helper, published in windowExports.js. Returns
  * null before the app boots so call sites keep their optional-chaining shape.
  */
 export function getApiFetch(): ApiFetchFn | null {
-  const fn = (window as any).apiFetch;
+  const fn = standaloneWindow().apiFetch;
   return typeof fn === 'function' ? (fn as ApiFetchFn) : null;
 }
 
 /** Project context still consumed by the legacy session startup path. */
 export function setNextProjectId(projectId: string | null): void {
-  (window as any)._nextProjectId = projectId;
+  standaloneWindow()._nextProjectId = projectId;
 }
 
 export function setActiveProject(project: Record<string, unknown> | null): void {
-  (window as any).__activeProject = project;
+  standaloneWindow().__activeProject = project;
 }
 
 /** The signed-in user record published by the legacy auth layer, or null. */
-export function getCurrentUser<T = Record<string, any>>(): T | null {
-  return (((window as any).CURRENT_USER) ?? null) as T | null;
+export function getCurrentUser<T = Record<string, unknown>>(): T | null {
+  return (standaloneWindow().CURRENT_USER ?? null) as T | null;
 }

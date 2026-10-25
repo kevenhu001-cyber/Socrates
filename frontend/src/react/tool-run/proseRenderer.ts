@@ -4,21 +4,20 @@ import { getLegacyActions } from '../legacy/gateway.ts';
 import { stripLegacyToolHtml } from './toolRunModel.js';
 
 const IMPURE_OUTPUT = /class="viz"|-slot"|canvas-block/;
-function renderEnvKey(): string {
+function renderEnvKey(mathRevision: number): string {
   if (typeof window === 'undefined') return '0';
   const runtime = window as unknown as {
-    __socratesMathRenderRev?: number;
     _currentLang?: string;
     hljs?: unknown;
   };
-  return String(runtime.__socratesMathRenderRev || 0)
+  return String(mathRevision)
     + '|' + (runtime._currentLang || '')
     + '|' + (runtime.hljs ? 1 : 0)
     + '|';
 }
 
-function sharedFinalProse(text: string, paint: () => string): { __html: string } {
-  const key = renderEnvKey() + text;
+function sharedFinalProse(text: string, paint: () => string, mathRevision: number): { __html: string } {
+  const key = renderEnvKey(mathRevision) + text;
   const hit = sharedFinalProseCache.get(key);
   if (hit !== undefined) return hit;
   const box = { __html: paint() };
@@ -66,7 +65,7 @@ export function useProseRenderer(live: boolean): ProseRenderer {
       if (hit !== undefined) return hit;
       const box = live
         ? { __html: paint(text, true) }
-        : sharedFinalProse(text, () => paint(text, true));
+        : sharedFinalProse(text, () => paint(text, true), mathRevision);
       cache.set(key, box);
       return box;
     };

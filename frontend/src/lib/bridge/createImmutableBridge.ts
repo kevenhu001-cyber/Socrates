@@ -131,7 +131,7 @@ export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Actio
          subscribers always see consistent state. The error is
          surfaced through the console; we don't rethrow because the
          dispatch is async-ish (RAF-coalesced). */
-      // eslint-disable-next-line no-console
+
       console.error('[bridge] reducer threw, snapshot preserved', error);
       reportSwallow(error, 'bridge/reducer', 'invariant');
       return;

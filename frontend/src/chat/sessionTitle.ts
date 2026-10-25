@@ -24,15 +24,15 @@ function cleanTitle(value: unknown): string {
     .replace(/<\/?s>/g,"")
     .replace(/\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/g,"")
     .replace(/<[^>]*>/g,"")
-    .replace(/^\s*(?:Title|标题)\s*[:：\-]\s*/i,"")
+    .replace(/^\s*(?:Title|标题)\s*[:：-]\s*/i,"")
     .trim()
     .replace(/^[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+|[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+$/g,"");
 }
 
 function compactTitle(value: unknown): string {
-  let clean=cleanTitle(value);
+  const clean=cleanTitle(value);
   if(!clean)return "";
-  let isZh=/[\u3400-\u9fff]/.test(clean);
+  const isZh=/[\u3400-\u9fff]/.test(clean);
   let sentence=clean.split(isZh ? /[。！？!?;\n]/ : /[.!?\n]/)[0].trim();
   if(!sentence)sentence=clean;
   if(isZh)return Array.from(sentence).slice(0,8).join("").replace(/[\s，。！？；：、]+$/g,"");
@@ -52,7 +52,7 @@ export function generateSessionTitle(): void {
   const topic=(stateStore.read("topic")||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
   if(!sessionId||!topic)return;
   const currentTitle = (stateStore.read("sessionTitle") as string) || "";
-  let ownsFallback=_titleFallbackSession===sessionId&&currentTitle===_titleFallbackValue;
+  const ownsFallback=_titleFallbackSession===sessionId&&currentTitle===_titleFallbackValue;
   if(currentTitle&&!ownsFallback)return;
   if(_titleGenQueued&&_titleGenSession===sessionId)return;
   /* P_title-429 — background title generation must not turn repeated saves
@@ -103,7 +103,7 @@ export function generateSessionTitle(): void {
   apiFetch("/api/chat",{method:"POST",_authEndpoint:true,body:{messages:msgs2,temperature:0.3,max_tokens:30,mode:"chat"}}).then(function(r){
     if(_titleGenSession===sessionId)_titleGenQueued=false;
     if(stateStore.read("currentSessionId")!==sessionId)return;
-    let raw=(r&&typeof r.content==="string")?r.content:
+    const raw=(r&&typeof r.content==="string")?r.content:
       (r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content)||"";
     if(!raw)return;
     /* Mirror the strips formatMsg() / stripChatArtifacts() apply to
@@ -114,7 +114,7 @@ export function generateSessionTitle(): void {
      *    bullets) that would look ugly in a sidebar title. */
     const title = normalizeSessionTitle(raw);
     const latestTitle = (stateStore.read("sessionTitle") as string) || "";
-    let stillOwnsTitle=_titleFallbackSession===sessionId&&latestTitle===_titleFallbackValue;
+    const stillOwnsTitle=_titleFallbackSession===sessionId&&latestTitle===_titleFallbackValue;
     if(latestTitle&&!stillOwnsTitle)return;
     if(title&&title.length>2){
       /* P_title-save-race — only save the title if the session is

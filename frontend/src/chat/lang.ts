@@ -46,11 +46,11 @@ function detectLanguage(text: string): string {
 function languageDirectiveFor(text: string): string {
   const t = text ? String(text).trim() : '';
   if (t.length >= 2) {
-    if (/^(https?:\/\/|www\.|[\/\\][\w\-./\\]+\.\w{1,5}$)/i.test(t)) return '';
-    if (/^(function\s|class\s|def\s|import\s|const\s|let\s|var\s|#include|<\?xml|<\!DOCTYPE)/i.test(t)) return '';
+    if (/^(https?:\/\/|www\.|[/\\][\w\-./\\]+\.\w{1,5}$)/i.test(t)) return '';
+    if (/^(function\s|class\s|def\s|import\s|const\s|let\s|var\s|#include|<\?xml|<!DOCTYPE)/i.test(t)) return '';
   }
   const hasLangSignal = /[A-Za-z\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0400-\u04ff\u0600-\u06ff]/.test(t);
-  const uiLang = (typeof window !== 'undefined' && (window as any)._currentLang) || '';
+  const uiLang = (typeof window !== 'undefined' && (window as Window & { _currentLang?: string })._currentLang) || '';
   const lang = hasLangSignal ? detectLanguage(t) : (uiLang || detectLanguage(t));
   if (lang === 'zh') {
     return '\n\n## \u8bed\u8a00\u6307\u4ee4\uff08\u6700\u9ad8\u4f18\u5148\u7ea7\uff09\uff1a\u4e25\u683c\u4f7f\u7528\u4e2d\u6587\uff0c\u7981\u6b62\u4e2d\u82f1\u6df7\u7528\n\n' +

@@ -177,7 +177,7 @@ function emitVisibleDelta(state: ProcessorState, context: StreamProcessorContext
 }
 
 function emitJsonDelta(state: ProcessorState, context: StreamProcessorContext, payload: string): void {
-  let message: Record<string, unknown> | null = null;
+  let message: Record<string, unknown> | null;
   try {
     message = JSON.parse(payload);
   } catch (_) {

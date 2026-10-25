@@ -100,7 +100,7 @@ function modelGlyphSVG(g, opts){
   var size = opts.size || 16;
   var sw = 1.5;
   var k = g.kind;
-  var body = "";
+  var body;
   if (k === "compass") {
     /* Outer circle + inner dot + tick marks — reads as a compass face. */
     body = '<circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="' + sw + '"/>' +

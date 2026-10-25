@@ -1,10 +1,10 @@
 import { getApiFetch, getLegacyActions } from '../../legacy/gateway.ts';
-import { getCachedProjects, hasCachedProjects, refreshCachedProjects, setCachedProjects } from '../../../projects/projectCache.ts';
+import { getCachedProjects, hasCachedProjects, refreshCachedProjects, setCachedProjects, type CachedProject } from '../../../projects/projectCache.ts';
 import { patchLibraryData, setWorkspaceLoading, setLibraryCollections, setWorkspacePlugins, setWorkspaceProjects, useWorkspaceStore } from './workspace.store';
 import type { LibraryItem, PluginItem } from './types';
 
 type ApiResponse<T> = T & { error?: string };
-type JsonApi = (path: string, options?: Record<string, unknown>) => Promise<any>;
+type JsonApi = NonNullable<ReturnType<typeof getApiFetch>>;
 
 function api(): JsonApi {
   const request = getApiFetch();
@@ -39,11 +39,11 @@ export async function loadProjectsData(): Promise<void> {
   if (!hasCachedProjects()) setWorkspaceLoading('projects', true);
   try {
     await refreshCachedProjects(() => api()('/api/projects'));
-    setWorkspaceProjects(getCachedProjects() as any[]);
+    setWorkspaceProjects(getCachedProjects());
     setWorkspaceLoading('projects', false);
   } catch (error) {
     // Preserve the last successful list while reporting the failed refresh.
-    setWorkspaceProjects(getCachedProjects() as any[]);
+    setWorkspaceProjects(getCachedProjects());
     setWorkspaceLoading('projects', false);
     const status = error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
     toast(status === 401 ? 'Sign in to create projects.' : 'Projects could not be loaded. Try again.');
@@ -167,10 +167,10 @@ export async function saveProjectRecord(projectId: string | null, data: Record<s
       ? await api()('/api/projects/' + encodeURIComponent(projectId), { method: 'PATCH', body: data })
       : await api()('/api/projects', { method: 'POST', body: data });
     const current = [...getCachedProjects()];
-    const record = saved && typeof saved === 'object' && 'project' in saved ? (saved as { project: any }).project : saved;
+    const record = saved && typeof saved === 'object' && 'project' in saved ? (saved as { project: CachedProject }).project : saved;
     if (projectId) setCachedProjects(current.map((project) => project.id === projectId ? { ...project, ...record } : project));
     else if (record && typeof record.id === 'string') setCachedProjects([...current, record]);
-    setWorkspaceProjects(getCachedProjects() as any[]);
+    setWorkspaceProjects(getCachedProjects());
     toast(projectId ? 'Project updated' : 'Project created');
   } catch {
     toast('Could not save project');
@@ -182,7 +182,7 @@ export async function deleteProjectRecord(id: string): Promise<void> {
   try {
     await api()('/api/projects/' + encodeURIComponent(id), { method: 'DELETE' });
     setCachedProjects(getCachedProjects().filter((project) => project.id !== id));
-    setWorkspaceProjects(getCachedProjects() as any[]);
+    setWorkspaceProjects(getCachedProjects());
     toast('Project deleted');
   } catch {
     toast('Could not delete project');

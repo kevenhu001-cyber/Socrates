@@ -84,7 +84,7 @@ export interface AuthRequests {
 
 /** Start /me and public config requests together after URL-only routes. */
 export function startAuthRequests(preflight: BootPreflight | null): AuthRequests {
-  let meRequest: Promise<unknown> = preflight && preflight.me
+  const meRequest: Promise<unknown> = preflight && preflight.me
     ? adoptPreflight(preflight.me, '/api/auth/me')
     : apiFetch('/api/auth/me', { _authEndpoint: true });
   const settled: Promise<AuthMeResult> = meRequest.then(

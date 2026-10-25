@@ -162,7 +162,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      to Stop, superseding turns and session changes. */
   var urls=extractHttpUrls(userMsg);
   var pageBlocks=[];
-  var pageResults=[];
+  var pageResults;
   if(urls.length){
     const preparation = new AbortController();
     const abortPreparation = () => preparation.abort();

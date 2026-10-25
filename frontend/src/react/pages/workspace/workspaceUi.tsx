@@ -24,7 +24,7 @@ function libraryDate(value?: string): string {
   const diffMs = Math.max(0, Date.now() - date.getTime());
   const elapsedDays = Math.floor(diffMs / (24 * 3600000));
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
-  let rel = '';
+  let rel;
   if (elapsedDays >= 7) {
     rel = rtf.format(-Math.floor(elapsedDays / 7), 'week');
   } else if (elapsedDays >= 1) {

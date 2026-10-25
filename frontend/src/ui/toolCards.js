@@ -87,7 +87,7 @@ export function toolFormatInput(name, inp) {
 }
 
 function stringifyPreview(value, maxLen) {
-  var text = "";
+  var text;
   try {
     text = typeof value === "string" ? value : JSON.stringify(value);
   } catch (_) {
@@ -147,7 +147,7 @@ function syncToolCopyActions(card) {
 export function extractCodeFromArgs(name, argsJson) {
   if (!argsJson || typeof argsJson !== "string") return { code: "", language: "python", parsed: false, truncated: false };
   // Try to parse as JSON; fall back to the raw string when mid-stream.
-  let parsed = null;
+  let parsed;
   try { parsed = JSON.parse(argsJson); } catch (_) { parsed = null; }
   const truncated = parsed === null && argsJson.length > 0;
   if (name === "code_interpreter") {
@@ -191,7 +191,7 @@ export function findToolCard(tcId, root) {
   // CSS.escape so tool_call_ids with non-id-safe characters don't
   // break the selector. Falls back to a manual escape when CSS.escape
   // is unavailable (e.g. jsdom in tests).
-  let safeId = tcId;
+  let safeId;
   if (typeof CSS !== "undefined" && CSS && typeof CSS.escape === "function") {
     safeId = CSS.escape(tcId);
   } else {

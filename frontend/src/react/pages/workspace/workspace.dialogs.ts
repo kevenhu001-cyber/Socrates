@@ -16,7 +16,39 @@ import {
 } from '../scheduled/scheduled.service';
 import { useScheduledStore } from '../scheduled/scheduled.store';
 
-type Api = (path: string, options?: Record<string, unknown>) => Promise<any>;
+type Api = NonNullable<ReturnType<typeof getApiFetch>>;
+
+interface ProjectRunSummary {
+  id: string;
+  task?: string;
+  status?: string;
+  startedAt?: string | number;
+  summary?: string;
+  error?: string;
+}
+
+interface ProjectRunDetails {
+  run?: ProjectRunSummary;
+  artifacts?: Array<{ id: string; name?: string }>;
+  events?: Array<{ event?: string; data?: { command?: string; delta?: unknown } }>;
+}
+
+interface PaperSummary {
+  title?: string;
+  authors?: string[];
+  publishedAt?: string;
+  categories?: string[];
+  abstractUrl?: string;
+  pdfUrl?: string;
+  summary?: string;
+}
+
+interface ReferenceSummary {
+  title?: string;
+  itemType?: string;
+  creators?: string[];
+  date?: string;
+}
 
 function api(): Api {
   const request = getApiFetch();
@@ -208,7 +240,7 @@ async function renderProjectRunHistory(projectId: string): Promise<void> {
   if (!host) return;
   host.innerHTML = `<div class="workspace-loading">${escapeHtml(i18n('dialog.project.runsLoading', 'Loading agent runs…'))}</div>`;
   try {
-    const result = await api()('/api/agent-runs?projectId=' + encodeURIComponent(projectId) + '&limit=8');
+    const result = await api()<{ runs?: ProjectRunSummary[] }>('/api/agent-runs?projectId=' + encodeURIComponent(projectId) + '&limit=8');
     const current = byId('projectRunHistory');
     if (!current) return;
     current.replaceChildren();
@@ -224,7 +256,7 @@ async function renderProjectRunHistory(projectId: string): Promise<void> {
       current.appendChild(empty);
       return;
     }
-    runs.forEach((run: any) => {
+    runs.forEach((run) => {
       const row = document.createElement('div');
       row.className = 'project-run-row';
       const copy = document.createElement('div');
@@ -251,17 +283,17 @@ async function renderProjectRunHistory(projectId: string): Promise<void> {
 async function openAgentRunDetails(runId: string): Promise<void> {
   const dialog = showWorkspaceDialog(`${dialogHeader(i18n('dialog.project.runDetails', 'Agent run'), i18n('dialog.project.runDetailsLoading', 'Loading the execution record…'))}<div id="agentRunDetails" class="agent-run-details"><div class="workspace-loading">${escapeHtml(i18n('dialog.project.runsLoading', 'Loading agent runs…'))}</div></div>`);
   try {
-    const result = await api()('/api/agent-runs/' + encodeURIComponent(runId));
+    const result = await api()<ProjectRunDetails>('/api/agent-runs/' + encodeURIComponent(runId));
     const host = dialog.querySelector<HTMLElement>('#agentRunDetails');
     if (!host) return;
     host.replaceChildren();
-    const run = result?.run || {};
+    const run = result?.run;
     const summary = document.createElement('p');
     summary.className = 'agent-run-details-summary';
-    summary.textContent = run.summary || run.error || i18n('dialog.project.noRunSummary', 'No summary was saved.');
+    summary.textContent = run?.summary || run?.error || i18n('dialog.project.noRunSummary', 'No summary was saved.');
     const status = document.createElement('div');
     status.className = 'agent-run-details-status';
-    status.textContent = runStatusLabel(run.status) + (timeLabel(run.startedAt) ? ' · ' + timeLabel(run.startedAt) : '');
+    status.textContent = runStatusLabel(run?.status) + (timeLabel(run?.startedAt) ? ' · ' + timeLabel(run?.startedAt) : '');
     host.append(summary, status);
     if (Array.isArray(result?.artifacts) && result.artifacts.length) {
       const title = document.createElement('strong');
@@ -269,7 +301,7 @@ async function openAgentRunDetails(runId: string): Promise<void> {
       title.textContent = i18n('dialog.project.artifacts', 'Created artifacts');
       const list = document.createElement('ul');
       list.className = 'agent-run-artifacts';
-      result.artifacts.forEach((artifact: any) => { const item = document.createElement('li'); item.textContent = artifact.name || artifact.id; list.appendChild(item); });
+      result.artifacts.forEach((artifact) => { const item = document.createElement('li'); item.textContent = artifact.name || artifact.id; list.appendChild(item); });
       host.append(title, list);
     }
     if (Array.isArray(result?.events) && result.events.length) {
@@ -278,7 +310,7 @@ async function openAgentRunDetails(runId: string): Promise<void> {
       const title = document.createElement('summary');
       title.textContent = i18n('dialog.project.activity', 'Activity');
       const list = document.createElement('ol');
-      result.events.slice(-40).forEach((event: any) => {
+      result.events.slice(-40).forEach((event) => {
         const item = document.createElement('li');
         const payload = event.data || {};
         item.textContent = String(event.event || 'event') + (payload.command ? ': ' + payload.command : payload.delta ? ': ' + String(payload.delta).slice(0, 160) : '');
@@ -317,8 +349,10 @@ export async function openScheduledTaskForm(taskId?: string, initialPrompt = '')
   const dialog = showWorkspaceDialog(markup);
   const form = dialog.querySelector<HTMLFormElement>('#taskForm');
   if (!form) return;
-  form.elements.namedItem('title') && ((form.elements.namedItem('title') as HTMLInputElement).value = task?.title || initialPrompt.slice(0, 120));
-  form.elements.namedItem('prompt') && ((form.elements.namedItem('prompt') as HTMLTextAreaElement).value = task?.prompt || initialPrompt);
+  const titleInput = form.elements.namedItem('title') as HTMLInputElement | null;
+  const promptInput = form.elements.namedItem('prompt') as HTMLTextAreaElement | null;
+  if (titleInput) titleInput.value = task?.title || initialPrompt.slice(0, 120);
+  if (promptInput) promptInput.value = task?.prompt || initialPrompt;
   (form.elements.namedItem('frequency') as HTMLSelectElement).value = task?.frequency || 'once';
   const agentSelect = form.elements.namedItem('agentKind') as HTMLSelectElement;
   agentSelect.value = task?.agentKind || 'native';
@@ -412,10 +446,10 @@ export function openArxivSearch(): void {
     const query = String(new FormData(form).get('query') || '');
     if (list) list.innerHTML = `<div class="workspace-loading">${i18n('connectors.arxivSearching', 'Searching arXiv…')}</div>`;
     try {
-      const result = await api()('/api/connectors/arxiv/papers?query=' + encodeURIComponent(query));
+      const result = await api()<{ papers?: PaperSummary[] }>('/api/connectors/arxiv/papers?query=' + encodeURIComponent(query));
       if (!list) return;
       const papers = Array.isArray(result?.papers) ? result.papers : [];
-      list.innerHTML = papers.length ? papers.map((paper: any) => {
+      list.innerHTML = papers.length ? papers.map((paper) => {
         const meta = [paper.authors?.join(', '), paper.publishedAt ? new Date(paper.publishedAt).getFullYear() : '', paper.categories?.slice(0, 2).join(', ')].filter(Boolean).join(' · ');
         const links = (paper.abstractUrl ? `<a class="workspace-row-action" href="${escapeHtml(paper.abstractUrl)}" target="_blank" rel="noopener noreferrer">Abstract</a>` : '') + (paper.pdfUrl ? `<a class="workspace-row-action" href="${escapeHtml(paper.pdfUrl)}" target="_blank" rel="noopener noreferrer">PDF</a>` : '');
         return `<div class="workspace-row arxiv-paper"><span class="workspace-row-icon connector-icon connector-arxiv">${connectorIcon('arxiv')}</span><div class="workspace-row-copy"><strong>${escapeHtml(paper.title || 'Untitled paper')}</strong><span>${escapeHtml(meta || 'arXiv preprint')}</span>${paper.summary ? `<p class="arxiv-summary">${escapeHtml(paper.summary)}</p>` : ''}</div><span class="connector-actions">${links}</span></div>`;
@@ -432,10 +466,10 @@ export function openZoteroLibrary(): void {
     const list = dialog.querySelector<HTMLElement>('#zoteroItems');
     if (list) list.innerHTML = `<div class="workspace-loading">${i18n('connectors.zoteroLoading', 'Loading references…')}</div>`;
     try {
-      const result = await api()('/api/connectors/zotero/items?query=' + encodeURIComponent(query));
+      const result = await api()<{ items?: ReferenceSummary[] }>('/api/connectors/zotero/items?query=' + encodeURIComponent(query));
       if (!list) return;
       const items = Array.isArray(result?.items) ? result.items : [];
-      list.innerHTML = items.length ? items.map((item: any) => {
+      list.innerHTML = items.length ? items.map((item) => {
         const details = [item.itemType, item.creators?.join(', '), item.date].filter(Boolean).join(' · ');
         return `<div class="workspace-row zotero-item"><span class="workspace-row-icon connector-icon connector-zotero">${connectorIcon('zotero')}</span><div class="workspace-row-copy"><strong>${escapeHtml(item.title || 'Untitled item')}</strong><span>${escapeHtml(details || 'Zotero item')}</span></div></div>`;
       }).join('') : `<div class="workspace-empty"><strong>${i18n('connectors.zoteroNone', 'No matching references')}</strong><span>${i18n('connectors.zoteroNoneHint', 'Try a title, author, or year.')}</span></div>`;

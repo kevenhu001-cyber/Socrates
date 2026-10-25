@@ -84,7 +84,7 @@ export function renderExtension(
     'window.addEventListener("error",function(e){post({type:"socrates-viz-error",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + ',message:String((e&&e.message)||"runtime error").slice(0,300)})});' +
     'window.addEventListener("unhandledrejection",function(e){post({type:"socrates-viz-error",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + ',message:String((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection").slice(0,300)})});' +
     'post({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '})' +
-    '})()<\/script>';
+    '})()</script>';
   const documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + headScript + renderSource;
   return '<iframe class="visualization-extension" sandbox="allow-scripts" title="' + escapeHtml(spec.title) + '" data-card-id="' + escapeHtml(cardId) + '" data-nonce="' + escapeHtml(nonce) + '" srcdoc="' + escapeHtml(documentSource) + '"></iframe>';
 }

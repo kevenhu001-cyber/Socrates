@@ -27,7 +27,7 @@ export function ArtifactOutput({ output, host }: ArtifactOutputProps) {
         output.name ?? undefined,
       );
     } catch (_) { /* artifact gone server-side */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [output.id, output.fileId, output.mimeType, output.name, host]);
 
   return null;

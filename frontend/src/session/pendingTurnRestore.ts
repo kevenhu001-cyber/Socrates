@@ -81,7 +81,7 @@ export async function reattachPendingTurn(sessionId: string, fallback?: () => vo
     if (typeof fallback !== 'function') return;
     try { fallback(); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.fallback'); }
   };
-  let pending = null;
+  let pending: ReturnType<typeof loadPendingTurn>;
   try { pending = loadPendingTurn(sessionId); } catch { runFallback(); return; }
   if (!pending || (!pending.turnId && !pending.clientTurnId)) { runFallback(); return; }
   let snapshot: { turn: ChatTurn; events: TurnEventFrame[] } | null = null;

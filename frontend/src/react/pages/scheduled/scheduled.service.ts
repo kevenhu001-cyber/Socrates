@@ -2,7 +2,7 @@ import { getApiFetch, getLegacyActions } from '../../legacy/gateway.ts';
 import { patchScheduledState, replaceScheduledTasks, useScheduledStore } from './scheduled.store';
 import type { ScheduledTask } from './types';
 
-type Api = (path: string, options?: Record<string, unknown>) => Promise<any>;
+type Api = NonNullable<ReturnType<typeof getApiFetch>>;
 
 function api(): Api {
   const request = getApiFetch();

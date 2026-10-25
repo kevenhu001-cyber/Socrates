@@ -42,7 +42,7 @@ export function extractHttpUrls(text: string): string[] {
   function add(u: string | undefined): void {
     if(!u)return;
     /* Strip common trailing punctuation. */
-    u=u.replace(/[.,;:!?\]）】」』\)]+$/,"");
+    u=u.replace(/[.,;:!?\]）】」』)]+$/,"");
     /* Drop anchor-only fragments the user didn't intend to send. */
     if(!u||u==="#")return;
     if(seen[u])return;
@@ -68,7 +68,7 @@ export function extractHttpUrls(text: string): string[] {
      wrote something like "report.pdf" or "image.png" — those are
      filenames, not URLs. We still allow the same token if the user
      wrote "www." or included a "/" path. */
-  let FILE_EXTS=("pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz "+
+  const FILE_EXTS=("pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz "+
     "jpg jpeg png gif webp svg mp3 mp4 mov avi mkv exe dmg iso "+
     "txt md rtf csv json xml html htm").split(" ");
   const re2=/(?:^|[^\w一-鿿＠@])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]*)?)/gi;

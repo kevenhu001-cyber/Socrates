@@ -165,7 +165,7 @@ export function bindModelPicker(opts){
     itemEls.forEach(function(el){
       el.addEventListener('click', function(){
         var id = el.getAttribute('data-id');
-        onPick && onPick(id);
+      if (onPick) onPick(id);
         close();
       });
     });
@@ -173,7 +173,7 @@ export function bindModelPicker(opts){
     if (addBtn) {
       addBtn.addEventListener('click', function(){
         close();
-        onManage && onManage();
+      if (onManage) onManage();
       });
     }
     if (allowFilter && rawItems.length >= 4) {

@@ -103,7 +103,7 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
        the tolerant progressive renderer so already-streamed fields are
        not replaced by an empty fallback. */
     if (hasPartial && abortedMessage) {
-      let stoppedHtml = '';
+      let stoppedHtml: string;
       try {
         stoppedHtml = buildAssistantHtml(stoppedRaw);
         if (/scaffold-stream-unclosed/.test(stoppedHtml)) {
