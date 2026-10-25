@@ -15,6 +15,17 @@
   font-weight: 100 900;
   font-display: swap;
   src: url('../../assets/fonts/geist-sans-variable.woff2') format('woff2');
+  /* P_cjk-punctuation-full-width — Geist carries narrow, Latin-proportioned
+     glyphs for the CJK punctuation blocks (U+3000-303F and U+FF00-FFEF).
+     A face without a unicode-range may be used for every code point, so the
+     browser handed ，。！？；：（） to Geist — the first family in the stack —
+     and a Chinese sentence rendered them at half width: the text was full
+     width in the DOM but read as English punctuation on screen.
+     Excluding the two blocks lets those code points fall through to Noto
+     Sans SC, which carries the full-width metrics. Everything Geist does
+     cover (Latin, digits, arrows, quotes, dashes) keeps its own glyphs, so
+     the Latin face is unchanged. */
+  unicode-range: U+0000-2E7F, U+3040-FEFF, U+FFF0-FFFF;
 }
 
 @font-face {
@@ -23,4 +34,7 @@
   font-weight: 100 900;
   font-display: swap;
   src: url('../../assets/fonts/geist-mono-variable.woff2') format('woff2');
+  /* Same contract as Geist Sans above: code blocks carry Chinese prose too,
+     and their punctuation must not collapse to the Latin metrics. */
+  unicode-range: U+0000-2E7F, U+3040-FEFF, U+FFF0-FFFF;
 }
