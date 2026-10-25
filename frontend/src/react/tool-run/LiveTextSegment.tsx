@@ -5,7 +5,15 @@ import { createStreamReveal } from '../../render/streamReveal.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ProseRenderer } from './proseRenderer';
 
-const SettledBlock = memo(function SettledBlock({ html, live = false, tail = false, source = '' }: { html: { __html: string }; live?: boolean; tail?: boolean; source?: string }) {
+interface SettledBlockProps {
+  html: { __html: string };
+  live?: boolean;
+  tail?: boolean;
+  last?: boolean;
+  source?: string;
+}
+
+const SettledBlock = memo(function SettledBlock({ html, live = false, tail = false, last = false, source = '' }: SettledBlockProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const revealRef = useRef<ReturnType<typeof createStreamReveal> | null>(null);
   const revealedMarkupRef = useRef<string | null>(null);
@@ -30,6 +38,7 @@ const SettledBlock = memo(function SettledBlock({ html, live = false, tail = fal
     <div
       ref={ref}
       className={'tool-run-prose ' + (live ? 'is-live' : 'is-settled') + (tail ? ' is-tail' : '')}
+      data-prose-last={last ? 'true' : undefined}
       dangerouslySetInnerHTML={html}
     />
   );
@@ -63,12 +72,18 @@ export function LiveTextSegment({ text, live = true, settled, tail }: LiveTextSe
     return { blocks: prefixCache(split.blocks, settled), tailBox: tail(split.tail), tailSource: split.tail };
   }, [prefixCache, splitter, text, settled, tail]);
 
-  return (
-    <>
-      {blocks.map((html, index) => (
-        <SettledBlock key={index} html={html} />
-      ))}
-      <SettledBlock html={tailBox} live={live} tail source={tailSource} />
-    </>
-  );
+  // One keyed sequence owns both phases of each source block. Keeping the
+  // tail outside the mapped prefix gave it a separate React slot: promotion
+  // recreated its DOM in the prefix and reused the old tail for the next
+  // paragraph. A block now keeps its identity when it becomes settled.
+  return [...blocks, tailBox].map((html, index) => (
+    <SettledBlock
+      key={index}
+      html={html}
+      live={index === blocks.length && live}
+      tail={index === blocks.length}
+      last={index === blocks.length || (index === blocks.length - 1 && !tailSource.trim())}
+      source={index === blocks.length ? tailSource : ''}
+    />
+  ));
 }

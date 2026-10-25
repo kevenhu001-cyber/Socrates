@@ -635,7 +635,6 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    turn splits its prose into one wrapper per settled block, which is why the
    paragraph seam rule (P_stream-seam) sits next to `p:last-child` in
    polish/transcript.css — it has to outrank that `#appShell` rule. */
-.tool-run-prose{display:contents}
 .tool-run-group{
   margin:8px 0 4px;
   border:0;

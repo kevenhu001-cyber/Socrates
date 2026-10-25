@@ -56,6 +56,10 @@
   --tc-live: var(--ui-text-secondary);
 }
 
+/* Prose wrappers preserve React block identity without adding layout boxes.
+   This is part of the current turn surface, not a legacy tutor dependency. */
+.tool-run-prose { display: contents; }
+
 /* ── Row ─────────────────────────────────────────────────────────────── */
 .msg.assistant .msg-body.is-declarative .tool-inline,
 .msg.assistant .msg-body.is-declarative .tool-run-group {

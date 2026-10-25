@@ -53,19 +53,45 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
 @media (max-width: 768px) {
 
+/* Include read-only transcripts that do not set conversation-active. */
+#appShell .msg-body { --msg-para-gap: var(--ui-space-md); }
+
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body {
   color: var(--ui-text-primary);
   font-family: var(--font-sans);
-  font-size: calc(15px * var(--app-font-scale, 1));
+  font-size: var(--ui-text-body);
   font-weight: var(--ui-font-weight-regular);
-  line-height: 1.65;
+  line-height: var(--ui-text-body-line);
   letter-spacing: normal;
 }
 
 /* Headings keep the same semantic weight as the desktop reading column. */
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body :is(h1, h2) {
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body :is(h1, h2, h3, h4) {
   color: var(--ui-text-primary);
+  font-family: var(--font-sans);
   font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: normal;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h1 {
+  font-size: var(--ui-font-size-xxl);
+  line-height: 1.33;
+  margin: var(--ui-space-xl) 0 var(--ui-space-md);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h2 {
+  font-size: var(--ui-font-size-xl);
+  line-height: 1.4;
+  margin: var(--ui-space-xl) 0 var(--ui-space-md);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h3 {
+  font-size: var(--ui-font-size-lg);
+  line-height: 1.55;
+  margin: var(--ui-space-xl) 0 var(--ui-space-sm);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h4 {
+  font-size: var(--ui-text-body);
+  line-height: var(--ui-text-body-line);
+  margin: var(--ui-space-lg) 0 var(--ui-space-xs);
 }
 }
 

@@ -63,6 +63,7 @@
   background: var(--ui-bg-code);
   color: var(--ui-text-primary);
   padding: 12px 14px;
+  font-size: var(--ui-font-size-sm);
 }
 }
 @media (max-width: 768px) {
@@ -193,12 +194,9 @@
   }
 }
 
-/* Prose rhythm. One variable feeds the paragraph gap AND the live-turn seam
-   rule below, so the two cannot drift apart again. */
-#appShell .msg-body { --msg-para-gap: 12px; }
-@media (max-width: 768px) {
-#appShell .msg-body { line-height: 1.65; --msg-para-gap: 10px; }
-}
+/* Prose rhythm comes from the responsive surface owners: parity/transcript
+   on desktop, components/chat on phones. Both the ordinary paragraph and
+   the split-block seam below consume that same inherited value. */
 
 /* P_turn-surface-single — one assistant body owns every phase from the first
    waiting frame through the final answer. Activity/status, tool rows, prose,
@@ -231,14 +229,12 @@
 @media (max-width: 768px) {
 #appShell .msg-body p:last-child { margin-bottom: 0; }
 }
-/* P_stream-seam — a live turn mounts every settled markdown block in its own
-   `display:contents` wrapper (react/tool-run/AssistantTurn.tsx), so each
-   block's last <p> also matches `p:last-child` above. The finalized turn
-   renders the same prose in ONE wrapper, where only the true last paragraph
-   does. Without this, every paragraph gap read 0 while streaming and snapped
-   open at finish, shifting all text below it. */
-#appShell #msgList .msg-body .tool-run-prose.is-settled:not(.is-tail) > p:last-child,
-#appShell .msg-body .tool-run-prose.is-settled:not(.is-tail) > p:last-child { margin-bottom: var(--msg-para-gap, 12px); }
+/* Split prose keeps its wrappers at finish; restored history can use one
+   wrapper. A block's last paragraph still needs the ordinary paragraph gap
+   when another visible block follows it. The final block has no trailing gap,
+   including an answer ending in a blank line (an empty tail follows it). */
+#appShell #msgList .msg-body .tool-run-prose.is-settled:not(.is-tail):not([data-prose-last]) > p:last-child,
+#appShell .msg-body .tool-run-prose.is-settled:not(.is-tail):not([data-prose-last]) > p:last-child { margin-bottom: var(--msg-para-gap); }
 
 /* Streaming cursor — the single owner (render state from AssistantTurn's
    StreamCursor). One soft dot that pulses in opacity only: steady while text
