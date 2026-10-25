@@ -16,6 +16,18 @@
  *   3. every local face must declare a range, so no future font can claim
  *      the whole Unicode space by accident.
  *
+ * Two trees are checked, because both paint Chinese prose with the same
+ * font stack:
+ *
+ *   frontend/src/styles — strict. Every face must declare a range.
+ *   site/               — every face must declare a range, unless it points
+ *                         at an explicitly subsetted file (the file name
+ *                         carries a subset marker such as `latin`). Such a
+ *                         file cannot contain the code points it never
+ *                         shipped, so an unbounded face over it is harmless.
+ *                         The site's Inter / Source Serif 4 / Newsreader
+ *                         faces are exactly that case.
+ *
  * Usage: node scripts/check-cjk-punctuation-fonts.mjs
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -23,7 +35,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
-const STYLES = join(FRONTEND, 'src', 'styles');
+const REPO = fileURLToPath(new URL('../..', import.meta.url));
 
 /* CJK Symbols and Punctuation, and Halfwidth and Fullwidth Forms. */
 export const CJK_PUNCTUATION_BLOCKS = [
@@ -33,6 +45,15 @@ export const CJK_PUNCTUATION_BLOCKS = [
 
 /* Families that are allowed to own those blocks. */
 const CJK_FAMILY = /Noto Sans SC|Noto Serif SC|PingFang|Hiragino|Microsoft YaHei|Songti|SimSun/i;
+
+/* A file whose name carries one of these markers is an explicit subset. */
+const SUBSET_FILE = /[-_](latin|latin-ext|cyrillic|cyrillic-ext|vietnamese|greek|arabic|hebrew|thai|symbols2?|ext)([-_.]|$)/i;
+
+/* The trees that paint Chinese prose, and how strict each one is. */
+const TREES = [
+  { dir: join(FRONTEND, 'src', 'styles'), allowSubsetFile: false, label: 'frontend/src/styles' },
+  { dir: join(REPO, 'site'), allowSubsetFile: true, label: 'site' },
+];
 
 function cssFiles(dir) {
   const out = [];
@@ -50,7 +71,8 @@ export function parseFaces(css) {
     const body = match[1];
     const family = (body.match(/font-family:\s*([^;]+);/) || [])[1]?.trim().replace(/^['"]|['"]$/g, '');
     const range = (body.match(/unicode-range:\s*([^;]+);/) || [])[1]?.trim();
-    if (family) faces.push({ family, range: range || null });
+    const src = (body.match(/src:\s*([^;]+);/) || [])[1]?.trim() || '';
+    if (family) faces.push({ family, range: range || null, src });
   }
   return faces;
 }
@@ -75,11 +97,12 @@ export function coveredCodePoints(range) {
   return points;
 }
 
-export function checkFaces(faces) {
+export function checkFaces(faces, { allowSubsetFile = false } = {}) {
   const violations = [];
   for (const face of faces) {
     const where = `${face.family} (${face.range ? 'has unicode-range' : 'NO unicode-range'})`;
     if (!face.range) {
+      if (allowSubsetFile && SUBSET_FILE.test(face.src)) continue;
       violations.push(`${where}: a face without a unicode-range may claim every code point, including the CJK punctuation blocks`);
       continue;
     }
@@ -97,13 +120,20 @@ export function checkFaces(faces) {
 
 const violations = [];
 let faceCount = 0;
-for (const file of cssFiles(STYLES)) {
-  const css = readFileSync(file, 'utf8');
-  const faces = parseFaces(css);
-  faceCount += faces.length;
-  for (const violation of checkFaces(faces)) {
-    violations.push(`${relative(FRONTEND, file)}: ${violation}`);
+for (const tree of TREES) {
+  let treeFaces = 0;
+  for (const file of cssFiles(tree.dir)) {
+    const faces = parseFaces(readFileSync(file, 'utf8'));
+    treeFaces += faces.length;
+    for (const violation of checkFaces(faces, { allowSubsetFile: tree.allowSubsetFile })) {
+      violations.push(`${relative(REPO, file)}: ${violation}`);
+    }
   }
+  if (!treeFaces) {
+    console.error(`check-cjk-punctuation-fonts: parsed 0 @font-face blocks under ${tree.label} — refusing to gate on an empty parse`);
+    process.exit(1);
+  }
+  faceCount += treeFaces;
 }
 
 if (!faceCount) {
