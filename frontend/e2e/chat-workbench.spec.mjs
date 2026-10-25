@@ -51,8 +51,8 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(contract.mainBackgroundImage).toBe('none');
   /* The Lobe-aligned page and slightly brighter sidebar are adjacent
      neutral foundation steps separated by a hairline. */
-  expect(contract.pageBackground).toBe('rgb(8, 8, 8)');
-  expect(contract.sidebarBackground).toBe('rgb(13, 13, 13)');
+  expect(contract.pageBackground).toBe('rgb(10, 10, 10)');
+  expect(contract.sidebarBackground).toBe('rgb(26, 26, 26)');
   expect(contract.sidebarBorder).not.toBe('0px');
   expect(contract.topbarHeight).toBeGreaterThanOrEqual(50);
 

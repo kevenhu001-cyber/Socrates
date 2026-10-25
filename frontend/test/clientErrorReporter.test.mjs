@@ -17,7 +17,12 @@ test('every emitter in src uses the shared client-error path', async () => {
      invisible to tests, so pin the source: no file may carry the literal. */
   const { readFileSync, readdirSync } = await import('node:fs');
   const { join, relative, sep } = await import('node:path');
-  const SRC = new URL('../src', import.meta.url).pathname;
+  const { fileURLToPath } = await import('node:url');
+  /* fileURLToPath, not `.pathname`: on Windows a URL path starts with a slash
+     ("/C:/Users/…"), and path.join then resolves it against the drive's
+     current directory into "C:\C:\Users\…" — a path that does not exist, so
+     the scan failed before it read a single source file. */
+  const SRC = fileURLToPath(new URL('../src', import.meta.url));
   const offenders = [];
   (function walk(dir) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {

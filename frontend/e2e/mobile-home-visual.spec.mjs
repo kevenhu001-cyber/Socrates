@@ -60,9 +60,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(550);
-  /* The mobile canvas shares the Lobe-aligned page token with desktop. */
-  expect(geometry.background).toBe('rgb(8, 8, 8)');
-  expect(geometry.pageToken).toBe('#080808');
+  /* The mobile canvas shares the Geist-aligned page token with desktop. */
+  expect(geometry.background).toBe('rgb(10, 10, 10)');
+  expect(geometry.pageToken).toBe('#0a0a0a');
 
   /* P_greeting-mobile-center — the landing greeting must be visually
      centred horizontally on the viewport and sit just above the optical

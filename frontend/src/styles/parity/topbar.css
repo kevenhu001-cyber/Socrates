@@ -41,6 +41,9 @@
   gap: 0;
   padding: 2px;
   border-radius: var(--ui-radius-pill);
+  /* Geist segmented control: the track is the quiet chip fill (5–6% ink
+     over the page), the thumb is the raised surface. A hairline ring on
+     the track as well would read as a field, not as a group. */
   background: var(--ui-bg-chip);
   isolation: isolate;
 }
@@ -52,8 +55,11 @@
   left: 2px;
   width: calc(50% - 2px);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-segment-active);
-  box-shadow: var(--ui-shadow-control);
+  /* Geist thumb: the raised surface of the ladder, a hairline edge and the
+     control shadow. On the page colour this reads as a chip lifted off the
+     header rather than as a filled segment. */
+  background: var(--ui-bg-surface);
+  box-shadow: var(--ui-shadow-control), inset 0 0 0 1px var(--ui-border-default);
   transform: translateX(0);
   transition: transform var(--ui-duration-normal) var(--ui-ease-out);
   z-index: -1;
@@ -89,7 +95,10 @@
 }
 #appShell .top-mode-switch-option:hover { color: var(--ui-text-primary); }
 #appShell .top-mode-switch-option.is-active { color: var(--ui-text-primary); }
-[data-mode="light"] #appShell .top-mode-switch-option { color: var(--ui-text-primary); }
+/* The old light-mode override painted every segment in primary ink, which
+   left the switch with no state cue: the thumb still moved, but the label
+   did not say which side was selected. Geist states the selection in type
+   (active = primary, idle = secondary) on both modes. */
 
 .top-model-switcher-settings { display: none; }
 
@@ -181,7 +190,9 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     margin: 0;
     padding: 0 var(--ui-space-md);
     border: 0;
-    border-bottom: 1px solid var(--ui-border-subtle);
+    /* Geist header edge: the default 1px hairline (gray-400), the same
+       border the input, button and card outlines use. */
+    border-bottom: 1px solid var(--ui-border-default);
     background: var(--ui-bg-header-glass);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
@@ -229,13 +240,17 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    box-sizing: border-box;
     max-width: 360px;
     height: var(--ui-control-desktop);
     margin: 0;
     padding: 0 8px 0 10px;
-    border: 0;
-    border-radius: var(--ui-radius-row);
-    background: transparent;
+    /* Geist outline control: the model picker is a bordered button cut from
+       the raised surface, not a ghost label. border-box keeps the 1px edge
+       inside the 36px control rung. */
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-bg-surface);
     color: var(--ui-text-primary);
     font: inherit;
     font-size: var(--ui-font-size-lg);
@@ -247,6 +262,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
        reads as a jump rather than as focus. */
     box-shadow: 0 0 0 2px transparent, 0 0 0 3px transparent;
     transition: background-color var(--ui-duration-hover) ease,
+                border-color var(--ui-duration-hover) ease,
                 box-shadow var(--ui-duration-hover) ease;
   }
   /* The baseline above outranks the global :focus-visible contract, so the
@@ -255,7 +271,10 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     box-shadow: var(--ui-focus-shadow);
   }
   #appShell #topModelSwitcher:hover,
-  #appShell #topModelSwitcher[aria-expanded="true"] { background: var(--ui-bg-hover); }
+  #appShell #topModelSwitcher[aria-expanded="true"] {
+    background: var(--ui-bg-hover);
+    border-color: var(--ui-border-strong);
+  }
   #appShell .top-model-switcher-name { font-weight: var(--ui-font-weight-semibold); }
   #appShell .top-model-switcher-model {
     min-width: 0;
@@ -285,7 +304,10 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     height: var(--ui-control-desktop);
     margin: 0;
     border: 0;
-    border-radius: var(--ui-radius-pill);
+    /* Geist icon button: the 6px system radius, not a circle. The circle
+       read as a second kind of control in a row that is otherwise all
+       squared-off buttons. */
+    border-radius: var(--ui-radius-sm);
     background: transparent;
     color: var(--ui-text-primary);
     font: inherit;
@@ -299,7 +321,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   #appShell #shareBtn:hover,
   #appShell #findBtn:hover { background: var(--ui-bg-hover); }
   #appShell #shareBtn svg,
-  #appShell #findBtn svg { width: 18px; height: 18px; }
+  #appShell #findBtn svg { width: 16px; height: 16px; }
   #appShell #shareBtn.hidden,
   #appShell #findBtn.hidden { display: none; }
   /* Icon-only on desktop (sidebar-nav.spec contract). */

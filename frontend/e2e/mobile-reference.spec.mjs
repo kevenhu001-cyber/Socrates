@@ -11,13 +11,15 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await waitForAppShell(page);
   await page.evaluate(() => document.fonts.ready);
   const composer = page.locator('#composerInputWrap');
-  /* The phone composer's dark surface is the ladder's L4 rung (#181818) —
-     docs/ref/mobile-reference-2026-10-04.md pins "composer #181818" and
-     themes.css ships that value. The layered palette expresses the surface
-     as a translucent `color(srgb …)`, so compare the resolved channels: the
-     pinned hue is unchanged, only its notation and alpha are. */
+  /* The phone composer's dark surface is the ladder's top rung (#292929) —
+     the Geist elevated step the composer has always been cut from. ADR 0023
+     moved the whole ladder onto the Geist scale, so the pinned value moved
+     with it (#181818 → #292929); the composer is still one rung above the
+     phone canvas, which is the contract this reference actually pins. The
+     layered palette expresses the surface as a translucent `color(srgb …)`,
+     so compare the resolved channels: only the tone and notation changed. */
   const composerBackground = await composer.evaluate((el) => getComputedStyle(el).backgroundColor);
-  expect(rgbChannels(composerBackground)).toEqual([24, 24, 24]);
+  expect(rgbChannels(composerBackground)).toEqual([41, 41, 41]);
   await expect(page.locator('#composerPrimaryBtn .icon-arrow')).toBeVisible();
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);

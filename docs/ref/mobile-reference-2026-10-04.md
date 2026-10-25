@@ -18,7 +18,7 @@ account, session, file and connector data.
 | Drawer | 254px, 40px navigation/history rows, bottom account block | `polish/mobile-sidebar.css` |
 | Directories | 36px search, 40px tabs/app icons, 60px file rows | `polish/mobile-directories.css` |
 | Popovers | viewport-clamped portal, 40px rows, 20px corners | `menu/AnchoredMenu.tsx`, `components/sidebar.css` |
-| Colors | ladder L1 page #080808, composer #181818, controls #2e2e2e, menus #181818 | `themes.css` |
+| Colors | ladder L1 page #0a0a0a, composer #292929, controls #2e2e2e, menus #292929 | `themes.css` |
 | Text | locally bundled Inter and MiSans (MiSans replaced Noto Sans SC in 824b0864) | `foundations/fonts.css`, `themes.css` |
 
 `themes.css` remains imported exactly once and last. Repeated phone geometry
@@ -26,6 +26,14 @@ was removed from compatibility files instead of covered with another cascade
 of `!important`. Historical global landing geometry is now desktop-scoped.
 `check-mobile-css.mjs` prevents new phone shell and directory geometry outside
 their owners. Existing composer and desktop surface guards remain in force.
+
+The Colors row was re-valued on 2026-10-25: the neutral ladder now comes from
+the Geist scale (ADR 0023), so the pinned tones moved with it — the page is
+`#0a0a0a` rather than `#080808`, and the composer and menus sit on the Geist
+elevated step `#292929` rather than `#181818`. The *relationship* the row
+records is unchanged: the composer and the menus are one rung above the phone
+canvas, and the controls sit one step above that. Phone geometry was not
+touched.
 
 Home and conversation share one composer DOM node. Its empty primary action
 invokes existing browser speech input, a draft switches to Send, and streaming

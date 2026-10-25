@@ -449,11 +449,20 @@
 /* .workspace-dialog-card's chrome is pinned by chatgpt-ui's !important
    rule (border/radius/dialog bg/shadow) — it still takes color above. */
 #appShell .modal,
-#appShell .modal-card,
-#appShell .cmd-k-modal,
-.cmd-k-modal {
+#appShell .modal-card {
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-2xl);
+  background: var(--ui-bg-overlay);
+  box-shadow: var(--ui-shadow-dialog);
+}
+/* The command palette is not a dialog card: it is a Geist command surface
+   with the 8px system radius and the default hairline. It used to ride the
+   shared modal rule above, which gave it the 20px dialog shell. Its own
+   chrome stays here; the palette's internals (input row, result rows, kbd
+   chips) are skinned in polish/overlays.css. */
+.cmd-k-modal {
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-md);
   background: var(--ui-bg-overlay);
   box-shadow: var(--ui-shadow-dialog);
 }

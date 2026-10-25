@@ -198,78 +198,78 @@ export const breakpoints = {
 } as const;
 
 /**
- * Lobe default neutral palette projected into Socrates semantic roles.
+ * Geist neutral palette projected into Socrates semantic roles.
  * Values stay as HSL triplets because legacy CSS consumers compose them with
  * `hsl(...)`; `themes.css` carries the exact upstream hex values.
  */
 export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
-    strong: '0 0% 93.3%',      // #eeeeee
-    soft: '0 0% 7.45%',        // #131313
-    surface: '0 0% 7.45%',     // #131313
+    strong: '0 0% 92.94%',      // #ededed
+    soft: '0 0% 12.16%',       // #1f1f1f
+    surface: '0 0% 12.16%',    // #1f1f1f
   },
   bg: {
-    /* Four-step ladder: L1 3.14% → L2 5.1% → L3 7.45% → L4 9.41%.
-     * Perceived-lightness steps are 1.96% / 2.35% / 1.96%, all inside the
-     * 1.5%-3% band. The canvas is a near-black, never pure #000. */
-    page: '0 0% 3.14%',        // #080808  L1
-    raised: '0 0% 7.45%',      // #131313  L3 — cards on the canvas
-    overlay: '0 0% 9.41%',     // #181818  L4 — floating bars, menus
-    hover: '0 0% 19.6%',       // #323232  selected/hover tint
-    sunken: '0 0% 3.14%',      // #080808  L1 — inset wells
+    /* Four-step ladder, projected from four consecutive steps of the Geist
+     * surface ramp: L1 3.92% → L2 10.2% → L3 12.16% → L4 16.08%. The canvas
+     * is a near-black, never pure #000. */
+    page: '0 0% 3.92%',        // #0a0a0a  L1
+    raised: '0 0% 12.16%',     // #1f1f1f  L3 — cards on the canvas
+    overlay: '0 0% 16.08%',    // #292929  L4 — floating bars, menus
+    hover: '0 0% 21.18%',      // #363636  selected/hover tint
+    sunken: '0 0% 3.92%',      // #0a0a0a  L1 — inset wells
   },
   text: {
-    primary: '0 0% 95.29%',    // #f3f3f3
-    secondary: '0 0% 70.6%',   // #b4b4b4
-    tertiary: '0 0% 60.8%',    // #9b9b9b
-    muted: '0 0% 60.8%',       // description / idle icon role
-    disabled: '0 0% 60.8%',    // #9b9b9b
+    primary: '0 0% 92.94%',    // #ededed
+    secondary: '0 0% 63.14%',  // #a1a1a1
+    tertiary: '0 0% 60%',      // #999999
+    muted: '0 0% 60%',         // description / idle icon role
+    disabled: '0 0% 60%',      // #999999
   },
   border: {
-    subtle: '0 0% 9.41%',      // #181818
-    default: '0 0% 12.5%',     // #202020
-    strong: '0 0% 17.6%',      // #2d2d2d
+    subtle: '0 0% 16.08%',     // #292929
+    default: '0 0% 18.04%',    // #2e2e2e
+    strong: '0 0% 27.06%',     // #454545
   },
-  danger: '1 78% 61%',        // #e95350
+  danger: '1 80% 70%',        // #f07775 — clears AA on every dark rung
   success: '90 58% 49%',      // #80c933
-  muted: '0 0% 60.8%',
-  onAccent: '0 0% 3.14%',     // #080808
+  muted: '0 0% 60%',
+  onAccent: '0 0% 3.92%',     // #0a0a0a
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 6.67%',      // #111111
-    soft: '0 0% 94.12%',       // #f0f0f0
-    surface: '0 0% 94.12%',    // #f0f0f0
+    strong: '0 0% 9.02%',      // #171717
+    soft: '0 0% 92.16%',       // #ebebeb
+    surface: '0 0% 92.16%',    // #ebebeb
   },
   bg: {
     /* Same four-step ladder as dark mode, running the other way:
-     * L1 100% → L2 98.04% → L3 96.47% → L4 94.12%. The canvas is L2 — the
+     * L1 100% → L2 98.04% → L3 94.9% → L4 92.16%. The canvas is L2 — the
      * paper (L1) is what raised and overlay surfaces are cut from, so they
      * read as *lighter* than the page they stand on. */
-    page: '0 0% 98.04%',     // #fafafa  L2 — the canvas
+    page: '0 0% 98.04%',       // #fafafa  L2 — the canvas
     raised: '0 0% 100%',       // #ffffff  L1 — cards on the canvas
     overlay: '0 0% 100%',      // #ffffff  L1 — floating bars, menus
-    hover: '0 0% 89.8%',       // #e5e5e5  selected/hover tint
-    sunken: '0 0% 94.12%',     // #f0f0f0  L4 — inset wells
+    hover: '0 0% 87.84%',      // #e0e0e0  selected/hover tint
+    sunken: '0 0% 92.16%',     // #ebebeb  L4 — inset wells
   },
   text: {
-    primary: '0 0% 6.67%',     // #111111
-    secondary: '0 0% 34.9%',   // #595959
-    tertiary: '0 0% 42%',      // #6b6b6b
-    muted: '0 0% 42%',
-    disabled: '0 0% 56.1%',    // #8f8f8f
+    primary: '0 0% 9.02%',     // #171717
+    secondary: '0 0% 30.2%',   // #4d4d4d
+    tertiary: '0 0% 40%',      // #666666
+    muted: '0 0% 40%',
+    disabled: '0 0% 56.08%',   // #8f8f8f
   },
   border: {
-    subtle: '0 0% 94.12%',     // #f0f0f0
-    default: '0 0% 89.8%',     // #e5e5e5
-    strong: '0 0% 83.1%',      // #d4d4d4
+    subtle: '0 0% 92.16%',     // #ebebeb
+    default: '0 0% 91.76%',    // #eaeaea
+    strong: '0 0% 78.82%',     // #c9c9c9
   },
-  danger: '10 88% 58%',        // #f35837
-  success: '144 100% 31%',     // #00a03f
-  muted: '0 0% 42%',
+  danger: '7 73% 40%',           // #b02d1c — matches the web palette
+  success: '144 80% 24%',         // #0c6e33 — matches the web palette
+  muted: '0 0% 40%',
   onAccent: '0 0% 100%',       // #ffffff
 };
 
@@ -287,5 +287,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
  * `styles/themes.css`, preventing a flash before the stylesheet parses.
  */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#fafafa' : '#080808';
+  return mode === 'light' ? '#fafafa' : '#0a0a0a';
 }

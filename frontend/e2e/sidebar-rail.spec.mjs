@@ -49,25 +49,27 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
     };
   });
   expect(rows.navH).toBe(36);
-  /* --ui-radius-row (10px), the documented row step in polish/buttons.css and
-     the value the phone drawer uses. */
-  expect(rows.navRadius).toBe('10px');
+  /* --ui-radius-sm (6px), the Geist row radius. The rail rows, the search
+     field and the buttons beside them now share one curve. */
+  expect(rows.navRadius).toBe('6px');
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.modeBadgeVisible).toBe(false);
   /* The rail is one rung below the canvas on the light ladder. */
-  expect(rows.sidebarBg).toBe('rgb(246, 246, 246)');
-  /* --ui-sidebar-border → --ui-bg-panel (#f0f0f0): a neutral hairline,
-     not the translucent black chatgpt.com uses. */
-  expect(rows.sidebarBorder).toBe('1px rgb(240, 240, 240)');
+  expect(rows.sidebarBg).toBe('rgb(242, 242, 242)');
+  /* --ui-sidebar-border → --ui-border-default (#eaeaea): the Geist default
+     hairline, the same 1px the inputs and cards draw. */
+  expect(rows.sidebarBorder).toBe('1px rgb(234, 234, 234)');
   expect(rows.headerH).toBe(52);
   expect(rows.logoFontSize).toBe('18px');
   expect(rows.footerBorderTop).toBe('0px');
   expect(rows.avatarSize).toBe(28);
 
-  /* Keep the shared translucent hover wash over the navigation rail. */
+  /* Keep the shared translucent hover wash over the navigation rail. The
+     wash is now Geist's own alpha step (gray-alpha-100 = 5% ink), not the
+     3% the old palette mixed by hand. */
   await page.locator('#navProjects').hover();
-  await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.03)');
+  await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.05)');
 });
 
 test('collapsing keeps a 52px icon rail with named buttons and reopens from it', async ({ page }) => {

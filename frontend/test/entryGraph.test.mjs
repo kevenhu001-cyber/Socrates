@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { gzipSync } from 'node:zlib';
+import { join, resolve } from 'node:path';
 import { createEntryGraphPlugin, staticPaths } from '../scripts/entry-graph.mjs';
 
 test('static graph traversal deduplicates shared dependencies and terminates cycles', () => {
@@ -11,24 +12,31 @@ test('static graph traversal deduplicates shared dependencies and terminates cyc
 });
 
 test('audit follows emitted chunk imports, including accidentally eager lazy code', () => {
-  const root = '/fixture';
+  /* Native paths, not POSIX literals: the plugin resolves the entry through
+     path.resolve(), so on Windows a '/fixture/…' id never matches the
+     resolved root and every static path came back null. */
+  const root = resolve('fixture');
+  const mainId = join(root, 'src/main.js');
+  const helperId = join(root, 'helper.js');
+  const lazyId = join(root, 'lazy.js');
+  const unusedId = join(root, 'unused.js');
   const info = {
-    '/fixture/src/main.js': { importedIds: ['/fixture/helper.js'], dynamicallyImportedIds: ['/fixture/lazy.js'] },
-    '/fixture/helper.js': { importedIds: [], dynamicallyImportedIds: [] },
-    '/fixture/lazy.js': { importedIds: [], dynamicallyImportedIds: [] },
-    '/fixture/unused.js': { importedIds: [], dynamicallyImportedIds: [] },
+    [mainId]: { importedIds: [helperId], dynamicallyImportedIds: [lazyId] },
+    [helperId]: { importedIds: [], dynamicallyImportedIds: [] },
+    [lazyId]: { importedIds: [], dynamicallyImportedIds: [] },
+    [unusedId]: { importedIds: [], dynamicallyImportedIds: [] },
   };
   const chunk = (fileName, imports, modules, isEntry = false) => ({
     type: 'chunk', fileName, imports, modules, isEntry, dynamicImports: [], code: `/* ${fileName} */`,
   });
   const html = '<script src="/assets/main.js"></script><link href="/assets/style.css"><link href="/assets/style.css">';
   const bundle = {
-    'assets/main.js': chunk('assets/main.js', ['assets/vendor.js'], { '/fixture/src/main.js': { renderedLength: 20 } }, true),
+    'assets/main.js': chunk('assets/main.js', ['assets/vendor.js'], { [mainId]: { renderedLength: 20 } }, true),
     // A manual chunk can contain both an eager helper and a lazy renderer.
     'assets/vendor.js': chunk('assets/vendor.js', [], {
-      '/fixture/helper.js': { renderedLength: 10 },
-      '/fixture/lazy.js': { renderedLength: 30 },
-      '/fixture/unused.js': { renderedLength: 0 },
+      [helperId]: { renderedLength: 10 },
+      [lazyId]: { renderedLength: 30 },
+      [unusedId]: { renderedLength: 0 },
     }),
     'index.html': { type: 'asset', source: html },
     'assets/style.css': { type: 'asset', source: 'body{}' },

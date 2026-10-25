@@ -132,6 +132,7 @@ frontend/e2e/zz-*.mjs
 frontend/e2e/tmp-*.mjs
 frontend/e2e/probe-*.mjs
 frontend/e2e/__probe*
+frontend/probe-*.mjs
 
 # ── Agent / IDE tool output committed by mistake (2026-09-25 review) ──
 # AGENTS.md already says "do not commit generated dist/, test reports,

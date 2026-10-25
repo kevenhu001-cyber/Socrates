@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, rgbChannels } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function installVoiceMocks(page) {
@@ -213,8 +213,12 @@ test('the mic starts voice input and the primary becomes send after transcriptio
     background: getComputedStyle(document.getElementById('composerInputWrap')).backgroundColor,
   }));
   if (recordingMode.mode === 'dark') {
-    const red = Number(recordingMode.background.match(/\d+/)?.[0] || 255);
-    expect(red).toBeLessThan(40);
+    /* The recording shell is the composer's own elevated rung, and it has to
+       stay a dark surface while dictating. ADR 0023 moved that rung onto
+       the Geist scale (#181818 → the elevated step #292929), so the check
+       pins the exact tone instead of a threshold: the surface may not
+       brighten behind the recording bar. */
+    expect(rgbChannels(recordingMode.background)).toEqual([41, 41, 41]);
   }
 
   const waveform = await bar.locator('.voice-recording-wave > span').evaluateAll((nodes) => ({

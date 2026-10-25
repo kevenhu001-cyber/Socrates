@@ -223,16 +223,97 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   animation: ui-scrim-out var(--ui-duration-exit) var(--ui-ease-out) forwards;
 }
 
-/* ── CmdK palette ── */
-.cmd-k-input-row { border-bottom: 1px solid var(--ui-border-subtle); }
+/* ── CmdK palette (Geist) ────────────────────────────────────────────────
+   The palette is a Geist command surface, not a legacy skin: a 16px search
+   row on the hairline edge, 6px result rows on the raised surface, and kbd
+   chips cut from the control fill. The DOM still comes from the legacy
+   renderer, so every rule below re-projects that markup onto the Geist
+   scale — same selectors, later in the cascade than legacy/. */
+.cmd-k-input-row {
+  gap: var(--ui-space-sm);
+  padding: var(--ui-space-lg) var(--ui-space-lg);
+  border-bottom: 1px solid var(--ui-border-default);
+}
+.cmd-k-input-row .cmd-k-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--ui-text-tertiary);
+}
+.cmd-k-input-row input {
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-md);
+}
+.cmd-k-input-row input::placeholder { color: var(--ui-text-placeholder); }
+/* Geist kbd chip: the control fill with a hairline edge, in Geist Mono at
+   the small step. The legacy chip was a bare outline on the card colour,
+   which vanished against the raised surface. The edge takes the *strong*
+   border, because the chip's own fill is only one step off the card. */
+.cmd-k-kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-xs);
+  background: var(--ui-bg-control);
+  color: var(--ui-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xxs);
+  line-height: var(--ui-text-ui-line);
+}
 .cmd-k-results { padding: 6px; }
+/* Section label — the quiet uppercase group heading of the Geist scale. */
+.cmd-k-section-label {
+  padding: var(--ui-space-sm) var(--ui-space-md) var(--ui-space-xxs);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+}
+/* Result rows: 6px radius (Geist row radius) on the raised surface, a
+   ghost wash on hover and the selected fill on the keyboard selection.
+   The selected fill is a named scale step rather than --ui-bg-selected:
+   the card already sits on the elevated rung, and the control fill would
+   land within a hair of it — the hover wash and the selection would read
+   as the same tone. */
+.cmd-k-row {
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  border-radius: var(--ui-radius-sm);
+}
+.cmd-k-row:hover { background: var(--ui-bg-hover); }
+.cmd-k-row.selected { background: var(--ui-bg-pill-selected); }
+.cmd-k-row-title {
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+}
+.cmd-k-row-snippet {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+.cmd-k-row-meta {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+}
+.cmd-k-empty {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+}
+.cmd-k-empty kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-xs);
+  background: var(--ui-bg-control);
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xxs);
+}
 .cmd-k-foot {
-  border-top: 1px solid var(--ui-border-subtle);
-  color: var(--ui-text-muted);
+  border-top: 1px solid var(--ui-border-default);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
 }
 .cmd-k-foot kbd {
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xs, 4px);
+  padding: 1px 5px;
+  margin-right: 4px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-xs);
+  background: var(--ui-bg-control);
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xxs);
 }
 
 /* ── Modals (share / usage / confirm / generic) ── */

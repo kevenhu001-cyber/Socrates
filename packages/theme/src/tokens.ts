@@ -194,78 +194,85 @@ export const easing = {
 
 export const borderAlpha = 0.25;
 
-/** Universal dark neutral palette, tuned for clear layered surfaces. */
+/** Universal dark neutral palette, projected from the Geist scale. */
 export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
-    strong: '0 0% 93.3%',
-    soft: '0 0% 7.45%',
-    surface: '0 0% 7.45%',
+    strong: '0 0% 92.94%',
+    soft: '0 0% 12.16%',
+    surface: '0 0% 12.16%',
   },
   bg: {
-    /* Four-step ladder: L1 3.14% → L2 5.1% → L3 7.45% → L4 9.41%.
-     * Perceived-lightness steps are 1.96% / 2.35% / 1.96%, all inside the
-     * 1.5%-3% band. The canvas is a near-black, never pure #000 — pure
-     * black crushes shadow detail and lets the lowest layer read as a hole
-     * punched through the UI. */
-    page: '0 0% 3.14%',     // #080808  L1
-    raised: '0 0% 7.45%',   // #131313  L3 — cards on the canvas
-    overlay: '0 0% 9.41%',  // #181818  L4 — floating bars, menus
-    hover: '0 0% 19.6%',    // #323232  selected/hover tint (off-ladder)
-    sunken: '0 0% 3.14%',   // #080808  L1 — inset wells ride the canvas
+    /* Four-step ladder, projected from four consecutive steps of the Geist
+     * surface ramp: background-100 → gray-100 → gray-200 → gray-300.
+     * Perceived-lightness steps are 6.27% / 1.96% / 3.92%; the first one is
+     * Geist's own gap between the page tone and the gray ramp, not a choice.
+     * The canvas is a near-black, never pure #000 — pure black crushes
+     * shadow detail and lets the lowest layer read as a hole punched
+     * through the UI. */
+    page: '0 0% 3.92%',     // #0a0a0a  L1
+    raised: '0 0% 12.16%',  // #1f1f1f  L3 — cards on the canvas
+    overlay: '0 0% 16.08%', // #292929  L4 — floating bars, menus
+    hover: '0 0% 21.18%',   // #363636  selected/hover tint (off-ladder)
+    sunken: '0 0% 3.92%',   // #0a0a0a  L1 — inset wells ride the canvas
   },
   text: {
-    primary: '0 0% 95.29%',
-    secondary: '0 0% 70.6%',
-    tertiary: '0 0% 60.8%',
-    muted: '0 0% 60.8%',
-    disabled: '0 0% 60.8%',
+    primary: '0 0% 92.94%',
+    secondary: '0 0% 63.14%',
+    tertiary: '0 0% 60%',
+    muted: '0 0% 60%',
+    disabled: '0 0% 60%',
   },
   border: {
-    subtle: '0 0% 9.41%',
-    default: '0 0% 12.5%',
-    strong: '0 0% 17.6%',
+    subtle: '0 0% 16.08%',
+    default: '0 0% 18.04%',
+    strong: '0 0% 27.06%',
   },
-  danger: '1 78% 61%',
+  danger: '1 80% 70%',
   success: '90 58% 49%',
-  muted: '0 0% 60.8%',
-  onAccent: '0 0% 3.14%',
+  muted: '0 0% 60%',
+  onAccent: '0 0% 3.92%',
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 6.67%',
-    soft: '0 0% 94.12%',
-    surface: '0 0% 94.12%',
+    strong: '0 0% 9.02%',
+    soft: '0 0% 92.16%',
+    surface: '0 0% 92.16%',
   },
   bg: {
-    /* Same four-step ladder, running the other way: L1 100% → L2 98.04%
-     * → L3 96.47% → L4 94.12%. The canvas is L2 — the paper (L1) is what
-     * raised and overlay surfaces are cut from, so they read as *lighter*
-     * than the page they stand on instead of relying on a shadow alone.
+    /* Same four-step ladder, running the other way, and again four
+     * consecutive Geist steps: background-100 → background-200 → gray-100 →
+     * gray-200. The canvas is L2 — the paper (L1) is what raised and
+     * overlay surfaces are cut from, so they read as *lighter* than the
+     * page they stand on instead of relying on a shadow alone.
      * The lower rungs spend themselves on recess and control. */
     page: '0 0% 98.04%',    // #fafafa  L2 — the canvas
     raised: '0 0% 100%',    // #ffffff  L1 — cards on the canvas
     overlay: '0 0% 100%',   // #ffffff  L1 — floating bars, menus
-    hover: '0 0% 89.8%',    // #e5e5e5  selected/hover tint (off-ladder)
-    sunken: '0 0% 94.12%',  // #f0f0f0  L4 — inset wells
+    hover: '0 0% 87.84%',   // #e0e0e0  selected/hover tint (off-ladder)
+    sunken: '0 0% 92.16%',  // #ebebeb  L4 — inset wells
   },
   text: {
-    primary: '0 0% 6.67%',
-    secondary: '0 0% 34.9%',
-    tertiary: '0 0% 42%',
-    muted: '0 0% 42%',
-    disabled: '0 0% 56.1%',
+    primary: '0 0% 9.02%',
+    secondary: '0 0% 30.2%',
+    tertiary: '0 0% 40%',
+    muted: '0 0% 40%',
+    disabled: '0 0% 56.08%',
   },
   border: {
-    subtle: '0 0% 94.12%',
-    default: '0 0% 89.8%',
-    strong: '0 0% 83.1%',
+    subtle: '0 0% 92.16%',
+    default: '0 0% 91.76%',
+    strong: '0 0% 78.82%',
   },
-  danger: '10 88% 58%',
-  success: '144 100% 31%',
-  muted: '0 0% 42%',
+  /* The semantic tones are text colours. These values match the web palette
+     in themes.css, which had already been re-tuned to clear AA on the light
+     ladder; the shared package still carried the older, brighter pair, so the
+     Universal app painted its danger text at 3.2:1 on the light canvas. */
+  danger: '7 73% 40%',
+  success: '144 80% 24%',
+  muted: '0 0% 40%',
   onAccent: '0 0% 100%',
 };
 
@@ -280,5 +287,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
 
 /** Background color used for first paint by each theme mode. */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#fafafa' : '#080808';
+  return mode === 'light' ? '#fafafa' : '#0a0a0a';
 }

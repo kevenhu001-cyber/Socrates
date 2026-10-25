@@ -40,16 +40,17 @@ test('theme selector follows the operating system and persists explicit modes', 
     };
   });
   // The dark canvas is a near-black, never pure #000 — see the surface
-  // ladder in styles/themes.css.
-  expect(darkPalette.page).toBe('#080808');
-  expect(darkPalette.sidebar).toBe('#0d0d0d');
-  expect(darkPalette.raised).toBe('#131313');
-  expect(darkPalette.surface).toBe('#181818');
+  // ladder in styles/themes.css. The four rungs are four consecutive steps
+  // of the Geist scale.
+  expect(darkPalette.page).toBe('#0a0a0a');
+  expect(darkPalette.sidebar).toBe('#1a1a1a');
+  expect(darkPalette.raised).toBe('#1f1f1f');
+  expect(darkPalette.surface).toBe('#292929');
   // Computed custom properties resolve var() aliases to the canonical value.
   expect(darkPalette.cgPage).toBe(darkPalette.page);
   expect(darkPalette.chatgptPage).toBe(darkPalette.page);
   expect(darkPalette.conversationPage).toBe(darkPalette.page);
-  expect(darkPalette.legacyPage).toBe('0 0% 3.14%');
+  expect(darkPalette.legacyPage).toBe('0 0% 3.92%');
   expect(darkPalette.lobeLayout).toBe(darkPalette.page);
   expect(darkPalette.lobeContainer).toBe(darkPalette.raised);
   expect(darkPalette.lobeElevated).toBe(darkPalette.surface);
@@ -75,8 +76,8 @@ test('theme selector follows the operating system and persists explicit modes', 
     page: '#fafafa',
     raised: '#ffffff',
     elevated: '#ffffff',
-    text: '#111111',
-    border: '#e5e5e5',
+    text: '#171717',
+    border: '#eaeaea',
   });
 
   await page.emulateMedia({ colorScheme: 'dark' });

@@ -1,9 +1,12 @@
 /*
  * themes.css — canonical Socrates palette and compatibility bridge.
  *
- * Light surfaces share site/'s white paper, neutral ink and Geist brand face.
- * The stable `--ui-*` API and Lobe aliases keep existing features compatible.
- * Product geometry remains owned by tokens.css / component styles.
+ * The neutral palette is projected from the Geist scale (vercel.com/geist):
+ * `--geist-background-*` carries the two surface tones, `--geist-gray-*` the
+ * ten-step ramp behind text, borders and raised surfaces, and
+ * `--geist-gray-alpha-*` the translucent washes that layer over an unknown
+ * surface. The stable `--ui-*` API and Lobe aliases keep existing features
+ * compatible. Product geometry remains owned by tokens.css / component styles.
  */
 
 html[data-theme="socrates"][data-mode],
@@ -27,20 +30,57 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 [data-mode="dark"] {
   color-scheme: dark;
 
+  /* ---------------------------------------------------------------------
+   * Geist scale — dark mode.
+   *
+   * These are the raw steps every dark role is projected from. The two
+   * background tones are Geist's page and surface; the ten grays carry
+   * text, borders and raised surfaces; the alpha ramp is what layers over
+   * a surface whose colour is not known in advance.
+   * ------------------------------------------------------------------- */
+  --geist-background-100: #0a0a0a;
+  --geist-background-200: #000000;
+  --geist-gray-100: #1a1a1a;
+  --geist-gray-200: #1f1f1f;
+  --geist-gray-300: #292929;
+  --geist-gray-400: #2e2e2e;
+  --geist-gray-500: #454545;
+  --geist-gray-600: #878787;
+  --geist-gray-700: #8f8f8f;
+  --geist-gray-800: #7d7d7d;
+  --geist-gray-900: #a1a1a1;
+  --geist-gray-1000: #ededed;
+  --geist-gray-alpha-100: rgb(255 255 255 / 6%);
+  --geist-gray-alpha-200: rgb(255 255 255 / 9%);
+  --geist-gray-alpha-300: rgb(255 255 255 / 13%);
+  --geist-gray-alpha-400: rgb(255 255 255 / 14%);
+  --geist-gray-alpha-500: rgb(255 255 255 / 24%);
+  --geist-gray-alpha-600: rgb(255 255 255 / 51%);
+  --geist-gray-alpha-700: rgb(255 255 255 / 54%);
+  --geist-gray-alpha-800: rgb(255 255 255 / 47%);
+  --geist-gray-alpha-900: rgb(255 255 255 / 61%);
+  --geist-gray-alpha-1000: rgb(255 255 255 / 92%);
+  --geist-blue-700: #0070f3;
+  --geist-blue-900: #52a8ff;
+
   /* Neutral foundation: a four-step background ladder.
    *
-   * Perceived-lightness steps are 1.96% / 2.35% / 1.96% — all inside the
-   * 1.5%-3% band. The canvas is a near-black (#080808), never pure #000:
-   * pure black crushes shadow detail and lets the lowest layer read as a
-   * hole punched through the UI rather than a surface.
+   * The four rungs are four *consecutive* steps of the Geist surface ramp:
+   * background-100 → gray-100 → gray-200 → gray-300. Naming the source
+   * steps is what keeps the ladder honest — a ladder whose rungs belong to
+   * no scale step is four unrelated colours that happen to be close.
    *
-   * Only these four values are surfaces. Interactive tints (control, bubble,
-   * selected pill) are alpha overlays derived from L4, so they stay off the
-   * ladder by construction and composite correctly on any surface. */
-  --ui-bg-page: #080808;      /* L1 — canvas */
-  --ui-bg-rail: #0d0d0d;      /* L2 — sidebar rail */
-  --ui-bg-panel: #131313;     /* L3 — panels, code blocks, active rows */
-  --ui-bg-elevated: #181818;  /* L4 — menus, composer, dialogs */
+   * The canvas is Geist's background-100 (#0a0a0a), a near-black rather
+   * than pure #000: pure black crushes shadow detail and lets the lowest
+   * layer read as a hole punched through the UI.
+   *
+   * Interactive tints (control, bubble, selected pill) are named scale
+   * steps too, so they carry a fixed relationship to the surfaces they
+   * sit on instead of drifting with a percentage mix. */
+  --ui-bg-page: var(--geist-background-100);
+  --ui-bg-rail: var(--geist-gray-100);
+  --ui-bg-panel: var(--geist-gray-200);
+  --ui-bg-elevated: var(--geist-gray-300);
 
   /* Role aliases onto the ladder. */
   --ui-bg-sidebar: var(--ui-bg-rail);
@@ -49,18 +89,26 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-surface: var(--ui-bg-elevated);
   --ui-bg-overlay: var(--ui-bg-elevated);
   --ui-bg-composer: var(--ui-bg-elevated);
-  --ui-bg-control: color-mix(in srgb, var(--ui-bg-elevated), var(--ui-text-primary) 10%);
-  --ui-bg-hover: rgb(255 255 255 / 6%);
+  --ui-bg-control: var(--geist-gray-400);
+  --ui-bg-hover: var(--geist-gray-alpha-100);
   --ui-bg-selected: var(--ui-bg-control);
-  --ui-bg-bubble: color-mix(in srgb, var(--ui-bg-elevated), var(--ui-text-primary) 8%);
-  --ui-bg-pill-selected: color-mix(in srgb, var(--ui-bg-elevated), var(--ui-text-primary) 12%);
+  --ui-bg-bubble: var(--geist-gray-400);
+  --ui-bg-pill-selected: var(--geist-gray-500);
   --ui-bg-hover-ghost: var(--ui-bg-hover);
-  --ui-sidebar-border: var(--ui-bg-elevated);
+  /* Geist hairline: the rail's edge is the default border (gray-400), the
+     same 1px the inputs, buttons and cards draw. */
+  --ui-sidebar-border: var(--ui-border-default);
 
-  /* Lobe text neutral roles. */
-  --ui-text-primary: #f3f3f3;
-  --ui-text-secondary: #b4b4b4;
-  --ui-text-tertiary: #9b9b9b;
+  /* Text neutral roles.
+   *
+   * Geist defines two accessible text tiers — gray-900 for secondary text
+   * and icons, gray-1000 for primary. Socrates keeps a third, de-emphasised
+   * tier, so it takes the lightest Geist accent that still clears AA on the
+   * mode's deepest rung: accents-6 (#999999) in dark, accents-5 (#666666)
+   * in light. Every tier below clears 4.5:1 on all four rungs. */
+  --ui-text-primary: var(--geist-gray-1000);
+  --ui-text-secondary: var(--geist-gray-900);
+  --ui-text-tertiary: #999999;
   --ui-text-muted: var(--ui-text-tertiary);
   --ui-text-placeholder: var(--ui-text-tertiary);
   --ui-text-disabled: var(--ui-text-placeholder);
@@ -79,26 +127,37 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-font-weight-medium: 450;
   --ui-font-weight-bold: 600;
 
-  /* Lobe border / mask roles. */
+  /* Border / mask roles. Geist's own mapping: gray-400 is the default
+   * border, gray-500 the hover border, gray-600 the active border. */
   --ui-border-subtle: var(--ui-bg-elevated);
-  --ui-border-default: #202020;
-  --ui-border-strong: var(--ui-bg-control);
+  --ui-border-default: var(--geist-gray-400);
+  --ui-border-strong: var(--geist-gray-500);
   --ui-backdrop: rgb(0 0 0 / 44%);
 
-  /* Lobe monochrome primary + semantic status colors. */
+  /* Geist's monochrome primary + semantic status colors. */
   --ui-on-accent: var(--ui-bg-page);
-  --ui-accent-strong: #eeeeee;
-  --ui-danger: rgb(233 83 80);
+  --ui-accent-strong: var(--geist-gray-1000);
+  /* The danger tone is a *text* colour, so it has to clear AA on the
+     lightest dark rung as well as on the canvas. The old Lobe value
+     (rgb(233 83 80)) cleared the near-black page but sat at 4.03:1 on
+     the new elevated rung (#292929); this one clears it on every rung
+     (5.3:1 on the control fill). */
+  --ui-danger: rgb(240 119 117);
   --ui-success: rgb(128 201 51);
   --ui-thinking-accent: rgb(255 190 69);
   --ui-info: rgb(76 179 255);
   --ui-warning: var(--ui-thinking-accent);
   --ui-link: var(--ui-info);
 
+  /* The focus indicator is Geist's blue: the one saturated colour the
+   * system allows on a neutral surface, so keyboard focus is never
+   * mistaken for a hover state. */
+  --ui-focus-ring: var(--geist-blue-900);
+
   /* Socrates product roles projected from the foundation. */
   --ui-avatar-bg: var(--ui-bg-control);
   --ui-bg-chip: var(--ui-bg-hover);
-  --ui-bg-chip-hover: rgb(255 255 255 / 10%);
+  --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-selected);
   --ui-shadow-control: 0 1px 3px rgb(0 0 0 / 16%);
   --ui-shadow-popover: 0 12px 36px -8px rgb(0 0 0 / 28%), 0 2px 8px rgb(0 0 0 / 14%);
@@ -128,6 +187,36 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 [data-mode="light"] {
   color-scheme: light;
 
+  /* ---------------------------------------------------------------------
+   * Geist scale — light mode. The same ramp as dark, flipped: the two
+   * backgrounds are the paper (#ffffff) and the canvas (#fafafa), and the
+   * grays run from the near-white inset tones down to the primary ink.
+   * ------------------------------------------------------------------- */
+  --geist-background-100: #ffffff;
+  --geist-background-200: #fafafa;
+  --geist-gray-100: #f2f2f2;
+  --geist-gray-200: #ebebeb;
+  --geist-gray-300: #e6e6e6;
+  --geist-gray-400: #eaeaea;
+  --geist-gray-500: #c9c9c9;
+  --geist-gray-600: #a8a8a8;
+  --geist-gray-700: #8f8f8f;
+  --geist-gray-800: #7d7d7d;
+  --geist-gray-900: #4d4d4d;
+  --geist-gray-1000: #171717;
+  --geist-gray-alpha-100: rgb(0 0 0 / 5%);
+  --geist-gray-alpha-200: rgb(0 0 0 / 8%);
+  --geist-gray-alpha-300: rgb(0 0 0 / 10%);
+  --geist-gray-alpha-400: rgb(0 0 0 / 8%);
+  --geist-gray-alpha-500: rgb(0 0 0 / 21%);
+  --geist-gray-alpha-600: rgb(0 0 0 / 34%);
+  --geist-gray-alpha-700: rgb(0 0 0 / 44%);
+  --geist-gray-alpha-800: rgb(0 0 0 / 51%);
+  --geist-gray-alpha-900: rgb(0 0 0 / 70%);
+  --geist-gray-alpha-1000: rgb(0 0 0 / 91%);
+  --geist-blue-700: #0070f3;
+  --geist-blue-900: #52a8ff;
+
   /* Marketing-site paper/ink foundation, projected through the existing API.
    *
    * The same four-step ladder as dark mode, running the other way — but the
@@ -138,12 +227,12 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * page they sit on; the rail and the recessed wells take the two rungs
    * below.
    *
-   * The rungs still run L1 → L4 in the same order as dark mode and stay
-   * 1.5%-3% apart in perceived lightness. */
-  --ui-bg-page: #fafafa;      /* L2 — canvas */
-  --ui-bg-rail: #f6f6f6;      /* L3 — sidebar rail */
-  --ui-bg-panel: #f0f0f0;     /* L4 — inset wells, controls, chips */
-  --ui-bg-elevated: #ffffff;  /* L1 — the paper: composer, menus, dialogs */
+   * The rungs are four consecutive steps of the Geist ramp, in the same order
+   * as dark mode: background-100 → background-200 → gray-100 → gray-200. */
+  --ui-bg-page: var(--geist-background-200);
+  --ui-bg-rail: var(--geist-gray-100);
+  --ui-bg-panel: var(--geist-gray-200);
+  --ui-bg-elevated: var(--geist-background-100);
 
   /* Role aliases onto the ladder.
    *
@@ -155,38 +244,35 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-raised: var(--ui-bg-elevated);
   --ui-bg-surface: var(--ui-bg-elevated);
   --ui-bg-overlay: var(--ui-bg-elevated);
-  --ui-bg-control: var(--ui-bg-panel);
-  --ui-bg-hover: rgb(0 0 0 / 3%);
+  --ui-bg-control: var(--geist-gray-200);
+  --ui-bg-hover: var(--geist-gray-alpha-100);
   --ui-bg-selected: var(--ui-bg-control);
-  --ui-bg-bubble: var(--ui-bg-panel);
-  --ui-bg-pill-selected: color-mix(in srgb, var(--ui-bg-panel), var(--ui-text-primary) 5%);
+  --ui-bg-bubble: var(--geist-gray-200);
+  --ui-bg-pill-selected: var(--geist-gray-300);
   --ui-bg-hover-ghost: var(--ui-bg-hover);
-  --ui-sidebar-border: var(--ui-bg-panel);
+  /* Geist hairline — see the dark-mode note above. */
+  --ui-sidebar-border: var(--ui-border-default);
 
-  /* Lobe text neutral roles.
+  /* Text neutral roles.
    *
-   * The three neutral text tiers are spaced so each one is legible on its own
-   * (WCAG AA, 4.5:1) AND still reads as a distinct step. The reference
-   * secondary (#5d5d5d) and tertiary tones are both too light for small text
-   * on the #ffffff page, so both are lifted here:
-   *   primary   #111111  18.9:1
-   *   secondary #595959   7.0:1
-   *   tertiary  #6b6b6b   5.3:1   (4.7:1 on the deepest light surface, #f0f0f0)
-   * "muted" is the same role as "tertiary" — it is an alias so there is one
-   * de-emphasised text colour, not two near-identical ones. The placeholder
-   * keeps the reference #8f8f8f (see docs/ref/chatgpt-parity.md). */
-  --ui-text-primary: #111111;
-  --ui-text-secondary: #595959;
-  --ui-text-tertiary: #6b6b6b;
+   * Geist's two accessible tiers — gray-1000 for primary text, gray-900 for
+   * secondary — plus a third, de-emphasised tier taken from the lightest
+   * Geist accent that still clears AA on the mode's deepest rung:
+   * accents-5 (#666666). The placeholder keeps gray-700, the tone the
+   * reference uses for hints that carry no reading of their own. */
+  --ui-text-primary: var(--geist-gray-1000);
+  --ui-text-secondary: var(--geist-gray-900);
+  --ui-text-tertiary: #666666;
   --ui-text-muted: var(--ui-text-tertiary);
-  --ui-text-placeholder: #8f8f8f;
+  --ui-text-placeholder: var(--geist-gray-700);
   --ui-text-disabled: var(--ui-text-placeholder);
   --ui-sidebar-glyph: var(--ui-text-primary);
 
-  /* Lobe border / mask roles. */
+  /* Border / mask roles. Geist's own mapping: gray-400 is the default
+   * border, gray-500 the hover border, gray-600 the active border. */
   --ui-border-subtle: var(--ui-bg-panel);
-  --ui-border-default: #e5e5e5;
-  --ui-border-strong: #d4d4d4;
+  --ui-border-default: var(--geist-gray-400);
+  --ui-border-strong: var(--geist-gray-500);
   --ui-backdrop: rgb(0 0 0 / 44%);
 
   /* Lobe monochrome primary + semantic status colors.
@@ -202,13 +288,17 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * The thinking accent stays a vivid chart/accent colour and is never used
    * as body text; warning no longer aliases it. */
   --ui-on-accent: var(--ui-bg-surface);
-  --ui-accent-strong: #111111;
+  --ui-accent-strong: var(--geist-gray-1000);
   --ui-danger: rgb(176 45 28);
   --ui-success: rgb(12 110 51);
   --ui-thinking-accent: rgb(254 180 0);
   --ui-info: rgb(0 92 184);
   --ui-warning: rgb(125 82 0);
   --ui-link: rgb(0 96 204);
+
+  /* The focus indicator is Geist's blue, on the dark side of the ramp so
+   * the ring holds against the paper the control is cut from. */
+  --ui-focus-ring: var(--geist-blue-700);
 
   /* Socrates product roles projected from the foundation.
    *
@@ -219,7 +309,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-avatar-bg: var(--ui-text-tertiary);
   --ui-bg-composer: var(--ui-bg-elevated);
   --ui-bg-chip: var(--ui-bg-hover);
-  --ui-bg-chip-hover: rgb(0 0 0 / 6%);
+  --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-surface);
   --ui-shadow-control: 0 1px 3px rgb(0 0 0 / 6%);
   --ui-shadow-popover: 0 10px 32px -8px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 4%);
@@ -286,7 +376,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-shadow-menu: var(--ui-shadow-popover);
   --ui-shadow-modal: var(--ui-shadow-dialog);
   --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
-  --ui-focus-ring: color-mix(in srgb, var(--ui-text-primary) 55%, transparent);
+  /* The ring colour is declared per mode: it is Geist's blue, not a tint of
+     * the text, so keyboard focus is never mistaken for a hover state. */
   /* 2026-10-25 — the indicator used to be a two-layer shadow: a 2px
      page-coloured gap plus a 2px ring. The gap was always the *page*
      colour, so on every other rung of the ladder (the sidebar rail, an
@@ -295,9 +386,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
      a black box in light mode, a white one in dark mode.
      The indicator is now one 2px ring that hugs the control, with a 1px
      ambient bloom outside it. The ring composites over the surface it
-     sits on and clears 4:1 against every rung of the background ladder
-     (5.7:1 dark, 4.2:1 light, 4.0:1 on the deepest light surface). */
-  --ui-focus-glow: color-mix(in srgb, var(--ui-text-primary) 12%, transparent);
+     sits on and clears 4:1 against every rung of the background ladder. */
+  --ui-focus-glow: color-mix(in srgb, var(--ui-focus-ring) 30%, transparent);
   --ui-focus-shadow: 0 0 0 2px var(--ui-focus-ring), 0 0 0 3px var(--ui-focus-glow);
 
   --chatgpt-font: var(--cg-font);
@@ -358,10 +448,10 @@ html[data-theme="socrates"][data-mode="dark"] {
    * roles use. They stay HSL triplets because the frozen legacy tree
    * composes them with `hsl(...)`; the values track the ladder exactly so
    * a legacy surface never drifts onto a tone the palette does not own. */
-  --bg-000: 0 0% 3.14%;   /* L1 — page */
-  --bg-100: 0 0% 5.1%;    /* L2 — rail */
-  --bg-200: 0 0% 7.45%;   /* L3 — panel */
-  --bg-300: 0 0% 9.41%;   /* L4 — elevated */
+  --bg-000: 0 0% 3.92%;   /* L1 — page (geist background-100) */
+  --bg-100: 0 0% 10.2%;   /* L2 — rail (geist gray-100) */
+  --bg-200: 0 0% 12.16%;  /* L3 — panel (geist gray-200) */
+  --bg-300: 0 0% 16.08%;  /* L4 — elevated (geist gray-300) */
   --text-000: 0 0% 100%;
   --text-100: 0 0% 90%;
   --text-200: 0 0% 71%;
@@ -388,8 +478,8 @@ html[data-theme="socrates"][data-mode="light"] {
    * that mapping points at, so the canvas move left them untouched. */
   --bg-000: 0 0% 100%;     /* the paper (elevated) */
   --bg-100: 0 0% 98.04%;  /* the canvas (page) */
-  --bg-200: 0 0% 96.47%;  /* the rail */
-  --bg-300: 0 0% 94.12%;  /* the panel: controls, chips, wells */
+  --bg-200: 0 0% 94.9%;   /* the rail (geist gray-100) */
+  --bg-300: 0 0% 92.16%;  /* the panel: controls, chips, wells (geist gray-200) */
   --text-000: 0 0% 0%;
   --text-100: 0 0% 12%;
   --text-200: 0 0% 40%;

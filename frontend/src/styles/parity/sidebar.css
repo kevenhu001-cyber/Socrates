@@ -180,7 +180,9 @@
     margin: 0;
     padding: 6px var(--ui-space-md);
     border: 0;
-    border-radius: var(--ui-radius-row);
+    /* Geist row radius — the same 6px the polish layer gives the rail, so
+       the two files cannot drift into two different row shapes. */
+    border-radius: var(--ui-radius-sm);
     background: transparent;
     color: var(--ui-text-secondary);
     font: inherit;
@@ -274,13 +276,20 @@
     min-width: 0;
     height: var(--sidebar-row);
     padding: 0 10px;
-    border: 0;
-    border-radius: var(--ui-radius-row);
-    background: transparent;
-    transition: background-color var(--ui-duration-hover) ease;
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-bg-surface);
+    transition: background-color var(--ui-duration-hover) ease,
+                border-color var(--ui-duration-hover) ease;
   }
-  #appShell #sidebar .sidebar-search:hover,
-  #appShell #sidebar .sidebar-search:focus-within { background: var(--ui-bg-hover); }
+  #appShell #sidebar .sidebar-search:hover {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-bg-surface);
+  }
+  #appShell #sidebar .sidebar-search:focus-within {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-bg-surface);
+  }
   #appShell #sidebar .sidebar-search svg {
     flex: 0 0 20px;
     width: 20px;

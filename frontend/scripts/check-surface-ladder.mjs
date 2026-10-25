@@ -12,11 +12,18 @@
  * Three properties make it a ladder rather than an arbitrary palette:
  *
  *   1. exactly four surfaces, each with a job;
- *   2. consecutive rungs are 1.5%-3% apart in perceived lightness, so the
+ *   2. consecutive rungs are 1.5%-7% apart in perceived lightness, so the
  *      layering reads as depth rather than as a colour change;
  *   3. the darkest rung is a near-black, never pure #000 — pure black crushes
  *      shadow detail and lets the lowest layer read as a hole punched
  *      through the UI.
+ *
+ * The band above is a sanity net rather than the contract. The contract is
+ * that the four rungs are a *consecutive slice of the Geist scale*: every
+ * rung is a tone the design system actually ships, and the ladder is one
+ * slice of one scale rather than four unrelated greys that happen to be
+ * close together. That is why the scale is embedded below and why the
+ * baseline records the Geist step each rung is cut from.
  *
  * Dark mode runs the ladder upwards (L1 darkest). Light mode runs it the
  * other way, and the canvas is *not* the top rung there: the paper (L1) is
@@ -61,9 +68,62 @@ const UPDATE = process.argv.includes('--update');
 /* The ladder's rung names, in order, for both modes. */
 const RUNGS = ['page', 'rail', 'panel', 'elevated'];
 
-/* The step band, in percentage points of perceived lightness. */
+/* The roles ordered from the darkest rung to the lightest, per mode. Dark
+ * runs upwards: the canvas is the floor and the elevated surfaces are the
+ * ceiling. Light runs the other way and puts the paper at the top, so the
+ * canvas is *not* the brightest rung — a raised surface has to read as
+ * lighter than the page it stands on. */
+const LIGHTNESS_ORDER = {
+  dark: ['page', 'rail', 'panel', 'elevated'],
+  light: ['panel', 'rail', 'page', 'elevated'],
+};
+
+/* The step band, in percentage points of perceived lightness. This is a
+ * sanity net, not the contract: the contract is that the rungs are four
+ * consecutive steps of the Geist ramp (see GEIST_SURFACES). The band only
+ * catches a rung that was moved somewhere the scale does not have a step
+ * for, so it is wide enough to hold Geist's own gap between its page tone
+ * and the gray ramp. */
 const MIN_STEP = 1.5;
-const MAX_STEP = 3.0;
+const MAX_STEP = 7.0;
+
+/* The Geist surface ramp, per mode, in the order the scale itself runs:
+ * the two background tones first (paper and canvas), then the ten grays
+ * from the near-white inset tone down to the primary ink.
+ *
+ * The ladder must be four *consecutive* entries of this list. That is a
+ * stronger statement than "four colours that happen to be close together":
+ * it says every rung is a tone the design system actually ships, and that
+ * the ladder is a slice of one scale rather than four unrelated greys. */
+const GEIST_SURFACES = {
+  light: [
+    { step: 'background-100', value: '#ffffff' },
+    { step: 'background-200', value: '#fafafa' },
+    { step: 'gray-100', value: '#f2f2f2' },
+    { step: 'gray-200', value: '#ebebeb' },
+    { step: 'gray-300', value: '#e6e6e6' },
+    { step: 'gray-400', value: '#eaeaea' },
+    { step: 'gray-500', value: '#c9c9c9' },
+    { step: 'gray-600', value: '#a8a8a8' },
+    { step: 'gray-700', value: '#8f8f8f' },
+    { step: 'gray-800', value: '#7d7d7d' },
+    { step: 'gray-900', value: '#4d4d4d' },
+    { step: 'gray-1000', value: '#171717' },
+  ],
+  dark: [
+    { step: 'background-100', value: '#0a0a0a' },
+    { step: 'gray-100', value: '#1a1a1a' },
+    { step: 'gray-200', value: '#1f1f1f' },
+    { step: 'gray-300', value: '#292929' },
+    { step: 'gray-400', value: '#2e2e2e' },
+    { step: 'gray-500', value: '#454545' },
+    { step: 'gray-600', value: '#878787' },
+    { step: 'gray-700', value: '#8f8f8f' },
+    { step: 'gray-800', value: '#7d7d7d' },
+    { step: 'gray-900', value: '#a1a1a1' },
+    { step: 'gray-1000', value: '#ededed' },
+  ],
+};
 
 /* Roles in the shared package that carry a ladder rung. The mapping is
  * mode-dependent: in dark mode the ladder runs upwards, so "panel" is the
@@ -147,15 +207,17 @@ function declarations(body) {
   return out;
 }
 
-/* Resolve `var(--x)` chains inside one declaration map. */
+/* Resolve `var(--x)` chains inside one declaration map. The whole
+ * `var(--name)` token is replaced, closing parenthesis included, so a
+ * reference resolves to a bare value rather than to `value)`. */
 function resolveValue(value, vars, seen = new Set()) {
   if (!value.includes('var(')) return value;
-  const match = /var\(\s*(--[\w-]+)/.exec(value);
+  const match = /var\(\s*(--[\w-]+)\s*\)/.exec(value);
   if (!match || seen.has(match[1])) return value;
   seen.add(match[1]);
   const next = vars.get(match[1]);
   if (!next) return value;
-  return resolveValue(value.replace(match[0], next), vars, seen);
+  return resolveValue(value.replace(match[0], next), vars, new Set(seen));
 }
 
 function hexToRgb(hex) {
@@ -263,12 +325,49 @@ function main() {
       failures.push(`themes.css: ${mode} ladder uses pure black #000000 — the canvas must be a near-black`);
     }
 
-    const sorted = [...rungs].sort((a, b) => lightness(a) - lightness(b));
-    for (let i = 1; i < sorted.length; i += 1) {
-      const step = Math.abs(lightness(sorted[i]) - lightness(sorted[i - 1]));
+    /* Every rung must be a tone the Geist scale actually ships, and the four
+     * of them must be a consecutive slice of that scale. A ladder whose
+     * rungs belong to no scale step is four unrelated colours that happen
+     * to be close together. */
+    const scale = GEIST_SURFACES[mode];
+    const indices = rungs.map((rung) => scale.findIndex((entry) => entry.value === rung));
+    if (indices.includes(-1)) {
+      const unknown = rungs.filter((rung) => !scale.some((entry) => entry.value === rung));
+      failures.push(
+        `themes.css: ${mode} ladder rung ${unknown.join(', ')} is not a step of the Geist scale`,
+      );
+    } else {
+      const sorted = [...indices].sort((a, b) => a - b);
+      const consecutive = sorted.every((index, i) => i === 0 || index === sorted[i - 1] + 1);
+      if (!consecutive) {
+        failures.push(
+          `themes.css: ${mode} ladder is not a consecutive slice of the Geist scale — it uses ${sorted.map((index) => scale[index].step).join(', ')}`,
+        );
+      }
+    }
+
+    /* The roles keep their meaning: the elevated rung is always the
+     * lightest, and the canvas is the darkest in dark mode. In light mode
+     * the paper (the elevated rung) deliberately sits *above* the canvas,
+     * so a raised surface reads as lighter than the page it stands on. */
+    const order = LIGHTNESS_ORDER[mode];
+    for (let i = 1; i < order.length; i += 1) {
+      const lower = ladder[mode]?.[order[i - 1]];
+      const higher = ladder[mode]?.[order[i]];
+      if (!lower || !higher) continue;
+      if (lightness(lower) >= lightness(higher)) {
+        failures.push(
+          `themes.css: ${mode} ladder role order is wrong — ${order[i - 1]} (${lower}) is not darker than ${order[i]} (${higher})`,
+        );
+      }
+    }
+
+    const sortedRungs = [...rungs].sort((a, b) => lightness(a) - lightness(b));
+    for (let i = 1; i < sortedRungs.length; i += 1) {
+      const step = Math.abs(lightness(sortedRungs[i]) - lightness(sortedRungs[i - 1]));
       if (step < MIN_STEP - 0.01 || step > MAX_STEP + 0.01) {
         failures.push(
-          `themes.css: ${mode} ladder step ${sorted[i - 1]} → ${sorted[i]} is ${step.toFixed(2)}%, outside the ${MIN_STEP}%-${MAX_STEP}% band`,
+          `themes.css: ${mode} ladder step ${sortedRungs[i - 1]} → ${sortedRungs[i]} is ${step.toFixed(2)}%, outside the ${MIN_STEP}%-${MAX_STEP}% band`,
         );
       }
     }
@@ -396,18 +495,29 @@ function main() {
   }
 
   if (UPDATE) {
-    const next = {
-      ...ladder,
-      legacyChannels,
-      generatedBy: 'check-surface-ladder.mjs --update',
-    };
+    /* The baseline records the Geist step each rung is cut from, not just
+     * its value: the step is the reviewable part of the decision, and the
+     * value follows from it. */
+    const next = {};
+    for (const mode of ['dark', 'light']) {
+      const scale = GEIST_SURFACES[mode];
+      next[mode] = {};
+      for (const rung of RUNGS) {
+        const value = ladder[mode]?.[rung];
+        const entry = scale.find((candidate) => candidate.value === value);
+        next[mode][rung] = { step: entry?.step ?? null, value: value ?? null };
+      }
+    }
+    next.legacyChannels = legacyChannels;
+    next.generatedBy = 'check-surface-ladder.mjs --update';
     writeFileSync(BASELINE, `${JSON.stringify(next, null, 2)}\n`);
     console.log('surface-ladder baseline updated:');
     console.log(JSON.stringify(next, null, 2));
   } else if (baseline) {
     for (const mode of ['dark', 'light']) {
       for (const rung of RUNGS) {
-        const expected = baseline[mode]?.[rung];
+        const expectedEntry = baseline[mode]?.[rung];
+        const expected = typeof expectedEntry === 'string' ? expectedEntry : expectedEntry?.value;
         const actual = ladder[mode]?.[rung];
         if (expected && actual && expected !== actual) {
           failures.push(

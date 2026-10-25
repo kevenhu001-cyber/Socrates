@@ -108,15 +108,16 @@ function declarations(body) {
   return out;
 }
 
-/* Resolve `var(--x)` chains inside one declaration map. */
+/* Resolve `var(--x)` chains inside one declaration map. The whole
+ * `var(--name)` token is replaced, closing parenthesis included. */
 function resolveValue(value, vars, seen = new Set()) {
   if (!value.includes('var(')) return value;
-  const match = /var\(\s*(--[\w-]+)/.exec(value);
+  const match = /var\(\s*(--[\w-]+)\s*\)/.exec(value);
   if (!match || seen.has(match[1])) return value;
   seen.add(match[1]);
   const next = vars.get(match[1]);
   if (!next) return value;
-  return resolveValue(value.replace(match[0], next), vars, seen);
+  return resolveValue(value.replace(match[0], next), vars, new Set(seen));
 }
 
 function hexToRgb(hex) {
@@ -248,51 +249,55 @@ function main() {
   }
 
   /* ---------- 2. the ring colour and its contrast ---------- */
-  const ringRaw = focusVars.get('--ui-focus-ring');
-  let ringRgb = null;
-  let ringAlpha = 1;
-  if (!ringRaw) {
-    failures.push('themes.css: --ui-focus-ring is missing');
-  } else {
-    const mix = /color-mix\(\s*in srgb\s*,\s*var\(\s*(--[\w-]+)\s*\)\s*([\d.]+)%\s*,\s*transparent\s*\)/.exec(ringRaw);
-    if (!mix) {
-      failures.push(
-        `themes.css: --ui-focus-ring is "${ringRaw}" — expected color-mix(in srgb, var(--ui-text-primary) N%, transparent)`,
-      );
-    } else {
-      ringAlpha = Number.parseFloat(mix[2]) / 100;
-      const sourceName = mix[1];
-      for (const mode of ['dark', 'light']) {
-        const body = ruleBody(themes, `[data-mode="${mode}"]`);
-        if (!body) continue;
-        const vars = declarations(body);
-        const source = resolveValue(vars.get(sourceName) || '', vars);
-        const rgb = hexToRgb(source);
-        if (!rgb) continue;
-        const ladder = {};
-        for (const rung of RUNGS) {
-          const raw = vars.get(`--ui-bg-${rung}`);
-          if (!raw) continue;
-          const resolved = resolveValue(raw, vars);
-          const rungRgb = hexToRgb(resolved);
-          if (rungRgb) ladder[rung] = rungRgb;
-        }
-        const minContrast = Math.min(
-          ...Object.entries(ladder).map(([rung, bg]) => {
-            const over = composite(rgb, ringAlpha, bg);
-            const ratio = contrastRatio(over, bg);
-            if (ratio < requiredContrast) {
-              failures.push(
-                `themes.css: the ${mode} focus ring is ${ratio.toFixed(2)}:1 on --ui-bg-${rung} — it must clear ${requiredContrast}:1`,
-              );
-            }
-            return ratio;
-          }),
-        );
-        if (!ringRgb) ringRgb = rgb;
-        ratios[mode] = minContrast;
-      }
+  /* The ring colour is declared per mode, so it is read from each mode's
+   * own rule rather than from one shared declaration. It may be a solid
+   * colour (Geist's blue) or a translucent tint of another role; both are
+   * resolved against the mode's palette before they are measured. */
+  for (const mode of ['dark', 'light']) {
+    const body = ruleBody(themes, `[data-mode="${mode}"]`);
+    if (!body) continue;
+    const vars = declarations(body);
+    const ringRaw = vars.get('--ui-focus-ring');
+    if (!ringRaw) {
+      failures.push(`themes.css: [data-mode="${mode}"] is missing --ui-focus-ring`);
+      continue;
     }
+    const mix = /color-mix\(\s*in srgb\s*,\s*var\(\s*(--[\w-]+)\s*\)\s*([\d.]+)%\s*,\s*transparent\s*\)/.exec(ringRaw);
+    let rgb = null;
+    let ringAlpha = 1;
+    if (mix) {
+      ringAlpha = Number.parseFloat(mix[2]) / 100;
+      rgb = hexToRgb(resolveValue(vars.get(mix[1]) || '', vars));
+    } else {
+      rgb = hexToRgb(resolveValue(ringRaw, vars));
+    }
+    if (!rgb) {
+      failures.push(
+        `themes.css: [data-mode="${mode}"] --ui-focus-ring is "${ringRaw}" — it must resolve to a colour`,
+      );
+      continue;
+    }
+    const ladder = {};
+    for (const rung of RUNGS) {
+      const raw = vars.get(`--ui-bg-${rung}`);
+      if (!raw) continue;
+      const resolved = resolveValue(raw, vars);
+      const rungRgb = hexToRgb(resolved);
+      if (rungRgb) ladder[rung] = rungRgb;
+    }
+    const minContrast = Math.min(
+      ...Object.entries(ladder).map(([rung, bg]) => {
+        const over = composite(rgb, ringAlpha, bg);
+        const ratio = contrastRatio(over, bg);
+        if (ratio < requiredContrast) {
+          failures.push(
+            `themes.css: the ${mode} focus ring is ${ratio.toFixed(2)}:1 on --ui-bg-${rung} — it must clear ${requiredContrast}:1`,
+          );
+        }
+        return ratio;
+      }),
+    );
+    ratios[mode] = minContrast;
   }
 
   /* ---------- 3. the global contract in the foundations layer ---------- */

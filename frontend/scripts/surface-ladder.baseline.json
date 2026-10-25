@@ -1,15 +1,39 @@
 {
   "dark": {
-    "page": "#080808",
-    "rail": "#0d0d0d",
-    "panel": "#131313",
-    "elevated": "#181818"
+    "page": {
+      "step": "background-100",
+      "value": "#0a0a0a"
+    },
+    "rail": {
+      "step": "gray-100",
+      "value": "#1a1a1a"
+    },
+    "panel": {
+      "step": "gray-200",
+      "value": "#1f1f1f"
+    },
+    "elevated": {
+      "step": "gray-300",
+      "value": "#292929"
+    }
   },
   "light": {
-    "page": "#fafafa",
-    "rail": "#f6f6f6",
-    "panel": "#f0f0f0",
-    "elevated": "#ffffff"
+    "page": {
+      "step": "background-200",
+      "value": "#fafafa"
+    },
+    "rail": {
+      "step": "gray-100",
+      "value": "#f2f2f2"
+    },
+    "panel": {
+      "step": "gray-200",
+      "value": "#ebebeb"
+    },
+    "elevated": {
+      "step": "background-100",
+      "value": "#ffffff"
+    }
   },
   "legacyChannels": {
     "dark": {

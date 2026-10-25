@@ -7,7 +7,7 @@
  */
 
 /** Dark mode page background — ladder L1, a near-black rather than pure #000. */
-export const DARK_PAGE_BACKGROUND = '#080808';
+export const DARK_PAGE_BACKGROUND = '#0a0a0a';
 
 /** Light mode page background — ladder L2, one step below the paper. */
 export const LIGHT_PAGE_BACKGROUND = '#fafafa';

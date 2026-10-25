@@ -62,7 +62,9 @@
   #appShell #sidebarNav .sidebar-nav-btn {
     gap: 8px;
     padding-inline: 8px;
-    border-radius: var(--ui-radius-row);
+    /* Geist row radius: 6px, the same curve the buttons, inputs and menu
+       rows use, so the rail reads as one set of controls. */
+    border-radius: var(--ui-radius-sm);
     color: var(--ui-text-secondary);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);
@@ -91,40 +93,45 @@
   #appShell #sidebar .sidebar-search {
     gap: 8px;
     padding-inline: 8px;
-    border-radius: var(--ui-radius-row);
+    /* Geist input: the system radius, the default hairline and the raised
+       surface. The field used to be a transparent nav row that only gained
+       a fill on hover, which made it hard to read as a text field at rest. */
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-bg-surface);
     color: var(--ui-text-secondary);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                border-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 box-shadow var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #sidebar .sidebar-search:hover {
-    background: var(--ui-bg-hover);
+    border-color: var(--ui-border-strong);
     color: var(--ui-text-primary);
   }
   /* The pill carries the focus treatment for its bare input (the input has
      no frame of its own, so a ring around it read as a box drawn around the
-     sidebar). A filled surface plus a one-pixel inner stroke plus the
-     ambient bloom reads as focus without the hard frame. */
+     sidebar). A filled surface plus the project focus ring reads as focus
+     without the hard frame. */
   #appShell #sidebar .sidebar-search:focus-within {
+    border-color: var(--ui-border-strong);
     background: var(--ui-bg-surface);
     color: var(--ui-text-primary);
-    box-shadow: inset 0 0 0 1px var(--ui-border-strong), 0 0 0 3px var(--ui-focus-glow);
+    box-shadow: var(--ui-focus-shadow);
   }
   #appShell #sidebar .sidebar-search svg {
-    width: 18px;
-    height: 18px;
-    flex-basis: 18px;
-    color: var(--ui-text-secondary);
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
+    color: var(--ui-text-tertiary);
     transition: color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .sidebar-search:hover svg,
   #appShell #sidebar .sidebar-search:focus-within svg {
     color: var(--ui-text-primary);
   }
-  #appShell #sidebarSearch,
-  #appShell #sidebarSearch::placeholder {
-    color: var(--ui-text-secondary);
-  }
+  #appShell #sidebarSearch { color: var(--ui-text-primary); }
+  #appShell #sidebarSearch::placeholder { color: var(--ui-text-placeholder); }
   #appShell #sidebarSearch:focus::placeholder {
     color: var(--ui-text-placeholder);
   }
@@ -165,7 +172,7 @@
   #appShell #sidebar .recent-item {
     gap: 0;
     padding-inline: 8px;
-    border-radius: var(--ui-radius-row);
+    border-radius: var(--ui-radius-sm);
     color: var(--ui-text-secondary);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);
@@ -221,7 +228,7 @@
     gap: 8px;
     min-height: 40px;
     padding: 6px 8px;
-    border-radius: var(--ui-radius-row);
+    border-radius: var(--ui-radius-sm);
     color: var(--ui-text-secondary);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);

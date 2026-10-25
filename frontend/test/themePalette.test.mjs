@@ -13,7 +13,7 @@
  *   1. the HSL source of truth and the native hex projection agree — the
  *      projection is what React Native paints, so a drift here means the
  *      Universal app and the Web app show different colours;
- *   2. the background ladder holds its shape — four rungs, 1.5%-3% apart in
+ *   2. the background ladder holds its shape — four rungs, evenly stepped in
  *      perceived lightness, and never a pure-black canvas;
  *   3. the web palette in themes.css carries the same rungs, so the ladder
  *      is one ladder rather than one per surface.
@@ -50,8 +50,25 @@ const RUNGS = {
   ],
 };
 
+/* The step band, in percentage points of perceived lightness. The contract
+ * itself is that the rungs are a consecutive slice of the Geist scale (the
+ * surface-ladder guard enforces that); this band is the sanity net that
+ * catches a rung moved somewhere the scale has no step for. */
 const MIN_STEP = 1.5;
-const MAX_STEP = 3.0;
+const MAX_STEP = 7.0;
+
+/* Resolve `var(--x)` chains inside one declaration map. The web palette
+ * projects the ladder from `--geist-*` steps, so a rung is a reference
+ * rather than a literal. */
+function resolveValue(value, vars, seen = new Set()) {
+  if (!value.includes('var(')) return value;
+  const match = /var\(\s*(--[\w-]+)\s*\)/.exec(value);
+  if (!match || seen.has(match[1])) return value;
+  seen.add(match[1]);
+  const next = vars.get(match[1]);
+  if (!next) return value;
+  return resolveValue(value.replace(match[0], next), vars, new Set(seen));
+}
 
 function hslToHex(value) {
   const [h, s, l] = value.split(/\s+/).map((part) => Number.parseFloat(part));
@@ -85,6 +102,16 @@ function contrast(foreground, background) {
 function lightnessPercent(hex) {
   const channels = hex.slice(1).match(/../g).map((channel) => parseInt(channel, 16));
   return (0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]) / 255 * 100;
+}
+
+/* `rgb(240 119 117)` and `#f07775` are the same colour written two ways; the
+   shared package stores hex, the web palette stores rgb(). */
+function toHex(value) {
+  const raw = value.trim();
+  if (raw.startsWith('#')) return raw.toLowerCase();
+  const match = /rgba?\(\s*(\d+)[,\s]\s*(\d+)[,\s]\s*(\d+)/.exec(raw);
+  if (!match) return raw.toLowerCase();
+  return `#${[match[1], match[2], match[3]].map((c) => Number(c).toString(16).padStart(2, '0')).join('')}`;
 }
 
 function checkParity(palette, hex) {
@@ -121,7 +148,7 @@ test('primary, secondary, and readable muted text meet WCAG AA for normal text',
   }
 });
 
-test('the background ladder is four rungs, 1.5%-3% apart, and never pure black', () => {
+test('the background ladder is four rungs, evenly stepped, and never pure black', () => {
   for (const mode of ['dark', 'light']) {
     const rungs = RUNGS[mode].map((rung) => sharedRungHex(mode, rung));
 
@@ -155,6 +182,26 @@ test('every text tier clears AA on every ladder rung', () => {
   }
 });
 
+test('the semantic tones clear AA on every ladder rung', () => {
+  /* danger and success are text colours too — the tool-card error value and
+     the metric chip paint them on the ladder and on a 16% tint of
+     themselves. A tone that reads on the canvas can still fail on the
+     raised rung, which is where the dialogs and the cards live. */
+  for (const mode of ['dark', 'light']) {
+    const palette = palettesHex[mode];
+    for (const rung of RUNGS[mode]) {
+      const background = sharedRungHex(mode, rung);
+      for (const role of ['danger', 'success']) {
+        const ratio = contrast(palette[role], background);
+        assert.ok(
+          ratio >= 4.5,
+          `${mode}.${role} on the ${rung.name} rung (${background}) is ${ratio.toFixed(2)}:1, below 4.5:1`,
+        );
+      }
+    }
+  }
+});
+
 test('the web palette in themes.css carries the same ladder', async () => {
   const css = (await readFile(THEMES_CSS, 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -162,13 +209,49 @@ test('the web palette in themes.css carries the same ladder', async () => {
     const rule = new RegExp(`\\[data-mode="${mode}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`).exec(css);
     assert.ok(rule, `themes.css has no [data-mode="${mode}"] rule`);
 
+    const vars = new Map();
+    for (const match of rule[1].matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
+      if (!vars.has(match[1])) vars.set(match[1], match[2].trim());
+    }
+
     const webRungs = RUNGS[mode].map((rung) => {
-      const match = new RegExp(`--ui-bg-${rung.name}:\\s*(#[0-9a-fA-F]{6})`).exec(rule[1]);
-      assert.ok(match, `themes.css [data-mode="${mode}"] is missing --ui-bg-${rung.name}`);
-      return match[1].toLowerCase();
+      const raw = vars.get(`--ui-bg-${rung.name}`);
+      assert.ok(raw, `themes.css [data-mode="${mode}"] is missing --ui-bg-${rung.name}`);
+      const resolved = resolveValue(raw, vars);
+      assert.match(resolved, /^#[0-9a-fA-F]{6}$/, `--ui-bg-${rung.name} does not resolve to a hex`);
+      return resolved.toLowerCase();
     });
 
     const sharedRungs = RUNGS[mode].map((rung) => sharedRungHex(mode, rung).toLowerCase());
     assert.deepEqual(webRungs, sharedRungs, `${mode} web ladder drifted from the shared package`);
+  }
+});
+
+test('the web palette carries the same semantic tones as the shared package', async () => {
+  /* The Universal app paints danger and success from the shared package; the
+     web paints them from themes.css. A tone that only one of the two knows
+     about is a colour the other platform never shows — and the web's values
+     are the ones that were checked against the ladder. */
+  const css = (await readFile(THEMES_CSS, 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
+
+  for (const mode of ['dark', 'light']) {
+    const rule = new RegExp(`\\[data-mode="${mode}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`).exec(css);
+    assert.ok(rule, `themes.css has no [data-mode="${mode}"] rule`);
+
+    const vars = new Map();
+    for (const match of rule[1].matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
+      if (!vars.has(match[1])) vars.set(match[1], match[2].trim());
+    }
+
+    for (const role of ['danger', 'success']) {
+      const raw = vars.get(`--ui-${role}`);
+      assert.ok(raw, `themes.css [data-mode="${mode}"] is missing --ui-${role}`);
+      const web = toHex(resolveValue(raw, vars));
+      assert.equal(
+        web,
+        palettesHex[mode][role].toLowerCase(),
+        `${mode} --ui-${role} drifted from the shared package`,
+      );
+    }
   }
 });

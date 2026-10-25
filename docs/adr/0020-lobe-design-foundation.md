@@ -2,6 +2,10 @@
 
 - **Status:** Accepted
 - **Date:** 2026-10-18
+- **Amended by:** ADR 0023 (2026-10-25) — the foundation metrics below still stand;
+  the *neutral values* they were paired with are now projected from the Geist
+  scale instead of the Lobe defaults, and the application shell was rebuilt
+  in Geist form.
 
 ## Context
 
