@@ -5,9 +5,9 @@
  "scenarios": {
   "home-1440-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -44,7 +44,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -80,7 +80,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -88,9 +88,9 @@
   },
   "plusMenu-1440-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -127,7 +127,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -135,9 +135,9 @@
   },
   "effortMenu-1440-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -174,7 +174,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -182,9 +182,9 @@
   },
   "cmdk-1440-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -221,7 +221,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -229,9 +229,9 @@
   },
   "settings-1440-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -268,7 +268,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -276,9 +276,9 @@
   },
   "home-1440-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -315,7 +315,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -351,7 +351,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -359,9 +359,9 @@
   },
   "plusMenu-1440-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -398,7 +398,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -406,9 +406,9 @@
   },
   "effortMenu-1440-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -445,7 +445,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -453,9 +453,9 @@
   },
   "cmdk-1440-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -492,7 +492,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -500,9 +500,9 @@
   },
   "settings-1440-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -539,7 +539,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -547,9 +547,9 @@
   },
   "home-1440-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -586,7 +586,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -622,7 +622,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -630,9 +630,9 @@
   },
   "plusMenu-1440-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -669,7 +669,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -677,9 +677,9 @@
   },
   "effortMenu-1440-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -716,7 +716,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -724,9 +724,9 @@
   },
   "cmdk-1440-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -763,7 +763,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -771,9 +771,9 @@
   },
   "settings-1440-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -810,7 +810,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -818,9 +818,9 @@
   },
   "home-1440-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -857,7 +857,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -893,7 +893,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -901,9 +901,9 @@
   },
   "plusMenu-1440-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -940,7 +940,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -948,9 +948,9 @@
   },
   "effortMenu-1440-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -987,7 +987,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -995,9 +995,9 @@
   },
   "cmdk-1440-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1034,7 +1034,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1042,9 +1042,9 @@
   },
   "settings-1440-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1081,7 +1081,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1089,9 +1089,9 @@
   },
   "home-1280-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1128,7 +1128,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1164,7 +1164,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1172,9 +1172,9 @@
   },
   "plusMenu-1280-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1211,7 +1211,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1219,9 +1219,9 @@
   },
   "effortMenu-1280-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1258,7 +1258,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1266,9 +1266,9 @@
   },
   "cmdk-1280-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1305,7 +1305,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1313,9 +1313,9 @@
   },
   "settings-1280-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1352,7 +1352,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1360,9 +1360,9 @@
   },
   "home-1280-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1399,7 +1399,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1435,7 +1435,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1443,9 +1443,9 @@
   },
   "plusMenu-1280-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1482,7 +1482,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1490,9 +1490,9 @@
   },
   "effortMenu-1280-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1529,7 +1529,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1537,9 +1537,9 @@
   },
   "cmdk-1280-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1576,7 +1576,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1584,9 +1584,9 @@
   },
   "settings-1280-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1623,7 +1623,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1631,9 +1631,9 @@
   },
   "home-1280-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1670,7 +1670,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1706,7 +1706,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1714,9 +1714,9 @@
   },
   "plusMenu-1280-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1753,7 +1753,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1761,9 +1761,9 @@
   },
   "effortMenu-1280-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1800,7 +1800,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1808,9 +1808,9 @@
   },
   "cmdk-1280-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1847,7 +1847,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1855,9 +1855,9 @@
   },
   "settings-1280-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1894,7 +1894,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1902,9 +1902,9 @@
   },
   "home-1280-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -1941,7 +1941,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1977,7 +1977,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -1985,9 +1985,9 @@
   },
   "plusMenu-1280-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2024,7 +2024,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2032,9 +2032,9 @@
   },
   "effortMenu-1280-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2071,7 +2071,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2079,9 +2079,9 @@
   },
   "cmdk-1280-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2118,7 +2118,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2126,9 +2126,9 @@
   },
   "settings-1280-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2165,7 +2165,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2173,9 +2173,9 @@
   },
   "home-1024-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2212,7 +2212,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2248,7 +2248,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2256,9 +2256,9 @@
   },
   "plusMenu-1024-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2295,7 +2295,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2303,9 +2303,9 @@
   },
   "effortMenu-1024-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2342,7 +2342,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2350,9 +2350,9 @@
   },
   "cmdk-1024-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2389,7 +2389,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2397,9 +2397,9 @@
   },
   "settings-1024-dark-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2436,7 +2436,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2444,9 +2444,9 @@
   },
   "home-1024-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2483,7 +2483,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2519,7 +2519,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2527,9 +2527,9 @@
   },
   "plusMenu-1024-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2566,7 +2566,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2574,9 +2574,9 @@
   },
   "effortMenu-1024-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2613,7 +2613,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2621,9 +2621,9 @@
   },
   "cmdk-1024-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2660,7 +2660,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2668,9 +2668,9 @@
   },
   "settings-1024-dark-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2707,7 +2707,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2715,9 +2715,9 @@
   },
   "home-1024-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2754,7 +2754,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2790,7 +2790,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2798,9 +2798,9 @@
   },
   "plusMenu-1024-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2837,7 +2837,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2845,9 +2845,9 @@
   },
   "effortMenu-1024-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2884,7 +2884,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2892,9 +2892,9 @@
   },
   "cmdk-1024-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2931,7 +2931,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2939,9 +2939,9 @@
   },
   "settings-1024-light-zh": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -2978,7 +2978,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -2986,9 +2986,9 @@
   },
   "home-1024-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -3025,7 +3025,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -3061,7 +3061,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -3069,9 +3069,9 @@
   },
   "plusMenu-1024-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -3108,7 +3108,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -3116,9 +3116,9 @@
   },
   "effortMenu-1024-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -3155,7 +3155,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -3163,9 +3163,9 @@
   },
   "cmdk-1024-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -3202,7 +3202,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
@@ -3210,9 +3210,9 @@
   },
   "settings-1024-light-en": {
    "heroTitle": {
-    "h": 39,
-    "style.fontSize": "30px",
-    "style.lineHeight": "39px"
+    "h": 31,
+    "style.fontSize": "24px",
+    "style.lineHeight": "31.2px"
    },
    "homeQuickActions": {
     "h": 46
@@ -3249,7 +3249,7 @@
    "sidebarItem": {
     "h": 36,
     "style.borderRadius": "10px",
-    "style.fontSize": "14px"
+    "style.fontSize": "16px"
    },
    "topbar": {
     "h": 52
