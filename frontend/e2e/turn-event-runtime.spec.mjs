@@ -123,7 +123,7 @@ test('committed UI patch retains DOM, local state and disclosure while removing 
     { op: 'remove', nodeId: 'old-group' },
     { op: 'add', node: { id: 'new-evidence', type: 'text', parent: 'panel', text: 'Fresh evidence' } },
   ] }));
-  await expect(panel).toContainText('Updated estimate');
+  await expect(message.getByRole('heading', { name: 'Updated estimate', exact: true })).toBeVisible();
   await expect(panel).toContainText('Fresh evidence');
   await expect(message.locator('[data-intui-id="value"]')).toContainText('2');
   await expect(message.locator('[data-intui-id="old-child"]')).toHaveCount(0);
@@ -138,7 +138,7 @@ test('committed UI patch retains DOM, local state and disclosure while removing 
     ] });
     window.__turnEventCtl.finish();
   });
-  await expect(panel).toContainText('Updated estimate');
+  await expect(message.getByRole('heading', { name: 'Updated estimate', exact: true })).toBeVisible();
   await expect(button).toBeVisible();
   await expect(message.locator('[data-intui-id="value"]')).toContainText('2');
   await page.screenshot({ path: 'test-results/intelligent-ui-patch.png' });

@@ -172,7 +172,9 @@ test('native UI survives a tool-only settled turn and recovers raw streamed argu
   const message = page.locator('#msgList .msg.assistant[data-client-id="native-ui-tool-only"]');
   await expect(message).toHaveCount(1);
   await expect(message.locator('.intui')).toBeVisible();
-  await expect(message.locator('[data-intui-id="panel"]')).toContainText('Recovered UI');
+  // The root panel's title is hoisted into the surface heading, so the
+  // panel element itself only carries its body.
+  await expect(message.getByRole('heading', { name: 'Recovered UI', exact: true })).toBeVisible();
   await expect(message.locator('[data-intui-id="value"]')).toContainText('7');
 });
 

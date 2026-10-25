@@ -143,20 +143,32 @@ export function commitSendInput(input: SendInput, options: CommitSendOptions): C
    idle slot so the click handler can return without paying for a
    TipTap document walk. Falls back through rIC → setTimeout so Safari
    (which has rIC since 16.4 but not on all surfaces) and the test
-   harness (no rIC) still clear. */
+   harness (no rIC) still clear.
+
+   The clear is deferred, so by the time it runs the composer may already
+   hold the next message — on a busy main thread the idle slot arrives
+   late, and an unconditional clear wiped whatever the user had typed in
+   the meantime. Compare against what was sent: clear only while the
+   composer still holds it. */
 function scheduleIdleClearComposer(scope: ComposerSurface): void {
+  const sent = getComposerMarkdown(scope);
+  const clearIfUnchanged = () => {
+    try {
+      if (getComposerMarkdown(scope) === sent) clearComposer(scope);
+    } catch (error) { reportSwallow(error, 'send/input.scheduleIdleClearComposer'); }
+  };
   if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(function idleClear() { clearComposer(scope); }, { timeout: 0 });
+    requestIdleCallback(function idleClear() { clearIfUnchanged(); }, { timeout: 0 });
     return;
   }
   const raf = typeof requestAnimationFrame === 'function'
     ? requestAnimationFrame
     : null;
   if (raf) {
-    raf(function rafClear() { clearComposer(scope); });
+    raf(function rafClear() { clearIfUnchanged(); });
     return;
   }
-  setTimeout(function () { clearComposer(scope); }, 0);
+  setTimeout(function () { clearIfUnchanged(); }, 0);
 }
 
 function patchCommittedAttachments(userClientId: string | null, attachments: unknown[]): void {
