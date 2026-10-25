@@ -108,7 +108,10 @@ for (const size of ['desktop', 'mobile']) {
     const disabledOpacity = await send.evaluate((node) => Number(getComputedStyle(node).opacity));
     await editor.fill('Help me refine this plan.');
     await expect(send).toBeEnabled();
-    expect(await send.evaluate((node) => Number(getComputedStyle(node).opacity))).toBeGreaterThan(disabledOpacity);
+    // The send button fades from the disabled 0.3 to its resting opacity, so
+    // the first frame after enabling still reports the disabled value.
+    await expect.poll(() => send.evaluate((node) => Number(getComputedStyle(node).opacity)))
+      .toBeGreaterThan(disabledOpacity);
     await page.screenshot({ path: `test-results/ui-detail-actions-${encodeURIComponent(size)}.png` });
   });
 }
