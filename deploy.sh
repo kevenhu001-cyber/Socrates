@@ -267,7 +267,11 @@ run_site_only_deploy() {
   local state_tmp commit dirty ts tmp
   state_tmp="${STATE_FILE%.json}.site.json"
   commit=$(git -C "$(dirname "$(readlink -f "$0")")" rev-parse HEAD 2>/dev/null || echo unknown)
-  dirty=$(git -C "$(dirname "$(readlink -f "$0")")" status --porcelain=v1 --untracked-files=all 2>/dev/null | grep -c . || echo 0)
+  # `grep -c` prints the count but exits 1 when the count is zero, so the
+  # fallback must swallow the exit code without printing a second number:
+  # `|| echo 0` wrote "0\n0" into the state file and left it unparseable.
+  dirty=$(git -C "$(dirname "$(readlink -f "$0")")" status --porcelain=v1 --untracked-files=all 2>/dev/null | grep -c . || true)
+  dirty=${dirty:-0}
   ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   tmp=$(mktemp "${state_tmp}.XXXXXX.tmp")
   cat > "$tmp" <<EOF

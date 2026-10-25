@@ -175,6 +175,16 @@ if [[ "$*" == *"status.topodrive.top"* ]]; then
   printf '200'
   exit 0
 fi
+if [[ "$*" == *"topodrive.top"* && "$*" != *"app.topodrive.top"* && "$*" != *"status.topodrive.top"* ]]; then
+  # The marketing-site gate reads the published pages back from the origin and
+  # greps them for a marker. Serve every marker the five site checks look for.
+  if [[ "$*" == *"-w"* ]]; then
+    printf '200'
+  else
+    printf '<html><a href="/pricing">Pricing</a><a href="/zh/pricing">Pricing</a>The route back to an idea</html>'
+  fi
+  exit 0
+fi
 if [[ -n "$output_file" ]]; then
   printf '<html><div id="adminPanel"></div>new frontend</html>\n' > "$output_file"
 fi
@@ -271,6 +281,17 @@ SH
 run_deploy() {
   local base="$1"
   shift
+  # `--`-prefixed arguments are passed to deploy.sh itself; everything else is
+  # an environment override for the fixture.
+  local -a deploy_args=()
+  local -a deploy_env=()
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --*) deploy_args+=("$arg") ;;
+      *) deploy_env+=("$arg") ;;
+    esac
+  done
   env \
     PATH="$base/bin:/usr/bin:/bin" \
     FRONTEND_DIR="$base/frontend" \
@@ -290,8 +311,8 @@ run_deploy() {
     CODEX_ENABLED="0" \
     PI_AGENT_BIN="$base/no-pi" \
     CODEX_DROPIN="$base/etc/codex.conf" \
-    "$@" \
-    "$base/deploy.sh"
+    ${deploy_env[@]+"${deploy_env[@]}"} \
+    "$base/deploy.sh" ${deploy_args[@]+"${deploy_args[@]}"}
 }
 
 # Exercise the real deploy.sh gate through its normal invocation. A skip is
@@ -487,4 +508,33 @@ if run_deploy "$lock_base" MOCK_FLOCK_HELD=1 >"$lock_base/output.log" 2>&1; then
 fi
 grep -q 'another Socrates deploy is already in progress' "$lock_base/output.log"
 
-echo "deploy flow: CI gate skip/success/failure/missing/unverifiable, success, lock contention, health gate, cleanup, rollback, and the status-page gate (DNS missing/strict/artifact/feed/public) passed"
+# The site-only release writes its own state file, and that file must be
+# parseable. `git status | grep -c .` exits 1 when the worktree is clean, and
+# the old `|| echo 0` fallback appended a second number to the count: the
+# state file came out as `"worktreeDirtyFiles": 0` followed by a bare `0,`,
+# which no JSON parser accepts.
+site_state_base=$(make_fixture site-only-state)
+mkdir -p "$site_state_base/site/zh"
+cat > "$site_state_base/site/index.html" <<'HTML'
+<!doctype html>
+<html lang="en"><head><title>Socrates</title></head>
+<body><a href="/pricing">Pricing</a><a href="/zh/pricing">Pricing</a></body></html>
+HTML
+cp "$site_state_base/site/index.html" "$site_state_base/site/pricing.html"
+cp "$site_state_base/site/index.html" "$site_state_base/site/zh/index.html"
+cp "$site_state_base/site/index.html" "$site_state_base/site/zh/pricing.html"
+printf '/* fixture */\n' > "$site_state_base/site/base.css"
+# Ignore everything so the fixture worktree reads as clean. The dirty-file
+# count is only zero there, and only a zero count took the broken fallback
+# branch (`grep -c` exits 1 on a zero count, and `|| echo 0` appended a
+# second number).
+printf '*\n' > "$site_state_base/.gitignore"
+run_deploy "$site_state_base" SITE_DIR="$site_state_base/site" --site-only >"$site_state_base/output.log" 2>&1
+if ! jq -e '.lastSuccessfulSiteDeploy.worktreeDirtyFiles == 0' "$site_state_base/deploy-state.site.json" >/dev/null; then
+  echo "the site-only state file is not parseable JSON" >&2
+  cat "$site_state_base/deploy-state.site.json" >&2
+  exit 1
+fi
+jq -e '.lastSuccessfulSiteDeploy.htmlPages == 4' "$site_state_base/deploy-state.site.json" >/dev/null
+
+echo "deploy flow: CI gate skip/success/failure/missing/unverifiable, success, lock contention, health gate, cleanup, rollback, the status-page gate (DNS missing/strict/artifact/feed/public), and the site-only state file passed"
