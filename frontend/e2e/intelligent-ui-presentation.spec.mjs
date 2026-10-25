@@ -79,7 +79,11 @@ for (const format of ['native', 'openui']) {
       await page.locator('#composerToolsBtn').click();
       const tools = page.locator('#composerToolsMenu');
       await expect(tools).toBeVisible();
-      const tool = tools.getByRole('button').first();
+      // The tools entries are <button role="menuitem">, so their computed ARIA
+      // role is menuitem, not button. The desktop and the mobile item lists
+      // are both mounted and one of them is hidden by CSS, so pick the first
+      // entry that is actually on screen.
+      const tool = tools.getByRole('menuitem').filter({ visible: true }).first();
       await expect(tool).toBeVisible();
       expect(await tool.evaluate((node) => {
         const rect = node.getBoundingClientRect();
