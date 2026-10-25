@@ -20,8 +20,8 @@
   --tool-card-text-subtle:hsl(0 0% 50%);
   --tool-card-icon:hsl(0 0% 42%);
   --tool-card-icon-hover:hsl(0 0% 16%);
-  --tool-card-radius:12px;
-  --tool-card-radius-sm:10px;
+  --tool-card-radius:16px;
+  --tool-card-radius-sm:12px;
   --tool-card-pad-y:12px;
   --tool-card-pad-x:14px;
   --tool-card-title-size:14px;

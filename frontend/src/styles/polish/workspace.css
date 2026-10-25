@@ -1062,7 +1062,9 @@
 #appShell .workspace-skeleton-icon-circle {
   width: 32px;
   height: 32px;
-  border-radius: var(--ui-radius-full);
+  /* --ui-radius-full never existed as a token, so this resolved to an
+     invalid value and the skeleton circle drew as a hard square. */
+  border-radius: var(--ui-radius-pill);
   background: var(--cg-surface-raised);
   flex-shrink: 0;
 }
@@ -1070,7 +1072,7 @@
 #appShell .workspace-skeleton-dot-action {
   width: 24px;
   height: 24px;
-  border-radius: var(--ui-radius-full);
+  border-radius: var(--ui-radius-pill);
   background: var(--cg-surface-raised);
   flex-shrink: 0;
 }

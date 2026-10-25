@@ -56,7 +56,10 @@ test('light conversation home has a neutral readable palette and balanced compos
   /* ChatGPT.html measures 768 x 52 with a 16px editor at 1440x900. */
   expect(geometry.composer?.height).toBe(52);
   expect(geometry.topicFontSize).toBe(16);
-  expect(geometry.titleSize).toBe('30px');
+  /* The baseline greeting is 24px / 28px / 400 (docs/ref/chatgpt-parity.md,
+     captured over CDP from chatgpt.com at 1440×900). The old 30px was the
+     display-heading step, not the reference's line. */
+  expect(geometry.titleSize).toBe('24px');
   expect(geometry.fontFamily).toContain('Geist Sans');
   /* Current ChatGPT landing geometry leaves a 36px pause between the 24/28
      greeting and the 768×52 composer. */

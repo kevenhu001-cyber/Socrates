@@ -100,7 +100,7 @@
   #appShell .sidebar-account-menu { width: min(242px, calc(var(--ui-sidebar-mobile) - 12px)); padding: 12px; }
   #appShell .sidebar-account-menu :is(button, a) { height: 40px; min-height: 40px; font-size: var(--ui-font-size-sm); }
   #appShell .sidebar-account-menu .account-menu-identity { height: 44px; gap: 8px; }
-  #appShell .sidebar-account-menu .user-avatar { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; font-size: 10px; border-radius: 50%; background: var(--ui-avatar-bg); }
+  #appShell .sidebar-account-menu .user-avatar { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; font-size: 10px; border-radius: 50%; background: var(--ui-avatar-bg); color: var(--ui-on-accent); }
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
   #appShell .sidebar-account-menu .user-name { font-size: 15px; font-weight: var(--ui-font-weight-regular); }
   #appShell .sidebar-account-menu .user-plan { font-size: var(--ui-font-size-xs); color: var(--ui-text-muted); }

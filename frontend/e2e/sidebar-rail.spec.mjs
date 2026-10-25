@@ -49,9 +49,10 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
     };
   });
   expect(rows.navH).toBe(36);
-  /* --ui-radius-sm (6px), the Geist row radius. The rail rows, the search
-     field and the buttons beside them now share one curve. */
-  expect(rows.navRadius).toBe('6px');
+  /* --ui-radius-row (10px), the chatgpt.com row radius (docs/ref/
+     chatgpt-parity.md, captured over CDP from chatgpt.com at 1440×900:
+     "Sidebar item | 36px, radius 10, pad 6/10, icon 20"). */
+  expect(rows.navRadius).toBe('10px');
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.modeBadgeVisible).toBe(false);

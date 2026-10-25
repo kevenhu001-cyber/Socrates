@@ -853,7 +853,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   min-width: 40px !important;
   height: 40px !important;
   min-height: 40px !important;
-  border-radius: 12px !important;
+  border-radius: var(--ui-radius-lg) !important;
   background: var(--cg-surface-raised) !important;
 }
 
@@ -957,7 +957,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
   body #composerToolsMenu:not(.hidden) {
     border: 1px solid var(--cg-border) !important;
-    border-radius: 16px !important;
+    /* P_roundness — the tools card is a floating surface, but its pixels are
+       committed to the repo (composer-tools-visual-baseline, rendered on
+       Linux), so it keeps its own pinned step instead of the shared popover
+       one. */
+    border-radius: var(--ui-radius-tools-card) !important;
     /* `--ref-menu` is declared on #appShell, but the menu is a body child;
        fall back to the opaque surface token so it never paints transparent. */
     background: var(--ref-menu, var(--cg-surface)) !important;

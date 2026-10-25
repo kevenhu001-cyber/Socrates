@@ -12,23 +12,23 @@
 #appShell .creation-header h1 { margin:0; font-size:28px; line-height:36px; font-weight:var(--ui-font-weight-medium); letter-spacing:-.025em; }
 #appShell #sitesPanel { margin:0 auto; }
 #appShell .creation-sites-header { margin-bottom:62px; }
-#appShell #sitesPanel .creation-sites-header input { width:240px; min-height:36px; border-radius:20px; background:var(--chatgpt-composer, #303030); font-size:13px; }
+#appShell #sitesPanel .creation-sites-header input { width:240px; min-height:36px; border-radius:var(--ui-radius-pill); background:var(--chatgpt-composer, #303030); font-size:13px; }
 #appShell .creation-sites-view { display:flex; justify-content:flex-end; gap:5px; margin-bottom:22px; }
 #appShell .creation-sites-view button { width:36px; height:36px; border:0; border-radius:50%; background:transparent; color:var(--chatgpt-muted, #a0a0a0); font-size:21px; cursor:pointer; }
 #appShell .creation-sites-view button[aria-pressed="true"] { background:var(--chatgpt-composer, #303030); color:var(--chatgpt-text, #f4f4f4); }
-#appShell .creation-site-banner { display:flex; align-items:center; gap:14px; min-height:96px; box-sizing:border-box; padding:20px; border:1px solid var(--chatgpt-line, #444); border-radius:17px; background:var(--chatgpt-composer, #303030); }
-#appShell .creation-site-banner-icon { display:grid; place-items:center; flex:none; width:38px; height:38px; border:1px solid var(--chatgpt-line, #444); border-radius:10px; font-size:22px; }
+#appShell .creation-site-banner { display:flex; align-items:center; gap:14px; min-height:96px; box-sizing:border-box; padding:20px; border:1px solid var(--chatgpt-line, #444); border-radius:var(--ui-radius-2xl); background:var(--chatgpt-composer, #303030); }
+#appShell .creation-site-banner-icon { display:grid; place-items:center; flex:none; width:38px; height:38px; border:1px solid var(--chatgpt-line, #444); border-radius:var(--ui-radius-md); font-size:22px; }
 #appShell .creation-site-banner strong, #appShell .creation-site-banner small { display:block; }
 #appShell .creation-site-banner strong { font-size:15px; font-weight:var(--ui-font-weight-semibold); }
 #appShell .creation-site-banner small { margin-top:3px; color:var(--chatgpt-muted, #a0a0a0); font-size:14px; }
-#appShell .creation-site-banner button { margin-left:auto; min-height:34px; border-radius:18px; font-size:13px; font-weight:var(--ui-font-weight-medium); }
+#appShell .creation-site-banner button { margin-left:auto; min-height:34px; border-radius:var(--ui-radius-pill); font-size:13px; font-weight:var(--ui-font-weight-medium); }
 #appShell .creation-sites-table { margin-top:24px; border:0; }
 #appShell .creation-sites-table .creation-table-head, #appShell .creation-sites-table .creation-row { grid-template-columns:minmax(0,1fr) 150px 114px; border:0; padding:14px 16px; }
 #appShell .creation-sites-table .creation-table-head { padding-top:12px; padding-bottom:10px; }
 #appShell .creation-sites-table .creation-row { min-height:66px; }
 #appShell .creation-site-main { display:flex; align-items:center; gap:16px; min-width:0; padding:0; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
 #appShell .creation-site-main strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-#appShell .creation-site-thumb { display:block; flex:none; width:80px; height:50px; border:1px solid var(--chatgpt-line, #444); border-radius:7px; background:var(--chatgpt-composer, #303030); }
+#appShell .creation-site-thumb { display:block; flex:none; width:80px; height:50px; border:1px solid var(--chatgpt-line, #444); border-radius:var(--ui-radius-sm); background:var(--chatgpt-composer, #303030); }
 #appShell .creation-site-visibility { color:var(--chatgpt-muted, #a0a0a0); font-size:13px; }
 #appShell .creation-sites-table .creation-row-actions { justify-content:flex-end; }
 #appShell .creation-sites-table.is-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
@@ -39,7 +39,7 @@
 #appShell .creation-sites-table.is-grid .creation-site-visibility { padding:0 4px; }
 #appShell .creation-header-actions { display:flex; align-items:center; gap:10px; }
 #appShell .creation-header input, #appShell .creation-image-actions input, #appShell .creation-editor input, #appShell .creation-editor textarea, #appShell .creation-editor select {
-  box-sizing:border-box; min-height:38px; border:1px solid var(--chatgpt-line, #444); border-radius:9px; padding:8px 12px;
+  box-sizing:border-box; min-height:38px; border:1px solid var(--chatgpt-line, #444); border-radius:var(--ui-radius-control); padding:8px 12px;
   outline:none; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-page, #212121); font:inherit;
 }
 #appShell .creation-header input:focus, #appShell .creation-image-actions input:focus, #appShell .creation-editor input:focus, #appShell .creation-editor textarea:focus { border-color:var(--chatgpt-text, #f4f4f4); }
@@ -51,7 +51,7 @@
   color:var(--cg-text); background:transparent;
   font:var(--ui-font-weight-regular) 14px/22px var(--cg-font);
 }
-#appShell .creation-primary { min-height:38px; border:0; border-radius:9px; padding:8px 15px; color:var(--chatgpt-page, #212121); background:var(--chatgpt-text, #f4f4f4); font:inherit; font-weight:var(--ui-font-weight-semibold); cursor:pointer; white-space:nowrap; }
+#appShell .creation-primary { min-height:38px; border:0; border-radius:var(--ui-radius-control); padding:8px 15px; color:var(--chatgpt-page, #212121); background:var(--chatgpt-text, #f4f4f4); font:inherit; font-weight:var(--ui-font-weight-semibold); cursor:pointer; white-space:nowrap; }
 #appShell .creation-primary:disabled { opacity:.55; cursor:wait; }
 #appShell .creation-empty { padding:68px 20px; border-top:1px solid var(--chatgpt-line, #444); text-align:center; color:var(--chatgpt-muted, #a0a0a0); font-size:14px; }
 #appShell .creation-table { border-top:1px solid var(--chatgpt-line, #444); }
@@ -60,20 +60,20 @@
 #appShell .creation-row strong { display:block; font-size:14px; font-weight:var(--ui-font-weight-medium); }
 #appShell .creation-row small { display:block; margin-top:5px; color:var(--chatgpt-muted, #a0a0a0); font-size:12px; }
 #appShell .creation-row-actions { display:flex; gap:5px; }
-#appShell .creation-row-actions button, #appShell .creation-publish-controls button { border:0; border-radius:7px; padding:7px 10px; background:transparent; color:var(--chatgpt-muted, #a0a0a0); font:inherit; font-size:13px; cursor:pointer; }
+#appShell .creation-row-actions button, #appShell .creation-publish-controls button { border:0; border-radius:var(--ui-radius-sm); padding:7px 10px; background:transparent; color:var(--chatgpt-muted, #a0a0a0); font:inherit; font-size:13px; cursor:pointer; }
 #appShell .creation-row-actions button:hover, #appShell .creation-publish-controls button:hover { color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-hover, #303030); }
-#appShell .creation-image-form { max-width:680px; margin:48px auto 72px; padding:15px; border:1px solid var(--chatgpt-line, #444); border-radius:24px; background:var(--chatgpt-composer, #303030); }
+#appShell .creation-image-form { max-width:680px; margin:48px auto 72px; padding:15px; border:1px solid var(--chatgpt-line, #444); border-radius:var(--ui-radius-2xl); background:var(--chatgpt-composer, #303030); }
 #appShell .creation-image-form textarea { display:block; box-sizing:border-box; width:100%; min-height:76px; padding:7px 9px; border:0; outline:0; resize:vertical; color:var(--chatgpt-text, #f4f4f4); background:transparent; font:inherit; font-size:16px; }
 #appShell .creation-image-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; }
 #appShell .creation-image-actions input { max-width:220px; background:transparent; }
 #appShell .creation-gallery { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; }
-#appShell .creation-image-card { display:block; min-width:0; padding:0; border:1px solid var(--chatgpt-line, #444); border-radius:12px; overflow:hidden; text-align:left; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-composer, #303030); cursor:pointer; }
+#appShell .creation-image-card { display:block; min-width:0; padding:0; border:1px solid var(--chatgpt-line, #444); border-radius:var(--ui-radius-lg); overflow:hidden; text-align:left; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-composer, #303030); cursor:pointer; }
 #appShell .creation-image-card img { display:block; width:100%; aspect-ratio:1; object-fit:cover; }
 #appShell .creation-image-card > button:first-child { display:block; width:100%; padding:0; border:0; background:transparent; cursor:pointer; }
-#appShell .creation-image-card .creation-image-edit { float:right; margin:-34px 7px 7px; position:relative; border:0; border-radius:6px; padding:5px 9px; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-hover, #303030); cursor:pointer; }
+#appShell .creation-image-card .creation-image-edit { float:right; margin:-34px 7px 7px; position:relative; border:0; border-radius:var(--ui-radius-sm); padding:5px 9px; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-hover, #303030); cursor:pointer; }
 #appShell .creation-image-card span { display:block; padding:11px 12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
 #appShell .creation-image-reference { display:flex; align-items:center; gap:8px; padding:5px 8px 12px; font-size:12px; }
-#appShell .creation-image-reference img { width:38px; height:38px; border-radius:6px; object-fit:cover; }
+#appShell .creation-image-reference img { width:38px; height:38px; border-radius:var(--ui-radius-sm); object-fit:cover; }
 #appShell .creation-image-reference button { margin-left:auto; border:0; color:inherit; background:transparent; font-size:20px; cursor:pointer; }
 .creation-editor header, .creation-editor footer, .creation-publish-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .creation-editor h2 { margin:0; font-size:20px; font-weight:var(--ui-font-weight-semibold); }
@@ -82,7 +82,7 @@
 .creation-editor textarea { resize:vertical; min-height:130px; }
 .creation-editor .creation-generation { display:flex; gap:9px; align-items:stretch; }
 .creation-editor .creation-generation textarea { flex:1; min-height:65px; }
-.creation-editor .creation-generation button { align-self:flex-end; padding:9px 12px; border:1px solid var(--chatgpt-line, #444); border-radius:8px; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-composer, #303030); cursor:pointer; white-space:nowrap; }
+.creation-editor .creation-generation button { align-self:flex-end; padding:9px 12px; border:1px solid var(--chatgpt-line, #444); border-radius:var(--ui-radius-control); color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-composer, #303030); cursor:pointer; white-space:nowrap; }
 .creation-editor footer { justify-content:flex-end; padding-top:7px; }
 .creation-editor footer button:not(.creation-primary) { padding:8px 12px; border:0; color:inherit; background:transparent; cursor:pointer; }
 @media(max-width:768px) {
@@ -110,7 +110,7 @@
    workspace destinations. The source site preview and publish flow remains
    owned by creationSurfaces.js. */
 #appShell #sitesPanel .creation-sites-header { margin-bottom: 18px; }
-#appShell #sitesPanel .creation-sites-new { min-width: 72px; border-radius: 999px; }
+#appShell #sitesPanel .creation-sites-new { min-width: 72px; border-radius: var(--ui-radius-pill); }
 /* Layout only — .creation-sites-search also carries the shared
    .workspace-search-field class, so flex/gap/icon/input chrome comes from
    the same rules that drive the plugin-directory pill. */

@@ -78,7 +78,7 @@ body,
 #appShell .sidebar-header .icon-btn:hover {
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: var(--ui-radius-sm);
   color: var(--cg-text-secondary);
   background: transparent;
 }
@@ -212,7 +212,7 @@ body,
 #appShell .user-row {
   min-width: 0;
   padding: 4px;
-  border-radius: 9px;
+  border-radius: var(--ui-radius-sm);
 }
 }
 
@@ -252,7 +252,7 @@ body,
 #appShell .sidebar-footer-actions > .icon-btn {
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--ui-radius-sm);
   color: var(--cg-text-muted);
 }
 }
@@ -1098,7 +1098,14 @@ body.workspace-active #appShell #mainInner {
 .plugin-directory-search:focus-within {
   border-color: var(--cg-text);
   border-color: color-mix(in srgb, var(--cg-text) 36%, transparent);
-  box-shadow: none;
+  /* The bare input inside this field carries no ring of its own (see the
+     focus contract in components/input.css), so the FIELD is the indicator.
+     It used to clear its shadow here as well, which left the field with no
+     focus cue at all once the input's own ring was suppressed — a keyboard
+     user had nothing to see. The shared ring is drawn inset, so it stays
+     inside the field's own box and cannot be clipped by the surrounding
+     page. */
+  box-shadow: var(--ui-focus-shadow);
 }
 
 .workspace-search-field svg,

@@ -271,3 +271,13 @@
 @media (prefers-reduced-motion: reduce) {
   .tool-run-prose.is-live .stream-append-reveal { animation: none; }
 }
+
+/* The "new reply" pill is a floating chip, and the legacy skin gave it a
+ * transparent outline — the global focus contract paints a box-shadow, so
+ * the pill was the one focusable surface in the conversation with no visible
+ * cue at all. The ring is composed onto the menu shadow rather than
+ * replacing it: the chip keeps its elevation and gains the inset ring, so
+ * nothing about its box changes when it takes focus. */
+#appShell .new-reply-pill:focus-visible {
+  box-shadow: var(--ui-shadow-menu), var(--ui-focus-shadow);
+}

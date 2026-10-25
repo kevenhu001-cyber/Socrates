@@ -60,12 +60,19 @@
     padding: 2px 8px 8px;
   }
   #appShell #sidebarNav .sidebar-nav-btn {
-    gap: 8px;
-    padding-inline: 8px;
-    /* Geist row radius: 6px, the same curve the buttons, inputs and menu
-       rows use, so the rail reads as one set of controls. */
-    border-radius: var(--ui-radius-sm);
-    color: var(--ui-text-secondary);
+    /* The chatgpt.com baseline (docs/ref/chatgpt-parity.md): a 20px glyph,
+       a 16px label, a 6px gap and 6/10 padding on a 10px row radius. The
+       spacing scale has no 6px or 10px step, so both are literal here and
+       in parity/sidebar.css — the two files must not drift apart. */
+    gap: 6px;
+    padding-inline: 10px;
+    /* Geist row radius: the baseline's 10px, the token that was written for
+       chatgpt.com's row shape. */
+    border-radius: var(--ui-radius-row);
+    /* The reference sets its destination labels in the primary ink: the
+       rail is a list of places to go, and the rail's own surface already
+       separates it from the page. */
+    color: var(--ui-text-primary);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
@@ -141,11 +148,18 @@
     scrollbar-width: thin;
   }
   #appShell #sidebar .recents-header {
-    padding: 14px 8px 4px;
+    /* 8px from the panel edge + 4px of its own = 12px from the rail edge,
+       which is where the reference draws the group header — a shade left of
+       the row icons it introduces. */
+    padding: 14px var(--ui-space-xs) 4px;
   }
   #appShell #sidebar .recents-title {
     color: var(--ui-text-muted);
-    font-size: var(--ui-font-size-xxs);
+    /* One step below the row labels. The reference draws its group headers
+       at the same size as the rows, but its headers carry no weight of their
+       own; here the header is a quiet grey label, so it stays a step down
+       and the rail keeps its two reading levels. */
+    font-size: var(--ui-font-size-xs);
     font-weight: var(--ui-font-weight-medium);
     line-height: 16px;
   }

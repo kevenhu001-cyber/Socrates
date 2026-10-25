@@ -236,7 +236,7 @@
      row (parity/sidebar.css), which paints its letter white. A dark letter
      on that tint only reaches 3.1:1 in light mode, so it matches the
      desktop rule instead of inheriting the page's text colour. */
-  #appShell .sidebar-account-menu .user-avatar { place-items: center; background: var(--ui-avatar-bg); color: rgb(255 255 255); }
+  #appShell .sidebar-account-menu .user-avatar { place-items: center; background: var(--ui-avatar-bg); color: var(--ui-on-accent); }
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
 }
 @media (max-width: 768px) {

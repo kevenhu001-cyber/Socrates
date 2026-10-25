@@ -137,6 +137,16 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   /* Geist's monochrome primary + semantic status colors. */
   --ui-on-accent: var(--ui-bg-page);
   --ui-accent-strong: var(--geist-gray-1000);
+  /* The action colour — the one saturated fill in the product, and the only
+   * place the brand is allowed to shout. It carries the composer's send
+   * button, which is the app's single "do the thing" control.
+   * The fill is the reference's own blue (measured #397EF7) and the glyph
+   * on it is the light one in both modes: the arrow is a control glyph, so
+   * WCAG's 3:1 non-text contrast applies (3.8:1 here), not the 4.5:1 of
+   * body text. Registered as a deliberate deviation in
+   * docs/ref/chatgpt-parity.md. */
+  --ui-accent-action: rgb(57 126 247);
+  --ui-on-action: rgb(255 255 255);
   /* The danger tone is a *text* colour, so it has to clear AA on the
      lightest dark rung as well as on the canvas. The old Lobe value
      (rgb(233 83 80)) cleared the near-black page but sat at 4.03:1 on
@@ -154,8 +164,17 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * mistaken for a hover state. */
   --ui-focus-ring: var(--geist-blue-900);
 
+  /* The brand accent — the one saturated colour in the system, and the
+   * product's only colour anchor. The reference draws the account avatar as
+   * a saturated disc with light initials; the neutral rail around it makes
+   * that disc read as a deliberate mark.
+   * On the dark rail the teal is the reference's own step, where the
+   * initials flip to dark ink; on the light rail it is the darker step that
+   * still clears 4.5:1 under light initials (measured 4.75:1). */
+  --ui-brand-accent: rgb(31 199 168);
+
   /* Socrates product roles projected from the foundation. */
-  --ui-avatar-bg: var(--ui-bg-control);
+  --ui-avatar-bg: var(--ui-brand-accent);
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-selected);
@@ -288,6 +307,13 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * The thinking accent stays a vivid chart/accent colour and is never used
    * as body text; warning no longer aliases it. */
   --ui-on-accent: var(--ui-bg-surface);
+  /* The action colour — the composer's send button. The same blue as the
+   * light mode: the dark rail carries it on a darker surface, and the
+   * glyph on it is the light one in both modes (3.8:1, the non-text
+   * contrast a control glyph needs). Registered as a deliberate deviation
+   * in docs/ref/chatgpt-parity.md. */
+  --ui-accent-action: rgb(57 126 247);
+  --ui-on-action: rgb(255 255 255);
   --ui-accent-strong: var(--geist-gray-1000);
   --ui-danger: rgb(176 45 28);
   --ui-success: rgb(12 110 51);
@@ -306,7 +332,18 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * lightness gap does the separating and the border only finishes the edge.
    * The dark composer sits on L4 for the same reason — there the paper is
    * the darkest tone and the elevated rung is the lighter one. */
-  --ui-avatar-bg: var(--ui-text-tertiary);
+  /* The brand accent — the reference's own teal, darkened to the step that
+   * still clears 4.5:1 under the light initials (measured 4.75:1 on the
+   * light page). On the dark rail the accent's own contrast colour flips to
+   * dark ink, so the mark stays legible there at the reference's step. */
+  --ui-brand-accent: rgb(15 127 107);
+
+  /* The account avatar is a solid disc with the person's initials in the
+     accent's own contrast colour — the reference draws a saturated disc
+     with light initials. The accent role is the system's one solid ink, so
+     the disc reads as a deliberate mark rather than a grey placeholder,
+     and the initials stay legible in both modes. */
+  --ui-avatar-bg: var(--ui-brand-accent);
   --ui-bg-composer: var(--ui-bg-elevated);
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
@@ -314,7 +351,11 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-shadow-control: 0 1px 3px rgb(0 0 0 / 6%);
   --ui-shadow-popover: 0 10px 32px -8px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 4%);
   --ui-shadow-dialog: 0 24px 64px -16px rgb(0 0 0 / 14%), 0 4px 12px rgb(0 0 0 / 4%);
-  --ui-composer-border: var(--ui-border-strong);
+  /* The composer is a hairline capsule on a near-white page, so its resting
+     edge is the default rule. --ui-border-strong is held back for the
+     focus-within state: with both states on the same border the capsule
+     showed no focus cue at all. */
+  --ui-composer-border: var(--ui-border-default);
   --ui-composer-shadow: 0 1px 2px rgb(0 0 0 / 3%), 0 8px 24px -8px rgb(0 0 0 / 6%);
   --ui-tool-chip-text: var(--ui-link);
   --ui-tool-chip-hover-bg: rgb(237 244 255);
@@ -388,7 +429,29 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
      ambient bloom outside it. The ring composites over the surface it
      sits on and clears 4:1 against every rung of the background ladder. */
   --ui-focus-glow: color-mix(in srgb, var(--ui-focus-ring) 30%, transparent);
-  --ui-focus-shadow: 0 0 0 2px var(--ui-focus-ring), 0 0 0 3px var(--ui-focus-glow);
+  /* 2026-10-25 — the indicator is drawn INSET.
+   *
+   * It used to be an outward ring (2px ring + 1px bloom at a 3px spread).
+   * An outward ring paints three pixels outside the control's own box, so
+   * two things went wrong on the surfaces that sit against an edge: a
+   * control next to the sidebar scrollbar had the outer third of its ring
+   * clipped away by the ancestor's overflow, and the ring therefore read as
+   * half a ring — a "shake" that was purely visual, never a layout shift.
+   * The same outward spread also made a focused control look *bigger* than
+   * its resting self while the ring appeared, which is the other half of
+   * the jump people saw.
+   *
+   * Inset, the indicator occupies the control's own box: nothing is painted
+   * outside it, so no ancestor can clip it and nothing changes size. The
+   * ring keeps the same colour and the same 3:1 contrast on every rung of
+   * the ladder; it is simply drawn against the surface the control already
+   * sits on. The 1px bloom stays as the inner halo, so the detail still
+   * reads as focus rather than as a border.
+   *
+   * The shape is still a box-shadow because a single outline cannot carry
+   * both layers, and because forced-colours mode strips box-shadow — the
+   * transparent outline in foundations/base.css is what survives there. */
+  --ui-focus-shadow: inset 0 0 0 2px var(--ui-focus-ring), inset 0 0 0 3px var(--ui-focus-glow);
 
   --chatgpt-font: var(--cg-font);
   --chatgpt-page: var(--ui-bg-page);

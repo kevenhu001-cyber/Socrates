@@ -68,25 +68,38 @@
   --ui-space-xl: var(--ui-foundation-space-lg);
   --ui-space-xxl: var(--ui-foundation-space-xl);
 
-  /* Radii — common rungs derive from the Lobe foundation; larger values are
-     Socrates product tokens. */
+  /* Radii — the Socrates corner ladder.
+     P_roundness (2026-10-25) — "尽量不要使用方形": every rung below the
+     chatgpt-pinned ones moved up one step, and --ui-radius-control was
+     decoupled from --ui-radius-row so a rounder control radius no longer
+     drags the pinned 10px sidebar row along with it. The pinned rungs keep
+     their baseline values: composer capsule 24/28, sidebar row 10, and the
+     avatar/send discs at 50% (both outside this ladder). */
   --ui-radius-none: 0;
-  --ui-radius-xs: var(--ui-foundation-radius-xs);
-  --ui-radius-sm: var(--ui-foundation-radius-sm);
-  --ui-radius-control: var(--ui-radius-row);
-  --ui-radius-md: var(--ui-foundation-radius-base);
-  --ui-radius-lg: var(--ui-foundation-radius-lg);
-  --ui-radius-xl: 16px;
-  --ui-radius-2xl: 20px;
+  --ui-radius-xs: 6px;
+  --ui-radius-sm: 10px;
+  --ui-radius-md: 12px;
+  --ui-radius-control: var(--ui-radius-md);
+  --ui-radius-lg: 16px;
+  --ui-radius-xl: 20px;
+  --ui-radius-2xl: 24px;
   --ui-radius-composer: 24px;
   /* Desktop composer capsule (chatgpt.com: 28px on a 52px single row). */
   --ui-radius-composer-desktop: 28px;
   /* chatgpt.com row radius: sidebar rows, menu items. */
   --ui-radius-row: 10px;
-  --ui-radius-bubble: 18px;
+  --ui-radius-bubble: 20px;
   --ui-radius-pill: 999px;
   --ui-radius-popover: var(--ui-radius-xl);
   --ui-radius-dialog: var(--ui-radius-2xl);
+  /* The composer tools popup is the one floating surface whose pixels are
+     committed to the repository: e2e/composer-tools-visual-baseline.spec.mjs
+     snapshots it on Linux (8 PNGs under its -snapshots folder) and compares
+     them at maxDiffPixelRatio 0.003. Its card therefore stays on the 16px
+     step and its rows on 10px while the shared popover / control rungs
+     widened. Re-render those baselines on Linux to move these two steps. */
+  --ui-radius-tools-card: 16px;
+  --ui-radius-tools-row: 10px;
 
   /* Controls and responsive shell. Lobe's 28/36/40 ladder is available as
      foundation metrics. Socrates retains its product density and the 44px

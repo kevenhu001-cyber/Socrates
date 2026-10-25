@@ -55,11 +55,12 @@
   left: 2px;
   width: calc(50% - 2px);
   border-radius: var(--ui-radius-pill);
-  /* Geist thumb: the raised surface of the ladder, a hairline edge and the
-     control shadow. On the page colour this reads as a chip lifted off the
-     header rather than as a filled segment. */
+  /* Geist thumb: the raised surface of the ladder with the control shadow.
+     The reference draws the active segment as a plain white shape lifted
+     off the track — a hairline ring around it read as a second, smaller
+     pill inside the first one and made the control look busy. */
   background: var(--ui-bg-surface);
-  box-shadow: var(--ui-shadow-control), inset 0 0 0 1px var(--ui-border-default);
+  box-shadow: var(--ui-shadow-control);
   transform: translateX(0);
   transition: transform var(--ui-duration-normal) var(--ui-ease-out);
   z-index: -1;
@@ -75,8 +76,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* The 36px desktop density rung — the same step as the model switcher
-     and the library toolbar, not the 40px mobile rung. */
+  /* The 36px desktop density rung — the baseline's "centered 36px
+     segmented pill", the same step as the model switcher and the library
+     toolbar, not the 40px mobile rung. */
   height: var(--ui-control-desktop);
   min-width: 104px;
   margin: 0;
@@ -249,7 +251,13 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
        the raised surface, not a ghost label. border-box keeps the 1px edge
        inside the 36px control rung. */
     border: 1px solid var(--ui-border-default);
-    border-radius: var(--ui-radius-sm);
+    /* P_roundness (2nd pass) — the model picker is the widest filled control
+       in the chrome, so its corner is what the eye reads as "square" first.
+       A 12px radius on a 36px-tall box still read as a rounded rectangle, so
+       it became a pill: the two ends are half-circles and the control now
+       speaks the same language as the mode switch next to it (both are
+       --ui-radius-pill). */
+    border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-surface);
     color: var(--ui-text-primary);
     font: inherit;
@@ -259,8 +267,13 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     cursor: pointer;
     /* The focus ring is painted from a transparent baseline so it fades in
        instead of snapping on. A ring that pops on a control this small
-       reads as a jump rather than as focus. */
-    box-shadow: 0 0 0 2px transparent, 0 0 0 3px transparent;
+       reads as a jump rather than as focus.
+       The baseline shares the ring's own geometry — two inset layers at 2px
+       and 3px — so the ring appears in place: nothing about the control's
+       box, paint order or surrounding space changes, only the two layer
+       colours do. An outward baseline would have been clipped by any
+       overflow-hidden ancestor and would have grown the control on focus. */
+    box-shadow: inset 0 0 0 2px transparent, inset 0 0 0 3px transparent;
     transition: background-color var(--ui-duration-hover) ease,
                 border-color var(--ui-duration-hover) ease,
                 box-shadow var(--ui-duration-hover) ease;
@@ -304,10 +317,10 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     height: var(--ui-control-desktop);
     margin: 0;
     border: 0;
-    /* Geist icon button: the 6px system radius, not a circle. The circle
+    /* Geist icon button: the shared control radius, not a circle. The circle
        read as a second kind of control in a row that is otherwise all
        squared-off buttons. */
-    border-radius: var(--ui-radius-sm);
+    border-radius: var(--ui-radius-control);
     background: transparent;
     color: var(--ui-text-primary);
     font: inherit;

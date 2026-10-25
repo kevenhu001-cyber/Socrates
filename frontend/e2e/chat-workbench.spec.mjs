@@ -86,7 +86,10 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(messageLayout.rowWidth).toBeLessThanOrEqual(822);
   expect(messageLayout.userWidth).toBeLessThan(messageLayout.rowWidth);
   expect(Math.abs(messageLayout.userRightGap)).toBeLessThanOrEqual(1);
-  expect(messageLayout.userRadius).toBe(18);
+  /* The user bubble corner is 20px, not chatgpt.com's 18: the 2026-10-25
+     roundness pass ("尽量不要使用方形") moved --ui-radius-bubble up one step.
+     Registered in docs/ref/chatgpt-parity.md. */
+  expect(messageLayout.userRadius).toBe(20);
   expect(messageLayout.userBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(messageLayout.assistantBackground).toBe('rgba(0, 0, 0, 0)');
   /* chatgpt.com prose is 16px at the default display step (1.125×); other

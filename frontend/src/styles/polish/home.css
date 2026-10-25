@@ -27,7 +27,13 @@
     border: 1px solid transparent;
     border-radius: var(--ui-radius-pill);
     background: transparent;
-    color: var(--ui-text-secondary);
+    /* The reference landing view carries no quick-action row at all, so this
+       strip is the one part of the surface that has no counterpart to
+       match. It stays because it carries three real composer entry
+       points, but it sits a tier quieter than the surrounding interface:
+       the tertiary ink keeps it as a hint under the capsule instead of a
+       row of buttons competing with it. */
+    color: var(--ui-text-tertiary);
     text-align: left;
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
@@ -66,7 +72,7 @@
     height: var(--ui-control-xs);
     border-radius: var(--ui-radius-pill);
     background: transparent;
-    color: var(--ui-text-secondary);
+    color: var(--ui-text-tertiary);
   }
 
   #appShell .home-quick-action-icon svg {

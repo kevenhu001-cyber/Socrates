@@ -172,23 +172,31 @@
        different x and the rail reads as ragged. The collapsed icon rail
        re-centres on purpose (see the .collapsed block below). */
     justify-content: flex-start;
-    gap: var(--ui-space-md);
+    /* The chatgpt.com baseline: a 20px glyph, a 16px label and a 6px gap
+       between them (docs/ref/chatgpt-parity.md, captured over CDP at
+       1440×900). The spacing scale has no 6px step, so the gap is literal. */
+    gap: 6px;
     box-sizing: border-box;
     width: 100%;
     min-height: var(--sidebar-row);
     height: var(--sidebar-row);
     margin: 0;
-    padding: 6px var(--ui-space-md);
+    /* The baseline's 6/10 padding. The scale has no 10px step either, so the
+       inline half is literal; the vertical half is the scale's 4px step
+       doubled to the baseline's 6px. */
+    padding: 6px 10px;
     border: 0;
-    /* Geist row radius — the same 6px the polish layer gives the rail, so
-       the two files cannot drift into two different row shapes. */
-    border-radius: var(--ui-radius-sm);
+    /* The baseline's 10px row radius — the token that was written for it. */
+    border-radius: var(--ui-radius-row);
     background: transparent;
-    color: var(--ui-text-secondary);
+    /* The reference sets its destination labels in the primary ink, not a
+       secondary grey: the rail is a list of places to go, and the rail's
+       own surface already separates it from the page. */
+    color: var(--ui-text-primary);
     font: inherit;
-    font-size: var(--ui-text-ui);
+    font-size: var(--ui-font-size-md);
     font-weight: var(--ui-font-weight-regular);
-    line-height: var(--ui-text-ui-line);
+    line-height: var(--ui-text-body-line);
     letter-spacing: normal;
     text-align: start;
     white-space: nowrap;
@@ -207,6 +215,17 @@
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current="true"] {
     background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+  /* The reference lights the primary destination while the composer is
+     empty — 新聊天 sits on a flat wash, so the rail always says where a
+     new turn starts. The wash is the selected role rather than the hover
+     role: it has to survive the pointer leaving the row, and it must not
+     be the same value a hover paints, or the two states are
+     indistinguishable. */
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell #sidebarNav #navNew.sidebar-nav-btn {
+    background: var(--ui-bg-selected);
     color: var(--ui-text-primary);
   }
   #appShell #sidebarNav .sidebar-nav-btn svg {
@@ -337,7 +356,11 @@
     display: flex;
     align-items: center;
     margin: 0;
-    padding: 20px 10px 6px;
+    /* The group header sits 12px in from the rail edge — the recents panel
+       contributes 8px and the header 4px — and the reference draws it a
+       shade LEFT of the row icons it introduces (12.8px against 15.2px).
+       It used to land to their right, which read as a misalignment. */
+    padding: 20px var(--ui-space-xs) 6px;
   }
   #appShell #sidebar .recents-title {
     color: var(--ui-text-tertiary);
@@ -638,7 +661,9 @@
   margin: 0;
   border-radius: 50%;
   background: var(--ui-avatar-bg);
-  color: rgb(255 255 255);
+  /* The initials take the accent's own contrast colour, so the disc flips
+     with the mode instead of keeping a white letter on a white disc. */
+  color: var(--ui-on-accent);
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-semibold);
   line-height: 1;

@@ -18,6 +18,11 @@
   background: var(--ui-bg-page);
   color: var(--ui-text-primary);
   border-inline-start: 1px solid var(--ui-border-default);
+  /* P_roundness — the drawer is the one framed surface that carried no
+     corner at all and read as a hard rectangle against the page. It is
+     docked to the right edge, so only the two leading corners round. */
+  border-start-start-radius: var(--ui-radius-xl);
+  border-end-start-radius: var(--ui-radius-xl);
   animation: detail-enter var(--ui-duration-overlay) var(--ui-ease-out) both;
 }
 .detail-header {
@@ -75,5 +80,6 @@
 }
 @keyframes detail-enter { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
 @media (max-width: 768px) {
-  .detail-surface { width: 100%; border: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  /* The phone drawer is a full-bleed sheet: no corner, no edge. */
+  .detail-surface { width: 100%; border: 0; border-start-start-radius: 0; border-end-start-radius: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 }

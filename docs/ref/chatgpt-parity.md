@@ -49,6 +49,48 @@ this is the Lobe foundation in `docs/adr/0020-lobe-design-foundation.md`;
 dark tool-chip text is lifted to `#81a6f9` for WCAG AA; the bundled Plus
 Jakarta Sans face is kept as the single UI font instead of the system stack.
 
+Two more deviations were taken on purpose in 2026-10-25, against a
+user-supplied screenshot of the current chatgpt.com:
+
+- **The send button is the action blue.** chatgpt.com fills it with `#0d0d0d`
+  in light mode and `#fff` in dark, and the blue circle in the screenshot
+  (#397EF7, measured) is its *voice-mode* control — a waveform glyph, not a
+  send arrow. The screenshot's blue was read as the send fill and the send
+  button was repainted `--ui-accent-action` (`#397EF7`) with a light up-arrow,
+  as an explicit product decision. The waveform control itself is NOT
+  adopted: Socrates has dictation, not a voice conversation, so no waveform,
+  no voice-mode entry point. The arrow on the button is the product's own
+  glyph and stays an arrow. The glyph is a control glyph, so it is held to
+  WCAG's 3:1 non-text contrast (3.8:1 on this blue), not to 4.5:1.
+- **The account avatar is a saturated teal disc.** chatgpt.com draws it as a
+  teal circle (`#18b89c` in the screenshot) with light initials; the capture
+  above does not cover the avatar, so this one comes from the screenshot and
+  is registered here for the same reason. It is `--ui-brand-accent`, dark-
+  ened on the light rail to the step that still clears 4.5:1 under light
+  initials (`rgb(15 127 107)`, 4.75:1) and kept at the reference's step on
+  the dark rail (`rgb(31 199 168)`), where the initials flip to dark ink.
+- **The corner ladder is one step rounder than chatgpt.com.** On 2026-10-25 the
+  product owner asked for a UI with as few square corners as possible
+  ("尽量不要使用方形"). Every radius rung below the chatgpt-pinned ones moved up
+  one step in `styles/tokens.css`: `--ui-radius-xs` 4→6, `--ui-radius-sm` 6→10,
+  `--ui-radius-md` 8→12, `--ui-radius-lg` 12→16, `--ui-radius-xl` 16→20,
+  `--ui-radius-2xl` 20→24, and `--ui-radius-control` was decoupled from
+  `--ui-radius-row` so a rounder control no longer drags the pinned 10px
+  sidebar row along with it (the control step is now 12). Against the baseline
+  above, the visible consequences are: popover/menu cards 16→20, code-block
+  cards 16→20, the user bubble 18→20, dialogs 20→24, menu items 10→12, and
+  the detail drawer — the one framed surface that carried no radius at all —
+  now rounds its two leading corners at 20. The top-left model switcher went
+  further and became a pill: on a 36px-tall box a 12px corner still read as a
+  rounded rectangle, so both ends are now half-circles and the control speaks
+  the same language as the mode switch beside it (both `--ui-radius-pill`). The pinned rungs keep the baseline values: the composer capsule stays at
+  28, the sidebar row at 10, and the avatar and send discs at 50%. One surface is
+  deliberately left where it is: the composer tools popup keeps its 16px card
+  and 10px rows, because its pixels are committed to the repository as the
+  Linux visual baseline
+  (`frontend/e2e/composer-tools-visual-baseline.spec.mjs-snapshots/`); re-render
+  those baselines on Linux to move it as well.
+
 The light neutral ramp is lifted for WCAG AA. The reference's secondary
 (`#5d5d5d`) and tertiary tones are both too light for small text on the
 `#f8f8f8` page, so `--ui-text-secondary` is `#595959` (6.6:1) and

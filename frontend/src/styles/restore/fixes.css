@@ -102,7 +102,7 @@
   min-height: 32px;
   padding: 5px 10px;
   border: 1px solid var(--cg-border);
-  border-radius: 9px;
+  border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--cg-text);
   font: inherit;
@@ -128,11 +128,10 @@
     max-width: none !important;
     height: auto !important;
     max-height: min(52dvh, 360px) !important;
-    /* The shared popover step (--ui-radius-lg, 12px) — the same corner every
-       other floating surface uses. A literal 20px here is what kept the
-       phone card rounder than the desktop one and than the model-config
-       popover it opens beside. */
-    border-radius: var(--ui-radius-popover) !important;
+    /* The shared tools-card step — the same corner the desktop card uses.
+       A literal 20px here is what kept the phone card rounder than the
+       desktop one and than the model-config popover it opens beside. */
+    border-radius: var(--ui-radius-tools-card) !important;
   }
 
   /* Reference rows are full-height touch targets with a 44px chip, not the

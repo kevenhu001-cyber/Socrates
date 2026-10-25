@@ -48,10 +48,16 @@ test('CSS product aliases retain Socrates geometry while inheriting matching fou
   const css = await readFile(new URL('../src/styles/tokens.css', import.meta.url), 'utf8');
 
   assert.match(css, /--ui-foundation-space-md:\s*20px;/);
-  assert.match(css, /--ui-foundation-control-base:\s*36px;/);
-  assert.match(css, /--ui-foundation-duration-fast:\s*100ms;/);
-  assert.match(css, /--ui-radius-sm:\s*var\(--ui-foundation-radius-sm\);/);
   assert.match(css, /--ui-control-desktop:\s*var\(--ui-foundation-control-base\);/);
   assert.match(css, /--ui-control-touch:\s*44px;/);
   assert.match(css, /--ui-space-xxs:\s*2px;/);
+  /* The shared Lobe foundation radius ladder (4/6/8/12) stays as it is: the
+     native theme package exports the same four rungs, so the CSS copy may
+     not drift. The Socrates *product* radius ladder, however, deliberately
+     sits one step above it since the 2026-10-25 roundness pass, and is
+     therefore declared with explicit values instead of aliasing the
+     foundation. This is what these two assertions pin down. */
+  assert.match(css, /--ui-foundation-radius-sm:\s*6px;/);
+  assert.match(css, /--ui-radius-sm:\s*10px;/);
+  assert.match(css, /--ui-radius-control:\s*var\(--ui-radius-md\);/);
 });

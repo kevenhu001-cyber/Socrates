@@ -85,10 +85,18 @@
               box-shadow var(--ui-duration-overlay) var(--ui-ease-out);
 }
 
-/* A quiet focus cue keeps the capsule readable without a bright outer glow. */
+/* A quiet focus cue keeps the capsule readable without a bright outer glow.
+ *
+ * The capsule is a container, not a control: it reacts to focus with
+ * :focus-within, so it cannot carry the shared ring (an outline painted
+ * around a 768px capsule read as a frame, and an outward ring grew the
+ * capsule by a pixel on every side, moving its top and bottom edges the
+ * moment the editor took focus). The cue is therefore the border colour
+ * alone, and the elevation shadow is kept as it is — a focus state that
+ * drops the resting shadow makes the capsule look like it collapsed. */
 #appShell .composer-shell:not(.voice-recording-active):focus-within {
   border-color: var(--ui-border-strong);
-  box-shadow: var(--ui-composer-shadow), 0 0 0 1px var(--ui-border-strong);
+  box-shadow: var(--ui-composer-shadow);
 }
 
 /* Two-row layout: a real multi-line draft, or any tool / plugin chip.
@@ -357,8 +365,12 @@
    text token: the dark theme's --ui-text-primary is #e6e6e6, which reads as
    a greyed-out control rather than the inverted disc the reference ships. */
 #appShell .composer-shell .composer-primary-btn {
-  background: var(--ui-accent-strong);
-  color: var(--ui-on-accent);
+  /* The send button is the product's one saturated fill: the reference
+     draws it as a blue disc with a light up-arrow. The glyph is a control
+     glyph, so it is held to WCAG's 3:1 non-text contrast (3.8:1 on this
+     blue), not to the 4.5:1 of body text. */
+  background: var(--ui-accent-action);
+  color: var(--ui-on-action);
   font-weight: var(--ui-font-weight-medium);
 }
 #appShell .composer-shell .composer-primary-btn:hover:not(:disabled) { opacity: var(--ui-press-opacity); }

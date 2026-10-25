@@ -19,8 +19,10 @@ body #composerToolsMenu.composer-tools-menu {
   max-height: min(75dvh, 520px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* The same soft corner on desktop, phone, account and configuration menus. */
-  border-radius: var(--ui-radius-popover);
+  /* The same soft corner on desktop, phone, account and configuration menus.
+     The tools card is the one exception: its pixels are committed to the
+     repo (composer-tools-visual-baseline), so it keeps its own step. */
+  border-radius: var(--ui-radius-tools-card);
   animation: none;
 }
 body #composerToolsMenu.composer-tools-menu::before { display: none; }
@@ -37,11 +39,12 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   padding: 5px 8px;
   gap: 12px;
   border: 0;
-  /* 8px on every row and every breakpoint. The literal 12px that used to
-     sit here only reached the phone rows (.composer-tools-mobile-item is
-     not in polish/composer.css's selector), so the same menu drew 8px rows
+  /* 10px on every row and every breakpoint — the step the committed
+     composer-tools visual baseline was rendered with. The literal 12px that
+     used to sit here only reached the phone rows (.composer-tools-mobile-item
+     is not in polish/composer.css's selector), so the same menu drew 8px rows
      on desktop and 12px rows on phones. */
-  border-radius: var(--ui-radius-control);
+  border-radius: var(--ui-radius-tools-row);
   background: transparent;
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-md);
@@ -112,7 +115,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     min-width: 236px;
     height: min(48dvh, 234px);
     max-height: min(48dvh, 234px);
-    border-radius: var(--ui-radius-popover);
+    border-radius: var(--ui-radius-tools-card);
   }
   [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: var(--ui-bg-surface); }
   #composerToolsMenu .composer-tools-item,
