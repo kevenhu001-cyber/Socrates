@@ -314,18 +314,41 @@
   }
 }
 
-/* "New reply" / scroll pill — floating chip, menu shadow. The entrance runs
-   on the overlay clock (160ms) instead of the legacy 220/260ms pair so it
-   appears with the same tempo as every other anchored surface. */
+/* "New reply" / scroll pill — modern floating frosted FAB */
 #appShell .new-reply-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
   border-radius: var(--ui-radius-pill);
   border: 1px solid var(--ui-border-subtle);
-  box-shadow: var(--ui-shadow-menu);
+  background: color-mix(in srgb, var(--ui-bg-surface-elevated, var(--ui-bg-overlay)) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--ui-shadow-floating, 0 4px 16px rgba(0, 0, 0, 0.12));
+  color: var(--ui-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--ui-font-size-xs, 12px);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: -0.01em;
   transition:
     opacity var(--ui-duration-fast) var(--ui-ease-out),
-    transform var(--ui-duration-overlay) var(--ui-ease-out),
+    transform var(--ui-duration-overlay) var(--ui-ease-spring-gentle, cubic-bezier(0.16, 1, 0.3, 1)),
     box-shadow var(--ui-duration-overlay) var(--ui-ease-out),
-    filter var(--ui-duration-hover) ease;
+    background var(--ui-duration-hover) ease,
+    color var(--ui-duration-hover) ease;
+}
+
+#appShell .new-reply-pill:hover {
+  background: var(--ui-bg-surface-elevated, var(--ui-bg-overlay));
+  color: var(--ui-text-primary);
+  box-shadow: var(--ui-shadow-modal);
+  transform: translateY(-2px);
+}
+
+#appShell .new-reply-pill:active {
+  transform: translateY(0);
 }
 
 /* Toasts. The legacy skin painted them with --bg-000, which is the page

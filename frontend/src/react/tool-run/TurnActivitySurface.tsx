@@ -21,6 +21,12 @@ export interface TurnActivitySurfaceProps {
   hasTools?: boolean;
 }
 
+const SparkleActivityIcon = (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" shapeRendering="geometricPrecision" className="thinking-accordion-icon">
+    <path d="m12 3 1.9 4.8a2 2 0 0 0 1.3 1.3L20 11l-4.8 1.9a2 2 0 0 0-1.3 1.3L12 19l-1.9-4.8a2 2 0 0 0-1.3-1.3L4 11l4.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
+  </svg>
+);
+
 export function TurnActivitySurface({ publicSummary = '', activities = [], isLive = false, elapsedSec, statusLabel, status, showActivityCue = true, intentSummary, answerStarted = false, children, hasTools = false }: TurnActivitySurfaceProps) {
   const [isOpen, setIsOpen] = useState(false);
   const bodyId = useId();
@@ -75,7 +81,11 @@ export function TurnActivitySurface({ publicSummary = '', activities = [], isLiv
           onClick={() => setIsOpen((previous) => !previous)}
         >
           <span className="thinking-accordion-left">
-            {isLive && status?.toolName ? <ToolActivityIcon name={status.toolName} /> : null}
+            {isLive && status?.toolName ? (
+              <ToolActivityIcon name={status.toolName} />
+            ) : !isLive && hasDetails && !hasTools ? (
+              SparkleActivityIcon
+            ) : null}
             <span className="thinking-accordion-title thinking-status-label" role={isLive ? 'status' : undefined}>
               {title}
             </span>

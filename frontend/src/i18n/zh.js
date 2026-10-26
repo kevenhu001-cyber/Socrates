@@ -225,6 +225,10 @@ export const zh = {
     "chat.send":"发送",
     /* P_composer-primary-split — see matching en block. */
     "chat.stop":"停止生成",
+    "chat.followUp.example":"举一个具体例子",
+    "chat.followUp.deepen":"深入解释核心原理",
+    "chat.followUp.summary":"一句话总结要点",
+    "chat.followUp.quiz":"考考我的理解",
     /* P_attachments — see matching en block. */
     "chat.attach":"附加文件",
     "chat.attach.aria":"附加文件",

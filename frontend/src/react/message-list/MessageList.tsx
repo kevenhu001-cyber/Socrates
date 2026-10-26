@@ -49,10 +49,12 @@ function MessageList() {
     <>
       {mounted.map((entry, index) => {
         const id = entryId(entry, `idx-${index + start}`);
+        const isLatest = index + start === visibleMessages.length - 1;
         return (
           <MessageItem
             key={id}
             message={entry}
+            isLatest={isLatest}
             mathRevision={getMathRenderRevision()}
           />
         );

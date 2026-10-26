@@ -8,6 +8,7 @@ import { syncSidebarForMode } from '../config/providers.ts';
 import { syncWorkspaceRoute } from '../sidebar/navigation.service.ts';
 import { toggleShareBtn } from '../ui/share.js';
 import { renderGreeting } from '../ui/greeting.js';
+import { activateMainView } from '../ui/mainViewController.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { fetchWithAuthGraceRetry, restoreRoutedSession } from './postAuth/flow.ts';
 import { migrateLegacyStorage } from './postAuth/migration.ts';
@@ -79,10 +80,14 @@ async function restoreSessionFromCurrentUrl(): Promise<void> {
     onChatFailure: () => {
       stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
       setChatIdInURL(null);
+      document.documentElement.removeAttribute('data-routed-session');
+      activateMainView('topicSetup', document);
     },
     onExamFailure: () => {
       stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
       setExamIdInURL(null);
+      document.documentElement.removeAttribute('data-routed-session');
+      activateMainView('topicSetup', document);
     },
   });
 }
@@ -106,9 +111,19 @@ export async function afterAuthEnter(): Promise<void> {
   clearPreviousUserState();
   replayQueuedMessageEdits();
   await migrateLegacyStorage();
+  const chatId = getChatIdFromURL();
+  const examId = getExamIdFromURL();
+  if (chatId) {
+    try { activateMainView('chatView', document); }
+    catch (e) { reportSwallow(e, 'auth/postAuth.activateChatView'); }
+  } else if (examId) {
+    try { activateMainView('examView', document); }
+    catch (e) { reportSwallow(e, 'auth/postAuth.activateExamView'); }
+  }
+  const restorePromise = restoreSessionFromCurrentUrl();
   await fetchBootstrapData();
   refreshAuthenticatedUi();
-  await restoreSessionFromCurrentUrl();
+  await restorePromise;
   triggerInitialLoad();
   syncWorkspaceRoute();
 }

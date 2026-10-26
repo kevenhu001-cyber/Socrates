@@ -41,6 +41,8 @@ export interface MessageItemProps {
   message: LegacyChatMessage;
   /** Global math-render revision from the remaining legacy KaTeX renderer. */
   mathRevision?: number;
+  /** True when this row is the latest message in the visible transcript. */
+  isLatest?: boolean;
 }
 
 declare global {

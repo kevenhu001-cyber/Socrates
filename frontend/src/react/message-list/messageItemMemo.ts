@@ -8,5 +8,6 @@ import type { MessageItemProps } from './types';
  */
 export function areMessageItemsEqual(prev: MessageItemProps, next: MessageItemProps): boolean {
   return prev.mathRevision === next.mathRevision
-    && prev.message === next.message;
+    && prev.message === next.message
+    && prev.isLatest === next.isLatest;
 }

@@ -191,6 +191,20 @@
 }
 .thinking-accordion-left > .tool-inline-tool-icon svg { width: 100%; height: 100%; }
 
+.thinking-accordion-left > .thinking-accordion-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  color: var(--ui-text-tertiary);
+  opacity: 0.85;
+  transition: color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
+}
+.thinking-accordion-toggle:hover .thinking-accordion-icon {
+  color: var(--ui-accent-default, var(--ui-text-primary));
+  opacity: 1;
+}
+
 .thinking-accordion-title {
   min-width: 0;
   overflow-wrap: anywhere;

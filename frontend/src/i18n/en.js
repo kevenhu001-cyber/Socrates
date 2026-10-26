@@ -228,6 +228,10 @@ export const en = {
     /* P_composer-primary-split — the composer primary button is submit-only
      * and announces the live-turn action while a turn streams. */
     "chat.stop":"Stop generating",
+    "chat.followUp.example":"Give a concrete example",
+    "chat.followUp.deepen":"Explain key concepts deeper",
+    "chat.followUp.summary":"Summarize key points",
+    "chat.followUp.quiz":"Quiz me on this",
     /* P_attachments — UI strings for the chat-input attachment chip
      * strip, paperclip button, and toast feedback. Kept short so
      * the chips don't wrap. */

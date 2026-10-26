@@ -157,7 +157,8 @@ a{color:inherit;text-decoration:none}
    block (line ~1667) so future readers see it before they decide to
    tweak the visible-on-landing state.
    ────────────────────────────────────────────────────────────────── */
-body[data-conversation-active="true"] #mobileMode{display:none!important}
+body[data-conversation-active="true"] #mobileMode,
+html[data-routed-session="true"] #mobileMode{display:none!important}
 /* ─── A11y utilities ── */
 /* P_a11y-visually-hidden — screen-reader-only text. The 1px size and
    clip-path trick keep the element in the accessibility tree without

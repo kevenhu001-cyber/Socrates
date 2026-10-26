@@ -6,6 +6,7 @@ import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { MessageToolbar } from './MessageToolbar';
 import { MessageAttachments } from './MessageAttachments';
 import { MessageBody } from './MessageBody';
+import { MessageFollowUps } from './MessageFollowUps';
 import { areMessageItemsEqual } from './messageItemMemo';
 import type { MessageItemProps } from './types';
 import { useMessagePostRender } from './useMessagePostRender';
@@ -105,7 +106,7 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
   return Array.isArray(message.attachments) && message.attachments.length > 0;
 }
 
-function MessageItemBase({ message }: MessageItemProps) {
+function MessageItemBase({ message, isLatest = false }: MessageItemProps) {
   const role = messageRole(message);
   /* chatRuntime.bridge gives React an immutable snapshot for this row. */
   const presentation = deriveTurnPresentationState(message);
@@ -153,6 +154,7 @@ function MessageItemBase({ message }: MessageItemProps) {
         bodyRef={bodyRef}
       />
       {role === 'user' || presentation.showToolbar || isLive ? <MessageToolbar message={message} role={toolbarRole(role)} pending={isLive} /> : null}
+      {isLatest && streamSettled && role === 'assistant' ? <MessageFollowUps /> : null}
     </div>
   );
 }

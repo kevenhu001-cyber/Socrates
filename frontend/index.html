@@ -110,6 +110,15 @@
 <script>
 (function(){
   try{document.documentElement.dataset.bootState="checking"}catch(_){}
+  /* P_routed-session — detect routed session (?chat= or ?exam=) before first paint
+     so a page reload never flashes the landing page greeting or starter cards. */
+  try{
+    var _s=location.search;
+    if(/(?:^|[?&])(chat|chatId|exam|examId)=/.test(_s)){
+      document.documentElement.dataset.routedSession="true";
+      document.documentElement.dataset.mainView=/(?:^|[?&])(exam|examId)=/.test(_s)?"examView":"chatView";
+    }
+  }catch(_){}
   /* P_grid — restore grid preference before first paint so the
      boot-loading screen respects the user's choice immediately. */
   try{
