@@ -207,6 +207,14 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
       )}
       {role === 'assistant' && (
         <>
+          {c.onReadAloud && (
+            <IconButton
+              label={i18n('message.readAloud', 'Read aloud')}
+              onClick={(event) => c.onReadAloud?.(event)}
+            >
+              {ReadAloudIcon}
+            </IconButton>
+          )}
           <IconButton
             label={i18n('message.regenerate', 'Regenerate response')}
             onClick={() => c.onRegenerate?.()}
@@ -232,7 +240,7 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
           <MessageOverflow actions={[
             { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => c.onShare?.() },
             { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => c.onBranch?.() },
-            { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event) => c.onReadAloud?.(event) },
+            { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, mobileOnly: true, onClick: (event) => c.onReadAloud?.(event) },
             { label: i18n('message.reExplain', 'Re-explain from a different angle'), icon: ReExplainIcon, onClick: () => c.onReExplain?.() },
             { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, mobileOnly: true, onClick: () => c.onThumbsUp?.() },
             { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, mobileOnly: true, onClick: () => c.onThumbsDown?.() },

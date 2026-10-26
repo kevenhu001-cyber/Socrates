@@ -6,6 +6,14 @@ import { i18n } from '../legacy/gateway';
 
 const PREFIX = '#socrates-citation-';
 
+function safeHostname(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
 /** Links are inserted from validated annotations, never guessed from [n] text. */
 export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntime | null; text: string; children: ReactNode }) {
   const [preview, setPreview] = useState<{ claimId: string; left: number; top: number; pinned: boolean } | null>(null);
@@ -68,7 +76,7 @@ export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntim
   };
 
   const hoverClose = () => {
-    if (!preview?.pinned) hoverTimer.current = setTimeout(() => setPreview(null), 150);
+    if (!preview?.pinned) hoverTimer.current = setTimeout(() => setPreview(null), 240);
   };
 
   // Keep the preview clear of its own citation. A popover that covers the
@@ -95,8 +103,13 @@ export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntim
     {preview && previewSources.length ? createPortal(<aside ref={dialogRef} className="turn-source-preview" role="dialog" onMouseEnter={cancelHoverClose} onMouseLeave={hoverClose} aria-label={i18n('citation.preview', 'Source preview')} tabIndex={-1}
       style={{ left: preview.left, top: preview.top }}>
       {previewSources.map((source) => <div key={source.id}>
-        <a href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a>
-        <small>{new URL(source.url).hostname}</small>
+        <a href={source.url} target="_blank" rel="noopener noreferrer">
+          {source.title || safeHostname(source.url)}
+          <svg className="turn-sources-external" viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'inline-block', marginLeft: 4, verticalAlign: 'middle' }}>
+            <path d="M12 9v4H3V4h4M9 3h4v4M6.5 9.5 13 3" />
+          </svg>
+        </a>
+        <small>{safeHostname(source.url)}</small>
         {source.snippet ? <p>{source.snippet}</p> : null}
       </div>)}
     </aside>, document.body) : null}
@@ -114,8 +127,13 @@ export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntim
         </svg>
       </summary>
       <ol aria-label={i18n('citation.sources', 'Sources')}>{citedSources.map((source) => <li key={source.id} value={sources.indexOf(source) + 1}>
-        <a href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a>
-        <small>{new URL(source.url).hostname}</small>
+        <a href={source.url} target="_blank" rel="noopener noreferrer">
+          {source.title || safeHostname(source.url)}
+          <svg className="turn-sources-external" viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'inline-block', marginLeft: 4, verticalAlign: 'middle' }}>
+            <path d="M12 9v4H3V4h4M9 3h4v4M6.5 9.5 13 3" />
+          </svg>
+        </a>
+        <small>{safeHostname(source.url)}</small>
         {source.snippet ? <p>{source.snippet}</p> : null}
       </li>)}</ol>
     </details> : null}

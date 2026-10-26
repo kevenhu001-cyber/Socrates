@@ -26,6 +26,22 @@
   font-size: var(--ui-font-size-sm);
 }
 .turn-source-preview > div + div { margin-top: var(--ui-space-md); }
+.turn-source-preview a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xxs);
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-medium);
+  text-decoration: none;
+}
+.turn-source-preview a:hover {
+  color: var(--ui-link);
+  text-decoration: underline;
+}
+.turn-sources-external {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
 .turn-source-preview small,
 .turn-sources small {
   display: block;

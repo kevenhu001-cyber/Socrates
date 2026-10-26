@@ -419,6 +419,9 @@
   #appShell #sidebar .recent-item:hover .recent-item-actions,
   #appShell #sidebar .recent-item:focus-within .recent-item-actions,
   #appShell #sidebar .recent-item.actions-open .recent-item-actions { opacity: 1; }
+  @media (hover: none) {
+    #appShell #sidebar .recent-item-actions { opacity: 0.65; }
+  }
   /* The reference row shows a single quiet ⋯ trigger on hover — the
      tag/archive/delete actions live inside its dropdown (the menu is a
      universal rule in components/sidebar.css). The open row keeps the
