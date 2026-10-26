@@ -48,11 +48,14 @@ function IconButton({ label, onClick, children, svgInner, active, modifier, butt
     >
       <svg
         viewBox="0 0 24 24"
+        width="18"
+        height="18"
         fill="none"
         stroke="currentColor"
         strokeWidth={INTERFACE_ICON_STROKE}
         strokeLinecap="round"
         strokeLinejoin="round"
+        shapeRendering="geometricPrecision"
         aria-hidden="true"
         {...(svgInner ? { dangerouslySetInnerHTML: { __html: svgInner } } : { children })}
       />
@@ -78,7 +81,7 @@ function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageB
         aria-label={i18n('message.branch.prev', 'Previous version')}
         title={i18n('message.branch.prev', 'Previous version')}
       >
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </button>
@@ -93,7 +96,7 @@ function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageB
         aria-label={i18n('message.branch.next', 'Next version')}
         title={i18n('message.branch.next', 'Next version')}
       >
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
           <polyline points="9 18 15 12 9 6" />
         </svg>
       </button>

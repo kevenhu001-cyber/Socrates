@@ -18,6 +18,13 @@ body {
 button, input, textarea, select { color: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 
+/* Vector rendering precision: geometric precision keeps 1.5-2px icon strokes crisp
+   without blurring on standard and subpixel displays. */
+svg {
+  shape-rendering: geometricPrecision;
+  vertical-align: middle;
+}
+
 /* Focus contract: one double ring for every focusable surface.
  *
  * The indicator is the two-layer --ui-focus-shadow — a 2px page-coloured gap

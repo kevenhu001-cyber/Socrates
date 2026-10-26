@@ -128,8 +128,7 @@
   color: var(--ui-text-primary);
 }
 
-[data-mode="light"] .btn,
-[data-mode="light"] .btn-icon {
+[data-mode="light"] .btn {
   color: var(--ui-text-primary);
 }
 

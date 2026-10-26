@@ -357,11 +357,12 @@
 }
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--ui-text-secondary);
 }
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn):hover,
 #appShell .composer-shell .composer-tools-trigger[aria-expanded="true"] {
   background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
 }
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) svg { display: block; width: 20px; height: 20px; }
 
