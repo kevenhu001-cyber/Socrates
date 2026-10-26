@@ -94,6 +94,7 @@
     border: 0;
     border-radius: var(--ui-radius-bubble);
     background: var(--ui-bg-bubble);
+    box-shadow: var(--ui-bubble-shadow);
   }
   #appShell #msgList .msg.user .msg-body p { margin: 0; }
 
@@ -162,7 +163,8 @@
     height: 36px;
     margin: 0;
     padding: 0 8px 0 16px;
-    border: 0;
+    border: 1px solid var(--ui-border-code);
+    border-bottom: 0;
     border-radius: var(--ui-radius-xl) var(--ui-radius-xl) 0 0;
     background: var(--ui-bg-code);
     color: var(--ui-text-tertiary);
@@ -196,7 +198,7 @@
     margin: 0 0 16px;
     padding: 16px;
     overflow-x: auto;
-    border: 0;
+    border: 1px solid var(--ui-border-code);
     border-radius: var(--ui-radius-xl);
     background: var(--ui-bg-code);
     color: var(--ui-text-primary);
@@ -206,6 +208,7 @@
   }
   #appShell #msgList .msg-body .code-block-header + pre {
     padding-top: 4px;
+    border-top: 0;
     border-radius: 0 0 var(--ui-radius-xl) var(--ui-radius-xl);
   }
   #appShell #msgList .msg-body pre code {

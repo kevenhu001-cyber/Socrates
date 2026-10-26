@@ -178,11 +178,12 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-selected);
-  --ui-shadow-control: 0 1px 3px rgb(0 0 0 / 16%);
-  --ui-shadow-popover: 0 12px 36px -8px rgb(0 0 0 / 28%), 0 2px 8px rgb(0 0 0 / 14%);
-  --ui-shadow-dialog: 0 24px 64px -12px rgb(0 0 0 / 32%), 0 4px 16px rgb(0 0 0 / 14%);
+  --ui-shadow-control: 0 1px 2px rgb(0 0 0 / 24%), 0 0 0 1px rgb(255 255 255 / 6%);
+  --ui-shadow-popover: 0 0 0 1px rgb(255 255 255 / 8%), inset 0 1px 0 0 rgb(255 255 255 / 6%), 0 12px 32px -4px rgb(0 0 0 / 45%), 0 4px 12px -2px rgb(0 0 0 / 25%);
+  --ui-shadow-dialog: 0 0 0 1px rgb(255 255 255 / 10%), inset 0 1px 0 0 rgb(255 255 255 / 8%), 0 24px 64px -8px rgb(0 0 0 / 60%), 0 8px 24px -4px rgb(0 0 0 / 30%);
   --ui-composer-border: rgb(255 255 255 / 15%);
-  --ui-composer-shadow: inset 0 0 1px rgb(255 255 255 / 20%);
+  --ui-composer-shadow: inset 0 1px 0 0 rgb(255 255 255 / 8%), inset 0 0 1px rgb(255 255 255 / 15%);
+  --ui-bubble-shadow: inset 0 1px 0 0 rgb(255 255 255 / 6%);
   --ui-tool-chip-text: var(--ui-info);
   --ui-tool-chip-hover-bg: rgb(0 26 53);
   --ui-tool-chip-hover-text: rgb(156 218 255);
@@ -266,7 +267,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-control: var(--geist-gray-200);
   --ui-bg-hover: var(--geist-gray-alpha-100);
   --ui-bg-selected: var(--ui-bg-control);
-  --ui-bg-bubble: var(--geist-gray-200);
+  --ui-bg-bubble: var(--geist-gray-100);
   --ui-bg-pill-selected: var(--geist-gray-300);
   --ui-bg-hover-ghost: var(--ui-bg-hover);
   /* Geist hairline — see the dark-mode note above. */
@@ -348,15 +349,16 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-surface);
-  --ui-shadow-control: 0 1px 3px rgb(0 0 0 / 6%);
-  --ui-shadow-popover: 0 10px 32px -8px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 4%);
-  --ui-shadow-dialog: 0 24px 64px -16px rgb(0 0 0 / 14%), 0 4px 12px rgb(0 0 0 / 4%);
+  --ui-shadow-control: 0 1px 2px rgb(0 0 0 / 4%), 0 0 0 1px rgb(0 0 0 / 3%);
+  --ui-shadow-popover: 0 0 0 1px rgb(0 0 0 / 5%), 0 4px 12px -2px rgb(0 0 0 / 5%), 0 16px 32px -4px rgb(0 0 0 / 6%);
+  --ui-shadow-dialog: 0 0 0 1px rgb(0 0 0 / 6%), 0 8px 24px -4px rgb(0 0 0 / 8%), 0 32px 64px -8px rgb(0 0 0 / 8%);
   /* The composer is a hairline capsule on a near-white page, so its resting
      edge is the default rule. --ui-border-strong is held back for the
      focus-within state: with both states on the same border the capsule
      showed no focus cue at all. */
   --ui-composer-border: var(--ui-border-default);
-  --ui-composer-shadow: 0 1px 2px rgb(0 0 0 / 3%), 0 8px 24px -8px rgb(0 0 0 / 6%);
+  --ui-composer-shadow: 0 0 0 1px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 4%), 0 12px 32px -8px rgb(0 0 0 / 5%);
+  --ui-bubble-shadow: 0 1px 2px rgb(0 0 0 / 3%);
   --ui-tool-chip-text: var(--ui-link);
   --ui-tool-chip-hover-bg: rgb(237 244 255);
   --ui-tool-chip-hover-text: rgb(44 145 255);
