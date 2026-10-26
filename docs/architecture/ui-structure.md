@@ -119,19 +119,22 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 | 第三轮：消息 / 分享 / 白板 | 15/15 | 58 个不同用例：消息/流式集 43/43；最终编辑器颜色与主题/布局集 26/26 |
 | 第四轮：弹窗结构化 / 数学修订与轻量提示收敛 | 7/7 | 24 个不同用例通过：sidebar-nav 16/16，message-list 7/7，storage-bootstrap 1/1 |
 | 第五轮：模态无障碍标准化、桥接直调解耦与附件类型化 | 24/24 | 26 个用例全通：sidebar-nav 16/16，message-list 7/7，recents-archive 1/1，storage-bootstrap 1/1 |
+| 第六轮：Admin 模态标准化、10 个遗留模块 TS 迁移与基线紧缩 | 14/14 | 22 个用例全通：sidebar-nav 16/16，chrome-i18n 4/4，recents-archive 1/1，storage-bootstrap 1/1 |
 
-当前最小单测：ownedRoot、messageSurface、attachmentFileTypes、attachments、attachmentUploadQueue、proseRenderer。
+当前最小单测：ownedRoot、modalA11y、cookieConsent、foundationTokens、legacyGateway、attachments、proseRenderer。
 先 build，再按 diff 跑 message-list-compat、share-view、whiteboard-lifecycle、chat-send、
 chat-stop-resend、streaming-render、react-compat、storage-bootstrap、recents-archive 等 Playwright。
-frontend lint 包含类型与全部架构护栏；测试截图和报告保持 gitignored。
-空 catch 的冻结预算从 295 缩减到 294，已移除的静默清理路径不再保留预算；未类型化遗留 JS 从 122 进一步缩减至 119。
+frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告保持 gitignored。
+空 catch 的冻结预算从 295 历经多轮缩减已降至 273；未类型化遗留 JS 从 122 进一步缩减至 109。
 
 弹窗结构化与遗留治理进展：
-1. `Cheatsheet`、`StorageModal`、`PromptTemplatesModal` 与 `ResearchReportDialog` 全面接入 `FoundationDialog`，统一由 Base UI 拥有弹窗交互、Escape 键盘支持、焦点陷阱与无障碍 `role="dialog"` 属性，配合 `data-ui-motion` 实现顺滑的进出场反向动画。
+1. `AdminModal`、`Cheatsheet`、`StorageModal`、`PromptTemplatesModal` 与 `ResearchReportDialog` 全面接入 `FoundationDialog`，统一由 Base UI 拥有弹窗交互、Escape 键盘支持、焦点恢复与无障碍 `role="dialog"` 属性，配合 `data-ui-motion` 实现顺滑的进出场反向动画。
 2. `legacyBridge.js` 全面解耦：消除历史上在对象字面量中通过 `window.*` 间接读取本地模块符号的隐患（包括 `editUserMessage`、`openAttachmentPicker`、`showToast` 等），改为直接静态符号挂载；`extensions/index.ts` 显式导出扩展动作（`exploreAction`、`composeAction` 等），切断全局 window 竞态。
-3. `attachments/limits.js` 与 `attachments/fileTypes.js` 重构为强类型 TypeScript 模块（`limits.ts` 与 `fileTypes.ts`），清晰定义文件归类类型与能力约束，遗留 JS 资产基线顺利下降至 119。
-4. KaTeX 数学重新渲染版本计数解耦，由类型化模块 `render/mathRevision.ts` 集中管理，消除 `MessageList` 与 `proseRenderer` 跨层直读 `window.__socratesMathRenderRev`。
-5. `ui/toast.js` 统一重构为类型化 `ui/toast.ts`，修复并兼容毫秒数字直传参数，收窄遗留 JS 资产基线。
+3. `attachments/limits.js` 与 `attachments/fileTypes.js` 重构为强类型 TypeScript 模块（`limits.ts` 与 `fileTypes.ts`），清晰定义文件归类类型与能力约束。
+4. 10 个轻量遗留 UI 模块全面迁移为类型化 TypeScript：`cheatsheet.ts`、`storage.ts`、`confirm.ts`、`dangerConfirms.ts`、`composerAnim.ts`、`composerLang.ts`、`sendGlyph.ts`、`liveRegion.ts`、`greeting.ts`；清除冗余的转接垫片 `tokens.js` 以及旧版 `cheatsheet.impl.mjs`、`storage.impl.mjs`，消除不必要的动态按需导入与未标注的空 catch 块。
+5. 生产打包零警告（0 project warnings）：彻底解决 Rollup 中由于动态按需导入与静态首屏引入冲突导致的模块 chunk 合并警告。
+6. KaTeX 数学重新渲染版本计数解耦，由类型化模块 `render/mathRevision.ts` 集中管理，消除 `MessageList` 与 `proseRenderer` 跨层直读 `window.__socratesMathRenderRev`。
+7. `ui/toast.js` 统一重构为类型化 `ui/toast.ts`，修复并兼容毫秒数字直传参数，收窄遗留 JS 资产基线。
 
 历史阶段验证均为 Chromium + localhost mock API。未以此宣称 Safari / Android / iOS 原生签收或帧率基准。
 
