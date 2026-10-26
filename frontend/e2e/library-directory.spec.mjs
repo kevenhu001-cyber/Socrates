@@ -72,10 +72,19 @@ test('directory headings and actions align without occupying the phone app bar',
     await page.setViewportSize({ width, height: 900 });
     await page.evaluate(() => window.openNav('plugins'));
     await expect(page.locator('.plugin-directory')).toBeVisible();
-    await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      const panel = document.getElementById('pluginsPanel');
+      if (panel) await Promise.all(panel.getAnimations().map((a) => a.finished));
+    });
     const plugin = await page.locator('.plugin-directory-heading h2').boundingBox();
     await page.evaluate(() => window.openNav('library'));
     await expect(page.locator('.library-directory')).toBeVisible();
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      const panel = document.getElementById('libraryPanel');
+      if (panel) await Promise.all(panel.getAnimations().map((a) => a.finished));
+    });
     const title = await page.locator('#library-directory-title').boundingBox();
     const actions = await page.locator('.library-head-actions').boundingBox();
     const appBar = await page.locator('.top-bar').boundingBox();

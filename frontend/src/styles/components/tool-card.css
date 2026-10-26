@@ -379,7 +379,7 @@
   max-width: 100%;
   max-height: 200px;
   margin: var(--ui-space-xxs) 0;
-  padding: 8px 12px;
+  padding: 6px 12px;
   overflow: auto;
   border: 1px solid var(--ui-border-code, var(--ui-border-subtle));
   border-radius: var(--ui-radius-md);

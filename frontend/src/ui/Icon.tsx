@@ -63,7 +63,6 @@ export const Icon = React.forwardRef<SVGSVGElement, IconProps>(function Icon(
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
-      shapeRendering="geometricPrecision"
       aria-hidden="true"
       focusable="false"
       className={className}

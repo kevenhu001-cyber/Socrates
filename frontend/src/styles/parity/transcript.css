@@ -204,7 +204,7 @@
     background: var(--ui-bg-hover-ghost);
     color: var(--ui-text-primary);
   }
-  #appShell #msgList .msg-body pre {
+  #appShell #msgList .msg-body pre:not(.tool-inline-detail-value) {
     margin: 0 0 16px;
     padding: 16px;
     overflow-x: auto;

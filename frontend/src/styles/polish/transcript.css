@@ -326,7 +326,7 @@
   background: color-mix(in srgb, var(--ui-bg-surface-elevated, var(--ui-bg-overlay)) 88%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: var(--ui-shadow-floating, 0 4px 16px rgba(0, 0, 0, 0.12));
+  box-shadow: var(--ui-shadow-menu);
   color: var(--ui-text-secondary);
   font-family: var(--font-sans);
   font-size: var(--ui-font-size-xs, 12px);

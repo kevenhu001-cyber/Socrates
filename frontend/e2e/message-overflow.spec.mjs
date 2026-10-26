@@ -187,7 +187,8 @@ for (const variant of ['desktop', 'phone']) {
     await triggerOf(page, 1).click();
     const menu = menuOf(page);
     await expect(menu).toBeVisible();
-    await expect(menu).toHaveCSS('animation-name', 'ui-overlay-in');
+    await expect(menu).toHaveCSS('animation-name', 'none');
+    await expect(menu).toHaveCSS('transition-property', 'opacity, transform');
     await menu.evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished)));
     const box = await menu.boundingBox();
     expect(box.x).toBeGreaterThanOrEqual(6);

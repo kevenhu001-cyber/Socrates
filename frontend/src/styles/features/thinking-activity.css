@@ -313,8 +313,8 @@
   border-inline-start: 2px solid var(--ui-border-strong);
   border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0;
   background: color-mix(in srgb, var(--ui-text-primary) 2.5%, transparent);
-  margin: var(--ui-space-xs) 0 var(--ui-space-sm) var(--ui-space-xxs);
-  padding: 10px 14px;
+  margin: var(--ui-space-xs) 0 var(--ui-space-xs) var(--ui-space-xxs);
+  padding: 6px 12px;
 }
 .turn-activity-surface .thinking-accordion-text {
   border: 0;

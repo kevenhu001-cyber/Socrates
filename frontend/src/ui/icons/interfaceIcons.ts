@@ -92,5 +92,5 @@ export function interfaceIcon(name: InterfaceIconName, size?: number): string {
   const body = interfaceIconInnerHtml(name);
   if (!body) return '';
   const dimensions = size === undefined ? '' : ` width="${size}" height="${size}"`;
-  return `<svg viewBox="0 0 24 24"${dimensions} fill="none" stroke="currentColor" stroke-width="${INTERFACE_ICON_STROKE}" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision" aria-hidden="true" focusable="false">${body}</svg>`;
+  return `<svg viewBox="0 0 24 24"${dimensions} fill="none" stroke="currentColor" stroke-width="${INTERFACE_ICON_STROKE}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
 }
