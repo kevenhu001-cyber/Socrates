@@ -16,8 +16,8 @@ import { escHTML } from './helpers.ts';
    via the `.copied` / `.copy-failed` classes the Task 8.1 CSS targets. */
 
 const COPY_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" ' +
+  'stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision" aria-hidden="true">' +
   '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
   '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
@@ -59,8 +59,8 @@ interface CopyButtonEl extends HTMLButtonElement {
 }
 
 const CHECK_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" ' +
+  'stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision" aria-hidden="true">' +
   '<polyline points="20 6 9 17 4 12"/></svg>';
 
 function setCodeCopyFeedback(button: CopyButtonEl, ok: boolean): void {

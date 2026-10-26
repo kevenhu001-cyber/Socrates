@@ -83,8 +83,21 @@
 .prompt-row-icon svg{width:18px;height:18px;color:currentColor}
 .prompt-row-main{gap:3px}
 .prompt-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text);gap:8px}
-.prompt-row-shortcut,
-.slash-command-shortcut{padding:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight);border-radius:0}
+.prompt-row-shortcut {
+  padding:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight);border-radius:0;
+}
+.slash-command-shortcut {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  background: color-mix(in srgb, var(--ui-text-primary) 6%, transparent);
+  border: 1px solid var(--tool-card-border);
+  border-radius: var(--ui-radius-control);
+  color: var(--ui-text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-medium);
+}
 .prompt-row-desc,.slash-command-desc{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
 .prompt-row-actions{gap:6px}
 .prompt-row-edit,.prompt-row-delete{min-height:30px;padding:6px 10px;border:1px solid var(--tool-card-border-strong);border-radius:var(--tool-card-radius-sm);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-title-weight)}

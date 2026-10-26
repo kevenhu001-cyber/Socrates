@@ -468,9 +468,59 @@
 }
 
 #appShell .visualization-card {
-  border-color: var(--ui-border-default);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-raised);
   box-shadow: none;
+  overflow: hidden;
+}
+
+#appShell .visualization-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .visualization-header h3 {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+#appShell .visualization-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#appShell .visualization-actions button {
+  height: var(--ui-control-xs);
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, border-color var(--ui-duration-fast) ease;
+}
+
+#appShell .visualization-actions button:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+#appShell .visualization-actions button[aria-expanded="true"] {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+  border-color: var(--ui-border-default);
 }
 
 @media (max-width: 768px) {

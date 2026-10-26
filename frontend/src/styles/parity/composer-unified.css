@@ -637,6 +637,12 @@
   scroll-snap-align: start;
   display: flex;
   align-items: center;
+  transition: border-color var(--ui-duration-fast) ease, box-shadow var(--ui-duration-fast) ease;
+}
+
+.composer-shell .attachment-chip:hover {
+  border-color: var(--ui-border-default);
+  box-shadow: 0 2px 6px hsl(0 0% 0% / 0.06);
 }
 
 .composer-shell .attachment-chip-visual {
@@ -735,7 +741,7 @@
   display: block;
 }
 
-/* Close button: solid dark circular badge inside top-right corner */
+/* Close button: circular badge inside top-right corner */
 .composer-shell .attachment-chip-remove {
   position: absolute;
   top: 6px;
@@ -744,8 +750,8 @@
   height: var(--ui-control-badge);
   min-width: var(--ui-control-badge);
   border-radius: var(--ui-radius-pill);
-  background: hsl(0 0% 10% / 0.85);
-  color: hsl(var(--always-white));
+  background: color-mix(in srgb, var(--ui-text-primary) 70%, transparent);
+  color: var(--ui-bg-page);
   border: none;
   display: inline-flex;
   align-items: center;
@@ -753,11 +759,12 @@
   cursor: pointer;
   padding: 0;
   z-index: 3;
-  opacity: 1;
-  transition: opacity var(--ui-duration-fast) ease, transform var(--ui-duration-fast) ease;
+  opacity: 0.85;
+  transition: opacity var(--ui-duration-fast) ease, transform var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 .composer-shell .attachment-chip-remove:hover {
-  background: hsl(0 0% 0%);
+  background: var(--ui-text-primary);
+  opacity: 1;
   transform: scale(1.08);
 }
 .composer-shell .attachment-chip.is-image .attachment-chip-remove {
