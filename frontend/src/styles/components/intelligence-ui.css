@@ -676,10 +676,21 @@
   gap: var(--ui-space-md);
   padding: var(--ui-foundation-space-md) var(--ui-foundation-space-md) 0;
 }
+.intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]) .intui-surface-header {
+  position: absolute;
+  top: var(--ui-foundation-space-md);
+  right: var(--ui-foundation-space-md);
+  z-index: 2;
+  padding: 0;
+  pointer-events: none;
+}
 .intui-surface-heading {
   flex: 1 1 auto;
   min-width: 0;
   padding-block: calc((var(--intui-action-size) - var(--ui-space-xl)) / 2);
+}
+.intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]) .intui-surface-heading {
+  padding-block: 0;
 }
 #appShell #msgList .msg-body .intui-surface-title {
   margin: 0;
@@ -716,7 +727,23 @@
   background: var(--ui-bg-hover-ghost);
   color: var(--ui-text-primary);
 }
-.intui-surface-label { display: block; color: var(--ui-text-secondary); font-size: var(--ui-font-size-xs); line-height: var(--ui-space-xl); font-weight: var(--ui-font-weight-regular); }
+.intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]) .intui-surface-toolbar {
+  pointer-events: auto;
+}
+.intui-surface-shell:not([data-has-title="true"]) .iui-card > .iui-title:first-child {
+  padding-right: calc(var(--intui-action-size) * 2 + var(--ui-space-sm));
+}
+.intui-surface-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .intui-surface-expand,
 .intui-surface-return,
 .intui-surface-options { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: var(--intui-action-size); }
