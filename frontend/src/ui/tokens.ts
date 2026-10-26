@@ -282,10 +282,22 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
   return palettes[mode];
 }
 
+/** Dark mode page background — ladder L1, a near-black rather than pure #000. */
+export const DARK_PAGE_BACKGROUND = '#0a0a0a';
+
+/** Light mode page background — ladder L2, one step below the paper. */
+export const LIGHT_PAGE_BACKGROUND = '#fafafa';
+
+/** Default fallback for the dark-mode user picker. */
+export const DEFAULT_DARK_PICKER = DARK_PAGE_BACKGROUND;
+
+/** Default fallback for the light-mode user picker. */
+export const DEFAULT_LIGHT_PICKER = LIGHT_PAGE_BACKGROUND;
+
 /**
  * First-frame page paint. These exact values mirror Lobe colorBgLayout and
  * `styles/themes.css`, preventing a flash before the stylesheet parses.
  */
-export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#fafafa' : '#0a0a0a';
+export function resolveBackground(mode: ThemeMode | string): string {
+  return mode === 'light' ? LIGHT_PAGE_BACKGROUND : DARK_PAGE_BACKGROUND;
 }
