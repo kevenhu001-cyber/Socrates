@@ -226,9 +226,25 @@ function startComposerShapeAnimation(
   toHeight: number,
   cleanup: () => void,
   state: ComposerShapeState,
+  controlTransforms?: Map<HTMLElement, { dx: number; dy: number }>,
 ): void {
-  state.animationCleanup.current = cleanup;
-  const duration = 340;
+  const restoreTransforms = () => {
+    controlTransforms?.forEach((_, el) => {
+      el.style.transform = '';
+      el.style.willChange = '';
+    });
+  };
+
+  state.animationCleanup.current = () => {
+    restoreTransforms();
+    cleanup();
+  };
+
+  controlTransforms?.forEach((_, el) => {
+    el.style.willChange = 'transform';
+  });
+
+  const duration = 280;
   const startedAt = performance.now();
   let frame = 0;
   let cancelled = false;
@@ -236,16 +252,31 @@ function startComposerShapeAnimation(
     cancel() {
       cancelled = true;
       if (frame) cancelAnimationFrame(frame);
+      restoreTransforms();
     },
   };
   const tick = (now: number) => {
     if (cancelled) return;
     const progress = Math.min(1, (now - startedAt) / duration);
-    /* Cubic ease-out avoids the initial jump of a front-loaded easing curve. */
-    const eased = 1 - Math.pow(1 - progress, 3);
+    /* Fluid quintic ease-out matches Apple/web motion standards. */
+    const eased = 1 - Math.pow(1 - progress, 4);
     const height = fromHeight + (toHeight - fromHeight) * eased;
     wrap.style.setProperty('height', height + 'px', 'important');
     state.height.current = height;
+
+    if (controlTransforms && controlTransforms.size > 0) {
+      const factor = 1 - eased;
+      controlTransforms.forEach(({ dx, dy }, el) => {
+        const curX = dx * factor;
+        const curY = dy * factor;
+        if (Math.abs(curX) > 0.1 || Math.abs(curY) > 0.1) {
+          el.style.transform = `translate(${curX.toFixed(2)}px, ${curY.toFixed(2)}px)`;
+        } else {
+          el.style.transform = '';
+        }
+      });
+    }
+
     if (progress < 1) {
       frame = requestAnimationFrame(tick);
       return;
@@ -253,6 +284,7 @@ function startComposerShapeAnimation(
     if (state.animation.current !== controller) return;
     state.animation.current = null;
     state.animationCleanup.current = null;
+    restoreTransforms();
     cleanup();
     state.height.current = wrap.getBoundingClientRect().height;
   };
@@ -295,10 +327,22 @@ export function transitionComposerShape(
     return;
   }
 
+  const shouldAnimate = !matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* Capture initial visual positions of controls for FLIP morphing before state cancellation. */
+  const controls = shouldAnimate
+    ? Array.from(wrap.querySelectorAll<HTMLElement>(
+        '.composer-tools-trigger, .effort-picker, .mobile-mic-btn, .composer-primary-btn, .composer-plugin-chips'
+      )).filter((el) => el.offsetParent !== null)
+    : [];
+  const firstRects = new Map<HTMLElement, DOMRect>();
+  controls.forEach((el) => {
+    firstRects.set(el, el.getBoundingClientRect());
+  });
+
   const fromHeight = getTransitionStartHeight(wrap, shouldExpand, classChanges, state);
   cancelComposerShapeAnimation(state);
 
-  const shouldAnimate = !matchMedia('(prefers-reduced-motion:reduce)').matches;
   const cleanupTemporaryStyles = shouldAnimate
     ? lockComposerGeometry(wrap, fromHeight)
     : null;
@@ -308,11 +352,29 @@ export function transitionComposerShape(
      released, then restore the painted start height before yielding. */
   if (shouldAnimate) wrap.style.removeProperty('height');
   const toHeight = wrap.getBoundingClientRect().height;
-  if (shouldAnimate) wrap.style.setProperty('height', fromHeight + 'px', 'important');
+
+  const controlTransforms = new Map<HTMLElement, { dx: number; dy: number }>();
+  if (shouldAnimate) {
+    controls.forEach((el) => {
+      const first = firstRects.get(el);
+      if (!first) return;
+      const last = el.getBoundingClientRect();
+      const dx = first.left - last.left;
+      const dy = first.top - last.top;
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        controlTransforms.set(el, { dx, dy });
+        el.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)`;
+      }
+    });
+    wrap.style.setProperty('height', fromHeight + 'px', 'important');
+  }
 
   if (cleanupTemporaryStyles && shouldAnimateShape(wrap, fromHeight, toHeight)) {
-    startComposerShapeAnimation(wrap, fromHeight, toHeight, cleanupTemporaryStyles, state);
+    startComposerShapeAnimation(wrap, fromHeight, toHeight, cleanupTemporaryStyles, state, controlTransforms);
   } else {
+    controlTransforms.forEach((_, el) => {
+      el.style.transform = '';
+    });
     cleanupTemporaryStyles?.();
     state.height.current = wrap.getBoundingClientRect().height;
   }
