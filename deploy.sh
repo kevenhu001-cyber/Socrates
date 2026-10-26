@@ -1636,6 +1636,13 @@ if [[ -n "${APP_FILE:-}" && -f "$APP_DEPLOYED_PATH" ]]; then
   PUBLIC_APP_MATCH=0
   for attempt in 1 2 3; do
     if curl -sfL --max-time 8 "$APP_FRONTEND_GATE_URL" -o "$PUBLIC_APP_TMP"; then
+      # If EdgeOne bot challenge intercepted curl, probe the local origin vhost directly
+      if grep -qE "EO_Bot_Ssid|TencentEdgeOne" "$PUBLIC_APP_TMP" 2>/dev/null; then
+        app_edge_host="${APP_PUBLIC_URL#*://}"
+        app_edge_host="${app_edge_host%%/*}"
+        app_edge_host="${app_edge_host%%:*}"
+        curl -sfL --max-time 8 --noproxy '*' --resolve "$app_edge_host:443:127.0.0.1" "$APP_FRONTEND_GATE_URL" -o "$PUBLIC_APP_TMP" || true
+      fi
       # CDN "JS detection" injections (e.g. Cloudflare's challenge-platform,
       # added when the domain moved behind Cloudflare) append a <script>
       # carrying a per-request nonce before </body>. A raw md5 of the public
@@ -1682,6 +1689,12 @@ EXPECTED_CANONICAL_API_BASE_URL="${EXPECTED_WEB_BASE_URL}/api"
 mobile_bootstrap_aligned() {
   local body
   body=$(curl -sf --max-time 8 "$MOBILE_BOOTSTRAP_URL" || true)
+  if [[ -z "$body" ]] || echo "$body" | grep -qE "EO_Bot_Ssid|TencentEdgeOne" 2>/dev/null; then
+    local app_edge_host="${APP_PUBLIC_URL#*://}"
+    app_edge_host="${app_edge_host%%/*}"
+    app_edge_host="${app_edge_host%%:*}"
+    body=$(curl -sf --max-time 8 --noproxy '*' --resolve "$app_edge_host:443:127.0.0.1" "$MOBILE_BOOTSTRAP_URL" || true)
+  fi
   [[ -n "$body" ]] || return 1
   echo "$body" | jq -e \
     --arg web "$EXPECTED_WEB_BASE_URL" \
