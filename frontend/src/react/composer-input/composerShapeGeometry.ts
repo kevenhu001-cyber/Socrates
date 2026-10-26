@@ -105,6 +105,7 @@ function createCollapsedMeasureProbe(
     'pointer-events:none',
     'contain:layout style',
   ].join(';');
+  host.style.width = collapsedWidth + 'px';
 
   const editor = previous?.editor ?? editorDom.cloneNode(false) as HTMLElement;
   const html = editorDom.innerHTML;
@@ -116,8 +117,12 @@ function createCollapsedMeasureProbe(
   editor.style.setProperty('height', 'auto', 'important');
   editor.style.setProperty('min-height', '0', 'important');
   editor.style.setProperty('max-height', 'none', 'important');
-  editor.style.setProperty('overflow', 'visible', 'important');
+  editor.style.setProperty('overflow-y', 'auto', 'important');
+  editor.style.setProperty('scrollbar-width', 'thin', 'important');
   if (!previous) {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = '.composer-shape-probe p { margin: 0 !important; }';
+    host.appendChild(styleEl);
     host.appendChild(editor);
     document.body.appendChild(host);
   }
@@ -171,7 +176,7 @@ export function shouldExpandComposer(
 
   /* Empty editors can exceed one line because of the surface's CSS minimum
      height. Only text or a rendered break may expand the shell. */
-  return hasMultilineContent(hasRenderedBreak, hasEditorText, contentHeight, singleLineHeight);
+  return hasMultilineContent(hasRenderedBreak, hasEditorText, contentHeight, singleLineHeight, lineHeight);
 }
 
 function hasMultilineContent(
@@ -179,8 +184,13 @@ function hasMultilineContent(
   hasEditorText: boolean,
   contentHeight: number,
   singleLineHeight: number,
+  lineHeight = 24,
 ): boolean {
-  return hasRenderedBreak || (hasEditorText && contentHeight > singleLineHeight + 1);
+  // A second line of text adds an entire line height (typically 24px).
+  // Require at least half a line height (12px) of overflow to reliably detect a second line,
+  // preventing subpixel jitter, font descender protrusion, or 1px rounding discrepancies from falsely triggering multiline.
+  const threshold = singleLineHeight + Math.max(10, Math.round(lineHeight * 0.5));
+  return hasRenderedBreak || (hasEditorText && contentHeight >= threshold);
 }
 
 function lockComposerGeometry(wrap: HTMLElement, fromHeight: number): () => void {

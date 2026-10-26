@@ -344,6 +344,11 @@
   cursor: pointer;
   transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
 }
+/* In single-row desktop layout, keep controls centered on the editor's text line
+   so buttons never jump vertically as text approaches the single-line margin. */
+#appShell .composer-shell:not(.composer-multiline):not(.has-plugin-chips) :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-picker) {
+  align-self: center;
+}
 /* The resting shadow is reset above because these are flat discs, but the
    focus contract is a box-shadow too — without this the send and tools
    buttons would carry no focus indicator at all. */
