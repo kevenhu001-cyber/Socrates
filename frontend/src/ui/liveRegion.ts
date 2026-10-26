@@ -1,4 +1,4 @@
-/* ui/liveRegion.js — a single visually-hidden polite announcer for DOM
+/* ui/liveRegion.ts — a single visually-hidden polite announcer for DOM
  * updates that never move focus (finished streaming replies).
  *
  * Text is announced once at completion, not per delta: an aria-live node
@@ -7,15 +7,15 @@
  * NVDA/VoiceOver read it verbatim, which matches what ChatGPT announces).
  */
 
-var region = null;
+let region: HTMLElement | null = null;
 
-function ensureRegion() {
+function ensureRegion(): HTMLElement {
   if (region && region.isConnected) return region;
-  region = document.createElement("div");
-  region.id = "srLiveRegion";
-  region.className = "visually-hidden";
-  region.setAttribute("aria-live", "polite");
-  region.setAttribute("aria-atomic", "true");
+  region = document.createElement('div');
+  region.id = 'srLiveRegion';
+  region.className = 'visually-hidden';
+  region.setAttribute('aria-live', 'polite');
+  region.setAttribute('aria-atomic', 'true');
   document.body.appendChild(region);
   return region;
 }
@@ -24,19 +24,20 @@ function ensureRegion() {
  * identical string is a no-op for some ATs, so clear first and write on
  * the next frame; very long transcripts are truncated — a screen reader
  * can still reach the full text in the message row itself. */
-var MAX_ANNOUNCE_CHARS = 5000;
-export function announceTranscript(text) {
+const MAX_ANNOUNCE_CHARS = 5000;
+
+export function announceTranscript(text?: string | null): void {
   try {
-    if (typeof document === "undefined" || !document.body) return;
-    var value = String(text == null ? "" : text).trim();
+    if (typeof document === 'undefined' || !document.body) return;
+    let value = String(text == null ? '' : text).trim();
     if (!value) return;
     if (value.length > MAX_ANNOUNCE_CHARS) {
-      value = value.slice(0, MAX_ANNOUNCE_CHARS) + "…";
+      value = value.slice(0, MAX_ANNOUNCE_CHARS) + '…';
     }
-    var node = ensureRegion();
-    node.textContent = "";
-    requestAnimationFrame(function () {
+    const node = ensureRegion();
+    node.textContent = '';
+    requestAnimationFrame(() => {
       if (node.isConnected) node.textContent = value;
     });
-  } catch (_) { /* never break the stream for an announcement */ }
+  } catch (_) { /* empty-catch: intentional — never break the stream for an announcement */ }
 }

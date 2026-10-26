@@ -1,4 +1,4 @@
-// src/ui/sendGlyph.js — the send button's "sent" moment.
+// src/ui/sendGlyph.ts — the send button's "sent" moment.
 //
 // A composer submit flips the primary button through arrow → stop within a
 // frame or two. Without a transition the icon just flickers. While
@@ -13,9 +13,9 @@
 
 export const SEND_GLYPH_MS = 220;
 
-let timer = 0;
+let timer: ReturnType<typeof setTimeout> | number = 0;
 
-export function playSendGlyph(doc) {
+export function playSendGlyph(doc?: Document | null): void {
   const d = doc || (typeof document !== 'undefined' ? document : null);
   const btn = d && d.getElementById ? d.getElementById('composerPrimaryBtn') : null;
   if (!btn) return;
@@ -31,15 +31,16 @@ export function playSendGlyph(doc) {
      which is the only place the animation needs to be "fresh" anyway.
      The 220ms timer below still drives the un-send side. */
   btn.classList.remove('is-sending');
-  const raf = typeof d.requestAnimationFrame === 'function'
-    ? d.requestAnimationFrame.bind(d)
-    : (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : null);
-  const restart = function () {
+  const win = d?.defaultView || (typeof window !== 'undefined' ? window : null);
+  const raf = win && typeof win.requestAnimationFrame === 'function'
+    ? win.requestAnimationFrame.bind(win)
+    : null;
+  const restart = () => {
     btn.classList.add('is-sending');
   };
   if (raf) raf(restart);
   else restart();
-  timer = setTimeout(function () {
+  timer = setTimeout(() => {
     timer = 0;
     btn.classList.remove('is-sending');
   }, SEND_GLYPH_MS);
