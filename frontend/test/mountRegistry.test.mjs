@@ -85,3 +85,46 @@ test('mount registry label filters skip lazy hosts until the full pass', () => {
   assert.equal(fullPass.mounted.length, 1);
   assert.equal(mounts, 2);
 });
+
+test('lazy mounts reserve hosts, deduplicate boot passes and release failures for retry', async () => {
+  const { document } = new JSDOM('<!doctype html><div id="lazy"></div><div id="next"></div>').window;
+  let reject;
+  let attempts = 0;
+  let nextMounts = 0;
+  const error = new Error('chunk unavailable');
+  const spec = { hostId: 'lazy', label: 'lazy-root', mount: () => {
+    attempts++;
+    return attempts === 1 ? new Promise((_, fail) => { reject = fail; }) : Promise.resolve();
+  } };
+  configureMountRegistry([spec, { hostId: 'next', label: 'next', mount: () => { nextMounts++; } }]);
+  const first = runMountRegistry(document);
+  assert.equal(first.pending.length, 1);
+  assert.equal(hostIsMountedBy(document, 'lazy', 'lazy-root'), true, 'legacy writers are excluded during loading');
+  runMountRegistry(document);
+  assert.equal(attempts, 1);
+  reject(error);
+  await Promise.all(first.pending);
+  assert.deepEqual(first.failed, [{ spec, error }]);
+  assert.equal(hostIsMountedBy(document, 'lazy', 'lazy-root'), false);
+  assert.equal(nextMounts, 1, 'other surfaces still mount');
+  const retry = runMountRegistry(document);
+  await Promise.all(retry.pending);
+  assert.equal(attempts, 2);
+  assert.deepEqual(retry.mounted, [spec]);
+  assert.equal(hostIsMountedBy(document, 'lazy', 'lazy-root'), true);
+});
+
+test('synchronous failures and asynchronous opt-outs preserve legacy ownership', async () => {
+  const { document } = new JSDOM('<!doctype html><div id="broken"></div><div id="share"></div>').window;
+  const error = new Error('bridge install failed');
+  configureMountRegistry([
+    { hostId: 'broken', label: 'broken', mount: () => { throw error; } },
+    { hostId: 'share', label: 'msg-list', mount: () => Promise.resolve(false) },
+  ]);
+  const result = runMountRegistry(document);
+  await Promise.all(result.pending);
+  assert.equal(result.failed[0].error, error);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(hostIsMountedBy(document, 'broken', 'broken'), false);
+  assert.equal(hostIsMountedBy(document, 'share', 'msg-list'), false);
+});

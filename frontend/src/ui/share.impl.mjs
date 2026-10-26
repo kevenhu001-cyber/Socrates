@@ -18,6 +18,8 @@ import { apiFetch } from '../util/api.ts';
 import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';
 import { activateMainView } from './mainViewController.js';
+import { takeOverSharedMessageList } from './msgListMount.ts';
+import { renderSharedAssistantTurn, releaseSharedAssistantTurns } from './assistantTurnRenderer.ts';
 
 import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './toolCards.js';
 
@@ -181,19 +183,9 @@ async function revokeShareLink() {
 function _renderSharedMessageList(messages) {
   var msgList = document.getElementById("msgList");
   if (!msgList) return;
-  /* The share view owns #msgList exclusively. Flag the takeover so the
-     React bootstrap skips mounting the message list, and unmount the
-     React root if it already mounted — wiping React-owned children with
-     innerHTML="" would crash React's next commit (removeChild). */
-  window.__socratesShareMsgListTakeover = true;
-  if (typeof window.__socratesReleaseMsgListReact === "function") {
-    try { window.__socratesReleaseMsgListReact(); } catch (_) {}
-  }
-  /* Same hazard per message: each declarative turn is its own React root
-     inside the body we are about to wipe. */
-  if (typeof window.__socratesReleaseAssistantTurns === "function") {
-    try { window.__socratesReleaseAssistantTurns(); } catch (_) {}
-  }
+  // Release React roots before any legacy child replacement.
+  takeOverSharedMessageList(msgList);
+  releaseSharedAssistantTurns();
   /* P_viz-dispose-shared — dispose any live visualization
      cards/ECharts instances before wiping the DOM. Mirrors the
      call in main.js#enterChat (line 1496) so the shared-session
@@ -203,8 +195,6 @@ function _renderSharedMessageList(messages) {
     try { disposeVisualizations(msgList); } catch (_) {}
   }
   msgList.innerHTML = "";
-  var mountTurn = typeof window.__socratesMountAssistantTurn === "function"
-    ? window.__socratesMountAssistantTurn : null;
   (messages || []).forEach(function (m) {
     if (!m) return;
     var div = document.createElement("div");
@@ -222,11 +212,11 @@ function _renderSharedMessageList(messages) {
        The offsets index the RAW markdown, so `rawText` — not `content`, which
        is the rendered snapshot — is what the turn gets sliced against. */
     var declarative = false;
-    if (m.role === "assistant" && mountTurn && typeof m.rawText === "string" && m.rawText
+    if (m.role === "assistant" && typeof m.rawText === "string" && m.rawText
         && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
       body.className = "msg-body content is-declarative";
       try {
-        declarative = !!mountTurn(body, {
+        declarative = renderSharedAssistantTurn(body, {
           id: m.id || null,
           clientId: m.id || null,
           role: "assistant",
@@ -235,7 +225,7 @@ function _renderSharedMessageList(messages) {
           html: typeof m.content === "string" ? m.content : "",
           toolCalls: m.toolCalls,
           reasoningContent: m.reasoningContent || null,
-        }, { readOnly: true });
+        });
       } catch (_) {
         declarative = false;
       }
@@ -310,6 +300,9 @@ function _switchToSharedChatView() {
      affordance. */
   var banner = document.getElementById("sharedBanner");
   if (banner) {
+    // The transcript was lifted out of mainInner during the shell migration.
+    // Its read-only notice must follow it instead of staying in the hidden landing container.
+    document.getElementById("chatPage")?.prepend(banner);
     banner.classList.remove("hidden");
     var label = banner.querySelector("[data-i18n-key='share.readOnlyBanner']");
     if (label && typeof window.t === "function") {

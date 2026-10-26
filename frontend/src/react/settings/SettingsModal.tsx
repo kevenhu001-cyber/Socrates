@@ -1,7 +1,6 @@
 import { useRef } from 'react';
-import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
-import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 import { useSettingsSnapshot, installSettingsBridge } from './settings.bridge';
 import { closeSettings } from './settings.service';
 import { SettingsHeader, SettingsNavigation } from './SettingsModalChrome';
@@ -66,6 +65,8 @@ function SettingsModal() {
  * Mount the React-owned settings surface. The legacy settings module only
  * publishes open state and provider configuration through the typed bridge.
  */
+const rootSlot = createRootSlot('settings-modal');
+
 export function mountSettingsModal(): void {
   let container = document.getElementById('settingsModalReactRoot');
   if (!container) {
@@ -73,9 +74,5 @@ export function mountSettingsModal(): void {
     container.id = 'settingsModalReactRoot';
     document.body.appendChild(container);
   }
-  if (hostIsMountedBy(container, 'settings-modal')) return;
-  markHostMountedBy(container, 'settings-modal');
-  installSettingsBridge();
-  const root = createRoot(container);
-  flushSync(() => root.render(<SettingsModal />));
+  flushSync(() => rootSlot.mount(container, <SettingsModal />, installSettingsBridge));
 }

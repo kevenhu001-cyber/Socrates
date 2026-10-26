@@ -196,10 +196,15 @@ test('collapsed sidebar rail keeps only the avatar of the account row', async ({
 
 test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 769 });
+  // Boot at the phone width. A late desktop-to-phone resize event otherwise
+  // closes the drawer after the open-state check below.
+  await page.reload();
+  await waitForAppShell(page);
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar?.classList.contains('collapsed')) window.toggleSidebar?.();
   });
+  await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
   const rows = await page.locator('#sidebarNav .sidebar-nav-btn:visible').evaluateAll((buttons) => buttons.map((button) => {
     const row = button.getBoundingClientRect();
     const glyph = button.querySelector('svg')?.getBoundingClientRect();

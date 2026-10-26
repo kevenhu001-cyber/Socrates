@@ -1,5 +1,5 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import { createRoot, type Root } from 'react-dom/client';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import type { Root } from 'react-dom/client';
 import { useSyncExternalStore } from 'react';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
@@ -64,25 +64,10 @@ export interface RecentsChipsHandle {
  * Hydrate the legacy `#recentsFilterChips` element with React. Idempotent.
  * The chip-bar element keeps its id, classes, and CSS styling; React owns
  * only its direct children (the chip buttons + separators). The legacy
- * renderer is suppressed by a data-attribute guard so the two never fight.
+ * renderer reads the ownership registry so the two never fight.
  */
 export function hydrateRecentsFilterChips(): RecentsChipsHandle | null {
   const target = document.getElementById(TARGET_ID);
   if (!target) return null;
-  if (hostIsMountedBy(target, 'recents-filter-chips')) {
-    throw new Error('Recents filter chips React runtime was initialized more than once.');
-  }
-
-  hydrateRecentsFilterState();
-  const root = createRoot(target);
-  root.render(<RecentsFilterChips />);
-  markHostMountedBy(target, 'recents-filter-chips');
-  return {
-    target,
-    root,
-    destroy: () => {
-      root.unmount();
-      clearHostMounted(target);
-    },
-  };
+  return { target, ...mountOwnedRoot(target, 'recents-filter-chips', <RecentsFilterChips />, hydrateRecentsFilterState) };
 }

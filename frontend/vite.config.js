@@ -409,7 +409,9 @@ export default defineConfig({
        .css, so the woff2 slices inlined into the critical CSS are
        unaffected). */
     assetsInlineLimit: (filePath) => {
-      if (typeof filePath === 'string' && filePath.endsWith('.css')) return false;
+      // Libraries fetch JSON URL imports (including tldraw's empty en.json).
+      // A data: URL is blocked by connect-src; emit a same-origin file instead.
+      if (typeof filePath === 'string' && (filePath.endsWith('.css') || filePath.endsWith('.json'))) return false;
       return undefined;
     },
     rollupOptions: {

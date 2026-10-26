@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { createRoot } from 'react-dom/client';
 
 import { saveChatPreferences, type ReasoningEffort, type ResponseSpeed } from '../../config/chatPreferences';
 import { resolveEffectiveEffort } from '../../config/effectiveEffort';
 import { pickActiveProviderById } from '../../pickers.js';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
-import { markHostMountedBy } from '../lib/boot/ownership';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import {
   closeChatConfiguration,
   installChatConfigurationBridge,
@@ -153,21 +152,12 @@ export function ChatConfiguration() {
   );
 }
 
-let chatConfigurationMounted = false;
-
 export function mountChatConfiguration(): void {
-  /* See mountConfirmDialog — the mount registry marks this host at
-     dispatch time, before the lazy import resolves, so the ownership
-     flag can't double as the re-entry guard here. */
-  if (chatConfigurationMounted) return;
   let host = document.getElementById('chatConfigurationReactRoot');
   if (!host) {
     host = document.createElement('div');
     host.id = 'chatConfigurationReactRoot';
     document.body.appendChild(host);
   }
-  chatConfigurationMounted = true;
-  markHostMountedBy(host, 'chat-configuration');
-  installChatConfigurationBridge();
-  createRoot(host).render(<ChatConfiguration />);
+  mountOwnedRoot(host, 'chat-configuration', <ChatConfiguration />, installChatConfigurationBridge);
 }

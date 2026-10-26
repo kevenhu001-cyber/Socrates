@@ -1,7 +1,7 @@
-import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
 
 import { installFindInSessionBridge, subscribeToFindInSession, getFindInSessionSnapshot } from './find.bridge';
 import { closeFindInSession, findNext, findPrev, onFindInput } from './findInSession.actions';
@@ -122,34 +122,10 @@ export interface FindInSessionReactRootHandle {
  * Mounts the React find-in-session bar into the existing `#findBar` element.
  * Idempotent — a second call returns the existing handle.
  */
-let findInSessionMounted = false;
-
 export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
   const bar = document.getElementById(FIND_BAR_ID);
   if (!bar) return null;
-  /* See hydrateCmdKOverlay — the registry marks the host at dispatch time,
-     before this lazy import resolves, so a module flag is the guard. */
-  if (findInSessionMounted) return null;
-  findInSessionMounted = true;
-
-  installFindInSessionBridge();
-
-  /* The bar is position:fixed, but inside #mainContent it is trapped in
-     that element's stacking context (z-index 1) and renders underneath
-     the top bar (z-index 5) — the search button looked like it did
-     nothing. Host it at the body level so its own z-index applies. */
+  // Keep the fixed search bar outside the main content stacking context.
   if (bar.parentElement !== document.body) document.body.appendChild(bar);
-
-  const root = createRoot(bar);
-  root.render(<FindInSession />);
-  markHostMountedBy(bar, 'find-in-session');
-
-  return {
-    root,
-    destroy: () => {
-      root.unmount();
-      findInSessionMounted = false;
-      clearHostMounted(bar);
-    },
-  };
+  return mountOwnedRoot(bar, 'find-in-session', <FindInSession />, installFindInSessionBridge);
 }

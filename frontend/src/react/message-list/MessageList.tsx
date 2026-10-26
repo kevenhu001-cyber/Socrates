@@ -1,11 +1,12 @@
-import { createRoot, type Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 import { useEffect, useSyncExternalStore } from 'react';
 
 import { subscribeToChatRuntime } from '../chatRuntime.bridge';
 import { ErrorBoundary } from '../ErrorBoundary';
 import type { LegacyChatMessage } from '../types/domain';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { isMsgListMounted, setMsgListMounted } from '../../ui/msgListMount.ts';
+import { claimReactMessageList, isMsgListMounted, isSharedMessageList } from '../../ui/msgListMount.ts';
 import { entryId } from './messageIdentity';
 import { MessageItem } from './MessageItem';
 import { updateScrollFadeMask } from './messageScroll';
@@ -59,28 +60,21 @@ function MessageList() {
   );
 }
 
-/** Mount React rows into the legacy #msgList host without replacing its shell. */
+const rootSlot = createRootSlot('msg-list');
+
+/** Mount React rows without replacing the transcript shell or a shared view. */
 export function mountMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
-  if (!container || isMsgListMounted()) return { root: null };
-  // The read-only share view renders #msgList itself; never mount over it.
-  if (window.__socratesShareMsgListTakeover) return { root: null };
+  if (!container) { rootSlot.destroy(); return { root: null }; }
+  if (isMsgListMounted() || isSharedMessageList(container)) return { root: null };
+  const handle = rootSlot.mount(container, <ErrorBoundary><MessageList /></ErrorBoundary>, () =>
+    claimReactMessageList(container, releaseMessageList));
+  return { root: handle.root };
+}
 
-  const root = createRoot(container);
-  root.render(<ErrorBoundary><MessageList /></ErrorBoundary>);
-  setMsgListMounted(true);
-
-  window.__socratesReleaseMsgListReact = () => {
-    try {
-      root.unmount();
-    } catch (error) {
-      reportSwallow(error, 'MessageList.releaseMsgListReact.unmount');
-    }
-    setMsgListMounted(false);
-    delete window.__socratesReleaseMsgListReact;
-  };
-
-  return { root };
+function releaseMessageList(): void {
+  try { rootSlot.destroy(); }
+  catch (error) { reportSwallow(error, 'MessageList.release'); }
 }
 
 export { MessageList };

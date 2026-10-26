@@ -1,12 +1,16 @@
 # Universal App 迁移路线（2026-10-06 生效）
 
+> 当前结构与剩余债务见 [UI 结构与迁移边界](../architecture/ui-structure.md)（2026-10-26）。
+> 第 9 节起为历史进展，保留当时的验证结果；已删除目录和工作流以当前结构为准。
+>
 > 核心原则：共享业务逻辑 + 共享 React Native UI，平台差异只留在最底层。
 > 不追求 100% 代码共用；80%～90% 共用 + 10% 平台适配是健康目标。
 
 ## 1. 冻结与基准
 
-- `mobile/` 已冻结（见 `mobile/FROZEN.md`）：不再做 Web/Mobile UI parity，只允许
-  release-blocking 的安全/crash/data-loss 修复。
+- `mobile/` 已于 2026-10-12 完全删除；`capacitor/` 于 2026-10-15 删除，不再作为迁移目标。
+- `apps/socrates-android/` 是 ADR 0021 明确允许的独立 Kotlin + Compose 客户端，
+  与 Universal App 并存，保持 `/api/v2` 协议兼容。
 - `frontend/` 是当前唯一的视觉/功能基准，直到本计划逐模块签收。
 - M4 继续：消除 `document.getElementById` / `window.xxx` / 全局事件桥，核心界面
   全部由 React 管理。`frontend/src/extensions/chipSync.ts` 是本轮增量范例
@@ -18,13 +22,13 @@
 |---|---|---|
 | `@socrates/contracts` | API 类型、SSE 事件名、Session/Message/ToolCall 协议 | 已有，持续扩展 |
 | `@socrates/core` | SSE 分帧（`consumeSseBuffer`/`dispatchChatSseFrame`）、历史裁剪、toolRun、streamPlayer | 已有 |
-| `@socrates/api` | API client（token 读写经 `KeyValueStore` 注入）、`startChatStream`/`readChatStream` | 已有（未提交，需合入） |
-| `@socrates/auth` | 用户会话 Zustand store、`restore`/`signOut`，storage 注入 | 本轮新增 |
+| `@socrates/api` | API client（token 读写经 `KeyValueStore` 注入）、`startChatStream`/`readChatStream` | 已有 |
+| `@socrates/auth` | 用户会话 Zustand store、`restore`/`signOut`，storage 注入 | 已有 |
 | `@socrates/chat` | session/chat Zustand（sessions/active/draft/status/delta/toolCall） | 已有 |
 | `@socrates/settings` | theme/language/haptics Zustand + storage hydrate | 已有 |
 | `@socrates/platform` | `KeyValueStore` + `PlatformServices` 接口 + memory 实现 | 已有 |
 | `@socrates/theme` | tokens + RN hex 映射（`palettesHex`），前后端同源 `frontend/src/ui/tokens.ts` | 已有 |
-| `@socrates/ui` | `Sidebar` / `ChatMessageList` / `Composer`（RN + Reanimated，light/dark） | 本轮对齐基准 |
+| `@socrates/ui` | `Sidebar` / `ChatMessageList` / `Composer`（RN + Reanimated，light/dark） | 已有，按模块验证基准 |
 
 禁止这些包依赖 DOM、`react-dom`、`localStorage`、`window`/`document`。
 平台差异只允许在 `apps/socrates/src/*.web.ts`、`*.android.ts`、
@@ -62,8 +66,7 @@ TipTap、tldraw、HTML/Viz、Mermaid、Three.js 暂时保留为 Web/局部 WebVi
 
 - **决定（round 16-5，2026-10-07）：不再做 Windows / macOS 原生目标**，
   发布范围收敛为 Android / Web / iOS。桌面需求由 Expo Web 导出承担
-  （`release-clients.yml` 的 “Windows release” 本就是 web bundle，
-  localStorage 持久化已可用）；`*.windows.ts` / `*.macos.ts` 适配文件保留
+  （旧 `release-clients.yml` 已删除，当前由 `universal-app-build.yml` 验证 Web 导出）；`*.windows.ts` / `*.macos.ts` 适配文件保留
   为休眠占位，不再投入，`storage.windows.ts` / `storage.macos.ts` 原定的
   Credential Locker / Keychain 适配随之作废。
 - 平台适配机制不变：`*.web.ts` / `*.android.ts` / `*.native.ts`（iOS 走
@@ -103,7 +106,8 @@ Agent / Tools
 
 ```text
 apps/
-  socrates/        # Universal App（Expo RN + Web + Android + Desktop 适配）
+  socrates/        # Universal App（Web / Android / iOS）
+  socrates-android/ # 独立 Kotlin + Compose Android 客户端（ADR 0021）
 packages/
   core/            # SSE/历史/toolRun/streamPlayer（纯函数）
   contracts/       # 跨端协议
@@ -116,7 +120,6 @@ packages/
   ui/              # Sidebar/MessageList/Composer（RN UI）
 server/            # 唯一 API 真源
 frontend/          # 基准，逐模块签收后缩减
-mobile/            # 冻结，仅安全/crash/data-loss 修复
 ```
 
 ## 8. 验证
@@ -125,7 +128,10 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
 - `cd apps/socrates && npm run typecheck`
 - `cd frontend && npm run lint`（含 M4 增量）+ `npm run test:unit` + `npm run build`
 - Web smoke：`cd apps/socrates && npm run export:web` + Chromium 看三件套
-- Android：CI `build-apk.yml` + 真机签收（返回键/键盘/安全区/网络切换）
+- Universal：`universal-app-build.yml` 的 web export + smoke；Android/iOS 另做真机签收
+  （返回键/键盘/安全区/网络切换）。
+- 独立原生 Android：`native-android-build.yml`；本地 `assembleDebug testDebugUnitTest lintDebug`，
+  有设备时再运行 `connectedDebugAndroidTest`。
 
 ## 9. 进展（第二轮，2026-10-06）
 

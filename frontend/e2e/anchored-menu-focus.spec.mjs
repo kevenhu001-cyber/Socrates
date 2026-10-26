@@ -16,7 +16,8 @@ test('account menu uses the shared overlay entrance anchored to its trigger edge
     const px = (raw, size) => (raw.endsWith('%') ? (Number.parseFloat(raw) / 100) * size : Number.parseFloat(raw));
     return {
       animationName: style.animationName,
-      animationDuration: style.animationDuration,
+      transitionProperty: style.transitionProperty,
+      transitionDuration: style.transitionDuration,
       placement: node.dataset.placement,
       align: node.dataset.align,
       originX: px(rawX, node.offsetWidth),
@@ -26,8 +27,9 @@ test('account menu uses the shared overlay entrance anchored to its trigger edge
     };
   });
 
-  expect(motion.animationName).toBe('ui-overlay-in');
-  expect(motion.animationDuration).toBe('0.18s');
+  expect(motion.animationName).toBe('none');
+  expect(motion.transitionProperty).toBe('opacity, transform');
+  expect(motion.transitionDuration).toBe('0.18s, 0.22s');
   expect(motion.placement).toBe('above');
   expect(motion.align).toBe('end');
   expect(motion.originX).toBeCloseTo(motion.width, 0);

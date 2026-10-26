@@ -7,7 +7,7 @@
  */
 
 import { StrictMode } from 'react';
-import { createRoot, hydrateRoot } from 'react-dom/client';
+import { hydrateOwnedRoot, mountOwnedRoot } from './ownedRoot';
 
 import { ErrorBoundary } from '../../ErrorBoundary';
 import type { MountSpec } from './registry';
@@ -27,12 +27,6 @@ import { handleComposerEscape, submitComposer } from '../../composer-input/lifec
 import { hydrateAttachmentChipsRows } from '../../attachments/AttachmentChipsRow';
 
 import { NewReplyPill, PrimaryButton } from './indicatorComponents';
-
-/* Module-level reference the registry's pill mount needs to capture. */
-export let pillRoot: import('react-dom/client').Root | null = null;
-export function setPillRoot(root: import('react-dom/client').Root | null): void {
-  pillRoot = root;
-}
 
 /* Portal helpers — lazily create a body-level host element when the
    page didn't ship one in index.html. */
@@ -69,32 +63,32 @@ export function mountRegistryList(): MountSpec[] {
        runs, so every root can subscribe during mount. */
     { hostId: 'msgList', label: 'msg-list', mount: () => mountMessageList().root !== null },
     { hostId: 'newReplyPill', label: 'new-reply-pill', mount: (host) => {
-      setPillRoot(hydrateRoot(host, <StrictMode><NewReplyPill host={host} /></StrictMode>));
+      hydrateOwnedRoot(host, 'new-reply-pill', <StrictMode><NewReplyPill host={host} /></StrictMode>);
     } },
     { hostId: 'composerPrimaryBtnContent', label: 'primary-button', mount: (host) => {
-      createRoot(host).render(<StrictMode><PrimaryButton /></StrictMode>);
+      mountOwnedRoot(host, 'primary-button', <StrictMode><PrimaryButton /></StrictMode>);
     } },
     /* 2. Overlays / modals / popovers */
     { hostId: 'cmdKOverlay', label: 'cmd-k',
-      mount: () => { void import('../../cmdk/CommandPalette').then((m) => m.hydrateCmdKOverlay()); } },
+      mount: () => import('../../cmdk/CommandPalette').then((m) => m.hydrateCmdKOverlay()) },
     { hostId: 'findBar', label: 'find-in-session',
-      mount: () => { void import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()); } },
+      mount: () => import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()) },
     { hostId: 'sidebarNav', label: 'sidebar-nav', mount: () => hydrateSidebarNav() },
     { hostId: 'recentsFilterChips', label: 'recents-filter-chips', mount: () => hydrateRecentsFilterChips() },
     { hostId: 'composerToolsMenu', label: 'composer-tools-menu',
-      mount: () => { void import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu()); } },
+      mount: () => import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu()) },
     /* The single composer shell owns one chips host; the registry mounts
        it once. */
     { hostId: 'composerAttachmentChips', label: 'attachment-chips',
       mount: () => { hydrateAttachmentChipsRows(); } },
     { hostId: 'moreNavPopover', label: 'more-popover',
-      mount: () => { void import('../../morePopover').then((m) => m.hydrateMorePopover()); } },
+      mount: () => import('../../morePopover').then((m) => m.hydrateMorePopover()) },
     { hostId: 'shareOverlay', label: 'share-modal',
-      mount: () => { void import('../../shareModal').then((m) => m.hydrateShareModal()); } },
+      mount: () => import('../../shareModal').then((m) => m.hydrateShareModal()) },
     { hostId: 'profileOverlay', label: 'profile-modal',
-      mount: () => { void import('../../profileModal').then((m) => m.hydrateProfileModal()); } },
+      mount: () => import('../../profileModal').then((m) => m.hydrateProfileModal()) },
     { hostId: 'usageOverlay', label: 'usage-modal',
-      mount: () => { void import('../../usageModal').then((m) => m.hydrateUsageModal()); } },
+      mount: () => import('../../usageModal').then((m) => m.hydrateUsageModal()) },
     /* 3. Sidebar chrome — one root owns the header and portaled user
        footer; they share the bridge snapshot (sidebar-chrome/mount.tsx). */
     { hostId: 'sidebarHeader', label: 'sidebar-chrome', mount: () => { mountSidebarChrome(); } },
@@ -110,22 +104,22 @@ export function mountRegistryList(): MountSpec[] {
     /* 5. Lazy portal roots */
     { hostId: 'storageModalReactRoot', label: 'storage-modal',
       ensureHost: (doc) => ensureBodyChild(doc, 'storageModalReactRoot'),
-      mount: () => { void import('../../storageModal').then((m) => m.mountStorageModal()); } },
+      mount: () => import('../../storageModal').then((m) => m.mountStorageModal()) },
     { hostId: 'cheatsheetReactRoot', label: 'cheatsheet',
       ensureHost: (doc) => ensureBodyChild(doc, 'cheatsheetReactRoot'),
-      mount: () => { void import('../../cheatsheet').then((m) => m.mountCheatsheet()); } },
+      mount: () => import('../../cheatsheet').then((m) => m.mountCheatsheet()) },
     { hostId: 'promptTemplatesReactRoot', label: 'prompt-templates',
       ensureHost: (doc) => ensureBodyChild(doc, 'promptTemplatesReactRoot'),
-      mount: () => { void import('../../promptTemplatesModal').then((m) => m.mountPromptTemplatesModal()); } },
+      mount: () => import('../../promptTemplatesModal').then((m) => m.mountPromptTemplatesModal()) },
     /* M4 step 4.5c — confirm dialog is React-owned. The static
        index.html #confirmDialog markup was removed; the mount spec
        lazily creates the body-level root the component renders into. */
     { hostId: 'confirmDialogReactRoot', label: 'confirm-dialog',
       ensureHost: (doc) => ensureBodyChild(doc, 'confirmDialogReactRoot'),
-      mount: () => { void import('../../confirm').then((m) => m.mountConfirmDialog()); } },
+      mount: () => import('../../confirm').then((m) => m.mountConfirmDialog()) },
     { hostId: 'chatConfigurationReactRoot', label: 'chat-configuration',
       ensureHost: (doc) => ensureBodyChild(doc, 'chatConfigurationReactRoot'),
-      mount: () => { void import('../../chat-configuration').then((m) => m.mountChatConfiguration()); } },
+      mount: () => import('../../chat-configuration').then((m) => m.mountChatConfiguration()) },
     /* 5. Lazy portal roots. The session list mounts into the existing
        `#recentsList` host (mountSessionList targets that id directly);
        the hostId must match it or the registry skips the spec and the
@@ -144,8 +138,8 @@ export function mountRegistryList(): MountSpec[] {
        lifecycle commands branch on the live surface, so the editor does not
        remount when the view flips. */
     { hostId: 'composerRoot', label: 'rich-composer', mount: (host) => {
-      void import('../../composer-input').then(({ RichComposer }) => {
-        createRoot(host).render(<ErrorBoundary><RichComposer
+      return import('../../composer-input').then(({ RichComposer }) => {
+        mountOwnedRoot(host, 'rich-composer', <ErrorBoundary><RichComposer
           placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
           onSubmit={() => submitComposer(legacyComposer)}
           onEscape={() => handleComposerEscape(legacyComposer)} /></ErrorBoundary>);
@@ -154,8 +148,8 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'workflowLayerReactRoot', label: 'workflow-layer',
       ensureHost: ensureWorkflowHost,
       mount: (host) => {
-        void import('../../extensions/WorkflowLayer').then(({ WorkflowLayer }) => {
-          createRoot(host).render(<ErrorBoundary><WorkflowLayer /></ErrorBoundary>);
+        return import('../../extensions/WorkflowLayer').then(({ WorkflowLayer }) => {
+          mountOwnedRoot(host, 'workflow-layer', <ErrorBoundary><WorkflowLayer /></ErrorBoundary>);
         });
       } },
 

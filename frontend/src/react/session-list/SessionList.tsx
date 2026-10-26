@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { installSessionListBridge, setCurrentSessionId, useSessionListSnapshot } from './sessionList.bridge';
@@ -83,13 +82,11 @@ const LIST_ID = 'recentsList';
 /** Mount React into the empty legacy-owned session-list host. Idempotent. */
 export function mountSessionList(): void {
   const container = document.getElementById(LIST_ID);
-  if (!container || hostIsMountedBy(container, 'session-list')) return;
-  installSessionListBridge();
-  const root = createRoot(container);
-  root.render(
+  if (!container) return;
+  mountOwnedRoot(container, 'session-list',
     <ErrorBoundary>
       <SessionListInner />
     </ErrorBoundary>,
+    installSessionListBridge,
   );
-  markHostMountedBy(container, 'session-list');
 }

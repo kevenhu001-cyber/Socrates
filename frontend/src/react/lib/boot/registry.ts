@@ -31,13 +31,15 @@
  *    decisions, rather than inspecting migration attributes in the DOM.
  */
 
-import { hostIsMounted, hostIsMountedBy as ownsHost, markHostMountedBy as markOwnership } from './ownership.ts';
+import { reportSwallow } from '../../../util/reportSwallow';
+import { clearHostMounted, hostIsMounted, hostIsMountedBy as ownsHost, markHostMountedBy as markOwnership } from './ownership.ts';
 
 export type EnsureHostFn = (document: Document) => HTMLElement | null;
 
 /**
  * Mount callback. Receives the host element. Return `false` when the host
- * intentionally remains legacy-owned; every other result records success.
+ * intentionally remains legacy-owned; a Promise reserves the host until it settles. Failures release the reservation
+ * so a later pass can retry; every other result records success.
  */
 export type MountFn = (host: HTMLElement) => unknown;
 
@@ -46,8 +48,7 @@ export interface MountSpec {
   hostId: string;
   /**
    * Stable ownership label. A label may be
-   * shared by equivalent hosts (for example both composer roots). It is what
-   * shared by equivalent roots.
+   * shared by equivalent hosts.
    */
   label: string;
   /**
@@ -63,6 +64,9 @@ export interface MountSpec {
 export interface MountRegistryResult {
   mounted: MountSpec[];
   skipped: MountSpec[];
+  /** Lazy mounts settle without unhandled rejections; inspect failed for diagnostics. */
+  pending: Promise<void>[];
+  failed: { spec: MountSpec; error: unknown }[];
 }
 
 export interface MountRegistryOptions {
@@ -81,6 +85,8 @@ export function runMountRegistry(
 ): MountRegistryResult {
   const mounted: MountSpec[] = [];
   const skipped: MountSpec[] = [];
+  const pending: Promise<void>[] = [];
+  const failed: MountRegistryResult['failed'] = [];
 
   for (const spec of mountRegistry) {
     if (options.labels && !options.labels.has(spec.label)) {
@@ -99,16 +105,38 @@ export function runMountRegistry(
       skipped.push(spec);
       continue;
     }
-    const result = spec.mount(host);
-    if (result === false) {
-      skipped.push(spec);
-      continue;
+    const fail = (error: unknown) => {
+      clearHostMounted(host);
+      failed.push({ spec, error });
+      reportSwallow(error, `react:mount:${spec.label}`);
+    };
+    try {
+      const result = spec.mount(host);
+      if (result === false) {
+        skipped.push(spec);
+        continue;
+      }
+      // Reserve lazy hosts so legacy writers and repeated boot passes cannot
+      // write into them while their React chunk is loading.
+      markHostMountedBy(host, spec.label);
+      if (result instanceof Promise) {
+        pending.push(result.then((value) => {
+          if (value === false) {
+            clearHostMounted(host);
+            skipped.push(spec);
+          } else {
+            mounted.push(spec);
+          }
+        }).catch(fail));
+      } else {
+        mounted.push(spec);
+      }
+    } catch (error) {
+      fail(error);
     }
-    if (spec.label !== 'msg-list') markHostMountedBy(host, spec.label);
-    mounted.push(spec);
   }
 
-  return { mounted, skipped };
+  return { mounted, skipped, pending, failed };
 }
 
 /**

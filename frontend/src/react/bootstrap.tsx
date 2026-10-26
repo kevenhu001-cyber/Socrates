@@ -1,15 +1,11 @@
-import type { Root } from 'react-dom/client';
-
 import { installChatRuntimeBridge } from './chatRuntime.bridge';
 import { configureMountRegistry, runMountRegistry } from './lib/boot/registry';
 import { mountRegistryList } from './lib/boot/specs';
-import { mountAssistantTurn, releaseAssistantTurns } from './tool-run';
-import type { LegacyChatMessage } from './types/domain';
+import { mountAssistantTurn, releaseAssistantTurns } from './tool-run/mountTurn';
+import { registerAssistantTurnRenderer } from '../ui/assistantTurnRenderer';
 
-export function bootstrapReactCompatibilityRuntime(): Root | null {
-  window.__socratesMountAssistantTurn = (container, message, options) =>
-    mountAssistantTurn(container, message as LegacyChatMessage, options);
-  window.__socratesReleaseAssistantTurns = releaseAssistantTurns;
+export function bootstrapReactCompatibilityRuntime(): void {
+  registerAssistantTurnRenderer({ mount: mountAssistantTurn, releaseAll: releaseAssistantTurns });
   installChatRuntimeBridge();
   for (const id of ['newReplyPill', 'composerPrimaryBtnContent']) {
     if (!document.getElementById(id)) throw new Error(`React mount target "#${id}" was not found.`);
@@ -25,10 +21,8 @@ export function bootstrapReactCompatibilityRuntime(): Root | null {
   runMountRegistry(document, { labels: new Set(['sidebar-nav']) });
   const runtime = window as Window & {
     __socratesMountReactCompatibility?: () => void;
-    __socratesPillRoot?: Root | null;
   };
   runtime.__socratesMountReactCompatibility = () => {
     runMountRegistry(document);
   };
-  return runtime.__socratesPillRoot ?? null;
 }

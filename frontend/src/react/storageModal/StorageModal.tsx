@@ -1,4 +1,4 @@
-import { createRoot, type Root } from 'react-dom/client';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 import React from 'react';
 import { installStorageBridge, useStorageSnapshot, useStorageDispatch } from './storageModal.bridge';
 
@@ -50,10 +50,9 @@ function StorageModal() {
   );
 }
 
-let root: Root | null = null;
+const rootSlot = createRootSlot('storage-modal');
 
 export function mountStorageModal(): void {
-  installStorageBridge();
   // Use portal or create dedicated container
   let container = document.getElementById('storageModalReactRoot');
   if (!container) {
@@ -61,10 +60,9 @@ export function mountStorageModal(): void {
     container.id = 'storageModalReactRoot';
     document.body.appendChild(container);
   }
-  if (!root) root = createRoot(container);
-  root.render(React.createElement(StorageModal));
+  rootSlot.mount(container, React.createElement(StorageModal), installStorageBridge);
 }
 
 export function unmountStorageModal(): void {
-  if (root) { root.unmount(); root = null; }
+  rootSlot.destroy();
 }

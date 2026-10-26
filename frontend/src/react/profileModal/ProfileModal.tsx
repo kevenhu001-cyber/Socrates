@@ -1,5 +1,5 @@
-import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
-import { createRoot, type Root } from 'react-dom/client';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import type { Root } from 'react-dom/client';
 
 import { installProfileBridge, useProfileDispatch, useProfileSnapshot } from './profileModal.bridge';
 import { ProfileAccountSection, ProfileSubscriptionSection } from './ProfileAccountSections';
@@ -45,24 +45,8 @@ export interface ProfileModalHandle {
   destroy: () => void;
 }
 
-let profileModalMounted = false;
-
 export function hydrateProfileModal(): ProfileModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
-  if (!overlay || profileModalMounted) return null;
-  profileModalMounted = true;
-
-  installProfileBridge();
-  const root = createRoot(overlay);
-  root.render(<ProfileModal />);
-  markHostMountedBy(overlay, 'profile-modal');
-  return {
-    overlay,
-    root,
-    destroy: () => {
-      root.unmount();
-      profileModalMounted = false;
-      clearHostMounted(overlay);
-    },
-  };
+  if (!overlay) return null;
+  return { overlay, ...mountOwnedRoot(overlay, 'profile-modal', <ProfileModal />, installProfileBridge) };
 }

@@ -1,4 +1,4 @@
-import { createRoot, type Root } from 'react-dom/client';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 import React from 'react';
 import {
   closePromptTemplatesModal,
@@ -40,20 +40,18 @@ function PromptTemplatesModal() {
   );
 }
 
-let root: Root | null = null;
+const rootSlot = createRootSlot('prompt-templates');
 
 export function mountPromptTemplatesModal(): void {
-  installPromptTemplatesBridge();
   let container = document.getElementById('promptTemplatesReactRoot');
   if (!container) {
     container = document.createElement('div');
     container.id = 'promptTemplatesReactRoot';
     document.body.appendChild(container);
   }
-  if (!root) root = createRoot(container);
-  root.render(React.createElement(PromptTemplatesModal));
+  rootSlot.mount(container, React.createElement(PromptTemplatesModal), installPromptTemplatesBridge);
 }
 
 export function unmountPromptTemplatesModal(): void {
-  if (root) { root.unmount(); root = null; }
+  rootSlot.destroy();
 }

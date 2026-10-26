@@ -1,6 +1,6 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
 
 import {
   installAttachmentsBridge,
@@ -78,31 +78,13 @@ export interface AttachmentChipsHandle {
  * Idempotent — second call returns the existing handle. The host keeps
  * its id / classes / CSS — React owns only its direct children (the
  * chip buttons). The legacy renderer in `src/attachments/render.js` is
- * suppressed by a data-attribute guard so the two never collide.
+ * suppressed by the ownership registry so the two never collide.
  */
+const rootSlot = createRootSlot('attachment-chips');
+
 export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
   const target = document.getElementById(CHIPS_ID);
-
-  installAttachmentsBridge();
-
-  const roots: Root[] = [];
-
-  if (target && !hostIsMountedBy(target, 'attachment-chips')) {
-    const root = createRoot(target);
-    root.render(<ChipsRow targetId={CHIPS_ID} />);
-    markHostMountedBy(target, 'attachment-chips');
-    roots.push(root);
-  }
-
-  if (roots.length === 0) return null;
-
-  return {
-    roots,
-    destroy: () => {
-      roots.forEach((root) => root.unmount());
-      if (target) {
-        clearHostMounted(target);
-      }
-    },
-  };
+  if (!target) { rootSlot.destroy(); return null; }
+  const handle = rootSlot.mount(target, <ChipsRow targetId={CHIPS_ID} />, installAttachmentsBridge);
+  return { roots: [handle.root], destroy: handle.destroy };
 }

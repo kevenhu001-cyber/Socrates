@@ -1,6 +1,7 @@
 import { setConversationChrome } from './topBarState.js';
 import { activateComposerSurface } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { animateSurfaceEntrance } from './motion/surface.ts';
 import { closeDetailSurface } from './detailSurface.ts';
 import { CORE_VIEW_IDS, MAIN_PAGE_IDS } from '../sidebar/navigation.destinations.ts';
 
@@ -57,7 +58,8 @@ export function activateMainView(viewId, doc) {
   if (!currentDocument || !VIEW_IDS.has(viewId)) return false;
   const target = currentDocument.getElementById(viewId);
   if (!target) return false;
-  if (currentDocument.documentElement.dataset.mainView !== viewId) closeDetailSurface(undefined, currentDocument, false);
+  const previousView = currentDocument.documentElement.dataset.mainView || getVisibleCoreView(currentDocument);
+  if (previousView !== viewId) closeDetailSurface(undefined, currentDocument, false);
   currentDocument.documentElement.dataset.mainView = viewId;
 
   setHidden(currentDocument, CORE_VIEW_IDS, true);
@@ -88,6 +90,7 @@ export function activateMainView(viewId, doc) {
   }
 
   setConversationChrome(CONVERSATION_CHROME_VIEWS.has(viewId), currentDocument);
+  animateSurfaceEntrance(target, previousView, WORKSPACE_PAGE_IDS.has(viewId));
   return true;
 }
 

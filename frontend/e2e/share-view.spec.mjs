@@ -236,3 +236,26 @@ test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
   expect(shareCalls.some((c) => c.startsWith('DELETE'))).toBe(true);
   expect(shareCalls.some((c) => /\/api\/(?:v2\/)?shares\//.test(c))).toBe(false);
 });
+
+test('late compatibility mounting preserves the read-only shared transcript', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page);
+  await mockShareRoute(page);
+  await page.goto('/?share=' + encodeURIComponent(SHARE_TOKEN));
+  await waitForAppShell(page);
+  await expect(page.locator('#msgList .msg')).toHaveCount(3);
+  await page.evaluate(() => {
+    window.__socratesMountReactCompatibility();
+    window.__socratesMountReactCompatibility();
+  });
+  const turn = page.locator('#msgList .msg.assistant').last();
+  await expect(turn.locator('.tool-inline')).toHaveCount(2);
+  await expect(page.locator('#msgList .msg')).toHaveCount(3);
+  await expect(page.locator('#composerRoot')).toBeHidden();
+  await expect(page.locator('#msgList .msg-toolbar')).toHaveCount(0);
+  await expect(page.locator('#sharedBanner')).toBeVisible();
+  await page.screenshot({ path: 'test-results/shared-transcript-readonly-mobile.png' });
+  expect(errors).toEqual([]);
+});

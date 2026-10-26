@@ -1,4 +1,4 @@
-import { createRoot, type Root } from 'react-dom/client';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 import React from 'react';
 import { installCheatsheetBridge, useCheatsheetSnapshot, useCheatsheetDispatch } from './cheatsheet.bridge';
 
@@ -71,20 +71,18 @@ function Cheatsheet() {
   );
 }
 
-let root: Root | null = null;
+const rootSlot = createRootSlot('cheatsheet');
 
 export function mountCheatsheet(): void {
-  installCheatsheetBridge();
   let container = document.getElementById('cheatsheetReactRoot');
   if (!container) {
     container = document.createElement('div');
     container.id = 'cheatsheetReactRoot';
     document.body.appendChild(container);
   }
-  if (!root) root = createRoot(container);
-  root.render(React.createElement(Cheatsheet));
+  rootSlot.mount(container, React.createElement(Cheatsheet), installCheatsheetBridge);
 }
 
 export function unmountCheatsheet(): void {
-  if (root) { root.unmount(); root = null; }
+  rootSlot.destroy();
 }

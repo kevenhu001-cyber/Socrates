@@ -1,5 +1,5 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import { createRoot, type Root } from 'react-dom/client';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import type { Root } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Icon } from '../../ui/Icon';
 
@@ -74,19 +74,5 @@ export interface SidebarNavHandle {
 export function hydrateSidebarNav(): SidebarNavHandle | null {
   const nav = document.getElementById(NAV_ID);
   if (!nav) return null;
-  if (hostIsMountedBy(nav, 'sidebar-nav')) {
-    throw new Error('Sidebar nav React runtime was initialized more than once.');
-  }
-
-  const root = createRoot(nav);
-  root.render(<SidebarNav />);
-  markHostMountedBy(nav, 'sidebar-nav');
-  return {
-    nav,
-    root,
-    destroy: () => {
-      root.unmount();
-      clearHostMounted(nav);
-    },
-  };
+  return { nav, ...mountOwnedRoot(nav, 'sidebar-nav', <SidebarNav />) };
 }

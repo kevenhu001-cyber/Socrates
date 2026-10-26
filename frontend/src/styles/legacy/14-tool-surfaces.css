@@ -287,28 +287,7 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   box-shadow:none;
   color:var(--tool-activity-text);
 }
-.msg.assistant .msg-body:has(.tool-inline) p,
-.msg.assistant .msg-body:has(.tool-inline) li,
-.msg.assistant .msg-body:has(.tool-run-group) p,
-.msg.assistant .msg-body:has(.tool-run-group) li,
-.msg.assistant .msg-body:has(.agent-tool-card) p,
-.msg.assistant .msg-body:has(.agent-tool-card) li,
-.msg.assistant .msg-body:has(.tool-inline) strong,
-.msg.assistant .msg-body:has(.tool-run-group) strong,
-.msg.assistant .msg-body:has(.agent-tool-card) strong{
-  color:var(--tool-activity-text);
-}
-.msg.assistant .msg-body:has(.tool-inline) a,
-.msg.assistant .msg-body:has(.tool-run-group) a,
-.msg.assistant .msg-body:has(.agent-tool-card) a{
-  color:var(--tool-activity-text);
-  text-decoration-color:var(--tool-activity-row);
-}
-.msg.assistant .msg-body:has(.tool-inline) a:hover,
-.msg.assistant .msg-body:has(.tool-run-group) a:hover,
-.msg.assistant .msg-body:has(.agent-tool-card) a:hover{
-  color:var(--tool-activity-row-hover);
-}
+/* Prose text and links are owned by features/tool-surfaces.css. */
 .msg.assistant .msg-body:has(.tool-inline) blockquote,
 .msg.assistant .msg-body:has(.tool-run-group) blockquote,
 .msg.assistant .msg-body:has(.agent-tool-card) blockquote{

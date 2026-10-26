@@ -75,3 +75,56 @@
     animation: none;
   }
 }
+
+/* Stateful primitives keep the same node during exit. Transitions reverse
+   from the current visual progress; endpoint keyframes used to flash fully
+   opaque when an opening menu was dismissed before its entrance finished. */
+.anchored-menu[data-anchored-menu],
+[data-ui-motion="dialog"][data-state] {
+  animation: none;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity var(--ui-duration-overlay) var(--ui-ease-out),
+              transform var(--ui-duration-normal) var(--ui-ease-out);
+}
+.anchored-menu[data-anchored-menu][data-starting-style],
+.anchored-menu[data-anchored-menu][data-ending-style] {
+  opacity: 0;
+  transform: translateY(-4px) scale(var(--ui-overlay-enter-scale));
+}
+.anchored-menu[data-anchored-menu][data-placement="above"][data-starting-style],
+.anchored-menu[data-anchored-menu][data-placement="above"][data-ending-style] {
+  transform: translateY(4px) scale(var(--ui-overlay-enter-scale));
+}
+[data-ui-motion="dialog"][data-starting-style],
+[data-ui-motion="dialog"][data-ending-style] {
+  opacity: 0;
+  transform: translateY(6px) scale(var(--ui-overlay-enter-scale));
+}
+.anchored-menu[data-anchored-menu][data-ending-style],
+[data-ui-motion="dialog"][data-ending-style] {
+  transition-duration: var(--ui-duration-exit);
+}
+[data-ui-motion="scrim"][data-state] {
+  animation: none;
+  opacity: 1;
+  transition: opacity var(--ui-duration-overlay) var(--ui-ease-out);
+}
+[data-ui-motion="scrim"][data-starting-style],
+[data-ui-motion="scrim"][data-ending-style] {
+  opacity: 0;
+}
+[data-ui-motion="scrim"][data-ending-style] {
+  transition-duration: var(--ui-duration-exit);
+}
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  .anchored-menu[data-anchored-menu],
+  .anchored-menu[data-anchored-menu]:is([data-starting-style], [data-ending-style]),
+  [data-ui-motion="dialog"][data-state],
+  [data-ui-motion="dialog"][data-state]:is([data-starting-style], [data-ending-style]),
+  [data-ui-motion="scrim"][data-state] {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}

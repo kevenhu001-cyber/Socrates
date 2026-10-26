@@ -1,6 +1,6 @@
 /** Compatibility modal for existing admin configuration entry points. */
 
-import { createRoot, type Root } from 'react-dom/client';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 
 import { installAdminBridge } from './admin.bridge';
 import { closeAdminModal } from './legacyApi';
@@ -63,19 +63,15 @@ function AdminModal() {
   );
 }
 
-let root: Root | null = null;
+const rootSlot = createRootSlot('admin-modal');
 
 export function mountAdminModal(): void {
   const container = document.getElementById('adminModal');
-  if (!container) return;
+  if (!container) { rootSlot.destroy(); return; }
 
-  installAdminBridge();
-  if (!root) root = createRoot(container);
-  root.render(<AdminModal />);
+  rootSlot.mount(container, <AdminModal />, installAdminBridge);
 }
 
 export function unmountAdminModal(): void {
-  if (!root) return;
-  root.unmount();
-  root = null;
+  rootSlot.destroy();
 }

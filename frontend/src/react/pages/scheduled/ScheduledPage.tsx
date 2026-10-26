@@ -1,4 +1,4 @@
-import { createRoot, type Root } from 'react-dom/client';
+import { createRootSlot } from '../../lib/boot/ownedRoot';
 import { useMemo, useState } from 'react';
 
 import { useScheduledStore } from './scheduled.store';
@@ -67,21 +67,15 @@ function ScheduledPage() {
   );
 }
 
-let root: Root | null = null;
+const rootSlot = createRootSlot('scheduled-page');
 
 export function mountScheduledPage(): void {
   const panel = document.getElementById(PANEL_ID);
-  if (!panel) return;
+  if (!panel) { rootSlot.destroy(); return; }
 
-  if (!root) {
-    root = createRoot(panel);
-  }
-  root.render(<ScheduledPage />);
+  rootSlot.mount(panel, <ScheduledPage />);
 }
 
 export function unmountScheduledPage(): void {
-  if (root) {
-    root.unmount();
-    root = null;
-  }
+  rootSlot.destroy();
 }

@@ -193,7 +193,8 @@ for (const variant of ['desktop', 'phone']) {
     await open(page, { title: 'Delete this draft?', msg: 'This action removes the selected draft.', danger: true });
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toBeVisible();
-    await expect(dialog).toHaveCSS('animation-name', 'ui-overlay-in');
+    await expect(dialog).toHaveCSS('animation-name', 'none');
+    await expect(dialog).toHaveCSS('transition-property', 'opacity, transform');
     await dialog.evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished)));
     await expect(dialog).toBeInViewport();
     await page.screenshot({ path: `test-results/confirm-dialog-${encodeURIComponent(variant)}.png` });

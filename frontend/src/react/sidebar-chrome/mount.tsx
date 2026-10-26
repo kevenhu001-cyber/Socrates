@@ -3,31 +3,38 @@
    portaled into its own static host element. One reconciliation tree,
    one bridge install, two DOM hosts. */
 
-import { createRoot } from 'react-dom/client';
 import { createPortal } from 'react-dom';
 
-import { markHostMountedBy } from '../lib/boot/ownership';
+import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarFooter } from './SidebarFooter';
 import { RecentsHeader } from './RecentsHeader';
 import { installSidebarChromeBridge } from './sidebarChrome.bridge';
 
+const rootSlot = createRootSlot('sidebar-chrome');
+let portalHosts: { footer: HTMLElement; recents: HTMLElement | null } | null = null;
+
 export function mountSidebarChrome(): void {
   const headHost = document.getElementById('sidebarHeader');
   const footHost = document.getElementById('sidebarUserRow');
   const recentsHost = document.querySelector<HTMLElement>('#recentsPanel .recents-header');
-  if (!headHost || !footHost) return;
-  installSidebarChromeBridge();
-  /* createPortal appends into the host — unlike createRoot().render() it
-     does not clear the legacy fallback markup first, so empty it here. */
-  footHost.replaceChildren();
-  recentsHost?.replaceChildren();
-  createRoot(headHost).render(
+  if (!headHost || !footHost) { rootSlot.destroy(); portalHosts = null; return; }
+  if (portalHosts && (portalHosts.footer !== footHost || portalHosts.recents !== recentsHost)) rootSlot.destroy();
+  portalHosts = { footer: footHost, recents: recentsHost };
+  rootSlot.mount(headHost,
     <>
       <SidebarHeader />
       {createPortal(<SidebarFooter />, footHost)}
       {recentsHost ? createPortal(<RecentsHeader />, recentsHost) : null}
     </>,
+    () => {
+      installSidebarChromeBridge();
+      // Portals append, so remove fallback markup only on the first mount.
+      footHost.replaceChildren();
+      recentsHost?.replaceChildren();
+      markHostMountedBy(footHost, 'sidebar-chrome');
+      return () => clearHostMounted(footHost);
+    },
   );
-  markHostMountedBy(footHost, 'sidebar-chrome');
 }

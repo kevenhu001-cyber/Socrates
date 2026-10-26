@@ -8,23 +8,22 @@ import { DESTINATIONS, isWorkspacePage, type WorkspacePage } from '../../../side
 
 export function mountWorkspacePage(page: WorkspacePage): void {
   if (!isWorkspacePage(page)) return;
-  loadPage(DESTINATIONS[page].host, async () => {
+  void loadPage(DESTINATIONS[page].host, async () => {
     const { mountWorkspacePage: mount } = await import('../../pages/workspace/WorkspacePage');
-    mount(page);
+    return () => mount(page);
   });
 }
 
 export function mountScheduledPage(afterMount?: () => void): void {
-  loadPage('scheduledPanel', async () => {
+  void loadPage('scheduledPanel', async () => {
     const { mountScheduledPage: mount } = await import('../../pages/scheduled/ScheduledPage');
-    mount();
-    afterMount?.();
-  });
+    return () => mount();
+  }, afterMount);
 }
 
 export function mountAdminPage(): void {
-  loadPage('adminPanel', async () => {
+  void loadPage('adminPanel', async () => {
     const { mountAdminPage: mount } = await import('../../adminModal/AdminPage');
-    mount();
+    return () => mount();
   });
 }

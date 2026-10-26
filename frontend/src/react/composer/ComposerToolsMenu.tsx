@@ -1,5 +1,5 @@
-import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
-import { createRoot, type Root } from 'react-dom/client';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import type { Root } from 'react-dom/client';
 
 import {
   getActiveTemplateExtensionKey,
@@ -36,27 +36,8 @@ export interface ComposerToolsHandle {
   destroy: () => void;
 }
 
-let composerToolsMenuMounted = false;
-
 export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
   const menu = document.getElementById(MENU_ID);
   if (!menu) return null;
-  /* The registry marks the host at dispatch time, before this lazy import
-     resolves, so a module flag prevents duplicate React roots. */
-  if (composerToolsMenuMounted) return null;
-  composerToolsMenuMounted = true;
-
-  installComposerToolsBridge();
-  const root = createRoot(menu);
-  root.render(<ComposerToolsMenu />);
-  markHostMountedBy(menu, 'composer-tools-menu');
-  return {
-    menu,
-    root,
-    destroy: () => {
-      root.unmount();
-      composerToolsMenuMounted = false;
-      clearHostMounted(menu);
-    },
-  };
+  return { menu, ...mountOwnedRoot(menu, 'composer-tools-menu', <ComposerToolsMenu />, installComposerToolsBridge) };
 }

@@ -44,6 +44,7 @@
 | Guard | Enforces |
 |---|---|
 | `check-react-globals.mjs` | React components read the store through `store/index.ts` hooks, not `window.stateStore` |
+| `check-react-roots.mjs` | React root creation and hydration stay in `react/lib/boot/ownedRoot.ts`; retired transcript mount globals cannot return. Includes `lint:react-roots` and a shrink-only `--update` baseline |
 | `check-css-debt.mjs` | `!important` / hex colors / literal radii / stacked IDs stay at or below their frozen counts |
 | `check-button-sizes.mjs` | Interactive controls reach the size ladder (`--ui-control-sm` 32 / `md` 40 / `touch` 44) instead of a literal px height; off-ladder count stays at or below its baseline (also `lint:button-sizes`) |
 | `check-z-index.mjs` | Live sheets use the `--ui-z-*` rungs (20/30/40/80/90/200/400/1600) instead of literal `z-index` ≥ 10 (local 0–9 allowed); off-token count stays at or below its baseline (also `lint:z-index`) |

@@ -373,12 +373,12 @@ async function mountGeoGebra(spec, stage) {
 async function mountWhiteboard(spec, stage) {
   tldrawPromise ||= Promise.all([
     import('react'),
-    import('react-dom/client'),
+    import('../react/lib/boot/ownedRoot.ts'),
     import('tldraw'),
+    import('@tldraw/assets/imports.vite'),
     import('tldraw/tldraw.css'),
-  ]);
-  const [React, ReactDOM, tldraw] = await tldrawPromise;
-  const root = ReactDOM.createRoot(stage);
+  ]).catch((error) => { tldrawPromise = null; throw error; });
+  const [React, rootRuntime, tldraw, assets] = await tldrawPromise;
   const seeds = spec.payload.nodes || spec.payload.items || [];
   const onMount = (editor) => {
     const shapes = seeds.slice(0, 30).map((item, index) => ({
@@ -393,12 +393,13 @@ async function mountWhiteboard(spec, stage) {
       editor.zoomToFit({ animation: { duration: 240 } });
     }
   };
-  root.render(React.createElement(tldraw.Tldraw, {
+  const root = rootRuntime.mountOwnedRoot(stage, 'whiteboard', React.createElement(tldraw.Tldraw, {
     persistenceKey: `socrates-${String(spec.title || 'whiteboard').replace(/\W+/g, '-').toLowerCase()}`,
     inferDarkMode: true,
+    assetUrls: assets.getAssetUrlsByImport(),
     onMount,
   }));
-  return { handled: true, chart: null, cleanup() { root.unmount(); } };
+  return { handled: true, chart: null, cleanup() { root.destroy(); } };
 }
 
 /**

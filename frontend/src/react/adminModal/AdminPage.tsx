@@ -1,6 +1,6 @@
 /** The standalone /admin operator console page. */
 
-import { createRoot, type Root } from 'react-dom/client';
+import { createRootSlot } from '../lib/boot/ownedRoot';
 
 import { installAdminBridge } from './admin.bridge';
 import { EmbeddingProviderSection } from './EmbeddingProviderSection';
@@ -49,19 +49,15 @@ function AdminPage() {
   );
 }
 
-let root: Root | null = null;
+const rootSlot = createRootSlot('admin-page');
 
 export function mountAdminPage(): void {
   const container = document.getElementById('adminPanel');
-  if (!container) return;
+  if (!container) { rootSlot.destroy(); return; }
 
-  installAdminBridge();
-  if (!root) root = createRoot(container);
-  root.render(<AdminPage />);
+  rootSlot.mount(container, <AdminPage />, installAdminBridge);
 }
 
 export function unmountAdminPage(): void {
-  if (!root) return;
-  root.unmount();
-  root = null;
+  rootSlot.destroy();
 }

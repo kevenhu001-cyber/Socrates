@@ -1,27 +1,10 @@
-/**
- * react/tool-run/mountTurn.tsx — imperative entry point for React-free surfaces.
- *
- * The read-only share view renders `#msgList` itself: `ui/share.js` sets
- * `window.__socratesShareMsgListTakeover` so `mountMessageList` never runs, and
- * fills it with DOM strings. Its tool rows used to be another copy of the
- * layout rule (rebuildAssistantHtmlWithInlineTools over the projection's
- * strings, or the rows baked into the stored HTML). This hands one message to
- * the same declarative renderer the chat uses, in a root of its own, with no
- * retry/approval affordances.
- *
- * Both globals are published from react/bootstrap.tsx, which main.js calls in
- * its module body — before auth/boot.js's `?share=` branch can reach its first
- * fetch. The legacy caller still checks for them and keeps its own fallback, so
- * a React runtime that never came up degrades to prose instead of a blank turn.
- */
-import { createRoot, type Root } from 'react-dom/client';
-
+/** Independent read-only tool turns share the ordinary root lifecycle. */
+import { createRootGroup } from '../lib/boot/ownedRoot';
 import { AssistantTurn } from './AssistantTurn.js';
 import { hasTurnStructure } from './toolRunModel.js';
 import type { LegacyChatMessage } from '../types/domain';
 
-/** Containers this module has taken over, so a re-render can release them. */
-const ROOTS = new Map<Element, Root>();
+const roots = createRootGroup('assistant-turn');
 
 export interface MountAssistantTurnOptions {
   /** Share / replay: hides Retry and approval. Default true here. */
@@ -37,39 +20,22 @@ export interface MountAssistantTurnOptions {
  *   caller should keep its own markup rather than show an answer with no rows.
  */
 export function mountAssistantTurn(
-  container: Element,
+  container: HTMLElement,
   message: LegacyChatMessage,
   options: MountAssistantTurnOptions = {},
 ): boolean {
   const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
-  if (!hasTurnStructure(rawText, calls)) return false;
-
-  const readOnly = options.readOnly !== false;
-  const node = <AssistantTurn message={message} readOnly={readOnly} />;
-  const existing = ROOTS.get(container);
-  if (existing) {
-    existing.render(node);
-    return true;
+  if (!hasTurnStructure(rawText, calls)) {
+    // The caller may now write fallback markup into this same host.
+    roots.release(container);
+    return false;
   }
-  const root = createRoot(container);
-  ROOTS.set(container, root);
-  try {
-    root.render(node);
-  } catch (error) {
-    /* A turn that cannot render must not take the rest of the page with it:
-       drop the root and let the caller fall back to its own markup. */
-    ROOTS.delete(container);
-    try { root.unmount(); } catch (_) { /* partially mounted */ }
-    throw error;
-  }
+  roots.render(container, <AssistantTurn message={message} readOnly={options.readOnly !== false} />);
   return true;
 }
 
-/** Release every container — call before the host wipes the list it owns. */
+/** Release the roots before their legacy parent clears its child containers. */
 export function releaseAssistantTurns(): void {
-  for (const root of ROOTS.values()) {
-    try { root.unmount(); } catch (_) { /* already gone */ }
-  }
-  ROOTS.clear();
+  roots.releaseAll();
 }

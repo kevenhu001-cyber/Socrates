@@ -1,5 +1,5 @@
-import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
-import { createRoot, type Root } from 'react-dom/client';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import type { Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway.ts';
 import {
@@ -50,28 +50,8 @@ export interface UsageModalHandle {
   destroy: () => void;
 }
 
-let usageModalMounted = false;
-
 export function hydrateUsageModal(): UsageModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  /* See hydrateCmdKOverlay — the registry marks the host at dispatch time,
-     before this lazy import resolves, so a module flag is the guard. */
-  if (usageModalMounted) return null;
-  usageModalMounted = true;
-
-  installUsageBridge();
-
-  const root = createRoot(overlay);
-  root.render(<UsageModal />);
-  markHostMountedBy(overlay, 'usage-modal');
-  return {
-    overlay,
-    root,
-    destroy: () => {
-      root.unmount();
-      usageModalMounted = false;
-      clearHostMounted(overlay);
-    },
-  };
+  return { overlay, ...mountOwnedRoot(overlay, 'usage-modal', <UsageModal />, installUsageBridge) };
 }

@@ -273,3 +273,31 @@ test('streaming bubble is removed at finish and React renders the finalized entr
   await expect(page.locator('[data-client-id^="msg-"].msg.assistant .msg-body')).toContainText('stream-final');
   await expect(page.locator('[data-client-id^="msg-"].msg.assistant .msg-toolbar button.msg-toolbar-btn[aria-label="Copy"]')).toHaveCount(1);
 });
+
+test('replacing the transcript host remounts its current messages and keeps later updates live', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.__testActivateMainView('chatView');
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.addMessage('user', 'Transcript survives host replacement.');
+  });
+  await expect(page.locator('#msgList .msg-body').first()).toContainText('Transcript survives host replacement.');
+  await page.evaluate(() => {
+    const host = document.getElementById('msgList');
+    host.replaceWith(host.cloneNode(false));
+    window.__socratesMountReactCompatibility();
+    window.__socratesMountReactCompatibility();
+  });
+  await expect(page.locator('#msgList .msg.user')).toHaveCount(1);
+  await expect(page.locator('#msgList')).toContainText('Transcript survives host replacement.');
+  await page.evaluate(() => window.addMessage('user', 'Updates still reach the replacement.'));
+  await expect(page.locator('#msgList .msg.user')).toHaveCount(2);
+  await expect(page.locator('#msgList')).toContainText('Updates still reach the replacement.');
+  expect(errors).toEqual([]);
+  await page.screenshot({ path: 'test-results/transcript-host-replacement.png' });
+});

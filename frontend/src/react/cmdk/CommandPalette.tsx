@@ -1,6 +1,6 @@
-import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
+import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useEffect, useRef } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
 
 import { installCmdKBridge } from './cmdk.bridge';
 import {
@@ -87,37 +87,15 @@ export interface CmdKReactRootHandle {
 }
 
 /**
- * Hydrates the legacy `#cmdKOverlay` element with React. Idempotent — a
- * second call returns the existing handle. The overlay element itself is
+ * Hydrates the legacy `#cmdKOverlay` element with React. Idempotent — repeated calls reuse the host root. The overlay element itself is
  * preserved (same id, same classes, same `onclick` contract for the
  * backdrop-click dismissal) — React owns only `#cmdKModal`'s contents.
  *
  * Callers claim the overlay through the module-private ownership registry,
  * so the legacy renderer becomes a no-op the moment React takes over.
  */
-let cmdKMounted = false;
-
 export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  /* The mount registry marks the host at dispatch time — before this lazy
-     import resolves — so a module-level flag is the real re-entry guard
-     (same pattern as mountConfirmDialog). */
-  if (cmdKMounted) return null;
-  cmdKMounted = true;
-
-  installCmdKBridge();
-
-  const root = createRoot(overlay);
-  root.render(<CommandPalette />);
-  markHostMountedBy(overlay, 'cmd-k');
-  return {
-    overlay,
-    root,
-    destroy: () => {
-      root.unmount();
-      cmdKMounted = false;
-      clearHostMounted(overlay);
-    },
-  };
+  return { overlay, ...mountOwnedRoot(overlay, 'cmd-k', <CommandPalette />, installCmdKBridge) };
 }

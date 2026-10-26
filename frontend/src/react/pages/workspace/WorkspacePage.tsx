@@ -1,4 +1,4 @@
-import { createRoot, type Root } from 'react-dom/client';
+import { createRootSlot } from '../../lib/boot/ownedRoot';
 import { useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.hooks';
 import { WorkspaceLoadingView } from './WorkspaceLoadingView';
 import { LibraryView } from './LibraryView';
@@ -30,26 +30,26 @@ function WorkspacePage({ page }: { page: WorkspacePageKey }) {
 /*  Mount / unmount helpers                                            */
 /* ------------------------------------------------------------------ */
 
-const roots = new Map<WorkspacePageKey, Root>();
+const roots = new Map<WorkspacePageKey, ReturnType<typeof createRootSlot>>();
 
 export function mountWorkspacePage(page: WorkspacePageKey): void {
   if (!isWorkspacePage(page)) return;
   const panelId = DESTINATIONS[page].host;
   const panel = document.getElementById(panelId);
-  if (!panel) return;
+  if (!panel) { unmountWorkspacePage(page); return; }
 
   let root = roots.get(page);
   if (!root) {
-    root = createRoot(panel);
+    root = createRootSlot('workspace-page');
     roots.set(page, root);
   }
-  root.render(<WorkspacePage page={page} />);
+  root.mount(panel, <WorkspacePage page={page} />);
 }
 
 export function unmountWorkspacePage(page: WorkspacePageKey): void {
   const root = roots.get(page);
   if (root) {
-    root.unmount();
+    root.destroy();
     roots.delete(page);
   }
 }

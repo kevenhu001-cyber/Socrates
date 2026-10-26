@@ -1,21 +1,59 @@
-/* Lazy page loader — shared by the mount registry specs and the
-   sidebar nav's page-mount entry points (pageMounts.ts).
+import { reportSwallow } from '../../../util/reportSwallow';
+import { hasOwnedRoot } from './ownedRoot';
 
-   The first call for a host shows a lightweight "Loading…" placeholder
-   with aria-busy while the page chunk is imported; the hostId is then
-   recorded so repeat navigations skip the placeholder. The load callback
-   itself runs on every call — page mount functions are idempotent. */
+type PageMount = (host: HTMLElement) => void;
+interface PageState {
+  loaded: boolean;
+  pending?: Promise<boolean>;
+}
+const pages = new WeakMap<HTMLElement, PageState>();
 
-const loadedPages = new Set<string>();
-
-export function loadPage(hostId: string, load: () => Promise<void>): void {
+/** Import once per in-flight host. Resolve against the captured DOM node so
+ * a late import cannot mount into a replacement panel or overwrite its UI. */
+export function loadPage(
+  hostId: string,
+  load: () => Promise<PageMount>,
+  afterMount?: () => void | Promise<void>,
+): Promise<boolean> {
   const host = document.getElementById(hostId);
-  if (host && !loadedPages.has(hostId)) {
-    host.classList.remove('visually-hidden');
-    host.innerHTML = '<div class="workspace-chunk-loading" role="status"><span class="workspace-chunk-loading-label shimmer-text">Loading…</span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer"></span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer workspace-chunk-loading-line-short"></span></div>';
-    host.setAttribute('aria-busy', 'true');
+  if (!host) return Promise.resolve(false);
+  let state = pages.get(host);
+  if (!state) {
+    state = { loaded: hasOwnedRoot(host) };
+    pages.set(host, state);
   }
-  void load().then(() => loadedPages.add(hostId)).catch(() => {
-    if (host) host.textContent = 'Could not load this page. Please try again.';
-  }).finally(() => host?.removeAttribute('aria-busy'));
+  const current = state;
+  const isCurrentHost = () => document.getElementById(hostId) === host;
+  if (!current.pending) {
+    if (!current.loaded) {
+      host.classList.remove('visually-hidden');
+      host.innerHTML = '<div class="workspace-chunk-loading" role="status"><span class="workspace-chunk-loading-label shimmer-text">Loading…</span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer"></span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer workspace-chunk-loading-line-short"></span></div>';
+      host.setAttribute('aria-busy', 'true');
+    }
+    current.pending = Promise.resolve().then(load).then((mount) => {
+      if (!isCurrentHost()) return false;
+      mount(host);
+      current.loaded = true;
+      return true;
+    }).catch((error) => {
+      reportSwallow(error, `react:page:${hostId}`);
+      // Never replace an already-mounted React tree with an error string.
+      if (isCurrentHost() && !current.loaded && !hasOwnedRoot(host)) {
+        host.textContent = 'Could not load this page. Please try again.';
+      }
+      return false;
+    }).finally(() => {
+      host.removeAttribute('aria-busy');
+      current.pending = undefined;
+    });
+  }
+  const pending = current.pending;
+  if (!afterMount) return pending;
+  return pending.then(async (loaded) => {
+    if (loaded && isCurrentHost()) await afterMount();
+    return loaded;
+  }).catch((error) => {
+    reportSwallow(error, `react:page:${hostId}:after-mount`);
+    return false;
+  });
 }

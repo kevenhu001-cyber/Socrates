@@ -23,9 +23,9 @@ export function FoundationDialog({ id, open, onOpenChange, overlayClassName, cla
 
   return <Dialog.Root open={open} onOpenChange={onOpenChange}>
     <Dialog.Portal>
-      <Dialog.Backdrop id={id} className={overlayClassName} data-state={open ? 'open' : 'closing'}
+      <Dialog.Backdrop data-ui-motion="scrim" id={id} className={overlayClassName} data-state={open ? 'open' : 'closing'}
         inert={!open} style={{ zIndex: 'var(--ui-z-modal)' }}>
-        <Dialog.Popup role={role} aria-modal="true" className={className} initialFocus={initialFocus} finalFocus={finalFocus}
+        <Dialog.Popup data-ui-motion="dialog" role={role} aria-modal="true" className={className} initialFocus={initialFocus} finalFocus={finalFocus}
           data-state={open ? 'open' : 'closing'}
           style={{ maxHeight: 'calc(100dvh - 2 * var(--ui-space-lg))', overflowY: 'auto' }}>
           {children}

@@ -1,5 +1,4 @@
 import { useEffect, useReducer, useSyncExternalStore } from 'react';
-import { createRoot } from 'react-dom/client';
 
 import type { AgentRunEvent } from '../../extensions/types';
 import {
@@ -109,10 +108,4 @@ export function ExploreStepper({ event: supplied }: { event?: AgentRunEvent } = 
       </ol>
     </div>
   );
-}
-
-export function mountExploreStepper(host: HTMLElement): () => void {
-  const root = createRoot(host);
-  root.render(<ExploreStepper />);
-  return () => root.unmount();
 }
