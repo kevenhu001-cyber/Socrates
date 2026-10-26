@@ -70,6 +70,6 @@ export function installWidgetRuntime() {
   try {
     window.renderMistakes = mistakeBook.renderMistakes;
     window.updateMistakesBadge = mistakeBook.updateMistakesBadge;
-  } catch (_) {}
+  } catch (_) { /* empty-catch: intentional — window assignment in headless environments */ }
   return mistakeBook;
 }

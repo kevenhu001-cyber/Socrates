@@ -31,6 +31,7 @@ const DANGEROUS_URL_RE = /^\s*(?:javascript|vbscript|file|filesystem|data\s*:\s*
 
 export function sanitizeUrl(url: unknown): string {
   if (typeof url !== 'string') return '';
+  // eslint-disable-next-line no-control-regex
   const trimmed = url.replace(/^[\u0000-\u0020]+/, '');
   if (DANGEROUS_URL_RE.test(trimmed)) return '#';
   if (SAFE_URL_RE.test(trimmed)) return url;

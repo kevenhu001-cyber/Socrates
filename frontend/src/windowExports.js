@@ -287,7 +287,7 @@ if (typeof window.setLang === 'function') {
   // Re-affirm in this bridge file (no-op if already set).
 } else {
   // Defensive fallback if i18n.js refactor changes the binding point.
-  window.setLang = function(){};
+  window.setLang = function () { /* noop */ };
 }
 
 // Note: refreshApiConfig / handleRefreshProductInfo are still defined
@@ -350,7 +350,7 @@ function _loadExamModule() {
   if (!_examImport) {
     _examImport = import('./exam.js').then(function (m) {
       window.__examModule = m;
-      try { m.mountExamListeners(); } catch (_) {}
+      try { m.mountExamListeners(); } catch (_) { /* empty-catch: intentional — mounting listeners is idempotent and non-fatal */ }
       return m;
     });
     _examImport.catch(function (err) {

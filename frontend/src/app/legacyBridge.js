@@ -63,9 +63,9 @@ import { setRecentsSearch } from '../ui/recentsView.js';
 import { syncEffortUI } from '../ui/effortPicker.js';
 
 /* Diagnostic entry points (noop until startSession installs per-session closures). */
-window.cancelDiagnostic = function () {};
-window.retryDiagnostic = function () {};
-window.useBuiltinDiagnostic = function () {};
+window.cancelDiagnostic = function () { /* noop */ };
+window.retryDiagnostic = function () { /* noop */ };
+window.useBuiltinDiagnostic = function () { /* noop */ };
 
 /* No max_tokens cap — backend defaults to its model max when omitted. */
 var MAX_TOKENS_CHAT = undefined;

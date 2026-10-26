@@ -127,6 +127,7 @@ export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): P
  * The body is untyped by default (`T = any`) because the ~60 legacy call
  * sites read ad-hoc shapes from it; typed callers pass an explicit `T`.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function apiFetch<T = any>(path: string, opts: ApiRequestOptions = {}): Promise<T> {
   const request = prepareApiRequest(path, opts, { cacheBustGet: true });
   const userSignal = opts.signal || null;

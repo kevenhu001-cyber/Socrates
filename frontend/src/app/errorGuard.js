@@ -89,7 +89,7 @@ export function installGlobalErrorGuard() {
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
         navigator.sendBeacon(CLIENT_ERROR_PATH, new Blob([data], { type: 'application/json' }));
       } else if (typeof fetch !== 'undefined') {
-        fetch(CLIENT_ERROR_PATH, { method: 'POST', body: data, keepalive: true }).catch(function(){});
+        fetch(CLIENT_ERROR_PATH, { method: 'POST', body: data, keepalive: true }).catch(function () { /* noop: beacon fallback error */ });
       }
     } catch (_) { /* swallow */ }
   }
@@ -102,15 +102,15 @@ export function installGlobalErrorGuard() {
        a client-error report; a one-line console note keeps it greppable. */
     if (label === 'unhandledrejection') {
       var sig = '';
-      try { sig = String((payload && payload.reason != null ? payload.reason : '') + ' ' + ((payload && payload.message) || payload)).toLowerCase(); } catch (_) {}
+      try { sig = String((payload && payload.reason != null ? payload.reason : '') + ' ' + ((payload && payload.message) || payload)).toLowerCase(); } catch (_) { /* empty-catch: intentional — safe stringify */ }
       if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(sig)) {
-        try { console.log('[global-error] ignored expected turn abort:', sig.slice(0, 120)); } catch (_) {}
+        try { console.log('[global-error] ignored expected turn abort:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
         return;
       }
       var nm = '';
-      try { nm = String(payload && payload.name || ''); } catch (_) {}
+      try { nm = String(payload && payload.name || ''); } catch (_) { /* empty-catch: intentional — safe stringify */ }
       if (nm === 'AbortError' && /abort/i.test(sig)) {
-        try { console.log('[global-error] ignored AbortError:', sig.slice(0, 120)); } catch (_) {}
+        try { console.log('[global-error] ignored AbortError:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
         return;
       }
     }

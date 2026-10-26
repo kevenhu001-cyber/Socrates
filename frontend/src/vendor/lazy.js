@@ -113,7 +113,7 @@ export function ensureKatex() {
       ensureKatexCss();
       const pending = Array.from(katexReadyListeners);
       katexReadyListeners.clear();
-      pending.forEach((cb) => { try { cb(); } catch (_) { /* ignore */ } });
+      pending.forEach((cb) => { try { cb(); } catch (_) { /* empty-catch: intentional — subscriber callback errors must not break caller */ } });
       return katex;
     });
     /* A rejected loader must not poison the cache for the rest of the page
@@ -150,8 +150,8 @@ function ensureKatexCss() {
 
 export function onKatexReady(callback) {
   if (w && w.katex) {
-    try { callback(); } catch (_) { /* ignore */ }
-    return () => {};
+    try { callback(); } catch (_) { /* empty-catch: intentional — subscriber callback errors must not break caller */ }
+    return () => { /* noop */ };
   }
   katexReadyListeners.add(callback);
   return () => { katexReadyListeners.delete(callback); };

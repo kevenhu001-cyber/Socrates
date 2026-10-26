@@ -323,14 +323,14 @@ function abortHandleForXhr(entry, xhr) {
 }
 
 async function loadInlineImageData(file) {
-  const progress = () => {}; // Network progress owns the displayed percentage.
+  const progress = () => { /* noop: network progress owns the displayed percentage */ };
   try {
     if (file.size > MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL) {
       return await compressImageFile(file, progress);
     }
     const read = await readFileAsDataUrl(file, progress);
     return read.dataUrl;
-  } catch (_) {
+  } catch (_) { /* empty-catch: intentional — inline image data fallback */
     return '';
   }
 }

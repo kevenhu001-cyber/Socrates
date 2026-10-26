@@ -83,7 +83,7 @@ export var PROMPT_TEMPLATES_KEY="socrates-prompt-templates";
 export function loadPromptTemplates(){
   /* Throttled background pull — keeps the local cache fresh for the slash
      palette and the modal without making callers wait on the network. */
-  try{syncPromptTemplates();}catch(_){}
+  try { syncPromptTemplates(); } catch (_) { /* empty-catch: intentional — background sync failure is non-fatal */ }
   var custom;
   try{
     var raw=localStorage.getItem(PROMPT_TEMPLATES_KEY);
@@ -102,7 +102,7 @@ export function savePromptTemplates(customs){
   try{
     var persistable=(customs||[]).filter(function(t){return t&&!t.isBuiltin;});
     localStorage.setItem(PROMPT_TEMPLATES_KEY,JSON.stringify(persistable));
-  }catch(_){}
+  } catch (_) { /* empty-catch: intentional — localStorage may be full or blocked */ }
 }
 
 export function findTemplateByShortcut(s){
@@ -191,7 +191,7 @@ export function syncPromptTemplates(force){
           .catch(function(){ /* stays local-only until next sync */ });
       })).then(function(){
         savePromptTemplates(merged.concat(pending));
-        try{window.dispatchEvent(new CustomEvent("socrates:prompt-templates-synced"));}catch(_){ }
+        try { window.dispatchEvent(new CustomEvent("socrates:prompt-templates-synced")); } catch (_) { /* empty-catch: intentional — CustomEvent dispatch failure is non-fatal */ }
       });
     })
     .catch(function(){ /* offline / guest — localStorage keeps working */ })
@@ -216,10 +216,10 @@ function _syncTemplateToServer(t){
           t.id=created.id;
         }
       });
-  op.catch(function(){});
+  op.catch(function () { /* noop: server sync failure is non-fatal */ });
 }
 function _deleteTemplateOnServer(id){
   var apiFetch=(typeof window!=="undefined")&&window.apiFetch;
   if(typeof apiFetch!=="function"||!_isServerId(id))return;
-  apiFetch("/api/prompts/"+encodeURIComponent(id),{method:"DELETE"}).catch(function(){});
+  apiFetch("/api/prompts/"+encodeURIComponent(id),{method:"DELETE"}).catch(function () { /* noop: server sync failure is non-fatal */ });
 }

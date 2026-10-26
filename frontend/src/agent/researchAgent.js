@@ -24,7 +24,7 @@ function launchDeepResearch() {
      window.deepResearchOn and dispatches back to startDeepResearch
      after committing the user bubble, so no duplicate work happens. */
   if (surface === "topic" && typeof window.startSession === "function") {
-    try { window.deepResearchOn = true; } catch (_) {}
+    try { window.deepResearchOn = true; } catch (_) { /* empty-catch: intentional — window assignment in headless environments */ }
     window.startSession();
     return;
   }
