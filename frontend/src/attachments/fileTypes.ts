@@ -6,7 +6,7 @@ const ACCEPTED_IMAGE_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif',
 ]);
 
-const DOCUMENT_MIME_KINDS = new Map([
+const DOCUMENT_MIME_KINDS = new Map<string, string>([
   ['application/pdf', 'pdf'],
   ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'docx'],
   ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'xlsx'],
@@ -54,7 +54,7 @@ const TEXT_FILE_EXTENSIONS = new Set([
 const DOCUMENT_EXTENSIONS = new Set([
   '.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf', '.odt', '.ods', '.odp', '.doc', '.xls',
 ]);
-const DOCUMENT_KIND_BY_EXTENSION = new Map([
+const DOCUMENT_KIND_BY_EXTENSION = new Map<string, string>([
   ['.pdf', 'pdf'], ['.docx', 'docx'], ['.xlsx', 'xlsx'], ['.pptx', 'pptx'],
   ['.doc', 'doc'], ['.xls', 'xls'], ['.ppt', 'ppt'], ['.epub', 'epub'],
   ['.rtf', 'rtf'], ['.odt', 'odt'], ['.ods', 'ods'], ['.odp', 'odp'],
@@ -67,19 +67,26 @@ const UNSAFE_MIMES = new Set([
   'text/html', 'text/xhtml', 'application/xhtml+xml', 'image/svg+xml',
 ]);
 
-function extOf(name) {
+function extOf(name?: string | null): string {
   const normalized = String(name || '').toLowerCase();
   const index = normalized.lastIndexOf('.');
   return index >= 0 ? normalized.slice(index) : '';
 }
 
-function isTextLikeMime(mime) {
+function isTextLikeMime(mime: string): boolean {
   if (mime.startsWith('text/')) return mime !== 'text/rtf';
   return TEXTUAL_APPLICATION_MIMES.has(mime);
 }
 
+export type AttachmentClassification = 'image' | 'document' | 'text' | 'file';
+
+export interface FileLike {
+  name?: string;
+  type?: string;
+}
+
 /** Return image, text, document, file, or null for an unsupported type. */
-export function classifyAttachmentFile(file) {
+export function classifyAttachmentFile(file?: FileLike | null): AttachmentClassification | null {
   if (!file) return null;
   const mime = String(file.type || '').toLowerCase();
   if (UNSAFE_MIMES.has(mime)) return null;
@@ -96,7 +103,7 @@ export function classifyAttachmentFile(file) {
 }
 
 /** Map a classified document to the kind label used in chips and parts. */
-export function docKindFromFile(file) {
+export function docKindFromFile(file?: FileLike | null): string {
   const mime = String((file && file.type) || '').toLowerCase();
   const mimeKind = DOCUMENT_MIME_KINDS.get(mime);
   if (mimeKind) return mimeKind;

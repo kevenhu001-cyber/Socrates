@@ -12,6 +12,7 @@ import { MessageItem } from './MessageItem';
 import { updateScrollFadeMask } from './messageScroll';
 import { useProgressiveMessageMount } from './useProgressiveMessageMount';
 import { getVisibleMessagesSnapshot } from './visibleMessages';
+import { getMathRenderRevision } from '../../render/mathRevision.ts';
 
 const MSG_LIST_ID = 'msgList';
 
@@ -52,7 +53,7 @@ function MessageList() {
           <MessageItem
             key={id}
             message={entry}
-            mathRevision={typeof window === 'undefined' ? 0 : window.__socratesMathRenderRev || 0}
+            mathRevision={getMathRenderRevision()}
           />
         );
       })}

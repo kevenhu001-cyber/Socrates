@@ -21,4 +21,3 @@ export const MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL = Math.floor(
 
 /* Fail a transfer that stops making progress, while allowing slow active uploads. */
 export const UPLOAD_IDLE_TIMEOUT_MS = 45_000;
-

@@ -7,6 +7,7 @@ import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from './vizStubs.js';
 import { wireCodeBlockHeaders } from './postRender.ts';
+import { bumpMathRenderRevision } from './mathRevision.ts';
 
 /** The subset of a session message this repaint touches. */
 interface RepaintableMessage {
@@ -41,8 +42,7 @@ export function rerenderMathAfterKatex(): void {
        alone would hand back the SAME cached string — the one computed before
        KaTeX existed. Bumping this counter is what tells that cache to throw
        its entries away and re-typeset. */
-    window.__socratesMathRenderRev = (window.__socratesMathRenderRev || 0) + 1;
-    const rev = window.__socratesMathRenderRev;
+    const rev = bumpMathRenderRevision();
     const messages = stateStore.read("messages");
     const msgs: RepaintableMessage[] = Array.isArray(messages) ? messages as RepaintableMessage[] : [];
     /* Collect first, render in slices: re-rendering every math message in

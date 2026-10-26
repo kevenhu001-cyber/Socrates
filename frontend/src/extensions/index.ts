@@ -77,6 +77,12 @@ export function dispatchExtension(key: string): boolean {
   return true;
 }
 
+export function composeAction(): void { dispatchExtension('write'); }
+export function researchAction(): void { dispatchExtension('webSearch'); }
+export function exploreAction(): void { dispatchExtension('explore'); }
+export function deepResearchAction(): void { dispatchExtension('deepResearch'); }
+export function analyzeAction(): void { dispatchExtension('analyze'); }
+
 export function installWindowExtensionDelegates(): void {
   installExtensions();
 
@@ -90,11 +96,11 @@ export function installWindowExtensionDelegates(): void {
     __socratesExtensionDispatch?: (key: string) => boolean;
   };
 
-  if (!w.composeAction) w.composeAction = () => dispatchExtension('write');
-  if (!w.researchAction) w.researchAction = () => dispatchExtension('webSearch');
-  if (!w.exploreAction) w.exploreAction = () => dispatchExtension('explore');
-  if (!w.deepResearchAction) w.deepResearchAction = () => dispatchExtension('deepResearch');
-  if (!w.analyzeAction) w.analyzeAction = () => dispatchExtension('analyze');
+  if (!w.composeAction) w.composeAction = composeAction;
+  if (!w.researchAction) w.researchAction = researchAction;
+  if (!w.exploreAction) w.exploreAction = exploreAction;
+  if (!w.deepResearchAction) w.deepResearchAction = deepResearchAction;
+  if (!w.analyzeAction) w.analyzeAction = analyzeAction;
   if (!w.toggleExtensionByKey) {
     w.toggleExtensionByKey = (key: string) => {
       dispatchExtension(key);

@@ -1,5 +1,5 @@
 {
-  "count": 122,
+  "count": 119,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -16,9 +16,7 @@
     "src/app/router.js",
     "src/app/widgetSetup.js",
     "src/attachments.js",
-    "src/attachments/fileTypes.js",
     "src/attachments/imageCompression.js",
-    "src/attachments/limits.js",
     "src/attachments/messageContent.js",
     "src/attachments/render.js",
     "src/batchStorage.js",
@@ -108,7 +106,6 @@
     "src/ui/sidebarChrome.js",
     "src/ui/sidebarResize.js",
     "src/ui/storage.js",
-    "src/ui/toast.js",
     "src/ui/tokens.js",
     "src/ui/toolArtifacts.js",
     "src/ui/toolCardHelpers.js",

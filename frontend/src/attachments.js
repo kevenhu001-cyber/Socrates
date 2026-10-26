@@ -34,7 +34,7 @@
 
 import { apiFetch } from './util/api.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
-import { classifyAttachmentFile, docKindFromFile } from './attachments/fileTypes.js';
+import { classifyAttachmentFile, docKindFromFile } from './attachments/fileTypes.ts';
 import { compressImageFile, readFileAsDataUrl } from './attachments/imageCompression.js';
 import { createBuildMessageContent } from './attachments/messageContent.js';
 import {
@@ -47,7 +47,7 @@ import {
   MAX_TOTAL_ATTACHMENTS,
   XHR_TIMEOUT_MS,
   UPLOAD_IDLE_TIMEOUT_MS,
-} from './attachments/limits.js';
+} from './attachments/limits.ts';
 
 export {
   ATTACHMENT_READY_TIMEOUT_MS,
@@ -59,7 +59,7 @@ export {
   MAX_TOTAL_ATTACHMENTS,
   XHR_TIMEOUT_MS,
   UPLOAD_IDLE_TIMEOUT_MS,
-} from './attachments/limits.js';
+} from './attachments/limits.ts';
 export { attachmentPointerLine, formatAttachmentSize } from './attachments/messageContent.js';
 
 /* Pending attachments for the current turn. The store is

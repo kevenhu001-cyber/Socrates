@@ -1,10 +1,10 @@
-import { useEffect, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, type CSSProperties, type ComponentProps, type ReactNode } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 import { setModalOpen } from '../../ui/modalA11y';
 
 /** Socrates keeps overlay geometry and motion. Base UI owns modal interaction;
  * the legacy registry only coordinates shell inertness with unmigrated modals. */
-export function FoundationDialog({ id, open, onOpenChange, overlayClassName, className, initialFocus, finalFocus, role = 'dialog', children }: {
+export function FoundationDialog({ id, open, onOpenChange, overlayClassName, className, initialFocus, finalFocus, role = 'dialog', contentStyle, children }: {
   id: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -13,6 +13,7 @@ export function FoundationDialog({ id, open, onOpenChange, overlayClassName, cla
   initialFocus?: ComponentProps<typeof Dialog.Popup>['initialFocus'];
   finalFocus?: ComponentProps<typeof Dialog.Popup>['finalFocus'];
   role?: 'dialog' | 'alertdialog';
+  contentStyle?: CSSProperties;
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -27,7 +28,7 @@ export function FoundationDialog({ id, open, onOpenChange, overlayClassName, cla
         inert={!open} style={{ zIndex: 'var(--ui-z-modal)' }}>
         <Dialog.Popup data-ui-motion="dialog" role={role} aria-modal="true" className={className} initialFocus={initialFocus} finalFocus={finalFocus}
           data-state={open ? 'open' : 'closing'}
-          style={{ maxHeight: 'calc(100dvh - 2 * var(--ui-space-lg))', overflowY: 'auto' }}>
+          style={{ maxHeight: 'calc(100dvh - 2 * var(--ui-space-lg))', overflowY: 'auto', ...contentStyle }}>
           {children}
         </Dialog.Popup>
       </Dialog.Backdrop>

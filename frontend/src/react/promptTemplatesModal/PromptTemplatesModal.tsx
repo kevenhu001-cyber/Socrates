@@ -1,5 +1,8 @@
+import { useRef, type ReactNode } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
-import React from 'react';
+import {
+  FoundationDialog,
+} from '../dialog/FoundationDialog';
 import {
   closePromptTemplatesModal,
   onPromptRowDelete,
@@ -7,11 +10,19 @@ import {
   openPromptTemplateEditor,
   renderPromptTemplatesModal,
 } from '../../ui/promptTemplates.js';
-import { installPromptTemplatesBridge, usePromptTemplatesSnapshot, usePromptTemplatesDispatch } from './promptTemplates.bridge';
+import {
+  installPromptTemplatesBridge,
+  usePromptTemplatesDispatch,
+  usePromptTemplatesSnapshot,
+} from './promptTemplates.bridge';
 
-function PromptTemplatesModal() {
+function PromptTemplatesModal(): ReactNode {
   const snap = usePromptTemplatesSnapshot();
   const dispatch = usePromptTemplatesDispatch();
+  const lastSnap = useRef(snap);
+  if (snap.open) lastSnap.current = snap;
+  const content = snap.open ? snap : lastSnap.current;
+
   const handleCommand = (event: React.MouseEvent) => {
     const button = (event.target as HTMLElement).closest<HTMLElement>('[data-prompt-command]');
     if (!button) return;
@@ -25,18 +36,27 @@ function PromptTemplatesModal() {
     else if (command === 'save' && id) onPromptTemplateEditorSave(id);
   };
 
-  if (!snap.open) return null;
-
-  return React.createElement('div', {
-    className: 'cmd-k-overlay',
-    id: 'promptTemplatesOverlay',
-    onClick: (e: React.MouseEvent) => { if (e.target === e.currentTarget) dispatch.close(); },
-  },
-    React.createElement('div', {
-      className: 'prompt-templates-modal',
-      onClick: (e: React.MouseEvent) => { e.stopPropagation(); handleCommand(e); },
-      dangerouslySetInnerHTML: { __html: snap.bodyHTML },
-    }),
+  return (
+    <FoundationDialog
+      id="promptTemplatesOverlay"
+      open={snap.open}
+      onOpenChange={(open) => {
+        if (!open) {
+          closePromptTemplatesModal();
+          dispatch.close();
+        }
+      }}
+      overlayClassName="cmd-k-overlay"
+      className="cmd-k-modal prompt-templates-modal"
+    >
+      <div
+        style={{ display: 'contents' }}
+        onClick={(e: React.MouseEvent) => {
+          handleCommand(e);
+        }}
+        dangerouslySetInnerHTML={{ __html: content.bodyHTML }}
+      />
+    </FoundationDialog>
   );
 }
 
@@ -49,7 +69,7 @@ export function mountPromptTemplatesModal(): void {
     container.id = 'promptTemplatesReactRoot';
     document.body.appendChild(container);
   }
-  rootSlot.mount(container, React.createElement(PromptTemplatesModal), installPromptTemplatesBridge);
+  rootSlot.mount(container, <PromptTemplatesModal />, installPromptTemplatesBridge);
 }
 
 export function unmountPromptTemplatesModal(): void {

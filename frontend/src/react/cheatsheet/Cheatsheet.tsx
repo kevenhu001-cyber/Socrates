@@ -1,20 +1,29 @@
+import { useRef } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
-import React from 'react';
-import { installCheatsheetBridge, useCheatsheetSnapshot, useCheatsheetDispatch } from './cheatsheet.bridge';
-
-function esc(s: string): string {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
-}
+import {
+  FoundationDialog,
+  FoundationDialogClose,
+  FoundationDialogTitle,
+} from '../dialog/FoundationDialog';
+import {
+  installCheatsheetBridge,
+  useCheatsheetDispatch,
+  useCheatsheetSnapshot,
+} from './cheatsheet.bridge';
 
 function CheatsheetSection({ title, rows }: { title: string; rows: Array<[string, string[]]> }) {
-  return React.createElement('div', { className: 'cheatsheet-section' },
-    React.createElement('div', { className: 'cmd-k-section-label' }, title),
-    ...rows.map((row, i) =>
-      React.createElement('div', { className: 'cheatsheet-row', key: i },
-        ...row[1].map((k, j) => React.createElement('kbd', { className: 'cheatsheet-kbd', key: j }, esc(k))),
-        React.createElement('span', { className: 'cheatsheet-desc' }, esc(row[0])),
-      )
-    ),
+  return (
+    <div className="cheatsheet-section">
+      <div className="cmd-k-section-label">{title}</div>
+      {rows.map(([desc, keys], i) => (
+        <div className="cheatsheet-row" key={i}>
+          {keys.map((k, j) => (
+            <kbd className="cheatsheet-kbd" key={j}>{k}</kbd>
+          ))}
+          <span className="cheatsheet-desc">{desc}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -51,23 +60,33 @@ const SECTIONS: Array<[string, Array<[string, string[]]>]> = [
 function Cheatsheet() {
   const snap = useCheatsheetSnapshot();
   const dispatch = useCheatsheetDispatch();
+  const titleRef = useRef<HTMLDivElement>(null);
 
-  if (!snap.open) return null;
-
-  return React.createElement('div', {
-    className: 'cmd-k-overlay',
-    id: 'cheatsheetOverlay',
-    onClick: (e: React.MouseEvent) => { if (e.target === e.currentTarget) dispatch.close(); },
-  },
-    React.createElement('div', { className: 'cmd-k-modal cheatsheet', onClick: (e: React.MouseEvent) => e.stopPropagation() },
-      React.createElement('div', { className: 'modal-head' },
-        React.createElement('span', { className: 'modal-title' }, 'Keyboard shortcuts'),
-        React.createElement('button', { className: 'modal-close', onClick: () => dispatch.close() }, '×'),
-      ),
-      React.createElement('div', { className: 'cheatsheet-body' },
-        ...SECTIONS.map(([title, rows]) => React.createElement(CheatsheetSection, { key: title, title, rows })),
-      ),
-    ),
+  return (
+    <FoundationDialog
+      id="cheatsheetOverlay"
+      open={snap.open}
+      onOpenChange={(open) => {
+        if (!open) dispatch.close();
+      }}
+      overlayClassName="cmd-k-overlay"
+      className="cmd-k-modal cheatsheet"
+      initialFocus={titleRef}
+    >
+      <div className="modal-head">
+        <FoundationDialogTitle ref={titleRef} tabIndex={-1} className="modal-title">
+          Keyboard shortcuts
+        </FoundationDialogTitle>
+        <FoundationDialogClose className="modal-close" onClick={() => dispatch.close()} aria-label="Close">
+          ×
+        </FoundationDialogClose>
+      </div>
+      <div className="cheatsheet-body">
+        {SECTIONS.map(([title, rows]) => (
+          <CheatsheetSection key={title} title={title} rows={rows} />
+        ))}
+      </div>
+    </FoundationDialog>
   );
 }
 
@@ -80,7 +99,7 @@ export function mountCheatsheet(): void {
     container.id = 'cheatsheetReactRoot';
     document.body.appendChild(container);
   }
-  rootSlot.mount(container, React.createElement(Cheatsheet), installCheatsheetBridge);
+  rootSlot.mount(container, <Cheatsheet />, installCheatsheetBridge);
 }
 
 export function unmountCheatsheet(): void {

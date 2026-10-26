@@ -25,27 +25,31 @@ import { openNav } from '../sidebar/navigation.service.ts';
 import { closeConfirm, showConfirm } from '../ui/confirm.js';
 import { deleteUserMessage, sendFeedback, restorePersistedMessageExtras } from '../ui/messageActions.ts';
 import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHtml.ts';
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../ui/toast.ts';
 import { addMessage } from '../chat/messages.ts';
 import { askNextQuestion } from '../tutor/socraticTurn.js';
 import { saveCurrentSession } from '../session/persistence.ts';
 /* chat/webSearch.js (~16KB) is lazy — the window.fetchWebContext proxy
    below returns a promise, which every caller already awaits. */
-import { openAttachmentPicker, openMediaPicker } from '../attachments/render.js';
-import { getCustomInstructionsString, saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch } from '../ui/profile.js';
+import { openAttachmentPicker, openMediaPicker, renderAttachmentChips, retryComposerAttachment } from '../attachments/render.js';
+import { removeAttachment } from '../attachments.js';
+import { getCustomInstructionsString, saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch, openProfile, closeProfile } from '../ui/profile.js';
 import { editUserMessage, regenerateAssistantMessage, branchFromMessage, switchMessageBranch } from '../chat/editBranch.js';
 import { toggleReadAloud } from '../ui/readAloud.js';
-import { selectShareVis, copyShareLink } from '../ui/share.js';
-import { closeCheatsheet } from '../ui/cheatsheet.js';
+import { selectShareVis, copyShareLink, openShareModal, closeShareModal, createShareLink, revokeShareLink } from '../ui/share.js';
+import { openCheatsheet, closeCheatsheet } from '../ui/cheatsheet.js';
+import { closeMorePopover } from '../sidebar/morePopover.js';
+import { toggleComposerTools } from '../ui/composerTools.js';
+import { composeAction, researchAction, exploreAction, deepResearchAction, analyzeAction } from '../extensions/index.ts';
 import { toggleSidebar } from '../sidebar/sidebar.service.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.js';
 import { openStorageModal, closeStorageModal } from '../ui/storage.js';
 import { openPromptTemplatesModal, closePromptTemplatesModal } from '../ui/promptTemplates.js';
-import { toggleExtensionByKey } from '../pickers.js';
-import { openCmdKResult } from '../ui/cmdK.js';
+import { toggleExtensionByKey, toggleWebSearch } from '../pickers.js';
+import { openCmdK, closeCmdK, onCmdKInput, onCmdKKey, openCmdKResult } from '../ui/cmdK.js';
 import { loadWebSearch } from '../chat/webSearchLoader.ts';
 /* ui/dangerConfirms.js is lazy — confirm actions import it on demand. */
-import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid } from '../render/vizStubs.js';
+import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid, processPendingVizActions } from '../render/vizStubs.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.ts';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.js';
 import { appendInlineArtifact } from '../ui/toolCards.js';
@@ -149,37 +153,49 @@ window.switchMessageBranch = switchMessageBranch;
 
 window.__socratesLegacy = {
   messages: {
-    editUserMessage: window.editUserMessage,
-    regenerateAssistantMessage: window.regenerateAssistantMessage,
-    switchMessageBranch: window.switchMessageBranch,
-    deleteUserMessage: window.deleteUserMessage,
-    branchFromMessage: window.branchFromMessage,
-    sendFeedback: window.sendFeedback,
-    toggleReadAloud: toggleReadAloud,
-    openShareModal: window.openShareModal,
-    showToast: window.showToast,
+    editUserMessage,
+    regenerateAssistantMessage,
+    switchMessageBranch,
+    deleteUserMessage,
+    branchFromMessage,
+    sendFeedback,
+    toggleReadAloud,
+    openShareModal,
+    showToast,
   },
   navigation: {
-    resetApp: window.resetApp,
-    startNewChat: window.startNewChat,
+    resetApp,
+    startNewChat,
     toggleSidebar,
     openNav,
-    openSettings: window.openSettings,
-    closeSettings: window.closeSettings,
-    openProfile: window.openProfile,
-    closeProfile: window.closeProfile,
-    openUsageModal: window.openUsageModal,
-    closeUsageModal: window.closeUsageModal,
-    openStorageModal: openStorageModal,
-    closeStorageModal: closeStorageModal,
-    openPromptTemplatesModal: openPromptTemplatesModal,
-    closePromptTemplatesModal: closePromptTemplatesModal,
-    openCheatsheet: window.openCheatsheet,
-    closeCheatsheet: closeCheatsheet,
-    closeMorePopover: window.closeMorePopover,
-    toggleDisplayPrefs: toggleDisplayPrefs,
-    toggleIncognito: toggleIncognito,
-    signOut: signOut,
+    openSettings: function () {
+      if (typeof window.openSettings === 'function') return window.openSettings();
+      return import('../react/settings/settings.service.ts').then(function (m) { return m.openSettings(); });
+    },
+    closeSettings: function () {
+      if (typeof window.closeSettings === 'function') return window.closeSettings();
+      return import('../react/settings/settings.service.ts').then(function (m) { return m.closeSettings(); });
+    },
+    openProfile,
+    closeProfile,
+    openUsageModal: function () {
+      if (typeof window.openUsageModal === 'function') return window.openUsageModal();
+      return import('../ui/usage.js').then(function (m) { return m.openUsageModal(); });
+    },
+    closeUsageModal: function () {
+      if (typeof window.closeUsageModal === 'function') return window.closeUsageModal();
+      return import('../ui/usage.js').then(function (m) { return m.closeUsageModal(); });
+    },
+    openStorageModal,
+    closeStorageModal,
+    openPromptTemplatesModal,
+    closePromptTemplatesModal,
+    openCheatsheet,
+    closeCheatsheet,
+    closeMorePopover,
+    toggleDisplayPrefs,
+    toggleIncognito,
+    signOut,
   },
   confirm: {
     closeConfirm,
@@ -189,67 +205,67 @@ window.__socratesLegacy = {
     flushRecentsReconcile,
     updateSessionMetadata,
     loadSession,
-    setRecentsSearch: setRecentsSearch,
-    retryRecentsFetch: retryRecentsFetch,
-    openTagEditor: openTagEditor,
+    setRecentsSearch,
+    retryRecentsFetch,
+    openTagEditor,
     deleteSession: actuallyDeleteSession,
-    archiveSession: archiveSession,
-    onSessionDragStart: onSessionDragStart,
-    onSessionDragEnd: onSessionDragEnd,
-    restoreSession: restoreSession,
-    confirmPurgeSession: confirmPurgeSession,
+    archiveSession,
+    onSessionDragStart,
+    onSessionDragEnd,
+    restoreSession,
+    confirmPurgeSession,
   },
   composer: {
-    openAttachmentPicker: window.openAttachmentPicker,
-    openMediaPicker: window.openMediaPicker,
-    toggleWebSearch: window.toggleWebSearch,
-    exploreAction: window.exploreAction,
-    toggleTools: window.toggleComposerTools,
-    composeAction: window.composeAction,
-    researchAction: window.researchAction,
-    deepResearchAction: window.deepResearchAction,
-    analyzeAction: window.analyzeAction,
-    toggleExtensionByKey: toggleExtensionByKey,
-    removeAttachment: window.removeAttachment,
-    retryAttachment: window.retryComposerAttachment,
-    renderAttachmentChips: window.renderAttachmentChips,
-    startSession: startSession,
-    submitChatMessage: submitChatMessage,
-    stopChatResponse: stopChatResponse,
-    syncEffortUI: syncEffortUI,
+    openAttachmentPicker,
+    openMediaPicker,
+    toggleWebSearch,
+    exploreAction,
+    toggleTools: toggleComposerTools,
+    composeAction,
+    researchAction,
+    deepResearchAction,
+    analyzeAction,
+    toggleExtensionByKey,
+    removeAttachment,
+    retryAttachment: retryComposerAttachment,
+    renderAttachmentChips,
+    startSession,
+    submitChatMessage,
+    stopChatResponse,
+    syncEffortUI,
   },
   cmdK: {
-    openCmdK: window.openCmdK,
-    closeCmdK: window.closeCmdK,
-    onCmdKInput: window.onCmdKInput,
-    onCmdKKey: window.onCmdKKey,
-    openCmdKResult: openCmdKResult,
+    openCmdK,
+    closeCmdK,
+    onCmdKInput,
+    onCmdKKey,
+    openCmdKResult,
   },
   share: {
-    selectShareVis: selectShareVis,
-    createShareLink: window.createShareLink,
-    copyShareLink: copyShareLink,
-    revokeShareLink: window.revokeShareLink,
-    closeShareModal: window.closeShareModal,
+    selectShareVis,
+    createShareLink,
+    copyShareLink,
+    revokeShareLink,
+    closeShareModal,
   },
   profile: {
-    saveProfileName: saveProfileName,
-    onCustomInstructionsChange: onCustomInstructionsChange,
-    toggleProfileWebSearch: toggleProfileWebSearch,
+    saveProfileName,
+    onCustomInstructionsChange,
+    toggleProfileWebSearch,
     confirmClearCache: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearCache(); }); },
     confirmClearSettings: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearSettings(); }); },
     confirmDeleteAccount: function () { return _loadDangerConfirms().then(function (m) { return m.confirmDeleteAccount(); }); },
     setLang: window.setLang,
   },
   postRender: {
-    processPendingMermaid: processPendingMermaid,
-    schedulePendingMermaid: schedulePendingMermaid,
-    processPendingViz: processPendingViz,
-    reclaimVizCards: reclaimVizCards,
-    processPendingVizActions: window.processPendingVizActions,
-    wireCodeBlockHeaders: wireCodeBlockHeaders,
-    wireMsgBodyImages: wireMsgBodyImages,
-    restorePersistedMessageExtras: window.restorePersistedMessageExtras,
+    processPendingMermaid,
+    schedulePendingMermaid,
+    processPendingViz,
+    reclaimVizCards,
+    processPendingVizActions,
+    wireCodeBlockHeaders,
+    wireMsgBodyImages,
+    restorePersistedMessageExtras,
     /* P_declarative-tool-run — react/tool-run renders a tool row's non-text
        output (chart spec, saved files) from toolCalls[] instead of having
        restorePersistedMessageExtras insert a sibling node after the row. Both

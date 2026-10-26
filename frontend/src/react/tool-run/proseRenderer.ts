@@ -2,6 +2,7 @@ import { createProseCache, sharedFinalProseCache, clearSharedProseCache } from '
 import { useMemo } from 'react';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { stripLegacyToolHtml } from './toolRunModel.js';
+import { getMathRenderRevision } from '../../render/mathRevision.ts';
 
 const IMPURE_OUTPUT = /class="viz"|-slot"|canvas-block/;
 function renderEnvKey(mathRevision: number): string {
@@ -42,7 +43,7 @@ export interface ProseRenderer {
  * bounded cache, excluding renderers that register placeholders as effects.
  */
 export function useProseRenderer(live: boolean): ProseRenderer {
-  const mathRevision = typeof window === 'undefined' ? 0 : window.__socratesMathRenderRev || 0;
+  const mathRevision = getMathRenderRevision();
   return useMemo(() => {
     const renderer = getLegacyActions().render;
     const final = renderer.renderAssistantHTML;
