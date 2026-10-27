@@ -317,7 +317,7 @@ sequenceDiagram
 | Universal App UI | React Native + Expo + RN Web + Zustand + Reanimated | [`apps/socrates/`](apps/socrates/) |
 | Universal App I/O | Platform adapters (`*.web` / `*.android` / `*.windows` / `*.macos`) over shared transport | [`apps/socrates/src/`](apps/socrates/src/) |
 | Shared packages | `@socrates/{core,contracts,api,chat,auth,settings,platform,theme,ui}` | [`packages/`](packages/) — DOM-free, enforced by `scripts/check-packages-dom.mjs` |
-| CI | GitHub Actions: SPA gate, server, security/SAST, OCI image, Universal App preview, Rust tooling, Qodana | [`ci.yml`](.github/workflows/ci.yml), [`universal-app-build.yml`](.github/workflows/universal-app-build.yml) |
+| CI | GitHub Actions: SPA gate, server, security/SAST, OCI image, Universal App preview, Rust tooling | [`ci.yml`](.github/workflows/ci.yml), [`universal-app-build.yml`](.github/workflows/universal-app-build.yml) |
 | Edge | nginx reverse proxy + static file server | [deploy.sh](deploy.sh) |
 | Vendored scripts | KaTeX + highlight.js + Plotly + Mermaid + ECharts (UMD under [`frontend/src/vendor-files/`](frontend/src/vendor-files/)); marked + DOMPurify + fuse.js come from npm — no CDN fallback | see [vendored-scripts-README](frontend/src/vendor-files/README.md) |
 

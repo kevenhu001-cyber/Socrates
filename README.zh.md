@@ -240,7 +240,7 @@ sequenceDiagram
 | 通用客户端 UI | React Native + Expo + RN Web + Zustand + Reanimated | [`apps/socrates/`](apps/socrates/) |
 | 通用客户端 I/O | 平台适配层（`*.web` / `*.android` / `*.windows` / `*.macos`） | [`apps/socrates/src/`](apps/socrates/src/) |
 | 共享包 | `@socrates/{core,contracts,api,chat,auth,settings,platform,theme,ui}` | [`packages/`](packages/) —— 强制 DOM-free，由 `scripts/check-packages-dom.mjs` 校验 |
-| CI | GitHub Actions：SPA 门禁、服务端、安全/SAST、OCI 镜像、通用客户端预览、Rust 工具链、Qodana | [`ci.yml`](.github/workflows/ci.yml)、[`universal-app-build.yml`](.github/workflows/universal-app-build.yml) |
+| CI | GitHub Actions：SPA 门禁、服务端、安全/SAST、OCI 镜像、通用客户端预览、Rust 工具链 | [`ci.yml`](.github/workflows/ci.yml)、[`universal-app-build.yml`](.github/workflows/universal-app-build.yml) |
 | 边缘 | nginx 反向代理 + 静态文件服务 | [deploy.sh](deploy.sh) |
 | vendored 前端库 | KaTeX + highlight.js + Plotly + Mermaid + ECharts（UMD，位于 [`frontend/src/vendor-files/`](frontend/src/vendor-files/)）；marked + DOMPurify + fuse.js 走 npm —— 无 CDN 回退 | 见 `frontend/src/vendor-files/README.md` |
 
