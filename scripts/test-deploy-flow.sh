@@ -330,15 +330,15 @@ grep -q '"ciGate": "green"' "$ci_success_base/deploy-state.json"
 for ci_case in failure missing unverifiable cancelled in-progress unknown; do
   ci_base=$(make_fixture "ci-$ci_case")
   case "$ci_case" in
-    failure) ci_env=(MOCK_GH_RESULT=failure) ;;
-    missing) ci_env=(MOCK_GH_RESULT=missing) ;;
-    unverifiable) ci_env=(MOCK_GH_ERROR=1) ;;
-    cancelled) ci_env=(MOCK_GH_RESULT=cancelled) ;;
-    in-progress) ci_env=(MOCK_GH_RESULT=in_progress) ;;
-    unknown) ci_env=(MOCK_GH_RESULT=queued) ;;
+    failure) ci_env=(DEPLOY_REQUIRE_CI_CHECK=1 MOCK_GH_RESULT=failure) ;;
+    missing) ci_env=(DEPLOY_REQUIRE_CI_CHECK=1 MOCK_GH_RESULT=missing) ;;
+    unverifiable) ci_env=(DEPLOY_REQUIRE_CI_CHECK=1 MOCK_GH_ERROR=1) ;;
+    cancelled) ci_env=(DEPLOY_REQUIRE_CI_CHECK=1 MOCK_GH_RESULT=cancelled) ;;
+    in-progress) ci_env=(DEPLOY_REQUIRE_CI_CHECK=1 MOCK_GH_RESULT=in_progress) ;;
+    unknown) ci_env=(DEPLOY_REQUIRE_CI_CHECK=1 MOCK_GH_RESULT=queued) ;;
   esac
   if run_deploy "$ci_base" "${ci_env[@]}" >"$ci_base/output.log" 2>&1; then
-    echo "CI gate $ci_case unexpectedly succeeded" >&2
+    echo "CI gate $ci_case unexpectedly succeeded when enforced" >&2
     exit 1
   fi
   case "$ci_case" in
@@ -347,6 +347,21 @@ for ci_case in failure missing unverifiable cancelled in-progress unknown; do
     unverifiable) grep -q 'could not verify the merge gate' "$ci_base/output.log" ;;
   esac
 done
+
+# By default, merge gate check is optional: failing CI does not block deploy,
+# but prints a notice and records the optional status.
+ci_optional_base=$(make_fixture ci-optional)
+run_deploy "$ci_optional_base" MOCK_GH_RESULT=failure >"$ci_optional_base/output.log" 2>&1
+grep -q 'notice: merge gate not green' "$ci_optional_base/output.log"
+grep -q '"ciGate": "optional: ci.yml(failure)' "$ci_optional_base/deploy-state.json"
+
+# --require-ci flag enforces the gate on the command line.
+ci_flag_base=$(make_fixture ci-flag)
+if run_deploy "$ci_flag_base" MOCK_GH_RESULT=failure --require-ci >"$ci_flag_base/output.log" 2>&1; then
+  echo "--require-ci unexpectedly succeeded on failure" >&2
+  exit 1
+fi
+grep -q 'failing:.*ci\.yml(failure)' "$ci_flag_base/output.log"
 
 # Probe the actual gate function in a clean child shell so missing commands and
 # an invalid checkout can be tested without changing deploy's full-run fixture.
@@ -372,8 +387,8 @@ exit 1
 SH
       chmod +x "$test_path/git" ;;
   esac
-  if env PATH="$test_path" /bin/bash -c 'source "$1"; DEPLOY_CI_GATE_STATUS=not-run; ci_gate_check /not/a/repo' _ "$ci_gate_source" >"$WORK/ci-$missing_case.log" 2>&1; then
-    echo "CI gate missing-$missing_case unexpectedly succeeded" >&2
+  if env PATH="$test_path" /bin/bash -c 'source "$1"; DEPLOY_CI_GATE_STATUS=not-run; DEPLOY_REQUIRE_CI_CHECK=1; ci_gate_check /not/a/repo' _ "$ci_gate_source" >"$WORK/ci-$missing_case.log" 2>&1; then
+    echo "CI gate missing-$missing_case unexpectedly succeeded when enforced" >&2
     exit 1
   fi
   case "$missing_case" in

@@ -31,6 +31,9 @@ deploy.sh — publish the Socrates web properties.
 Usage:
   ./deploy.sh                          full release: SPA bundle + backend
                                        (frontend build, migrations, restart)
+  ./deploy.sh --require-ci             enforce the GitHub Actions merge gate
+                                       before deploying (off by default: CI is
+                                       checked informatively, does not block)
   ./deploy.sh --site-only              publish only the marketing site
                                        (topodrive.top) — no SPA build, no
                                        migration, no backend restart
@@ -44,15 +47,18 @@ Usage:
   ./deploy.sh /path/to/index.html      legacy: publish one prebuilt SPA doc
 
 Environment:
-  SITE_DIR            source tree for the marketing site
-  SITE_WEB_ROOT       published location of the marketing site
-  SITE_PUBLIC_URL     public base URL used by the site-only health gate
+  DEPLOY_REQUIRE_CI_CHECK enforce the CI merge gate on full deploy (0 by default)
+  DEPLOY_SKIP_CI_CHECK    skip CI merge gate entirely without querying gh (0 by default)
+  SITE_DIR                source tree for the marketing site
+  SITE_WEB_ROOT           published location of the marketing site
+  SITE_PUBLIC_URL         public base URL used by the site-only health gate
 EOF
 }
 
 DEPLOY_SCOPE="full"
 DRY_RUN="${DRY_RUN:-0}"
 SITE_REQUIRE_MERGE_GATE=0
+DEPLOY_REQUIRE_CI_CHECK="${DEPLOY_REQUIRE_CI_CHECK:-0}"
 for arg in "$@"; do
   case "$arg" in
     --site-only)
@@ -63,6 +69,9 @@ for arg in "$@"; do
       ;;
     --require-merge-gate)
       SITE_REQUIRE_MERGE_GATE=1
+      ;;
+    --require-ci)
+      DEPLOY_REQUIRE_CI_CHECK=1
       ;;
     -h|--help)
       deploy_usage
@@ -543,6 +552,10 @@ REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-ci.yml security.yml}"
 ci_gate_check() {
   local source_dir="$1"
   local skip="${DEPLOY_SKIP_CI_CHECK:-0}"
+  local enforce="${DEPLOY_REQUIRE_CI_CHECK:-0}"
+  if [[ "$SITE_REQUIRE_MERGE_GATE" == "1" ]]; then
+    enforce=1
+  fi
 
   if [[ "$skip" == "1" ]]; then
     echo "  ci.gate  SKIPPED by DEPLOY_SKIP_CI_CHECK=1 (override, will be recorded)" >&2
@@ -553,19 +566,31 @@ ci_gate_check() {
     return 0
   fi
   if ! command -v git >/dev/null 2>&1 || ! command -v gh >/dev/null 2>&1; then
-    echo "ERROR: refusing to deploy — git and gh are required to verify the merge gate." >&2
-    echo "       Install the missing command(s), or set DEPLOY_SKIP_CI_CHECK=1 to override deliberately." >&2
-    DEPLOY_CI_GATE_STATUS="unverified-missing-git-or-gh"
-    return 1
+    if [[ "$enforce" == "1" ]]; then
+      echo "ERROR: refusing to deploy — git and gh are required to verify the merge gate." >&2
+      echo "       Install the missing command(s), or set DEPLOY_SKIP_CI_CHECK=1 to override deliberately." >&2
+      DEPLOY_CI_GATE_STATUS="unverified-missing-git-or-gh"
+      return 1
+    else
+      echo "  ci.gate  notice: git or gh not available to verify merge gate (optional, proceeding)" >&2
+      DEPLOY_CI_GATE_STATUS="optional:missing-git-or-gh"
+      return 0
+    fi
   fi
 
   local commit
   commit=$(git -C "$source_dir" rev-parse HEAD 2>/dev/null || true)
   if [[ -z "$commit" ]]; then
-    echo "ERROR: refusing to deploy — cannot resolve HEAD in $source_dir; cannot verify the merge gate." >&2
-    echo "       Ensure this is a valid Git checkout, or set DEPLOY_SKIP_CI_CHECK=1 to override deliberately." >&2
-    DEPLOY_CI_GATE_STATUS="unverified-no-head"
-    return 1
+    if [[ "$enforce" == "1" ]]; then
+      echo "ERROR: refusing to deploy — cannot resolve HEAD in $source_dir; cannot verify the merge gate." >&2
+      echo "       Ensure this is a valid Git checkout, or set DEPLOY_SKIP_CI_CHECK=1 to override deliberately." >&2
+      DEPLOY_CI_GATE_STATUS="unverified-no-head"
+      return 1
+    else
+      echo "  ci.gate  notice: cannot resolve HEAD in $source_dir (optional, proceeding)" >&2
+      DEPLOY_CI_GATE_STATUS="optional:no-head"
+      return 0
+    fi
   fi
 
   local short="${commit:0:8}"
@@ -598,24 +623,39 @@ ci_gate_check() {
   done
 
   if [[ -n "$failed" || -n "$missing" ]]; then
-    echo "ERROR: refusing to deploy ${short} — merge gate is not green." >&2
-    [[ -n "$failed" ]]  && echo "       failing: $failed" >&2
-    [[ -n "$missing" ]] && echo "       no completed run for this commit: $missing" >&2
-    echo "       Fix CI, or re-run with DEPLOY_SKIP_CI_CHECK=1 to override" >&2
-    echo "       deliberately (the override is recorded in .deploy-state.json)." >&2
-    DEPLOY_CI_GATE_STATUS="blocked:$failed$missing"
-    return 1
+    if [[ "$enforce" == "1" ]]; then
+      echo "ERROR: refusing to deploy ${short} — merge gate is not green." >&2
+      [[ -n "$failed" ]]  && echo "       failing: $failed" >&2
+      [[ -n "$missing" ]] && echo "       no completed run for this commit: $missing" >&2
+      echo "       Fix CI, or re-run with DEPLOY_SKIP_CI_CHECK=1 to override" >&2
+      echo "       deliberately (the override is recorded in .deploy-state.json)." >&2
+      DEPLOY_CI_GATE_STATUS="blocked:$failed$missing"
+      return 1
+    else
+      echo "  ci.gate  notice: merge gate not green for ${short} (optional, proceeding)" >&2
+      [[ -n "$failed" ]]  && echo "           failing:$failed" >&2
+      [[ -n "$missing" ]] && echo "           no completed run for this commit:$missing" >&2
+      DEPLOY_CI_GATE_STATUS="optional:$failed$missing"
+      return 0
+    fi
   fi
   if [[ -n "$errored" ]]; then
-    # Not proof of a red gate, but not proof of a green one either. Fail
-    # closed: an unverifiable gate must not silently become a passing gate.
-    echo "ERROR: refusing to deploy ${short} — could not verify the merge gate." >&2
-    echo "       gh API errors for:$errored" >&2
-    echo "       This is a transport failure, not a CI verdict. Retry once" >&2
-    echo "       network is healthy, or set DEPLOY_SKIP_CI_CHECK=1 to deploy" >&2
-    echo "       deliberately (the override is recorded in .deploy-state.json)." >&2
-    DEPLOY_CI_GATE_STATUS="unverified:$errored"
-    return 1
+    if [[ "$enforce" == "1" ]]; then
+      # Not proof of a red gate, but not proof of a green one either. Fail
+      # closed: an unverifiable gate must not silently become a passing gate.
+      echo "ERROR: refusing to deploy ${short} — could not verify the merge gate." >&2
+      echo "       gh API errors for:$errored" >&2
+      echo "       This is a transport failure, not a CI verdict. Retry once" >&2
+      echo "       network is healthy, or set DEPLOY_SKIP_CI_CHECK=1 to deploy" >&2
+      echo "       deliberately (the override is recorded in .deploy-state.json)." >&2
+      DEPLOY_CI_GATE_STATUS="unverified:$errored"
+      return 1
+    else
+      echo "  ci.gate  notice: could not verify merge gate for ${short} due to gh API errors (optional, proceeding)" >&2
+      echo "           gh API errors for:$errored" >&2
+      DEPLOY_CI_GATE_STATUS="optional:unverified:$errored"
+      return 0
+    fi
   fi
 
   echo "  ci.gate  all required workflows green for ${short}"

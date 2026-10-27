@@ -22,7 +22,7 @@ git rev-parse HEAD
 ./deploy.sh
 ```
 
-不要传单个 HTML 路径作为完整发布；那是 legacy SPA 单文件模式。部署有 `flock` 并发锁、CI gate、构建/部署门禁与发布后公网探测；成功后 `.deploy-state.json` 记录状态。脚本会保留前端旧版本至 `$APP_WEB_ROOT/.previous/`，发布门禁失败时如有上一版会自动恢复后端 build；门禁失败时不更新 state。**这不是完整原子回滚，也不保证迁移可逆**。不要用 `--dry-run` 当实际发布验证，也不要随意设置 `DEPLOY_SKIP_CI_CHECK=1`。
+不要传单个 HTML 路径作为完整发布；那是 legacy SPA 单文件模式。部署有 `flock` 并发锁、CI gate（默认仅提示不阻断发布，如需强制通过 CI 可加 `--require-ci` 或 `DEPLOY_REQUIRE_CI_CHECK=1`）、构建/部署门禁与发布后公网探测；成功后 `.deploy-state.json` 记录状态。脚本会保留前端旧版本至 `$APP_WEB_ROOT/.previous/`，发布门禁失败时如有上一版会自动恢复后端 build；门禁失败时不更新 state。**这不是完整原子回滚，也不保证迁移可逆**。不要用 `--dry-run` 当实际发布验证，也不要随意设置 `DEPLOY_SKIP_CI_CHECK=1`。
 
 状态页门禁分两层：**产物正确性**（源站 vhost 返回 2xx、本次安装的 `status.<TS>.html` 与源站返回字节一致、`/api/status` feed 可达）任一不达标即阻断发布；**公开 DNS 可达性**单独判定——主机名能解析时按公网 2xx 严格校验，不能解析时只告警并打印 DNSPod 补 A 记录的修复指引（该区在 DNSPod 控制台，仓库与脚本都无法代劳）。需要恢复"公网不可达即阻断"的旧语义时设 `STATUS_GATE_REQUIRE_PUBLIC=1`。`.deploy-state.json` 记录 `statusPublicDns` 与 `statusPublicReachable`。
 
