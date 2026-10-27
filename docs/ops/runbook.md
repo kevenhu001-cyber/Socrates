@@ -8,7 +8,7 @@
 2. **分支保护（待人工核验/配置）：** 在 GitHub 仓库设置 `main` 分支保护/规则集：禁止直接推送，要求 PR、至少一名审查者、要求相关 CI 检查通过、限制管理员绕过；检查实际规则与必需检查名并记录。仓库文件本身不能证明远端规则已启用。
 3. **CI 与静态门禁：** PR/待发提交应通过仓库工作流（`.github/workflows/ci.yml`、`server-ci.yml`、`security.yml` 等）；本地可运行 按各包锁文件安装依赖并生成 WASM 后运行 `npm run verify`（typecheck、lint、共享测试），再运行 `npm run test:unit`、`npm run openapi:check`、`npm run test:openapi`、`node --test scripts/test-verify-sbom.mjs`、`bash scripts/test-deploy-flow.sh`；前端 build 后运行完整 `parity:check` 和相关 Playwright 套件。服务端迁移改动另核对 `server` 包脚本与 Drizzle schema；不要将本地通过等同于远端必需检查已通过。
 4. **CodeQL（待人工 triage）：** 检查 GitHub Security/Code scanning 中默认分支与待发提交的 CodeQL 结果；每项告警由维护者判定、修复或按流程记录误报/接受风险，未 triage 不视为“通过”。仓库有 `security.yml` 不代表扫描已运行、无告警或已处理。
-5. **部署脚本预检：** 在目标部署主机、正确 checkout 与授权账户下审阅 `./deploy.sh --help` 与 `./deploy.sh --site-only --dry-run`（校验营销站目录、不写任何文件）。`--dry-run` 只在 `--site-only` 下可用；单独使用会被直接拒绝，因为它过去实际含义是"跳过合并门禁然后照样全量发布"。核实 `git`/`gh` 登录可用，确保 `deploy.sh` 的提交 CI gate 对**当前 commit**为绿。脚本缺少 `git`/`gh`、无法解析 HEAD、查询失败、无已完成成功结果时均默认拒绝发布；`DEPLOY_SKIP_CI_CHECK=1` 是有审计记录的绕过，不是常规做法。生产脚本要求 `sudo -n` 可用、`flock` 可用。
+5. **部署脚本预检：** 在目标部署主机、正确 checkout 与授权账户下审阅 `./deploy.sh --help` 与 `./deploy.sh --site-only --dry-run`（校验营销站目录、不写任何文件）。`--dry-run` 只在 `--site-only` 下可用；单独使用会被直接拒绝，因为它过去实际含义是"跳过合并门禁然后照样全量发布"。核实 `git`/`gh` 登录可用，确保 `deploy.sh` 的提交 CI gate 对**当前 commit**为绿。脚本缺少 `git`/`gh`、无法解析 HEAD、查询失败、无已完成成功结果时均默认拒绝发布；`DEPLOY_SKIP_CI_CHECK=1`（完全跳过检查）与 `--no-ci-check` / `DEPLOY_REQUIRE_CI_CHECK=0`（检查但不强制）都是有审计记录的绕过，不是常规做法。生产脚本要求 `sudo -n` 可用、`flock` 可用。
 6. **staging（待建立/验证）：** 人工确认有隔离的 staging 主机、数据库、域名、独立密钥和证书，部署同一 SHA，执行 API/登录/核心聊天与迁移兼容性冒烟，再记录结果。仓库未证明 staging 已存在；未验证前标为阻塞/风险接受，不能声称已通过 staging。
 7. 冻结发布 SHA；确认变更影响、兼容迁移、回滚责任人和观测窗口。若 schema 为破坏性变更，采用先兼容扩展、后清理的分阶段迁移；`deploy.sh` 的应用回退**不会**回滚数据库迁移。
 
@@ -22,7 +22,7 @@ git rev-parse HEAD
 ./deploy.sh
 ```
 
-不要传单个 HTML 路径作为完整发布；那是 legacy SPA 单文件模式。部署有 `flock` 并发锁、CI gate（默认仅提示不阻断发布，如需强制通过 CI 可加 `--require-ci` 或 `DEPLOY_REQUIRE_CI_CHECK=1`）、构建/部署门禁与发布后公网探测；成功后 `.deploy-state.json` 记录状态。脚本会保留前端旧版本至 `$APP_WEB_ROOT/.previous/`，发布门禁失败时如有上一版会自动恢复后端 build；门禁失败时不更新 state。**这不是完整原子回滚，也不保证迁移可逆**。不要用 `--dry-run` 当实际发布验证，也不要随意设置 `DEPLOY_SKIP_CI_CHECK=1`。
+不要传单个 HTML 路径作为完整发布；那是 legacy SPA 单文件模式。部署有 `flock` 并发锁、CI gate（**默认强制**：当前 commit 的 CI 不为绿即拒绝发布；紧急情况下用 `--no-ci-check` 或 `DEPLOY_REQUIRE_CI_CHECK=0` 显式绕过，检查照常执行并记录为未强制，`--require-ci` 仍可用于显式声明强制）、构建/部署门禁与发布后公网探测；成功后 `.deploy-state.json` 记录状态。脚本会保留前端旧版本至 `$APP_WEB_ROOT/.previous/`，发布门禁失败时如有上一版会自动恢复后端 build；门禁失败时不更新 state。**这不是完整原子回滚，也不保证迁移可逆**。不要用 `--dry-run` 当实际发布验证，也不要随意设置 `DEPLOY_SKIP_CI_CHECK=1`。
 
 状态页门禁分两层：**产物正确性**（源站 vhost 返回 2xx、本次安装的 `status.<TS>.html` 与源站返回字节一致、`/api/status` feed 可达）任一不达标即阻断发布；**公开 DNS 可达性**单独判定——主机名能解析时按公网 2xx 严格校验，不能解析时只告警并打印 DNSPod 补 A 记录的修复指引（该区在 DNSPod 控制台，仓库与脚本都无法代劳）。需要恢复"公网不可达即阻断"的旧语义时设 `STATUS_GATE_REQUIRE_PUBLIC=1`。`.deploy-state.json` 记录 `statusPublicDns` 与 `statusPublicReachable`。
 
