@@ -17,28 +17,21 @@
           "name": "@expo/cli",
           "severity": "high",
           "direct": false,
-          "range": "<=0.0.0-canary-20231123-1b19f96-4 || >=0.0.1-canary-20231125-d600e44",
-          "reason": "Upstream GHSA-86w9-cpqp-85rv in node-forge <= 1.4.0; build/signing tooling only; unblocks on upstream Expo/node-forge patch."
-        },
-        {
-          "name": "@expo/code-signing-certificates",
-          "severity": "high",
-          "direct": false,
-          "range": "*",
+          "range": ">=54.1.0-canary-20250930-9dc59d3",
           "reason": "Upstream GHSA-86w9-cpqp-85rv in node-forge <= 1.4.0; build/signing tooling only; unblocks on upstream Expo/node-forge patch."
         },
         {
           "name": "expo",
           "severity": "high",
           "direct": true,
-          "range": ">=45.0.0-beta.1",
+          "range": "52.0.0-canary-20240625-2333e70 - 52.0.0-canary-20241018-f71b3e0 || >=55.0.0-canary-20250912-b5ce2a8",
           "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
         },
         {
           "name": "node-forge",
           "severity": "high",
           "direct": false,
-          "range": "*",
+          "range": "<=1.4.0",
           "reason": "Upstream GHSA-86w9-cpqp-85rv in node-forge <= 1.4.0; build/signing tooling only; unblocks on upstream Expo/node-forge patch."
         },
         {
@@ -46,7 +39,7 @@
           "severity": "high",
           "direct": false,
           "range": "<4.6.6",
-          "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6; Expo CLI pins zod ^3.25.76 and the newest @expo/cli (58.1.15) still does, so no upstream fix exists. The copy is build/CI tooling of @expo/cli only \u2014 it never validates a user-supplied collection, so the oversized-collection DoS it describes is not reachable here; unblocks on an upstream Expo zod bump."
+          "reason": "GHSA-mrhx-c7xc-m3w5 in zod <4.6.6; Expo CLI pins zod ^3.25.76 and the newest @expo/cli (58.1.15) still does, so no upstream fix exists. The copy is build/CI tooling of @expo/cli only — it never validates a user-supplied collection, so the oversized-collection DoS it describes is not reachable here; unblocks on an upstream Expo zod bump."
         }
       ]
     }
