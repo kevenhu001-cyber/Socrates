@@ -184,6 +184,21 @@ function bindCard(card, spec, chart, opts) {
       if (resolved) downloadDataUrl((spec.title || 'visualization').replace(/[^\w-]+/g, '-') + dataUrlExtension(resolved), resolved);
     });
   });
+  var wbBtn = card.querySelector('[data-viz-action="workbench"]');
+  if (wbBtn) {
+    wbBtn.addEventListener('click', function () {
+      import('../react/workbench/workbenchStore').then(function (m) {
+        m.openWorkbench({
+          id: card.dataset.visualizationId || ('viz-' + Date.now()),
+          title: spec.title || '数据可视化',
+          type: 'chart',
+          code: JSON.stringify(spec, null, 2),
+          language: 'json',
+          previewHtml: card.outerHTML,
+        }, 'preview');
+      });
+    });
+  }
 }
 
 /* P_viz-i18n — read a translation key with an English fallback.
@@ -243,7 +258,8 @@ export async function mountVisualization(spec, host, options) {
   var actionReset = vizT('viz.action.reset', 'Reset view');
   var actionDownload = vizT('viz.action.download', 'Download PNG');
   var actionFullscreen = vizT('viz.action.fullscreen', 'Fullscreen');
-  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" aria-label="' + esc(actionTable) + '" title="' + esc(actionTable) + '">' + esc(actionTable) + '</button><button type="button" data-viz-action="reset" aria-label="' + esc(actionReset) + '" title="' + esc(actionReset) + '">' + esc(actionReset) + '</button><button type="button" data-viz-action="download" aria-label="' + esc(actionDownload) + '" title="' + esc(actionDownload) + '">' + esc(actionDownload) + '</button><button type="button" data-viz-action="fullscreen" aria-label="' + esc(actionFullscreen) + '" title="' + esc(actionFullscreen) + '">' + esc(actionFullscreen) + '</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
+  var actionWorkbench = vizT('workbench.title', 'Workbench');
+  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions"><button type="button" data-viz-action="workbench" aria-label="' + esc(actionWorkbench) + '" title="' + esc(actionWorkbench) + '">' + esc(actionWorkbench) + '</button><button type="button" data-viz-action="table" aria-expanded="false" aria-label="' + esc(actionTable) + '" title="' + esc(actionTable) + '">' + esc(actionTable) + '</button><button type="button" data-viz-action="reset" aria-label="' + esc(actionReset) + '" title="' + esc(actionReset) + '">' + esc(actionReset) + '</button><button type="button" data-viz-action="download" aria-label="' + esc(actionDownload) + '" title="' + esc(actionDownload) + '">' + esc(actionDownload) + '</button><button type="button" data-viz-action="fullscreen" aria-label="' + esc(actionFullscreen) + '" title="' + esc(actionFullscreen) + '">' + esc(actionFullscreen) + '</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
   host.appendChild(card);
   mounting.delete(cardId);
   renderCardMath(card);

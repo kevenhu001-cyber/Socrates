@@ -13,6 +13,7 @@ export const DISPLAY_WIDTH_STEPS = [0.85,  1, 1.3,   1.7];
 export const FONT_LABELS  = ["S","M","L","XL"];
 export const WIDTH_LABELS = ["S","M","L","XL"];
 export const THEME_PREFERENCES = ["system", "light", "dark"];
+export const THEME_STYLES = ["socrates", "philosophy"];
 
 /* ── state ── */
 export var displayPrefs = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: false };
@@ -21,6 +22,28 @@ var _systemThemeQuery = null;
 
 function isThemePreference(value) {
   return THEME_PREFERENCES.indexOf(value) !== -1;
+}
+
+function isThemeStyle(value) {
+  return THEME_STYLES.indexOf(value) !== -1;
+}
+
+export function getThemeStyle() {
+  var attr = document.documentElement.getAttribute("data-theme");
+  if (isThemeStyle(attr)) return attr;
+  try {
+    var saved = localStorage.getItem("socrates-theme-style");
+    if (isThemeStyle(saved)) return saved;
+  } catch (_) { /* empty-catch: intentional — theme style preference read is best-effort */ }
+  return "socrates";
+}
+
+export function setThemeStyle(style) {
+  if (!isThemeStyle(style)) return;
+  document.documentElement.setAttribute("data-theme", style);
+  try { localStorage.setItem("socrates-theme-style", style); } catch (_) { /* empty-catch: intentional — theme style preference write is best-effort */ }
+  syncThemeUI();
+  applyDisplayPrefs();
 }
 
 function systemThemeMode() {
@@ -64,6 +87,13 @@ export function syncThemeUI() {
     option.classList.toggle("on", active);
     option.setAttribute("aria-checked", active ? "true" : "false");
   });
+  var currentStyle = html.getAttribute("data-theme") || getThemeStyle();
+  var styleOptions = document.querySelectorAll("[data-theme-style-option]");
+  styleOptions.forEach(function (option) {
+    var active = option.getAttribute("data-theme-style-option") === currentStyle;
+    option.classList.toggle("on", active);
+    option.setAttribute("aria-checked", active ? "true" : "false");
+  });
   /* P_display-prefs-no-dup — the theme row is a radiogroup, so the checked
      radio already states the current theme. The old #displayThemeModeLabel
      readout repeated the same word next to it. */
@@ -104,6 +134,8 @@ function watchSystemTheme() {
 export function initTheme() {
   var preference = getThemePreference();
   document.documentElement.setAttribute("data-theme-preference", preference);
+  var style = getThemeStyle();
+  document.documentElement.setAttribute("data-theme", style);
   setEffectiveThemeMode(resolveThemeMode(preference));
   watchSystemTheme();
   var options = document.querySelectorAll("[data-theme-option]");
@@ -112,6 +144,14 @@ export function initTheme() {
     option.dataset.themeWired = "true";
     option.addEventListener("click", function () {
       setThemePreference(option.getAttribute("data-theme-option"));
+    });
+  });
+  var styleOptions = document.querySelectorAll("[data-theme-style-option]");
+  styleOptions.forEach(function (option) {
+    if (option.dataset.styleWired === "true") return;
+    option.dataset.styleWired = "true";
+    option.addEventListener("click", function () {
+      setThemeStyle(option.getAttribute("data-theme-style-option"));
     });
   });
   syncThemeUI();
@@ -218,7 +258,9 @@ export function syncDisplayPrefsUI() {
      of snapping. Uses rAF on the first sync so the indicator lands
      at the correct position before the popover reveals, avoiding a
      flash from (0,0) to the real coordinates. */
-  [fWrap, wWrap].forEach(function (wrap) {
+  var sWrap = document.getElementById("displayThemeStyleSegs");
+  var tWrap = document.getElementById("displayThemeSegs");
+  [fWrap, wWrap, sWrap, tWrap].forEach(function (wrap) {
     if (!wrap) return;
     var onBtn = wrap.querySelector(".display-prefs-seg.on");
     if (!onBtn) return;

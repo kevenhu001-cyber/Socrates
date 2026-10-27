@@ -28,6 +28,7 @@ import { addMessage } from './messages.ts';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { syncSocraticMasteryUI, showSocraticSuggestions } from '../tutor/socraticMastery.ts';
 
 /* omit entirely; backend passes through (mirrors main.js contract) */
 var MAX_TOKENS_CHAT = undefined;
@@ -373,6 +374,12 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
     if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId,_clientTurn.id);
   }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#13'); }
   publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
+  try {
+    syncSocraticMasteryUI();
+    if (result && result.text && !result.cancelled) {
+      showSocraticSuggestions();
+    }
+  } catch (_) { /* empty-catch: intentional — socratic mastery and suggestions are non-fatal feedback */ }
   if(!ctl || typeof ctl.isFinished !== "function" || !ctl.isFinished()){
     if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length))saveCurrentSession();
   }

@@ -83,3 +83,428 @@
   /* The phone drawer is a full-bleed sheet: no corner, no edge. */
   .detail-surface { width: 100%; border: 0; border-start-start-radius: 0; border-end-start-radius: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 }
+
+/* =========================================================================
+ * Artifacts & Canvas Workbench (Dual-pane desktop & mobile bottom sheet)
+ * ======================================================================= */
+.artifacts-workbench.hidden,
+.artifacts-backdrop.hidden {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  #appShell .main {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+  }
+  #appShell .main .main-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .artifacts-workbench {
+    flex: 0 0 auto;
+    width: min(520px, 46vw);
+    min-width: 360px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--ui-bg-page);
+    border-inline-start: 1px solid var(--ui-border-default);
+    animation: detail-enter var(--ui-duration-overlay) var(--ui-ease-out) both;
+    position: relative;
+    z-index: var(--ui-z-drawer);
+  }
+  .artifacts-workbench.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: var(--ui-z-modal);
+    border-inline-start: 0;
+  }
+  .artifacts-backdrop {
+    display: none;
+  }
+  .workbench-drag-handle {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .artifacts-backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--ui-backdrop);
+    z-index: var(--ui-z-modal);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .artifacts-workbench {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    height: 85vh;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--ui-bg-elevated);
+    border-start-start-radius: var(--ui-radius-2xl);
+    border-start-end-radius: var(--ui-radius-2xl);
+    border-top: 1px solid var(--ui-border-default);
+    box-shadow: var(--ui-shadow-overlay);
+    z-index: var(--ui-z-sheet);
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .workbench-drag-handle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 24px;
+    width: 100%;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .workbench-drag-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-border-strong);
+  }
+  .workbench-action-btn.desktop-only {
+    display: none;
+  }
+}
+
+.workbench-drawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.workbench-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-sm);
+  padding: 0 var(--ui-space-md);
+  min-height: 44px;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  flex: 0 0 auto;
+}
+
+.workbench-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.workbench-type-badge {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-bg-panel);
+  color: var(--ui-accent-action);
+  flex: 0 0 auto;
+}
+
+.workbench-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+}
+
+.workbench-title {
+  margin: 0;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workbench-lang-badge {
+  font-size: var(--ui-font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--ui-radius-xs);
+  background: var(--ui-bg-control);
+  color: var(--ui-text-secondary);
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+
+.workbench-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--ui-bg-panel);
+  border-radius: var(--ui-radius-pill);
+  padding: 2px;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.workbench-tab {
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  padding: 0 10px;
+  min-height: 24px;
+  border-radius: var(--ui-radius-pill);
+  cursor: pointer;
+  transition: background var(--ui-duration-hover), color var(--ui-duration-hover);
+}
+
+.workbench-tab.is-active {
+  background: var(--ui-bg-elevated);
+  color: var(--ui-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.workbench-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  flex: 0 0 auto;
+}
+
+.workbench-action-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  border-radius: var(--ui-radius-control);
+  cursor: pointer;
+  transition: background var(--ui-duration-hover), color var(--ui-duration-hover);
+}
+
+.workbench-action-btn:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+.workbench-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--ui-space-md);
+}
+
+.workbench-preview-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.workbench-preview-container > * {
+  max-width: 100%;
+}
+
+.workbench-code-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.workbench-code-pre {
+  margin: 0;
+  flex: 1 1 auto;
+  background: var(--ui-bg-panel);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  padding: var(--ui-space-md);
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.6;
+  color: var(--ui-text-primary);
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.workbench-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--ui-space-md);
+  min-height: 40px;
+  border-top: 1px solid var(--ui-border-subtle);
+  flex: 0 0 auto;
+}
+
+.workbench-version-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-text-tertiary);
+}
+
+.workbench-version-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ui-accent-action);
+}
+
+.workbench-ask-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--ui-border-default);
+  background: var(--ui-bg-control);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  padding: 0 12px;
+  min-height: 32px;
+  border-radius: var(--ui-radius-pill);
+  cursor: pointer;
+  transition: background var(--ui-duration-hover);
+}
+
+.workbench-ask-btn:hover {
+  background: var(--ui-bg-hover);
+}
+
+.code-block-workbench-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  cursor: pointer;
+  padding: 0 6px;
+  min-height: 24px;
+  border-radius: var(--ui-radius-xs);
+  transition: color var(--ui-duration-hover), background var(--ui-duration-hover);
+}
+
+.code-block-workbench-btn:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
+}
+
+/* =========================================================================
+ * Socratic Mastery Pill & Proactive Cognitive Scaffolding Chips
+ * ======================================================================= */
+.tutor-mastery-pill.hidden,
+.socratic-suggestions.hidden {
+  display: none;
+}
+
+.tutor-mastery-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-panel);
+  border: 1px solid var(--ui-border-subtle);
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-text-primary);
+  flex: 0 0 auto;
+  user-select: none;
+}
+
+.tutor-mastery-stage-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ui-accent-action);
+  box-shadow: 0 0 6px var(--ui-accent-action);
+}
+
+.tutor-mastery-stage-label {
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-primary);
+}
+
+.tutor-mastery-stage-steps {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tutor-mastery-stage-steps .step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ui-border-strong);
+  transition: background var(--ui-duration-hover), transform var(--ui-duration-hover);
+}
+
+.tutor-mastery-stage-steps .step-dot.active {
+  background: var(--ui-accent-action);
+  transform: scale(1.25);
+}
+
+@media (max-width: 768px) {
+  .tutor-mastery-stage-steps {
+    display: none;
+  }
+}
+
+.socratic-suggestions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  padding: 4px 0 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.socratic-suggestions::-webkit-scrollbar {
+  display: none;
+}
+
+.socratic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  min-height: 32px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-control);
+  border: 1px solid var(--ui-border-default);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-regular);
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  transition: background var(--ui-duration-hover), color var(--ui-duration-hover), border-color var(--ui-duration-hover);
+}
+
+.socratic-chip:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+  border-color: var(--ui-border-strong);
+}
+
+.socratic-chip-icon {
+  color: var(--ui-accent-action);
+}

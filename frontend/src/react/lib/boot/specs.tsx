@@ -120,6 +120,13 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'chatConfigurationReactRoot', label: 'chat-configuration',
       ensureHost: (doc) => ensureBodyChild(doc, 'chatConfigurationReactRoot'),
       mount: () => import('../../chat-configuration').then((m) => m.mountChatConfiguration()) },
+    { hostId: 'artifactsWorkbench', label: 'artifacts-workbench',
+      mount: () => import('../../workbench/WorkbenchDrawer').then(({ WorkbenchDrawer }) => {
+        const el = document.getElementById('artifactsWorkbench');
+        if (el) {
+          mountOwnedRoot(el, 'artifacts-workbench', <WorkbenchDrawer />);
+        }
+      }) },
     /* 5. Lazy portal roots. The session list mounts into the existing
        `#recentsList` host (mountSessionList targets that id directly);
        the hostId must match it or the registry skips the spec and the

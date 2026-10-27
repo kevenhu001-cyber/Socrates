@@ -28,6 +28,18 @@ export function GeneralSettingsPane({
           <option value="dark">{label('深色', 'Dark')}</option>
         </select>
       </label>
+      <label className="settings-choice">{label('主题风格', 'Theme style')}
+        <select
+          value={document.documentElement.getAttribute('data-theme') || 'socrates'}
+          onChange={(event) => {
+            const style = event.target.value;
+            document.querySelector<HTMLElement>('[data-theme-style-option="' + style + '"]')?.click();
+          }}
+        >
+          <option value="socrates">{label('现代科技', 'Modern')}</option>
+          <option value="philosophy">{label('古典哲学', 'Philosophy')}</option>
+        </select>
+      </label>
       <label className="settings-choice">{label('语言', 'Language')}
         <select value={language} onChange={(event) => onLanguageChange(event.target.value)}>
           <option value="zh">中文</option>

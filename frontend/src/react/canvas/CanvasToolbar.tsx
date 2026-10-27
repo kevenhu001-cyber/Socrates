@@ -13,6 +13,7 @@ interface CanvasToolbarProps {
   onIterate: () => void;
   onFullscreen: () => void;
   onToggleOriginal: () => void;
+  onOpenWorkbench?: () => void;
 }
 
 /**
@@ -31,6 +32,7 @@ export function CanvasToolbar({
   onIterate,
   onFullscreen,
   onToggleOriginal,
+  onOpenWorkbench,
 }: CanvasToolbarProps) {
   const t = useTranslation();
   const editLabel = mode === 'edit' ? t('composer.canvas.done') : t('composer.canvas.edit');
@@ -45,6 +47,15 @@ export function CanvasToolbar({
         <span className="canvas-block-chip-label">{extensionLabel}</span>
       </span>
       <div className="canvas-block-actions">
+        {onOpenWorkbench && (
+          <button
+            type="button"
+            className="canvas-btn canvas-workbench-btn"
+            onClick={onOpenWorkbench}
+          >
+            {t('workbench.title')}
+          </button>
+        )}
         <button
           type="button"
           className="canvas-btn"

@@ -233,6 +233,21 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
           </IconButton>
           </span>
           <MessageOverflow actions={[
+            {
+              label: i18n('workbench.open', '在工作台打开'),
+              icon: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/>',
+              onClick: () => {
+                import('../workbench/workbenchStore').then(({ openWorkbench }) => {
+                  openWorkbench({
+                    id: String(message.clientId || message.id || Date.now()),
+                    title: '对话内容协同',
+                    type: 'document',
+                    code: message.rawText || '',
+                    previewHtml: message.html || undefined,
+                  }, 'preview');
+                });
+              },
+            },
             { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => c.onShare?.() },
             { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => c.onBranch?.() },
             { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event) => c.onReadAloud?.(event) },

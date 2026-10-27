@@ -100,12 +100,42 @@ function makeCodeCopyButton(pre: HTMLElement): CopyButtonEl {
   return button;
 }
 
+/* Build the workbench button for a code-block header. */
+function makeWorkbenchButton(pre: HTMLElement, langLabel: string): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'code-block-workbench-btn';
+  const label = trCopy('workbench.open', '在工作台打开');
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  button.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg><span class="code-block-workbench-label">' + escHTML(label) + '</span>';
+  button.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const codeEl = pre.querySelector('code');
+    const codeText = codeEl ? (codeEl.textContent || '') : '';
+    import('../react/workbench/workbenchStore').then(({ openWorkbench }) => {
+      openWorkbench({
+        id: `code-${Date.now()}`,
+        title: langLabel ? `${langLabel.toUpperCase()} 代码` : '代码实现',
+        type: 'code',
+        language: langLabel,
+        code: codeText,
+      }, 'code');
+    });
+  });
+  return button;
+}
+
 /* Inject a copy control into a `.code-block-header` if it does not have one
    yet. Idempotent — safe to run repeatedly over the same header. */
 function addCopyToHeader(header: Element): void {
   if (header.querySelector('.code-block-copy')) return;
   const pre = header.nextElementSibling;
   if (!pre || pre.tagName !== 'PRE') return;
+  const langEl = header.querySelector('.code-block-header-lang');
+  const lang = (langEl && langEl.textContent) ? langEl.textContent.trim() : '';
+  header.appendChild(makeWorkbenchButton(pre as HTMLElement, lang));
   header.appendChild(makeCodeCopyButton(pre as HTMLElement));
 }
 

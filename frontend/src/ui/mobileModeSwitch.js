@@ -1,4 +1,5 @@
 import { stateStore } from '../state/store.js';
+import { syncSocraticMasteryUI } from '../tutor/socraticMastery.ts';
 
 /* ui/mobileModeSwitch.js — mobile-only 对话/导师 (Chat/Tutor) switcher.
  *
@@ -69,6 +70,7 @@ function syncTopModeSwitch(mode) {
        and the control is two stops where it should be one. */
     options[i].setAttribute("tabindex", active ? "0" : "-1");
   }
+  try { syncSocraticMasteryUI(); } catch (_) { /* empty-catch: intentional — socratic mastery sync is best-effort */ }
 }
 
 /** Select a mode from the header pill (or an arrow key on it). */
@@ -152,6 +154,7 @@ export function syncConversationActive() {
      directly here is the final authority: no cowork rule can beat
      an inline display:none !important. */
   _applyModeSwitchVisibility(active);
+  try { syncSocraticMasteryUI(); } catch (_) { /* empty-catch: intentional — socratic mastery sync on conversation toggle is best-effort */ }
 }
 
 function _applyModeSwitchVisibility(hidden) {

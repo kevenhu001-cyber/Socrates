@@ -93,8 +93,16 @@
   var initialMode = initialPreference === "system"
     ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
     : initialPreference;
+  var initialStyle = "socrates";
+  try {
+    var storedStyle = localStorage.getItem("socrates-theme-style");
+    if (storedStyle === "socrates" || storedStyle === "philosophy") {
+      initialStyle = storedStyle;
+    }
+  } catch (_) { /* ignore */ }
   document.documentElement.setAttribute('data-theme-preference', initialPreference);
   document.documentElement.setAttribute('data-mode', initialMode);
+  document.documentElement.setAttribute('data-theme', initialStyle);
 })();
 </script>
 <!-- Fetch the shared variable UI face before stylesheet discovery. CJK
@@ -511,6 +519,15 @@
             </div>
           </div>
           <div class="display-prefs-row">
+            <div class="display-prefs-label">
+              <span data-i18n-key="display.themeStyle">Theme style</span>
+            </div>
+            <div class="display-prefs-segs display-theme-style-segs" id="displayThemeStyleSegs" role="radiogroup" data-i18n-aria="display.themeStyle" aria-label="Theme style">
+              <button class="display-prefs-seg on" type="button" data-theme-style-option="socrates" role="radio" aria-checked="true" data-i18n-key="display.styleModern">Modern</button>
+              <button class="display-prefs-seg" type="button" data-theme-style-option="philosophy" role="radio" aria-checked="false" data-i18n-key="display.stylePhilosophy">Philosophy</button>
+            </div>
+          </div>
+          <div class="display-prefs-row">
             <div class="display-prefs-label"><span data-i18n-key="sidebar.textSize">Text size</span></div>
             <div class="display-prefs-segs" id="displayPrefsFontSegs" role="radiogroup" data-i18n-aria="sidebar.textSize" aria-label="Text size">
               <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-font="1">S</button>
@@ -611,6 +628,17 @@
         <span class="top-model-switcher-model" id="topModelSwitcherModel"></span>
         <svg class="top-model-switcher-caret" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg>
       </button>
+      <!-- P_tutor-mastery — Socratic progress indicator shown when Tutor mode is active -->
+      <div class="tutor-mastery-pill tutor-only hidden" id="tutorMasteryPill" role="status" aria-label="Socratic learning stage" data-i18n-aria="tutor.mastery.title" data-i18n-title="tutor.mastery.title" title="Socratic Stage">
+        <span class="tutor-mastery-stage-dot" aria-hidden="true"></span>
+        <span class="tutor-mastery-stage-label" id="tutorMasteryStageLabel" data-i18n-key="tutor.mastery.step1">探索提问</span>
+        <span class="tutor-mastery-stage-steps" aria-hidden="true">
+          <span class="step-dot active" data-step="1"></span>
+          <span class="step-dot" data-step="2"></span>
+          <span class="step-dot" data-step="3"></span>
+          <span class="step-dot" data-step="4"></span>
+        </span>
+      </div>
       <!-- #chatStats removed: updateChatStats() never had stats to show,
            the element stayed empty and hidden since 2026-09. -->
       <span class="exam-title-bar hidden" id="examTitleBar" data-exam-only="true"></span>
@@ -880,6 +908,8 @@
           </button>
         </div>
         <div class="chat-input-bar" id="chatInputBar">
+          <!-- P_socratic-suggestions — Proactive cognitive scaffolding chips in Tutor mode -->
+          <div class="socratic-suggestions tutor-only hidden" id="socraticSuggestions" role="region" aria-label="启发式思维建议" data-i18n-aria="tutor.suggestion.prefix"></div>
           <!-- P_pill-anchor-composer — moved inside chat-input-bar so the
                pill anchors to the composer's top edge instead of
                chat-view's top edge. The CSS rule `.chat-input-bar >
@@ -892,6 +922,10 @@
     </div>
 
   </div>
+
+  <!-- P_artifacts-workbench — Dual-pane side-by-side workspace & mobile bottom sheet for Code/Preview -->
+  <aside class="artifacts-workbench hidden" id="artifactsWorkbench" aria-label="Artifacts and Canvas" role="complementary"></aside>
+  <div class="artifacts-backdrop hidden" id="artifactsBackdrop" aria-hidden="true"></div>
 
 </main>
 </div>

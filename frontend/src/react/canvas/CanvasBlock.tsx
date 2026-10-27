@@ -7,6 +7,7 @@ import { sanitizeHtml } from '../../render/sanitizeHtml.ts';
 import { copyToClipboard } from './clipboard';
 import { useTranslation } from './useTranslation';
 import { CanvasToolbar, type CanvasMode } from './CanvasToolbar';
+import { openWorkbench } from '../workbench/workbenchStore';
 
 interface CanvasBlockProps {
   message: LegacyChatMessage;
@@ -114,6 +115,17 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
     setMode((prev) => (prev === 'view-original' ? 'view-edited' : 'view-original'));
   }, []);
 
+  const openInWorkbench = useCallback(() => {
+    openWorkbench({
+      id: canvasId,
+      title: 'Canvas 协同工作台',
+      type: 'document',
+      previewHtml: innerRef.current?.innerHTML || html,
+      code: innerRef.current?.innerText || originalText,
+      version: hasEdited ? 2 : 1,
+    }, 'preview');
+  }, [canvasId, html, originalText, hasEdited]);
+
   const extensionIcon = typeof message._extensionIcon === 'string' ? message._extensionIcon : '';
   const extensionLabel = (() => {
     const k = 'composer.write';
@@ -134,6 +146,7 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
         onIterate={iterate}
         onFullscreen={fullscreen}
         onToggleOriginal={toggleOriginal}
+        onOpenWorkbench={openInWorkbench}
       />
       {mode === 'view-original' ? (
         <pre className="canvas-block-original">{originalText}</pre>

@@ -12,6 +12,6 @@
  */
 export const CSP_INLINE_SCRIPT_HASHES: readonly string[] = [
   "'sha256-BMMCszDyZgbtJTInq97l3gS6kz3p75tjTJvHvp76968='",
-  "'sha256-ERwxO+tAm3Q6IHi6PtJ03Du4l/hSrWtqvVSIwyDlOQk='",
+  "'sha256-nFEipkdO6nVc1pFMJHgoWAIypAKBd28P3QGzsCXwzjE='",
   "'sha256-t8qICH0mvfUwUGue2+eutvTR2ZYOQpwWMYb9uj1+kvM='",
 ] as const;

@@ -558,3 +558,183 @@ html[data-theme="socrates"][data-mode="light"] {
   --border-400: 0 0% 80%;
   --border-500: 0 0% 68%;
 }
+
+/* -------------------------------------------------------------------------
+ * Philosophy Theme ("Classic Socratic" — warm parchment & scholarly ink)
+ * ----------------------------------------------------------------------- */
+html[data-theme="philosophy"][data-mode],
+html[data-theme="philosophy"][data-mode]:lang(zh) {
+  --font-sans: "Geist Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --cg-font: var(--font-sans);
+  --font-display: "Newsreader", "Charis SIL", "Noto Serif SC", "Songti SC", "Georgia", serif;
+  --font-serif: "Newsreader", "Charis SIL", "Noto Serif SC", "Songti SC", "Georgia", serif;
+  --font-mono: "Geist Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --ui-text-prose: color-mix(in srgb, var(--ui-text-primary) 90%, var(--ui-text-secondary));
+  --ui-bg-header-glass: color-mix(in srgb, var(--ui-bg-page) 92%, transparent);
+  --ui-bg-composer-glass: color-mix(in srgb, var(--ui-bg-composer) 95%, transparent);
+
+  --lobe-border-radius-xs: var(--ui-radius-xs);
+  --lobe-border-radius-sm: var(--ui-radius-sm);
+  --lobe-border-radius: var(--ui-radius-md);
+  --lobe-border-radius-lg: var(--ui-radius-lg);
+}
+
+html[data-theme="philosophy"] .greeting,
+html[data-theme="philosophy"] .topic-title,
+html[data-theme="philosophy"] .auth-brand span,
+html[data-theme="philosophy"] .sidebar-logo span,
+html[data-theme="philosophy"] .home-tutor-starters h2,
+html[data-theme="philosophy"] .tutor-mastery-stage-label {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+html[data-theme="philosophy"][data-mode="light"] {
+  --ui-bg-page: rgb(247 244 238);
+  --ui-bg-sidebar: rgb(240 236 225);
+  --ui-bg-panel: rgb(232 227 214);
+  --ui-bg-elevated: rgb(252 251 249);
+  --ui-bg-surface: rgb(252 251 249);
+  --ui-bg-raised: rgb(252 251 249);
+  --ui-bg-overlay: rgb(252 251 249);
+  --ui-bg-composer: rgb(252 251 249);
+  --ui-bg-control: rgb(238 233 220);
+  --ui-bg-bubble: rgb(239 233 219);
+  --ui-bg-sunken: rgb(232 227 214);
+  --ui-bg-hover: color-mix(in srgb, var(--ui-bg-panel) 60%, transparent);
+
+  --ui-border-default: rgba(120, 100, 80, 0.14);
+  --ui-border-strong: rgba(120, 100, 80, 0.24);
+  --ui-border-subtle: rgba(120, 100, 80, 0.08);
+  --ui-border-control: rgba(120, 100, 80, 0.16);
+
+  --ui-text-primary: rgb(28 26 23);
+  --ui-text-secondary: rgb(94 87 77);
+  --ui-text-muted: rgb(125 117 104);
+  --ui-text-tertiary: rgb(125 117 104);
+  --ui-text-disabled: rgb(168 160 146);
+
+  --ui-accent-action: rgb(168 88 50);
+  --ui-accent-hover: rgb(145 74 39);
+  --ui-accent-active: rgb(124 62 31);
+  --ui-accent-strong: rgb(168 88 50);
+  --ui-on-accent: rgb(255 255 255);
+  --ui-brand-accent: rgb(168 88 50);
+
+  --cg-page: var(--ui-bg-page);
+  --cg-rail: var(--ui-bg-sidebar);
+  --cg-surface: var(--ui-bg-surface);
+  --cg-surface-hover: var(--ui-bg-hover);
+  --cg-border: var(--ui-border-default);
+  --cg-border-strong: var(--ui-border-strong);
+  --cg-text: var(--ui-text-primary);
+  --cg-text-secondary: var(--ui-text-secondary);
+  --cg-text-muted: var(--ui-text-muted);
+  --cg-text-faint: var(--ui-text-disabled);
+  --cg-accent: var(--ui-accent-strong);
+  --cg-accent-strong: var(--ui-accent-strong);
+  --cg-accent-ink: var(--ui-on-accent);
+  --cg-danger: var(--ui-danger);
+  --cg-surface-raised: var(--ui-bg-raised);
+
+  --conversation-page: var(--ui-bg-page);
+  --conversation-surface: var(--ui-bg-surface);
+  --conversation-control: var(--ui-bg-control);
+  --conversation-control-hover: color-mix(in srgb, var(--ui-bg-control), var(--ui-text-primary) 8%);
+  --conversation-border: var(--ui-border-default);
+  --conversation-text: var(--ui-text-primary);
+  --conversation-text-muted: var(--ui-text-muted);
+  --conversation-user: var(--ui-bg-bubble);
+
+  --bg-000: 42 20% 98.6%;
+  --bg-100: 43 25% 95.5%;
+  --bg-200: 43 28% 91.2%;
+  --bg-300: 42 22% 87.5%;
+  --text-000: 36 10% 10%;
+  --text-100: 36 10% 12%;
+  --text-200: 36 10% 36%;
+  --text-300: 36 9% 46%;
+  --text-350: 36 9% 46%;
+  --text-400: 36 8% 54%;
+  --text-500: 36 8% 62%;
+  --border-100: 36 15% 90%;
+  --border-200: 36 15% 85%;
+  --border-300: 36 15% 80%;
+  --border-400: 36 15% 72%;
+  --border-500: 36 15% 60%;
+}
+
+html[data-theme="philosophy"][data-mode="dark"] {
+  --ui-bg-page: rgb(18 17 16);
+  --ui-bg-sidebar: rgb(24 23 21);
+  --ui-bg-panel: rgb(32 30 27);
+  --ui-bg-elevated: rgb(40 38 34);
+  --ui-bg-surface: rgb(32 30 27);
+  --ui-bg-raised: rgb(40 38 34);
+  --ui-bg-overlay: rgb(40 38 34);
+  --ui-bg-composer: rgb(40 38 34);
+  --ui-bg-control: rgb(38 36 32);
+  --ui-bg-bubble: rgb(37 35 32);
+  --ui-bg-sunken: rgb(18 17 16);
+  --ui-bg-hover: color-mix(in srgb, var(--ui-bg-panel) 85%, var(--ui-text-primary) 15%);
+
+  --ui-border-default: rgba(230, 215, 190, 0.12);
+  --ui-border-strong: rgba(230, 215, 190, 0.22);
+  --ui-border-subtle: rgba(230, 215, 190, 0.08);
+  --ui-border-control: rgba(230, 215, 190, 0.15);
+
+  --ui-text-primary: rgb(242 237 228);
+  --ui-text-secondary: rgb(168 160 146);
+  --ui-text-muted: rgb(136 128 114);
+  --ui-text-tertiary: rgb(136 128 114);
+  --ui-text-disabled: rgb(98 92 82);
+
+  --ui-accent-action: rgb(212 130 85);
+  --ui-accent-hover: rgb(224 146 102);
+  --ui-accent-active: rgb(194 114 68);
+  --ui-accent-strong: rgb(212 130 85);
+  --ui-on-accent: rgb(18 17 16);
+  --ui-brand-accent: rgb(212 130 85);
+
+  --cg-page: var(--ui-bg-page);
+  --cg-rail: var(--ui-bg-sidebar);
+  --cg-surface: var(--ui-bg-surface);
+  --cg-surface-hover: var(--ui-bg-hover);
+  --cg-border: var(--ui-border-default);
+  --cg-border-strong: var(--ui-border-strong);
+  --cg-text: var(--ui-text-primary);
+  --cg-text-secondary: var(--ui-text-secondary);
+  --cg-text-muted: var(--ui-text-muted);
+  --cg-text-faint: var(--ui-text-disabled);
+  --cg-accent: var(--ui-accent-strong);
+  --cg-accent-strong: var(--ui-accent-strong);
+  --cg-accent-ink: var(--ui-on-accent);
+  --cg-danger: var(--ui-danger);
+  --cg-surface-raised: var(--ui-bg-control);
+
+  --conversation-page: var(--ui-bg-page);
+  --conversation-surface: var(--ui-bg-surface);
+  --conversation-control: var(--ui-bg-control);
+  --conversation-control-hover: color-mix(in srgb, var(--ui-bg-control), var(--ui-text-primary) 8%);
+  --conversation-border: var(--ui-border-default);
+  --conversation-text: var(--ui-text-primary);
+  --conversation-text-muted: var(--ui-text-muted);
+  --conversation-user: var(--ui-bg-bubble);
+
+  --bg-000: 30 7% 7.1%;
+  --bg-100: 30 8% 9.0%;
+  --bg-200: 30 8% 11.8%;
+  --bg-300: 30 8% 14.9%;
+  --text-000: 38 35% 98%;
+  --text-100: 38 35% 92%;
+  --text-200: 38 12% 65%;
+  --text-300: 38 10% 53%;
+  --text-350: 38 10% 53%;
+  --text-400: 38 10% 43%;
+  --text-500: 38 10% 35%;
+  --border-100: 38 10% 14%;
+  --border-200: 38 10% 18%;
+  --border-300: 38 10% 24%;
+  --border-400: 38 10% 32%;
+  --border-500: 38 10% 40%;
+}
