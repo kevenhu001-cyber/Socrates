@@ -154,14 +154,17 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   });
   /* 36px search per docs/ref/mobile-reference-2026-10-04.md
      ("Directories | 36px search, 40px tabs/app icons, 60px file rows"),
-     owned by polish/mobile-directories.css. */
-  expect(pluginGeometry.search?.height).toBe(36);
+     owned by polish/mobile-directories.css.
+     The densities stay pinned to the pixel, but the measurement tolerates
+     sub-pixel layout rounding: a loaded machine can land on 35.99998… and
+     an exact match turned that into a random red. */
+  expect(pluginGeometry.search?.height).toBeCloseTo(36, 1);
   expect((pluginGeometry.installedLabel?.y ?? 0) + (pluginGeometry.installedLabel?.height ?? 0)).toBeLessThanOrEqual(pluginGeometry.installedIcon?.y ?? 0);
-  expect(pluginGeometry.installedIcon?.width).toBe(40);
+  expect(pluginGeometry.installedIcon?.width).toBeCloseTo(40, 1);
   /* Exact alignment at the lower edge is valid at the reference viewport. */
   expect(pluginGeometry.tabs?.y).toBeGreaterThanOrEqual(315);
   expect(pluginGeometry.tabs?.y).toBeLessThan(410);
-  expect(pluginGeometry.rowIcon?.width).toBe(40);
+  expect(pluginGeometry.rowIcon?.width).toBeCloseTo(40, 1);
   await page.evaluate(() => document.getElementById('pluginWorkspaceSkillsTab')?.click());
   await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();
   await page.locator('#promptTemplatesOverlay [data-prompt-command="close"]').click();

@@ -51,7 +51,10 @@ for (const mobile of [false, true]) {
     await more.click();
     const menu = page.getByRole('menu');
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole('menuitem')).toHaveCount(mobile ? 6 : 4);
+    /* The overflow carries the workbench entry first, then the turn's own
+       secondary actions. */
+    await expect(menu.getByRole('menuitem', { name: 'Open in Workbench' })).toHaveCount(1);
+    await expect(menu.getByRole('menuitem')).toHaveCount(mobile ? 7 : 5);
     await expect(menu.getByRole('menuitem').first()).toBeFocused();
     await page.keyboard.press('ArrowDown');
     await expect(menu.getByRole('menuitem').nth(1)).toBeFocused();

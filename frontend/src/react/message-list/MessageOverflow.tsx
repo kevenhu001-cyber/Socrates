@@ -1,4 +1,4 @@
-import { Icon } from '../../ui/Icon';
+import { IconButton } from '../ui/IconButton';
 import { INTERFACE_ICON_STROKE } from '../../ui/icons/interfaceIcons';
 import { useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
 import { i18n } from '../legacy/gateway';
@@ -27,9 +27,7 @@ export function MessageOverflow({ actions }: { actions: OverflowAction[] }) {
   const mobile = useSyncExternalStore(open ? subscribeMobile : subscribeClosed, readMobile);
   const label = i18n('message.moreActions', 'More actions');
   return <DeferredMenu open={open} onOpenChange={setOpen} className="msg-action-menu" label={label} align="start"
-    trigger={<button ref={trigger} type="button" className="btn btn-icon btn-touch msg-toolbar-btn" aria-label={label}>
-      <Icon name="more" />
-    </button>}>
+    trigger={<IconButton ref={trigger} variant="shared" size="touch" className="msg-toolbar-btn" label={label} icon="more" />}>
     {({ FoundationMenuItem }) => actions.filter((action) => mobile || !action.mobileOnly).map((action) =>
       <FoundationMenuItem key={action.label} className={action.mobileOnly ? 'msg-action-mobile-only' : undefined}
         onClick={(event) => {

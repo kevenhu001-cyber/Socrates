@@ -1,4 +1,4 @@
-/* critical-1.css — first-paint slice 1/5 (render-blocking).
+/* critical-1.css — first-paint slice 1/6 (render-blocking).
  *
  * P_perf-css-split — the 955 KB single stylesheet blocked first paint on
  * parse + transfer. It is now delivered as ordered slices: `critical-*`

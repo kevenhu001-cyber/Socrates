@@ -1,6 +1,6 @@
 import { getApiFetch, getConnectorIconMarkupFn, getLegacyActions, i18n, setActiveProject, setNextProjectId } from '../../legacy/gateway.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
-import { stateStore } from '../../../state/store.js';
+import { dispatchSession, sessionStore } from '../../../store/index.ts';
 import { openLibraryDetail } from '../../../ui/libraryDetail.js';
 import { useWorkspaceStore } from './workspace.store';
 import {
@@ -211,9 +211,9 @@ export async function openProjectWorkspace(projectId: string): Promise<void> {
     await getLegacyActions().navigation.resetApp();
   });
   dialog.querySelector('[data-action="move-chat"]')?.addEventListener('click', async () => {
-    stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: projectId });
+    dispatchSession({ type: 'session/set', key: 'currentProjectId', value: projectId });
     setActiveProject(project);
-    const sessionId = stateStore.read('currentSessionId') as string | null;
+    const sessionId = sessionStore.getState().currentSessionId;
     try {
       if (sessionId) await api()('/api/sessions/' + encodeURIComponent(sessionId), { method: 'PATCH', body: { projectId } });
       closeWorkspaceDialog();
@@ -336,7 +336,7 @@ export async function openScheduledTaskForm(taskId?: string, initialPrompt = '')
     return `${date.getFullYear()}-${part(date.getMonth() + 1)}-${part(date.getDate())}T${part(date.getHours())}:${part(date.getMinutes())}`;
   };
   const projectOptions = getCachedProjects().map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.name)}</option>`).join('');
-  const activeProjectId = task?.projectId || stateStore.read('currentProjectId') || '';
+  const activeProjectId = task?.projectId || sessionStore.getState().currentProjectId || '';
   const markup = `${dialogHeader(i18n(editing ? 'dialog.task.editTitle' : 'dialog.task.newTitle', editing ? 'Edit task' : 'Schedule a task'), i18n('dialog.task.subtitle', 'Choose what should run and when to check back.'))}
     <form id="taskForm" class="workspace-form">
       <label class="workspace-field"><span>${i18n('dialog.task.field', 'Task')}</span><input name="title" maxlength="120" required value="${escapeHtml(task?.title)}" placeholder="${i18n('dialog.task.titlePh', 'Send me a weekly study plan')}"></label>

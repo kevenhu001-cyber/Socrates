@@ -94,6 +94,17 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
+test('code workbench title follows the active language', async ({ page }) => {
+  await bootChatWithCodeBlock(page);
+  await page.locator('.msg.assistant').last().locator('.code-block-workbench-btn').click();
+  const title = page.locator('#artifactsWorkbench .workbench-title');
+  await expect(title).toHaveText('JS code');
+  await page.evaluate(() => window.setLang('zh'));
+  await expect(title).toHaveText('JS 代码');
+  await page.evaluate(() => window.setLang('en'));
+  await expect(title).toHaveText('JS code');
+});
+
 test('clicking copy on a code block writes the code content to the clipboard', async ({ page }) => {
   await bootChatWithCodeBlock(page);
 

@@ -197,7 +197,13 @@ test('long tool output expands and copies the complete source text', async ({ pa
   const section = row.locator('[data-kind="output"]');
   await expect(section.locator('.tool-inline-detail-value')).toContainText('line-0:');
   await expect(section.locator('.tool-inline-detail-value')).not.toContainText('line-15:');
-  await section.getByRole('button', { name: /Show all/ }).click();
+  const expand = section.getByRole('button', { name: /Show all/ });
+  await expect(expand).toHaveAttribute('aria-expanded', 'false');
+  const contentId = await expand.getAttribute('aria-controls');
+  expect(contentId).toBeTruthy();
+  await expect(section.locator('.tool-inline-detail-value')).toHaveAttribute('id', contentId);
+  await expand.click();
+  await expect(section.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true');
   await expect(section.locator('.tool-inline-detail-value')).toContainText('line-15:');
   await section.getByRole('button', { name: 'Copy' }).click();
   expect(await page.evaluate(() => window.__copiedToolOutput)).toBe(output);

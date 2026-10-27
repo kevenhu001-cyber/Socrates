@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import type { ProfileDispatch, ProfileSnapshot } from './types';
 import { profileText } from './profileText';
 
@@ -14,7 +15,7 @@ export function ProfilePreferencesSection({
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.language', 'Language')}</span>
         <div className="profile-lang-toggle" id="profileLangToggle" role="group" aria-label={profileText('profile.language', 'Language')}>
-          <button
+          <UiButton
             type="button"
             className={`profile-lang-option${snapshot.currentLang === 'en' ? ' active' : ''}`}
             id="profileLangEn"
@@ -22,8 +23,8 @@ export function ProfilePreferencesSection({
             onClick={() => dispatch.setLang('en')}
           >
             English
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             type="button"
             className={`profile-lang-option${snapshot.currentLang === 'zh' ? ' active' : ''}`}
             id="profileLangZh"
@@ -31,14 +32,14 @@ export function ProfilePreferencesSection({
             onClick={() => dispatch.setLang('zh')}
           >
             中文
-          </button>
+          </UiButton>
         </div>
       </div>
 
       <div className="profile-toggle-desc">
         {profileText('profile.webSearchDesc', 'Enable web search to include real-time results in questions.')}
       </div>
-      <button
+      <UiButton
         type="button"
         className="profile-toggle"
         id="profileWebSearchToggle"
@@ -49,7 +50,7 @@ export function ProfilePreferencesSection({
         <div className={`stg-toggle-track${snapshot.webSearchOn ? ' on' : ''}`} id="profileWebSearchTrack">
           <div className="stg-toggle-knob" />
         </div>
-      </button>
+      </UiButton>
 
       <div className="profile-instructions">
         <label className="profile-instructions-label" htmlFor="profileInstResponse">

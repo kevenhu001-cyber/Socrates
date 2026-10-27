@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import type { ReactNode } from 'react';
 import { scheduledText } from './scheduled.copy';
 
@@ -50,14 +51,14 @@ export function ScheduledRecommendations({ onSelect }: ScheduledRecommendationsP
       </div>
       <div className="scheduled-recommendations">
         {RECOMMENDATIONS.map((recommendation) => (
-          <button type="button" className="scheduled-recommendation" key={recommendation.titleKey} onClick={() => onSelect(recommendation.prompt)}>
+          <UiButton type="button" className="scheduled-recommendation" key={recommendation.titleKey} onClick={() => onSelect(recommendation.prompt)}>
             <span className="scheduled-recommendation-icon" aria-hidden="true">{recommendation.icon}</span>
             <span className="scheduled-recommendation-copy">
               <strong>{scheduledText(recommendation.titleKey, recommendation.titleFallback)}</strong>
               <small>{scheduledText(recommendation.descriptionKey, recommendation.descriptionFallback)}</small>
             </span>
             <span className="scheduled-recommendation-add" aria-hidden="true">+</span>
-          </button>
+          </UiButton>
         ))}
       </div>
     </>

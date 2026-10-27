@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { createContext, useCallback, useContext, useId, useRef, useState, type ReactNode } from 'react';
 import { Check, Ellipsis, Maximize2, X } from 'lucide-react';
 import { i18n } from '../legacy/gateway';
@@ -44,13 +45,13 @@ export function IntelligentSurface({ children, title, description, displayMode =
       {description ? <div className="intui-panel-description intui-surface-description">{description}</div> : null}
     </div>
     <div className="intui-surface-toolbar">
-      <button type="button" className="intui-surface-expand" aria-label={expandLabel} title={expandLabel}
+      <UiButton type="button" className="intui-surface-expand" aria-label={expandLabel} title={expandLabel}
         aria-expanded={expanded} onClick={toggleExpanded}>
         {expanded ? <X size={18} strokeWidth={INTERFACE_ICON_STROKE} aria-hidden /> : <Maximize2 size={16} strokeWidth={INTERFACE_ICON_STROKE} aria-hidden />}
-      </button>
+      </UiButton>
       {!expanded ? <DeferredMenu open={menuOpen} onOpenChange={setMenuOpen}
         className="intui-surface-menu" label={i18n('intui.displayMode', 'Display mode')}
-        trigger={<button type="button" className="intui-surface-options" aria-label={i18n('intui.displayMode', 'Display mode')} title={i18n('intui.displayMode', 'Display mode')}><Ellipsis size={16} aria-hidden /></button>}>
+        trigger={<UiButton type="button" className="intui-surface-options" aria-label={i18n('intui.displayMode', 'Display mode')} title={i18n('intui.displayMode', 'Display mode')}><Ellipsis size={16} aria-hidden /></UiButton>}>
         {({ FoundationMenuRadioGroup, FoundationMenuRadioItem }) => <FoundationMenuRadioGroup value={mode} onValueChange={(value) => setChoice(value as IntelligentDisplayMode)}>
           {(['inline', 'compact', 'carousel', 'pip'] as const).map((value) => <FoundationMenuRadioItem key={value} value={value}>
             <span>{i18n(`intui.${value}`, { inline: 'Inline', compact: 'Compact', carousel: 'Carousel', pip: 'Floating' }[value])}</span>
@@ -58,7 +59,7 @@ export function IntelligentSurface({ children, title, description, displayMode =
           </FoundationMenuRadioItem>)}
         </FoundationMenuRadioGroup>}
       </DeferredMenu> : null}
-      {mode === 'pip' ? <button type="button" className="intui-surface-return" aria-label={i18n('intui.inline', 'Inline')} title={i18n('intui.inline', 'Inline')} onClick={() => setChoice('inline')}><X size={16} aria-hidden /></button> : null}
+      {mode === 'pip' ? <UiButton type="button" className="intui-surface-return" aria-label={i18n('intui.inline', 'Inline')} title={i18n('intui.inline', 'Inline')} onClick={() => setChoice('inline')}><X size={16} aria-hidden /></UiButton> : null}
     </div>
     </header>
     <ExpandedSurface.Provider value={expanded}>

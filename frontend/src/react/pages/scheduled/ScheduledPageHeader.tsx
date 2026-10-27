@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { scheduledText } from './scheduled.copy';
 
 interface ScheduledPageHeaderProps {
@@ -27,10 +28,10 @@ export function ScheduledPageHeader({ query, onQueryChange, onCreate }: Schedule
           <SearchGlyph />
           <input type="search" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
         </label>
-        <button type="button" className="workspace-create-button" onClick={onCreate}>
+        <UiButton type="button" className="workspace-create-button" onClick={onCreate}>
           <PlusGlyph />
           <span>{scheduledText('scheduled.new', 'New')}</span>
-        </button>
+        </UiButton>
       </div>
     </div>
   );

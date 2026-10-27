@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { shareText } from './shareText';
 
 export function ShareLinkPanel({
@@ -30,9 +31,9 @@ export function ShareLinkPanel({
           aria-label={shareText('sidebar.shareLink', 'Share link')}
           value={shareUrl}
         />
-        <button type="button" className="share-copy-btn" id="shareCopyBtn" onClick={onCopy}>
+        <UiButton type="button" className="share-copy-btn" id="shareCopyBtn" onClick={onCopy}>
           {shareText('share.copy', 'Copy')}
-        </button>
+        </UiButton>
       </div>
 
       <div
@@ -40,16 +41,16 @@ export function ShareLinkPanel({
         id="shareRevokeArea"
         style={hasLink ? { textAlign: 'center' } : undefined}
       >
-        <button type="button" className="share-revoke" onClick={onRevoke}>
+        <UiButton type="button" className="share-revoke" onClick={onRevoke}>
           {'× ' + shareText('share.revoke', 'Revoke share link')}
-        </button>
+        </UiButton>
       </div>
 
       <div className={`share-error${error ? '' : ' hidden'}`} id="shareError">{error}</div>
       <div className={`share-status${status ? '' : ' hidden'}`} id="shareStatus">{status}</div>
 
       <div id="shareCreateArea" style={{ textAlign: 'center', marginTop: 4 }}>
-        <button
+        <UiButton
           type="button"
           className="btn"
           id="shareCreateBtn"
@@ -57,7 +58,7 @@ export function ShareLinkPanel({
           style={{ marginTop: 8 }}
         >
           {shareText('share.create', 'Create share link')}
-        </button>
+        </UiButton>
       </div>
     </>
   );

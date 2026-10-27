@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { createRootSlot } from '../../lib/boot/ownedRoot';
 import { useMemo, useState } from 'react';
 
@@ -42,12 +43,12 @@ function ScheduledPage() {
       <ScheduledPageHeader query={query} onQueryChange={setQuery} onCreate={() => createTask()} />
 
       <div className="scheduled-filter-tabs" role="tablist" aria-label={scheduledText('scheduled.filter', 'Task filter')}>
-        <button type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>
+        <UiButton type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>
           {scheduledText('scheduled.all', 'All')}
-        </button>
-        <button type="button" role="tab" aria-selected={scope === 'active'} className={scope === 'active' ? 'active' : ''} onClick={() => setScope('active')}>
+        </UiButton>
+        <UiButton type="button" role="tab" aria-selected={scope === 'active'} className={scope === 'active' ? 'active' : ''} onClick={() => setScope('active')}>
           {scheduledText('scheduled.activeOnly', 'Active')}
-        </button>
+        </UiButton>
       </div>
 
       {!searching ? <ScheduledRecommendations onSelect={(prompt) => createTask(prompt)} /> : null}

@@ -1,3 +1,4 @@
+import { IconButton } from '../ui/IconButton';
 import { Icon } from '../../ui/Icon';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { List } from 'lucide-react';
@@ -21,11 +22,11 @@ export function RecentsHeader() {
   return <>
     <span className="recents-title" data-i18n-key="sidebar.recentSessions">{i18n('sidebar.recentSessions', 'Recents')}</span>
     <span className="recents-header-actions">
-      <button type="button" className="recents-head-btn" id="recentsNewBtn" aria-label={i18n('sidebar.newChat', 'New chat')}
-        title={i18n('sidebar.newChat', 'New chat')} onClick={() => { void getLegacyActions().navigation.startNewChat(); }}><Icon name="newChat" /></button>
+      <IconButton className="recents-head-btn" id="recentsNewBtn" label={i18n('sidebar.newChat', 'New chat')} icon="newChat"
+        title={i18n('sidebar.newChat', 'New chat')} onClick={() => { void getLegacyActions().navigation.startNewChat(); }} />
       <DeferredMenu open={open} onOpenChange={setOpen} className="recents-organize-menu" label={i18n('sidebar.organize', 'Organize chats')} spill
-        trigger={<button type="button" className="recents-head-btn" id="recentsMoreBtn"
-          aria-label={i18n('sidebar.organize', 'Organize chats')} title={i18n('sidebar.organize', 'Organize chats')}><Icon name="more" /></button>}>
+        trigger={<IconButton className="recents-head-btn" id="recentsMoreBtn" icon="more"
+          label={i18n('sidebar.organize', 'Organize chats')} title={i18n('sidebar.organize', 'Organize chats')} />}>
       {({ FoundationMenuItem, FoundationMenuRadioGroup, FoundationMenuRadioItem }) => <>
       <div className="organize-menu-heading">{i18n('sidebar.organize', 'Organize chats')}</div>
       <FoundationMenuRadioGroup value={organization} onValueChange={select}>

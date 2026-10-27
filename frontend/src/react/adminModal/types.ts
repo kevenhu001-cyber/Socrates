@@ -49,7 +49,6 @@ export interface AdminBridge {
 
 declare global {
   interface Window {
-    __socratesAdminBridge?: AdminBridge;
     closeAdminModal?: () => void;
   }
 }

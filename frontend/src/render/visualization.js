@@ -190,7 +190,8 @@ function bindCard(card, spec, chart, opts) {
       import('../react/workbench/workbenchStore').then(function (m) {
         m.openWorkbench({
           id: card.dataset.visualizationId || ('viz-' + Date.now()),
-          title: spec.title || '数据可视化',
+          title: spec.title || vizT('workbench.chartTitle', 'Visualization'),
+          titleKey: spec.title ? undefined : 'workbench.chartTitle',
           type: 'chart',
           code: JSON.stringify(spec, null, 2),
           language: 'json',

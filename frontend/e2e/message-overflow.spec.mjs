@@ -44,12 +44,13 @@ test('cold keyboard opening supports last item, bounds, wrap and typeahead witho
   await trigger.focus();
   await page.keyboard.press('ArrowUp');
   const menu = menuOf(page);
-  await expect(menu.getByRole('menuitem')).toHaveCount(4);
+  await expect(menu.getByRole('menuitem')).toHaveCount(5);
+  await expect(menu.getByRole('menuitem', { name: 'Open in Workbench' }).locator('svg rect')).toHaveCount(1);
   await expect(menu.getByRole('menuitem').last()).toBeFocused();
   await expect(trigger).toHaveAttribute('aria-controls', await menu.getAttribute('id'));
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('Home');
-  await expect(menu.getByRole('menuitem', { name: 'Share conversation' })).toBeFocused();
+  await expect(menu.getByRole('menuitem', { name: 'Open in Workbench' })).toBeFocused();
   await page.keyboard.press('ArrowUp');
   await expect(menu.getByRole('menuitem', { name: 'Re-explain from a different angle' })).toBeFocused();
   await page.keyboard.press('ArrowDown');
@@ -80,13 +81,49 @@ test('branch and read-aloud dispatch exactly once to the selected message with a
   ]);
 });
 
+test('opening the workbench keeps the model switcher usable above the chat pane', async ({ page }) => {
+  await boot(page);
+  await triggerOf(page).click();
+  await menuOf(page).getByRole('menuitem', { name: 'Open in Workbench' }).click();
+  const workbench = page.locator('#artifactsWorkbench');
+  const header = page.locator('.top-bar');
+  const chat = page.locator('#mainContent');
+  await expect(workbench).toBeVisible();
+  await expect(workbench.locator('.workbench-close-btn')).toBeVisible();
+  await expect(workbench).toContainText('Conversation');
+  await expect(workbench).toContainText('Live workbench');
+  await expect(workbench.getByRole('tablist', { name: 'Workbench view modes' })).toBeVisible();
+  await page.evaluate(() => window.setLang('zh'));
+  await expect(workbench.locator('.workbench-title')).toHaveText('对话内容协同');
+  await expect(workbench).toContainText('实时工作台');
+  await page.evaluate(() => window.setLang('en'));
+  await expect(workbench.locator('.workbench-title')).toHaveText('Conversation');
+  const [barBox, chatBox, paneBox] = await Promise.all([
+    header.boundingBox(), chat.boundingBox(), workbench.boundingBox(),
+  ]);
+  expect(barBox.width).toBeGreaterThan(400);
+  expect(Math.abs(barBox.x - chatBox.x)).toBeLessThanOrEqual(1);
+  expect(barBox.x + barBox.width).toBeLessThanOrEqual(paneBox.x + 1);
+  expect(chatBox.x + chatBox.width).toBeLessThanOrEqual(paneBox.x + 1);
+
+  await page.locator('#topModelSwitcher').click();
+  await expect(page.locator('.chat-config-pop')).toBeVisible();
+  await page.locator('#topModelSwitcher').click();
+  await expect(page.locator('.chat-config-pop')).toHaveCount(0);
+  await workbench.getByRole('button', { name: 'Ask about this artifact' }).click();
+  await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText('About “Conversation”:');
+  await workbench.locator('.workbench-close-btn').click();
+  await expect(workbench).toBeHidden();
+  await expect(page.locator('#topModelSwitcher')).toBeVisible();
+});
+
 test('phone feedback is keyboard reachable and tracks viewport changes while open', async ({ page }) => {
   await boot(page, { width: 390, height: 640 });
   const trigger = triggerOf(page);
   await trigger.focus();
   await page.keyboard.press('ArrowDown');
   const menu = menuOf(page);
-  await expect(menu.getByRole('menuitem')).toHaveCount(6);
+  await expect(menu.getByRole('menuitem')).toHaveCount(7);
   await page.keyboard.press('End');
   await expect(menu.getByRole('menuitem', { name: 'Not helpful', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
@@ -97,12 +134,12 @@ test('phone feedback is keyboard reachable and tracks viewport changes while ope
   await page.keyboard.press('End');
   await expect(menu.getByRole('menuitem', { name: 'Not helpful', exact: true })).toBeFocused();
   await page.setViewportSize({ width: 1200, height: 800 });
-  await expect(menu.getByRole('menuitem')).toHaveCount(4);
+  await expect(menu.getByRole('menuitem')).toHaveCount(5);
   await page.keyboard.press('End');
   await expect(menu.getByRole('menuitem').last()).toHaveText('Re-explain from a different angle');
   await expect(menu.getByRole('menuitem').last()).toBeFocused();
   await page.setViewportSize({ width: 390, height: 640 });
-  await expect(menu.getByRole('menuitem')).toHaveCount(6);
+  await expect(menu.getByRole('menuitem')).toHaveCount(7);
   await page.keyboard.press('End');
   await expect(menu.getByRole('menuitem', { name: 'Not helpful', exact: true })).toBeFocused();
 });

@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   closeWorkbench,
@@ -13,7 +14,14 @@ import { i18n } from '../legacy/gateway';
 export function WorkbenchDrawer(): React.ReactElement | null {
   const { isOpen, activeTab, isFullscreen, artifact } = useWorkbench();
   const [copied, setCopied] = useState(false);
+  const [, setLanguageRevision] = useState(0);
   const previewRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const refreshLanguage = () => setLanguageRevision((revision) => revision + 1);
+    document.addEventListener('socrates:langchange', refreshLanguage);
+    return () => document.removeEventListener('socrates:langchange', refreshLanguage);
+  }, []);
 
   // Keyboard shortcut: Esc to close workbench or exit fullscreen
   useEffect(() => {
@@ -43,6 +51,9 @@ export function WorkbenchDrawer(): React.ReactElement | null {
   }, [artifact, activeTab]);
 
   if (!isOpen || !artifact) return null;
+  const title = artifact.titleKey
+    ? i18n(artifact.titleKey, artifact.title).replace('{language}', (artifact.language || '').toUpperCase())
+    : artifact.title;
 
   const handleCopy = () => {
     const textToCopy = artifact.code || artifact.previewHtml || '';
@@ -53,7 +64,7 @@ export function WorkbenchDrawer(): React.ReactElement | null {
   };
 
   const handleAskAboutArtifact = () => {
-    const prompt = `${i18n('workbench.askPrefix', '关于')} "${artifact.title}"：`;
+    const prompt = i18n('workbench.askPrompt', 'About “{title}”: ').replace('{title}', title);
     try {
       setComposerMarkdown('chat', prompt);
       const editor = document.querySelector<HTMLElement>('#composerRoot [contenteditable="true"]');
@@ -100,7 +111,7 @@ export function WorkbenchDrawer(): React.ReactElement | null {
   };
 
   return (
-    <div className={`workbench-drawer${isFullscreen ? ' is-fullscreen' : ''}`} role="dialog" aria-modal="true" aria-label={artifact.title}>
+    <div className={`workbench-drawer${isFullscreen ? ' is-fullscreen' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
       {/* Mobile top drag handle indicator */}
       <div className="workbench-drag-handle" aria-hidden="true" onClick={closeWorkbench}>
         <span className="workbench-drag-bar" />
@@ -112,15 +123,15 @@ export function WorkbenchDrawer(): React.ReactElement | null {
             {getTypeIcon()}
           </span>
           <div className="workbench-title-wrap">
-            <h2 className="workbench-title">{artifact.title}</h2>
+            <h2 className="workbench-title">{title}</h2>
             {artifact.language && (
               <span className="workbench-lang-badge">{artifact.language}</span>
             )}
           </div>
         </div>
 
-        <div className="workbench-tabs" role="tablist" aria-label="Workbench view modes">
-          <button
+        <div className="workbench-tabs" role="tablist" aria-label={i18n('workbench.viewModes', 'Workbench view modes')}>
+          <UiButton
             type="button"
             role="tab"
             aria-selected={activeTab === 'preview'}
@@ -128,8 +139,8 @@ export function WorkbenchDrawer(): React.ReactElement | null {
             onClick={() => setWorkbenchTab('preview')}
           >
             {i18n('workbench.preview', '实时预览')}
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             type="button"
             role="tab"
             aria-selected={activeTab === 'code'}
@@ -137,11 +148,11 @@ export function WorkbenchDrawer(): React.ReactElement | null {
             onClick={() => setWorkbenchTab('code')}
           >
             {i18n('workbench.code', '查看代码')}
-          </button>
+          </UiButton>
         </div>
 
         <div className="workbench-actions">
-          <button
+          <UiButton
             type="button"
             className="workbench-action-btn"
             title={copied ? i18n('workbench.copied', '已复制') : i18n('workbench.copy', '复制代码')}
@@ -158,8 +169,8 @@ export function WorkbenchDrawer(): React.ReactElement | null {
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
             )}
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             type="button"
             className="workbench-action-btn desktop-only"
             title={i18n('workbench.fullscreen', '全屏模式')}
@@ -181,8 +192,8 @@ export function WorkbenchDrawer(): React.ReactElement | null {
                 <line x1="3" y1="21" x2="10" y2="14" />
               </svg>
             )}
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             type="button"
             className="workbench-action-btn workbench-close-btn"
             title={i18n('workbench.close', '关闭工作台')}
@@ -193,7 +204,7 @@ export function WorkbenchDrawer(): React.ReactElement | null {
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          </button>
+          </UiButton>
         </div>
       </header>
 
@@ -214,9 +225,9 @@ export function WorkbenchDrawer(): React.ReactElement | null {
       <footer className="workbench-footer">
         <div className="workbench-version-tag">
           <span className="workbench-version-dot" aria-hidden="true" />
-          <span>v{artifact.version || 1} · 实时工作台</span>
+          <span>v{artifact.version || 1} · {i18n('workbench.live', 'Live workbench')}</span>
         </div>
-        <button
+        <UiButton
           type="button"
           className="workbench-ask-btn"
           onClick={handleAskAboutArtifact}
@@ -225,7 +236,7 @@ export function WorkbenchDrawer(): React.ReactElement | null {
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <span>{i18n('workbench.ask', '对此产物提问')}</span>
-        </button>
+        </UiButton>
       </footer>
     </div>
   );

@@ -1,21 +1,8 @@
-/**
- * Storage modal bridge — M2 single-bridge migration.
- *
- * `ui/storage.js` publishes through
- * `window.__socratesStorageBridge.publish(...)`. The factory owns the
- * snapshot/reducer/listener loop; this module adds the `publish` alias
- * and React hooks.
- */
+/** Module-owned archived-session state shared with the UI facade and React. */
 
 import { createImmutableBridge, useBridge } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { StorageBridge, StorageSnapshot } from './types';
-
-declare global {
-  interface Window {
-    __socratesStorageBridge?: StorageBridge;
-  }
-}
 
 type Action = Omit<StorageSnapshot, 'revision'>;
 
@@ -32,12 +19,6 @@ const bridge: StorageBridge = Object.assign(factoryBridge, {
 }) as StorageBridge;
 
 export function installStorageBridge(): StorageBridge {
-  if (typeof window !== 'undefined') {
-    if (!window.__socratesStorageBridge) {
-      window.__socratesStorageBridge = bridge;
-    }
-    return window.__socratesStorageBridge;
-  }
   return bridge;
 }
 

@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import type { ProfileDispatch } from './types';
 import { profileText } from './profileText';
 
@@ -12,14 +13,14 @@ export function ProfileDangerSection({ dispatch }: { dispatch: ProfileDispatch }
           <div className="profile-action-label">{profileText('profile.signOut', 'Sign out')}</div>
           <div className="profile-action-desc">{profileText('profile.signOutDesc', 'End your session on this device.')}</div>
         </div>
-        <button
+        <UiButton
           type="button"
           className="profile-btn signout"
           onClick={() => { dispatch.signOut(); dispatch.close(); }}
           style={{ width: 'auto', padding: '6px 14px', flexShrink: 0 }}
         >
           {profileText('profile.signOut', 'Sign out')}
-        </button>
+        </UiButton>
       </div>
       <div className="profile-action-row">
         <div>
@@ -28,14 +29,14 @@ export function ProfileDangerSection({ dispatch }: { dispatch: ProfileDispatch }
           </div>
           <div className="profile-action-desc">{profileText('profile.deleteAccountDesc', 'Permanently delete your account and all data.')}</div>
         </div>
-        <button
+        <UiButton
           type="button"
           className="profile-btn danger"
           onClick={dispatch.deleteAccount}
           style={{ width: 'auto', padding: '6px 14px', flexShrink: 0 }}
         >
           {profileText('profile.deleteAccount', 'Delete')}
-        </button>
+        </UiButton>
       </div>
     </div>
   );

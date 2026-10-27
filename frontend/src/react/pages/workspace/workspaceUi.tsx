@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { ListFilter } from 'lucide-react';
 import { t as _t } from '../../legacy/gateway.ts';
 
@@ -127,7 +128,7 @@ function WorkspacePageHeader({ title, description, query, onQuery, actionLabel, 
       <div><h1 id="projects-directory-title">{title}</h1><p>{description}</p></div>
       <div className="workspace-head-actions">
         <label className="workspace-search-field"><SearchIcon /><input type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
-        <button type="button" className={'workspace-create-button' + (compactAction ? ' projects-create-button' : '')} onClick={onAction}>{compactAction ? null : <PlusIcon />}<span>{actionLabel}</span></button>
+        <UiButton type="button" className={'workspace-create-button' + (compactAction ? ' projects-create-button' : '')} onClick={onAction}>{compactAction ? null : <PlusIcon />}<span>{actionLabel}</span></UiButton>
       </div>
     </div>
   );

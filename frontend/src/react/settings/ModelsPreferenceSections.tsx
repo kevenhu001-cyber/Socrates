@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { useState } from 'react';
 import { i18n } from '../legacy/gateway.ts';
 import { confirmClearSettings } from '../../ui/dangerConfirms.js';
@@ -54,7 +55,7 @@ export function ImageVoiceSettingsSection({
         </div>
         <div className="settings-field">
           <input className="settings-input" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
-          <button className="btn" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</button>
+          <Button className="btn" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</Button>
         </div>
       </section>
       <section className="settings-section">
@@ -80,15 +81,15 @@ export function SettingsModelActions({
 }) {
   return (
     <div className="settings-actions">
-      <button className="btn" id="clearSettingsBtn" onClick={confirmClearSettings}>
+      <Button className="btn" id="clearSettingsBtn" onClick={confirmClearSettings}>
         {i18n('settings.clearAll', 'Clear all')}
-      </button>
-      <button className="btn" id="cancelSettingsBtn" onClick={closeSettings}>
+      </Button>
+      <Button className="btn" id="cancelSettingsBtn" onClick={closeSettings}>
         {i18n('common.cancel', 'Cancel')}
-      </button>
-      <button className="btn" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
+      </Button>
+      <Button className="btn" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
         {saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
-      </button>
+      </Button>
     </div>
   );
 }

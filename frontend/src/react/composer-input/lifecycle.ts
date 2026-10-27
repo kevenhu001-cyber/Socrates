@@ -3,7 +3,7 @@ import {
   focusComposer,
   readComposerSurface,
 } from '../../composer/controller.ts';
-import { clearComposerPlugins } from '../composer/pluginSelection';
+import { clearComposerPlugins } from '../../composer/pluginSelection.ts';
 import { updateComposerBtn } from '../../ui/topicSetup.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import type { LegacyComposer } from '../legacy/types';

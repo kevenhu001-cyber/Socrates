@@ -1,7 +1,7 @@
+import { IconButton } from '../ui/IconButton';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
-import { Icon } from '../../ui/Icon';
 
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { openNav } from '../../sidebar/navigation.service';
@@ -41,12 +41,12 @@ function SidebarNav() {
         if (button.key !== 'projects') return navigation;
         return <div className="sidebar-project-nav" key={button.key}>
           {navigation}
-          <button type="button" className="sidebar-project-create" data-i18n-aria="projects.create" data-i18n-title="projects.create" aria-label={i18n('projects.create', 'Create project')}
+          <IconButton className="sidebar-project-create" data-i18n-aria="projects.create" data-i18n-title="projects.create" label={i18n('projects.create', 'Create project')} icon="plus"
             title={i18n('projects.create', 'Create project')} onClick={() => {
               openNav('projects');
               void import('../pages/workspace/workspace.dialogs').then(({ openProjectForm }) => openProjectForm())
                 .catch(() => getLegacyActions().messages.showToast?.(i18n('sidebar.projectOpenFailed', 'Could not open the project form. Please try again.')));
-            }}><Icon name="plus" /></button>
+            }} />
         </div>;
       })}
     </>

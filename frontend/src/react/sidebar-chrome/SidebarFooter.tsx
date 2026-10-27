@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { useCallback, useState } from 'react';
 import { CircleUserRound, LifeBuoy, LogOut } from 'lucide-react';
@@ -23,8 +24,8 @@ export function SidebarFooter() {
   return <div className="sidebar-footer-account-wrap">
     <DeferredMenu open={open} onOpenChange={setOpen} above className="sidebar-account-menu"
       label={label('账户', 'Account')}
-      trigger={<button type="button" className="sidebar-account-trigger"
-        title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}>{identity}</button>}>
+      trigger={<Button type="button" className="sidebar-account-trigger"
+        title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}>{identity}</Button>}>
       {({ FoundationMenuItem }) => <>
       <FoundationMenuItem className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<Icon name="chevronRight" /></FoundationMenuItem>
       <hr />

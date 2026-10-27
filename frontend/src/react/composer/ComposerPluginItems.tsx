@@ -1,13 +1,19 @@
+import { Button } from '../ui/Button';
 import { Icon } from '../../ui/Icon';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { i18n } from './composerToolsMenuData';
 import type { ComposerToolsAction } from './types';
-import { loadPluginCatalog, pluginIconMarkup, type PluginCatalogEntry } from './pluginCatalog';
+import { loadPluginCatalog, type PluginCatalogEntry } from '../../composer/pluginCatalog.ts';
+import { getConnectorIconMarkupFn } from '../legacy/gateway.ts';
+import { useComposerPluginSelectionSnapshot } from './useComposerPluginSelection';
 import {
   toggleComposerPlugin,
-  useComposerPluginSelectionSnapshot,
-} from './pluginSelection';
+} from '../../composer/pluginSelection.ts';
+
+function pluginIconMarkup(id: string): string {
+  return getConnectorIconMarkupFn()?.(id) || '';
+}
 
 function PluginMark({ plugin }: { plugin: PluginCatalogEntry }) {
   const markup = pluginIconMarkup(plugin.id);
@@ -27,13 +33,13 @@ function ComposerPluginItem({
   onPick: (plugin: PluginCatalogEntry) => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
       className={`composer-tools-plugin-item${selected ? ' is-selected' : ''}`}
       data-composer-plugin={plugin.id}
-      role="menuitem"
-      aria-pressed={selected}
-      aria-label={`${plugin.name}${selected ? ': added' : ''}`}
+      role="menuitemcheckbox"
+      aria-checked={selected}
+      aria-label={selected ? i18n('composer.plugin.added', '{name}: added').replace('{name}', plugin.name) : plugin.name}
       onClick={(event) => {
         event.stopPropagation();
         onPick(plugin);
@@ -44,7 +50,7 @@ function ComposerPluginItem({
       {selected ? (
         <Icon name="check" className="composer-tools-check" />
       ) : null}
-    </button>
+    </Button>
   );
 }
 
@@ -60,14 +66,18 @@ export function ComposerPluginItems({
 }) {
   const [plugins, setPlugins] = useState<ReadonlyArray<PluginCatalogEntry>>([]);
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [attempt, setAttempt] = useState(0);
+  const forceNextLoad = useRef(false);
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
   const selectedPlugins = mode ? selectionSnapshot[mode] : [];
 
   useEffect(() => {
     if (!isOpen) return undefined;
     let cancelled = false;
+    const force = forceNextLoad.current;
+    forceNextLoad.current = false;
     setLoadState('loading');
-    loadPluginCatalog()
+    loadPluginCatalog(force)
       .then((entries) => {
         if (!cancelled) {
           setPlugins(entries);
@@ -78,7 +88,7 @@ export function ComposerPluginItems({
         if (!cancelled) setLoadState('error');
       });
     return () => { cancelled = true; };
-  }, [isOpen]);
+  }, [isOpen, attempt]);
 
   const connectedPlugins = useMemo(
     () => plugins.filter((plugin) => plugin.connectionStatus === 'connected'),
@@ -91,13 +101,8 @@ export function ComposerPluginItems({
   };
   const connectedCount = plugins.filter((plugin) => plugin.connectionStatus === 'connected').length;
   const retry = () => {
-    setLoadState('loading');
-    loadPluginCatalog(true)
-      .then((entries) => {
-        setPlugins(entries);
-        setLoadState('ready');
-      })
-      .catch(() => setLoadState('error'));
+    forceNextLoad.current = true;
+    setAttempt((value) => value + 1);
   };
   const managePlugins = () => onPick('managePlugins');
 
@@ -110,7 +115,7 @@ export function ComposerPluginItems({
       {loadState === 'error' ? (
         <div className="composer-tools-plugin-state" role="status">
           <span>{i18n('composer.tools.plugins.error', 'Connected apps could not be loaded.')}</span>
-          <button
+          <Button
             type="button"
             className="composer-tools-state-action"
             role="menuitem"
@@ -120,7 +125,7 @@ export function ComposerPluginItems({
             }}
           >
             {i18n('composer.tools.plugins.retry', 'Try again')}
-          </button>
+          </Button>
         </div>
       ) : null}
       {loadState === 'ready' && connectedPlugins.length > 0 ? (
@@ -139,9 +144,9 @@ export function ComposerPluginItems({
         <div className="composer-tools-plugin-state">
           <span>{i18n('composer.tools.plugins.empty', 'No connected apps yet.')}</span>
           <small>{i18n('composer.tools.plugins.emptyHint', 'Connect an app to add its context to a chat.')}</small>
-          <button type="button" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
+          <Button type="button" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
             {i18n('composer.tools.plugins.manage', 'Manage apps')}
-          </button>
+          </Button>
         </div>
       ) : null}
     </section>

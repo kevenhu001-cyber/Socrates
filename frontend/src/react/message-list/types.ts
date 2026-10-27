@@ -9,14 +9,6 @@
 
 import type { LegacyChatMessage } from '../types/domain';
 
-export interface MessageListBridge {
-  /** Called by legacy code to signal that the message list DOM should be
-   *  re-rendered by React. The chat runtime bridge already carries the
-   *  message data; this bridge is purely a trigger. */
-  notify: () => void;
-  subscribe: (listener: () => void) => () => void;
-}
-
 /**
  * Click handler props passed to MessageToolbar. The legacy functions live
  * on `window` and remain the authoritative side-effect owner; the React
@@ -43,10 +35,4 @@ export interface MessageItemProps {
   mathRevision?: number;
   /** True when this row is the latest message in the visible transcript. */
   isLatest?: boolean;
-}
-
-declare global {
-  interface Window {
-    __socratesMessageListBridge?: MessageListBridge;
-  }
 }

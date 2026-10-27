@@ -227,12 +227,14 @@ test('mobile conversation home matches the compact dark reference layout', async
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 
-  await menu.getByRole('menuitem', { name: 'Think deeper' }).click();
+  /* "Think deeper" is a toggle, so the tools menu gives it the checkable
+     menu item role (aria-checked) rather than the plain one. */
+  await menu.getByRole('menuitemcheckbox', { name: 'Think deeper' }).click();
   await expect(menu).toBeHidden();
   await expect.poll(async () => page.evaluate(() => window.extensiveThinkingOn === true)).toBe(true);
 
   await page.locator('#composerToolsBtn').click();
-  const activeThinking = menu.getByRole('menuitem', { name: 'Think deeper' });
+  const activeThinking = menu.getByRole('menuitemcheckbox', { name: 'Think deeper' });
   await expect(activeThinking).toHaveClass(/is-active/);
   await expect(activeThinking.locator('.composer-tools-active-dot')).toBeVisible();
 });

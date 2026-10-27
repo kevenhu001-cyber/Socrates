@@ -52,6 +52,7 @@ import {
   type UiAction,
   type UiSnapshot,
 } from '../state/bridges.ts';
+import { notifyLegacyListeners } from '../state/store.js';
 import type { RevisionedSnapshot } from '../lib/bridge/createImmutableBridge.ts';
 
 type DomainSnapshot =
@@ -84,6 +85,38 @@ export const useSearchStore = defineDomainHook<SearchSnapshot, SearchAction>(sea
 export const useCallStore = defineDomainHook<CallSnapshot, CallAction>(callStore);
 export const useUiStore = defineDomainHook<UiSnapshot, UiAction>(uiStore);
 export const useExamStore = defineDomainHook<ExamSnapshot, ExamAction>(examStore);
+
+/**
+ * Typed imperative access to the domain stores.
+ *
+ * The hooks above are for components. These are for the code that is not
+ * one: an event handler in a legacy module, a callback that has to commit
+ * a change and read the result back in the same tick.
+ *
+ * The action is one of the typed unions from state/bridges.ts, so a typo in
+ * an action type or a missing field is a compile error rather than a
+ * silent no-op. The legacy facade's `stateStore.dispatch` takes a bare
+ * string type and cannot offer that — which is why the stringly-typed
+ * calls are the thing `check-state-ownership.mjs` freezes.
+ *
+ * Each commit flushes synchronously — the same thing the facade does — and
+ * then wakes the legacy listeners, so a subscriber of
+ * `stateStore.subscribe` (the research tracker, the scroll indicator) sees
+ * exactly the change it would have seen through the facade.
+ */
+export function dispatchSession(action: SessionAction): SessionSnapshot {
+  sessionBridge.dispatch(action);
+  sessionBridge.flush();
+  notifyLegacyListeners();
+  return sessionStore.getState();
+}
+
+export function dispatchUi(action: UiAction): UiSnapshot {
+  uiBridge.dispatch(action);
+  uiBridge.flush();
+  notifyLegacyListeners();
+  return uiStore.getState();
+}
 
 /** The zustand snapshot stores, for advanced subscribers outside React. */
 export {

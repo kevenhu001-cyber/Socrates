@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { getLegacyActions, t } from '../legacy/gateway.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
@@ -34,7 +35,7 @@ export function SidebarHeader() {
         <Icon name="chevronDown" className="cg-sidebar-caret" />
       </div>
       <div className="sidebar-header-actions">
-        <button
+        <Button
           className="btn-icon sidebar-search-btn"
           id="sidebarSearchBtn"
           type="button"
@@ -55,7 +56,7 @@ export function SidebarHeader() {
           }}
           dangerouslySetInnerHTML={{ __html: SEARCH_ICON }}
         />
-        <button
+        <Button
           className="btn-icon compose-btn"
           id="newChatBtn"
           title={t('sidebar.startNewChat')}
@@ -68,7 +69,7 @@ export function SidebarHeader() {
           }}
           dangerouslySetInnerHTML={{ __html: NEW_CHAT_ICON }}
         />
-        <button
+        <Button
           className="btn-icon"
           id="sidebarCloseBtn"
           title={t('chrome.closeSidebar')}

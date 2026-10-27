@@ -25,6 +25,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import postcss from 'postcss';
 
 const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
 const STYLES = join(FRONTEND, 'src', 'styles');
@@ -91,6 +92,84 @@ const ORDERED_MANIFESTS = {
     './mobile-directories.css',
   ],
 };
+
+/* Stylesheets that are imported by another stylesheet rather than listed in
+ * an aggregate manifest.
+ *
+ * These are pinned for the same reason ORDERED_MANIFESTS is: an @import is
+ * legal only before any style rule in its file, so a nested import always
+ * lands immediately BEFORE the file that imports it. That position is fixed
+ * by the CSS, not by a manifest — but the file's existence, its contents and
+ * its place in the cascade still have to be tracked, or a 97 KB font sheet
+ * can be renamed, reordered or dropped without anything noticing.
+ *
+ * The relative spec is resolved against the importing file's directory, so
+ * './motion.css' under polish/buttons.css is polish/motion.css. */
+const NESTED_MANIFESTS = {
+  'foundations/fonts.css': ['./fonts-cjk.css'],
+  'polish/buttons.css': ['./motion.css'],
+};
+
+/* The pinned children of a stylesheet: the aggregate manifest if it has one,
+ * the nested manifest if it has one, nothing if it is a leaf. */
+function pinnedChildren(key) {
+  if (ORDERED_MANIFESTS[key]) return ORDERED_MANIFESTS[key];
+  if (NESTED_MANIFESTS[key]) return NESTED_MANIFESTS[key];
+  return [];
+}
+
+/* Resolve an import spec against the importing file's directory. */
+function resolveSpec(parentKey, spec) {
+  const dir = parentKey.includes('/') ? parentKey.slice(0, parentKey.lastIndexOf('/') + 1) : '';
+  return dir + spec.replace(/^\.\//, '');
+}
+
+/* Flatten a stylesheet's import graph into the files the browser loads, in
+ * cascade order.
+ *
+ * An @import is only legal before any style rule in its file, so an
+ * imported stylesheet's rules always precede its importer's own rules: the
+ * nested file comes first, then the file that imported it.
+ *
+ * A file that carries style rules of its own therefore contributes those
+ * rules AFTER the stylesheets it imports; a pure manifest — a file that
+ * only holds @imports — contributes its imports and nothing else, because
+ * the browser replaces it with them. That distinction is a property of the
+ * file, not of the side that is reading it, so both sides classify it the
+ * same way.
+ *
+ * `childrenOf` decides where the children come from — the pinned manifests
+ * for the expected order, the files themselves for the actual order. */
+function flattenImports(key, childrenOf, out = [], seen = new Set()) {
+  const children = childrenOf(key);
+  if (children.length === 0) {
+    out.push(key);
+    return out;
+  }
+  for (const spec of children) {
+    const child = resolveSpec(key, spec);
+    if (seen.has(child)) continue;
+    seen.add(child);
+    flattenImports(child, childrenOf, out, seen);
+  }
+  if (hasStyleRules(key)) out.push(key);
+  return out;
+}
+
+/* Whether a stylesheet carries style rules of its own, as opposed to being
+ * a pure manifest of @imports. */
+function hasStyleRules(key) {
+  const file = join(STYLES, key);
+  if (!existsSync(file)) return false;
+  try {
+    const ast = postcss.parse(readFileSync(file, 'utf8'), { from: file });
+    let found = false;
+    ast.walkRules(() => { found = true; });
+    return found;
+  } catch {
+    return false;
+  }
+}
 
 function stripComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '));
@@ -236,6 +315,24 @@ function checkCascadeOrder() {
       }
     }
   }
+
+  /* The nested manifests are pinned the same way: a stylesheet that is
+   * imported by another stylesheet has a fixed place in the cascade (the
+   * @import has to sit before any rule, so the imported file lands
+   * immediately before its importer), and that place is only reviewable if
+   * it is written down. */
+  for (const [manifest, expected] of Object.entries(NESTED_MANIFESTS)) {
+    const actual = importsIn(join(STYLES, manifest));
+    if (actual.length !== expected.length) {
+      problems.push(`${manifest} nested import count changed (expected ${expected.length}, found ${actual.length})`);
+    }
+    const length = Math.max(actual.length, expected.length);
+    for (let i = 0; i < length; i += 1) {
+      if (actual[i] !== expected[i]) {
+        problems.push(`${manifest} nested import #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`);
+      }
+    }
+  }
   return problems;
 }
 
@@ -248,17 +345,12 @@ function checkCascadeOrder() {
  * above); this check pins the HTML to it. */
 function checkHtmlLoadOrder() {
   const problems = [];
-  const flatExpected = [];
-  for (const spec of importsIn(join(STYLES, 'index.css'))) {
-    const key = spec.replace(/^\.\//, '');
-    const nested = ORDERED_MANIFESTS[key];
-    if (nested) {
-      const dir = key.slice(0, key.lastIndexOf('/') + 1);
-      for (const sub of nested) flatExpected.push(dir + sub.replace(/^\.\//, ''));
-    } else {
-      flatExpected.push(key);
-    }
-  }
+  /* The expected side comes from the pinned manifests; the actual side from
+   * the files themselves. Both are flattened recursively, so a nested import
+   * is tracked in the cascade instead of dropping out of the proof. */
+  const flatExpected = flattenImports('index.css', (key) => (
+    key === 'index.css' ? importsIn(join(STYLES, key)) : pinnedChildren(key)
+  ));
   const html = readFileSync(join(FRONTEND, 'index.html'), 'utf8');
   const linkRe = /<link\s+rel="stylesheet"\s+href="\/src\/styles\/([^"]+)"([^>]*)>/g;
   const flatActual = [];
@@ -298,9 +390,7 @@ function checkHtmlLoadOrder() {
         flatActual.push(manifest);
       }
     } else {
-      for (const spec of nested) {
-        flatActual.push(spec.replace(/^\.\//, ''));
-      }
+      flatActual.push(...flattenImports(manifest, (key) => importsIn(join(STYLES, key))));
     }
   }
   if (deferredCount === 0) problems.push('no below-fold stylesheet links found in index.html — the css split regressed to a single blocking bundle');
@@ -341,6 +431,45 @@ function collectCounts() {
   return { totals, perFile };
 }
 
+/* ---------- 1c. nested @import legality ---------- */
+/* An @import is only valid BEFORE any style rule in its file. A browser
+ * drops an @import that appears after a rule — silently, with no error and
+ * no console message — so the imported stylesheet simply never lands and
+ * the cascade quietly loses whatever it was supposed to contribute.
+ *
+ * The cascade order proof cannot see this: the file is listed in the
+ * manifest either way. Only the CSS grammar knows the import is dead, so
+ * it has to be checked directly. */
+function checkImportLegality() {
+  const problems = [];
+  for (const file of walkCss(STYLES)) {
+    const rel = relative(STYLES, file).split(sep).join('/');
+    let ast;
+    try {
+      ast = postcss.parse(readFileSync(file, 'utf8'), { from: file });
+    } catch (error) {
+      problems.push(`${rel}: could not be parsed — ${error.message}`);
+      continue;
+    }
+    let sawRule = false;
+    /* The root's own children are in document order, so a single pass can
+     * tell whether a rule came before an import. */
+    for (const node of ast.nodes) {
+      if (node.type === 'rule') {
+        sawRule = true;
+        continue;
+      }
+      if (node.type === 'atrule' && node.name === 'import' && sawRule) {
+        const line = node.source?.start?.line ?? '?';
+        problems.push(
+          `${rel}:${line} — @import appears after a style rule, so the browser drops it and the imported stylesheet never loads`,
+        );
+      }
+    }
+  }
+  return problems;
+}
+
 function main() {
   const orderProblems = checkCascadeOrder();
   const { totals } = collectCounts();
@@ -353,6 +482,7 @@ function main() {
   const failures = [
     ...orderProblems.map((p) => `cascade: ${p}`),
     ...checkHtmlLoadOrder().map((p) => `load order: ${p}`),
+    ...checkImportLegality().map((p) => `import legality: ${p}`),
     ...themeOwnershipProblems().map((p) => `theme ownership: ${p}`),
   ];
 

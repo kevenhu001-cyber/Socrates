@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { getAvailablePresets } from '../../config/tonePresets.ts';
 import type { SettingsLabel } from './settings.types';
 
@@ -26,7 +27,7 @@ export function PersonalizationToneSection({
             ? preset.descriptionZh || preset.description
             : preset.description;
           return (
-            <button
+            <Button
               key={preset.id}
               type="button"
               className={'tone-preset-btn' + (active ? ' active' : '')}
@@ -36,7 +37,7 @@ export function PersonalizationToneSection({
             >
               <span className="tone-preset-label">{presetLabel}</span>
               <span className="tone-preset-desc">{description}</span>
-            </button>
+            </Button>
           );
         })}
       </div>

@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { getApiFetch } from '../legacy/gateway.ts';
 import { clearAllMemories, getAllMemories, removeMemory, setMemory } from '../../storage/memoryStore.ts';
 import type { SettingsLabel, SettingsMemory } from './settings.types';
@@ -58,7 +59,7 @@ export function PersonalizationMemorySection({
           <p>{label('助手在对话中自动沉淀的关于你的背景与偏好。', 'Things the assistant has learned about you across conversations.')}</p>
         </div>
         {memories.length > 0 && (
-          <button
+          <Button
             type="button"
             className="settings-btn-mini danger"
             onClick={() => {
@@ -66,7 +67,7 @@ export function PersonalizationMemorySection({
               clearAllMemories();
               onChange([]);
             }}
-          >{label('清空全部', 'Clear all')}</button>
+          >{label('清空全部', 'Clear all')}</Button>
         )}
       </div>
       <PersonalizationMemoryList memories={memories} label={label} onDelete={deleteMemory} />

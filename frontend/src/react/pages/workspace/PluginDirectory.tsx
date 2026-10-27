@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { useMemo, useState } from 'react';
 import { getCurrentLang } from '../../legacy/gateway.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -55,7 +56,7 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
             <SearchIcon />
             <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
           </label>
-          <button
+          <UiButton
             type="button"
             className="plugin-directory-add-btn"
             aria-label={getCurrentLang() === 'zh' ? '添加插件' : 'Add plugin'}
@@ -66,7 +67,7 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
             }}
           >
             <PlusIcon />
-          </button>
+          </UiButton>
         </div>
       </div>
 
@@ -77,12 +78,12 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
       />
 
       <div className="plugin-directory-tabs" role="tablist" aria-label={i18n('plugins.allPlugins', 'All plugins')}>
-        <button type="button" role="tab" aria-selected={scope === 'public'} className={scope === 'public' ? 'active' : ''} onClick={() => setScope('public')}>
+        <UiButton type="button" role="tab" aria-selected={scope === 'public'} className={scope === 'public' ? 'active' : ''} onClick={() => setScope('public')}>
           {i18n('plugins.public', 'Public')}
-        </button>
-        <button type="button" role="tab" aria-selected={scope === 'personal'} className={scope === 'personal' ? 'active' : ''} onClick={() => setScope('personal')}>
+        </UiButton>
+        <UiButton type="button" role="tab" aria-selected={scope === 'personal'} className={scope === 'personal' ? 'active' : ''} onClick={() => setScope('personal')}>
           {i18n('plugins.personal', 'Personal')}
-        </button>
+        </UiButton>
       </div>
 
       <div className="plugin-directory-body">

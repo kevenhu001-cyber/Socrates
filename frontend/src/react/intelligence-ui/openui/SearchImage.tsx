@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { defineComponent } from '@openuidev/react-lang';
 import { useState } from 'react';
 import { z } from 'zod/v4';
@@ -21,13 +22,13 @@ function SearchPhoto({ query, aspectRatio = 1.5, radius: rounding = 'lg', fit = 
   return <figure className="iui-search-image">
     <div className="iui-search-image-frame" style={{ aspectRatio: Math.min(4, Math.max(.5, aspectRatio)), borderRadius: radius(rounding) }}>
       {image ? <img src={image.url} alt={image.title || term} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ objectFit: fit === 'contain' ? 'contain' : 'cover' }} onError={() => setFailed((previous) => [...previous, image.url])} /> : <div className="iui-media-status" role="status">{result.loading ? labels.imageLoading : labels.imageFailed}
-        {!result.loading ? <button type="button" className="iui-button iui-button-outline" onClick={() => { setFailed([]); result.retry(); }}>{labels.retry}</button> : null}
+        {!result.loading ? <UiButton type="button" className="iui-button iui-button-outline" onClick={() => { setFailed([]); result.retry(); }}>{labels.retry}</UiButton> : null}
       </div>}
     </div>
     {image ? <figcaption className="iui-search-image-caption">
       <a href={webUrl(image.sourceUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`${labels.imageSource}: ${image.title}`}>{image.title || labels.imageSource}</a>
       {image.author || image.license ? <span>{[image.author, image.license].filter(Boolean).join(' · ')}</span> : null}
-      {images.length > 1 ? <span className="iui-image-pager"><button type="button" className="iui-button iui-button-sm" aria-label={labels.previousImage} onClick={() => change(-1)}>‹</button><span>{index + 1} / {images.length}</span><button type="button" className="iui-button iui-button-sm" aria-label={labels.nextImage} onClick={() => change(1)}>›</button></span> : null}
+      {images.length > 1 ? <span className="iui-image-pager"><UiButton type="button" className="iui-button iui-button-sm" aria-label={labels.previousImage} onClick={() => change(-1)}>‹</UiButton><span>{index + 1} / {images.length}</span><UiButton type="button" className="iui-button iui-button-sm" aria-label={labels.nextImage} onClick={() => change(1)}>›</UiButton></span> : null}
     </figcaption> : null}
   </figure>;
 }

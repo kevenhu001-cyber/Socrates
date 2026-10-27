@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { i18n } from './workspaceUi';
 import type { WorkspacePluginBasic } from './pluginDetail.types';
 
@@ -29,10 +30,10 @@ export function PluginDetailHeader({
   return (
     <>
       <div className="plugin-detail-nav">
-        <button type="button" className="plugin-detail-back-btn" onClick={onBack} aria-label={i18n('plugins.detail.back', 'Back to plugins')}>
+        <UiButton type="button" className="plugin-detail-back-btn" onClick={onBack} aria-label={i18n('plugins.detail.back', 'Back to plugins')}>
           <BackIcon />
           <span>{i18n('plugins.detail.backLabel', 'Plugins')}</span>
-        </button>
+        </UiButton>
       </div>
 
       <div className="plugin-detail-hero">
@@ -55,13 +56,13 @@ export function PluginDetailHeader({
       <div className="plugin-detail-cta-bar">
         {isConnected ? (
           <div className="plugin-detail-cta-group">
-            <button type="button" className="plugin-detail-btn-primary" onClick={onUseInChat}>{i18n('plugins.detail.useInChat', 'Use in chat')}</button>
-            <button type="button" className="plugin-detail-btn-secondary" onClick={onManage}>{i18n('plugins.detail.manage', 'Manage')}</button>
+            <UiButton type="button" className="plugin-detail-btn-primary" onClick={onUseInChat}>{i18n('plugins.detail.useInChat', 'Use in chat')}</UiButton>
+            <UiButton type="button" className="plugin-detail-btn-secondary" onClick={onManage}>{i18n('plugins.detail.manage', 'Manage')}</UiButton>
           </div>
         ) : (
-          <button type="button" className="plugin-detail-btn-primary" disabled={!connectable} onClick={onConnect}>
+          <UiButton type="button" className="plugin-detail-btn-primary" disabled={!connectable} onClick={onConnect}>
             {connectable ? i18n('plugins.detail.connect', 'Install & connect') : i18n('plugins.detail.unavailable', 'Unavailable')}
-          </button>
+          </UiButton>
         )}
       </div>
     </>

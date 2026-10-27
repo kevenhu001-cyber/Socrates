@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import type { FormEvent } from 'react';
 
 import type { EmbeddingProviderConfig } from './types';
@@ -29,12 +30,12 @@ export function EmbeddingProviderSection({
         the existing one. Remove the provider to degrade to BM25-only.
       </p>
       {!form ? (
-        <button type="button" className="admin-save" onClick={() => onFormChange({
+        <UiButton type="button" className="admin-save" onClick={() => onFormChange({
           id: '', label: 'Embedding', url: '', model: '',
           keyHint: null, dimensions: 1536, isActive: true, hasKey: false,
         })}>
           Configure embedding provider
-        </button>
+        </UiButton>
       ) : (
         <form onSubmit={onSubmit}>
           <label>
@@ -72,13 +73,13 @@ export function EmbeddingProviderSection({
               autoComplete="off" />
           </label>
           <div className="admin-actions">
-            <button type="submit" className="admin-save" disabled={saving}>
+            <UiButton type="submit" className="admin-save" disabled={saving}>
               {saving ? 'Saving…' : 'Save embedding'}
-            </button>
+            </UiButton>
             {form.id && (
-              <button type="button" className="admin-remove" onClick={onRemove} disabled={saving}>
+              <UiButton type="button" className="admin-remove" onClick={onRemove} disabled={saving}>
                 Remove
-              </button>
+              </UiButton>
             )}
           </div>
         </form>

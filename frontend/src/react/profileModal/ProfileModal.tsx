@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
@@ -26,14 +27,14 @@ function ProfileModal() {
         <ProfileDangerSection dispatch={dispatch} />
       </div>
       <div className="profile-actions" style={{ borderTop: '0.5px solid hsl(var(--border-300)/0.08)', paddingTop: 12 }}>
-        <button
+        <UiButton
           type="button"
           className="profile-btn close-btn"
           data-initial-focus
           onClick={dispatch.close}
         >
           {profileText('common.close', 'Close')}
-        </button>
+        </UiButton>
       </div>
     </div>
   );

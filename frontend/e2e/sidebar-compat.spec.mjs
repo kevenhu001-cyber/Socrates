@@ -40,6 +40,7 @@ test('Sidebar React nav buttons navigate and reflect active state', async ({ pag
   // The Plugins button should now have the .active class (React re-renders).
   const pluginsBtn = page.locator('#navPlugins');
   await expect(pluginsBtn).toHaveClass(/active/);
+  await expect(pluginsBtn).toHaveAttribute('aria-current', 'page');
 });
 
 test('typed recents filter updates while the compact drawer hides chips', async ({ page }) => {
@@ -85,7 +86,13 @@ test('React recents chips refresh after project and session caches change', asyn
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await expect(page.locator('#recentsFilterChips [data-filter="project:project-algebra"]')).toContainText('Algebra project');
+  const projectChip = page.locator('#recentsFilterChips [data-filter="project:project-algebra"]');
+  await expect(projectChip).toContainText('Algebra project');
+  await expect(projectChip).toHaveAttribute('aria-label', 'Filter by project: Algebra project');
+  await page.evaluate(() => window.setLang('zh'));
+  await expect(projectChip).toHaveAttribute('aria-label', '按项目筛选：Algebra project');
+  await page.evaluate(() => window.setLang('en'));
+  await expect(projectChip).toHaveAttribute('aria-label', 'Filter by project: Algebra project');
   await page.evaluate(() => {
     window.SERVER_SESSIONS = [
       { id: 'session-1', tags: ['algebra', 'practice'] },

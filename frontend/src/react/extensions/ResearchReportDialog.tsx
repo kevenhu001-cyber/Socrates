@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { useEffect, useMemo, useState } from 'react';
 import type { Message, ResearchJob } from '@socrates/contracts';
 import { fetchResearchReport } from '../../agent/researchJobsClient.ts';
@@ -89,7 +90,7 @@ export function ResearchReportDialog({ job, onClose }: ResearchReportDialogProps
           </FoundationDialogTitle>
         </div>
         <div className="research-report-header-actions">
-          <button type="button" className="research-report-icon-button" onClick={download} disabled={!text} aria-label={t('research.downloadReport')} title={t('research.downloadReport')}>↓</button>
+          <UiButton type="button" className="research-report-icon-button" onClick={download} disabled={!text} aria-label={t('research.downloadReport')} title={t('research.downloadReport')}>↓</UiButton>
           <FoundationDialogClose className="research-report-icon-button" onClick={onClose} aria-label={t('dialog.close', 'Close')}>×</FoundationDialogClose>
         </div>
       </header>

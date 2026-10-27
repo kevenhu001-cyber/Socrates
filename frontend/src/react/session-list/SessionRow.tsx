@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import React, { memo, useCallback, useState, useEffect } from 'react';
 import { t } from '../legacy/gateway.ts';
 import { detailCache } from '../../session/detailCache.ts';
@@ -85,7 +86,7 @@ function SessionRowBase({
       />
       <div className="recent-item-actions">
         <SessionRowMenu
-          trigger={<button
+          trigger={<UiButton
           className="btn-icon recent-item-overflow"
           type="button"
           title={t('session.moreActions')}
@@ -103,7 +104,7 @@ function SessionRowBase({
             <circle cx="12" cy="12" r="2.1" />
             <circle cx="19" cy="12" r="2.1" />
           </svg>
-        </button>}
+        </UiButton>}
           session={session}
           open={actionsOpen}
           onOpenChange={setMenuOpen}

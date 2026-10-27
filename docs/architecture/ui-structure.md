@@ -39,6 +39,12 @@ index.html                         静态 shell / 挂载宿主 / CSP
   `react/legacy/gateway.ts` 访问，不在组件里扩散任意 `window.*`。
 - `chat/` 不依赖 React 实现；共享类型可来自 `react/types/`，宿主状态与展示模型留在 ui。
   不通过新增 re-export shim 延长旧路径寿命。
+- 插件目录和选中状态由 `frontend/src/composer/` 持有；聊天、OAuth 返回恢复和 React
+  读取同一模块实例，React 订阅只留在 `useComposerPluginSelection.ts`。聊天层对 React
+  实现的直接依赖已归零，插件选择不再依赖 window bridge。
+- Admin、聊天配置、快捷键、会话内查找、设置和存档 UI 的调用者直接使用各自模块状态；不再把这些
+  状态发布到 window。其他仍有遗留调用者的 bridge 继续保留，按领域迁移。
+- 消息列表直接订阅聊天运行时；没有消费者的独立消息列表 bridge 已删除。
 - `auth` 的 `__socratesMountReactCompatibility` 仍是兼容启动通知，保留认证后才加载
   editor / modal 的时序。消息挂载和分享接管的四个 window 字段已由中立模块替代。
 
@@ -87,6 +93,11 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 - 唯一样式入口 `styles/index.css`：结构 token → legacy 兼容几何 → 当前组件、restore、parity、
   polish → themes。themes.css 只导入一次且最后导入。
 - 桌面 sidebar / topbar / composer / transcript 的所有者位于 parity；移动目录密度遵循固定参考。
+- 桌面主区域使用网格：顶部栏和聊天内容共用左列，工作台位于右列并跨两行；
+  顶部栏的网格位置仍由 `parity/topbar.css` 持有。手机继续使用原有布局。
+- React 的原生 JSX 按钮集中在 `react/ui/Button.tsx`；`IconButton` 复用该原语并要求
+  可访问名称。现有功能类名仍负责各自外观，迁移不等于所有按钮已共享同一视觉变体。
+  按钮 ratchet 已收紧至零；带原生默认提交语义的存量按钮显式保留 `type="submit"`。
 - 菜单与 FoundationDialog 通过 starting / ending 状态驱动 transition，从当前进度反向过渡。
   进入 opacity 180ms / transform 220ms，退出 120ms；使用现有 token，仅读写 opacity / transform。
 - workspace pane 局部 reveal 6px / 180ms；布局同步提交，连续导航取消旧动画，同页不重播。

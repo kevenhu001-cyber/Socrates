@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { useState, type FormEvent } from 'react';
 
 import { loginAdmin } from './adminApi';
@@ -38,9 +39,9 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
           />
         </label>
         {error && <div className="admin-error" role="alert">{error}</div>}
-        <button type="submit" className="admin-save" disabled={busy || !password}>
+        <UiButton type="submit" className="admin-save" disabled={busy || !password}>
           {busy ? 'Signing in…' : 'Sign in'}
-        </button>
+        </UiButton>
       </form>
     </div>
   );

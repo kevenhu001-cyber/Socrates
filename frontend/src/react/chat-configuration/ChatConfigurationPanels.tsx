@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import type { ReasoningEffort, ResponseSpeed } from '../../config/chatPreferences';
 import type { ChatProviderOption } from './types';
 import { i18n } from '../legacy/gateway.ts';
@@ -42,27 +43,27 @@ export function ModelPickerPanel({ providers, activeId, effort, speed, onPickMod
     <>
       <div role="listbox" aria-label={i18n('chatconfig.models', 'Models')}>
         {providers.length ? providers.map((provider, index) => (
-          <button key={provider.id} type="button" className="chat-config-row" role="option" aria-selected={activeId === provider.id} data-initial-focus={index === 0 ? 'true' : undefined} onClick={() => onPickModel(provider.id)}>
+          <UiButton key={provider.id} type="button" className="chat-config-row" role="option" aria-selected={activeId === provider.id} data-initial-focus={index === 0 ? 'true' : undefined} onClick={() => onPickModel(provider.id)}>
             <span>
               <strong>{providerName(provider)}</strong>
               {provider.model && provider.model !== providerName(provider) ? <small>{provider.model}</small> : null}
             </span>
             {activeId === provider.id ? <CheckIcon /> : null}
-          </button>
+          </UiButton>
         )) : <div className="chat-config-empty">{i18n('chatconfig.noModels', 'No models yet.')}</div>}
       </div>
       <div className="chat-config-divider" />
-      <button type="button" className="chat-config-row" onClick={onOpenEffort}>
+      <UiButton type="button" className="chat-config-row" onClick={onOpenEffort}>
         <span><strong>{i18n('chatconfig.effort', 'Reasoning effort')}</strong></span>
         <span className="chat-config-value">{effortLabel(effort)}<ChevronIcon /></span>
-      </button>
-      <button type="button" className="chat-config-row" onClick={onOpenSpeed}>
+      </UiButton>
+      <UiButton type="button" className="chat-config-row" onClick={onOpenSpeed}>
         <span><strong>{i18n('chatconfig.speed', 'Speed')}</strong></span>
         <span className="chat-config-value">{speedLabel(speed)}<ChevronIcon /></span>
-      </button>
-      <button type="button" className="chat-config-row" onClick={onOpenSettings}>
+      </UiButton>
+      <UiButton type="button" className="chat-config-row" onClick={onOpenSettings}>
         <span><strong>{i18n('chatconfig.manageModels', 'Manage models')}</strong></span>
-      </button>
+      </UiButton>
     </>
   );
 }
@@ -84,11 +85,11 @@ export function EffortPanel({ effort, speed, supportsInstant = true, onBack, onC
   const sliderIndex = stops.indexOf(effort);
   return (
     <>
-      <button type="button" className="chat-config-row" data-initial-focus="true" onClick={onBack}>
+      <UiButton type="button" className="chat-config-row" data-initial-focus="true" onClick={onBack}>
         <span><strong>{effortLabel(effort)}</strong></span>
         <span className="chat-config-value"><ChevronIcon /></span>
-      </button>
-      <button type="button" className="chat-config-row" aria-pressed={effort === 'instant'} disabled={!supportsInstant} onClick={() => onCommit('instant', speed)}>
+      </UiButton>
+      <UiButton type="button" className="chat-config-row" aria-pressed={effort === 'instant'} disabled={!supportsInstant} onClick={() => onCommit('instant', speed)}>
         <span>
           <strong>{i18n('effort.instant', 'Instant')}</strong>
           <small>{supportsInstant
@@ -96,7 +97,7 @@ export function EffortPanel({ effort, speed, supportsInstant = true, onBack, onC
             : i18n('chatconfig.instantUnsupported', 'This model always reasons')}</small>
         </span>
         {effort === 'instant' ? <CheckIcon /> : null}
-      </button>
+      </UiButton>
       <div className="chat-config-slider">
         <input
           type="range"
@@ -123,20 +124,20 @@ interface SpeedPanelProps {
 export function SpeedPanel({ effort, speed, onCommit }: SpeedPanelProps) {
   return (
     <div role="listbox" aria-label={i18n('chatconfig.speed', 'Speed')}>
-      <button type="button" className="chat-config-row" role="option" aria-selected={speed === 'standard'} data-initial-focus="true" onClick={() => onCommit(effort, 'standard')}>
+      <UiButton type="button" className="chat-config-row" role="option" aria-selected={speed === 'standard'} data-initial-focus="true" onClick={() => onCommit(effort, 'standard')}>
         <span>
           <strong>{speedLabel('standard')}</strong>
           <small>{i18n('chatconfig.speed.standardHint', 'Works with every configured model')}</small>
         </span>
         {speed === 'standard' ? <CheckIcon /> : null}
-      </button>
-      <button type="button" className="chat-config-row" role="option" aria-selected={speed === 'fast'} onClick={() => onCommit(effort, 'fast')}>
+      </UiButton>
+      <UiButton type="button" className="chat-config-row" role="option" aria-selected={speed === 'fast'} onClick={() => onCommit(effort, 'fast')}>
         <span>
           <strong>{speedLabel('fast')}</strong>
           <small>{i18n('chatconfig.speed.fastHint', 'Prefers low-latency service; falls back automatically')}</small>
         </span>
         {speed === 'fast' ? <CheckIcon /> : null}
-      </button>
+      </UiButton>
     </div>
   );
 }

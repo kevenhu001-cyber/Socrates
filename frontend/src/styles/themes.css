@@ -368,6 +368,30 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-dialog: var(--ui-bg-surface);
   --ui-scrollbar-thumb: rgb(0 0 0 / 12%);
   --ui-scrollbar-thumb-hover: rgb(0 0 0 / 24%);
+
+  /* Chat-surface bridge — the light-mode half of the family.
+   *
+   * The dark block declares --chat-* (see the dark block above). This block
+   * used not to, which meant the only consumer of the family —
+   * restore/chat-surface.css, the frozen compatibility surface — fell back
+   * to its own hardcoded hex in light mode (#f3f3f3 surface, #e7e7e7
+   * control) while dark mode followed the ladder. One mode tracked the
+   * design system and the other did not.
+   *
+   * Declaring the family here fixes it for every theme: custom properties
+   * are substituted at the point of use, so a theme that redefines
+   * --ui-bg-surface (philosophy does) gets its own chat surface without
+   * redeclaring the bridge. The declarations live in themes.css, which is
+   * imported last, so they win over the frozen :root / [data-mode="light"]
+   * hex in restore/chat-surface.css by source order. */
+  --chat-page: var(--ui-bg-page);
+  --chat-surface: var(--ui-bg-surface);
+  --chat-control: var(--ui-bg-control);
+  --chat-control-hover: var(--ui-bg-hover);
+  --chat-line: var(--ui-border-default);
+  --chat-text: var(--ui-text-primary);
+  --chat-muted: var(--ui-text-tertiary);
+  --chat-overlay: var(--ui-backdrop);
 }
 
 /* Lobe UI v6 CSS-variable bridge. The Lobe namespace deliberately aliases
@@ -591,7 +615,8 @@ html[data-theme="philosophy"] .tutor-mastery-stage-label {
 
 html[data-theme="philosophy"][data-mode="light"] {
   --ui-bg-page: rgb(247 244 238);
-  --ui-bg-sidebar: rgb(240 236 225);
+  --ui-bg-rail: rgb(240 236 225);
+  --ui-bg-sidebar: var(--ui-bg-rail);
   --ui-bg-panel: rgb(232 227 214);
   --ui-bg-elevated: rgb(252 251 249);
   --ui-bg-surface: rgb(252 251 249);
@@ -666,7 +691,8 @@ html[data-theme="philosophy"][data-mode="light"] {
 
 html[data-theme="philosophy"][data-mode="dark"] {
   --ui-bg-page: rgb(18 17 16);
-  --ui-bg-sidebar: rgb(24 23 21);
+  --ui-bg-rail: rgb(24 23 21);
+  --ui-bg-sidebar: var(--ui-bg-rail);
   --ui-bg-panel: rgb(32 30 27);
   --ui-bg-elevated: rgb(40 38 34);
   --ui-bg-surface: rgb(32 30 27);

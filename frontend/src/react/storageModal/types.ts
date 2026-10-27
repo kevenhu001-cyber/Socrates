@@ -19,7 +19,6 @@ export interface StorageBridge {
 
 declare global {
   interface Window {
-    __socratesStorageBridge?: StorageBridge;
     closeStorageModal?: () => void;
     restoreSession?: (id: string) => void;
     confirmPurgeSession?: (id: string) => void;

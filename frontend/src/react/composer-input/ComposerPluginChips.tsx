@@ -1,9 +1,12 @@
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
 import { Icon } from '../../ui/Icon';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import type { ComposerSurface } from '../../composer/types.ts';
 import { syncComposerShellFlags } from '../../ui/composerShape.js';
 import { getLegacyActions, i18n, isWebSearchOn } from '../legacy/gateway.ts';
-import { removeComposerPlugin, useComposerPluginSelectionSnapshot } from '../composer/pluginSelection';
+import { removeComposerPlugin } from '../../composer/pluginSelection.ts';
+import { useComposerPluginSelectionSnapshot } from '../composer/useComposerPluginSelection';
 
 /* Web search is picked from the "+" menu and then shown as a removable chip,
    the same affordance chatgpt.com uses. State lives in config/providers.js;
@@ -35,7 +38,7 @@ function WebSearchChip() {
   const label = i18n('composer.tools.webSearch', 'Web search');
   const removeLabel = i18n('composer.webSearch.remove', 'Web search, click to remove');
   return (
-    <button
+    <Button
       type="button"
       className="composer-tool-chip"
       data-tool="webSearch"
@@ -53,7 +56,7 @@ function WebSearchChip() {
         <Icon name="close" className="composer-tool-chip-close" />
       </span>
       <span className="composer-tool-chip-label">{label}</span>
-    </button>
+    </Button>
   );
 }
 
@@ -89,26 +92,24 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
             <span className="composer-plugin-chip-icon composer-plugin-chip-fallback" aria-hidden="true">{plugin.name.slice(0, 1).toUpperCase()}</span>
           )}
           <span className="composer-plugin-chip-label">{plugin.name}</span>
-          <button
-            type="button"
+          <IconButton
             className="composer-plugin-chip-remove"
-            aria-label={`Remove ${plugin.name}`}
-            title={`Remove ${plugin.name}`}
+            label={i18n('composer.plugin.remove', 'Remove {name}').replace('{name}', plugin.name)}
+            icon="close"
+            title={i18n('composer.plugin.remove', 'Remove {name}').replace('{name}', plugin.name)}
             onMouseDown={(event) => event.preventDefault()}
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
               removeComposerPlugin(surface, plugin.id);
             }}
-          >
-            <Icon name="close" />
-          </button>
+          />
         </span>
       ))}
       {hiddenCount > 0 ? (
-        <button type="button" className="composer-plugin-chip composer-plugin-chip-more" onClick={openTools}>
-          +{hiddenCount} more
-        </button>
+        <Button type="button" className="composer-plugin-chip composer-plugin-chip-more" onClick={openTools}>
+          {i18n('composer.plugin.more', '+{count} more').replace('{count}', String(hiddenCount))}
+        </Button>
       ) : null}
     </div>
   );

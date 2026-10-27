@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import { i18n } from './workspaceUi';
 
@@ -19,7 +20,7 @@ export function LibraryCategoryTabs({ chip, onChipChange, dispatch }: LibraryCat
   return (
     <div className="library-chips-bar" role="tablist" aria-label={i18n('sidebar.library.title', '资料库')}>
       {categories.map((category) => (
-        <button
+        <UiButton
           key={category.id}
           type="button"
           role="tab"
@@ -31,7 +32,7 @@ export function LibraryCategoryTabs({ chip, onChipChange, dispatch }: LibraryCat
           }}
         >
           {category.label}
-        </button>
+        </UiButton>
       ))}
     </div>
   );

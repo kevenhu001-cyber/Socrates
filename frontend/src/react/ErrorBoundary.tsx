@@ -1,3 +1,4 @@
+import { Button as UiButton } from './ui/Button';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { i18n } from './legacy/gateway';
 
@@ -30,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
       return (
         <div className="error-boundary-fallback" style={{ padding: 16, color: 'hsl(0 60% 50%)' }}>
-          <p>{i18n('error.generic', 'Something went wrong.')} <button className="text-btn" onClick={() => this.setState({ hasError: false, error: null })}>{i18n('error.retry', 'Try again')}</button></p>
+          <p>{i18n('error.generic', 'Something went wrong.')} <UiButton type="submit" className="text-btn" onClick={() => this.setState({ hasError: false, error: null })}>{i18n('error.retry', 'Try again')}</UiButton></p>
         </div>
       );
     }

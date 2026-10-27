@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { useMemo, useState } from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { ProjectItem } from './types';
@@ -25,9 +26,9 @@ function ProjectsView({ projects, dispatch }: {
 
   const projectTabs = (
     <div className="projects-filter-tabs" role="tablist" aria-label={i18n('projects.filter', 'Project filter')}>
-      <button type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>{i18n('projects.all', 'All')}</button>
-      <button type="button" role="tab" aria-selected={scope === 'owned'} className={scope === 'owned' ? 'active' : ''} onClick={() => setScope('owned')}>{i18n('projects.owned', 'Created by you')}</button>
-      <button type="button" role="tab" aria-selected={scope === 'shared'} className={scope === 'shared' ? 'active' : ''} onClick={() => setScope('shared')}>{i18n('projects.shared', 'Shared with you')}</button>
+      <UiButton type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>{i18n('projects.all', 'All')}</UiButton>
+      <UiButton type="button" role="tab" aria-selected={scope === 'owned'} className={scope === 'owned' ? 'active' : ''} onClick={() => setScope('owned')}>{i18n('projects.owned', 'Created by you')}</UiButton>
+      <UiButton type="button" role="tab" aria-selected={scope === 'shared'} className={scope === 'shared' ? 'active' : ''} onClick={() => setScope('shared')}>{i18n('projects.shared', 'Shared with you')}</UiButton>
     </div>
   );
 
@@ -44,7 +45,7 @@ function ProjectsView({ projects, dispatch }: {
       />
       {projectTabs}
       {projects.length === 0 ? (
-        <div className="workspace-empty"><strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong><span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span><button className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</button></div>
+        <div className="workspace-empty"><strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong><span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span><UiButton type="submit" className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</UiButton></div>
       ) : (
         <div className="projects-list">
           <div className="projects-list-heading">{i18n('projects.name', 'Name')}</div>
@@ -52,14 +53,14 @@ function ProjectsView({ projects, dispatch }: {
             const color = /^#[0-9a-f]{3,8}$/i.test(project.color || '') ? project.color! : 'hsl(var(--accent-000))';
             return (
               <div className="workspace-row project-row" key={project.id}>
-                <button className="project-main" onClick={() => dispatch.openProject(project.id)}>
+                <UiButton type="submit" className="project-main" onClick={() => dispatch.openProject(project.id)}>
                   <span className="project-icon" style={{ color }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 7.5h6l2-2h9v13h-17z" /></svg></span>
                   <span className="workspace-row-copy">
                     <strong>{project.name}</strong>
                     <span>{projectMeta(project)}</span>
                   </span>
-                </button>
-                <button className="workspace-row-action workspace-icon-action" aria-label={i18n('projects.edit', 'Edit')} title={i18n('projects.edit', 'Edit')} onClick={(e) => { e.stopPropagation(); dispatch.editProject(project.id); }}><MoreIcon /></button>
+                </UiButton>
+                <UiButton type="submit" className="workspace-row-action workspace-icon-action" aria-label={i18n('projects.edit', 'Edit')} title={i18n('projects.edit', 'Edit')} onClick={(e) => { e.stopPropagation(); dispatch.editProject(project.id); }}><MoreIcon /></UiButton>
               </div>
             );
           })}

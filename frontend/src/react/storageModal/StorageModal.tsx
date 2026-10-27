@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { useRef } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import {
@@ -61,20 +62,20 @@ function StorageModal() {
                     </div>
                   </div>
                   <div className="storage-row-actions">
-                    <button
+                    <UiButton
                       type="button"
                       className="storage-btn-restore"
                       onClick={() => dispatch.restore(s.id)}
                     >
                       Restore
-                    </button>
-                    <button
+                    </UiButton>
+                    <UiButton
                       type="button"
                       className="storage-btn-delete"
                       onClick={() => dispatch.purge(s.id)}
                     >
                       Delete forever
-                    </button>
+                    </UiButton>
                   </div>
                 </div>
               );

@@ -303,6 +303,30 @@ function createPrecompressedAssetsPlugin() {
   };
 }
 
+/* P_perf-strip-html-comments — index.html carries ~16 KB of developer
+   documentation in HTML comments. The source keeps every one of them (they
+   explain why the boot shell is shaped the way it is), but the shipped
+   document does not need them: they cost ~6.6 KB of gzip on the
+   render-blocking path, about a third of the compressed shell, and pushed
+   the entry budget over its limit.
+   Script and style blocks are matched first, so their bodies are never
+   touched — the inline theme resolver is hashed by
+   scripts/gen-csp-hashes.mjs, and the entry-graph audit reads the same
+   built document this plugin produces. */
+function createStripHtmlCommentsPlugin() {
+  /* A script/style block is consumed as one unit, so a comment inside it is
+     never offered to the comment branch. */
+  const PROTECTED_BLOCK = /(<script\b[\s\S]*?<\/script>|<style\b[\s\S]*?<\/style>)|<!--[\s\S]*?-->/g;
+  return {
+    name: 'strip-html-comments',
+    apply: 'build',
+    enforce: 'post',
+    transformIndexHtml(html) {
+      return html.replace(PROTECTED_BLOCK, (match, protectedBlock) => protectedBlock ?? '');
+    },
+  };
+}
+
 function createLocalApiStubPlugin() {
   return {
     name: 'local-api-stub',
@@ -493,6 +517,7 @@ export default defineConfig({
   },
   plugins: [
     createLocalApiStubPlugin(),
+    createStripHtmlCommentsPlugin(),
     createPrecompressedAssetsPlugin(),
     createEntryGraphPlugin(),
   ],

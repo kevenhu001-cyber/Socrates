@@ -29,6 +29,34 @@ async function openModelsPane(page) {
   return overlay;
 }
 
+test('tone choices have separate readable labels and expose the selected state', async ({ page }) => {
+  await page.evaluate(() => window.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+  await overlay.locator('.settings-nav [data-section="personalization"]').click();
+  const options = overlay.locator('.tone-preset-btn');
+  await expect(options).toHaveCount(5);
+  for (const option of await options.all()) {
+    const label = await option.locator('.tone-preset-label').boundingBox();
+    const description = await option.locator('.tone-preset-desc').boundingBox();
+    expect(label).not.toBeNull();
+    expect(description).not.toBeNull();
+    expect(description.y).toBeGreaterThanOrEqual(label.y + label.height);
+  }
+  const friendly = overlay.locator('.tone-preset-btn[data-tone="friendly"]');
+  await friendly.click();
+  await expect(friendly).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => friendly.evaluate((element) => getComputedStyle(element, '::after').content)).toContain('✓');
+  await expect(overlay.locator('.tone-preset-btn[aria-pressed="true"]')).toHaveCount(1);
+
+  await page.setViewportSize({ width: 390, height: 768 });
+  const bounds = await overlay.locator('#tonePresetOptions').evaluate((element) => ({
+    width: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width);
+  await expect(friendly).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('settings modal opens with React-owned providers and tones, and closes', async ({ page }) => {
   // Open via the legacy window binding (the model-picker "add" path).
   const overlay = await openModelsPane(page);

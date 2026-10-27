@@ -1,0 +1,8 @@
+{
+  "count": 0,
+  "excluded": [
+    "src/react/ui"
+  ],
+  "note": "Raw JSX <button> elements in src/react/** outside the shared primitives. May only go down. Run with --update after an intentional reduction.",
+  "generatedBy": "check-button-primitive.mjs --update"
+}

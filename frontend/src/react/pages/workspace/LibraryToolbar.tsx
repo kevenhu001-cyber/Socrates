@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { getLegacyActions, t as translate } from '../../legacy/gateway.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import { ChevronDownIcon, FilterIcon, GearIcon, GridIcon, i18n, ListIcon, SearchIcon } from './workspaceUi';
@@ -49,31 +50,31 @@ export function LibraryToolbar({
         </div>
         <div className="library-head-actions">
           <div className="library-new-wrap">
-            <button type="button" className="workspace-create-button library-new-pill" onClick={() => onNewMenuOpenChange(!newMenuOpen)}>
+            <UiButton type="button" className="workspace-create-button library-new-pill" onClick={() => onNewMenuOpenChange(!newMenuOpen)}>
               <span>{i18n('library.new', '新建')}</span>
               <ChevronDownIcon />
-            </button>
+            </UiButton>
             {newMenuOpen ? (
               <div className="library-new-menu" role="menu">
-                <button type="button" role="menuitem" onClick={() => {
+                <UiButton type="button" role="menuitem" onClick={() => {
                   onNewMenuOpenChange(false);
                   document.getElementById('libraryUploadInput')?.click();
                 }}>
                   {i18n('library.upload', '上传文件')}
-                </button>
+                </UiButton>
               </div>
             ) : null}
           </div>
-          <button type="button" className="library-settings-btn" aria-label={i18n('profile.preferences', '偏好设置')} onClick={() => getLegacyActions().navigation.openSettings()}>
+          <UiButton type="button" className="library-settings-btn" aria-label={i18n('profile.preferences', '偏好设置')} onClick={() => getLegacyActions().navigation.openSettings()}>
             <GearIcon />
-          </button>
+          </UiButton>
         </div>
       </div>
 
       <div className="library-toolbar">
         <div className="library-toolbar-controls">
           <div className="library-tool-btn-wrap">
-            <button
+            <UiButton
               type="button"
               className={'library-tool-btn' + (typeFilter !== 'all' ? ' is-active' : '')}
               aria-label={filterLabel}
@@ -83,11 +84,11 @@ export function LibraryToolbar({
               onClick={() => onFilterOpenChange(!filterOpen)}
             >
               <FilterIcon />
-            </button>
+            </UiButton>
             {filterOpen ? (
               <div className="library-filter-menu" role="menu">
                 {FILE_TYPE_FILTERS.map((filter) => (
-                  <button
+                  <UiButton
                     key={filter.id}
                     type="button"
                     role="menuitemradio"
@@ -99,19 +100,19 @@ export function LibraryToolbar({
                     }}
                   >
                     {i18n(filter.labelKey, filter.fallback)}
-                  </button>
+                  </UiButton>
                 ))}
               </div>
             ) : null}
           </div>
           <div className="library-toolbar-divider" />
           <div className="library-view-switcher">
-            <button type="button" className={'library-view-btn' + (viewMode === 'grid' ? ' active' : '')} onClick={() => onViewModeChange('grid')} aria-label={translate('chrome.gridView')} data-i18n-aria="chrome.gridView">
+            <UiButton type="button" className={'library-view-btn' + (viewMode === 'grid' ? ' active' : '')} onClick={() => onViewModeChange('grid')} aria-label={translate('chrome.gridView')} data-i18n-aria="chrome.gridView">
               <GridIcon />
-            </button>
-            <button type="button" className={'library-view-btn' + (viewMode === 'list' ? ' active' : '')} onClick={() => onViewModeChange('list')} aria-label={translate('chrome.listView')} data-i18n-aria="chrome.listView">
+            </UiButton>
+            <UiButton type="button" className={'library-view-btn' + (viewMode === 'list' ? ' active' : '')} onClick={() => onViewModeChange('list')} aria-label={translate('chrome.listView')} data-i18n-aria="chrome.listView">
               <ListIcon />
-            </button>
+            </UiButton>
           </div>
         </div>
         <label className="workspace-search-field library-search-pill">

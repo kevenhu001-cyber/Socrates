@@ -35,23 +35,35 @@ have migrated. Chat lifecycle, SSE streaming, session behavior, and parts of
 Markdown rendering remain in JavaScript modules. Keep those existing behaviors
 covered while moving one user flow at a time.
 
+## React controls
+
+Use `src/react/ui/Button.tsx` for new React buttons and `IconButton.tsx` for
+icon-only controls; the latter requires an accessible label. Both render a
+native button and default to `type="button"`, so form submissions must set
+`type="submit"` explicitly. Use the plain variant when a feature still owns
+its styling; the shared variants opt into the button size and style grammar.
+Loading disables the control and exposes its busy state. The button ratchet
+tracks remaining raw React buttons and only allows its baseline to shrink.
+
 ## CSS cascade
 
 `src/styles/index.css` is the single stylesheet entry. Its order is part of the
 implementation:
 
-1. `tokens.css` and `themes.css` define shared values.
-2. `legacy/index.css` imports 17 order-sensitive slices of the older sheet.
+1. `tokens.css` defines theme-independent geometry, typography and motion.
+2. `legacy/index.css` loads order-sensitive compatibility styles.
 3. `foundations/`, `layout/`, `components/`, and `features/` contain modular
    styles for actively maintained surfaces.
-4. `restore/index.css` loads the visual restore layer last; `restore/fixes.css`
-   contains adjustments made against the current DOM.
+4. `restore/index.css` supplies compatibility rules; `parity/index.css` owns
+   the current desktop surfaces, followed by shared `polish/` details.
+5. `themes.css` loads exactly once, last, and owns the palette and legacy
+   token mappings.
 
-This is a transition architecture, so equal selectors can have multiple active
-owners. When changing a surface, first trace its cascade in `styles/index.css`
-and its imported files. Move or delete a legacy rule only after checking the
-affected desktop/mobile and light/dark views. Keep `index.css` as the only
-entry point.
+This is a transition architecture: compatibility selectors remain for surfaces
+not yet migrated. When changing a surface, trace its cascade in `styles/index.css`
+and its imports, and use the designated owner for the four desktop surfaces.
+Move or delete a legacy rule only after checking the affected desktop/mobile
+and light/dark views. Keep `index.css` as the only entry point.
 
 ## Checks
 
@@ -68,6 +80,13 @@ coverage. Save temporary screenshots under the ignored `test-results/` folder;
 do not commit build output or test reports. The regular Playwright config covers
 desktop Chromium; the mobile config intentionally runs only its focused Web
 flow instead of duplicating the full suite.
+
+`index.html` is heavily commented: those comments explain why the boot shell is
+shaped the way it is, so they stay in the source. The production build strips
+them from the shipped document (`P_perf-strip-html-comments` in
+`vite.config.js`) because they cost about 6.6 KB of gzip on the render-blocking
+path. The entry budget in `e2e/performance-loading.spec.mjs` is a ratchet —
+keep the built document under it rather than raising the limit.
 
 ## Local development
 

@@ -84,7 +84,9 @@ for (const { spec, content, actions, tableRows } of CASES) {
     }
 
     const visible = await card.locator('[data-viz-action]').evaluateAll((els) => els.filter((b) => !b.hidden).map((b) => b.dataset.vizAction));
-    expect(visible).toEqual(actions);
+    /* Every card carries the workbench affordance first (it opens the
+       artifact in the artifacts workbench); the rest is per template. */
+    expect(visible).toEqual(['workbench', ...actions]);
     if (actions.includes('table')) {
       await card.locator('[data-viz-action="table"]').click();
       await expect(card.locator('.visualization-table')).toBeVisible();

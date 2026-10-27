@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { useTranslation } from './useTranslation';
 
 export type CanvasMode = 'view-original' | 'view-edited' | 'edit';
@@ -48,54 +49,60 @@ export function CanvasToolbar({
       </span>
       <div className="canvas-block-actions">
         {onOpenWorkbench && (
-          <button
+          <UiButton
             type="button"
             className="canvas-btn canvas-workbench-btn"
+            data-action="canvas-workbench"
             onClick={onOpenWorkbench}
           >
             {t('workbench.title')}
-          </button>
+          </UiButton>
         )}
-        <button
+        <UiButton
           type="button"
           className="canvas-btn"
           aria-pressed={mode === 'view-original'}
+            data-action="canvas-original"
           onClick={onToggleOriginal}
         >
           {mode === 'view-original'
             ? t('composer.canvas.editedView')
             : t('composer.canvas.original')}
-        </button>
-        <button
+        </UiButton>
+        <UiButton
           type="button"
           className="canvas-btn"
           aria-pressed={mode === 'edit'}
+            data-action="canvas-edit"
           onClick={onToggleEdit}
         >
           {editLabel}
-        </button>
-        <button
+        </UiButton>
+        <UiButton
           type="button"
           className="canvas-btn"
           onClick={onCopy}
+            data-action="canvas-copy"
         >
           {t('composer.canvas.copy')}
-        </button>
-        <button
+        </UiButton>
+        <UiButton
           type="button"
           className="canvas-btn"
           onClick={onIterate}
+            data-action="canvas-iterate"
         >
           {t('composer.canvas.iterate')}
-        </button>
-        <button
+        </UiButton>
+        <UiButton
           type="button"
           className="canvas-btn"
           aria-pressed={isFullscreen}
+            data-action="canvas-fullscreen"
           onClick={onFullscreen}
         >
           {isFullscreen ? t('composer.canvas.exitFullscreen') : t('composer.canvas.fullscreen')}
-        </button>
+        </UiButton>
       </div>
       {hasEdited ? (
         <span className="canvas-block-edited-badge">{t('composer.canvas.edited')}</span>

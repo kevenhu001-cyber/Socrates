@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { defineComponent } from '@openuidev/react-lang';
 import { calculatorStep, initialCalculatorState } from '@socrates/core';
 import { useReducer, type KeyboardEvent } from 'react';
@@ -32,7 +33,7 @@ export const Calculator = defineComponent({
       {props.label ? <strong>{props.label}</strong> : null}
       <output className="iui-title" aria-live="polite" aria-label={title}>{state.display === 'Error' ? i18n('intui.calculationError', 'Error') : state.display}</output>
       <div className="iui-grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 'var(--ui-space-sm)' }}>
-        {CALCULATOR_KEYS.map(([key, role]) => <button className={cx('iui-button', 'iui-button-outline', 'iui-button-md', `iui-calculator-${role}`)} type="button" aria-label={key === 'Backspace' ? i18n('intui.backspace', 'Backspace') : undefined} key={key} onClick={() => dispatch(key)}>{key === 'Backspace' ? '⌫' : key}</button>)}
+        {CALCULATOR_KEYS.map(([key, role]) => <UiButton className={cx('iui-button', 'iui-button-outline', 'iui-button-md', `iui-calculator-${role}`)} type="button" aria-label={key === 'Backspace' ? i18n('intui.backspace', 'Backspace') : undefined} key={key} onClick={() => dispatch(key)}>{key === 'Backspace' ? '⌫' : key}</UiButton>)}
       </div>
     </div>;
   },

@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { scheduledText } from './scheduled.copy';
 
 interface ScheduledEmptyStateProps {
@@ -17,7 +18,7 @@ export function ScheduledEmptyState({ searching, scope, onCreate }: ScheduledEmp
         <>
           <strong>{scheduledText('scheduled.empty', 'Let Socrates follow up')}</strong>
           <span>{scheduledText('scheduled.emptyDesc', 'Create a reminder, recurring briefing, or monitoring task.')}</span>
-          <button type="button" className="workspace-primary" onClick={onCreate}>{scheduledText('scheduled.createTask', 'Create task')}</button>
+          <UiButton type="button" className="workspace-primary" onClick={onCreate}>{scheduledText('scheduled.createTask', 'Create task')}</UiButton>
         </>
       )}
     </div>

@@ -75,7 +75,11 @@ test(`loading an old conversation rebuilds scaffold widgets and visualizations (
   await expect.poll(() => page.evaluate(() => window.__activeProject?.id)).toBe('project-restore');
 
   await expect(page.locator('#msgList .msg')).toHaveCount(2);
-  await expect(page.locator('#msgList .msg.user strong')).toHaveText('parabola');
+  /* A user bubble always renders its own raw text — never a persisted
+     markdown snapshot. The stored <strong> must not come back as markup,
+     which is what makes the "stale HTML" case meaningful. */
+  await expect(page.locator('#msgList .msg.user strong')).toHaveCount(0);
+  await expect(page.locator('#msgList .msg.user .msg-body')).toHaveText('Explain a **parabola**');
   await expect(page.locator('.inline-definition-term')).toHaveText('Parabola');
   await expect(page.locator('.inline-definition-body')).toContainText('A quadratic curve');
   await expect(page.locator('.visualization-card')).toContainText('Restored parabola');

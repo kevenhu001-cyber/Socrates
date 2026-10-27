@@ -6,7 +6,7 @@ import { flushRecentsReconcile } from '../../session/recents.ts';
 import { apiFetch } from '../../util/api.ts';
 import { activateMainView } from '../../ui/mainViewController.js';
 import { focusComposer } from '../../composer/controller.ts';
-import { clearComposerPlugins } from '../../react/composer/pluginSelection.ts';
+import { clearComposerPlugins } from '../../composer/pluginSelection.ts';
 import { buildMessageContent, resetAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';
 import { updateComposerBtn } from '../../ui/topicSetup.js';

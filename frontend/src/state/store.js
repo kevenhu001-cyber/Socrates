@@ -75,6 +75,37 @@ function resetBridges() {
   });
 }
 
+/* The legacy listener set lives at module scope rather than inside the
+ * facade's closure, because a typed caller that commits a domain action
+ * through src/store/index.ts has to be able to wake the same listeners the
+ * facade wakes. The facade is not the only writer of the domain stores —
+ * it is the only writer that has to be stringly typed.
+ *
+ * The notification contract is one wake per commit: a batch that touches
+ * several namespaces still wakes the listeners once, and a deferred commit
+ * coalesces into the next microtask. */
+var listeners = new Set();
+var notifyScheduled = false;
+
+function notify() { listeners.forEach(function (listener) { listener(); }); }
+function notifyDeferred() {
+  if (notifyScheduled) return;
+  notifyScheduled = true;
+  var flush = function () { notifyScheduled = false; notify(); };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(flush);
+  else if (typeof queueMicrotask === 'function') queueMicrotask(flush);
+  else Promise.resolve().then(flush);
+}
+
+/**
+ * Wake the legacy listeners after a commit that did not go through the
+ * facade. Callers that write a domain store directly — the typed helpers
+ * in src/store/index.ts — use this so the subscribers that watch
+ * `stateStore.subscribe` (the research tracker, the scroll indicator) see
+ * the change exactly as they would have through the facade.
+ */
+function notifyLegacyListeners() { notify(); }
+
 export function subscribeAll(listener) {
   var disposers = Object.keys(namespaceBridges).map(function (namespace) {
     return namespaceBridges[namespace].subscribe(listener);
@@ -83,18 +114,6 @@ export function subscribeAll(listener) {
 }
 
 var stateStore = (function () {
-  var listeners = new Set();
-  var notifyScheduled = false;
-  function notify() { listeners.forEach(function (listener) { listener(); }); }
-  function notifyDeferred() {
-    if (notifyScheduled) return;
-    notifyScheduled = true;
-    var flush = function () { notifyScheduled = false; notify(); };
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(flush);
-    else if (typeof queueMicrotask === 'function') queueMicrotask(flush);
-    else Promise.resolve().then(flush);
-  }
-
   /** @param {string} key @returns {any} */
   function read(key) {
     var path = pathFor(key);
@@ -295,4 +314,5 @@ if (typeof window !== 'undefined') {
 }
 
 export { stateStore, resetState };
+export { notifyLegacyListeners };
 export { callBridge, examBridge, kbBridge, searchBridge, sessionBridge, uiBridge };

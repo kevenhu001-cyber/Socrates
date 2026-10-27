@@ -7,12 +7,12 @@ import {
   normalisePluginId,
   resetPluginCatalogForTests,
   serializeSelectedPluginContext,
-} from '../src/react/composer/pluginCatalog.ts';
+} from '../src/composer/pluginCatalog.ts';
 import {
   installComposerPluginSelectionBridge,
   removeComposerPlugin,
   toggleComposerPlugin,
-} from '../src/react/composer/pluginSelection.ts';
+} from '../src/composer/pluginSelection.ts';
 
 test('normalises connector ids and decorates connection state', () => {
   assert.equal(normalisePluginId('Google_Drive'), 'googledrive');
@@ -56,6 +56,31 @@ test('loads a catalog and keeps connected entries distinguishable', async () => 
       ['gmail', 'disconnected'],
       ['disabled', 'unavailable'],
     ]);
+  } finally {
+    globalThis.fetch = previousFetch;
+    resetPluginCatalogForTests();
+  }
+});
+
+test('an older failed catalog request cannot evict a newer in-flight request', async () => {
+  const previousFetch = globalThis.fetch;
+  const pending = [];
+  globalThis.fetch = () => new Promise((resolve, reject) => pending.push({ resolve, reject }));
+  try {
+    resetPluginCatalogForTests();
+    const older = loadPluginCatalog();
+    const newer = loadPluginCatalog(true);
+    assert.equal(pending.length, 2);
+    pending[0].reject(new Error('old request failed'));
+    await assert.rejects(older);
+    const reused = loadPluginCatalog();
+    assert.equal(pending.length, 2);
+    pending[1].resolve(new Response(JSON.stringify({
+      configured: true,
+      connectors: [{ id: 'github', name: 'GitHub', connection: { status: 'connected' } }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    assert.equal((await newer)[0].id, 'github');
+    assert.equal((await reused)[0].id, 'github');
   } finally {
     globalThis.fetch = previousFetch;
     resetPluginCatalogForTests();

@@ -6,6 +6,8 @@ export type WorkbenchTab = 'preview' | 'code';
 export interface WorkbenchArtifact {
   id: string;
   title: string;
+  /** Translation key for built-in titles; user-provided titles stay literal. */
+  titleKey?: string;
   type: WorkbenchArtifactType;
   language?: string;
   code?: string;

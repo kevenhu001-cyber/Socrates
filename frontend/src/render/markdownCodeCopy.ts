@@ -117,7 +117,8 @@ function makeWorkbenchButton(pre: HTMLElement, langLabel: string): HTMLButtonEle
     import('../react/workbench/workbenchStore').then(({ openWorkbench }) => {
       openWorkbench({
         id: `code-${Date.now()}`,
-        title: langLabel ? `${langLabel.toUpperCase()} 代码` : '代码实现',
+        title: langLabel ? trCopy('workbench.codeTitleLanguage', '{language} code').replace('{language}', langLabel.toUpperCase()) : trCopy('workbench.codeTitle', 'Code'),
+        titleKey: langLabel ? 'workbench.codeTitleLanguage' : 'workbench.codeTitle',
         type: 'code',
         language: langLabel,
         code: codeText,

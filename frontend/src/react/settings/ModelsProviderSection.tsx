@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { i18n } from '../legacy/gateway.ts';
 import { ProviderList } from './ProviderList';
 import { useProviderListState } from './useProviderListState';
@@ -26,9 +27,9 @@ export function ModelsProviderSection({
       <div className="settings-field">
         <div className="settings-label-row">
           <span className="settings-label">{i18n('settings.models', 'Models')}</span>
-          <button className="settings-btn-mini" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
+          <Button className="settings-btn-mini" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
             {i18n('settings.addProvider', '+ Add')}
-          </button>
+          </Button>
         </div>
         <span className="settings-hint">
           {i18n('settings.providerHint', 'Configure one or more providers. Click the circle to set one as active.')}

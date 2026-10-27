@@ -43,14 +43,20 @@
 
 | Guard | Enforces |
 |---|---|
-| `check-react-globals.mjs` | React components read the store through `store/index.ts` hooks, not `window.stateStore` |
+| `check-react-globals.mjs` | React does not read legacy `window.*` functions directly; the typed gateway (`react/legacy/gateway.ts`) is the only boundary. The `window.__socrates*Bridge` objects are exempt as bridge infrastructure — that exemption is why `check-state-ownership.mjs` exists |
+| `check-state-ownership.mjs` | React state access converges on `store/index.ts` typed hooks: no new `window.__socrates*Bridge` reads and no new string-keyed `stateStore.dispatch` writes. Shrink-only baseline (also `lint:state-ownership`) |
+| `check-button-primitive.mjs` | Raw JSX `<button>` elements under `src/react/**` (outside `src/react/ui/`) stay at or below their frozen count — counted from the TypeScript AST, so an HTML template string is not mistaken for an element. Use the shared primitives in `src/react/ui/` instead. Shrink-only baseline (also `lint:button-primitive`) |
 | `check-react-roots.mjs` | React root creation and hydration stay in `react/lib/boot/ownedRoot.ts`; retired transcript mount globals cannot return. Includes `lint:react-roots` and a shrink-only `--update` baseline |
-| `check-css-debt.mjs` | `!important` / hex colors / literal radii / stacked IDs stay at or below their frozen counts |
+| `check-css-debt.mjs` | `!important` / hex colors / literal radii / stacked IDs stay at or below their frozen counts; the cascade order in `index.html` is proved against `styles/index.css` (nested `@import`s included), and no `@import` may sit after a style rule — the browser drops those silently |
 | `check-button-sizes.mjs` | Interactive controls reach the size ladder (`--ui-control-sm` 32 / `md` 40 / `touch` 44) instead of a literal px height; off-ladder count stays at or below its baseline (also `lint:button-sizes`) |
 | `check-z-index.mjs` | Live sheets use the `--ui-z-*` rungs (20/30/40/80/90/200/400/1600) instead of literal `z-index` ≥ 10 (local 0–9 allowed); off-token count stays at or below its baseline (also `lint:z-index`) |
 | `check-empty-catch.mjs` | Every empty `catch` carries a reasoned `empty-catch: intentional — …` marker (AST-based, so strings/regexes never count) |
 | `check-composer-css.mjs` | Exactly one owner for composer CSS: `styles/parity/composer-unified.css` |
 | `check-surface-ownership.mjs` | Sidebar / topbar / transcript each have one desktop owner under `styles/parity/` |
+| `check-surface-ladder.mjs` | The four-step background ladder holds for **every** theme discovered in `themes.css`: exactly four rungs, no pure black, role order, steps inside the 1.5%–7% band, and the legacy HSL channels tracking the rungs they carry. Themes are cross-checked against the runtime `THEME_STYLES` list, so a theme registered in one place but not the other fails. The baseline records each theme's scale / shared-projection policy (also `lint:surface-ladder`) |
+| `check-focus-ring.mjs` | Focus states use the `--ui-focus-shadow` double ring with a ≥3:1 outer ring; no bare visible `outline` survives, and every `!important` that clears an outline carries a forced-colors fallback (also `lint:focus-ring`) |
+| `check-font-weight.mjs` | Font weights come from tokens, not literals, and the dark mode's 450/600 step-down stays a real variable-font axis rather than snapping to a static neighbour (also `lint:font-weight`) |
+| `check-prompt-dashes.mjs` | Prompt text uses a single dash convention; the baseline records the entries that are deliberately exempt (also `lint:prompt-dashes`) |
 | `check-mobile-css.mjs` | Mobile CSS stays in the mobile owner files |
 | `check-i18n-locales.mjs` | `en` and `zh` carry the same key set |
 | `check-e2e-artifacts.mjs` | e2e writes screenshots under `test-results/`, never to absolute paths like `/tmp` (which break on non-POSIX runners and leak across runs) |

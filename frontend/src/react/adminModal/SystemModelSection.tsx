@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import type { FormEvent } from 'react';
 
 import type { SystemModelConfig } from './types';
@@ -58,9 +59,9 @@ export function SystemModelSection({
               onChange={(event) => onFormChange({ ...form, isMultimodal: event.target.checked })} />
             Accepts images (multimodal)
           </label>
-          <button type="submit" className="admin-save" disabled={saving}>
+          <UiButton type="submit" className="admin-save" disabled={saving}>
             {saving ? 'Saving…' : 'Save system model'}
-          </button>
+          </UiButton>
         </form>
       ) : (
         <p className="admin-empty">Not configured yet — fill the form and save.</p>

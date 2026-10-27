@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { i18n } from './workspaceUi';
 import { ConnectorMark } from './ConnectorMark';
 import type { PluginItem } from './types';
@@ -12,13 +13,13 @@ export function InstalledPluginStrip({ plugins, onSelect, onShowPersonal }: Inst
   if (plugins.length === 0) return null;
   return (
     <div className="plugin-installed-strip" aria-label={i18n('plugins.installed', 'Installed')}>
-      <button type="button" className="plugin-installed-label" onClick={onShowPersonal}>
+      <UiButton type="button" className="plugin-installed-label" onClick={onShowPersonal}>
         {i18n('plugins.installed', 'Installed')}
         <span className="plugin-installed-caret" aria-hidden="true">›</span>
-      </button>
+      </UiButton>
       <div className="plugin-installed-icons">
         {plugins.map((plugin) => (
-          <button
+          <UiButton
             type="button"
             className={'workspace-row-icon connector-icon connector-' + plugin.id}
             key={plugin.id}
@@ -26,7 +27,7 @@ export function InstalledPluginStrip({ plugins, onSelect, onShowPersonal }: Inst
             onClick={() => onSelect(plugin.id)}
           >
             <ConnectorMark id={plugin.id} name={plugin.name} />
-          </button>
+          </UiButton>
         ))}
       </div>
     </div>

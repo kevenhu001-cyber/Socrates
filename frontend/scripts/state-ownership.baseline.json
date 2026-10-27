@@ -1,0 +1,7 @@
+{
+  "bridgeGlobals": 35,
+  "foreignBridgeGlobals": 0,
+  "directDispatches": 0,
+  "note": "React-side coupling to the legacy bridge globals and the string-keyed stateStore facade. May only go down. Run with --update after an intentional reduction.",
+  "generatedBy": "check-state-ownership.mjs --update"
+}

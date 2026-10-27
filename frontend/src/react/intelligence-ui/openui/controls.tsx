@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
 import {
   action,
@@ -64,7 +65,7 @@ export const Button = defineComponent({
     const streaming = useIsStreaming();
     const label = String(props.label ?? "");
     return (
-      <button
+      <UiButton
         type="button"
         className={cx(
           "iui-button",
@@ -78,7 +79,7 @@ export const Button = defineComponent({
       >
         {props.icon ? <Glyph name={props.icon} size={props.size === "sm" ? 14 : 16} /> : null}
         {label}
-      </button>
+      </UiButton>
     );
   },
 });
@@ -97,7 +98,7 @@ export const IconButton = defineComponent({
     const streaming = useIsStreaming();
     const label = props.label || String(props.icon ?? "");
     return (
-      <button
+      <UiButton
         type="button"
         className={cx("iui-icon-button", `iui-icon-button-${props.variant ?? "outline"}`)}
         aria-label={label}
@@ -106,7 +107,7 @@ export const IconButton = defineComponent({
         onClick={() => run(label, props.action)}
       >
         <Glyph name={props.icon} size={16} />
-      </button>
+      </UiButton>
     );
   },
 });
@@ -268,7 +269,7 @@ export const SegmentedControl = defineComponent({
     return (
       <div className={cx("iui-segmented", props.block && "iui-block")} role="radiogroup">
         {optionList(props.options).map((o, i) => (
-          <button
+          <UiButton
             key={`${o.value}-${i}`}
             type="button"
             role="radio"
@@ -277,7 +278,7 @@ export const SegmentedControl = defineComponent({
             onClick={() => field.setValue(o.value)}
           >
             {o.label}
-          </button>
+          </UiButton>
         ))}
       </div>
     );
@@ -495,14 +496,14 @@ export const Timer = defineComponent({
           <span className="iui-timer-time">{clock(left)}</span>
         </div>
         <div className="iui-timer-actions">
-          <button type="button" className="iui-button iui-button-solid iui-button-sm" disabled={streaming || left === 0} onClick={toggle}>
+          <UiButton type="button" className="iui-button iui-button-solid iui-button-sm" disabled={streaming || left === 0} onClick={toggle}>
             <Glyph name={running ? "pause" : "play"} size={14} />
             {running ? "Pause" : startedAt === null || left === 0 ? "Start" : "Resume"}
-          </button>
-          <button type="button" className="iui-button iui-button-ghost iui-button-sm" disabled={streaming || startedAt === null} onClick={reset}>
+          </UiButton>
+          <UiButton type="button" className="iui-button iui-button-ghost iui-button-sm" disabled={streaming || startedAt === null} onClick={reset}>
             <Glyph name="rotate-ccw" size={14} />
             Reset
-          </button>
+          </UiButton>
         </div>
       </div>
     );

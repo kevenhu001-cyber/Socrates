@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { useEffect, useReducer, useState, useSyncExternalStore } from 'react';
 import type { FormEvent } from 'react';
 import type { AgentRunEvent } from '../../extensions/types';
@@ -83,12 +84,12 @@ function ResearchJobMetrics({ job, expanded, onToggle }: { job: ResearchView['jo
       ) : null}
 
       {hasPlan ? (
-        <button type="button" className="research-toggle-steps-btn" aria-expanded={expanded} onClick={onToggle}>
+        <UiButton type="button" className="research-toggle-steps-btn" aria-expanded={expanded} onClick={onToggle}>
           <span>{expanded ? t('research.hideSteps') : t('research.viewSteps')}</span>
           <svg className={`research-toggle-icon${expanded ? ' is-expanded' : ''}`} viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 6l4 4 4-4" />
           </svg>
-        </button>
+        </UiButton>
       ) : null}
     </div>
   );
@@ -123,8 +124,8 @@ function ResearchFocusForm({ jobId, busy, onCancel, onSubmit }: { jobId: string;
           {t('research.focusCount').replace('{count}', String(instruction.length))}
         </span>
         <div className="research-refine-buttons">
-          <button type="button" onClick={onCancel} disabled={busy}>{t('research.dismissFocus')}</button>
-          <button type="submit" disabled={busy || !instruction.trim()}>{t('research.applyFocus')}</button>
+          <UiButton type="button" onClick={onCancel} disabled={busy}>{t('research.dismissFocus')}</UiButton>
+          <UiButton type="submit" disabled={busy || !instruction.trim()}>{t('research.applyFocus')}</UiButton>
         </div>
       </div>
     </form>
@@ -159,10 +160,10 @@ function ResearchJobCard({ view, expanded, onToggle }: { view: ResearchView; exp
 
     {completed ? <div className="research-complete-summary" role="status">{t('research.completed')}</div> : null}
     <div className="research-job-footer">
-      {completed ? <button type="button" className="research-report-open-btn" onClick={() => setReportOpen(true)}>{t('research.openReport')}</button> : null}
-      {running ? <button type="button" aria-expanded={refining} disabled={view.busy} onClick={() => setRefining((open) => !open)}>{t('research.adjustFocus')}</button> : null}
-      {running ? <button type="button" disabled={view.busy} onClick={() => { void researchClient.control(job.id, 'cancel'); }}>{t('research.cancel')}</button> : null}
-      {job.status === 'failed' || job.status === 'cancelled' ? <button type="button" disabled={view.busy} onClick={() => { void researchClient.control(job.id, 'retry'); }}>{t('research.retry')}</button> : null}
+      {completed ? <UiButton type="button" className="research-report-open-btn" onClick={() => setReportOpen(true)}>{t('research.openReport')}</UiButton> : null}
+      {running ? <UiButton type="button" aria-expanded={refining} disabled={view.busy} onClick={() => setRefining((open) => !open)}>{t('research.adjustFocus')}</UiButton> : null}
+      {running ? <UiButton type="button" disabled={view.busy} onClick={() => { void researchClient.control(job.id, 'cancel'); }}>{t('research.cancel')}</UiButton> : null}
+      {job.status === 'failed' || job.status === 'cancelled' ? <UiButton type="button" disabled={view.busy} onClick={() => { void researchClient.control(job.id, 'retry'); }}>{t('research.retry')}</UiButton> : null}
     </div>
     {job.error ? <p className="research-job-error" role="status">{t(ERROR_KEYS[job.error] || 'research.executionFailed')}</p> : null}
     {reportOpen ? <ResearchReportDialog job={job} onClose={() => setReportOpen(false)} /> : null}
@@ -209,12 +210,12 @@ export function ResearchJobs() {
   return <section className="research-jobs" aria-label={t('research.title')}>
     {snapshot.pending ? <div className="research-job-notice" role="status">
       <span>{t(snapshot.submitting ? 'research.submitting' : 'research.submitUncertain')}</span>
-      {!snapshot.submitting ? <button type="button" onClick={() => { void researchClient.submit(); }}>{t('research.retrySubmit')}</button> : null}
-      {!snapshot.submitting ? <button type="button" onClick={researchClient.discardPending}>{t('research.dismissSubmit')}</button> : null}
+      {!snapshot.submitting ? <UiButton type="button" onClick={() => { void researchClient.submit(); }}>{t('research.retrySubmit')}</UiButton> : null}
+      {!snapshot.submitting ? <UiButton type="button" onClick={researchClient.discardPending}>{t('research.dismissSubmit')}</UiButton> : null}
     </div> : null}
     {snapshot.issue ? <div className="research-job-notice" role="alert">
       <span>{t(`research.issue.${snapshot.issue}`)}</span>
-      <button type="button" onClick={() => { void researchClient.refresh(); }}>{t('research.refresh')}</button>
+      <UiButton type="button" onClick={() => { void researchClient.refresh(); }}>{t('research.refresh')}</UiButton>
     </div> : null}
     {snapshot.jobs.map((view) => (
       <ResearchJobCard key={view.job.id} view={view} expanded={!!expandedJobs[view.job.id]} onToggle={() => toggleSteps(view.job.id)} />

@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 /**
  * react/tool-run/ToolRunApproval.tsx — a decision the run is blocked on.
  *
@@ -76,7 +77,7 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
       {!readOnly && !view.disabled && view.state === 'pending' && view.decisions.length ? (
         <div className="tool-inline-approval-actions">
           {DECISIONS.filter((spec) => view.decisions.includes(spec.decision)).map((spec) => (
-            <button
+            <Button
               type="button"
               key={spec.decision}
               className={`tool-inline-approval-action${spec.primary ? ' primary' : ''}`}
@@ -84,7 +85,7 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
               onClick={decide(spec.decision)}
             >
               {i18n(spec.key, spec.fallback)}
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}

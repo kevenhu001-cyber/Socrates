@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { Renderer, type ActionEvent, type OpenUIError, type ParseResult } from '@openuidev/react-lang';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { i18n } from '../legacy/gateway';
@@ -53,7 +54,7 @@ export default function OpenUiBlock({ source, open = false, readOnly = false, em
     {!tooLarge ? <RemoteLabels.Provider value={labels}><Renderer response={source} library={library} isStreaming={open} onAction={onAction} onError={onError} onParseResult={onParseResult} onStateUpdate={onStateUpdate} publishObservability={false} /></RemoteLabels.Provider> : null}
     </div>
     {unavailable ? <div className="iui-notice"><p className="iui-caption" role="status">{stateIssue ? i18n('intui.invalidResult', 'A valid result is unavailable. Check your inputs or repair this tool.') : i18n('intui.unavailable', 'This interactive view could not be displayed. You can continue in chat.')}</p>
-      {!readOnly && !open ? <button type="button" className="iui-button iui-button-outline iui-button-md" onClick={repair}>{i18n('intui.repair', 'Fix with AI')}</button> : null}
+      {!readOnly && !open ? <UiButton type="button" className="iui-button iui-button-outline iui-button-md" onClick={repair}>{i18n('intui.repair', 'Fix with AI')}</UiButton> : null}
     </div> : null}
   </div>;
   return embedded ? content : <div className="intui"><IntelligentSurface>{content}</IntelligentSurface></div>;

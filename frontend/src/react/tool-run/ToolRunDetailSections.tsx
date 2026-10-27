@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { Button } from '../ui/Button';
+import { useEffect, useId, useRef, useState } from 'react';
 import { formatToolOutput } from '../../render/toolOutput.ts';
 import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
 import type { DetailSection, TechSection, ToolRunView } from './toolRunModel.js';
@@ -61,12 +62,16 @@ export function ResultSection({ section }: { section: DetailSection }) {
 function ExpandableTextSection({ section }: { section: Extract<DetailSection, { kind: 'output' | 'error' }> }) {
   const [expanded, setExpanded] = useState(false);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const contentId = useId();
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const copyAttempt = useRef(0);
-  useEffect(() => () => {
-    clearTimeout(feedbackTimer.current);
-    copyAttempt.current += 1;
-  }, []);
+  useEffect(() => {
+    setCopyState('idle');
+    return () => {
+      clearTimeout(feedbackTimer.current);
+      copyAttempt.current += 1;
+    };
+  }, [section.text, section.fullText]);
   const expandable = !!section.fullText && section.fullText !== section.text;
   const shown = expanded && section.fullText ? section.fullText : section.text;
   const rich = section.kind === 'output' && !expanded ? formatToolOutput(shown) : null;
@@ -80,6 +85,7 @@ function ExpandableTextSection({ section }: { section: Extract<DetailSection, { 
       await navigator.clipboard.writeText(text);
       copied = true;
     } catch (_) {
+      if (attempt !== copyAttempt.current) return;
       /* Clipboard can be denied (permissions, insecure context) — fall
          back to a selection copy path. */
       const textarea = document.createElement('textarea');
@@ -109,24 +115,25 @@ function ExpandableTextSection({ section }: { section: Extract<DetailSection, { 
       <div className="tool-inline-detail-title">{section.title}</div>
       {rich && rich.rich ? (
         <pre
+          id={contentId}
           className="tool-inline-detail-value tool-inline-detail-rich"
           dangerouslySetInnerHTML={{ __html: rich.html }}
         />
       ) : (
-        <pre className="tool-inline-detail-value">{shown}</pre>
+        <pre id={contentId} className="tool-inline-detail-value">{shown}</pre>
       )}
       <div className="tool-inline-detail-actions">
         {expandable ? (
-          <button type="button" className="tool-inline-action" onClick={() => setExpanded((value) => !value)}>
+          <Button type="button" className="tool-inline-action" aria-expanded={expanded} aria-controls={contentId} onClick={() => setExpanded((value) => !value)}>
             {expanded
               ? translate('tool.showLess', 'Show less')
               : tf('tool.showAll', 'Show all ({n} chars)', { n: (section.fullText || '').length.toLocaleString() })}
-          </button>
+          </Button>
         ) : null}
-        <button type="button" className="tool-inline-action" onClick={copy} aria-live="polite">
+        <Button type="button" className="tool-inline-action" onClick={copy} aria-live="polite">
           {copyState === 'copied' ? translate('tool.copied', 'Copied')
             : copyState === 'failed' ? translate('tool.copyFailed', 'Copy failed') : translate('tool.copy', 'Copy')}
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -147,7 +154,7 @@ export function RetryButton({ view, readOnly }: { view: ToolRunView; readOnly?: 
   const retry = view.retry;
   return (
     <div className="tool-inline-error-actions">
-      <button
+      <Button
         type="button"
         className="tool-inline-retry"
         onClick={(event) => {
@@ -161,7 +168,7 @@ export function RetryButton({ view, readOnly }: { view: ToolRunView; readOnly?: 
         }}
       >
         {translate('tool.retry', 'Retry search')}
-      </button>
+      </Button>
     </div>
   );
 }

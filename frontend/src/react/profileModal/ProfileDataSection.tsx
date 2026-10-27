@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import type { ProfileDispatch } from './types';
 import { profileText } from './profileText';
 
@@ -20,14 +21,14 @@ function ProfileActionRow({
         <div className="profile-action-label">{title}</div>
         <div className="profile-action-desc">{description}</div>
       </div>
-      <button
+      <UiButton
         type="button"
         className={`profile-btn${warning ? ' warning' : ''}`}
         onClick={onAction}
         style={{ width: 'auto', padding: '6px 14px', flexShrink: 0 }}
       >
         {actionLabel}
-      </button>
+      </UiButton>
     </div>
   );
 }

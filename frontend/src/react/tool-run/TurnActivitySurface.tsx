@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import type { LiveTurnStatus } from '../types/domain';
 import type { TurnActivityEntry } from '@socrates/contracts';
 import { useEffect, useId, useReducer, useState, type ReactNode } from 'react';
@@ -72,7 +73,7 @@ export function TurnActivitySurface({ publicSummary = '', activities = [], isLiv
       data-open={isOpen ? 'true' : 'false'}
     >
       <div className={`thinking-accordion-head${isLive ? ' thinking-status' : ''}`} data-phase={isLive ? status?.phase : undefined}>
-        <button
+        <Button
           type="button"
           className="thinking-accordion-toggle"
           disabled={!hasDetails}
@@ -97,7 +98,7 @@ export function TurnActivitySurface({ publicSummary = '', activities = [], isLiv
           {hasDetails ? <span className="thinking-accordion-chev" aria-hidden="true"
             dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
           /> : null}
-        </button>
+        </Button>
       </div>
       <div id={bodyId} className="thinking-accordion-body" aria-hidden={!isOpen} inert={!isOpen}>
         <div className="thinking-accordion-inner">

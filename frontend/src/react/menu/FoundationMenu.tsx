@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { useId, useLayoutEffect, useRef, type ComponentProps, type ComponentPropsWithRef, type ReactElement, type ReactNode, type RefObject } from 'react';
 import { Menu } from '@base-ui/react/menu';
 import { ENABLED_MENU_ITEM_SELECTOR, MENU_ANCHOR_GAP, MENU_EDGE_GUTTER, MENU_PHONE_BREAKPOINT, MENU_PHONE_SPILL_OFFSET } from './menuPrimitive';
@@ -73,7 +74,7 @@ export function FoundationMenuItem({ onClick, ...props }: Omit<ComponentProps<ty
   // Base UI types Item events against its default div; this adapter always
   // renders a native button, including for callbacks that need currentTarget.
   return <Menu.Item {...props} onClick={onClick as ComponentProps<typeof Menu.Item>['onClick']}
-    nativeButton render={<button type="button" />} />;
+    nativeButton render={<UiButton type="button" />} />;
 }
 
 export function FoundationMenuLink(props: ComponentProps<typeof Menu.LinkItem>) {
@@ -85,5 +86,5 @@ export function FoundationMenuRadioGroup(props: ComponentProps<typeof Menu.Radio
 }
 
 export function FoundationMenuRadioItem(props: ComponentProps<typeof Menu.RadioItem>) {
-  return <Menu.RadioItem closeOnClick {...props} nativeButton render={<button type="button" />} />;
+  return <Menu.RadioItem closeOnClick {...props} nativeButton render={<UiButton type="button" />} />;
 }

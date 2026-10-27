@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { i18n } from '../legacy/gateway.ts';
 import { ProviderTextField } from './ProviderTextField';
 import type { ProviderListProps, SettingsProviderErrors, SettingsProviderSnapshot } from './types';
@@ -16,9 +17,9 @@ interface ProviderRowProps {
 function ProviderActiveButton({ active, onClick }: { active: boolean; onClick: () => void }) {
   const label = active ? i18n('settings.activeModel', 'Active model') : i18n('settings.setActiveModel', 'Set as active');
   return (
-    <button type="button" className="provider-active-btn" title={label} aria-label={label} aria-pressed={active} onClick={onClick}>
+    <Button type="button" className="provider-active-btn" title={label} aria-label={label} aria-pressed={active} onClick={onClick}>
       {active ? '●' : '○'}
-    </button>
+    </Button>
   );
 }
 
@@ -92,9 +93,9 @@ export function ProviderRow({
           <span>{i18n('provider.multimodal', 'Multimodal (vision-capable)')}</span>
         </label>
       </div>
-      <button type="button" className="provider-del" title={language === 'zh' ? '移除' : 'Remove'} aria-label={language === 'zh' ? '移除' : 'Remove'} onClick={() => onRemove(provider.id)}>
+      <Button type="button" className="provider-del" title={language === 'zh' ? '移除' : 'Remove'} aria-label={language === 'zh' ? '移除' : 'Remove'} onClick={() => onRemove(provider.id)}>
         ×
-      </button>
+      </Button>
     </div>
   );
 }

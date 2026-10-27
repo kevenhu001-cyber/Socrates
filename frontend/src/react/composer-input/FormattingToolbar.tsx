@@ -1,8 +1,9 @@
+import { Button } from '../ui/Button';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
 
 function ToolbarButton({
-  active = false,
+  active,
   disabled = false,
   label,
   children,
@@ -15,17 +16,18 @@ function ToolbarButton({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
       className={`rich-composer-tool${active ? ' active' : ''}`}
       disabled={disabled}
       aria-label={label}
+      aria-pressed={active}
       title={label}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 

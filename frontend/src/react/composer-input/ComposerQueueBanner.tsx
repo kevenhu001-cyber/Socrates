@@ -1,3 +1,5 @@
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
 import { useLayoutEffect, useSyncExternalStore } from 'react';
 import {
   getQueuedPrompts,
@@ -55,24 +57,22 @@ export function ComposerQueueBanner({ surface }: { surface: ComposerSurface }) {
         </span>
       </div>
       <div className="composer-queue-actions">
-        <button
+        <Button
           type="button"
           className="composer-queue-btn composer-queue-edit"
           onClick={handleEdit}
         >
           {i18n('composer.queue.edit', 'Edit')}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <IconButton
           className="composer-queue-btn composer-queue-cancel"
           onClick={handleCancel}
-          aria-label={i18n('composer.queue.cancel', 'Cancel')}
+          label={i18n('composer.queue.cancel', 'Cancel')}
           title={i18n('composer.queue.cancel', 'Cancel')}
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          icon={<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
+          </svg>}
+        />
       </div>
     </div>
   );

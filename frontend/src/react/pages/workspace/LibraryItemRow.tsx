@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import React, { useState } from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { LibraryDisplayItem } from './library.types';
@@ -29,11 +30,11 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
 
   const actions = (
     <div className="library-row-menu-wrap">
-      <button type="button" className="library-row-more-btn" aria-label={`${name}: ${i18n('sidebar.nav.more', 'More')}`} aria-expanded={menuOpen} onClick={(e) => { e.stopPropagation(); setMenuOpen((open) => !open); }}><MoreIcon /></button>
+      <UiButton type="button" className="library-row-more-btn" aria-label={`${name}: ${i18n('sidebar.nav.more', 'More')}`} aria-expanded={menuOpen} onClick={(e) => { e.stopPropagation(); setMenuOpen((open) => !open); }}><MoreIcon /></UiButton>
       {menuOpen && <div className="library-row-menu" role="menu">
-        <button type="button" role="menuitem" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); dispatch.startRename(item.id, itemKey); }}>{i18n('library.rename', 'Rename')}</button>
+        <UiButton type="button" role="menuitem" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); dispatch.startRename(item.id, itemKey); }}>{i18n('library.rename', 'Rename')}</UiButton>
         {tab === 'files' && <a role="menuitem" className="library-row-menu-link" href={'/api/v2/files/' + encodeURIComponent(item.id) + '/raw'} download={name} onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}>{i18n('library.download', 'Download original')}</a>}
-        {tab === 'files' && <button type="button" role="menuitem" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); dispatch.deleteFile(item.id); }}>{i18n('common.delete', 'Delete')}</button>}
+        {tab === 'files' && <UiButton type="button" role="menuitem" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); dispatch.deleteFile(item.id); }}>{i18n('common.delete', 'Delete')}</UiButton>}
       </div>}
     </div>
   );

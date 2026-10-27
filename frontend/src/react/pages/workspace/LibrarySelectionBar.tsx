@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { LibraryDisplayItem } from './library.types';
 import { i18n } from './workspaceUi';
@@ -28,9 +29,9 @@ export function LibrarySelectionBar({ items, chip, selection, dispatch }: Librar
         />
         <span>{i18n('library.selectedCount', '{n} selected').replace('{n}', String(selectedCount))}</span>
       </label>
-      <button className="workspace-row-action library-bulk-delete" onClick={() => dispatch.deleteSelected()} disabled={selectedCount === 0}>
+      <UiButton type="submit" className="workspace-row-action library-bulk-delete" onClick={() => dispatch.deleteSelected()} disabled={selectedCount === 0}>
         {i18n('library.deleteSelected', 'Delete selected')}
-      </button>
+      </UiButton>
     </div>
   );
 }

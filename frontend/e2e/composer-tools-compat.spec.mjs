@@ -328,7 +328,15 @@ test('composer plus menu lists only connected plugins', async ({ page }) => {
   await github.click();
   await expect(github).toHaveClass(/is-selected/);
   await expect(github.locator('.composer-tools-check')).toHaveCount(1);
-  await expect(github).toHaveAttribute('aria-pressed', 'true');
+  await expect(github).toHaveAttribute('role', 'menuitemcheckbox');
+  await expect(github).toHaveAttribute('aria-checked', 'true');
+  const remove = page.locator('.composer-plugin-chip-remove');
+  await expect(remove).toHaveAttribute('aria-label', 'Remove GitHub');
+  await page.evaluate(() => window.setLang('zh'));
+  await expect(github).toHaveAttribute('aria-label', 'GitHub：已添加');
+  await expect(remove).toHaveAttribute('aria-label', '移除 GitHub');
+  await page.evaluate(() => window.setLang('en'));
+  await expect(remove).toHaveAttribute('aria-label', 'Remove GitHub');
 });
 
 test('composer plugin catalog exposes a retry after a failed request', async ({ page }) => {
@@ -361,4 +369,41 @@ test('composer plugin catalog exposes a retry after a failed request', async ({ 
   await menu.getByRole('menuitem', { name: /Try again|重试/ }).click();
   await expect(menu.locator('[data-composer-plugin="github"]')).toBeVisible();
   expect(requestCount).toBe(2);
+});
+
+test('a pending plugin retry survives closing and reopening the tools menu', async ({ page }) => {
+  await mockAuthedApp(page);
+  let requestCount = 0;
+  let releaseRetry;
+  const retryGate = new Promise((resolve) => { releaseRetry = resolve; });
+  await page.route(/\/api\/(?:v2\/)?project-connectors(?:\?|$)/, async (route) => {
+    requestCount += 1;
+    if (requestCount === 1) {
+      await route.fulfill({ status: 503, json: { error: 'offline' } });
+      return;
+    }
+    await retryGate;
+    await route.fulfill({ json: {
+      configured: true,
+      connectors: [{ id: 'github', name: 'GitHub', connection: { status: 'connected' } }],
+    } });
+  });
+  try {
+    await gotoAndSettle(page, '/');
+    await waitForAppShell(page);
+    const trigger = page.locator('#composerToolsBtn');
+    const menu = page.locator('#composerToolsMenu');
+    await trigger.click();
+    await menu.getByRole('menuitem', { name: /Try again|重试/ }).click();
+    await expect.poll(() => requestCount).toBe(2);
+    await trigger.click();
+    await expect(menu).toBeHidden();
+    await trigger.click();
+    await expect(menu.locator('.composer-tools-plugin-state')).toContainText(/Loading connected apps|正在加载/);
+    releaseRetry();
+    await expect(menu.locator('[data-composer-plugin="github"]')).toBeVisible();
+    expect(requestCount).toBe(2);
+  } finally {
+    releaseRetry();
+  }
 });

@@ -1,3 +1,4 @@
+import { Button as BaseButton } from '../ui/Button';
 import { LazyOpenUiBlock } from './LazyOpenUiBlock';
 import { Ellipsis } from 'lucide-react';
 import { DeferredMenu } from '../menu/DeferredMenu';
@@ -58,7 +59,7 @@ function UiPanel({ node, context }: { node: IntelligenceUiNode; context: RenderC
         {visibleActions.map((child) => <UiNode key={child.id} node={child} context={context} />)}
         {overflowActions.length ? <DeferredMenu open={moreOpen} onOpenChange={setMoreOpen} className="intui-surface-menu"
           label={i18n('session.moreActions', 'More actions')}
-          trigger={<button type="button" className="intui-panel-more" aria-label={i18n('session.moreActions', 'More actions')}><Ellipsis size={18} aria-hidden /></button>}>
+          trigger={<BaseButton type="button" className="intui-panel-more" aria-label={i18n('session.moreActions', 'More actions')}><Ellipsis size={18} aria-hidden /></BaseButton>}>
           {({ FoundationMenuItem }) => overflowActions.map((child) => <FoundationMenuItem key={child.id}
             disabled={context.readOnly && (child.action as UiAction).type === 'prompt'}
             onClick={(event) => executeAction(child.action as UiAction, context, event)}>{asProse(resolve(child.label, context))}</FoundationMenuItem>)}
@@ -202,7 +203,7 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
           const optionLabel = asProse(resolve(option.label ?? option.value, context));
           const selected = context.state[bind] === optionValue;
           return (
-            <button
+            <BaseButton
               type="button"
               key={`${node.id}-${index}`}
               className={selected ? 'is-selected' : ''}
@@ -210,7 +211,7 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
               onClick={() => setBoundValue(context, bind, optionValue)}
             >
               {optionLabel}
-            </button>
+            </BaseButton>
           );
         })}
       </div>
@@ -249,7 +250,7 @@ function UiButton({ node, context }: { node: IntelligenceUiNode; context: Render
   if (!label || !action) return null;
   const promptDisabled = context.readOnly && action.type === 'prompt';
   return (
-    <button
+    <BaseButton
       type="button"
       className={`intui-button${node.primary === true ? ' is-primary' : ''}`}
       data-intui-id={node.id}
@@ -257,7 +258,7 @@ function UiButton({ node, context }: { node: IntelligenceUiNode; context: Render
       onClick={(event) => executeAction(action, context, event)}
     >
       {label}
-    </button>
+    </BaseButton>
   );
 }
 
@@ -448,7 +449,7 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
         aria-orientation="horizontal"
       >
         {tabs.map((tab, index) => (
-          <button
+          <BaseButton
             type="button"
             role="tab"
             id={`intui-tab-${node.id}-${tab.id}`}
@@ -461,7 +462,7 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
             onKeyDown={(event) => handleTabKey(event, index)}
           >
             {tab.label}
-          </button>
+          </BaseButton>
         ))}
       </div> : <div className="intui-tabs-preview">
         <span id={activeTabId}>{tabs.find((tab) => tab.id === active)?.label}</span>
@@ -526,14 +527,14 @@ function UiEntity({ node, context }: { node: IntelligenceUiNode; context: Render
         ) : null}
         {renderChildren(node, context)}
         {action && actionLabel ? (
-          <button
+          <BaseButton
             type="button"
             className="intui-button intui-entity-action"
             disabled={promptDisabled}
             onClick={(event) => executeAction(action, context, event)}
           >
             {actionLabel}
-          </button>
+          </BaseButton>
         ) : null}
       </div>
     </article>

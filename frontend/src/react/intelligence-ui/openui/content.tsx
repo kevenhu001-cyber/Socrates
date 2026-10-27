@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import { defineComponent } from '@openuidev/react-lang';
 import { useState } from 'react';
 import { z } from 'zod/v4';
@@ -49,7 +50,7 @@ export const Flashcard = defineComponent({
   name: 'Flashcard', props: z.object({ front: z.string(), back: z.string(), label: z.string().optional() }), description: 'A study card that flips on click.',
   component: function FlashcardView({ props }) {
     const [flipped, setFlipped] = useState(false);
-    return <button className="iui-flashcard" type="button" aria-label={props.label ?? props.front} aria-pressed={flipped} onClick={() => setFlipped(!flipped)}><span className="iui-caption">{props.label}</span><span>{flipped ? props.back : props.front}</span></button>;
+    return <UiButton className="iui-flashcard" type="button" aria-label={props.label ?? props.front} aria-pressed={flipped} onClick={() => setFlipped(!flipped)}><span className="iui-caption">{props.label}</span><span>{flipped ? props.back : props.front}</span></UiButton>;
   },
 });
 export const Table = defineComponent({

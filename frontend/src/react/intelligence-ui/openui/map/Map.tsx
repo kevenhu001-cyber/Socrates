@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../../ui/Button';
 // Adapted from thesysdev/open-intelligent-ui map.tsx (MIT); see ../LICENSE.
 import { defineComponent, reactive, useIsStreaming, useStateField } from '@openuidev/react-lang';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -160,14 +161,14 @@ export const MapView = defineComponent({
         <div className="iui-map-surface" ref={canvas} />
         <div className="iui-map-controls">
           {categories.length > 1 ? <select aria-label={labels.filterPlaces} value={activeGroup} onChange={(event) => setGroup(event.target.value)}><option value="">{labels.allPlaces}</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select> : null}
-          <button type="button" className="iui-button iui-button-sm" onClick={() => { if (places.length) map.current?.fitBounds(boundsOf(places.map((place) => [place.lat, place.lng] as LatLng)), { padding: 60, maxZoom: 14 }); }}>{labels.recenter}</button>
+          <UiButton type="button" className="iui-button iui-button-sm" onClick={() => { if (places.length) map.current?.fitBounds(boundsOf(places.map((place) => [place.lat, place.lng] as LatLng)), { padding: 60, maxZoom: 14 }); }}>{labels.recenter}</UiButton>
         </div>
         {!ready && !error ? <p className="iui-map-notice" role="status">{labels.mapLoading}</p> : null}
-        {error ? <div className="iui-map-notice" role="status">{labels.mapUnavailable}<button type="button" className="iui-button iui-button-sm" onClick={() => setAttempt((previous) => previous + 1)}>{labels.retry}</button></div> : null}
+        {error ? <div className="iui-map-notice" role="status">{labels.mapUnavailable}<UiButton type="button" className="iui-button iui-button-sm" onClick={() => setAttempt((previous) => previous + 1)}>{labels.retry}</UiButton></div> : null}
       </div>
       {resolved.loading ? <p className="iui-caption" role="status">{labels.mapLoading}</p> : null}
       {resolved.missing ? <p className="iui-caption" role="status">{labels.placesUnavailable}</p> : null}
-      <ol className="iui-map-places">{places.map((place) => <li key={place.key}><button className="iui-button iui-button-outline" type="button" aria-pressed={selected === place.label} onClick={() => { selection.setValue(place.label); map.current?.easeTo({ center: [place.lng, place.lat], zoom: 14, duration: 0 }); }}>{place.label}</button>{place.sourceUrl && webUrl(place.sourceUrl) ? <a href={webUrl(place.sourceUrl)!} target="_blank" rel="noopener noreferrer">{place.resolvedLabel}</a> : null}</li>)}</ol>
+      <ol className="iui-map-places">{places.map((place) => <li key={place.key}><UiButton className="iui-button iui-button-outline" type="button" aria-pressed={selected === place.label} onClick={() => { selection.setValue(place.label); map.current?.easeTo({ center: [place.lng, place.lat], zoom: 14, duration: 0 }); }}>{place.label}</UiButton>{place.sourceUrl && webUrl(place.sourceUrl) ? <a href={webUrl(place.sourceUrl)!} target="_blank" rel="noopener noreferrer">{place.resolvedLabel}</a> : null}</li>)}</ol>
       {props.route && places.length > 1 ? <p className="iui-caption" role="status">{route.error ? labels.routeUnavailable : route.data ? labels.routeDriving : labels.routeLoading}</p> : null}
     </section>;
   },

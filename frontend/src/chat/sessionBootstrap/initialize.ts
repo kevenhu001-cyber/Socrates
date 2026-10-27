@@ -3,7 +3,7 @@ import { turnState } from '../turnState.ts';
 import { generateId } from '../../util/ids.ts';
 import { setCurrentSessionId } from '../../session/loader.ts';
 import { pushChatIdToURL } from '../../session/store.ts';
-import { copyComposerPlugins, clearComposerPlugins } from '../../react/composer/pluginSelection.ts';
+import { copyComposerPlugins, clearComposerPlugins } from '../../composer/pluginSelection.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getAppMode } from './runtime.ts';
 import type { SessionStartContext } from './input.ts';

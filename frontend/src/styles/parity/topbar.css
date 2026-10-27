@@ -178,6 +178,8 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
 
 @media (min-width: 769px) {
   #appShell .top-bar {
+    grid-column: 1;
+    grid-row: 1;
     position: relative;
     container: app-topbar / inline-size;
     z-index: var(--ui-z-header);

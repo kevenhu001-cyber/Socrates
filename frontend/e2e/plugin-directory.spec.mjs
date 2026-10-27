@@ -60,6 +60,7 @@ test('using a connected plugin waits for the chat reset to succeed', async ({ pa
 
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
+  expect(await page.evaluate(() => '__socratesComposerPluginSelectionBridge' in window)).toBe(false);
 });
 
 test('canceling the chat reset keeps the connected plugin unselected', async ({ page }) => {

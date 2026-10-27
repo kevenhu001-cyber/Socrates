@@ -1,5 +1,4 @@
-import { apiFetch } from '../../util/api.ts';
-import { getConnectorIconMarkupFn } from '../legacy/gateway.ts';
+import { apiFetch } from '../util/api.ts';
 
 export type PluginConnectionStatus =
   | 'connected'
@@ -124,7 +123,7 @@ let catalogRequest: Promise<ReadonlyArray<PluginCatalogEntry>> | null = null;
 
 export async function loadPluginCatalog(force = false): Promise<ReadonlyArray<PluginCatalogEntry>> {
   if (!force && catalogRequest) return catalogRequest;
-  catalogRequest = apiFetch('/api/project-connectors')
+  const request = apiFetch('/api/project-connectors')
     .then((payload) => {
       const response = (payload || {}) as CatalogResponse;
       const configured = response.configured !== false;
@@ -135,17 +134,14 @@ export async function loadPluginCatalog(force = false): Promise<ReadonlyArray<Pl
       );
     })
     .catch((error) => {
-      catalogRequest = null;
+      if (catalogRequest === request) catalogRequest = null;
       throw error;
     });
-  return catalogRequest;
+  catalogRequest = request;
+  return request;
 }
 
 export function resetPluginCatalogForTests(): void {
   catalogRequest = null;
 }
 
-export function pluginIconMarkup(id: string): string {
-  const fn = getConnectorIconMarkupFn();
-  return fn ? fn(id) || '' : '';
-}

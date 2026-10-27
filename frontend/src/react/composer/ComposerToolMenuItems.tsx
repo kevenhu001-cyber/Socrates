@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useReducer } from 'react';
 
 import { repositionComposerTools } from '../../ui/composerTools';
-import { useComposerPluginSelectionSnapshot } from './pluginSelection';
+import { useComposerPluginSelectionSnapshot } from './useComposerPluginSelection';
 import { ComposerPluginItems } from './ComposerPluginItems';
 import { MenuItem, MobileMenuItem } from './ComposerToolItems';
 import {
@@ -26,6 +26,11 @@ export function ComposerToolMenuItems({
   isOpen: boolean;
   mode: 'topic' | 'chat' | null;
 }) {
+  const [, refreshLanguage] = useReducer((value: number) => value + 1, 0);
+  useEffect(() => {
+    document.addEventListener('socrates:langchange', refreshLanguage);
+    return () => document.removeEventListener('socrates:langchange', refreshLanguage);
+  }, []);
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
   const selectedPluginCount = mode ? selectionSnapshot[mode].length : 0;
 

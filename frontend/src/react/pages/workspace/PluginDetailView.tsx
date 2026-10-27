@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { getLegacyActions } from '../../legacy/gateway.ts';
 import { focusComposer } from '../../composer-input';
-import { toggleComposerPlugin } from '../../composer/pluginSelection';
+import { toggleComposerPlugin } from '../../../composer/pluginSelection.ts';
 import { getConnectorIconMarkup } from '../../../connector-icons';
 import type { PluginDetailViewProps } from './pluginDetail.types';
 import { PluginDetailHeader } from './PluginDetailHeader';

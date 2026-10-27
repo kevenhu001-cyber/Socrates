@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { i18n } from '../legacy/gateway.ts';
 import { ProviderRow } from './ProviderRow';
 import type { ProviderListProps } from './types';
@@ -35,7 +36,7 @@ export function ProviderList({
         )) : builtIn ? (
           <>
             <div className={`provider-row built-in-row${builtIn.isActive ? ' active' : ''}`} data-id={builtIn.id}>
-              <button
+              <Button
                 type="button"
                 className="provider-active-btn"
                 title={builtIn.isActive ? i18n('settings.activeModel', 'Active model') : i18n('settings.setActiveModel', 'Set as active')}
@@ -44,7 +45,7 @@ export function ProviderList({
                 onClick={() => onSetActive(builtIn.id)}
               >
                 {builtIn.isActive ? '●' : '○'}
-              </button>
+              </Button>
               <div className="provider-fields">
                 <div className="provider-builtin-label">
                   {builtIn.label || builtIn.model || 'Built-in AI'}

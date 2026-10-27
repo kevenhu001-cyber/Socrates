@@ -39,7 +39,6 @@ export interface SettingsBridge {
 
 declare global {
   interface Window {
-    __socratesSettingsBridge?: SettingsBridge;
     closeSettings?: () => void;
   }
 }

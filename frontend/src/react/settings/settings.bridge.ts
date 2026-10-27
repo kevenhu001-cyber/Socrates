@@ -3,12 +3,6 @@
 import { createImmutableBridge, useBridge } from '../../lib/bridge';
 import type { SettingsBridge, SettingsSnapshot } from './types';
 
-declare global {
-  interface Window {
-    __socratesSettingsBridge?: SettingsBridge;
-  }
-}
-
 type Action = Partial<Omit<SettingsSnapshot, 'revision'>>;
 
 const factoryBridge = createImmutableBridge<SettingsSnapshot, Action>({
@@ -25,12 +19,6 @@ const bridge: SettingsBridge = Object.assign(factoryBridge, {
 }) as SettingsBridge;
 
 export function installSettingsBridge(): SettingsBridge {
-  if (typeof window !== 'undefined') {
-    if (!window.__socratesSettingsBridge) {
-      window.__socratesSettingsBridge = bridge;
-    }
-    return window.__socratesSettingsBridge;
-  }
   return bridge;
 }
 

@@ -1,6 +1,6 @@
-import { createImmutableBridge, useBridge } from '../../lib/bridge/index.ts';
-import type { ComposerSurface } from '../../composer/types.ts';
-import type { PluginCatalogEntry } from './pluginCatalog';
+import { createImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
+import type { ComposerSurface } from './types.ts';
+import type { PluginCatalogEntry } from './pluginCatalog.ts';
 
 export interface ComposerPluginSelection {
   id: string;
@@ -88,21 +88,11 @@ const bridge: ComposerPluginSelectionBridge = Object.assign(factoryBridge, {
 }) as ComposerPluginSelectionBridge;
 
 export function installComposerPluginSelectionBridge(): ComposerPluginSelectionBridge {
-  if (typeof window !== 'undefined') {
-    if (!window.__socratesComposerPluginSelectionBridge) {
-      window.__socratesComposerPluginSelectionBridge = bridge;
-    }
-    return window.__socratesComposerPluginSelectionBridge;
-  }
   return bridge;
 }
 
 export function getComposerPluginSelectionSnapshot(): ComposerPluginSelectionSnapshot {
   return installComposerPluginSelectionBridge().getSnapshot();
-}
-
-export function useComposerPluginSelectionSnapshot(): ComposerPluginSelectionSnapshot {
-  return useBridge(factoryBridge);
 }
 
 export function selectedComposerPlugins(surface: ComposerSurface): ReadonlyArray<ComposerPluginSelection> {
@@ -140,16 +130,3 @@ export function copyComposerPlugins(from: ComposerSurface, to: ComposerSurface):
   });
 }
 
-/* The legacy navigation module can restore an OAuth return context before
-   the first Composer React render commits. Register the same singleton at
-   module evaluation time so that early page restoration never falls into a
-   no-op just because the hook has not subscribed yet. */
-if (typeof window !== 'undefined') {
-  installComposerPluginSelectionBridge();
-}
-
-declare global {
-  interface Window {
-    __socratesComposerPluginSelectionBridge?: ComposerPluginSelectionBridge;
-  }
-}

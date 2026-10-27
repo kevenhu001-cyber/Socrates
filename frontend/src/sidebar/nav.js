@@ -1,3 +1,4 @@
+import { installComposerPluginSelectionBridge } from '../composer/pluginSelection.ts';
 import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
 import { activateMainView } from "../ui/mainViewController.js";
 import { loadSession } from "../session/loader.ts";
@@ -163,7 +164,7 @@ function safeConnectorReturnPath(value) {
 }
 
 function composerReturnSnapshot() {
-  var bridge = window.__socratesComposerPluginSelectionBridge;
+  var bridge = installComposerPluginSelectionBridge();
   var snapshot = bridge && typeof bridge.getSnapshot === "function" ? bridge.getSnapshot() : { topic: [], chat: [] };
   var controller = window.__socratesComposerController;
   var draft = function (surface) {
@@ -227,7 +228,7 @@ function restoreComposerReturnState(composer) {
       }
     });
   }
-  var bridge = window.__socratesComposerPluginSelectionBridge;
+  var bridge = installComposerPluginSelectionBridge();
   if (!bridge || typeof bridge.dispatch !== "function") return;
   ["topic", "chat"].forEach(function (surface) {
     var plugins = composer[surface];

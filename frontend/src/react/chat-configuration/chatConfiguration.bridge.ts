@@ -6,7 +6,6 @@ import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOp
 
 declare global {
   interface Window {
-    __socratesChatConfigurationBridge?: ChatConfigurationBridge;
     syncEffortUI?: () => void;
     openSettings?: () => void;
   }
@@ -29,13 +28,12 @@ const factoryBridge = createImmutableBridge<ChatConfigurationSnapshot, Action>({
   reducer: (_state, action) => action,
 });
 
+const bridge = Object.assign(factoryBridge, {
+  publish: factoryBridge.dispatch,
+}) as ChatConfigurationBridge;
+
 export function installChatConfigurationBridge(): ChatConfigurationBridge {
-  if (!window.__socratesChatConfigurationBridge) {
-    window.__socratesChatConfigurationBridge = Object.assign(factoryBridge, {
-      publish: factoryBridge.dispatch,
-    }) as ChatConfigurationBridge;
-  }
-  return window.__socratesChatConfigurationBridge;
+  return bridge;
 }
 
 export function openChatConfiguration(trigger?: HTMLElement | null): void {

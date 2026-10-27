@@ -1,31 +1,15 @@
 import React from 'react';
-import { getIconDescriptor } from '../../ui/iconRegistry';
-import { INTERFACE_ICON_STROKE } from '../../ui/icons/interfaceIcons';
+import { Icon } from '../../ui/Icon';
+import { getIconDescriptor, type IconName } from '../../ui/iconRegistry';
 import { animateSpring, readScale } from '../../ui/motion/spring';
 import { SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { MessageOverflow } from './MessageOverflow';
 import type { LegacyChatMessage } from '../types/domain';
 import { useMessageToolbarCallbacks } from './useMessageActions';
 import { i18n } from '../legacy/gateway';
+import { IconButton } from '../ui';
 
-interface IconButtonProps {
-  label: string;
-  onClick?: (ev: React.MouseEvent<HTMLButtonElement>) => void;
-  children?: React.ReactNode;
-  svgInner?: string;
-  active?: boolean;
-  /** Extra class for a state that CSS keys off, e.g. the copied check. */
-  modifier?: string;
-  /** A handle on the button, for the controls that animate themselves. */
-  buttonRef?: React.Ref<HTMLButtonElement>;
-}
-
-const CopyIcon = getIconDescriptor('copy').children;
-const CheckIcon = getIconDescriptor('check').children;
-const EditIcon = getIconDescriptor('edit').children;
-const DeleteIcon = getIconDescriptor('trash').children;
 const ShareIcon = getIconDescriptor('share').children;
-const RegenerateIcon = getIconDescriptor('regenerate').children;
 const ThumbsUpIcon = getIconDescriptor('thumbsUp').children;
 const ThumbsDownIcon = getIconDescriptor('thumbsDown').children;
 const BranchIcon = getIconDescriptor('branch').children;
@@ -37,31 +21,11 @@ const ReadAloudIcon = getIconDescriptor('speaker').children;
  * and a peak of 19.5% — so the curve and the amplitude are one decision. */
 const LIKE_OVERSHOOT = 0.195;
 
-function IconButton({ label, onClick, children, svgInner, active, modifier, buttonRef }: IconButtonProps): React.ReactElement {
-  return (
-    <button
-      type="button"
-      ref={buttonRef}
-      className={`btn btn-icon btn-touch msg-toolbar-btn${active ? ' active' : ''}${modifier ? ` ${modifier}` : ''}`}
-      aria-label={label}
-      onClick={onClick}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="18"
-        height="18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={INTERFACE_ICON_STROKE}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        shapeRendering="geometricPrecision"
-        aria-hidden="true"
-        {...(svgInner ? { dangerouslySetInnerHTML: { __html: svgInner } } : { children })}
-      />
-    </button>
-  );
-}
+/* The toolbar glyph: the shared icon set, drawn the way the toolbar's own
+ * sheet expects it (18px on the 24px grid, geometric edges). */
+const toolbarIcon = (name: IconName) => (
+  <Icon name={name} size={18} shapeRendering="geometricPrecision" />
+);
 
 interface MessageBranchSwitcherProps {
   currentIndex: number;
@@ -73,33 +37,33 @@ interface MessageBranchSwitcherProps {
 function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageBranchSwitcherProps): React.ReactElement {
   return (
     <div className="msg-branch-switcher" role="group" aria-label={i18n('message.branch.navigation', 'Message versions')}>
-      <button
-        type="button"
-        className="btn btn-icon btn-touch msg-toolbar-btn msg-branch-btn msg-branch-prev"
+      <IconButton
+        variant="shared"
+        size="touch"
+        className="msg-toolbar-btn msg-branch-btn msg-branch-prev"
         disabled={currentIndex <= 0}
         onClick={onPrev}
-        aria-label={i18n('message.branch.prev', 'Previous version')}
+        label={i18n('message.branch.prev', 'Previous version')}
         title={i18n('message.branch.prev', 'Previous version')}
-      >
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
+        icon={<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
           <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
+        </svg>}
+      />
       <span className="msg-branch-counter" aria-live="polite">
         {currentIndex + 1} / {total}
       </span>
-      <button
-        type="button"
-        className="btn btn-icon btn-touch msg-toolbar-btn msg-branch-btn msg-branch-next"
+      <IconButton
+        variant="shared"
+        size="touch"
+        className="msg-toolbar-btn msg-branch-btn msg-branch-next"
         disabled={currentIndex >= total - 1}
         onClick={onNext}
-        aria-label={i18n('message.branch.next', 'Next version')}
+        label={i18n('message.branch.next', 'Next version')}
         title={i18n('message.branch.next', 'Next version')}
-      >
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
+        icon={<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
           <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+        </svg>}
+      />
     </div>
   );
 }
@@ -185,62 +149,72 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
         />
       )}
       <IconButton
+        variant="shared"
+        size="touch"
         label={copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy')}
         onClick={handleCopy}
-        active={copied}
-        modifier={copied ? 'is-copied' : undefined}
-      >
-        {copied ? CheckIcon : CopyIcon}
-      </IconButton>
+        className={`msg-toolbar-btn${copied ? ' active' : ''}${copied ? ' is-copied' : ''}`}
+        icon={copied ? toolbarIcon('check') : toolbarIcon('copy')}
+      />
       {role === 'user' && (
         <>
           <IconButton
+            variant="shared"
+            size="touch"
+            className="msg-toolbar-btn"
             label={i18n('message.edit', 'Edit message')}
             onClick={() => c.onEdit?.()}
-          >
-            {EditIcon}
-          </IconButton>
+            icon={toolbarIcon('edit')}
+          />
           <IconButton
+            variant="shared"
+            size="touch"
+            className="msg-toolbar-btn"
             label={i18n('message.delete', 'Delete message')}
             onClick={() => c.onDelete?.()}
-          >
-            {DeleteIcon}
-          </IconButton>
+            icon={toolbarIcon('trash')}
+          />
         </>
       )}
       {role === 'assistant' && (
         <>
           <IconButton
+            variant="shared"
+            size="touch"
+            className="msg-toolbar-btn"
             label={i18n('message.regenerate', 'Regenerate response')}
             onClick={() => c.onRegenerate?.()}
-          >
-            {RegenerateIcon}
-          </IconButton>
+            icon={toolbarIcon('regenerate')}
+          />
           <span className="msg-toolbar-feedback">
           <IconButton
+            variant="shared"
+            size="touch"
+            className={`msg-toolbar-btn${liked ? ' active' : ''}`}
             label={i18n('message.helpful', 'Helpful')}
             onClick={handleThumbsUp}
-            active={liked}
-            buttonRef={likeButtonRef}
-          >
-            {ThumbsUpIcon}
-          </IconButton>
+            ref={likeButtonRef}
+            icon={toolbarIcon('thumbsUp')}
+          />
           <IconButton
+            variant="shared"
+            size="touch"
+            className="msg-toolbar-btn"
             label={i18n('message.notHelpful', 'Not helpful')}
             onClick={() => c.onThumbsDown?.()}
-          >
-            {ThumbsDownIcon}
-          </IconButton>
+            icon={toolbarIcon('thumbsDown')}
+          />
           </span>
           <MessageOverflow actions={[
             {
               label: i18n('workbench.open', '在工作台打开'),
-              icon: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/>',
+              icon: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /></>,
               onClick: () => {
                 import('../workbench/workbenchStore').then(({ openWorkbench }) => {
                   openWorkbench({
                     id: String(message.clientId || message.id || Date.now()),
-                    title: '对话内容协同',
+                    title: i18n('workbench.conversationTitle', 'Conversation'),
+                    titleKey: 'workbench.conversationTitle',
                     type: 'document',
                     code: message.rawText || '',
                     previewHtml: message.html || undefined,

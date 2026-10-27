@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 /**
  * react/tool-output/OutputErrorBoundary.tsx — one output must not take the
  * turn down.
@@ -48,7 +49,7 @@ export class OutputErrorBoundary extends Component<
       return (
         <div className="tool-output-error" role="status">
           <span>This result failed to render.</span>
-          <button type="button" onClick={this.retry}>Retry</button>
+          <Button type="button" onClick={this.retry}>Retry</Button>
         </div>
       );
     }

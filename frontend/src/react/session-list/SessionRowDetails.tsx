@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import React from 'react';
 import { t } from '../legacy/gateway.ts';
 import { setRecentsFilter } from '../../sidebar/sidebar.service';
@@ -86,7 +87,7 @@ export function SessionRowDetails({
         {session.tags && session.tags.length > 0 && (
           <div className="recent-item-tags">
             {session.tags.map((tag) => (
-              <button
+              <UiButton type="submit"
                 key={tag}
                 className="recent-tag-pill"
                 onClick={(event) => {
@@ -94,7 +95,7 @@ export function SessionRowDetails({
                   setRecentsFilter(tag);
                 }}
                 title={t('session.filterByTag').replace('{tag}', tag)}
-              >#{tag}</button>
+              >#{tag}</UiButton>
             ))}
           </div>
         )}

@@ -1,6 +1,6 @@
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useReducer, useSyncExternalStore } from 'react';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
 import { serverCache } from '../../session/serverCache.ts';
@@ -16,6 +16,11 @@ import { buildChips } from './recentsFilterChips.model';
 const TARGET_ID = 'recentsFilterChips';
 
 function RecentsFilterChips() {
+  const [, refreshLanguage] = useReducer((value: number) => value + 1, 0);
+  useEffect(() => {
+    document.addEventListener('socrates:langchange', refreshLanguage);
+    return () => document.removeEventListener('socrates:langchange', refreshLanguage);
+  }, []);
   const filter = useSidebarStore((state) => state.recentsFilter);
   useSidebarStore((state) => state.recentsVersion);
   const pick = onRecentsFilterChipClick;

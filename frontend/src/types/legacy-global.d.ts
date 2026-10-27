@@ -77,15 +77,10 @@ declare global {
     // exact type here.
 
     __socratesReactChatBridge?: unknown;
-    __socratesMessageListBridge?: unknown;
     __socratesCmdK?: unknown;
-    __socratesFindInSession?: unknown;
-    __socratesSettingsBridge?: unknown;
     __socratesProfileBridge?: unknown;
-    __socratesStorageBridge?: unknown;
     __socratesUsageBridge?: unknown;
     __socratesShareBridge?: unknown;
-    __socratesCheatsheetBridge?: unknown;
     __socratesMorePopoverBridge?: unknown;
     __socratesComposerToolsBridge?: unknown;
     __socratesAttachmentsBridge?: unknown;

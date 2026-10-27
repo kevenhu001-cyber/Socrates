@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../../ui/Button';
 import type { ScheduledTask } from './types';
 import { formatScheduledTime, scheduledStatusLabel, scheduledText } from './scheduled.copy';
 
@@ -26,7 +27,7 @@ export function ScheduledTaskRow({ task, onEdit, onRun, onToggle, onRemove }: Sc
           <path d="M8 2v4m8-4v4M3 10h18" />
         </svg>
       </span>
-      <button type="button" className="task-main" onClick={() => onEdit(task.id)}>
+      <UiButton type="button" className="task-main" onClick={() => onEdit(task.id)}>
         <span className="workspace-row-copy">
           <strong>{task.title}</strong>
           <span>
@@ -34,16 +35,16 @@ export function ScheduledTaskRow({ task, onEdit, onRun, onToggle, onRemove }: Sc
             {detailParts.join(' · ')}
           </span>
         </span>
-      </button>
-      <button type="button" className="workspace-row-action" onClick={() => onRun(task.id)} aria-label={scheduledText('scheduled.runNowAria', 'Run task now')}>
+      </UiButton>
+      <UiButton type="button" className="workspace-row-action" onClick={() => onRun(task.id)} aria-label={scheduledText('scheduled.runNowAria', 'Run task now')}>
         {scheduledText('scheduled.runNow', 'Run now')}
-      </button>
-      <button type="button" className="workspace-row-action" onClick={() => onToggle(task.id, active)} aria-label={active ? scheduledText('scheduled.pause', 'Pause task') : scheduledText('scheduled.resume', 'Resume task')}>
+      </UiButton>
+      <UiButton type="button" className="workspace-row-action" onClick={() => onToggle(task.id, active)} aria-label={active ? scheduledText('scheduled.pause', 'Pause task') : scheduledText('scheduled.resume', 'Resume task')}>
         {active ? scheduledText('scheduled.pause', 'Pause') : scheduledText('scheduled.resume', 'Resume')}
-      </button>
-      <button type="button" className="workspace-row-action" onClick={() => onRemove(task.id)} aria-label={scheduledText('scheduled.deleteAria', 'Delete task')}>
+      </UiButton>
+      <UiButton type="button" className="workspace-row-action" onClick={() => onRemove(task.id)} aria-label={scheduledText('scheduled.deleteAria', 'Delete task')}>
         {scheduledText('scheduled.delete', 'Delete')}
-      </button>
+      </UiButton>
     </div>
   );
 }

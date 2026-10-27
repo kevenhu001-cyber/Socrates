@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { t } from '../legacy/gateway.ts';
 import type { ChipDescriptor } from './recentsFilterChips.model';
 
@@ -10,7 +11,7 @@ export function RecentsFilterChip({
 }) {
   if (chip.kind === 'all') {
     return (
-      <button
+      <Button
         type="button"
         className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
         data-filter="all"
@@ -18,26 +19,26 @@ export function RecentsFilterChip({
         onClick={() => onPick('all')}
       >
         <span data-i18n-key="sidebar.all">{t('sidebar.all')}</span>
-      </button>
+      </Button>
     );
   }
   if (chip.kind === 'project') {
     return (
-      <button
+      <Button
         type="button"
         className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
         data-filter={chip.value}
         aria-pressed={chip.active}
-        aria-label={t('session.filterByTag').replace('{tag}', chip.name)}
+        aria-label={t('session.filterByProject').replace('{project}', chip.name)}
         onClick={() => onPick(chip.value)}
       >
         <span className="recents-filter-chip-icon">●</span>
         {chip.name}
-      </button>
+      </Button>
     );
   }
   return (
-    <button
+    <Button
       type="button"
       className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
       data-filter={chip.value}
@@ -45,6 +46,6 @@ export function RecentsFilterChip({
       onClick={() => onPick(chip.value)}
     >
       {chip.label}
-    </button>
+    </Button>
   );
 }

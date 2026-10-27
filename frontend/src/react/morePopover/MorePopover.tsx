@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
@@ -55,7 +56,7 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: MoreP
     ? 'sidebar-more-item sidebar-more-item-danger'
     : 'sidebar-more-item';
   return (
-    <button
+    <UiButton
       type="button"
       className={className}
       role="menuitem"
@@ -63,7 +64,7 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: MoreP
     >
       <span dangerouslySetInnerHTML={{ __html: spec.icon }} />
       <span>{label}</span>
-    </button>
+    </UiButton>
   );
 }
 

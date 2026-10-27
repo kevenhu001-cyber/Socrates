@@ -1,18 +1,7 @@
-/**
- * Admin modal bridge — same factory pattern as settings / confirm /
- * scheduled. The legacy openAdminModal helper calls
- * `window.__socratesAdminBridge.publish(...)`, and the React
- * AdminModal consumes `useBridge` directly.
- */
+/** Module-owned admin state shared with the admin service and React. */
 
 import { createImmutableBridge, useBridge } from '../../lib/bridge';
 import type { AdminBridge, AdminSnapshot } from './types';
-
-declare global {
-  interface Window {
-    __socratesAdminBridge?: AdminBridge;
-  }
-}
 
 type Action = Omit<AdminSnapshot, 'revision'>;
 
@@ -41,12 +30,6 @@ const bridge: AdminBridge = Object.assign(factoryBridge, {
 }) as AdminBridge;
 
 export function installAdminBridge(): AdminBridge {
-  if (typeof window !== 'undefined') {
-    if (!window.__socratesAdminBridge) {
-      window.__socratesAdminBridge = bridge;
-    }
-    return window.__socratesAdminBridge;
-  }
   return bridge;
 }
 

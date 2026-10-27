@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import type { MouseEvent } from 'react';
 import { t as translate } from '../legacy/gateway.ts';
 import { navButtonId, type NavButtonSpec } from './sidebarNav.items';
@@ -18,7 +19,7 @@ export function SidebarNavButton({
 }) {
   const label = i18n(item.i18nKey, item.label);
   return (
-    <button
+    <Button
       type="button"
       className={`btn btn-ghost btn-touch sidebar-nav-btn${active ? ' active' : ''}`}
       data-nav={item.key}
@@ -37,6 +38,6 @@ export function SidebarNavButton({
         <span data-i18n-key={item.i18nKey}>{label}</span>
       )}
       {item.key === 'new' ? <span className="nav-kbd">{i18n('sidebar.nav.kbd', '⌘K')}</span> : null}
-    </button>
+    </Button>
   );
 }

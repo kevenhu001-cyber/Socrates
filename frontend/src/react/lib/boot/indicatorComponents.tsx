@@ -9,7 +9,7 @@ import { Icon } from '../../../ui/Icon';
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { stateStore } from '../../../state/store.js';
+import { useUiStore } from '../../../store/index.ts';
 import { useChatStreamStatus, useIsChatStreaming } from '../../useChatRuntime';
 
 const ICON_PROPS = {
@@ -21,16 +21,11 @@ function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} stro
 /* The pill's visibility is part of the sticky-bottom contract: while an
    answer streams, a reader who scrolls away gets the "↓ New reply"
    affordance and clicking it re-pins. `_userScrolledAway` is owned by the
-   legacy scroll listener (ui/scrollPill.js), so subscribe to the store
-   and mirror it onto the hydrating host element. */
+   legacy scroll listener (ui/scrollPill.js), so read it from the ui domain
+   store — the typed view of the same flag the legacy listener writes, and
+   a subscription to that one namespace rather than to every state change. */
 function useScrolledAway(): boolean {
-  const [away, setAway] = useState(() => Boolean(stateStore.read('_userScrolledAway')));
-  useEffect(() => {
-    const sync = () => setAway(Boolean(stateStore.read('_userScrolledAway')));
-    sync();
-    return stateStore.subscribe(sync);
-  }, []);
-  return away;
+  return useUiStore((snapshot) => Boolean(snapshot._userScrolledAway));
 }
 
 /* The legacy updateComposerBtn mirrors draft state onto the button's

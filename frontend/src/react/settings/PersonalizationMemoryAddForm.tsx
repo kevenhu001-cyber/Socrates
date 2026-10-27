@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { useState, type FormEvent } from 'react';
 
 import type { SettingsLabel } from './settings.types';
@@ -36,9 +37,9 @@ export function PersonalizationMemoryAddForm({
         value={value}
         onChange={(event) => setValue(event.target.value)}
       />
-      <button type="submit" className="btn" disabled={!value.trim()}>
+      <Button type="submit" className="btn" disabled={!value.trim()}>
         {label('添加', 'Add')}
-      </button>
+      </Button>
     </form>
   );
 }

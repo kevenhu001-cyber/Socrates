@@ -41,8 +41,22 @@ for (const theme of ['dark', 'light']) for (const size of ['desktop', 'mobile'])
           background: style.backgroundColor, border: style.borderColor, radius: style.borderRadius,
           x: rect.x, y: rect.y, width: rect.width, height: rect.height };
       };
+      /* The surface toolbar deliberately paints no background of its own —
+         it must not put a second frame on top of the result card. What it
+         shows is whatever the card underneath paints, so the coherence
+         check has to resolve the painted surface, not the declared one. */
+      const paintedBackground = (element) => {
+        for (let node = element; node; node = node.parentElement) {
+          const value = getComputedStyle(node).backgroundColor;
+          const alpha = value.startsWith('rgba') ? Number(value.split(',')[3]) : 1;
+          if (value !== 'transparent' && alpha > 0) return value;
+        }
+        return 'rgba(0, 0, 0, 0)';
+      };
+      const toolbar = document.querySelector('.intui-surface-toolbar');
       return { prose: sample('.tool-run-prose p'), heading: sample('.tool-run-prose h2'),
         card: sample('.intui-surface-shell'), toolbar: sample('.intui-surface-toolbar'),
+        toolbarPainted: paintedBackground(toolbar),
         cardTitle: sample('.intui-panel-title'), composer: sample('#appShell .composer-shell'),
         overflow: document.documentElement.scrollWidth - innerWidth };
     });
@@ -52,7 +66,7 @@ for (const theme of ['dark', 'light']) for (const size of ['desktop', 'mobile'])
     if (!process.env.DESIGN_BASELINE) {
       expect(Number(measurements.prose.weight)).toBe(400);
       expect(parseFloat(measurements.heading.fontSize)).toBeGreaterThan(parseFloat(measurements.prose.fontSize));
-      expect(measurements.toolbar.background).toBe(measurements.card.background);
+      expect(measurements.toolbarPainted).toBe(measurements.card.background);
     }
     await page.screenshot({ path: `test-results/design-${encodeURIComponent(theme)}-${encodeURIComponent(size)}-${encodeURIComponent(process.env.DESIGN_BASELINE ? 'before' : 'after')}.png` });
     const slider = result.getByRole('slider', { name: '每日学习时长' });

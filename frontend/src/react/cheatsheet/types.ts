@@ -11,7 +11,6 @@ export interface CheatsheetBridge {
 
 declare global {
   interface Window {
-    __socratesCheatsheetBridge?: CheatsheetBridge;
     closeCheatsheet?: () => void;
   }
 }

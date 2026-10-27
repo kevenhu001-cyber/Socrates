@@ -1,31 +1,10 @@
-/**
- * Find-in-session bridge — M2 single-bridge migration.
- *
- * The find bar is opened by `ui/findInSession.js` and by the React
- * component itself, both calling
- * `window.__socratesFindInSession.publish(...)`. The factory owns the
- * snapshot/reducer/listener loop; this module adds the legacy alias
- * and the React-friendly helpers.
- *
- * Note: `FindInSessionSnapshot` did not track a `revision` field before
- * M2 — the legacy store relied on identity changes alone to wake
- * subscribers. With M2 we add an internal `revision` counter so the
- * factory's `useSyncExternalStore` integration sees a stable snapshot
- * between publishes; the field is internal and not part of the public
- * snapshot shape.
- */
+/** Module-owned find state, shared by actions and React subscribers. */
 
 import { createImmutableBridge, useBridge } from '../../lib/bridge';
 import type {
   FindInSessionBridge,
   FindInSessionSnapshot,
 } from './types';
-
-declare global {
-  interface Window {
-    __socratesFindInSession?: FindInSessionBridge;
-  }
-}
 
 const CLOSED: FindInSessionSnapshot = {
   isOpen: false,
@@ -46,12 +25,6 @@ const bridge: FindInSessionBridge = Object.assign(factoryBridge, {
 }) as FindInSessionBridge;
 
 export function installFindInSessionBridge(): FindInSessionBridge {
-  if (typeof window !== 'undefined') {
-    if (!window.__socratesFindInSession) {
-      window.__socratesFindInSession = bridge;
-    }
-    return window.__socratesFindInSession;
-  }
   return bridge;
 }
 

@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
@@ -27,14 +28,14 @@ function ShareModal() {
     <div className="share-modal" onClick={(e) => e.stopPropagation()}>
       <div className="share-header">
         <span className="share-title">{shareText('share.title', 'Share conversation')}</span>
-        <button
+        <UiButton
           type="button"
           className="share-close"
           aria-label={shareText('common.close', 'Close')}
           onClick={() => dispatch.close()}
         >
           <Icon name="close" size={16} strokeWidth={2.5} />
-        </button>
+        </UiButton>
       </div>
       <ShareVisibilityOptions visibility={snap.visibility} onSelect={dispatch.selectVis} />
       <ShareLinkPanel

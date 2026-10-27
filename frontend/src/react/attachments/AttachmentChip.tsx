@@ -1,3 +1,4 @@
+import { Button as UiButton } from '../ui/Button';
 import { useState } from 'react';
 
 import { getAttachmentIcon } from './fileIcons';
@@ -182,7 +183,7 @@ function AttachmentChipActions({ entry, onRemove, onRetry }: AttachmentChipProps
   return (
     <>
       {entry.error && !entry.pending ? (
-        <button
+        <UiButton
           type="button"
           className="attachment-chip-retry"
           aria-label={i18n('chat.attach.retry.aria', 'Retry upload')}
@@ -191,7 +192,7 @@ function AttachmentChipActions({ entry, onRemove, onRetry }: AttachmentChipProps
           dangerouslySetInnerHTML={{ __html: RETRY_ICON }}
         />
       ) : null}
-      <button
+      <UiButton
         type="button"
         className="attachment-chip-remove"
         aria-label={i18n('chat.attach.remove.aria', 'Remove attachment')}

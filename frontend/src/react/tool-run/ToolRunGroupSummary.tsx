@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { STROKE_ICONS, categoryIcon } from '../../ui/icons/toolIcons.ts';
 import type { ToolRunGroupView, ToolRunState } from './toolRunModel.js';
 
@@ -27,7 +28,7 @@ export function ToolRunGroupSummary({
 }) {
   const live = view.state === 'running';
   return (
-    <button
+    <Button
       type="button"
       className="tool-run-summary"
       aria-expanded={open}
@@ -47,6 +48,6 @@ export function ToolRunGroupSummary({
         aria-hidden="true"
         dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
       />
-    </button>
+    </Button>
   );
 }
