@@ -663,8 +663,8 @@
   padding: 0;
   min-width: 0;
   box-sizing: border-box;
-  border: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-xl);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-raised);
   color: var(--ui-text-primary);
   font: inherit;
@@ -708,7 +708,13 @@
   gap: var(--ui-space-xs);
   flex: 0 0 auto;
   padding: 0;
-  background: var(--ui-bg-raised);
+  background: transparent;
+  opacity: 0.72;
+  transition: opacity var(--ui-duration-hover) ease;
+}
+.intui-surface-shell:hover .intui-surface-toolbar,
+.intui-surface-toolbar:focus-within {
+  opacity: 1;
 }
 .intui-surface-toolbar button {
   min-height: var(--intui-action-size);
@@ -792,7 +798,13 @@
 .intui-surface-menu [aria-checked="false"] .intui-surface-selected { visibility: hidden; }
 .intui-surface-document { display: grid; align-content: start; gap: var(--ui-space-lg); min-width: 0; padding: var(--ui-foundation-space-md); container-type: inline-size; }
 .intui-surface-document > * { min-width: 0; }
-.msg.assistant .msg-body.is-declarative .intui-surface-document > .intui-panel { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.intui-surface-document > .intui-panel,
+.msg.assistant .msg-body .intui-surface-document > .intui-panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
 .intui-surface-shell[data-display-mode="compact"] .intui-surface-document {
   /* Compact changes density, keeping the conversation as the scroll owner. */
   gap: var(--ui-space-md);

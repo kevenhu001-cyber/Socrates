@@ -14,7 +14,6 @@ import { updateComposerBtn } from '../../ui/topicSetup.js';
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.js';
 import { buildMessageContent, resetAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';
-import { formatMsg } from '../../render/markdown.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import type { SessionStartContext } from './input.ts';
@@ -45,7 +44,7 @@ function patchFirstTurnAttachments(clientId: string, topic: string, attachments:
       patch: {
         attachments,
         rawText: topic,
-        html: formatMsg(topic),
+        html: '',
       },
     });
     publishReactChatRuntime({ type: 'state-synced', reason: 'start-attachment-patch' });
