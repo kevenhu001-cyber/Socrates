@@ -224,7 +224,7 @@
 
 /* Reference shell metrics. This existing mobile owner consumes theme tokens. */
 @media (max-width: 768px) {
-  #appShell #sidebarHeader .sidebar-logo > span, #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
+  #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader .btn-icon svg { width: 20px; height: 20px; }
   #appShell .recent-item.active { box-shadow: none; background: var(--ui-bg-hover); }
   /* The tier badge size is owned by polish/mobile-sidebar.css:78 (14px, set

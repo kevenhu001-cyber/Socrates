@@ -15,7 +15,7 @@
 }
 @media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn {
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-primary);
 }
 }
 @media (max-width: 768px) {
@@ -25,7 +25,7 @@
 
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn {
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-primary);
 }
 }
 @media (max-width: 768px) {
@@ -184,7 +184,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 @media (max-width: 768px) {
 #appShell .recent-item {
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-primary);
 }
 }
 @media (max-width: 768px) {
@@ -247,7 +247,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   /* The reference drawer keeps only the logo glyph in the header and a
      flat recent-session list — no mode bullets, meta rows, tag pills or
      time-group separators on phones. */
-  #appShell .sidebar-logo span,
   #appShell .sidebar-logo .cg-sidebar-caret { display: none; }
   #appShell .recents-filter-chips,
   #appShell .recents-time-label { display: none; }

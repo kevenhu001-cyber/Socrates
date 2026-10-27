@@ -203,7 +203,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
 [data-mode="light"] #appShell .sidebar-nav-btn {
-  color: var(--cg-text-secondary) !important;
+  color: var(--ui-text-primary) !important;
 }
 }
 
@@ -235,7 +235,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 @media (max-width: 768px) {
 
 [data-mode="light"] #appShell .recent-item-text {
-  color: var(--cg-text-secondary) !important;
+  color: var(--ui-text-primary) !important;
 }
 }
 

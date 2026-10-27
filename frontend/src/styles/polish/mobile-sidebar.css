@@ -2,7 +2,10 @@
 @media (max-width: 768px) {
   /* Match the supplied phone drawer's ~65% width while leaving the main
      pane visible. Touch rows retain the shipped 48px density. */
-  #appShell #sidebar { --ui-mobile-row: 48px; }
+  #appShell #sidebar {
+    --ui-mobile-row: 48px;
+    background: var(--ui-bg-page);
+  }
   #appShell .sidebar-inner { padding: 0 6px 6px; }
   #appShell #sidebarHeader {
     display: flex;
@@ -12,10 +15,11 @@
     min-height: calc(var(--ui-control-touch) + 18px);
     padding: 8px 10px;
   }
-  #appShell .sidebar-logo { display: flex; padding: 0; gap: 8px; min-width: 0; }
+  #appShell .sidebar-logo { display: flex; align-items: center; padding: 0 4px; gap: 8px; min-width: 0; }
   #appShell .sidebar-logo-img { display: block; width: 24px; height: 24px; }
   #appShell .sidebar-logo > span {
-    display: none;
+    display: inline-block;
+    color: var(--ui-text-primary);
     font-size: var(--ui-font-size-lg);
     font-weight: var(--ui-font-weight-semibold);
     line-height: 28px;
@@ -34,7 +38,7 @@
     border: 0;
     border-radius: var(--ui-radius-control);
     background: transparent;
-    color: var(--ui-text-secondary);
+    color: var(--ui-text-primary);
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
   #appShell #sidebarHeader .btn-icon:hover {
@@ -89,7 +93,7 @@
     border: 0;
     border-radius: var(--ui-radius-row);
     background: transparent;
-    color: var(--ui-text-secondary);
+    color: var(--ui-text-primary);
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
@@ -149,6 +153,13 @@
     color: var(--ui-text-primary);
   }
   #appShell .recents-head-btn svg { width: 20px; height: 20px; }
+  #appShell .sidebar-nav-sep {
+    display: block;
+    height: 1px;
+    margin: 8px 16px 4px;
+    border: 0;
+    background: var(--ui-border-subtle);
+  }
   #appShell .recent-item {
     display: flex;
     align-items: center;
@@ -157,6 +168,7 @@
     padding: 0 6px 0 16px;
     border-radius: var(--ui-radius-row);
     font-size: calc(16px * var(--app-type-scale));
+    color: var(--ui-text-primary);
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
   #appShell .recent-item:hover {
@@ -165,7 +177,7 @@
   #appShell .recent-item:active {
     background: var(--ui-bg-active);
   }
-  #appShell .recent-item-text { font-size: inherit; line-height: 24px; font-weight: var(--ui-font-weight-regular); }
+  #appShell .recent-item-text { font-size: inherit; line-height: 24px; font-weight: var(--ui-font-weight-regular); color: var(--ui-text-primary); }
   #appShell .recent-item-overflow {
     display: grid;
     place-items: center;

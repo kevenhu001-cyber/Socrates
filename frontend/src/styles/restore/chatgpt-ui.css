@@ -184,7 +184,7 @@ body,
 @media (max-width: 768px) {
 
 #appShell .recent-item-text {
-  color: var(--cg-text-secondary);
+  color: var(--ui-text-primary);
 }
 }
 
