@@ -10,53 +10,98 @@
   padding: 24px 16px;
 }
 
-.auth-card {
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-dialog);
-  box-shadow: var(--ui-shadow-modal);
+/* The gate follows shadcn's card/form grammar: `rounded-xl` card on
+   `--card`, `text-sm` medium labels, 36px `rounded-md` inputs with a
+   `ring`-based focus, and the primary/secondary button rungs. Legacy
+   `09-viz-markdown.css` still owns the layout; these rules only repaint. */
+.auth-gate .auth-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
 }
 
 .auth-brand { letter-spacing: -0.01em; }
 
-/* Tabs: quiet underline tabs, muted → primary. */
-.auth-tabs { border-bottom: 1px solid var(--ui-border-subtle); }
-.auth-tab { color: var(--ui-text-muted); font-weight: var(--ui-font-weight-medium); }
-.auth-tab:hover { color: var(--muted-foreground); }
-.auth-tab.active { color: var(--foreground); }
-
-/* Labels: small-caps microcopy, muted. */
-.auth-label {
-  font-size: 11px;
-  font-weight: var(--ui-font-weight-semibold);
-  letter-spacing: 0.05em;
-  color: var(--ui-text-muted);
+/* Tabs: shadcn's segmented control — muted track, raised active pill. */
+.auth-gate .auth-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  margin-bottom: 20px;
+}
+.auth-gate .auth-tab {
+  flex: 1;
+  height: var(--ui-control-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
+.auth-gate .auth-tab:hover { color: var(--foreground); }
+.auth-gate .auth-tab.active {
+  background: var(--background);
+  color: var(--foreground);
+  border-bottom-color: transparent;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
 }
 
-.auth-input {
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control);
-  background: var(--cg-rail);
-  color: var(--cg-text);
+.auth-gate .auth-label {
+  margin: 4px 0 6px;
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.auth-gate .auth-input {
+  width: 100%;
+  height: 36px;
+  margin-bottom: 4px;
+  padding: 0 12px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 4%));
+  outline: none;
   transition: border-color var(--ui-duration-fast) ease, box-shadow var(--ui-duration-fast) ease;
 }
-.auth-input:focus {
-  border-color: var(--ui-border-strong);
+.auth-gate .auth-input:focus {
+  border-color: var(--ring);
   box-shadow: var(--ui-focus-shadow);
 }
+.auth-gate .auth-input::placeholder { color: var(--muted-foreground); }
 
-.auth-btn {
-  border-radius: var(--ui-radius-control);
+.auth-gate .auth-btn {
+  height: 36px;
+  margin-top: 10px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
-  transition: filter var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
 }
-.auth-btn.primary:hover { filter: brightness(0.92); }
-.auth-btn.secondary {
+.auth-gate .auth-btn.primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.auth-gate .auth-btn.primary:hover { filter: brightness(0.94); }
+.auth-gate .auth-btn.secondary {
   border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control);
-  color: var(--muted-foreground);
+  background: var(--background);
+  color: var(--foreground);
 }
-.auth-btn.secondary:hover { background: var(--accent); color: var(--foreground); }
+.auth-gate .auth-btn.secondary:hover { background: var(--accent); color: var(--accent-foreground); }
 
 .auth-view-separator { color: var(--ui-text-muted); }
 .auth-foot, .auth-footnote { color: var(--ui-text-muted); }

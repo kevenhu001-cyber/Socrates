@@ -98,6 +98,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B1 守卫扩容 | 完成（2026-10-29） | `c9483ad1`：四条基线入库（97 / 30 / 140 / 32），`npm run lint` 全绿 |
 | B2 composer 芯片行与队列条 | 完成（2026-10-29） | 见下 |
 | B2 composer 工具菜单 | 完成（2026-10-29） | 见下 |
+| B3 auth 登录页 | 皮肤完成（2026-10-29） | 见下；标记仍是保留 HTML，React 化未做 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -137,6 +138,24 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 `mobile-composer-ux` 共 18 例通过；`check-css-debt` 的 `stackedId` 维持 43（焦点态
 与 hover 合并为一条规则，没有新增 id 叠加）；`check-focus-ring` 通过（沿用
 `--ui-focus-shadow` 契约）；build 与 lint 通过。
+
+### B3 · auth 登录页（2026-10-29）
+
+登录/注册卡改用 shadcn 的表单语法，标记与 id 全部保留：
+
+- 标签：11px 大写字距小标签 → `text-sm` / `font-medium` / 正常大小写
+- 输入框：36px 高、`rounded-md`、`border-input`、透明底、`text-sm`，
+  焦点走 `--ui-focus-shadow` 契约
+- 主/次按钮：36px 高、`rounded-md`、`bg-primary` / `border-input bg-background`
+- 页签：下划线 tab → shadcn 分段控件（`bg-muted` 轨道 + 选中项 `bg-background`
+  + `shadow-sm`），高度落在 `--ui-control-sm` 阶梯上
+
+仍是保留 HTML + legacy 控制器（`auth/index.ts` 按 id 绑定），所以这一批只换皮肤、
+不动表单行为；把 auth 变成 React 组件属于 B3 的下一步。
+
+验证：`auth-direct-handlers`、`chrome-i18n`、`reference-ui-visual`、
+`visual-system-convergence` 共 16 例通过；`check-button-sizes` 0/0、
+`check-focus-ring` 通过（改用共享 token，未自绘阴影）；build 与 lint 通过。
 
 ## 待决问题
 
