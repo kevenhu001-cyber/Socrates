@@ -130,7 +130,10 @@ function WorkspacePageHeader({ title, description, query, onQuery, actionLabel, 
       <div><h1 id="projects-directory-title">{title}</h1><p>{description}</p></div>
       <div className="workspace-head-actions">
         <ShadcnLabel className="workspace-search-field"><SearchIcon /><ShadcnInput type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></ShadcnLabel>
-        <Button type="button" variant="default" className={'projects-create-button' + (compactAction ? '' : ' rounded-full')} onClick={onAction}>{compactAction ? null : <PlusIcon />}<span>{actionLabel}</span></Button>
+        {/* The legacy class stays: it is the geometry contract for the
+            directory headers and the selector the projects e2e spec drives.
+            The component owns the structure, the owner keeps the pixels. */}
+        <Button type="button" variant="default" className={'workspace-create-button' + (compactAction ? ' projects-create-button' : ' rounded-full')} onClick={onAction}>{compactAction ? null : <PlusIcon />}<span>{actionLabel}</span></Button>
       </div>
     </div>
   );
