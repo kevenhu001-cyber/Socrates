@@ -101,6 +101,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B3 auth 登录页 | 皮肤完成（2026-10-29） | 见下；标记仍是保留 HTML，React 化未做 |
 | B3 workspace 弹窗表单 | 皮肤完成（2026-10-29） | 见下；模板仍是 HTML 字符串 |
 | B4 代码块与 tutor 内联控件 | 完成（2026-10-29） | 见下；仍是 legacy DOM 构建 |
+| B4 cookie 同意条 | 完成（2026-10-29） | 见下 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -193,6 +194,13 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 
 验证：`code-copy-visual`、`tutor-inline-widgets` 共 5 例通过；截图确认代码块头与
 tutor 卡片的新观感；build 与 lint 通过。
+
+### B4 · cookie 同意条（2026-10-29）
+
+底部同意卡换成 shadcn 卡片与按钮：`rounded-xl` + `border` + `bg-card`，
+标题 `text-sm`/medium，正文 `text-muted-foreground`，两个按钮 36px、`rounded-md`，
+主按钮 `bg-primary`、次按钮 `border-input bg-background`，焦点走 `--ui-focus-shadow`。
+`cookie-consent` 2 例通过。
 
 ## 待决问题
 
