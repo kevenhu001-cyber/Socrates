@@ -1,20 +1,20 @@
 {
   "totals": {
     "live": {
-      "important": 20,
+      "important": 14,
       "hexColor": 32,
       "literalRadius": 2,
       "stackedId": 43,
-      "literalFontSize": 65,
+      "literalFontSize": 60,
       "legacyChannel": 0
     },
     "frozen": {
-      "important": 645,
-      "hexColor": 92,
-      "literalRadius": 285,
+      "important": 624,
+      "hexColor": 51,
+      "literalRadius": 253,
       "stackedId": 59,
-      "literalFontSize": 518,
-      "legacyChannel": 1324
+      "literalFontSize": 453,
+      "legacyChannel": 1140
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

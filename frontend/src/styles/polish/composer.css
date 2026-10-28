@@ -76,67 +76,11 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden)
 @media (prefers-reduced-motion: reduce) {
   body #composerToolsMenu.composer-tools-menu:not(.hidden) { animation: none; }
 }
-body #composerToolsMenu .composer-tools-item,
-body #composerToolsMenu .composer-tools-plugin-item {
-  /* Pinned to the tools-row step: the committed composer-tools visual
-     baseline was rendered with these rows at 10px. */
-  border-radius: var(--ui-radius-tools-row);
-  min-height: 40px;
-}
-body #composerToolsMenu .composer-tools-group-label {
-  font-size: 11px;
-  font-weight: var(--ui-font-weight-medium);
-  letter-spacing: 0.04em;
-  color: var(--ui-text-muted);
-}
-body #composerToolsMenu .composer-tools-copy small { color: var(--ui-text-muted); }
-body #composerToolsMenu .composer-tools-item kbd {
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xs, 4px);
-  font-size: 10px;
-}
-
-/* Desktop "+" card — compact single-line directory. The restore layer
-   re-enabled per-item descriptions, which stretched the card into a tall
-   narrow tower against the 52px capsule; the reference pattern (and our
-   own mobile sheet) is icon + label. Descriptions stay mounted for
-   aria-labels. */
-@media (min-width: 769px) {
-  body #composerToolsMenu .composer-tools-desktop-items .composer-tools-item,
-  body #composerToolsMenu .composer-tools-plugin-item {
-    min-height: 34px;
-    padding: 4px 10px;
-    gap: 10px;
-  }
-  body #composerToolsMenu .composer-tools-desktop-items .composer-tools-copy small {
-    display: none;
-  }
-  body #composerToolsMenu .composer-tools-icon {
-    width: 20px !important;
-    min-width: 20px !important;
-    height: 20px !important;
-    border-radius: 0;
-    background: transparent !important;
-    color: var(--muted-foreground);
-  }
-  body #composerToolsMenu .composer-tools-icon svg {
-    width: 17px !important;
-    height: 17px !important;
-  }
-  body #composerToolsMenu .composer-tools-group-label {
-    padding: 10px 10px 3px;
-  }
-  body #composerToolsMenu .composer-tools-group:first-child .composer-tools-group-label {
-    padding-top: 4px;
-  }
-  body #composerToolsMenu .composer-tools-plugin-state {
-    padding: 8px 10px;
-    font-size: var(--ui-font-size-xxs);
-  }
-  body #composerToolsMenu .composer-tools-plugin-state small { font-size: 11px; }
-  /* Footer search geometry (34px) is owned by components/menu.css, which
-     now matches this row height instead of being silently overridden here. */
-}
+/* The tools card's rows, glyphs, group labels and footer now belong to
+   `components/menu.css` alone (ADR 0024: one owner per surface). The 34px /
+   20px / `--ui-radius-tools-row` block that lived here re-skinned the same
+   rows after the component layer and kept them off the shadcn 32px rung;
+   removed 2026-10-29 with the matching `restore/chatgpt-parity.css` pins. */
 
 /* Attachment chips inside the capsule — the card radius (12px) matches
    the legacy/07-composer-settings.css chip block so both files agree. */

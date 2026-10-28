@@ -1,10 +1,13 @@
-
 /*
- * Final ChatGPT-parity layer.
+ * Final parity layer for the shell background, the landing composer inset and
+ * the workspace page fill. Loaded after chat-surface.css.
  *
- * This sheet is deliberately loaded after chat-surface.css. It owns only the
- * high-salience shell, landing composer, tool menu and plugin directory so
- * legacy feature views keep their existing layout contracts.
+ * The `#composerToolsMenu` block that used to live here was deleted on
+ * 2026-10-29: it re-pinned the tools card at 20px glyphs, 8px row corners and
+ * `--chatgpt-*` fills with `!important`, fighting `components/menu.css` and
+ * `polish/composer.css` for the same rows. ADR 0024 gives that card a single
+ * owner, and it now speaks the shadcn row grammar (32px rows, 16px glyphs,
+ * `--accent` hover) on every breakpoint.
  */
 
 /* The --chatgpt-* family is owned by the compatibility bridge in themes.css
@@ -22,12 +25,9 @@
   html[data-theme="socrates"] #appShell .main,
   html[data-theme="socrates"] #appShell .main-content,
   html[data-theme="socrates"] #appShell .main-bg {
-    background: var(--chatgpt-page) !important;
-    background-color: var(--chatgpt-page) !important;
+    background: var(--background) !important;
+    background-color: var(--background) !important;
   }
-
-  /* ChatGPT's model switcher is a quiet label, not a raised segmented card.
-     Socrates keeps both modes available while adopting that visual weight. */
 
   #appShell#appShell #topicSetup {
     padding-top: 0 !important;
@@ -40,98 +40,9 @@
     max-width: min(100%, 768px);
   }
 
-  /* Compact add-content popover. Only the row inset lives here now.
-     The width / border / radius / background / shadow !important pins that
-     used to sit in this rule fought the live owner (components/menu.css +
-     polish/overlays.css): they held the desktop card at 220px, borderless
-     and 16px, while the phone card was 236px, hairline and 20px, and every
-     other popover in the app was 12px. Dropping them lets one shape win on
-     both breakpoints. */
-  body #composerToolsMenu.composer-tools-menu {
-    padding: 6px 0;
-  }
-
-  #composerToolsMenu .composer-tools-desktop-items,
-  #composerToolsMenu .composer-tools-expanded {
-    display: flex !important;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  #composerToolsMenu .composer-tools-item,
-  #composerToolsMenu .composer-tools-plugin-item {
-    width: calc(100% - 12px);
-    margin: 0 6px;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--chatgpt-text);
-    font-size: 14px;
-    font-weight: var(--ui-font-weight-regular);
-    line-height: 20px;
-    /* padding/gap moved on — the desktop compact-directory rhythm lives in
-       polish/composer.css and needs no !important. */
-  }
-
-  #composerToolsMenu .composer-tools-item:hover,
-  #composerToolsMenu .composer-tools-plugin-item:hover {
-    background: var(--chatgpt-hover) !important;
-  }
-
-  #composerToolsMenu .composer-tools-icon {
-    width: 20px !important;
-    min-width: 20px !important;
-    height: 20px !important;
-  }
-
-  #composerToolsMenu .composer-tools-icon svg {
-    width: 20px !important;
-    height: 20px !important;
-
-  }
-
-  #composerToolsMenu .composer-tools-copy {
-    min-width: 0;
-    flex: 1 1 auto;
-    gap: 0;
-  }
-
-  #composerToolsMenu .composer-tools-copy > span {
-    overflow: visible;
-    white-space: nowrap !important;
-    text-overflow: clip;
-  }
-
-  #composerToolsMenu .composer-tools-copy small,
-  #composerToolsMenu .composer-tools-item kbd {
-    display: none !important;
-  }
-
-  #composerToolsMenu .composer-tools-active-dot {
-    width: 7px !important;
-    height: 7px !important;
-    margin-left: auto !important;
-    border-radius: 50% !important;
-    background: #fff !important;
-  }
-
-  #composerToolsMenu .composer-tools-plugins {
-    margin-top: 5px !important;
-    padding-top: 5px !important;
-    border-top: 1px solid var(--chatgpt-line) !important;
-  }
-
-  #composerToolsMenu .composer-plugin-mark {
-    width: 22px !important;
-    min-width: 22px !important;
-    height: 22px !important;
-    border-radius: 5px !important;
-  }
-
-  /* Plugin marketplace: dense two-column rows and genuine connector marks. */
+  /* Plugin marketplace pages share the workspace page fill. */
   body.workspace-active #appShell .main-page:not(#sitesPanel) {
     padding: 0 !important;
-    background: var(--chatgpt-page);
+    background: var(--background);
   }
 }
-

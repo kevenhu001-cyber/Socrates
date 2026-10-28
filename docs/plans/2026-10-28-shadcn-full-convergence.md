@@ -105,6 +105,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B4 工具卡片 | 完成（2026-10-29） | 见下；保留「无边框行」的转录语法 |
 | B4 creation 表面（Images / Assistants / Sites） | 完成（2026-10-29） | 见下；模板仍是 HTML 字符串，皮肤归 shadcn 语义 |
 | B4 exam 考试页与分享弹窗 | 完成（2026-10-29） | 见下；`legacy/08-exam.css` 的 HSL 通道清零 |
+| B5 tools 菜单归属清理 | 完成（2026-10-29） | 见下；删掉两处重复 owner，基线随之下调 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -280,6 +281,32 @@ build 与 lint 全绿（`check-css-debt` 与 `check-button-sizes` 计数未变�
 验证：`exam-regressions` 2 例、`creation-surfaces` / `detail-surface` /
 `reference-ui-visual` 12 例通过；lint 全绿，`frozen.legacyChannel` 1281 → 1140，
 `frozen.literalRadius` 275 → 255，`frozen.literalFontSize` 494 → 454。
+
+### B5 · tools 菜单归属清理（2026-10-29）
+
+上一批把 `components/menu.css` 改成 shadcn 菜单语法（32px 行、16px 字形、
+`hover:bg-accent`、右对齐 kbd），但桌面端实际渲染仍被两层更晚的规则覆盖：
+
+- `restore/chatgpt-parity.css` 用 `!important` 把行压回 20px 字形、8px 圆角、
+  `--chatgpt-text` / `--chatgpt-hover`，并把 `small` 与 `kbd` 全部 `display:none`；
+- `polish/composer.css` 再把桌面行定成 34px、字形 20/17px、`--ui-radius-tools-row`。
+
+两处都删掉，tools 卡回到单一 owner（`components/menu.css`）。效果：
+行高落到 32px rung、字形 16px、快捷键 kbd 重新出现并右对齐——这正是
+`FoundationMenu` 的菜单语言。`restore/chatgpt-parity.css` 只剩 shell 底色、
+`#topicSetup` 内边距和 workspace 页面底色，`--chatgpt-*` 在该文件里只保留
+字体桥接一处。
+
+快照基线（`composer-tools-visual-baseline`）按换皮后的实际渲染重新生成，
+宽度契约 244–260px 由 `composer-tools-compat` 继续守住，未变。
+
+`check-css-debt` 基线随之收缩：
+live `important` 20 → 14、`literalFontSize` 65 → 60；
+frozen `important` 645 → 624、`hexColor` 92 → 51、`literalRadius` 285 → 253、
+`literalFontSize` 518 → 453、`legacyChannel` 1324 → 1140。
+
+验证：`composer-tools-compat` 10 例、`composer-tools-visual-baseline` 1 例、
+`plugin-directory` 9 例通过；build 与 lint 全绿。
 
 ### B4 · 工具卡片（2026-10-29）
 
