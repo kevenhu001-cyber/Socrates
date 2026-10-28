@@ -217,30 +217,11 @@ true) but the dropdown never shows — see commit history. */
   fill:currentColor;opacity:1
 }
 .effort-picker[data-open="true"] .effort-glyph{color:hsl(var(--text-200))}
-.diag-text td{border:0.5px solid hsl(var(--border-300)/0.15);padding:6px 10px;text-align:left}
-.diag-text th{background:hsl(var(--bg-200));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100))}
-.diag-text td{color:hsl(var(--text-200))}
-.diag-text a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
-/* P_test-interpretation — diagnostic results interpretation screen. */
-.diag-results{max-width:600px;margin:0 auto;padding:8px 4px;display:flex;flex-direction:column;gap:20px}
-.diag-results-title{font-size:calc(18px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100));text-align:center;margin-bottom:4px}
-.diag-results-notice{display:flex;gap:12px;padding:14px 16px;background:hsl(var(--accent-000)/0.06);border:0.5px solid hsl(var(--accent-000)/0.2);border-radius:12px}
-.diag-results-notice-icon{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:var(--ui-font-weight-bold);font-style:italic;font-family:Georgia,serif}
-.diag-results-notice-text{font-size:calc(13px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-200))}
-.diag-results-notice-text strong{color:hsl(var(--text-100));font-weight:var(--ui-font-weight-semibold)}
-.diag-results-grid{display:flex;flex-direction:column;gap:8px}
-.diag-result-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-000))}
-.diag-result-card.fuzzy{border-color:hsl(38 60% 50%/0.25);background:hsl(38 60% 50%/0.05)}
-.diag-result-card.blank{border-color:hsl(var(--border-300)/0.15)}
-.diag-result-card-num{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:inline-flex;align-items:center;justify-content:center;font-size:calc(13px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);font-family:var(--font-mono)}
-.diag-result-card.fuzzy .diag-result-card-num{background:hsl(38 60% 50%/0.15);color:hsl(38 60% 40%)}
-.diag-result-card-name{flex:1;font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-weight:var(--ui-font-weight-medium)}
-.diag-result-card-status{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
-.diag-result-card.fuzzy .diag-result-card-status{color:hsl(38 60% 45%)}
-.diag-results-summary{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;padding:4px 0}
-.diag-results-actions{display:flex;justify-content:center;padding:8px 0 4px}
-.diag-results-continue{padding:12px 32px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0;cursor:pointer;transition:background .15s;font-family:inherit}
-.diag-results-continue:hover{background:hsl(var(--accent-100))}
+/* Markdown tables inside the diagnostic question text. The card itself is the
+   React `DiagnosticView`, so only the injected prose needs a skin. */
+.diag-text td{border:1px solid var(--border);padding:6px 10px;text-align:left;color:var(--muted-foreground)}
+.diag-text th{background:var(--muted);font-weight:var(--ui-font-weight-semibold);color:var(--foreground)}
+.diag-text a{color:var(--primary);text-decoration:underline;text-underline-offset:2px}
 /* Task 3.4 — teaching-plan view in the Knowledge sidebar. Kept
    minimal and consistent with the .diag-* / .kb-* styles: same
    font-scale pattern, same colour tokens, text markers (no emoji). */

@@ -17,27 +17,14 @@ import { generateDiagnosticQuestions } from '../diagnosticGenerator.ts';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.js';
 import { buildFallbackDiagnosticQuestions, shouldAutoSearchTutor } from '../../tutor/policy.js';
-import { esc } from '../../render/helpers.ts';
+import {
+  clearDiagnosticScreen,
+  showDiagnosticError,
+  showDiagnosticLoading,
+  updateDiagnosticProgress,
+} from '../../ui/diagnosticScreen.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isWebSearchOn, renderRecents, translate } from './runtime.ts';
-
-function diagnosticLoadingHTML() {
-  return '<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div>'
-    + '<p class="diag-loading-text">' + translate('tutor.loading') + '</p>'
-    + '<div class="diag-progress"><div class="diag-progress-bar">'
-    + '<div class="diag-progress-fill" id="diagProgressFill"></div></div>'
-    + '<div class="diag-progress-step" id="diagProgressStep"><span class="diag-progress-spin"></span>'
-    + translate('diag.analyzingTopic') + '</div></div>'
-    + '<button type="button" class="diag-cancel-btn" data-diag-command="cancel">'
-    + translate('diag.cancel') + '</button></div>';
-}
-
-function updateDiagnosticProgress(percent, label) {
-  const fill = document.getElementById('diagProgressFill');
-  const step = document.getElementById('diagProgressStep');
-  if (fill) fill.style.width = percent + '%';
-  if (step) step.innerHTML = '<span class="diag-progress-spin"></span>' + label;
-}
 
 function prepareTutorAttachments(context) {
   resetAttachments();
@@ -88,7 +75,7 @@ function cancelDiagnostic() {
   }
 
   const diagnosticView = document.getElementById('diagnosticView');
-  if (diagnosticView) diagnosticView.innerHTML = '';
+  if (diagnosticView) clearDiagnosticScreen();
   activateMainView('topicSetup', document);
   clearComposerPlugins('topic');
   clearComposerPlugins('chat');
@@ -96,19 +83,9 @@ function cancelDiagnostic() {
 }
 
 function renderDiagnosticFailure(fallbackError) {
-  const diagnosticView = document.getElementById('diagnosticView');
-  if (!diagnosticView) return;
+  if (!document.getElementById('diagnosticView')) return;
   const reason = stateStore.read('lastCallError') || fallbackError || '';
-  diagnosticView.classList.remove('hidden');
-  diagnosticView.innerHTML = '<div class="diag-error">'
-    + '<p class="diag-error-title">' + esc(translate('diag.timeoutTitle')) + '</p>'
-    + (reason ? '<p class="diag-error-reason">' + esc(reason) + '</p>' : '')
-    + '<div class="diag-error-actions">'
-    + '<button type="button" class="diag-error-retry" data-diag-command="retry">'
-    + esc(translate('diag.retry')) + '</button>'
-    + '<button type="button" class="diag-error-builtin" data-diag-command="builtin">'
-    + esc(translate('diag.useBuiltin')) + '</button>'
-    + '</div></div>';
+  showDiagnosticError(reason);
 }
 
 function completeDiagnosticQuestions(questions) {
@@ -133,13 +110,7 @@ function recordDiagnosticFailureReason() {
 
 async function runDiagnosticGeneration(context, reinjectLoading) {
   stateStore.dispatch({ type: 'state/set', key: 'diagCancel', value: false });
-  if (reinjectLoading) {
-    const diagnosticView = document.getElementById('diagnosticView');
-    if (diagnosticView) {
-      diagnosticView.classList.remove('hidden');
-      diagnosticView.innerHTML = diagnosticLoadingHTML();
-    }
-  }
+  if (reinjectLoading) showDiagnosticLoading();
   updateDiagnosticProgress(20, translate('chat.generatingQuestions'));
 
   let questions = null;
@@ -185,8 +156,6 @@ function installDiagnosticActions(context) {
     if (!stateStore.read('lastCallError')) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: 'Using built-in questions' });
     }
-    const diagnosticView = document.getElementById('diagnosticView');
-    if (diagnosticView) diagnosticView.classList.remove('hidden');
     renderDiagQuestion();
     updateKB();
   };
@@ -239,7 +208,7 @@ export async function startTutorSession(context) {
   syncChatModel();
   prepareTutorAttachments(context);
   window.cancelDiagnostic = cancelDiagnostic;
-  document.getElementById('diagnosticView').innerHTML = diagnosticLoadingHTML();
+  showDiagnosticLoading();
   startTutorWebSearch(context.topic);
 
   await prepareKnowledgeNodes(context);

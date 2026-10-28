@@ -107,6 +107,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B4 exam 考试页与分享弹窗 | 完成（2026-10-29） | 见下；`legacy/08-exam.css` 的 HSL 通道清零 |
 | B5 tools 菜单归属清理 | 完成（2026-10-29） | 见下；删掉两处重复 owner，基线随之下调 |
 | B3 session 标签编辑器 | 完成（2026-10-29） | 见下；遗留模板控件 140 → 135，`legacy/01-sidebar.css` 的 tag 规则清零 |
+| B4 tutor 诊断视图 | 完成（2026-10-29） | 见下；`#diagnosticView` 单一 React owner，模板控件 135 → 129 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -352,6 +353,32 @@ React：
 新增 `e2e/session-tags.spec.mjs`：从行菜单打开、锚点位置、逗号分隔多添加、
 PUT `/tags` 载荷、移除、Esc 关闭。遗留模板控件 140 → 135；css-debt 冻结计数
 `literalRadius` 253 → 248、`literalFontSize` 453 → 444、`legacyChannel` 1140 → 1120。
+
+### B4 · tutor 诊断视图（2026-10-29）
+
+`#diagnosticView` 有四个写入方（加载页、题目卡、结果页、失败卡），全部走 `innerHTML`。
+本轮把它收成**单一 React owner**：
+
+- `react/tutor/DiagnosticView.tsx`：四种屏幕（loading / question / results / error），
+  全部用 shadcn `Button` 与语义 token；题目卡用 `rounded-xl border bg-card`，
+  选项行 `variant="outline"` 铺满、选中走 `border-primary/40 bg-primary/10` 且字母徽标
+  反色，结果页节点卡同样按 fuzzy/blank 分色。
+- `react/tutor/diagnosticHost.tsx`：`mountOwnedRoot` 挂在 `#diagnosticView` 上，
+  `renderDiagnostic()` / `clearDiagnostic()` 是唯一入口。
+- `ui/diagnosticScreen.ts` 接管加载页与失败卡的进度状态；`ui/diagnosticQuestion.js`
+  与 `ui/diagnosticResults.js` 退化成"把状态翻译成 props"的薄壳。
+- 点击仍由 `tutor/diagnosticFlow.js` 的委托监听处理：所有按钮保留
+  `data-diag-command` / `data-diag-index`，该文件一行未改。
+
+**顺带修了一个真实缺陷**：`.diag-card` / `.diag-opt` / `.diag-btn` / `.diag-loading`
+整个家族在 2026-10-02 的 `7f399e3e`（"delete dead-class rules"）里被当成死类删掉了
+（提交信息还写着 "diag-card … verified live and untouched"）。此后四周诊断页是无样式
+的裸 DOM。现在样式由组件自带，`legacy/05-chat-landing.css` 只剩 markdown 表格的皮肤，
+且已换成语义 token。
+
+新增 `e2e/diagnostic-view.spec.mjs`（失败卡 → 内置题 → 作答 → 结果页）。
+`legacyChannel` 1120 → 1097、`literalFontSize` 444 → 436、`literalRadius` 248 → 244；
+遗留模板控件 135 → 129。
 
 ## 待决问题
 
