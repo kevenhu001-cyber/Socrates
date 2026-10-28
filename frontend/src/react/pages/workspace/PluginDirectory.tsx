@@ -1,6 +1,7 @@
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
-import { Button as UiButton } from '../../ui/Button';
+import { Button } from '../../ui/shadcn/button';
+import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { useMemo, useState } from 'react';
 import { getCurrentLang } from '../../legacy/gateway.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -58,9 +59,11 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
             <SearchIcon />
             <ShadcnInput type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
           </ShadcnLabel>
-          <UiButton
+          <Button
             type="button"
-            className="plugin-directory-add-btn"
+            variant="outline"
+            size="icon-lg"
+            className="plugin-directory-add-btn rounded-full"
             aria-label={getCurrentLang() === 'zh' ? '添加插件' : 'Add plugin'}
             onClick={() => {
               setScope('public');
@@ -69,7 +72,7 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
             }}
           >
             <PlusIcon />
-          </UiButton>
+          </Button>
         </div>
       </div>
 
@@ -79,14 +82,15 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
         onShowPersonal={() => setScope('personal')}
       />
 
-      <div className="plugin-directory-tabs" role="tablist" aria-label={i18n('plugins.allPlugins', 'All plugins')}>
-        <UiButton type="button" role="tab" aria-selected={scope === 'public'} className={scope === 'public' ? 'active' : ''} onClick={() => setScope('public')}>
+      <ToggleGroup className="plugin-directory-tabs w-full min-w-0" value={[scope]} aria-label={i18n('plugins.allPlugins', 'All plugins')}
+        onValueChange={(values) => { if (values[0] === 'public' || values[0] === 'personal') setScope(values[0]); }}>
+        <ToggleGroupItem type="button" value="public" className={scope === 'public' ? 'active' : ''}>
           {i18n('plugins.public', 'Public')}
-        </UiButton>
-        <UiButton type="button" role="tab" aria-selected={scope === 'personal'} className={scope === 'personal' ? 'active' : ''} onClick={() => setScope('personal')}>
+        </ToggleGroupItem>
+        <ToggleGroupItem type="button" value="personal" className={scope === 'personal' ? 'active' : ''}>
           {i18n('plugins.personal', 'Personal')}
-        </UiButton>
-      </div>
+        </ToggleGroupItem>
+      </ToggleGroup>
 
       <div className="plugin-directory-body">
         {visiblePlugins.length === 0 ? (

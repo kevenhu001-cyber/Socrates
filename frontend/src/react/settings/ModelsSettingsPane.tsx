@@ -1,4 +1,6 @@
 import { i18n } from '../legacy/gateway.ts';
+import { Switch } from '../ui/shadcn/switch';
+import { Field, FieldLabel } from '../ui/shadcn/field';
 import { useProviderListState } from './useProviderListState';
 import { useProviderConfigStore } from '../../config/providerConfig.store';
 import { toggleExternalApi } from './settings.service';
@@ -44,12 +46,10 @@ export function ModelsSettingsPane({
           <p>Choose whether Socrates may use your own API credentials.</p>
         </div>
         <div className="settings-card settings-card--toggle">
-          <div className="stg-toggle" id="stgToggle" onClick={toggleExternalApi}>
-            <span className="settings-label stg-toggle-label">{i18n('settings.useExternalApi', 'Use External API')}</span>
-            <div className={'stg-toggle-track' + (externalApiOn ? ' on' : '')} id={TRACK_ID}>
-              <div className="stg-toggle-knob" />
-            </div>
-          </div>
+          <Field orientation="horizontal">
+            <FieldLabel id="stgToggle" htmlFor={TRACK_ID} className="flex-1">{i18n('settings.useExternalApi', 'Use External API')}</FieldLabel>
+            <Switch id={TRACK_ID} aria-labelledby="stgToggle" checked={externalApiOn} onCheckedChange={toggleExternalApi} />
+          </Field>
         </div>
       </section>
       <ModelsProviderSection

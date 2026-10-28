@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { getApiFetch } from '../legacy/gateway.ts';
 import { clearAllMemories, getAllMemories, removeMemory, setMemory } from '../../storage/memoryStore.ts';
 import type { SettingsLabel, SettingsMemory } from './settings.types';
@@ -59,9 +59,9 @@ export function PersonalizationMemorySection({
           <p>{label('助手在对话中自动沉淀的关于你的背景与偏好。', 'Things the assistant has learned about you across conversations.')}</p>
         </div>
         {memories.length > 0 && (
-          <Button
+          <Button variant="destructive"
             type="button"
-            className="settings-btn-mini danger"
+            className="settings-btn-mini"
             onClick={() => {
               if (!window.confirm(label('确定要清空全部已保存的记忆吗？', 'Are you sure you want to clear all memories?'))) return;
               clearAllMemories();

@@ -1,4 +1,4 @@
-import { Button as UiButton } from '../ui/Button';
+import { Button as UiButton } from '../ui/shadcn/button';
 import type { ProfileDispatch } from './types';
 import { profileText } from './profileText';
 
@@ -21,11 +21,9 @@ function ProfileActionRow({
         <div className="profile-action-label">{title}</div>
         <div className="profile-action-desc">{description}</div>
       </div>
-      <UiButton
-        type="button"
-        className={`profile-btn${warning ? ' warning' : ''}`}
+      <UiButton type="button"
+        variant={warning ? 'destructive' : 'outline'}
         onClick={onAction}
-        style={{ width: 'auto', padding: '6px 14px', flexShrink: 0 }}
       >
         {actionLabel}
       </UiButton>

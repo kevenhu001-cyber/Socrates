@@ -272,8 +272,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 .msg-list>.msg.assistant:last-child .msg-toolbar{opacity:1}
 .msg.assistant[data-stream-settled] .msg-toolbar{opacity:1;transition:opacity var(--ui-duration-fast) var(--ui-ease-out)}
-.msg-toolbar-btn{position:relative;width:var(--ui-control-sm);min-height:var(--ui-control-sm);display:flex;align-items:center;justify-content:center;border-radius:var(--ui-radius-md);background:transparent;color:var(--muted-foreground);cursor:pointer;transition:background-color var(--ui-duration-hover) ease,color var(--ui-duration-hover) ease;border:0;padding:0}
-.msg-toolbar-btn:hover{background:var(--ui-bg-hover-ghost);color:var(--foreground)}
+/* The button box itself is the shadcn primitive's (src/react/message-list/
+ * ToolButton.tsx): 32px square, --ui-radius-md, ghost hover — all from
+ * --ui-* tokens. What stays here is the affordance layer: the ::after
+ * tooltip, the state skins, the light-theme tint and the glyph rung. */
 .msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(3px);background:var(--popover);color:var(--foreground);font-family:var(--font-sans);font-size:var(--ui-font-size-xxs);font-weight:var(--ui-font-weight-medium);letter-spacing:-0.01em;line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);border:1px solid var(--ui-border-subtle);box-shadow:var(--ui-shadow-menu);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--ui-duration-fast) ease,transform var(--ui-duration-fast) ease;z-index:var(--ui-z-menu)}
 .msg-toolbar-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0);transition:opacity var(--ui-duration-fast) ease 250ms,transform var(--ui-duration-fast) var(--ui-ease-spring-gentle) 250ms}
 .msg-toolbar-btn.active{color:var(--foreground);background:var(--accent)}
@@ -297,30 +299,6 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 @media (min-width: 769px) {
   #appShell #msgList .msg.user .msg-toolbar { margin: 4px -6px 0 0; }
-}
-@media (min-width: 769px) {
-  #appShell #msgList .msg-toolbar-btn {
-    display: inline-grid;
-    place-items: center;
-    width: var(--ui-control-sm);
-    height: var(--ui-control-sm);
-    min-width: var(--ui-control-sm);
-    min-height: var(--ui-control-sm);
-    padding: 0;
-    border: 0;
-    border-radius: var(--ui-radius-md);
-    background: transparent;
-    color: var(--muted-foreground);
-    cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
-  }
-}
-@media (min-width: 769px) {
-  #appShell #msgList .msg-toolbar-btn:hover,
-  #appShell #msgList .msg-toolbar-btn:focus-visible {
-    background: var(--ui-bg-hover-ghost);
-    color: var(--foreground);
-  }
 }
 @media (min-width: 769px) {
   #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; shape-rendering: geometricPrecision; }

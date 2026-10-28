@@ -1,8 +1,10 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
-import { Label as ShadcnLabel } from '../ui/shadcn/label';
-import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
-import { Button } from '../ui/Button';
-import { FieldGroup } from '../ui/shadcn/field';
+import { Checkbox } from '../ui/shadcn/checkbox';
+import { Button } from '../ui/shadcn/button';
+import { RadioGroupItem } from '../ui/shadcn/radio-group';
+import { Card, CardHeader, CardTitle, CardAction, CardContent, CardFooter } from '../ui/shadcn/card';
+import { TrashIcon } from 'lucide-react';
+import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { i18n } from '../legacy/gateway.ts';
 import { ProviderTextField } from './ProviderTextField';
 import type { ProviderListProps, SettingsProviderErrors, SettingsProviderSnapshot } from './types';
@@ -14,16 +16,13 @@ interface ProviderRowProps {
   onFieldChange: ProviderListProps['onFieldChange'];
   onKeyRef: ProviderListProps['onKeyRef'];
   onLabelRef: ProviderListProps['onLabelRef'];
-  onSetActive: ProviderListProps['onSetActive'];
   onRemove: ProviderListProps['onRemove'];
 }
 
-function ProviderActiveButton({ active, onClick }: { active: boolean; onClick: () => void }) {
+function ProviderActiveButton({ active, id }: { active: boolean; id: string }) {
   const label = active ? i18n('settings.activeModel', 'Active model') : i18n('settings.setActiveModel', 'Set as active');
   return (
-    <Button type="button" className="provider-active-btn" title={label} aria-label={label} aria-pressed={active} onClick={onClick}>
-      {active ? '●' : '○'}
-    </Button>
+    <RadioGroupItem className="provider-active-btn" value={id} title={label} aria-label={label} />
   );
 }
 
@@ -38,17 +37,20 @@ export function ProviderRow({
   onFieldChange,
   onKeyRef,
   onLabelRef,
-  onSetActive,
   onRemove,
 }: ProviderRowProps) {
   return (
-    <div className={`provider-row${provider.isActive ? ' active' : ''}`} data-id={provider.id}>
-      <ProviderActiveButton active={provider.isActive} onClick={() => onSetActive(provider.id)} />
+    <Card className={`provider-row${provider.isActive ? ' active' : ''}`} data-id={provider.id}>
+      <CardHeader>
+        <CardTitle>{provider.label || i18n('provider.label', 'Display name')}</CardTitle>
+        <CardAction><ProviderActiveButton active={provider.isActive} id={provider.id} /></CardAction>
+      </CardHeader>
+      <CardContent>
       <FieldGroup className="provider-fields">
         <ProviderTextField
           id={provider.id}
           field="label"
-          label={i18n('provider.placeholderLabel', 'Label')}
+          label={i18n('provider.label', 'Display name')}
           placeholder={i18n('provider.placeholderLabel', 'Label')}
           value={provider.label}
           error={errors.label}
@@ -58,7 +60,7 @@ export function ProviderRow({
         <ProviderTextField
           id={provider.id}
           field="url"
-          label={i18n('provider.placeholderUrl', 'Base URL')}
+          label={i18n('provider.url', 'Base URL')}
           placeholder={i18n('provider.placeholderUrl', 'Base URL')}
           value={provider.url}
           error={errors.url}
@@ -69,7 +71,7 @@ export function ProviderRow({
           <ProviderTextField
             id={provider.id}
             field="key"
-            label={i18n('provider.placeholderKey', 'API key')}
+            label={i18n('provider.key', 'API key')}
             placeholder={providerKeyPlaceholder(provider)}
             defaultValue=""
             error={errors.key}
@@ -82,24 +84,27 @@ export function ProviderRow({
         <ProviderTextField
           id={provider.id}
           field="model"
-          label={i18n('provider.placeholderModel', 'Model ID')}
+          label={i18n('provider.model', 'Model ID')}
           placeholder={i18n('provider.placeholderModel', 'Model ID')}
           value={provider.model}
           onChange={(value) => onFieldChange(provider.id, 'model', value)}
         />
-        <ShadcnLabel className="provider-multimodal" title={i18n('provider.multimodalHint', 'Multimodal (vision-capable)')}>
-          <ShadcnNativeControl
-            type="checkbox"
+        <Field orientation="horizontal" className="provider-multimodal" title={i18n('provider.multimodalHint', 'Multimodal (vision-capable)')}>
+          <Checkbox
+            id={`provider-${provider.id}-vision`}
             data-field="vision"
             checked={provider.vision}
-            onChange={(event) => onFieldChange(provider.id, 'vision', event.target.checked)}
+            onCheckedChange={(checked) => onFieldChange(provider.id, 'vision', checked)}
           />
-          <span>{i18n('provider.multimodal', 'Multimodal (vision-capable)')}</span>
-        </ShadcnLabel>
+          <FieldLabel htmlFor={`provider-${provider.id}-vision`}>{i18n('provider.multimodal', 'Multimodal (vision-capable)')}</FieldLabel>
+        </Field>
       </FieldGroup>
-      <Button type="button" className="provider-del" title={language === 'zh' ? '移除' : 'Remove'} aria-label={language === 'zh' ? '移除' : 'Remove'} onClick={() => onRemove(provider.id)}>
-        ×
+      </CardContent>
+      <CardFooter className="justify-end">
+      <Button variant="destructive" type="button" className="provider-del" title={language === 'zh' ? '移除' : 'Remove'} aria-label={language === 'zh' ? '移除' : 'Remove'} onClick={() => onRemove(provider.id)}>
+        <TrashIcon data-icon="inline-start" aria-hidden />{language === 'zh' ? '移除' : 'Remove'}
       </Button>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }

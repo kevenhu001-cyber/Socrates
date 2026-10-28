@@ -334,36 +334,31 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   border-radius: var(--ui-radius-dialog);
   box-shadow: var(--ui-shadow-modal);
 }
-.settings-close { border-radius: var(--ui-radius-control, 8px); }
 
 /* Settings layout lives with its chrome; visited categories retain their DOM. */
-.settings-modal.settings-modal--full { display:flex; flex-direction:column; width:min(94vw,900px); max-width:900px; height:min(88vh,720px); max-height:88vh; overflow:hidden; border:1px solid var(--border); background:var(--background); color:var(--foreground); font:var(--ui-text-ui)/var(--ui-text-ui-line) var(--font-sans); }
+.settings-modal.settings-modal--full { display:flex; flex-direction:column; width:min(94vw,900px); max-width:900px; height:min(88vh,720px); max-height:88vh; overflow:hidden; }
 .settings-modal--full .settings-header { display:flex; align-items:center; justify-content:space-between; flex:none; min-height:54px; padding:0 22px; border-bottom:1px solid var(--border); }
 .settings-modal--full .settings-title { font-weight:var(--ui-font-weight-semibold); font-size:var(--ui-font-size-md); }
 .settings-modal--full .settings-shell { display:grid; grid-template-columns:218px minmax(0,1fr); min-height:0; flex:1; }
 .settings-modal--full .settings-nav { display:flex; flex-direction:column; align-items:stretch; gap:var(--ui-space-xxs); padding:var(--ui-space-lg) var(--ui-space-md); border-right:1px solid var(--border); overflow:auto; background:var(--sidebar); }
-.settings-modal--full .settings-nav input { box-sizing:border-box; width:100%; height:var(--ui-control-desktop); margin-bottom:12px; padding:8px 10px; border:1px solid var(--border); border-radius:var(--ui-radius-control); color:var(--foreground); background:var(--ui-bg-composer); font:inherit; }
-.settings-modal--full .settings-nav button { min-height:var(--ui-control-desktop); padding:var(--ui-space-sm) var(--ui-space-md); border:0; border-radius:var(--ui-radius-control); text-align:left; color:var(--muted-foreground); background:transparent; font:inherit; cursor:pointer; }
-.settings-modal--full .settings-nav button:hover { background:var(--accent); color:var(--foreground); }
-.settings-modal--full .settings-nav button.active { background:var(--ui-bg-selected); color:var(--foreground); font-weight:var(--ui-font-weight-medium); }
 .settings-modal--full .settings-body { display:block; min-height:0; overflow:auto; padding:var(--ui-space-xl); }
 .settings-modal--full .settings-pane[hidden] { display:none; }
 .settings-preference-fields { gap: 18px; }
-.settings-control-field { display: contents; }
-.settings-choice [data-slot="native-select-wrapper"] { flex-shrink: 0; }
+.provider-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.provider-multimodal { grid-column: 1 / -1; }
+.settings-account-name { min-width: 0; }
 .settings-modal--full .settings-pane { display:flex; flex-direction:column; gap:18px; }
 .settings-modal--full .settings-pane > h2 { margin:0 0 10px; color:var(--foreground); font-size:var(--ui-font-size-xl); font-weight:var(--ui-font-weight-semibold); }
 .settings-modal--full .settings-pane > p { margin:0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-sm); }
 .settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:55px; border-bottom:1px solid var(--border); color:var(--foreground); font-size:var(--ui-font-size-sm); }
-.settings-modal--full .settings-choice select { min-width:130px; min-height:var(--ui-control-desktop); padding:var(--ui-space-xs) var(--ui-space-sm); border:1px solid var(--border); border-radius:var(--ui-radius-control); color:var(--foreground); background:var(--ui-bg-composer); font:inherit; }
 .settings-modal--full .settings-section { margin-top:20px; }
 .settings-modal--full .settings-save-error { margin:20px 0 0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-xxs); }
 @media(max-width:640px) {
+  .settings-modal--full .settings-search { display: none; }
+  .provider-fields { grid-template-columns: minmax(0, 1fr); }
   .settings-modal.settings-modal--full { width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
   .settings-modal--full .settings-shell { display:flex; flex-direction:column; }
   .settings-modal--full .settings-nav { flex:none; flex-direction:row; gap:4px; padding:10px; border-right:0; border-bottom:1px solid var(--border); overflow-x:auto; }
-  .settings-modal--full .settings-nav input { display:none; }
-  .settings-modal--full .settings-nav button { white-space:nowrap; }
   .settings-modal--full .settings-body { padding:20px 18px; }
 }
 
@@ -380,33 +375,6 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   background: var(--secondary);
   color: var(--foreground);
 }
-.profile-btn { border-radius: var(--ui-radius-control, 8px); }
-.profile-lang-toggle { border-radius: var(--ui-radius-control, 8px); }
-.stg-toggle-track { border-radius: var(--ui-radius-pill, 999px); }
-/* Switch skin. Legacy painted the knob with --text-000 and the "on" track
-   with --accent-000 — the same colour in both modes — so an enabled switch
-   was one solid pill with no visible knob, and the light "off" knob was a
-   near-black dot that read as "on". Off is a neutral control fill with a
-   white (light) / grey (dark) knob; on is the inverted primary with an
-   on-accent knob, so the knob always contrasts with its track. */
-.stg-toggle-track {
-  background: var(--secondary);
-  border-color: var(--border);
-  transition: background-color var(--ui-duration-fast, 140ms) var(--ui-ease-apple, ease),
-              border-color var(--ui-duration-fast, 140ms) var(--ui-ease-apple, ease);
-}
-.stg-toggle-track.on {
-  background: var(--primary);
-  border-color: var(--primary);
-}
-.stg-toggle-knob {
-  background: var(--muted-foreground);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
-  transition: transform var(--ui-duration-fast, 140ms) var(--ui-ease-spring-snappy, ease),
-              background-color var(--ui-duration-fast, 140ms) ease;
-}
-[data-mode="light"] .stg-toggle-knob { background: var(--background); }
-.stg-toggle-track.on .stg-toggle-knob { background: var(--primary-foreground); }
 
 /* ── Settings · Account pane ── */
 .settings-account-card {
@@ -431,18 +399,6 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   min-width: 0;
   flex: 1;
 }
-.settings-account-name {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  color: var(--foreground);
-  font: var(--ui-font-weight-semibold) 16px/1.3 var(--cg-font);
-  outline: none;
-  border-radius: var(--ui-radius-xs, 4px);
-  min-width: 0;
-}
-.settings-account-name:focus { box-shadow: var(--ui-focus-shadow); }
 .settings-account-email {
   color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xs);
@@ -463,30 +419,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 .settings-danger-zone .settings-section-head h3 { color: var(--destructive); }
 .settings-danger-text { color: var(--destructive); }
 
-/* ── Settings · Display pane — segmented controls reuse the popover skin ── */
-.settings-pane .display-prefs-segs {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--ui-bg-surface);
-  border-radius: var(--ui-radius-md, 8px);
-}
-.settings-pane .display-prefs-seg {
-  min-width: 44px;
-  min-height: 30px;
-  border: 0;
-  border-radius: var(--ui-radius-sm, 6px);
-  background: transparent;
-  color: var(--ui-text-tertiary);
-  font-size: 12.5px;
-  font-weight: var(--ui-font-weight-semibold);
-  cursor: pointer;
-}
-.settings-pane .display-prefs-seg.on,
-.settings-pane .display-prefs-seg[aria-pressed="true"] {
-  background: var(--ui-bg-segment-active);
-  color: var(--foreground);
-}
+/* ── Settings · Display pane — native color picker layout ── */
 .settings-bg-pickers {
   display: flex;
   align-items: center;
@@ -522,62 +455,11 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   gap: var(--ui-space-sm);
   margin-top: var(--ui-space-md);
 }
-.tone-preset-btn {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--ui-space-xs);
-  min-width: 0;
-  padding: var(--ui-space-md);
-  padding-right: var(--ui-space-xxl);
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control);
-  background: var(--secondary);
-  color: var(--foreground);
-  text-align: left;
-  font: inherit;
-  cursor: pointer;
-}
-.tone-preset-btn:hover { background: var(--accent); }
-.tone-preset-btn[aria-pressed="true"] {
-  border-color: var(--ui-border-strong);
-  background: var(--ui-bg-selected);
-}
-.tone-preset-btn[aria-pressed="true"]::after {
-  content: '✓';
-  position: absolute;
-  top: var(--ui-space-md);
-  right: var(--ui-space-md);
-  color: var(--foreground);
-  font-weight: var(--ui-font-weight-semibold);
-}
 .tone-preset-label { font-weight: var(--ui-font-weight-semibold); }
 .tone-preset-desc {
   color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line);
-}
-
-.settings-textarea {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: var(--ui-radius-lg);
-  border: 0.5px solid var(--ui-border-subtle);
-  background: var(--secondary);
-  font-size: calc(13.5px * var(--app-font-scale, 1));
-  color: var(--foreground);
-  font-family: inherit;
-  outline: none;
-  resize: vertical;
-  line-height: 1.5;
-  transition: border-color 0.12s;
-}
-.settings-textarea:focus {
-  border-color: var(--ui-border-strong);
-}
-.settings-textarea::placeholder {
-  color: var(--ui-text-placeholder);
 }
 .settings-memory-list {
   display: flex;
@@ -622,22 +504,6 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.settings-memory-del-btn {
-  background: transparent;
-  border: none;
-  color: var(--muted-foreground);
-  padding: 4px;
-  border-radius: var(--ui-radius-xs);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.12s, background 0.12s;
-}
-.settings-memory-del-btn:hover {
-  color: var(--destructive);
-  background: var(--ui-bg-chip);
 }
 .settings-memory-add-form {
   display: flex;

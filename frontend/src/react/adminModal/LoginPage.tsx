@@ -1,6 +1,6 @@
-import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
-import { Button as UiButton } from '../ui/Button';
+import { Button as UiButton } from '../ui/shadcn/button';
 import { useState, type FormEvent } from 'react';
 
 import { loginAdmin } from './adminApi';
@@ -29,22 +29,24 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
       <h2>Admin console</h2>
       <p className="admin-hint">Enter the operator password to manage the system model and embedding provider.</p>
       <form onSubmit={submit}>
-        <ShadcnLabel>
-          Admin password
-          <ShadcnInput
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="current-password"
-            autoFocus
-            required
-          />
-        </ShadcnLabel>
-        {error && <div className="admin-error" role="alert">{error}</div>}
-        <UiButton type="submit" className="admin-save" disabled={busy || !password}>
-          {busy ? 'Signing in…' : 'Sign in'}
-        </UiButton>
-      </form>
+          <FieldGroup>
+          <Field>
+              <FieldLabel htmlFor="admin-loginpage-1">Admin password</FieldLabel>
+              <ShadcnInput id="admin-loginpage-1"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
+              autoFocus
+              required
+            />
+            </Field>
+          {error && <div className="admin-error" role="alert">{error}</div>}
+          <UiButton variant="default" type="submit" className="admin-save" disabled={busy || !password}>
+            {busy ? 'Signing in…' : 'Sign in'}
+          </UiButton>
+          </FieldGroup>
+        </form>
     </div>
   );
 }

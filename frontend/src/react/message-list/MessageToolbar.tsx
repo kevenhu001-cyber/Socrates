@@ -8,7 +8,8 @@ import type { LegacyChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
 import { useMessageToolbarCallbacks } from './useMessageActions';
 import { i18n } from '../legacy/gateway';
-import { IconButton } from '../ui';
+import { Button } from '../ui/shadcn/button';
+import { TOOL_BUTTON, ToolButton } from './ToolButton';
 import { openWorkbench } from '../workbench/workbenchStore';
 
 const ShareIcon = getIconDescriptor('share').children;
@@ -39,33 +40,35 @@ interface MessageBranchSwitcherProps {
 function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageBranchSwitcherProps): React.ReactElement {
   return (
     <div className="msg-branch-switcher" role="group" aria-label={i18n('message.branch.navigation', 'Message versions')}>
-      <IconButton
-        variant="shared"
-        size="touch"
-        className="msg-toolbar-btn msg-branch-btn msg-branch-prev"
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className={`${TOOL_BUTTON} msg-branch-btn msg-branch-prev`}
         disabled={currentIndex <= 0}
         onClick={onPrev}
-        label={i18n('message.branch.prev', 'Previous version')}
+        aria-label={i18n('message.branch.prev', 'Previous version')}
         title={i18n('message.branch.prev', 'Previous version')}
-        icon={<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
+      >
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
           <polyline points="15 18 9 12 15 6" />
-        </svg>}
-      />
+        </svg>
+      </Button>
       <span className="msg-branch-counter" aria-live="polite">
         {currentIndex + 1} / {total}
       </span>
-      <IconButton
-        variant="shared"
-        size="touch"
-        className="msg-toolbar-btn msg-branch-btn msg-branch-next"
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className={`${TOOL_BUTTON} msg-branch-btn msg-branch-next`}
         disabled={currentIndex >= total - 1}
         onClick={onNext}
-        label={i18n('message.branch.next', 'Next version')}
+        aria-label={i18n('message.branch.next', 'Next version')}
         title={i18n('message.branch.next', 'Next version')}
-        icon={<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
+      >
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
           <polyline points="9 18 15 12 9 6" />
-        </svg>}
-      />
+        </svg>
+      </Button>
     </div>
   );
 }
@@ -108,43 +111,41 @@ function MessageToolbarActions({
 
   return (
     <>
-      <IconButton
-        variant="shared"
-        size="touch"
+      <ToolButton
         label={copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy')}
         onClick={onCopy}
-        className={`msg-toolbar-btn${copied ? ' active' : ''}${copied ? ' is-copied' : ''}`}
-        icon={copied ? toolbarIcon('check') : toolbarIcon('copy')}
-      />
+        className={`${copied ? 'active ' : ''}${copied ? 'is-copied' : ''}`}
+      >
+        {copied ? toolbarIcon('check') : toolbarIcon('copy')}
+      </ToolButton>
       {role === 'user' && (
         <>
-          <IconButton variant="shared" size="touch" className="msg-toolbar-btn"
-            label={i18n('message.edit', 'Edit message')} onClick={() => callbacks.onEdit?.()}
-            icon={toolbarIcon('edit')} />
-          <IconButton variant="shared" size="touch" className="msg-toolbar-btn"
-            label={i18n('message.delete', 'Delete message')} onClick={() => callbacks.onDelete?.()}
-            icon={toolbarIcon('trash')} />
+          <ToolButton label={i18n('message.edit', 'Edit message')} onClick={() => callbacks.onEdit?.()}>
+            {toolbarIcon('edit')}
+          </ToolButton>
+          <ToolButton label={i18n('message.delete', 'Delete message')} onClick={() => callbacks.onDelete?.()}>
+            {toolbarIcon('trash')}
+          </ToolButton>
         </>
       )}
       {role === 'assistant' && (
         <>
-          <IconButton variant="shared" size="touch" className="msg-toolbar-btn"
-            label={i18n('message.regenerate', 'Regenerate response')} onClick={() => callbacks.onRegenerate?.()}
-            icon={toolbarIcon('regenerate')} />
+          <ToolButton label={i18n('message.regenerate', 'Regenerate response')} onClick={() => callbacks.onRegenerate?.()}>
+            {toolbarIcon('regenerate')}
+          </ToolButton>
           <span className="msg-toolbar-feedback">
-            <IconButton
-              variant="shared"
-              size="touch"
-              className={`msg-toolbar-btn${liked ? ' active' : ''}`}
+            <ToolButton
               label={i18n('message.helpful', 'Helpful')}
               aria-pressed={liked}
               onClick={onThumbsUp}
               ref={likeButtonRef}
-              icon={toolbarIcon('thumbsUp')}
-            />
-            <IconButton variant="shared" size="touch" className="msg-toolbar-btn"
-              label={i18n('message.notHelpful', 'Not helpful')} onClick={() => callbacks.onThumbsDown?.()}
-              icon={toolbarIcon('thumbsDown')} />
+              className={liked ? 'active' : undefined}
+            >
+              {toolbarIcon('thumbsUp')}
+            </ToolButton>
+            <ToolButton label={i18n('message.notHelpful', 'Not helpful')} onClick={() => callbacks.onThumbsDown?.()}>
+              {toolbarIcon('thumbsDown')}
+            </ToolButton>
           </span>
           <MessageOverflow actions={[
             {

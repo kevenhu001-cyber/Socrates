@@ -245,6 +245,9 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     align-items: center;
     gap: 6px;
     box-sizing: border-box;
+    /* The primitive ships `shrink-0`; the label has to be able to give way
+       or a long model name pushes the control under the centered switch. */
+    flex-shrink: 1;
     max-width: 360px;
     height: var(--ui-control-desktop);
     margin: 0;

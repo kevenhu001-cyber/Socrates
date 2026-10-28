@@ -182,18 +182,8 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .admin-empty{font-size:13px;color:hsl(var(--text-400));margin:0;line-height:1.6}
 .admin-loading{padding:20px 18px;font-size:14px;color:hsl(var(--text-400))}
 .admin-gate-error,.admin-error{margin:14px 18px;padding:12px 14px;border-radius:8px;background:hsl(0 60% 30%/0.18);border:0.5px solid hsl(0 60% 40%/0.4);color:hsl(0 70% 78%);font-size:13px;line-height:1.5}
-.admin-section label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-300))}
-.admin-section input[type="text"],.admin-section input[type="url"],.admin-section input[type="password"],.admin-section input[type="number"]{padding:10px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:14px;font-family:inherit}
-.admin-section input:focus{outline:none;border-color:hsl(var(--accent-000))}
-.admin-checkbox{flex-direction:row!important;align-items:center;gap:8px!important}
 .admin-key-present{font-size:12px;color:hsl(var(--text-500));font-weight:var(--ui-font-weight-regular)}
 .admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
-.admin-save{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:var(--ui-font-weight-semibold);cursor:pointer;border:0;background:hsl(var(--accent-000));color:hsl(var(--always-white));transition:filter .15s}
-.admin-save:hover{filter:brightness(1.1)}
-.admin-save:disabled{opacity:0.5;cursor:not-allowed}
-.admin-remove{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:var(--ui-font-weight-medium);cursor:pointer;border:0.5px solid hsl(0 60% 30%/0.5);background:transparent;color:hsl(0 60% 70%);transition:background .15s}
-.admin-remove:hover{background:hsl(0 60% 30%/0.4)}
-.admin-remove:disabled{opacity:0.5;cursor:not-allowed}
 
 /* Admin console page (/admin) — a main-content page like the other
    workspace panels, styled with the same form controls as the modal
@@ -206,20 +196,11 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .admin-login{max-width:400px;margin:64px auto;padding:28px;display:flex;flex-direction:column;gap:14px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;box-shadow:var(--ui-shadow-dialog)}
 .admin-login h2{font-size:20px;font-weight:var(--ui-font-weight-bold);color:hsl(var(--text-100));margin:0;letter-spacing:-0.01em}
 .admin-login .admin-hint{margin-bottom:4px}
-.admin-login label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-300))}
-.admin-login input[type="password"]{padding:10px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:14px}
-.admin-login input:focus{outline:none;border-color:hsl(var(--accent-000))}
 .admin-login form{display:flex;flex-direction:column;gap:14px}
-.admin-login .admin-save{width:100%;padding:10px}
 @media (max-width:640px){.admin-panel{padding:20px 16px 40px}.admin-login{margin:32px auto;padding:22px}}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.settings-close{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));transition:color .06s,background .06s;cursor:pointer}
-.settings-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
 .settings-field{display:flex;flex-direction:column;gap:6px}
 .settings-label{font-size:calc(12px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
-.settings-input{width:100%;padding:10px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-family:var(--font-mono);outline:none;transition:border-color .12s}
-.settings-input:focus{border-color:hsl(var(--accent-000)/0.4)}
-.settings-input::placeholder{color:hsl(var(--text-500));font-family:var(--font-sans)}
 .settings-hint{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));line-height:1.4}
 
 
@@ -227,13 +208,6 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 
 
 .settings-actions{display:flex;gap:8px;justify-content:flex-end}
-/* Settings validation and state styles */
-.settings-input.input-error{border-color:hsl(0 60% 50%)!important;box-shadow:0 0 0 1px hsl(0 60% 50%/0.3)!important}
-/* An errored settings field pins its error ring with !important, so the
-   focus ring has to out-specify it. The red border still carries the error;
-   the ring carries the focus. */
-.settings-input.input-error:focus-visible{box-shadow:var(--ui-focus-shadow)!important}
-.settings-field-error{display:block;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(0 60% 55%);padding:2px 0 0 4px;line-height:1.3}
 /* Collapsed provider list — "Use External API" off state.
    The block used to switch to display:none, which gave the toggle no
    transition at all. It now collapses on grid-template-rows
@@ -245,11 +219,6 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .profile-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:360px;max-height:85vh;box-shadow:var(--ui-shadow-dialog);display:flex;flex-direction:column}
 .profile-header{display:flex;flex-direction:column;align-items:center;padding:28px 20px 20px;gap:12px;background:hsl(var(--bg-100))}
 .profile-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(24px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);background:hsl(var(--text-200));color:hsl(var(--bg-100));flex-shrink:0}
-
-/* Editable name input in the profile header. */
-.profile-name-input{font-size:calc(17px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100));text-align:center;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:inherit;padding:2px 4px;width:90%;max-width:280px;transition:border-color .15s}
-.profile-name-input:focus{border-bottom-color:hsl(var(--accent-000)/0.4)}
-.profile-name-input:hover{border-bottom-color:hsl(var(--border-300)/0.3)}
 .profile-email{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center}
 .profile-body{padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1}
 .profile-row{display:flex;align-items:center;justify-content:space-between;font-size:calc(13px * var(--app-font-scale, 1));padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
@@ -257,34 +226,15 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .profile-row-label{color:hsl(var(--text-500))}
 .profile-row-value{color:hsl(var(--text-100));font-weight:var(--ui-font-weight-medium)}
 .profile-actions{display:flex;flex-direction:column;gap:6px;padding:0 20px 20px}
-.profile-btn{width:100%;padding:10px;border-radius:10px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);text-align:center;cursor:pointer;transition:background-color .1s,color .1s}
-.profile-btn.signout{background:hsl(var(--bg-300));color:hsl(0 60% 55%)}
-.profile-btn.signout:hover{background:hsl(0 60% 15%)}
-.profile-btn.close-btn{background:hsl(var(--bg-200));color:hsl(var(--text-300))}
-.profile-btn.close-btn:hover{background:var(--ui-bg-hover);color:hsl(var(--text-100))}
-.profile-btn.danger{background:hsl(var(--bg-300));color:hsl(0 60% 55%)}
-.profile-btn.danger:hover{background:hsl(0 60% 15%)}
-.profile-btn.warning{background:hsl(var(--bg-200));color:hsl(39 70% 50%)}
-.profile-btn.warning:hover{background:hsl(39 30% 12%)}
 .profile-section{padding:12px 0;border-top:0.5px solid hsl(var(--border-300)/0.08)}
 .profile-section:first-child{border-top:none;padding-top:0}
 .profile-section-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em;padding:0 0 8px}
-.profile-toggle{appearance:none;display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .profile-toggle-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
 .profile-toggle-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:0 0 4px}
-.profile-lang-toggle{display:inline-flex;padding:2px;border-radius:8px;background:hsl(var(--bg-300));cursor:pointer;font-size:calc(12px * var(--app-font-scale, 1));transition:background-color .15s;gap:0;border:0.5px solid hsl(var(--border-300)/0.15)}
-.profile-lang-toggle:hover{background:hsl(var(--bg-200))}
-.profile-lang-option{appearance:none;padding:4px 12px;border-radius:6px;color:hsl(var(--text-400));transition:background-color .12s,color .12s,box-shadow .12s;font-weight:var(--ui-font-weight-medium);line-height:1.3;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:inherit}
-.profile-lang-option.active{color:hsl(var(--text-100));background:hsl(var(--bg-000));box-shadow:0 1px 3px hsl(var(--always-black)/0.15)}
 .profile-action-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:12px}
 .profile-action-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
 .profile-action-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));flex:1}
-.profile-status-badge{font-size:calc(10px * var(--app-font-scale, 1));padding:2px 8px;border-radius:10px;font-weight:var(--ui-font-weight-medium)}
-.profile-status-badge.yes{background:hsl(145 50% 90%);color:hsl(145 60% 28%);border:0.5px solid hsl(145 50% 65%/0.6)}
-.profile-status-badge.no{background:hsl(0 50% 92%);color:hsl(0 55% 35%);border:0.5px solid hsl(0 50% 70%/0.6)}
-[data-theme=socrates][data-mode=dark] .profile-status-badge.yes{background:hsl(145 30% 16%);color:hsl(145 50% 65%);border:0.5px solid hsl(145 40% 35%/0.6)}
-[data-theme=socrates][data-mode=dark] .profile-status-badge.no{background:hsl(0 30% 18%);color:hsl(0 55% 70%);border:0.5px solid hsl(0 40% 38%/0.6)}
-.profile-id-text{font-size:calc(11px * var(--app-font-scale, 1));font-family:var(--font-mono);color:hsl(var(--text-400));word-break:break-all}  
+.profile-id-text{font-size:calc(11px * var(--app-font-scale, 1));font-family:var(--font-mono);color:hsl(var(--text-400));word-break:break-all}
 /* The confirm scrim used to be a 65% literal — the darkest of every dialog.
    Converged on the shared token so all dialogs dim by the same amount. */
 .confirm-dialog{position:fixed;inset:0;background:var(--ui-backdrop);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .12s}
@@ -300,11 +250,6 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .confirm-btn.danger:hover{background:hsl(0 60% 20%)}
 .confirm-btn.cancel{background:hsl(var(--bg-300));color:hsl(var(--text-300))}
 .confirm-btn.cancel:hover{background:var(--ui-bg-hover);color:hsl(var(--text-200))}
-.stg-toggle{display:flex;align-items:center;gap:10px;cursor:pointer}
-.stg-toggle-track{width:36px;height:20px;border-radius:10px;background:hsl(var(--bg-300)/0.6);border:0.5px solid hsl(var(--border-300)/0.5);transition:background .15s,border-color .15s;position:relative}
-.stg-toggle-track.on{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
-.stg-toggle-knob{width:16px;height:16px;border-radius:50%;background:hsl(var(--text-000));position:absolute;top:2px;left:2px;transition:left .15s;box-shadow:0 1px 2px hsl(var(--always-black)/0.25)}
-.stg-toggle-track.on .stg-toggle-knob{left:18px}
 
 /* Usage modal — heatmap */
 .usage-overlay{position:fixed;inset:0;background:var(--ui-backdrop);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}

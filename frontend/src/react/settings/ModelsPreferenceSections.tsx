@@ -1,7 +1,7 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
-import { Label as ShadcnLabel } from '../ui/shadcn/label';
-import { NativeSelect as ShadcnNativeSelect } from '../ui/shadcn/native-select';
-import { Button } from '../ui/Button';
+import { PreferenceSelect } from './PreferenceSelect';
+import { Button } from '../ui/shadcn/button';
+import { Field, FieldLabel } from '../ui/shadcn/field';
 import { useState } from 'react';
 import { i18n } from '../legacy/gateway.ts';
 import { confirmClearSettings } from '../../ui/dangerConfirms.js';
@@ -56,20 +56,17 @@ export function ImageVoiceSettingsSection({
           <h3>{label('图片模型', 'Image model')}</h3>
           <p>{label('填写当前图片服务支持的模型 ID。', 'Enter the model ID supported by your image provider.')}</p>
         </div>
-        <div className="settings-field">
-          <ShadcnInput className="settings-input" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
-          <Button variant="outline" className="btn" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</Button>
-        </div>
+        <Field>
+          <FieldLabel htmlFor="settings-image-model">{label('模型 ID', 'Model ID')}</FieldLabel>
+          <ShadcnInput id="settings-image-model" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
+          <Button variant="outline" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</Button>
+        </Field>
       </section>
       <section className="settings-section">
         <div className="settings-section-head"><h3>{label('语音输入语言', 'Voice input language')}</h3></div>
-        <ShadcnLabel className="settings-choice">{label('识别语言', 'Recognition language')}
-          <ShadcnNativeSelect value={voiceLanguage} onChange={(event) => updateVoiceLanguage(event.target.value)}>
-            <option value="auto">{label('自动', 'Automatic')}</option>
-            <option value="zh-CN">中文</option>
-            <option value="en-US">English</option>
-          </ShadcnNativeSelect>
-        </ShadcnLabel>
+        <PreferenceSelect id="settings-voice-language" label={label('识别语言', 'Recognition language')} value={voiceLanguage}
+          options={[{ value: 'auto', label: label('自动', 'Automatic') }, { value: 'zh-CN', label: '中文' }, { value: 'en-US', label: 'English' }]}
+          onValueChange={updateVoiceLanguage} />
       </section>
     </>
   );
@@ -84,13 +81,13 @@ export function SettingsModelActions({
 }) {
   return (
     <div className="settings-actions">
-      <Button variant="outline" className="btn" id="clearSettingsBtn" onClick={confirmClearSettings}>
+      <Button variant="destructive" id="clearSettingsBtn" onClick={confirmClearSettings}>
         {i18n('settings.clearAll', 'Clear all')}
       </Button>
-      <Button variant="outline" className="btn" id="cancelSettingsBtn" onClick={closeSettings}>
+      <Button variant="outline" id="cancelSettingsBtn" onClick={closeSettings}>
         {i18n('common.cancel', 'Cancel')}
       </Button>
-      <Button variant="outline" className="btn" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
+      <Button id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
         {saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
       </Button>
     </div>

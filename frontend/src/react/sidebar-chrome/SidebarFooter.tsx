@@ -1,5 +1,5 @@
 import { Separator as ShadcnSeparator } from '../ui/Separator';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { useCallback, useState } from 'react';
 import { CircleUserRound, LifeBuoy, LogOut } from 'lucide-react';
@@ -25,7 +25,8 @@ export function SidebarFooter() {
   return <div className="sidebar-footer-account-wrap">
     <DeferredMenu open={open} onOpenChange={setOpen} above className="sidebar-account-menu"
       label={label('账户', 'Account')}
-      trigger={<Button type="button" className="sidebar-account-trigger"
+      trigger={<Button variant="ghost" type="button"
+        className="sidebar-account-trigger active:not-aria-[haspopup]:translate-y-0"
         title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}>{identity}</Button>}>
       {({ FoundationMenuItem }) => <>
       <FoundationMenuItem className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<Icon name="chevronRight" /></FoundationMenuItem>

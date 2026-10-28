@@ -33,6 +33,12 @@ export function sameRgb(left, right) {
   return a !== null && b !== null && a.every((channel, index) => channel === b[index]);
 }
 
+/* The shell's selected-state marker is the whole class token `active`. The
+   shadcn primitives also ship `active:` and `aria-[current=page]:` variants,
+   so a bare /active/ regex matches every migrated button — always match the
+   token. */
+export const ACTIVE_CLASS = /(?:^|\s)active(?:\s|$)/;
+
 export const REQUIRED_BINDINGS = [
   'setLang', 't', 'setRecentsSearch', 'setRecentsFilter', 'clearRecentsFilter',
   'openSettings', 'closeSettings', 'openUsageModal', 'closeUsageModal',

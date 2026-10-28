@@ -102,13 +102,11 @@
     min-height: var(--ui-hit-area);
   }
 
-  /* ── Message toolbar buttons — 32 visual + 40 hit area ── */
+  /* ── Message toolbar buttons — 32 visual + 40 hit area ──
+     The 32px box, radius and ghost hover come from the primitive's
+     --ui-* utilities (src/react/message-list/ToolButton.tsx); only the
+     invisible tap extension and the phone glyph rung live here. */
   #appShell .msg-toolbar { gap: 4px; height: 32px; }
-  #appShell .msg-toolbar-btn {
-    position: relative;
-    width: 32px;
-    height: 32px;
-  }
   #appShell .msg-toolbar-btn::before {
     content: "";
     position: absolute;
@@ -260,18 +258,10 @@
 }
 @media (max-width: 768px) {
 #appShell .msg-toolbar-btn {
-  min-width: 32px;
-  min-height: 32px;
   color: var(--ui-text-muted);
   transition: background-color var(--ui-duration-fast) ease,
               color var(--ui-duration-fast) ease,
               opacity var(--ui-duration-fast) ease;
-}
-}
-@media (max-width: 768px) {
-#appShell .msg-toolbar-btn:hover {
-  background: var(--ui-bg-hover-ghost);
-  color: var(--foreground);
 }
 }
 @media (max-width: 768px) {

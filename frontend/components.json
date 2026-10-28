@@ -14,7 +14,7 @@
   "aliases": {
     "components": "@/react",
     "ui": "@/react/ui/shadcn",
-    "utils": "@/lib/utils",
+    "utils": "cn",
     "lib": "@/lib",
     "hooks": "@/react/hooks"
   },

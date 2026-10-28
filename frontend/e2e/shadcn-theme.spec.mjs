@@ -27,9 +27,9 @@ for (const style of ['socrates', 'philosophy']) {
       const settings = page.locator('#settingsOverlay');
       await expect(settings).toBeVisible();
       const appearance = settings.locator('#settings-appearance');
-      await expect(appearance).toHaveAttribute('data-slot', 'native-select');
-      await expect(settings.locator('.settings-nav input')).toHaveAttribute('data-slot', 'input');
-      await expect(settings.locator('#settingsCloseBtn')).toHaveAttribute('data-slot', 'button');
+      await expect(appearance).toHaveAttribute('data-slot', 'select-trigger');
+      await expect(settings.locator('.settings-nav input')).toHaveAttribute('data-slot', 'input-group-control');
+      await expect(settings.locator('#settingsCloseBtn')).toHaveAttribute('data-slot', 'dialog-close');
       const aliases = await page.evaluate(() => {
         const css = getComputedStyle(document.documentElement);
         return [['--background', '--ui-bg-page'], ['--foreground', '--ui-text-primary'],
@@ -46,6 +46,9 @@ for (const style of ['socrates', 'philosophy']) {
       // A global unlayered padding reset used to silently beat utilities.
       expect(await settings.locator('[data-slot="card-header"]').evaluate((node) => parseFloat(getComputedStyle(node).paddingLeft))).toBeGreaterThan(0);
       const tones = settings.locator('#tonePresetOptions');
+      await expect(tones.getByRole('button').first()).toHaveCSS('border-width', '1px');
+      await expect(tones.getByRole('button', { pressed: true })).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await expect(settings.locator('.settings-nav [aria-current="page"]')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
       expect((await tones.boundingBox()).width).toBeGreaterThan((await settings.locator('.settings-pane:visible').boundingBox()).width * 0.9);
       const instructions = settings.locator('#settings-custom-instructions');
       await instructions.fill('A shared theme must preserve editable form state.');

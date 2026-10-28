@@ -1,5 +1,5 @@
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
-import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
+import { Checkbox } from '../../ui/shadcn/checkbox';
 import { Button as UiButton } from '../../ui/Button';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { LibraryDisplayItem } from './library.types';
@@ -19,13 +19,13 @@ export function LibrarySelectionBar({ items, chip, selection, dispatch }: Librar
   return (
     <div className="library-selection-bar visible">
       <ShadcnLabel className="library-select-all">
-        <ShadcnNativeControl
-          type="checkbox"
+        <Checkbox
           className="library-checkbox"
           checked={allSelected}
-          onChange={(event) => {
-            if (chip === 'images') items.forEach((item) => dispatch.toggleSelect(item.id, event.target.checked));
-            else dispatch.toggleSelectAll(event.target.checked);
+          indeterminate={selectedCount > 0 && !allSelected}
+          onCheckedChange={(checked) => {
+            if (chip === 'images') items.forEach((item) => dispatch.toggleSelect(item.id, checked));
+            else dispatch.toggleSelectAll(checked);
           }}
           aria-label={i18n('library.selectAll', 'Select all')}
         />

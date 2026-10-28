@@ -39,12 +39,14 @@ for (const theme of ['light', 'dark']) {
       const settings = page.locator('#settingsOverlay');
       await expect(settings).toBeVisible();
       await expect(settings.locator('.settings-nav button').first()).toHaveCSS('font-size', '14px');
-      await expect(settings.locator('.settings-choice select').first()).toHaveCSS('font-size', '14px');
+      await expect(settings.locator('#settings-appearance')).toHaveCSS('font-size', '14px');
       expect(await settings.evaluate((node) => Number(getComputedStyle(node).zIndex))).toBeGreaterThan(200);
-      const appearance = settings.locator('.settings-choice select').first();
-      await appearance.selectOption(theme === 'light' ? 'dark' : 'light');
+      const appearance = settings.locator('#settings-appearance');
+      await appearance.click();
+      await page.getByRole('option', { name: theme === 'light' ? '深色' : '浅色', exact: true }).click();
       await expect(page.locator('html')).toHaveAttribute('data-mode', theme === 'light' ? 'dark' : 'light');
-      await appearance.selectOption(theme);
+      await appearance.click();
+      await page.getByRole('option', { name: theme === 'light' ? '浅色' : '深色', exact: true }).click();
       await expect(page.locator('html')).toHaveAttribute('data-mode', theme);
       await page.screenshot({ path: `test-results/global-settings-${encodeURIComponent(theme)}-${encodeURIComponent(width)}.png` });
       await page.keyboard.press('Escape');

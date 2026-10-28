@@ -1,4 +1,4 @@
-import { Button as UiButton } from '../../ui/Button';
+import { Button } from '../../ui/shadcn/button';
 import { i18n, MoreIcon, PlusIcon } from './workspaceUi';
 import { ConnectorMark } from './ConnectorMark';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -16,19 +16,19 @@ function PluginConnectionAction({ plugin, configured, dispatch }: Omit<PluginDir
   if (status === 'connected') {
     const label = i18n('plugins.manage', 'Manage');
     return (
-      <UiButton type="button" className="plugin-directory-icon-action" aria-label={label + ' ' + plugin.name} title={label} onClick={() => dispatch.openPluginForm(plugin.id)}>
+      <Button type="button" variant="outline" size="default" className="plugin-directory-icon-action rounded-full" aria-label={label + ' ' + plugin.name} title={label} onClick={() => dispatch.openPluginForm(plugin.id)}>
         <MoreIcon />
         <span className="plugin-directory-action-label">{label}</span>
-      </UiButton>
+      </Button>
     );
   }
   if (status === 'initiated') {
     const label = i18n('plugins.refreshStatus', 'Refresh status');
     return (
-      <UiButton type="button" className="plugin-directory-icon-action" aria-label={label + ' ' + plugin.name} title={label} onClick={() => dispatch.refreshPlugin(plugin.id)}>
+      <Button type="button" variant="outline" size="default" className="plugin-directory-icon-action rounded-full" aria-label={label + ' ' + plugin.name} title={label} onClick={() => dispatch.refreshPlugin(plugin.id)}>
         <PlusIcon />
         <span className="plugin-directory-action-label">{label}</span>
-      </UiButton>
+      </Button>
     );
   }
 
@@ -42,10 +42,10 @@ function PluginConnectionAction({ plugin, configured, dispatch }: Omit<PluginDir
     ? () => dispatch.openPluginForm(plugin.id)
     : () => dispatch.connectPlugin(plugin.id);
   return (
-    <UiButton type="button" className="plugin-directory-icon-action" disabled={!connectable} aria-label={label + ' ' + plugin.name} title={label} onClick={onClick}>
+    <Button type="button" variant="outline" size="default" className="plugin-directory-icon-action rounded-full" disabled={!connectable} aria-label={label + ' ' + plugin.name} title={label} onClick={onClick}>
       <PlusIcon />
       <span className="plugin-directory-action-label">{connectable ? i18n('plugins.connect', 'Connect') : i18n('plugins.unavailable', 'Unavailable')}</span>
-    </UiButton>
+    </Button>
   );
 }
 

@@ -1,4 +1,4 @@
-import { Button as UiButton } from '../../ui/Button';
+import { Button } from '../../ui/shadcn/button';
 import { i18n } from './workspaceUi';
 import type { WorkspacePluginBasic } from './pluginDetail.types';
 
@@ -30,10 +30,10 @@ export function PluginDetailHeader({
   return (
     <>
       <div className="plugin-detail-nav">
-        <UiButton type="button" className="plugin-detail-back-btn" onClick={onBack} aria-label={i18n('plugins.detail.back', 'Back to plugins')}>
+        <Button type="button" variant="ghost" size="sm" className="plugin-detail-back-btn -ml-2 text-sm text-muted-foreground" onClick={onBack} aria-label={i18n('plugins.detail.back', 'Back to plugins')}>
           <BackIcon />
           <span>{i18n('plugins.detail.backLabel', 'Plugins')}</span>
-        </UiButton>
+        </Button>
       </div>
 
       <div className="plugin-detail-hero">
@@ -56,13 +56,13 @@ export function PluginDetailHeader({
       <div className="plugin-detail-cta-bar">
         {isConnected ? (
           <div className="plugin-detail-cta-group">
-            <UiButton type="button" className="plugin-detail-btn-primary" onClick={onUseInChat}>{i18n('plugins.detail.useInChat', 'Use in chat')}</UiButton>
-            <UiButton type="button" className="plugin-detail-btn-secondary" onClick={onManage}>{i18n('plugins.detail.manage', 'Manage')}</UiButton>
+            <Button type="button" variant="default" size="lg" className="plugin-detail-btn-primary min-w-0 flex-1 rounded-full" onClick={onUseInChat}>{i18n('plugins.detail.useInChat', 'Use in chat')}</Button>
+            <Button type="button" variant="outline" size="lg" className="plugin-detail-btn-secondary shrink-0 rounded-full" onClick={onManage}>{i18n('plugins.detail.manage', 'Manage')}</Button>
           </div>
         ) : (
-          <UiButton type="button" className="plugin-detail-btn-primary" disabled={!connectable} onClick={onConnect}>
+          <Button type="button" variant="default" size="lg" className="plugin-detail-btn-primary w-full rounded-full" disabled={!connectable} onClick={onConnect}>
             {connectable ? i18n('plugins.detail.connect', 'Install & connect') : i18n('plugins.detail.unavailable', 'Unavailable')}
-          </UiButton>
+          </Button>
         )}
       </div>
     </>

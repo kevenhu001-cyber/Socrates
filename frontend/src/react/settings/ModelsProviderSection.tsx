@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { i18n } from '../legacy/gateway.ts';
 import { ProviderList } from './ProviderList';
 import { useProviderListState } from './useProviderListState';
@@ -27,7 +27,7 @@ export function ModelsProviderSection({
       <div className="settings-field">
         <div className="settings-label-row">
           <span className="settings-label">{i18n('settings.models', 'Models')}</span>
-          <Button className="settings-btn-mini" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
+          <Button variant="default" className="settings-btn-mini" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
             {i18n('settings.addProvider', '+ Add')}
           </Button>
         </div>

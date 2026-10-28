@@ -45,7 +45,7 @@ test('tone choices have separate readable labels and expose the selected state',
   const friendly = overlay.locator('.tone-preset-btn[data-tone="friendly"]');
   await friendly.click();
   await expect(friendly).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(() => friendly.evaluate((element) => getComputedStyle(element, '::after').content)).toContain('✓');
+  await expect(friendly.locator('[data-icon=inline-end]')).toBeVisible();
   await expect(overlay.locator('.tone-preset-btn[aria-pressed="true"]')).toHaveCount(1);
 
   await page.setViewportSize({ width: 390, height: 768 });
@@ -136,19 +136,19 @@ test('settings keeps the focus where the user moved it and hands it back to the 
   await expect(trigger).toBeFocused();
 });
 
-test('settings toggle flips the track class and persists', async ({ page }) => {
+test('settings switch toggles by its label and persists', async ({ page }) => {
   const overlay = await openModelsPane(page);
-  const track = overlay.locator('#stgToggleTrack');
+  const track = overlay.getByRole('switch', { name: 'Use External API' });
 
-  const initialOn = await track.evaluate((el) => el.classList.contains('on'));
-  const expectedClass = initialOn ? /^stg-toggle-track$/ : /^stg-toggle-track on$/;
+  const initialOn = await track.getAttribute('aria-checked') === 'true';
+  const expectedState = initialOn ? 'false' : 'true';
   await overlay.locator('#stgToggle').click();
-  await expect(track).toHaveClass(expectedClass);
+  await expect(track).toHaveAttribute('aria-checked', expectedState);
 
   // Persisted value survives a reopen.
   await overlay.locator('#settingsCloseBtn').click();
   await page.evaluate(() => window.openSettings());
-  await expect(track).toHaveClass(expectedClass);
+  await expect(track).toHaveAttribute('aria-checked', expectedState);
 });
 
 test('React-owned provider rows stay synchronized with provider configuration', async ({ page }) => {
@@ -235,22 +235,22 @@ test('provider validation errors render from React-owned state', async ({ page }
   await expect(row).toBeVisible();
   await row.locator('input[data-field="url"]').fill('ftp://example.test');
   await overlay.locator('#saveSettingsBtn').click();
-  await expect(row.locator('.settings-field-error')).toContainText('URL must start with http:// or https://');
+  await expect(row.locator('[data-slot="field-error"]')).toContainText('URL must start with http:// or https://');
 });
 
 test('provider activation failure restores the previous active selection', async ({ page }) => {
   const overlay = await openModelsPane(page);
   const first = overlay.locator('#providerList .provider-row[data-id="provider-one"]');
   const second = overlay.locator('#providerList .provider-row[data-id="provider-two"]');
-  await expect(first.locator('.provider-active-btn')).toHaveAttribute('aria-pressed', 'true');
+  await expect(first.locator('.provider-active-btn')).toHaveAttribute('aria-checked', 'true');
   await page.route(/\/api\/(v2\/)?api-key\/provider-two(?:\?|$)/, async (route) => {
     await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'activation unavailable' }) });
   });
 
   await second.locator('.provider-active-btn').click();
 
-  await expect(first.locator('.provider-active-btn')).toHaveAttribute('aria-pressed', 'true');
-  await expect(second.locator('.provider-active-btn')).toHaveAttribute('aria-pressed', 'false');
+  await expect(first.locator('.provider-active-btn')).toHaveAttribute('aria-checked', 'true');
+  await expect(second.locator('.provider-active-btn')).toHaveAttribute('aria-checked', 'false');
   await expect(page.locator('.msg-toast').filter({ hasText: 'Failed to activate provider' })).toBeVisible();
 });
 

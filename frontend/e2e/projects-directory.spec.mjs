@@ -1,7 +1,7 @@
 // e2e/projects-directory.spec.mjs — Projects workspace page geometry.
 //
 // Contract: the directory header stays a compact single-line title plus a
-// one-line description, the filter tab rail and its buttons keep reference
+// one-line description, the filter toggle rail and its items keep reference
 // proportions, and the search field/action stay inside the header row. The
 // page must keep working in both the populated and empty states.
 
@@ -52,7 +52,7 @@ test('projects directory header, tabs, and search keep compact geometry', async 
       descWraps: desc && descStyle ? desc.scrollWidth > desc.clientWidth + 1 : null,
       search: box('.workspace-search-field'),
       tabs: box('.projects-filter-tabs'),
-      tabButton: box('.projects-filter-tabs [role="tab"]'),
+      tabButton: box('.projects-filter-tabs [data-slot="toggle-group-item"]'),
     };
   });
 
@@ -67,6 +67,17 @@ test('projects directory header, tabs, and search keep compact geometry', async 
   /* Tab rail and pills. */
   expect(geometry.tabs?.height ?? 0).toBeLessThanOrEqual(48);
   expect(geometry.tabButton?.height ?? 0).toBeLessThanOrEqual(36);
+
+  const allProjects = page.getByRole('button', { name: 'All', exact: true });
+  const ownedProjects = page.getByRole('button', { name: 'Created by you', exact: true });
+  await expect(allProjects).toHaveAttribute('aria-pressed', 'true');
+  await allProjects.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(ownedProjects).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(ownedProjects).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.project-row')).toHaveCount(PROJECTS.projects.length);
+  await page.screenshot({ path: 'test-results/shadcn-project-filter-desktop.png', fullPage: true });
 });
 
 test('projects directory empty state keeps the same compact chrome', async ({ page }) => {

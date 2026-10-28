@@ -59,34 +59,10 @@
     gap: 1px;
     padding: 2px 8px 8px;
   }
-  #appShell #sidebarNav .sidebar-nav-btn {
-    /* The chatgpt.com baseline (docs/ref/chatgpt-parity.md): a 20px glyph,
-       a 16px label, a 6px gap and 6/10 padding on a 10px row radius. The
-       spacing scale has no 6px or 10px step, so both are literal here and
-       in parity/sidebar.css — the two files must not drift apart. */
-    gap: 6px;
-    padding-inline: 10px;
-    /* Geist row radius: the baseline's 10px, the token that was written for
-       chatgpt.com's row shape. */
-    border-radius: var(--ui-radius-row);
-    /* The reference sets its destination labels in the primary ink: the
-       rail is a list of places to go, and the rail's own surface already
-       separates it from the page. */
-    color: var(--foreground);
-    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
-  }
-  #appShell #sidebarNav .sidebar-nav-btn:hover,
-  #appShell #sidebarNav .sidebar-nav-btn:focus-visible {
-    background: var(--accent);
-    color: var(--foreground);
-  }
-  #appShell #sidebarNav .sidebar-nav-btn.active,
-  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"] {
-    background: var(--accent);
-    color: var(--foreground);
-    font-weight: var(--ui-font-weight-medium);
-  }
+  /* The desktop row look moved into react/sidebar/SidebarNavButton.tsx: the
+     control ladder, the 10px --ui-radius-row and the ghost hover now live as
+     --ui-* utilities on the shadcn button (ADR 0024). The collapsed rail and
+     the phone drawer keep their structural rules below. */
   /* Grouping comes from breathing room, not another line in the rail. */
   #appShell #sidebar .sidebar-nav-sep {
     height: 0;

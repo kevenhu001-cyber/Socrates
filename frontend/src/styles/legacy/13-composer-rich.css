@@ -171,16 +171,9 @@
 
 /* Sidebar nav block — sits between header and search row */
 .sidebar-nav{flex-shrink:0}
-.sidebar-nav-btn{background:transparent;border:none;color:hsl(var(--text-200));cursor:pointer;font-family:var(--font-sans)}
-.sidebar-nav-btn:hover:not([disabled]){background:hsl(var(--bg-200));color:hsl(var(--text-100))}
-.sidebar-nav-btn svg{width:16px;height:16px;flex-shrink:0;color:hsl(var(--text-400));transition:color .15s var(--ease-out)}
-.sidebar-nav-btn:hover:not([disabled]) svg{color:hsl(var(--text-200))}
-.sidebar-nav-btn[disabled]{opacity:.4;cursor:not-allowed}
-/* PR-A — active highlight on the currently-focused sidebar nav button.
-   Subtle accent tint, same shape as the hover, with fixed geometry so the
-   active state stays aligned with the paint-only press feedback. */
-.sidebar-nav-btn.active{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.sidebar-nav-btn.active svg{color:hsl(var(--text-100))}
+/* The row itself is a shadcn button owned by react/sidebar/SidebarNavButton.tsx
+   (ADR 0024). The legacy paint, glyph size and active tint were retired with
+   the parity/polish owner blocks they were already losing to. */
 /* PR-A — "is-soon" used by the Scheduled button in PR-A. Faded but
    still clickable (so the click handler can fire a toast). Lighter
    than the [disabled] treatment (which is reserved for true disables). */
@@ -231,7 +224,6 @@
 .sr-only-old{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .sr-only-opacity{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .sidebar-header-actions{display:flex;align-items:center;gap:2px}
-.stg-toggle-label{margin-bottom:0}
 
 
 

@@ -220,32 +220,30 @@ if (typeof document !== "undefined") {
 
   /* P_mode-segment-top — the header pill is a tablist, so it gets the two
      behaviours a tablist owes its users: click, and arrow-key traversal.
-     Handled by delegation on the group so the markup can re-render its
-     buttons without re-binding. */
-  var topSwitch = document.getElementById("topModeSwitch");
-  if (topSwitch) {
-    topSwitch.addEventListener("click", function (e) {
-      var option = e.target.closest(".top-mode-switch-option");
-      if (!option) return;
-      selectTopMode(option.getAttribute("data-mode"));
-    });
-    topSwitch.addEventListener("keydown", function (e) {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      e.preventDefault();
-      var options = Array.prototype.slice.call(topSwitch.querySelectorAll(".top-mode-switch-option"));
-      var focusedOption = e.target.closest && e.target.closest(".top-mode-switch-option");
-      var index = options.findIndex(function (node) {
-        return focusedOption ? node === focusedOption : node.getAttribute("data-mode") === _currentMode();
-      });
-      if (index < 0) return;
-      /* Wrap around: a two-position control has nowhere to go, so reversing
-         direction keeps both arrows meaningful instead of dead-ending. */
-      var next = (index + (e.key === "ArrowRight" ? 1 : options.length - 1)) % options.length;
-      var target = options[next];
-      if (target.focus) target.focus();
-      selectTopMode(target.getAttribute("data-mode"));
-    });
-  }
+     Delegated from the document, not the group: the pill is React-owned
+     (src/react/topbar/TopBar.tsx), so it does not exist yet when this module
+     evaluates and its buttons re-render without re-binding. */
+  document.addEventListener("click", function (e) {
+    var option = e.target && e.target.closest && e.target.closest("#topModeSwitch .top-mode-switch-option");
+    if (!option) return;
+    selectTopMode(option.getAttribute("data-mode"));
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    var focusedOption = e.target && e.target.closest && e.target.closest("#topModeSwitch .top-mode-switch-option");
+    if (!focusedOption) return;
+    e.preventDefault();
+    var group = focusedOption.closest("#topModeSwitch");
+    var options = group ? Array.prototype.slice.call(group.querySelectorAll(".top-mode-switch-option")) : [];
+    var index = options.indexOf(focusedOption);
+    if (index < 0) return;
+    /* Wrap around: a two-position control has nowhere to go, so reversing
+       direction keeps both arrows meaningful instead of dead-ending. */
+    var next = (index + (e.key === "ArrowRight" ? 1 : options.length - 1)) % options.length;
+    var target = options[next];
+    if (target.focus) target.focus();
+    selectTopMode(target.getAttribute("data-mode"));
+  });
 
   window.addEventListener("DOMContentLoaded", function () {
     try { syncMobileModeSwitch(); } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:250'); }

@@ -436,8 +436,6 @@ body.admin-active #topicDisclaimer{display:none!important}
 /* P1.2 — global search modal. Mac-style centered overlay with
    a single input + scrollable results column. */
 .profile-instructions-label{font-size:12px;color:hsl(var(--text-300));font-weight:var(--ui-font-weight-medium);letter-spacing:0.01em}
-.profile-instructions-area{width:100%;min-height:64px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.2);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;color:hsl(var(--text-100));line-height:1.5;resize:vertical;font-family:var(--font-sans)}
-.profile-instructions-area:focus{outline:none;border-color:hsl(var(--accent-000)/0.5);box-shadow:var(--ui-focus-shadow)}
 .profile-instructions-foot{margin-top:4px;display:flex;justify-content:flex-end}
 .profile-instructions-state{font-size:11px;color:hsl(var(--text-500));font-style:italic}
 .profile-instructions-state.saved{color:hsl(var(--accent-000))}
@@ -446,8 +444,6 @@ body.admin-active #topicDisclaimer{display:none!important}
 /* P1.3 — Custom Instructions textareas inside the profile modal */
 .profile-instructions{margin-top:14px;display:flex;flex-direction:column;gap:6px}
 .profile-instructions-label{font-size:12px;color:hsl(var(--text-300));font-weight:var(--ui-font-weight-medium);letter-spacing:0.01em}
-.profile-instructions-area{width:100%;min-height:64px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.2);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;color:hsl(var(--text-100));line-height:1.5;resize:vertical;font-family:var(--font-sans)}
-.profile-instructions-area:focus{outline:none;border-color:hsl(var(--accent-000)/0.5);box-shadow:var(--ui-focus-shadow)}
 .profile-instructions-foot{margin-top:4px;display:flex;justify-content:flex-end}
 .profile-instructions-state{font-size:11px;color:hsl(var(--text-500));font-style:italic}
 .profile-instructions-state.saved{color:hsl(var(--accent-000))}

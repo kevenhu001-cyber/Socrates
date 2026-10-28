@@ -104,6 +104,26 @@ test('directory headings and actions align without occupying the phone app bar',
   await expect(page.locator('#settingsOverlay')).toBeVisible();
 });
 
+test('library filters and view mode use shadcn stateful controls', async ({ page }) => {
+  const filterButton = page.locator('.library-tool-btn');
+  await expect(filterButton).toHaveAttribute('aria-pressed', 'false');
+  await filterButton.click();
+  const options = page.locator('.library-filter-menu [role="menuitemradio"]');
+  await expect(options).toHaveCount(7);
+  await options.nth(1).click();
+  await expect(page.locator('.library-row')).toHaveCount(1);
+  await expect(filterButton).toHaveAttribute('aria-pressed', 'true');
+
+  const viewOptions = page.locator('.library-view-switcher [data-slot="toggle-group-item"]');
+  const gridView = viewOptions.nth(0);
+  const listView = viewOptions.nth(1);
+  await expect(listView).toHaveAttribute('aria-pressed', 'true');
+  await gridView.click();
+  await expect(gridView).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.library-list')).toHaveClass(/view-grid/);
+  await page.screenshot({ path: 'test-results/shadcn-library-controls-desktop.png', fullPage: true });
+});
+
 test('selection checkbox only appears on hover, selection or focus', async ({ page }) => {
   const csv = row(page, 'country_risk_data.csv');
   const label = csv.locator('.library-checkbox-label');
@@ -154,6 +174,20 @@ test('thumbnail box renders a file-type glyph', async ({ page }) => {
   expect(pdf).toEqual({ rect: 0, circle: 0, path: 3 });
   const docx = await shapes('lab_report.docx');
   expect(docx).toEqual({ rect: 0, circle: 0, path: 3 });
+});
+
+test('partial selection exposes a mixed Checkbox and keyboard select-all is reversible', async ({ page }) => {
+  await row(page, 'country_risk_data.csv').getByRole('checkbox').check();
+  const all = page.locator('.library-select-all').getByRole('checkbox');
+  await expect(all).toHaveAttribute('aria-checked', 'mixed');
+  await all.focus();
+  await page.keyboard.press('Space');
+  await expect(all).toBeChecked();
+  await expect(page.locator('.library-selection-bar')).toContainText('4 selected');
+  await expect(page.locator('.library-row').getByRole('checkbox', { checked: true })).toHaveCount(4);
+  await page.keyboard.press('Space');
+  await expect(page.locator('.library-selection-bar')).toBeHidden();
+  await expect(page.locator('.library-row').getByRole('checkbox', { checked: true })).toHaveCount(0);
 });
 
 test('phone library filters actual images and selects only visible rows', async ({ page }) => {

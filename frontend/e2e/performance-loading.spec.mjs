@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { resolve } from 'node:path';
-import { gotoAndSettle, login } from './_lib.mjs';
+import { ACTIVE_CLASS, gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
@@ -104,7 +104,14 @@ test('production entry keeps the static closure gzip transfer under budget', () 
   };
   expect(metrics).toEqual(report.metrics);
   expect(metrics.htmlGzipBytes).toBeLessThan(19_000);
-  expect(metrics.staticJsGzipBytes).toBeLessThan(360_000);
+  /* 365 KB: the shell replacement (ADR 0024, P1/P2) moved the sidebar and
+     header chrome onto the local shadcn primitives, which puts the primitive
+     tree into the entry chunk by design — the plan forbids raw controls in
+     `src/react/**` while `#sidebarNav` and `#sideBarHeader` must stay
+     statically mounted. Measured 361,688 B after both phases; the cap keeps
+     the old 360 KB budget plus a 5 KB allowance so the next regression is
+     still caught. The total-closure cap below is unchanged. */
+  expect(metrics.staticJsGzipBytes).toBeLessThan(365_000);
   expect(metrics.linkedCssGzipBytes).toBeLessThan(210_000);
   expect(Object.values(metrics).reduce((sum, bytes) => sum + bytes, 0)).toBeLessThan(588_000);
 
@@ -204,7 +211,7 @@ test('late workspace imports cannot reveal an inactive page', async ({ page }) =
     release();
     await expect(page.locator('.projects-directory')).toBeVisible();
     await expect(page.locator('#libraryPanel')).toBeHidden();
-    await expect(page.locator('#navProjects')).toHaveClass(/active/);
+    await expect(page.locator('#navProjects')).toHaveClass(ACTIVE_CLASS);
     await expect(page).toHaveURL(/\/projects$/);
   } finally {
     release();
@@ -232,7 +239,7 @@ test('late creation imports cannot replace a newer navigation destination', asyn
     release();
     await expect(page.locator('.library-directory')).toBeVisible();
     await expect(page.locator('#sitesPanel')).toBeHidden();
-    await expect(page.locator('#navLibrary')).toHaveClass(/active/);
+    await expect(page.locator('#navLibrary')).toHaveClass(ACTIVE_CLASS);
     await expect(page).toHaveURL(/\/library$/);
   } finally {
     release();

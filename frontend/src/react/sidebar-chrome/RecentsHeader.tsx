@@ -1,5 +1,5 @@
 import { Separator as ShadcnSeparator } from '../ui/Separator';
-import { IconButton } from '../ui/IconButton';
+import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { List } from 'lucide-react';
@@ -23,11 +23,11 @@ export function RecentsHeader() {
   return <>
     <span className="recents-title" data-i18n-key="sidebar.recentSessions">{i18n('sidebar.recentSessions', 'Recents')}</span>
     <span className="recents-header-actions">
-      <IconButton className="recents-head-btn" id="recentsNewBtn" label={i18n('sidebar.newChat', 'New chat')} icon="newChat"
-        title={i18n('sidebar.newChat', 'New chat')} onClick={() => { void getLegacyActions().navigation.startNewChat(); }} />
+      <Button variant="ghost" className="recents-head-btn active:not-aria-[haspopup]:translate-y-0" id="recentsNewBtn" aria-label={i18n('sidebar.newChat', 'New chat')}
+        title={i18n('sidebar.newChat', 'New chat')} onClick={() => { void getLegacyActions().navigation.startNewChat(); }}><Icon name="newChat" /></Button>
       <DeferredMenu open={open} onOpenChange={setOpen} className="recents-organize-menu" label={i18n('sidebar.organize', 'Organize chats')} spill
-        trigger={<IconButton className="recents-head-btn" id="recentsMoreBtn" icon="more"
-          label={i18n('sidebar.organize', 'Organize chats')} title={i18n('sidebar.organize', 'Organize chats')} />}>
+        trigger={<Button variant="ghost" className="recents-head-btn active:not-aria-[haspopup]:translate-y-0" id="recentsMoreBtn"
+          aria-label={i18n('sidebar.organize', 'Organize chats')} title={i18n('sidebar.organize', 'Organize chats')}><Icon name="more" /></Button>}>
       {({ FoundationMenuItem, FoundationMenuRadioGroup, FoundationMenuRadioItem }) => <>
       <div className="organize-menu-heading">{i18n('sidebar.organize', 'Organize chats')}</div>
       <FoundationMenuRadioGroup value={organization} onValueChange={select}>

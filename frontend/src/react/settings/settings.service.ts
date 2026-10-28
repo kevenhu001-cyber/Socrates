@@ -2,6 +2,12 @@ import { showToast } from '../../ui/toast.js';
 import { publishProfileSnapshot } from '../../ui/profile.js';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
 
+let settingsReturnFocus: HTMLElement | null = null;
+
+export function getSettingsReturnFocus(): HTMLElement | null {
+  return settingsReturnFocus?.isConnected ? settingsReturnFocus : null;
+}
+
 function readExternalApiPreference(): boolean {
   try {
     const saved = localStorage.getItem('socrates-external-api');
@@ -19,6 +25,10 @@ export function initializeSettingsService(): void {
 }
 
 export async function openSettings(): Promise<void> {
+  if (!getSettingsSnapshot().open) {
+    const active = document.activeElement;
+    settingsReturnFocus = active instanceof HTMLElement && active !== document.body ? active : null;
+  }
   try {
     const { mountSettingsModal } = await import('./SettingsModal');
     mountSettingsModal();

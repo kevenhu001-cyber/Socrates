@@ -1166,8 +1166,7 @@ body.workspace-active #appShell #mainInner {
   margin: 0;
 }
 
-.workspace-tabs button,
-.plugin-directory-tabs button {
+.workspace-tabs button {
   min-height: 40px;
   padding: 8px 18px;
   border: 0;
@@ -1178,11 +1177,9 @@ body.workspace-active #appShell #mainInner {
   cursor: pointer;
 }
 
-.workspace-tabs button:hover,
-.plugin-directory-tabs button:hover { color: var(--cg-text); }
+.workspace-tabs button:hover { color: var(--cg-text); }
 
-.workspace-tabs button.active,
-.plugin-directory-tabs button.active {
+.workspace-tabs button.active {
   color: var(--cg-text);
   background: var(--cg-surface-hover);
   font-weight: var(--ui-font-weight-semibold);

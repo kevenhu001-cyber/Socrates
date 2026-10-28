@@ -1,6 +1,9 @@
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
-import { Button as UiButton } from '../ui/Button';
+import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
+import { Switch } from '../ui/shadcn/switch';
+import { Field, FieldLabel } from '../ui/shadcn/field';
+import { cn } from 'cn';
 import type { ProfileDispatch, ProfileSnapshot } from './types';
 import { profileText } from './profileText';
 
@@ -16,43 +19,34 @@ export function ProfilePreferencesSection({
       <div className="profile-section-title">{profileText('profile.preferences', 'Preferences')}</div>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.language', 'Language')}</span>
-        <div className="profile-lang-toggle" id="profileLangToggle" role="group" aria-label={profileText('profile.language', 'Language')}>
-          <UiButton
+        <ToggleGroup id="profileLangToggle" value={[snapshot.currentLang]} aria-label={profileText('profile.language', 'Language')}
+          onValueChange={(values) => { if (values[0] === 'en' || values[0] === 'zh') dispatch.setLang(values[0]); }}>
+          <ToggleGroupItem
             type="button"
-            className={`profile-lang-option${snapshot.currentLang === 'en' ? ' active' : ''}`}
+            className={cn(snapshot.currentLang === 'en' && 'active')}
+            value="en"
             id="profileLangEn"
-            aria-pressed={snapshot.currentLang === 'en'}
-            onClick={() => dispatch.setLang('en')}
           >
             English
-          </UiButton>
-          <UiButton
+          </ToggleGroupItem>
+          <ToggleGroupItem
             type="button"
-            className={`profile-lang-option${snapshot.currentLang === 'zh' ? ' active' : ''}`}
+            className={cn(snapshot.currentLang === 'zh' && 'active')}
+            value="zh"
             id="profileLangZh"
-            aria-pressed={snapshot.currentLang === 'zh'}
-            onClick={() => dispatch.setLang('zh')}
           >
             中文
-          </UiButton>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <div className="profile-toggle-desc">
         {profileText('profile.webSearchDesc', 'Enable web search to include real-time results in questions.')}
       </div>
-      <UiButton
-        type="button"
-        className="profile-toggle"
-        id="profileWebSearchToggle"
-        aria-pressed={snapshot.webSearchOn}
-        onClick={dispatch.toggleWebSearch}
-      >
-        <span className="profile-toggle-label">{profileText('profile.webSearch', 'Web search')}</span>
-        <div className={`stg-toggle-track${snapshot.webSearchOn ? ' on' : ''}`} id="profileWebSearchTrack">
-          <div className="stg-toggle-knob" />
-        </div>
-      </UiButton>
+      <Field orientation="horizontal" className="profile-row">
+        <FieldLabel htmlFor="profileWebSearchToggle" className="flex-1">{profileText('profile.webSearch', 'Web search')}</FieldLabel>
+        <Switch id="profileWebSearchToggle" checked={snapshot.webSearchOn} onCheckedChange={dispatch.toggleWebSearch} />
+      </Field>
 
       <div className="profile-instructions">
         <ShadcnLabel className="profile-instructions-label" htmlFor="profileInstResponse">

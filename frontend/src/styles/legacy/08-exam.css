@@ -261,17 +261,6 @@
 .share-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100))}
 .share-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:hsl(var(--text-400));cursor:pointer;transition:color .1s,background .1s}
 .share-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.share-opt{display:flex;align-items:flex-start;gap:12px;padding:12px;border:0.5px solid hsl(var(--border-300)/0.15);border-radius:10px;cursor:pointer;transition:background-color .15s,border-color .15s;margin-bottom:8px;background:hsl(var(--bg-100))}
-.share-opt:hover{border-color:hsl(var(--accent-000)/0.4)}
-.share-opt:hover .share-opt-radio{border-color:hsl(var(--text-300))}
-.share-opt.selected{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.06)}
-.share-opt-radio{width:18px;height:18px;border-radius:50%;border:2px solid hsl(var(--text-400));flex-shrink:0;margin-top:1px;transition:border-color .15s;display:flex;align-items:center;justify-content:center}
-.share-opt.selected .share-opt-radio{border-color:hsl(var(--accent-000))}
-.share-opt-radio-dot{width:10px;height:10px;border-radius:50%;background:hsl(var(--accent-000));opacity:0;transform:scale(0);transition:opacity .15s,transform .15s var(--ease-out)}
-.share-opt.selected .share-opt-radio-dot{opacity:1;transform:scale(1)}
-.share-opt-body{flex:1;min-width:0}
-.share-opt-title{font-size:calc(14px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-100));margin-bottom:2px}
-.share-opt-desc{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.4}
 .share-link-area{display:flex;gap:8px;margin-top:12px;align-items:center}
 .share-link-input{flex:1;padding:8px 10px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.2);background:hsl(var(--bg-200));color:hsl(var(--text-100));font-size:calc(12px * var(--app-font-scale, 1));font-family:var(--font-mono);outline:none}
 .share-link-input:focus{border-color:hsl(var(--accent-000)/0.5)}

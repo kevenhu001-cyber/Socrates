@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { getLegacyActions, t } from '../legacy/gateway.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
@@ -13,6 +13,16 @@ const CLOSE_ICON =
   + sidebarIcons.close.replace('<svg ', '<svg class="sidebar-toggle-close" ');
 
 const SEARCH_ICON = sidebarIcons.search;
+
+/*
+ * `btn-icon` is the marker the shell's icon-button rules key off (32px circle
+ * in the header, squared in the footer, tap-target expansion on the phone).
+ * The primitive underneath is the shadcn button; its own base classes sit in
+ * @layer utilities, so the unlayered owner rules keep the last word until they
+ * are retired (docs/adr/0024-shadcn-shell-geometry-ownership.md). The press
+ * row must not shift, so the primitive's translate is cancelled here.
+ */
+const ICON_BUTTON = 'btn-icon active:not-aria-[haspopup]:translate-y-0';
 
 export function SidebarHeader() {
   // Subscribe to the chrome bridge so the header re-renders on user change
@@ -36,7 +46,8 @@ export function SidebarHeader() {
       </div>
       <div className="sidebar-header-actions">
         <Button
-          className="btn-icon sidebar-search-btn"
+          variant="ghost"
+          className={`${ICON_BUTTON} sidebar-search-btn`}
           id="sidebarSearchBtn"
           type="button"
           title={t('sidebar.searchPlaceholder')}
@@ -57,7 +68,8 @@ export function SidebarHeader() {
           dangerouslySetInnerHTML={{ __html: SEARCH_ICON }}
         />
         <Button
-          className="btn-icon compose-btn"
+          variant="ghost"
+          className={`${ICON_BUTTON} compose-btn`}
           id="newChatBtn"
           title={t('sidebar.startNewChat')}
           aria-label={t('sidebar.startNewChat')}
@@ -70,7 +82,8 @@ export function SidebarHeader() {
           dangerouslySetInnerHTML={{ __html: NEW_CHAT_ICON }}
         />
         <Button
-          className="btn-icon"
+          variant="ghost"
+          className={ICON_BUTTON}
           id="sidebarCloseBtn"
           title={t('chrome.closeSidebar')}
           aria-label={t('chrome.closeSidebar')}

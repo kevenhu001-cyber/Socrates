@@ -1,4 +1,5 @@
-import { Button as UiButton } from '../ui/Button';
+import { Button as UiButton } from '../ui/shadcn/button';
+import { Separator } from '../ui/shadcn/separator';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
@@ -26,10 +27,11 @@ function ProfileModal() {
         <ProfileDataSection dispatch={dispatch} />
         <ProfileDangerSection dispatch={dispatch} />
       </div>
-      <div className="profile-actions" style={{ borderTop: '0.5px solid hsl(var(--border-300)/0.08)', paddingTop: 12 }}>
-        <UiButton
+      <Separator />
+      <div className="profile-actions pt-3">
+        <UiButton variant="outline"
           type="button"
-          className="profile-btn close-btn"
+          className="w-full"
           data-initial-focus
           onClick={dispatch.close}
         >

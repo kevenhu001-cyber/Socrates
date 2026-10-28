@@ -1,8 +1,10 @@
-import { useRef } from 'react';
 import { flushSync } from 'react-dom';
+import { Dialog, DialogContent } from '../ui/shadcn/dialog';
+import { cn } from 'cn';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { useSettingsSnapshot, installSettingsBridge } from './settings.bridge';
-import { closeSettings } from './settings.service';
+import { closeSettings, getSettingsReturnFocus } from './settings.service';
+import { setModalOpen } from '../../ui/modalA11y.js';
 import { SettingsHeader, SettingsNavigation } from './SettingsModalChrome';
 import { SettingsPanes } from './SettingsPanes';
 import { useSettingsDialogA11y } from './useSettingsDialogA11y';
@@ -11,27 +13,18 @@ import { useSettingsPreferences } from './useSettingsPreferences';
 
 function SettingsModal() {
   const snapshot = useSettingsSnapshot();
-  const overlayRef = useRef<HTMLDivElement>(null);
   const preferences = useSettingsPreferences();
   const navigation = useSettingsNavigation(preferences.label);
-  useSettingsDialogA11y(snapshot.open, overlayRef);
-
-  const handleOverlayClick = (event: React.MouseEvent) => {
-    if (event.target === event.currentTarget) closeSettings();
-  };
+  useSettingsDialogA11y(snapshot.open);
 
   return (
-    <div
-      ref={overlayRef}
-      className={'settings-overlay' + (snapshot.open ? '' : ' hidden')}
-      id="settingsOverlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="settingsTitle"
-      onClick={handleOverlayClick}
-    >
-      <div className="settings-modal settings-modal--full" onClick={(event) => event.stopPropagation()}>
-        <SettingsHeader label={preferences.label} onClose={closeSettings} />
+    <Dialog open={snapshot.open} onOpenChange={(open) => { if (!open) closeSettings(); }}>
+      <DialogContent layout="settings" keepMounted showCloseButton={false}
+        className="settings-modal settings-modal--full"
+        backdropProps={{ id: 'settingsOverlay', className: cn('settings-overlay', !snapshot.open && 'hidden') }}
+        initialFocus={() => document.getElementById('settingsCloseBtn')}
+        finalFocus={() => { setModalOpen('settingsOverlay', false); return getSettingsReturnFocus() || false; }}>
+        <SettingsHeader label={preferences.label} />
         <div className="settings-shell">
           <SettingsNavigation
             categories={navigation.categories}
@@ -56,8 +49,8 @@ function SettingsModal() {
             ? <p className="settings-save-error" role="status">{preferences.saveError}</p>
             : null}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

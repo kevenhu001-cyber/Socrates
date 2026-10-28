@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import type { SaveSettingsPreference, SettingsLabel, SettingsSection } from './settings.types';
 
@@ -69,7 +69,7 @@ function SettingsPaneLoader({ section, ...props }: PaneProps & { section: Settin
     <p role={failed ? 'alert' : 'status'}>{failed
       ? props.label('无法加载此分类，请重试。', 'Could not load this category. Please try again.')
       : props.label('加载中…', 'Loading…')}</p>
-    {failed ? <Button variant="outline" type="button" className="btn" onClick={() => setAttempt((value) => value + 1)}>
+    {failed ? <Button variant="outline" type="button" onClick={() => setAttempt((value) => value + 1)}>
       {props.label('重试', 'Try again')}
     </Button> : null}
   </section>;

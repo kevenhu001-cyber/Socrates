@@ -87,10 +87,12 @@ test('admin console signs in, saves both providers, removes embedding, and signs
   await expect(page.getByRole('heading', { name: 'System model (built-in / Beagle)' })).toBeVisible();
   await page.getByLabel('Display name').nth(0).fill('Updated system model');
   await page.getByLabel('API key').fill('system-secret');
+  await page.getByRole('checkbox', { name: 'Accepts images (multimodal)' }).check();
   await page.getByRole('button', { name: 'Save system model' }).click();
   await expect.poll(() => systemWrite).toMatchObject({
     label: 'Updated system model',
     key: 'system-secret',
+    isMultimodal: true,
   });
   expect(systemHeaders['x-admin-token']).toBe('smoke-admin-token');
   expect(systemHeaders['x-csrf-token']).toBe('smoke-csrf-token');
@@ -110,6 +112,7 @@ test('admin console signs in, saves both providers, removes embedding, and signs
   });
   expect(embeddingHeaders['x-admin-token']).toBe('smoke-admin-token');
   expect(embeddingHeaders['x-csrf-token']).toBe('smoke-csrf-token');
+  await page.screenshot({ path: 'test-results/shadcn-admin.png' });
   await page.getByRole('button', { name: 'Remove' }).click();
   await expect.poll(() => embeddingDelete).toBe(true);
   await expect(page.getByRole('button', { name: 'Configure embedding provider' })).toBeVisible();

@@ -123,15 +123,20 @@ window.getSlashApps = function () {
   });
 };
 
+var _pluginWorkspaceTabsBound = false;
+/* Delegated on purpose: #pluginWorkspaceTabs is React-owned
+   (src/react/topbar/TopBar.tsx), so the two tab buttons are re-created after
+   boot and a listener bound to the static node would die with it. The
+   elements are resolved by id on every call for the same reason. */
 function bindPluginWorkspaceTabs() {
-  var pluginsTab = byId("pluginWorkspacePluginsTab");
-  var skillsTab = byId("pluginWorkspaceSkillsTab");
-  var tabs = byId("pluginWorkspaceTabs");
-  if (!pluginsTab || !skillsTab || !tabs || tabs.dataset.bound === "true") return;
-  tabs.dataset.bound = "true";
+  if (_pluginWorkspaceTabsBound) return;
+  _pluginWorkspaceTabsBound = true;
 
   var lastSkillsOpen = null;
   function syncSelection() {
+    var pluginsTab = byId("pluginWorkspacePluginsTab");
+    var skillsTab = byId("pluginWorkspaceSkillsTab");
+    if (!pluginsTab || !skillsTab) return;
     var skillsOpen = !!document.getElementById("promptTemplatesOverlay");
     /* P_nav-observer-cheap — the observer below fires for every DOM change
        anywhere in the document (each streamed token, each history row).
@@ -145,8 +150,16 @@ function bindPluginWorkspaceTabs() {
     skillsTab.setAttribute("aria-selected", String(skillsOpen));
   }
 
-  pluginsTab.addEventListener("click", function () { openNav("plugins"); syncSelection(); });
-  skillsTab.addEventListener("click", function () {
+  document.addEventListener("click", function (event) {
+    var target = event.target;
+    if (!target || typeof target.closest !== "function") return;
+    var tab = target.closest("#pluginWorkspacePluginsTab, #pluginWorkspaceSkillsTab");
+    if (!tab) return;
+    if (tab.id === "pluginWorkspacePluginsTab") {
+      openNav("plugins");
+      syncSelection();
+      return;
+    }
     openPromptTemplatesModal();
     window.requestAnimationFrame(syncSelection);
   });

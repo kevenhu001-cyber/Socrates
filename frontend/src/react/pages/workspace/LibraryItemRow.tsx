@@ -1,6 +1,6 @@
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
-import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
+import { Checkbox } from '../../ui/shadcn/checkbox';
 import { Button as UiButton } from '../../ui/Button';
 import React, { useState } from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -45,7 +45,7 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
   return (
     <div className={'workspace-row library-row' + (isSelected ? ' library-row-selected' : '')}>
       <ShadcnLabel className="library-checkbox-label" onClick={(e) => e.stopPropagation()}>
-        <ShadcnNativeControl type="checkbox" className="library-checkbox" checked={isSelected} onChange={(e) => dispatch.toggleSelect(item.id, e.target.checked)} aria-label={'Select ' + name} />
+        <Checkbox className="library-checkbox" checked={isSelected} onCheckedChange={(checked) => dispatch.toggleSelect(item.id, checked)} aria-label={'Select ' + name} />
       </ShadcnLabel>
       <span className={'workspace-row-icon library-file-icon library-file-' + getFileTypeCategory(item) + (item.kind === 'image' ? ' is-image' : '')} onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}>
         {fileTypeGlyph(item)}

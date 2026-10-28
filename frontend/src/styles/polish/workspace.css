@@ -211,17 +211,6 @@
   gap: 6px;
   height: var(--ui-control-desktop);
   padding: 0 14px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  color: var(--foreground);
-  font-size: var(--ui-font-size-sm);
-  font-weight: var(--ui-font-weight-medium);
-  cursor: pointer;
-}
-
-#appShell .library-new-pill:hover {
-  background: var(--accent);
 }
 
 #appShell .library-new-menu {
@@ -239,18 +228,6 @@
 
 #appShell .library-new-menu button {
   width: 100%;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: var(--ui-radius-row);
-  background: transparent;
-  color: var(--foreground);
-  font-size: var(--ui-font-size-sm);
-  text-align: left;
-  cursor: pointer;
-}
-
-#appShell .library-new-menu button:hover {
-  background: var(--accent);
 }
 
 /* Ghost square, matching .library-tool-btn / .library-view-btn in the same
@@ -263,16 +240,6 @@
   place-items: center;
   width: var(--ui-control-desktop);
   height: var(--ui-control-desktop);
-  border: 0;
-  background: transparent;
-  color: var(--ui-text-tertiary);
-  border-radius: var(--ui-radius-control);
-  cursor: pointer;
-}
-
-#appShell .library-settings-btn:hover {
-  color: var(--foreground);
-  background: var(--accent);
 }
 
 #appShell .library-toolbar {
@@ -294,27 +261,12 @@
   place-items: center;
   width: var(--ui-control-desktop);
   height: var(--ui-control-desktop);
-  border: 0;
-  background: transparent;
-  color: var(--muted-foreground);
-  border-radius: var(--ui-radius-control);
-  cursor: pointer;
-}
-
-#appShell .library-tool-btn:hover {
-  color: var(--foreground);
-  background: var(--accent);
 }
 
 /* Filter popover — anchored under the toolbar button that owns it. */
 #appShell .library-tool-btn-wrap {
   position: relative;
   display: inline-flex;
-}
-
-#appShell .library-tool-btn.is-active {
-  color: var(--foreground);
-  background: var(--accent);
 }
 
 #appShell .library-filter-menu {
@@ -335,25 +287,6 @@
 
 #appShell .library-filter-option {
   width: 100%;
-  padding: 7px 10px;
-  border: 0;
-  border-radius: calc(var(--ui-radius-control) - 2px);
-  background: transparent;
-  color: var(--muted-foreground);
-  font: inherit;
-  font-size: var(--ui-font-size-xs);
-  text-align: left;
-  cursor: pointer;
-}
-
-#appShell .library-filter-option:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
-
-#appShell .library-filter-option.is-active {
-  color: var(--foreground);
-  font-weight: var(--ui-font-weight-semibold);
 }
 
 #appShell .library-toolbar-divider {
@@ -377,21 +310,6 @@
      choice. */
   width: var(--ui-control-desktop);
   height: var(--ui-control-desktop);
-  border: 0;
-  background: transparent;
-  color: var(--ui-text-tertiary);
-  border-radius: var(--ui-radius-control);
-  cursor: pointer;
-}
-
-#appShell .library-view-btn:hover {
-  color: var(--foreground);
-  background: var(--accent);
-}
-
-#appShell .library-view-btn.active {
-  color: var(--foreground);
-  background: var(--ui-bg-raised);
 }
 
 /* Layout hook only — the shared .workspace-search-field pill chrome
@@ -486,27 +404,6 @@
 
 #appShell .plugin-detail-nav {
   margin-bottom: 20px;
-}
-
-#appShell .plugin-detail-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  margin-left: -8px;
-  border: 0;
-  border-radius: var(--ui-radius-md);
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 14.5px;
-  font-weight: var(--ui-font-weight-medium);
-  cursor: pointer;
-  transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
-}
-
-#appShell .plugin-detail-back-btn:hover {
-  color: var(--foreground);
-  background: var(--accent);
 }
 
 #appShell .plugin-detail-hero {
@@ -619,53 +516,6 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-}
-
-#appShell .plugin-detail-btn-primary {
-  flex: 1 1 auto;
-  height: var(--ui-control-search);
-  padding: 0 20px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--foreground);
-  color: var(--primary-foreground);
-  font-size: 14.5px;
-  font-weight: var(--ui-font-weight-semibold);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity var(--ui-duration-fast) ease;
-}
-
-#appShell .plugin-detail-btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-#appShell .plugin-detail-btn-primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-#appShell .plugin-detail-btn-secondary {
-  flex: 0 0 auto;
-  height: var(--ui-control-search);
-  padding: 0 18px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--cg-surface-raised);
-  color: var(--foreground);
-  font-size: var(--ui-font-size-sm);
-  font-weight: var(--ui-font-weight-medium);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color var(--ui-duration-fast) ease;
-}
-
-#appShell .plugin-detail-btn-secondary:hover {
-  background: var(--accent);
 }
 
 #appShell .plugin-detail-body {

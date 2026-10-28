@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { ACTIVE_CLASS, gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const CONNECTORS = [
@@ -125,14 +125,21 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('.plugin-directory-empty')).toBeVisible();
   await appSearch.fill('');
   await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
-  await page.getByRole('tab', { name: 'Personal' }).click();
+  const publicScope = page.getByRole('button', { name: 'Public' });
+  const personalScope = page.getByRole('button', { name: 'Personal' });
+  await expect(publicScope).toHaveAttribute('aria-pressed', 'true');
+  await publicScope.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(personalScope).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(personalScope).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.plugin-directory-row')).toHaveCount(2);
 
   // The directory is a direct sidebar destination; new-chat returns home.
   await page.locator('#navNew').click();
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#pluginsPanel')).toBeHidden();
-  await expect(page.locator('#navPlugins')).not.toHaveClass(/active/);
+  await expect(page.locator('#navPlugins')).not.toHaveClass(ACTIVE_CLASS);
   await expect(page.locator('#navPlugins')).not.toHaveAttribute('aria-current', 'page');
 
   await page.locator('#navScheduled').click();

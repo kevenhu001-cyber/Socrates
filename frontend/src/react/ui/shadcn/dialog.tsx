@@ -30,7 +30,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={surface ? cn(className) : cn(
-        "fixed inset-0 isolate z-(--ui-z-modal) bg-(--ui-backdrop) duration-100 supports-backdrop-filter:backdrop-blur-xs",
+        "fixed inset-0 isolate z-(--ui-z-modal) bg-(--ui-backdrop) duration-100",
         className
       )}
       {...props}
@@ -48,17 +48,22 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  layout = "default",
+  keepMounted = false,
+  backdropProps,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  layout?: "default" | "settings"
+  keepMounted?: boolean
+  backdropProps?: DialogPrimitive.Backdrop.Props
 }) {
-  return (
-    <DialogPortal>
-      <DialogOverlay />
+  const popup = (
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-(--ui-z-modal) grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 sm:max-w-sm",
+          "fixed top-1/2 left-1/2 z-(--ui-z-modal) -translate-x-1/2 -translate-y-1/2 rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100",
+          layout === "settings" ? "flex flex-col gap-0 p-0" : "grid w-full max-w-[calc(100%-2rem)] gap-4 p-4 sm:max-w-sm",
           className
         )}
         {...props}
@@ -81,6 +86,10 @@ function DialogContent({
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>
+  )
+  return (
+    <DialogPortal keepMounted={keepMounted}>
+      {backdropProps ? <DialogOverlay {...backdropProps}>{popup}</DialogOverlay> : <><DialogOverlay />{popup}</>}
     </DialogPortal>
   )
 }

@@ -218,7 +218,6 @@
 .library-selection-bar.visible{display:flex}
 .library-select-all{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-400));-webkit-user-select:none;user-select:none}
 .library-select-all span{color:hsl(var(--text-400))}
-.library-checkbox{width:14px;height:14px;accent-color:hsl(var(--text-100));cursor:pointer;flex-shrink:0}
 .library-checkbox-label{display:flex;align-items:center;padding:0 0 0 8px;cursor:pointer;flex-shrink:0}
 .library-bulk-delete{min-height:22px;padding:2px 7px;border-radius:5px;font-size:10px;background:hsl(0 65% 62%/.15);color:hsl(0 65% 62%)}
 .library-bulk-delete:disabled{opacity:.35;cursor:default}

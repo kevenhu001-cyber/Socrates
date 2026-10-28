@@ -74,6 +74,15 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'findBar', label: 'find-in-session',
       mount: () => import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()) },
     { hostId: 'sidebarNav', label: 'sidebar-nav', mount: () => hydrateSidebarNav() },
+    /* The header chrome — one root renders every control inside
+       `<div class="top-bar" id="topBar">`. Its ids are the shell
+       contract for the legacy runtime, so the React tree owns the
+       markup while the runtime keeps toggling classes and text.
+       P_perf-static-closure — dynamically imported: the header is not on
+       the first-paint path either, and the primitive it pulls in would
+       otherwise grow the entry chunk past its gzip budget. */
+    { hostId: 'topBar', label: 'top-bar',
+      mount: () => import('../../topbar/TopBar').then((m) => m.mountTopBar()) },
     { hostId: 'recentsFilterChips', label: 'recents-filter-chips', mount: () => hydrateRecentsFilterChips() },
     { hostId: 'composerToolsMenu', label: 'composer-tools-menu',
       mount: () => import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu()) },

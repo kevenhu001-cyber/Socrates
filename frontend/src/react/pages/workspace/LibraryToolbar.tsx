@@ -1,6 +1,7 @@
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
-import { Button as UiButton } from '../../ui/Button';
+import { Button } from '../../ui/shadcn/button';
+import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { getLegacyActions, t as translate } from '../../legacy/gateway.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import { ChevronDownIcon, FilterIcon, GearIcon, GridIcon, i18n, ListIcon, SearchIcon } from './workspaceUi';
@@ -52,70 +53,76 @@ export function LibraryToolbar({
         </div>
         <div className="library-head-actions">
           <div className="library-new-wrap">
-            <UiButton type="button" className="workspace-create-button library-new-pill" onClick={() => onNewMenuOpenChange(!newMenuOpen)}>
+            <Button type="button" variant="secondary" className="library-new-pill rounded-full" onClick={() => onNewMenuOpenChange(!newMenuOpen)}>
               <span>{i18n('library.new', '新建')}</span>
               <ChevronDownIcon />
-            </UiButton>
+            </Button>
             {newMenuOpen ? (
               <div className="library-new-menu" role="menu">
-                <UiButton type="button" role="menuitem" onClick={() => {
+                <Button type="button" variant="ghost" role="menuitem" className="w-full justify-start" onClick={() => {
                   onNewMenuOpenChange(false);
                   document.getElementById('libraryUploadInput')?.click();
                 }}>
                   {i18n('library.upload', '上传文件')}
-                </UiButton>
+                </Button>
               </div>
             ) : null}
           </div>
-          <UiButton type="button" className="library-settings-btn" aria-label={i18n('profile.preferences', '偏好设置')} onClick={() => getLegacyActions().navigation.openSettings()}>
+          <Button type="button" variant="ghost" size="icon-lg" className="library-settings-btn" aria-label={i18n('profile.preferences', '偏好设置')} onClick={() => getLegacyActions().navigation.openSettings()}>
             <GearIcon />
-          </UiButton>
+          </Button>
         </div>
       </div>
 
       <div className="library-toolbar">
         <div className="library-toolbar-controls">
           <div className="library-tool-btn-wrap">
-            <UiButton
+            <Button
               type="button"
-              className={'library-tool-btn' + (typeFilter !== 'all' ? ' is-active' : '')}
+              variant="ghost"
+              size="icon-lg"
+              className="library-tool-btn"
               aria-label={filterLabel}
+              aria-pressed={typeFilter !== 'all'}
               aria-expanded={filterOpen}
               aria-haspopup="menu"
               title={typeFilter === 'all' ? filterLabel : filterLabel + ': ' + activeTypeLabel}
               onClick={() => onFilterOpenChange(!filterOpen)}
             >
               <FilterIcon />
-            </UiButton>
+            </Button>
             {filterOpen ? (
               <div className="library-filter-menu" role="menu">
                 {FILE_TYPE_FILTERS.map((filter) => (
-                  <UiButton
+                  <Button
                     key={filter.id}
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     role="menuitemradio"
                     aria-checked={typeFilter === filter.id}
-                    className={'library-filter-option' + (typeFilter === filter.id ? ' is-active' : '')}
+                    className="library-filter-option w-full justify-start aria-checked:bg-muted aria-checked:text-foreground"
                     onClick={() => {
                       onTypeFilterChange(filter.id);
                       onFilterOpenChange(false);
                     }}
                   >
                     {i18n(filter.labelKey, filter.fallback)}
-                  </UiButton>
+                  </Button>
                 ))}
               </div>
             ) : null}
           </div>
           <div className="library-toolbar-divider" />
-          <div className="library-view-switcher" role="group" aria-label={i18n('library.viewMode', 'View mode')}>
-            <UiButton type="button" className={'library-view-btn' + (viewMode === 'grid' ? ' active' : '')} onClick={() => onViewModeChange('grid')} aria-label={translate('chrome.gridView')} aria-pressed={viewMode === 'grid'} data-i18n-aria="chrome.gridView">
+          <ToggleGroup className="library-view-switcher" value={[viewMode]} aria-label={i18n('library.viewMode', 'View mode')}
+            onValueChange={(values) => { if (values[0] === 'grid' || values[0] === 'list') onViewModeChange(values[0]); }}>
+            <ToggleGroupItem type="button" value="grid" className="library-view-btn p-0" aria-label={translate('chrome.gridView')} data-i18n-aria="chrome.gridView">
               <GridIcon />
-            </UiButton>
-            <UiButton type="button" className={'library-view-btn' + (viewMode === 'list' ? ' active' : '')} onClick={() => onViewModeChange('list')} aria-label={translate('chrome.listView')} aria-pressed={viewMode === 'list'} data-i18n-aria="chrome.listView">
+            </ToggleGroupItem>
+            <ToggleGroupItem type="button" value="list" className="library-view-btn p-0" aria-label={translate('chrome.listView')} data-i18n-aria="chrome.listView">
               <ListIcon />
-            </UiButton>
-          </div>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
         <ShadcnLabel className="workspace-search-field library-search-pill">
           <SearchIcon />

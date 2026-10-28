@@ -1,5 +1,7 @@
 import type { ProfileUserSnapshot } from './types';
 import { profileText } from './profileText';
+import { Badge } from '../ui/shadcn/badge';
+import { buttonVariants } from '../ui/shadcn/button';
 
 export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
   return (
@@ -11,12 +13,11 @@ export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
       </div>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.emailVerified', 'Email verified')}</span>
-        <span
-          className={`profile-row-value${user.verifiedAt ? ' profile-status-badge yes' : ' profile-status-badge no'}`}
+        <Badge variant={user.verifiedAt ? 'secondary' : 'outline'}
           id="profileVerified"
         >
           {user.verifiedAt ? 'Yes' : 'No'}
-        </span>
+        </Badge>
       </div>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.userId', 'User ID')}</span>
@@ -35,13 +36,11 @@ export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot
       <div className="profile-section-title">{profileText('profile.subscription', 'Subscription')}</div>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.currentPlan', 'Current plan')}</span>
-        <span
-          className={`profile-row-value tier-badge tier-${user.tier}`}
+        <Badge variant="secondary"
           id="profileTier"
-          style={{ fontSize: 'calc(13px * var(--app-font-scale, 1))' }}
         >
           {tierLabel}
-        </span>
+        </Badge>
       </div>
       <div
         className="profile-row"
@@ -54,8 +53,7 @@ export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot
       <div style={{ marginTop: 10 }}>
         <a
           href="https://topodrive.top/pricing"
-          className="profile-btn close-btn"
-          style={{ textAlign: 'center', display: 'block', fontSize: 'calc(12px * var(--app-font-scale, 1))', padding: '8px 0' }}
+          className={buttonVariants({ variant: 'outline', className: 'w-full' })}
         >
           {profileText('profile.comparePlans', 'Compare plans')}
         </a>

@@ -1,6 +1,9 @@
-// Direct listeners for the few static shell controls that sit outside React
-// roots. This is intentionally an explicit element map, not an action-string
-// interpreter or a document-wide event dispatcher.
+// Listeners for the shell controls that sit outside React roots. The map is
+// explicit — no action-string interpreter — but the topbar controls are
+// dispatched from one document-level click listener rather than bound to the
+// node: the header chrome is React-owned (src/react/topbar), so the static
+// nodes this module would have bound at boot are replaced moments later and
+// a direct listener would be dropped with them.
 import { readComposerSurface } from '../composer/controller.ts';
 
 let mounted = false;
@@ -29,6 +32,8 @@ declare global {
   }
 }
 
+type ShellClickAction = (element: HTMLElement, event: Event) => void;
+
 function guardComposerReentry(button: HTMLButtonElement | null, streaming: boolean): void {
   if (streaming || !button?.classList.contains('active')) return;
   button.style.pointerEvents = 'none';
@@ -49,12 +54,30 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
   const byId = (id: string): HTMLElement | null => document.getElementById(id);
   const click = (id: string, action: EventListener) => bind(byId(id), 'click', action);
 
-  click('sidebarOpenBtn', actions.toggleSidebar);
-  click('mobileIncognitoBtn', actions.toggleIncognito);
-  click('mobileNewChatBtn', actions.startNewChat);
-  click('findBtn', actions.openFind);
-  click('shareBtn', actions.openShare);
-  click('apiSettingsBtn', actions.openSettings);
+  /* Delegated controls: selector → action, first match wins. `actions` run
+     with the matched element, which stands in for `event.currentTarget`. */
+  const delegated: Array<{ selector: string; action: ShellClickAction }> = [];
+  const onShellClick = (selector: string, action: ShellClickAction) => {
+    delegated.push({ selector, action });
+  };
+  const dispatchShellClick = (event: Event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    for (const entry of delegated) {
+      const element = target.closest(entry.selector);
+      if (!element) continue;
+      entry.action(element as HTMLElement, event);
+      return;
+    }
+  };
+  bind(document, 'click', dispatchShellClick as EventListener);
+
+  onShellClick('#sidebarOpenBtn', () => actions.toggleSidebar());
+  onShellClick('#mobileIncognitoBtn', () => actions.toggleIncognito());
+  onShellClick('#mobileNewChatBtn', () => actions.startNewChat());
+  onShellClick('#findBtn', () => actions.openFind());
+  onShellClick('#shareBtn', () => actions.openShare());
+  onShellClick('#apiSettingsBtn', () => actions.openSettings());
   bind(document, 'socrates:open-settings', actions.openSettings);
   click('composerPrimaryBtn', (() => {
     const button = byId('composerPrimaryBtn') as HTMLButtonElement | null;
@@ -86,8 +109,8 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput(surface);
   });
-  click('mobileModeTrigger', actions.toggleMobileMode);
-  click('mobileConfigBtn', () => {
+  onShellClick('#mobileModeTrigger', () => actions.toggleMobileMode());
+  onShellClick('#mobileConfigBtn', () => {
     byId('mobileMode')?.setAttribute('data-open', 'false');
     byId('mobileModeTrigger')?.setAttribute('aria-expanded', 'false');
     actions.toggleEffort(byId('mobileModeTrigger'));
@@ -111,9 +134,10 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
     bind(element, 'click', () => actions.toggleEffort(element));
   });
   /* The top-bar Chat/Tutor pill was removed; the dropdown items in
-     #mobileModeMenu are the remaining in-shell mode affordance. */
-  document.querySelectorAll<HTMLElement>('#mobileModeMenu .mobile-mode-item[data-mode]').forEach((element) => {
-    bind(element, 'click', () => actions.selectMode(element.dataset.mode));
+     #mobileModeMenu are the remaining in-shell mode affordance. They live in
+     the React header, so they are matched by selector at click time. */
+  onShellClick('#mobileModeMenu .mobile-mode-item[data-mode]', (element) => {
+    actions.selectMode(element.dataset.mode);
   });
 
   const search = byId('sidebarSearch');

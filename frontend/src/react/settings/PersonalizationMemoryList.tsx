@@ -1,4 +1,5 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
+import { XIcon } from 'lucide-react';
 import type { SettingsLabel, SettingsMemory } from './settings.types';
 
 export function PersonalizationMemoryList({
@@ -31,16 +32,15 @@ export function PersonalizationMemoryList({
             <span className="settings-memory-key">{memory.key}</span>
             <span className="settings-memory-val">{memory.value}</span>
           </div>
-          <Button
+          <Button variant="destructive"
+            size="icon-sm"
             type="button"
             className="settings-memory-del-btn"
             aria-label={label('删除记忆', 'Delete memory')}
             title={label('删除记忆', 'Delete memory')}
             onClick={() => onDelete(memory.id)}
           >
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <XIcon data-icon="inline-start" aria-hidden />
           </Button>
         </div>
       ))}

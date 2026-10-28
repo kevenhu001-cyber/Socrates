@@ -1,4 +1,4 @@
-import { Button as UiButton } from '../ui/Button';
+import { Button as UiButton } from '../ui/shadcn/button';
 /** The standalone /admin operator console page. */
 
 import { createRootSlot } from '../lib/boot/ownedRoot';
@@ -23,7 +23,7 @@ function AdminPage() {
     <div className="admin-console">
       <div className="admin-console-head">
         <h2>Admin console</h2>
-        <UiButton type="button" className="admin-remove" onClick={admin.signOut}>Sign out</UiButton>
+        <UiButton variant="destructive" type="button" className="admin-remove" onClick={admin.signOut}>Sign out</UiButton>
       </div>
       {admin.snapshot.loading && <div className="admin-loading">Loading…</div>}
       {admin.snapshot.error && <div className="admin-error" role="alert">{admin.snapshot.error}</div>}

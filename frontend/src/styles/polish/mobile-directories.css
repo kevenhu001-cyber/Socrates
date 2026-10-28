@@ -8,7 +8,7 @@
   body.workspace-active #appShell .plugin-directory-tools { display: flex; width: 100%; gap: 12px; }
   body.workspace-active #appShell .plugin-directory-search { display: flex; align-items: center; flex: 1; min-width: 0; height: 36px; min-height: 36px; padding: 0 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-pill); background: var(--ui-bg-surface); }
   body.workspace-active #appShell .plugin-directory-search input { min-width: 0; width: 100%; font-size: 15px; }
-  body.workspace-active #appShell .plugin-directory-add-btn { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: transparent; }
+  body.workspace-active #appShell .plugin-directory-add-btn { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; padding: 0; }
   body.workspace-active #appShell .plugin-directory-add-btn svg { width: 24px; height: 24px; }
   body.workspace-active #appShell .plugin-installed-strip { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin: 0 0 36px; }
   body.workspace-active #appShell .plugin-installed-label { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: var(--foreground); font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-medium); }
@@ -17,8 +17,7 @@
   body.workspace-active #appShell .plugin-installed-icons .workspace-row-icon { display: grid; place-items: center; width: 40px; min-width: 40px; height: 40px; padding: 0; border: 0; border-radius: var(--ui-radius-lg); background: var(--ui-bg-surface); overflow: hidden; }
   body.workspace-active #appShell .plugin-installed-icons svg { width: 100%; height: 100%; }
   body.workspace-active #appShell .plugin-directory-tabs { display: flex; align-items: center; gap: 8px; margin-bottom: 32px; }
-  body.workspace-active #appShell .plugin-directory-tabs button { min-height: 40px; height: 40px; padding: 0 18px; border: 0; border-radius: var(--ui-radius-pill); background: transparent; color: var(--muted-foreground); font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-regular); }
-  body.workspace-active #appShell .plugin-directory-tabs button.active { background: var(--ui-bg-pill-selected); color: var(--foreground); font-weight: var(--ui-font-weight-medium); }
+  body.workspace-active #appShell .plugin-directory-tabs [data-slot="toggle-group-item"] { min-height: 40px; height: 40px; padding-inline: 18px; }
   body.workspace-active #appShell .plugin-directory-list { display: flex; flex-direction: column; gap: 0; }
   body.workspace-active #appShell .plugin-directory-section h3 { margin: 0; font-size: var(--ui-font-size-sm); line-height: 20px; font-weight: var(--ui-font-weight-medium); }
   body.workspace-active #appShell .plugin-directory-row { display: flex; align-items: center; flex-direction: row; gap: 14px; min-height: 70px; padding: 10px 0; border: 0; border-radius: 0; background: transparent; }
@@ -34,7 +33,7 @@
   body.workspace-active #appShell .plugin-directory-card-status, body.workspace-active #appShell .plugin-directory-action-label { display: none; }
   body.workspace-active #appShell .plugin-directory-card-desc { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; margin: 0; overflow: hidden; font-size: var(--ui-font-size-sm); line-height: 20px; color: var(--ui-text-tertiary); }
   body.workspace-active #appShell .plugin-directory-row-action { display: flex; margin-left: auto; flex: 0 0 auto; }
-  body.workspace-active #appShell .plugin-directory-icon-action { display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--foreground); }
+  body.workspace-active #appShell .plugin-directory-icon-action { display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; padding: 0; }
   body.workspace-active #appShell .plugin-directory-icon-action svg { width: 22px; height: 22px; }
   body.workspace-active #appShell .plugin-directory-row .connector-icon svg,
   body.workspace-active #appShell .plugin-installed-icons .workspace-row-icon svg { stroke-linecap: round; stroke-linejoin: round; }
@@ -44,13 +43,12 @@
   body.workspace-active #appShell .library-head-left h1 { margin: 0; font-size: 26px; font-weight: var(--ui-font-weight-semibold); line-height: 32px; }
   body.workspace-active #appShell .library-head-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
   body.workspace-active #appShell .library-desktop-desc { display: none; }
-  body.workspace-active #appShell .library-new-pill { height: 36px; min-height: 36px; padding: 0 12px; border: 0; border-radius: var(--ui-radius-pill); background: var(--foreground); color: var(--background); font-size: var(--ui-font-size-sm); }
-  body.workspace-active #appShell .library-settings-btn { width: 36px; height: 36px; padding: 0; border: 0; background: transparent; }
+  body.workspace-active #appShell .library-new-pill { height: 36px; min-height: 36px; padding: 0 12px; }
+  body.workspace-active #appShell .library-settings-btn { width: 36px; height: 36px; padding: 0; }
   body.workspace-active #appShell .library-settings-btn svg { width: 20px; height: 20px; }
   body.workspace-active #appShell .library-toolbar { display: flex; align-items: center; gap: 12px; margin: 0 0 32px; }
   body.workspace-active #appShell .library-toolbar-controls { display: flex; align-items: center; gap: 12px; }
-  body.workspace-active #appShell .library-tool-btn, body.workspace-active #appShell .library-view-btn { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: transparent; }
-  body.workspace-active #appShell .library-view-btn.active { background: var(--ui-bg-pill-selected); }
+  body.workspace-active #appShell .library-tool-btn, body.workspace-active #appShell .library-view-btn { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; }
   body.workspace-active #appShell .library-toolbar-divider { width: 1px; height: 20px; background: var(--border); }
   body.workspace-active #appShell .library-view-switcher { display: flex; gap: 4px; }
   body.workspace-active #appShell .library-search-pill { flex: 1; min-width: 0; height: 36px; min-height: 36px; padding: 0 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-pill); background: var(--ui-bg-surface); }

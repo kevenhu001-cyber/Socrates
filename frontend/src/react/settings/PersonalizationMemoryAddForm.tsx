@@ -1,5 +1,5 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { useState, type FormEvent } from 'react';
 
 import type { SettingsLabel } from './settings.types';
@@ -26,19 +26,19 @@ export function PersonalizationMemoryAddForm({
     <form className="settings-memory-add-form" onSubmit={handleSubmit}>
       <ShadcnInput
         type="text"
-        className="settings-input settings-memory-key-input"
+        className="settings-memory-key-input"
         placeholder={label('标签 (如偏好)', 'Key (e.g. preference)')}
         value={key}
         onChange={(event) => setKey(event.target.value)}
       />
       <ShadcnInput
         type="text"
-        className="settings-input settings-memory-val-input"
+        className="settings-memory-val-input"
         placeholder={label('记忆内容 (如喜欢用 TypeScript)', 'Value (e.g. prefers TypeScript)')}
         value={value}
         onChange={(event) => setValue(event.target.value)}
       />
-      <Button variant="outline" type="submit" className="btn" disabled={!value.trim()}>
+      <Button variant="outline" type="submit" disabled={!value.trim()}>
         {label('添加', 'Add')}
       </Button>
     </form>

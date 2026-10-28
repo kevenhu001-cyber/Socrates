@@ -11,12 +11,21 @@ const CONTROLS = new Set(['button', 'input', 'textarea', 'select', 'label', 'hr'
 /** JSX parsing deliberately ignores HTML in editor previews/template strings. */
 export function inspectSource(source, name) {
   const ast = ts.createSourceFile(name, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const normalizedName = name.replaceAll('\\', '/');
+  const replacedFeature = /(?:^|\/)react\/(?:settings|profileModal|adminModal|sidebar|sidebar-chrome)\//.test(normalizedName)
+    || /(?:^|\/)react\/pages\/workspace\/(?:LibraryToolbar|PluginDetailHeader|PluginDirectory|PluginDirectoryCard|ProjectsView|workspaceUi)\.tsx$/.test(normalizedName);
   const problems = [];
   function report(node, kind, message) {
     const line = ast.getLineAndCharacterOfPosition(node.getStart(ast)).line + 1;
     problems.push({ kind, message, line });
   }
   function visit(node) {
+    if (replacedFeature && ts.isImportDeclaration(node) && /\/ui\/(?:Button|IconButton)$|\/ui\/shadcn\/native-select$/.test(node.moduleSpecifier.text)) {
+      report(node, 'compatibilityControls', 'use a semantic shadcn component in this migrated feature');
+    }
+    if (replacedFeature && ts.isJsxAttribute(node) && node.name.text === 'variant' && node.initializer && ts.isStringLiteral(node.initializer) && node.initializer.text === 'surface') {
+      report(node, 'compatibilityControls', 'use a semantic component variant in this migrated feature');
+    }
     if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && CONTROLS.has(node.tagName.getText(ast))) {
       report(node, 'rawControls', `use a shared shadcn control instead of <${node.tagName.getText(ast)}>`);
     }
@@ -48,7 +57,7 @@ function collect(dir, results = []) {
 
 function main() {
   const problems = collect(join(ROOT, 'src/react'));
-  const counts = { rawControls: 0, unadaptedPrimitives: 0 };
+  const counts = { rawControls: 0, unadaptedPrimitives: 0, compatibilityControls: 0 };
   for (const problem of problems) counts[problem.kind]++;
   const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
   if (process.argv.includes('--update')) {
@@ -61,7 +70,7 @@ function main() {
     for (const problem of problems.filter((item) => exceeded.has(item.kind))) console.error(`${problem.name}:${problem.line} ${problem.message}`);
     process.exitCode = 1;
   } else {
-    console.log(`shadcn adoption passed (${counts.rawControls}/${baseline.rawControls} raw controls, ${counts.unadaptedPrimitives}/${baseline.unadaptedPrimitives} unadapted primitives).`);
+    console.log(`shadcn adoption passed (${counts.rawControls}/${baseline.rawControls} raw controls, ${counts.unadaptedPrimitives}/${baseline.unadaptedPrimitives} unadapted primitives, ${counts.compatibilityControls}/${baseline.compatibilityControls} compatibility controls in migrated features).`);
   }
 }
 

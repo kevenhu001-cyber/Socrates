@@ -161,16 +161,14 @@
   #appShell #sidebar.collapsed .sidebar-nav-sep {
     margin-inline: 8px;
   }
-  #appShell #sidebarNav .sidebar-nav-btn,
+  /* The primary destinations are shadcn buttons now: react/sidebar/
+     SidebarNavButton.tsx owns their look through --ui-* utilities (see
+     docs/adr/0024-shadcn-shell-geometry-ownership.md). Only the history
+     rows still take their geometry from this file. */
   #appShell #sidebar .recent-item {
     position: relative;
     display: flex;
     align-items: center;
-    /* Rows carry the generic .btn class, whose base sets
-       justify-content: center. Without this the icon+label group floats to
-       the middle of the 247px row, so every button's glyph lands at a
-       different x and the rail reads as ragged. The collapsed icon rail
-       re-centres on purpose (see the .collapsed block below). */
     justify-content: flex-start;
     /* The chatgpt.com baseline: a 20px glyph, a 16px label and a 6px gap
        between them (docs/ref/chatgpt-parity.md, captured over CDP at
@@ -203,15 +201,11 @@
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) ease;
   }
-  #appShell #sidebarNav .sidebar-nav-btn:hover,
-  #appShell #sidebarNav .sidebar-nav-btn:focus-visible,
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within {
     background: var(--accent);
     color: var(--foreground);
   }
-  #appShell #sidebarNav .sidebar-nav-btn.active,
-  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"],
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current="true"] {
     background: var(--accent);
@@ -228,32 +222,7 @@
     background: var(--ui-bg-selected);
     color: var(--foreground);
   }
-  #appShell #sidebarNav .sidebar-nav-btn svg {
-    flex: 0 0 20px;
-    width: 20px;
-    height: 20px;
-    color: currentColor;
-  }
-  /* React wraps each glyph in a bare <span>; the label span carries the
-     i18n key. Rows with a trailing badge wrap label+badge in .nav-label-wrap
-     so the pill hugs the text instead of the row's edge. */
-  #appShell #sidebarNav .sidebar-nav-btn > span:not([data-i18n-key]):not(.nav-kbd):not(.nav-label-wrap) {
-    display: grid;
-    place-items: center;
-    flex: 0 0 20px;
-    width: 20px;
-    height: 20px;
-  }
-  #appShell #sidebarNav .sidebar-nav-btn svg { display: block; }
-  #appShell #sidebarNav .sidebar-nav-btn > span[data-i18n-key],
-  #appShell #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   /* Same visible set and order as before the parity pass. */
-  #appShell #sidebarNav .sidebar-nav-btn.nav-kbd,
-  #appShell #sidebarNav .sidebar-nav-btn .nav-kbd,
   #appShell #sidebarNav #navImages.sidebar-nav-btn,
   #appShell #sidebarNav #navAssistants.sidebar-nav-btn,
   #appShell #sidebarNav #navExam.sidebar-nav-btn { display: none; }
