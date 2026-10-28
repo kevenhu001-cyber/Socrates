@@ -104,6 +104,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B4 cookie 同意条 | 完成（2026-10-29） | 见下 |
 | B4 工具卡片 | 完成（2026-10-29） | 见下；保留「无边框行」的转录语法 |
 | B4 creation 表面（Images / Assistants / Sites） | 完成（2026-10-29） | 见下；模板仍是 HTML 字符串，皮肤归 shadcn 语义 |
+| B4 exam 考试页与分享弹窗 | 完成（2026-10-29） | 见下；`legacy/08-exam.css` 的 HSL 通道清零 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -253,6 +254,32 @@ tutor 卡片的新观感；build 与 lint 通过。
 验证：`creation-surfaces`、`detail-surface`、`reference-ui-visual` 共 12 例通过；
 build 与 lint 全绿（`check-css-debt` 与 `check-button-sizes` 计数未变，该文件属
 `restore/` 冻结区）。
+
+### B4 · exam 考试页与分享弹窗（2026-10-29）
+
+`legacy/08-exam.css` 是考试设置页、答题页、导航条、分享弹窗和只读横幅的唯一皮肤，
+也是最后一块整体使用旧 HSL 通道（`--accent-000` / `--bg-000` / `--text-100` /
+`--border-300`）的文件。整份改写成 shadcn 语义：
+
+- 设置分区 → shadcn 卡片：`--card` + 1px `--border` + `--radius-xl` + `--shadow-sm`；
+  序号块 `--muted` / `--muted-foreground`。
+- 输入 / 文本域 / 模型触发器 → 36px、`rounded-md`、`border-input`、透明底；
+  焦点 `border-color: var(--ring)` + `--ui-focus-shadow`（模型菜单展开时同样）。
+- 难度分段与题型开关卡 → 未选 `--background` + `--border` + `--muted-foreground`，
+  hover `--muted`，选中 `--accent` + `--ring` 边框；圆点改 `--primary`。
+- 题数步进器 → 36px 容器 + 32px ghost 按钮。
+- 主按钮 `--primary` / `--primary-foreground`（hover 80%），次按钮
+  `--background` + `--border`，`--ui-success` 保留为「提交成功」态。
+- 选项行与导航 pill → `--input` 边框、`rounded-md`/`rounded-sm`，选中 `--accent`，
+  答对 `--ui-success`、答错 `--destructive`，字母块选中时填 `--primary`。
+- 模型下拉菜单 → popover（`--popover`、`--radius-md`、`--ui-shadow-popover`、
+  菜单项 `hover:bg-accent`）。
+- 分享弹窗（React 侧 `ShareModal` 沿用同一批类名）→ `--card` 卡片 +
+  `rounded-xl` + 32px ghost 关闭按钮 + 36px 主按钮；只读横幅改 `--accent` 底。
+
+验证：`exam-regressions` 2 例、`creation-surfaces` / `detail-surface` /
+`reference-ui-visual` 12 例通过；lint 全绿，`frozen.legacyChannel` 1281 → 1140，
+`frozen.literalRadius` 275 → 255，`frozen.literalFontSize` 494 → 454。
 
 ### B4 · 工具卡片（2026-10-29）
 
