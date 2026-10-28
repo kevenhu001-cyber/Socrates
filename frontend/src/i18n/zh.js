@@ -1106,6 +1106,12 @@ export const zh = {
     "artifact.openFile":"打开文件",
     "profile.disclaimerTutor":"Socrates 通过提问帮助你思考，不会评判你的回答。",
     "tag.placeholder":"输入标签后按回车",
+    "tag.title":"本会话的标签",
+    "tag.empty":"还没有标签",
+    "tag.add":"添加",
+    "tag.suggested":"推荐",
+    "tag.done":"完成",
+    "tag.remove":"移除",
     "kb.placeholderNote":"写下你对本主题想记住的任何内容……",
     /* P_kb-i18n — see matching en block. 状态标签复用 tutor.status*，
        不另起一套译法：同一个 internalized 节点不能在教学面板里叫

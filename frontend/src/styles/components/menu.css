@@ -10,6 +10,22 @@
   color: var(--foreground);
 }
 
+/* Session tag editor. The shell is a singleton that `session/organize.ts`
+   re-anchors to the clicked row; only its frame lives here, the contents are
+   the React `TagEditorPopover`. */
+.tag-editor-popover {
+  position: fixed;
+  z-index: var(--ui-z-popover);
+  display: none;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  flex-direction: column;
+  padding: 12px;
+  border-radius: var(--ui-radius-popover);
+  box-shadow: 0 12px 36px -8px rgb(0 0 0 / 24%), 0 2px 8px rgb(0 0 0 / 10%);
+}
+.tag-editor-popover.visible { display: flex; }
+
 body #composerToolsMenu.composer-tools-menu {
   position: fixed;
   z-index: var(--ui-z-popover);

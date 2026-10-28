@@ -1129,6 +1129,12 @@ export const en = {
     "artifact.openFile":"Open file",
     "profile.disclaimerTutor":"Socrates asks questions to help you think. It does not judge your answers.",
     "tag.placeholder":"Add a tag and press Enter",
+    "tag.title":"Tags for this session",
+    "tag.empty":"No tags yet",
+    "tag.add":"Add",
+    "tag.suggested":"Suggested",
+    "tag.done":"Done",
+    "tag.remove":"Remove",
     "kb.placeholderNote":"Write anything you want to remember about this sub-topic...",
     /* P_kb-i18n — the knowledge-boundary detail panel (ui/knowledgeDetail.js)
      * was the last surface still hardcoding English. zh is the default

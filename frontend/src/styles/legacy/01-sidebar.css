@@ -185,26 +185,6 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 
 
 
-/* P2.2 — tag editor popover */
-.tag-editor-popover{position:fixed;width:320px;z-index:950;padding:14px;display:none;flex-direction:column;gap:10px}
-.tag-editor-popover.visible{display:flex}
-.tag-editor-head{font-size:13px;font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-200))}
-.tag-editor-current{display:flex;flex-wrap:wrap;gap:4px;min-height:24px}
-.tag-editor-empty{font-size:11px;color:hsl(var(--text-500));font-style:italic;align-self:center}
-.tag-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-200));font-size:11px}
-.tag-pill.removable{padding-right:2px}
-.tag-pill-x{width:14px;height:14px;border-radius:50%;background:transparent;border:0;color:hsl(var(--text-400));font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-.tag-pill-x:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
-.tag-editor-input-row{display:flex;gap:4px}
-.tag-editor-input{flex:1;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:6px 8px;font:inherit;font-size:12px;color:hsl(var(--text-100));outline:none}
-.tag-editor-input:focus{border-color:hsl(var(--accent-000)/0.6);box-shadow:var(--ui-focus-shadow)}
-.tag-editor-add{padding:4px 10px;background:hsl(var(--accent-000));color:hsl(var(--always-white));border:0;border-radius:6px;font-size:12px;cursor:pointer;font-weight:var(--ui-font-weight-medium)}
-.tag-editor-add:hover{filter:brightness(1.1)}
-.tag-editor-suggest{display:flex;flex-wrap:wrap;gap:4px}
-.tag-editor-suggest-label{font-size:10px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:0.05em;width:100%;margin-bottom:2px}
-.tag-editor-suggest-btn{padding:2px 8px;border-radius:999px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);color:hsl(var(--text-300));font-size:11px;cursor:pointer;font-family:inherit}
-.tag-editor-suggest-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.tag-editor-foot{display:flex;justify-content:flex-end;padding-top:6px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
-.tag-editor-done{padding:4px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:12px;cursor:pointer;font-family:inherit}
-.tag-editor-done:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+/* P2.2 — the tag editor popover moved to `react/session-tags`; its shell
+   geometry and skin are owned by `components/menu.css`. */
 

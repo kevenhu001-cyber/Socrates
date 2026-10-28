@@ -10,8 +10,9 @@ import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
 import { filterRecentsByChip } from '../ui/recentsHelpers.js';
 import { getCachedProjects } from '../projects/projectCache.ts';
 import { apiFetch } from '../util/api.ts';
-import { esc } from '../render/helpers.ts';
 import { showToast } from '../ui/toast.js';
+import { renderTagEditor } from '../react/session-tags/tagEditorHost.tsx';
+import type { TagEditorLabels, TagEditorPopoverProps } from '../react/session-tags/TagEditorPopover.tsx';
 import type { SessionItem } from '../react/session-list/types.ts';
 import { sameSessionRow as _sameRow, sessionRowFields as _sessionRowFields } from './sessionRowModel.ts';
 
@@ -55,13 +56,19 @@ function _renderRecents(): void {
   }
 }
 
-export function openTagEditor(id: string, e?: TagEditorEvent | null): void {
-  if (e) { e.stopPropagation(); e.preventDefault(); }
-  const idx = findServerSessionIndex(id);
-  if (idx < 0) return;
-  const s = serverCache.sessions[idx];
-  /* Reuse a singleton popover; positioning is recomputed each
-     time so the popover lands next to the row the user clicked. */
+function tagEditorLabels(): TagEditorLabels {
+  return {
+    title: _t('tag.title', 'Tags for this session'),
+    empty: _t('tag.empty', 'No tags yet'),
+    placeholder: _t('tag.placeholder', 'Add a tag and press Enter'),
+    add: _t('tag.add', 'Add'),
+    suggested: _t('tag.suggested', 'Suggested'),
+    done: _t('tag.done', 'Done'),
+    remove: _t('tag.remove', 'Remove'),
+  };
+}
+
+function ensureTagPopover(): HTMLElement {
   let pop = document.getElementById('tagEditorPopover');
   if (!pop) {
     pop = document.createElement('div');
@@ -69,34 +76,19 @@ export function openTagEditor(id: string, e?: TagEditorEvent | null): void {
     pop.className = 'tag-editor-popover';
     document.body.appendChild(pop);
   }
-  pop.dataset.sessionId = id;
-  const tags = Array.isArray(s.tags) ? s.tags as string[] : [];
-  const known = getKnownTags().filter(function (t) { return !(tags.indexOf(t) >= 0); });
-  pop.innerHTML =
-    '<div class="tag-editor-head">Tags for this session</div>' +
-    '<div class="tag-editor-current">' +
-      (tags.map(function (t) {
-        return '<span class="tag-pill removable" data-tag="' + esc(t) + '">' + esc(t) +
-          '<button class="tag-pill-x" data-tag-remove="' + esc(t) + '" title="Remove">×</button>' +
-        '</span>';
-      }).join('') || '<span class="tag-editor-empty">No tags yet</span>') +
-    '</div>' +
-    '<div class="tag-editor-input-row">' +
-      '<input class="tag-editor-input" id="tagEditorInput" placeholder="' + _t('tag.placeholder') + '" maxlength="30" autocomplete="off">' +
-      '<button class="tag-editor-add" id="tagEditorAdd">Add</button>' +
-    '</div>' +
-    (known.length ? '<div class="tag-editor-suggest"><div class="tag-editor-suggest-label">Suggested</div>' +
-      known.slice(0, 12).map(function (t) {
-        return '<button class="tag-editor-suggest-btn" data-tag-suggest="' + esc(t) + '">' + esc(t) + '</button>';
-      }).join('') +
-    '</div>' : '') +
-    '<div class="tag-editor-foot">' +
-      '<button class="tag-editor-done">Done</button>' +
-    '</div>';
-  /* Position. */
-  const row = (e && e.currentTarget && e.currentTarget.closest('.recent-item')) || null;
+  return pop;
+}
+
+/* Anchor to the row that opened the popover; the shell is a singleton, so
+   position is recomputed on every open. React hands us the native event,
+   whose `currentTarget` is the root container rather than the tag button,
+   so fall back to the row attribute. */
+function positionTagPopover(pop: HTMLElement, id: string, e?: TagEditorEvent | null): void {
+  const fromEvent = e && e.currentTarget ? e.currentTarget.closest('.recent-item') : null;
+  const row = fromEvent || document.querySelector('.recent-item[data-recent-actual="' + CSS.escape(id) + '"]');
   if (row) {
     const r = row.getBoundingClientRect();
+    pop.style.transform = '';
     pop.style.top = Math.min(window.innerHeight - 300, r.bottom + 6) + 'px';
     pop.style.left = Math.max(8, Math.min(window.innerWidth - 340, r.right - 340)) + 'px';
   } else {
@@ -104,53 +96,57 @@ export function openTagEditor(id: string, e?: TagEditorEvent | null): void {
     pop.style.left = '50%';
     pop.style.transform = 'translateX(-50%)';
   }
-  pop.classList.add('visible');
-  /* Wire up handlers. */
-  const input = pop.querySelector('#tagEditorInput') as HTMLInputElement;
-  const addBtn = pop.querySelector('#tagEditorAdd') as HTMLElement;
-  function commitInput(): void {
-    const v = (input.value || '').trim();
-    if (!v) return;
-    /* Accept comma-separated multi-add. */
-    v.split(/[,，]/).forEach(function (part) {
-      const t = part.trim().slice(0, 30);
-      if (t) addTagToSession(id, t);
-    });
-    input.value = '';
-  }
-  input.onkeydown = function (ev) {
-    if (ev.key === 'Enter') { ev.preventDefault(); commitInput(); }
-    else if (ev.key === 'Escape') { ev.preventDefault(); closeTagEditor(); }
+}
+
+function tagEditorProps(id: string): TagEditorPopoverProps {
+  const idx = findServerSessionIndex(id);
+  const session = idx >= 0 ? serverCache.sessions[idx] : null;
+  return {
+    tags: session && Array.isArray(session.tags) ? session.tags as string[] : [],
+    knownTags: getKnownTags(),
+    labels: tagEditorLabels(),
+    onAdd: function (tag) { addTagToSession(id, tag); },
+    onRemove: function (tag) { removeTagFromSession(id, tag); },
+    onClose: closeTagEditor,
   };
-  addBtn.onclick = commitInput;
-  const doneBtn = pop.querySelector('.tag-editor-done');
-  if (doneBtn) (doneBtn as HTMLElement).onclick = closeTagEditor;
-  pop.querySelectorAll('[data-tag-remove]').forEach(function (b) {
-    (b as HTMLElement).onclick = function () {
-      removeTagFromSession(id, b.getAttribute('data-tag-remove'));
-    };
-  });
-  pop.querySelectorAll('[data-tag-suggest]').forEach(function (b) {
-    (b as HTMLElement).onclick = function () {
-      addTagToSession(id, b.getAttribute('data-tag-suggest'));
-    };
-  });
-  /* Click-outside dismiss. */
+}
+
+/* Re-render an already-open popover from the cache after a tag mutation. */
+function refreshTagEditor(id: string): void {
+  const pop = document.getElementById('tagEditorPopover');
+  if (!pop || !pop.classList.contains('visible') || pop.dataset.sessionId !== id) return;
+  renderTagEditor(pop, tagEditorProps(id));
+}
+
+export function openTagEditor(id: string, e?: TagEditorEvent | null): void {
+  if (e) { e.stopPropagation(); e.preventDefault(); }
+  const idx = findServerSessionIndex(id);
+  if (idx < 0) return;
+  const pop = ensureTagPopover();
+  pop.dataset.sessionId = id;
+  positionTagPopover(pop, id, e);
+  pop.classList.add('visible');
+  renderTagEditor(pop, tagEditorProps(id));
+  bindTagEditorDismiss();
+}
+
+/* Click-outside dismiss. Bound once, deferred so the click that opened the
+   popover cannot immediately close it. */
+function bindTagEditorDismiss(): void {
   setTimeout(function () {
     const body = document.body as TagBoundBody;
-    if (!body._tagEditorClickBound) {
-      body._tagEditorClickBound = true;
-      document.addEventListener('click', function (ev) {
-        const p = document.getElementById('tagEditorPopover');
-        const target = ev.target as Element | null;
-        if (p && p.classList.contains('visible') && target && !p.contains(target) && !target.closest('[data-tag-open]')) {
-          closeTagEditor();
-        }
-      });
-    }
+    if (body._tagEditorClickBound) return;
+    body._tagEditorClickBound = true;
+    document.addEventListener('click', function (ev) {
+      const p = document.getElementById('tagEditorPopover');
+      const target = ev.target as Element | null;
+      if (p && p.classList.contains('visible') && target && !p.contains(target) && !target.closest('[data-tag-open]')) {
+        closeTagEditor();
+      }
+    });
   }, 0);
-  setTimeout(function () { input.focus(); }, 0);
 }
+
 export function closeTagEditor(): void {
   const pop = document.getElementById('tagEditorPopover');
   if (pop) pop.classList.remove('visible');
@@ -176,8 +172,7 @@ export function addTagToSession(id: string, tag: string | null): void {
     console.debug('[tags] server sync failed:', message);
   });
   _renderRecents();
-  /* Re-open the popover with the updated state. */
-  reopenTagEditor(id);
+  refreshTagEditor(id);
 }
 export function removeTagFromSession(id: string, tag: string | null): void {
   const idx = findServerSessionIndex(id);
@@ -191,14 +186,7 @@ export function removeTagFromSession(id: string, tag: string | null): void {
     /* empty-catch: intentional — tags sync is best-effort */
   });
   _renderRecents();
-  reopenTagEditor(id);
-}
-function reopenTagEditor(id: string): void {
-  openTagEditor(id, {
-    stopPropagation: function () { /* synthetic reopen */ },
-    preventDefault: function () { /* synthetic reopen */ },
-    currentTarget: document.querySelector('.recent-item[data-recent-actual="' + id + '"] .tag-btn'),
-  });
+  refreshTagEditor(id);
 }
 export function closeSessionContextMenu(): void {
   serverCache.ctxMenuSessionId = null;

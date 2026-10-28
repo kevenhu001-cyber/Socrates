@@ -11,10 +11,10 @@
     "frozen": {
       "important": 622,
       "hexColor": 51,
-      "literalRadius": 253,
+      "literalRadius": 248,
       "stackedId": 59,
-      "literalFontSize": 453,
-      "legacyChannel": 1140
+      "literalFontSize": 444,
+      "legacyChannel": 1120
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

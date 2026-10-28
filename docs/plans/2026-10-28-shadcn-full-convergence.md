@@ -106,6 +106,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B4 creation 表面（Images / Assistants / Sites） | 完成（2026-10-29） | 见下；模板仍是 HTML 字符串，皮肤归 shadcn 语义 |
 | B4 exam 考试页与分享弹窗 | 完成（2026-10-29） | 见下；`legacy/08-exam.css` 的 HSL 通道清零 |
 | B5 tools 菜单归属清理 | 完成（2026-10-29） | 见下；删掉两处重复 owner，基线随之下调 |
+| B3 session 标签编辑器 | 完成（2026-10-29） | 见下；遗留模板控件 140 → 135，`legacy/01-sidebar.css` 的 tag 规则清零 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -327,6 +328,30 @@ frozen `important` 645 → 624、`hexColor` 92 → 51、`literalRadius` 285 → 
 验证：`tool-run-group`、`tool-status-visual`、`tool-run-approval`、
 `visual-system-convergence` 共 21 例通过；审批卡暗色截图逐项核对
 （卡片、主次按钮、事实行、状态行）；build 与 lint 通过。
+
+### B3 · session 标签编辑器（2026-10-29）
+
+侧栏会话行的标签弹层是最后一个"整块 innerHTML + 手绑 onclick"的功能面板。外壳仍是
+命令式的（`#tagEditorPopover` 单例、按点击行重新定位、`.visible` 类），内容整体搬进
+React：
+
+- `react/session-tags/TagEditorPopover.tsx`：当前标签 → `Badge variant="secondary"`
+  + `Button variant="ghost" size="icon-xs"` 移除钮；输入 → shadcn `Input`
+  （`h-(--ui-control-sm)`）+ `Button size="sm"`；推荐标签 → `Button
+  variant="outline" size="xs"`；完成 → `Button variant="ghost" size="sm"`。
+- `react/session-tags/tagEditorHost.tsx`：`mountOwnedRoot` 挂载；再次渲染复用同一
+  棵树，所以草稿文字与焦点在增删标签后不丢。
+- `session/organize.ts` 只留数据与定位：`tagEditorProps()` 从 `serverCache` 派生，
+  增删后 `refreshTagEditor()` 重渲染，不再重开弹层（旧实现会重新定位并重新聚焦）。
+- 顺手修正定位：React 传下来的 `nativeEvent.currentTarget` 是根容器，`closest`
+  永远找不到行，弹层一直走"居中"分支。现在回退到
+  `.recent-item[data-recent-actual="…"]`，真正贴到被点的行下方。
+- `legacy/01-sidebar.css` 的 `.tag-editor-*` / `.tag-pill*` 共 21 行删除，外壳几何
+  移入 `components/menu.css`（`--ui-z-popover`、`--ui-radius-popover`）。
+
+新增 `e2e/session-tags.spec.mjs`：从行菜单打开、锚点位置、逗号分隔多添加、
+PUT `/tags` 载荷、移除、Esc 关闭。遗留模板控件 140 → 135；css-debt 冻结计数
+`literalRadius` 253 → 248、`literalFontSize` 453 → 444、`legacyChannel` 1140 → 1120。
 
 ## 待决问题
 
