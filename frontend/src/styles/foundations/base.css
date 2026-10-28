@@ -1,4 +1,4 @@
-html, body { background: var(--ui-bg-page); }
+html, body { background: var(--background); }
 html { scroll-behavior: smooth; }
 
 body, button, input, textarea, select {
@@ -6,7 +6,7 @@ body, button, input, textarea, select {
 }
 
 body {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-text-ui);
   line-height: var(--ui-text-ui-line);
   letter-spacing: 0;
@@ -15,7 +15,9 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-button, input, textarea, select { color: inherit; }
+@layer base {
+  button, input, textarea, select { color: inherit; }
+}
 button { -webkit-tap-highlight-color: transparent; }
 
 /* Focus contract: one double ring for every focusable surface.

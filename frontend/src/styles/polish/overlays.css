@@ -15,7 +15,7 @@
 .mobile-mode-menu {
   border-color: var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-family: var(--font-sans);
   font-size: var(--ui-text-ui);
   line-height: var(--ui-text-ui-line);
@@ -48,15 +48,15 @@
    the other menus, with the ghost wash for rows. */
 .chat-config-pop {
   padding: 6px;
-  background: var(--ui-bg-overlay);
-  color: var(--ui-text-primary);
+  background: var(--popover);
+  color: var(--foreground);
 }
 .chat-config-row {
   min-height: 40px;
   padding: 7px 10px;
   gap: 10px;
   font-size: var(--ui-font-size-sm);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .chat-config-row:hover,
 .chat-config-row:focus-visible { background: var(--ui-bg-hover-ghost); }
@@ -66,7 +66,7 @@
 .chat-config-row:disabled:hover { background: transparent; }
 .chat-config-row small,
 .chat-config-value { color: var(--ui-text-tertiary); }
-.chat-config-divider { background: var(--ui-border-default); }
+.chat-config-divider { background: var(--border); }
 .chat-config-row strong { font-size: var(--ui-font-size-sm); }
 .chat-config-row small { font-size: 11.5px; }
 .chat-config-row > svg { width: 17px; height: 17px; }
@@ -96,7 +96,7 @@
 .display-prefs-popover .display-prefs-seg.active,
 .display-prefs-popover .display-prefs-seg[aria-checked="true"] {
   background: var(--ui-bg-segment-active);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 
 /* ── Backdrops: one flat dim ──
@@ -232,7 +232,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 .cmd-k-input-row {
   gap: var(--ui-space-sm);
   padding: var(--ui-space-lg) var(--ui-space-lg);
-  border-bottom: 1px solid var(--ui-border-default);
+  border-bottom: 1px solid var(--border);
 }
 .cmd-k-input-row .cmd-k-icon {
   width: 16px;
@@ -240,7 +240,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   color: var(--ui-text-tertiary);
 }
 .cmd-k-input-row input {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-md);
 }
 .cmd-k-input-row input::placeholder { color: var(--ui-text-placeholder); }
@@ -252,7 +252,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   padding: 2px 6px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
   color: var(--ui-text-tertiary);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
@@ -275,14 +275,14 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   padding: var(--ui-space-sm) var(--ui-space-md);
   border-radius: var(--ui-radius-sm);
 }
-.cmd-k-row:hover { background: var(--ui-bg-hover); }
+.cmd-k-row:hover { background: var(--accent); }
 .cmd-k-row.selected { background: var(--ui-bg-pill-selected); }
 .cmd-k-row-title {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-sm);
 }
 .cmd-k-row-snippet {
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
 }
 .cmd-k-row-meta {
@@ -297,12 +297,12 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   padding: 1px 5px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
 }
 .cmd-k-foot {
-  border-top: 1px solid var(--ui-border-default);
+  border-top: 1px solid var(--border);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
 }
@@ -311,7 +311,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   margin-right: 4px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-xs);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
 }
@@ -337,28 +337,31 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 .settings-close { border-radius: var(--ui-radius-control, 8px); }
 
 /* Settings layout lives with its chrome; visited categories retain their DOM. */
-.settings-modal.settings-modal--full { display:flex; flex-direction:column; width:min(94vw,900px); max-width:900px; height:min(88vh,720px); max-height:88vh; overflow:hidden; border:1px solid var(--ui-border-default); background:var(--ui-bg-page); color:var(--ui-text-primary); font:var(--ui-text-ui)/var(--ui-text-ui-line) var(--font-sans); }
-.settings-modal--full .settings-header { display:flex; align-items:center; justify-content:space-between; flex:none; min-height:54px; padding:0 22px; border-bottom:1px solid var(--ui-border-default); }
+.settings-modal.settings-modal--full { display:flex; flex-direction:column; width:min(94vw,900px); max-width:900px; height:min(88vh,720px); max-height:88vh; overflow:hidden; border:1px solid var(--border); background:var(--background); color:var(--foreground); font:var(--ui-text-ui)/var(--ui-text-ui-line) var(--font-sans); }
+.settings-modal--full .settings-header { display:flex; align-items:center; justify-content:space-between; flex:none; min-height:54px; padding:0 22px; border-bottom:1px solid var(--border); }
 .settings-modal--full .settings-title { font-weight:var(--ui-font-weight-semibold); font-size:var(--ui-font-size-md); }
 .settings-modal--full .settings-shell { display:grid; grid-template-columns:218px minmax(0,1fr); min-height:0; flex:1; }
-.settings-modal--full .settings-nav { display:flex; flex-direction:column; align-items:stretch; gap:var(--ui-space-xxs); padding:var(--ui-space-lg) var(--ui-space-md); border-right:1px solid var(--ui-border-default); overflow:auto; background:var(--ui-bg-sidebar); }
-.settings-modal--full .settings-nav input { box-sizing:border-box; width:100%; height:var(--ui-control-desktop); margin-bottom:12px; padding:8px 10px; border:1px solid var(--ui-border-default); border-radius:var(--ui-radius-control); color:var(--ui-text-primary); background:var(--ui-bg-composer); font:inherit; }
-.settings-modal--full .settings-nav button { min-height:var(--ui-control-desktop); padding:var(--ui-space-sm) var(--ui-space-md); border:0; border-radius:var(--ui-radius-control); text-align:left; color:var(--ui-text-secondary); background:transparent; font:inherit; cursor:pointer; }
-.settings-modal--full .settings-nav button:hover { background:var(--ui-bg-hover); color:var(--ui-text-primary); }
-.settings-modal--full .settings-nav button.active { background:var(--ui-bg-selected); color:var(--ui-text-primary); font-weight:var(--ui-font-weight-medium); }
+.settings-modal--full .settings-nav { display:flex; flex-direction:column; align-items:stretch; gap:var(--ui-space-xxs); padding:var(--ui-space-lg) var(--ui-space-md); border-right:1px solid var(--border); overflow:auto; background:var(--sidebar); }
+.settings-modal--full .settings-nav input { box-sizing:border-box; width:100%; height:var(--ui-control-desktop); margin-bottom:12px; padding:8px 10px; border:1px solid var(--border); border-radius:var(--ui-radius-control); color:var(--foreground); background:var(--ui-bg-composer); font:inherit; }
+.settings-modal--full .settings-nav button { min-height:var(--ui-control-desktop); padding:var(--ui-space-sm) var(--ui-space-md); border:0; border-radius:var(--ui-radius-control); text-align:left; color:var(--muted-foreground); background:transparent; font:inherit; cursor:pointer; }
+.settings-modal--full .settings-nav button:hover { background:var(--accent); color:var(--foreground); }
+.settings-modal--full .settings-nav button.active { background:var(--ui-bg-selected); color:var(--foreground); font-weight:var(--ui-font-weight-medium); }
 .settings-modal--full .settings-body { display:block; min-height:0; overflow:auto; padding:var(--ui-space-xl); }
 .settings-modal--full .settings-pane[hidden] { display:none; }
+.settings-preference-fields { gap: 18px; }
+.settings-control-field { display: contents; }
+.settings-choice [data-slot="native-select-wrapper"] { flex-shrink: 0; }
 .settings-modal--full .settings-pane { display:flex; flex-direction:column; gap:18px; }
-.settings-modal--full .settings-pane > h2 { margin:0 0 10px; color:var(--ui-text-primary); font-size:var(--ui-font-size-xl); font-weight:var(--ui-font-weight-semibold); }
+.settings-modal--full .settings-pane > h2 { margin:0 0 10px; color:var(--foreground); font-size:var(--ui-font-size-xl); font-weight:var(--ui-font-weight-semibold); }
 .settings-modal--full .settings-pane > p { margin:0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-sm); }
-.settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:55px; border-bottom:1px solid var(--ui-border-default); color:var(--ui-text-primary); font-size:var(--ui-font-size-sm); }
-.settings-modal--full .settings-choice select { min-width:130px; min-height:var(--ui-control-desktop); padding:var(--ui-space-xs) var(--ui-space-sm); border:1px solid var(--ui-border-default); border-radius:var(--ui-radius-control); color:var(--ui-text-primary); background:var(--ui-bg-composer); font:inherit; }
+.settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:55px; border-bottom:1px solid var(--border); color:var(--foreground); font-size:var(--ui-font-size-sm); }
+.settings-modal--full .settings-choice select { min-width:130px; min-height:var(--ui-control-desktop); padding:var(--ui-space-xs) var(--ui-space-sm); border:1px solid var(--border); border-radius:var(--ui-radius-control); color:var(--foreground); background:var(--ui-bg-composer); font:inherit; }
 .settings-modal--full .settings-section { margin-top:20px; }
 .settings-modal--full .settings-save-error { margin:20px 0 0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-xxs); }
 @media(max-width:640px) {
   .settings-modal.settings-modal--full { width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
   .settings-modal--full .settings-shell { display:flex; flex-direction:column; }
-  .settings-modal--full .settings-nav { flex:none; flex-direction:row; gap:4px; padding:10px; border-right:0; border-bottom:1px solid var(--ui-border-default); overflow-x:auto; }
+  .settings-modal--full .settings-nav { flex:none; flex-direction:row; gap:4px; padding:10px; border-right:0; border-bottom:1px solid var(--border); overflow-x:auto; }
   .settings-modal--full .settings-nav input { display:none; }
   .settings-modal--full .settings-nav button { white-space:nowrap; }
   .settings-modal--full .settings-body { padding:20px 18px; }
@@ -374,8 +377,8 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
    legacy skin inverted it to a near-black disc in light mode, so the one
    avatar read as two different things. */
 .profile-avatar {
-  background: var(--ui-bg-control);
-  color: var(--ui-text-primary);
+  background: var(--secondary);
+  color: var(--foreground);
 }
 .profile-btn { border-radius: var(--ui-radius-control, 8px); }
 .profile-lang-toggle { border-radius: var(--ui-radius-control, 8px); }
@@ -387,23 +390,23 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
    white (light) / grey (dark) knob; on is the inverted primary with an
    on-accent knob, so the knob always contrasts with its track. */
 .stg-toggle-track {
-  background: var(--ui-bg-control);
-  border-color: var(--ui-border-default);
+  background: var(--secondary);
+  border-color: var(--border);
   transition: background-color var(--ui-duration-fast, 140ms) var(--ui-ease-apple, ease),
               border-color var(--ui-duration-fast, 140ms) var(--ui-ease-apple, ease);
 }
 .stg-toggle-track.on {
-  background: var(--ui-accent-strong);
-  border-color: var(--ui-accent-strong);
+  background: var(--primary);
+  border-color: var(--primary);
 }
 .stg-toggle-knob {
-  background: var(--ui-text-secondary);
+  background: var(--muted-foreground);
   box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
   transition: transform var(--ui-duration-fast, 140ms) var(--ui-ease-spring-snappy, ease),
               background-color var(--ui-duration-fast, 140ms) ease;
 }
-[data-mode="light"] .stg-toggle-knob { background: var(--ui-bg-page); }
-.stg-toggle-track.on .stg-toggle-knob { background: var(--ui-on-accent); }
+[data-mode="light"] .stg-toggle-knob { background: var(--background); }
+.stg-toggle-track.on .stg-toggle-knob { background: var(--primary-foreground); }
 
 /* ── Settings · Account pane ── */
 .settings-account-card {
@@ -433,7 +436,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   padding: 0;
   margin: 0;
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font: var(--ui-font-weight-semibold) 16px/1.3 var(--cg-font);
   outline: none;
   border-radius: var(--ui-radius-xs, 4px);
@@ -448,7 +451,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   white-space: nowrap;
 }
 .settings-choice-value {
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   text-align: right;
 }
@@ -457,8 +460,8 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: var(--ui-font-size-xxs);
 }
-.settings-danger-zone .settings-section-head h3 { color: var(--ui-danger); }
-.settings-danger-text { color: var(--ui-danger); }
+.settings-danger-zone .settings-section-head h3 { color: var(--destructive); }
+.settings-danger-text { color: var(--destructive); }
 
 /* ── Settings · Display pane — segmented controls reuse the popover skin ── */
 .settings-pane .display-prefs-segs {
@@ -482,7 +485,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 .settings-pane .display-prefs-seg.on,
 .settings-pane .display-prefs-seg[aria-pressed="true"] {
   background: var(--ui-bg-segment-active);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .settings-bg-pickers {
   display: flex;
@@ -495,13 +498,13 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   align-items: center;
   gap: 8px;
   font-size: var(--ui-font-size-xs);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 .settings-bg-picker input[type="color"] {
   width: 34px;
   height: 30px;
   padding: 2px;
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control, 8px);
   background: var(--ui-bg-surface);
   cursor: pointer;
@@ -528,15 +531,15 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   min-width: 0;
   padding: var(--ui-space-md);
   padding-right: var(--ui-space-xxl);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control);
-  background: var(--ui-bg-control);
-  color: var(--ui-text-primary);
+  background: var(--secondary);
+  color: var(--foreground);
   text-align: left;
   font: inherit;
   cursor: pointer;
 }
-.tone-preset-btn:hover { background: var(--ui-bg-hover); }
+.tone-preset-btn:hover { background: var(--accent); }
 .tone-preset-btn[aria-pressed="true"] {
   border-color: var(--ui-border-strong);
   background: var(--ui-bg-selected);
@@ -546,12 +549,12 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   position: absolute;
   top: var(--ui-space-md);
   right: var(--ui-space-md);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-semibold);
 }
 .tone-preset-label { font-weight: var(--ui-font-weight-semibold); }
 .tone-preset-desc {
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line);
 }
@@ -561,9 +564,9 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   padding: 10px 14px;
   border-radius: var(--ui-radius-lg);
   border: 0.5px solid var(--ui-border-subtle);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
   font-size: calc(13.5px * var(--app-font-scale, 1));
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-family: inherit;
   outline: none;
   resize: vertical;
@@ -592,7 +595,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   gap: 12px;
   padding: 8px 12px;
   border-radius: var(--ui-radius-control);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
   border: 0.5px solid var(--ui-border-subtle);
 }
 .settings-memory-content {
@@ -615,7 +618,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 }
 .settings-memory-val {
   font-size: var(--ui-font-size-xs);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -623,7 +626,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 .settings-memory-del-btn {
   background: transparent;
   border: none;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   padding: 4px;
   border-radius: var(--ui-radius-xs);
   cursor: pointer;
@@ -633,7 +636,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   transition: color 0.12s, background 0.12s;
 }
 .settings-memory-del-btn:hover {
-  color: var(--ui-danger);
+  color: var(--destructive);
   background: var(--ui-bg-chip);
 }
 .settings-memory-add-form {
@@ -653,7 +656,7 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
 }
 .settings-empty-hint {
   font-size: 12.5px;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   padding: 12px 4px;
   font-style: italic;
   line-height: 1.4;

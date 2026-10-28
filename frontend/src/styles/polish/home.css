@@ -43,8 +43,8 @@
 
   #appShell .home-quick-action:hover,
   #appShell .home-quick-action:focus-within {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
   }
 
   #appShell .home-quick-action-primary {
@@ -109,7 +109,7 @@
     border: 0;
     border-radius: 50%;
     background: transparent;
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
     opacity: 0;
     pointer-events: none;
     transform: translateY(-50%);
@@ -133,7 +133,7 @@
   #appShell .home-quick-action-dismiss:hover,
   #appShell .home-quick-action-dismiss:focus-visible {
     background: var(--ui-bg-hover-ghost);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
   }
 
   #appShell .home-quick-action[hidden] { display: none; }
@@ -159,7 +159,7 @@
   }
   #appShell .home-tutor-starters h2 {
     margin: 0 0 12px 12px;
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
     font-size: var(--ui-font-size-sm);
     font-weight: var(--ui-font-weight-regular);
     line-height: 1.5;
@@ -179,7 +179,7 @@
     border: 1px solid var(--ui-border-subtle);
     border-radius: var(--ui-radius-composer);
     background: var(--ui-bg-composer);
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
     text-align: start;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -191,11 +191,11 @@
                 border-color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell .home-tutor-card:hover {
-    background: var(--ui-bg-hover);
+    background: var(--accent);
     border-color: var(--ui-border-strong);
   }
   #appShell .home-tutor-card strong {
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font-size: var(--ui-text-ui);
     font-weight: var(--ui-font-weight-medium);
   }
@@ -205,7 +205,7 @@
     width: 24px;
     height: 24px;
     margin-bottom: 8px;
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font-size: 24px;
     line-height: 1;
   }

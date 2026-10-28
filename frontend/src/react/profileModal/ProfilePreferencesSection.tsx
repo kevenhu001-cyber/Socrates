@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
 import { Button as UiButton } from '../ui/Button';
 import type { ProfileDispatch, ProfileSnapshot } from './types';
 import { profileText } from './profileText';
@@ -53,10 +55,10 @@ export function ProfilePreferencesSection({
       </UiButton>
 
       <div className="profile-instructions">
-        <label className="profile-instructions-label" htmlFor="profileInstResponse">
+        <ShadcnLabel className="profile-instructions-label" htmlFor="profileInstResponse">
           {profileText('profile.howShouldIRespond', 'How should I respond?')}
-        </label>
-        <textarea
+        </ShadcnLabel>
+        <ShadcnTextarea
           id="profileInstResponse"
           name="profileInstResponse"
           className="profile-instructions-area"
@@ -65,14 +67,14 @@ export function ProfilePreferencesSection({
           defaultValue={snapshot.instResponse}
           onInput={dispatch.onInstChange}
         />
-        <label
+        <ShadcnLabel
           className="profile-instructions-label"
           htmlFor="profileInstAbout"
           style={{ marginTop: 10 }}
         >
           {profileText('profile.whatDoYouKnow', 'What do you know about me?')}
-        </label>
-        <textarea
+        </ShadcnLabel>
+        <ShadcnTextarea
           id="profileInstAbout"
           name="profileInstAbout"
           className="profile-instructions-area"

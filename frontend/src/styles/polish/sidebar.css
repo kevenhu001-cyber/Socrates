@@ -38,7 +38,7 @@
   #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
     border-radius: var(--ui-radius-sm);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
@@ -46,8 +46,8 @@
   #appShell #sidebarCloseBtn:hover,
   #appShell #newChatBtn:focus-visible,
   #appShell #sidebarCloseBtn:focus-visible {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
   }
   #appShell #newChatBtn svg,
   #appShell #sidebarCloseBtn svg {
@@ -72,19 +72,19 @@
     /* The reference sets its destination labels in the primary ink: the
        rail is a list of places to go, and the rail's own surface already
        separates it from the page. */
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #sidebarNav .sidebar-nav-btn:hover,
   #appShell #sidebarNav .sidebar-nav-btn:focus-visible {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
   }
   #appShell #sidebarNav .sidebar-nav-btn.active,
   #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"] {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
     font-weight: var(--ui-font-weight-medium);
   }
   /* Grouping comes from breathing room, not another line in the rail. */
@@ -103,10 +103,10 @@
     /* Geist input: the system radius, the default hairline and the raised
        surface. The field used to be a transparent nav row that only gained
        a fill on hover, which made it hard to read as a text field at rest. */
-    border: 1px solid var(--ui-border-default);
+    border: 1px solid var(--border);
     border-radius: var(--ui-radius-sm);
     background: var(--ui-bg-surface);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 border-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
@@ -114,7 +114,7 @@
   }
   #appShell #sidebar .sidebar-search:hover {
     border-color: var(--ui-border-strong);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
   }
   /* The pill carries the focus treatment for its bare input (the input has
      no frame of its own, so a ring around it read as a box drawn around the
@@ -123,21 +123,21 @@
   #appShell #sidebar .sidebar-search:focus-within {
     border-color: var(--ui-border-strong);
     background: var(--ui-bg-surface);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     box-shadow: var(--ui-focus-shadow);
   }
   #appShell #sidebar .sidebar-search svg {
     width: 16px;
     height: 16px;
     flex-basis: 16px;
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
     transition: color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .sidebar-search:hover svg,
   #appShell #sidebar .sidebar-search:focus-within svg {
-    color: var(--ui-text-primary);
+    color: var(--foreground);
   }
-  #appShell #sidebarSearch { color: var(--ui-text-primary); }
+  #appShell #sidebarSearch { color: var(--foreground); }
   #appShell #sidebarSearch::placeholder { color: var(--ui-text-placeholder); }
   #appShell #sidebarSearch:focus::placeholder {
     color: var(--ui-text-placeholder);
@@ -165,7 +165,7 @@
   }
   #appShell #sidebar .recents-empty {
     padding: var(--ui-space-xl) var(--ui-space-sm);
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
     font-size: var(--ui-font-size-xs);
     line-height: var(--ui-text-ui-line);
     text-align: start;
@@ -187,25 +187,25 @@
     gap: 0;
     padding-inline: 8px;
     border-radius: var(--ui-radius-sm);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #sidebar .recent-item-text {
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font-size: var(--ui-text-ui);
     line-height: var(--ui-text-ui-line);
     transition: color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
   }
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current="true"] {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
   }
   #appShell #sidebar .recent-item.active .recent-item-text,
   #appShell #sidebar .recent-item[aria-current="true"] .recent-item-text {
@@ -222,8 +222,8 @@
                 color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item-overflow:hover {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
   }
 
   /* The footer is the last navigation row, not a separate card. Space is
@@ -243,15 +243,15 @@
     min-height: 40px;
     padding: 6px 8px;
     border-radius: var(--ui-radius-sm);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell .sidebar-account-trigger:hover,
   #appShell .sidebar-account-trigger:focus-visible,
   #appShell .sidebar-account-trigger[aria-expanded="true"] {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
   }
   #appShell #sidebarUserRow .user-avatar {
     flex-basis: 28px;
@@ -292,8 +292,8 @@
                 color var(--ui-duration-hover) ease;
   }
   #appShell .sidebar-account-menu :is(button, a):hover {
-    background: var(--ui-bg-hover);
-    color: var(--ui-text-primary);
+    background: var(--accent);
+    color: var(--foreground);
   }
   #appShell .sidebar-account-menu svg {
     width: 18px;
@@ -337,8 +337,8 @@
 }
 @media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 }
 
@@ -348,15 +348,15 @@
 #appShell .sidebar-nav-btn {
   /* Reference drawer renders nav labels and glyphs at primary brightness,
      same as the session titles below them. */
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
 }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .sidebar-nav-btn:hover { background: var(--accent); color: var(--foreground); }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--ui-text-primary); }
+#appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--foreground); }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn .nav-kbd {
@@ -418,8 +418,8 @@
 @media (max-width: 768px) {
 #appShell .sidebar-search input {
   font-size: var(--ui-font-size-xs);
-  color: var(--ui-text-primary);
-  background: color-mix(in srgb, var(--ui-text-primary) 1%, transparent);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 1%, transparent);
   transform: translateZ(0);
 }
 }
@@ -430,8 +430,8 @@
   border-radius: var(--ui-radius-control, 8px);
   color: var(--ui-text-tertiary);
 }
-#appShell .sidebar-view-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
-#appShell .sidebar-view-btn.active { background: var(--ui-bg-surface); color: var(--ui-text-primary); }
+#appShell .sidebar-view-btn:hover { background: var(--accent); color: var(--foreground); }
+#appShell .sidebar-view-btn.active { background: var(--ui-bg-surface); color: var(--foreground); }
 
 /* ── Recents — tighter rows, quieter labels ── */
 @media (max-width: 768px) {
@@ -458,7 +458,7 @@
   background: transparent;
   color: var(--ui-text-tertiary);
 }
-#appShell .recents-head-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .recents-head-btn:hover { background: var(--accent); color: var(--foreground); }
 }
 /* The reference drawer footer is identity-only; theme/language/settings
    stay available on the desktop footer and the profile surfaces. */
@@ -471,7 +471,7 @@
      clear WCAG AA on the light sidebar rail, and keep its 12px size. The phone
      drawer used to drop to 11px here while the desktop rail stayed at 12px,
      so the same "Today" group header changed size with the viewport. */
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-medium);
   letter-spacing: 0.04em;
@@ -479,7 +479,7 @@
 #appShell .recents-title {
   /* Matches parity/sidebar.css: small labels use the secondary step so they
      clear WCAG AA on the light sidebar rail. */
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 }
 @media (max-width: 768px) {
@@ -501,13 +501,13 @@
   border: 0;
 }
 #appShell .recent-item {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   transition: background-color var(--ui-duration-fast) ease;
 }
 /* Reference drawer titles sit at primary brightness; keep the pinned
    accent intact by scoping the raise to non-pinned rows. */
 #appShell .recent-item:not(.pinned) .recent-item-text {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 }
 /* Current session uses the same quiet tonal wash as primary navigation.
@@ -596,8 +596,8 @@
 }
 @media (max-width: 768px) {
 #appShell .sidebar-footer .icon-btn:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 }
 @media (max-width: 768px) {
@@ -618,7 +618,7 @@
 }
 #appShell .sidebar-nav-btn[data-nav="new"] {
   background: var(--ui-bg-surface);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   border-radius: var(--ui-radius-row);
 }
 }
@@ -644,12 +644,12 @@
   gap: 12px;
   padding: 36px 24px;
   text-align: center;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: 13.5px;
   line-height: 20px;
 }
 #appShell .recents-empty-text a {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   text-decoration: underline;
   text-underline-offset: 2px;
 }

@@ -24,6 +24,7 @@
 /* Tier 3 — canonical component layer */
 @import './foundations/fonts.css';
 @import './foundations/base.css';
+@import './foundations/shadcn.css';
 @import './foundations/collapse.css';
 @import './layout/app-shell.css';
 @import './components/sidebar.css';

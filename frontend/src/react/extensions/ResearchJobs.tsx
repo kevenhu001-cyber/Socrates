@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
 import { Button as UiButton } from '../ui/Button';
 import { useEffect, useReducer, useState, useSyncExternalStore } from 'react';
 import type { FormEvent } from 'react';
@@ -106,8 +108,8 @@ function ResearchFocusForm({ jobId, busy, onCancel, onSubmit }: { jobId: string;
   };
   return (
     <form className="research-refine-form" onSubmit={(event) => { void submit(event); }}>
-      <label className="research-refine-label" htmlFor={`research-focus-${jobId}`}>{t('research.adjustFocusLabel')}</label>
-      <textarea
+      <ShadcnLabel className="research-refine-label" htmlFor={`research-focus-${jobId}`}>{t('research.adjustFocusLabel')}</ShadcnLabel>
+      <ShadcnTextarea
         id={`research-focus-${jobId}`}
         className="research-refine-input"
         value={instruction}

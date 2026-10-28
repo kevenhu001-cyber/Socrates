@@ -1,3 +1,4 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/Button';
 import React from 'react';
 import { t } from '../legacy/gateway.ts';
@@ -58,7 +59,7 @@ export function SessionRowDetails({
           )}
           {renaming ? (
             <form onClick={(event) => event.stopPropagation()} onSubmit={handleRenameSubmit}>
-              <input
+              <ShadcnInput
                 name="title"
                 aria-label={t('session.ctxRename')}
                 defaultValue={session.title || session.topic || ''}

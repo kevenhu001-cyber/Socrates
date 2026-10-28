@@ -1,4 +1,5 @@
-import { Button as UiButton } from '../../ui/Button';
+import { Tabs, TabsList, TabsTrigger } from '../../ui/shadcn/tabs';
+import { cn } from 'cn';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import { i18n } from './workspaceUi';
 
@@ -18,22 +19,22 @@ export function LibraryCategoryTabs({ chip, onChipChange, dispatch }: LibraryCat
   ] as const;
 
   return (
-    <div className="library-chips-bar" role="tablist" aria-label={i18n('sidebar.library.title', '资料库')}>
+    <Tabs value={chip} onValueChange={(value) => {
+      onChipChange(value as LibraryCategoryTabsProps['chip']);
+      if (value === 'images') dispatch.switchTab('files');
+    }}>
+    <TabsList className="library-chips-bar" aria-label={i18n('sidebar.library.title', '资料库')}>
       {categories.map((category) => (
-        <UiButton
+        <TabsTrigger
           key={category.id}
           type="button"
-          role="tab"
-          aria-selected={chip === category.id}
-          className={'library-chip' + (chip === category.id ? ' active' : '')}
-          onClick={() => {
-            onChipChange(category.id);
-            if (category.id === 'images') dispatch.switchTab('files');
-          }}
+          value={category.id}
+          className={cn('library-chip', chip === category.id && 'active')}
         >
           {category.label}
-        </UiButton>
+        </TabsTrigger>
       ))}
-    </div>
+    </TabsList>
+    </Tabs>
   );
 }

@@ -88,7 +88,7 @@
 
   /* User bubble */
   #appShell #msgList .msg.user .msg-body {
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     max-width: 70%;
     padding: 10px 16px;
     border: 0;
@@ -106,7 +106,7 @@
   #appShell #msgList .msg-body p:last-child { margin-bottom: 0; }
   #appShell #msgList .msg-body strong { font-weight: var(--ui-font-weight-semibold); }
   #appShell #msgList .msg-body :where(h1, h2, h3, h4) {
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font-family: var(--font-sans);
     font-weight: var(--ui-font-weight-semibold);
     letter-spacing: normal;
@@ -123,7 +123,7 @@
     height: 0;
     margin: 24px 0;
     border: 0;
-    border-top: 1px solid var(--ui-border-default);
+    border-top: 1px solid var(--border);
   }
   #appShell #msgList .msg-body a:not(.code-block-copy) {
     color: inherit;
@@ -140,8 +140,8 @@
     border: 0;
     border-inline-start: 3px solid var(--ui-border-strong);
     border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0;
-    background: color-mix(in srgb, var(--ui-text-primary) 3%, transparent);
-    color: var(--ui-text-secondary);
+    background: color-mix(in srgb, var(--foreground) 3%, transparent);
+    color: var(--muted-foreground);
     font-style: normal;
   }
   #appShell #msgList .msg-body blockquote p { color: inherit; font-style: normal; }
@@ -151,7 +151,7 @@
     padding: 2px 5px;
     border-radius: var(--ui-radius-sm);
     background: var(--ui-bg-chip);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font-family: var(--font-mono);
     font-size: 0.875em;
     font-weight: var(--ui-font-weight-medium);
@@ -202,7 +202,7 @@
   #appShell #msgList .msg-body .code-block-copy:hover,
   #appShell #msgList .msg-body .code-block-expand:hover {
     background: var(--ui-bg-hover-ghost);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
   }
   #appShell #msgList .msg-body pre:not(.tool-inline-detail-value) {
     margin: 0 0 16px;
@@ -211,7 +211,7 @@
     border: 1px solid var(--ui-border-code);
     border-radius: var(--ui-radius-xl);
     background: var(--ui-bg-code);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font-family: var(--font-mono);
     font-size: calc(14px * var(--app-type-scale));
     line-height: 1.6;
@@ -246,7 +246,7 @@
     border: 0;
     border-bottom: 1px solid var(--ui-border-subtle);
     background: transparent;
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     text-align: left;
     vertical-align: top;
   }

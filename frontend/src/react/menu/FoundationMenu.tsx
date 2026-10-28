@@ -1,6 +1,8 @@
 import { Button as UiButton } from '../ui/Button';
 import { useId, useLayoutEffect, useRef, type ComponentProps, type ComponentPropsWithRef, type ReactElement, type ReactNode, type RefObject } from 'react';
 import { Menu } from '@base-ui/react/menu';
+import { cn } from 'cn';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuPortal, DropdownMenuPopup, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLink, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '../ui/shadcn/dropdown-menu';
 import { ENABLED_MENU_ITEM_SELECTOR, MENU_ANCHOR_GAP, MENU_EDGE_GUTTER, MENU_PHONE_BREAKPOINT, MENU_PHONE_SPILL_OFFSET } from './menuPrimitive';
 
 export interface FoundationMenuProps {
@@ -32,16 +34,16 @@ export function FoundationMenu({ open, onOpenChange, trigger, children, classNam
   const triggerId = trigger.props.id || generatedId;
   const phoneSpill = spill && window.innerWidth <= MENU_PHONE_BREAKPOINT;
   const host = document.getElementById('appShell');
-  return <Menu.Root open={open} onOpenChange={onOpenChange} modal={false} triggerId={triggerId}>
-    <Menu.Trigger id={triggerId} render={trigger} />
-    {host && <Menu.Portal container={host}>
+  return <DropdownMenu open={open} onOpenChange={onOpenChange} modal={false} triggerId={triggerId}>
+    <DropdownMenuTrigger id={triggerId} render={trigger} />
+    {host && <DropdownMenuPortal container={host}>
       <Menu.Positioner positionMethod="fixed" side={above ? 'top' : 'bottom'} align={phoneSpill ? 'start' : align}
         alignOffset={phoneSpill ? -MENU_PHONE_SPILL_OFFSET : 0}
         sideOffset={above ? MENU_EDGE_GUTTER : phoneSpill ? -MENU_ANCHOR_GAP : MENU_ANCHOR_GAP}
         collisionAvoidance={{ side: 'flip', align: 'shift' }}
         collisionPadding={MENU_EDGE_GUTTER} style={{ zIndex: 'var(--ui-z-popover)' }}>
-        <Menu.Popup
-          className={`anchored-menu ${className}`.trim()}
+        <DropdownMenuPopup
+          className={cn('anchored-menu', className)}
           aria-label={label}
           style={{ maxHeight: 'var(--available-height)', overflowY: 'auto' }}
           render={(props, state) => <div {...props}
@@ -62,29 +64,29 @@ export function FoundationMenu({ open, onOpenChange, trigger, children, classNam
             }
           }}
           onClick={(event) => event.stopPropagation()}
-        >{children}</Menu.Popup>
+        ><DropdownMenuGroup>{children}</DropdownMenuGroup></DropdownMenuPopup>
       </Menu.Positioner>
-    </Menu.Portal>}
-  </Menu.Root>;
+    </DropdownMenuPortal>}
+  </DropdownMenu>;
 }
 
-export function FoundationMenuItem({ onClick, ...props }: Omit<ComponentProps<typeof Menu.Item>, 'onClick'> & {
+export function FoundationMenuItem({ onClick, ...props }: Omit<ComponentProps<typeof DropdownMenuItem>, 'onClick'> & {
   onClick?: ComponentProps<'button'>['onClick'];
 }) {
   // Base UI types Item events against its default div; this adapter always
   // renders a native button, including for callbacks that need currentTarget.
-  return <Menu.Item {...props} onClick={onClick as ComponentProps<typeof Menu.Item>['onClick']}
+  return <DropdownMenuItem {...props} onClick={onClick as ComponentProps<typeof DropdownMenuItem>['onClick']}
     nativeButton render={<UiButton type="button" />} />;
 }
 
-export function FoundationMenuLink(props: ComponentProps<typeof Menu.LinkItem>) {
-  return <Menu.LinkItem closeOnClick {...props} />;
+export function FoundationMenuLink(props: ComponentProps<typeof DropdownMenuLink>) {
+  return <DropdownMenuLink closeOnClick {...props} />;
 }
 
 export function FoundationMenuRadioGroup(props: ComponentProps<typeof Menu.RadioGroup>) {
-  return <Menu.RadioGroup {...props} />;
+  return <DropdownMenuRadioGroup {...props} />;
 }
 
-export function FoundationMenuRadioItem(props: ComponentProps<typeof Menu.RadioItem>) {
-  return <Menu.RadioItem closeOnClick {...props} nativeButton render={<UiButton type="button" />} />;
+export function FoundationMenuRadioItem(props: ComponentProps<typeof DropdownMenuRadioItem>) {
+  return <DropdownMenuRadioItem surface closeOnClick {...props} nativeButton render={<UiButton type="button" />} />;
 }

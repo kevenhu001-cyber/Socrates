@@ -46,7 +46,7 @@
   border: 1px solid transparent;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font: var(--ui-font-weight-regular) var(--ui-text-ui) / 20px var(--font-sans, system-ui, sans-serif);
   white-space: nowrap;
   cursor: pointer;
@@ -60,8 +60,8 @@
 }
 
 .btn:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 .btn:disabled,
@@ -90,7 +90,7 @@
 /* ─────────── Semantic variants ─────────── */
 .btn-ghost {
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-regular);
 }
 
@@ -98,7 +98,7 @@
 .btn-ghost[aria-current="page"],
 .btn-ghost[aria-selected="true"] {
   background: var(--ui-bg-surface);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 
 /* ─────────── .btn-icon ─────────── */
@@ -113,7 +113,7 @@
   border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   cursor: pointer;
   user-select: none;
   transition:
@@ -124,12 +124,12 @@
 }
 
 .btn-icon:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 [data-mode="light"] .btn {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 
 .btn-icon:disabled,
@@ -148,8 +148,8 @@
 .btn-icon.circle { border-radius: var(--ui-radius-pill); }
 .btn-icon.square { border-radius: var(--ui-radius-control); }
 .btn-icon.accent {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 .btn-icon.sm {

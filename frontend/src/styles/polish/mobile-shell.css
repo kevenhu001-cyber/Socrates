@@ -7,7 +7,7 @@
     padding: env(safe-area-inset-top, 0px) 8px 0;
     gap: 8px;
     border: 0;
-    background: var(--ui-bg-page);
+    background: var(--background);
   }
   #appShell .top-bar-left, #appShell .top-bar-right { gap: 8px; }
   #appShell #sidebarOpenBtn, #appShell #mobileNewChatBtn {
@@ -18,7 +18,7 @@
     border: 0;
     background: transparent;
     box-shadow: none;
-    color: var(--ui-text-primary);
+    color: var(--foreground);
   }
   #appShell #sidebarOpenBtn svg, #appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
   #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
@@ -53,7 +53,7 @@
     border: 0;
     border-radius: var(--ui-radius-pill);
     background: transparent;
-    color: var(--ui-text-primary);
+    color: var(--foreground);
   }
   body:not([data-conversation-active="true"]) #appShell #topModelSwitcher :is(.top-model-switcher-name, .top-model-switcher-model, .top-model-switcher-caret) { display: none; }
   body:not([data-conversation-active="true"]) #appShell .top-model-switcher-settings { display: block; width: 22px; height: 22px; }
@@ -65,7 +65,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font-size: var(--ui-font-size-lg);
     font-weight: var(--ui-font-weight-semibold);
     line-height: 24px;
@@ -100,7 +100,7 @@
     font-weight: var(--ui-font-weight-regular);
     line-height: 30px;
     letter-spacing: 0;
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     text-align: center;
   }
   #appShell .home-quick-actions { display: none; }

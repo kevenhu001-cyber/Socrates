@@ -1,3 +1,4 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
 import type { KeyboardEvent, Ref } from 'react';
 
 interface CmdKSearchInputProps {
@@ -21,7 +22,7 @@ export function CmdKSearchInput({ inputRef, onInput, onKey }: CmdKSearchInputPro
           <path d="m21 21-4.3-4.3" />
         </svg>
       </span>
-      <input
+      <ShadcnInput
         ref={inputRef}
         type="text"
         id="cmdKInput"

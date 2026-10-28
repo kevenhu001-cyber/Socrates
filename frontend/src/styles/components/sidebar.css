@@ -1,6 +1,6 @@
 @media (max-width: 768px) {#appShell .sidebar {
-  background: var(--ui-bg-sidebar);
-  color: var(--ui-text-primary);
+  background: var(--sidebar);
+  color: var(--foreground);
   box-shadow: none;
 }
 }
@@ -15,17 +15,17 @@
 }
 @media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-header .icon-btn:hover { background: var(--ui-bg-hover); }
+#appShell .sidebar-header .icon-btn:hover { background: var(--accent); }
 }
 
 
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 }
 @media (max-width: 768px) {
@@ -35,7 +35,7 @@
 #appShell .sidebar-nav-btn .nav-new-badge {
   margin-left: 4px;
   padding: 1px 6px 2px;
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-pill);
   color: var(--ui-text-tertiary);
   font-size: 10px;
@@ -44,7 +44,7 @@
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn:hover,
-#appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--foreground); }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn.active { font-weight: var(--ui-font-weight-regular); }
@@ -55,7 +55,7 @@
 body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-active):not(.exam-active)
   #appShell .sidebar-nav-btn[data-nav="new"] {
   background: var(--ui-bg-raised);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 }
 @media (max-width: 768px) {
@@ -103,19 +103,19 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   border: 0;
   border-radius: var(--ui-radius-row);
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   text-align: left;
   opacity: 1;
   cursor: pointer;
   box-sizing: border-box;
 }
-#appShell .recent-item-menu .recent-item-menu-row:hover { background: var(--ui-bg-hover); }
+#appShell .recent-item-menu .recent-item-menu-row:hover { background: var(--accent); }
 #appShell .recent-item-menu .recent-item-del {
-  color: var(--ui-danger);
+  color: var(--destructive);
 }
 #appShell .recent-item-menu .recent-item-del .recent-item-action-icon {
-  color: var(--ui-danger);
+  color: var(--destructive);
 }
 #appShell .recent-item-menu .recent-item-action-icon {
   display: inline-flex;
@@ -124,7 +124,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   overflow: hidden;
 }
 #appShell .recent-item-menu .recent-item-action-icon svg {
@@ -172,7 +172,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-search input { color: var(--ui-text-primary); font-size: var(--ui-font-size-sm); }
+#appShell .sidebar-search input { color: var(--foreground); font-size: var(--ui-font-size-sm); }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
@@ -184,12 +184,12 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 @media (max-width: 768px) {
 #appShell .recent-item {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 }
 @media (max-width: 768px) {
 #appShell .recent-item:hover,
-#appShell .recent-item.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .recent-item.active { background: var(--ui-bg-raised); color: var(--foreground); }
 }
 
 
@@ -201,7 +201,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     transition: transform var(--ui-duration-normal) var(--ui-ease-out), box-shadow var(--ui-duration-normal) ease;
     box-shadow: 1px 0 0 var(--ui-border-subtle), 4px 0 24px -4px rgb(0 0 0 / 14%), 12px 0 36px -8px rgb(0 0 0 / 10%);
     z-index: var(--ui-z-drawer);
-    background: var(--ui-bg-sidebar);
+    background: var(--sidebar);
     border-right: 1px solid var(--ui-border-subtle);
   }
   [data-mode="dark"] #appShell .sidebar {
@@ -265,16 +265,16 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     color: var(--ui-text-tertiary);
   }
   #appShell .recent-item-overflow svg { width: 18px; height: 18px; }
-  #appShell .recent-item-overflow:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+  #appShell .recent-item-overflow:hover { background: var(--accent); color: var(--foreground); }
 }
 
 /* Shared viewport menus escape scrolling drawers via the menu portal. */
 #appShell .recent-item-menu.is-open { display: flex; }
-#appShell .sidebar-account-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 6px; border: 0; border-radius: var(--ui-radius-row); background: transparent; color: var(--ui-text-primary); text-align: left; font: inherit; cursor: pointer; }
-#appShell .sidebar-account-trigger:hover, #appShell .sidebar-account-trigger[aria-expanded="true"] { background: var(--ui-bg-hover); }
-#appShell .sidebar-account-menu { z-index: var(--ui-z-popover, 200); width: 242px; max-width: calc(100vw - 12px); box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-popover); background: var(--ui-bg-overlay); color: var(--ui-text-primary); box-shadow: var(--ui-shadow-popover); }
+#appShell .sidebar-account-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 6px; border: 0; border-radius: var(--ui-radius-row); background: transparent; color: var(--foreground); text-align: left; font: inherit; cursor: pointer; }
+#appShell .sidebar-account-trigger:hover, #appShell .sidebar-account-trigger[aria-expanded="true"] { background: var(--accent); }
+#appShell .sidebar-account-menu { z-index: var(--ui-z-popover, 200); width: 242px; max-width: calc(100vw - 12px); box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-popover); background: var(--popover); color: var(--foreground); box-shadow: var(--ui-shadow-popover); }
 #appShell .sidebar-account-menu :is(button, a) { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 4px; border: 0; border-radius: var(--ui-radius-control); background: transparent; color: inherit; font: inherit; font-size: var(--ui-font-size-sm); text-align: left; text-decoration: none; cursor: pointer; }
-#appShell .sidebar-account-menu :is(button, a):hover { background: var(--ui-bg-hover); }
+#appShell .sidebar-account-menu :is(button, a):hover { background: var(--accent); }
 #appShell .sidebar-account-menu svg { width: 20px; height: 20px; flex: 0 0 20px; }
 #appShell .sidebar-account-menu hr { border: 0; border-top: 1px solid var(--ui-border-strong); margin: 12px 0 8px; }
 #appShell .sidebar-account-menu .account-menu-identity { min-height: 44px; }
@@ -290,11 +290,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   padding: 8px;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-popover);
-  background: var(--ui-bg-overlay);
-  color: var(--ui-text-primary);
+  background: var(--popover);
+  color: var(--foreground);
   box-shadow: var(--ui-shadow-popover);
 }
-#appShell .organize-menu-heading { padding: 8px 10px; color: var(--ui-text-secondary); font-size: var(--ui-font-size-sm); }
+#appShell .organize-menu-heading { padding: 8px 10px; color: var(--muted-foreground); font-size: var(--ui-font-size-sm); }
 #appShell .recents-organize-menu button {
   display: flex;
   align-items: center;
@@ -311,21 +311,21 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   text-align: start;
   cursor: pointer;
 }
-#appShell .recents-organize-menu button:hover { background: var(--ui-bg-hover); }
+#appShell .recents-organize-menu button:hover { background: var(--accent); }
 #appShell .recents-organize-menu svg { width: 20px; height: 20px; flex: 0 0 20px; }
 #appShell .recents-organize-menu .organize-menu-check { margin-inline-start: auto; width: 16px; height: 16px; flex-basis: 16px; }
 #appShell .recents-organize-menu hr { margin: 6px 8px; border: 0; border-top: 1px solid var(--ui-border-subtle); }
 #appShell .recents-project-label {
   padding: 16px 12px 6px;
   overflow: hidden;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 @media (max-width: 768px) {
-  #appShell .recent-item-menu { min-width: 158px; width: 158px; gap: 0; padding: 14px; border-radius: var(--ui-radius-popover); background: var(--ui-bg-overlay); }
+  #appShell .recent-item-menu { min-width: 158px; width: 158px; gap: 0; padding: 14px; border-radius: var(--ui-radius-popover); background: var(--popover); }
   #appShell .recent-item-menu .recent-item-menu-row { min-height: 40px; height: 40px; padding: 0 6px; font-size: var(--ui-font-size-sm); }
   #appShell .recent-item-menu .recent-item-action-icon, #appShell .recent-item-menu .recent-item-action-icon svg { width: 18px; height: 18px; flex-basis: 18px; }
 }

@@ -1,3 +1,5 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/Button';
 import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
 import type { SettingsPaneProps } from './settings.types';
@@ -13,7 +15,7 @@ export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {
         <div className="settings-account-card">
           <span className="user-avatar settings-account-avatar">{profile.user.initials || '?'}</span>
           <div className="settings-account-id">
-            <input
+            <ShadcnInput
               className="settings-account-name"
               type="text"
               maxLength={50}
@@ -29,9 +31,9 @@ export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {
               {profile.user.email || label('访客模式', 'Guest session')}
             </span>
           </div>
-          <span className={'tier-badge tier-' + profile.user.tier}>
+          <Badge variant="secondary" className={'tier-badge tier-' + profile.user.tier}>
             {profile.user.tier.charAt(0).toUpperCase() + profile.user.tier.slice(1)}
-          </span>
+          </Badge>
         </div>
       </section>
       <section className="settings-section">
@@ -45,25 +47,25 @@ export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {
         <div className="settings-section-head"><h3>{label('数据与用量', 'Data & usage')}</h3></div>
         <div className="settings-choice">
           <span>{label('Token 用量', 'Token usage')}</span>
-          <Button type="button" className="btn" onClick={() => actions.openUsage()}>{label('查看', 'View')}</Button>
+          <Button variant="outline" type="button" className="btn" onClick={() => actions.openUsage()}>{label('查看', 'View')}</Button>
         </div>
         <div className="settings-choice">
           <span>{label('已归档会话', 'Archived sessions')}</span>
-          <Button type="button" className="btn" onClick={() => actions.openStorage()}>{label('管理', 'Manage')}</Button>
+          <Button variant="outline" type="button" className="btn" onClick={() => actions.openStorage()}>{label('管理', 'Manage')}</Button>
         </div>
       </section>
       <section className="settings-section">
         <div className="settings-section-head"><h3>{label('会话', 'Session')}</h3></div>
         <div className="settings-choice">
           <span>{label('退出当前设备上的登录状态', 'End the session on this device')}</span>
-          <Button type="button" className="btn" onClick={() => actions.signOut()}>{label('退出登录', 'Sign out')}</Button>
+          <Button variant="outline" type="button" className="btn" onClick={() => actions.signOut()}>{label('退出登录', 'Sign out')}</Button>
         </div>
       </section>
       <section className="settings-section settings-danger-zone">
         <div className="settings-section-head"><h3>{label('危险区', 'Danger zone')}</h3></div>
         <div className="settings-choice">
           <span className="settings-danger-text">{label('永久删除账户及全部数据', 'Permanently delete your account and all data')}</span>
-          <Button type="button" className="btn" onClick={() => actions.deleteAccount()}>{label('删除账户', 'Delete account')}</Button>
+          <Button variant="outline" type="button" className="btn" onClick={() => actions.deleteAccount()}>{label('删除账户', 'Delete account')}</Button>
         </div>
       </section>
     </section>

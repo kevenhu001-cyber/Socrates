@@ -45,7 +45,7 @@ function ProjectsView({ projects, dispatch }: {
       />
       {projectTabs}
       {projects.length === 0 ? (
-        <div className="workspace-empty"><strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong><span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span><UiButton type="submit" className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</UiButton></div>
+        <div className="workspace-empty"><strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong><span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span><UiButton variant="default" type="submit" className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</UiButton></div>
       ) : (
         <div className="projects-list">
           <div className="projects-list-heading">{i18n('projects.name', 'Name')}</div>

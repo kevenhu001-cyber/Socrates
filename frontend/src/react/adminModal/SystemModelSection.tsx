@@ -1,3 +1,6 @@
+import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button as UiButton } from '../ui/Button';
 import type { FormEvent } from 'react';
 
@@ -29,36 +32,36 @@ export function SystemModelSection({
       </p>
       {form ? (
         <form onSubmit={onSubmit}>
-          <label>
+          <ShadcnLabel>
             Display name
-            <input type="text" value={form.label}
+            <ShadcnInput type="text" value={form.label}
               onChange={(event) => onFormChange({ ...form, label: event.target.value })}
               maxLength={200} required />
-          </label>
-          <label>
+          </ShadcnLabel>
+          <ShadcnLabel>
             OpenAI-compatible URL
-            <input type="url" value={form.url}
+            <ShadcnInput type="url" value={form.url}
               onChange={(event) => onFormChange({ ...form, url: event.target.value })}
               placeholder="https://api.minimax.io/v1" maxLength={2048} required />
-          </label>
-          <label>
+          </ShadcnLabel>
+          <ShadcnLabel>
             Model ID
-            <input type="text" value={form.model}
+            <ShadcnInput type="text" value={form.model}
               onChange={(event) => onFormChange({ ...form, model: event.target.value })}
               placeholder="MiniMax-M3" maxLength={200} required />
-          </label>
-          <label>
+          </ShadcnLabel>
+          <ShadcnLabel>
             API key {form.hasKey && <span className="admin-key-present">(configured{form.keyHint ? `: ${form.keyHint}…` : ''})</span>}
-            <input type="password" value={apiKey}
+            <ShadcnInput type="password" value={apiKey}
               onChange={(event) => onApiKeyChange(event.target.value)}
               placeholder={form.hasKey ? 'Leave blank to keep' : 'Paste the provider key'}
               autoComplete="off" />
-          </label>
-          <label className="admin-checkbox">
-            <input type="checkbox" checked={form.isMultimodal}
+          </ShadcnLabel>
+          <ShadcnLabel className="admin-checkbox">
+            <ShadcnNativeControl type="checkbox" checked={form.isMultimodal}
               onChange={(event) => onFormChange({ ...form, isMultimodal: event.target.checked })} />
             Accepts images (multimodal)
-          </label>
+          </ShadcnLabel>
           <UiButton type="submit" className="admin-save" disabled={saving}>
             {saving ? 'Saving…' : 'Save system model'}
           </UiButton>

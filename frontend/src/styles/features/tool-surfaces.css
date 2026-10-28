@@ -38,21 +38,21 @@
 }
 [data-theme=socrates][data-mode=dark]{
   --tool-card-bg:var(--ui-bg-raised);
-  --tool-card-bg-hover:var(--ui-bg-hover);
-  --tool-card-bg-sunken:var(--ui-bg-page);
+  --tool-card-bg-hover:var(--accent);
+  --tool-card-bg-sunken:var(--background);
   --tool-card-surface:var(--ui-bg-surface);
   --tool-card-border:var(--ui-border-subtle);
-  --tool-card-border-strong:var(--ui-border-default);
-  --tool-card-text:var(--ui-text-primary);
-  --tool-card-text-muted:var(--ui-text-secondary);
+  --tool-card-border-strong:var(--border);
+  --tool-card-text:var(--foreground);
+  --tool-card-text-muted:var(--muted-foreground);
   --tool-card-text-subtle:var(--ui-text-tertiary);
   --tool-card-icon:var(--ui-text-tertiary);
-  --tool-card-icon-hover:var(--ui-text-primary);
+  --tool-card-icon-hover:var(--foreground);
   --tool-card-focus:var(--ui-border-strong);
   --tool-card-shadow:var(--ui-shadow-popover);
-  --tool-card-danger:var(--ui-danger);
-  --tool-card-danger-soft:color-mix(in srgb,var(--ui-danger) 12%,var(--ui-bg-page));
-  --tool-card-danger-soft-strong:color-mix(in srgb,var(--ui-danger) 22%,var(--ui-bg-page))
+  --tool-card-danger:var(--destructive);
+  --tool-card-danger-soft:color-mix(in srgb,var(--destructive) 12%,var(--background));
+  --tool-card-danger-soft-strong:color-mix(in srgb,var(--destructive) 22%,var(--background))
 }
 
 /* Menus and card surfaces */
@@ -90,10 +90,10 @@
   display: inline-flex;
   align-items: center;
   padding: 1px 6px;
-  background: color-mix(in srgb, var(--ui-text-primary) 6%, transparent);
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
   border: 1px solid var(--tool-card-border);
   border-radius: var(--ui-radius-control);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-medium);
@@ -136,7 +136,7 @@
   border-radius:0;
   background:transparent;
   box-shadow:none;
-  color:var(--ui-text-primary);
+  color:var(--foreground);
 }
 /* Embedded editors own their text palette; prose colors stop at that boundary. */
 .msg.assistant .msg-body:has(.tool-inline) p:not(:where(.tl-container *)),
@@ -145,21 +145,21 @@
 .msg.assistant .msg-body:has(.tool-run-group) li:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.agent-tool-card) p:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.agent-tool-card) li:not(:where(.tl-container *)){
-  color:var(--ui-text-primary);
+  color:var(--foreground);
 }
 .msg.assistant .msg-body:has(.tool-inline) strong:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.tool-run-group) strong:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.agent-tool-card) strong:not(:where(.tl-container *)){
-  color:var(--ui-accent-strong);
+  color:var(--primary);
 }
 .msg.assistant .msg-body:has(.tool-inline) a:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.tool-run-group) a:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)){
-  color:var(--ui-text-primary);
-  text-decoration-color:var(--ui-text-secondary);
+  color:var(--foreground);
+  text-decoration-color:var(--muted-foreground);
 }
 .msg.assistant .msg-body:has(.tool-inline) a:not(:where(.tl-container *)):hover,
 .msg.assistant .msg-body:has(.tool-run-group) a:not(:where(.tl-container *)):hover,
 .msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)):hover{
-  color:var(--ui-accent-strong);
+  color:var(--primary);
 }

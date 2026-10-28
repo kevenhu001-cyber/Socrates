@@ -1,4 +1,5 @@
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
@@ -401,6 +402,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
       /* The sub-path aliases have to come before the package alias: Vite
          matches string aliases by prefix, so a bare `@socrates/core` would
          swallow `@socrates/core/motion/spring` and look for it *inside*
@@ -534,6 +536,7 @@ export default defineConfig({
     modulePreload: { polyfill: true },
   },
   plugins: [
+    tailwindcss(),
     createLocalApiStubPlugin(),
     createStripHtmlCommentsPlugin(),
     createPrecompressedAssetsPlugin(),

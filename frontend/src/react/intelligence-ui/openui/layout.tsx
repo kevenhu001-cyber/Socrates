@@ -1,3 +1,4 @@
+import { Separator as ShadcnSeparator } from '../../ui/Separator';
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
 import { defineComponent, FormNameContext } from "@openuidev/react-lang";
 import { useId, type CSSProperties } from "react";
@@ -141,7 +142,7 @@ export const Divider = defineComponent({
   name: "Divider",
   props: z.object({}),
   description: "",
-  component: () => <hr className="iui-divider" />,
+  component: () => <ShadcnSeparator className="iui-divider" />,
 });
 
 export const Spacer = defineComponent({

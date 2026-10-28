@@ -1,4 +1,5 @@
 import { forwardRef, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { cn } from 'cn';
 import { Icon } from '../../ui/Icon';
 import type { IconName } from '../../ui/iconRegistry';
 import { Button, type ButtonSize } from './Button';
@@ -77,11 +78,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
 ) {
   const shared = variant !== 'plain';
   const rung = size ?? 'md';
-  const classes = [
+  const classes = cn(
     shared ? SHARED_BASE : '',
     shared ? (ICON_SIZE_CLASS[rung] ?? '') : '',
     className,
-  ].filter(Boolean).join(' ');
+  );
 
   return (
     <Button

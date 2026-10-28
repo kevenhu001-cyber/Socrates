@@ -2,8 +2,8 @@
 #appShell .main,
 #appShell .main-bg,
 #appShell .main-content {
-  background: var(--ui-bg-page);
-  color: var(--ui-text-primary);
+  background: var(--background);
+  color: var(--foreground);
 }
 
 #appShell .main-bg { background-image: none; }
@@ -26,7 +26,7 @@
   border: 0;
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   box-shadow: none;
 }
 
@@ -41,7 +41,7 @@
   border: 0;
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   box-shadow: none;
 }
 }
@@ -49,16 +49,16 @@
 #appShell #sidebarOpenBtn:hover,
 #appShell #mobileIncognitoBtn:hover,
 #appShell #mobileNewChatBtn:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 @media (max-width: 768px) {
 
 #appShell #findBtn:hover,
 #appShell #shareBtn:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 }
 
@@ -104,7 +104,7 @@
 }
 #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
   background: var(--ui-bg-segment-active);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-medium);
 }
 
@@ -116,7 +116,7 @@
   display: block;
   animation: none;
   padding: 0;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   /* No font-family here on purpose. This rule used to open with
      "Plus Jakarta Sans" while polish/composer.css pins the greeting to
      --cg-font (the bundled Inter) at four-#appShell specificity, so the

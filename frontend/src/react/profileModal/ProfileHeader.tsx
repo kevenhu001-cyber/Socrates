@@ -1,3 +1,4 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { useCallback, type KeyboardEvent } from 'react';
 
 import type { ProfileUserSnapshot } from './types';
@@ -16,7 +17,7 @@ export function ProfileHeader({
   return (
     <div className="profile-header">
       <div className="profile-avatar" id="profileAvatar">{user.initials}</div>
-      <input
+      <ShadcnInput
         className="profile-name-input"
         id="profileName"
         type="text"

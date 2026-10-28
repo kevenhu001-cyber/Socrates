@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button as UiButton } from '../../ui/Button';
 import { ListFilter } from 'lucide-react';
 import { t as _t } from '../../legacy/gateway.ts';
@@ -127,7 +129,7 @@ function WorkspacePageHeader({ title, description, query, onQuery, actionLabel, 
     <div className="workspace-page-head">
       <div><h1 id="projects-directory-title">{title}</h1><p>{description}</p></div>
       <div className="workspace-head-actions">
-        <label className="workspace-search-field"><SearchIcon /><input type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
+        <ShadcnLabel className="workspace-search-field"><SearchIcon /><ShadcnInput type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></ShadcnLabel>
         <UiButton type="button" className={'workspace-create-button' + (compactAction ? ' projects-create-button' : '')} onClick={onAction}>{compactAction ? null : <PlusIcon />}<span>{actionLabel}</span></UiButton>
       </div>
     </div>

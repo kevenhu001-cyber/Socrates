@@ -1,3 +1,8 @@
+import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { Input as ShadcnInput } from '../../ui/shadcn/input';
+import { Textarea as ShadcnTextarea } from '../../ui/shadcn/textarea';
+import { NativeSelect as ShadcnNativeSelect } from '../../ui/shadcn/native-select';
+import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
 import { Button as UiButton } from '../../ui/Button';
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
 import {
@@ -61,10 +66,10 @@ function sliderDisplay(props: SliderDisplayProps, fieldValue: unknown) {
 function Field({ label, children: content }: { label?: string; children: ReactNode }) {
   if (!label) return <>{content}</>;
   return (
-    <label className="iui-field">
+    <ShadcnLabel className="iui-field">
       <span className="iui-label">{label}</span>
       {content}
-    </label>
+    </ShadcnLabel>
   );
 }
 
@@ -198,7 +203,7 @@ export const Input = defineComponent({
     const shown = draft ?? (numeric ? (typeof field.value === "number" ? String(field.value) : String(field.value ?? "")) : String(field.value ?? ""));
     return (
       <Field label={props.label}>
-        <input
+        <ShadcnInput
           className="iui-input"
           type="text"
           inputMode={numeric ? "decimal" : undefined}
@@ -233,7 +238,7 @@ export const TextArea = defineComponent({
     const field = useStateField(useFieldName(props.label, statementId), props.value);
     return (
       <Field label={props.label}>
-        <textarea
+        <ShadcnTextarea
           className="iui-input iui-textarea"
           rows={Math.min(20, Math.max(2, Math.round(props.rows ?? 3)))}
           value={String(field.value ?? "")}
@@ -264,7 +269,7 @@ export const Select = defineComponent({
     const value = field.value == null ? "" : String(field.value);
     return (
       <Field label={props.label}>
-        <select className="iui-input iui-select" value={value} aria-label={props.label ? undefined : props.placeholder} onChange={(event) => field.setValue(event.target.value)}>
+        <ShadcnNativeSelect className="iui-input iui-select" value={value} aria-label={props.label ? undefined : props.placeholder} onChange={(event) => field.setValue(event.target.value)}>
           {(props.placeholder || !choices.some((o) => o.value === value)) && (
             <option value="" disabled>
               {props.placeholder ?? "Choose…"}
@@ -275,7 +280,7 @@ export const Select = defineComponent({
               {o.label}
             </option>
           ))}
-        </select>
+        </ShadcnNativeSelect>
       </Field>
     );
   },
@@ -331,7 +336,7 @@ export const Slider = defineComponent({
       <div className="iui-slider">
         {(props.label || props.unit) && (
           <div className="iui-slider-head">
-            <label htmlFor={id}>{props.label}</label>
+            <ShadcnLabel htmlFor={id}>{props.label}</ShadcnLabel>
             <output htmlFor={id}>{readout}</output>
           </div>
         )}
@@ -340,7 +345,7 @@ export const Slider = defineComponent({
             <span className="iui-slider-fill" />
             <span className="iui-slider-thumb" />
           </div>
-          <input
+          <ShadcnNativeControl
             id={id}
             className="iui-range"
             type="range"
@@ -378,10 +383,10 @@ export const Checkbox = defineComponent({
     const field = useStateField(useFieldName(props.label, statementId), props.checked);
     const checked = field.value === true;
     return (
-      <label className={cx("iui-check", checked && props.lineThrough && "is-done")}>
-        <input type="checkbox" checked={checked} onChange={(event) => field.setValue(event.target.checked)} />
+      <ShadcnLabel className={cx("iui-check", checked && props.lineThrough && "is-done")}>
+        <ShadcnNativeControl type="checkbox" checked={checked} onChange={(event) => field.setValue(event.target.checked)} />
         <span>{String(props.label ?? "")}</span>
-      </label>
+      </ShadcnLabel>
     );
   },
 });
@@ -410,13 +415,13 @@ export const RadioGroup = defineComponent({
         {props.label ? <legend className="iui-label">{props.label}</legend> : null}
         <div>
           {choiceList(props.options).map((o, i) => (
-            <label key={`${o.value}-${i}`} className={cx(variant === "list" ? "iui-check" : "iui-choice", o.value === value && "is-selected")}>
-              <input type="radio" name={name} checked={o.value === value} onChange={() => field.setValue(o.value)} />
+            <ShadcnLabel key={`${o.value}-${i}`} className={cx(variant === "list" ? "iui-check" : "iui-choice", o.value === value && "is-selected")}>
+              <ShadcnNativeControl type="radio" name={name} checked={o.value === value} onChange={() => field.setValue(o.value)} />
               <span className="iui-choice-text">
                 <span>{o.label}</span>
                 {o.description ? <span className="iui-choice-description">{o.description}</span> : null}
               </span>
-            </label>
+            </ShadcnLabel>
           ))}
         </div>
       </fieldset>
@@ -440,7 +445,7 @@ export const DatePicker = defineComponent({
     const value = typeof field.value === "string" && DATE.test(field.value) ? field.value : "";
     return (
       <Field label={props.label}>
-        <input
+        <ShadcnInput
           className="iui-input iui-date"
           type="date"
           value={value}

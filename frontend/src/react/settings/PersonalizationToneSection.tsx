@@ -1,4 +1,5 @@
-import { Button } from '../ui/Button';
+import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
+import { cn } from 'cn';
 import { getAvailablePresets } from '../../config/tonePresets.ts';
 import type { SettingsLabel } from './settings.types';
 
@@ -19,7 +20,9 @@ export function PersonalizationToneSection({
         <h3>{label('助手语调风格', 'Tone & voice')}</h3>
         <p>{label('选择助手的说话风格。', 'Choose how Socrates speaks in a session.')}</p>
       </div>
-      <div className="tone-preset-options" id="tonePresetOptions">
+      <ToggleGroup variant="surface" className="tone-preset-options" id="tonePresetOptions" value={[selectedTone]}
+        aria-label={label('助手语调风格', 'Tone & voice')}
+        onValueChange={(values) => { if (values[0]) onSelect(values[0]); }}>
         {getAvailablePresets().map((preset) => {
           const active = selectedTone === preset.id;
           const presetLabel = language === 'zh' ? preset.labelZh || preset.label : preset.label;
@@ -27,20 +30,19 @@ export function PersonalizationToneSection({
             ? preset.descriptionZh || preset.description
             : preset.description;
           return (
-            <Button
+            <ToggleGroupItem
               key={preset.id}
               type="button"
-              className={'tone-preset-btn' + (active ? ' active' : '')}
+              className={cn('tone-preset-btn', active && 'active')}
+              value={preset.id}
               data-tone={preset.id}
-              aria-pressed={active}
-              onClick={() => onSelect(preset.id)}
             >
               <span className="tone-preset-label">{presetLabel}</span>
               <span className="tone-preset-desc">{description}</span>
-            </Button>
+            </ToggleGroupItem>
           );
         })}
-      </div>
+      </ToggleGroup>
     </section>
   );
 }

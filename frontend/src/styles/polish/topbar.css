@@ -41,15 +41,15 @@
 }
 }
 #appShell .top-bar .toggle-sidebar:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 @media (max-width: 768px) {
 #appShell .top-bar .icon-btn:hover,
 #appShell .top-bar .find-btn:hover,
 #appShell .top-bar .share-btn:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 }
 
@@ -82,7 +82,7 @@ body.plugins-active #appShell .mobile-newchat-btn {
   transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-semibold);
 }
 [data-mode="dark"] #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
@@ -101,6 +101,6 @@ body.plugins-active #appShell .mobile-newchat-btn {
 
 /* Phone mode menu reuses the existing functional dropdown. */
 @media (max-width: 768px) {
-  #appShell #mobileModeTrigger { background: transparent; border: 0; box-shadow: none; color: var(--ui-text-primary); }
+  #appShell #mobileModeTrigger { background: transparent; border: 0; box-shadow: none; color: var(--foreground); }
   body.workspace-active #appShell #mobileMode { display: none; }
 }

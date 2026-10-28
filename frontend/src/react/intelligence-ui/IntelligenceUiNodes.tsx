@@ -1,3 +1,6 @@
+import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
+import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button as BaseButton } from '../ui/Button';
 import { LazyOpenUiBlock } from './LazyOpenUiBlock';
 import { Ellipsis } from 'lucide-react';
@@ -170,12 +173,12 @@ function UiSlider({ node, context }: { node: IntelligenceUiNode; context: Render
   const label = asProse(resolve(node.label, context));
   const valueText = asProse(resolve(node.displayValue, context)) || asText(value);
   return (
-    <label className="intui-slider" data-intui-id={node.id}>
+    <ShadcnLabel className="intui-slider" data-intui-id={node.id}>
       <span className="intui-control-head">
         <span>{label}</span>
         <output>{valueText}</output>
       </span>
-      <input
+      <ShadcnNativeControl
         type="range"
         min={min}
         max={max}
@@ -185,7 +188,7 @@ function UiSlider({ node, context }: { node: IntelligenceUiNode; context: Render
         aria-valuetext={valueText}
         onChange={(event) => setBoundValue(context, bind, Number(event.currentTarget.value))}
       />
-    </label>
+    </ShadcnLabel>
   );
 }
 
@@ -227,12 +230,12 @@ function UiToggle({ node, context }: { node: IntelligenceUiNode; context: Render
   const bound = context.state[bind];
   const checked = typeof bound === 'boolean' ? bound : node.checked === true;
   return (
-    <label className="intui-toggle" data-intui-id={node.id}>
+    <ShadcnLabel className="intui-toggle" data-intui-id={node.id}>
       <span className="intui-toggle-copy">
         {label ? <span className="intui-toggle-label">{label}</span> : null}
         {description ? <span className="intui-toggle-description">{description}</span> : null}
       </span>
-      <input
+      <ShadcnNativeControl
         type="checkbox"
         role="switch"
         checked={checked}
@@ -240,7 +243,7 @@ function UiToggle({ node, context }: { node: IntelligenceUiNode; context: Render
         aria-label={label || 'Toggle'}
         onChange={(event) => setBoundValue(context, bind, event.currentTarget.checked)}
       />
-    </label>
+    </ShadcnLabel>
   );
 }
 
@@ -600,7 +603,7 @@ const nodeRenderers = new Map<string, UiNodeRenderer>([
   ['text', (node, context) => <UiText node={node} context={context} />],
   ['metric', (node, context) => <UiMetric node={node} context={context} />],
   ['progress', (node, context) => <UiProgress node={node} context={context} />],
-  ['divider', (node) => <hr className="intui-divider" data-intui-id={node.id} />],
+  ['divider', (node) => <ShadcnSeparator className="intui-divider" data-intui-id={node.id} />],
   ['callout', (node, context) => <UiCallout node={node} context={context} />],
   ['slider', (node, context) => <UiSlider node={node} context={context} />],
   ['choice', (node, context) => <UiChoice node={node} context={context} />],

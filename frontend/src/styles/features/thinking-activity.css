@@ -37,19 +37,19 @@
 /* Compatibility aliases resolve to the sole theme palette. */
 :root {
   --tool-activity-border: var(--ui-border-subtle);
-  --tool-activity-text: var(--ui-text-primary);
-  --tool-activity-row: var(--ui-text-secondary);
-  --tool-activity-row-hover: var(--ui-text-primary);
+  --tool-activity-text: var(--foreground);
+  --tool-activity-row: var(--muted-foreground);
+  --tool-activity-row-hover: var(--foreground);
   --tool-activity-focus: var(--ui-border-strong);
   --tool-activity-code-bg: var(--ui-bg-raised);
-  --tool-activity-danger: var(--ui-danger);
-  --tool-activity-danger-bg: color-mix(in srgb, var(--ui-danger) 8%, var(--ui-bg-page));
+  --tool-activity-danger: var(--destructive);
+  --tool-activity-danger-bg: color-mix(in srgb, var(--destructive) 8%, var(--background));
 }
 
 /* One process disclosure owns intent, public summaries and tool activity. */
 .turn-activity-intent {
   margin: 0 0 var(--ui-space-xs);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
 }
@@ -71,29 +71,29 @@
   gap: var(--ui-space-sm);
   padding: var(--ui-space-xs) 0 var(--ui-space-xs) var(--ui-space-sm);
   border: 0;
-  border-inline-start: 2px solid var(--ui-danger);
+  border-inline-start: 2px solid var(--destructive);
   border-radius: 0;
   background: transparent;
-  color: var(--ui-danger);
+  color: var(--destructive);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line);
 }
 .msg-error-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.msg-resend { color: var(--ui-text-secondary); }
+.msg-resend { color: var(--muted-foreground); }
 .msg-retry-btn {
   flex-shrink: 0;
   min-height: var(--ui-control-sm);
   padding: 0 var(--ui-space-sm);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font: inherit;
   font-weight: var(--ui-font-weight-medium);
   cursor: pointer;
   transition: background-color var(--ui-duration-fast) ease;
 }
-.msg-retry-btn:hover:not(:disabled) { background: var(--ui-bg-hover); }
+.msg-retry-btn:hover:not(:disabled) { background: var(--accent); }
 .msg-retry-btn:disabled { opacity: var(--ui-disabled-opacity, 0.5); cursor: wait; }
 @media (max-width: 768px) {
   .msg-retry-btn { min-height: var(--ui-control-touch); }
@@ -164,7 +164,7 @@
   border: 0;
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--ui-text-muted, var(--ui-text-secondary));
+  color: var(--ui-text-muted, var(--muted-foreground));
   font: var(--ui-font-weight-medium) var(--ui-font-size-sm) / 1.4 var(--font-sans);
   text-align: start;
   cursor: pointer;
@@ -173,8 +173,8 @@
 }
 
 .thinking-accordion-toggle:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 .thinking-accordion-left {
@@ -201,7 +201,7 @@
   transition: color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
 }
 .thinking-accordion-toggle:hover .thinking-accordion-icon {
-  color: var(--ui-accent-default, var(--ui-text-primary));
+  color: var(--ui-accent-default, var(--foreground));
   opacity: 1;
 }
 
@@ -237,15 +237,15 @@
 }
 
 .thinking-accordion[data-open="true"] .thinking-accordion-toggle {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 /* The live caption is a plain palette colour that breathes (polish/motion.css
    owns the cue). It used to be a travelling gradient clipped to the glyphs;
    the sweep repainted the text on every frame of the shimmer. */
 .thinking-accordion[data-live="true"] .thinking-status-label {
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 
 .thinking-accordion-body {
@@ -289,7 +289,7 @@
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-relaxed);
   font-family: var(--font-sans);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-style: normal;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -299,7 +299,7 @@
 .turn-activity-list {
   margin: var(--ui-space-xs) 0;
   padding-inline-start: var(--ui-space-lg);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-relaxed);
 }
@@ -307,12 +307,12 @@
 .turn-activity-phase { margin-inline-start: var(--ui-space-sm); color: var(--ui-text-tertiary); }
 
 .thinking-accordion-toggle:disabled { cursor: default; opacity: 1; }
-.thinking-accordion-toggle:disabled:hover { background: transparent; color: var(--ui-text-secondary); }
+.thinking-accordion-toggle:disabled:hover { background: transparent; color: var(--muted-foreground); }
 .turn-activity-content {
   min-width: 0;
   border-inline-start: 2px solid var(--ui-border-strong);
   border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0;
-  background: color-mix(in srgb, var(--ui-text-primary) 2.5%, transparent);
+  background: color-mix(in srgb, var(--foreground) 2.5%, transparent);
   margin: var(--ui-space-xs) 0 var(--ui-space-xs) var(--ui-space-xxs);
   padding: 6px 12px;
 }
@@ -322,7 +322,7 @@
   padding: 0;
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line, 1.6);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 .turn-activity-surface .turn-activity-list { list-style: none; padding: 0; margin: 0; }
 .turn-activity-list:empty { display: none; }

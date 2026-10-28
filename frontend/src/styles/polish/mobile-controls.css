@@ -16,7 +16,7 @@
      extending their touch target to 48px. */
   #appShell .sidebar-header .icon-btn,
   #appShell .sidebar-header .btn-icon {
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
   }
   #appShell .sidebar-header .icon-btn::before,
   #appShell .sidebar-header .btn-icon::before {
@@ -141,7 +141,7 @@
     background-color: var(--ui-bg-surface);   /* was #1f1f1f */
   }
   body #composerToolsMenu .composer-tools-icon {
-    background-color: var(--ui-bg-control);   /* was #3a3a3a */
+    background-color: var(--secondary);   /* was #3a3a3a */
   }
   [data-mode="dark"] body #composerToolsMenu.composer-tools-menu {
     background-color: var(--ui-bg-surface);   /* was #1b1b1b */
@@ -226,7 +226,7 @@
 @media (max-width: 768px) {
   #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader .btn-icon svg { width: 20px; height: 20px; }
-  #appShell .recent-item.active { box-shadow: none; background: var(--ui-bg-hover); }
+  #appShell .recent-item.active { box-shadow: none; background: var(--accent); }
   /* The tier badge size is owned by polish/mobile-sidebar.css:78 (14px, set
      with .user-plan). This block used to restate it as 13px on the same
      selector; mobile-sidebar.css imports later, so the 13px never shipped —
@@ -236,7 +236,7 @@
      row (parity/sidebar.css), which paints its letter white. A dark letter
      on that tint only reaches 3.1:1 in light mode, so it matches the
      desktop rule instead of inheriting the page's text colour. */
-  #appShell .sidebar-account-menu .user-avatar { place-items: center; background: var(--ui-avatar-bg); color: var(--ui-on-accent); }
+  #appShell .sidebar-account-menu .user-avatar { place-items: center; background: var(--ui-avatar-bg); color: var(--primary-foreground); }
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
 }
 @media (max-width: 768px) {
@@ -271,14 +271,14 @@
 @media (max-width: 768px) {
 #appShell .msg-toolbar-btn:hover {
   background: var(--ui-bg-hover-ghost);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 }
 @media (max-width: 768px) {
 #appShell .msg-toolbar-btn:active {
   opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 }
 @media (max-width: 768px) {

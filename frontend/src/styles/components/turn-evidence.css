@@ -4,8 +4,8 @@
   align-items: center;
   padding: 0 var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  color: var(--ui-text-secondary);
-  background: var(--ui-bg-hover);
+  color: var(--muted-foreground);
+  background: var(--accent);
   font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / var(--ui-line-height-normal) var(--font-sans);
   text-decoration: none;
   vertical-align: baseline;
@@ -21,7 +21,7 @@
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-surface);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   box-shadow: var(--ui-shadow-popover);
   font-size: var(--ui-font-size-sm);
 }
@@ -30,7 +30,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ui-space-xxs);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-medium);
   text-decoration: none;
 }
@@ -48,10 +48,10 @@
   color: var(--ui-text-tertiary);
 }
 .turn-source-preview p,
-.turn-sources p { margin: var(--ui-space-xs) 0; color: var(--ui-text-secondary); }
+.turn-sources p { margin: var(--ui-space-xs) 0; color: var(--muted-foreground); }
 .turn-sources {
   margin-block: var(--ui-space-md);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-sm);
   overflow-wrap: anywhere;
 }
@@ -64,7 +64,7 @@
   padding-inline: var(--ui-space-sm);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-pill);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   background: transparent;
   list-style: none;
   transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
@@ -72,14 +72,14 @@
 .turn-sources summary::-webkit-details-marker { display: none; }
 .turn-sources summary::marker { content: ''; }
 .turn-sources summary:hover {
-  border-color: var(--ui-border-default);
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-hover);
+  border-color: var(--border);
+  color: var(--foreground);
+  background: var(--accent);
 }
 .turn-sources[open] summary {
-  border-color: var(--ui-border-default);
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-hover);
+  border-color: var(--border);
+  color: var(--foreground);
+  background: var(--accent);
 }
 .turn-sources-icon { flex: 0 0 auto; opacity: .78; }
 .turn-sources-divider { color: var(--ui-text-tertiary); }

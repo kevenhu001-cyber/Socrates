@@ -1,11 +1,13 @@
 import React from 'react';
+import { Skeleton } from '../../ui/shadcn/skeleton';
+import { cn } from 'cn';
 
 export interface WorkspaceLoadingViewProps {
   page: string;
 }
 
 function SkeletonBlock({ className }: { className: string }) {
-  return <div className={`workspace-skeleton-shimmer ${className}`} />;
+  return <Skeleton className={cn('workspace-skeleton-shimmer', className)} />;
 }
 
 function PluginSkeleton() {

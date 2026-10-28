@@ -1,3 +1,4 @@
+import { NativeSelect as ShadcnNativeSelect } from '../../../ui/shadcn/native-select';
 import { Button as UiButton } from '../../../ui/Button';
 // Adapted from thesysdev/open-intelligent-ui map.tsx (MIT); see ../LICENSE.
 import { defineComponent, reactive, useIsStreaming, useStateField } from '@openuidev/react-lang';
@@ -85,7 +86,7 @@ function MapViewContent({
     <div className="iui-map-frame" style={{ height }}>
       <div className="iui-map-surface" ref={canvas} />
       <div className="iui-map-controls">
-        {categories.length > 1 ? <select aria-label={labels.filterPlaces} value={activeGroup} onChange={(event) => setGroup(event.target.value)}><option value="">{labels.allPlaces}</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select> : null}
+        {categories.length > 1 ? <ShadcnNativeSelect aria-label={labels.filterPlaces} value={activeGroup} onChange={(event) => setGroup(event.target.value)}><option value="">{labels.allPlaces}</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</ShadcnNativeSelect> : null}
         <UiButton type="button" className="iui-button iui-button-sm" onClick={recenter}>{labels.recenter}</UiButton>
       </div>
       {!ready && !error ? <p className="iui-map-notice" role="status">{labels.mapLoading}</p> : null}

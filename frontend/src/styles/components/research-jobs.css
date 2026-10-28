@@ -5,7 +5,7 @@
   margin: 8px auto 4px;
   display: grid;
   gap: 8px;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-text-ui);
 }
 .research-job { min-width: 0; }
@@ -18,7 +18,7 @@
 }
 .research-job-context-label {
   flex: 0 0 auto;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-text-meta);
   font-weight: var(--ui-font-weight-semibold);
 }
@@ -49,19 +49,19 @@
 }
 .research-job-focus-label {
   flex: 0 0 auto;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-semibold);
 }
 .research-jobs button {
   min-height: var(--ui-control-sm);
   padding: 0 12px;
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control);
   background: var(--ui-bg-raised);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   cursor: pointer;
 }
-.research-jobs button:hover { background: var(--ui-bg-hover); }
+.research-jobs button:hover { background: var(--accent); }
 .research-jobs button:disabled { opacity: .5; cursor: wait; }
 .research-job-error { margin: 0; color: var(--ui-text-muted); }
 
@@ -82,7 +82,7 @@
   background: var(--ui-bg-subtle, var(--ui-bg-raised));
   color: var(--ui-text-muted);
   font-size: var(--ui-text-meta);
-  border: 1px solid var(--ui-border-subtle, var(--ui-border-default));
+  border: 1px solid var(--ui-border-subtle, var(--border));
 }
 .research-metric-icon {
   flex: 0 0 auto;
@@ -97,15 +97,15 @@
   padding: 0 var(--ui-space-sm);
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   color: var(--ui-text-secondary, var(--ui-text-muted));
   font-size: var(--ui-text-meta);
   cursor: pointer;
   margin-left: auto;
 }
 .research-jobs button.research-toggle-steps-btn:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 .research-toggle-icon {
   transition: transform 0.2s ease;
@@ -119,7 +119,7 @@
   padding: var(--ui-space-sm) var(--ui-space-md);
   border-radius: var(--ui-radius-md);
   background: var(--ui-bg-subtle, var(--ui-bg-raised));
-  border: 1px solid var(--ui-border-subtle, var(--ui-border-default));
+  border: 1px solid var(--ui-border-subtle, var(--border));
 }
 .research-plan-head {
   display: flex;
@@ -129,7 +129,7 @@
   margin-bottom: var(--ui-space-sm);
 }
 .research-plan-title {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-text-meta);
   font-weight: var(--ui-font-weight-semibold);
 }
@@ -158,7 +158,7 @@
   color: var(--ui-text-muted);
 }
 .research-plan-step.is-active {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-medium);
 }
 .research-plan-step.is-pending {
@@ -170,12 +170,12 @@
   gap: var(--ui-space-xs);
   margin-top: var(--ui-space-sm);
   padding: var(--ui-space-sm);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-md);
   background: var(--ui-bg-raised);
 }
 .research-refine-label {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-text-meta);
   font-weight: var(--ui-font-weight-semibold);
 }
@@ -183,10 +183,10 @@
   width: 100%;
   min-height: var(--ui-control-touch);
   padding: var(--ui-space-sm);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control);
   background: var(--ui-bg-subtle, var(--ui-bg-raised));
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font: inherit;
   line-height: 1.4;
   resize: vertical;
@@ -208,7 +208,7 @@
   gap: var(--ui-space-xs);
 }
 .research-refine-buttons button:last-child {
-  background: var(--ui-text-primary);
+  background: var(--foreground);
   color: var(--ui-bg-base, var(--ui-bg-raised));
 }
 .research-step-indicator {
@@ -220,20 +220,20 @@
   margin-top: 1px;
 }
 .research-plan-step.is-done .research-step-indicator {
-  color: var(--ui-accent, var(--ui-text-primary));
+  color: var(--ui-accent, var(--foreground));
 }
 .research-step-active-dot {
   width: 8px;
   height: 8px;
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-accent, var(--ui-text-primary));
+  background: var(--ui-accent, var(--foreground));
   animation: research-pulse 1.4s ease-in-out infinite;
 }
 .research-step-pending-ring {
   width: 7px;
   height: 7px;
   border-radius: var(--ui-radius-pill);
-  border: 1.5px solid var(--ui-border-strong, var(--ui-border-default));
+  border: 1.5px solid var(--ui-border-strong, var(--border));
 }
 .research-step-text {
   flex: 1;
@@ -245,12 +245,12 @@
   align-items: center;
   gap: var(--ui-space-xs);
   margin-top: var(--ui-space-sm);
-  color: var(--ui-success, var(--ui-text-secondary));
+  color: var(--ui-success, var(--muted-foreground));
   font-size: var(--ui-text-meta);
 }
 .research-jobs button.research-report-open-btn {
-  background: var(--ui-text-primary);
-  color: var(--ui-bg-page);
+  background: var(--foreground);
+  color: var(--background);
 }
 .research-report-backdrop {
   position: fixed;
@@ -259,7 +259,7 @@
   display: grid;
   place-items: stretch;
   padding: var(--ui-space-md);
-  background: color-mix(in srgb, var(--ui-bg-page) 76%, transparent);
+  background: color-mix(in srgb, var(--background) 76%, transparent);
   backdrop-filter: blur(10px);
 }
 .research-report-dialog {
@@ -270,8 +270,8 @@
   overflow: hidden;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-page);
-  color: var(--ui-text-primary);
+  background: var(--background);
+  color: var(--foreground);
   box-shadow: var(--ui-shadow-popover);
 }
 .research-report-header {
@@ -317,12 +317,12 @@
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font: inherit;
   font-size: var(--ui-font-size-lg);
   cursor: pointer;
 }
-.research-report-icon-button:hover:not(:disabled) { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+.research-report-icon-button:hover:not(:disabled) { background: var(--accent); color: var(--foreground); }
 .research-report-icon-button:disabled { opacity: .45; cursor: default; }
 .research-report-layout {
   display: grid;
@@ -338,7 +338,7 @@
   overflow-y: auto;
   padding: var(--ui-space-lg) var(--ui-space-md);
   border-right: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-subtle, var(--ui-bg-page));
+  background: var(--ui-bg-subtle, var(--background));
 }
 .research-report-sidebar-label {
   margin-bottom: var(--ui-space-xs);
@@ -353,12 +353,12 @@
   min-height: var(--ui-control-sm);
   padding: var(--ui-space-xs) var(--ui-space-sm);
   border-radius: var(--ui-radius-control);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-text-ui);
   line-height: 1.4;
   text-decoration: none;
 }
-.research-report-sidebar a:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+.research-report-sidebar a:hover { background: var(--accent); color: var(--foreground); }
 .research-report-outline {
   display: grid;
   gap: var(--ui-space-xxs);
@@ -381,17 +381,17 @@
   color: var(--ui-text-tertiary);
   font-size: var(--ui-text-meta);
 }
-.research-report-meta span:first-child { color: var(--ui-success, var(--ui-text-secondary)); font-weight: var(--ui-font-weight-semibold); }
+.research-report-meta span:first-child { color: var(--ui-success, var(--muted-foreground)); font-weight: var(--ui-font-weight-semibold); }
 .research-report-article {
   max-width: 54rem;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-md);
   line-height: var(--ui-line-height-relaxed);
 }
 .research-report-article h3,
 .research-report-section h3 {
   margin: var(--ui-space-lg) 0 var(--ui-space-sm);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-lg);
   font-weight: var(--ui-font-weight-semibold);
   line-height: 1.35;
@@ -408,11 +408,11 @@
   scroll-margin-top: var(--ui-space-md);
 }
 .research-report-section h3 { margin-top: var(--ui-space-sm); }
-.research-report-section ol { margin: 0; padding-inline-start: var(--ui-space-lg); color: var(--ui-text-secondary); }
+.research-report-section ol { margin: 0; padding-inline-start: var(--ui-space-lg); color: var(--muted-foreground); }
 .research-report-section li { margin-block: var(--ui-space-xs); }
-.research-report-section li.is-complete { color: var(--ui-text-primary); }
-.research-report-sources a { color: var(--ui-link, var(--ui-text-primary)); text-underline-offset: 3px; }
-.research-report-state { color: var(--ui-text-secondary); }
+.research-report-section li.is-complete { color: var(--foreground); }
+.research-report-sources a { color: var(--ui-link, var(--foreground)); text-underline-offset: 3px; }
+.research-report-state { color: var(--muted-foreground); }
 
 @keyframes research-pulse {
   0%, 100% { opacity: 0.4; transform: scale(0.85); }

@@ -208,21 +208,21 @@
     </div>
 
     <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Account access" data-i18n-aria="chrome.accountAccess">
-      <button type="button" class="auth-tab active" id="authSigninTab" role="tab" aria-controls="authSigninView" aria-selected="true" tabindex="0" data-tab="signin" data-i18n-key="auth.signIn">Sign in</button>
-      <button type="button" class="auth-tab" id="authRegisterTab" role="tab" aria-controls="authRegisterView" aria-selected="false" tabindex="-1" data-tab="register" data-i18n-key="auth.createAccount">Create account</button>
+      <button type="button" class="auth-tab active" id="authSigninTab" role="tab" aria-controls="authSigninView" aria-selected="true" tabindex="0" data-tab="signin" data-i18n-key="auth.signIn" data-slot="button" data-ui-legacy="">Sign in</button>
+      <button type="button" class="auth-tab" id="authRegisterTab" role="tab" aria-controls="authRegisterView" aria-selected="false" tabindex="-1" data-tab="register" data-i18n-key="auth.createAccount" data-slot="button" data-ui-legacy="">Create account</button>
     </div>
 
     <div class="auth-views">
       <!-- Sign in -->
       <form class="auth-view" id="authSigninView">
-        <label class="auth-label" for="authSigninEmail" data-i18n-key="auth.email">Email</label>
-        <input class="auth-input" id="authSigninEmail" name="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-        <label class="auth-label" for="authSigninPassword" data-i18n-key="auth.password">Password</label>
-        <input class="auth-input" id="authSigninPassword" name="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••">
+        <label class="auth-label" for="authSigninEmail" data-i18n-key="auth.email" data-slot="label" data-ui-legacy="">Email</label>
+        <input class="auth-input" id="authSigninEmail" name="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com" data-slot="input" data-ui-legacy="">
+        <label class="auth-label" for="authSigninPassword" data-i18n-key="auth.password" data-slot="label" data-ui-legacy="">Password</label>
+        <input class="auth-input" id="authSigninPassword" name="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••" data-slot="input" data-ui-legacy="">
         <a class="auth-inline-link auth-inline-link-right" href="#" data-i18n-key="auth.forgotPassword">Forgot password?</a>
         <div class="auth-error" id="authSigninError"></div>
-        <label class="auth-guest-label" for="authGuestCheckbox"><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox"> <span data-i18n-key="auth.guestMode">Guest mode</span></label>
-        <button class="auth-btn primary" id="authSigninBtn" type="submit" data-i18n-key="auth.signIn">Sign in</button>
+        <label class="auth-guest-label" for="authGuestCheckbox" data-slot="label" data-ui-legacy=""><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox" data-slot="native-checkbox" data-ui-legacy=""> <span data-i18n-key="auth.guestMode">Guest mode</span></label>
+        <button class="auth-btn primary" id="authSigninBtn" type="submit" data-i18n-key="auth.signIn" data-slot="button" data-ui-legacy="">Sign in</button>
         <div class="auth-view-separator" data-i18n-key="auth.or">or</div>
         <a class="auth-btn secondary auth-github-btn" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg><span data-i18n-key="auth.continueGithub">Continue with GitHub</span></a>
         <a class="auth-inline-link auth-code-login-link" href="#" data-i18n-key="auth.codeLoginLink">Login with verification code</a>
@@ -232,12 +232,12 @@
       <!-- Register -->
       <form class="auth-view hidden" id="authRegisterView">
         <p class="auth-lede" data-i18n-key="auth.registerLede">Sign up with your email. We'll send a verification link — no codes to memorize.</p>
-        <label class="auth-label" for="authRegisterEmail" data-i18n-key="auth.email">Email</label>
-        <input class="auth-input" id="authRegisterEmail" name="authRegisterEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-        <label class="auth-label" for="authRegisterPassword" data-i18n-key="auth.password">Password</label>
-        <input class="auth-input" id="authRegisterPassword" name="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" data-i18n-placeholder="chrome.passwordHint">
+        <label class="auth-label" for="authRegisterEmail" data-i18n-key="auth.email" data-slot="label" data-ui-legacy="">Email</label>
+        <input class="auth-input" id="authRegisterEmail" name="authRegisterEmail" type="email" autocomplete="email" required placeholder="you@example.com" data-slot="input" data-ui-legacy="">
+        <label class="auth-label" for="authRegisterPassword" data-i18n-key="auth.password" data-slot="label" data-ui-legacy="">Password</label>
+        <input class="auth-input" id="authRegisterPassword" name="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" data-i18n-placeholder="chrome.passwordHint" data-slot="input" data-ui-legacy="">
         <div class="auth-error" id="authRegisterError"></div>
-        <button class="auth-btn primary" id="authRegisterBtn" type="submit" data-i18n-key="auth.sendVerificationLink">Send verification link</button>
+        <button class="auth-btn primary" id="authRegisterBtn" type="submit" data-i18n-key="auth.sendVerificationLink" data-slot="button" data-ui-legacy="">Send verification link</button>
         <div class="auth-foot"><span data-i18n-key="auth.alreadyVerified">Already verified?</span> <a href="#" data-i18n-key="auth.signIn">Sign in</a></div>
       </form>
 
@@ -248,7 +248,7 @@
         </div>
         <h2 class="auth-title" data-i18n-key="auth.checkInbox">Check your inbox</h2>
         <p class="auth-lede"><span data-i18n-key="auth.verifySentPre">We sent a verification link to </span><strong id="authVerifyEmail"></strong><span data-i18n-key="auth.verifySentPost">. Click the button in the email to start learning with Socrates. The link expires in 24 hours.</span></p>
-        <button class="auth-btn secondary" data-i18n-key="auth.resendLink">Resend the link</button>
+        <button class="auth-btn secondary" data-i18n-key="auth.resendLink" data-slot="button" data-ui-legacy="">Resend the link</button>
         <div class="auth-foot"><a href="#" data-i18n-key="auth.useDifferentEmail">Use a different email</a></div>
       </div>
 
@@ -260,10 +260,10 @@
         <h2 class="auth-title" id="authVerifyFailedTitle">This link is invalid or expired</h2>
         <p class="auth-lede" id="authVerifyFailedMsg">Verification links expire after 24 hours. Enter your email and we'll send a fresh one.</p>
         <form>
-          <label class="auth-label" for="authResendEmail" data-i18n-key="auth.email">Email</label>
-          <input class="auth-input" id="authResendEmail" name="authResendEmail" type="email" required placeholder="you@example.com">
+          <label class="auth-label" for="authResendEmail" data-i18n-key="auth.email" data-slot="label" data-ui-legacy="">Email</label>
+          <input class="auth-input" id="authResendEmail" name="authResendEmail" type="email" required placeholder="you@example.com" data-slot="input" data-ui-legacy="">
           <div class="auth-error" id="authVerifyFailedError"></div>
-          <button class="auth-btn primary" type="submit" data-i18n-key="auth.sendNewLink">Send a new link</button>
+          <button class="auth-btn primary" type="submit" data-i18n-key="auth.sendNewLink" data-slot="button" data-ui-legacy="">Send a new link</button>
         </form>
         <div class="auth-foot"><a href="#">Back to sign in</a></div>
       </div>
@@ -286,10 +286,10 @@
         </div>
         <h2 class="auth-title" data-i18n-key="auth.resetTitle">Reset your password</h2>
         <p class="auth-lede" data-i18n-key="auth.resetLede">Enter your email and we'll send a reset link.</p>
-        <label class="auth-label" for="authForgotEmail" data-i18n-key="auth.email">Email</label>
-        <input class="auth-input" id="authForgotEmail" name="authForgotEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label class="auth-label" for="authForgotEmail" data-i18n-key="auth.email" data-slot="label" data-ui-legacy="">Email</label>
+        <input class="auth-input" id="authForgotEmail" name="authForgotEmail" type="email" autocomplete="email" required placeholder="you@example.com" data-slot="input" data-ui-legacy="">
         <div class="auth-error" id="authForgotError"></div>
-        <button class="auth-btn primary" id="authForgotBtn" type="submit" data-i18n-key="auth.sendResetLink">Send reset link</button>
+        <button class="auth-btn primary" id="authForgotBtn" type="submit" data-i18n-key="auth.sendResetLink" data-slot="button" data-ui-legacy="">Send reset link</button>
       </form>
 
       <!-- Forgot-password-sent -->
@@ -314,14 +314,14 @@
              can be associated with an account. The reset link itself
              carries the token + email, so this field is hidden but
              still part of the form. -->
-        <label class="auth-label sr-only-old" for="authResetEmail">Email</label>
-        <input class="auth-input sr-only-opacity" id="authResetEmail" type="email" autocomplete="username" tabindex="-1" aria-hidden="true">
-        <label class="auth-label" for="authResetPassword" data-i18n-key="auth.newPassword">New password</label>
-        <input class="auth-input" id="authResetPassword" name="authResetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" data-i18n-placeholder="chrome.passwordHint">
-        <label class="auth-label" for="authResetConfirm" data-i18n-key="auth.confirmPassword">Confirm password</label>
-        <input class="auth-input" id="authResetConfirm" name="authResetConfirm" type="password" autocomplete="new-password" minlength="8" required placeholder="Repeat your password" data-i18n-placeholder="chrome.repeatPassword">
+        <label class="auth-label sr-only-old" for="authResetEmail" data-slot="label" data-ui-legacy="">Email</label>
+        <input class="auth-input sr-only-opacity" id="authResetEmail" type="email" autocomplete="username" tabindex="-1" aria-hidden="true" data-slot="input" data-ui-legacy="">
+        <label class="auth-label" for="authResetPassword" data-i18n-key="auth.newPassword" data-slot="label" data-ui-legacy="">New password</label>
+        <input class="auth-input" id="authResetPassword" name="authResetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" data-i18n-placeholder="chrome.passwordHint" data-slot="input" data-ui-legacy="">
+        <label class="auth-label" for="authResetConfirm" data-i18n-key="auth.confirmPassword" data-slot="label" data-ui-legacy="">Confirm password</label>
+        <input class="auth-input" id="authResetConfirm" name="authResetConfirm" type="password" autocomplete="new-password" minlength="8" required placeholder="Repeat your password" data-i18n-placeholder="chrome.repeatPassword" data-slot="input" data-ui-legacy="">
         <div class="auth-error" id="authResetError"></div>
-        <button class="auth-btn primary" id="authResetBtn" type="submit" data-i18n-key="auth.resetPassword">Reset password</button>
+        <button class="auth-btn primary" id="authResetBtn" type="submit" data-i18n-key="auth.resetPassword" data-slot="button" data-ui-legacy="">Reset password</button>
       </form>
 
       <!-- Reset-success (shown after password is reset) -->
@@ -331,7 +331,7 @@
         </div>
         <h2 class="auth-title" data-i18n-key="auth.passwordUpdated">Password updated</h2>
         <p class="auth-lede" data-i18n-key="auth.passwordUpdatedLede">Your password has been reset successfully. Sign in with your new password.</p>
-        <button class="auth-btn primary" data-i18n-key="auth.signIn">Sign in</button>
+        <button class="auth-btn primary" data-i18n-key="auth.signIn" data-slot="button" data-ui-legacy="">Sign in</button>
       </div>
 
       <!-- Code-login (email + verification code) -->
@@ -342,17 +342,17 @@
         </div>
         <h2 class="auth-title" data-i18n-key="auth.codeLoginTitle">Email code login</h2>
         <p class="auth-lede" data-i18n-key="auth.codeLoginLede">Enter your email to receive an 8-character login code.</p>
-        <label class="auth-label" for="authCodeEmail" data-i18n-key="auth.email">Email</label>
-        <input class="auth-input" id="authCodeEmail" name="authCodeEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label class="auth-label" for="authCodeEmail" data-i18n-key="auth.email" data-slot="label" data-ui-legacy="">Email</label>
+        <input class="auth-input" id="authCodeEmail" name="authCodeEmail" type="email" autocomplete="email" required placeholder="you@example.com" data-slot="input" data-ui-legacy="">
         <div id="authCodeCodeWrap" class="hidden">
-          <label class="auth-label" for="authCodeInput" data-i18n-key="auth.codeLabel">8-character code</label>
-          <input class="auth-input auth-code-input" id="authCodeInput" name="authCodeInput" type="text" inputmode="text" pattern="[A-HJ-KM-NP-Z2-9]{8}" maxlength="8" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="ABCD2345">
+          <label class="auth-label" for="authCodeInput" data-i18n-key="auth.codeLabel" data-slot="label" data-ui-legacy="">8-character code</label>
+          <input class="auth-input auth-code-input" id="authCodeInput" name="authCodeInput" type="text" inputmode="text" pattern="[A-HJ-KM-NP-Z2-9]{8}" maxlength="8" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="ABCD2345" data-slot="input" data-ui-legacy="">
           <p class="auth-msg hidden" id="authCodeSentMsg"><span data-i18n-key="auth.codeSentPre">We sent a code to </span><strong id="authCodeSentEmail"></strong><span data-i18n-key="auth.codeSentPost">. It expires in 10 minutes.</span></p>
         </div>
         <div class="auth-error" id="authCodeError"></div>
-        <label class="auth-guest-label" for="authCodeGuestCheckbox"><input type="checkbox" id="authCodeGuestCheckbox" name="authCodeGuestCheckbox"> <span data-i18n-key="auth.guestMode">Guest mode</span></label>
-        <button class="auth-btn primary" id="authCodeSendBtn" type="button" data-i18n-key="auth.sendCode">Send code</button>
-        <button class="auth-btn primary hidden" id="authCodeLoginBtn" type="button" data-i18n-key="auth.logIn">Log in</button>
+        <label class="auth-guest-label" for="authCodeGuestCheckbox" data-slot="label" data-ui-legacy=""><input type="checkbox" id="authCodeGuestCheckbox" name="authCodeGuestCheckbox" data-slot="native-checkbox" data-ui-legacy=""> <span data-i18n-key="auth.guestMode">Guest mode</span></label>
+        <button class="auth-btn primary" id="authCodeSendBtn" type="button" data-i18n-key="auth.sendCode" data-slot="button" data-ui-legacy="">Send code</button>
+        <button class="auth-btn primary hidden" id="authCodeLoginBtn" type="button" data-i18n-key="auth.logIn" data-slot="button" data-ui-legacy="">Log in</button>
         <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#" data-i18n-key="auth.resendCode">Resend code</a></div>
         <div class="auth-foot"><a href="#" data-i18n-key="auth.backToSignIn">Back to sign in</a></div>
       </div>
@@ -373,61 +373,61 @@
         <svg class="cg-sidebar-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 9.5 5 5 5-5"/></svg>
       </div>
       <div class="sidebar-header-actions">
-        <button class="btn-icon sidebar-search-btn" id="sidebarSearchBtn" type="button" title="Search chats" aria-label="Search chats" data-i18n-title="sidebar.searchPlaceholder" data-i18n-aria="sidebar.searchPlaceholder" aria-controls="sidebarSearch" aria-expanded="false">
+        <button class="btn-icon sidebar-search-btn" id="sidebarSearchBtn" type="button" title="Search chats" aria-label="Search chats" data-i18n-title="sidebar.searchPlaceholder" data-i18n-aria="sidebar.searchPlaceholder" aria-controls="sidebarSearch" aria-expanded="false" data-slot="button" data-ui-legacy="">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 4.5 4.5"/></svg>
         </button>
-        <button class="btn-icon compose-btn" id="newChatBtn" title="Start a new chat" aria-label="Start a new chat" data-i18n-title="sidebar.startNewChat" data-i18n-aria="sidebar.startNewChat">
+        <button class="btn-icon compose-btn" id="newChatBtn" title="Start a new chat" aria-label="Start a new chat" data-i18n-title="sidebar.startNewChat" data-i18n-aria="sidebar.startNewChat" data-slot="button" data-ui-legacy="">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
         </button>
-        <button class="btn-icon" id="sidebarCloseBtn" title="Close sidebar" aria-label="Close sidebar" aria-controls="sidebar">
+        <button class="btn-icon" id="sidebarCloseBtn" title="Close sidebar" aria-label="Close sidebar" aria-controls="sidebar" data-slot="button" data-ui-legacy="">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17"/></svg>
         </button>
       </div>
     </div>
     <!-- Keep this fallback navigation aligned with the React-owned drawer. -->
     <nav class="sidebar-nav" id="sidebarNav" aria-label="Primary navigation" data-i18n-aria="chrome.primaryNav">
-      <button type="button" class="sidebar-nav-btn active" data-nav="new" id="navNew">
+      <button type="button" class="sidebar-nav-btn active" data-nav="new" id="navNew" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
         <span data-i18n-key="sidebar.nav.new">New chat</span>
         <span class="nav-kbd">⌘K</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="images" id="navImages">
+      <button type="button" class="sidebar-nav-btn" data-nav="images" id="navImages" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M4 17.5 8 13a2 2 0 0 1 3 0l2 2 1.5-1.5a2 2 0 0 1 3 0l3 3.5"/></svg>
         <span data-i18n-key="sidebar.nav.images">Images</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="library" id="navLibrary">
+      <button type="button" class="sidebar-nav-btn" data-nav="library" id="navLibrary" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.5 4h10A2.5 2.5 0 0 1 20 6.5v13a.5.5 0 0 1-.5.5h-12A3.5 3.5 0 0 1 4 16.5v-9A3.5 3.5 0 0 1 7.5 4ZM4 16.5A2.5 2.5 0 0 1 6.5 14H20M8 4v10M9 17h6"/></svg>
         <span data-i18n-key="sidebar.nav.library">Artifacts</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="scheduled" id="navScheduled">
+      <button type="button" class="sidebar-nav-btn" data-nav="scheduled" id="navScheduled" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.25"/><path d="M12 7.5V12l3 2"/></svg>
         <span data-i18n-key="sidebar.nav.scheduled">Scheduled</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="plugins" id="navPlugins">
+      <button type="button" class="sidebar-nav-btn" data-nav="plugins" id="navPlugins" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4.5H6.5a2 2 0 0 0-2 2V10H6a2 2 0 0 1 0 4H4.5v3.5a2 2 0 0 0 2 2H10V18a2 2 0 0 1 4 0v1.5h3.5a2 2 0 0 0 2-2V14H18a2 2 0 0 1 0-4h1.5V6.5a2 2 0 0 0-2-2H14V4a2.5 2.5 0 0 0-5 0v.5Z"/></svg>
         <span data-i18n-key="sidebar.nav.plugins">Plugins</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="projects" id="navProjects">
+      <button type="button" class="sidebar-nav-btn" data-nav="projects" id="navProjects" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 8V7A2.5 2.5 0 0 1 6 4.5h3a2 2 0 0 1 1.6.8l1.2 1.4a2 2 0 0 0 1.6.8H18a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 18 19.5H6A2.5 2.5 0 0 1 3.5 17V8Z"/></svg>
         <span data-i18n-key="sidebar.nav.projects">Projects</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="more" id="navMore">
+      <button type="button" class="sidebar-nav-btn" data-nav="more" id="navMore" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
         <span data-i18n-key="sidebar.nav.more">更多</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="assistants" id="navAssistants">
+      <button type="button" class="sidebar-nav-btn" data-nav="assistants" id="navAssistants" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="6"/><circle cx="8.5" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10" r="1" fill="currentColor" stroke="none"/><path d="M9 14.5c1.7 1.5 4.3 1.5 6 0"/></svg>
         <span data-i18n-key="sidebar.nav.assistants">Assistants</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="sites" id="navSites">
+      <button type="button" class="sidebar-nav-btn" data-nav="sites" id="navSites" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M9 9.5v10"/><circle cx="6.75" cy="7" r="0.65" fill="currentColor" stroke="none"/><circle cx="9.5" cy="7" r="0.65" fill="currentColor" stroke="none"/></svg>
         <span class="nav-label-wrap"><span data-i18n-key="sidebar.nav.sites">Sites</span><span class="nav-new-badge" data-i18n-key="sidebar.nav.newBadge">新</span></span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="exam" id="navExam">
+      <button type="button" class="sidebar-nav-btn" data-nav="exam" id="navExam" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="4.5" width="14" height="16" rx="3"/><rect x="9" y="2.5" width="6" height="4" rx="1.5"/><path d="m8.5 13 2.5 2.5 4.5-5"/></svg>
         <span data-i18n-key="sidebar.nav.exam">Exam</span>
       </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="skills" id="navSkills">
+      <button type="button" class="sidebar-nav-btn" data-nav="skills" id="navSkills" data-slot="button" data-ui-legacy="">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="6" height="6" rx="2"/><rect x="14" y="4" width="6" height="6" rx="2"/><rect x="4" y="14" width="6" height="6" rx="2"/><path d="M17 13c.4 2.3 1.7 3.6 4 4-2.3.4-3.6 1.7-4 4-.4-2.3-1.7-3.6-4-4 2.3-.4 3.6-1.7 4-4Z"/></svg>
         <span data-i18n-key="sidebar.nav.skills">Skills</span>
       </button>
@@ -448,12 +448,12 @@
       <div class="sidebar-search-row-inner">
       <div class="sidebar-search">
         <svg class="sidebar-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 4.5 4.5"/></svg>
-        <input type="text" id="sidebarSearch" name="sidebarSearch" autocomplete="off" spellcheck="false" placeholder="Search chats" data-i18n-placeholder="sidebar.searchPlaceholder" aria-label="Search chats">
+        <input type="text" id="sidebarSearch" name="sidebarSearch" autocomplete="off" spellcheck="false" placeholder="Search chats" data-i18n-placeholder="sidebar.searchPlaceholder" aria-label="Search chats" data-slot="input" data-ui-legacy="">
       </div>
-      <button class="sidebar-view-btn tutor-only" id="tabKnowledge" title="Knowledge" data-i18n-title="sidebar.knowledge" aria-label="Knowledge">
+      <button class="sidebar-view-btn tutor-only" id="tabKnowledge" title="Knowledge" data-i18n-title="sidebar.knowledge" aria-label="Knowledge" data-slot="button" data-ui-legacy="">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="10.5" cy="18" r="2.5"/><path d="m8.5 6.4 7 1.2M6.9 8.4l2.7 7.2m6.9-5.7-4.4 6.2"/></svg>
       </button>
-      <button class="sidebar-view-btn tutor-only" id="tabMistakes" title="Mistakes" data-i18n-title="sidebar.mistakes" aria-label="Mistakes">
+      <button class="sidebar-view-btn tutor-only" id="tabMistakes" title="Mistakes" data-i18n-title="sidebar.mistakes" aria-label="Mistakes" data-slot="button" data-ui-legacy="">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3.5h8A2.5 2.5 0 0 1 18.5 6v13.5a.75.75 0 0 1-1.2.6L12 16l-5.3 4.1a.75.75 0 0 1-1.2-.6V6A2.5 2.5 0 0 1 8 3.5Z"/></svg>
         <span class="tab-badge" id="mistakesTabBadge"></span>
       </button>
@@ -469,10 +469,10 @@
         <!-- Trailing actions mirroring the reference drawer's 最近 header:
              compose starts a new chat; React mounts the organization menu. -->
         <span class="recents-header-actions">
-          <button type="button" class="recents-head-btn" id="recentsNewBtn" title="New chat" data-i18n-title="sidebar.newChat" data-i18n-aria="sidebar.newChat" aria-label="New chat">
+          <button type="button" class="recents-head-btn" id="recentsNewBtn" title="New chat" data-i18n-title="sidebar.newChat" data-i18n-aria="sidebar.newChat" aria-label="New chat" data-slot="button" data-ui-legacy="">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
           </button>
-          <button type="button" class="recents-head-btn" id="recentsMoreBtn" title="Organize chats" data-i18n-title="sidebar.organize" data-i18n-aria="sidebar.organize" aria-label="Organize chats" aria-haspopup="menu" aria-expanded="false">
+          <button type="button" class="recents-head-btn" id="recentsMoreBtn" title="Organize chats" data-i18n-title="sidebar.organize" data-i18n-aria="sidebar.organize" aria-label="Organize chats" aria-haspopup="menu" aria-expanded="false" data-slot="button" data-ui-legacy="">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
           </button>
         </span>
@@ -493,14 +493,14 @@
            this pre-paint placeholder with the same structure). -->
       <div class="user-row" id="sidebarUserRow"><div class="user-avatar" aria-hidden="true">?</div><div class="user-identity"><div class="user-name"></div><div class="user-plan">Free</div></div></div>
       <div class="sidebar-footer-actions">
-        <button type="button" class="btn-icon theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme" data-i18n-title="display.themeToggle" data-i18n-aria="display.themeToggle">
+        <button type="button" class="btn-icon theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme" data-i18n-title="display.themeToggle" data-i18n-aria="display.themeToggle" data-slot="button" data-ui-legacy="">
           <svg class="theme-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.75"/><path d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21M5.6 5.6l1 1m10.8 10.8 1 1M5.6 18.4l1-1M17.4 6.6l1-1"/></svg>
           <svg class="theme-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.2 13.7A8.5 8.5 0 0 1 10.3 3.8a8.5 8.5 0 1 0 9.9 9.9Z"/></svg>
         </button>
-        <button type="button" class="btn-icon" id="displayPrefsBtn" title="Display settings" aria-label="Display settings" data-i18n-title="chrome.displaySettings" data-i18n-aria="chrome.displaySettings">
+        <button type="button" class="btn-icon" id="displayPrefsBtn" title="Display settings" aria-label="Display settings" data-i18n-title="chrome.displaySettings" data-i18n-aria="chrome.displaySettings" data-slot="button" data-ui-legacy="">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h7m4 0h5M4 17h3m4 0h9"/><circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
         </button>
-        <button class="btn-icon" id="apiSettingsBtn" title="API Settings" aria-label="API Settings" data-i18n-title="chrome.apiSettings" data-i18n-aria="chrome.apiSettings">
+        <button class="btn-icon" id="apiSettingsBtn" title="API Settings" aria-label="API Settings" data-i18n-title="chrome.apiSettings" data-i18n-aria="chrome.apiSettings" data-slot="button" data-ui-legacy="">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9.5 4 .5-1h4l.5 1 .6 1.8 1.9.5 1.8-.4 2 3.4-1.3 1.3-.5 1.4.5 1.4 1.3 1.3-2 3.4-1.8-.4-1.9.5-.6 1.8-.5 1h-4l-.5-1-.6-1.8-1.9-.5-1.8.4-2-3.4 1.3-1.3.5-1.4-.5-1.4-1.3-1.3 2-3.4 1.8.4 1.9-.5.6-1.8Z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
         <div class="display-prefs-popover hidden" id="displayPrefsPopover">
@@ -513,9 +513,9 @@
               <span data-i18n-key="display.theme">Theme</span>
             </div>
             <div class="display-prefs-segs display-theme-segs" id="displayThemeSegs" role="radiogroup" data-i18n-aria="display.theme" aria-label="Theme">
-              <button class="display-prefs-seg" type="button" data-theme-option="system" role="radio" aria-checked="false" data-i18n-key="display.themeSystem">System</button>
-              <button class="display-prefs-seg" type="button" data-theme-option="light" role="radio" aria-checked="false" data-i18n-key="display.themeLight">Light</button>
-              <button class="display-prefs-seg" type="button" data-theme-option="dark" role="radio" aria-checked="true" data-i18n-key="display.themeDark">Dark</button>
+              <button class="display-prefs-seg" type="button" data-theme-option="system" role="radio" aria-checked="false" data-i18n-key="display.themeSystem" data-slot="button" data-ui-legacy="">System</button>
+              <button class="display-prefs-seg" type="button" data-theme-option="light" role="radio" aria-checked="false" data-i18n-key="display.themeLight" data-slot="button" data-ui-legacy="">Light</button>
+              <button class="display-prefs-seg" type="button" data-theme-option="dark" role="radio" aria-checked="true" data-i18n-key="display.themeDark" data-slot="button" data-ui-legacy="">Dark</button>
             </div>
           </div>
           <div class="display-prefs-row">
@@ -523,32 +523,32 @@
               <span data-i18n-key="display.themeStyle">Theme style</span>
             </div>
             <div class="display-prefs-segs display-theme-style-segs" id="displayThemeStyleSegs" role="radiogroup" data-i18n-aria="display.themeStyle" aria-label="Theme style">
-              <button class="display-prefs-seg on" type="button" data-theme-style-option="socrates" role="radio" aria-checked="true" data-i18n-key="display.styleModern">Modern</button>
-              <button class="display-prefs-seg" type="button" data-theme-style-option="philosophy" role="radio" aria-checked="false" data-i18n-key="display.stylePhilosophy">Philosophy</button>
+              <button class="display-prefs-seg on" type="button" data-theme-style-option="socrates" role="radio" aria-checked="true" data-i18n-key="display.styleModern" data-slot="button" data-ui-legacy="">Modern</button>
+              <button class="display-prefs-seg" type="button" data-theme-style-option="philosophy" role="radio" aria-checked="false" data-i18n-key="display.stylePhilosophy" data-slot="button" data-ui-legacy="">Philosophy</button>
             </div>
           </div>
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span data-i18n-key="sidebar.textSize">Text size</span></div>
             <div class="display-prefs-segs" id="displayPrefsFontSegs" role="radiogroup" data-i18n-aria="sidebar.textSize" aria-label="Text size">
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-font="1">S</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.125">M</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.25">L</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.375">XL</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-font="1" data-slot="button" data-ui-legacy="">S</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.125" data-slot="button" data-ui-legacy="">M</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.25" data-slot="button" data-ui-legacy="">L</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.375" data-slot="button" data-ui-legacy="">XL</button>
             </div>
           </div>
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span data-i18n-key="sidebar.contentWidth">Content width</span></div>
             <div class="display-prefs-segs" id="displayPrefsWidthSegs" role="radiogroup" data-i18n-aria="sidebar.contentWidth" aria-label="Content width">
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-width="0.85" title="Narrow" data-i18n-title="sidebar.narrow">S</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1" title="Medium" data-i18n-title="sidebar.medium">M</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1.3" title="Wide" data-i18n-title="sidebar.wide">L</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1.7" title="Full width" data-i18n-title="sidebar.fullWidth">XL</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-width="0.85" title="Narrow" data-i18n-title="sidebar.narrow" data-slot="button" data-ui-legacy="">S</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1" title="Medium" data-i18n-title="sidebar.medium" data-slot="button" data-ui-legacy="">M</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1.3" title="Wide" data-i18n-title="sidebar.wide" data-slot="button" data-ui-legacy="">L</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1.7" title="Full width" data-i18n-title="sidebar.fullWidth" data-slot="button" data-ui-legacy="">XL</button>
             </div>
           </div>
           <!-- Grid background toggle -->
           <div class="display-prefs-row display-prefs-toggle-row">
             <div class="display-prefs-label"><span data-i18n-key="chrome.backgroundGrid">Background grid</span></div>
-            <button class="grid-toggle" id="gridToggle" type="button" title="Toggle background grid" aria-label="Toggle background grid" data-i18n-title="chrome.toggleBackgroundGrid" data-i18n-aria="chrome.toggleBackgroundGrid">
+            <button class="grid-toggle" id="gridToggle" type="button" title="Toggle background grid" aria-label="Toggle background grid" data-i18n-title="chrome.toggleBackgroundGrid" data-i18n-aria="chrome.toggleBackgroundGrid" data-slot="button" data-ui-legacy="">
               <div class="toggle-knob"></div>
             </button>
           </div>
@@ -556,15 +556,15 @@
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span data-i18n-key="chrome.darkModeBg">Dark mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgDark" value="#141414" title="Dark mode page background" data-i18n-title="chrome.darkModePageBg">
-              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgDarkReset" title="Reset dark mode to theme default" data-i18n-title="chrome.resetDarkBg">↺</button>
+              <input type="color" id="displayPrefsBgDark" value="#141414" title="Dark mode page background" data-i18n-title="chrome.darkModePageBg" data-slot="native-color" data-ui-legacy="">
+              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgDarkReset" title="Reset dark mode to theme default" data-i18n-title="chrome.resetDarkBg" data-slot="button" data-ui-legacy="">↺</button>
             </div>
           </div>
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span data-i18n-key="chrome.lightModeBg">Light mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgLight" value="#ffffff" title="Light mode page background" data-i18n-title="chrome.lightModePageBg">
-              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgLightReset" title="Reset light mode to theme default" data-i18n-title="chrome.resetLightBg">↺</button>
+              <input type="color" id="displayPrefsBgLight" value="#ffffff" title="Light mode page background" data-i18n-title="chrome.lightModePageBg" data-slot="native-color" data-ui-legacy="">
+              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgLightReset" title="Reset light mode to theme default" data-i18n-title="chrome.resetLightBg" data-slot="button" data-ui-legacy="">↺</button>
             </div>
           </div>
         </div>
@@ -579,34 +579,34 @@
   <div class="main-bg" aria-hidden="true"></div>
   <div class="top-bar">
     <div class="top-mode-tabs plugin-workspace-tabs" id="pluginWorkspaceTabs" role="tablist" aria-label="Plugin workspace" data-i18n-aria="chrome.pluginWorkspace" hidden>
-      <button type="button" class="plugin-workspace-tab active" id="pluginWorkspacePluginsTab" role="tab" aria-selected="true" data-i18n-key="plugins.pluginsTab">插件</button>
-      <button type="button" class="plugin-workspace-tab" id="pluginWorkspaceSkillsTab" role="tab" aria-selected="false" data-i18n-key="plugins.skillsTab">技能</button>
+      <button type="button" class="plugin-workspace-tab active" id="pluginWorkspacePluginsTab" role="tab" aria-selected="true" data-i18n-key="plugins.pluginsTab" data-slot="button" data-ui-legacy="">插件</button>
+      <button type="button" class="plugin-workspace-tab" id="pluginWorkspaceSkillsTab" role="tab" aria-selected="false" data-i18n-key="plugins.skillsTab" data-slot="button" data-ui-legacy="">技能</button>
     </div>
     <!-- P_mobile-topbar — the mobile dropdown (#mobileMode) is the only
          user-facing mode switch after the top-bar pill was removed; it stays
          mounted for narrow layouts and accessibility. Toggle + label sync
          live in src/ui/mobileModeSwitch.js. -->
     <div class="mobile-mode" id="mobileMode">
-      <button type="button" class="mobile-mode-trigger" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false">
+      <button type="button" class="mobile-mode-trigger" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false" data-slot="button" data-ui-legacy="">
         <span class="mobile-mode-label" id="mobileModeLabel" data-i18n-key="tutor.modeChat">Chat</span>
         <svg class="mobile-mode-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="mobile-mode-menu" id="mobileModeMenu" role="menu" aria-label="Session mode" data-i18n-aria="chrome.sessionMode">
-        <button type="button" class="mobile-mode-item" data-mode="chat" role="menuitem">
+        <button type="button" class="mobile-mode-item" data-mode="chat" role="menuitem" data-slot="button" data-ui-legacy="">
           <span class="mobile-mode-item-title" data-i18n-key="tutor.modeChat">Chat</span>
           <span class="mobile-mode-item-desc" data-i18n-key="tutor.modeChatDesc">Plain conversation, no scaffolding</span>
         </button>
-        <button type="button" class="mobile-mode-item" data-mode="tutor" role="menuitem">
+        <button type="button" class="mobile-mode-item" data-mode="tutor" role="menuitem" data-slot="button" data-ui-legacy="">
           <span class="mobile-mode-item-title" data-i18n-key="tutor.modeTutor">Tutor</span>
           <span class="mobile-mode-item-desc" data-i18n-key="tutor.modeTutorDesc">AI asks, follows up, and tracks what you know</span>
         </button>
-        <button type="button" class="mobile-mode-item" id="mobileConfigBtn" data-chat-config-trigger role="menuitem">
+        <button type="button" class="mobile-mode-item" id="mobileConfigBtn" data-chat-config-trigger role="menuitem" data-slot="button" data-ui-legacy="">
           <span class="mobile-mode-item-title" data-i18n-key="topbar.modelSwitcher">Model and reasoning</span>
         </button>
       </div>
     </div>
     <div class="top-bar-left">
-      <button class="toggle-sidebar cg-circle-btn" id="sidebarOpenBtn" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true">
+      <button class="toggle-sidebar cg-circle-btn" id="sidebarOpenBtn" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true" data-slot="button" data-ui-legacy="">
         <svg class="glyph-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9 4.5v15"/></svg>
         <!-- Mobile shows the reference's three-line hamburger instead of
              the desktop panel-collapse mark. -->
@@ -622,7 +622,7 @@
            by ui/effortPicker.js, which already writes the model into the
            button and re-runs on every language change (i18n.js calls
            window.syncEffortUI). -->
-      <button type="button" class="top-model-switcher" id="topModelSwitcher" data-chat-config-trigger aria-haspopup="dialog" aria-expanded="false" data-i18n-title="topbar.modelSwitcher" title="Model and reasoning">
+      <button type="button" class="top-model-switcher" id="topModelSwitcher" data-chat-config-trigger aria-haspopup="dialog" aria-expanded="false" data-i18n-title="topbar.modelSwitcher" title="Model and reasoning" data-slot="button" data-ui-legacy="">
         <svg class="top-model-switcher-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h7m4 0h5M4 17h3m4 0h9"/><circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
         <span class="top-model-switcher-name">Socrates</span>
         <span class="top-model-switcher-model" id="topModelSwitcherModel"></span>
@@ -653,21 +653,21 @@
          (app/lifecycle/mode.js), which is why it is a button per mode. -->
     <div class="top-mode-switch" id="topModeSwitch" role="tablist" data-i18n-aria="chrome.sessionMode" aria-label="Session mode">
       <span class="top-mode-switch-thumb" id="topModeSwitchThumb" aria-hidden="true"></span>
-      <button type="button" class="top-mode-switch-option is-active" id="topModeChat" role="tab" aria-selected="true" data-mode="chat" data-i18n-key="tutor.modeChat">聊天</button>
-      <button type="button" class="top-mode-switch-option" id="topModeTutor" role="tab" aria-selected="false" data-mode="tutor" data-i18n-key="tutor.modeTutor">辅导</button>
+      <button type="button" class="top-mode-switch-option is-active" id="topModeChat" role="tab" aria-selected="true" data-mode="chat" data-i18n-key="tutor.modeChat" data-slot="button" data-ui-legacy="">聊天</button>
+      <button type="button" class="top-mode-switch-option" id="topModeTutor" role="tab" aria-selected="false" data-mode="tutor" data-i18n-key="tutor.modeTutor" data-slot="button" data-ui-legacy="">辅导</button>
     </div>
     <div class="top-bar-right">
       <!-- Mobile top-right control (reference capsule): a single circular
            "new chat" button. Incognito moved into the sidebar 更多 popover
            so the header matches the one-icon reference. -->
-      <button type="button" class="mobile-newchat-btn" id="mobileNewChatBtn" data-i18n-title="sidebar.nav.new" data-i18n-aria="sidebar.nav.new" title="New chat" aria-label="New chat">
+      <button type="button" class="mobile-newchat-btn" id="mobileNewChatBtn" data-i18n-title="sidebar.nav.new" data-i18n-aria="sidebar.nav.new" title="New chat" aria-label="New chat" data-slot="button" data-ui-legacy="">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
       </button>
       <!-- P_mobile-topbar — mobile-only incognito ("无痕对话") toggle,
            top-right. Starts a temporary chat that is not saved to
            Recents. Styled like the left sidebar toggle (not a filled
            circle). Hidden on desktop. -->
-      <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat" data-i18n-aria="sidebar.nav.incognito" data-i18n-title="sidebar.nav.incognito">
+      <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat" data-i18n-aria="sidebar.nav.incognito" data-i18n-title="sidebar.nav.incognito" data-slot="button" data-ui-legacy="">
         <svg class="incognito-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <!-- A compact hat-and-glasses mark: symmetric, conventional and
                still distinct from refresh/sync icons at the 24px size. -->
@@ -679,7 +679,7 @@
         </svg>
       </button>
       <div class="chat-model-wrap hidden" id="chatModelWrap">
-        <button class="chat-model-trigger" id="chatModel" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Pick or configure the model for this conversation" title="Pick or configure the model for this conversation" data-i18n-aria="chrome.pickModel" data-i18n-title="chrome.pickModel">
+        <button class="chat-model-trigger" id="chatModel" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Pick or configure the model for this conversation" title="Pick or configure the model for this conversation" data-i18n-aria="chrome.pickModel" data-i18n-title="chrome.pickModel" data-slot="button" data-ui-legacy="">
           <!-- Model glyph — inner SVG is replaced by pickers.js
                _syncChatModelInternal() on every active-model change.
                Sized 16x16 so the trigger stays compact regardless of
@@ -696,10 +696,10 @@
       <!-- P0.2 — In-session find (Ctrl-F). Shown alongside Share once a
            conversation is active (toggled by toggleShareBtn in
            ui/share.js). Opens the floating find bar over #chatView. -->
-      <button class="find-btn hidden" id="findBtn" data-i18n-title="find.title" data-i18n-aria="find.title" title="Find in conversation" aria-label="Find in conversation">
+      <button class="find-btn hidden" id="findBtn" data-i18n-title="find.title" data-i18n-aria="find.title" title="Find in conversation" aria-label="Find in conversation" data-slot="button" data-ui-legacy="">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 4.5 4.5"/></svg>
       </button>
-      <button class="share-btn hidden" id="shareBtn" title="Share this conversation" aria-label="Share this conversation" data-i18n-title="chrome.shareConversation" data-i18n-aria="chrome.shareConversation">
+      <button class="share-btn hidden" id="shareBtn" title="Share this conversation" aria-label="Share this conversation" data-i18n-title="chrome.shareConversation" data-i18n-aria="chrome.shareConversation" data-slot="button" data-ui-legacy="">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4.5 13v4.5a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3V13M12 15V3.5m-4 4 4-4 4 4"/></svg>
         <span class="share-btn-label" data-i18n-key="sidebar.share">Share</span>
       </button>
@@ -737,12 +737,12 @@
           <div id="composerRoot" class="composer-editor-root" aria-label="Message input"></div>
           <div class="composer-footer">
             <div class="footer-left-group">
-              <button class="attach-btn composer-tools-trigger" id="composerToolsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files" data-i18n-aria="chrome.addToolsFiles" data-i18n-title="chrome.addToolsFiles">
+              <button class="attach-btn composer-tools-trigger" id="composerToolsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files" data-i18n-aria="chrome.addToolsFiles" data-i18n-title="chrome.addToolsFiles" data-slot="button" data-ui-legacy="">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
               </button>
               <input type="file" id="composerAttachInput" multiple
                      accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif,text/*,application/json,application/xml,application/javascript,application/x-javascript,application/typescript,application/x-typescript,application/yaml,application/x-yaml,application/x-sh,application/sql,application/toml,application/pdf,application/rtf,text/rtf,application/epub+zip,application/msword,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/webm,audio/mp4,audio/x-m4a,audio/aac,audio/flac,.txt,.md,.markdown,.csv,.tsv,.log,.json,.jsonl,.ndjson,.xml,.yaml,.yml,.toml,.ini,.cfg,.conf,.env,.tex,.bib,.py,.pyw,.js,.mjs,.cjs,.ts,.tsx,.jsx,.java,.c,.h,.cpp,.cc,.cxx,.hpp,.hh,.cs,.go,.rs,.rb,.php,.swift,.kt,.kts,.m,.mm,.scala,.sh,.bash,.zsh,.fish,.pl,.pm,.lua,.r,.jl,.sql,.css,.scss,.less,.vue,.svelte,.dart,.ex,.exs,.erl,.hrl,.clj,.cljs,.hs,.ml,.fs,.vb,.ps1,.bat,.cmd,.ipynb,.diff,.patch,.gitignore,.dockerignore,.proto,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.epub,.rtf,.odt,.ods,.odp,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.flac,.aac"
-                     hidden>
+                     hidden data-slot="native-file" data-ui-legacy="">
             </div>
             <!-- P_cowork-landing — reasoning effort sits with the send button,
                  not with the attach button. Everything that decides *how* the
@@ -751,7 +751,7 @@
                  The label is filled by syncEffortUI() (ui/effortPicker.js) and
                  the chosen value feeds chat/stream.js's reasoning_effort. -->
             <div class="effort-picker" data-open="false">
-              <button type="button" class="effort-trigger" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+              <button type="button" class="effort-trigger" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort" data-slot="button" data-ui-legacy="">
                 <span class="effort-label" data-i18n-key="effort.label">Effort</span>
                 <span class="effort-value" aria-hidden="true"></span>
                 <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
@@ -766,10 +766,10 @@
                  `+ / mic / send`; that is what ships now. The primary starts
                  disabled at 30% (parity/composer-unified.css) until a draft
                  or attachment exists, and updateComposerBtn re-enables it. -->
-            <button class="mobile-mic-btn" id="composerMicBtn" type="button" aria-label="Voice input" title="Voice input" data-i18n-aria="chrome.voiceInput" data-i18n-title="chrome.voiceInput">
+            <button class="mobile-mic-btn" id="composerMicBtn" type="button" aria-label="Voice input" title="Voice input" data-i18n-aria="chrome.voiceInput" data-i18n-title="chrome.voiceInput" data-slot="button" data-ui-legacy="">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3M9 20.5h6"/></svg>
             </button>
-            <button class="composer-primary-btn" id="composerPrimaryBtn" type="button" disabled aria-label="Send" title="Send" data-i18n-aria="chat.send" data-i18n-title="chat.send">
+            <button class="composer-primary-btn" id="composerPrimaryBtn" type="button" disabled aria-label="Send" title="Send" data-i18n-aria="chat.send" data-i18n-title="chat.send" data-slot="button" data-ui-legacy="">
               <span id="composerPrimaryBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></span>
             </button>
           </div>
@@ -784,35 +784,35 @@
              landing surface. -->
         <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions" data-i18n-aria="chrome.quickActions">
           <div class="home-quick-action">
-            <button type="button" class="home-quick-action-primary" data-home-action="upload">
+            <button type="button" class="home-quick-action-primary" data-home-action="upload" data-slot="button" data-ui-legacy="">
             <span class="home-quick-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M4 17.5 8 13a2 2 0 0 1 3 0l2 2 1.5-1.5a2 2 0 0 1 3 0l3 3.5"/></svg>
             </span>
             <span class="home-quick-action-copy"><span data-i18n-key="home.quick.upload">添加图片或文件</span></span>
             </button>
-            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
+            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作" data-slot="button" data-ui-legacy="">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17"/></svg>
             </button>
           </div>
           <div class="home-quick-action">
-            <button type="button" class="home-quick-action-primary" data-home-action="write">
+            <button type="button" class="home-quick-action-primary" data-home-action="write" data-slot="button" data-ui-legacy="">
             <span class="home-quick-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
             </span>
             <span class="home-quick-action-copy"><span data-i18n-key="home.quick.write">撰写或编辑</span></span>
             </button>
-            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
+            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作" data-slot="button" data-ui-legacy="">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17"/></svg>
             </button>
           </div>
           <div class="home-quick-action">
-            <button type="button" class="home-quick-action-primary" data-home-action="research">
+            <button type="button" class="home-quick-action-primary" data-home-action="research" data-slot="button" data-ui-legacy="">
             <span class="home-quick-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c4.5 4.7 4.5 12.3 0 17-4.5-4.7-4.5-12.3 0-17Z"/></svg>
             </span>
             <span class="home-quick-action-copy"><span data-i18n-key="home.quick.research">搜索网页</span></span>
             </button>
-            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
+            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作" data-slot="button" data-ui-legacy="">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17"/></svg>
             </button>
           </div>
@@ -822,17 +822,17 @@
         <section class="home-tutor-starters" aria-labelledby="homeTutorHeading">
           <h2 id="homeTutorHeading" data-i18n-key="home.tutor.heading">从一个好问题开始</h2>
           <div class="home-tutor-grid">
-            <button type="button" class="home-tutor-card" data-home-prompt="understand">
+            <button type="button" class="home-tutor-card" data-home-prompt="understand" data-slot="button" data-ui-legacy="">
               <span class="home-tutor-card-icon" aria-hidden="true">◇</span>
               <strong data-i18n-key="home.tutor.understand.title"></strong>
               <span data-i18n-key="home.tutor.understand.hint"></span>
             </button>
-            <button type="button" class="home-tutor-card" data-home-prompt="practice">
+            <button type="button" class="home-tutor-card" data-home-prompt="practice" data-slot="button" data-ui-legacy="">
               <span class="home-tutor-card-icon" aria-hidden="true">↗</span>
               <strong data-i18n-key="home.tutor.practice.title"></strong>
               <span data-i18n-key="home.tutor.practice.hint"></span>
             </button>
-            <button type="button" class="home-tutor-card" data-home-prompt="plan">
+            <button type="button" class="home-tutor-card" data-home-prompt="plan" data-slot="button" data-ui-legacy="">
               <span class="home-tutor-card-icon" aria-hidden="true">☷</span>
               <strong data-i18n-key="home.tutor.plan.title"></strong>
               <span data-i18n-key="home.tutor.plan.hint"></span>
@@ -854,7 +854,7 @@
 
     <!-- Main-content pages for Library, Projects, Scheduled, Plugins -->
     <div class="library-panel main-page hidden" id="libraryPanel"></div>
-    <input type="file" id="libraryUploadInput" multiple hidden>
+    <input type="file" id="libraryUploadInput" multiple hidden data-slot="native-file" data-ui-legacy="">
     <div class="spaces-panel main-page hidden" id="spacesPanel"></div>
     <div class="scheduled-panel main-page hidden" id="scheduledPanel"></div>
     <div class="plugins-panel main-page hidden" id="pluginsPanel"></div>
@@ -895,15 +895,15 @@
              logic lives in src/ui/findInSession.js. -->
         <div class="find-bar hidden" id="findBar" role="search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="find-bar-icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false">
+          <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false" data-slot="input" data-ui-legacy="">
           <span class="find-count" id="findCount" aria-live="polite"></span>
-          <button class="find-nav-btn" type="button" title="Previous match" aria-label="Previous match" data-i18n-title="chrome.previousMatch" data-i18n-aria="chrome.previousMatch">
+          <button class="find-nav-btn" type="button" title="Previous match" aria-label="Previous match" data-i18n-title="chrome.previousMatch" data-i18n-aria="chrome.previousMatch" data-slot="button" data-ui-legacy="">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
           </button>
-          <button class="find-nav-btn" type="button" title="Next match" aria-label="Next match" data-i18n-title="chrome.nextMatch" data-i18n-aria="chrome.nextMatch">
+          <button class="find-nav-btn" type="button" title="Next match" aria-label="Next match" data-i18n-title="chrome.nextMatch" data-i18n-aria="chrome.nextMatch" data-slot="button" data-ui-legacy="">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
-          <button class="find-close-btn" type="button" title="Close find" aria-label="Close find" data-i18n-title="chrome.closeFind" data-i18n-aria="chrome.closeFind">
+          <button class="find-close-btn" type="button" title="Close find" aria-label="Close find" data-i18n-title="chrome.closeFind" data-i18n-aria="chrome.closeFind" data-slot="button" data-ui-legacy="">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
         </div>

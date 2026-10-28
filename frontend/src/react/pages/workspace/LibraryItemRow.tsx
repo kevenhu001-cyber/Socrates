@@ -1,3 +1,6 @@
+import { Input as ShadcnInput } from '../../ui/shadcn/input';
+import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
 import { Button as UiButton } from '../../ui/Button';
 import React, { useState } from 'react';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -18,7 +21,7 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
   let nameEl: React.ReactNode;
   if (isRenaming) {
     nameEl = (
-      <input className="library-rename-input" type="text" defaultValue={name} maxLength={255} autoFocus
+      <ShadcnInput className="library-rename-input" type="text" defaultValue={name} maxLength={255} autoFocus
         data-rename-id={item.id} data-rename-key={itemKey}
         onKeyDown={(e) => { if (e.key === 'Enter') dispatch.saveRename(e.currentTarget); if (e.key === 'Escape') dispatch.cancelRename(); }} />
     );
@@ -41,9 +44,9 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
 
   return (
     <div className={'workspace-row library-row' + (isSelected ? ' library-row-selected' : '')}>
-      <label className="library-checkbox-label" onClick={(e) => e.stopPropagation()}>
-        <input type="checkbox" className="library-checkbox" checked={isSelected} onChange={(e) => dispatch.toggleSelect(item.id, e.target.checked)} aria-label={'Select ' + name} />
-      </label>
+      <ShadcnLabel className="library-checkbox-label" onClick={(e) => e.stopPropagation()}>
+        <ShadcnNativeControl type="checkbox" className="library-checkbox" checked={isSelected} onChange={(e) => dispatch.toggleSelect(item.id, e.target.checked)} aria-label={'Select ' + name} />
+      </ShadcnLabel>
       <span className={'workspace-row-icon library-file-icon library-file-' + getFileTypeCategory(item) + (item.kind === 'image' ? ' is-image' : '')} onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}>
         {fileTypeGlyph(item)}
       </span>

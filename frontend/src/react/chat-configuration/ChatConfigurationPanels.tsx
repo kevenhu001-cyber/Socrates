@@ -1,3 +1,4 @@
+import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button as UiButton } from '../ui/Button';
 import type { ReasoningEffort, ResponseSpeed } from '../../config/chatPreferences';
 import type { ChatProviderOption } from './types';
@@ -99,7 +100,7 @@ export function EffortPanel({ effort, speed, supportsInstant = true, onBack, onC
         {effort === 'instant' ? <CheckIcon /> : null}
       </UiButton>
       <div className="chat-config-slider">
-        <input
+        <ShadcnNativeControl
           type="range"
           min={0}
           max={stops.length - 1}

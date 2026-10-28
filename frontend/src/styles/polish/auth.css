@@ -22,8 +22,8 @@
 /* Tabs: quiet underline tabs, muted → primary. */
 .auth-tabs { border-bottom: 1px solid var(--ui-border-subtle); }
 .auth-tab { color: var(--ui-text-muted); font-weight: var(--ui-font-weight-medium); }
-.auth-tab:hover { color: var(--ui-text-secondary); }
-.auth-tab.active { color: var(--ui-text-primary); }
+.auth-tab:hover { color: var(--muted-foreground); }
+.auth-tab.active { color: var(--foreground); }
 
 /* Labels: small-caps microcopy, muted. */
 .auth-label {
@@ -34,7 +34,7 @@
 }
 
 .auth-input {
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control);
   background: var(--cg-rail);
   color: var(--cg-text);
@@ -52,16 +52,16 @@
 }
 .auth-btn.primary:hover { filter: brightness(0.92); }
 .auth-btn.secondary {
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
-.auth-btn.secondary:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+.auth-btn.secondary:hover { background: var(--accent); color: var(--foreground); }
 
 .auth-view-separator { color: var(--ui-text-muted); }
 .auth-foot, .auth-footnote { color: var(--ui-text-muted); }
-.auth-foot a, .auth-inline-link { color: var(--ui-text-secondary); }
-.auth-foot a:hover, .auth-inline-link:hover { color: var(--ui-text-primary); }
+.auth-foot a, .auth-inline-link { color: var(--muted-foreground); }
+.auth-foot a:hover, .auth-inline-link:hover { color: var(--foreground); }
 
 .auth-error { border-radius: var(--ui-radius-control); }
 
@@ -72,10 +72,10 @@
   max-height: calc(100dvh - var(--ui-space-xxl));
   overflow-y: auto;
   padding: var(--ui-space-xl);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-overlay);
-  color: var(--ui-text-primary);
+  background: var(--popover);
+  color: var(--foreground);
   box-shadow: var(--ui-shadow-dialog);
   font-family: inherit;
 }
@@ -94,12 +94,12 @@
   min-height: var(--ui-control-touch);
   margin-top: var(--ui-space-sm);
   padding: var(--ui-space-sm) var(--ui-space-lg);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control);
   background: var(--ui-bg-raised);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   text-decoration: none;
   cursor: pointer;
 }
-.browser-login-handoff .auth-btn:hover { background: var(--ui-bg-hover); }
+.browser-login-handoff .auth-btn:hover { background: var(--accent); }
 .browser-login-handoff .auth-btn:disabled { opacity: .5; cursor: wait; }

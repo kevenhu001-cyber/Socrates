@@ -6,8 +6,8 @@
 .extensions-menu,
 .tag-editor-popover {
   border: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-overlay);
-  color: var(--ui-text-primary);
+  background: var(--popover);
+  color: var(--foreground);
 }
 
 body #composerToolsMenu.composer-tools-menu {
@@ -50,14 +50,14 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
      on desktop and 12px rows on phones. */
   border-radius: var(--ui-radius-tools-row);
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-regular);
 }
 
 #composerToolsMenu .composer-tools-item:hover,
 #composerToolsMenu .composer-tools-mobile-item:hover,
-#composerToolsMenu .composer-tools-plugin-item:hover { background: var(--ui-bg-hover); }
+#composerToolsMenu .composer-tools-plugin-item:hover { background: var(--accent); }
 
 #composerToolsMenu .composer-tools-icon {
   display: grid;
@@ -69,7 +69,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   /* The popover surface already uses --ui-bg-overlay; stepping DOWN to
      --ui-bg-surface keeps the circular chip legible inside the card. */
   background: var(--ui-bg-surface);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 #composerToolsMenu .composer-tools-icon svg {
   width: 22px;
@@ -84,7 +84,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
 
 #composerToolsMenu .composer-tools-group-label {
   padding: 8px 8px 4px;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: 11px;
   font-weight: var(--ui-font-weight-semibold);
   line-height: 16px;
@@ -134,7 +134,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     min-width: 36px;
     height: 36px;
   }
-  [data-mode="dark"] #composerToolsMenu .composer-tools-icon { background: var(--ui-bg-control); }
+  [data-mode="dark"] #composerToolsMenu .composer-tools-icon { background: var(--secondary); }
   #composerToolsMenu .composer-tools-icon svg { width: 22px; height: 22px; }
   #composerToolsMenu .composer-tools-copy > span { font-size: var(--ui-font-size-md); }
 }

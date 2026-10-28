@@ -117,7 +117,7 @@ body #composerToolsMenu .composer-tools-item kbd {
     height: 20px !important;
     border-radius: 0;
     background: transparent !important;
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
   }
   body #composerToolsMenu .composer-tools-icon svg {
     width: 17px !important;
@@ -185,8 +185,8 @@ body #composerToolsMenu .composer-tools-item kbd {
 }
 #appShell .voice-recording-cancel:hover,
 #appShell .voice-recording-cancel:focus-visible {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 #appShell .voice-recording-cancel svg { display: block; width: 15px; height: 15px; }
 

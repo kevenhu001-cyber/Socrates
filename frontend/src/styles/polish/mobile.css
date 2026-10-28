@@ -17,7 +17,7 @@
   #appShell .top-bar .toggle-sidebar,
   #appShell .top-bar .mobile-newchat-btn,
   #appShell .top-bar .mobile-incognito-btn {
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
   }
 
   /* Nav rows / recents: radius is owned by mobile-controls.css (10px row

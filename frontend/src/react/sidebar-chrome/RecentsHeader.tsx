@@ -1,3 +1,4 @@
+import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { IconButton } from '../ui/IconButton';
 import { Icon } from '../../ui/Icon';
 import { useCallback, useEffect, useReducer, useState } from 'react';
@@ -37,7 +38,7 @@ export function RecentsHeader() {
         <Icon name="folder" /><span>{i18n('sidebar.organize.projects', 'Group by project')}</span>{organization === 'projects' ? <Icon name="check" className="organize-menu-check" /> : null}
       </FoundationMenuRadioItem>
       </FoundationMenuRadioGroup>
-      <hr />
+      <ShadcnSeparator />
       <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openStorageModal(); }}>
         <Icon name="archive" /><span>{i18n('profile.archivedSessions', 'Archived chats')}</span>
       </FoundationMenuItem>

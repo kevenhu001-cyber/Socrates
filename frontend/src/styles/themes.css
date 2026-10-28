@@ -30,6 +30,41 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 [data-mode="dark"] {
   color-scheme: dark;
 
+  /* shadcn semantic roles. Product and retained HTML controls share these
+     values; there is no second palette in the component stylesheet. */
+  --background: var(--geist-background-100);
+  --foreground: var(--geist-gray-1000);
+  --card: var(--geist-gray-200);
+  --card-foreground: var(--foreground);
+  --popover: var(--geist-gray-300);
+  --popover-foreground: var(--foreground);
+  --primary: var(--geist-gray-1000);
+  --primary-foreground: var(--background);
+  --secondary: var(--geist-gray-400);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--geist-gray-100);
+  --muted-foreground: var(--geist-gray-900);
+  --accent: var(--geist-gray-alpha-100);
+  --accent-foreground: var(--foreground);
+  --destructive: var(--ui-danger);
+  --destructive-foreground: var(--background);
+  --border: var(--geist-gray-400);
+  --input: var(--border);
+  --ring: var(--geist-blue-900);
+  --sidebar: var(--geist-gray-100);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  --chart-1: var(--ui-info);
+  --chart-2: var(--ui-success);
+  --chart-3: var(--ui-warning);
+  --chart-4: var(--ui-brand-accent);
+  --chart-5: var(--ui-danger);
+
   /* ---------------------------------------------------------------------
    * Geist scale — dark mode.
    *
@@ -77,8 +112,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * Interactive tints (control, bubble, selected pill) are named scale
    * steps too, so they carry a fixed relationship to the surfaces they
    * sit on instead of drifting with a percentage mix. */
-  --ui-bg-page: var(--geist-background-100);
-  --ui-bg-rail: var(--geist-gray-100);
+  --ui-bg-page: var(--background);
+  --ui-bg-rail: var(--sidebar);
   --ui-bg-panel: var(--geist-gray-200);
   --ui-bg-elevated: var(--geist-gray-300);
 
@@ -87,10 +122,10 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-sunken: var(--ui-bg-page);
   --ui-bg-raised: var(--ui-bg-panel);
   --ui-bg-surface: var(--ui-bg-elevated);
-  --ui-bg-overlay: var(--ui-bg-elevated);
+  --ui-bg-overlay: var(--popover);
   --ui-bg-composer: var(--ui-bg-elevated);
-  --ui-bg-control: var(--geist-gray-400);
-  --ui-bg-hover: var(--geist-gray-alpha-100);
+  --ui-bg-control: var(--secondary);
+  --ui-bg-hover: var(--accent);
   --ui-bg-selected: var(--ui-bg-control);
   --ui-bg-bubble: var(--geist-gray-400);
   --ui-bg-pill-selected: var(--geist-gray-500);
@@ -106,8 +141,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * tier, so it takes the lightest Geist accent that still clears AA on the
    * mode's deepest rung: accents-6 (#999999) in dark, accents-5 (#666666)
    * in light. Every tier below clears 4.5:1 on all four rungs. */
-  --ui-text-primary: var(--geist-gray-1000);
-  --ui-text-secondary: var(--geist-gray-900);
+  --ui-text-primary: var(--foreground);
+  --ui-text-secondary: var(--muted-foreground);
   --ui-text-tertiary: #999999;
   --ui-text-muted: var(--ui-text-tertiary);
   --ui-text-placeholder: var(--ui-text-tertiary);
@@ -130,13 +165,13 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   /* Border / mask roles. Geist's own mapping: gray-400 is the default
    * border, gray-500 the hover border, gray-600 the active border. */
   --ui-border-subtle: var(--ui-bg-elevated);
-  --ui-border-default: var(--geist-gray-400);
+  --ui-border-default: var(--border);
   --ui-border-strong: var(--geist-gray-500);
   --ui-backdrop: rgb(0 0 0 / 44%);
 
   /* Geist's monochrome primary + semantic status colors. */
-  --ui-on-accent: var(--ui-bg-page);
-  --ui-accent-strong: var(--geist-gray-1000);
+  --ui-on-accent: var(--primary-foreground);
+  --ui-accent-strong: var(--primary);
   /* The action colour — the one saturated fill in the product, and the only
    * place the brand is allowed to shout. It carries the composer's send
    * button, which is the app's single "do the thing" control.
@@ -162,7 +197,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   /* The focus indicator is Geist's blue: the one saturated colour the
    * system allows on a neutral surface, so keyboard focus is never
    * mistaken for a hover state. */
-  --ui-focus-ring: var(--geist-blue-900);
+  --ui-focus-ring: var(--ring);
 
   /* The brand accent — the one saturated colour in the system, and the
    * product's only colour anchor. The reference draws the account avatar as
@@ -207,6 +242,39 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 [data-mode="light"] {
   color-scheme: light;
 
+  --background: var(--geist-background-200);
+  --foreground: var(--geist-gray-1000);
+  --card: var(--geist-background-100);
+  --card-foreground: var(--foreground);
+  --popover: var(--geist-background-100);
+  --popover-foreground: var(--foreground);
+  --primary: var(--geist-gray-1000);
+  --primary-foreground: var(--geist-background-100);
+  --secondary: var(--geist-gray-200);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--geist-gray-100);
+  --muted-foreground: var(--geist-gray-900);
+  --accent: var(--geist-gray-alpha-100);
+  --accent-foreground: var(--foreground);
+  --destructive: var(--ui-danger);
+  --destructive-foreground: var(--geist-background-100);
+  --border: var(--geist-gray-400);
+  --input: var(--border);
+  --ring: var(--geist-blue-700);
+  --sidebar: var(--geist-gray-100);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  --chart-1: var(--ui-info);
+  --chart-2: var(--ui-success);
+  --chart-3: var(--ui-warning);
+  --chart-4: var(--ui-brand-accent);
+  --chart-5: var(--ui-danger);
+
   /* ---------------------------------------------------------------------
    * Geist scale — light mode. The same ramp as dark, flipped: the two
    * backgrounds are the paper (#ffffff) and the canvas (#fafafa), and the
@@ -249,8 +317,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    *
    * The rungs are four consecutive steps of the Geist ramp, in the same order
    * as dark mode: background-100 → background-200 → gray-100 → gray-200. */
-  --ui-bg-page: var(--geist-background-200);
-  --ui-bg-rail: var(--geist-gray-100);
+  --ui-bg-page: var(--background);
+  --ui-bg-rail: var(--sidebar);
   --ui-bg-panel: var(--geist-gray-200);
   --ui-bg-elevated: var(--geist-background-100);
 
@@ -263,9 +331,9 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-sunken: var(--ui-bg-panel);
   --ui-bg-raised: var(--ui-bg-elevated);
   --ui-bg-surface: var(--ui-bg-elevated);
-  --ui-bg-overlay: var(--ui-bg-elevated);
-  --ui-bg-control: var(--geist-gray-200);
-  --ui-bg-hover: var(--geist-gray-alpha-100);
+  --ui-bg-overlay: var(--popover);
+  --ui-bg-control: var(--secondary);
+  --ui-bg-hover: var(--accent);
   --ui-bg-selected: var(--ui-bg-control);
   --ui-bg-bubble: var(--geist-gray-100);
   --ui-bg-pill-selected: var(--geist-gray-300);
@@ -280,8 +348,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * Geist accent that still clears AA on the mode's deepest rung:
    * accents-5 (#666666). The placeholder keeps gray-700, the tone the
    * reference uses for hints that carry no reading of their own. */
-  --ui-text-primary: var(--geist-gray-1000);
-  --ui-text-secondary: var(--geist-gray-900);
+  --ui-text-primary: var(--foreground);
+  --ui-text-secondary: var(--muted-foreground);
   --ui-text-tertiary: #666666;
   --ui-text-muted: var(--ui-text-tertiary);
   --ui-text-placeholder: var(--geist-gray-700);
@@ -291,7 +359,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   /* Border / mask roles. Geist's own mapping: gray-400 is the default
    * border, gray-500 the hover border, gray-600 the active border. */
   --ui-border-subtle: var(--ui-bg-panel);
-  --ui-border-default: var(--geist-gray-400);
+  --ui-border-default: var(--border);
   --ui-border-strong: var(--geist-gray-500);
   --ui-backdrop: rgb(0 0 0 / 44%);
 
@@ -307,7 +375,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    *   warning rgb(125 82 0)   6.4:1 / 5.1:1
    * The thinking accent stays a vivid chart/accent colour and is never used
    * as body text; warning no longer aliases it. */
-  --ui-on-accent: var(--ui-bg-surface);
+  --ui-on-accent: var(--primary-foreground);
   /* The action colour — the composer's send button. The same blue as the
    * light mode: the dark rail carries it on a darker surface, and the
    * glyph on it is the light one in both modes (3.8:1, the non-text
@@ -315,7 +383,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * in docs/ref/chatgpt-parity.md. */
   --ui-accent-action: rgb(57 126 247);
   --ui-on-action: rgb(255 255 255);
-  --ui-accent-strong: var(--geist-gray-1000);
+  --ui-accent-strong: var(--primary);
   --ui-danger: rgb(176 45 28);
   --ui-success: rgb(12 110 51);
   --ui-thinking-accent: rgb(254 180 0);
@@ -325,7 +393,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 
   /* The focus indicator is Geist's blue, on the dark side of the ramp so
    * the ring holds against the paper the control is cut from. */
-  --ui-focus-ring: var(--geist-blue-700);
+  --ui-focus-ring: var(--ring);
 
   /* Socrates product roles projected from the foundation.
    *
@@ -614,27 +682,39 @@ html[data-theme="philosophy"] .tutor-mastery-stage-label {
 }
 
 html[data-theme="philosophy"][data-mode="light"] {
-  --ui-bg-page: rgb(247 244 238);
-  --ui-bg-rail: rgb(240 236 225);
+  --background: rgb(247 244 238);
+  --foreground: rgb(28 26 23);
+  --card: rgb(252 251 249);
+  --popover: var(--card);
+  --primary: rgb(168 88 50);
+  --primary-foreground: rgb(255 255 255);
+  --secondary: rgb(238 233 220);
+  --muted: rgb(240 236 225);
+  --muted-foreground: rgb(94 87 77);
+  --accent: color-mix(in srgb, rgb(232 227 214) 60%, transparent);
+  --border: rgba(120, 100, 80, 0.14);
+  --sidebar: rgb(240 236 225);
+  --ui-bg-page: var(--background);
+  --ui-bg-rail: var(--sidebar);
   --ui-bg-sidebar: var(--ui-bg-rail);
   --ui-bg-panel: rgb(232 227 214);
   --ui-bg-elevated: rgb(252 251 249);
   --ui-bg-surface: rgb(252 251 249);
   --ui-bg-raised: rgb(252 251 249);
-  --ui-bg-overlay: rgb(252 251 249);
+  --ui-bg-overlay: var(--popover);
   --ui-bg-composer: rgb(252 251 249);
-  --ui-bg-control: rgb(238 233 220);
+  --ui-bg-control: var(--secondary);
   --ui-bg-bubble: rgb(239 233 219);
   --ui-bg-sunken: rgb(232 227 214);
-  --ui-bg-hover: color-mix(in srgb, var(--ui-bg-panel) 60%, transparent);
+  --ui-bg-hover: var(--accent);
 
-  --ui-border-default: rgba(120, 100, 80, 0.14);
+  --ui-border-default: var(--border);
   --ui-border-strong: rgba(120, 100, 80, 0.24);
   --ui-border-subtle: rgba(120, 100, 80, 0.08);
   --ui-border-control: rgba(120, 100, 80, 0.16);
 
-  --ui-text-primary: rgb(28 26 23);
-  --ui-text-secondary: rgb(94 87 77);
+  --ui-text-primary: var(--foreground);
+  --ui-text-secondary: var(--muted-foreground);
   --ui-text-muted: rgb(125 117 104);
   --ui-text-tertiary: rgb(125 117 104);
   --ui-text-disabled: rgb(168 160 146);
@@ -642,8 +722,8 @@ html[data-theme="philosophy"][data-mode="light"] {
   --ui-accent-action: rgb(168 88 50);
   --ui-accent-hover: rgb(145 74 39);
   --ui-accent-active: rgb(124 62 31);
-  --ui-accent-strong: rgb(168 88 50);
-  --ui-on-accent: rgb(255 255 255);
+  --ui-accent-strong: var(--primary);
+  --ui-on-accent: var(--primary-foreground);
   --ui-brand-accent: rgb(168 88 50);
 
   --cg-page: var(--ui-bg-page);
@@ -690,27 +770,39 @@ html[data-theme="philosophy"][data-mode="light"] {
 }
 
 html[data-theme="philosophy"][data-mode="dark"] {
-  --ui-bg-page: rgb(18 17 16);
-  --ui-bg-rail: rgb(24 23 21);
+  --background: rgb(18 17 16);
+  --foreground: rgb(242 237 228);
+  --card: rgb(32 30 27);
+  --popover: rgb(40 38 34);
+  --primary: rgb(212 130 85);
+  --primary-foreground: var(--background);
+  --secondary: rgb(38 36 32);
+  --muted: rgb(24 23 21);
+  --muted-foreground: rgb(168 160 146);
+  --accent: color-mix(in srgb, rgb(32 30 27) 85%, var(--foreground) 15%);
+  --border: rgba(230, 215, 190, 0.12);
+  --sidebar: rgb(24 23 21);
+  --ui-bg-page: var(--background);
+  --ui-bg-rail: var(--sidebar);
   --ui-bg-sidebar: var(--ui-bg-rail);
   --ui-bg-panel: rgb(32 30 27);
   --ui-bg-elevated: rgb(40 38 34);
   --ui-bg-surface: rgb(32 30 27);
   --ui-bg-raised: rgb(40 38 34);
-  --ui-bg-overlay: rgb(40 38 34);
+  --ui-bg-overlay: var(--popover);
   --ui-bg-composer: rgb(40 38 34);
-  --ui-bg-control: rgb(38 36 32);
+  --ui-bg-control: var(--secondary);
   --ui-bg-bubble: rgb(37 35 32);
   --ui-bg-sunken: rgb(18 17 16);
-  --ui-bg-hover: color-mix(in srgb, var(--ui-bg-panel) 85%, var(--ui-text-primary) 15%);
+  --ui-bg-hover: var(--accent);
 
-  --ui-border-default: rgba(230, 215, 190, 0.12);
+  --ui-border-default: var(--border);
   --ui-border-strong: rgba(230, 215, 190, 0.22);
   --ui-border-subtle: rgba(230, 215, 190, 0.08);
   --ui-border-control: rgba(230, 215, 190, 0.15);
 
-  --ui-text-primary: rgb(242 237 228);
-  --ui-text-secondary: rgb(168 160 146);
+  --ui-text-primary: var(--foreground);
+  --ui-text-secondary: var(--muted-foreground);
   --ui-text-muted: rgb(136 128 114);
   --ui-text-tertiary: rgb(136 128 114);
   --ui-text-disabled: rgb(98 92 82);
@@ -718,8 +810,8 @@ html[data-theme="philosophy"][data-mode="dark"] {
   --ui-accent-action: rgb(212 130 85);
   --ui-accent-hover: rgb(224 146 102);
   --ui-accent-active: rgb(194 114 68);
-  --ui-accent-strong: rgb(212 130 85);
-  --ui-on-accent: rgb(18 17 16);
+  --ui-accent-strong: var(--primary);
+  --ui-on-accent: var(--primary-foreground);
   --ui-brand-accent: rgb(212 130 85);
 
   --cg-page: var(--ui-bg-page);

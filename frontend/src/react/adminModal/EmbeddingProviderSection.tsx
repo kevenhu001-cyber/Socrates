@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/Button';
 import type { FormEvent } from 'react';
 
@@ -38,40 +40,40 @@ export function EmbeddingProviderSection({
         </UiButton>
       ) : (
         <form onSubmit={onSubmit}>
-          <label>
+          <ShadcnLabel>
             Display name
-            <input type="text" value={form.label}
+            <ShadcnInput type="text" value={form.label}
               onChange={(event) => onFormChange({ ...form, label: event.target.value })}
               maxLength={200} required />
-          </label>
-          <label>
+          </ShadcnLabel>
+          <ShadcnLabel>
             OpenAI-compatible URL
-            <input type="url" value={form.url}
+            <ShadcnInput type="url" value={form.url}
               onChange={(event) => onFormChange({ ...form, url: event.target.value })}
               placeholder="https://api.openai.com/v1" maxLength={2048} required />
-          </label>
-          <label>
+          </ShadcnLabel>
+          <ShadcnLabel>
             Model ID
-            <input type="text" value={form.model}
+            <ShadcnInput type="text" value={form.model}
               onChange={(event) => onFormChange({ ...form, model: event.target.value })}
               placeholder="text-embedding-3-small" maxLength={200} required />
-          </label>
-          <label>
+          </ShadcnLabel>
+          <ShadcnLabel>
             Dimensions
-            <input type="number" value={form.dimensions}
+            <ShadcnInput type="number" value={form.dimensions}
               onChange={(event) => onFormChange({
                 ...form,
                 dimensions: Number.parseInt(event.target.value, 10) || 1536,
               })}
               min={64} max={4096} required />
-          </label>
-          <label>
+          </ShadcnLabel>
+          <ShadcnLabel>
             API key {form.hasKey && <span className="admin-key-present">(configured{form.keyHint ? `: ${form.keyHint}…` : ''})</span>}
-            <input type="password" value={apiKey}
+            <ShadcnInput type="password" value={apiKey}
               onChange={(event) => onApiKeyChange(event.target.value)}
               placeholder={form.hasKey ? 'Leave blank to keep' : 'Paste the provider key'}
               autoComplete="off" />
-          </label>
+          </ShadcnLabel>
           <div className="admin-actions">
             <UiButton type="submit" className="admin-save" disabled={saving}>
               {saving ? 'Saving…' : 'Save embedding'}

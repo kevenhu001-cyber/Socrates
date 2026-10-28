@@ -1,3 +1,4 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button } from '../ui/Button';
 import type { SettingsLabel, SettingsSection } from './settings.types';
 
@@ -44,7 +45,7 @@ export function SettingsNavigation({
 }) {
   return (
     <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
-      <input
+      <ShadcnInput
         type="search"
         placeholder={label('搜索设置', 'Search settings')}
         aria-label={label('搜索设置', 'Search settings')}

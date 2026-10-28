@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button as UiButton } from '../../ui/Button';
 import { useMemo, useState } from 'react';
 import { getCurrentLang } from '../../legacy/gateway.ts';
@@ -52,10 +54,10 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
           <p className="plugin-directory-desc">{i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}</p>
         </div>
         <div className="plugin-directory-tools">
-          <label className="plugin-directory-search">
+          <ShadcnLabel className="plugin-directory-search">
             <SearchIcon />
-            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
-          </label>
+            <ShadcnInput type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
+          </ShadcnLabel>
           <UiButton
             type="button"
             className="plugin-directory-add-btn"

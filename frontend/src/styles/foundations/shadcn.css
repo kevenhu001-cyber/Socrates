@@ -1,0 +1,73 @@
+/* Tailwind is opt-in: omit Preflight so retained HTML, editor content and
+ * reference-pinned geometry keep their native contracts. Palette values live
+ * only in themes.css, which remains the final stylesheet in the cascade. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+
+@source '../../react';
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-sans: var(--cg-font);
+  --font-weight-normal: var(--ui-font-weight-regular);
+  --font-weight-medium: var(--ui-font-weight-medium);
+  --font-weight-semibold: var(--ui-font-weight-semibold);
+  --font-weight-bold: var(--ui-font-weight-bold);
+  --text-xs: var(--ui-font-size-xs);
+  --text-sm: var(--ui-font-size-sm);
+  --text-base: var(--ui-font-size-md);
+  --text-lg: var(--ui-font-size-lg);
+  --text-xl: var(--ui-font-size-xl);
+  --text-2xl: var(--ui-font-size-xxl);
+  --radius-sm: var(--ui-radius-sm);
+  --radius-md: var(--ui-radius-control);
+  --radius-lg: var(--ui-radius-lg);
+  --radius-xl: var(--ui-radius-xl);
+  --radius-2xl: var(--ui-radius-2xl);
+}
+
+/* Upstream components assume Preflight's box model and border defaults.
+ * Limit that normalization to component roots and their own parts. */
+@layer base {
+  :where([data-slot]) {
+    box-sizing: border-box;
+    border-style: solid;
+    border-width: 0;
+  }
+  :where(.socrates-native-control[type="checkbox"], .socrates-native-control[type="radio"]) {
+    accent-color: var(--primary);
+  }
+}

@@ -1,4 +1,6 @@
-import { Button as UiButton } from '../../ui/Button';
+import { Tabs, TabsList, TabsTrigger } from '../../ui/shadcn/tabs';
+import { Alert, AlertDescription } from '../../ui/shadcn/alert';
+import { cn } from 'cn';
 import { createRootSlot } from '../../lib/boot/ownedRoot';
 import { useMemo, useState } from 'react';
 
@@ -32,7 +34,7 @@ function ScheduledPage() {
   }
 
   if (snap.error) {
-    return <div className="scheduled-empty">{snap.error}</div>;
+    return <Alert variant="destructive" className="scheduled-empty"><AlertDescription>{snap.error}</AlertDescription></Alert>;
   }
 
   const searching = query.trim().length > 0;
@@ -42,14 +44,16 @@ function ScheduledPage() {
     <section className="workspace-surface scheduled-directory" aria-labelledby="scheduled-directory-title">
       <ScheduledPageHeader query={query} onQueryChange={setQuery} onCreate={() => createTask()} />
 
-      <div className="scheduled-filter-tabs" role="tablist" aria-label={scheduledText('scheduled.filter', 'Task filter')}>
-        <UiButton type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>
+      <Tabs value={scope} onValueChange={(value) => setScope(value as typeof scope)}>
+      <TabsList className="scheduled-filter-tabs" aria-label={scheduledText('scheduled.filter', 'Task filter')}>
+        <TabsTrigger type="button" value="all" className={cn(scope === 'all' && 'active')}>
           {scheduledText('scheduled.all', 'All')}
-        </UiButton>
-        <UiButton type="button" role="tab" aria-selected={scope === 'active'} className={scope === 'active' ? 'active' : ''} onClick={() => setScope('active')}>
+        </TabsTrigger>
+        <TabsTrigger type="button" value="active" className={cn(scope === 'active' && 'active')}>
           {scheduledText('scheduled.activeOnly', 'Active')}
-        </UiButton>
-      </div>
+        </TabsTrigger>
+      </TabsList>
+      </Tabs>
 
       {!searching ? <ScheduledRecommendations onSelect={(prompt) => createTask(prompt)} /> : null}
 

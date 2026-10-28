@@ -1,3 +1,5 @@
+import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
+import { NativeSelect as ShadcnNativeSelect } from '../ui/shadcn/native-select';
 import type { SettingsPaneProps, SaveSettingsPreference, SettingsLanguage } from './settings.types';
 
 export function GeneralSettingsPane({
@@ -14,8 +16,10 @@ export function GeneralSettingsPane({
   return (
     <section className="settings-pane" hidden={hidden}>
       <h2>{label('通用', 'General')}</h2>
-      <label className="settings-choice">{label('外观', 'Appearance')}
-        <select
+      <FieldGroup className="settings-preference-fields">
+      <Field orientation="horizontal" className="settings-choice"><FieldLabel htmlFor="settings-appearance">{label('外观', 'Appearance')}</FieldLabel>
+        <ShadcnNativeSelect
+          id="settings-appearance"
           value={document.documentElement.getAttribute('data-theme-preference') || 'system'}
           onChange={(event) => {
             const theme = event.target.value;
@@ -26,10 +30,11 @@ export function GeneralSettingsPane({
           <option value="system">{label('跟随系统', 'System')}</option>
           <option value="light">{label('浅色', 'Light')}</option>
           <option value="dark">{label('深色', 'Dark')}</option>
-        </select>
-      </label>
-      <label className="settings-choice">{label('主题风格', 'Theme style')}
-        <select
+        </ShadcnNativeSelect>
+      </Field>
+      <Field orientation="horizontal" className="settings-choice"><FieldLabel htmlFor="settings-theme-style">{label('主题风格', 'Theme style')}</FieldLabel>
+        <ShadcnNativeSelect
+          id="settings-theme-style"
           value={document.documentElement.getAttribute('data-theme') || 'socrates'}
           onChange={(event) => {
             const style = event.target.value;
@@ -38,14 +43,15 @@ export function GeneralSettingsPane({
         >
           <option value="socrates">{label('现代科技', 'Modern')}</option>
           <option value="philosophy">{label('古典哲学', 'Philosophy')}</option>
-        </select>
-      </label>
-      <label className="settings-choice">{label('语言', 'Language')}
-        <select value={language} onChange={(event) => onLanguageChange(event.target.value)}>
+        </ShadcnNativeSelect>
+      </Field>
+      <Field orientation="horizontal" className="settings-choice"><FieldLabel htmlFor="settings-language">{label('语言', 'Language')}</FieldLabel>
+        <ShadcnNativeSelect id="settings-language" value={language} onChange={(event) => onLanguageChange(event.target.value)}>
           <option value="zh">中文</option>
           <option value="en">English</option>
-        </select>
-      </label>
+        </ShadcnNativeSelect>
+      </Field>
+      </FieldGroup>
     </section>
   );
 }

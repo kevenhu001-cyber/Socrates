@@ -40,7 +40,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   box-sizing: border-box;
   width: 100%;
   padding: 0;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 }
 
@@ -57,7 +57,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 #appShell .msg-body { --msg-para-gap: var(--ui-space-md); }
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-family: var(--font-sans);
   font-size: var(--ui-text-body);
   font-weight: var(--ui-font-weight-regular);
@@ -67,7 +67,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
 /* Headings keep the same semantic weight as the desktop reading column. */
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body :is(h1, h2, h3, h4) {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-family: var(--font-sans);
   font-weight: var(--ui-font-weight-semibold);
   letter-spacing: normal;
@@ -272,14 +272,14 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 .msg-list>.msg.assistant:last-child .msg-toolbar{opacity:1}
 .msg.assistant[data-stream-settled] .msg-toolbar{opacity:1;transition:opacity var(--ui-duration-fast) var(--ui-ease-out)}
-.msg-toolbar-btn{position:relative;width:var(--ui-control-sm);min-height:var(--ui-control-sm);display:flex;align-items:center;justify-content:center;border-radius:var(--ui-radius-md);background:transparent;color:var(--ui-text-secondary);cursor:pointer;transition:background-color var(--ui-duration-hover) ease,color var(--ui-duration-hover) ease;border:0;padding:0}
-.msg-toolbar-btn:hover{background:var(--ui-bg-hover-ghost);color:var(--ui-text-primary)}
-.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(3px);background:var(--ui-bg-overlay);color:var(--ui-text-primary);font-family:var(--font-sans);font-size:var(--ui-font-size-xxs);font-weight:var(--ui-font-weight-medium);letter-spacing:-0.01em;line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);border:1px solid var(--ui-border-subtle);box-shadow:var(--ui-shadow-menu);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--ui-duration-fast) ease,transform var(--ui-duration-fast) ease;z-index:var(--ui-z-menu)}
+.msg-toolbar-btn{position:relative;width:var(--ui-control-sm);min-height:var(--ui-control-sm);display:flex;align-items:center;justify-content:center;border-radius:var(--ui-radius-md);background:transparent;color:var(--muted-foreground);cursor:pointer;transition:background-color var(--ui-duration-hover) ease,color var(--ui-duration-hover) ease;border:0;padding:0}
+.msg-toolbar-btn:hover{background:var(--ui-bg-hover-ghost);color:var(--foreground)}
+.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(3px);background:var(--popover);color:var(--foreground);font-family:var(--font-sans);font-size:var(--ui-font-size-xxs);font-weight:var(--ui-font-weight-medium);letter-spacing:-0.01em;line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);border:1px solid var(--ui-border-subtle);box-shadow:var(--ui-shadow-menu);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--ui-duration-fast) ease,transform var(--ui-duration-fast) ease;z-index:var(--ui-z-menu)}
 .msg-toolbar-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0);transition:opacity var(--ui-duration-fast) ease 250ms,transform var(--ui-duration-fast) var(--ui-ease-spring-gentle) 250ms}
-.msg-toolbar-btn.active{color:var(--ui-text-primary);background:var(--ui-bg-hover)}
-.msg-toolbar-btn.active:hover{background:var(--ui-bg-hover)}
-.msg-toolbar-btn.is-speaking{color:var(--ui-on-accent);background:var(--ui-accent-strong);animation:readAloudPulse 1.4s ease-in-out infinite}
-.msg-toolbar-btn.is-speaking:hover{background:var(--ui-accent-strong)}
+.msg-toolbar-btn.active{color:var(--foreground);background:var(--accent)}
+.msg-toolbar-btn.active:hover{background:var(--accent)}
+.msg-toolbar-btn.is-speaking{color:var(--primary-foreground);background:var(--primary);animation:readAloudPulse 1.4s ease-in-out infinite}
+.msg-toolbar-btn.is-speaking:hover{background:var(--primary)}
 .msg-toolbar-btn svg{width:16px;height:16px}
 @keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
 #appShell#appShell .msg-toolbar {
@@ -287,7 +287,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 [data-mode="light"] .msg-toolbar-btn,
 [data-mode="light"] #appShell .msg-toolbar {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 @media (min-width: 769px) {
   #appShell #msgList .msg-toolbar {
@@ -310,7 +310,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     border: 0;
     border-radius: var(--ui-radius-md);
     background: transparent;
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
@@ -319,7 +319,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   #appShell #msgList .msg-toolbar-btn:hover,
   #appShell #msgList .msg-toolbar-btn:focus-visible {
     background: var(--ui-bg-hover-ghost);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
   }
 }
 @media (min-width: 769px) {
@@ -364,7 +364,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   border-radius: var(--ui-radius-pill);
   border: 1px solid var(--ui-border-subtle);
   background: color-mix(in srgb, var(--ui-bg-subtle) 40%, transparent);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-sans);
   font-size: var(--ui-font-size-xs, 12px);
   font-weight: var(--ui-font-weight-medium);
@@ -379,8 +379,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
 .msg-follow-up-chip:hover {
   background: var(--ui-bg-hover-ghost);
-  border-color: var(--ui-border-default);
-  color: var(--ui-text-primary);
+  border-color: var(--border);
+  color: var(--foreground);
   transform: translateY(-1px);
 }
 
@@ -397,7 +397,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 
 .msg-follow-up-chip:hover svg {
-  color: var(--ui-accent-default, var(--ui-text-primary));
+  color: var(--ui-accent-default, var(--foreground));
 }
 
 .msg-action-menu {
@@ -406,8 +406,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   padding: var(--ui-space-xs);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-popover);
-  background: var(--ui-bg-overlay);
-  color: var(--ui-text-primary);
+  background: var(--popover);
+  color: var(--foreground);
   box-shadow: var(--ui-shadow-popover);
 }
 .msg-action-menu button {
@@ -426,7 +426,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   text-align: start;
   cursor: pointer;
 }
-.msg-action-menu button:hover, .msg-action-menu button:focus-visible { background: var(--ui-bg-hover); }
+.msg-action-menu button:hover, .msg-action-menu button:focus-visible { background: var(--accent); }
 .msg-action-menu svg { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ── Message Branch Switcher (< 1 / 2 > in-place navigation) ────────── */
@@ -439,7 +439,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   border-radius: var(--ui-radius-pill);
   background: color-mix(in srgb, var(--ui-bg-hover-ghost) 60%, transparent);
   border: 1px solid var(--ui-border-subtle);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-sans);
   font-size: var(--ui-font-size-xs);
   font-variant-numeric: tabular-nums;
@@ -458,14 +458,14 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   border: 0;
   border-radius: var(--ui-radius-circle, 50%);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
 }
 
 .msg-branch-btn:hover:not(:disabled) {
   background: var(--ui-bg-hover-ghost);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 
 .msg-branch-btn:disabled {
@@ -482,6 +482,6 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .msg-branch-counter {
   padding: 0 4px;
   font-weight: var(--ui-font-weight-medium);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   white-space: nowrap;
 }

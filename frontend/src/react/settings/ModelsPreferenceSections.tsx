@@ -1,3 +1,6 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { NativeSelect as ShadcnNativeSelect } from '../ui/shadcn/native-select';
 import { Button } from '../ui/Button';
 import { useState } from 'react';
 import { i18n } from '../legacy/gateway.ts';
@@ -54,19 +57,19 @@ export function ImageVoiceSettingsSection({
           <p>{label('填写当前图片服务支持的模型 ID。', 'Enter the model ID supported by your image provider.')}</p>
         </div>
         <div className="settings-field">
-          <input className="settings-input" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
-          <Button className="btn" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</Button>
+          <ShadcnInput className="settings-input" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
+          <Button variant="outline" className="btn" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</Button>
         </div>
       </section>
       <section className="settings-section">
         <div className="settings-section-head"><h3>{label('语音输入语言', 'Voice input language')}</h3></div>
-        <label className="settings-choice">{label('识别语言', 'Recognition language')}
-          <select value={voiceLanguage} onChange={(event) => updateVoiceLanguage(event.target.value)}>
+        <ShadcnLabel className="settings-choice">{label('识别语言', 'Recognition language')}
+          <ShadcnNativeSelect value={voiceLanguage} onChange={(event) => updateVoiceLanguage(event.target.value)}>
             <option value="auto">{label('自动', 'Automatic')}</option>
             <option value="zh-CN">中文</option>
             <option value="en-US">English</option>
-          </select>
-        </label>
+          </ShadcnNativeSelect>
+        </ShadcnLabel>
       </section>
     </>
   );
@@ -81,13 +84,13 @@ export function SettingsModelActions({
 }) {
   return (
     <div className="settings-actions">
-      <Button className="btn" id="clearSettingsBtn" onClick={confirmClearSettings}>
+      <Button variant="outline" className="btn" id="clearSettingsBtn" onClick={confirmClearSettings}>
         {i18n('settings.clearAll', 'Clear all')}
       </Button>
-      <Button className="btn" id="cancelSettingsBtn" onClick={closeSettings}>
+      <Button variant="outline" className="btn" id="cancelSettingsBtn" onClick={closeSettings}>
         {i18n('common.cancel', 'Cancel')}
       </Button>
-      <Button className="btn" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
+      <Button variant="outline" className="btn" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
         {saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
       </Button>
     </div>

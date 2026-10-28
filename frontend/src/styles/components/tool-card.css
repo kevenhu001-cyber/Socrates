@@ -51,9 +51,9 @@
   --tc-glyph: 16px;
   --tc-chevron: 12px;
   --tc-rail: var(--ui-border-subtle);
-  --tc-idle: var(--ui-text-secondary);
+  --tc-idle: var(--muted-foreground);
   --tc-quiet: var(--ui-text-tertiary);
-  --tc-live: var(--ui-text-secondary);
+  --tc-live: var(--muted-foreground);
 }
 
 /* Prose wrappers preserve React block identity without adding layout boxes.
@@ -107,7 +107,7 @@
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary:hover {
   background: transparent;
   background-color: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:focus-visible,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary:focus-visible {
@@ -118,7 +118,7 @@
 .msg.assistant .msg-body.is-declarative .tool-run-summary[aria-expanded="true"] {
   background: transparent;
   background-color: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 
 /* ── Glyph slot ────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@
 }
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:hover .tool-inline-tool-icon,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary:hover .tool-run-summary-icon {
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="running"] .tool-inline-tool-icon,
 .msg.assistant .msg-body.is-declarative .tool-run-group[data-state="running"] .tool-run-summary-icon {
@@ -168,7 +168,7 @@
 }
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="error"] .tool-inline-tool-icon,
 .msg.assistant .msg-body.is-declarative .tool-run-group[data-state="error"] .tool-run-summary-icon {
-  color: var(--ui-danger);
+  color: var(--destructive);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="stopped"] .tool-inline-tool-icon,
 .msg.assistant .msg-body.is-declarative .tool-run-group[data-state="cancelled"] .tool-run-summary-icon {
@@ -383,8 +383,8 @@
   overflow: auto;
   border: 1px solid var(--ui-border-code, var(--ui-border-subtle));
   border-radius: var(--ui-radius-md);
-  background: var(--ui-bg-code, color-mix(in srgb, var(--ui-text-primary) 3%, transparent));
-  color: var(--ui-text-primary);
+  background: var(--ui-bg-code, color-mix(in srgb, var(--foreground) 3%, transparent));
+  color: var(--foreground);
   font: var(--ui-font-weight-regular) var(--ui-font-size-xs) / 1.55 var(--font-mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -404,7 +404,7 @@
   padding: 0;
   max-height: 120px;
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xxs);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-code-preview + .tool-inline-code-preview {
@@ -416,8 +416,8 @@
   color: var(--tc-quiet);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value {
-  background: color-mix(in srgb, var(--ui-danger) 8%, var(--ui-bg-page));
-  color: var(--ui-danger);
+  background: color-mix(in srgb, var(--destructive) 8%, var(--background));
+  color: var(--destructive);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-detail-empty {
   margin: 0;
@@ -441,7 +441,7 @@
   margin: 0;
   padding: 2px 0;
   border-radius: 0;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   text-decoration: none;
   transition: color var(--ui-duration-hover) ease;
@@ -449,14 +449,14 @@
 .msg.assistant .msg-body.is-declarative a.tool-inline-src:hover,
 .msg.assistant .msg-body.is-declarative a.tool-inline-src:focus-visible {
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-src-title {
   flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
   font-weight: var(--ui-font-weight-medium);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-src-meta {
   display: flex;
@@ -521,7 +521,7 @@
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-tech-summary:hover {
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-tech-icon {
   display: inline-flex;
@@ -550,14 +550,14 @@
    failed row must still be legible as a failure. */
 .msg.assistant .msg-body.is-declarative .tool-inline-error {
   margin: var(--ui-space-xxs) 0 var(--ui-space-sm) var(--tc-nested-text);
-  color: var(--ui-danger);
+  color: var(--destructive);
   font-size: var(--ui-font-size-xs);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="error"] .tool-inline-label,
 .msg.assistant .msg-body.is-declarative .tool-run-group[data-state="error"] .tool-run-summary-label {
-  color: var(--ui-danger);
+  color: var(--destructive);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-error-actions {
   display: flex;
@@ -574,10 +574,10 @@
   gap: var(--ui-space-xs);
   min-height: var(--tc-row-height);
   padding: 0 var(--ui-space-md);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font: var(--ui-font-weight-medium) var(--ui-font-size-xxs) / 1 var(--font-sans);
   cursor: pointer;
   transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
@@ -587,7 +587,7 @@
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-action:hover:not(:disabled) {
   border-color: var(--ui-border-strong);
   background: var(--ui-bg-hover-ghost);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-detail-actions {
   display: flex;
@@ -621,16 +621,16 @@
   gap: var(--ui-space-xs);
   margin: var(--ui-space-xs) 0 var(--ui-space-sm) var(--tc-indent);
   padding: var(--ui-space-md);
-  border: 1px solid color-mix(in srgb, var(--tc-live) 40%, var(--ui-border-default));
+  border: 1px solid color-mix(in srgb, var(--tc-live) 40%, var(--border));
   border-radius: var(--ui-radius-md);
-  background: color-mix(in srgb, var(--tc-live) 7%, var(--ui-bg-page));
-  color: var(--ui-text-secondary);
+  background: color-mix(in srgb, var(--tc-live) 7%, var(--background));
+  color: var(--muted-foreground);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-heading {
   display: flex;
   align-items: center;
   gap: var(--ui-space-sm);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-xs);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-dot {
@@ -664,7 +664,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font: var(--ui-font-size-xxs) / 1.5 var(--font-mono);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-actions {
@@ -690,8 +690,8 @@
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-approval[data-state="declined"],
 .msg.assistant .msg-body.is-declarative .tool-inline-approval[data-state="stopped"] {
-  border-color: color-mix(in srgb, var(--ui-danger) 30%, var(--ui-border-default));
-  background: color-mix(in srgb, var(--ui-danger) 6%, var(--ui-bg-page));
+  border-color: color-mix(in srgb, var(--destructive) 30%, var(--border));
+  background: color-mix(in srgb, var(--destructive) 6%, var(--background));
 }
 
 @media (max-width: 768px) {

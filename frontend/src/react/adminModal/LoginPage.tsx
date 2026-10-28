@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/Button';
 import { useState, type FormEvent } from 'react';
 
@@ -27,9 +29,9 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
       <h2>Admin console</h2>
       <p className="admin-hint">Enter the operator password to manage the system model and embedding provider.</p>
       <form onSubmit={submit}>
-        <label>
+        <ShadcnLabel>
           Admin password
-          <input
+          <ShadcnInput
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -37,7 +39,7 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
             autoFocus
             required
           />
-        </label>
+        </ShadcnLabel>
         {error && <div className="admin-error" role="alert">{error}</div>}
         <UiButton type="submit" className="admin-save" disabled={busy || !password}>
           {busy ? 'Signing in…' : 'Sign in'}

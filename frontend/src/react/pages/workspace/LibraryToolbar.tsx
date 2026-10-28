@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button as UiButton } from '../../ui/Button';
 import { getLegacyActions, t as translate } from '../../legacy/gateway.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -115,16 +117,16 @@ export function LibraryToolbar({
             </UiButton>
           </div>
         </div>
-        <label className="workspace-search-field library-search-pill">
+        <ShadcnLabel className="workspace-search-field library-search-pill">
           <SearchIcon />
-          <input
+          <ShadcnInput
             type="search"
             value={query}
             onChange={(event) => dispatch.filter(event.target.value)}
             placeholder={i18n('library.filterPlaceholder', '搜索资料库')}
             aria-label={i18n('library.filterPlaceholder', '搜索资料库')}
           />
-        </label>
+        </ShadcnLabel>
       </div>
     </>
   );

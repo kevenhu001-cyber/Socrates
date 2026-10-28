@@ -1,4 +1,8 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button } from '../ui/Button';
+import { FieldGroup } from '../ui/shadcn/field';
 import { i18n } from '../legacy/gateway.ts';
 import { ProviderTextField } from './ProviderTextField';
 import type { ProviderListProps, SettingsProviderErrors, SettingsProviderSnapshot } from './types';
@@ -40,7 +44,7 @@ export function ProviderRow({
   return (
     <div className={`provider-row${provider.isActive ? ' active' : ''}`} data-id={provider.id}>
       <ProviderActiveButton active={provider.isActive} onClick={() => onSetActive(provider.id)} />
-      <div className="provider-fields">
+      <FieldGroup className="provider-fields">
         <ProviderTextField
           id={provider.id}
           field="label"
@@ -61,7 +65,7 @@ export function ProviderRow({
           onChange={(value) => onFieldChange(provider.id, 'url', value)}
         />
         <form style={{ display: 'contents' }} onSubmit={(event) => event.preventDefault()}>
-          <input type="text" name="username" autoComplete="username" style={{ display: 'none' }} aria-hidden="true" />
+          <ShadcnInput type="text" name="username" autoComplete="username" style={{ display: 'none' }} aria-hidden="true" />
           <ProviderTextField
             id={provider.id}
             field="key"
@@ -83,16 +87,16 @@ export function ProviderRow({
           value={provider.model}
           onChange={(value) => onFieldChange(provider.id, 'model', value)}
         />
-        <label className="provider-multimodal" title={i18n('provider.multimodalHint', 'Multimodal (vision-capable)')}>
-          <input
+        <ShadcnLabel className="provider-multimodal" title={i18n('provider.multimodalHint', 'Multimodal (vision-capable)')}>
+          <ShadcnNativeControl
             type="checkbox"
             data-field="vision"
             checked={provider.vision}
             onChange={(event) => onFieldChange(provider.id, 'vision', event.target.checked)}
           />
           <span>{i18n('provider.multimodal', 'Multimodal (vision-capable)')}</span>
-        </label>
-      </div>
+        </ShadcnLabel>
+      </FieldGroup>
       <Button type="button" className="provider-del" title={language === 'zh' ? '移除' : 'Remove'} aria-label={language === 'zh' ? '移除' : 'Remove'} onClick={() => onRemove(provider.id)}>
         ×
       </Button>

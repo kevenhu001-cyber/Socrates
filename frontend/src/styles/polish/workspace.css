@@ -186,7 +186,7 @@
   line-height: 36px;
   font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.02em;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 
 #appShell .library-desktop-desc {
@@ -212,16 +212,16 @@
   height: var(--ui-control-desktop);
   padding: 0 14px;
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-control);
-  border: 1px solid var(--ui-border-default);
-  color: var(--ui-text-primary);
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
   cursor: pointer;
 }
 
 #appShell .library-new-pill:hover {
-  background: var(--ui-bg-hover);
+  background: var(--accent);
 }
 
 #appShell .library-new-menu {
@@ -243,14 +243,14 @@
   border: 0;
   border-radius: var(--ui-radius-row);
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   text-align: left;
   cursor: pointer;
 }
 
 #appShell .library-new-menu button:hover {
-  background: var(--ui-bg-hover);
+  background: var(--accent);
 }
 
 /* Ghost square, matching .library-tool-btn / .library-view-btn in the same
@@ -271,8 +271,8 @@
 }
 
 #appShell .library-settings-btn:hover {
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-hover);
+  color: var(--foreground);
+  background: var(--accent);
 }
 
 #appShell .library-toolbar {
@@ -296,14 +296,14 @@
   height: var(--ui-control-desktop);
   border: 0;
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   border-radius: var(--ui-radius-control);
   cursor: pointer;
 }
 
 #appShell .library-tool-btn:hover {
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-hover);
+  color: var(--foreground);
+  background: var(--accent);
 }
 
 /* Filter popover — anchored under the toolbar button that owns it. */
@@ -313,8 +313,8 @@
 }
 
 #appShell .library-tool-btn.is-active {
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-hover);
+  color: var(--foreground);
+  background: var(--accent);
 }
 
 #appShell .library-filter-menu {
@@ -339,7 +339,7 @@
   border: 0;
   border-radius: calc(var(--ui-radius-control) - 2px);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font: inherit;
   font-size: var(--ui-font-size-xs);
   text-align: left;
@@ -347,12 +347,12 @@
 }
 
 #appShell .library-filter-option:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 #appShell .library-filter-option.is-active {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-semibold);
 }
 
@@ -385,12 +385,12 @@
 }
 
 #appShell .library-view-btn:hover {
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-hover);
+  color: var(--foreground);
+  background: var(--accent);
 }
 
 #appShell .library-view-btn.active {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   background: var(--ui-bg-raised);
 }
 
@@ -429,22 +429,22 @@
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-sm);
   cursor: pointer;
   white-space: nowrap;
 }
 
 #appShell .library-chip:hover {
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
+  background: var(--accent);
+  color: var(--foreground);
 }
 
 #appShell .library-chip.active {
   background: var(--ui-bg-raised);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-medium);
-  border-color: var(--ui-border-default);
+  border-color: var(--border);
 }
 
 /* File type squircle icons. The fill comes from the --ui-file-* palette in
@@ -460,7 +460,7 @@
   height: 44px;
   min-width: 44px;
   border-radius: var(--ui-radius-lg);
-  background: var(--ui-file-color, var(--ui-bg-control));
+  background: var(--ui-file-color, var(--secondary));
   color: hsl(var(--always-white));
   flex: 0 0 44px;
 }
@@ -497,7 +497,7 @@
   border: 0;
   border-radius: var(--ui-radius-md);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: 14.5px;
   font-weight: var(--ui-font-weight-medium);
   cursor: pointer;
@@ -505,8 +505,8 @@
 }
 
 #appShell .plugin-detail-back-btn:hover {
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-hover);
+  color: var(--foreground);
+  background: var(--accent);
 }
 
 #appShell .plugin-detail-hero {
@@ -564,7 +564,7 @@
   margin: 0;
   font-size: 22px;
   font-weight: var(--ui-font-weight-semibold);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   line-height: 1.25;
 }
 
@@ -574,9 +574,9 @@
   gap: 4px;
   padding: 2px 8px;
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
   font-size: var(--ui-font-size-xxs);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 
 #appShell .plugin-detail-meta-row {
@@ -626,8 +626,8 @@
   height: var(--ui-control-search);
   padding: 0 20px;
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-text-primary);
-  color: var(--ui-on-accent);
+  background: var(--foreground);
+  color: var(--primary-foreground);
   font-size: 14.5px;
   font-weight: var(--ui-font-weight-semibold);
   border: none;
@@ -653,10 +653,10 @@
   padding: 0 18px;
   border-radius: var(--ui-radius-pill);
   background: var(--cg-surface-raised);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -665,7 +665,7 @@
 }
 
 #appShell .plugin-detail-btn-secondary:hover {
-  background: var(--ui-bg-hover);
+  background: var(--accent);
 }
 
 #appShell .plugin-detail-body {
@@ -682,7 +682,7 @@
 #appShell .plugin-detail-section-title {
   font-size: 15px;
   font-weight: var(--ui-font-weight-semibold);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   margin: 0 0 10px;
   letter-spacing: -0.01em;
 }
@@ -690,7 +690,7 @@
 #appShell .plugin-detail-desc {
   font-size: 14.5px;
   line-height: 1.6;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   margin: 0;
 }
 
@@ -710,21 +710,21 @@
   background: var(--cg-surface-raised);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   text-align: left;
   cursor: pointer;
   transition: background-color var(--ui-duration-fast) ease, border-color var(--ui-duration-fast) ease;
 }
 
 #appShell .plugin-detail-prompt-card:hover {
-  background: var(--ui-bg-hover);
-  border-color: var(--ui-border-default);
+  background: var(--accent);
+  border-color: var(--border);
 }
 
 #appShell .plugin-detail-prompt-text {
   font-size: var(--ui-font-size-sm);
   line-height: 1.4;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 
 #appShell .plugin-detail-prompt-arrow {
@@ -747,7 +747,7 @@
   align-items: center;
   gap: 10px;
   font-size: var(--ui-font-size-sm);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   line-height: 1.4;
 }
 
@@ -779,7 +779,7 @@
 }
 
 #appShell .plugin-detail-security-value {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-medium);
 }
 
@@ -835,7 +835,7 @@
   flex: 0 0 44px;
   display: grid;
   place-items: center;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 
 #appShell .workspace-loading-spinner-ring {
@@ -843,8 +843,8 @@
   height: 28px;
   border-radius: 50%;
   border: 2px solid var(--ui-border-subtle);
-  border-top-color: var(--ui-accent-strong);
-  border-right-color: var(--ui-text-primary);
+  border-top-color: var(--primary);
+  border-right-color: var(--foreground);
   box-sizing: border-box;
   animation: workspaceLoadingSpin var(--ui-duration-spin) cubic-bezier(.4, 0, .2, 1) infinite;
   will-change: transform;
@@ -863,7 +863,7 @@
 #appShell .workspace-loading-banner-text strong {
   font-size: 15px;
   font-weight: var(--ui-font-weight-semibold);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 
 #appShell .workspace-loading-banner-text span {
@@ -880,11 +880,11 @@
   background-image: linear-gradient(105deg,
     var(--ui-text-tertiary) 0%,
     var(--ui-text-tertiary) 28%,
-    color-mix(in srgb, var(--ui-text-tertiary), var(--ui-text-primary) 42%) 40%,
-    var(--ui-text-primary) 47%,
-    var(--ui-accent-strong) 50%,
-    var(--ui-text-primary) 53%,
-    color-mix(in srgb, var(--ui-text-tertiary), var(--ui-text-primary) 42%) 60%,
+    color-mix(in srgb, var(--ui-text-tertiary), var(--foreground) 42%) 40%,
+    var(--foreground) 47%,
+    var(--primary) 50%,
+    var(--foreground) 53%,
+    color-mix(in srgb, var(--ui-text-tertiary), var(--foreground) 42%) 60%,
     var(--ui-text-tertiary) 72%,
     var(--ui-text-tertiary) 100%);
   background-size: 320% 100%;
@@ -909,7 +909,7 @@
   background-image: linear-gradient(105deg,
     var(--cg-surface-raised) 0%,
     var(--cg-surface-raised) 36%,
-    color-mix(in srgb, var(--cg-surface-raised), var(--ui-text-primary) 12%) 50%,
+    color-mix(in srgb, var(--cg-surface-raised), var(--foreground) 12%) 50%,
     var(--cg-surface-raised) 64%,
     var(--cg-surface-raised) 100%);
   background-repeat: no-repeat;
@@ -959,7 +959,7 @@
 }
 
 #appShell .workspace-skeleton-pill-tab.active {
-  background-color: var(--ui-bg-control);
+  background-color: var(--secondary);
 }
 
 #appShell .workspace-skeleton-pill-chip {
@@ -1286,8 +1286,8 @@
   max-width: var(--ui-content-chat);
   margin-inline: auto;
   padding: var(--ui-space-lg) 0;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   background: transparent;
   border: 0;
 }
-.detail-body > .creation-preview-frame { width: 100%; height: 100%; flex: 1; min-height: 0; border: 0; background: var(--ui-bg-page); }
+.detail-body > .creation-preview-frame { width: 100%; height: 100%; flex: 1; min-height: 0; border: 0; background: var(--background); }

@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button as UiButton } from '../../ui/Button';
 import { scheduledText } from './scheduled.copy';
 
@@ -24,11 +26,11 @@ export function ScheduledPageHeader({ query, onQueryChange, onCreate }: Schedule
         <p>{scheduledText('scheduled.subtitle', 'Let Socrates plan follow-ups, reminders, and recurring updates for you.')}</p>
       </div>
       <div className="workspace-head-actions">
-        <label className="workspace-search-field">
+        <ShadcnLabel className="workspace-search-field">
           <SearchGlyph />
-          <input type="search" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
-        </label>
-        <UiButton type="button" className="workspace-create-button" onClick={onCreate}>
+          <ShadcnInput type="search" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
+        </ShadcnLabel>
+        <UiButton variant="default" type="button" className="workspace-create-button" onClick={onCreate}>
           <PlusGlyph />
           <span>{scheduledText('scheduled.new', 'New')}</span>
         </UiButton>

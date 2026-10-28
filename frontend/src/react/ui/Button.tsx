@@ -1,20 +1,20 @@
 import { forwardRef, type ComponentPropsWithRef, type CSSProperties, type ReactNode } from 'react';
+import { cn } from 'cn';
+import { Button as ShadcnButton } from './shadcn/button';
 
 /**
- * Button — the shared button primitive.
- *
- * The primitive owns the *behaviour* of a button, not a second look. It
- * renders a real `<button type="button">`, forwards its ref, carries the
- * disabled / loading states, and composes its class list out of the
- * grammar the sheets already declare plus the class the surface already
- * owns. A surface that has a class of its own keeps it, so migrating onto
- * the primitive does not repaint anything.
+ * Button — the compatibility entry into the local shadcn button.
+ * Explicit semantic variants use shadcn styles; `plain` keeps geometry in
+ * the surface owner. Refs, native form intent and the existing busy/loading
+ * contract survive both paths. The primitive renders native DOM so using a
+ * button on the shell does not preload modal/menu interaction runtimes.
  *
  * The size ladder is the one declared in styles/tokens.css:
  *
  *   sm      32px   --ui-control-sm
  *   md      40px   --ui-control-md
  *   touch   44px   --ui-control-touch
+ *   desktop 36px   --ui-control-desktop
  *
  * The ladder rides on the shared base (`.btn` from
  * styles/polish/buttons.css). A surface that keeps its own class keeps its
@@ -23,14 +23,14 @@ import { forwardRef, type ComponentPropsWithRef, type CSSProperties, type ReactN
  * "this surface owns the whole button".
  */
 
-export type ButtonSize = 'sm' | 'md' | 'touch';
+export type ButtonSize = 'sm' | 'md' | 'touch' | 'desktop';
 
 /**
  * `plain`   the surface's own class owns the whole look.
  * `shared`  the `.btn` grammar from styles/polish/buttons.css.
  * `ghost`   the `.btn .btn-ghost` grammar.
  */
-export type ButtonVariant = 'plain' | 'shared' | 'ghost';
+export type ButtonVariant = 'plain' | 'shared' | 'ghost' | 'default' | 'secondary' | 'outline' | 'destructive' | 'link';
 
 interface ButtonOwnProps extends Omit<ComponentPropsWithRef<'button'>, 'className' | 'children' | 'ref'> {
   /** Classes appended after the primitive's own — the surface's own look. */
@@ -50,11 +50,11 @@ interface ButtonOwnProps extends Omit<ComponentPropsWithRef<'button'>, 'classNam
  */
 export type ButtonProps = ButtonOwnProps & (
   | { variant?: 'plain'; size?: never }
-  | { variant: 'shared' | 'ghost'; size?: ButtonSize }
+  | { variant: Exclude<ButtonVariant, 'plain'>; size?: ButtonSize }
 );
 
 /** The shared base of each variant. */
-const VARIANT_BASE: Record<'shared' | 'ghost', string> = {
+const VARIANT_BASE: Partial<Record<ButtonVariant, string>> = {
   shared: 'btn',
   ghost: 'btn btn-ghost',
 };
@@ -73,6 +73,12 @@ const TEXT_SIZE_STYLE: Partial<Record<ButtonSize, CSSProperties>> = {
   sm: { '--ui-control-md': 'var(--ui-control-sm)' } as CSSProperties,
 };
 
+const SHADCN_SIZE = { sm: 'sm', md: 'lg', touch: 'touch', desktop: 'default' } as const;
+const SHADCN_VARIANT = {
+  plain: 'surface', shared: 'outline', ghost: 'ghost', default: 'default',
+  secondary: 'secondary', outline: 'outline', destructive: 'destructive', link: 'link',
+} as const;
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
     variant = 'plain',
@@ -90,19 +96,21 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 ) {
   const shared = variant !== 'plain';
   const rung = size ?? 'md';
-  const classes = [
-    shared ? VARIANT_BASE[variant] : '',
+  const classes = cn(
+    VARIANT_BASE[variant],
     shared ? (TEXT_SIZE_CLASS[rung] ?? '') : '',
     className,
-  ].filter(Boolean).join(' ');
+  );
   const sizeStyle = shared ? TEXT_SIZE_STYLE[rung] : undefined;
   const mergedStyle = sizeStyle || style ? { ...sizeStyle, ...style } : undefined;
 
   return (
-    <button
+    <ShadcnButton
       {...rest}
       ref={ref}
       type={type}
+      variant={SHADCN_VARIANT[variant]}
+      size={shared ? SHADCN_SIZE[rung] : 'surface'}
       className={classes || undefined}
       disabled={disabled || loading}
       aria-busy={loading ? true : ariaBusy}
@@ -110,7 +118,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       style={mergedStyle}
     >
       {children}
-    </button>
+    </ShadcnButton>
   );
 });
 

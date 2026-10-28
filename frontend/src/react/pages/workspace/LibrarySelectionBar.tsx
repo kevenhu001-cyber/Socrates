@@ -1,3 +1,5 @@
+import { Label as ShadcnLabel } from '../../ui/shadcn/label';
+import { NativeControl as ShadcnNativeControl } from '../../ui/NativeControl';
 import { Button as UiButton } from '../../ui/Button';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { LibraryDisplayItem } from './library.types';
@@ -16,8 +18,8 @@ export function LibrarySelectionBar({ items, chip, selection, dispatch }: Librar
 
   return (
     <div className="library-selection-bar visible">
-      <label className="library-select-all">
-        <input
+      <ShadcnLabel className="library-select-all">
+        <ShadcnNativeControl
           type="checkbox"
           className="library-checkbox"
           checked={allSelected}
@@ -28,7 +30,7 @@ export function LibrarySelectionBar({ items, chip, selection, dispatch }: Librar
           aria-label={i18n('library.selectAll', 'Select all')}
         />
         <span>{i18n('library.selectedCount', '{n} selected').replace('{n}', String(selectedCount))}</span>
-      </label>
+      </ShadcnLabel>
       <UiButton type="submit" className="workspace-row-action library-bulk-delete" onClick={() => dispatch.deleteSelected()} disabled={selectedCount === 0}>
         {i18n('library.deleteSelected', 'Delete selected')}
       </UiButton>

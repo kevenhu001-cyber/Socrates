@@ -1,3 +1,5 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { Field, FieldError } from '../ui/shadcn/field';
 interface ProviderTextFieldProps {
   id: string;
   field: 'label' | 'url' | 'key' | 'model';
@@ -27,8 +29,8 @@ export function ProviderTextField({
 }: ProviderTextFieldProps) {
   const descriptionId = `provider-${id}-${field}-error`;
   return (
-    <>
-      <input
+    <Field data-invalid={Boolean(error)} className="settings-control-field">
+      <ShadcnInput
         ref={inputRef}
         className="settings-input"
         data-field={field}
@@ -41,7 +43,7 @@ export function ProviderTextField({
         {...(value === undefined ? { defaultValue } : { value })}
         onChange={(event) => onChange(event.target.value)}
       />
-      {error ? <span id={descriptionId} className="settings-field-error" role="alert">{error}</span> : null}
-    </>
+      {error ? <FieldError id={descriptionId} className="settings-field-error">{error}</FieldError> : null}
+    </Field>
   );
 }

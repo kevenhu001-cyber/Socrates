@@ -1,3 +1,4 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/Button';
 import { shareText } from './shareText';
 
@@ -21,7 +22,7 @@ export function ShareLinkPanel({
   return (
     <>
       <div className={`share-link-area${hasLink ? '' : ' hidden'}`} id="shareLinkArea">
-        <input
+        <ShadcnInput
           className="share-link-input"
           id="shareLinkInput"
           name="shareLinkInput"
@@ -50,7 +51,7 @@ export function ShareLinkPanel({
       <div className={`share-status${status ? '' : ' hidden'}`} id="shareStatus">{status}</div>
 
       <div id="shareCreateArea" style={{ textAlign: 'center', marginTop: 4 }}>
-        <UiButton
+        <UiButton variant="outline"
           type="button"
           className="btn"
           id="shareCreateBtn"

@@ -86,7 +86,7 @@
   border: 0;
   border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font: inherit;
   font-size: var(--ui-text-ui);
   font-weight: var(--ui-font-weight-medium);
@@ -95,8 +95,8 @@
   cursor: pointer;
   transition: color var(--ui-duration-hover) ease;
 }
-#appShell .top-mode-switch-option:hover { color: var(--ui-text-primary); }
-#appShell .top-mode-switch-option.is-active { color: var(--ui-text-primary); }
+#appShell .top-mode-switch-option:hover { color: var(--foreground); }
+#appShell .top-mode-switch-option.is-active { color: var(--foreground); }
 /* The old light-mode override painted every segment in primary ink, which
    left the switch with no state cue: the thumb still moved, but the label
    did not say which side was selected. Geist states the selection in type
@@ -139,7 +139,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     border: 0;
     border-radius: var(--ui-radius-row, 10px);
     background: transparent;
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font: inherit;
     font-size: 15px;
     line-height: 24px;
@@ -148,10 +148,10 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     transition: background-color var(--ui-duration-hover) ease, opacity var(--ui-duration-hover) ease;
   }
   body[data-conversation-active="true"] #appShell #topModelSwitcher:hover {
-    background: var(--ui-bg-hover);
+    background: var(--accent);
   }
   body[data-conversation-active="true"] #appShell #topModelSwitcher:active {
-    background: var(--ui-bg-hover);
+    background: var(--accent);
     opacity: var(--press-opacity, var(--ui-press-opacity, 0.82));
   }
   body[data-conversation-active="true"] #appShell .top-model-switcher-name {
@@ -196,11 +196,11 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     border: 0;
     /* Geist header edge: the default 1px hairline (gray-400), the same
        border the input, button and card outlines use. */
-    border-bottom: 1px solid var(--ui-border-default);
+    border-bottom: 1px solid var(--border);
     background: var(--ui-bg-header-glass);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font-family: var(--font-sans);
     font-size: var(--ui-text-ui);
     line-height: var(--ui-text-ui-line);
@@ -252,7 +252,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     /* Geist outline control: the model picker is a bordered button cut from
        the raised surface, not a ghost label. border-box keeps the 1px edge
        inside the 36px control rung. */
-    border: 1px solid var(--ui-border-default);
+    border: 1px solid var(--border);
     /* P_roundness (2nd pass) — the model picker is the widest filled control
        in the chrome, so its corner is what the eye reads as "square" first.
        A 12px radius on a 36px-tall box still read as a rounded rectangle, so
@@ -261,7 +261,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
        --ui-radius-pill). */
     border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-surface);
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font: inherit;
     font-size: var(--ui-font-size-lg);
     line-height: 28px;
@@ -287,7 +287,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   }
   #appShell #topModelSwitcher:hover,
   #appShell #topModelSwitcher[aria-expanded="true"] {
-    background: var(--ui-bg-hover);
+    background: var(--accent);
     border-color: var(--ui-border-strong);
   }
   #appShell .top-model-switcher-name { font-weight: var(--ui-font-weight-semibold); }
@@ -295,7 +295,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     min-width: 0;
     overflow: hidden;
     /* Brand and current value share a baseline; weight separates their roles. */
-    color: var(--ui-text-secondary);
+    color: var(--muted-foreground);
     font-weight: var(--ui-font-weight-medium);
     text-overflow: ellipsis;
   }
@@ -324,7 +324,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
        squared-off buttons. */
     border-radius: var(--ui-radius-control);
     background: transparent;
-    color: var(--ui-text-primary);
+    color: var(--foreground);
     font: inherit;
     font-size: var(--ui-text-ui);
     font-weight: var(--ui-font-weight-medium);
@@ -334,7 +334,7 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   }
   #appShell #findBtn { width: var(--ui-control-desktop); padding: 0; }
   #appShell #shareBtn:hover,
-  #appShell #findBtn:hover { background: var(--ui-bg-hover); }
+  #appShell #findBtn:hover { background: var(--accent); }
   #appShell #shareBtn svg,
   #appShell #findBtn svg { width: 16px; height: 16px; }
   #appShell #shareBtn.hidden,

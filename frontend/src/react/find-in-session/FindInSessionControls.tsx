@@ -1,3 +1,4 @@
+import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/Button';
 import type { ChangeEventHandler, KeyboardEventHandler, Ref } from 'react';
 import { FIND_INPUT_ID } from './findInSession.constants';
@@ -29,7 +30,7 @@ export function FindInSessionControls({
         <circle cx="11" cy="11" r="7" />
         <path d="m21 21-4.3-4.3" />
       </svg>
-      <input
+      <ShadcnInput
         ref={inputRef}
         type="text"
         id={FIND_INPUT_ID}

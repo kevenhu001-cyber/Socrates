@@ -107,8 +107,13 @@ const ORDERED_MANIFESTS = {
  * './motion.css' under polish/buttons.css is polish/motion.css. */
 const NESTED_MANIFESTS = {
   'foundations/fonts.css': ['./fonts-cjk.css'],
+  'foundations/shadcn.css': ['tailwindcss/theme.css', 'tailwindcss/utilities.css'],
   'polish/buttons.css': ['./motion.css'],
 };
+
+// These build-time imports are expanded by Tailwind, not loaded over the
+// network. Keep the list explicit so the split-load proof includes them.
+const PACKAGE_CSS = new Set(['tailwindcss/theme.css', 'tailwindcss/utilities.css']);
 
 /* The pinned children of a stylesheet: the aggregate manifest if it has one,
  * the nested manifest if it has one, nothing if it is a leaf. */
@@ -120,6 +125,7 @@ function pinnedChildren(key) {
 
 /* Resolve an import spec against the importing file's directory. */
 function resolveSpec(parentKey, spec) {
+  if (PACKAGE_CSS.has(spec)) return spec;
   const dir = parentKey.includes('/') ? parentKey.slice(0, parentKey.lastIndexOf('/') + 1) : '';
   return dir + spec.replace(/^\.\//, '');
 }
@@ -141,6 +147,10 @@ function resolveSpec(parentKey, spec) {
  * `childrenOf` decides where the children come from — the pinned manifests
  * for the expected order, the files themselves for the actual order. */
 function flattenImports(key, childrenOf, out = [], seen = new Set()) {
+  if (PACKAGE_CSS.has(key)) {
+    out.push(key);
+    return out;
+  }
   const children = childrenOf(key);
   if (children.length === 0) {
     out.push(key);
@@ -187,13 +197,19 @@ function walkCss(dir) {
 
 function themeOwnershipProblems() {
   const paletteDeclaration = /--(?:ui-(?:bg|text|border|shadow|composer|sidebar|accent|danger|success|link|backdrop|on-accent)|cg-|cgv-|chatgpt-|conversation-|bg-|text-|border-)[\w-]*\s*:/g;
+  const semanticDeclaration = /--(?:background|foreground|card(?:-foreground)?|popover(?:-foreground)?|primary(?:-foreground)?|secondary(?:-foreground)?|muted(?:-foreground)?|accent(?:-foreground)?|destructive(?:-foreground)?|border|input|ring|sidebar(?:-(?:foreground|primary(?:-foreground)?|accent(?:-foreground)?|border|ring))?|chart-[1-5])\s*:/g;
   const problems = [];
   for (const file of walkCss(STYLES)) {
     const rel = relative(STYLES, file).split(sep).join('/');
     const top = rel.split('/')[0];
     if (rel === 'themes.css' || rel === 'tokens.css' || FROZEN_DIRS.has(top)) continue;
     const text = stripComments(readFileSync(file, 'utf8'));
-    for (const match of text.matchAll(paletteDeclaration)) {
+    for (const match of [...text.matchAll(paletteDeclaration), ...text.matchAll(semanticDeclaration)]) {
+      // Tailwind's --text-* names are type sizes, not legacy text colors.
+      // Only aliases onto the existing font-size scale qualify; literal
+      // values and any other text-family declaration remain forbidden.
+      const declaration = text.slice(match.index, text.indexOf(';', match.index) + 1).trim();
+      if (rel === 'foundations/shadcn.css' && /^--text-(?:xs|sm|base|lg|xl|2xl)\s*:\s*var\(--ui-font-size-[\w-]+\);$/.test(declaration)) continue;
       const line = text.slice(0, match.index).split('\n').length;
       problems.push(`${rel}:${line} palette declaration outside themes.css: ${match[0].slice(0, -1)}`);
     }

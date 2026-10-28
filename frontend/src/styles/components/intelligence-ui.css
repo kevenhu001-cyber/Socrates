@@ -9,7 +9,7 @@
   min-width: 0;
   width: 100%;
   margin: var(--ui-space-md) 0;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font: var(--ui-font-weight-regular) var(--ui-font-size-sm) / var(--ui-line-height-normal) var(--font-sans);
   container-type: inline-size;
 }
@@ -27,7 +27,7 @@
   margin-bottom: var(--ui-foundation-space-md);
 }
 .msg.assistant .msg-body.is-declarative :is(.intui-panel-title, .intui-callout-title) {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-semibold);
   line-height: var(--ui-line-height-normal);
@@ -38,7 +38,7 @@
   overflow-wrap: anywhere;
 }
 .msg.assistant .msg-body.is-declarative :is(.intui-panel-description, .intui-callout-text, .intui-text) {
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
 }
@@ -66,13 +66,13 @@
 }
 .msg.assistant .msg-body.is-declarative .intui-metric-label {
   overflow-wrap: anywhere;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-normal);
 }
 .msg.assistant .msg-body.is-declarative .intui-metric-value {
   overflow-wrap: anywhere;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-xl);
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-semibold);
@@ -86,7 +86,7 @@
   gap: var(--ui-space-xxs);
   padding: var(--ui-space-xxs) var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xs);
   font-variant-numeric: tabular-nums;
@@ -98,8 +98,8 @@
   color: var(--ui-success);
 }
 .msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend="down"] {
-  background: color-mix(in srgb, var(--ui-danger) 12%, transparent);
-  color: var(--ui-danger);
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+  color: var(--destructive);
 }
 .msg.assistant .msg-body.is-declarative .intui-callout {
   --intui-tone: var(--ui-border-strong);
@@ -110,16 +110,16 @@
   border-inline-start: 2px solid var(--intui-tone);
   border-radius: var(--ui-radius-md);
   background: color-mix(in srgb, var(--intui-tone) 6%, transparent);
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-callout[data-tone="info"] { --intui-tone: var(--ui-info); }
 .msg.assistant .msg-body.is-declarative .intui-callout[data-tone="success"] { --intui-tone: var(--ui-success); }
 .msg.assistant .msg-body.is-declarative .intui-callout[data-tone="warning"] { --intui-tone: var(--ui-warning); }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone="danger"] { --intui-tone: var(--ui-danger); }
+.msg.assistant .msg-body.is-declarative .intui-callout[data-tone="danger"] { --intui-tone: var(--destructive); }
 .msg.assistant .msg-body.is-declarative .intui-callout[data-tone="neutral"] {
   border-color: transparent;
   border-inline-start-color: var(--ui-border-strong);
-  background: var(--ui-bg-page);
+  background: var(--background);
 }
 .msg.assistant .msg-body.is-declarative .intui-callout:not([data-tone="neutral"]) .intui-callout-title {
   color: var(--intui-tone);
@@ -144,11 +144,11 @@
   justify-content: space-between;
   gap: var(--ui-space-md);
   min-width: 0;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-sm);
 }
 .msg.assistant .msg-body.is-declarative :is(.intui-control-head output, .intui-progress-head > :last-child) {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-medium);
 }
@@ -165,12 +165,12 @@
 .msg.assistant .msg-body.is-declarative .intui-slider input::-webkit-slider-runnable-track {
   height: var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
 }
 .msg.assistant .msg-body.is-declarative .intui-slider input::-moz-range-track {
   height: var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
 }
 .msg.assistant .msg-body.is-declarative .intui-slider input::-webkit-slider-thumb {
   appearance: none;
@@ -179,7 +179,7 @@
   margin-top: calc((var(--ui-space-xs) - var(--ui-foundation-space-md)) / 2);
   border: 2px solid var(--ui-bg-raised);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-text-primary);
+  background: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-slider input::-moz-range-thumb {
   width: var(--ui-foundation-space-md);
@@ -187,25 +187,25 @@
   box-sizing: border-box;
   border: 2px solid var(--ui-bg-raised);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-text-primary);
+  background: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible { outline: 0; }
 .msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 var(--ui-space-xxs) var(--ui-bg-raised), 0 0 0 var(--ui-space-xs) var(--ui-text-tertiary); }
 .msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 var(--ui-space-xxs) var(--ui-bg-raised), 0 0 0 var(--ui-space-xs) var(--ui-text-tertiary); }
 .msg.assistant .msg-body.is-declarative .intui-progress {
-  --intui-tone: var(--ui-accent-strong);
+  --intui-tone: var(--primary);
 }
 .msg.assistant .msg-body.is-declarative .intui-progress[data-tone="info"] { --intui-tone: var(--ui-info); }
 .msg.assistant .msg-body.is-declarative .intui-progress[data-tone="success"] { --intui-tone: var(--ui-success); }
 .msg.assistant .msg-body.is-declarative .intui-progress[data-tone="warning"] { --intui-tone: var(--ui-warning); }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone="danger"] { --intui-tone: var(--ui-danger); }
+.msg.assistant .msg-body.is-declarative .intui-progress[data-tone="danger"] { --intui-tone: var(--destructive); }
 .msg.assistant .msg-body.is-declarative .intui-progress-track {
   position: relative;
   width: 100%;
   height: var(--ui-space-xs);
   overflow: hidden;
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
 }
 .msg.assistant .msg-body.is-declarative .intui-progress-value {
   display: block;
@@ -216,7 +216,7 @@
 }
 .msg.assistant .msg-body.is-declarative .intui-choice legend {
   padding: 0;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
 }
 .msg.assistant .msg-body.is-declarative .intui-choice-options {
@@ -230,10 +230,10 @@
   justify-content: center;
   min-height: var(--ui-control-sm);
   padding: 0 var(--ui-space-md);
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / 1 var(--font-sans);
   cursor: pointer;
   transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease, opacity var(--ui-duration-hover) ease;
@@ -241,17 +241,17 @@
 .msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button):hover:not(:disabled) {
   border-color: var(--ui-border-strong);
   background: var(--ui-bg-hover-ghost);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-choice-options button.is-selected {
   border-color: var(--ui-border-strong);
   background: var(--ui-bg-pill-selected);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-button.is-primary {
-  border-color: var(--ui-accent-strong);
-  background: var(--ui-accent-strong);
-  color: var(--ui-on-accent);
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-button {
   min-height: var(--ui-control-md);
@@ -262,8 +262,8 @@
 }
 .msg.assistant .msg-body.is-declarative .intui-button.is-primary:hover:not(:disabled) {
   opacity: var(--ui-press-opacity);
-  background: var(--ui-accent-strong);
-  color: var(--ui-on-accent);
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-button:disabled {
   border-color: var(--ui-border-subtle);
@@ -282,9 +282,9 @@
 }
 /* A result has one visually primary action, even if multiple hints arrive. */
 .msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-button.is-primary ~ .intui-button.is-primary {
-  border-color: var(--ui-border-default);
+  border-color: var(--border);
   background: transparent;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle {
   display: flex;
@@ -300,7 +300,7 @@
   transition: border-color var(--ui-duration-hover) ease, background-color var(--ui-duration-hover) ease;
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle:hover {
-  border-color: var(--ui-border-default);
+  border-color: var(--border);
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle-copy {
   display: grid;
@@ -308,7 +308,7 @@
   min-width: 0;
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle-label {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
   line-height: var(--ui-line-height-normal);
@@ -324,9 +324,9 @@
   inline-size: 32px;
   block-size: 20px;
   margin: 0;
-  border: 1px solid var(--ui-border-default);
+  border: 1px solid var(--border);
   border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
   cursor: pointer;
   appearance: none;
   transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease;
@@ -343,12 +343,12 @@
   transition: transform var(--ui-duration-fast) var(--ui-ease-out), background-color var(--ui-duration-hover) ease;
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle input:checked {
-  border-color: var(--ui-accent-strong);
-  background: var(--ui-accent-strong);
+  border-color: var(--primary);
+  background: var(--primary);
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle input:checked::before {
   transform: translateX(12px);
-  background: var(--ui-on-accent);
+  background: var(--primary-foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-table-wrap {
   max-width: 100%;
@@ -359,14 +359,14 @@
 .msg.assistant .msg-body.is-declarative .intui-table {
   width: 100%;
   border-collapse: collapse;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
 }
 .msg.assistant .msg-body.is-declarative .intui-table-caption {
   padding: var(--ui-space-sm) var(--ui-space-md);
   border-bottom: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-surface);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
   text-align: start;
@@ -379,7 +379,7 @@
 }
 .msg.assistant .msg-body.is-declarative .intui-table th {
   background: var(--ui-bg-surface);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-weight: var(--ui-font-weight-medium);
 }
 .msg.assistant .msg-body.is-declarative .intui-table tbody tr:hover td {
@@ -410,7 +410,7 @@
 .intui .intui-chart-title,
 .intui .intui-gallery-label,
 .intui .intui-entity-title {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-semibold);
   line-height: var(--ui-line-height-normal);
@@ -427,12 +427,12 @@
   vector-effect: non-scaling-stroke;
 }
 .intui .intui-chart-bar {
-  fill: var(--ui-accent-strong);
+  fill: var(--primary);
   opacity: .82;
 }
 .intui .intui-chart-line {
   fill: none;
-  stroke: var(--ui-accent-strong);
+  stroke: var(--primary);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
@@ -440,7 +440,7 @@
 }
 .intui .intui-chart-point {
   fill: var(--ui-bg-raised);
-  stroke: var(--ui-accent-strong);
+  stroke: var(--primary);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
@@ -464,7 +464,7 @@
   white-space: nowrap;
 }
 .intui .intui-chart-value strong {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-medium);
 }
@@ -504,13 +504,13 @@
   border-block-end: 1px solid transparent;
 }
 .intui .intui-tab-list button:hover {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .intui .intui-tab-list button.is-selected {
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .intui .intui-tab-list button.is-selected::after {
-  border-block-end-color: var(--ui-text-primary);
+  border-block-end-color: var(--foreground);
 }
 .intui .intui-tab-panel {
   display: grid;
@@ -533,7 +533,7 @@
   height: 4.5rem;
   object-fit: cover;
   border-radius: var(--ui-radius-md);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
 }
 .intui .intui-entity-body,
 .intui .intui-entity-head {
@@ -543,7 +543,7 @@
 }
 .intui .intui-entity-subtitle,
 .intui .intui-entity-description {
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-relaxed);
 }
@@ -566,7 +566,7 @@
 .intui .intui-entity-fields dd {
   margin: 0;
   overflow-wrap: anywhere;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font-size: var(--ui-font-size-xs);
   font-variant-numeric: tabular-nums;
 }
@@ -598,7 +598,7 @@
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: var(--ui-radius-md);
-  background: var(--ui-bg-control);
+  background: var(--secondary);
 }
 .intui .intui-image-gallery figcaption {
   overflow: hidden;
@@ -666,7 +666,7 @@
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-raised);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font: inherit;
   text-align: start;
 }
@@ -694,7 +694,7 @@
 }
 #appShell #msgList .msg-body .intui-surface-title {
   margin: 0;
-  color: var(--ui-text-primary);
+  color: var(--foreground);
   font: var(--ui-font-weight-semibold) var(--ui-font-size-md) / var(--ui-line-height-normal) var(--font-sans);
   letter-spacing: normal;
   overflow-wrap: anywhere;
@@ -722,7 +722,7 @@
   border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   font: inherit;
   font-size: var(--ui-font-size-sm);
   cursor: pointer;
@@ -731,7 +731,7 @@
 }
 .intui-surface-toolbar button:hover {
   background: var(--ui-bg-hover-ghost);
-  color: var(--ui-text-primary);
+  color: var(--foreground);
 }
 .intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]) .intui-surface-toolbar {
   pointer-events: auto;
@@ -758,8 +758,8 @@
   padding: var(--ui-space-xs);
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-popover);
-  background: var(--ui-bg-overlay);
-  color: var(--ui-text-primary);
+  background: var(--popover);
+  color: var(--foreground);
   box-shadow: var(--ui-shadow-popover);
 }
 .intui-surface-menu :is([role="menuitemradio"], [role="menuitem"]) {
@@ -778,7 +778,7 @@
   font-size: var(--ui-font-size-sm);
   cursor: pointer;
 }
-.intui-surface-menu :is([role="menuitemradio"], [role="menuitem"])[data-highlighted] { background: var(--ui-bg-hover); }
+.intui-surface-menu :is([role="menuitemradio"], [role="menuitem"])[data-highlighted] { background: var(--accent); }
 .intui-surface-menu [aria-disabled="true"] { color: var(--ui-text-disabled); cursor: default; }
 .msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more {
   display: inline-flex;
@@ -790,11 +790,11 @@
   border: 0;
   border-radius: var(--ui-radius-control);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--muted-foreground);
   cursor: pointer;
 }
-.msg.assistant .msg-body.is-declarative .intui-panel-more:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
-.intui-tabs-preview { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--ui-space-sm); color: var(--ui-text-secondary); font-size: var(--ui-font-size-xs); }
+.msg.assistant .msg-body.is-declarative .intui-panel-more:hover { background: var(--accent); color: var(--foreground); }
+.intui-tabs-preview { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--ui-space-sm); color: var(--muted-foreground); font-size: var(--ui-font-size-xs); }
 .intui-surface-menu [aria-checked="false"] .intui-surface-selected { visibility: hidden; }
 .intui-surface-document { display: grid; align-content: start; gap: var(--ui-space-lg); min-width: 0; padding: var(--ui-foundation-space-md); container-type: inline-size; }
 .intui-surface-document > * { min-width: 0; }
@@ -835,7 +835,7 @@
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: var(--ui-bg-page);
+  background: var(--background);
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -844,10 +844,10 @@
   top: 0;
   z-index: var(--ui-z-panel);
   padding: var(--ui-space-md) max(var(--ui-foundation-space-md), calc((100% - var(--ui-content-chat)) / 2));
-  background: var(--ui-bg-page);
+  background: var(--background);
   border-bottom: 1px solid var(--ui-border-subtle);
 }
-.intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-toolbar { background: var(--ui-bg-page); }
+.intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-toolbar { background: var(--background); }
 .intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-document {
   box-sizing: border-box;
   width: 100%;

@@ -1,5 +1,6 @@
 import { Button as UiButton } from '../../ui/Button';
 import { scheduledText } from './scheduled.copy';
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from '../../ui/shadcn/empty';
 
 interface ScheduledEmptyStateProps {
   searching: boolean;
@@ -9,18 +10,19 @@ interface ScheduledEmptyStateProps {
 
 export function ScheduledEmptyState({ searching, scope, onCreate }: ScheduledEmptyStateProps) {
   return (
-    <div className="workspace-empty">
+    <Empty className="workspace-empty"><EmptyHeader>
       {searching ? (
-        <><strong>{scheduledText('scheduled.noMatch', 'No matching tasks')}</strong><span>{scheduledText('scheduled.noMatchDesc', 'Try a different search.')}</span></>
+        <><EmptyTitle>{scheduledText('scheduled.noMatch', 'No matching tasks')}</EmptyTitle><EmptyDescription>{scheduledText('scheduled.noMatchDesc', 'Try a different search.')}</EmptyDescription></>
       ) : scope === 'active' ? (
-        <><strong>{scheduledText('scheduled.noActive', 'No active tasks')}</strong><span>{scheduledText('scheduled.noActiveDesc', 'Paused and completed tasks are hidden.')}</span></>
+        <><EmptyTitle>{scheduledText('scheduled.noActive', 'No active tasks')}</EmptyTitle><EmptyDescription>{scheduledText('scheduled.noActiveDesc', 'Paused and completed tasks are hidden.')}</EmptyDescription></>
       ) : (
         <>
-          <strong>{scheduledText('scheduled.empty', 'Let Socrates follow up')}</strong>
-          <span>{scheduledText('scheduled.emptyDesc', 'Create a reminder, recurring briefing, or monitoring task.')}</span>
-          <UiButton type="button" className="workspace-primary" onClick={onCreate}>{scheduledText('scheduled.createTask', 'Create task')}</UiButton>
+          <EmptyTitle>{scheduledText('scheduled.empty', 'Let Socrates follow up')}</EmptyTitle>
+          <EmptyDescription>{scheduledText('scheduled.emptyDesc', 'Create a reminder, recurring briefing, or monitoring task.')}</EmptyDescription>
         </>
       )}
-    </div>
+    </EmptyHeader>
+      {!searching && scope === 'all' ? <EmptyContent><UiButton variant="default" size="desktop" type="button" className="workspace-primary" onClick={onCreate}>{scheduledText('scheduled.createTask', 'Create task')}</UiButton></EmptyContent> : null}
+    </Empty>
   );
 }
