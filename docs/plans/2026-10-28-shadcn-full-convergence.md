@@ -102,6 +102,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B3 workspace 弹窗表单 | 皮肤完成（2026-10-29） | 见下；模板仍是 HTML 字符串 |
 | B4 代码块与 tutor 内联控件 | 完成（2026-10-29） | 见下；仍是 legacy DOM 构建 |
 | B4 cookie 同意条 | 完成（2026-10-29） | 见下 |
+| B4 工具卡片 | 完成（2026-10-29） | 见下；保留「无边框行」的转录语法 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -201,6 +202,26 @@ tutor 卡片的新观感；build 与 lint 通过。
 标题 `text-sm`/medium，正文 `text-muted-foreground`，两个按钮 36px、`rounded-md`，
 主按钮 `bg-primary`、次按钮 `border-input bg-background`，焦点走 `--ui-focus-shadow`。
 `cookie-consent` 2 例通过。
+
+### B4 · 工具卡片（2026-10-29）
+
+工具卡片是聊天里出现频率最高的组件，也是最后一块大的遗留皮肤。**刻意保留**
+「静止时无边框、无填充的单行」这一转录语法（文件头写死的设计意图，也是
+`tool-status-visual` 钉住的形态）；换的是交互语言与决策面：
+
+- 行头 hover 从「只变字色」改为 shadcn 的 `bg-accent` + `accent-foreground`，
+  圆角 `--radius-md`；焦点加 `--ui-focus-shadow`
+- 审批卡从 tinted 自绘块改为 shadcn 卡片：`border` + `bg-card` + `--radius-lg`
+  + `shadow-sm`
+- 审批按钮从药丸改为 shadcn 两档：`Allow once` = `bg-primary` +
+  `primary-foreground`，`Decline` = `border-input bg-background`，32px、
+  `--radius-md`、hover `bg-accent`
+- 顺手修了审批事实标签在 `DESTINATION` 处折行的问题（`flex: 0 0 62px` →
+  `0 0 auto` + `min-width`）
+
+验证：`tool-run-group`、`tool-status-visual`、`tool-run-approval`、
+`visual-system-convergence` 共 21 例通过；审批卡暗色截图逐项核对
+（卡片、主次按钮、事实行、状态行）；build 与 lint 通过。
 
 ## 待决问题
 

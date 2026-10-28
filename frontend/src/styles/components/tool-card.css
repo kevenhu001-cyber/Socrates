@@ -90,7 +90,7 @@
   min-height: var(--tc-row-height);
   padding: var(--ui-space-xxs) 0;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   background: transparent;
   background-color: transparent;
   color: var(--tc-idle);
@@ -105,13 +105,14 @@
 .tool-inline-head::marker { content: ''; }
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:hover,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary:hover {
-  background: transparent;
-  background-color: transparent;
-  color: var(--foreground);
+  background: var(--accent);
+  background-color: var(--accent);
+  color: var(--accent-foreground);
 }
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:focus-visible,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary:focus-visible {
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--radius-md);
+  box-shadow: var(--ui-focus-shadow);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline[open] > .tool-inline-head,
 .msg.assistant .msg-body.is-declarative .tool-run-group.open .tool-run-summary,
@@ -572,22 +573,22 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ui-space-xs);
-  min-height: var(--tc-row-height);
+  min-height: var(--ui-control-sm);
   padding: 0 var(--ui-space-md);
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--muted-foreground);
-  font: var(--ui-font-weight-medium) var(--ui-font-size-xxs) / 1 var(--font-sans);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / 1 var(--font-sans);
   cursor: pointer;
   transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-retry:hover,
 .msg.assistant .msg-body.is-declarative .tool-inline-action:hover,
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-action:hover:not(:disabled) {
-  border-color: var(--ui-border-strong);
-  background: var(--ui-bg-hover-ghost);
-  color: var(--foreground);
+  border-color: var(--border);
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-detail-actions {
   display: flex;
@@ -621,10 +622,11 @@
   gap: var(--ui-space-xs);
   margin: var(--ui-space-xs) 0 var(--ui-space-sm) var(--tc-indent);
   padding: var(--ui-space-md);
-  border: 1px solid color-mix(in srgb, var(--tc-live) 40%, var(--border));
-  border-radius: var(--ui-radius-md);
-  background: color-mix(in srgb, var(--tc-live) 7%, var(--background));
-  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-heading {
   display: flex;
@@ -655,7 +657,8 @@
   font-size: var(--ui-font-size-xxs);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-fact-label {
-  flex: 0 0 62px;
+  flex: 0 0 auto;
+  min-width: 62px;
   color: var(--tc-quiet);
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -674,9 +677,13 @@
   margin-top: var(--ui-space-xs);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-action.primary {
-  border-color: color-mix(in srgb, var(--tc-live) 55%, transparent);
-  background: color-mix(in srgb, var(--tc-live) 12%, transparent);
-  color: var(--tc-live);
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.msg.assistant .msg-body.is-declarative .tool-inline-approval-action.primary:hover:not(:disabled) {
+  background: var(--primary);
+  filter: brightness(0.94);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-action:disabled {
   opacity: .5;
