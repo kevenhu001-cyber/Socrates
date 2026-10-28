@@ -96,8 +96,9 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | 批次 | 状态 | 提交 / 证据 |
 | --- | --- | --- |
 | B1 守卫扩容 | 完成（2026-10-29） | `c9483ad1`：四条基线入库（97 / 30 / 140 / 32），`npm run lint` 全绿 |
-| B2 composer 芯片行 | 完成（2026-10-29） | 见下 |
-| B2 其余（转录行正文、composer 主控件、队列条、工具菜单） | 未开始 | — |
+| B2 composer 芯片行与队列条 | 完成（2026-10-29） | 见下 |
+| B2 composer 工具菜单 | 完成（2026-10-29） | 见下 |
+| B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
 
@@ -121,6 +122,21 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 `reference-ui-visual`、`composer-tool-visual`、`composer-tools-visual-baseline`、
 `shadcn-theme` 共 10 例通过（视觉基线未受影响）；`npm run build` / `npm run lint`
 通过。
+
+### B2 · composer 工具菜单（2026-10-29）
+
+`+` 菜单的每一行改成与 `FoundationMenu` 同一套 shadcn 菜单语法：行高 32px、
+`rounded-md`、`padding 4px 6px`、16px 线性图标（去掉 36px 圆形图标底）、
+分组标题 12px/medium/muted、快捷键右对齐、hover 与键盘焦点统一 `bg-accent` +
+`accent-foreground`。行高从 48px 收到 32px 是这次换皮最明显的可见变化，菜单整体变矮。
+
+`ComposerToolItems`、`ComposerPluginItems`、`FormattingToolbar` 三个文件的按钮同时
+从 `ui/Button` 兼容壳改为直接 `ui/shadcn/button`，composer 目录下不再有兼容壳引用。
+
+验证：`composer-tools-compat`、`composer-tools-visual-baseline`、`composer-layout`、
+`mobile-composer-ux` 共 18 例通过；`check-css-debt` 的 `stackedId` 维持 43（焦点态
+与 hover 合并为一条规则，没有新增 id 叠加）；`check-focus-ring` 通过（沿用
+`--ui-focus-shadow` 契约）；build 与 lint 通过。
 
 ## 待决问题
 

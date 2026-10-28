@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -35,6 +35,8 @@ function ComposerPluginItem({
   return (
     <Button
       type="button"
+      variant="surface"
+      size="surface"
       className={`composer-tools-plugin-item${selected ? ' is-selected' : ''}`}
       data-composer-plugin={plugin.id}
       role="menuitemcheckbox"
@@ -117,6 +119,8 @@ export function ComposerPluginItems({
           <span>{i18n('composer.tools.plugins.error', 'Connected apps could not be loaded.')}</span>
           <Button
             type="button"
+            variant="surface"
+            size="surface"
             className="composer-tools-state-action"
             role="menuitem"
             onClick={(event) => {
@@ -144,7 +148,7 @@ export function ComposerPluginItems({
         <div className="composer-tools-plugin-state">
           <span>{i18n('composer.tools.plugins.empty', 'No connected apps yet.')}</span>
           <small>{i18n('composer.tools.plugins.emptyHint', 'Connect an app to add its context to a chat.')}</small>
-          <Button type="button" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
+          <Button type="button" variant="surface" size="surface" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
             {i18n('composer.tools.plugins.manage', 'Manage apps')}
           </Button>
         </div>

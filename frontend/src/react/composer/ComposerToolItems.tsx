@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { i18n, menuCopy, MOBILE_MENU_ITEMS, type MenuItemSpec } from './composerToolsMenuData';
 import type { ComposerToolsAction } from './types';
@@ -17,6 +17,8 @@ export function MenuItem({
   return (
     <Button
       type="button"
+      variant="surface"
+      size="surface"
       className={`composer-tools-item${active ? ' is-active' : ''}`}
       role={spec.kind === 'toggle' ? 'menuitemcheckbox' : 'menuitem'}
       data-composer-action={spec.key}
@@ -54,6 +56,8 @@ export function MobileMenuItem({
   return (
     <Button
       type="button"
+      variant="surface"
+      size="surface"
       className={`composer-tools-item composer-tools-mobile-item${active ? ' is-active' : ''}`}
       role="menuitem"
       data-composer-action={action}

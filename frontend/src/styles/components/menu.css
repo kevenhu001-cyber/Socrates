@@ -34,59 +34,74 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
 #composerToolsMenu .composer-tools-desktop-items,
 #composerToolsMenu .composer-tools-mobile-items { gap: 0; }
 
+/* The tools menu follows the same shadcn menu grammar as `FoundationMenu`
+   (rounded-md rows, 16px glyphs, focus = accent): it is the app's menu
+   language, not a bespoke card. Row height is the shadcn 32px rung. */
 #composerToolsMenu .composer-tools-item,
 #composerToolsMenu .composer-tools-mobile-item,
 #composerToolsMenu .composer-tools-plugin-item {
   width: 100%;
-  min-height: 48px;
+  min-height: 32px;
   margin: 0;
-  padding: 5px 8px;
-  gap: 12px;
+  padding: 4px 6px;
+  gap: 6px;
   border: 0;
-  /* 10px on every row and every breakpoint — the step the committed
-     composer-tools visual baseline was rendered with. The literal 12px that
-     used to sit here only reached the phone rows (.composer-tools-mobile-item
-     is not in polish/composer.css's selector), so the same menu drew 8px rows
-     on desktop and 12px rows on phones. */
-  border-radius: var(--ui-radius-tools-row);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--foreground);
-  font-size: var(--ui-font-size-md);
+  font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-regular);
 }
 
+/* Fill follows shadcn (`bg-accent`); the keyboard ring itself is still the
+   app-wide `--ui-focus-shadow` from the legacy focus contract. */
 #composerToolsMenu .composer-tools-item:hover,
+#composerToolsMenu .composer-tools-item:focus-visible,
 #composerToolsMenu .composer-tools-mobile-item:hover,
-#composerToolsMenu .composer-tools-plugin-item:hover { background: var(--accent); }
+#composerToolsMenu .composer-tools-mobile-item:focus-visible,
+#composerToolsMenu .composer-tools-plugin-item:hover,
+#composerToolsMenu .composer-tools-plugin-item:focus-visible {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
 
 #composerToolsMenu .composer-tools-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  border-radius: var(--ui-radius-pill);
-  /* The popover surface already uses --ui-bg-overlay; stepping DOWN to
-     --ui-bg-surface keeps the circular chip legible inside the card. */
-  background: var(--ui-bg-surface);
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 0;
+  background: none;
   color: var(--muted-foreground);
 }
+#composerToolsMenu .composer-tools-item:hover .composer-tools-icon,
+#composerToolsMenu .composer-tools-item:focus-visible .composer-tools-icon {
+  color: var(--accent-foreground);
+}
 #composerToolsMenu .composer-tools-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   stroke-width: 1.75;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-#composerToolsMenu .composer-tools-copy > span { color: inherit; font-size: var(--ui-font-size-md); font-weight: var(--ui-font-weight-regular); }
-#composerToolsMenu .composer-tools-copy small,
-#composerToolsMenu .composer-tools-item kbd { display: none; }
+#composerToolsMenu .composer-tools-copy > span { color: inherit; font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-regular); }
+#composerToolsMenu .composer-tools-copy small { display: none; }
+#composerToolsMenu .composer-tools-item kbd {
+  display: block;
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-regular);
+  letter-spacing: 0.05em;
+}
 
 #composerToolsMenu .composer-tools-group-label {
-  padding: 8px 8px 4px;
+  padding: 6px 6px 2px;
   color: var(--muted-foreground);
-  font-size: 11px;
-  font-weight: var(--ui-font-weight-semibold);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
   line-height: 16px;
 }
 

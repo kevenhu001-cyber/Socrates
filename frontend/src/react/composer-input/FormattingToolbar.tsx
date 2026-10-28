@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../ui/shadcn/button';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
 
@@ -18,6 +18,8 @@ function ToolbarButton({
   return (
     <Button
       type="button"
+      variant="surface"
+      size="surface"
       className={`rich-composer-tool${active ? ' active' : ''}`}
       disabled={disabled}
       aria-label={label}
