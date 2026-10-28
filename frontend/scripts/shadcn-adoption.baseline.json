@@ -1,5 +1,9 @@
 {
   "rawControls": 0,
   "unadaptedPrimitives": 0,
-  "compatibilityControls": 0
+  "compatibilityControls": 0,
+  "retainedMarkupControls": 97,
+  "legacyDomControls": 30,
+  "legacyTemplateControls": 140,
+  "reactTemplateControls": 32
 }

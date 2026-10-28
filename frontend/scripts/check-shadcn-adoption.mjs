@@ -8,6 +8,20 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BASELINE = join(ROOT, 'scripts/shadcn-adoption.baseline.json');
 const CONTROLS = new Set(['button', 'input', 'textarea', 'select', 'label', 'hr']);
 
+/** Every source file under a directory, used for the retained-surface scan. */
+function walk(dir, results = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      // Vendored files are third-party and keep their own markup.
+      if (entry.name !== 'vendor-files') walk(path, results);
+    } else {
+      results.push(path);
+    }
+  }
+  return results;
+}
+
 /** JSX parsing deliberately ignores HTML in editor previews/template strings. */
 export function inspectSource(source, name) {
   const ast = ts.createSourceFile(name, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -55,9 +69,42 @@ function collect(dir, results = []) {
   return results;
 }
 
+/**
+ * The React tree is componentised, but retained markup and the legacy DOM
+ * layer still hand-roll controls. These counts are the shrink-only ratchet
+ * for the convergence plan (`docs/plans/2026-10-28-shadcn-full-convergence.md`):
+ * every migrated surface lowers them, none may raise them.
+ */
+function collectRetained() {
+  const counts = {
+    retainedMarkupControls: 0,
+    legacyDomControls: 0,
+    legacyTemplateControls: 0,
+    reactTemplateControls: 0,
+  };
+  const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  counts.retainedMarkupControls = (html.match(/<(?:button|input|select|textarea|label)\b/g) || []).length;
+  for (const path of walk(join(ROOT, 'src'))) {
+    const name = relative(ROOT, path).replaceAll('\\', '/');
+    // `src/react/ui` holds the shared adapters and the shadcn sources; they
+    // are allowed to render native markup on purpose.
+    if (name.startsWith('src/vendor-files/')) continue;
+    if (!/\.(?:js|ts|tsx)$/.test(name)) continue;
+    const source = readFileSync(path, 'utf8');
+    const templateControls = (source.match(/<(?:button|input|select|textarea)\b/g) || []).length;
+    if (name.startsWith('src/react/')) {
+      if (!name.startsWith('src/react/ui/')) counts.reactTemplateControls += templateControls;
+      continue;
+    }
+    counts.legacyTemplateControls += templateControls;
+    counts.legacyDomControls += (source.match(/createElement\(\s*['"](?:button|input|select|textarea)['"]/g) || []).length;
+  }
+  return counts;
+}
+
 function main() {
   const problems = collect(join(ROOT, 'src/react'));
-  const counts = { rawControls: 0, unadaptedPrimitives: 0, compatibilityControls: 0 };
+  const counts = { rawControls: 0, unadaptedPrimitives: 0, compatibilityControls: 0, ...collectRetained() };
   for (const problem of problems) counts[problem.kind]++;
   const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
   if (process.argv.includes('--update')) {
@@ -68,9 +115,10 @@ function main() {
   const exceeded = new Set(Object.keys(counts).filter((key) => counts[key] > baseline[key]));
   if (exceeded.size) {
     for (const problem of problems.filter((item) => exceeded.has(item.kind))) console.error(`${problem.name}:${problem.line} ${problem.message}`);
+    for (const key of exceeded) console.error(`shadcn adoption regression: ${key} is ${counts[key]}, baseline allows ${baseline[key]}`);
     process.exitCode = 1;
   } else {
-    console.log(`shadcn adoption passed (${counts.rawControls}/${baseline.rawControls} raw controls, ${counts.unadaptedPrimitives}/${baseline.unadaptedPrimitives} unadapted primitives, ${counts.compatibilityControls}/${baseline.compatibilityControls} compatibility controls in migrated features).`);
+    console.log(`shadcn adoption passed (${counts.rawControls}/${baseline.rawControls} raw controls, ${counts.unadaptedPrimitives}/${baseline.unadaptedPrimitives} unadapted primitives, ${counts.compatibilityControls}/${baseline.compatibilityControls} compatibility controls in migrated features, ${counts.retainedMarkupControls}/${baseline.retainedMarkupControls} retained markup controls, ${counts.legacyDomControls}/${baseline.legacyDomControls} legacy DOM controls, ${counts.legacyTemplateControls}/${baseline.legacyTemplateControls} legacy template controls, ${counts.reactTemplateControls}/${baseline.reactTemplateControls} retained React template controls).`);
   }
 }
 
