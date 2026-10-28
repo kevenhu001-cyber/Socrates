@@ -103,6 +103,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B4 代码块与 tutor 内联控件 | 完成（2026-10-29） | 见下；仍是 legacy DOM 构建 |
 | B4 cookie 同意条 | 完成（2026-10-29） | 见下 |
 | B4 工具卡片 | 完成（2026-10-29） | 见下；保留「无边框行」的转录语法 |
+| B4 creation 表面（Images / Assistants / Sites） | 完成（2026-10-29） | 见下；模板仍是 HTML 字符串，皮肤归 shadcn 语义 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -229,6 +230,29 @@ tutor 卡片的新观感；build 与 lint 通过。
 标题 `text-sm`/medium，正文 `text-muted-foreground`，两个按钮 36px、`rounded-md`，
 主按钮 `bg-primary`、次按钮 `border-input bg-background`，焦点走 `--ui-focus-shadow`。
 `cookie-consent` 2 例通过。
+
+### B4 · creation 表面（Images / Assistants / Sites）（2026-10-29）
+
+`src/ui/creationSurfaces.js` 的三个目录页与两个编辑器仍是 HTML 模板，皮肤全部由
+`restore/creation-surfaces.css` 承担。这一批把该文件的调色板整体换成语义 token，
+不留一处 `--chatgpt-*`：
+
+- 面板 / 卡片：`--background` → `--card`，边框统一 `--border`，圆角走
+  `--radius-lg` / `--radius-xl`；站点 banner 与图片表单变成 shadcn 卡片。
+- 输入 / 文本域 / 下拉：36px、`rounded-md`、`border-input`、透明底、`text-sm`，
+  焦点 `border-color: var(--ring)` + `--ui-focus-shadow`。
+- 主操作 `.creation-primary` → `--primary` / `--primary-foreground`，
+  hover 用 `color-mix(... transparent 20%)`（等价 `bg-primary/80`），禁用态 `opacity:.5`。
+- 行内操作与发布按钮 → ghost：`--muted-foreground`，hover `--muted` + `--foreground`。
+- 站点列表/网格切换 → shadcn 分段控件（`--muted` 轨道 + `--background` 抬升块），
+  桌面 32px、手机 40px；轨道收成 `width: max-content` 靠右，不再拉满整行。
+- 站点行菜单 → popover：`--popover` / `--popover-foreground`、`rounded-md`、`p-1`，
+  菜单项 `rounded-sm` + `hover:bg-accent`。
+- 标签从 13px muted 改成 `text-sm` medium 的 `--foreground`，与 auth / 弹窗表单一致。
+
+验证：`creation-surfaces`、`detail-surface`、`reference-ui-visual` 共 12 例通过；
+build 与 lint 全绿（`check-css-debt` 与 `check-button-sizes` 计数未变，该文件属
+`restore/` 冻结区）。
 
 ### B4 · 工具卡片（2026-10-29）
 
