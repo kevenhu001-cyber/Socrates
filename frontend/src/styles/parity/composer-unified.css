@@ -235,73 +235,28 @@
   overflow: hidden;
   background: none;
 }
+/* Chip skins. The box (flex, height from --composer-control, padding, radius,
+   type, overflow) is declared by `ComposerPluginChips.tsx` on the shadcn
+   Button, per ADR 0024; what stays here is the surface's own look and the
+   phone overrides below. */
 #appShell .composer-shell .composer-plugin-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 220px;
-  height: var(--composer-control);
-  padding: 0 6px 0 10px;
-  overflow: hidden;
-  border: 0;
-  border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-chip);
   color: var(--muted-foreground);
-  font-size: var(--ui-font-size-sm);
-  line-height: 20px;
-}
-#appShell .composer-shell .composer-plugin-chip-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
-  overflow: hidden;
-  border-radius: var(--ui-radius-xs);
 }
 #appShell .composer-shell .composer-plugin-chip-icon svg { display: block; width: 16px; height: 16px; }
 #appShell .composer-shell .composer-plugin-chip-fallback { background: var(--ui-bg-raised); font-size: 10px; }
-#appShell .composer-shell .composer-plugin-chip-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-#appShell .composer-shell .composer-plugin-chip-remove {
-  display: grid;
-  place-items: center;
-  flex: 0 0 var(--ui-control-xs);
-  width: var(--ui-control-xs);
-  height: var(--ui-control-xs);
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ui-text-muted);
-}
+#appShell .composer-shell .composer-plugin-chip-remove { color: var(--ui-text-muted); }
 #appShell .composer-shell .composer-plugin-chip-remove:hover { background: var(--accent); color: var(--foreground); }
 #appShell .composer-shell .composer-plugin-chip-remove svg { width: 14px; height: 14px; }
-#appShell .composer-shell .composer-plugin-chip-more { padding-inline: 10px; color: var(--ui-text-muted); }
+#appShell .composer-shell .composer-plugin-chip-more { color: var(--ui-text-muted); }
 
 /* Tool chip — web search picked from the "+" menu (chatgpt.com: 14px pill,
-   blue text; the globe turns into × on hover = "click to remove"). */
+   blue text; the globe turns into × on hover = "click to remove").
+   The pill's box is declared by `ComposerPluginChips.tsx`; the skin, the
+   hover swap and the glyph cross-fade stay here. */
 #appShell .composer-tool-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-  height: var(--composer-control, 36px);
-  padding: 0 12px 0 8px;
-  border: 0;
-  border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-tool-chip-text);
-  font: inherit;
-  font-size: var(--ui-font-size-sm);
-  line-height: 20px;
-  white-space: nowrap;
   cursor: pointer;
   transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
 }

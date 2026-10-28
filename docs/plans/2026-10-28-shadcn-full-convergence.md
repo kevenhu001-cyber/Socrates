@@ -86,6 +86,28 @@
 把 `staticJsGzipBytes` 压回 360,000 B 以内，恢复原预算上限，而不是继续沿用
 365 KB 的临时额度。
 
+## 进度记录
+
+| 批次 | 状态 | 提交 / 证据 |
+| --- | --- | --- |
+| B1 守卫扩容 | 完成（2026-10-29） | `c9483ad1`：四条基线入库（97 / 30 / 140 / 32），`npm run lint` 全绿 |
+| B2 composer 芯片行 | 完成（2026-10-29） | 见下 |
+| B2 其余（转录行正文、composer 主控件、队列条、工具菜单） | 未开始 | — |
+
+### B2 · composer 芯片行（2026-10-29）
+
+`ComposerPluginChips.tsx` 的四个控件（web search 药丸、插件芯片、移除按钮、
+`+N more`）改由 shadcn `Button` 渲染；盒子（flex、`--composer-control` 高度、
+padding、`--ui-radius-pill` 圆角、字号行高、溢出）搬到组件上的 utility，
+`composer-unified.css` 只留皮肤（静息色、hover 换色、图标/× 交叉淡入）、
+`grid-area` 槽位与手机端覆盖。类名全部保留：e2e 与 `composerShapeGeometry.ts`
+按类名取节点。
+
+验证：改动前后用 computed-style 探针（8 个节点 × 两种表面：仅 web search 芯片 /
+带插件芯片）逐项比对，**0 差异**（排除自定义属性与 transition/animation 后
+逐属性相等，含盒子尺寸）；`plugin-directory`、`composer-layout`、
+`composer-tools-compat`、`chat-preparation` 共 28 例通过；`npm run lint` 通过。
+
 ## 待决问题
 
 1. **遗留 HTML 怎么拿到与 React 相同的控件外观？** 两条路：
