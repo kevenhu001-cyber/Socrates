@@ -887,11 +887,10 @@ body.workspace-active #appShell .workspace-row:hover {
   box-shadow: var(--ui-focus-shadow) !important;
 }
 
-.auth-btn.primary,
-.auth-btn.primary:hover {
-  color: var(--cg-accent-ink) !important;
-  background: var(--cg-accent) !important;
-}
+/* The auth primary button used to be pinned here to `--cg-accent` with
+   `!important`, which is why it ignored `--primary` in the philosophy theme.
+   `polish/auth.css` now paints it with the shadcn primary pair, so the pin is
+   gone and the button matches every other `variant="default"` control. */
 
 /* Small screens: keep the rail as a drawer, pages as one column, and every
    primary control reachable without horizontal scrolling. */
