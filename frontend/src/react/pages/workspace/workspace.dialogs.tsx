@@ -1,7 +1,19 @@
+import type { ReactElement } from 'react';
 import { getApiFetch, getConnectorIconMarkupFn, getLegacyActions, i18n, setActiveProject, setNextProjectId } from '../../legacy/gateway.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
 import { openLibraryDetail } from '../../../ui/libraryDetail.js';
+import { mountDialogCard, unmountDialogCard } from './workspace.dialogHost';
+import {
+  AgentRunView,
+  ArxivSearchView,
+  ConnectorCredentialsView,
+  ManageConnectorView,
+  ProjectFormView,
+  ProjectWorkspaceView,
+  ScheduledTaskFormView,
+  ZoteroSearchView,
+} from './workspace.dialogViews';
 import { useWorkspaceStore } from './workspace.store';
 import {
   deleteProjectRecord,
@@ -85,10 +97,13 @@ function dialogHost(): HTMLDivElement {
   return dialog;
 }
 
-export function showWorkspaceDialog(markup: string, cardClass = ''): HTMLDivElement {
+/** Mount a React view into the same card shell and run the shared wiring. */
+export function showWorkspaceDialogView(element: ReactElement, cardClass = ''): HTMLDivElement {
   const dialog = dialogHost();
-  const extraClass = cardClass === 'library-file-preview-card' ? ` ${cardClass}` : '';
-  dialog.innerHTML = `<div class="workspace-dialog-card${extraClass}">${markup}</div>`;
+  const extraClass = cardClass === 'library-file-preview-card' ? cardClass : '';
+  unmountDialogCard();
+  dialog.replaceChildren();
+  mountDialogCard(dialog, element, extraClass);
   dialog.classList.remove('hidden');
   dialog.querySelectorAll<HTMLElement>('[data-dialog-close]').forEach((button) => button.addEventListener('click', closeWorkspaceDialog));
   const focus = dialog.querySelector<HTMLElement>('input, textarea, select');
@@ -100,26 +115,12 @@ export function closeWorkspaceDialog(): void {
   const dialog = byId('workspaceDialog');
   if (!dialog) return;
   dialog.classList.add('hidden');
+  unmountDialogCard();
   dialog.innerHTML = '';
 }
 
-function dialogHeader(title: string, subtitle: string): string {
-  return `<div class="workspace-dialog-title"><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div><button type="button" data-dialog-close aria-label="${i18n('dialog.close', 'Close')}">×</button></div>`;
-}
 
 type CachedProject = ReturnType<typeof getCachedProjects>[number];
-
-function projectFormMarkup(project: CachedProject | null, title: string): string {
-  const editing = Boolean(project);
-  return `${dialogHeader(title, i18n('dialog.project.subtitle', 'Give this work a home and a clear instruction.'))}
-    <form id="projectForm" class="workspace-form">
-      <label class="workspace-field"><span>${i18n('dialog.field.name', 'Name')}</span><input name="name" maxlength="80" required value="${escapeHtml(project?.name)}" placeholder="${i18n('dialog.project.namePh', 'Research, writing, a course…')}"></label>
-      <label class="workspace-field"><span>${i18n('dialog.field.description', 'Description')} <em>${i18n('dialog.optional', 'Optional')}</em></span><input name="description" maxlength="180" value="${escapeHtml(project?.description)}" placeholder="${i18n('dialog.project.descPh', 'What are you working toward?')}"></label>
-      <label class="workspace-field"><span>${i18n('dialog.field.instructions', 'Instructions')} <em>${i18n('dialog.optional', 'Optional')}</em></span><textarea name="systemPrompt" rows="3" placeholder="${i18n('dialog.project.instrPh', 'How should Socrates approach work in this project?')}">${escapeHtml(project?.systemPrompt)}</textarea></label>
-      <label class="workspace-field"><span>${i18n('dialog.field.color', 'Color')}</span><input name="color" type="color" value="${escapeHtml(project?.color || '#c69a2d')}"></label>
-      <div class="workspace-dialog-actions">${editing ? `<button type="button" class="workspace-danger" data-action="delete-project">${i18n('common.delete', 'Delete')}</button>` : '<span></span>'}<span></span><button type="button" class="workspace-secondary" data-dialog-close>${i18n('common.cancel', 'Cancel')}</button><button class="workspace-primary" type="submit">${i18n(editing ? 'dialog.project.save' : 'projects.create', editing ? 'Save changes' : 'Create project')}</button></div>
-    </form>`;
-}
 
 async function deleteProjectFromForm(project: CachedProject): Promise<void> {
   const accepted = await confirmAction(i18n('confirm.deleteProject.title', 'Delete this project?'), i18n('confirm.deleteProject.msg', "This permanently deletes the project's chats, files, artifacts, and memories. This cannot be undone."));
@@ -177,7 +178,7 @@ export function openProjectForm(projectId: string | null = null): void {
   const project = projectId ? getCachedProjects().find((entry) => entry.id === projectId) || null : null;
   const editing = Boolean(project);
   const title = i18n(editing ? 'dialog.project.editTitle' : 'dialog.project.newTitle', editing ? 'Edit project' : 'New project');
-  const dialog = showWorkspaceDialog(projectFormMarkup(project, title));
+  const dialog = showWorkspaceDialogView(<ProjectFormView project={project} title={title} />);
   bindProjectForm(dialog, project);
 }
 
@@ -225,9 +226,12 @@ async function loadLibraryFileContent(id: string): Promise<void> {
 export async function openProjectWorkspace(projectId: string): Promise<void> {
   const project = getCachedProjects().find((entry) => entry.id === projectId);
   if (!project) return;
-  const dialog = showWorkspaceDialog(`${dialogHeader(String(project.name), String(project.description || i18n('dialog.project.defaultDesc', 'A focused place for related work.')))}
-    <div class="project-workspace-actions"><button type="button" class="workspace-primary" data-action="new-chat">${i18n('dialog.project.newChat', 'New chat in project')}</button><button type="button" class="workspace-secondary" data-action="move-chat">${i18n('dialog.project.moveCurrent', 'Move current chat here')}</button></div>
-    <p class="workspace-note">${i18n('dialog.project.note', 'Project instructions are saved with this project. Files and chats remain available as shared context for future work.')}</p><div id="projectRunHistory" class="project-run-history"></div>`);
+  const dialog = showWorkspaceDialogView(
+    <ProjectWorkspaceView
+      name={String(project.name)}
+      description={String(project.description || i18n('dialog.project.defaultDesc', 'A focused place for related work.'))}
+    />,
+  );
   dialog.querySelector('[data-action="new-chat"]')?.addEventListener('click', async () => {
     setNextProjectId(projectId);
     setActiveProject(project);
@@ -351,7 +355,12 @@ function renderRunDetails(host: HTMLElement, result: ProjectRunDetails): void {
 }
 
 async function openAgentRunDetails(runId: string): Promise<void> {
-  const dialog = showWorkspaceDialog(`${dialogHeader(i18n('dialog.project.runDetails', 'Agent run'), i18n('dialog.project.runDetailsLoading', 'Loading the execution record…'))}<div id="agentRunDetails" class="agent-run-details"><div class="workspace-loading">${escapeHtml(i18n('dialog.project.runsLoading', 'Loading agent runs…'))}</div></div>`);
+  const dialog = showWorkspaceDialogView(
+    <AgentRunView
+      title={i18n('dialog.project.runDetails', 'Agent run')}
+      subtitle={i18n('dialog.project.runDetailsLoading', 'Loading the execution record…')}
+    />,
+  );
   try {
     const result = await api()<ProjectRunDetails>('/api/agent-runs/' + encodeURIComponent(runId));
     const host = dialog.querySelector<HTMLElement>('#agentRunDetails');
@@ -363,27 +372,8 @@ async function openAgentRunDetails(runId: string): Promise<void> {
   }
 }
 
-function dateTimeLocalValue(value: string | null): string {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const part = (number: number) => String(number).padStart(2, '0');
-  return `${date.getFullYear()}-${part(date.getMonth() + 1)}-${part(date.getDate())}T${part(date.getHours())}:${part(date.getMinutes())}`;
-}
 
 type ScheduledTask = ReturnType<typeof useScheduledStore.getState>['tasks'][number];
-
-function scheduledTaskFormMarkup(task: ScheduledTask | null, editing: boolean, projectOptions: string): string {
-  return `${dialogHeader(i18n(editing ? 'dialog.task.editTitle' : 'dialog.task.newTitle', editing ? 'Edit task' : 'Schedule a task'), i18n('dialog.task.subtitle', 'Choose what should run and when to check back.'))}
-    <form id="taskForm" class="workspace-form">
-      <label class="workspace-field"><span>${i18n('dialog.task.field', 'Task')}</span><input name="title" maxlength="120" required value="${escapeHtml(task?.title)}" placeholder="${i18n('dialog.task.titlePh', 'Send me a weekly study plan')}"></label>
-      <label class="workspace-field"><span>${i18n('dialog.task.prompt', 'Prompt')}</span><textarea name="prompt" rows="3" placeholder="${i18n('dialog.task.promptPh', 'What should Socrates do when this task runs?')}">${escapeHtml(task?.prompt)}</textarea></label>
-      <div class="workspace-form-grid"><label class="workspace-field"><span>${i18n('dialog.task.agent', 'Agent')}</span><select name="agentKind"><option value="native">${i18n('dialog.task.nativeAgent', 'Socrates · native tools')}</option><option value="codex">${i18n('dialog.task.codexAgent', 'Pi Agent · project workspace')}</option></select></label><label class="workspace-field"><span>${i18n('dialog.task.project', 'Project')}</span><select name="projectId"><option value="">${i18n('dialog.task.noProject', 'No project')}</option>${projectOptions}</select></label></div>
-      <div class="workspace-form-grid"><label class="workspace-field"><span>${i18n('dialog.task.repeat', 'Repeat')}</span><select name="frequency"><option value="once">${i18n('scheduled.freq.once', 'Once')}</option><option value="daily">${i18n('scheduled.freq.daily', 'Daily')}</option><option value="weekly">${i18n('scheduled.freq.weekly', 'Weekly')}</option><option value="monthly">${i18n('scheduled.freq.monthly', 'Monthly')}</option></select></label><label class="workspace-field"><span>${i18n('dialog.task.firstRun', 'First run')}</span><input name="nextRunAt" type="datetime-local" value="${escapeHtml(dateTimeLocalValue(task?.nextRunAt || null))}"></label></div>
-      <p class="workspace-note">${i18n('dialog.task.codexNote', 'Pi Agent scheduled runs work inside the selected project workspace with server-enforced disk limits.')}</p>
-      <div class="workspace-dialog-actions">${editing ? `<button type="button" class="workspace-danger" data-action="delete-task">${i18n('common.delete', 'Delete')}</button>` : '<span></span>'}<span></span><button type="button" class="workspace-secondary" data-dialog-close>${i18n('common.cancel', 'Cancel')}</button><button class="workspace-primary" type="submit">${i18n(editing ? 'dialog.task.save' : 'scheduled.createTask', editing ? 'Save task' : 'Create task')}</button></div>
-    </form>`;
-}
 
 function bindScheduledTaskForm(
   dialog: HTMLDivElement,
@@ -431,9 +421,11 @@ function bindScheduledTaskForm(
 export async function openScheduledTaskForm(taskId?: string, initialPrompt = ''): Promise<void> {
   const task = taskId ? useScheduledStore.getState().tasks.find((item) => item.id === taskId) || null : null;
   const editing = Boolean(task);
-  const projectOptions = getCachedProjects().map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.name)}</option>`).join('');
+  const projectOptions = getCachedProjects().map((project) => ({ id: String(project.id), name: String(project.name) }));
   const activeProjectId = task?.projectId || sessionStore.getState().currentProjectId || '';
-  const dialog = showWorkspaceDialog(scheduledTaskFormMarkup(task, editing, projectOptions));
+  const dialog = showWorkspaceDialogView(
+    <ScheduledTaskFormView task={task} editing={editing} projectOptions={projectOptions} />,
+  );
   bindScheduledTaskForm(dialog, task, editing, initialPrompt, String(activeProjectId));
 }
 
@@ -443,8 +435,19 @@ function connectorIcon(id: string): string {
 
 function credentialDialog(connector: NonNullable<ReturnType<typeof useWorkspaceStore.getState>['pluginsData'][number]>): void {
   const fields = connector.credentialInput?.fields || [];
-  const fieldsHtml = fields.map((field) => `<label class="workspace-field"><span>${escapeHtml(field.label)}</span><input name="${escapeHtml(field.key)}" type="${escapeHtml(field.type || 'text')}"${field.required ? ' required' : ''} autocomplete="off" spellcheck="false"></label>${field.help ? `<p class="workspace-note">${escapeHtml(field.help)}</p>` : ''}`).join('');
-  const dialog = showWorkspaceDialog(`${dialogHeader(`Connect ${connector.name}`, connector.description || '')}<form id="projectConnectorForm" class="workspace-form">${fieldsHtml}<div class="workspace-dialog-actions"><span></span><button type="button" class="workspace-secondary" data-dialog-close>${i18n('common.cancel', 'Cancel')}</button><button class="workspace-primary" type="submit">Connect</button></div></form>`);
+  const dialog = showWorkspaceDialogView(
+    <ConnectorCredentialsView
+      name={connector.name}
+      description={connector.description || ''}
+      fields={fields.map((field) => ({
+        key: String(field.key),
+        label: String(field.label),
+        type: field.type ? String(field.type) : undefined,
+        required: Boolean(field.required),
+        help: field.help ? String(field.help) : undefined,
+      }))}
+    />,
+  );
   dialog.querySelector<HTMLFormElement>('#projectConnectorForm')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget as HTMLFormElement;
@@ -464,16 +467,17 @@ function manageConnectorDialog(connector: NonNullable<ReturnType<typeof useWorks
   const status = connection.status || '';
   const account = connection.displayName || connection.connectionName || '';
   const updated = connection.updatedAt ? timeLabel(connection.updatedAt) : '';
-  const error = connection.lastError
-    ? `<p class="workspace-note">${escapeHtml(i18n('plugins.manageDialog.error', 'Last error'))}: ${escapeHtml(connection.lastError)}</p>`
-    : '';
-  const dialog = showWorkspaceDialog(`${dialogHeader(`${i18n('plugins.manage', 'Manage')} ${connector.name}`, connector.description || '')}<div class="workspace-form">
-    <label class="workspace-field"><span>${i18n('plugins.manageDialog.status', 'Status')}</span><input readonly value="${escapeHtml(status + (account ? ' · ' + account : ''))}"></label>
-    <label class="workspace-field"><span>${i18n('plugins.manageDialog.account', 'Account')}</span><input readonly value="${escapeHtml(account || '—')}"></label>
-    ${updated ? `<label class="workspace-field"><span>${i18n('plugins.manageDialog.updated', 'Updated')}</span><input readonly value="${escapeHtml(updated)}"></label>` : ''}
-    ${error}
-    <div class="workspace-dialog-actions"><span></span><button type="button" class="workspace-secondary" data-action="refresh">${i18n('plugins.manageDialog.refresh', 'Refresh')}</button><button type="button" class="workspace-danger" data-action="disconnect">${i18n('plugins.manageDialog.disconnect', 'Disconnect')}</button><button type="button" class="workspace-secondary" data-dialog-close>${i18n('common.cancel', 'Cancel')}</button></div>
-  </div>`);
+  const error = connection.lastError ? String(connection.lastError) : '';
+  const dialog = showWorkspaceDialogView(
+    <ManageConnectorView
+      name={connector.name}
+      description={connector.description || ''}
+      status={status}
+      account={account}
+      updated={updated}
+      error={error}
+    />,
+  );
   dialog.querySelector('[data-action="refresh"]')?.addEventListener('click', async () => {
     closeWorkspaceDialog();
     try { await (await import('./workspace.service')).refreshProjectPlugin(connector.id); }
@@ -492,7 +496,7 @@ export function openProjectConnectorForm(id: string): void {
 }
 
 export function openArxivSearch(): void {
-  const dialog = showWorkspaceDialog(`${dialogHeader(i18n('connectors.arxivTitle', 'Search arXiv'), i18n('connectors.arxivSubtitle', 'Explore public research preprints. No account connection is needed.'))}<form id="arxivSearchForm" class="workspace-form"><div class="workspace-form-grid"><label class="workspace-field"><span>${i18n('connectors.researchTopic', 'Research topic')}</span><input name="query" maxlength="200" minlength="2" autocomplete="off" required placeholder="e.g. retrieval augmented generation"></label><div class="workspace-field"><span>&nbsp;</span><button class="workspace-primary" type="submit">${i18n('connectors.search', 'Search')}</button></div></div></form><div id="arxivPapers" class="marketplace-list"><div class="workspace-empty"><strong>${i18n('connectors.arxivEmptyTitle', 'Find a paper')}</strong><span>${i18n('connectors.arxivEmptyHint', 'Search by topic, method, author, or year.')}</span></div></div>`);
+  const dialog = showWorkspaceDialogView(<ArxivSearchView />);
   dialog.querySelector<HTMLFormElement>('#arxivSearchForm')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget as HTMLFormElement;
@@ -515,7 +519,7 @@ export function openArxivSearch(): void {
 }
 
 export function openZoteroLibrary(): void {
-  const dialog = showWorkspaceDialog(`${dialogHeader(i18n('connectors.zoteroTitle', 'Zotero library'), i18n('connectors.zoteroSubtitle', 'Search the references connected to this account.'))}<form id="zoteroSearchForm" class="workspace-form"><div class="workspace-form-grid"><label class="workspace-field"><span>${i18n('connectors.search', 'Search')}</span><input name="query" maxlength="200" autocomplete="off" placeholder="${i18n('connectors.zoteroSearchPh', 'Title, author, or year')}"></label><div class="workspace-field"><span>&nbsp;</span><button class="workspace-primary" type="submit">${i18n('connectors.search', 'Search')}</button></div></div></form><div id="zoteroItems" class="marketplace-list"><div class="workspace-loading">${i18n('connectors.zoteroLoading', 'Loading references…')}</div></div>`);
+  const dialog = showWorkspaceDialogView(<ZoteroSearchView />);
   const load = async (query: string) => {
     const list = dialog.querySelector<HTMLElement>('#zoteroItems');
     if (list) list.innerHTML = `<div class="workspace-loading">${i18n('connectors.zoteroLoading', 'Loading references…')}</div>`;

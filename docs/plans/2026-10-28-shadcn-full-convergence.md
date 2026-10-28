@@ -99,7 +99,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B2 composer 芯片行与队列条 | 完成（2026-10-29） | 见下 |
 | B2 composer 工具菜单 | 完成（2026-10-29） | 见下 |
 | B3 auth 登录页 | 皮肤完成（2026-10-29） | 见下；标记仍是保留 HTML，React 化未做 |
-| B3 workspace 弹窗表单 | 皮肤完成（2026-10-29） | 见下；模板仍是 HTML 字符串 |
+| B3 workspace 弹窗表单 | 完成（2026-10-29） | 见下；HTML 字符串模板已整体删除，改 React 视图 |
 | B4 代码块与 tutor 内联控件 | 完成（2026-10-29） | 见下；仍是 legacy DOM 构建 |
 | B4 cookie 同意条 | 完成（2026-10-29） | 见下 |
 | B4 工具卡片 | 完成（2026-10-29） | 见下；保留「无边框行」的转录语法 |
@@ -179,6 +179,33 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 
 验证：`projects-directory`、`plugin-directory`、`scheduled-tasks`、
 `reference-ui-visual` 共 14 例通过；build 与 lint 通过。
+
+### B3 · workspace 弹窗 React 化（2026-10-29）
+
+换皮之后这些弹窗仍是 `innerHTML` 字符串，控件永远绕不开 `check-shadcn-adoption`
+的模板基线。这一批把整层改成 React 视图：
+
+- `workspace.dialogHost.tsx`（新）：`#workspaceDialog` 里挂一个 `workspace-dialog-card`
+  宿主，用 `mountOwnedRoot` 建根（不自己 `createRoot`，`check-react-roots` 要求唯一
+  创建者），并包在 `flushSync` 里提交——调用方紧接着要 `querySelector('#projectForm')`
+  绑定提交，异步渲染会让 id 还不存在。
+- `workspace.dialogViews.tsx`（新）：`ProjectFormView`、`ScheduledTaskFormView`、
+  `ProjectWorkspaceView`、`AgentRunView`、`ConnectorCredentialsView`、
+  `ManageConnectorView`、`ArxivSearchView`、`ZoteroSearchView`，外加
+  `DialogHeader` / `Field` / `DialogActions`。`Field` 用 shadcn `Label` 包住控件，
+  避免新增裸 `<label>`。
+- `workspace.dialogs.ts` → `.tsx`：删掉 `showWorkspaceDialog(markup)`、
+  `dialogHeader()`、`projectFormMarkup()`、`scheduledTaskFormMarkup()`、
+  `dateTimeLocalValue()`，八处调用改为 `showWorkspaceDialogView(<View/>)`。
+- 保留的契约不变：仍是原生 `<form>` + `FormData` 提交，`#projectForm` / `#taskForm`
+  / `#projectConnectorForm` / `#arxivSearchForm` / `#zoteroSearchForm` 的 id 与
+  `data-action` 挂点全部沿用；`bindProjectForm`、`bindScheduledTaskForm` 的绑定代码
+  一行未改。
+
+`reactTemplateControls` 基线 32 → **0**（React 树内已无 HTML 模板控件）。
+
+验证：`npm run build`、`npm run lint` 全绿；`projects-directory`、
+`plugin-directory`、`scheduled-page` 共 13 例通过。
 
 ### B4 · 代码块与 tutor 内联控件（2026-10-29）
 
