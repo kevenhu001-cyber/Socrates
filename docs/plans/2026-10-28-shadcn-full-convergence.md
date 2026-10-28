@@ -99,6 +99,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B2 composer 芯片行与队列条 | 完成（2026-10-29） | 见下 |
 | B2 composer 工具菜单 | 完成（2026-10-29） | 见下 |
 | B3 auth 登录页 | 皮肤完成（2026-10-29） | 见下；标记仍是保留 HTML，React 化未做 |
+| B3 workspace 弹窗表单 | 皮肤完成（2026-10-29） | 见下；模板仍是 HTML 字符串 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -156,6 +157,25 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 验证：`auth-direct-handlers`、`chrome-i18n`、`reference-ui-visual`、
 `visual-system-convergence` 共 16 例通过；`check-button-sizes` 0/0、
 `check-focus-ring` 通过（改用共享 token，未自绘阴影）；build 与 lint 通过。
+
+### B3 · workspace 弹窗表单（2026-10-29）
+
+项目 / 任务 / 连接器凭据 / 插件管理 / arXiv 搜索这几个弹窗共用 `.workspace-field`、
+`.workspace-primary/secondary/danger`，所以换皮只动这两组语义类：
+
+- 输入/下拉/文本域：36px、`rounded-md`、`border-input`、透明底、`text-sm`；
+  文本域 `min-height: 72px`；`input[type=color]` 收成 48px 色块，不再拉满整行
+- 焦点：`border-color: var(--ring)` + 共享 `--ui-focus-shadow`
+- 标签：11px/600 → 14px/500 正常大小写；`Optional` 标记降到 12px muted
+- 按钮：36px、`rounded-md`、`bg-primary` / `border-input bg-background` /
+  `text-destructive`，替换掉 `--cg-*` 旧皮肤
+
+`restore/chatgpt-ui.css` 里带 `!important` 的那段是这些控件的实际所有者，直接改写；
+`features/surfaces.css` 只留 id 级兜底。`check-css-debt` 的 `literalRadius` 285 → 283、
+`literalFontSize` 64 → 63，`important` 维持 645。
+
+验证：`projects-directory`、`plugin-directory`、`scheduled-tasks`、
+`reference-ui-visual` 共 14 例通过；build 与 lint 通过。
 
 ## 待决问题
 

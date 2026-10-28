@@ -635,28 +635,42 @@ body.workspace-active #appShell .main-page {
 body.workspace-active #appShell .workspace-primary,
 body.workspace-active #appShell .workspace-secondary,
 body.workspace-active #appShell .workspace-danger{
-  border-radius: 10px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
   font-family: var(--cg-font);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
 }
 
 body.workspace-active #appShell .workspace-primary {
-  color: var(--cg-accent-ink);
-  background: var(--cg-accent);
+  color: var(--primary-foreground);
+  background: var(--primary);
 }
 
 body.workspace-active #appShell .workspace-primary:hover {
-  background: var(--cg-accent-strong);
+  filter: brightness(0.94);
 }
 
 body.workspace-active #appShell .workspace-secondary{
-  border: 1px solid var(--cg-border-strong);
-  color: var(--cg-text-secondary);
-  background: var(--cg-surface);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  background: var(--background);
 }
 
 body.workspace-active #appShell .workspace-secondary:hover{
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
+  color: var(--accent-foreground);
+  background: var(--accent);
+}
+
+body.workspace-active #appShell .workspace-danger{
+  border: 1px solid transparent;
+  color: var(--destructive);
+  background: transparent;
+}
+
+body.workspace-active #appShell .workspace-danger:hover{
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
 }
 
 /* Kimi-style two-column card grid. Cards keep the legacy connector-row
@@ -838,20 +852,38 @@ body.workspace-active #appShell .workspace-row:hover {
   font-family: var(--cg-font) !important;
 }
 
+/* Workspace forms use the shadcn input rung: 36px, rounded-md,
+   transparent fill on the dialog card, ring-based focus. */
 .workspace-field input,
 .workspace-field textarea,
 .workspace-field select {
-  border: 1px solid var(--cg-border-strong) !important;
-  border-radius: 10px !important;
-  background: var(--cg-rail) !important;
-  color: var(--cg-text) !important;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--input) !important;
+  border-radius: var(--radius-md) !important;
+  background: transparent !important;
+  color: var(--foreground) !important;
+  font-size: var(--ui-font-size-sm) !important;
+}
+
+.workspace-field textarea {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 12px;
+}
+
+/* A colour swatch is a picker, not a text field: keep it at the control rung
+   instead of stretching it across the form. */
+.workspace-field input[type="color"] {
+  width: 48px;
+  padding: 2px;
+  cursor: pointer;
 }
 
 .workspace-field input:focus,
 .workspace-field textarea:focus,
 .workspace-field select:focus {
-  border-color: var(--cg-border-strong) !important;
-  border-color: color-mix(in srgb, var(--cg-accent) 62%, var(--cg-border-strong)) !important;
+  border-color: var(--ring) !important;
   box-shadow: var(--ui-focus-shadow) !important;
 }
 

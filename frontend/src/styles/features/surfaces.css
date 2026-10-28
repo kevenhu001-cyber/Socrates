@@ -426,11 +426,26 @@
 #appShell .workspace-field input,
 #appShell .workspace-field textarea,
 #appShell .workspace-field select {
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control);
-  background: var(--ui-bg-surface);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: transparent;
   color: var(--foreground);
-  box-shadow: none;
+}
+
+#appShell .workspace-field :is(input, textarea, select) {
+  box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 4%));
+}
+
+/* Field labels follow the shadcn form grammar: 14px medium, sentence case. */
+#appShell .workspace-field {
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
+#appShell .workspace-field em {
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-regular);
 }
 
 #appShell .workspace-dialog,
