@@ -1,5 +1,5 @@
-import { Button } from '../ui/Button';
-import { IconButton } from '../ui/IconButton';
+import { Badge } from '../ui/shadcn/badge';
+import { Button } from '../ui/shadcn/button';
 import { useLayoutEffect, useSyncExternalStore } from 'react';
 import {
   getQueuedPrompts,
@@ -41,38 +41,48 @@ export function ComposerQueueBanner({ surface }: { surface: ComposerSurface }) {
   };
 
   return (
-    <div className="composer-queue-banner" role="status" aria-live="polite">
-      <div className="composer-queue-main">
-        <span className="composer-queue-icon" aria-hidden="true">
+    <div
+      className="composer-queue-banner flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-xs text-muted-foreground"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="composer-queue-main flex min-w-0 items-center gap-1.5 overflow-hidden">
+        <span className="composer-queue-icon inline-flex shrink-0 items-center text-muted-foreground" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
         </span>
-        <span className="composer-queue-badge">
+        <Badge variant="secondary" className="composer-queue-badge shrink-0">
           {count > 1 ? i18n('composer.queue.count', '{count} queued').replace('{count}', String(count)) : i18n('composer.queue.title', 'Queued prompt')}
-        </span>
-        <span className="composer-queue-text" title={first.text}>
+        </Badge>
+        <span className="composer-queue-text truncate text-muted-foreground" title={first.text}>
           “{preview}”
         </span>
       </div>
-      <div className="composer-queue-actions">
+      <div className="composer-queue-actions flex shrink-0 items-center gap-1">
         <Button
           type="button"
+          variant="ghost"
+          size="xs"
           className="composer-queue-btn composer-queue-edit"
           onClick={handleEdit}
         >
           {i18n('composer.queue.edit', 'Edit')}
         </Button>
-        <IconButton
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
           className="composer-queue-btn composer-queue-cancel"
           onClick={handleCancel}
-          label={i18n('composer.queue.cancel', 'Cancel')}
+          aria-label={i18n('composer.queue.cancel', 'Cancel')}
           title={i18n('composer.queue.cancel', 'Cancel')}
-          icon={<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M18 6L6 18M6 6l12 12" />
-          </svg>}
-        />
+          </svg>
+        </Button>
       </div>
     </div>
   );

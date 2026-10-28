@@ -58,10 +58,15 @@
 
 ### B2 — 主壳 P3 / P4（ADR 0024）
 
-转录行与消息工具条、composer chrome 改为 React + shadcn 组件渲染，几何只从
-`--ui-*` token 来；`parity/transcript.css`、`parity/composer-unified.css` 中被组件
-接手的规则随之删除。流程与 P1/P2 相同：先用 computed-style 探针取改动前的数值，
-改后逐项复现；`reference-ui-visual` 与 composer 快照出现非零差异就先回退几何。
+转录行与消息工具条、composer chrome 改为 React + shadcn 组件渲染，**外观直接采用
+shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-border`、
+`hover:bg-accent`、focus ring），几何只从 `--ui-*` token 来；
+`parity/transcript.css`、`parity/composer-unified.css` 中被组件接手的规则随之删除。
+
+验收标准（2026-10-29 修订）：视觉向 shadcn 靠拢是**预期结果**，不为保住旧像素而回退
+样式。computed-style 探针只用于守住主壳布局契约（composer 单行 52px、控件
+36px、tools 菜单 244–260 × 300–368）；`reference-ui-visual` 等快照因换皮而变时更新
+基线，而不是改回旧皮肤。
 
 ### B3 — 保留标记收敛（`index.html`）
 
@@ -94,19 +99,28 @@
 | B2 composer 芯片行 | 完成（2026-10-29） | 见下 |
 | B2 其余（转录行正文、composer 主控件、队列条、工具菜单） | 未开始 | — |
 
-### B2 · composer 芯片行（2026-10-29）
+### B2 · composer 芯片行与队列条（2026-10-29）
 
-`ComposerPluginChips.tsx` 的四个控件（web search 药丸、插件芯片、移除按钮、
-`+N more`）改由 shadcn `Button` 渲染；盒子（flex、`--composer-control` 高度、
-padding、`--ui-radius-pill` 圆角、字号行高、溢出）搬到组件上的 utility，
-`composer-unified.css` 只留皮肤（静息色、hover 换色、图标/× 交叉淡入）、
-`grid-area` 槽位与手机端覆盖。类名全部保留：e2e 与 `composerShapeGeometry.ts`
-按类名取节点。
+目标改为**视觉上真的长成 shadcn**，不再以零像素差异为验收：
 
-验证：改动前后用 computed-style 探针（8 个节点 × 两种表面：仅 web search 芯片 /
-带插件芯片）逐项比对，**0 差异**（排除自定义属性与 transition/animation 后
-逐属性相等，含盒子尺寸）；`plugin-directory`、`composer-layout`、
-`composer-tools-compat`、`chat-preparation` 共 28 例通过；`npm run lint` 通过。
+- 插件芯片 → shadcn `Badge variant="secondary"`；web search 芯片与 `+N more`
+  → `Button variant="secondary" size="sm"`；移除按钮 → `Button variant="ghost"
+  size="icon-xs"`。圆角从药丸改成 `rounded-md`，加 `border-border` 与
+  `bg-secondary` / `hover:bg-accent` 的 shadcn 皮肤。
+- 队列条 → shadcn 卡片（`rounded-lg border-border bg-card`）+ `Badge`
+  variant="secondary" + `Button variant="ghost"`（Edit 用 `size="xs"`，
+  Cancel 用 `size="icon-xs"`）。
+- `composer-unified.css` 删掉两段控件的皮肤与盒子规则，只留 composer 网格槽位、
+  glyph/× 交叉淡入和手机覆盖。
+
+保留的硬约束（这两条不能因为换皮而漂移）：composer 单行仍为 52px、
+`--composer-control` 36px 的控制高度不变；类名全部保留，e2e 与
+`composerShapeGeometry.ts` 的节点契约不动。
+
+验证：`composer-layout`、`chat-preparation`、`plugin-directory` 共 18 例通过；
+`reference-ui-visual`、`composer-tool-visual`、`composer-tools-visual-baseline`、
+`shadcn-theme` 共 10 例通过（视觉基线未受影响）；`npm run build` / `npm run lint`
+通过。
 
 ## 待决问题
 

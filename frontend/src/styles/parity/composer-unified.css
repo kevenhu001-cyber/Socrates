@@ -235,36 +235,15 @@
   overflow: hidden;
   background: none;
 }
-/* Chip skins. The box (flex, height from --composer-control, padding, radius,
-   type, overflow) is declared by `ComposerPluginChips.tsx` on the shadcn
-   Button, per ADR 0024; what stays here is the surface's own look and the
-   phone overrides below. */
-#appShell .composer-shell .composer-plugin-chip {
-  background: var(--ui-bg-chip);
-  color: var(--muted-foreground);
-}
+/* Chip internals: the badge and its remove button are shadcn `Badge` /
+   `Button` (secondary + ghost) in `ComposerPluginChips.tsx`, so only the
+   glyph plumbing and the phone overrides are left here. */
 #appShell .composer-shell .composer-plugin-chip-icon svg { display: block; width: 16px; height: 16px; }
 #appShell .composer-shell .composer-plugin-chip-fallback { background: var(--ui-bg-raised); font-size: 10px; }
-#appShell .composer-shell .composer-plugin-chip-remove { color: var(--ui-text-muted); }
-#appShell .composer-shell .composer-plugin-chip-remove:hover { background: var(--accent); color: var(--foreground); }
 #appShell .composer-shell .composer-plugin-chip-remove svg { width: 14px; height: 14px; }
-#appShell .composer-shell .composer-plugin-chip-more { color: var(--ui-text-muted); }
 
-/* Tool chip — web search picked from the "+" menu (chatgpt.com: 14px pill,
-   blue text; the globe turns into × on hover = "click to remove").
-   The pill's box is declared by `ComposerPluginChips.tsx`; the skin, the
-   hover swap and the glyph cross-fade stay here. */
-#appShell .composer-tool-chip {
-  background: transparent;
-  color: var(--ui-tool-chip-text);
-  cursor: pointer;
-  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
-}
-#appShell .composer-tool-chip:hover,
-#appShell .composer-tool-chip:focus-visible {
-  background: var(--ui-tool-chip-hover-bg);
-  color: var(--ui-tool-chip-hover-text);
-}
+/* Web-search chip: a shadcn secondary Button. The globe turns into × on
+   hover = "click to remove"; that swap is the only thing left here. */
 #appShell .composer-tool-chip-icon { display: inline-grid; width: 20px; height: 20px; }
 #appShell .composer-tool-chip-icon svg { grid-area: 1 / 1; width: 20px; height: 20px; transition: opacity var(--ui-duration-hover) ease; }
 #appShell .composer-tool-chip-close { opacity: 0; }
@@ -807,87 +786,8 @@
   height: 11px;
 }
 
-/* ── Prompt Queue Banner (ChatGPT-style queued messages) ──────────────── */
-#appShell .composer-shell .composer-queue-banner {
-  grid-area: queue;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ui-space-sm);
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0 0 var(--ui-space-xs) 0;
-  padding: 4px 10px;
-  background: var(--ui-bg-surface-elevated, var(--ui-bg-surface));
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
-  font-family: var(--font-sans);
-  font-size: var(--ui-font-size-xs);
-  color: var(--muted-foreground);
-}
-
-#appShell .composer-shell .composer-queue-main {
-  display: flex;
-  align-items: center;
-  gap: var(--ui-space-xs);
-  min-width: 0;
-  overflow: hidden;
-}
-
-#appShell .composer-shell .composer-queue-icon {
-  display: inline-flex;
-  align-items: center;
-  color: var(--ui-text-muted);
-  flex-shrink: 0;
-}
-
-#appShell .composer-shell .composer-queue-badge {
-  font-weight: var(--ui-font-weight-semibold);
-  color: var(--foreground);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-#appShell .composer-shell .composer-queue-text {
-  color: var(--muted-foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#appShell .composer-shell .composer-queue-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--ui-space-xs);
-  flex-shrink: 0;
-}
-
-#appShell .composer-shell .composer-queue-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--ui-control-xs);
-  box-sizing: border-box;
-  border-radius: var(--ui-radius-sm);
-  border: 0;
-  background: transparent;
-  color: var(--ui-text-muted);
-  cursor: pointer;
-}
-
-#appShell .composer-shell .composer-queue-btn:hover {
-  background: var(--ui-bg-control-hover);
-  color: var(--foreground);
-}
-
-#appShell .composer-shell .composer-queue-edit {
-  padding: 0 8px;
-  font-size: var(--ui-font-size-xs);
-  font-weight: var(--ui-font-weight-medium);
-}
-
-#appShell .composer-shell .composer-queue-cancel {
-  width: var(--ui-control-xs);
-  padding: 0;
-}
+/* ── Prompt Queue Banner (ChatGPT-style queued messages) ────────────────
+   The banner is a shadcn card + Badge + ghost Buttons in
+   `ComposerQueueBanner.tsx`; only its grid slot is the shell's business. */
+#appShell .composer-shell .composer-queue-banner { grid-area: queue; }
 

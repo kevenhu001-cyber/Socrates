@@ -1,3 +1,4 @@
+import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { useEffect, useLayoutEffect, useState } from 'react';
@@ -15,28 +16,25 @@ import { useComposerPluginSelectionSnapshot } from '../composer/useComposerPlugi
    the tools menu until that layout moves to parity/. */
 const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
 
-/* Chip geometry lives here, on the primitives (ADR 0024): the box comes from
- * `--composer-control` and the `--ui-*` rungs, while the stylesheet keeps the
- * skins (resting colours, hover swap, the glyph/× cross-fade) and the phone
- * overrides. The classes stay on the nodes because the e2e specs and
- * `composerShapeGeometry.ts` read them. */
+/* Chips are shadcn `Badge` / `Button` (secondary): the component owns the
+ * box and the skin, the stylesheet keeps the composer grid slot, the phone
+ * overrides and the glyph/× cross-fade. The classes stay on the nodes because
+ * the e2e specs and `composerShapeGeometry.ts` read them. */
 const CHIP_BOX = [
-  'inline-flex items-center gap-1.5 grow-0 shrink basis-auto min-w-0 max-w-[220px]',
-  'h-(--composer-control) p-0 pr-1.5 pl-2.5 border-0 border-none border-current rounded-[var(--ui-radius-pill)] overflow-hidden',
-  'text-sm font-normal leading-5 whitespace-normal justify-normal select-auto bg-clip-border',
+  'inline-flex items-center justify-start gap-1.5 grow-0 shrink basis-auto min-w-0 max-w-[220px]',
+  'h-(--composer-control) rounded-md border border-border bg-secondary px-2.5 py-0 pr-1',
+  'text-sm font-normal leading-5 text-secondary-foreground whitespace-normal',
 ].join(' ');
 const TOOL_CHIP_BOX = [
   'inline-flex items-center gap-1 grow-0 shrink-0 basis-auto',
-  'h-(--composer-control) p-0 pr-3 pl-2 border-0 border-none border-current rounded-[var(--ui-radius-pill)]',
-  'text-sm font-normal leading-5 whitespace-nowrap justify-normal select-auto bg-clip-border',
+  'h-(--composer-control) rounded-md px-3 py-0 pl-2 font-medium leading-5',
 ].join(' ');
-const CHIP_ICON_BOX = 'grid place-items-center grow-0 shrink-0 basis-4 w-4 h-4 overflow-hidden rounded-[var(--ui-radius-xs)]';
+const CHIP_ICON_BOX = 'grid shrink-0 grow-0 basis-4 place-items-center w-4 h-4 overflow-hidden rounded-sm';
 const CHIP_LABEL_BOX = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap';
 const CHIP_REMOVE_BOX = [
-  'grid place-items-center grow-0 shrink-0 basis-(--ui-control-xs) size-(--ui-control-xs)',
-  'p-0 border-0 border-none border-current rounded-[50%] bg-transparent font-normal leading-[normal] whitespace-normal justify-normal bg-clip-border [&_svg]:size-3.5',
+  'grid shrink-0 grow-0 basis-(--ui-control-xs) place-items-center size-(--ui-control-xs)',
+  'rounded-sm p-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-3.5',
 ].join(' ');
-
 
 function useWebSearchOn(): boolean {
   const read = () => isWebSearchOn()
@@ -62,7 +60,7 @@ function WebSearchChip() {
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant="secondary"
       size="sm"
       className={`composer-tool-chip ${TOOL_CHIP_BOX}`}
       data-tool="webSearch"
@@ -109,7 +107,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
     <div className="composer-plugin-chips" aria-label="Selected plugins" data-i18n-aria="composer.selectedPlugins">
       {webSearchOn ? <WebSearchChip /> : null}
       {visiblePlugins.map((plugin) => (
-        <span className={`composer-plugin-chip ${CHIP_BOX}`} key={plugin.id} title={plugin.description || plugin.name}>
+        <Badge variant="secondary" className={`composer-plugin-chip ${CHIP_BOX}`} key={plugin.id} title={plugin.description || plugin.name}>
           {plugin.iconMarkup ? (
             <span className={`composer-plugin-chip-icon ${CHIP_ICON_BOX}`} aria-hidden="true" dangerouslySetInnerHTML={{ __html: plugin.iconMarkup }} />
           ) : (
@@ -132,12 +130,12 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
           >
             <Icon name="close" />
           </Button>
-        </span>
+        </Badge>
       ))}
       {hiddenCount > 0 ? (
         <Button
           type="button"
-          variant="ghost"
+          variant="secondary"
           size="sm"
           className={`composer-plugin-chip composer-plugin-chip-more ${CHIP_BOX} pr-2.5`}
           onClick={openTools}
