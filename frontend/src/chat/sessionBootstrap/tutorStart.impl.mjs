@@ -9,7 +9,7 @@ import { focusComposer } from '../../composer/controller.ts';
 import { clearComposerPlugins } from '../../composer/pluginSelection.ts';
 import { buildMessageContent, resetAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';
-import { updateComposerBtn } from '../../ui/topicSetup.js';
+import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { syncChatModel, getActiveProvider } from '../../pickers.js';
 import { loadWebSearch } from '../webSearchLoader.ts';
 import { generateTopicKBNodes } from '../topicKbNodes.ts';

@@ -91,6 +91,98 @@ function clearActiveChatAbort(handle: unknown): void {
   if (handle && win._activeChatAbort === handle) win._activeChatAbort = null;
 }
 
+function createRetryHooks(
+  turnController: AbortController,
+  retryOptions: AIRequestOptions,
+): {
+  waitForRetry(attempt: number, error: unknown): Promise<boolean>;
+  retryWasCancelled(): boolean;
+} {
+  async function waitForRetry(attempt: number, error: unknown): Promise<boolean> {
+    try {
+      return await waitForAIRetry(attempt, error, Object.assign({}, retryOptions, {
+        signal: turnController.signal,
+      }));
+    } catch (caught) {
+      if (isUserAbort(caught, turnController.signal) || isUserAbort(caught, retryOptions.signal)) {
+        return false;
+      }
+      throw caught;
+    }
+  }
+  return {
+    waitForRetry,
+    retryWasCancelled: () => turnController.signal.aborted && isUserAbort(null, turnController.signal),
+  };
+}
+
+function prepareNextAttempt(opts: StreamCallOptions | null | undefined, activeTurn: { current: string | null }): void {
+  /* Retire a replaced server turn while preserving an explicit same-turn rebind. */
+  const rebindsSameTurn = !!(opts && typeof opts.turnId === 'string' && opts.turnId);
+  if (!rebindsSameTurn) abandonServerTurn(activeTurn.current);
+  if (opts && typeof opts === 'object' && opts.clientTurn && typeof (opts.clientTurn as { id?: unknown }).id === 'string') {
+    (opts.clientTurn as { id: string }).id = newClientTurnId();
+  }
+  activeTurn.current = null;
+}
+
+async function executeStreamAttempts(args: {
+  win: StreamWindow;
+  messages: unknown;
+  maxTokens: number | undefined;
+  onDelta: StreamDeltaHandler;
+  onThinking: StreamThinkingHandler;
+  opts?: StreamCallOptions | null;
+  maxAttempts: number;
+  turnController: AbortController;
+  retryHooks: ReturnType<typeof createRetryHooks>;
+  onAbortHandle(handle: (reason?: unknown) => void): void;
+}): Promise<StreamResult | null> {
+  const activeTurn = {
+    current: args.opts && typeof args.opts.turnId === 'string' ? args.opts.turnId : null,
+  };
+  let lastError: Error | null = null;
+  const activeAbortHandle = (reason?: unknown): void => args.turnController.abort(reason || 'user-stop');
+  args.win._activeChatAbort = activeAbortHandle;
+  args.onAbortHandle(activeAbortHandle);
+  const { runStreamAttempt } = await import('./streamAttempt.js');
+  if (args.turnController.signal.aborted) return { text: '', cancelled: true };
+
+  for (let attempt = 1; attempt <= args.maxAttempts; attempt += 1) {
+    /* streamAttempt.js is still untyped; the outcome union is declared here
+       and the module can adopt it wholesale when it converts. */
+    const outcome = (await runStreamAttempt({
+      messages: args.messages,
+      maxTokens: args.maxTokens,
+      onDelta: args.onDelta,
+      onThinking: args.onThinking,
+      opts: args.opts,
+      attempt,
+      lastError,
+      turnController: args.turnController,
+      turnSignal: args.turnController.signal,
+      activeTurn,
+      bindAttemptSignal: (controller: { abort(reason?: unknown): void }) =>
+        bindAbortSignal(args.turnController.signal, controller),
+      onAbortHandle: args.onAbortHandle,
+      waitForRetry: args.retryHooks.waitForRetry,
+      retryWasCancelled: args.retryHooks.retryWasCancelled,
+      setLastCallError,
+    })) as StreamAttemptOutcome;
+
+    if (outcome.kind === 'success' || outcome.kind === 'cancelled') return outcome.result;
+    if (outcome.kind === 'retry') {
+      lastError = outcome.error;
+      prepareNextAttempt(args.opts, activeTurn);
+      continue;
+    }
+    return null;
+  }
+  /* Keep an error visible when every retryable attempt was exhausted. */
+  setLastCallError((lastError && lastError.message) || 'Stream failed after all retries');
+  return null;
+}
+
 /* Streaming variant. Calls /api/chat/stream (our backend SSE proxy).
    onDelta(text, full) is called for every text chunk the upstream produces.
    Resolves to {text, html, widgets, cancelled} on success, or null on failure.
@@ -98,7 +190,7 @@ function clearActiveChatAbort(handle: unknown): void {
    needed, while transient transport failures use the shared retry policy. */
 export async function callAPIStream(
   messages: unknown,
-  maxTokens: number,
+  maxTokens: number | undefined,
   onDelta: StreamDeltaHandler,
   onThinking: StreamThinkingHandler,
   opts?: StreamCallOptions | null,
@@ -120,21 +212,8 @@ export async function callAPIStream(
 
   const turnController = new AbortController();
   const unbindExternal = bindAbortSignal(retryOptions.signal ?? null, turnController);
+  const retryHooks = createRetryHooks(turnController, retryOptions);
   let activeAbortHandle: ((reason?: unknown) => void) | null = null;
-  const waitForRetry = async (attempt: number, error: unknown): Promise<boolean> => {
-    try {
-      return await waitForAIRetry(attempt, error, Object.assign({}, retryOptions, {
-        signal: turnController.signal,
-      }));
-    } catch (caught) {
-      if (isUserAbort(caught, turnController.signal) || isUserAbort(caught, retryOptions.signal)) {
-        return false;
-      }
-      throw caught;
-    }
-  };
-  const retryWasCancelled = (): boolean => turnController.signal.aborted
-    && isUserAbort(null, turnController.signal);
 
   try {
     /* Fail fast when the OS already knows the network is unavailable. */
@@ -143,68 +222,20 @@ export async function callAPIStream(
       return null;
     }
 
-    const activeTurn = {
-      current: opts && typeof opts.turnId === 'string' ? opts.turnId : null,
-    };
-    let lastError: Error | null = null;
-
-    // Shell consumers need the stream API, not the HTTP reader and SSE
-    // processor. Bind cancellation BEFORE loading that execution graph so
-    // Stop/session changes during a cold import cannot send a stale request.
-    activeAbortHandle = (reason) => turnController.abort(reason || 'user-stop');
-    win._activeChatAbort = activeAbortHandle;
-    const { runStreamAttempt } = await import('./streamAttempt.js');
-    if (turnController.signal.aborted) return { text: '', cancelled: true };
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      /* streamAttempt.js is still untyped; the outcome union is declared here
-         and the module can adopt it wholesale when it converts. */
-      const outcome = (await runStreamAttempt({
-        messages,
-        maxTokens,
-        onDelta,
-        onThinking,
-        opts,
-        attempt,
-        lastError,
-        turnController,
-        turnSignal: turnController.signal,
-        activeTurn,
-        bindAttemptSignal: (controller: { abort(reason?: unknown): void }) =>
-          bindAbortSignal(turnController.signal, controller),
-        onAbortHandle: (handle: (reason?: unknown) => void) => { activeAbortHandle = handle; },
-        waitForRetry,
-        retryWasCancelled,
-        setLastCallError,
-      })) as StreamAttemptOutcome;
-
-      if (outcome.kind === 'success' || outcome.kind === 'cancelled') return outcome.result;
-      if (outcome.kind === 'retry') {
-        lastError = outcome.error;
-        /* The failed attempt's server turn keeps generating upstream tokens
-           until the server's stale-turn reclaim runs (120 s). With several
-           attempts allowed per user action that is several concurrent paid
-           generations for one question — stop the turn we are replacing
-           before opening the next one.
-           Skip it when the next attempt rebinds the SAME turn (an explicit
-           turnId): interrupting that would kill the attempt that is about to
-           start. */
-        const rebindsSameTurn = !!(opts && typeof opts.turnId === 'string' && opts.turnId);
-        if (!rebindsSameTurn) abandonServerTurn(activeTurn.current);
-        /* Renew clientTurnId so attempt 2 does not collide with attempt 1's
-           turn execution claim on the server. */
-        if (opts && typeof opts === 'object' && opts.clientTurn && typeof (opts.clientTurn as { id?: unknown }).id === 'string') {
-          (opts.clientTurn as { id: string }).id = newClientTurnId();
-        }
-        activeTurn.current = null;
-        continue;
-      }
-      return null;
-    }
-
-    /* Keep an error visible even when every retryable attempt was exhausted. */
-    setLastCallError((lastError && lastError.message) || 'Stream failed after all retries');
-    return null;
+    // Bind cancellation before loading the execution graph so Stop/session
+    // changes during a cold import cannot send a stale request.
+    return await executeStreamAttempts({
+      win,
+      messages,
+      maxTokens,
+      onDelta,
+      onThinking,
+      opts,
+      maxAttempts,
+      turnController,
+      retryHooks,
+      onAbortHandle: (handle) => { activeAbortHandle = handle; },
+    });
   } finally {
     if (unbindExternal) unbindExternal();
     clearActiveChatAbort(activeAbortHandle);

@@ -4,7 +4,7 @@
 import { whenSessionIdle } from './afterSessionPaint.ts';
 import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.js';
-import { buildUserContentParts } from '../chat/history.js';
+import { buildUserContentParts } from '../chat/history.ts';
 import { quietTurn } from '../chat/turnUi.ts';
 import { apiFetch } from '../util/api.ts';
 import { loadLocalMemory, LOCAL_MEMORY_MAX, _memKey } from '../storage/localMemory.ts';
@@ -90,6 +90,89 @@ interface ChatTurnWindow extends Window {
   askChatTurn?: (text: string, parts: unknown) => unknown;
 }
 
+function restoredClientId(message: PersistedMessage): string {
+  return message.clientId || message.id || ('loaded-' + generateId());
+}
+
+function restoredHtml(message: PersistedMessage): string {
+  let html = message.html || '';
+  if (typeof html === 'string' && html.indexOf('think-block') !== -1) {
+    html = html.replace(/<details class="think-block[\s\S]*?<\/details>/gi, '');
+  }
+  return html;
+}
+
+function restoredReasoning(message: PersistedMessage): Pick<RestoredMessage, 'reasoningContent' | 'reasoningDurationSec'> {
+  return {
+    reasoningContent: message.reasoningContent || message.reasoning_content || null,
+    reasoningDurationSec: message.reasoningDurationSec || message.reasoning_duration_sec || null,
+  };
+}
+
+function restoredToolIdentity(call: PersistedToolCall): Record<string, unknown> {
+  return {
+    id: String(call.id || ''),
+    name: String(call.name || ''),
+    input: call.input == null ? null : call.input,
+    output: call.output == null ? null : call.output,
+    isError: call.isError === true,
+  };
+}
+
+function restoredToolArtifacts(value: unknown): unknown[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((artifact: { id?: unknown; mimeType?: string | null; name?: string | null }) => ({
+    id: String(artifact.id || ''),
+    mimeType: artifact.mimeType || null,
+    name: artifact.name || null,
+  }));
+}
+
+function restoredToolVisualFields(call: PersistedToolCall): Record<string, unknown> {
+  const visualization = call.visualization as { version?: number } | null | undefined;
+  return {
+    /* Preserve the split offset and versioned visualization spec so
+       inline tool layout survives a reload. */
+    textOffset: typeof call.textOffset === 'number' ? call.textOffset : undefined,
+    visualization: (visualization && visualization.version === 1) ? visualization : undefined,
+    visualizations: Array.isArray(call.visualizations) ? call.visualizations.slice(0, 8) : undefined,
+    /* Keep the normalized output list when present. The renderer
+       validates entries and can fall back to legacy output fields. */
+    outputs: Array.isArray(call.outputs) ? call.outputs : undefined,
+  };
+}
+
+function restoredToolTerminalFields(call: PersistedToolCall): Record<string, unknown> {
+  return {
+    /* Terminal fields drive the restored tool row's state and error UI. */
+    status: call.status == null ? null : String(call.status),
+    durationMs: typeof call.durationMs === 'number' ? call.durationMs : undefined,
+    error: call.error == null ? null : call.error,
+    errorCode: call.errorCode == null ? null : call.errorCode,
+    retryable: typeof call.retryable === 'boolean' ? call.retryable : undefined,
+    userMessage: call.userMessage == null ? undefined : call.userMessage,
+    stderr: call.stderr == null ? undefined : call.stderr,
+    detail: call.detail == null ? undefined : call.detail,
+  };
+}
+
+function restoredToolCall(call: PersistedToolCall): Record<string, unknown> {
+  return {
+    ...restoredToolIdentity(call),
+    artifacts: restoredToolArtifacts(call.artifacts),
+    results: Array.isArray(call.results) ? call.results.slice(0, 20) : [],
+    ...restoredToolVisualFields(call),
+    ...restoredToolTerminalFields(call),
+  };
+}
+
+function restoredCollections(message: PersistedMessage): Pick<RestoredMessage, 'attachments' | 'toolCalls'> {
+  return {
+    attachments: Array.isArray(message.attachments) ? message.attachments : [],
+    toolCalls: Array.isArray(message.toolCalls) ? message.toolCalls.map(restoredToolCall) : [],
+  };
+}
+
 function _t(key: string): string {
   try {
     if (typeof window !== 'undefined' && typeof window.t === 'function') {
@@ -106,15 +189,14 @@ export function restoreSessionMessage(m: PersistedMessage): RestoredMessage {
   /* Keep the stable clientId for DOM/state and retain the database UUID
      separately. Replacing clientId with m.id makes the next save insert a
      duplicate row and causes message actions to lose their client identity. */
-  const clientId = m.clientId || m.id || ('loaded-' + generateId());
+  const clientId = restoredClientId(m);
   /* MessageBody/AssistantTurn render canonical rawText when a row mounts.
      Building markup here parses offscreen history and schedules scaffold
      mounts for discarded slots. Retain supplied snapshots for compatibility
      and persistence; leave raw-only rows raw until they actually mount. */
-  let html = m.html || '';
-  if (typeof html === 'string' && html.indexOf('think-block') !== -1) {
-    html = html.replace(/<details class="think-block[\s\S]*?<\/details>/gi, '');
-  }
+  const html = restoredHtml(m);
+  const reasoning = restoredReasoning(m);
+  const collections = restoredCollections(m);
   return {
     clientId: clientId,
     serverId: m.id || null,
@@ -125,44 +207,12 @@ export function restoreSessionMessage(m: PersistedMessage): RestoredMessage {
     restoredFromHistory: true,
     /* The API uses the camelCase schema key. Keep the snake_case fallback
        for any legacy payloads. */
-    reasoningContent: m.reasoningContent || m.reasoning_content || null,
-    reasoningDurationSec: m.reasoningDurationSec || m.reasoning_duration_sec || null,
+    ...reasoning,
     /* P_turn-summary — carry the persisted retrospective so the Summary
        sheet reads the same after a reload as it did live. */
     summary: m.summary || null,
     turnRuntime: normalizeTurnRuntime(m.turnRuntime),
-    attachments: Array.isArray(m.attachments) ? m.attachments : [],
-    toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function (tc) {
-      const visualization = tc.visualization as { version?: number } | null | undefined;
-      return {
-        id: String(tc.id || ''),
-        name: String(tc.name || ''),
-        input: tc.input == null ? null : tc.input,
-        output: tc.output == null ? null : tc.output,
-        isError: tc.isError === true,
-        artifacts: Array.isArray(tc.artifacts) ? tc.artifacts.map(function (a) {
-          return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
-        }) : [],
-        results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
-        /* Preserve the split offset and versioned visualization spec so
-           inline tool layout survives a reload. */
-        textOffset: typeof tc.textOffset === 'number' ? tc.textOffset : undefined,
-        visualization: (visualization && visualization.version === 1) ? visualization : undefined,
-        visualizations: Array.isArray(tc.visualizations) ? tc.visualizations.slice(0, 8) : undefined,
-        /* Keep the normalized output list when present. The renderer
-           validates entries and can fall back to legacy output fields. */
-        outputs: Array.isArray(tc.outputs) ? tc.outputs : undefined,
-        /* Terminal fields drive the restored tool row's state and error UI. */
-        status: tc.status == null ? null : String(tc.status),
-        durationMs: typeof tc.durationMs === 'number' ? tc.durationMs : undefined,
-        error: tc.error == null ? null : tc.error,
-        errorCode: tc.errorCode == null ? null : tc.errorCode,
-        retryable: typeof tc.retryable === 'boolean' ? tc.retryable : undefined,
-        userMessage: tc.userMessage == null ? undefined : tc.userMessage,
-        stderr: tc.stderr == null ? undefined : tc.stderr,
-        detail: tc.detail == null ? undefined : tc.detail,
-      };
-    }) : [],
+    ...collections,
     actions: null,
   };
 }

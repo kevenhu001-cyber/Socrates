@@ -216,10 +216,10 @@ window.openProfile = openProfile;
 
 /* ─── ui/scroll.js ─── */
 
-/* ─── ui/topicSetup.js ─── */
+/* ─── ui/topicSetup.ts ─── */
 /* Composer auto-resize is consumed via main.js's direct imports; bare
    import keeps evaluation order. */
-import './ui/topicSetup.js';
+import './ui/topicSetup.ts';
 
 /* ─── storage/localMemory.js ─── */
 
@@ -269,11 +269,11 @@ window.renderAttachmentChips = renderAttachmentChips;
    (composer.retryAttachment in the legacy gateway). */
 window.retryComposerAttachment = retryComposerAttachment;
 
-/* ─── ui/topicSetup.js — send/start button refreshers. attachments/
+/* ─── ui/topicSetup.ts — send/start button refreshers. attachments/
    render.js calls them by name (window[w.updateBtnName]) after every
    file add/remove so an attachment-only draft still lights up Send, and
    extensions/modules/write.ts reaches them through window as well. */
-import { updateComposerBtn } from './ui/topicSetup.js';
+import { updateComposerBtn } from './ui/topicSetup.ts';
 window.updateComposerBtn = updateComposerBtn;
 
 /* ─── i18n.js (setLang) ─── */

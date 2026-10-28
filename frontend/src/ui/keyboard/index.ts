@@ -68,422 +68,384 @@ export function getKeyboardLift(): KeyboardLift | null {
   return active;
 }
 
-export function initKeyboardLift({
-  inputs,
-  input,
-  container,
-  root = typeof document !== 'undefined' ? document.documentElement : null,
-}: KeyboardLiftOptions = {}): KeyboardLift {
-  if (!root || typeof window === 'undefined' || typeof document === 'undefined') {
-    return unavailableLift();
+function resolveTrackedInputs(options: KeyboardLiftOptions): HTMLElement[] {
+  const source = options.inputs ?? options.input;
+  if (!source) return [];
+  if (typeof source === 'string') return Array.from(document.querySelectorAll<HTMLElement>(source));
+  return (Array.isArray(source) ? source : [source]).filter(Boolean);
+}
+
+class KeyboardLiftController implements KeyboardLift {
+  private readonly trackedInputs: HTMLElement[];
+  private readonly viewport: (ViewportLike & EventTarget & { width?: number }) | null;
+  private readonly insetListeners = new Set<(layoutInset: number) => void>();
+  private readonly anchor: TranscriptAnchor;
+  private phaseValue: KeyboardPhase = 'closed';
+  private sessionActive = false;
+  private appliedInset = -1;
+  private blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
+  private closeTimer: ReturnType<typeof setTimeout> | 0 = 0;
+  private finishTimer: ReturnType<typeof setTimeout> | 0 = 0;
+  private nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
+  private nativeHideTimer: ReturnType<typeof setTimeout> | 0 = 0;
+  private nativeHint: number | null = null;
+
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly container: HTMLElement | null,
+    options: KeyboardLiftOptions,
+  ) {
+    this.trackedInputs = resolveTrackedInputs(options);
+    this.viewport = window.visualViewport as (ViewportLike & EventTarget & { width?: number }) | null;
+    this.anchor = new TranscriptAnchor({
+      listFor: () => {
+        try { return document.getElementById('msgList'); } catch { return null; }
+      },
+      viewportOffset: () => this.viewportPan(),
+      stillActive: () => this.sessionActive || this.phaseValue === 'closing',
+    });
+    this.bindEvents();
+    this.publishInset(0);
+    this.setPhase('closed');
+    this.setIntent(false);
+    this.setMode('unknown');
+    try { delete this.root.dataset.keyboardMotion; }
+    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearMotion'); /* cleanup */ }
   }
 
-  const trackedInputs = (() => {
-    const source = inputs ?? input;
-    if (!source) return [] as HTMLElement[];
-    if (typeof source === 'string') {
-      return Array.from(document.querySelectorAll<HTMLElement>(source));
+  get phase(): KeyboardPhase {
+    return this.phaseValue;
+  }
+
+  get inset(): number {
+    return this.appliedInset > 0 ? this.appliedInset : 0;
+  }
+
+  onInset(cb: (layoutInset: number) => void): () => void {
+    this.insetListeners.add(cb);
+    return () => { this.insetListeners.delete(cb); };
+  }
+
+  private readonly onPointerDown = (): void => {
+    /* Pointerdown is retained for the keyboard lifecycle event surface. */
+  };
+
+  private readonly onFocusIn = (): void => {
+    if (this.blurTimer) {
+      clearTimeout(this.blurTimer);
+      this.blurTimer = 0;
     }
-    return (Array.isArray(source) ? source : [source]).filter(Boolean);
-  })();
-
-  const viewport = window.visualViewport as (ViewportLike & EventTarget & { width?: number }) | null;
-  const insetListeners = new Set<(layoutInset: number) => void>();
-  let phase: KeyboardPhase = 'closed';
-  let sessionActive = false;
-  let appliedInset = -1;
-  let blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
-  let closeTimer: ReturnType<typeof setTimeout> | 0 = 0;
-  let finishTimer: ReturnType<typeof setTimeout> | 0 = 0;
-  let nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
-  let nativeHideTimer: ReturnType<typeof setTimeout> | 0 = 0;
-  let nativeHint: number | null = null;
-
-  const shellElement = (): HTMLElement | null => (
-    container || document.getElementById('appShell') || root
-  );
-
-  const isFocused = () => isTrackedInputFocused(trackedInputs);
-
-  const setPhase = (next: KeyboardPhase) => {
-    if (phase === next && root.dataset.keyboardPhase === next) return;
-    phase = next;
-    try { root.dataset.keyboardPhase = next; } catch (e) { reportSwallow(e, 'keyboard.setPhase'); /* detached */ }
+    this.clearNativeTimers();
+    this.updateFromGeometry();
   };
 
-  const setIntent = (open: boolean) => {
-    try { root.dataset.keyboardOpen = open ? 'true' : 'false'; } catch (e) { reportSwallow(e, 'keyboard.setIntent'); /* detached */ }
-  };
-
-  const setMode = (next: KeyboardMode) => {
-    try { root.dataset.keyboardMode = next; } catch (e) { reportSwallow(e, 'keyboard.setMode'); /* detached */ }
-  };
-
-  const publishInset = (value: number) => {
-    const next = Math.max(0, Math.round(Number.isFinite(value) ? value : 0));
-    if (Math.abs(next - appliedInset) <= WRITE_EPSILON_PX) return;
-    appliedInset = next;
-    root.style.setProperty('--keyboard-inset', `${next}px`);
-    for (const cb of insetListeners) {
-      try { cb(next); } catch (e) { reportSwallow(e, 'keyboard.publishInset'); /* isolated */ }
-    }
-    /* The transcript correction lands in the same task as the inset write,
-     * so the painted messages never trail the composer by a frame. */
-    if (anchor.active) anchor.correct();
-  };
-
-  const shellBottom = (): number => {
-    const el = shellElement();
-    try {
-      if (el && typeof el.getBoundingClientRect === 'function') {
-        const bottom = Number(el.getBoundingClientRect().bottom);
-        if (Number.isFinite(bottom) && bottom > 0) return bottom;
-      }
-    } catch (e) { reportSwallow(e, 'keyboard.shellBottom.measure'); /* detached */ }
-    return Math.max(0, Number(window.innerHeight) || 0);
-  };
-
-  const viewportPan = (): number => {
-    const visualTop = viewport && Number.isFinite(Number(viewport.offsetTop))
-      ? Math.max(0, Number(viewport.offsetTop)) : 0;
-    const documentTop = Number.isFinite(Number(window.scrollY))
-      ? Math.max(0, Number(window.scrollY)) : 0;
-    return visualTop + documentTop;
-  };
-
-  const anchor = new TranscriptAnchor({
-    listFor: () => {
-      try { return document.getElementById('msgList'); } catch { return null; }
-    },
-    viewportOffset: viewportPan,
-    stillActive: () => sessionActive || phase === 'closing',
-  });
-
-  /**
-   * Absolute keyboard coverage for this exact frame — no baseline, so a
-   * stale pre-focus reference can never inject a jump into the first
-   * lifted frame. Returns null for a transient/zoomed viewport sample,
-   * which the caller holds (keeps displaying) instead of dipping to zero.
-   */
-  const measureTarget = (): number | null => {
-    const shell = shellBottom();
-    if (!(shell > 0)) return 0;
-    if (viewport && Number.isFinite(Number(viewport.height))) {
-      const height = Math.max(0, Number(viewport.height));
-      if (height < MIN_STABLE_VISUAL_HEIGHT) return null;
-      const scale = Number((viewport as ViewportLike).scale);
-      if (Number.isFinite(scale) && Math.abs(scale - 1) > 0.05) return null;
-      const offsetTop = Number.isFinite(Number(viewport.offsetTop))
-        ? Math.max(0, Number(viewport.offsetTop)) : 0;
-      const measured = getKeyboardInset(shell, height, offsetTop);
-      if (measured > KEYBOARD_OPEN_THRESHOLD_PX) {
-        /* Real geometry beats the native hint — consume it. */
-        nativeHint = null;
-        return measured;
-      }
-      if (nativeHint != null) {
-        return Math.min(Math.max(0, nativeHint), shell * NATIVE_HINT_MAX_RATIO, shell);
-      }
-      return measured;
-    }
-    /* Legacy WebView without VisualViewport: a stuck shell paired with a
-     * shrunken layout height still yields the true keyboard height, while
-     * a jointly-shrunk shell reads ~0 (native reflow owns it). */
-    const innerHeight = Number(window.innerHeight);
-    if (!Number.isFinite(innerHeight) || innerHeight <= 0) return 0;
-    const measured = getKeyboardInset(shell, Math.max(0, innerHeight), 0);
-    if (measured > KEYBOARD_OPEN_THRESHOLD_PX) {
-      nativeHint = null;
-      return measured;
-    }
-    if (nativeHint != null) {
-      return Math.min(Math.max(0, nativeHint), shell * NATIVE_HINT_MAX_RATIO, shell);
-    }
-    return measured;
-  };
-
-  const clearTimers = () => {
-    if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
-    if (closeTimer) { clearTimeout(closeTimer); closeTimer = 0; }
-    if (finishTimer) { clearTimeout(finishTimer); finishTimer = 0; }
-  };
-
-  const clearNativeTimers = () => {
-    if (nativeOpenTimer) { clearTimeout(nativeOpenTimer); nativeOpenTimer = 0; }
-    if (nativeHideTimer) { clearTimeout(nativeHideTimer); nativeHideTimer = 0; }
-  };
-
-  const startSession = () => {
-    if (sessionActive) return;
-    sessionActive = true;
-    setIntent(true);
-    setPhase('opening');
-    anchor.begin();
-  };
-
-  const finishSession = () => {
-    clearTimers();
-    clearNativeTimers();
-    nativeHint = null;
-    sessionActive = false;
-    setMode('unknown');
-    setIntent(false);
-    setPhase('closed');
-    publishInset(0);
-    anchor.end();
-    /* A resize-mode or panned browser can leave the document itself
-     * scrolled when the session ends (the platform scrolled it to reveal
-     * the focused composer). While the session is live we never fight that
-     * pan — once it ends, snap the document home exactly once so the shell
-     * is not left offset under a keyboard that is gone. */
-    try {
-      if (window.scrollY !== 0 || window.scrollX !== 0) {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      }
-    } catch (e) { reportSwallow(e, 'keyboard.finishSession.snapHome'); /* detached */ }
-  };
-
-  const scheduleFinish = () => {
-    if (finishTimer) return;
-    finishTimer = setTimeout(() => {
-      finishTimer = 0;
-      if (!sessionActive) return;
-      const target = measureTarget();
-      /* Still restored (or focus genuinely left) — release the session.
-       * A re-opened keyboard cancels this timer on its first frame. */
-      if (target == null || target <= RESTORE_SLOP_PX || !isFocused()) {
-        finishSession();
-      }
-    }, FINISH_CLOSE_MS);
-  };
-
-  const confirmClose = () => {
-    closeTimer = 0;
-    if (!sessionActive) return;
-    const target = measureTarget();
-    if (target != null && target > RESTORE_SLOP_PX) return;
-    if (target == null) {
-      /* Unstable frame at the boundary — wait for a readable one. */
-      if (sessionActive) scheduleCloseConfirm();
-      return;
-    }
-    setPhase('closing');
-    publishInset(0);
-    /* A native shell teleport that restored the layout may still be
-     * mid-FLIP; the session releases once the confirmed zero lands. */
-    scheduleFinish();
-  };
-
-  const scheduleCloseConfirm = () => {
-    if (closeTimer) return;
-    /* Held, not closing yet: a lone restored frame must neither dip the
-     * composer nor flip the phase — the confirm timer below releases the
-     * lift only if the restore persists. */
-    closeTimer = setTimeout(confirmClose, CLOSE_CONFIRM_MS);
-  };
-
-  const cancelCloseConfirm = () => {
-    if (!closeTimer) return;
-    clearTimeout(closeTimer);
-    closeTimer = 0;
-  };
-
-  /**
-   * The single entry point for every geometry signal. The inset is derived
-   * from absolute live geometry and published synchronously — the painted
-   * composer tracks the keyboard frame the browser just reported, with no
-   * deferred vote that could lag and then snap.
-   */
-  const updateFromGeometry = () => {
-    const target = measureTarget();
-
-    /* A lone transient frame holds the current lift instead of dipping. */
-    if (target == null) return;
-
-    const focused = isFocused();
-    const open = target > KEYBOARD_OPEN_THRESHOLD_PX;
-
-    if (!sessionActive && (open && focused)) startSession();
-
-    if (sessionActive) {
-      if (open) {
-        cancelCloseConfirm();
-        if (finishTimer) { clearTimeout(finishTimer); finishTimer = 0; }
-        if (phase === 'closing') setPhase('opening');
-        /* Immediate mirror — progressive IME frames land 1:1, and a coarse
-         * overlay jump lands whole: the composer never trails the keyboard
-         * and therefore never has to catch up with a visible snap. */
-        publishInset(target);
-        setMode('overlay');
-        if (Math.abs(target - (appliedInset > 0 ? appliedInset : 0)) <= 1) {
-          setPhase('open');
-        }
-      } else if (target <= RESTORE_SLOP_PX) {
-        /* Held, not published: a single restored frame must not dip the
-         * composer. The confirm timer releases the lift only if the
-         * restore persists. */
-        if (phase === 'open' || phase === 'opening') scheduleCloseConfirm();
-        else if (phase === 'closing' && !closeTimer && !finishTimer) scheduleCloseConfirm();
-      }
-      /* A visual-viewport pan can leave the coverage unchanged (same inset)
-       * while moving the painted content: the transcript compensation must
-       * run on every geometry event, not only on inset writes. */
-      if (anchor.active) anchor.correct();
-    } else {
-      if (appliedInset !== 0) publishInset(0);
-      if (phase !== 'closed') setPhase('closed');
-      if (root.dataset.keyboardOpen !== 'false') setIntent(false);
-    }
-  };
-
-  const onPointerDown = () => {
-    /* No FLIP target to pre-arm anymore — pointerdown is kept for future
-     * pre-baseline capture, but the controller no longer drives a parallel
-     * presentation timeline that would race the browser's own animation. */
-  };
-
-  const onFocusIn = () => {
-    if (blurTimer) {
-      clearTimeout(blurTimer);
-      blurTimer = 0;
-    }
-    clearNativeTimers();
-    updateFromGeometry();
-  };
-
-  const onFocusOut = () => {
-    if (!sessionActive) return;
-    /* The IME dismiss button often keeps focus while the viewport
-     * restores — geometry (not blur) owns the close. Blur only arms the
-     * backstop for WebViews whose viewport never reports the restore. */
-    setPhase('closing');
-    updateFromGeometry();
-    if (blurTimer) clearTimeout(blurTimer);
-    blurTimer = setTimeout(() => {
-      blurTimer = 0;
-      if (sessionActive && !isFocused()) {
-        cancelCloseConfirm();
-        publishInset(0);
-        finishSession();
+  private readonly onFocusOut = (): void => {
+    if (!this.sessionActive) return;
+    /* Geometry owns close; blur is only a fallback for WebViews without it. */
+    this.setPhase('closing');
+    this.updateFromGeometry();
+    if (this.blurTimer) clearTimeout(this.blurTimer);
+    this.blurTimer = setTimeout(() => {
+      this.blurTimer = 0;
+      if (this.sessionActive && !this.isFocused()) {
+        this.cancelCloseConfirm();
+        this.publishInset(0);
+        this.finishSession();
       }
     }, BLUR_GRACE_MS);
   };
 
-  const onGeometryEvent = () => {
-    updateFromGeometry();
+  private readonly onGeometryEvent = (): void => {
+    this.updateFromGeometry();
   };
 
-  document.addEventListener('pointerdown', onPointerDown, true);
-  if (viewport && typeof viewport.addEventListener === 'function') {
-    viewport.addEventListener('resize', onGeometryEvent);
-    viewport.addEventListener('scroll', onGeometryEvent);
+  private bindEvents(): void {
+    document.addEventListener('pointerdown', this.onPointerDown, true);
+    if (this.viewport && typeof this.viewport.addEventListener === 'function') {
+      this.viewport.addEventListener('resize', this.onGeometryEvent);
+      this.viewport.addEventListener('scroll', this.onGeometryEvent);
+    }
+    window.addEventListener('resize', this.onGeometryEvent);
+    window.addEventListener('scroll', this.onGeometryEvent, { passive: true });
+    document.addEventListener('focusin', this.onFocusIn);
+    document.addEventListener('focusout', this.onFocusOut);
+    document.addEventListener('visibilitychange', this.onGeometryEvent);
   }
-  window.addEventListener('resize', onGeometryEvent);
-  window.addEventListener('scroll', onGeometryEvent, { passive: true });
-  document.addEventListener('focusin', onFocusIn);
-  document.addEventListener('focusout', onFocusOut);
-  document.addEventListener('visibilitychange', onGeometryEvent);
 
-  publishInset(0);
-  setPhase('closed');
-  setIntent(false);
-  setMode('unknown');
-  try { delete root.dataset.keyboardMotion; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearMotion'); /* cleanup */ }
+  private shellElement(): HTMLElement {
+    return this.container || document.getElementById('appShell') || this.root;
+  }
 
-  const controller: KeyboardLift = {
-    get phase() { return phase; },
-    get inset() { return appliedInset > 0 ? appliedInset : 0; },
-    onInset(cb) {
-      insetListeners.add(cb);
-      return () => { insetListeners.delete(cb); };
-    },
-    notifyNativeKeyboard(kind, keyboardHeight) {
-      if (kind === 'show') {
-        if (blurTimer) {
-          clearTimeout(blurTimer);
-          blurTimer = 0;
-        }
-        if (closeTimer) {
-          clearTimeout(closeTimer);
-          closeTimer = 0;
-        }
-        if (finishTimer) {
-          clearTimeout(finishTimer);
-          finishTimer = 0;
-        }
-        if (nativeHideTimer) {
-          clearTimeout(nativeHideTimer);
-          nativeHideTimer = 0;
-        }
-        const hint = Number(keyboardHeight);
-        nativeHint = Number.isFinite(hint) && hint > 0 ? hint : null;
-        startSession();
-        setMode('native-resize');
-        setPhase('opening');
-        updateFromGeometry();
-        if (nativeOpenTimer) clearTimeout(nativeOpenTimer);
-        nativeOpenTimer = setTimeout(() => {
-          nativeOpenTimer = 0;
-          if (sessionActive && phase === 'opening') {
-            setPhase('open');
-          }
-        }, NATIVE_OPEN_SETTLE_MS);
-        return;
+  private isFocused(): boolean {
+    return isTrackedInputFocused(this.trackedInputs);
+  }
+
+  private setPhase(next: KeyboardPhase): void {
+    if (this.phaseValue === next && this.root.dataset.keyboardPhase === next) return;
+    this.phaseValue = next;
+    try { this.root.dataset.keyboardPhase = next; }
+    catch (error) { reportSwallow(error, 'keyboard.setPhase'); /* detached */ }
+  }
+
+  private setIntent(open: boolean): void {
+    try { this.root.dataset.keyboardOpen = open ? 'true' : 'false'; }
+    catch (error) { reportSwallow(error, 'keyboard.setIntent'); /* detached */ }
+  }
+
+  private setMode(next: KeyboardMode): void {
+    try { this.root.dataset.keyboardMode = next; }
+    catch (error) { reportSwallow(error, 'keyboard.setMode'); /* detached */ }
+  }
+
+  private publishInset(value: number): void {
+    const next = Math.max(0, Math.round(Number.isFinite(value) ? value : 0));
+    if (Math.abs(next - this.appliedInset) <= WRITE_EPSILON_PX) return;
+    this.appliedInset = next;
+    this.root.style.setProperty('--keyboard-inset', next + 'px');
+    for (const cb of this.insetListeners) {
+      try { cb(next); } catch (error) { reportSwallow(error, 'keyboard.publishInset'); /* isolated */ }
+    }
+    if (this.anchor.active) this.anchor.correct();
+  }
+
+  private shellBottom(): number {
+    const element = this.shellElement();
+    try {
+      if (element && typeof element.getBoundingClientRect === 'function') {
+        const bottom = Number(element.getBoundingClientRect().bottom);
+        if (Number.isFinite(bottom) && bottom > 0) return bottom;
       }
+    } catch (error) { reportSwallow(error, 'keyboard.shellBottom.measure'); /* detached */ }
+    return Math.max(0, Number(window.innerHeight) || 0);
+  }
 
-      if (nativeOpenTimer) {
-        clearTimeout(nativeOpenTimer);
-        nativeOpenTimer = 0;
-      }
-      nativeHint = null;
-      if (!sessionActive) {
-        publishInset(0);
-        setIntent(false);
-        setPhase('closed');
-        return;
-      }
+  private viewportPan(): number {
+    const visualTop = this.viewport && Number.isFinite(Number(this.viewport.offsetTop))
+      ? Math.max(0, Number(this.viewport.offsetTop)) : 0;
+    const documentTop = Number.isFinite(Number(window.scrollY))
+      ? Math.max(0, Number(window.scrollY)) : 0;
+    return visualTop + documentTop;
+  }
 
-      setPhase('closing');
-      updateFromGeometry();
-      if (nativeHideTimer) clearTimeout(nativeHideTimer);
-      nativeHideTimer = setTimeout(() => {
-        nativeHideTimer = 0;
-        /* Some WebViews never report the dismiss geometry — release. */
-        if (sessionActive) {
-          cancelCloseConfirm();
-          publishInset(0);
-          finishSession();
-        }
-      }, NATIVE_HIDE_FALLBACK_MS);
-    },
-    destroy() {
-      clearTimers();
-      clearNativeTimers();
-      anchor.end();
-      insetListeners.clear();
-      document.removeEventListener('pointerdown', onPointerDown, true);
-      if (viewport && typeof viewport.removeEventListener === 'function') {
-        viewport.removeEventListener('resize', onGeometryEvent);
-        viewport.removeEventListener('scroll', onGeometryEvent);
-      }
-      window.removeEventListener('resize', onGeometryEvent);
-      window.removeEventListener('scroll', onGeometryEvent);
-      document.removeEventListener('focusin', onFocusIn);
-      document.removeEventListener('focusout', onFocusOut);
-      document.removeEventListener('visibilitychange', onGeometryEvent);
-      try { root.style.removeProperty('--keyboard-inset'); } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearInset'); /* detached */ }
-      try { delete root.dataset.keyboardOpen; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearOpen'); /* detached */ }
-      try { delete root.dataset.keyboardPhase; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearPhase'); /* detached */ }
-      try { delete root.dataset.keyboardMode; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearMode'); /* detached */ }
-      try { delete root.dataset.keyboardMotion; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearMotionFlag'); /* detached */ }
-      if (active === controller) active = null;
-    },
-  };
+  private resolveMeasuredCoverage(measured: number, shell: number): number {
+    if (measured > KEYBOARD_OPEN_THRESHOLD_PX) {
+      this.nativeHint = null;
+      return measured;
+    }
+    if (this.nativeHint == null) return measured;
+    return Math.min(Math.max(0, this.nativeHint), shell * NATIVE_HINT_MAX_RATIO, shell);
+  }
 
+  private measureTarget(): number | null {
+    const shell = this.shellBottom();
+    if (!(shell > 0)) return 0;
+    if (this.viewport && Number.isFinite(Number(this.viewport.height))) {
+      const height = Math.max(0, Number(this.viewport.height));
+      if (height < MIN_STABLE_VISUAL_HEIGHT) return null;
+      const scale = Number(this.viewport.scale);
+      if (Number.isFinite(scale) && Math.abs(scale - 1) > 0.05) return null;
+      const offsetTop = Number.isFinite(Number(this.viewport.offsetTop))
+        ? Math.max(0, Number(this.viewport.offsetTop)) : 0;
+      return this.resolveMeasuredCoverage(getKeyboardInset(shell, height, offsetTop), shell);
+    }
+
+    /* Legacy WebViews expose no VisualViewport; native resize is the fallback. */
+    const innerHeight = Number(window.innerHeight);
+    if (!Number.isFinite(innerHeight) || innerHeight <= 0) return 0;
+    return this.resolveMeasuredCoverage(getKeyboardInset(shell, Math.max(0, innerHeight), 0), shell);
+  }
+
+  private clearTimers(): void {
+    if (this.blurTimer) { clearTimeout(this.blurTimer); this.blurTimer = 0; }
+    if (this.closeTimer) { clearTimeout(this.closeTimer); this.closeTimer = 0; }
+    if (this.finishTimer) { clearTimeout(this.finishTimer); this.finishTimer = 0; }
+  }
+
+  private clearNativeTimers(): void {
+    if (this.nativeOpenTimer) { clearTimeout(this.nativeOpenTimer); this.nativeOpenTimer = 0; }
+    if (this.nativeHideTimer) { clearTimeout(this.nativeHideTimer); this.nativeHideTimer = 0; }
+  }
+
+  private startSession(): void {
+    if (this.sessionActive) return;
+    this.sessionActive = true;
+    this.setIntent(true);
+    this.setPhase('opening');
+    this.anchor.begin();
+  }
+
+  private finishSession(): void {
+    this.clearTimers();
+    this.clearNativeTimers();
+    this.nativeHint = null;
+    this.sessionActive = false;
+    this.setMode('unknown');
+    this.setIntent(false);
+    this.setPhase('closed');
+    this.publishInset(0);
+    this.anchor.end();
+    try {
+      if (window.scrollY !== 0 || window.scrollX !== 0) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+    } catch (error) { reportSwallow(error, 'keyboard.finishSession.snapHome'); /* detached */ }
+  }
+
+  private scheduleFinish(): void {
+    if (this.finishTimer) return;
+    this.finishTimer = setTimeout(() => {
+      this.finishTimer = 0;
+      if (!this.sessionActive) return;
+      const target = this.measureTarget();
+      if (target == null || target <= RESTORE_SLOP_PX || !this.isFocused()) this.finishSession();
+    }, FINISH_CLOSE_MS);
+  }
+
+  private confirmClose(): void {
+    this.closeTimer = 0;
+    if (!this.sessionActive) return;
+    const target = this.measureTarget();
+    if (target != null && target > RESTORE_SLOP_PX) return;
+    if (target == null) {
+      if (this.sessionActive) this.scheduleCloseConfirm();
+      return;
+    }
+    this.setPhase('closing');
+    this.publishInset(0);
+    this.scheduleFinish();
+  }
+
+  private scheduleCloseConfirm(): void {
+    if (this.closeTimer) return;
+    this.closeTimer = setTimeout(() => this.confirmClose(), CLOSE_CONFIRM_MS);
+  }
+
+  private cancelCloseConfirm(): void {
+    if (!this.closeTimer) return;
+    clearTimeout(this.closeTimer);
+    this.closeTimer = 0;
+  }
+
+  private applyOpenGeometry(target: number): void {
+    this.cancelCloseConfirm();
+    if (this.finishTimer) { clearTimeout(this.finishTimer); this.finishTimer = 0; }
+    if (this.phaseValue === 'closing') this.setPhase('opening');
+    this.publishInset(target);
+    this.setMode('overlay');
+    if (Math.abs(target - (this.appliedInset > 0 ? this.appliedInset : 0)) <= 1) this.setPhase('open');
+  }
+
+  private applyClosingGeometry(target: number): void {
+    if (target > RESTORE_SLOP_PX) return;
+    if (this.phaseValue === 'open' || this.phaseValue === 'opening') this.scheduleCloseConfirm();
+    else if (this.phaseValue === 'closing' && !this.closeTimer && !this.finishTimer) this.scheduleCloseConfirm();
+  }
+
+  private settleClosedGeometry(): void {
+    if (this.appliedInset !== 0) this.publishInset(0);
+    if (this.phaseValue !== 'closed') this.setPhase('closed');
+    if (this.root.dataset.keyboardOpen !== 'false') this.setIntent(false);
+  }
+
+  private updateFromGeometry(): void {
+    const target = this.measureTarget();
+    if (target == null) return;
+    const open = target > KEYBOARD_OPEN_THRESHOLD_PX;
+    if (!this.sessionActive && open && this.isFocused()) this.startSession();
+    if (this.sessionActive) {
+      if (open) this.applyOpenGeometry(target);
+      else this.applyClosingGeometry(target);
+      if (this.anchor.active) this.anchor.correct();
+      return;
+    }
+    this.settleClosedGeometry();
+  }
+
+  private showNativeKeyboard(keyboardHeight?: number): void {
+    if (this.blurTimer) { clearTimeout(this.blurTimer); this.blurTimer = 0; }
+    if (this.closeTimer) { clearTimeout(this.closeTimer); this.closeTimer = 0; }
+    if (this.finishTimer) { clearTimeout(this.finishTimer); this.finishTimer = 0; }
+    if (this.nativeHideTimer) { clearTimeout(this.nativeHideTimer); this.nativeHideTimer = 0; }
+    const hint = Number(keyboardHeight);
+    this.nativeHint = Number.isFinite(hint) && hint > 0 ? hint : null;
+    this.startSession();
+    this.setMode('native-resize');
+    this.setPhase('opening');
+    this.updateFromGeometry();
+    if (this.nativeOpenTimer) clearTimeout(this.nativeOpenTimer);
+    this.nativeOpenTimer = setTimeout(() => {
+      this.nativeOpenTimer = 0;
+      if (this.sessionActive && this.phaseValue === 'opening') this.setPhase('open');
+    }, NATIVE_OPEN_SETTLE_MS);
+  }
+
+  private hideNativeKeyboard(): void {
+    if (this.nativeOpenTimer) {
+      clearTimeout(this.nativeOpenTimer);
+      this.nativeOpenTimer = 0;
+    }
+    this.nativeHint = null;
+    if (!this.sessionActive) {
+      this.publishInset(0);
+      this.setIntent(false);
+      this.setPhase('closed');
+      return;
+    }
+    this.setPhase('closing');
+    this.updateFromGeometry();
+    if (this.nativeHideTimer) clearTimeout(this.nativeHideTimer);
+    this.nativeHideTimer = setTimeout(() => {
+      this.nativeHideTimer = 0;
+      if (!this.sessionActive) return;
+      this.cancelCloseConfirm();
+      this.publishInset(0);
+      this.finishSession();
+    }, NATIVE_HIDE_FALLBACK_MS);
+  }
+
+  notifyNativeKeyboard(kind: 'show' | 'hide', keyboardHeight?: number): void {
+    if (kind === 'show') this.showNativeKeyboard(keyboardHeight);
+    else this.hideNativeKeyboard();
+  }
+
+  destroy(): void {
+    this.clearTimers();
+    this.clearNativeTimers();
+    this.anchor.end();
+    this.insetListeners.clear();
+    document.removeEventListener('pointerdown', this.onPointerDown, true);
+    if (this.viewport && typeof this.viewport.removeEventListener === 'function') {
+      this.viewport.removeEventListener('resize', this.onGeometryEvent);
+      this.viewport.removeEventListener('scroll', this.onGeometryEvent);
+    }
+    window.removeEventListener('resize', this.onGeometryEvent);
+    window.removeEventListener('scroll', this.onGeometryEvent);
+    document.removeEventListener('focusin', this.onFocusIn);
+    document.removeEventListener('focusout', this.onFocusOut);
+    document.removeEventListener('visibilitychange', this.onGeometryEvent);
+    try { this.root.style.removeProperty('--keyboard-inset'); }
+    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearInset'); /* detached */ }
+    try { delete this.root.dataset.keyboardOpen; }
+    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearOpen'); /* detached */ }
+    try { delete this.root.dataset.keyboardPhase; }
+    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearPhase'); /* detached */ }
+    try { delete this.root.dataset.keyboardMode; }
+    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearMode'); /* detached */ }
+    try { delete this.root.dataset.keyboardMotion; }
+    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearMotionFlag'); /* detached */ }
+    if (active === this) active = null;
+  }
+}
+
+export function initKeyboardLift(options: KeyboardLiftOptions = {}): KeyboardLift {
+  const root = options.root === undefined
+    ? (typeof document !== 'undefined' ? document.documentElement : null)
+    : options.root;
+  if (!root || typeof window === 'undefined' || typeof document === 'undefined') return unavailableLift();
+  const controller = new KeyboardLiftController(root, options.container || null, options);
   active = controller;
   return controller;
 }
-
 function unavailableLift(): KeyboardLift {
   return {
     phase: 'closed',

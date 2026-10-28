@@ -17,7 +17,7 @@ import { settleTurnRuntime } from '@socrates/core';
 import { esc } from '../../render/helpers.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { formatMsgProgressive } from '../../render/markdown.ts';
-import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
+import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
 import { setChatStopState, markTurnEnded, resendLastUserMessage } from '../turnUi.ts';
 import { claimLiveRetry } from '../liveTurn.ts';
 import { turnState } from '../turnState.ts';
@@ -30,6 +30,108 @@ import type { TurnMessage, TurnRuntimeState } from './runtimeState.ts';
 
 export interface AbortPath {
   abort(): void;
+}
+
+function readAbortedMessage(state: TurnRuntimeState): TurnMessage | null {
+  const message = readTurnMessage(state.msgIdx);
+  return message && message.clientId === state.clientId ? message : null;
+}
+
+function hasVisibleAbortContent(message: TurnMessage | null, visibleText: string): boolean {
+  return !!(message && (
+    visibleText || message.turnRuntime?.uiSurfaces.some((surface) => surface.phase === 'committed')
+  ));
+}
+
+function preserveEmptyAbortStub(state: TurnRuntimeState, message: TurnMessage | null): void {
+  if (!message || message.type !== 'streaming') return;
+  state.patchOwnedMessage({
+    rawText: '',
+    html: '<span data-turn-stub="1"></span>',
+    type: 'assistant',
+    _supersededStub: true,
+  });
+  setTimeout(function () {
+    try { removeSupersededStub(state.clientId); } catch { /* already gone */ }
+  }, 700);
+}
+
+function renderStoppedHtml(state: TurnRuntimeState, stoppedRaw: string, visibleStoppedRaw: string): string {
+  try {
+    const html = buildAssistantHtml(stoppedRaw);
+    return /scaffold-stream-unclosed/.test(html) ? formatMsgProgressive(stoppedRaw) : html;
+  } catch {
+    try { return formatMsgProgressive(stoppedRaw); }
+    catch { return '<p>' + esc(visibleStoppedRaw) + '</p>'; }
+  }
+}
+
+function bindStoppedResend(state: TurnRuntimeState): void {
+  claimLiveRetry(state.ret, function () {
+    try { resendLastUserMessage(); } catch { /* resend handler threw */ }
+  });
+  const delegatedResend = function (event: Event): void {
+    const target = event.target as Element | null;
+    if (!(target && target.closest && target.closest('[data-chat-resend]'))) return;
+    try { state.list.removeEventListener('click', delegatedResend); }
+    catch { /* listener already detached */ }
+    resendLastUserMessage();
+  };
+  try { state.list.addEventListener('click', delegatedResend); }
+  catch { /* list unavailable */ }
+  try { saveCurrentSession(); }
+  catch { /* save failed */ }
+}
+
+function finalizeStoppedMessage(
+  state: TurnRuntimeState,
+  message: TurnMessage,
+  stoppedRaw: string,
+  visibleStoppedRaw: string,
+): void {
+  const stoppedHtml = renderStoppedHtml(state, stoppedRaw, visibleStoppedRaw);
+  const resendHtml = '<div class="msg-error msg-resend" style="margin-top:8px">' +
+    '<span class="msg-error-text">' + esc(state.t('chat.stopped') || 'Response stopped') + '</span>' +
+    '<button type="button" class="msg-retry-btn chat-resend-btn" data-chat-resend>' +
+    esc(state.t('chat.resend') || 'Resend') + '</button>' +
+    '</div>';
+  const finalized = state.patchOwnedMessage({
+    rawText: stoppedRaw,
+    html: stoppedHtml + resendHtml,
+    type: 'assistant',
+    state: 'stopped',
+  }) || message;
+  setReactLiveStatus(finalized, {
+    phase: 'stopped', label: state.t('chat.stopped') || 'Response stopped',
+  });
+  bindStoppedResend(state);
+}
+
+function evictLegacyAbortShell(state: TurnRuntimeState): void {
+  requestAnimationFrame(function () {
+    try {
+      const legacy = state.list.querySelector('[data-client-id="' + state.clientId + '"]');
+      if (legacy && !legacy.hasAttribute('data-react-owned') && legacy.parentNode === state.list) {
+        state.list.removeChild(legacy);
+      }
+    } catch { /* legacy shell already gone */ }
+  });
+}
+
+function releaseActiveAbortTurn(state: TurnRuntimeState): void {
+  if (turnState.activeChatCtl !== state.ret) return;
+  turnState.chatStreaming = false;
+  try { setChatStopState(false); } catch { /* stop state already cleared */ }
+  try { markTurnEnded(); } catch { /* turn already ended */ }
+}
+
+function publishAbortedTurn(state: TurnRuntimeState): void {
+  publishReactChatRuntime({
+    type: 'stream-aborted',
+    messageId: state.clientId,
+    textLength: state.full.length,
+  });
+  evictLegacyAbortShell(state);
 }
 
 /**
@@ -56,11 +158,7 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
      * already taken over (the new wrapper cancels the OLD
      * controller when the user sends a follow-up, and the new
      * addStreamingMessage has already raised turnState.chatStreaming). */
-    if (turnState.activeChatCtl === state.ret) {
-      turnState.chatStreaming = false;
-      try { setChatStopState(false); } catch { /* stop state already cleared */ }
-      try { markTurnEnded(); } catch { /* turn already ended */ }
-    }
+    releaseActiveAbortTurn(state);
     /* Stop the independent execution stream and any queued delta
        frame before this message can lose ownership of its slot. */
     state.toolRuntime.cancel();
@@ -73,46 +171,26 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
      * session's message — splicing here would delete the new session's
      * message. The abandoned placeholder is harmless (it's not in the
      * new session's array), so just skip the splice. */
-    let abortedMessage: TurnMessage | null = readTurnMessage(state.msgIdx);
-    if (abortedMessage && abortedMessage.clientId !== state.clientId) abortedMessage = null;
+    const abortedMessage = readAbortedMessage(state);
     const stoppedRaw = abortedMessage ? String(state.full || abortedMessage.rawText || '') : String(state.full || '');
     const visibleStoppedRaw = stripChatArtifacts(stoppedRaw)
       .replace(/<think>[\s\S]*?<\/think>/gi, '')
       .replace(/<think>[\s\S]*$/gi, '')
       .trim();
-    const hasPartial = !!(abortedMessage
-      && (visibleStoppedRaw || abortedMessage.turnRuntime?.uiSurfaces.some((surface) => surface.phase === 'committed')));
-    if (abortedMessage && !hasPartial && abortedMessage.type === 'streaming') {
+    const hasPartial = hasVisibleAbortContent(abortedMessage, visibleStoppedRaw);
+    if (abortedMessage && !hasPartial) {
       /* P_supersede-stable — removing the empty placeholder also removes
          the turn's viewport reserve, collapsing the scroll range on the
          send frame. Keep the entry as an invisible stub that still holds
          its reserve; the new turn's anchor glides past it and retires it
          off-screen (removeSupersededStub is the no-new-turn fallback). */
-      abortedMessage = state.patchOwnedMessage({
-        rawText: '',
-        html: '<span data-turn-stub="1"></span>',
-        type: 'assistant',
-        _supersededStub: true,
-      }) || abortedMessage;
-      setTimeout(function () {
-        try { removeSupersededStub(state.clientId); } catch { /* already gone */ }
-      }, 700);
+      preserveEmptyAbortStub(state, abortedMessage);
     }
     /* Finalize the partial text before publishing the aborted state. A
        complete scaffold becomes interactive; an open scaffold stays on
        the tolerant progressive renderer so already-streamed fields are
        not replaced by an empty fallback. */
     if (hasPartial && abortedMessage) {
-      let stoppedHtml: string;
-      try {
-        stoppedHtml = buildAssistantHtml(stoppedRaw);
-        if (/scaffold-stream-unclosed/.test(stoppedHtml)) {
-          stoppedHtml = formatMsgProgressive(stoppedRaw);
-        }
-      } catch {
-        try { stoppedHtml = formatMsgProgressive(stoppedRaw); }
-        catch { stoppedHtml = '<p>' + esc(visibleStoppedRaw) + '</p>'; }
-      }
       /* Task 4.1 — Resend affordance. After a user Stop, offer a
          Resend control on the stopped bubble that re-runs the send path
          from the most recent user message with a fresh turn (Req 2.6/2.7).
@@ -120,48 +198,11 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
          button lives in the message HTML and clicks are delegated on the
          React-owned list. Reuses askChatTurn's AbortController/isUserAbort
          path — no new retry logic. */
-      const resendHtml = '<div class="msg-error msg-resend" style="margin-top:8px">' +
-        '<span class="msg-error-text">' + esc(state.t('chat.stopped') || 'Response stopped') + '</span>' +
-        '<button type="button" class="msg-retry-btn chat-resend-btn" data-chat-resend>' + esc(state.t('chat.resend') || 'Resend') + '</button>' +
-        '</div>';
-      stoppedHtml = stoppedHtml + resendHtml;
-      abortedMessage = state.patchOwnedMessage({
-        rawText: stoppedRaw, html: stoppedHtml, type: 'assistant', state: 'stopped',
-      }) || abortedMessage;
-      /* The declarative renderer has no host for the html-resend
-         affordance, so the stopped line is data. */
-      setReactLiveStatus(abortedMessage, {
-        phase: 'stopped', label: state.t('chat.stopped') || 'Response stopped',
-      });
-      claimLiveRetry(state.ret, function () {
-        try { resendLastUserMessage(); } catch { /* resend handler threw */ }
-      });
-      /* Delegate the Resend click on the list (button DOM is React-owned
-         after the next paint). One-shot: detaches after firing. */
-      const _resendDelegated = function (ev: Event): void {
-        const tgt = ev.target as Element | null;
-        if (!(tgt && tgt.closest && tgt.closest('[data-chat-resend]'))) return;
-        try { state.list.removeEventListener('click', _resendDelegated); } catch { /* listener already detached */ }
-        resendLastUserMessage();
-      };
-      try { state.list.addEventListener('click', _resendDelegated); } catch { /* list unavailable */ }
-      try { saveCurrentSession(); } catch { /* save failed */ }
+      finalizeStoppedMessage(state, abortedMessage, stoppedRaw, visibleStoppedRaw);
     }
     /* Publish first, then remove only a throwaway shell on the next
        frame (a non-React node with our clientId, if one ever exists). */
-    publishReactChatRuntime({
-      type: 'stream-aborted',
-      messageId: state.clientId,
-      textLength: state.full.length,
-    });
-    requestAnimationFrame(function () {
-      try {
-        const _abLegacy = state.list.querySelector('[data-client-id="' + state.clientId + '"]');
-        if (_abLegacy && !_abLegacy.hasAttribute('data-react-owned') && _abLegacy.parentNode === state.list) {
-          state.list.removeChild(_abLegacy);
-        }
-      } catch { /* legacy shell already gone */ }
-    });
+    publishAbortedTurn(state);
   }
   return { abort };
 }

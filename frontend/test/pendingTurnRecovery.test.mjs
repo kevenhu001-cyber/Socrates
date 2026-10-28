@@ -200,7 +200,7 @@ test('the session loader never renders the partial fallback on its own', async (
   );
   assert.match(
     source,
-    /reattachPendingTurn\(s\.id,\s*restorePartialFallback\)/,
+    /reattachPendingTurn\([^,]+,\s*restorePartialFallback\)/,
     'the loader must hand the partial fallback to the re-attach',
   );
 });

@@ -16,41 +16,47 @@ function outputId(toolCallId: string, kind: ToolOutput['kind'], discriminator: s
   return `${toolCallId}:${kind}:${discriminator}`;
 }
 
+function normalizeVisualizationOutput(toolCallId: string, record: Record<string, unknown>): ToolOutput | null {
+  const spec = record.spec;
+  if (!spec || typeof spec !== 'object') return null;
+  if ((spec as { version?: unknown }).version !== 1) return null;
+  return {
+    id: outputId(toolCallId, 'visualization', '0'),
+    toolCallId,
+    kind: 'visualization',
+    spec: spec as Record<string, unknown>,
+  };
+}
+
+function normalizeArtifactOutput(toolCallId: string, record: Record<string, unknown>): ToolOutput | null {
+  const fileId = typeof record.fileId === 'string' ? record.fileId : '';
+  if (!fileId) return null;
+  return {
+    id: outputId(toolCallId, 'artifact', fileId),
+    toolCallId,
+    kind: 'artifact',
+    fileId,
+    mimeType: typeof record.mimeType === 'string' ? record.mimeType : null,
+    name: typeof record.name === 'string' ? record.name : null,
+  };
+}
+
+function normalizeTextOutput(toolCallId: string, record: Record<string, unknown>): ToolOutput | null {
+  const text = typeof record.text === 'string' ? record.text : '';
+  if (!text) return null;
+  const stream: ToolTextStream = record.stream === 'stdout' || record.stream === 'stderr'
+    ? record.stream
+    : 'result';
+  return { id: outputId(toolCallId, 'text', stream), toolCallId, kind: 'text', stream, text };
+}
+
 /** Validate one persisted protocol entry into a ToolOutput, or drop it. */
 function normalizeToolOutput(toolCallId: string, value: unknown): ToolOutput | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
-  if (record.kind === 'visualization') {
-    const spec = record.spec;
-    if (!spec || typeof spec !== 'object') return null;
-    if ((spec as { version?: unknown }).version !== 1) return null;
-    return {
-      id: outputId(toolCallId, 'visualization', '0'),
-      toolCallId,
-      kind: 'visualization',
-      spec: spec as Record<string, unknown>,
-    };
-  }
-  if (record.kind === 'artifact') {
-    const fileId = typeof record.fileId === 'string' ? record.fileId : '';
-    if (!fileId) return null;
-    return {
-      id: outputId(toolCallId, 'artifact', fileId),
-      toolCallId,
-      kind: 'artifact',
-      fileId,
-      mimeType: typeof record.mimeType === 'string' ? record.mimeType : null,
-      name: typeof record.name === 'string' ? record.name : null,
-    };
-  }
-  if (record.kind === 'text') {
-    const text = typeof record.text === 'string' ? record.text : '';
-    if (!text) return null;
-    const stream: ToolTextStream = record.stream === 'stdout' || record.stream === 'stderr'
-      ? record.stream
-      : 'result';
-    return { id: outputId(toolCallId, 'text', stream), toolCallId, kind: 'text', stream, text };
-  }
+  if (record.kind === 'visualization') return normalizeVisualizationOutput(toolCallId, record);
+  if (record.kind === 'artifact') return normalizeArtifactOutput(toolCallId, record);
+  if (record.kind === 'text') return normalizeTextOutput(toolCallId, record);
   return null;
 }
 

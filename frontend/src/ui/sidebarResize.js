@@ -16,6 +16,7 @@
 // module has wired up.
 
 import { createSpring, SPRING_PRESETS } from '@socrates/core/motion/spring';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 const SIDEBAR_MIN_PX = 200;
 const SIDEBAR_MAX_PX = 480;
@@ -42,7 +43,7 @@ export function loadSidebarWidth(){
       const n = parseInt(raw, 10);
       if(n >= SIDEBAR_MIN_PX && n <= SIDEBAR_MAX_PX) sidebarWidthPx = n;
     }
-  }catch(_){}
+  }catch (error) { reportSwallow(error, 'ui/sidebarResize.js:45', 'expected'); }
   applySidebarWidth();
 }
 
@@ -52,7 +53,7 @@ export function applySidebarWidth(){
 
 export function saveSidebarWidth(width){
   const value = width == null ? Math.round(sidebarWidthPx) : width;
-  try{ localStorage.setItem(STORAGE_KEY, String(value)); }catch(_){}
+  try{ localStorage.setItem(STORAGE_KEY, String(value)); }catch (error) { reportSwallow(error, 'ui/sidebarResize.js:55', 'expected'); }
 }
 
 export function getSidebarWidthPx(){ return sidebarWidthPx; }
@@ -204,7 +205,7 @@ export function onViewportResize(){
     if(window.sidebarOpen !== undefined) window.sidebarOpen = false;
     if(bd) bd.classList.remove("show");
     // Persist so a mobile refresh restores the collapsed state.
-    try{ localStorage.setItem("socrates-sb", "0"); }catch(_){}
+    try{ localStorage.setItem("socrates-sb", "0"); }catch (error) { reportSwallow(error, 'ui/sidebarResize.js:207', 'expected'); }
   } else if(w >= 768 && bd){
     bd.classList.remove("show");
   }

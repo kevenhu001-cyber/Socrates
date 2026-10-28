@@ -2,6 +2,7 @@ import { esc } from "../render/helpers.ts";
 import { apiFetch } from "../util/api.ts";
 import { trTool } from "./toolCardHelpers.js";
 import { openArtifactPreview } from "./artifactPreview.js";
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* Build the diagnostic placeholder shown when an inline artifact
    fails to load. */
@@ -114,7 +115,7 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
     loadTimer = setTimeout(function () {
       if (!wrap.parentNode || img.complete) return;
       if (attempts++ === 0) return requestImage();
-      try { wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load timeout after retry"), wrap); } catch (_) {}
+      try { wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load timeout after retry"), wrap); } catch (error) { reportSwallow(error, 'ui/toolArtifacts.js:117'); }
     }, 10000);
   }
 
@@ -153,8 +154,8 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
               size.textContent = cur + ' · ' + formatBytes(metaRow.size);
             }
           })
-          .catch(function () {});
-      } catch (_) {}
+          .catch(function (error) { reportSwallow(error, 'ui/toolArtifacts.lookupAttachmentMetadata', 'expected'); });
+      } catch (error) { reportSwallow(error, 'ui/toolArtifacts.js:157'); }
     }
   });
   img.addEventListener("error", function () {
@@ -162,7 +163,7 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
     if (attempts++ === 0) return requestImage();
     try {
       if (wrap.parentNode) wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load failed after retry"), wrap);
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'ui/toolArtifacts.js:165'); }
   });
   img.style.display = "none";
   /* Image and expand affordances open the shared Artifacts drawer. */
@@ -257,8 +258,8 @@ function appendInlineFileLink(fileId, mimeType, url, out, t, displayName) {
         if (!r.ok && a.parentNode) {
           a.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "HTTP " + r.status), a);
         }
-      }).catch(function () {});
-    } catch (_) {}
+      }).catch(function (error) { reportSwallow(error, 'ui/toolArtifacts.probeArtifactDownload', 'expected'); });
+    } catch (error) { reportSwallow(error, 'ui/toolArtifacts.js:261'); }
   }
   out.appendChild(a);
 }

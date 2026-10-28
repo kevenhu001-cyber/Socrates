@@ -80,60 +80,54 @@ function openMobileAttachmentPicker(
   composer.openAttachmentPicker('composerAttachInput');
 }
 
+type LegacyActionContext = ReturnType<typeof getLegacyActions>;
+type ComposerActionHandler = (actions: LegacyActionContext) => void;
+
+const COMPOSER_ACTION_HANDLERS: Partial<Record<ComposerToolsAction, ComposerActionHandler>> = {
+  webSearch: ({ composer }) => composer.toggleWebSearch?.(),
+  write: ({ composer }) => composer.composeAction(),
+  research: ({ composer }) => composer.researchAction(),
+  explore: ({ composer }) => composer.exploreAction?.(),
+  deepResearch: ({ composer }) => composer.deepResearchAction(),
+  extensiveThinking: ({ composer }) => composer.toggleExtensionByKey('extensiveThinking'),
+  analyze: ({ composer }) => composer.analyzeAction(),
+  exam: ({ composer }) => composer.toggleExtensionByKey('exam'),
+  skills: ({ navigation }) => navigation.openPromptTemplatesModal(),
+  managePlugins: ({ navigation }) => navigation.openNav('plugins'),
+};
+
+function isMobileAttachmentAction(
+  action: ComposerToolsAction,
+): action is 'camera' | 'photos' | 'upload' {
+  return action === 'camera' || action === 'photos' || action === 'upload';
+}
+
+function startImageCreation(actions: LegacyActionContext): void {
+  const showPlugins = (): void => {
+    actions.navigation.openNav('plugins');
+    showImageConnectionRequired();
+  };
+  void loadPluginCatalog(true).then((plugins) => {
+    const jimeng = plugins.find((plugin) => normalisePluginId(plugin.id).includes('jimengai'));
+    if (jimeng?.connectionStatus === 'connected') {
+      actions.composer.toggleExtensionByKey('createImage');
+      return;
+    }
+    showPlugins();
+  }).catch(showPlugins);
+}
+
 function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null): void {
-  const nav = getLegacyActions().navigation;
-  const composer = getLegacyActions().composer;
-  switch (action) {
-    case 'camera':
-    case 'photos':
-    case 'upload':
-      openMobileAttachmentPicker(mode, action);
-      return;
-    case 'webSearch':
-      composer.toggleWebSearch?.();
-      return;
-    case 'createImage':
-      void loadPluginCatalog(true).then((plugins) => {
-        const jimeng = plugins.find((plugin) => normalisePluginId(plugin.id).includes('jimengai'));
-        if (jimeng?.connectionStatus === 'connected') {
-          composer.toggleExtensionByKey('createImage');
-          return;
-        }
-        nav.openNav('plugins');
-        showImageConnectionRequired();
-      }).catch(() => {
-        nav.openNav('plugins');
-        showImageConnectionRequired();
-      });
-      return;
-    case 'write':
-      composer.composeAction();
-      return;
-    case 'research':
-      composer.researchAction();
-      return;
-    case 'explore':
-      composer.exploreAction?.();
-      return;
-    case 'deepResearch':
-      composer.deepResearchAction();
-      return;
-    case 'extensiveThinking':
-      composer.toggleExtensionByKey(action);
-      return;
-    case 'analyze':
-      composer.analyzeAction();
-      return;
-    case 'exam':
-      composer.toggleExtensionByKey(action);
-      return;
-    case 'skills':
-      nav.openPromptTemplatesModal();
-      return;
-    case 'managePlugins':
-      nav.openNav('plugins');
-      return;
+  if (isMobileAttachmentAction(action)) {
+    openMobileAttachmentPicker(mode, action);
+    return;
   }
+  const actions = getLegacyActions();
+  if (action === 'createImage') {
+    startImageCreation(actions);
+    return;
+  }
+  COMPOSER_ACTION_HANDLERS[action]?.(actions);
 }
 
 function showImageConnectionRequired(): void {

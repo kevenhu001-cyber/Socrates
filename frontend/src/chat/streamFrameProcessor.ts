@@ -176,44 +176,58 @@ function emitVisibleDelta(state: ProcessorState, context: StreamProcessorContext
   warnMissingThinkingCallback(state, context);
 }
 
+function recordTruncatedStreamError(state: ProcessorState, payload: string): void {
+  const hasErrorField = payload.indexOf('"error"') >= 0 || payload.indexOf("'error'") >= 0;
+  if (hasErrorField && /error|fail|unavailable/i.test(payload)) {
+    state.streamError = makeStreamError(payload.slice(0, 200));
+  }
+}
+
+function applyMessageError(state: ProcessorState, message: Record<string, unknown> | null): boolean {
+  const messageError = message && message.error;
+  if (!messageError) return false;
+  const detail = typeof messageError === 'string'
+    ? messageError
+    : ((messageError as { message?: string })?.message || 'upstream error');
+  state.streamError = makeStreamError(
+    detail,
+    message?.status,
+    message,
+  );
+  return true;
+}
+
+function firstChoiceDelta(message: Record<string, unknown> | null): Record<string, unknown> | null {
+  const choices = message?.choices;
+  if (!Array.isArray(choices)) return null;
+  const choice = choices[0] as { delta?: unknown } | undefined;
+  if (!choice || !choice.delta || typeof choice.delta !== 'object') return null;
+  return choice.delta as Record<string, unknown>;
+}
+
+function reasoningText(delta: Record<string, unknown> | null): string {
+  const value = delta?.reasoning_content ?? delta?.reasoning ?? delta?.thinking;
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object' && typeof (value as { text?: unknown }).text === 'string') {
+    return (value as { text: string }).text;
+  }
+  return '';
+}
+
 function emitJsonDelta(state: ProcessorState, context: StreamProcessorContext, payload: string): void {
   let message: Record<string, unknown> | null;
   try {
     message = JSON.parse(payload);
   } catch (_) {
     /* Ignore [DONE] and unknown frames. Preserve recognizable truncated errors. */
-    if ((payload.indexOf('"error"') >= 0 || payload.indexOf("'error'") >= 0)
-        && /error|fail|unavailable/i.test(payload)) {
-      state.streamError = makeStreamError(payload.slice(0, 200));
-    }
+    recordTruncatedStreamError(state, payload);
     return;
   }
 
-  const messageError = message && (message as { error?: unknown }).error;
-  if (messageError) {
-    state.streamError = makeStreamError(
-      typeof messageError === 'string'
-        ? messageError
-        : ((messageError as { message?: string })?.message || 'upstream error'),
-      (message as { status?: unknown }).status,
-      message as Record<string, unknown>,
-    );
-    return;
-  }
-  const choices = (message as { choices?: Array<{ delta?: Record<string, unknown> }> })?.choices;
-  const delta = choices && choices[0] && choices[0].delta && choices[0].delta.content;
-  const rawReasoning = choices && choices[0] && choices[0].delta && (
-    choices[0].delta.reasoning_content
-    ?? choices[0].delta.reasoning
-    ?? choices[0].delta.thinking
-  );
-  const reasoning = typeof rawReasoning === 'string'
-    ? rawReasoning
-    : (rawReasoning && typeof rawReasoning === 'object' && typeof (rawReasoning as { text?: unknown }).text === 'string')
-      ? (rawReasoning as { text: string }).text
-      : '';
-  emitReasoning(state, context, reasoning);
-  emitVisibleDelta(state, context, delta);
+  if (applyMessageError(state, message)) return;
+  const delta = firstChoiceDelta(message);
+  emitReasoning(state, context, reasoningText(delta));
+  emitVisibleDelta(state, context, delta && delta.content);
 }
 
 function processDataPayload(state: ProcessorState, context: StreamProcessorContext, payload: string): void {

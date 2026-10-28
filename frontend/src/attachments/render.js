@@ -10,6 +10,7 @@
 // window.setupAttachmentInput) are re-bound in src/windowExports.js.
 import { attachments, addFiles, retryAttachment } from '../attachments.js';
 import { showToast } from '../ui/toast.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* React migration bridge — fires whenever the pending attachments array
    changes so the React compatibility root can mirror the chip row via
@@ -113,7 +114,7 @@ function updateProgressOnly(){
 function refreshAllSendBtns(){
   WIRED_INPUTS.forEach(function(w){
     if(typeof window !== "undefined" && typeof window[w.updateBtnName] === "function"){
-      try{ window[w.updateBtnName](); }catch(_){}
+      try{ window[w.updateBtnName](); }catch (error) { reportSwallow(error, 'attachments/render.js:116'); }
     }
   });
 }
@@ -400,5 +401,5 @@ if(typeof window !== "undefined"){
   window.addEventListener("DOMContentLoaded", dcl);
   /* If the script runs after DOMContentLoaded (rare — Vite HMR,
      extension injection, SSR hydration), fire immediately. */
-  if(document.readyState !== "loading"){ try{ dcl(); }catch(_){} }
+  if(document.readyState !== "loading"){ try{ dcl(); }catch (error) { reportSwallow(error, 'attachments/render.js:403'); } }
 }

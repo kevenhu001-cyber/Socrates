@@ -58,6 +58,62 @@ function close() {
   _publishComposerTools();
 }
 
+function positionTopicMenu(el, trigger, rect, viewportWidth, viewportBottom, menuHeightCap) {
+  if (!trigger.dataset || trigger.dataset.composerMode !== "topic" || viewportWidth <= 768) return false;
+  const topicWrap = trigger.closest ? trigger.closest("#composerInputWrap") : null;
+  const wrapRect = topicWrap ? topicWrap.getBoundingClientRect() : rect;
+  const menuTop = rect.bottom + 8;
+  const room = Math.max(120, viewportBottom - menuTop - 16);
+  el.style.width = "220px";
+  el.style.maxHeight = Math.min(room, menuHeightCap) + "px";
+  el.style.left = Math.max(8, Math.min(wrapRect.left, viewportWidth - 228)) + "px";
+  el.style.top = menuTop + "px";
+  el.dataset.menuSide = "below";
+  return true;
+}
+
+function positionMobileMenu(el, left, wrapRect, viewportTop, height) {
+  var mobileTop = Math.max(viewportTop + 8, wrapRect.bottom - height);
+  el.style.setProperty('left', left + "px", 'important');
+  el.style.setProperty('right', 'auto', 'important');
+  el.style.setProperty('top', mobileTop + "px", 'important');
+  el.style.setProperty('bottom', 'auto', 'important');
+  el.dataset.menuSide = "above";
+}
+
+function chooseDesktopMenuPosition(el, anchorTop, anchorBottom, viewportTop, viewportBottom, height, cap) {
+  var belowTop = anchorBottom + 8;
+  var aboveTop = anchorTop - height - 8;
+  var belowSpace = viewportBottom - belowTop - 8;
+  var aboveSpace = anchorTop - viewportTop - 8;
+  var top;
+  var side;
+  if (belowSpace >= height) {
+    top = belowTop;
+    side = "below";
+  } else if (aboveSpace >= height) {
+    top = aboveTop;
+    side = "above";
+  } else if (belowSpace >= 120 && belowSpace >= aboveSpace) {
+    el.style.maxHeight = Math.min(belowSpace, cap) + "px";
+    top = belowTop;
+    side = "below";
+  } else if (aboveSpace >= 120) {
+    el.style.maxHeight = Math.min(aboveSpace, cap) + "px";
+    top = anchorTop - aboveSpace - 8;
+    side = "above";
+  } else {
+    el.style.maxHeight = Math.min(Math.max(120, Math.max(belowSpace, aboveSpace)), cap) + "px";
+    top = belowSpace >= aboveSpace ? belowTop : viewportTop + 8;
+    side = belowSpace >= aboveSpace ? "below" : "above";
+  }
+  return { top, side };
+}
+
+function clampDesktopMenuTop(top, viewportTop, viewportBottom, menuHeight, fallbackHeight) {
+  return Math.max(viewportTop + 8, Math.min(viewportBottom - (menuHeight || fallbackHeight) - 8, top));
+}
+
 function position(el, trigger) {
   /* Clear measurements from a prior viewport before calculating this pass. */
   el.style.removeProperty('top');
@@ -71,7 +127,6 @@ function position(el, trigger) {
   var viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
   var viewportBottom = viewport ? (viewportTop + viewport.height) : window.innerHeight;
   var viewportWidth = viewport ? viewport.width : window.innerWidth;
-  var mode = trigger.dataset ? trigger.dataset.composerMode : null;
   /* The expanded card never grows past ~62vh on desktop (560px absolute
      ceiling) so it reads as a menu next to the capsule, not a second panel.
      With nine grouped rows the directory needs ~565px — a shorter cap hides
@@ -84,18 +139,7 @@ function position(el, trigger) {
   /* The landing reference anchors the popover to the composer's left edge
      and always opens downward. Connected plugin rows scroll inside the card
      instead of making the card jump above the prompt. */
-  if (mode === "topic" && viewportWidth > 768) {
-    const topicWrap = trigger.closest ? trigger.closest("#composerInputWrap") : null;
-    const wrapRect = topicWrap ? topicWrap.getBoundingClientRect() : r;
-    var menuTop = r.bottom + 8;
-    var room = Math.max(120, viewportBottom - menuTop - 16);
-    el.style.width = "220px";
-    el.style.maxHeight = Math.min(room, menuHeightCap) + "px";
-    el.style.left = Math.max(8, Math.min(wrapRect.left, viewportWidth - 228)) + "px";
-    el.style.top = menuTop + "px";
-    el.dataset.menuSide = "below";
-    return;
-  }
+  if (positionTopicMenu(el, trigger, r, viewportWidth, viewportBottom, menuHeightCap)) return;
 
   el.style.width = viewportWidth > 768 ? "220px" : "";
   el.style.maxHeight = menuHeightCap + "px";
@@ -121,51 +165,23 @@ function position(el, trigger) {
      covers its left half; the mic and primary control remain visible on the
      right. This is a deliberate stacked state, not an above-composer gap. */
   if (viewportWidth <= 768) {
-    var mobileTop = Math.max(viewportTop + 8, wrapRect.bottom - height);
     /* Restore sheets include `top:auto` and `bottom` overrides from an older
        bottom-sheet layout. Inline important placement keeps the current
        floating card anchored to the composer's measured bottom edge. */
-    el.style.setProperty('left', left + "px", 'important');
-    el.style.setProperty('right', 'auto', 'important');
-    el.style.setProperty('top', mobileTop + "px", 'important');
-    el.style.setProperty('bottom', 'auto', 'important');
-    el.dataset.menuSide = "above";
+    positionMobileMenu(el, left, wrapRect, viewportTop, height);
     return;
   }
-  var anchorTop = wrapRect.top;
   /* ChatGPT places the add-content menu below the composer whenever the
      viewport has room. Falling back above is only necessary near the bottom
      edge (most often on a phone), which keeps the desktop landing state from
      covering the greeting. */
-  var belowTop = wrapRect.bottom + 8;
-  var aboveTop = anchorTop - height - 8;
-  var belowSpace = viewportBottom - belowTop - 8;
-  var aboveSpace = anchorTop - viewportTop - 8;
-  var top;
-  var side;
-  if (belowSpace >= height) {
-    top = belowTop;
-    side = "below";
-  } else if (aboveSpace >= height) {
-    top = aboveTop;
-    side = "above";
-  } else if (belowSpace >= 120 && belowSpace >= aboveSpace) {
-    /* A short desktop viewport may not have room for the full directory.
-       Prefer a scrollable menu below the composer so selected chips and the
-       trigger never become an accidental hit-test target underneath it. */
-    el.style.maxHeight = Math.min(belowSpace, menuHeightCap) + "px";
-    top = belowTop;
-    side = "below";
-  } else if (aboveSpace >= 120) {
-    el.style.maxHeight = Math.min(aboveSpace, menuHeightCap) + "px";
-    top = anchorTop - aboveSpace - 8;
-    side = "above";
-  } else {
-    el.style.maxHeight = Math.min(Math.max(120, Math.max(belowSpace, aboveSpace)), menuHeightCap) + "px";
-    top = belowSpace >= aboveSpace ? belowTop : viewportTop + 8;
-    side = belowSpace >= aboveSpace ? "below" : "above";
-  }
-  top = Math.max(viewportTop + 8, Math.min(viewportBottom - (el.offsetHeight || height) - 8, top));
+  /* A short desktop viewport keeps the menu scrollable above or below. */
+  const placement = chooseDesktopMenuPosition(
+    el, wrapRect.top, wrapRect.bottom, viewportTop, viewportBottom, height, menuHeightCap,
+  );
+  var top = placement.top;
+  var side = placement.side;
+  top = clampDesktopMenuTop(top, viewportTop, viewportBottom, el.offsetHeight, height);
   el.style.left = left + "px";
   el.style.top = top + "px";
   el.dataset.menuSide = side;

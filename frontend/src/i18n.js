@@ -12,6 +12,7 @@ var _currentLang="zh";
    mask hides the brief English flash, and auth/boot.js gives the chunk a
    bounded grace before revealing any UI. */
 var _zhReady=null;
+var LANG_OPTION_IDS=["profileLangEn","profileLangZh"];
 function ensureZh(){
   if(I18N.zh)return Promise.resolve();
   if(!_zhReady){
@@ -20,6 +21,16 @@ function ensureZh(){
   return _zhReady;
 }
 function t(key){var v=I18N[_currentLang]&&I18N[_currentLang][key];if(typeof v!=="undefined")return v;v=I18N.en[key];if(typeof v!=="undefined")return v;return key;}
+function syncLanguageToggleOptions(lang){
+  for(var i=0;i<LANG_OPTION_IDS.length;i++){
+    var el=document.getElementById(LANG_OPTION_IDS[i]);
+    if(!el)continue;
+    var optLang=LANG_OPTION_IDS[i].replace("profileLang","").toLowerCase();
+    var active=optLang===lang;
+    el.classList.toggle("active",active);
+    el.setAttribute("aria-pressed",active?"true":"false");
+  }
+}
 function setLang(lang){
   if(!I18N[lang]){
     /* zh may still be in flight — apply as soon as it lands. */
@@ -39,15 +50,7 @@ function setLang(lang){
   /* Update language toggle active state. Only en + zh are supported;
      removing ja/ko from this iteration avoids keeping dead UI states
      if the toggle HTML reverts. */
-  var optionIds=["profileLangEn","profileLangZh"];
-  for(var i=0;i<optionIds.length;i++){
-    var el=document.getElementById(optionIds[i]);
-    if(!el)continue;
-    var optLang=optionIds[i].replace("profileLang","").toLowerCase();
-    var active=optLang===lang;
-    el.classList.toggle("active",active);
-    el.setAttribute("aria-pressed",active?"true":"false");
-  }
+  syncLanguageToggleOptions(lang);
   /* Update the small "EN/中" label in the sidebar header so the
      quick-toggle button reflects the active language. */
   try{
@@ -65,61 +68,31 @@ function setLang(lang){
     }
   }catch(e){reportSwallow(e, 'i18n.setLang.langChangeEvent'); }
 }
-function applyI18n(){
-  /* Translate all elements with data-i18n-key attribute */
+function translateTextNodes(){
   var els=document.querySelectorAll("[data-i18n-key]");
   for(var i=0;i<els.length;i++){
     var key=els[i].getAttribute("data-i18n-key");
     var val=t(key);
     if(val&&val!==key)els[i].textContent=val;
   }
-  /* P_profile-lang-active — sync the profile modal language toggle's
-     `active` class with the current language. The toggle's static HTML
-     hard-codes "English" as `.active` so on first paint with
-     `_currentLang === "zh"` the chip stayed on English until the user
-     clicked. Sync here so both the sidebar quick-toggle and any consumer
-     of applyI18n share one source of truth. setLang() also calls this
-     block (kept its loop for redundancy with the sidebar path). */
-  try{
-    var langIds=["profileLangEn","profileLangZh"];
-    for(var li=0;li<langIds.length;li++){
-      var langEl=document.getElementById(langIds[li]);
-      if(!langEl)continue;
-      var langOpt=langIds[li].replace("profileLang","").toLowerCase();
-      var langActive=langOpt===_currentLang;
-      langEl.classList.toggle("active",langActive);
-      langEl.setAttribute("aria-pressed",langActive?"true":"false");
-    }
-  }catch(e){reportSwallow(e, 'i18n.applyI18n.profileLangChips'); }
-  /* Translate all elements with data-i18n-placeholder attribute
-     (used on <input>/<textarea> where textContent doesn't apply). */
-  var phs=document.querySelectorAll("[data-i18n-placeholder]");
-  for(var j=0;j<phs.length;j++){
-    var ph=phs[j].getAttribute("data-i18n-placeholder");
-    var phv=t(ph);
-    if(phv&&phv!==ph)phs[j].setAttribute("placeholder",phv);
+}
+
+function translateAttribute(selector,keyAttribute,targetAttribute){
+  var elements=document.querySelectorAll(selector);
+  for(var i=0;i<elements.length;i++){
+    var key=elements[i].getAttribute(keyAttribute);
+    var value=t(key);
+    if(value&&value!==key)elements[i].setAttribute(targetAttribute,value);
   }
-  /* Translate elements with data-i18n-title / data-i18n-aria — used
-   * by the attachment paperclip button. Same pattern as the
-   * placeholder block above. */
-  var titles=document.querySelectorAll("[data-i18n-title]");
-  for(var ti=0;ti<titles.length;ti++){
-    var tk=titles[ti].getAttribute("data-i18n-title");
-    var tv=t(tk);
-    if(tv&&tv!==tk)titles[ti].setAttribute("title",tv);
-  }
-  var arias=document.querySelectorAll("[data-i18n-aria]");
-  for(var ai=0;ai<arias.length;ai++){
-    var ak=arias[ai].getAttribute("data-i18n-aria");
-    var av=t(ak);
-    if(av&&av!==ak)arias[ai].setAttribute("aria-label",av);
-  }
-  /* The selected theme label is generated from the active preference, so
-     refresh it after a language switch alongside the static selector copy. */
+}
+
+function refreshThemeLabel(){
   if(typeof syncThemeUI === "function"){
     try{syncThemeUI()}catch(e){reportSwallow(e, 'i18n.applyI18n.syncThemeUI'); /* theme UI may not be mounted yet */ }
   }
-  /* Placeholder / value updates — done selectively for now. */
+}
+
+function updateComposerLabels(){
   var ci=document.getElementById("composerRoot");
   if(ci){
     var _cv=document.getElementById("chatView");
@@ -128,24 +101,11 @@ function applyI18n(){
   }
   var ch=document.getElementById("chatInputHint");
   if(ch)ch.textContent=t("chat.hint");
-  /* Topic-setup title/sub/disclaimer. syncAppModeUI() rewrote these
-     as either the tutor-mode or chat-mode versions; re-route through
-     t() but keep the mode-aware mapping so toggling the language
-     doesn't revert them to the wrong mode's text.
-     P_tutor-leak — appMode is a top-level `var` in main.js and is
-     mirrored onto `window.appMode` at boot (see main.js:13243). It is
-     NOT a field on `window.state` (state/store.js has no `appMode`), so
-     reading `window.state.appMode` was always undefined and we fell
-     back to "tutor" — silently flipping a chat-mode user into tutor
-     copy on every language toggle. Read the real global and default
-     to "chat" so a fresh page (window.appMode not yet set) doesn't
-     paint tutor text. */
+}
+
+function updateTopicSetupCopy(){
   var appMode=(typeof window!=="undefined"&&window.appMode)||"chat";
   var tt=document.getElementById("topicTitle");
-  /* P_chatgpt-landing — #topicTitle is now the personalized greeting
-     (renderGreeting from src/ui/greeting.js). When a localized
-     greeting renderer is wired up, defer to it so the name survives
-     language toggles. Otherwise fall back to the legacy static copy. */
   if(tt){
     if(typeof renderGreeting==="function")renderGreeting();
     else tt.textContent=t(appMode==="chat"?"topic.titleChat":"topic.title");
@@ -154,10 +114,11 @@ function applyI18n(){
   if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
   var tdisc=document.getElementById("topicDisclaimer");
   if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
+}
+
+function updatePrimaryComposerButton(){
   var cpb=document.getElementById("composerPrimaryBtn");
   if(cpb&&!cpb.classList.contains("chat-stop")&&!cpb.classList.contains("agent-stop")){
-    /* P_composer-primary-split — the primary is submit-only, so it always
-       speaks "Send"; the microphone carries the dictation label. */
     var composerLabel=t("chat.send");
     cpb.setAttribute("aria-label",composerLabel);
     cpb.setAttribute("title",composerLabel);
@@ -167,8 +128,14 @@ function applyI18n(){
       cpb.disabled=!cpb.classList.contains("active");
     }
   }
+}
+
+function updateExtensionsLabel(){
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");
+}
+
+function refreshDynamicSurfaces(){
   /* Exam content is generated dynamically, so static data-i18n scanning
      cannot update it. Repaint its UI chrome while preserving form values,
      generated questions and answers. */
@@ -178,6 +145,21 @@ function applyI18n(){
   /* P_chatgpt-landing — the reasoning-effort trigger label (高/中/低) is
      driven by JS, not a data-i18n-key element, so refresh it here too. */
   if(typeof window.syncEffortUI==="function"){try{window.syncEffortUI();}catch(e){reportSwallow(e, 'i18n.applyI18n.syncEffortUI'); }}
+}
+
+function applyI18n(){
+  translateTextNodes();
+  /* Keep the profile modal toggle aligned with the active locale. */
+  try{syncLanguageToggleOptions(_currentLang)}catch(e){reportSwallow(e, 'i18n.applyI18n.profileLangChips'); }
+  translateAttribute("[data-i18n-placeholder]","data-i18n-placeholder","placeholder");
+  translateAttribute("[data-i18n-title]","data-i18n-title","title");
+  translateAttribute("[data-i18n-aria]","data-i18n-aria","aria-label");
+  refreshThemeLabel();
+  updateComposerLabels();
+  updateTopicSetupCopy();
+  updatePrimaryComposerButton();
+  updateExtensionsLabel();
+  refreshDynamicSurfaces();
 }
 /* Load saved language preference. _currentLang is the single source
    of truth at runtime; setLang() persists changes and applyI18n()

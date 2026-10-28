@@ -123,6 +123,57 @@ function completedTurnResult(
   return { text: state.full, html: null, widgets: [] };
 }
 
+interface PollOutcome {
+  terminal: boolean;
+  value: { text: string; html: null; widgets: never[] } | null;
+}
+
+function snapshotPollOutcome(
+  snapshot: Snapshot | null,
+  state: RecoveryState,
+  context: DetachedRecoveryContext,
+): PollOutcome | null {
+  if (!snapshot?.turn) return null;
+  if (snapshot.turn.turnRuntime) {
+    invoke(context.opts && context.opts.onTurnSnapshot, [snapshot.turn.turnRuntime], 'chat/detachedTurnRecovery.runtimeSnapshot');
+  }
+  for (const frame of snapshot.events || []) {
+    if (frame.event === 'turn_event') {
+      invoke(context.opts && context.opts.onTurnEvent, [frame.data], 'chat/detachedTurnRecovery.snapshot');
+    }
+  }
+  const completed = completedTurnResult(snapshot.turn, state, context);
+  if (completed) return { terminal: true, value: completed };
+  if (isFailedTurn(snapshot.turn)) return { terminal: true, value: null };
+  return null;
+}
+
+async function pollDetachedAttempt(
+  turnId: string,
+  state: RecoveryState,
+  context: DetachedRecoveryContext,
+  controller: AbortController,
+): Promise<PollOutcome> {
+  let snapshot: Snapshot | null = null;
+  try { snapshot = await getChatTurn(turnId, context.signal); }
+  catch (error) { reportSwallow(error, 'chat/detachedTurnRecovery.pollCheck'); }
+  if (context.signal?.aborted) return { terminal: true, value: null };
+  const snapshotOutcome = snapshotPollOutcome(snapshot, state, context);
+  if (snapshotOutcome) return snapshotOutcome;
+
+  try {
+    await subscribeChatTurnEvents(turnId, state.maxSeq, controller.signal, {
+      onEvent: (frame) => applyDetachedTurnFrame(frame, state, context, controller),
+    });
+  } catch (error) { reportSwallow(error, 'chat/detachedTurnRecovery.subscribe'); }
+
+  if (state.done) return { terminal: true, value: { text: state.full, html: null, widgets: [] } };
+  if (state.failed) return { terminal: true, value: null };
+  try { await abortableDelay(800, context.signal); }
+  catch { return { terminal: true, value: null }; }
+  return { terminal: false, value: null };
+}
+
 async function pollDetachedTurn(
   turnId: string,
   state: RecoveryState,
@@ -131,35 +182,8 @@ async function pollDetachedTurn(
 ): Promise<{ text: string; html: null; widgets: never[] } | null> {
   for (let attempt = 0; attempt < 30 && !state.done && !state.failed; attempt += 1) {
     if (context.signal && context.signal.aborted) break;
-
-    let snapshot: Snapshot | null = null;
-    try { snapshot = await getChatTurn(turnId, context.signal); }
-    catch (error) { reportSwallow(error, 'chat/detachedTurnRecovery.pollCheck'); }
-    if (context.signal?.aborted) return null;
-    if (snapshot && snapshot.turn) {
-      if (snapshot.turn.turnRuntime) {
-        invoke(context.opts && context.opts.onTurnSnapshot, [snapshot.turn.turnRuntime], 'chat/detachedTurnRecovery.runtimeSnapshot');
-      }
-      for (const frame of snapshot.events || []) {
-        if (frame.event === 'turn_event') {
-          invoke(context.opts && context.opts.onTurnEvent, [frame.data], 'chat/detachedTurnRecovery.snapshot');
-        }
-      }
-      const completed = completedTurnResult(snapshot.turn, state, context);
-      if (completed) return completed;
-      if (isFailedTurn(snapshot.turn)) return null;
-    }
-
-    try {
-      await subscribeChatTurnEvents(turnId, state.maxSeq, controller.signal, {
-        onEvent: (frame) => applyDetachedTurnFrame(frame, state, context, controller),
-      });
-    } catch (error) { reportSwallow(error, 'chat/detachedTurnRecovery.subscribe'); }
-
-    if (state.done) return { text: state.full, html: null, widgets: [] };
-    if (state.failed) return null;
-    try { await abortableDelay(800, context.signal); }
-    catch { return null; }
+    const outcome = await pollDetachedAttempt(turnId, state, context, controller);
+    if (outcome.terminal) return outcome.value;
   }
   return state.done ? { text: state.full, html: null, widgets: [] } : null;
 }

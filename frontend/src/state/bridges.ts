@@ -68,6 +68,52 @@ export type SessionAction =
 
 export type SessionSnapshot = SessionState & RevisionedSnapshot;
 
+function replaceSessionMessages(
+  state: SessionSnapshot,
+  action: Extract<SessionAction, { type: 'session/replace-messages' }>,
+): SessionSnapshot {
+  if (!Array.isArray(action.payload)) return state;
+  return { ...state, messages: action.payload.slice() };
+}
+
+function updateSessionMessage(
+  state: SessionSnapshot,
+  action: Extract<SessionAction, { type: 'session/update-message' }>,
+): SessionSnapshot {
+  const idx = Number(action.index);
+  const current = state.messages[idx];
+  if (!Number.isInteger(idx) || !current) return state;
+  if (action.clientId && current.clientId !== action.clientId) return state;
+  const updated = { ...current, ...action.patch };
+  const messages = state.messages
+    .slice(0, idx)
+    .concat([updated], state.messages.slice(idx + 1));
+  return { ...state, messages };
+}
+
+function removeSessionMessage(
+  state: SessionSnapshot,
+  action: Extract<SessionAction, { type: 'session/remove-message-at' }>,
+): SessionSnapshot {
+  const idx = Number(action.index);
+  const candidate = state.messages[idx];
+  if (!Number.isInteger(idx) || !candidate) return state;
+  if (action.clientId && candidate.clientId !== action.clientId) return state;
+  const messages = state.messages
+    .slice(0, idx)
+    .concat(state.messages.slice(idx + 1));
+  return { ...state, messages };
+}
+
+function truncateSessionMessages(
+  state: SessionSnapshot,
+  action: Extract<SessionAction, { type: 'session/truncate-messages-after' }>,
+): SessionSnapshot {
+  const keep = Number(action.index);
+  if (!Number.isInteger(keep) || keep < -1) return state;
+  return { ...state, messages: state.messages.slice(0, keep + 1) };
+}
+
 function sessionReducer(
   state: SessionSnapshot,
   action: SessionAction,
@@ -83,36 +129,14 @@ function sessionReducer(
       const messages = state.messages.concat([action.payload]);
       return { ...state, messages };
     }
-    case 'session/replace-messages': {
-      if (!Array.isArray(action.payload)) return state;
-      return { ...state, messages: action.payload.slice() };
-    }
-    case 'session/update-message': {
-      const idx = Number(action.index);
-      const current = state.messages[idx];
-      if (!Number.isInteger(idx) || !current) return state;
-      if (action.clientId && current.clientId !== action.clientId) return state;
-      const updated = { ...current, ...action.patch };
-      const messages = state.messages
-        .slice(0, idx)
-        .concat([updated], state.messages.slice(idx + 1));
-      return { ...state, messages };
-    }
-    case 'session/remove-message-at': {
-      const idx = Number(action.index);
-      const candidate = state.messages[idx];
-      if (!Number.isInteger(idx) || !candidate) return state;
-      if (action.clientId && candidate.clientId !== action.clientId) return state;
-      const messages = state.messages
-        .slice(0, idx)
-        .concat(state.messages.slice(idx + 1));
-      return { ...state, messages };
-    }
-    case 'session/truncate-messages-after': {
-      const keep = Number(action.index);
-      if (!Number.isInteger(keep) || keep < -1) return state;
-      return { ...state, messages: state.messages.slice(0, keep + 1) };
-    }
+    case 'session/replace-messages':
+      return replaceSessionMessages(state, action);
+    case 'session/update-message':
+      return updateSessionMessage(state, action);
+    case 'session/remove-message-at':
+      return removeSessionMessage(state, action);
+    case 'session/truncate-messages-after':
+      return truncateSessionMessages(state, action);
     default:
       return state;
   }

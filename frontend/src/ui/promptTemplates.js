@@ -31,7 +31,7 @@ function openPromptTemplatesModal() {
 
 function closePromptTemplatesModal() {
   if (_impl) _impl.closePromptTemplatesModal();
-  else if (_implPromise) void _implPromise.then(function (module) { module.closePromptTemplatesModal(); }).catch(function () {});
+  else if (_implPromise) void _implPromise.then(function (module) { module.closePromptTemplatesModal(); }).catch(() => undefined);
 }
 
 function renderPromptTemplatesModal() {

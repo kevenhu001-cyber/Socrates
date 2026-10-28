@@ -10,7 +10,7 @@ import { addMessage } from '../messages.ts';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { activateMainView } from '../../ui/mainViewController.js';
 import { clearComposer } from '../../composer/controller.ts';
-import { updateComposerBtn } from '../../ui/topicSetup.js';
+import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.js';
 import { buildMessageContent, resetAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';

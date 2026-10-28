@@ -70,12 +70,37 @@ const CODE_EXTENSIONS = new Set([
   'ps1', 'bat', 'cmd',
 ]);
 const TEXT_EXTENSIONS = new Set(['txt', 'md', 'markdown', 'rst', 'log', 'json', 'csv', 'tsv']);
+const MEDIA_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac']);
+const DOC_KIND_ICONS = new Map<string, string>([
+  ['docx', WORD_ICON], ['doc', WORD_ICON],
+  ['xlsx', EXCEL_ICON], ['xls', EXCEL_ICON], ['ods', EXCEL_ICON],
+  ['pptx', POWERPOINT_ICON], ['ppt', POWERPOINT_ICON], ['odp', POWERPOINT_ICON],
+  ['pdf', PDF_ICON], ['epub', EPUB_ICON], ['rtf', RTF_ICON], ['odt', TEXT_ICON],
+]);
 
 function getExtension(name: string | undefined): string {
   if (!name) return '';
   const i = name.lastIndexOf('.');
   if (i < 0 || i === name.length - 1) return '';
   return name.slice(i + 1).toLowerCase();
+}
+
+function iconForMime(mime: string): string | null {
+  if (mime.startsWith('image/')) return IMAGE_ICON;
+  if (mime === 'application/pdf') return PDF_ICON;
+  if (mime.startsWith('audio/') || mime.startsWith('video/')) return MEDIA_ICON;
+  if (mime.startsWith('text/')) return TEXT_ICON;
+  return null;
+}
+
+function iconForFileKind(entry: IconSource): string | null {
+  if (entry.kind !== 'file') return null;
+  const extension = getExtension(entry.name);
+  if (MEDIA_EXTENSIONS.has(extension)) return MEDIA_ICON;
+  if (extension === 'doc') return WORD_ICON;
+  if (extension === 'xls') return EXCEL_ICON;
+  if (extension === 'ppt') return POWERPOINT_ICON;
+  return null;
 }
 
 /**
@@ -88,35 +113,16 @@ function getExtension(name: string | undefined): string {
  */
 function pickIcon(entry: IconSource): string {
   const docKind = String(entry.docKind || '').toLowerCase();
-  if (docKind === 'docx' || docKind === 'doc') return WORD_ICON;
-  if (docKind === 'xlsx' || docKind === 'xls') return EXCEL_ICON;
-  if (docKind === 'pptx' || docKind === 'ppt') return POWERPOINT_ICON;
-  if (docKind === 'pdf') return PDF_ICON;
-  if (docKind === 'epub') return EPUB_ICON;
-  if (docKind === 'rtf') return RTF_ICON;
-  /* OpenDocument maps onto its closest Office cousin. */
-  if (docKind === 'ods') return EXCEL_ICON;
-  if (docKind === 'odp') return POWERPOINT_ICON;
-  if (docKind === 'odt') return TEXT_ICON;
+  const documentIcon = DOC_KIND_ICONS.get(docKind);
+  if (documentIcon) return documentIcon;
 
   const mime = String(entry.mime || '').toLowerCase();
-  if (mime.startsWith('image/')) return IMAGE_ICON;
-  if (mime === 'application/pdf') return PDF_ICON;
-  if (mime.startsWith('audio/') || mime.startsWith('video/')) return MEDIA_ICON;
-  if (mime.startsWith('text/')) return TEXT_ICON;
+  const mimeIcon = iconForMime(mime);
+  if (mimeIcon) return mimeIcon;
 
-  /* Media files classified as kind 'file' by extension (the browser
-     didn't supply a mime). */
-  if (entry.kind === 'file') {
-    const mediaExt = getExtension(entry.name);
-    if (mediaExt && ['mp4', 'webm', 'mov', 'mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac'].includes(mediaExt)) {
-      return MEDIA_ICON;
-    }
-    const officeExt = getExtension(entry.name);
-    if (officeExt === 'doc') return WORD_ICON;
-    if (officeExt === 'xls') return EXCEL_ICON;
-    if (officeExt === 'ppt') return POWERPOINT_ICON;
-  }
+  /* Media files classified as kind 'file' by extension when no MIME exists. */
+  const fileKindIcon = iconForFileKind(entry);
+  if (fileKindIcon) return fileKindIcon;
 
   const ext = getExtension(entry.name);
   if (ext && CODE_EXTENSIONS.has(ext)) return CODE_ICON;

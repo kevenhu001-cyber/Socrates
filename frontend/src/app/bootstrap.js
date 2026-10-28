@@ -1,7 +1,7 @@
 import { installModalA11y } from '../ui/modalA11y.js';
 import { bootstrapReactCompatibilityRuntime } from '../react/bootstrap.tsx';
 import { mountAuthListeners } from '../auth/index.ts';
-import { mountLegacyShellListeners } from '../ui/legacyShellListeners.js';
+import { mountLegacyShellListeners } from '../ui/legacyShellListeners.ts';
 import { bootstrapOutbox } from '../session/mutationOutbox.ts';
 
 /**

@@ -220,6 +220,143 @@ export function restoreMessageBody(entry: MessageEntry, body: HTMLElement): void
    assistant's markdown. React calls this after a history bubble commits;
    the public-share renderer uses the same helper so both paths stay in
    parity. The data marker makes repeated React renders idempotent. */
+function toolCallSelector(id: string | undefined): string {
+  const raw = String(id || '');
+  try {
+    if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(raw);
+  } catch (error) {
+    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras');
+  }
+  return raw.replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
+function inlineToolRow(body: HTMLElement, selector: string): Element | null {
+  if (!selector) return null;
+  try {
+    return body.querySelector('.tool-inline[data-tcid="' + selector + '"]');
+  } catch (error) {
+    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras');
+    return null;
+  }
+}
+
+function inlineArtifactHost(body: HTMLElement, row: Element, selector: string, callId?: string): Element {
+  let host: Element | null = null;
+  try {
+    host = body.querySelector('.tool-inline-attachments[data-tool-anchor="' + selector + '"]');
+  } catch (error) {
+    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#2');
+  }
+  if (host) return host;
+  const next = row.nextElementSibling;
+  if (next?.classList.contains('tool-inline-attachments')) return next;
+  host = document.createElement('div');
+  host.className = 'tool-inline-attachments';
+  host.setAttribute('data-tool-anchor', String(callId || ''));
+  row.insertAdjacentElement('afterend', host);
+  return host;
+}
+
+function mountRestoredVisualization(
+  spec: NonNullable<ReturnType<typeof visualizationSpecOf>>,
+  host: Element,
+  toolCallId: string,
+  reportContext: string,
+): void {
+  try {
+    mountVisualization(spec, host, { toolCallId }).catch(() => { /* async: the surrounding try cannot see this */ });
+  } catch (error) {
+    reportSwallow(error, reportContext);
+  }
+}
+
+function appendInlineArtifacts(artifacts: ToolCallEntry['artifacts'], host: Element): void {
+  if (!Array.isArray(artifacts)) return;
+  for (const artifact of artifacts) {
+    if (!artifact?.id) continue;
+    try {
+      appendInlineArtifact(artifact.id, artifact.mimeType, host, artifact.name);
+    } catch (error) {
+      reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#4');
+    }
+  }
+}
+
+function restoreInlineToolCall(
+  body: HTMLElement,
+  row: Element,
+  selector: string,
+  call: ToolCallEntry,
+  spec: NonNullable<ReturnType<typeof visualizationSpecOf>> | null,
+  toolCallId: string,
+): void {
+  const artifacts = call.artifacts;
+  if (!spec && (!Array.isArray(artifacts) || artifacts.length === 0)) return;
+  const host = inlineArtifactHost(body, row, selector, call.id);
+  if (spec) mountRestoredVisualization(spec, host, toolCallId, 'ui/messageActions.restorePersistedMessageExtras#3');
+  appendInlineArtifacts(artifacts, host);
+}
+
+function restoreStandaloneToolCall(
+  body: HTMLElement,
+  call: ToolCallEntry,
+  spec: NonNullable<ReturnType<typeof visualizationSpecOf>> | null,
+  toolCallId: string,
+): void {
+  let card: Element | null = null;
+  try {
+    card = appendToolModule(call.name!, call.input || {}, body, {
+      restored: true,
+      isError: call.isError === true,
+    }) as Element | null;
+    if (card && call.output != null) {
+      renderToolTextOutput(card, String(call.output), {
+        isError: call.isError === true,
+        kind: call.isError === true ? 'error' : 'output',
+      });
+    }
+  } catch (error) {
+    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#5');
+  }
+  if (spec) mountRestoredVisualization(spec, body, toolCallId, 'ui/messageActions.restorePersistedMessageExtras#6');
+  appendStandaloneArtifacts(body, card, call.artifacts);
+}
+
+function appendStandaloneArtifacts(
+  body: HTMLElement,
+  card: Element | null,
+  artifacts: ToolCallEntry['artifacts'],
+): void {
+  if (!card || !Array.isArray(artifacts)) return;
+  for (const artifact of artifacts) {
+    if (!artifact?.id) continue;
+    const previewable = artifact.mimeType?.startsWith('image/') || artifact.mimeType?.startsWith('text/html');
+    try {
+      appendInlineArtifact(
+        artifact.id,
+        artifact.mimeType || 'application/octet-stream',
+        previewable ? body : card,
+        artifact.name,
+      );
+    } catch (error) {
+      reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#7');
+    }
+  }
+}
+
+function restoreToolCallExtras(body: HTMLElement, call: ToolCallEntry, index: number, idPrefix?: string): void {
+  if (!call.name) return;
+  const selector = toolCallSelector(call.id);
+  const row = inlineToolRow(body, selector);
+  const spec = visualizationSpecOf(call);
+  const toolCallId = call.id || ((idPrefix || 'history') + '-viz-' + index);
+  if (row) {
+    restoreInlineToolCall(body, row, selector, call, spec, toolCallId);
+    return;
+  }
+  restoreStandaloneToolCall(body, call, spec, toolCallId);
+}
+
 export function restorePersistedMessageExtras(
   body: HTMLElement,
   entry: MessageEntry,
@@ -229,113 +366,12 @@ export function restorePersistedMessageExtras(
   const messageKey = String(entry.clientId || entry.id || idPrefix || 'message');
   if (body.dataset && body.dataset.persistedExtrasFor === messageKey) return;
   const calls: ToolCallEntry[] = Array.isArray(entry.toolCalls) ? entry.toolCalls : [];
-  for (let tci = 0; tci < calls.length; tci++) {
-    const tc = calls[tci];
-    if (!tc || !tc.name) continue;
-    const vizSpec = visualizationSpecOf(tc);
-    /* P_inline-restore — when the rebuilt HTML already carries the
-       settled inline tool row (data-tcid), don't append a duplicate
-       card at the bubble bottom; instead re-seat the tool's visual
-       output (chart / image artifacts) right after its row so the
-       restored layout matches the live streaming layout. */
-    let inlineRow: Element | null = null;
-    let sel = '';
-    try {
-      sel =
-        typeof CSS !== 'undefined' && CSS.escape
-          ? CSS.escape(String(tc.id || ''))
-          : String(tc.id || '').replace(/[^a-zA-Z0-9_-]/g, '');
-      if (sel) inlineRow = body.querySelector('.tool-inline[data-tcid="' + sel + '"]');
-    } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras'); }
-    if (inlineRow) {
-      /* P_declarative-tool-run — nothing to mount means nothing to insert:
-         react/tool-run already rendered the host for a call that has a chart
-         or a file, and an empty .tool-inline-attachments div next to every
-         restored row only adds a gap to the layout. */
-      const hasArtifacts = Array.isArray(tc.artifacts) && tc.artifacts.length > 0;
-      if (!vizSpec && !hasArtifacts) continue;
-      /* The declarative renderer keeps outputs OUTSIDE the collapsible row
-         list, so adjacency no longer finds its host; locate it by anchor
-         anywhere in the body first. Without this the legacy pass creates a
-         second host beside the row and mounts the chart twice — one visible,
-         one hidden with the collapsed status. */
-      let host: Element | null = null;
-      try {
-        host = body.querySelector(
-          '.tool-inline-attachments[data-tool-anchor="' + sel + '"]',
-        );
-      } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#2'); }
-      if (!host) {
-        const next = inlineRow.nextElementSibling;
-        if (next && next.classList && next.classList.contains('tool-inline-attachments')) {
-          host = next;
-        }
-      }
-      if (!host) {
-        host = document.createElement('div');
-        host.className = 'tool-inline-attachments';
-        host.setAttribute('data-tool-anchor', String(tc.id || ''));
-        inlineRow.insertAdjacentElement('afterend', host);
-      }
-      if (vizSpec) {
-        try {
-          mountVisualization(vizSpec, host, {
-            toolCallId: tc.id || ((idPrefix || 'history') + '-viz-' + tci),
-          }).catch(() => { /* async: the surrounding try cannot see this */ });
-        } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#3'); }
-      }
-      if (Array.isArray(tc.artifacts)) {
-        for (let aj = 0; aj < tc.artifacts.length; aj++) {
-          const artJ = tc.artifacts[aj];
-          if (!artJ || !artJ.id) continue;
-          try {
-            appendInlineArtifact(artJ.id, artJ.mimeType, host, artJ.name);
-          } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#4'); }
-        }
-      }
-      continue;
-    }
-    let cardOut: Element | null = null;
-    try {
-      cardOut = appendToolModule(tc.name, tc.input || {}, body, {
-        restored: true,
-        isError: tc.isError === true,
-      }) as Element | null;
-      if (cardOut && tc.output != null) {
-        renderToolTextOutput(cardOut, String(tc.output), {
-          isError: tc.isError === true,
-          kind: tc.isError === true ? 'error' : 'output',
-        });
-      }
-    } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#5'); }
-    if (vizSpec) {
-      try {
-        mountVisualization(vizSpec, body, {
-          toolCallId: tc.id || ((idPrefix || 'history') + '-viz-' + tci),
-        }).catch(() => { /* async: the surrounding try cannot see this */ });
-      } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#6'); }
-    }
-    if (cardOut && Array.isArray(tc.artifacts)) {
-      for (let ai = 0; ai < tc.artifacts.length; ai++) {
-        const art = tc.artifacts[ai];
-        if (!art || !art.id) continue;
-        const previewable =
-          art.mimeType &&
-          (art.mimeType.indexOf('image/') === 0 || art.mimeType.indexOf('text/html') === 0);
-        try {
-          appendInlineArtifact(
-            art.id,
-            art.mimeType || 'application/octet-stream',
-            previewable ? body : cardOut,
-            art.name,
-          );
-        } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#7'); }
-      }
-    }
-  }
+  calls.forEach((call, index) => restoreToolCallExtras(body, call, index, idPrefix));
   try {
     appendFileChangeSummaryCards(body);
-  } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#8'); }
+  } catch (error) {
+    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#8');
+  }
   if (body.dataset) body.dataset.persistedExtrasFor = messageKey;
 }
 

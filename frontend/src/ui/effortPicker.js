@@ -1,6 +1,7 @@
 import { getStoredReasoningEffort } from '../config/chatPreferences.ts';
 import { openChatConfiguration } from '../react/chat-configuration/chatConfiguration.bridge.ts';
 import { getProviderConfigSnapshot, subscribeToProviderConfig } from '../config/providerConfig.store.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 /* ui/effortPicker.js — the composer "思考强度" pill.
  *
  * The compact pill is a phone affordance. Desktop already exposes the same
@@ -31,7 +32,7 @@ function _load() {
 }
 
 function _syncThinking(v) {
-  try { window.extensiveThinkingOn = (v === "high"); } catch (_) {}
+  try { window.extensiveThinkingOn = (v === "high"); } catch (error) { reportSwallow(error, 'ui/effortPicker.js:34'); }
 }
 
 /* Public read used by chat/stream.js. Always returns a valid value. */
@@ -144,6 +145,6 @@ if (typeof document !== "undefined") {
     syncEffortUI();
   });
   window.addEventListener('resize', _syncComposerEffortVisibility, { passive: true });
-  window.addEventListener("DOMContentLoaded", function () { try { syncEffortUI(); } catch (_) {} });
-  if (document.readyState !== "loading") { try { syncEffortUI(); } catch (_) {} }
+  window.addEventListener("DOMContentLoaded", function () { try { syncEffortUI(); } catch (error) { reportSwallow(error, 'ui/effortPicker.js:147'); } });
+  if (document.readyState !== "loading") { try { syncEffortUI(); } catch (error) { reportSwallow(error, 'ui/effortPicker.js:148'); } }
 }

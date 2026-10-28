@@ -44,6 +44,11 @@ function clearPending(): void {
   catch { /* empty-catch: intentional — no handoff is allowed without usable tab storage */ }
 }
 
+function isValidAuthorizationResponse(callback: string | null, expiresAt: number): callback is string {
+  return Boolean(callback) && Number.isFinite(expiresAt) && expiresAt > Date.now()
+    && expiresAt <= Date.now() + 5 * 60 * 1000 + 10000;
+}
+
 async function authorizeBrowserLogin(request: BrowserLoginRequest, userId: unknown, signal: AbortSignal) {
   if (Date.now() - request.createdAt >= TTL_MS || request.createdAt > Date.now()) throw new Error('expired');
   // No automatic retry after an ambiguous response, no Authorization header,
@@ -69,8 +74,7 @@ async function authorizeBrowserLogin(request: BrowserLoginRequest, userId: unkno
   const data = await response.json() as { url?: unknown; expiresAt?: unknown };
   const callback = validateBrowserLoginCallback(data.url, request.state);
   const expiresAt = typeof data.expiresAt === 'string' ? Date.parse(data.expiresAt) : NaN;
-  if (!callback || !Number.isFinite(expiresAt) || expiresAt <= Date.now()
-    || expiresAt > Date.now() + 5 * 60 * 1000 + 10000) throw new Error('invalid response');
+  if (!isValidAuthorizationResponse(callback, expiresAt)) throw new Error('invalid response');
   return { callback, expiresAt };
 }
 

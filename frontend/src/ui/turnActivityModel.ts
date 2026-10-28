@@ -51,32 +51,37 @@ function hasObservedReasoning(message: LegacyChatMessage): boolean {
   return Boolean(raw.match(/<think\b[^>]*>([\s\S]*?)(?:<\/think>|$)/i)?.[1]?.trim());
 }
 
-function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity): LiveTurnStatus | undefined {
+function observedThinkingStatus(message: LegacyChatMessage): LiveTurnStatus {
   const legacy = message._liveStatus;
+  const reasoningHasStarted = hasObservedReasoning(message);
+  const phase = hasVisibleAnswerText(message) || reasoningHasStarted ? 'thinking' : 'waiting';
+  return {
+    phase,
+    label: phase === 'thinking'
+      ? translate('think.thinking', 'Thinking…')
+      : translate('think.waitingForResponse', 'Waiting for the response.'),
+    elapsedSec: legacy?.phase === phase ? legacy.elapsedSec : undefined,
+  };
+}
+
+function observedToolStatus(message: LegacyChatMessage, activity: Extract<PublicTurnActivity, { type: 'tool' }>): LiveTurnStatus | undefined {
+  const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
+  if (call && !['running', 'awaiting'].includes(toolRunStateOf(call))) return undefined;
+  const legacy = message._liveStatus;
+  const label = legacy?.phase === 'tool-running'
+    ? legacy.label
+    : toolRunLabel({ name: activity.toolName }, 'running').text;
+  return { phase: 'tool-running', toolName: activity.toolName, label };
+}
+
+function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity): LiveTurnStatus | undefined {
   switch (activity.type) {
-    case 'thinking':
-      /* P0 response interleaving — a visible answer does not mean the model
-         has stopped working. Keep one compact live cue until the turn/tool
-         lifecycle actually settles, so users can read the answer while the
-         remaining work continues. */
-      if (hasVisibleAnswerText(message)) {
-        return {
-          phase: 'thinking',
-          label: translate('think.thinking', 'Thinking…'),
-          elapsedSec: legacy?.phase === 'thinking' ? legacy.elapsedSec : undefined,
-        };
-      }
-      return hasObservedReasoning(message)
-        ? { phase: 'thinking', label: translate('think.thinking', 'Thinking…'), elapsedSec: legacy?.phase === 'thinking' ? legacy.elapsedSec : undefined }
-        : { phase: 'waiting', label: translate('think.waitingForResponse', 'Waiting for the response.'), elapsedSec: legacy?.phase === 'waiting' ? legacy.elapsedSec : undefined };
-    case 'public_reasoning_summary': return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: translate('think.thinking', 'Thinking…') };
-    case 'synthesizing': return hasVisibleAnswerText(message) ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
-    case 'tool': {
-      const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
-      if (call && !['running', 'awaiting'].includes(toolRunStateOf(call))) return undefined;
-      const label = legacy?.phase === 'tool-running' ? legacy.label : toolRunLabel({ name: activity.toolName }, 'running').text;
-      return { phase: 'tool-running', toolName: activity.toolName, label };
-    }
+    case 'thinking': return observedThinkingStatus(message);
+    case 'public_reasoning_summary':
+      return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: translate('think.thinking', 'Thinking…') };
+    case 'synthesizing':
+      return hasVisibleAnswerText(message) ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
+    case 'tool': return observedToolStatus(message, activity);
     case 'done': return undefined;
   }
 }
@@ -90,6 +95,45 @@ function selectedStatus(message: LegacyChatMessage, activity: PublicTurnActivity
   return legacy?.phase === 'tool-running' && options.hasSettledTool ? undefined : legacy;
 }
 
+function reasoningSummaryState(activities: NonNullable<LegacyChatMessage['turnRuntime']>['activities'], activity: PublicTurnActivity | null) {
+  const reasoningSummaries = activities.filter((entry) => entry.kind === 'reasoning_summary' && entry.text?.trim());
+  const publicSummary = reasoningSummaries[reasoningSummaries.length - 1]?.text?.trim()
+    || (activity?.type === 'public_reasoning_summary' ? activity.text : '');
+  return { reasoningSummaries, publicSummary };
+}
+
+function reasoningDurationSeconds(
+  activities: NonNullable<LegacyChatMessage['turnRuntime']>['activities'],
+  fallback: number | null | undefined,
+): number | undefined {
+  const ranges = activities
+    .filter((entry) => ['reasoning', 'reasoning_summary'].includes(entry.kind) && entry.endedAt !== undefined)
+    .map((entry) => [entry.startedAt, entry.endedAt!] as const)
+    .sort((a, b) => a[0] - b[0]);
+  let durationMs = 0;
+  let end = 0;
+  for (const [start, finish] of ranges) {
+    durationMs += Math.max(0, finish - Math.max(end, start));
+    end = Math.max(end, finish);
+  }
+  return durationMs > 0 ? durationMs / 1000 : typeof fallback === 'number' && fallback > 0 ? fallback : undefined;
+}
+
+function activityStatusFor(status: LiveTurnStatus | undefined, live: boolean, options: PresentationOptions): LiveTurnStatus | undefined {
+  if (status?.phase === 'error' || status?.phase === 'stopped') return undefined;
+  if (status) return status;
+  if (!live || !options.activeTool) return undefined;
+  return {
+    phase: 'tool-running',
+    toolName: options.activeTool.name,
+    label: toolRunLabel(options.activeTool, 'running').text,
+  };
+}
+
+function activityLabelFor(status: LiveTurnStatus | undefined, intentSummary: string): string | undefined {
+  return status?.phase === 'waiting' && intentSummary ? intentSummary : status?.label;
+}
+
 /** One owner for activity, terminal notices, cursor and toolbar visibility.
  * A mounted running tool owns activity; a deferred tool retains its status.
  * Transport completion is distinct from playback completion: a done event
@@ -99,28 +143,12 @@ export function deriveTurnPresentationState(message: LegacyChatMessage, options:
   const activity = normalizePublicTurnActivity(message._activity);
   const status = selectedStatus(message, activity, live, options);
   const activities = message.turnRuntime?.activities || [];
-  // Intent previews and completed observations are never reasoning summaries.
-  const reasoningSummaries = activities.filter((entry) => entry.kind === 'reasoning_summary' && entry.text?.trim());
-  const publicSummary = reasoningSummaries[reasoningSummaries.length - 1]?.text?.trim()
-    || (activity?.type === 'public_reasoning_summary' ? activity.text : '');
-  const ranges = activities.filter((entry) => ['reasoning', 'reasoning_summary'].includes(entry.kind) && entry.endedAt !== undefined)
-    .map((entry) => [entry.startedAt, entry.endedAt!] as const).sort((a, b) => a[0] - b[0]);
-  let reasoningMs = 0;
-  let end = 0;
-  for (const range of ranges) {
-    reasoningMs += Math.max(0, range[1] - Math.max(end, range[0]));
-    end = Math.max(end, range[1]);
-  }
+  const { reasoningSummaries, publicSummary } = reasoningSummaryState(activities, activity);
   const intentSummary = live ? message._taskSummary?.trim() || '' : '';
-  const terminal = status?.phase === 'error' || status?.phase === 'stopped';
-  const activityStatus: LiveTurnStatus | undefined = terminal ? undefined : status
-    || (live && options.activeTool ? {
-      phase: 'tool-running', toolName: options.activeTool.name,
-      label: toolRunLabel(options.activeTool, 'running').text,
-    } : undefined);
+  const activityStatus = activityStatusFor(status, live, options);
   return {
     activityStatus,
-    activityLabel: activityStatus?.phase === 'waiting' && intentSummary ? intentSummary : activityStatus?.label,
+    activityLabel: activityLabelFor(activityStatus, intentSummary),
     activityLive: live && Boolean(activityStatus),
     activities,
     reasoningSummaries,
@@ -130,7 +158,7 @@ export function deriveTurnPresentationState(message: LegacyChatMessage, options:
     intentSummary,
     outcomeSummary: !live ? message.summary?.trim() || '' : '',
     publicSummary,
-    reasoningDurationSec: reasoningMs > 0 ? reasoningMs / 1000 : (typeof message.reasoningDurationSec === 'number' && message.reasoningDurationSec > 0 ? message.reasoningDurationSec : undefined),
+    reasoningDurationSec: reasoningDurationSeconds(activities, message.reasoningDurationSec),
     showToolbar: !live,
     showCursor: live && !status && !options.hasRunningRow,
     isSettled: !live,

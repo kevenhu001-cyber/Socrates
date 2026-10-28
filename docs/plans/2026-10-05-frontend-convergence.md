@@ -1,6 +1,7 @@
 # Frontend Convergence and Governance
 
 Status: Active · 2026-10-05
+Last updated: 2026-10-28
 
 This plan applies the staged migration and per-surface ownership approach in
 the [React + TypeScript migration plan](react-typescript-migration.md) and the
@@ -160,3 +161,10 @@ and page-specific dialog/action aliases are removed. Shared confirmation and
 Recents operations remain available through typed legacy actions for their
 other callers. Focused route, drawer, workspace CRUD, preview, and scheduled-
 page coverage protects the existing destinations, ordering, and return paths.
+
+## Fourteenth increment
+
+The pure lifecycle mode and reset decision helpers now live in TypeScript, with
+their callers importing the typed modules directly. The legacy-JS ratchet now
+compares the exact path allow-list: any new JS path fails even if another file
+was removed, and an intentional migration must shrink the baseline explicitly.

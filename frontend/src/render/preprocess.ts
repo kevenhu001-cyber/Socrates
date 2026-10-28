@@ -54,7 +54,7 @@ export function preprocessMarkdown(t: string | null | undefined): string {
   function _stash(replacement: string): string {
     const id = _ppStash.length;
     _ppStash.push(replacement);
-    return '\x01PP' + id + '\x01';
+    return '\uE000SOCRATES_PP_' + id + '\uE001';
   }
   function _protectFences(s: string): string {
     return s.replace(/```([\w-]*)\n?([\s\S]*?)```/g, function (_, lang: string, body: string) {
@@ -151,7 +151,7 @@ export function preprocessMarkdown(t: string | null | undefined): string {
     return lines.join('\n');
   })();
 
-  s = s.replace(/\x01PP(\d+)\x01/g, function (_, id: string) { return _ppStash[parseInt(id)]; });
+  s = s.replace(/\uE000SOCRATES_PP_(\d+)\uE001/g, function (_, id: string) { return _ppStash[parseInt(id)]; });
   s = s.replace(/\\\[([\s\S]+?)\\\]/g, '$$$$$1$$$$');
   s = s.replace(/\\\(([\s\S]+?)\\\)/g, '$$$1$$');
   return s;
@@ -177,7 +177,7 @@ export function preprocessMarkdownForStreaming(
   function _stash(replacement: string): string {
     const id = _ppStash.length;
     _ppStash.push(replacement);
-    return '\x01PP' + id + '\x01';
+    return '\uE000SOCRATES_PP_' + id + '\uE001';
   }
   s = s.replace(/```([\w-]*)\n?([\s\S]*?)```/g, function (_, lang: string, body: string) {
     return _stash('```' + lang + '\n' + body + '```');
@@ -240,7 +240,7 @@ export function preprocessMarkdownForStreaming(
     return lines.join('\n');
   })();
 
-  s = s.replace(/\x01PP(\d+)\x01/g, function (_, id: string) { return _ppStash[parseInt(id)]; });
+  s = s.replace(/\uE000SOCRATES_PP_(\d+)\uE001/g, function (_, id: string) { return _ppStash[parseInt(id)]; });
   s = s.replace(/\\\[([\s\S]+?)\\\]/g, '$$$$$1$$$$');
   s = s.replace(/\\\(([\s\S]+?)\\\)/g, '$$$1$$');
   return s;

@@ -30,3 +30,22 @@ test('Cmd-K opens the search palette and the input is focusable', async ({ page 
   await page.keyboard.type('test', { delay: 30 });
   await expect(input).toHaveValue(/test/);
 });
+
+test('Ctrl-K keyboard shortcut opens the palette once', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    const openCmdK = window.openCmdK;
+    window.__openCmdKCalls = 0;
+    window.openCmdK = () => {
+      window.__openCmdKCalls += 1;
+      openCmdK?.();
+    };
+  });
+
+  await page.keyboard.press('Control+k');
+  await expect(page.locator('#cmdKOverlay')).not.toHaveClass(/hidden/);
+  expect(await page.evaluate(() => window.__openCmdKCalls)).toBe(1);
+});

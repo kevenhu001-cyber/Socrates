@@ -94,6 +94,23 @@ export interface VizSpec {
   [key: string]: unknown;
 }
 
+const FAILED_VISUALIZATION_STATUSES = new Set([
+  'failed', 'error', 'timeout', 'timed_out', 'cancelled', 'stopped', 'aborted',
+]);
+const FAILED_VISUALIZATION_PHASES = new Set(['failed', 'timed_out', 'cancelled']);
+
+function visualizationCallFailed(call: VisualizationCallLike): boolean {
+  if (call.name !== 'render_visualization') return false;
+  const status = String(call.status || '').toLowerCase();
+  const phase = String(call._run?.phase || '').toLowerCase();
+  return call.isError === true || FAILED_VISUALIZATION_STATUSES.has(status)
+    || FAILED_VISUALIZATION_PHASES.has(phase);
+}
+
+function isVersionOneSpec(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && (value as { version?: unknown }).version === 1;
+}
+
 /**
  * Narrow untrusted input to a renderable spec.
  *
@@ -125,21 +142,9 @@ export function asVisualizationSpec(input: unknown): VizSpec | null {
 export function visualizationSpecOf(
   call: VisualizationCallLike | null | undefined,
 ): VizSpec | null {
-  if (!call) return null;
-  if (call.name === 'render_visualization') {
-    const status = String(call.status || '').toLowerCase();
-    const phase = String(call._run?.phase || '').toLowerCase();
-    if (call.isError === true
-      || ['failed', 'error', 'timeout', 'timed_out', 'cancelled', 'stopped', 'aborted'].includes(status)
-      || ['failed', 'timed_out', 'cancelled'].includes(phase)) return null;
-  }
+  if (!call || visualizationCallFailed(call)) return null;
   const persisted = call.visualization;
-  if (persisted && typeof persisted === 'object' && (persisted as { version?: unknown }).version === 1) {
-    return asVisualizationSpec(persisted);
-  }
-  if (call.name === 'render_visualization' && call.input && typeof call.input === 'object') {
-    const input = call.input as Record<string, unknown>;
-    if (input.version === 1) return asVisualizationSpec(input);
-  }
+  if (isVersionOneSpec(persisted)) return asVisualizationSpec(persisted);
+  if (call.name === 'render_visualization' && isVersionOneSpec(call.input)) return asVisualizationSpec(call.input);
   return null;
 }

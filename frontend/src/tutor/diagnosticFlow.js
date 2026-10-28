@@ -13,6 +13,7 @@ import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQues
 import { formatMsg } from '../render/markdown.ts';
 import { updateKB } from '../ui/knowledgePanel.js';
 import { activateMainView } from '../ui/mainViewController.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
   try {
@@ -20,14 +21,14 @@ function _t(key, fallback) {
       var v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.js:23'); }
   return fallback != null ? fallback : key;
 }
 
 function _isZh() {
   try {
     if (typeof window !== 'undefined' && window._currentLang === 'zh') return true;
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.js:30'); }
   return false;
 }
 
@@ -86,7 +87,7 @@ export function finishDiagnostic() {
    moment to read the interpretation before teaching begins. */
 export function proceedToTeaching() {
   activateMainView('chatView', document);
-  try { updateKB(); } catch (_) {}
+  try { updateKB(); } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.js:89'); }
 
   /* P_teaching-plan — generate the structured teaching plan from the
      freshly-populated KB. Sub-topics are sorted so blank nodes come
@@ -106,13 +107,13 @@ export function proceedToTeaching() {
   /* AUDIT-R5 — diagnostic is over; the session now lives in the chat
      view, so persist phase="chat" (loadSession also uses this as the
      signal that the conversation is resumable). */
-  try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
+  try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.js:109'); }
 
   /* First Socratic question */
   setTimeout(function () {
     try {
       if (typeof window.askNextQuestion === 'function') window.askNextQuestion();
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.js:115'); }
   }, 400);
 }
 

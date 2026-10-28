@@ -1,3 +1,6 @@
+
+import { reportSwallow } from '../util/reportSwallow.ts';
+
 function resolveDocument(doc) {
   return doc || (typeof document !== 'undefined' ? document : null);
 }
@@ -27,7 +30,7 @@ export function setConversationChrome(active, doc) {
 
   var view = d.defaultView || (typeof window !== 'undefined' ? window : null);
   if (view && typeof view.syncConversationActive === 'function') {
-    try { view.syncConversationActive(); } catch (_) {}
+    try { view.syncConversationActive(); } catch (error) { reportSwallow(error, 'ui/topBarState.js:30'); }
   }
 }
 

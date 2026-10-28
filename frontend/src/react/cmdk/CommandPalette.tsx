@@ -17,11 +17,8 @@ const MODAL_ID = 'cmdKModal';
 const RESULTS_ID = 'cmdKResults';
 
 /**
- * The React palette renders the same DOM structure the legacy
- * `renderCmdKResultsHits` produced — same class names, same text content,
- * same inline event wiring translated to React handlers — so existing CSS
- * styles and the `inline-handlers.spec.mjs` audit (which only checks
- * `cmdKOverlay` overlay-level handlers, not result rows) keep working.
+ * Results come from the typed command palette snapshot; the established row
+ * classes keep the existing visual styles, while React owns the event wiring.
  */
 function CommandPalette() {
   const snapshot = useCmdKSnapshot();

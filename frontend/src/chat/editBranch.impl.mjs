@@ -14,7 +14,7 @@ import {
   rollbackMessagesAfter,
 } from '../ui/messageActions.ts';
 import { stripMarkdown, formatMsg } from '../render/markdown.ts';
-import { buildUserContentParts } from '../chat/history.js';
+import { buildUserContentParts } from '../chat/history.ts';
 import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
@@ -217,19 +217,14 @@ export function regenerateAssistantMessage(messageId){
   /* Hook into the existing streaming pipeline. Locate the user turn
      that produced this assistant reply, rewind the conversation to it
      (locally + server-side), then re-ask. */
-  var assistantIdx=findMessageIndex(messageId);
-  if(assistantIdx<0)return;
-  var userIdx=assistantIdx-1;
-  while(userIdx>=0&&stateStore.read("messages")[userIdx].role!=="user")userIdx--;
-  var userEntry=userIdx>=0?stateStore.read("messages")[userIdx]:null;
+  var regenRes = prepareAssistantRegenerateBranch(messageId);
+  if (!regenRes) return;
+  var userEntry = regenRes.userEntry;
   var userText=userEntry&&userEntry.rawText;
   if(!userText)return;
   var userMessageId=userEntry.clientId||userEntry.id;
   /* Prepare branch variants for assistant regeneration (< 1 / 2 >). */
-  var regenRes = prepareAssistantRegenerateBranch(messageId);
-  if (regenRes) {
-    turnState.pendingAssistantBranchInfo = regenRes.branchInfo;
-  }
+  turnState.pendingAssistantBranchInfo = regenRes.branchInfo;
   /* P0.1 BUG-P01-04 — rewind to the user turn instead of splicing only
      the single assistant bubble. Regenerating a reply invalidates every
      message that followed it, so drop them all from state + DOM (matches

@@ -120,165 +120,142 @@ var stateStore = (function () {
     return path ? readPath(path) : undefined;
   }
 
+  function dispatchStateSet(action) {
+    var setPath = pathFor(action.key);
+    if (!setPath) throw new TypeError('Unknown state key: ' + action.key);
+    var parts = setPath.split('.');
+    var value = parts.length > 2
+      ? nestedValue(namespaceBridges[parts[0]].getSnapshot()[parts[1]], parts.slice(2), action.value)
+      : action.value;
+    dispatchToNamespace(parts[0], { type: parts[0] + '/set', key: parts[1], value: value });
+  }
+
+  function dispatchStateBatch(action) {
+    if (!action.patch || typeof action.patch !== 'object') {
+      throw new TypeError('state/batch requires a patch');
+    }
+    var perNamespace = {};
+    Object.keys(action.patch).forEach(function (key) {
+      var path = pathFor(key);
+      if (!path) throw new TypeError('Unknown state key: ' + key);
+      var parts = path.split('.');
+      if (!perNamespace[parts[0]]) perNamespace[parts[0]] = {};
+      var current = Object.prototype.hasOwnProperty.call(perNamespace[parts[0]], parts[1])
+        ? perNamespace[parts[0]][parts[1]]
+        : namespaceBridges[parts[0]].getSnapshot()[parts[1]];
+      perNamespace[parts[0]][parts[1]] = parts.length > 2
+        ? nestedValue(current, parts.slice(2), action.patch[key])
+        : action.patch[key];
+    });
+    Object.keys(perNamespace).forEach(function (namespace) {
+      dispatchToNamespace(namespace, { type: namespace + '/patch', patch: perNamespace[namespace] });
+    });
+  }
+
+  function dispatchBatchEntry(inner) {
+    if (!inner || typeof inner.type !== 'string') {
+      throw new TypeError('state/batch-actions: every entry requires a type');
+    }
+    var namespaceMatch = /^([a-z]+)\/(set|patch|reset)$/.exec(inner.type);
+    if (namespaceMatch && namespaceBridges[namespaceMatch[1]]) {
+      dispatchToNamespace(namespaceMatch[1], inner);
+      return;
+    }
+    var slash = inner.type.indexOf('/');
+    var root = slash > 0 ? inner.type.slice(0, slash) : null;
+    if (root === 'session' || root === 'kb' || root === 'search' || root === 'call' || root === 'ui' || root === 'exam') {
+      dispatchToNamespace(root, inner);
+      return;
+    }
+    if (inner.type === 'state/set') {
+      dispatchStateSet(inner);
+      return;
+    }
+    if (inner.type === 'state/reset') {
+      resetBridges();
+      return;
+    }
+    throw new TypeError('state/batch-actions: unsupported action ' + inner.type);
+  }
+
+  function dispatchBatchActions(action) {
+    /* One notify after all inner actions keeps a batch to one subscriber walk. */
+    if (!Array.isArray(action.actions)) {
+      throw new TypeError('state/batch-actions requires an actions array');
+    }
+    for (var index = 0; index < action.actions.length; index += 1) {
+      dispatchBatchEntry(action.actions[index]);
+    }
+  }
+
+  function updateSessionMessage(action) {
+    var before = sessionBridge.getSnapshot().messages[Number(action.index)];
+    dispatchToNamespace('session', {
+      type: action.type, index: action.index, clientId: action.clientId, patch: action.patch || {},
+    });
+    var after = sessionBridge.getSnapshot().messages[Number(action.index)];
+    return action.clientId && (!before || before.clientId !== action.clientId) ? null : after || null;
+  }
+
+  function removeSessionMessage(action) {
+    var removed = sessionBridge.getSnapshot().messages[Number(action.index)];
+    dispatchToNamespace('session', { type: action.type, index: action.index, clientId: action.clientId });
+    return action.clientId && removed && removed.clientId !== action.clientId ? null : removed;
+  }
+
+  function truncateSessionMessages(action) {
+    var messages = sessionBridge.getSnapshot().messages;
+    var keep = Number(action.index);
+    dispatchToNamespace('session', { type: action.type, index: action.index });
+    return Number.isInteger(keep) && keep >= -1 ? messages.slice(keep + 1) : [];
+  }
+
+  var sessionActionHandlers = {
+    'session/append-message': function (action) {
+      dispatchToNamespace('session', { type: action.type, payload: action.payload });
+      return sessionBridge.getSnapshot().messages.length - 1;
+    },
+    'session/replace-messages': function (action) {
+      dispatchToNamespace('session', { type: action.type, payload: action.payload });
+      return sessionBridge.getSnapshot().messages;
+    },
+    'session/update-message': updateSessionMessage,
+    'session/remove-message-at': removeSessionMessage,
+    'session/truncate-messages-after': truncateSessionMessages,
+  };
+
+  function dispatchSessionAction(action) {
+    if (!Object.prototype.hasOwnProperty.call(sessionActionHandlers, action.type)) {
+      throw new TypeError('Unknown state action: ' + action.type);
+    }
+    return sessionActionHandlers[action.type](action);
+  }
+
+  function dispatchAction(action) {
+    switch (action.type) {
+      case 'state/set': return dispatchStateSet(action);
+      case 'state/batch': return dispatchStateBatch(action);
+      case 'state/patch-namespace':
+        if (!action.namespace) throw new TypeError('state/patch-namespace requires a namespace');
+        return dispatchToNamespace(action.namespace, { type: action.namespace + '/patch', patch: action.patch || {} });
+      case 'state/batch-actions': return dispatchBatchActions(action);
+      case 'state/reset': return resetBridges();
+      default: return dispatchSessionAction(action);
+    }
+  }
+
   /** @param {StateStoreAction | { type: string; [key: string]: any }} action @returns {any} */
   function dispatch(action) {
     if (!action || typeof action.type !== 'string') {
       throw new TypeError('stateStore.dispatch requires an action');
     }
-    var result;
     var namespaceMatch = /^([a-z]+)\/(set|patch|reset)$/.exec(action.type);
     if (namespaceMatch && namespaceBridges[namespaceMatch[1]]) {
       dispatchToNamespace(namespaceMatch[1], action);
       notify();
       return undefined;
     }
-
-    switch (action.type) {
-      case 'state/set': {
-        var setPath = pathFor(action.key);
-        if (!setPath) throw new TypeError('Unknown state key: ' + action.key);
-        var setParts = setPath.split('.');
-        dispatchToNamespace(setParts[0], {
-          type: setParts[0] + '/set',
-          key: setParts[1],
-          value: setParts.length > 2
-            ? nestedValue(namespaceBridges[setParts[0]].getSnapshot()[setParts[1]], setParts.slice(2), action.value)
-            : action.value,
-        });
-        break;
-      }
-      case 'state/batch': {
-        if (!action.patch || typeof action.patch !== 'object') {
-          throw new TypeError('state/batch requires a patch');
-        }
-        var perNamespace = {};
-        Object.keys(action.patch).forEach(function (key) {
-          var batchPath = pathFor(key);
-          if (!batchPath) throw new TypeError('Unknown state key: ' + key);
-          var parts = batchPath.split('.');
-          if (!perNamespace[parts[0]]) perNamespace[parts[0]] = {};
-          var currentValue = Object.prototype.hasOwnProperty.call(perNamespace[parts[0]], parts[1])
-            ? perNamespace[parts[0]][parts[1]]
-            : namespaceBridges[parts[0]].getSnapshot()[parts[1]];
-          perNamespace[parts[0]][parts[1]] = parts.length > 2
-            ? nestedValue(currentValue, parts.slice(2), action.patch[key])
-            : action.patch[key];
-        });
-        Object.keys(perNamespace).forEach(function (namespace) {
-          dispatchToNamespace(namespace, {
-            type: namespace + '/patch',
-            patch: perNamespace[namespace],
-          });
-        });
-        break;
-      }
-      case 'state/patch-namespace':
-        if (!action.namespace) throw new TypeError('state/patch-namespace requires a namespace');
-        dispatchToNamespace(action.namespace, {
-          type: action.namespace + '/patch',
-          patch: action.patch || {},
-        });
-        break;
-      case 'state/batch-actions': {
-        /* P_send-batch-actions — the click frame used to fire 2–3
-           synchronous `stateStore.dispatch` calls (state/set
-           _userScrolledAway, session/append-message, tutor
-           kb/patch-node). Each one runs the dispatchToNamespace →
-           bridge.flush() pair and then notify() walks every React
-           subscriber. This reducer accepts an `actions` array and
-           dispatches each entry through the same code path `dispatch`
-           would, but the notify() at the bottom of dispatch fires ONCE
-           for the whole batch — collapsing 2–3 listener walks into one
-           and matching what a single mutated snapshot would have
-           produced. The supported action types are the same set the
-           `state/*` / `session/*` / `kb/*` / `ui/*` / `call/*` /
-           `exam/*` / `search/*` / `state/reset` branches above handle,
-           so callers don't need to learn a new vocabulary. */
-        if (!Array.isArray(action.actions)) {
-          throw new TypeError('state/batch-actions requires an actions array');
-        }
-        for (var bi = 0; bi < action.actions.length; bi += 1) {
-          var inner = action.actions[bi];
-          if (!inner || typeof inner.type !== 'string') {
-            throw new TypeError('state/batch-actions: every entry requires a type');
-          }
-          var innerNs = /^([a-z]+)\/(set|patch|reset)$/.exec(inner.type);
-          if (innerNs && namespaceBridges[innerNs[1]]) {
-            dispatchToNamespace(innerNs[1], inner);
-            continue;
-          }
-          var innerSlash = inner.type.indexOf('/');
-          var innerRoot = innerSlash > 0 ? inner.type.slice(0, innerSlash) : null;
-          if (innerRoot === 'session' || innerRoot === 'kb'
-              || innerRoot === 'search' || innerRoot === 'call'
-              || innerRoot === 'ui' || innerRoot === 'exam') {
-            dispatchToNamespace(innerRoot, inner);
-            continue;
-          }
-          if (inner.type === 'state/set') {
-            const setPath = pathFor(inner.key);
-            if (!setPath) throw new TypeError('Unknown state key: ' + inner.key);
-            const setParts = setPath.split('.');
-            dispatchToNamespace(setParts[0], {
-              type: setParts[0] + '/set',
-              key: setParts[1],
-              value: setParts.length > 2
-                ? nestedValue(namespaceBridges[setParts[0]].getSnapshot()[setParts[1]], setParts.slice(2), inner.value)
-                : inner.value,
-            });
-            continue;
-          }
-          if (inner.type === 'state/reset') {
-            resetBridges();
-            continue;
-          }
-          throw new TypeError('state/batch-actions: unsupported action ' + inner.type);
-        }
-        break;
-      }
-      case 'state/reset':
-        resetBridges();
-        break;
-      case 'session/append-message':
-        dispatchToNamespace('session', { type: action.type, payload: action.payload });
-        result = sessionBridge.getSnapshot().messages.length - 1;
-        break;
-      case 'session/replace-messages':
-        dispatchToNamespace('session', { type: action.type, payload: action.payload });
-        result = sessionBridge.getSnapshot().messages;
-        break;
-      case 'session/update-message': {
-        var before = sessionBridge.getSnapshot().messages[Number(action.index)];
-        dispatchToNamespace('session', {
-          type: action.type,
-          index: action.index,
-          clientId: action.clientId,
-          patch: action.patch || {},
-        });
-        var after = sessionBridge.getSnapshot().messages[Number(action.index)];
-        result = action.clientId && (!before || before.clientId !== action.clientId) ? null : after || null;
-        break;
-      }
-      case 'session/remove-message-at': {
-        var removed = sessionBridge.getSnapshot().messages[Number(action.index)];
-        dispatchToNamespace('session', {
-          type: action.type,
-          index: action.index,
-          clientId: action.clientId,
-        });
-        result = action.clientId && removed && removed.clientId !== action.clientId ? null : removed;
-        break;
-      }
-      case 'session/truncate-messages-after': {
-        var messages = sessionBridge.getSnapshot().messages;
-        var keep = Number(action.index);
-        dispatchToNamespace('session', { type: action.type, index: action.index });
-        result = Number.isInteger(keep) && keep >= -1 ? messages.slice(keep + 1) : [];
-        break;
-      }
-      default:
-        throw new TypeError('Unknown state action: ' + action.type);
-    }
+    var result = dispatchAction(action);
     if (action.deferNotify) notifyDeferred();
     else notify();
     return result;

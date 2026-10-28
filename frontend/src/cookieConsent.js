@@ -1,3 +1,6 @@
+
+import { reportSwallow } from './util/reportSwallow.ts';
+
 /* Cookie consent manager
  *
  * Shows a consent banner until the visitor makes a choice, then persists
@@ -71,7 +74,7 @@ export function getConsentPreference() {
     }
   }
   if (pref) {
-    try { localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (_) {}
+    try { localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (error) { reportSwallow(error, 'cookieConsent.js:74', 'expected'); }
   }
   return pref;
 }
@@ -117,15 +120,15 @@ export function setConsentPreference(choice) {
     nonEssential: choice === CONSENT_ACCEPT,
     updatedAt: new Date().toISOString(),
   };
-  try { localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (_) {}
-  try { document.cookie = consentCookieString(pref); } catch (_) {}
+  try { localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (error) { reportSwallow(error, 'cookieConsent.js:120', 'expected'); }
+  try { document.cookie = consentCookieString(pref); } catch (error) { reportSwallow(error, 'cookieConsent.js:121', 'expected'); }
   try {
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
       window.dispatchEvent(new CustomEvent('socrates:cookie-consent', {
         detail: { preference: pref },
       }));
     }
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'cookieConsent.js:128'); }
   return pref;
 }
 
@@ -184,7 +187,7 @@ function localT(key) {
     try {
       var v = window.t(key);
       if (typeof v === 'string' && v !== key) return v;
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'cookieConsent.js:187'); }
   }
   var fallback = {
     'consent.title': 'We respect your privacy',

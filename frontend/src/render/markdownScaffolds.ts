@@ -122,122 +122,145 @@ function streamCard(tag: string, content: string): string {
     badge + content + '</div>';
 }
 
+type StreamMarkdownRenderer = (value: string, empty?: string) => string;
+type StreamPreviewRenderer = (inner: string, markdown: StreamMarkdownRenderer, attrs: string) => string;
+
+function renderStreamMarkdown(value: string, formatMarkdown: (value: string) => string, empty = '…'): string {
+  const text = String(value || '').trim();
+  if (!text) return '<span class="scaffold-stream-placeholder shimmer-text">' + escHTML(empty) + '</span>';
+  try {
+    return formatMarkdown(text);
+  } catch (_) {
+    return escHTML(text);
+  }
+}
+
+function renderKeyPointPreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  return streamCard('key-point',
+    '<div class="inline-key-point-body">' + markdown(streamLeaf(inner)) + '</div>');
+}
+
+function renderDefinitionPreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  const term = streamField(inner, 'term');
+  const body = streamField(inner, 'body');
+  return streamCard('definition',
+    '<div class="inline-definition-term">' + markdown(term, 'Term') + '</div>' +
+    '<div class="inline-definition-body">' + markdown(body, 'Definition') + '</div>');
+}
+
+function renderExamplePreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  const title = streamField(inner, 'title') || 'Example';
+  const problem = streamField(inner, 'problem');
+  const solution = streamField(inner, 'solution');
+  return streamCard('example',
+    '<div class="inline-example-title">' + markdown(title) + '</div>' +
+    '<div class="inline-example-problem">' + markdown(problem, 'Problem') + '</div>' +
+    (solution
+      ? '<button type="button" class="inline-example-reveal" aria-disabled="true" tabindex="-1">Show solution</button>' +
+        '<div class="inline-example-solution" hidden>' + markdown(solution) + '</div>'
+      : ''));
+}
+
+function renderPracticePreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  const problem = streamField(inner, 'problem');
+  const hint = streamField(inner, 'hint');
+  return streamCard('practice',
+    '<div class="inline-practice-problem">' + markdown(problem, 'Problem') + '</div>' +
+    (hint
+      ? '<button type="button" class="inline-practice-hint-toggle" aria-disabled="true" tabindex="-1">Show hint</button>' +
+        '<div class="inline-practice-hint" hidden>' + markdown(hint) + '</div>'
+      : '') +
+    '<form class="inline-practice-form">' +
+      '<textarea class="inline-practice-textarea" rows="3" placeholder="Type your answer…" aria-disabled="true" tabindex="-1"></textarea>' +
+      '<div class="inline-practice-actions"><button type="button" class="inline-practice-submit" aria-disabled="true" tabindex="-1">Submit</button></div>' +
+      '<div class="inline-practice-feedback"></div>' +
+    '</form>');
+}
+
+function renderFlashcardPreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  const front = streamField(inner, 'front');
+  const back = streamField(inner, 'back');
+  return streamCard('flashcard',
+    '<div class="inline-flashcard-front">' + markdown(front, 'Front') + '</div>' +
+    (back ? '<div class="inline-flashcard-back">' + markdown(back) + '</div>' : ''));
+}
+
+function renderTheoremPreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  const title = streamField(inner, 'title');
+  const statement = streamField(inner, 'statement');
+  return streamCard('theorem',
+    (title ? '<div class="inline-theorem-title">' + markdown(title) + '</div>' : '') +
+    '<div class="inline-theorem-statement">' + markdown(statement, 'Statement') + '</div>');
+}
+
+function renderProofPreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  const title = streamField(inner, 'title');
+  const body = streamField(inner, 'body');
+  return streamCard('proof',
+    (title ? '<div class="inline-proof-title">' + markdown(title) + '</div>' : '') +
+    '<div class="inline-proof-body">' + markdown(body, 'Proof') + '</div>');
+}
+
+function renderDerivationPreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  const title = streamField(inner, 'title');
+  const body = streamField(inner, 'body');
+  return streamCard('derivation',
+    (title ? '<div class="inline-derivation-title">' + markdown(title) + '</div>' : '') +
+    '<div class="inline-derivation-body">' + markdown(body, 'Derivation') + '</div>');
+}
+
+function renderStepPreview(inner: string, attrs: string): string {
+  const number = streamAttr(attrs, 'n');
+  const body = streamPlainPreview(inner);
+  return streamCard('step',
+    '<span class="scaffold-stream-step-number">' + escHTML(number || '·') + '</span>' +
+    (body ? escHTML(body) : '<span class="scaffold-stream-placeholder shimmer-text">…</span>'));
+}
+
+function renderQuizPreview(inner: string, markdown: StreamMarkdownRenderer): string {
+  const question = streamField(inner, 'q');
+  const options: string[] = [];
+  const optionRe = /<o\s+letter=["']([A-Da-d])["'][^>]*>([\s\S]*?)(?:<\/o>|$)/gi;
+  let match: RegExpExecArray | null;
+  while ((match = optionRe.exec(inner)) !== null) {
+    options.push('<button type="button" class="inline-quiz-opt" aria-disabled="true" tabindex="-1">' +
+      '<span class="inline-quiz-opt-letter">' + escHTML(match[1].toUpperCase()) + '.</span>' +
+      '<span class="inline-quiz-opt-text">' + markdown(decodeEntities(match[2].trim())) + '</span></button>');
+  }
+  return streamCard('quiz',
+    '<div class="inline-quiz-q">' + markdown(question, 'Question') + '</div>' +
+    (options.length ? '<div class="inline-quiz-opts">' + options.join('') + '</div>' : '') +
+    /* Final mounted quiz has an empty feedback div — mirror it exactly so
+     * the live preview and the final widget are structurally identical. */
+    '<div class="inline-quiz-feedback"></div>');
+}
+
+function renderGenericScaffoldPreview(tag: string, inner: string): string {
+  return streamCard(tag, escHTML(streamPlainPreview(inner)));
+}
+
+const STREAM_PREVIEW_RENDERERS: Record<string, StreamPreviewRenderer> = {
+  'key-point': (inner, markdown) => renderKeyPointPreview(inner, markdown),
+  definition: (inner, markdown) => renderDefinitionPreview(inner, markdown),
+  example: (inner, markdown) => renderExamplePreview(inner, markdown),
+  practice: (inner, markdown) => renderPracticePreview(inner, markdown),
+  flashcard: (inner, markdown) => renderFlashcardPreview(inner, markdown),
+  theorem: (inner, markdown) => renderTheoremPreview(inner, markdown),
+  proof: (inner, markdown) => renderProofPreview(inner, markdown),
+  derivation: (inner, markdown) => renderDerivationPreview(inner, markdown),
+  step: (inner, _markdown, attrs) => renderStepPreview(inner, attrs),
+  quiz: (inner, markdown) => renderQuizPreview(inner, markdown),
+};
+
 export function renderStreamScaffoldPreview(
   tag: string,
   inner: string,
   attrs: string,
   formatMarkdown: (value: string) => string,
 ): string | null {
-  function renderStreamMarkdown(value: string, empty = '…'): string {
-    const text = String(value || '').trim();
-    if (!text) return '<span class="scaffold-stream-placeholder shimmer-text">' + escHTML(empty) + '</span>';
-    try {
-      return formatMarkdown(text);
-    } catch (_) {
-      return escHTML(text);
-    }
-  }
   if (!STREAM_SCAFFOLD_CLASSES[tag]) return null;
-
-  if (tag === 'key-point') {
-    return streamCard(tag,
-      '<div class="inline-key-point-body">' + renderStreamMarkdown(streamLeaf(inner)) + '</div>');
-  }
-
-  if (tag === 'definition') {
-    const term = streamField(inner, 'term');
-    const body = streamField(inner, 'body');
-    return streamCard(tag,
-      '<div class="inline-definition-term">' + renderStreamMarkdown(term, 'Term') + '</div>' +
-      '<div class="inline-definition-body">' + renderStreamMarkdown(body, 'Definition') + '</div>');
-  }
-
-  if (tag === 'example') {
-    const title = streamField(inner, 'title') || 'Example';
-    const problem = streamField(inner, 'problem');
-    const solution = streamField(inner, 'solution');
-    return streamCard(tag,
-      '<div class="inline-example-title">' + renderStreamMarkdown(title) + '</div>' +
-      '<div class="inline-example-problem">' + renderStreamMarkdown(problem, 'Problem') + '</div>' +
-      (solution
-        ? '<button type="button" class="inline-example-reveal" aria-disabled="true" tabindex="-1">Show solution</button>' +
-          '<div class="inline-example-solution" hidden>' + renderStreamMarkdown(solution) + '</div>'
-        : ''));
-  }
-
-  if (tag === 'practice') {
-    const problem = streamField(inner, 'problem');
-    const hint = streamField(inner, 'hint');
-    return streamCard(tag,
-      '<div class="inline-practice-problem">' + renderStreamMarkdown(problem, 'Problem') + '</div>' +
-      (hint
-        ? '<button type="button" class="inline-practice-hint-toggle" aria-disabled="true" tabindex="-1">Show hint</button>' +
-          '<div class="inline-practice-hint" hidden>' + renderStreamMarkdown(hint) + '</div>'
-        : '') +
-      '<form class="inline-practice-form">' +
-        '<textarea class="inline-practice-textarea" rows="3" placeholder="Type your answer…" aria-disabled="true" tabindex="-1"></textarea>' +
-        '<div class="inline-practice-actions"><button type="button" class="inline-practice-submit" aria-disabled="true" tabindex="-1">Submit</button></div>' +
-        '<div class="inline-practice-feedback"></div>' +
-      '</form>');
-  }
-
-  if (tag === 'flashcard') {
-    const front = streamField(inner, 'front');
-    const back = streamField(inner, 'back');
-    return streamCard(tag,
-      '<div class="inline-flashcard-front">' + renderStreamMarkdown(front, 'Front') + '</div>' +
-      (back ? '<div class="inline-flashcard-back">' + renderStreamMarkdown(back) + '</div>' : ''));
-  }
-
-  if (tag === 'theorem') {
-    const title = streamField(inner, 'title');
-    const statement = streamField(inner, 'statement');
-    return streamCard(tag,
-      (title ? '<div class="inline-theorem-title">' + renderStreamMarkdown(title) + '</div>' : '') +
-      '<div class="inline-theorem-statement">' + renderStreamMarkdown(statement, 'Statement') + '</div>');
-  }
-
-  if (tag === 'proof') {
-    const title = streamField(inner, 'title');
-    const body = streamField(inner, 'body');
-    return streamCard(tag,
-      (title ? '<div class="inline-proof-title">' + renderStreamMarkdown(title) + '</div>' : '') +
-      '<div class="inline-proof-body">' + renderStreamMarkdown(body, 'Proof') + '</div>');
-  }
-
-  if (tag === 'derivation') {
-    const title = streamField(inner, 'title');
-    const body = streamField(inner, 'body');
-    return streamCard(tag,
-      (title ? '<div class="inline-derivation-title">' + renderStreamMarkdown(title) + '</div>' : '') +
-      '<div class="inline-derivation-body">' + renderStreamMarkdown(body, 'Derivation') + '</div>');
-  }
-
-  if (tag === 'step') {
-    const n = streamAttr(attrs, 'n');
-    const body = streamPlainPreview(inner);
-    return streamCard(tag,
-      '<span class="scaffold-stream-step-number">' + escHTML(n || '·') + '</span>' +
-      (body ? escHTML(body) : '<span class="scaffold-stream-placeholder shimmer-text">…</span>'));
-  }
-
-  if (tag === 'quiz') {
-    const q = streamField(inner, 'q');
-    const options: string[] = [];
-    const optionRe = /<o\s+letter=["']([A-Da-d])["'][^>]*>([\s\S]*?)(?:<\/o>|$)/gi;
-    let match: RegExpExecArray | null;
-    while ((match = optionRe.exec(inner)) !== null) {
-      options.push('<button type="button" class="inline-quiz-opt" aria-disabled="true" tabindex="-1">' +
-        '<span class="inline-quiz-opt-letter">' + escHTML(match[1].toUpperCase()) + '.</span>' +
-        '<span class="inline-quiz-opt-text">' + renderStreamMarkdown(decodeEntities(match[2].trim())) + '</span></button>');
-    }
-    return streamCard(tag,
-      '<div class="inline-quiz-q">' + renderStreamMarkdown(q, 'Question') + '</div>' +
-      (options.length ? '<div class="inline-quiz-opts">' + options.join('') + '</div>' : '') +
-      /* Final mounted quiz has an empty feedback div — mirror it exactly so
-       * the live preview and the final widget are structurally identical. */
-      '<div class="inline-quiz-feedback"></div>');
-  }
-
-  return streamCard(tag, escHTML(streamPlainPreview(inner)));
+  const renderer = STREAM_PREVIEW_RENDERERS[tag];
+  if (!renderer) return renderGenericScaffoldPreview(tag, inner);
+  const markdown: StreamMarkdownRenderer = (value, empty) => renderStreamMarkdown(value, formatMarkdown, empty);
+  return renderer(inner, markdown, attrs);
 }

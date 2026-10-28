@@ -4,7 +4,7 @@
  */
 import { stateStore } from '../state/store.js';
 import { hasUsableActive } from '../config/providers.ts';
-import { extractHistory } from '../chat/history.js';
+import { extractHistory } from '../chat/history.ts';
 import { callAPI } from '../chat/api.ts';
 import { callAPIStream } from '../chat/stream.ts';
 import { buildSocraticMessages, buildFollowUpMessages, buildSocraticPrompt } from './flow.ts';

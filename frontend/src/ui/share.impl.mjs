@@ -24,6 +24,7 @@ import { renderSharedAssistantTurn, releaseSharedAssistantTurns } from './assist
 import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './toolCards.js';
 
 import { mountVisualization, disposeVisualizations } from '../render/vizStubs.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 var _shareSessionId = null;
 var _shareVisibility = "public";
@@ -72,7 +73,7 @@ function toggleShareBtn() {
   var findBtn = document.getElementById("findBtn");
   if (findBtn) findBtn.classList.toggle("hidden", !show);
   if (!show && typeof window.closeFindInSession === "function") {
-    try { window.closeFindInSession(); } catch (_) {}
+    try { window.closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.impl.mjs:75'); }
   }
 }
 
@@ -180,116 +181,125 @@ async function revokeShareLink() {
    leaves this function with the prose path for everything the renderer cannot
    take: user turns, turns with no tool calls, and turns stored before
    textOffset existed (whose baked rows still ride along in `content`). */
-function _renderSharedMessageList(messages) {
-  var msgList = document.getElementById("msgList");
-  if (!msgList) return;
+function sharedMessageSource(message) {
+  if (typeof message.rawText === "string" && message.rawText.length > 0) return message.rawText;
+  if (typeof message.content === "string" && message.content.length > 0) return message.content;
+  return "";
+}
+
+function renderDeclarativeSharedTurn(body, message) {
+  if (message.role !== "assistant" || typeof message.rawText !== "string" || !message.rawText
+      || !Array.isArray(message.toolCalls) || message.toolCalls.length === 0) return false;
+  body.className = "msg-body content is-declarative";
+  try {
+    return renderSharedAssistantTurn(body, {
+      id: message.id || null,
+      clientId: message.id || null,
+      role: "assistant",
+      type: "assistant",
+      rawText: message.rawText,
+      html: typeof message.content === "string" ? message.content : "",
+      toolCalls: message.toolCalls,
+      reasoningContent: message.reasoningContent || null,
+    });
+  } catch (_) {
+    body.className = "msg-body content";
+    return false;
+  }
+}
+
+function renderSharedMessageFallback(body, message, source) {
+  var html = "";
+  try {
+    /* Preserve already-rendered inline rows in older saved messages. */
+    if (message.role === "assistant" && typeof message.content === "string"
+        && message.content.indexOf("tool-inline") !== -1) html = message.content;
+    if (!html) {
+      html = message.role === "assistant" && typeof window.renderAssistantHTML === "function"
+        ? window.renderAssistantHTML(source)
+        : (typeof window.formatMsg === "function" ? window.formatMsg(source) : ("<p>" + esc(source) + "</p>"));
+    }
+  } catch (_) {
+    html = "<p>" + esc(source) + "</p>";
+  }
+  body.innerHTML = html;
+}
+
+function appendSharedToolArtifacts(body, message) {
+  var calls = message.toolCalls;
+  if (!Array.isArray(calls)) return;
+  for (var callIndex = 0; callIndex < calls.length; callIndex++) {
+    var call = calls[callIndex];
+    if (!call || !call.name) continue;
+    var card = typeof appendToolModule === "function"
+      ? appendToolModule(call.name, call.input || {}, body, { restored: true, isError: !!call.isError })
+      : null;
+    if (call.name === "render_visualization" && call.input && call.input.version === 1
+        && typeof mountVisualization === "function") {
+      mountVisualization(call.input, body, { toolCallId: call.id || ("share-viz-" + callIndex) })
+        .catch(function () { /* card paints its own error state */ });
+    }
+    appendSharedArtifacts(body, card, call.artifacts);
+  }
+}
+
+function appendSharedArtifacts(body, card, artifacts) {
+  if (!card || !Array.isArray(artifacts) || !artifacts.length
+      || typeof appendInlineArtifact !== "function") return;
+  for (var index = 0; index < artifacts.length; index++) {
+    var artifact = artifacts[index];
+    if (!artifact || !artifact.id) continue;
+    var mimeType = artifact.mimeType || "application/octet-stream";
+    var previewable = mimeType.indexOf("image/") === 0 || mimeType.indexOf("text/html") === 0;
+    appendInlineArtifact(artifact.id, mimeType, previewable ? body : card, artifact.name);
+  }
+}
+
+function restoreSharedMessageExtras(body, message) {
+  if (message.role !== "assistant") return;
+  if (typeof window.restorePersistedMessageExtras === "function") {
+    window.restorePersistedMessageExtras(body, message, "share-" + (message.id || "message"));
+  } else if (Array.isArray(message.toolCalls) && message.toolCalls.length > 0) {
+    appendSharedToolArtifacts(body, message);
+  }
+  if (typeof appendFileChangeSummaryCards === "function") {
+    try { appendFileChangeSummaryCards(body); } catch (error) { reportSwallow(error, 'ui/share.impl.mjs:290'); }
+  }
+}
+
+function renderSharedMessage(message) {
+  var div = document.createElement("div");
+  div.className = "msg " + (message.role || "user");
+  var body = document.createElement("div");
+  body.className = "msg-body content";
+  var source = sharedMessageSource(message);
+  /* The offsets index raw markdown; the renderer chooses the whole branch. */
+  var declarative = renderDeclarativeSharedTurn(body, message);
+  if (!declarative) {
+    if (body.className !== "msg-body content") body.className = "msg-body content";
+    renderSharedMessageFallback(body, message, source);
+  }
+  div.appendChild(body);
+  if (!declarative) restoreSharedMessageExtras(body, message);
+  return div;
+}
+
+function prepareSharedMessageList(msgList) {
   // Release React roots before any legacy child replacement.
   takeOverSharedMessageList(msgList);
   releaseSharedAssistantTurns();
-  /* P_viz-dispose-shared — dispose any live visualization
-     cards/ECharts instances before wiping the DOM. Mirrors the
-     call in main.js#enterChat (line 1496) so the shared-session
-     path doesn't leak ECharts instances, ResizeObservers, or
-     window `message` listeners across navigations. */
   if (typeof disposeVisualizations === "function") {
-    try { disposeVisualizations(msgList); } catch (_) {}
+    try { disposeVisualizations(msgList); } catch (error) { reportSwallow(error, 'ui/share.impl.mjs:195'); }
   }
   msgList.innerHTML = "";
-  (messages || []).forEach(function (m) {
-    if (!m) return;
-    var div = document.createElement("div");
-    div.className = "msg " + (m.role || "user");
-    var body = document.createElement("div");
-    body.className = "msg-body content";
-    var source = "";
-    if (typeof m.rawText === "string" && m.rawText.length > 0) {
-      source = m.rawText;
-    } else if (typeof m.content === "string" && m.content.length > 0) {
-      source = m.content;
-    }
-    /* The renderer refuses turns whose calls have no usable split point, so
-       one call decides the whole branch: it returns false without mounting.
-       The offsets index the RAW markdown, so `rawText` — not `content`, which
-       is the rendered snapshot — is what the turn gets sliced against. */
-    var declarative = false;
-    if (m.role === "assistant" && typeof m.rawText === "string" && m.rawText
-        && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
-      body.className = "msg-body content is-declarative";
-      try {
-        declarative = renderSharedAssistantTurn(body, {
-          id: m.id || null,
-          clientId: m.id || null,
-          role: "assistant",
-          type: "assistant",
-          rawText: m.rawText,
-          html: typeof m.content === "string" ? m.content : "",
-          toolCalls: m.toolCalls,
-          reasoningContent: m.reasoningContent || null,
-        });
-      } catch (_) {
-        declarative = false;
-      }
-      if (!declarative) body.className = "msg-body content";
-    }
-    if (!declarative) {
-      var renderHtml = "";
-      try {
-        /* P_inline-restore — turns the renderer could not take fall back to
-           the stored markup. `content` is the finalized HTML snapshot, which
-           for a message saved before this renderer existed already carries the
-           serialized rows; re-rendering the markdown would drop them. */
-        if (m.role === "assistant" && typeof m.content === "string"
-            && m.content.indexOf("tool-inline") !== -1) {
-          renderHtml = m.content;
-        }
-        if (!renderHtml) {
-          renderHtml = m.role === "assistant" && typeof window.renderAssistantHTML === "function"
-            ? window.renderAssistantHTML(source)
-            : (typeof window.formatMsg === "function" ? window.formatMsg(source) : ("<p>" + esc(source) + "</p>"));
-        }
-      } catch (_) {
-        renderHtml = "<p>" + esc(source) + "</p>";
-      }
-      body.innerHTML = renderHtml;
-    }
-    div.appendChild(body);
-    /* P_tool-history-share — a declarative turn already renders its own
-       attachments (charts, saved files) from toolCalls[], so the recovery
-       pass is only for turns that fell back to stored markup. */
-    if (!declarative && m.role === "assistant" && typeof window.restorePersistedMessageExtras === "function") {
-      window.restorePersistedMessageExtras(body, m, "share-" + (m.id || "message"));
-    } else if (!declarative && m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
-      for (var tci = 0; tci < m.toolCalls.length; tci++) {
-        var tc = m.toolCalls[tci];
-        if (!tc || !tc.name) continue;
-        var cardOut = null;
-        if (typeof appendToolModule === "function") {
-          cardOut = appendToolModule(tc.name, tc.input || {}, body, {
-            restored: true,
-            isError: !!tc.isError,
-          });
-        }
-        if (tc.name === "render_visualization" && tc.input && tc.input.version === 1 && typeof mountVisualization === "function") {
-          mountVisualization(tc.input, body, { toolCallId: tc.id || ("share-viz-" + tci) }).catch(function () { /* card paints its own error state */ });
-        }
-        if (cardOut && Array.isArray(tc.artifacts) && tc.artifacts.length > 0 && typeof appendInlineArtifact === "function") {
-          for (var ai = 0; ai < tc.artifacts.length; ai++) {
-            var art = tc.artifacts[ai];
-            if (art && art.id) {
-              var previewable = art.mimeType && (art.mimeType.indexOf("image/") === 0 || art.mimeType.indexOf("text/html") === 0);
-              appendInlineArtifact(art.id, art.mimeType || "application/octet-stream", previewable ? body : cardOut, art.name);
-            }
-          }
-        }
-      }
-    }
-    /* The summary card is built by inserting a node after the last legacy
-       .agent-tool-card, so it only applies to the fallback markup — a
-       declarative turn renders its own file chip and React owns that body. */
-    if (!declarative && m.role === "assistant" && typeof appendFileChangeSummaryCards === "function") {
-      try { appendFileChangeSummaryCards(body); } catch (_) {}
-    }
-    msgList.appendChild(div);
+}
+
+function _renderSharedMessageList(messages) {
+  var msgList = document.getElementById("msgList");
+  if (!msgList) return;
+  prepareSharedMessageList(msgList);
+  (messages || []).forEach(function (message) {
+    if (message) msgList.appendChild(renderSharedMessage(message));
   });
 }
 
@@ -323,64 +333,75 @@ function _switchToSharedChatView() {
   var recentsPane = document.getElementById("recentsPane");
   if (recentsPane) recentsPane.classList.add("hidden");
   if (typeof window.hideGate === "function") {
-    try { window.hideGate(); } catch (_) {}
+    try { window.hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.mjs:326'); }
   }
+}
+
+function restoreSharedMessage(message) {
+  return {
+    clientId: message.id || ("shared-" + Math.random().toString(36).slice(2, 10)),
+    role: message.role || "user",
+    /* rawText is the markdown the inline tool rows are spliced into, so
+       keep it distinct from the rendered `content` snapshot. */
+    rawText: message.rawText || message.content || "",
+    html: "",
+    type: message.role || "user",
+    reasoningContent: message.reasoningContent || null,
+    toolCalls: Array.isArray(message.toolCalls) ? message.toolCalls : [],
+    restoredFromHistory: true,
+  };
+}
+
+function installSharedSessionState(session) {
+  stateStore.dispatch({ type: 'state/batch', patch: {
+    topic: session.topic || '',
+    currentSessionId: session.id,
+    sessionTitle: session.title || null,
+    domain: session.domain || null,
+  } });
+  stateStore.dispatch({ type: 'session/replace-messages', payload:
+    (session.messages || []).map(restoreSharedMessage)
+  });
+}
+
+function showSharedChatSession(session) {
+  _switchToSharedChatView();
+  _renderSharedMessageList(session.messages || []);
+  document.documentElement.dataset.bootState = "app";
+  if (typeof window.renderRecents === "function") window.renderRecents();
+}
+
+function recoverFailedSharedSessionLoad() {
+  console.log("[share] load failed");
+  document.documentElement.dataset.bootState = "app";
+  if (typeof window.hideGate === "function") {
+    try { window.hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.mjs:371'); }
+  }
+  var gate = document.getElementById("authGate");
+  if (gate) gate.classList.add("hidden");
+  showToast("Shared session not found or has expired.");
 }
 
 async function loadSharedSession(token) {
   if (!token) return;
   try {
-    var r = await apiFetch("/api/shares/" + encodeURIComponent(token), { _authEndpoint: true });
-    if (!r || !r.id) throw new Error("Invalid response");
-    stateStore.dispatch({ type: 'state/batch', patch: {
-      topic: r.topic || '',
-      currentSessionId: r.id,
-      sessionTitle: r.title || null,
-      domain: r.domain || null,
-    } });
-    stateStore.dispatch({ type: 'session/replace-messages', payload:
-      (r.messages || []).map(function (m) {
-        return {
-          clientId: m.id || ("shared-" + Math.random().toString(36).slice(2, 10)),
-          role: m.role || "user",
-          /* rawText is the markdown the inline tool rows are spliced into, so
-             keep it distinct from the rendered `content` snapshot. */
-          rawText: m.rawText || m.content || "",
-          html: "",
-          type: m.role || "user",
-          reasoningContent: m.reasoningContent || null,
-          toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls : [],
-          restoredFromHistory: true,
-        };
-      })
-    });
-    if (r.kind === "exam" && r.examData) {
+    var session = await apiFetch("/api/shares/" + encodeURIComponent(token), { _authEndpoint: true });
+    if (!session || !session.id) throw new Error("Invalid response");
+    installSharedSessionState(session);
+    if (session.kind === "exam" && session.examData) {
       /* Awaited so a render failure lands in the catch below (toast + gate
          teardown) instead of escaping as an unhandled rejection. */
-      await loadSharedExamSession(r);
+      await loadSharedExamSession(session);
       return;
     }
-    _switchToSharedChatView();
-    _renderSharedMessageList(r.messages || []);
-    document.documentElement.dataset.bootState = "app";
-    if (typeof window.renderRecents === "function") window.renderRecents();
+    showSharedChatSession(session);
   } catch {
-    console.log("[share] load failed");
-    document.documentElement.dataset.bootState = "app";
-    if (typeof window.hideGate === "function") {
-      try { window.hideGate(); } catch (_) {}
-    }
-    var gate = document.getElementById("authGate");
-    if (gate) gate.classList.add("hidden");
-    showToast("Shared session not found or has expired.");
+    recoverFailedSharedSessionLoad();
   }
 }
 
-async function loadSharedExamSession(session) {
-  if (!session) return;
-  var exam = (session && session.examData) || {};
-  var questions = Array.isArray(exam.questions) ? exam.questions : [];
-  var answers = (exam && exam.answers) || {};
+function prepareSharedExamState(session, exam, questions) {
+  var answers = exam.answers || {};
   stateStore.dispatch({ type: 'state/batch', patch: {
     examReadOnly: true,
     examQuestions: questions,
@@ -390,11 +411,14 @@ async function loadSharedExamSession(session) {
     examCount: questions.length,
     _examInView: true,
   } });
+}
+
+function prepareSharedExamChrome(session, exam) {
   activateMainView("examView", document);
   /* exam.js is lazy — the shared view's Close button uses the delegated
      data-exam-command listener, so kick off the module load now. */
   if (typeof window.__loadExamModule === "function") {
-    try { window.__loadExamModule(); } catch (_) {}
+    try { window.__loadExamModule(); } catch (error) { reportSwallow(error, 'ui/share.impl.mjs:397'); }
   }
   var sharedExamTitle = (exam.submitted ? "Exam Results: " : "") + (exam.topic || session.topic || "");
   var titleEl = document.getElementById("examViewTitle");
@@ -402,30 +426,48 @@ async function loadSharedExamSession(session) {
   var titleBar = document.getElementById("examTitleBar");
   if (titleBar) { titleBar.textContent = sharedExamTitle; titleBar.classList.remove("hidden"); }
   document.body.classList.add("exam-active");
+}
+
+function renderSharedExamQuestions(questions) {
   var body = document.getElementById("examViewBody");
-  if (body) {
-    body.innerHTML = '<div id="examQuestionsContainer"></div>';
-    var container = body.querySelector("#examQuestionsContainer");
-    questions.forEach(function (q, idx) {
-      var card = document.createElement("div");
-      card.className = "exam-q-card";
-      card.id = "examQ" + idx;
-      card.setAttribute("data-idx", String(idx));
-      container.appendChild(card);
-      renderSharedQuestionCard(idx, q);
-    });
-  }
+  if (!body) return;
+  body.innerHTML = '<div id="examQuestionsContainer"></div>';
+  var container = body.querySelector("#examQuestionsContainer");
+  questions.forEach(function (question, index) {
+    var card = document.createElement("div");
+    card.className = "exam-q-card";
+    card.id = "examQ" + index;
+    card.setAttribute("data-idx", String(index));
+    container.appendChild(card);
+    renderSharedQuestionCard(index, question);
+  });
+}
+
+function renderSharedExamFooter() {
   var footer = document.getElementById("examViewFooter");
-  if (footer) {
-    var closeLabel = (window._currentLang === "zh") ? "关闭" : "Close";
-    footer.innerHTML = '<button class="exam-btn secondary" data-exam-command="close">' + closeLabel + '</button>';
-  }
+  if (!footer) return;
+  var closeLabel = (window._currentLang === "zh") ? "关闭" : "Close";
+  footer.innerHTML = '<button class="exam-btn secondary" data-exam-command="close">' + closeLabel + '</button>';
+}
+
+function revealSharedExam() {
   var gate = document.getElementById("authGate");
   if (gate) gate.classList.add("hidden");
   if (typeof window.hideGate === "function") {
-    try { window.hideGate(); } catch (_) {}
+    try { window.hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.mjs:426'); }
   }
   document.documentElement.dataset.bootState = "app";
+}
+
+async function loadSharedExamSession(session) {
+  if (!session) return;
+  var exam = session.examData || {};
+  var questions = Array.isArray(exam.questions) ? exam.questions : [];
+  prepareSharedExamState(session, exam, questions);
+  prepareSharedExamChrome(session, exam);
+  renderSharedExamQuestions(questions);
+  renderSharedExamFooter();
+  revealSharedExam();
 }
 
 function renderSharedQuestionCard(idx, q) {

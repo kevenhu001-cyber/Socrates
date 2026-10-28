@@ -5,7 +5,7 @@ import { saveCurrentSession } from '../../session/persistence.ts';
 import { resetApp } from './reset.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { translateLifecycleText } from './helpers.js';
-import { hasActiveModeSession, resolveNextAppMode } from './modeDecision.js';
+import { hasActiveModeSession, resolveNextAppMode } from './modeDecision.ts';
 
 function activeConversationIsInView() {
   const messageList = document.getElementById('msgList');

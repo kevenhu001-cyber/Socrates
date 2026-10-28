@@ -90,20 +90,29 @@ export function capSessions(arr: unknown): SessionRow[] {
   return Array.isArray(arr) ? (arr.slice(0, RECENTS_CAP) as SessionRow[]) : [];
 }
 
+function sessionSortTime(value: SessionRow['pinnedAt'] | SessionRow['updated_at'] | SessionRow['updatedAt'] | SessionRow['created_at'] | SessionRow['createdAt']): number {
+  return timeMs(value);
+}
+
+function pinnedSessionTime(session: SessionRow): number {
+  return sessionSortTime(session.pinnedAt || session.updated_at || session.updatedAt);
+}
+
+function recentSessionTime(session: SessionRow): number {
+  return sessionSortTime(session.updated_at || session.updatedAt || session.created_at || session.createdAt);
+}
+
+function compareVisibleSessions(a: SessionRow, b: SessionRow): number {
+  if (a.pinned && !b.pinned) return -1;
+  if (!a.pinned && b.pinned) return 1;
+  if (a.pinned && b.pinned) return pinnedSessionTime(b) - pinnedSessionTime(a);
+  return recentSessionTime(b) - recentSessionTime(a);
+}
+
 export function getVisibleSessions(sessions: ReadonlyArray<SessionRow>, now?: number): SessionRow[] {
   const swept = sweepExpiredArchivesFrom(sessions, now).sessions;
   const copy = swept.filter(function (s) { return !s || !s.archivedAt; });
-  copy.sort(function (a, b) {
-    /* Pinned sessions first, sorted by pin time descending. */
-    if (a.pinned && !b.pinned) return -1;
-    if (!a.pinned && b.pinned) return 1;
-    if (a.pinned && b.pinned) {
-      return timeMs(b.pinnedAt || b.updated_at || b.updatedAt)
-        - timeMs(a.pinnedAt || a.updated_at || a.updatedAt);
-    }
-    return timeMs(b.updated_at || b.updatedAt || b.created_at || b.createdAt)
-      - timeMs(a.updated_at || a.updatedAt || a.created_at || a.createdAt);
-  });
+  copy.sort(compareVisibleSessions);
   return copy;
 }
 

@@ -201,6 +201,31 @@ export function toolRowAnchorOffset(text: string, offset: number): number {
 
 const TOOL_SENTENCE_CLOSERS = new Set(['"', "'", '”', '’', '」', '』', '）', ')', ']', '}']);
 
+function skipSentenceClosers(text: string, start: number, limit: number): number {
+  let index = start;
+  while (index < limit && TOOL_SENTENCE_CLOSERS.has(text[index])) index += 1;
+  return index;
+}
+
+function sentenceAlreadyEndedBeforeOffset(text: string, offset: number, boundary: number): boolean {
+  const before = text.slice(0, offset).trimEnd();
+  const last = before[before.length - 1] || '';
+  const next = text[boundary] || '';
+  return /[。！？!?]/u.test(last) || (last === '.' && (!next || /\s/u.test(next)));
+}
+
+function nextSentenceEnd(text: string, start: number, limit: number): number | null {
+  for (let index = start; index < limit; index += 1) {
+    const char = text[index];
+    if (!/[。！？!?]/u.test(char) && char !== '.') continue;
+    if (char === '.' && index + 1 < limit && !/\s/u.test(text[index + 1])) continue;
+
+    const end = skipSentenceClosers(text, index + 1, limit);
+    if (/[。！？!?]/u.test(char) || end >= limit || /\s/u.test(text[end] || '')) return end;
+  }
+  return null;
+}
+
 /**
  * Historical turns already have their complete prose, so keep a tool row
  * close to the sentence where its persisted fire offset points. Live turns
@@ -214,24 +239,9 @@ export function restoredToolRowAnchorOffset(text: string, offset: number): numbe
 
   const paragraphEnd = paragraphEndAfter(full, off);
   if (full[off] === '\n' || full[off] === '\r') return off;
-
-  let boundary = off;
-  while (boundary < paragraphEnd && TOOL_SENTENCE_CLOSERS.has(full[boundary])) boundary += 1;
-  const before = full.slice(0, off).trimEnd();
-  const last = before[before.length - 1] || '';
-  const next = full[boundary] || '';
-  if (/[。！？!?]/u.test(last) || (last === '.' && (!next || /\s/u.test(next)))) return boundary;
-
-  for (let index = off; index < paragraphEnd; index += 1) {
-    const char = full[index];
-    if (!/[。！？!?]/u.test(char) && char !== '.') continue;
-    if (char === '.' && index + 1 < paragraphEnd && !/\s/u.test(full[index + 1])) continue;
-
-    let end = index + 1;
-    while (end < paragraphEnd && TOOL_SENTENCE_CLOSERS.has(full[end])) end += 1;
-    if (/[。！？!?]/u.test(char) || end >= paragraphEnd || /\s/u.test(full[end])) return end;
-  }
-  return paragraphEnd;
+  const boundary = skipSentenceClosers(full, off, paragraphEnd);
+  if (sentenceAlreadyEndedBeforeOffset(full, off, boundary)) return boundary;
+  return nextSentenceEnd(full, off, paragraphEnd) ?? paragraphEnd;
 }
 
 /* Keep completed Markdown blocks in a stable DOM region and return only the

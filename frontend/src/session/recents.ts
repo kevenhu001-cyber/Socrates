@@ -19,7 +19,7 @@ import { showToast } from '../ui/toast.js';
 import { clearComposer } from '../composer/controller.ts';
 import { clearComposerPlugins } from '../composer/pluginSelection.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
-import { updateComposerBtn } from '../ui/topicSetup.js';
+import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { turnState } from '../chat/turnState.ts';
 import { activateMainView } from '../ui/mainViewController.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -284,21 +284,21 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
 /* Quick archive from the Recents row menu. Soft-hide only: the row leaves
    Recents immediately, lands in Storage (Profile → Archived), and can be
    restored for 30 days. Distinct from deleteSession, which hard-deletes. */
-export async function archiveSession(id: string, ev?: Event | null): Promise<void> {
-  if (!_currentUser()) return;
-  if (ev && ev.stopPropagation) ev.stopPropagation();
-  if (ev && ev.preventDefault) ev.preventDefault();
-  if (saveState.saveInFlight) {
-    try { await saveState.saveInFlight; } catch (e) { reportSwallow(e, 'session/recents.archiveSession.drainInFlight'); }
-  }
+function stopActiveSessionForArchive(id: string): boolean {
   const wasActive = stateStore.read('currentSessionId') === id;
-  if (wasActive) {
-    if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.abortTurn'); } }
-    const abortActive = (window as RecentsWindow)._activeChatAbort;
-    if (abortActive) { try { abortActive('session-archived'); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.abortActive'); } }
-    bounceOutOfArchivedSession();
+  if (!wasActive) return false;
+  if (turnState.activeChatCtl) {
+    try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.abortTurn'); }
   }
-  const stamp = Date.now();
+  const abortActive = (window as RecentsWindow)._activeChatAbort;
+  if (abortActive) {
+    try { abortActive('session-archived'); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.abortActive'); }
+  }
+  bounceOutOfArchivedSession();
+  return true;
+}
+
+function stageSessionArchive(id: string, stamp: number): void {
   detailCache.invalidate(id);
   const idx = findServerSessionIndex(id);
   if (idx >= 0) {
@@ -308,25 +308,45 @@ export async function archiveSession(id: string, ev?: Event | null): Promise<voi
   }
   _renderRecents();
   _renderArchivedList();
+}
+
+async function finishSessionArchive(wasActive: boolean): Promise<void> {
+  showToast(_t('session.archived'));
+  await flushRecentsReconcile();
+  _renderRecents();
+  _renderArchivedList();
+  if (wasActive || getRecents().length === 0) bounceOutOfArchivedSession();
+}
+
+async function rollbackSessionArchive(id: string, error: unknown): Promise<void> {
+  const back = findServerSessionIndex(id);
+  if (back >= 0) serverCache.sessions[back].archivedAt = null;
+  try {
+    showToast(_t('session.archiveFailed').replace('{msg}', errorMessage(error) || 'server error'), 4000);
+  } catch (e) { reportSwallow(e, 'session/recents.archiveSession.toast'); }
+  try { await flushRecentsReconcile(); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.flushReconcile'); }
+  _renderRecents();
+  _renderArchivedList();
+}
+
+export async function archiveSession(id: string, ev?: Event | null): Promise<void> {
+  if (!_currentUser()) return;
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  if (ev && ev.preventDefault) ev.preventDefault();
+  if (saveState.saveInFlight) {
+    try { await saveState.saveInFlight; } catch (e) { reportSwallow(e, 'session/recents.archiveSession.drainInFlight'); }
+  }
+  const wasActive = stopActiveSessionForArchive(id);
+  const stamp = Date.now();
+  stageSessionArchive(id, stamp);
   try {
     await apiFetch('/api/sessions/' + encodeURIComponent(id) + '/archive', {
       method: 'POST',
     });
-    showToast(_t('session.archived'));
-    await flushRecentsReconcile();
-    _renderRecents();
-    _renderArchivedList();
-    if (wasActive || getRecents().length === 0) {
-      bounceOutOfArchivedSession();
-    }
-  } catch (err) {
+    await finishSessionArchive(wasActive);
+  } catch (error) {
     /* Roll the optimistic stamp so a failed POST doesn't hide the row. */
-    const back = findServerSessionIndex(id);
-    if (back >= 0) serverCache.sessions[back].archivedAt = null;
-    try { showToast(_t('session.archiveFailed').replace('{msg}', errorMessage(err) || 'server error'), 4000); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.toast'); }
-    try { await flushRecentsReconcile(); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.flushReconcile'); }
-    _renderRecents();
-    _renderArchivedList();
+    await rollbackSessionArchive(id, error);
   }
 }
 

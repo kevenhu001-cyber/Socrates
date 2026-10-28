@@ -107,11 +107,11 @@ function dialogHeader(title: string, subtitle: string): string {
   return `<div class="workspace-dialog-title"><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div><button type="button" data-dialog-close aria-label="${i18n('dialog.close', 'Close')}">×</button></div>`;
 }
 
-export function openProjectForm(projectId: string | null = null): void {
-  const project = projectId ? getCachedProjects().find((entry) => entry.id === projectId) || null : null;
+type CachedProject = ReturnType<typeof getCachedProjects>[number];
+
+function projectFormMarkup(project: CachedProject | null, title: string): string {
   const editing = Boolean(project);
-  const title = i18n(editing ? 'dialog.project.editTitle' : 'dialog.project.newTitle', editing ? 'Edit project' : 'New project');
-  const markup = `${dialogHeader(title, i18n('dialog.project.subtitle', 'Give this work a home and a clear instruction.'))}
+  return `${dialogHeader(title, i18n('dialog.project.subtitle', 'Give this work a home and a clear instruction.'))}
     <form id="projectForm" class="workspace-form">
       <label class="workspace-field"><span>${i18n('dialog.field.name', 'Name')}</span><input name="name" maxlength="80" required value="${escapeHtml(project?.name)}" placeholder="${i18n('dialog.project.namePh', 'Research, writing, a course…')}"></label>
       <label class="workspace-field"><span>${i18n('dialog.field.description', 'Description')} <em>${i18n('dialog.optional', 'Optional')}</em></span><input name="description" maxlength="180" value="${escapeHtml(project?.description)}" placeholder="${i18n('dialog.project.descPh', 'What are you working toward?')}"></label>
@@ -119,7 +119,17 @@ export function openProjectForm(projectId: string | null = null): void {
       <label class="workspace-field"><span>${i18n('dialog.field.color', 'Color')}</span><input name="color" type="color" value="${escapeHtml(project?.color || '#c69a2d')}"></label>
       <div class="workspace-dialog-actions">${editing ? `<button type="button" class="workspace-danger" data-action="delete-project">${i18n('common.delete', 'Delete')}</button>` : '<span></span>'}<span></span><button type="button" class="workspace-secondary" data-dialog-close>${i18n('common.cancel', 'Cancel')}</button><button class="workspace-primary" type="submit">${i18n(editing ? 'dialog.project.save' : 'projects.create', editing ? 'Save changes' : 'Create project')}</button></div>
     </form>`;
-  const dialog = showWorkspaceDialog(markup);
+}
+
+async function deleteProjectFromForm(project: CachedProject): Promise<void> {
+  const accepted = await confirmAction(i18n('confirm.deleteProject.title', 'Delete this project?'), i18n('confirm.deleteProject.msg', "This permanently deletes the project's chats, files, artifacts, and memories. This cannot be undone."));
+  if (!accepted) return;
+  await deleteProjectRecord(project.id);
+  closeWorkspaceDialog();
+  void getLegacyActions().sessions.flushRecentsReconcile();
+}
+
+function bindProjectForm(dialog: HTMLDivElement, project: CachedProject | null): void {
   const form = dialog.querySelector<HTMLFormElement>('#projectForm');
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -129,15 +139,46 @@ export function openProjectForm(projectId: string | null = null): void {
       closeWorkspaceDialog();
     } catch { /* service already reports the save failure */ }
   });
-  if (editing && project) {
-    dialog.querySelector('[data-action="delete-project"]')?.addEventListener('click', async () => {
-      const accepted = await confirmAction(i18n('confirm.deleteProject.title', 'Delete this project?'), i18n('confirm.deleteProject.msg', "This permanently deletes the project's chats, files, artifacts, and memories. This cannot be undone."));
-      if (!accepted) return;
-      await deleteProjectRecord(project.id);
-      closeWorkspaceDialog();
-      void getLegacyActions().sessions.flushRecentsReconcile();
-    });
+  if (!project) return;
+  dialog.querySelector('[data-action="delete-project"]')?.addEventListener('click', async () => {
+    await deleteProjectFromForm(project);
+  });
+}
+
+function libraryFilePreviewBody(mime: string, name: string, rawUrl: string): { html: string; isMedia: boolean } {
+  if (mime.startsWith('image/')) {
+    return { html: `<div class="library-file-preview-media"><img src="${escapeHtml(rawUrl)}" alt="${escapeHtml(name)}" /></div>`, isMedia: true };
   }
+  if (mime === 'application/pdf') {
+    return { html: `<iframe class="library-file-preview-frame" src="${escapeHtml(rawUrl)}" title="${escapeHtml(name)}"></iframe>`, isMedia: true };
+  }
+  if (mime.startsWith('video/')) {
+    return { html: `<div class="library-file-preview-media"><video controls preload="metadata" src="${escapeHtml(rawUrl)}"></video></div>`, isMedia: true };
+  }
+  if (mime.startsWith('audio/')) {
+    return { html: `<div class="library-file-preview-audio"><audio controls preload="metadata" src="${escapeHtml(rawUrl)}"></audio></div>`, isMedia: true };
+  }
+  return {
+    html: '<div id="libraryFilePreviewBody" class="library-file-preview-loading">' + i18n('library.preview.loading', 'Loading file content…') + '</div>',
+    isMedia: false,
+  };
+}
+
+function openLibraryArtifact(artifact: NonNullable<ReturnType<typeof getWorkspaceLibraryItem>>): void {
+  openLibraryDetail(
+    artifact.title || artifact.name || i18n('library.untitled', 'Untitled'),
+    i18n('library.preview.artifactSource', 'Created item source'),
+    `<pre class="library-file-preview-text library-artifact-source">${escapeHtml(artifact.source || '')}</pre>`,
+    i18n('dialog.close', 'Close'),
+  );
+}
+
+export function openProjectForm(projectId: string | null = null): void {
+  const project = projectId ? getCachedProjects().find((entry) => entry.id === projectId) || null : null;
+  const editing = Boolean(project);
+  const title = i18n(editing ? 'dialog.project.editTitle' : 'dialog.project.newTitle', editing ? 'Edit project' : 'New project');
+  const dialog = showWorkspaceDialog(projectFormMarkup(project, title));
+  bindProjectForm(dialog, project);
 }
 
 export function openLibraryItem(id: string, _kind: string, collection?: string): void {
@@ -145,12 +186,7 @@ export function openLibraryItem(id: string, _kind: string, collection?: string):
   const artifact = getWorkspaceLibraryItem(id, 'artifacts');
   if (collection === 'artifacts' || (!collection && !file && artifact)) {
     if (!artifact) return;
-    openLibraryDetail(
-      artifact.title || artifact.name || i18n('library.untitled', 'Untitled'),
-      i18n('library.preview.artifactSource', 'Created item source'),
-      `<pre class="library-file-preview-text library-artifact-source">${escapeHtml(artifact.source || '')}</pre>`,
-      i18n('dialog.close', 'Close'),
-    );
+    openLibraryArtifact(artifact);
     return;
   }
   if (!file) {
@@ -165,19 +201,7 @@ export function openLibraryItem(id: string, _kind: string, collection?: string):
   // Content-Disposition server-side; the `download` attribute covers the
   // inline-served kinds (images/PDF/media) so every preview can be saved.
   const downloadUrl = '/api/v2/files/' + encodeURIComponent(file.id) + '/raw';
-  const isMedia = mime.startsWith('image/') || mime === 'application/pdf' || mime.startsWith('video/') || mime.startsWith('audio/');
-  let body: string;
-  if (mime.startsWith('image/')) {
-    body = `<div class="library-file-preview-media"><img src="${escapeHtml(rawUrl)}" alt="${escapeHtml(name)}" /></div>`;
-  } else if (mime === 'application/pdf') {
-    body = `<iframe class="library-file-preview-frame" src="${escapeHtml(rawUrl)}" title="${escapeHtml(name)}"></iframe>`;
-  } else if (mime.startsWith('video/')) {
-    body = `<div class="library-file-preview-media"><video controls preload="metadata" src="${escapeHtml(rawUrl)}"></video></div>`;
-  } else if (mime.startsWith('audio/')) {
-    body = `<div class="library-file-preview-audio"><audio controls preload="metadata" src="${escapeHtml(rawUrl)}"></audio></div>`;
-  } else {
-    body = '<div id="libraryFilePreviewBody" class="library-file-preview-loading">' + i18n('library.preview.loading', 'Loading file content…') + '</div>';
-  }
+  const { html: body, isMedia } = libraryFilePreviewBody(mime, name, rawUrl);
 
   const downloadRow = `<div class="library-file-download"><a class="workspace-row-action" href="${escapeHtml(downloadUrl)}" download="${escapeHtml(name)}">${escapeHtml(i18n('library.download', 'Download original'))}</a></div>`;
   openLibraryDetail(name, mime || i18n('library.preview.file', 'File'), downloadRow + body, i18n('dialog.close', 'Close'));
@@ -280,73 +304,94 @@ async function renderProjectRunHistory(projectId: string): Promise<void> {
   }
 }
 
+function appendRunArtifacts(host: HTMLElement, artifacts: ProjectRunDetails['artifacts']): void {
+  if (!Array.isArray(artifacts) || !artifacts.length) return;
+  const title = document.createElement('strong');
+  title.className = 'agent-run-details-section-title';
+  title.textContent = i18n('dialog.project.artifacts', 'Created artifacts');
+  const list = document.createElement('ul');
+  list.className = 'agent-run-artifacts';
+  artifacts.forEach((artifact) => {
+    const item = document.createElement('li');
+    item.textContent = artifact.name || artifact.id;
+    list.appendChild(item);
+  });
+  host.append(title, list);
+}
+
+function appendRunEvents(host: HTMLElement, events: ProjectRunDetails['events']): void {
+  if (!Array.isArray(events) || !events.length) return;
+  const activity = document.createElement('details');
+  activity.className = 'agent-run-details-activity';
+  const title = document.createElement('summary');
+  title.textContent = i18n('dialog.project.activity', 'Activity');
+  const list = document.createElement('ol');
+  events.slice(-40).forEach((event) => {
+    const item = document.createElement('li');
+    const payload = event.data || {};
+    item.textContent = String(event.event || 'event') + (payload.command ? ': ' + payload.command : payload.delta ? ': ' + String(payload.delta).slice(0, 160) : '');
+    list.appendChild(item);
+  });
+  activity.append(title, list);
+  host.appendChild(activity);
+}
+
+function renderRunDetails(host: HTMLElement, result: ProjectRunDetails): void {
+  host.replaceChildren();
+  const run = result?.run;
+  const summary = document.createElement('p');
+  summary.className = 'agent-run-details-summary';
+  summary.textContent = run?.summary || run?.error || i18n('dialog.project.noRunSummary', 'No summary was saved.');
+  const status = document.createElement('div');
+  status.className = 'agent-run-details-status';
+  status.textContent = runStatusLabel(run?.status) + (timeLabel(run?.startedAt) ? ' · ' + timeLabel(run?.startedAt) : '');
+  host.append(summary, status);
+  appendRunArtifacts(host, result?.artifacts);
+  appendRunEvents(host, result?.events);
+}
+
 async function openAgentRunDetails(runId: string): Promise<void> {
   const dialog = showWorkspaceDialog(`${dialogHeader(i18n('dialog.project.runDetails', 'Agent run'), i18n('dialog.project.runDetailsLoading', 'Loading the execution record…'))}<div id="agentRunDetails" class="agent-run-details"><div class="workspace-loading">${escapeHtml(i18n('dialog.project.runsLoading', 'Loading agent runs…'))}</div></div>`);
   try {
     const result = await api()<ProjectRunDetails>('/api/agent-runs/' + encodeURIComponent(runId));
     const host = dialog.querySelector<HTMLElement>('#agentRunDetails');
     if (!host) return;
-    host.replaceChildren();
-    const run = result?.run;
-    const summary = document.createElement('p');
-    summary.className = 'agent-run-details-summary';
-    summary.textContent = run?.summary || run?.error || i18n('dialog.project.noRunSummary', 'No summary was saved.');
-    const status = document.createElement('div');
-    status.className = 'agent-run-details-status';
-    status.textContent = runStatusLabel(run?.status) + (timeLabel(run?.startedAt) ? ' · ' + timeLabel(run?.startedAt) : '');
-    host.append(summary, status);
-    if (Array.isArray(result?.artifacts) && result.artifacts.length) {
-      const title = document.createElement('strong');
-      title.className = 'agent-run-details-section-title';
-      title.textContent = i18n('dialog.project.artifacts', 'Created artifacts');
-      const list = document.createElement('ul');
-      list.className = 'agent-run-artifacts';
-      result.artifacts.forEach((artifact) => { const item = document.createElement('li'); item.textContent = artifact.name || artifact.id; list.appendChild(item); });
-      host.append(title, list);
-    }
-    if (Array.isArray(result?.events) && result.events.length) {
-      const activity = document.createElement('details');
-      activity.className = 'agent-run-details-activity';
-      const title = document.createElement('summary');
-      title.textContent = i18n('dialog.project.activity', 'Activity');
-      const list = document.createElement('ol');
-      result.events.slice(-40).forEach((event) => {
-        const item = document.createElement('li');
-        const payload = event.data || {};
-        item.textContent = String(event.event || 'event') + (payload.command ? ': ' + payload.command : payload.delta ? ': ' + String(payload.delta).slice(0, 160) : '');
-        list.appendChild(item);
-      });
-      activity.append(title, list);
-      host.appendChild(activity);
-    }
+    renderRunDetails(host, result);
   } catch (error) {
     const host = dialog.querySelector('#agentRunDetails');
     if (host) host.textContent = error instanceof Error ? error.message : i18n('dialog.project.runsFailed', 'Run history is unavailable right now.');
   }
 }
 
-export async function openScheduledTaskForm(taskId?: string, initialPrompt = ''): Promise<void> {
-  const task = taskId ? useScheduledStore.getState().tasks.find((item) => item.id === taskId) || null : null;
-  const editing = Boolean(task);
-  const toLocalDateTime = (value: string | null): string => {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    const part = (value: number) => String(value).padStart(2, '0');
-    return `${date.getFullYear()}-${part(date.getMonth() + 1)}-${part(date.getDate())}T${part(date.getHours())}:${part(date.getMinutes())}`;
-  };
-  const projectOptions = getCachedProjects().map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.name)}</option>`).join('');
-  const activeProjectId = task?.projectId || sessionStore.getState().currentProjectId || '';
-  const markup = `${dialogHeader(i18n(editing ? 'dialog.task.editTitle' : 'dialog.task.newTitle', editing ? 'Edit task' : 'Schedule a task'), i18n('dialog.task.subtitle', 'Choose what should run and when to check back.'))}
+function dateTimeLocalValue(value: string | null): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const part = (number: number) => String(number).padStart(2, '0');
+  return `${date.getFullYear()}-${part(date.getMonth() + 1)}-${part(date.getDate())}T${part(date.getHours())}:${part(date.getMinutes())}`;
+}
+
+type ScheduledTask = ReturnType<typeof useScheduledStore.getState>['tasks'][number];
+
+function scheduledTaskFormMarkup(task: ScheduledTask | null, editing: boolean, projectOptions: string): string {
+  return `${dialogHeader(i18n(editing ? 'dialog.task.editTitle' : 'dialog.task.newTitle', editing ? 'Edit task' : 'Schedule a task'), i18n('dialog.task.subtitle', 'Choose what should run and when to check back.'))}
     <form id="taskForm" class="workspace-form">
       <label class="workspace-field"><span>${i18n('dialog.task.field', 'Task')}</span><input name="title" maxlength="120" required value="${escapeHtml(task?.title)}" placeholder="${i18n('dialog.task.titlePh', 'Send me a weekly study plan')}"></label>
       <label class="workspace-field"><span>${i18n('dialog.task.prompt', 'Prompt')}</span><textarea name="prompt" rows="3" placeholder="${i18n('dialog.task.promptPh', 'What should Socrates do when this task runs?')}">${escapeHtml(task?.prompt)}</textarea></label>
       <div class="workspace-form-grid"><label class="workspace-field"><span>${i18n('dialog.task.agent', 'Agent')}</span><select name="agentKind"><option value="native">${i18n('dialog.task.nativeAgent', 'Socrates · native tools')}</option><option value="codex">${i18n('dialog.task.codexAgent', 'Pi Agent · project workspace')}</option></select></label><label class="workspace-field"><span>${i18n('dialog.task.project', 'Project')}</span><select name="projectId"><option value="">${i18n('dialog.task.noProject', 'No project')}</option>${projectOptions}</select></label></div>
-      <div class="workspace-form-grid"><label class="workspace-field"><span>${i18n('dialog.task.repeat', 'Repeat')}</span><select name="frequency"><option value="once">${i18n('scheduled.freq.once', 'Once')}</option><option value="daily">${i18n('scheduled.freq.daily', 'Daily')}</option><option value="weekly">${i18n('scheduled.freq.weekly', 'Weekly')}</option><option value="monthly">${i18n('scheduled.freq.monthly', 'Monthly')}</option></select></label><label class="workspace-field"><span>${i18n('dialog.task.firstRun', 'First run')}</span><input name="nextRunAt" type="datetime-local" value="${escapeHtml(toLocalDateTime(task?.nextRunAt || null))}"></label></div>
+      <div class="workspace-form-grid"><label class="workspace-field"><span>${i18n('dialog.task.repeat', 'Repeat')}</span><select name="frequency"><option value="once">${i18n('scheduled.freq.once', 'Once')}</option><option value="daily">${i18n('scheduled.freq.daily', 'Daily')}</option><option value="weekly">${i18n('scheduled.freq.weekly', 'Weekly')}</option><option value="monthly">${i18n('scheduled.freq.monthly', 'Monthly')}</option></select></label><label class="workspace-field"><span>${i18n('dialog.task.firstRun', 'First run')}</span><input name="nextRunAt" type="datetime-local" value="${escapeHtml(dateTimeLocalValue(task?.nextRunAt || null))}"></label></div>
       <p class="workspace-note">${i18n('dialog.task.codexNote', 'Pi Agent scheduled runs work inside the selected project workspace with server-enforced disk limits.')}</p>
       <div class="workspace-dialog-actions">${editing ? `<button type="button" class="workspace-danger" data-action="delete-task">${i18n('common.delete', 'Delete')}</button>` : '<span></span>'}<span></span><button type="button" class="workspace-secondary" data-dialog-close>${i18n('common.cancel', 'Cancel')}</button><button class="workspace-primary" type="submit">${i18n(editing ? 'dialog.task.save' : 'scheduled.createTask', editing ? 'Save task' : 'Create task')}</button></div>
     </form>`;
-  const dialog = showWorkspaceDialog(markup);
+}
+
+function bindScheduledTaskForm(
+  dialog: HTMLDivElement,
+  task: ScheduledTask | null,
+  editing: boolean,
+  initialPrompt: string,
+  activeProjectId: string,
+): void {
   const form = dialog.querySelector<HTMLFormElement>('#taskForm');
   if (!form) return;
   const titleInput = form.elements.namedItem('title') as HTMLInputElement | null;
@@ -381,6 +426,15 @@ export async function openScheduledTaskForm(taskId?: string, initialPrompt = '')
     try { await saveScheduledTask(task?.id || null, body); closeWorkspaceDialog(); }
     catch { /* service already reports the save failure */ }
   });
+}
+
+export async function openScheduledTaskForm(taskId?: string, initialPrompt = ''): Promise<void> {
+  const task = taskId ? useScheduledStore.getState().tasks.find((item) => item.id === taskId) || null : null;
+  const editing = Boolean(task);
+  const projectOptions = getCachedProjects().map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.name)}</option>`).join('');
+  const activeProjectId = task?.projectId || sessionStore.getState().currentProjectId || '';
+  const dialog = showWorkspaceDialog(scheduledTaskFormMarkup(task, editing, projectOptions));
+  bindScheduledTaskForm(dialog, task, editing, initialPrompt, String(activeProjectId));
 }
 
 function connectorIcon(id: string): string {

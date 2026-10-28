@@ -13,7 +13,7 @@ import { activateMainView } from '../../ui/mainViewController.js';
 import { setActiveNav } from '../../sidebar/navigation.service.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { translateLifecycleText } from './helpers.js';
-import { shouldConfirmReset } from './resetDecision.js';
+import { shouldConfirmReset } from './resetDecision.ts';
 
 function readResetDecision(options) {
   const examWasOpen = Boolean(stateStore.read('_examInView'))

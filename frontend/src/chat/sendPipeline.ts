@@ -24,7 +24,7 @@ import { enqueuePrompt } from './promptQueue.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { resetAttachments } from '../attachments.js';
 import { renderAttachmentChips } from '../attachments/render.js';
-import { updateComposerBtn } from '../ui/topicSetup.js';
+import { updateComposerBtn } from '../ui/topicSetup.ts';
 
 function refreshTutorWebContext(text: string): void {
   const topic = stateStore.read('topic');

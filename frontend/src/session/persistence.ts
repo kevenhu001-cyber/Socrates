@@ -64,6 +64,31 @@ export interface SessionPostPayload {
   [key: string]: unknown;
 }
 
+type SessionTeachingProgress = Pick<
+  SessionPostPayload,
+  'teachingStage' | 'currentExampleIdx' | 'practiceAttempts' | 'practicePhase' | 'teachingPlan'
+>;
+
+type SessionSidebarState = Pick<SessionPostPayload, 'boundariesHistory' | 'mistakeFilter' | 'branchedFrom'>;
+
+function captureTeachingProgress(): SessionTeachingProgress {
+  return {
+    teachingStage: (stateStore.read('teachingStage') as string) || 'motivate',
+    currentExampleIdx: (stateStore.read('currentExampleIdx') as number) || 0,
+    practiceAttempts: (stateStore.read('practiceAttempts') as number) || 0,
+    practicePhase: (stateStore.read('practicePhase') as string) || 'foundation',
+    teachingPlan: stateStore.read('teachingPlan') || null,
+  };
+}
+
+function captureSessionSidebarState(): SessionSidebarState {
+  return {
+    boundariesHistory: (stateStore.read('boundariesHistory') as unknown[]) || [],
+    mistakeFilter: (stateStore.read('mistakeFilter') as string) || 'all',
+    branchedFrom: stateStore.read('branchedFrom') || null,
+  };
+}
+
 /** The POST /api/sessions response fields the save pipeline reads. */
 interface SaveResponse {
   id?: string;
@@ -137,6 +162,64 @@ function _renderRecents(): void {
     /* empty-catch: intentional — rendering is best-effort */
   }
 }
+
+function commitAcknowledgedSave(
+  response: SaveResponse | null | undefined,
+  capturedSessionId: string,
+  originalSessionId: string,
+  sentMessages: SessionPostMessage[],
+): void {
+  /* Only acknowledged rows advance the watermark; any earlier failure
+     leaves them eligible for the next save attempt. */
+  commitSynced(_syncedFor(capturedSessionId), sentMessages, _fingerprints);
+  if (response && response.id && response.id !== originalSessionId) {
+    _rekeySynced(capturedSessionId, response.id);
+  }
+
+  /* Fold exactly the acknowledged delta into both old and adopted ids. */
+  const cachedId = (response && response.id) || capturedSessionId;
+  detailCache.foldSave(cachedId, response, sentMessages as MessageLike[]);
+  if (response && response.id && response.id !== capturedSessionId) {
+    detailCache.foldSave(capturedSessionId, response, sentMessages as MessageLike[]);
+  }
+
+  /* If the user deleted this draft while POST was in flight, only rewrite a
+     pending snapshot; the tombstone still prevents state adoption below. */
+  if (response && response.id && response.id !== originalSessionId
+    && saveState.pendingSnapshot && saveState.pendingSnapshot.id === originalSessionId) {
+    saveState.pendingSnapshot.id = response.id;
+  }
+}
+
+function publishAcknowledgedSave(
+  response: SaveResponse | null | undefined,
+  payload: SessionPostPayload,
+  capturedSessionId: string,
+  originalSessionId: string,
+): void {
+  _applySavedRow(response as SavedSession, payload, originalSessionId);
+  if (deletedSessionGuard.has(capturedSessionId)) _flushRecentsReconcile();
+  else _scheduleRecentsReconcile();
+
+  /* A late response belongs to the captured session, so it may only adopt
+     the server id while that session is still active. */
+  if (stateStore.read('currentSessionId') === capturedSessionId && response
+    && response.id && response.id !== originalSessionId) {
+    stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: response.id });
+    pushChatIdToURL(response.id);
+  }
+
+  /* Clear server streaming markers after the durable save. */
+  const targetSid = (response && response.id) || capturedSessionId;
+  if (targetSid) {
+    apiFetch('/api/sessions/' + encodeURIComponent(targetSid), {
+      method: 'PATCH',
+      body: { streamingText: null, streamingReasoning: null },
+    }).catch(function () { /* empty-catch: intentional — clearing the partial marker is best-effort */ });
+  }
+  _renderRecents();
+}
+
 function _appMode(): string {
   try {
     if (typeof window !== 'undefined' && (window as PersistenceWindow).appMode) return (window as PersistenceWindow).appMode as string;
@@ -364,19 +447,13 @@ function captureSessionPayload(): SessionPostPayload {
        reloaded session resumes at the right stage. The backend
        sessions.js uses .passthrough() so these extra fields are
        accepted without schema changes. */
-    teachingStage: (stateStore.read('teachingStage') as string) || 'motivate',
-    currentExampleIdx: (stateStore.read('currentExampleIdx') as number) || 0,
-    practiceAttempts: (stateStore.read('practiceAttempts') as number) || 0,
-    practicePhase: (stateStore.read('practicePhase') as string) || 'foundation',
-    teachingPlan: stateStore.read('teachingPlan') || null,
+    ...captureTeachingProgress(),
     /* v3.0 design — knowledge boundary history (snapshots) and
        mistake filter are also persisted so the sidebar state
        survives reloads. */
-    boundariesHistory: (stateStore.read('boundariesHistory') as unknown[]) || [],
-    mistakeFilter: (stateStore.read('mistakeFilter') as string) || 'all',
+    ...captureSessionSidebarState(),
     /* P1.1 — persist branchedFrom metadata so a reloaded session
        shows "Branched from ..." in the sidebar. */
-    branchedFrom: stateStore.read('branchedFrom') || null,
     updatedAt: now,
   };
   return payload;
@@ -528,69 +605,10 @@ function postSession(payload: SessionPostPayload): Promise<unknown> {
      known to hold. The watermark advances only in the success handler
      below, for exactly the rows that were acknowledged. */
   const body = buildDeltaPayload(payload, _syncedFor(capturedSessionId), _fingerprints);
-  const sentMessages = body.messages;
-  saveState.saveInFlight = apiFetch<SaveResponse>('/api/sessions', { method: 'POST', body: body }).then(function (r) {
-    /* The server acknowledged this batch — only now may the watermark
-       advance. Anything that failed before this point re-sends next time. */
-    commitSynced(_syncedFor(capturedSessionId), sentMessages, _fingerprints);
-    if (r && r.id && r.id !== sessionId) _rekeySynced(capturedSessionId, r.id);
-    /* P_cache-foldsave — the acknowledged delta is exactly what the server
-       now holds, so folding it into the cached detail leaves the entry
-       correct instead of dropping it. Applied to the server-adopted id too:
-       that is the id every later loadSession() uses. The client draft id is
-       re-keyed for the same reason it is for the sync watermark. */
-    const _cachedId = (r && r.id) || capturedSessionId;
-    detailCache.foldSave(_cachedId, r, sentMessages as MessageLike[]);
-    if (r && r.id && r.id !== capturedSessionId) {
-      detailCache.foldSave(capturedSessionId, r, sentMessages as MessageLike[]);
-    }
-    /* P_delete-resurrect — if this session was deleted while the
-       POST was in-flight (rememberDeletedSession set a tombstone),
-       do NOT adopt the server's id or update state. The server may
-       have processed this upsert after the DELETE (race), potentially
-       resurrecting the row. Instead, just refresh the server list
-       which will reflect the DELETE (or the next DELETE cycle). */
-    if (r && r.id && r.id !== sessionId && saveState.pendingSnapshot && saveState.pendingSnapshot.id === sessionId) {
-      saveState.pendingSnapshot.id = r.id;
-    }
-    /* P_recents-amplify — the response carries every scalar the list row
-       renders (server routes/sessions.ts P_save-response), so patch that one
-       row in place and hand the rest to a throttled reconcile. This used to
-       be `return _refreshServerSessions()` — a full 200-row fetch INSIDE the
-       saveInFlight promise, which meant (a) every turn paid it and (b)
-       loadSession()'s drain of saveInFlight had to wait for it. Neither is
-       needed to keep the list correct. */
-    /* The server body is only a row once it carries an id, which is what
-       patchSessionRow guards on; the cast states that contract at the call. */
-    _applySavedRow(r as SavedSession, payload, sessionId);
-    if (deletedSessionGuard.has(capturedSessionId)) {
-      /* P_delete-resurrect — a deleted row cannot be patched away, and the
-         tombstone means the list is genuinely wrong right now. Force a real
-         fetch instead of waiting for the reconcile window. */
-      _flushRecentsReconcile();
-    } else {
-      _scheduleRecentsReconcile();
-    }
-    /* P_context-race — if the user switched to a different session while this
-       POST was in-flight, do NOT adopt the server's id (it belongs to the old
-       session) and do NOT update the URL. The row patch above is keyed by id,
-       so it is safe either way. */
-    if (stateStore.read('currentSessionId') === capturedSessionId && r && r.id && r.id !== sessionId) {
-      stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: r.id });
-      pushChatIdToURL(r.id);
-    }
-    /* P_streaming-survival — after a successful save (the stream
-       completed normally), clear the server-side streaming_text
-       so a reload doesn't show partial content. Fire-and-forget;
-       failure is harmless. */
-    const targetSid = (r && r.id) || capturedSessionId;
-    if (targetSid) {
-      apiFetch('/api/sessions/' + encodeURIComponent(targetSid), {
-        method: 'PATCH',
-        body: { streamingText: null, streamingReasoning: null },
-      }).catch(function () { /* empty-catch: intentional — clearing the partial marker is best-effort */ });
-    }
-    _renderRecents();
+  const sentMessages = body.messages as SessionPostMessage[];
+  saveState.saveInFlight = apiFetch<SaveResponse>('/api/sessions', { method: 'POST', body: body }).then(function (response) {
+    commitAcknowledgedSave(response, capturedSessionId, sessionId, sentMessages);
+    publishAcknowledgedSave(response, payload, capturedSessionId, sessionId);
   }).catch(function (e) {
     /* F1a — surface the save failure so the user knows their
        conversation isn't being persisted. Without this the recent

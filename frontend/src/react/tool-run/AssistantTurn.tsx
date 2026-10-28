@@ -64,11 +64,10 @@ function segmentKey(segment: TurnSegment, index: number): string {
   return 'think-' + index;
 }
 
-export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnProps) {
-  const rawText = typeof message.rawText === 'string' ? message.rawText : '';
+function callsForMessage(message: LegacyChatMessage): ToolCallRecord[] {
   const storedCalls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
   const surfaces = message.turnRuntime?.uiSurfaces || [];
-  const calls: ToolCallRecord[] = storedCalls.map((call) => {
+  const calls = storedCalls.map((call) => {
     const uiSurface = surfaces.find((surface) => surface.toolCallId === call.id);
     return uiSurface ? { ...call, textOffset: uiSurface.textOffset, _run: call._run, uiSurface } : call;
   });
@@ -77,16 +76,32 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
     calls.push({ id: surface.toolCallId, name: 'render_intelligent_ui', textOffset: surface.textOffset,
       status: surface.phase === 'committed' ? 'completed' : 'running', uiSurface: surface });
   }
-  const storedHtml = typeof html === 'string' ? html : '';
-  const isLive = Boolean(live);
+  return calls;
+}
+
+function storedProseFor(rawText: string, html: string, calls: ToolCallRecord[]): string {
+  if (rawText.trim() || !html.trim()) return '';
+  return sortableToolCalls(rawText, calls).length > 0 ? stripLegacyToolHtml(html) : html;
+}
+
+function hasRunningToolRow(segments: TurnSegment[]): boolean {
+  return segments.some((segment) => segment.kind === 'group'
+    ? segment.running.length > 0
+    : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)));
+}
+
+function hasAnswerText(segments: TurnSegment[], storedProse: string): boolean {
+  return segments.some((segment) => segment.kind === 'text' && segment.text.trim().length > 0)
+    || Boolean(storedProse.trim());
+}
+
+function useStreamSettling(isLive: boolean): boolean {
   const [isSettling, setIsSettling] = useState(false);
   const wasLiveRef = useRef(isLive);
-
   useEffect(() => {
     const justSettled = wasLiveRef.current && !isLive;
     wasLiveRef.current = isLive;
     if (isLive) {
-      // A new live turn must not inherit the previous settle animation.
       setIsSettling(false);
       return;
     }
@@ -95,6 +110,108 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
     const timer = setTimeout(() => setIsSettling(false), STREAM_SETTLE_MS);
     return () => clearTimeout(timer);
   }, [isLive]);
+  return isSettling;
+}
+
+function ActivityToolRows({
+  segments,
+  messageId,
+  readOnly,
+}: {
+  segments: TurnSegment[];
+  messageId: string;
+  readOnly?: boolean;
+}): React.ReactElement {
+  return (
+    <>
+      {segments.map((segment, index) => {
+        if (segment.kind === 'group') {
+          return <ToolRunGroup key={segmentKey(segment, index)} segment={segment} messageId={messageId} readOnly={readOnly} activityOnly />;
+        }
+        if (segment.kind === 'tool') {
+          return <ToolRunRow key={segment.call.id} view={toolRunView(segment.call)} startedAt={runStartedAt(segment.call)} messageId={messageId} readOnly={readOnly} activityOnly />;
+        }
+        return null;
+      })}
+    </>
+  );
+}
+
+function TurnSegmentsView({
+  segments,
+  message,
+  growingIndex,
+  messageId,
+  calls,
+  readOnly,
+  prose,
+}: {
+  segments: TurnSegment[];
+  message: LegacyChatMessage;
+  growingIndex: number;
+  messageId: string;
+  calls: ToolCallRecord[];
+  readOnly?: boolean;
+  prose: ReturnType<typeof useProseRenderer>;
+}): React.ReactElement {
+  return (
+    <>
+      {segments.map((segment, index) => (
+        <TurnSegmentContent
+          key={segmentKey(segment, index)}
+          segment={segment}
+          turnRuntime={message.turnRuntime}
+          index={index}
+          growingIndex={growingIndex}
+          messageId={messageId}
+          tools={calls}
+          readOnly={readOnly}
+          prose={prose}
+        />
+      ))}
+    </>
+  );
+}
+
+function TurnIndicators({
+  presentation,
+  status,
+  messageId,
+  readOnly,
+  isLive,
+  isSettling,
+  hasRunningRow,
+  playbackState,
+}: {
+  presentation: ReturnType<typeof deriveTurnPresentationState>;
+  status: ReturnType<typeof deriveTurnPresentationState>['status'];
+  messageId: string;
+  readOnly?: boolean;
+  isLive: boolean;
+  isSettling: boolean;
+  hasRunningRow: boolean;
+  playbackState?: string;
+}): React.ReactElement {
+  const showStatus = Boolean(status && ['error', 'stopped'].includes(status.phase));
+  const showCursor = presentation.showCursor || (isSettling && !status && !hasRunningRow);
+  return (
+    <>
+      {showStatus && status ? <TurnStatus status={status} messageId={messageId} readOnly={readOnly} /> : null}
+      {showCursor ? <StreamCursor state={playbackState} settling={!isLive && isSettling} /> : null}
+    </>
+  );
+}
+
+function settledProseFor(status: ReturnType<typeof deriveTurnPresentationState>['status'], prose: string): string {
+  return status && ['error', 'stopped'].includes(status.phase) ? stripLegacyTerminalHtml(prose) : prose;
+}
+
+export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnProps) {
+  const rawText = typeof message.rawText === 'string' ? message.rawText : '';
+  const calls = callsForMessage(message);
+  const storedHtml = typeof html === 'string' ? html : '';
+  const isLive = Boolean(live);
+  const isSettling = useStreamSettling(isLive);
 
   /* Tool-call records mutate in place as rows settle; rebuild this pure layout
      on each published render so states and sentence-safe offsets stay current. */
@@ -103,10 +220,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
     deferOpenParagraph: isLive,
     restoredFromHistory: Boolean(message.restoredFromHistory),
   });
-  const canSpliceStoredTools = sortableToolCalls(rawText, calls).length > 0;
-  const storedProse = !rawText.trim() && storedHtml.trim()
-    ? (canSpliceStoredTools ? stripLegacyToolHtml(storedHtml) : storedHtml)
-    : '';
+  const storedProse = storedProseFor(rawText, storedHtml, calls);
   // Keep the renderer and its block cache for the lifetime of a streamed turn.
   // Finishing only changes chrome; it must not repaint prose with another parser.
   const streamedRef = useRef(isLive);
@@ -114,23 +228,17 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const prose = useProseRenderer(streamedRef.current);
   const textIdx = lastTextIndex(segments);
   const growingIndex = isLive ? (textIdx !== -1 ? textIdx : segments.findIndex((s) => s.kind === 'think')) : -1;
-  const hasRunningRow = segments.some((segment) =>
-    segment.kind === 'group' ? segment.running.length > 0
-      : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)),
-  );
+  const hasRunningRow = hasRunningToolRow(segments);
   /* The activity strip is mounted before the transcript so tool rows can
      remain in their sentence-safe position. Tell it when real answer prose
      has started, though, so the strip can become the small interleaved
      progress cue ChatGPT uses while the response continues composing. */
-  const hasAnswerProse = segments.some((segment) => segment.kind === 'text' && segment.text.trim().length > 0)
-    || Boolean(storedProse.trim());
+  const hasAnswerProse = hasAnswerText(segments, storedProse);
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
   const activeTool = calls.find((call) => ['running', 'awaiting'].includes(toolRunStateOf(call)));
   const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool, activeTool });
   const liveStatus = presentation.status;
-  const showStatus = Boolean(liveStatus);
-  const legacyHtml = liveStatus && ['error', 'stopped'].includes(liveStatus.phase)
-    ? stripLegacyTerminalHtml(storedProse) : storedProse;
+  const legacyHtml = settledProseFor(liveStatus, storedProse);
   const messageId = String(message.clientId || message.id || '');
 
   return (
@@ -147,11 +255,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           answerStarted={hasAnswerProse}
           hasTools={segments.some((segment) => segment.kind === 'tool' || segment.kind === 'group')}
         >
-          {segments.map((segment, index) => segment.kind === 'group'
-            ? <ToolRunGroup key={segmentKey(segment, index)} segment={segment} messageId={messageId} readOnly={readOnly} activityOnly />
-            : segment.kind === 'tool'
-              ? <ToolRunRow key={segment.call.id} view={toolRunView(segment.call)} startedAt={runStartedAt(segment.call)} messageId={messageId} readOnly={readOnly} activityOnly />
-              : null)}
+          <ActivityToolRows segments={segments} messageId={messageId} readOnly={readOnly} />
         </TurnActivitySurface>
         {legacyHtml ? (
           <div
@@ -159,25 +263,25 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
             dangerouslySetInnerHTML={{ __html: legacyHtml }}
           />
         ) : null}
-        {segments.map((segment, index) => (
-          <TurnSegmentContent
-            key={segmentKey(segment, index)}
-            segment={segment}
-            turnRuntime={message.turnRuntime}
-            index={index}
-            growingIndex={growingIndex}
-            messageId={messageId}
-            tools={calls}
-            readOnly={readOnly}
-            prose={prose}
-          />
-        ))}
-        {showStatus && liveStatus && ['error', 'stopped'].includes(liveStatus.phase) ? (
-          <TurnStatus status={liveStatus} messageId={messageId} readOnly={readOnly} />
-        ) : null}
-        {(presentation.showCursor || (isSettling && !showStatus && !hasRunningRow)) ? (
-          <StreamCursor state={message._playbackState} settling={!isLive && isSettling} />
-        ) : null}
+        <TurnSegmentsView
+          segments={segments}
+          message={message}
+          growingIndex={growingIndex}
+          messageId={messageId}
+          calls={calls}
+          readOnly={readOnly}
+          prose={prose}
+        />
+        <TurnIndicators
+          presentation={presentation}
+          status={liveStatus}
+          messageId={messageId}
+          readOnly={readOnly}
+          isLive={isLive}
+          isSettling={isSettling}
+          hasRunningRow={hasRunningRow}
+          playbackState={message._playbackState}
+        />
       </TurnEvidence>
     </ToolRunDisclosureProvider>
   );

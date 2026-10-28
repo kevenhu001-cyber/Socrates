@@ -2,7 +2,7 @@
  * owns when this runs; this module owns pending-turn transport and replay. */
 import { stateStore } from '../state/store.js';
 import { quietTurn } from '../chat/turnUi.ts';
-import { buildUserContentParts } from '../chat/history.js';
+import { buildUserContentParts } from '../chat/history.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import {
   bumpPendingSeq,
@@ -53,6 +53,208 @@ function storedMessages(): StoredMessage[] {
   return Array.isArray(messages) ? (messages as StoredMessage[]) : [];
 }
 
+type PendingTurnRecord = NonNullable<ReturnType<typeof loadPendingTurn>>;
+type PendingSnapshot = { turn: ChatTurn; events: TurnEventFrame[] };
+
+function createFallbackRunner(sessionId: string, fallback?: () => void): () => void {
+  let used = false;
+  return () => {
+    if (used || stateStore.read('currentSessionId') !== sessionId) return;
+    used = true;
+    if (typeof fallback !== 'function') return;
+    try { fallback(); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.fallback'); }
+  };
+}
+
+function clearPendingSafely(sessionId: string, context: string): void {
+  try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, context); }
+}
+
+async function resolvePendingSnapshot(sessionId: string, pending: PendingTurnRecord): Promise<PendingSnapshot | null> {
+  if (pending.turnId) return getChatTurn(pending.turnId);
+  if (!pending.clientTurnId) return null;
+  const created = await createChatTurn({ clientTurnId: pending.clientTurnId, sessionId });
+  if (!created?.turn?.id) return null;
+  pending.turnId = created.turn.id;
+  savePendingTurn(sessionId, { turnId: pending.turnId, clientTurnId: pending.clientTurnId, lastSeq: 0 });
+  return getChatTurn(pending.turnId);
+}
+
+function restoreCompletedTurn(
+  sessionId: string,
+  turn: ChatTurn,
+  win: PendingRestoreWindow,
+  runFallback: () => void,
+): void {
+  try {
+    const full = turn.fullText || '';
+    if (!full) {
+      runFallback();
+    } else if (typeof win.addMessage === 'function' && !hasAssistantMessage(full)) {
+      win.addMessage('assistant', full);
+      try { publishReactChatRuntime({ type: 'state-synced', reason: 'pending-turn-completed' }); }
+      catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~3'); }
+    }
+  } catch (error) {
+    reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~4');
+  }
+  clearPendingSafely(sessionId, 'session/pendingTurnRestore.reattachPendingTurn~5');
+}
+
+function hasAssistantMessage(text: string): boolean {
+  return storedMessages().some((message) => Boolean(message && message.role === 'assistant' && message.rawText === text));
+}
+
+function retryPendingTurn(win: PendingRestoreWindow): () => void {
+  return () => {
+    try {
+      const messages = storedMessages();
+      const lastUser = [...messages].reverse().find((message) => Boolean(message && message.role === 'user'));
+      const text = lastUser?.rawText || '';
+      if (!text || typeof win.askChatTurn !== 'function') return;
+      let parts = null;
+      try { parts = buildUserContentParts(text, lastUser?.attachments); } catch { parts = null; }
+      quietTurn(win.askChatTurn(text, parts));
+    } catch (error) {
+      reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~7');
+    }
+  };
+}
+
+interface FrameReplayContext {
+  sessionId: string;
+  ctl: StreamingTurnController;
+  retryThisTurn: () => void;
+  signal: AbortController;
+}
+
+function showTurnFailure(sessionId: string, ctl: StreamingTurnController, retry: () => void, signal: AbortController): void {
+  try {
+    if (typeof ctl.replaceWithError === 'function') {
+      ctl.replaceWithError('The response failed. Tap Retry to try again.', retry);
+    } else {
+      ctl.finish();
+    }
+  } catch (error) {
+    reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~12');
+  }
+  clearPendingSafely(sessionId, 'session/pendingTurnRestore.reattachPendingTurn~13');
+  try { signal.abort('done'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~14'); }
+}
+
+type TurnEventApplier = (data: Record<string, unknown>, context: FrameReplayContext) => boolean;
+
+function replayToolUse(data: Record<string, unknown>, context: FrameReplayContext): boolean {
+  const calls: unknown[] = Array.isArray(data) ? data : ((data.calls as unknown[]) || [data]);
+  calls.forEach((call) => {
+    try { context.ctl.recordToolUse(call); }
+    catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~9'); }
+  });
+  return false;
+}
+
+function completeRecoveredTurn(_data: Record<string, unknown>, context: FrameReplayContext): boolean {
+  context.ctl.finish();
+  clearPendingSafely(context.sessionId, 'session/pendingTurnRestore.reattachPendingTurn~10');
+  try { context.signal.abort('done'); }
+  catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~11'); }
+  return true;
+}
+
+const turnEventAppliers: Record<string, TurnEventApplier> = {
+  content: (data, { ctl }) => {
+    if (typeof data.delta === 'string') ctl.append(data.delta);
+    return false;
+  },
+  reasoning: (data, { ctl }) => {
+    if (typeof data.delta === 'string') ctl.appendThinking(data.delta);
+    return false;
+  },
+  tool_use: replayToolUse,
+  tool_result: (data, { ctl }) => { ctl.recordToolResult(data); return false; },
+  tool_approval: (data, { ctl }) => {
+    if (typeof ctl.recordToolApproval === 'function') ctl.recordToolApproval(data);
+    return false;
+  },
+  tool_progress: (data, { ctl }) => { ctl.recordToolProgress?.(data); return false; },
+  execution_start: (data, { ctl }) => { ctl.recordExecutionStart?.(data); return false; },
+  agent_step: (data, { ctl }) => { ctl.recordAgentStep?.(data); return false; },
+  agent_plan: (data, { ctl }) => { ctl.recordAgentPlan?.(data); return false; },
+  turn_done: completeRecoveredTurn,
+  turn_failed: (_data, { sessionId, ctl, retryThisTurn, signal }) => {
+    showTurnFailure(sessionId, ctl, retryThisTurn, signal);
+    return true;
+  },
+};
+
+function applyTurnEvent(frame: TurnEventFrame, context: FrameReplayContext): boolean {
+  const apply = turnEventAppliers[frame.event];
+  return apply ? apply(frame.data || {}, context) : false;
+}
+
+function createFrameApplier(
+  context: FrameReplayContext,
+  initialSequence: number,
+): { applyFrame(frame: TurnEventFrame): void; getSequence(): number } {
+  let maxSeq = initialSequence;
+  function applyFrame(frame: TurnEventFrame): void {
+    if (!frame || stateStore.read('currentSessionId') !== context.sessionId) {
+      try { context.signal.abort('session-switch'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~8'); }
+      return;
+    }
+    try {
+      if (applyTurnEvent(frame, context)) return;
+      if (typeof frame.sequence !== 'number' || frame.sequence <= maxSeq) return;
+      maxSeq = frame.sequence;
+      try { bumpPendingSeq(context.sessionId, maxSeq); }
+      catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~15'); }
+    } catch (error) {
+      reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~16');
+    }
+  }
+  return { applyFrame, getSequence: () => maxSeq };
+}
+
+function settleDisconnectedTurn(sessionId: string, ctl: StreamingTurnController, retry: () => void, signal: AbortController): void {
+  try {
+    if (typeof ctl.replaceWithError === 'function') {
+      ctl.replaceWithError('Lost the connection to the model. Tap Retry to try again.', retry);
+    } else {
+      ctl.finish();
+    }
+  } catch (error) {
+    reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~19');
+  }
+  clearPendingSafely(sessionId, 'session/pendingTurnRestore.reattachPendingTurn~20');
+  try { signal.abort('subscribe-failed'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~21'); }
+}
+
+async function followPendingTurn(
+  sessionId: string,
+  pending: PendingTurnRecord,
+  snapshot: PendingSnapshot,
+  ctl: StreamingTurnController,
+  retry: () => void,
+): Promise<void> {
+  if (!pending.turnId) return;
+  const signal = new AbortController();
+  const replay = createFrameApplier({ sessionId, ctl, retryThisTurn: retry, signal }, Number(pending.lastSeq) || 0);
+  try {
+    for (const frame of snapshot.events || []) replay.applyFrame(frame);
+    if (stateStore.read('currentSessionId') !== sessionId) {
+      try { signal.abort('session-switch'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~17'); }
+      return;
+    }
+    await subscribeChatTurnEvents(pending.turnId, replay.getSequence(), signal.signal, {
+      onEvent: replay.applyFrame,
+      onError: function () { /* empty-catch: intentional — replay errors are reported by the outer catch */ },
+    });
+  } catch (error) {
+    reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~18');
+    settleDisconnectedTurn(sessionId, ctl, retry, signal);
+  }
+}
+
 /* M2 async — re-attach a detached turn after reload/reconnect.
  * Cases:
  *   completed + fullText → append once (deduped by exact rawText) so
@@ -71,40 +273,22 @@ function storedMessages(): StoredMessage[] {
  * Retry button aborts this bubble. This module wins whenever it can take
  * ownership, and calls `fallback` only when it cannot. */
 export async function reattachPendingTurn(sessionId: string, fallback?: () => void): Promise<void> {
-  let usedFallback = false;
-  const runFallback = (): void => {
-    if (usedFallback) return;
-    /* Never touch another session: the fallback appends to the CURRENT
-       transcript, so it must not run after the user switched away. */
-    if (stateStore.read('currentSessionId') !== sessionId) return;
-    usedFallback = true;
-    if (typeof fallback !== 'function') return;
-    try { fallback(); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.fallback'); }
-  };
+  const runFallback = createFallbackRunner(sessionId, fallback);
   let pending: ReturnType<typeof loadPendingTurn>;
   try { pending = loadPendingTurn(sessionId); } catch { runFallback(); return; }
   if (!pending || (!pending.turnId && !pending.clientTurnId)) { runFallback(); return; }
-  let snapshot: { turn: ChatTurn; events: TurnEventFrame[] } | null = null;
+  let snapshot: PendingSnapshot | null;
   try {
-    if (pending.turnId) {
-      snapshot = await getChatTurn(pending.turnId);
-    } else if (pending.clientTurnId) {
-      const resTurn = await createChatTurn({ clientTurnId: pending.clientTurnId, sessionId });
-      if (resTurn && resTurn.turn && resTurn.turn.id) {
-        pending.turnId = resTurn.turn.id;
-        savePendingTurn(sessionId, { turnId: pending.turnId, clientTurnId: pending.clientTurnId, lastSeq: 0 });
-        snapshot = await getChatTurn(pending.turnId);
-      }
-    }
+    snapshot = await resolvePendingSnapshot(sessionId, pending);
   } catch {
-    try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~1'); }
+    clearPendingSafely(sessionId, 'session/pendingTurnRestore.reattachPendingTurn~1');
     runFallback();
     return;
   }
   if (!snapshot || !snapshot.turn) { runFallback(); return; }
   const turn = snapshot.turn;
   if (turn.sessionId && turn.sessionId !== sessionId) {
-    try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~2'); }
+    clearPendingSafely(sessionId, 'session/pendingTurnRestore.reattachPendingTurn~2');
     runFallback();
     return;
   }
@@ -112,30 +296,11 @@ export async function reattachPendingTurn(sessionId: string, fallback?: () => vo
   const win = window as PendingRestoreWindow;
 
   if (turn.status === 'completed') {
-    try {
-      const full = turn.fullText || '';
-      if (full) {
-        const msgs = storedMessages();
-        let already = false;
-        for (let i = 0; i < msgs.length; i++) {
-          if (msgs[i] && msgs[i].role === 'assistant' && msgs[i].rawText === full) { already = true; break; }
-        }
-        if (!already && typeof win.addMessage === 'function') {
-          win.addMessage('assistant', full);
-          try { publishReactChatRuntime({ type: 'state-synced', reason: 'pending-turn-completed' }); }
-          catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~3'); }
-        }
-      } else {
-        /* Completed but empty: this module has nothing to show, so the
-           partial-answer fallback owns the recovery. */
-        runFallback();
-      }
-    } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~4'); }
-    try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~5'); }
+    restoreCompletedTurn(sessionId, turn, win, runFallback);
     return;
   }
   if (turn.status === 'failed' || turn.status === 'interrupted') {
-    try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~6'); }
+    clearPendingSafely(sessionId, 'session/pendingTurnRestore.reattachPendingTurn~6');
     /* The turn is dead: this module cannot own the recovery, so the
        partial-answer fallback does. */
     runFallback();
@@ -145,107 +310,7 @@ export async function reattachPendingTurn(sessionId: string, fallback?: () => vo
   /* The retry closure is shared by the live bubble and by the error
      affordance that replaces it, so a failed re-attach still offers a
      working Retry button. */
-  const retryThisTurn = function (): void {
-    try {
-      let lastUserEntry: StoredMessage | null = null;
-      let lastUser: string | null = null;
-      const list = storedMessages();
-      for (let ui = list.length - 1; ui >= 0; ui--) {
-        if (list[ui] && list[ui].role === 'user') {
-          lastUserEntry = list[ui];
-          lastUser = lastUserEntry.rawText || null;
-          break;
-        }
-      }
-      if (lastUser && typeof win.askChatTurn === 'function') {
-        /* Same slicing hazard as the recovered-stream retry above: carry
-           the stored multimodal parts through the replay. */
-        let lastUserParts = null;
-        try { lastUserParts = buildUserContentParts(lastUser, lastUserEntry && lastUserEntry.attachments); } catch { lastUserParts = null; }
-        quietTurn(win.askChatTurn(lastUser, lastUserParts));
-      }
-    } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~7'); }
-  };
-  const ctl = await win.addStreamingMessage({
-    onRetry: retryThisTurn,
-  });
-  const subAbort = new AbortController();
-  let maxSeq = Number(pending.lastSeq) || 0;
-
-  function applyFrame(frame: TurnEventFrame): void {
-    if (!frame || stateStore.read('currentSessionId') !== sessionId) {
-      try { subAbort.abort('session-switch'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~8'); }
-      return;
-    }
-    try {
-      const data = frame.data || {};
-      if (frame.event === 'content' && typeof data.delta === 'string') ctl.append(data.delta);
-      else if (frame.event === 'reasoning' && typeof data.delta === 'string') ctl.appendThinking(data.delta);
-      else if (frame.event === 'tool_use') {
-        const calls: unknown[] = Array.isArray(data) ? data : ((data.calls as unknown[]) || [data]);
-        for (let ci = 0; ci < calls.length; ci++) { try { ctl.recordToolUse(calls[ci]); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~9'); } }
-      }
-      else if (frame.event === 'tool_result') ctl.recordToolResult(data);
-      else if (frame.event === 'tool_approval' && typeof ctl.recordToolApproval === 'function') ctl.recordToolApproval(data);
-      else if (frame.event === 'tool_progress' && ctl.recordToolProgress) ctl.recordToolProgress(data);
-      else if (frame.event === 'execution_start' && ctl.recordExecutionStart) ctl.recordExecutionStart(data);
-      else if (frame.event === 'agent_step' && typeof ctl.recordAgentStep === 'function') ctl.recordAgentStep(data);
-      else if (frame.event === 'agent_plan' && typeof ctl.recordAgentPlan === 'function') ctl.recordAgentPlan(data);
-      else if (frame.event === 'turn_done') {
-        ctl.finish();
-        try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~10'); }
-        try { subAbort.abort('done'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~11'); }
-        return;
-      } else if (frame.event === 'turn_failed') {
-        /* P_failed-turn-not-success — a failed turn must NOT be finalized
-           through the success path: that renders the truncated answer as a
-           normal reply, clears the error state and saves it as a good
-           message, so the user never learns the turn failed. Replace the
-           bubble with the error affordance instead. */
-        try {
-          if (typeof ctl.replaceWithError === 'function') {
-            ctl.replaceWithError('The response failed. Tap Retry to try again.', retryThisTurn);
-          } else {
-            ctl.finish();
-          }
-        } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~12'); }
-        try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~13'); }
-        try { subAbort.abort('done'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~14'); }
-        return;
-      }
-      if (typeof frame.sequence === 'number' && frame.sequence > maxSeq) {
-        maxSeq = frame.sequence;
-        try { bumpPendingSeq(sessionId, maxSeq); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~15'); }
-      }
-    } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~16'); }
-  }
-
-  try {
-    const replay = snapshot.events || [];
-    for (let r = 0; r < replay.length; r++) applyFrame(replay[r]);
-    if (stateStore.read('currentSessionId') !== sessionId) {
-      try { subAbort.abort('session-switch'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~17'); }
-      return;
-    }
-    await subscribeChatTurnEvents(pending.turnId, maxSeq, subAbort.signal, {
-      onEvent: applyFrame,
-      onError: function () { /* empty-catch: intentional — replay errors are reported by the outer catch */ },
-    });
-  } catch (error) {
-    reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~18');
-    /* P_subscribe-failure-not-stuck — the bubble was opened BEFORE the
-       subscription, and it owns the live spinner, the Stop button and the
-       1 Hz elapsed timer. If the subscription fails and we simply return,
-       the bubble spins forever with no way to stop it: only the next send
-       resets the turn state. Close it with the error affordance. */
-    try {
-      if (typeof ctl.replaceWithError === 'function') {
-        ctl.replaceWithError('Lost the connection to the model. Tap Retry to try again.', retryThisTurn);
-      } else {
-        ctl.finish();
-      }
-    } catch (caught) { reportSwallow(caught, 'session/pendingTurnRestore.reattachPendingTurn~19'); }
-    try { clearPendingTurn(sessionId); } catch (caught) { reportSwallow(caught, 'session/pendingTurnRestore.reattachPendingTurn~20'); }
-    try { subAbort.abort('subscribe-failed'); } catch (caught) { reportSwallow(caught, 'session/pendingTurnRestore.reattachPendingTurn~21'); }
-  }
+  const retry = retryPendingTurn(win);
+  const ctl = await win.addStreamingMessage({ onRetry: retry });
+  await followPendingTurn(sessionId, pending, snapshot, ctl, retry);
 }

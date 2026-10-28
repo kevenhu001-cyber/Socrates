@@ -1,5 +1,6 @@
 /* DOM observer and clipboard behavior for Markdown code blocks. */
 import { escHTML } from './helpers.ts';
+import { openWorkbench } from '../react/workbench/workbenchStore';
 
 /* ── Code-block copy affordance (Task 7.1) ───────────────────────────
    Post-render pass that gives every fenced code block in assistant
@@ -114,16 +115,14 @@ function makeWorkbenchButton(pre: HTMLElement, langLabel: string): HTMLButtonEle
     ev.stopPropagation();
     const codeEl = pre.querySelector('code');
     const codeText = codeEl ? (codeEl.textContent || '') : '';
-    import('../react/workbench/workbenchStore').then(({ openWorkbench }) => {
-      openWorkbench({
-        id: `code-${Date.now()}`,
-        title: langLabel ? trCopy('workbench.codeTitleLanguage', '{language} code').replace('{language}', langLabel.toUpperCase()) : trCopy('workbench.codeTitle', 'Code'),
-        titleKey: langLabel ? 'workbench.codeTitleLanguage' : 'workbench.codeTitle',
-        type: 'code',
-        language: langLabel,
-        code: codeText,
-      }, 'code');
-    });
+    openWorkbench({
+      id: `code-${Date.now()}`,
+      title: langLabel ? trCopy('workbench.codeTitleLanguage', '{language} code').replace('{language}', langLabel.toUpperCase()) : trCopy('workbench.codeTitle', 'Code'),
+      titleKey: langLabel ? 'workbench.codeTitleLanguage' : 'workbench.codeTitle',
+      type: 'code',
+      language: langLabel,
+      code: codeText,
+    }, 'code');
   });
   return button;
 }

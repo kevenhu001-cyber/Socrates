@@ -23,65 +23,89 @@ function shapeCoordinates(shape: VizShape): unknown {
   return shape.points;
 }
 
-function dataRows(spec: VizSpec, translate: Translate): unknown[][] {
+function functionRows(spec: VizSpec, translate: Translate): unknown[][] {
+  const functions = (spec.payload || {}).functions || [];
+  if (!functions.length) return [];
+  return [
+    [translate('viz.table.function', 'Function'), translate('viz.table.expression', 'Expression'), translate('viz.table.domain', 'Domain')],
+    ...functions.map((fn): unknown[] => [
+      fn.label || fn.expression,
+      fn.expression,
+      fn.domain ? fn.domain.join(' to ') : translate('viz.table.autoDomain', 'Automatic domain'),
+    ]),
+  ];
+}
+
+function heatmapRows(spec: VizSpec, translate: Translate): unknown[][] {
   const payload = spec.payload || {};
-  if (spec.template === 'function') {
-    const fns = payload.functions || [];
-    if (!fns.length) return [];
-    return [
-      [translate('viz.table.function', 'Function'), translate('viz.table.expression', 'Expression'), translate('viz.table.domain', 'Domain')],
-      ...fns.map(function (fn): unknown[] {
-        return [fn.label || fn.expression, fn.expression, fn.domain ? fn.domain.join(' to ') : translate('viz.table.autoDomain', 'Automatic domain')];
-      }),
-    ];
-  }
-  if (spec.template === 'heatmap') {
-    return [
-      [translate('viz.table.category', 'Category'), ...(payload.xCategories || [])],
-      ...(payload.yCategories || []).map(function (label, index): unknown[] {
-        return [label, ...((payload.values || [])[index] || [])];
-      }),
-    ];
-  }
-  if (spec.template === 'radar') {
-    return [
-      [translate('viz.table.indicator', 'Indicator'), ...(payload.series || []).map(function (series) { return series.name || translate('viz.table.series', 'Series'); })],
-      ...(payload.indicators || []).map(function (indicator, index): unknown[] {
-        return [indicator.name, ...(payload.series || []).map(function (series) { return series.data[index]; })];
-      }),
-    ];
-  }
-  if (spec.template === 'geometry') {
-    return [
-      [translate('viz.table.shape', 'Shape'), translate('viz.table.label', 'Label'), translate('viz.table.coordinates', 'Coordinates')],
-      ...(payload.shapes || []).map(function (shape): unknown[] {
-        return [shape.type, shape.label || '', JSON.stringify(shapeCoordinates(shape) || [])];
-      }),
-    ];
-  }
-  if (!payload.series) {
-    const items = payload.items || payload.nodes || [];
-    if (!items.length) return [];
-    return [
-      [translate('viz.table.item', 'Item'), translate('viz.table.value', 'Value'), translate('viz.table.detail', 'Detail')],
-      ...items.map(function (item): unknown[] {
-        return [item.label, item.value != null ? item.value : '', item.detail || ''];
-      }),
-    ];
-  }
+  return [
+    [translate('viz.table.category', 'Category'), ...(payload.xCategories || [])],
+    ...(payload.yCategories || []).map((label, index): unknown[] => [
+      label,
+      ...((payload.values || [])[index] || []),
+    ]),
+  ];
+}
+
+function radarRows(spec: VizSpec, translate: Translate): unknown[][] {
+  const payload = spec.payload || {};
+  const series = payload.series || [];
+  return [
+    [translate('viz.table.indicator', 'Indicator'), ...series.map((entry) => entry.name || translate('viz.table.series', 'Series'))],
+    ...(payload.indicators || []).map((indicator, index): unknown[] => [
+      indicator.name,
+      ...series.map((entry) => entry.data[index]),
+    ]),
+  ];
+}
+
+function geometryRows(spec: VizSpec, translate: Translate): unknown[][] {
+  const payload = spec.payload || {};
+  return [
+    [translate('viz.table.shape', 'Shape'), translate('viz.table.label', 'Label'), translate('viz.table.coordinates', 'Coordinates')],
+    ...(payload.shapes || []).map((shape): unknown[] => [
+      shape.type,
+      shape.label || '',
+      JSON.stringify(shapeCoordinates(shape) || []),
+    ]),
+  ];
+}
+
+function itemRows(spec: VizSpec, translate: Translate): unknown[][] {
+  const payload = spec.payload || {};
+  const items = payload.items || payload.nodes || [];
+  if (!items.length) return [];
+  return [
+    [translate('viz.table.item', 'Item'), translate('viz.table.value', 'Value'), translate('viz.table.detail', 'Detail')],
+    ...items.map((item): unknown[] => [item.label, item.value != null ? item.value : '', item.detail || '']),
+  ];
+}
+
+function seriesRows(spec: VizSpec): unknown[][] {
+  const payload = spec.payload || {};
   const series = payload.series;
-  const rows: unknown[][] = [['Category', ...series.map(function (entry) { return entry.name || 'Series'; })]];
-  const max = Math.max.apply(null, series.map(function (entry) { return entry.data.length; }));
+  if (!series) return [];
+  const rows: unknown[][] = [['Category', ...series.map((entry) => entry.name || 'Series')]];
+  const max = Math.max.apply(null, series.map((entry) => entry.data.length));
   for (let index = 0; index < max; index++) {
     rows.push([
       payload.categories && payload.categories[index] != null ? payload.categories[index] : index + 1,
-      ...series.map(function (entry) {
+      ...series.map((entry) => {
         const value = entry.data[index];
         return Array.isArray(value) ? value.join(', ') : (value && typeof value === 'object' ? JSON.stringify(value) : value);
       }),
     ]);
   }
   return rows;
+}
+
+function dataRows(spec: VizSpec, translate: Translate): unknown[][] {
+  const payload = spec.payload || {};
+  if (spec.template === 'function') return functionRows(spec, translate);
+  if (spec.template === 'heatmap') return heatmapRows(spec, translate);
+  if (spec.template === 'radar') return radarRows(spec, translate);
+  if (spec.template === 'geometry') return geometryRows(spec, translate);
+  return payload.series ? seriesRows(spec) : itemRows(spec, translate);
 }
 
 export function renderVisualizationTable(spec: VizSpec, escapeHtml: EscapeHtml, translate: Translate): string {
@@ -271,6 +295,63 @@ export function renderNumberLineVisualization(spec: VizSpec, escapeHtml: EscapeH
   return svg + '</svg>';
 }
 
+type CoordinateProjector = (coordinate: number) => number;
+
+function polygonCentroid(points: number[][]): Point {
+  if (!points.length) return { x: 0, y: 0 };
+  const totals = points.reduce((sum, point) => ({ x: sum.x + point[0], y: sum.y + point[1] }), { x: 0, y: 0 });
+  return { x: totals.x / points.length, y: totals.y / points.length };
+}
+
+function geometryLabelPosition(
+  shape: VizShape,
+  projectX: CoordinateProjector,
+  projectY: CoordinateProjector,
+  scale: number,
+): Point {
+  const at = shape.at || [];
+  const from = shape.from || [];
+  const to = shape.to || [];
+  const center = shape.center || [];
+  if (shape.type === 'point') return { x: projectX(at[0]), y: projectY(at[1]) - 12 };
+  if (shape.type === 'circle') return { x: projectX(center[0]), y: projectY(center[1]) - (shape.radius || 0) * scale - 8 };
+  if (shape.type === 'segment') {
+    return { x: (projectX(from[0]) + projectX(to[0])) / 2, y: (projectY(from[1]) + projectY(to[1])) / 2 - 8 };
+  }
+  const centroid = polygonCentroid(shape.points || []);
+  return { x: projectX(centroid.x), y: projectY(centroid.y) - 8 };
+}
+
+function renderGeometryShape(
+  shape: VizShape,
+  projectX: CoordinateProjector,
+  projectY: CoordinateProjector,
+  scale: number,
+  escapeHtml: EscapeHtml,
+  truncateLabel: TruncateLabel,
+): string {
+  const at = shape.at || [];
+  const from = shape.from || [];
+  const to = shape.to || [];
+  const center = shape.center || [];
+  const points = shape.points || [];
+  const radius = shape.radius || 0;
+  const labelPosition = geometryLabelPosition(shape, projectX, projectY, scale);
+  const label = shape.label
+    ? '<text class="visualization-node-detail" text-anchor="middle" x="' + labelPosition.x + '" y="' + labelPosition.y + '">' + escapeHtml(truncateLabel(shape.label, 20)) + '</text>'
+    : '';
+  if (shape.type === 'point') {
+    return '<g class="visualization-node"><circle cx="' + projectX(at[0]) + '" cy="' + projectY(at[1]) + '" r="5" fill="currentColor"/>' + label + '</g>';
+  }
+  if (shape.type === 'segment') {
+    return '<g class="visualization-node"><path class="visualization-edge" d="M' + projectX(from[0]) + ' ' + projectY(from[1]) + ' L' + projectX(to[0]) + ' ' + projectY(to[1]) + '" stroke-width="2"/>' + label + '</g>';
+  }
+  if (shape.type === 'circle') {
+    return '<g class="visualization-node"><circle cx="' + projectX(center[0]) + '" cy="' + projectY(center[1]) + '" r="' + (radius * scale) + '" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="2"/>' + label + '</g>';
+  }
+  return '<g class="visualization-node"><polygon points="' + points.map((point) => projectX(point[0]) + ',' + projectY(point[1])).join(' ') + '" fill="currentColor" fill-opacity=".07" stroke="currentColor" stroke-width="2"/>' + label + '</g>';
+}
+
 export function renderGeometryVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel): string {
   const shapes: VizShape[] = spec.payload.shapes || [];
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -294,28 +375,7 @@ export function renderGeometryVisualization(spec: VizSpec, escapeHtml: EscapeHtm
   const zeroX = px(0), zeroY = py(0);
   if (zeroY >= 24 && zeroY <= height - 24) svg += '<path class="visualization-edge" d="M36 ' + zeroY + ' H' + (width - 26) + '"/>';
   if (zeroX >= 36 && zeroX <= width - 26) svg += '<path class="visualization-edge" d="M' + zeroX + ' ' + (height - 28) + ' V24"/>';
-  shapes.forEach(function (shape) {
-    const at = shape.at || [], from = shape.from || [], to = shape.to || [];
-    const center = shape.center || [], points = shape.points || [];
-    const radius = shape.radius || 0;
-    const centroidX = points.length ? points.reduce(function (sum, point) { return sum + point[0]; }, 0) / points.length : 0;
-    const centroidY = points.length ? points.reduce(function (sum, point) { return sum + point[1]; }, 0) / points.length : 0;
-    const labelX = shape.type === 'point' ? px(at[0])
-      : shape.type === 'circle' ? px(center[0])
-        : shape.type === 'segment' ? (px(from[0]) + px(to[0])) / 2
-          : px(centroidX);
-    const labelY = shape.type === 'point' ? py(at[1]) - 12
-      : shape.type === 'circle' ? py(center[1]) - radius * scale - 8
-        : shape.type === 'segment' ? (py(from[1]) + py(to[1])) / 2 - 8
-          : py(centroidY) - 8;
-    const label = shape.label
-      ? '<text class="visualization-node-detail" text-anchor="middle" x="' + labelX + '" y="' + labelY + '">' + escapeHtml(truncateLabel(shape.label, 20)) + '</text>'
-      : '';
-    if (shape.type === 'point') svg += '<g class="visualization-node"><circle cx="' + px(at[0]) + '" cy="' + py(at[1]) + '" r="5" fill="currentColor"/>' + label + '</g>';
-    else if (shape.type === 'segment') svg += '<g class="visualization-node"><path class="visualization-edge" d="M' + px(from[0]) + ' ' + py(from[1]) + ' L' + px(to[0]) + ' ' + py(to[1]) + '" stroke-width="2"/>' + label + '</g>';
-    else if (shape.type === 'circle') svg += '<g class="visualization-node"><circle cx="' + px(center[0]) + '" cy="' + py(center[1]) + '" r="' + (radius * scale) + '" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="2"/>' + label + '</g>';
-    else svg += '<g class="visualization-node"><polygon points="' + points.map(function (point) { return px(point[0]) + ',' + py(point[1]); }).join(' ') + '" fill="currentColor" fill-opacity=".07" stroke="currentColor" stroke-width="2"/>' + label + '</g>';
-  });
+  shapes.forEach((shape) => { svg += renderGeometryShape(shape, px, py, scale, escapeHtml, truncateLabel); });
   return svg + '</svg>';
 }
 

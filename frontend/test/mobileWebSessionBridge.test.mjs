@@ -70,3 +70,22 @@ test('unknown mobile targets stay inert and do not rewrite history', async () =>
     restore();
   }
 });
+
+test('window-backed targets open and preserve unrelated query parameters', () => {
+  let opened = 0;
+  window.openProfile = () => { opened += 1; };
+  window.history.replaceState({}, '', '/?mobile_target=profile&chat=keep');
+  try {
+    assert.equal(openMobileTargetFromUrl(), true);
+    assert.equal(opened, 1);
+    assert.equal(window.location.search, '?chat=keep');
+  } finally {
+    delete window.openProfile;
+  }
+});
+
+test('a missing window action leaves the hand-off URL untouched', () => {
+  window.history.replaceState({}, '', '/?mobile_target=usage&chat=keep');
+  assert.equal(openMobileTargetFromUrl(), false);
+  assert.equal(window.location.search, '?mobile_target=usage&chat=keep');
+});

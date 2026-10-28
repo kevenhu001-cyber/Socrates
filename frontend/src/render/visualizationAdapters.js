@@ -71,6 +71,23 @@ function plotlyThemeUpdate(colors) {
   };
 }
 
+function geometryForThreeObject(THREE, object) {
+  const size = object.size || [1, 1, 1];
+  if (object.type === 'sphere') return new THREE.SphereGeometry(size[0] || 1, 40, 24);
+  if (object.type === 'cylinder') return new THREE.CylinderGeometry(size[0] || 1, size[0] || 1, size[1] || 2, 36);
+  if (object.type === 'cone') return new THREE.ConeGeometry(size[0] || 1, size[1] || 2, 36);
+  return new THREE.BoxGeometry(size[0] || 1, size[1] || 1, size[2] || 1);
+}
+
+function addThreeObjects(THREE, scene, material, objects) {
+  objects.forEach((object) => {
+    const mesh = new THREE.Mesh(geometryForThreeObject(THREE, object), material.clone());
+    const position = object.position || [0, 0.5, 0];
+    mesh.position.set(position[0] || 0, position[1] || 0, position[2] || 0);
+    scene.add(mesh);
+  });
+}
+
 export function plotlyTracesForVisualization(spec, colors, sampleFunctionImpl) {
   if (spec.template === 'function') {
     return (spec.payload.functions || []).map((fn, index) => {
@@ -242,18 +259,7 @@ async function mountThree(spec, stage) {
   const key = new THREE.DirectionalLight(0xffffff, 2.5); key.position.set(5, 8, 4); scene.add(key);
   scene.add(new THREE.GridHelper(12, 12, 0x8893a5, 0xdbe2ea));
   const material = new THREE.MeshStandardMaterial({ color: 0x4f78dd, roughness: 0.42, metalness: 0.05, transparent: true, opacity: 0.9 });
-  (spec.payload.objects || []).forEach((object) => {
-    const size = object.size || [1, 1, 1];
-    let geometry;
-    if (object.type === 'sphere') geometry = new THREE.SphereGeometry(size[0] || 1, 40, 24);
-    else if (object.type === 'cylinder') geometry = new THREE.CylinderGeometry(size[0] || 1, size[0] || 1, size[1] || 2, 36);
-    else if (object.type === 'cone') geometry = new THREE.ConeGeometry(size[0] || 1, size[1] || 2, 36);
-    else geometry = new THREE.BoxGeometry(size[0] || 1, size[1] || 1, size[2] || 1);
-    const mesh = new THREE.Mesh(geometry, material.clone());
-    const position = object.position || [0, 0.5, 0];
-    mesh.position.set(position[0] || 0, position[1] || 0, position[2] || 0);
-    scene.add(mesh);
-  });
+  addThreeObjects(THREE, scene, material, spec.payload.objects || []);
   const controls = new controlsModule.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   let frame = 0;

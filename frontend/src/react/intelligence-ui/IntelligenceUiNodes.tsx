@@ -479,6 +479,44 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
   );
 }
 
+interface EntityPresentationProps {
+  title: string;
+  subtitle: string;
+  description: string;
+}
+
+function EntityCopy({ title, subtitle, description }: EntityPresentationProps) {
+  return <>
+    <div className="intui-entity-head">
+      {title ? <div className="intui-entity-title">{title}</div> : null}
+      {subtitle ? <div className="intui-entity-subtitle">{subtitle}</div> : null}
+    </div>
+    {description ? <p className="intui-entity-description">{description}</p> : null}
+  </>;
+}
+
+function EntityImage({ imageUrl, imageAlt }: { imageUrl: string | null; imageAlt: string }) {
+  if (!imageUrl) return null;
+  return <img className="intui-entity-image" src={imageUrl} alt={imageAlt} loading="lazy" decoding="async" referrerPolicy="no-referrer" draggable={false} />;
+}
+
+function EntityFields({ fields, nodeId, context }: { fields: Record<string, unknown>[]; nodeId: string; context: RenderContext }) {
+  if (!fields.length) return null;
+  return <dl className="intui-entity-fields">
+    {fields.map((field, index) => {
+      const label = asProse(resolve(field.label, context));
+      const value = asText(resolve(field.value, context));
+      if (!label && !value) return null;
+      return <div key={`${nodeId}-field-${index}`}><dt>{label}</dt><dd>{value}</dd></div>;
+    })}
+  </dl>;
+}
+
+function EntityAction({ action, label, disabled, context }: { action: UiAction | null; label: string; disabled: boolean; context: RenderContext }) {
+  if (!action || !label) return null;
+  return <BaseButton type="button" className="intui-button intui-entity-action" disabled={disabled} onClick={(event) => executeAction(action, context, event)}>{label}</BaseButton>;
+}
+
 function UiEntity({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const title = asProse(resolve(node.title, context));
   const subtitle = asProse(resolve(node.subtitle, context));
@@ -490,55 +528,15 @@ function UiEntity({ node, context }: { node: IntelligenceUiNode; context: Render
   const actionLabel = asProse(resolve(node.actionLabel, context));
   const promptDisabled = context.readOnly && action?.type === 'prompt';
   if (!title && !subtitle && !description && !imageUrl && !fields.length) return null;
-
-  return (
-    <article className="intui-entity" data-intui-id={node.id}>
-      {imageUrl ? (
-        <img
-          className="intui-entity-image"
-          src={imageUrl}
-          alt={imageAlt}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          draggable={false}
-        />
-      ) : null}
-      <div className="intui-entity-body">
-        <div className="intui-entity-head">
-          {title ? <div className="intui-entity-title">{title}</div> : null}
-          {subtitle ? <div className="intui-entity-subtitle">{subtitle}</div> : null}
-        </div>
-        {description ? <p className="intui-entity-description">{description}</p> : null}
-        {fields.length ? (
-          <dl className="intui-entity-fields">
-            {fields.map((field, index) => {
-              const label = asProse(resolve(field.label, context));
-              const value = asText(resolve(field.value, context));
-              if (!label && !value) return null;
-              return (
-                <div key={`${node.id}-field-${index}`}>
-                  <dt>{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              );
-            })}
-          </dl>
-        ) : null}
-        {renderChildren(node, context)}
-        {action && actionLabel ? (
-          <BaseButton
-            type="button"
-            className="intui-button intui-entity-action"
-            disabled={promptDisabled}
-            onClick={(event) => executeAction(action, context, event)}
-          >
-            {actionLabel}
-          </BaseButton>
-        ) : null}
-      </div>
-    </article>
-  );
+  return <article className="intui-entity" data-intui-id={node.id}>
+    <EntityImage imageUrl={imageUrl} imageAlt={imageAlt} />
+    <div className="intui-entity-body">
+      <EntityCopy title={title} subtitle={subtitle} description={description} />
+      <EntityFields fields={fields} nodeId={node.id} context={context} />
+      {renderChildren(node, context)}
+      <EntityAction action={action} label={actionLabel} disabled={promptDisabled} context={context} />
+    </div>
+  </article>;
 }
 
 interface GalleryImage {
@@ -592,27 +590,30 @@ function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: 
   );
 }
 
+type UiNodeRenderer = (node: IntelligenceUiNode, context: RenderContext) => ReactNode;
+
+const nodeRenderers = new Map<string, UiNodeRenderer>([
+  ['openui', (node, context) => typeof node.source === 'string' ? <LazyOpenUiBlock source={node.source} readOnly={context.readOnly} open={context.streaming} embedded /> : null],
+  ['panel', (node, context) => <UiPanel node={node} context={context} />],
+  ['stack', (node, context) => <UiStack node={node} context={context} />],
+  ['grid', (node, context) => <UiGrid node={node} context={context} />],
+  ['text', (node, context) => <UiText node={node} context={context} />],
+  ['metric', (node, context) => <UiMetric node={node} context={context} />],
+  ['progress', (node, context) => <UiProgress node={node} context={context} />],
+  ['divider', (node) => <hr className="intui-divider" data-intui-id={node.id} />],
+  ['callout', (node, context) => <UiCallout node={node} context={context} />],
+  ['slider', (node, context) => <UiSlider node={node} context={context} />],
+  ['choice', (node, context) => <UiChoice node={node} context={context} />],
+  ['toggle', (node, context) => <UiToggle node={node} context={context} />],
+  ['button', (node, context) => <UiButton node={node} context={context} />],
+  ['table', (node, context) => <UiTable node={node} context={context} />],
+  ['chart', (node, context) => <UiChart node={node} context={context} />],
+  ['tabs', (node, context) => <UiTabs node={node} context={context} />],
+  ['entity', (node, context) => <UiEntity node={node} context={context} />],
+  ['image-gallery', (node, context) => <UiImageGallery node={node} context={context} />],
+]);
+
 export function UiNode({ node, context }: { node: IntelligenceUiNode; context: RenderContext }): ReactNode {
   if (!resolveVisible(node, context)) return null;
-  switch (node.type) {
-    case 'openui': return typeof node.source === 'string' ? <LazyOpenUiBlock source={node.source} readOnly={context.readOnly} open={context.streaming} embedded /> : null;
-    case 'panel': return <UiPanel node={node} context={context} />;
-    case 'stack': return <UiStack node={node} context={context} />;
-    case 'grid': return <UiGrid node={node} context={context} />;
-    case 'text': return <UiText node={node} context={context} />;
-    case 'metric': return <UiMetric node={node} context={context} />;
-    case 'progress': return <UiProgress node={node} context={context} />;
-    case 'divider': return <hr className="intui-divider" data-intui-id={node.id} />;
-    case 'callout': return <UiCallout node={node} context={context} />;
-    case 'slider': return <UiSlider node={node} context={context} />;
-    case 'choice': return <UiChoice node={node} context={context} />;
-    case 'toggle': return <UiToggle node={node} context={context} />;
-    case 'button': return <UiButton node={node} context={context} />;
-    case 'table': return <UiTable node={node} context={context} />;
-    case 'chart': return <UiChart node={node} context={context} />;
-    case 'tabs': return <UiTabs node={node} context={context} />;
-    case 'entity': return <UiEntity node={node} context={context} />;
-    case 'image-gallery': return <UiImageGallery node={node} context={context} />;
-    default: return null;
-  }
+  return nodeRenderers.get(node.type)?.(node, context) ?? null;
 }

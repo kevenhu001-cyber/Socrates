@@ -125,7 +125,9 @@ function vizRuntime(vizId) {
    (streaming re-renders included, since renderViz reads it fresh each
    call). Persisted so the choice survives reloads. */
 var _vizViewPref = null;
-try { _vizViewPref = localStorage.getItem('socrates-viz-view'); } catch (e) { reportSwallow(e, 'vizStubs.readViewPref'); /* ignore */ }
+try {
+  if (typeof localStorage !== 'undefined') _vizViewPref = localStorage.getItem('socrates-viz-view');
+} catch (e) { reportSwallow(e, 'vizStubs.readViewPref'); /* storage can be blocked in browser privacy modes */ }
 if (_vizViewPref !== 'code') _vizViewPref = 'preview';
 
 function vizActions(cardId, showSource, viewToggle) {

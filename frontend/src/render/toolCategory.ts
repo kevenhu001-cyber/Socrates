@@ -32,18 +32,18 @@ const CONNECTOR_TOOLS = new Set([
   'gitlab_identity', 'qq_mail_search',
 ]);
 
+const TOOL_CATEGORIES = new Map<string, string>([
+  ...Array.from(SEARCH_TOOLS, (name) => [name, 'search'] as const),
+  ['code_interpreter', 'code'], ['Code', 'code'],
+  ['web_fetch', 'fetch'], ['WebFetch', 'fetch'],
+  ['render_visualization', 'visual'], ['create_plan', 'plan'], ['create_spec', 'spec'],
+  ['workspace_agent', 'agent'], ['initialize_workspace', 'agent'],
+  ...Array.from(READ_TOOLS, (name) => [name, 'read'] as const),
+  ...Array.from(WRITE_TOOLS, (name) => [name, 'write'] as const),
+  ['save_memory', 'memory'], ['create_site', 'site'],
+  ...Array.from(CONNECTOR_TOOLS, (name) => [name, 'connector'] as const),
+]);
+
 export function toolCategory(name: string): string {
-  if (SEARCH_TOOLS.has(name)) return 'search';
-  if (name === 'code_interpreter' || name === 'Code') return 'code';
-  if (name === 'web_fetch' || name === 'WebFetch') return 'fetch';
-  if (name === 'render_visualization') return 'visual';
-  if (name === 'create_plan') return 'plan';
-  if (name === 'create_spec') return 'spec';
-  if (name === 'workspace_agent' || name === 'initialize_workspace') return 'agent';
-  if (READ_TOOLS.has(name)) return 'read';
-  if (WRITE_TOOLS.has(name)) return 'write';
-  if (name === 'save_memory') return 'memory';
-  if (name === 'create_site') return 'site';
-  if (CONNECTOR_TOOLS.has(name) || /^oc_/.test(name)) return 'connector';
-  return 'other';
+  return TOOL_CATEGORIES.get(name) || (name.startsWith('oc_') ? 'connector' : 'other');
 }

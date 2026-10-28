@@ -105,53 +105,28 @@ const CONNECTOR_NAMES = new Set([
   'gitlab_identity', 'qq_mail_search',
 ]);
 
-export function toolIcon(name: string): string {
+const TOOL_ICONS = new Map<string, string>([
+  ['web_search', STROKE_ICONS.search], ['arxiv_search', STROKE_ICONS.search],
+  ['zotero_search', STROKE_ICONS.search], ['notion_search_pages', STROKE_ICONS.search],
+  ['web_fetch', STROKE_ICONS.fetch], ['WebFetch', STROKE_ICONS.fetch],
+  ['code_interpreter', STROKE_ICONS.code], ['Code', STROKE_ICONS.code],
+  ['render_visualization', STROKE_ICONS.visual], ['create_plan', STROKE_ICONS.plan],
+  ['create_spec', STROKE_ICONS.spec], ['workspace_agent', STROKE_ICONS.agent],
+  ['initialize_workspace', STROKE_ICONS.agent], ['github_list_repos', STROKE_ICONS.repo],
+  ['gitee_list_repos', STROKE_ICONS.repo], ['Read', STROKE_ICONS.read],
+  ['Glob', STROKE_ICONS.read], ['Grep', STROKE_ICONS.read],
+  ['read_attachment', STROKE_ICONS.read], ['Write', STROKE_ICONS.fileChange],
+  ['Edit', STROKE_ICONS.fileChange], ['Bash', STROKE_ICONS.command],
+  ['save_memory', STROKE_ICONS.memory], ['create_site', STROKE_ICONS.site],
+  ['image', STROKE_ICONS.image], ['read_image', STROKE_ICONS.image],
+]);
 
-  switch (name) {
-    case 'web_search':
-    case 'arxiv_search':
-    case 'zotero_search':
-    case 'notion_search_pages':
-      return STROKE_ICONS.search;
-    case 'web_fetch':
-    case 'WebFetch':
-      return STROKE_ICONS.fetch;
-    case 'code_interpreter':
-    case 'Code':
-      return STROKE_ICONS.code;
-    case 'render_visualization':
-      return STROKE_ICONS.visual;
-    case 'create_plan':
-      return STROKE_ICONS.plan;
-    case 'create_spec':
-      return STROKE_ICONS.spec;
-    case 'workspace_agent':
-    case 'initialize_workspace':
-      return STROKE_ICONS.agent;
-    case 'github_list_repos':
-    case 'gitee_list_repos':
-      return STROKE_ICONS.repo;
-    case 'Read':
-    case 'Glob':
-    case 'Grep':
-    case 'read_attachment':
-      return STROKE_ICONS.read;
-    case 'Write':
-    case 'Edit':
-      return STROKE_ICONS.fileChange;
-    case 'Bash':
-      return STROKE_ICONS.command;
-    case 'save_memory':
-      return STROKE_ICONS.memory;
-    case 'create_site':
-      return STROKE_ICONS.site;
-    case 'image':
-    case 'read_image':
-      return STROKE_ICONS.image;
-    default:
-      if (CONNECTOR_NAMES.has(name) || /^oc_/.test(name)) return STROKE_ICONS.mcp;
-      return STROKE_ICONS.tool;
-  }
+export function toolIcon(name: string): string {
+  const icon = TOOL_ICONS.get(name);
+  if (icon) return icon;
+  return CONNECTOR_NAMES.has(name) || name.startsWith('oc_')
+    ? STROKE_ICONS.mcp
+    : STROKE_ICONS.tool;
 }
 
 /**

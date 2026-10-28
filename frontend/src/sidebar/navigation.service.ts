@@ -16,6 +16,12 @@ let adapters: NavigationAdapters = {};
 let routeListenersInstalled = false;
 let homeReturnView = 'topicSetup';
 
+function closeMobileSidebarAfterNavigation(destination: NavigationTarget): void {
+  if (destination === 'more' || window.innerWidth >= 768) return;
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar && !sidebar.classList.contains('collapsed')) toggleSidebar();
+}
+
 export function registerNavigationAdapters(next: NavigationAdapters): void {
   adapters = next;
 }
@@ -41,12 +47,7 @@ export function openNav(name: string, options?: { fromRoute?: boolean }): void {
 
   // Workspace destinations take over the main pane on phones, so dismiss
   // the drawer after navigation. More remains an in-drawer interaction.
-  if (destination !== 'more' && window.innerWidth < 768) {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) {
-      toggleSidebar();
-    }
-  }
+  closeMobileSidebarAfterNavigation(destination);
 }
 
 export function exitPluginsView(): void {

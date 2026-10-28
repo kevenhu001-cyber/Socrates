@@ -6,6 +6,48 @@ import { focusComposer, getComposerMarkdown, setComposerMarkdown } from '../comp
 import { toggleWebSearch } from '../pickers.js';
 import { openAttachmentPicker } from '../attachments/render.js';
 
+function applyHomePrompt(promptTarget) {
+  const key = `home.tutor.${promptTarget.dataset.homePrompt}.prompt`;
+  const prompt = window.t?.(key);
+  if (!prompt || prompt === key) return;
+  const draft = getComposerMarkdown('topic').trimEnd();
+  setComposerMarkdown('topic', draft ? `${draft}\n\n${prompt}` : prompt);
+  focusComposer('topic');
+}
+
+function dismissQuickAction(dismissTarget, event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const row = dismissTarget.closest('.home-quick-action');
+  if (!row) return;
+  const next = row.nextElementSibling || row.previousElementSibling;
+  row.hidden = true;
+  const remaining = next?.querySelector('.home-quick-action-primary');
+  if (remaining && !next.hidden) remaining.focus();
+  else focusComposer('topic');
+}
+
+function handleHomeAction(actionTarget, syncSearch) {
+  const action = actionTarget.dataset.homeAction;
+  if (action === 'upload') {
+    openAttachmentPicker('composerAttachInput');
+    return;
+  }
+  if (action === 'research') {
+    /* The reference row is a real web-search toggle. Calling the picker
+       directly keeps the existing state/search-context side effects while
+       avoiding a second extension entry that would drift from the
+       composer tools menu. */
+    toggleWebSearch();
+    syncSearch();
+    focusComposer('topic');
+    return;
+  }
+  const delegates = { write: 'composeAction' };
+  const delegate = delegates[action];
+  if (delegate && typeof window[delegate] === 'function') window[delegate]();
+}
+
 export function installHomeSurface() {
   const home = document.getElementById('topicSetup');
   if (!home) return;
@@ -17,54 +59,18 @@ export function installHomeSurface() {
   home.addEventListener('click', (event) => {
     const promptTarget = event.target.closest?.('[data-home-prompt]');
     if (promptTarget) {
-      const key = `home.tutor.${promptTarget.dataset.homePrompt}.prompt`;
-      const prompt = window.t?.(key);
-      if (!prompt || prompt === key) return;
-      const draft = getComposerMarkdown('topic').trimEnd();
-      setComposerMarkdown('topic', draft ? `${draft}\n\n${prompt}` : prompt);
-      focusComposer('topic');
+      applyHomePrompt(promptTarget);
       return;
     }
     const dismissTarget = event.target.closest?.('[data-home-dismiss]');
     if (dismissTarget) {
-      event.preventDefault();
-      event.stopPropagation();
-      const row = dismissTarget.closest('.home-quick-action');
-      if (row) {
-        const next = row.nextElementSibling || row.previousElementSibling;
-        row.hidden = true;
-        const remaining = next?.querySelector('.home-quick-action-primary');
-        if (remaining && !next.hidden) remaining.focus();
-        else focusComposer('topic');
-      }
+      dismissQuickAction(dismissTarget, event);
       return;
     }
 
     const actionTarget = event.target.closest?.('[data-home-action]');
     if (!actionTarget) return;
     event.preventDefault();
-    const action = actionTarget.dataset.homeAction;
-    const delegates = {
-      write: 'composeAction',
-    };
-    if (action === 'upload') {
-      openAttachmentPicker('composerAttachInput');
-      return;
-    }
-    if (action === 'research') {
-      /* The reference row is a real web-search toggle. Calling the picker
-         directly keeps the existing state/search-context side effects while
-         avoiding a second extension entry that would drift from the
-         composer tools menu. */
-      toggleWebSearch();
-      syncSearch();
-      focusComposer('topic');
-      return;
-    }
-
-    const delegate = delegates[action];
-    if (delegate && typeof window[delegate] === 'function') {
-      window[delegate]();
-    }
+    handleHomeAction(actionTarget, syncSearch);
   });
 }

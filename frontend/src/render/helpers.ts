@@ -57,7 +57,7 @@ export function stripCitationMarkers(s: string): string {
   const keep = (html: string): string => {
     const id = stash.length;
     stash.push(html);
-    return '\x01CITE' + id + '\x01';
+    return '\uE000SOCRATES_CITE_' + id + '\uE001';
   };
   /* Protect code and math spans before touching brackets. */
   t = t.replace(/```[\w-]*\n?[\s\S]*?```/g, keep);
@@ -80,7 +80,7 @@ export function stripCitationMarkers(s: string): string {
       const ok = /^(?:\[\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}\]|【\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}】)+$/.test(String(run));
       return ok ? '' : m;
     });
-  return t.replace(/\x01CITE(\d+)\x01/g, (_m, id: string) => stash[Number(id)]);
+  return t.replace(/\uE000SOCRATES_CITE_(\d+)\uE001/g, (_m, id: string) => stash[Number(id)]);
 }
 
 /* P_hljs-unknown-lang — validate a code-fence language tag against
@@ -359,86 +359,108 @@ const NUMBERED_TITLE_RE = /^\d{1,3}[.．、)）]\s*\S/;
 const GLUED_HEADING_RE = /^(.*?[。！？；：.!?;:…）)】」』”"*`~$》\]，、])[ \t]*((?:#{2,6}|＃{2,6})(?![#＃])[ \t]*[^\s#＃].*)$/;
 const HEADING_DIRECTIVE_RE = /^(?:include|define|pragma|ifdef|ifndef|elif|else|endif|error|warning|line|undef|import|using|region|endregion|!)/;
 
+interface HeadingScanState {
+  inFence: boolean;
+  fenceChar: string;
+  inMath: boolean;
+}
+
+function consumeFenceLine(line: string, state: HeadingScanState): boolean {
+  const fence = line.match(/^[ \t]{0,3}(`{3,}|~{3,})/);
+  if (!fence) return false;
+  const char = fence[1].charAt(0);
+  if (!state.inFence) {
+    state.inFence = true;
+    state.fenceChar = char;
+  } else if (char === state.fenceChar) {
+    state.inFence = false;
+    state.fenceChar = '';
+  }
+  return true;
+}
+
+function startsInsideMath(line: string, state: HeadingScanState): boolean {
+  const dollarRun = (line.match(/\$\$/g) || []).length;
+  const bracketDelta = (line.match(/\\\[/g) || []).length - (line.match(/\\\]/g) || []).length;
+  const wasMath = state.inMath;
+  if (dollarRun % 2 === 1 || bracketDelta !== 0) state.inMath = !state.inMath;
+  return wasMath;
+}
+
+function repairWrappedHeading(lines: string[], index: number): boolean {
+  const wrapped = lines[index].match(BOLD_WRAPPED_HEADING_RE);
+  if (!wrapped) return false;
+  lines[index] = wrapped[1] + wrapped[3] + ' ' + wrapped[4];
+  return true;
+}
+
+function splitGluedHeading(lines: string[], index: number): boolean {
+  const line = lines[index];
+  if (/^[ \t]*\|/.test(line)) return false;
+  const glued = line.match(GLUED_HEADING_RE);
+  if (!glued || /^[ \t]*[#＃]/.test(line) || !/[^*_`~\s]/.test(glued[1])) return false;
+  if (glued[2].charAt(2) !== ' ' && /^#{2}\d/.test(glued[2])) return false;
+  lines.splice(index, 1, glued[1], '', glued[2]);
+  return true;
+}
+
+function repairHeadingIndentation(lines: string[], index: number): void {
+  if (HEADING_LEAD_JUNK_RE.test(lines[index])) {
+    lines[index] = lines[index].replace(HEADING_LEAD_JUNK_RE, '');
+    return;
+  }
+  if (!HEADING_OVERINDENT_RE.test(lines[index])) return;
+  let previous = index - 1;
+  while (previous >= 0 && !/\S/.test(lines[previous])) previous--;
+  if (previous < 0 || !LIST_OR_INDENTED_RE.test(lines[previous])) {
+    lines[index] = lines[index].replace(HEADING_OVERINDENT_RE, '');
+  }
+}
+
+function repairHeadingRun(lines: string[], index: number): void {
+  const match = lines[index].match(HEADING_RUN_RE);
+  if (!match) return;
+  const prefix = match[1];
+  let run = match[2];
+  const rest = lines[index].slice(match[0].length);
+  /* Fullwidth `＃` normalizes even when the space is already present.
+     Keep character-for-character parity for over-long, invalid runs. */
+  if (run.indexOf('＃') !== -1) {
+    run = run.replace(/＃/g, '#');
+    lines[index] = prefix + run + rest;
+  }
+  if (!/\S/.test(rest)) {
+    lines[index] = prefix + run.replace(/#/g, '\\#');
+    return;
+  }
+  if (/^[ \t]/.test(rest)) return;
+  if (run.length <= 2 && /\d/.test(rest.charAt(0)) && !NUMBERED_TITLE_RE.test(rest)) return;
+  if (HEADING_DIRECTIVE_RE.test(rest)) return;
+  lines[index] = prefix + '#'.repeat(Math.min(run.length, 6)) + ' ' + rest;
+}
+
+function repairHeadingLine(lines: string[], index: number): boolean {
+  const wrapped = repairWrappedHeading(lines, index);
+  if (!wrapped && splitGluedHeading(lines, index)) return true;
+  repairHeadingIndentation(lines, index);
+  repairHeadingRun(lines, index);
+  return false;
+}
+
 export function fixHeadingMarkers(s: string): string {
   const lines = String(s).split('\n');
-  let inFence = false;
-  let fenceChar = '';
-  let inMath = false;
+  const state: HeadingScanState = { inFence: false, fenceChar: '', inMath: false };
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const fence = line.match(/^[ \t]{0,3}(`{3,}|~{3,})/);
-    if (fence) {
-      const ch = fence[1].charAt(0);
-      if (!inFence) { inFence = true; fenceChar = ch; }
-      else if (ch === fenceChar) { inFence = false; fenceChar = ''; }
-      continue;
-    }
-    if (inFence) continue;
+    if (consumeFenceLine(line, state) || state.inFence) continue;
     /* Display-math tracking: an odd `$$` count or an unbalanced `\[`
        toggles the region. Only lines that START inside the region are
        skipped — a `#标题 $$…` opener line is still prose up to the
        delimiter, so it keeps its heading repair. */
-    const dollarRun = (line.match(/\$\$/g) || []).length;
-    const bracketDelta =
-      (line.match(/\\\[/g) || []).length - (line.match(/\\\]/g) || []).length;
-    const wasMath = inMath;
-    if (dollarRun % 2 === 1 || bracketDelta !== 0) inMath = !inMath;
-    if (wasMath) continue;
-
-    /* Emphasis wrapped around the marker (`**## 标题**`): CommonMark sees a
-       paragraph starting with `**`. Move the marker out; the heading is
-       already bold, so the emphasis is dropped. */
-    const wrapped = line.match(BOLD_WRAPPED_HEADING_RE);
-    if (wrapped) {
-      lines[i] = wrapped[1] + wrapped[3] + ' ' + wrapped[4];
-    }
-    /* Glued heading: split it off and let the loop repair the new line. */
-    if (!wrapped && !/^[ \t]*\|/.test(line)) {
-      const g = lines[i].match(GLUED_HEADING_RE);
-      if (g && !/^[ \t]*[#＃]/.test(line) && /[^*_`~\s]/.test(g[1])
-          && !(g[2].charAt(2) !== ' ' && /^#{2}\d/.test(g[2]))) {
-        lines.splice(i, 1, g[1], '', g[2]);
-        i += 1; /* next iteration handles the heading line (i + 2) */
-        continue;
-      }
-    }
-    if (HEADING_LEAD_JUNK_RE.test(lines[i])) {
-      lines[i] = lines[i].replace(HEADING_LEAD_JUNK_RE, '');
-    } else if (HEADING_OVERINDENT_RE.test(lines[i])) {
-      let p = i - 1;
-      while (p >= 0 && !/\S/.test(lines[p])) p--;
-      if (p < 0 || !LIST_OR_INDENTED_RE.test(lines[p])) {
-        lines[i] = lines[i].replace(HEADING_OVERINDENT_RE, '');
-      }
-    }
-
-    const m = lines[i].match(HEADING_RUN_RE);
-    if (!m) continue;
-    const prefix = m[1];
-    let run = m[2];
-    const rest = lines[i].slice(m[0].length);
-    /* Fullwidth `＃` normalizes to ASCII even when the space is already
-       present (`＃＃ 标题`): the spaced early-out below would otherwise
-       keep a marker marked cannot parse, leaking the raw `＃＃` into the
-       answer. Char-for-char so over-long runs keep ASCII parity (7+
-       stays prose, exactly like `#######`). A bare fullwidth run then
-       flows into the escape branch below and shows `##`, same as ASCII. */
-    if (run.indexOf('＃') !== -1) {
-      run = run.replace(/＃/g, '#');
-      lines[i] = prefix + run + rest;
-    }
-    if (!/\S/.test(rest)) {
-      /* Bare `#`+ line: escape the ASCII hashes so the reader sees the
-         literal characters instead of an empty heading's gap. */
-      lines[i] = prefix + run.replace(/#/g, '\\#');
-      continue;
-    }
-    if (/^[ \t]/.test(rest)) continue; /* already spaced */
-    /* `#1`-style enumerations are prose; 3+ hashes before a digit are
-       headings (`###1. 方法`). Preprocessor/shebang lines bail too. */
-    if (run.length <= 2 && /\d/.test(rest.charAt(0)) && !NUMBERED_TITLE_RE.test(rest)) continue;
-    if (HEADING_DIRECTIVE_RE.test(rest)) continue;
-    lines[i] = prefix + '#'.repeat(Math.min(run.length, 6)) + ' ' + rest;
+    if (startsInsideMath(line, state)) continue;
+    /* A glued title inserts two lines; advance over the inserted blank so
+       the same pass can repair the title line immediately. */
+    if (repairHeadingLine(lines, i)) i++;
   }
   return lines.join('\n');
 }
@@ -461,7 +483,7 @@ export function fixEmphasisMarkers(s: string): string {
   const keep = (m: string): string => {
     const id = stash.length;
     stash.push(m);
-    return '\u0001EM' + id + '\u0001';
+    return '\uE000SOCRATES_EM_' + id + '\uE001';
   };
   const lines = String(s ?? '').replace(/`[^`\n]+`/g, keep).split('\n');
   let inFence = false;
@@ -505,7 +527,7 @@ export function fixEmphasisMarkers(s: string): string {
       });
     lines[i] = out;
   }
-  return lines.join('\n').replace(/\u0001EM(\d+)\u0001/g, (_m, id: string) => stash[Number(id)]);
+  return lines.join('\n').replace(/\uE000SOCRATES_EM_(\d+)\uE001/g, (_m, id: string) => stash[Number(id)]);
 }
 
 /* Detect and fix a GFM table separator row.

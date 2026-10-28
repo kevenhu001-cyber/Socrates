@@ -6,7 +6,7 @@
  * bottom is never a reason to move the reader to a different paragraph.
  */
 import { stateStore } from '../../state/store.js';
-import { updateMessageSnapshot } from '../../ui/messageSnapshot.js';
+import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
 import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';
@@ -25,9 +25,205 @@ interface FinishViewportCapture {
   anchorOffset: number;
 }
 
+interface FinishAnchorCandidate {
+  node: Element | null;
+  streamRowOffset: number | null;
+  streamRowNearTop: boolean;
+}
+
+interface FinishIntentGuard {
+  hasUserIntent(): boolean;
+  detach(): void;
+}
+
 export interface FinishViewport {
   capture(): void;
   settle(): void;
+}
+
+function findStreamingAnchor(
+  state: TurnRuntimeState,
+  list: HTMLElement,
+  viewport: DOMRect,
+): FinishAnchorCandidate {
+  const liveRow = state.div && state.div.isConnected ? state.div
+    : list.querySelector('.msg[data-client-id="' + state.clientId + '"]');
+  if (!liveRow) return { node: null, streamRowOffset: null, streamRowNearTop: false };
+  const liveRect = liveRow.getBoundingClientRect();
+  if (liveRect.bottom <= viewport.top + 1 || liveRect.top >= viewport.bottom - 1) {
+    return { node: null, streamRowOffset: null, streamRowNearTop: false };
+  }
+  const streamRowOffset = liveRect.top - viewport.top;
+  return {
+    node: liveRow,
+    streamRowOffset,
+    streamRowNearTop: Math.abs(streamRowOffset) <= 96,
+  };
+}
+
+function findVisibleMessageAnchor(rows: NodeListOf<Element>, viewportTop: number): Element | null {
+  for (let index = 0; index < rows.length; index++) {
+    const row = rows[index];
+    if (!row.classList.contains('user') && row.getBoundingClientRect().bottom > viewportTop + 1) {
+      return row;
+    }
+  }
+  for (let index = 0; index < rows.length; index++) {
+    const row = rows[index];
+    if (row.getBoundingClientRect().bottom > viewportTop + 1) return row;
+  }
+  return null;
+}
+
+function findVisibleInnerAnchor(anchor: Element | null, viewportTop: number): Element | null {
+  if (!anchor) return null;
+  const candidates = anchor.querySelectorAll(
+    '.stream-settled-content > *,.stream-live-content > *,' +
+    '.think-prefix > *,.think-suffix > *,.tool-inline,' +
+    '.visualization-card,.exec-artifact,.tool-run-prose > *,.msg-body > *',
+  );
+  for (let index = 0; index < candidates.length; index++) {
+    if (candidates[index].getBoundingClientRect().bottom > viewportTop + 1) return candidates[index];
+  }
+  return null;
+}
+
+function latestMessageId(): string | null {
+  const messages = stateStore.read('messages') as Array<{ clientId?: string }> | undefined;
+  return messages?.length ? messages[messages.length - 1].clientId || null : null;
+}
+
+function captureFinishViewport(state: TurnRuntimeState): FinishViewportCapture {
+  const list = state.list;
+  const viewport = list.getBoundingClientRect();
+  const rows = list.querySelectorAll('.msg[data-client-id]');
+  const stream = findStreamingAnchor(state, list, viewport);
+  const anchor = stream.node || findVisibleMessageAnchor(rows, viewport.top);
+  const innerAnchor = findVisibleInnerAnchor(anchor, viewport.top);
+  const rowOffset = anchor ? anchor.getBoundingClientRect().top - viewport.top : 0;
+  /* Near the top, preserve the answer row because streaming chrome above the
+     first paragraph disappears during handoff. Mid-answer, preserve the
+     paragraph the reader is following instead. */
+  const measuredAnchor = anchor && Math.abs(rowOffset) <= 96 ? anchor : innerAnchor || anchor;
+  return {
+    scroller: list,
+    sessionId: stateStore.read('currentSessionId') as string | null,
+    latestMessageId: latestMessageId(),
+    /* Freeze reader intent before handoff scroll events can change the live flag. */
+    scrolledAway: !!stateStore.read('_userScrolledAway'),
+    scrollTop: list.scrollTop,
+    streamRowId: stream.streamRowNearTop ? state.clientId : null,
+    streamRowOffset: stream.streamRowNearTop ? stream.streamRowOffset : null,
+    anchorNode: measuredAnchor,
+    anchorId: anchor ? anchor.getAttribute('data-client-id') : null,
+    anchorOffset: measuredAnchor ? measuredAnchor.getBoundingClientRect().top - viewport.top : 0,
+  };
+}
+
+function installFinishIntentGuard(): FinishIntentGuard {
+  let userIntent = false;
+  const markIntent = (): void => { userIntent = true; };
+  const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
+  for (const event of events) {
+    window.addEventListener(event, markIntent, { passive: true, capture: true });
+  }
+  return {
+    hasUserIntent: () => userIntent,
+    detach: () => {
+      for (const event of events) window.removeEventListener(event, markIntent, { capture: true });
+    },
+  };
+}
+
+function isCurrentFinish(viewport: FinishViewportCapture): boolean {
+  return stateStore.read('currentSessionId') === viewport.sessionId
+    && latestMessageId() === viewport.latestMessageId;
+}
+
+function reserveStreamRowForCorrection(
+  state: TurnRuntimeState,
+  viewport: FinishViewportCapture,
+  row: HTMLElement,
+  rowRect: DOMRect,
+  delta: number,
+): void {
+  if (delta <= 1) return;
+  const maxTop = Math.max(0, viewport.scroller.scrollHeight - viewport.scroller.clientHeight);
+  const neededTop = viewport.scroller.scrollTop + delta;
+  const shortfall = Math.ceil(neededTop - maxTop);
+  if (shortfall <= 0) return;
+  /* At the physical scroll limit, create only the missing answer reserve. */
+  const requiredMin = Math.ceil(rowRect.height + shortfall);
+  row.style.minHeight = requiredMin + 'px';
+  const message = readTurnMessage(state.msgIdx);
+  if (!message) return;
+  updateMessageSnapshot(message, {
+    _turnAnchorMinHeight: Math.max(Number(message._turnAnchorMinHeight) || 0, requiredMin),
+  }, true);
+}
+
+function applyStreamRowCorrection(state: TurnRuntimeState, viewport: FinishViewportCapture): boolean {
+  if (!viewport.streamRowId || !Number.isFinite(viewport.streamRowOffset)) return false;
+  const row = state.list.querySelector(
+    '.msg[data-client-id="' + viewport.streamRowId + '"][data-react-owned]',
+  ) as HTMLElement | null;
+  if (!row) return true;
+  const rowRect = row.getBoundingClientRect();
+  const scrollerTop = viewport.scroller.getBoundingClientRect().top;
+  const currentOffset = rowRect.top - scrollerTop;
+  const delta = currentOffset - (viewport.streamRowOffset as number);
+  reserveStreamRowForCorrection(state, viewport, row, rowRect, delta);
+  writeScrollTop(viewport.scroller, viewport.scroller.scrollTop + delta, 'finish');
+  return true;
+}
+
+function applyExactAnchorCorrection(viewport: FinishViewportCapture): boolean {
+  if (!viewport.anchorNode || !viewport.anchorNode.isConnected) return false;
+  const currentOffset = viewport.anchorNode.getBoundingClientRect().top
+    - viewport.scroller.getBoundingClientRect().top;
+  writeScrollTop(
+    viewport.scroller,
+    viewport.scroller.scrollTop + currentOffset - viewport.anchorOffset,
+    'finish',
+  );
+  return true;
+}
+
+function findCurrentMessageAnchor(state: TurnRuntimeState, anchorId: string): Element | null {
+  const rows = state.list.querySelectorAll('.msg[data-client-id]');
+  for (let index = 0; index < rows.length; index++) {
+    if (rows[index].getAttribute('data-client-id') === anchorId) return rows[index];
+  }
+  return null;
+}
+
+function applyMessageAnchorCorrection(state: TurnRuntimeState, viewport: FinishViewportCapture): void {
+  const anchor = viewport.anchorId ? findCurrentMessageAnchor(state, viewport.anchorId) : null;
+  if (!anchor) {
+    writeScrollTop(viewport.scroller, viewport.scrollTop, 'finish');
+    return;
+  }
+  const currentOffset = anchor.getBoundingClientRect().top - viewport.scroller.getBoundingClientRect().top;
+  writeScrollTop(
+    viewport.scroller,
+    viewport.scroller.scrollTop + currentOffset - viewport.anchorOffset,
+    'finish',
+  );
+}
+
+function applyFinishCorrection(state: TurnRuntimeState, viewport: FinishViewportCapture): void {
+  /* At transcript top, scrollTop itself expresses reader intent. */
+  if (viewport.scrolledAway && viewport.scrollTop <= 2) {
+    writeScrollTop(viewport.scroller, viewport.scrollTop, 'finish');
+    return;
+  }
+  if (applyStreamRowCorrection(state, viewport)) return;
+  if (applyExactAnchorCorrection(viewport)) return;
+  if (viewport.anchorId) {
+    applyMessageAnchorCorrection(state, viewport);
+    return;
+  }
+  writeScrollTop(viewport.scroller, viewport.scrollTop, 'finish');
 }
 
 /**
@@ -38,100 +234,12 @@ export interface FinishViewport {
  * `state.reactLive` gates both phases to the React-owned list.
  */
 export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
-  let _finishViewport: FinishViewportCapture | null = null;
+  let finishViewport: FinishViewportCapture | null = null;
 
   function capture(): void {
     if (!state.reactLive || !state.list) return;
-    try {
-      const list = state.list;
-      const _fvRect = list.getBoundingClientRect();
-      const _fvRows = list.querySelectorAll('.msg[data-client-id]');
-      let _fvAnchor: Element | null = null;
-      let _fvStreamRowOffset: number | null = null;
-      let _fvStreamRowNearTop = false;
-      /* If the answer that is finishing is actually visible, it is the
-         unambiguous anchor. Scanning from the top can accidentally pick
-         the previous assistant row when its margin/border overlaps the
-         viewport by a pixel, which shifts the current answer during the
-         legacy-to-React swap. Keep an explicit row-level snapshot too:
-         inner nodes may be transplanted and stay connected, masking the
-         fact that the outer answer row itself moved. */
-      const liveRow = state.div && state.div.isConnected ? state.div
-        : list.querySelector('.msg[data-client-id="' + state.clientId + '"]');
-      if (liveRow) {
-        const _fvLiveRect = liveRow.getBoundingClientRect();
-        if (_fvLiveRect.bottom > _fvRect.top + 1 && _fvLiveRect.top < _fvRect.bottom - 1) {
-          _fvAnchor = liveRow;
-          _fvStreamRowOffset = _fvLiveRect.top - _fvRect.top;
-          _fvStreamRowNearTop = Math.abs(_fvStreamRowOffset) <= 96;
-        }
-      }
-      /* Otherwise prefer an assistant (non-user) message as the anchor
-         so the viewport stays on the answer the reader is looking at. A
-         user message partially visible at the top of the viewport would
-         otherwise drag the scroll position back to the question after
-         the React handoff changes layout. */
-      for (let _fvi = 0; !_fvAnchor && _fvi < _fvRows.length; _fvi++) {
-        const _fvr = _fvRows[_fvi].getBoundingClientRect();
-        if (_fvr.bottom > _fvRect.top + 1) {
-          if (!_fvRows[_fvi].classList.contains('user')) { _fvAnchor = _fvRows[_fvi]; break; }
-        }
-      }
-      if (!_fvAnchor) {
-        for (let _fvi = 0; _fvi < _fvRows.length; _fvi++) {
-          const _fvr = _fvRows[_fvi].getBoundingClientRect();
-          if (_fvr.bottom > _fvRect.top + 1) { _fvAnchor = _fvRows[_fvi]; break; }
-        }
-      }
-      /* Prefer an exact visible node inside the message body. The old
-         row-level anchor could preserve the bubble's top while still
-         moving the paragraph the user was reading by hundreds of
-         pixels after async content and tool rows were transplanted. */
-      let _fvInnerAnchor: Element | null = null;
-      if (_fvAnchor) {
-        const _fvCandidates = _fvAnchor.querySelectorAll(
-          '.stream-settled-content > *,.stream-live-content > *,' +
-          '.think-prefix > *,.think-suffix > *,.tool-inline,' +
-          '.visualization-card,.exec-artifact,.tool-run-prose > *,.msg-body > *',
-        );
-        for (let _fvni = 0; _fvni < _fvCandidates.length; _fvni++) {
-          const _fvnr = _fvCandidates[_fvni].getBoundingClientRect();
-          if (_fvnr.bottom > _fvRect.top + 1) { _fvInnerAnchor = _fvCandidates[_fvni]; break; }
-        }
-      }
-      /* When the answer row itself begins at the viewport top, anchor
-         the row rather than its first paragraph. Streaming-only chrome
-         above that paragraph disappears during the React handoff; an
-         inner anchor would preserve the paragraph but visibly pull the
-         whole answer upward by exactly that chrome height. Once the row
-         starts well above the viewport, the reader is genuinely in the
-         middle of a long answer and the inner paragraph is the better
-         anchor. */
-      const _fvRowOffset = _fvAnchor
-        ? _fvAnchor.getBoundingClientRect().top - _fvRect.top
-        : 0;
-      const _fvMeasuredAnchor = (_fvAnchor && Math.abs(_fvRowOffset) <= 96)
-        ? _fvAnchor
-        : (_fvInnerAnchor || _fvAnchor);
-      _finishViewport = {
-        scroller: list,
-        sessionId: stateStore.read('currentSessionId') as string | null,
-        latestMessageId: (() => {
-          const messages = stateStore.read('messages') as Array<{ clientId?: string }> | undefined;
-          return messages?.length ? messages[messages.length - 1].clientId || null : null;
-        })(),
-        /* Freeze the reader-intent flag NOW: layout churn during the
-           handoff fires scroll events that can flip the live flag
-           without any user input. */
-        scrolledAway: !!stateStore.read('_userScrolledAway'),
-        scrollTop: list.scrollTop,
-        streamRowId: _fvStreamRowNearTop ? state.clientId : null,
-        streamRowOffset: _fvStreamRowNearTop ? _fvStreamRowOffset : null,
-        anchorNode: _fvMeasuredAnchor,
-        anchorId: _fvAnchor ? _fvAnchor.getAttribute('data-client-id') : null,
-        anchorOffset: _fvMeasuredAnchor ? _fvMeasuredAnchor.getBoundingClientRect().top - _fvRect.top : 0,
-      };
-    } catch { /* viewport capture failed; settle will no-op */ }
+    try { finishViewport = captureFinishViewport(state); }
+    catch { /* viewport capture failed; settle will no-op */ }
   }
 
   /* Completion can retire status rows or mount tool outputs. Reapply the
@@ -139,118 +247,22 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
      soon as the reader scrolls or interacts. */
   function settle(): void {
     if (!state.reactLive) return;
-    const viewport = _finishViewport;
+    const viewport = finishViewport;
     if (!viewport || !viewport.scroller) return;
-    const _fvScroller = viewport.scroller;
-    let _fvUserIntent = false;
-    const _fvMarkIntent = (): void => { _fvUserIntent = true; };
-    const _fvIntentEvents = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
-    for (let _fvei = 0; _fvei < _fvIntentEvents.length; _fvei++) {
-      window.addEventListener(_fvIntentEvents[_fvei], _fvMarkIntent,
-        { passive: true, capture: true });
-    }
-    const _fvDetachIntent = (): void => {
-      for (let _fvej = 0; _fvej < _fvIntentEvents.length; _fvej++) {
-        window.removeEventListener(_fvIntentEvents[_fvej], _fvMarkIntent,
-          { capture: true });
-      }
-    };
-    const _fvApply = (): void => {
-      // Completion must preserve the text being read, including for a reader
-      // who happens to be near the bottom. Snapping to the new bottom moves
-      // every paragraph when actions/status change the row's height.
-      if (viewport.scrolledAway && viewport.scrollTop <= 2) {
-        /* At the absolute transcript top, preserving scrollTop
-           is the user's explicit intent. Mid-answer reading is
-           different: React/legacy height deltas move the visible
-           paragraph even when scrollTop itself is unchanged, so
-           let the row-anchor branches below preserve content. */
-        writeScrollTop(_fvScroller, viewport.scrollTop, 'finish');
-      } else if (viewport.streamRowId &&
-        Number.isFinite(viewport.streamRowOffset)) {
-        const _fvStreamRow = state.list.querySelector(
-          '.msg[data-client-id="' + viewport.streamRowId + '"][data-react-owned]',
-        ) as HTMLElement | null;
-        if (_fvStreamRow) {
-          const _fvStreamRect = _fvStreamRow.getBoundingClientRect();
-          const _fvStreamNow = _fvStreamRect.top -
-            _fvScroller.getBoundingClientRect().top;
-          const _fvStreamDelta = _fvStreamNow - (viewport.streamRowOffset as number);
-          if (_fvStreamDelta > 1) {
-            const _fvMaxTop = Math.max(0,
-              _fvScroller.scrollHeight - _fvScroller.clientHeight);
-            const _fvNeededTop = _fvScroller.scrollTop + _fvStreamDelta;
-            const _fvShortfall = Math.ceil(_fvNeededTop - _fvMaxTop);
-            if (_fvShortfall > 0) {
-              /* The reader is already at the physical scroll
-                 limit, so create only the missing answer reserve
-                 before applying the row correction. This blank
-                 tail is the same turn viewport anchor used while
-                 streaming and is cleared when the next user turn
-                 begins. */
-              const _fvRequiredMin = Math.ceil(
-                _fvStreamRect.height + _fvShortfall,
-              );
-              _fvStreamRow.style.minHeight = _fvRequiredMin + 'px';
-              const _fvStreamMsg = readTurnMessage(state.msgIdx);
-              if (_fvStreamMsg) {
-                updateMessageSnapshot(_fvStreamMsg, {
-                  _turnAnchorMinHeight: Math.max(
-                    Number(_fvStreamMsg._turnAnchorMinHeight) || 0,
-                    _fvRequiredMin,
-                  ),
-                }, true);
-              }
-            }
-          }
-          writeScrollTop(_fvScroller, _fvScroller.scrollTop + _fvStreamDelta, 'finish');
-        }
-      } else if (viewport.anchorNode && viewport.anchorNode.isConnected) {
-        const _fvExactNow = viewport.anchorNode.getBoundingClientRect().top -
-          _fvScroller.getBoundingClientRect().top;
-        writeScrollTop(
-          _fvScroller,
-          _fvScroller.scrollTop + _fvExactNow - viewport.anchorOffset,
-          'finish',
-        );
-      } else if (viewport.anchorId) {
-        let _fvCurrent: Element | null = null;
-        const _fvCurrentRows = state.list.querySelectorAll('.msg[data-client-id]');
-        for (let _fvci = 0; _fvci < _fvCurrentRows.length; _fvci++) {
-          if (_fvCurrentRows[_fvci].getAttribute('data-client-id') === viewport.anchorId) {
-            _fvCurrent = _fvCurrentRows[_fvci]; break;
-          }
-        }
-        if (_fvCurrent) {
-          const _fvNow = _fvCurrent.getBoundingClientRect().top -
-            _fvScroller.getBoundingClientRect().top;
-          writeScrollTop(
-            _fvScroller,
-            _fvScroller.scrollTop + _fvNow - viewport.anchorOffset,
-            'finish',
-          );
-        } else {
-          writeScrollTop(_fvScroller, viewport.scrollTop, 'finish');
-        }
-      } else {
-        writeScrollTop(_fvScroller, viewport.scrollTop, 'finish');
-      }
-    };
-    let _fvFrames = 0;
-    const _fvSettle = (): void => {
-      if (_fvUserIntent) { _fvDetachIntent(); return; }
-      const _fvMessages = stateStore.read('messages') as Array<{ clientId?: string }> | undefined;
-      const _fvLatestId = _fvMessages?.length ? _fvMessages[_fvMessages.length - 1].clientId || null : null;
-      if (stateStore.read('currentSessionId') !== viewport.sessionId ||
-        _fvLatestId !== viewport.latestMessageId) {
-        _fvDetachIntent();
+    const intent = installFinishIntentGuard();
+    let frames = 0;
+    const settleFrame = (): void => {
+      if (intent.hasUserIntent() || !isCurrentFinish(viewport)) {
+        intent.detach();
         return;
       }
-      try { _fvApply(); } catch { /* frame apply failed */ }
-      if (++_fvFrames < 30) { requestAnimationFrame(_fvSettle); }
-      else { _fvDetachIntent(); }
+      try { applyFinishCorrection(state, viewport); }
+      catch { /* frame apply failed */ }
+      frames += 1;
+      if (frames < 30) requestAnimationFrame(settleFrame);
+      else intent.detach();
     };
-    _fvSettle();
+    settleFrame();
   }
 
   return { capture, settle };

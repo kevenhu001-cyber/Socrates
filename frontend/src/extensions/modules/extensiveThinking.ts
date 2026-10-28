@@ -2,6 +2,7 @@ import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/extensiveThinking.ts
 
 import type { ExtensionDefinition } from '../types';
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export const EXTENSIVE_THINKING_ICON = interfaceIcon('thinking', 18);
 
@@ -31,7 +32,7 @@ export const extensiveThinkingExtension: ExtensionDefinition = {
     ew().extensiveThinkingOn = true;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(true));
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'extensions/modules/extensiveThinking.ts:34', 'expected'); }
     ctx.setTemplate({
       key: 'extensiveThinking',
       title: ctx.t('effort.high.note', 'Extensive thinking'),
@@ -45,7 +46,7 @@ export const extensiveThinkingExtension: ExtensionDefinition = {
     ew().extensiveThinkingOn = false;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(false));
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'extensions/modules/extensiveThinking.ts:48', 'expected'); }
     const active = ew()._activeTemplate;
     if (active && active.extensionKey === 'extensiveThinking') {
       ctx.clearTemplate();

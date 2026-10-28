@@ -1,9 +1,9 @@
 /* modelPicker — DOM-free provider list model for the chat-header model
- * switcher. Ports the item semantics of `frontend/src/modelPicker.js`:
- * built-in rows sort first, the active row carries the check, and the
- * menu always ends with a Manage entry that leads to the providers
- * screen. Activation itself stays in the host app (PATCH /api-key with
- * the epoch-guarded mirror update); this module only shapes the list. */
+ * switcher. Preserves the legacy web picker's item semantics: built-in
+ * rows sort first, the active row carries the check, and the menu ends
+ * with a Manage entry that leads to the providers screen. Activation
+ * stays in the host app (PATCH /api-key with epoch-guarded mirror update);
+ * this module only shapes the list. */
 
 import type { ProviderKey } from '@socrates/contracts';
 

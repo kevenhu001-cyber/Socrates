@@ -72,6 +72,50 @@ function subscribeDocumentVisibility(cb: () => void): (() => void) | undefined {
   return () => document.removeEventListener('visibilitychange', cb);
 }
 
+function disposeCallback(callback: (() => void) | null): null {
+  callback?.();
+  return null;
+}
+
+function publishStateChange(
+  previous: PlaybackState,
+  next: PlaybackState,
+  onStateChange?: (state: PlaybackState) => void,
+): PlaybackState {
+  if (next === previous) return previous;
+  try { onStateChange?.(next); } catch (_) { /* listener threw */ }
+  return next;
+}
+
+function handleVisibilityChange(
+  clearIdle: () => void,
+  isHidden: () => boolean,
+  paintHidden: () => void,
+  isDone: () => boolean,
+  schedule: () => void,
+): void {
+  clearIdle();
+  if (isHidden()) paintHidden();
+  else if (!isDone()) schedule();
+}
+
+function flushVisibleText(
+  clock: PlaybackClock,
+  full: string,
+  onFrame: StreamPlayerOptions['onFrame'],
+): void {
+  const played = clock.playedLen();
+  const total = clock.totalLen();
+  clock.flushNow();
+  if (total > played) {
+    onFrame(full.slice(0, total), {
+      state: 'done',
+      revealed: total - played,
+      totalLen: total,
+    });
+  }
+}
+
 export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   const now = options.now || (() => performance.now());
   const raf = options.raf || ((cb: () => void) => { requestAnimationFrame(cb); });
@@ -94,29 +138,20 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   let lastState: PlaybackState = 'idle';
   let firstPaint = true;
   const subscribeVisibility = options.onVisibilityChange || subscribeDocumentVisibility;
-  function handleVisibility(): void {
-    clearIdle();
-    if (isHidden()) paintHidden();
-    else if (!clock.isDone()) schedule();
-  }
+  const handleVisibility = () => handleVisibilityChange(
+    () => { cancelIdle = disposeCallback(cancelIdle); },
+    isHidden,
+    paintHidden,
+    () => clock.isDone(),
+    schedule,
+  );
   let unsubscribeVisibility: (() => void) | null = subscribeVisibility(handleVisibility) ?? null;
-  function stopVisibility(): void {
-    unsubscribeVisibility?.();
-    unsubscribeVisibility = null;
-  }
   function paintHidden(): void {
     // A queued foreground frame may survive the tab switch. Invalidate it
     // before catching up synchronously, so it cannot re-arm a second loop.
     generation += 1;
     scheduled = false;
     tick(generation)();
-  }
-
-  function emitStateMaybe(state: PlaybackState): void {
-    if (state !== lastState) {
-      lastState = state;
-      try { onStateChange?.(state); } catch (_) { /* listener threw */ }
-    }
   }
 
   function tick(captured: number) {
@@ -134,9 +169,9 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
           totalLen: clock.totalLen(),
         });
       }
-      emitStateMaybe(r.state);
+      lastState = publishStateChange(lastState, r.state, onStateChange);
       if (clock.isDone()) {
-        stopVisibility();
+        unsubscribeVisibility = disposeCallback(unsubscribeVisibility);
         if (!doneFired) {
           doneFired = true;
           try { onDone?.(); } catch (_) { /* listener threw */ }
@@ -162,17 +197,12 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     raf(tick(generation));
   }
 
-  function clearIdle(): void {
-    cancelIdle?.();
-    cancelIdle = null;
-  }
-
   return {
     push(delta: string): void {
       if (!delta) return;
       // Tool handoffs can cancel a scheduled render and resume this player.
       if (!unsubscribeVisibility) unsubscribeVisibility = subscribeVisibility(handleVisibility) ?? null;
-      clearIdle();
+      cancelIdle = disposeCallback(cancelIdle);
       // Idle time must not become playback credit for a new network burst.
       if (clock.playedLen() === clock.totalLen()) clock.tick(now());
       full += delta;
@@ -181,31 +211,22 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       else schedule();
     },
     beginDrain(): void {
-      clearIdle();
+      cancelIdle = disposeCallback(cancelIdle);
       clock.beginDrain();
       if (isHidden()) paintHidden();
       else schedule();
     },
     flushNow(): void {
-      clearIdle();
-      stopVisibility();
+      cancelIdle = disposeCallback(cancelIdle);
+      unsubscribeVisibility = disposeCallback(unsubscribeVisibility);
       /* End-of-turn safety: make everything visible and paint synchronously,
          bypassing the adaptive rate. Used by abort/teardown paths that must
          not animate. */
-      const played = clock.playedLen();
-      const total = clock.totalLen();
-      clock.flushNow();
-      if (total > played) {
-        onFrame(full.slice(0, total), {
-          state: 'done',
-          revealed: total - played,
-          totalLen: total,
-        });
-      }
+      flushVisibleText(clock, full, onFrame);
       // Reflect terminal state; drop any pending frame.
       generation += 1;
       scheduled = false;
-      emitStateMaybe('done');
+      lastState = publishStateChange(lastState, 'done', onStateChange);
       if (!doneFired) {
         doneFired = true;
         try { onDone?.(); } catch (_) { /* listener threw */ }
@@ -221,8 +242,8 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       return clock.totalLen();
     },
     dispose(): void {
-      clearIdle();
-      stopVisibility();
+      cancelIdle = disposeCallback(cancelIdle);
+      unsubscribeVisibility = disposeCallback(unsubscribeVisibility);
       generation += 1;
       scheduled = false;
     },

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { shouldConfirmReset } from '../src/app/lifecycle/resetDecision.js';
+import { shouldConfirmReset } from '../src/app/lifecycle/resetDecision.ts';
 
 const emptySession = {
   examWasOpen: false,

@@ -8,21 +8,18 @@ import {
   reportTurnFailure,
 } from './runtime.ts';
 import type { SubmitChatMessage, TutorTurnOptions } from './tutorPolicy.ts';
+import type { StreamingTurnController } from '../turnState.ts';
 
 /** The abort surface of a turn created before the send was dispatched. */
-interface PrecreatedController {
-  abort(): void;
-}
-
 export interface DispatchSendTurnInput {
   text: string;
   chatContent: unknown;
-  precreatedController?: PrecreatedController | null;
+  precreatedController?: StreamingTurnController | null;
   options?: unknown;
   submitChatMessage?: unknown;
 }
 
-async function runChatTurn(text: string, chatContent: unknown, precreatedController?: PrecreatedController | null): Promise<void> {
+async function runChatTurn(text: string, chatContent: unknown, precreatedController?: StreamingTurnController | null): Promise<void> {
   try {
     await askChatTurn(text, chatContent, precreatedController);
   } catch (error) {

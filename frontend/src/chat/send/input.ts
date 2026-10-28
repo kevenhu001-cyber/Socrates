@@ -9,7 +9,7 @@ import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
 import { buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';
-import { updateComposerBtn } from '../../ui/topicSetup.js';
+import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { addMessage } from '../messages.ts';
 import { playSendGlyph } from '../../ui/sendGlyph.js';
 import {
@@ -19,7 +19,7 @@ import {
   isDeepResearchOn,
   translate,
 } from './runtime.ts';
-import type { ActiveChatController } from '../turnState.ts';
+import type { StreamingTurnController } from '../turnState.ts';
 
 /** The composer snapshot a send is built from, captured before the clear. */
 export interface SendInput {
@@ -32,7 +32,7 @@ export interface SendInput {
 
 /** The streaming message created ahead of the network call. */
 export interface PrecreatedTurn {
-  controller: ActiveChatController | null;
+  controller: StreamingTurnController | null;
   setRetryTarget(target: () => unknown): void;
 }
 
@@ -86,7 +86,7 @@ async function createPrecreatedTurn(input: SendInput): Promise<PrecreatedTurn | 
   if (getAppMode() !== 'chat' || isDeepResearchOn()) return null;
   const supersededController = turnState.activeChatCtl;
   let retryTarget = (): unknown => askChatTurn(input.text, input.textForModel);
-  let controller: ActiveChatController | null;
+  let controller: StreamingTurnController | null;
   try {
     controller = await addStreamingMessage({ onRetry: () => retryTarget() });
   } catch {

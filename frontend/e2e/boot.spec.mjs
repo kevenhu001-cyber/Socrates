@@ -113,7 +113,7 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
   }
 
   // After boot: the legacy shell's interactive controls are now owned by
-  // direct listeners (ui/legacyShellListeners.js) and React roots, which
+  // direct listeners (ui/legacyShellListeners.ts) and React roots, which
   // replaced the document-wide data-action delegation. Guard that at least
   // the primary nav stays React-hydrated so the shell is still interactive.
   const reactNavCount = await page.evaluate(() =>

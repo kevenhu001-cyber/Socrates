@@ -35,6 +35,73 @@ export interface FinishRender {
   run(): FinishRenderResult;
 }
 
+function seedCanvasPendingId(win: ActiveTemplateWindow): void {
+  if (!win._activeTemplate || win._activeTemplate.outputMode !== 'canvas') return;
+  stateStore.dispatch({
+    type: 'state/set', key: '_canvasPendingId',
+    value: 'canvas-' + Math.random().toString(36).slice(2, 10),
+  });
+}
+
+function stampToolOffsets(state: TurnRuntimeState): void {
+  const message = readTurnMessage(state.msgIdx);
+  if (!message || !Array.isArray(message.toolCalls)) return;
+  const offsets = new Map<string, number>(state.inlineToolRows.map((row) => [row.id, row.offset]));
+  state.patchOwnedMessage({
+    toolCalls: message.toolCalls.map((call: TurnToolCall) => {
+      const id = call.id;
+      if (id === undefined || !offsets.has(id) || call.textOffset === offsets.get(id)) return call;
+      const updated: TurnToolCall = { ...call, textOffset: offsets.get(id) };
+      if (call._run) Object.defineProperty(updated, '_run', { value: call._run, enumerable: false });
+      return updated;
+    }),
+  });
+}
+
+function finalizeThinkingStatus(state: TurnRuntimeState): void {
+  if (!state.thinkCtl || typeof state.thinkCtl.finalize !== 'function') return;
+  try { state.thinkCtl.finalize(); } catch { /* status already finalized */ }
+}
+
+function finalizeOwnedMessage(
+  state: TurnRuntimeState,
+  win: ActiveTemplateWindow,
+  finalHtml: string | null,
+): void {
+  if (!state.ownsMessageSlot()) return;
+  const outputMode = (win._activeTemplate && win._activeTemplate.outputMode) || 'chat';
+  const current = readTurnMessage(state.msgIdx);
+  const previousToolRunRevision = (current && current._toolRunRev) || 0;
+  const patch: Record<string, unknown> = {
+    html: finalHtml,
+    rawText: state.full,
+    type: 'assistant',
+    reasoningContent: state.fullReasoning || null,
+    reasoningDurationSec: (state.fullReasoning && state.reasoningDurationSec) ? state.reasoningDurationSec : undefined,
+    outputMode,
+    _liveStatus: null,
+    _streamSettled: true,
+    turnRuntime: settleTurnRuntime(current?.turnRuntime),
+    _toolRunRev: previousToolRunRevision + 1,
+  };
+  if (outputMode === 'canvas') {
+    patch.canvasId = stateStore.read('_canvasPendingId') || ('canvas-' + Math.random().toString(36).slice(2, 10));
+    patch._extensionIcon = (win._activeTemplate && win._activeTemplate.icon) || '';
+  }
+  state.patchOwnedMessage(patch);
+  stateStore.dispatch({ type: 'state/set', key: '_canvasPendingId', value: null });
+}
+
+function markStreamDomSettled(state: TurnRuntimeState): void {
+  try {
+    if (state.div && state.div.isConnected) state.div.dataset.streamSettled = 'true';
+    if (state.list && state.list.querySelector) {
+      const settledRow = state.list.querySelector('.msg[data-client-id="' + state.clientId + '"]') as HTMLElement | null;
+      if (settledRow) settledRow.dataset.streamSettled = 'true';
+    }
+  } catch { /* settled marker failed; React will reconcile */ }
+}
+
 /**
  * Build the finish-time render bound to one turn's state.
  *
@@ -47,12 +114,7 @@ export function createFinishRender(state: TurnRuntimeState): FinishRender {
     /* P_canvas-mode — seed a stable canvasId on state BEFORE the
        buildAssistantHtml call so the canvas wrapper inside that
        function reuses the same id. */
-    if (win._activeTemplate && win._activeTemplate.outputMode === 'canvas') {
-      stateStore.dispatch({
-        type: 'state/set', key: '_canvasPendingId',
-        value: 'canvas-' + Math.random().toString(36).slice(2, 10),
-      });
-    }
+    seedCanvasPendingId(win);
     /* P_declarative-tool-run — the finalized html carries prose only:
        react/tool-run splices the rows in from toolCalls[].textOffset,
        so a second copy baked into `html` would render each row twice.
@@ -60,19 +122,7 @@ export function createFinishRender(state: TurnRuntimeState): FinishRender {
        entries here — that is what makes the layout survive the
        save/reload round-trip. */
     try {
-      const message = readTurnMessage(state.msgIdx);
-      if (message && Array.isArray(message.toolCalls)) {
-        const offsets = new Map<string, number>(state.inlineToolRows.map((row) => [row.id, row.offset]));
-        state.patchOwnedMessage({
-          toolCalls: message.toolCalls.map((call: TurnToolCall) => {
-            const id = call.id;
-            if (id === undefined || !offsets.has(id) || call.textOffset === offsets.get(id)) return call;
-            const updated: TurnToolCall = { ...call, textOffset: offsets.get(id) };
-            if (call._run) Object.defineProperty(updated, '_run', { value: call._run, enumerable: false });
-            return updated;
-          }),
-        });
-      }
+      stampToolOffsets(state);
     } catch { /* tool offset writeback failed; layout will fall back */ }
     // Ordinary chat persists raw text. Its progressive DOM is already painted;
     // building final HTML here repeats all parsing and can register widgets twice.
@@ -83,41 +133,9 @@ export function createFinishRender(state: TurnRuntimeState): FinishRender {
     const finalHtml = canvasMode ? buildAssistantHtml(visibleFinal) : null;
     /* Finalize the thinking status BEFORE saving it so the spinner
        stops once the response is complete. */
-    if (state.thinkCtl && typeof state.thinkCtl.finalize === 'function') {
-      try { state.thinkCtl.finalize(); } catch { /* status already finalized */ }
-    }
-    if (state.ownsMessageSlot()) {
-      /* P_canvas-mode — copy the active template's outputMode + canvasId
-         onto the message so React's <CanvasBlock> can branch instead of
-         falling through to dangerouslySetInnerHTML. */
-      const _om = (win._activeTemplate && win._activeTemplate.outputMode) || 'chat';
-      const current = readTurnMessage(state.msgIdx);
-      const _preRev = (current && current._toolRunRev) || 0;
-      const _finalPatch: Record<string, unknown> = {
-        html: finalHtml, rawText: state.full,
-        type: 'assistant',
-        reasoningContent: state.fullReasoning || null,
-        reasoningDurationSec: (state.fullReasoning && state.reasoningDurationSec) ? state.reasoningDurationSec : undefined,
-        outputMode: _om,
-        _liveStatus: null,
-        _streamSettled: true,
-        turnRuntime: settleTurnRuntime(current?.turnRuntime),
-        _toolRunRev: _preRev + 1,
-      };
-      if (_om === 'canvas') {
-        _finalPatch.canvasId = stateStore.read('_canvasPendingId') || ('canvas-' + Math.random().toString(36).slice(2, 10));
-        _finalPatch._extensionIcon = (win._activeTemplate && win._activeTemplate.icon) || '';
-      }
-      state.patchOwnedMessage(_finalPatch);
-      stateStore.dispatch({ type: 'state/set', key: '_canvasPendingId', value: null });
-    }
-    try {
-      if (state.div && state.div.isConnected) state.div.dataset.streamSettled = 'true';
-      if (state.list && state.list.querySelector) {
-        const _settledRow = state.list.querySelector('.msg[data-client-id="' + state.clientId + '"]') as HTMLElement | null;
-        if (_settledRow) _settledRow.dataset.streamSettled = 'true';
-      }
-    } catch { /* settled marker failed; React will reconcile */ }
+    finalizeThinkingStatus(state);
+    finalizeOwnedMessage(state, win, finalHtml);
+    markStreamDomSettled(state);
     /* Return the render result so the caller can run the post-render
        wiring (memory / a11y / save / stats / stop-button restore) with
        the same `visibleFinal` value used to build the html. */

@@ -84,6 +84,51 @@ function buildRequestBody(context) {
   return body;
 }
 
+function resetClaimedTurn(context) {
+  if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn === 'object') {
+    context.opts.clientTurn.id = newClientTurnId();
+  }
+  context.activeTurn.current = null;
+  context.setLastCallError('Turn execution conflict. Please click Retry to create a new turn.');
+}
+
+async function recoverClaimConflict(error, processor, context) {
+  const recovered = await recoverAfterReadError(error, processor, context);
+  if (recovered) return completed(recovered);
+  resetClaimedTurn(context);
+  return failed();
+}
+
+function makeRequestError(error, signal) {
+  const status = error && error.status;
+  const aborted = error && (error.name === 'AbortError' || signal.aborted);
+  const requestError = makeStreamError(
+    aborted
+      ? 'request was interrupted'
+      : (status ? status + ' ' : 'network: ') + (error && error.message || error),
+    status,
+    error && error.body,
+  );
+  requestError.code = error && error.code;
+  requestError.reason = signal.reason;
+  return requestError;
+}
+
+async function handleRequestFailure(error, context, signal) {
+  const requestError = makeRequestError(error, signal);
+  if (isUserAbort(error, signal) || isUserAbort(error, context.turnSignal)) {
+    return cancelled(emptyCancelledResult());
+  }
+  if (isClaimConflictError(error) || isClaimConflictError(requestError)) {
+    return recoverClaimConflict(error, { full: '', formattedHtml: null }, context);
+  }
+  const retryOutcome = await retryOrCancel(context, requestError);
+  if (retryOutcome) return retryOutcome;
+  console.error('[API stream] request failed:', error);
+  context.setLastCallError(failureMessage(requestError));
+  return failed();
+}
+
 async function requestStream(context, signal) {
   try {
     const body = buildRequestBody(context);
@@ -96,35 +141,7 @@ async function requestStream(context, signal) {
     });
     return { kind: 'response', response };
   } catch (error) {
-    const status = error && error.status;
-    const aborted = error && (error.name === 'AbortError' || signal.aborted);
-    const requestError = makeStreamError(
-      aborted
-        ? 'request was interrupted'
-        : (status ? status + ' ' : 'network: ') + (error && error.message || error),
-      status,
-      error && error.body,
-    );
-    requestError.code = error && error.code;
-    requestError.reason = signal.reason;
-    if (isUserAbort(error, signal) || isUserAbort(error, context.turnSignal)) {
-      return cancelled(emptyCancelledResult());
-    }
-    if (isClaimConflictError(error) || isClaimConflictError(requestError)) {
-      const recovered = await recoverAfterReadError(error, { full: '', formattedHtml: null }, context);
-      if (recovered) return completed(recovered);
-      if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn === 'object') {
-        context.opts.clientTurn.id = newClientTurnId();
-      }
-      context.activeTurn.current = null;
-      context.setLastCallError('Turn execution conflict. Please click Retry to create a new turn.');
-      return failed();
-    }
-    const retryOutcome = await retryOrCancel(context, requestError);
-    if (retryOutcome) return retryOutcome;
-    console.error('[API stream] request failed:', error);
-    context.setLastCallError(failureMessage(requestError));
-    return failed();
+    return handleRequestFailure(error, context, signal);
   }
 }
 
@@ -136,14 +153,15 @@ async function handleNoStreamBody(context) {
   return failed();
 }
 
-async function recoverAfterReadError(error, processor, context) {
-  if (isUserAbort(error, context.attemptSignal) || isUserAbort(error, context.turnSignal)) return null;
+function turnIdFromError(error) {
+  if (!error) return null;
+  if (typeof error.turnId === 'string' && error.turnId) return error.turnId;
+  if (error.body && typeof error.body.turnId === 'string' && error.body.turnId) return error.body.turnId;
+  return null;
+}
 
-  let turnId = context.activeTurn.current;
-  if (!turnId && error) {
-    if (typeof error.turnId === 'string' && error.turnId) turnId = error.turnId;
-    else if (error.body && typeof error.body.turnId === 'string' && error.body.turnId) turnId = error.body.turnId;
-  }
+async function resolveRecoveryTurnId(error, context) {
+  let turnId = context.activeTurn.current || turnIdFromError(error);
   if (!turnId && context.opts && typeof context.opts.turnId === 'string' && context.opts.turnId) {
     turnId = context.opts.turnId;
   }
@@ -153,12 +171,22 @@ async function recoverAfterReadError(error, processor, context) {
       if (existing && existing.turn && existing.turn.id) turnId = existing.turn.id;
     } catch (caught) { reportSwallow(caught, 'chat/stream.createChatTurn'); }
   }
-  if (!turnId) return null;
-  if (!context.activeTurn.current) context.activeTurn.current = turnId;
+  return turnId;
+}
+
+function notifyTurnBound(context, turnId) {
   if (context.opts && typeof context.opts.onTurnBound === 'function') {
     try { context.opts.onTurnBound(turnId); }
     catch (caught) { reportSwallow(caught, 'chat/streamAttempt.onTurnBound'); }
   }
+}
+
+async function recoverAfterReadError(error, processor, context) {
+  if (isUserAbort(error, context.attemptSignal) || isUserAbort(error, context.turnSignal)) return null;
+  const turnId = await resolveRecoveryTurnId(error, context);
+  if (!turnId) return null;
+  if (!context.activeTurn.current) context.activeTurn.current = turnId;
+  notifyTurnBound(context, turnId);
 
   try {
     console.info('[API stream] connection dropped, recovering from detached turn:', turnId);
@@ -220,13 +248,7 @@ async function handleReadError(error, reader, processor, context) {
 
   const recovered = await recoverAfterReadError(error, processor, context);
   if (recovered) return completed(recovered);
-  if (isClaimConflictError(error)) {
-    if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn === 'object') {
-      context.opts.clientTurn.id = newClientTurnId();
-    }
-    context.activeTurn.current = null;
-    context.setLastCallError('Turn execution conflict. Please click Retry to create a new turn.');
-  }
+  if (isClaimConflictError(error)) resetClaimedTurn(context);
   return failed();
 }
 
@@ -266,43 +288,39 @@ function cancelResponseBody(body) {
   } catch (error) { reportSwallow(error, 'chat/streamAttempt.cancelGuard'); }
 }
 
-async function finishStreamResponse(processor, stream, context) {
-  if (processor.streamError) {
-    if (isClaimConflictError(processor.streamError)) {
-      const recovered = await recoverAfterReadError(processor.streamError, processor, context);
-      if (recovered) return completed(recovered);
-      if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn === 'object') {
-        context.opts.clientTurn.id = newClientTurnId();
-      }
-      context.activeTurn.current = null;
-      context.setLastCallError('Turn execution conflict. Please click Retry to create a new turn.');
-      return failed();
-    }
-    if (!processor.semanticActivity) return retryThenFail(context, processor.streamError);
-    context.setLastCallError(failureMessage(processor.streamError));
-    return failed();
+async function finishStreamError(processor, context) {
+  if (isClaimConflictError(processor.streamError)) {
+    return recoverClaimConflict(processor.streamError, processor, context);
   }
+  if (!processor.semanticActivity) return retryThenFail(context, processor.streamError);
+  context.setLastCallError(failureMessage(processor.streamError));
+  return failed();
+}
 
-  if (!processor.full && !processor.formattedHtml) {
-    if (processor.semanticActivity) {
-      return completed({
-        text: processor.full || '',
-        html: (processor.formattedHtml && processor.formattedHtml.html) || null,
-        widgets: (processor.formattedHtml && processor.formattedHtml.widgets) || [],
-        cancelled: false,
-        semanticActivity: true,
-      });
-    }
-    const message = stream.gotAnyData
-      ? 'empty stream (server returned no content)'
-      : 'empty stream (' + stream.bytesReceived + ' bytes received)';
-    const error = makeStreamError(message);
-    const outcome = await retryThenFail(context, error);
-    if (outcome.kind === 'retry' && !stream.gotAnyData) {
-      console.warn('[API stream]', error.message + ', retrying');
-    }
-    return outcome;
+async function finishEmptyStream(processor, stream, context) {
+  if (processor.semanticActivity) {
+    return completed({
+      text: processor.full || '',
+      html: (processor.formattedHtml && processor.formattedHtml.html) || null,
+      widgets: (processor.formattedHtml && processor.formattedHtml.widgets) || [],
+      cancelled: false,
+      semanticActivity: true,
+    });
   }
+  const message = stream.gotAnyData
+    ? 'empty stream (server returned no content)'
+    : 'empty stream (' + stream.bytesReceived + ' bytes received)';
+  const error = makeStreamError(message);
+  const outcome = await retryThenFail(context, error);
+  if (outcome.kind === 'retry' && !stream.gotAnyData) {
+    console.warn('[API stream]', error.message + ', retrying');
+  }
+  return outcome;
+}
+
+async function finishStreamResponse(processor, stream, context) {
+  if (processor.streamError) return finishStreamError(processor, context);
+  if (!processor.full && !processor.formattedHtml) return finishEmptyStream(processor, stream, context);
 
   return completed({
     text: processor.full,

@@ -129,152 +129,239 @@ export function cancelScrollAnimation(list){
    motion as user scroll-away intent. */
 export function velocityScrollTo(list, targetTop, opts){
   if(!list)return Promise.resolve();
-  const o = opts || {};
-  const owner = o.owner || 'content';
-  const active = activeScrollAnims && activeScrollAnims.get(list);
-  if (o.retarget === true && active && active.retargetKey === 'bottom-follow') return active.promise;
-  const startTop = list.scrollTop;
+  const options=opts||{};
+  const active=activeBottomFollowAnimation(list,options);
+  return active||startScroll(list,targetTop,options);
+}
+
+function activeBottomFollowAnimation(list,options){
+  const active=activeScrollAnims&&activeScrollAnims.get(list);
+  return options.retarget===true&&active&&active.retargetKey==='bottom-follow'
+    ?active.promise:null;
+}
+
+function startScroll(list,targetTop,options){
+  const owner=options.owner||'content';
+  const startTop=list.scrollTop;
   /* `opts.target` — a live target. Re-read every frame (and clamped to the
      reachable range) so a layout that settles mid-glide (a React commit, a
      reserve repaint, a late image) bends the motion toward the real
      destination instead of landing on a stale one and snapping. */
-  const liveTarget = typeof o.target === 'function' ? o.target : null;
-  const resolveTarget = liveTarget
-    ? function(){
-        let next = Number(liveTarget());
-        if (!isFinite(next)) next = Number(targetTop);
-        if (!isFinite(next)) next = list.scrollTop;
-        const max = Math.max(0, (list.scrollHeight || 0) - (list.clientHeight || 0));
-        return Math.max(0, Math.min(max, next));
-      }
-    : function(){ return targetTop; };
+  const liveTarget=typeof options.target==='function'?options.target:null;
+  const resolveTarget = targetResolver(list, targetTop, liveTarget);
   const initialTarget = resolveTarget();
   const distance = initialTarget - startTop;
-  if (!isFinite(distance) || distance === 0) {
-    return Promise.resolve();
-  }
+  if (!isFinite(distance) || distance === 0) return Promise.resolve();
   const ownerToken = beginScrollOwner(list, owner);
   if (ownerToken == null) return Promise.resolve();
   const absDistance = Math.abs(distance);
   const reduced = prefersReducedMotion();
   /* `opts.plan` — a caller-planned motion ({duration, ease, snap}), e.g.
      ui/motion.js planSendGlide. Without it the velocity planner decides. */
-  const injectedPlan = o.plan && typeof o.plan === 'object' ? o.plan : null;
-  const snap = reduced || o.smooth === false || absDistance <= 24 ||
-    typeof requestAnimationFrame !== 'function' ||
-    !!(injectedPlan && (injectedPlan.snap || !(injectedPlan.duration > 0)));
-  const cancelActive = function(){
-    cancelScrollAnimationFor(list);
-  };
-  const beginAutoScrolling = function(){
-    const previous = list.dataset.autoScrolling;
-    list.dataset.autoScrolling = 'true';
-    return function(){
-      try {
-        if (previous === undefined) delete list.dataset.autoScrolling;
-        else list.dataset.autoScrolling = previous;
-      } catch(_){ /* detached node */ }
-    };
-  };
+  const injectedPlan=options.plan&&typeof options.plan==='object'?options.plan:null;
+  const snap=shouldSnapScroll(options,reduced,absDistance,injectedPlan);
   if (snap) {
-    cancelActive();
-    const settle = beginAutoScrolling();
-    writeScrollTop(list, liveTarget ? resolveTarget() : targetTop, owner);
-    settle();
-    endScrollOwner(list, ownerToken);
+    snapScrollToTarget(list, liveTarget ? resolveTarget() : targetTop, owner, ownerToken);
     return Promise.resolve();
   }
-  const plan = injectedPlan || planMotionForUser(absDistance, o.motion);
-  const duration = plan.duration;
-  /* Default ease is the house cubic-bezier(.16,1,.3,1) — same curve the
-     CSS msgUserIn bubble reveal uses. Settle handoff into the first
-     content-follow delta no longer "kicks" off rest because the easing
-     itself starts from zero velocity. */
-  const ease = typeof plan.ease === 'function' ? plan.ease : easeOutHouse;
-  const direction = distance > 0 ? 1 : -1;
-  cancelActive();
-  const settle = beginAutoScrolling();
+  return animateScroll(list, {
+    owner, ownerToken, startTop, targetTop, distance, liveTarget, resolveTarget,
+    options, plan: injectedPlan,
+  });
+}
+
+function targetResolver(list, targetTop, liveTarget){
+  if (!liveTarget) return function(){ return targetTop; };
+  return function(){
+    let next=Number(liveTarget());
+    if(!isFinite(next))next=Number(targetTop);
+    if(!isFinite(next))next=list.scrollTop;
+    const max=Math.max(0,(list.scrollHeight||0)-(list.clientHeight||0));
+    return Math.max(0,Math.min(max,next));
+  };
+}
+
+function shouldSnapScroll(options, reduced, distance, injectedPlan){
+  return reduced||options.smooth===false||distance<=24||
+    typeof requestAnimationFrame!=='function'||
+    !!(injectedPlan&&(injectedPlan.snap||!(injectedPlan.duration>0)));
+}
+
+function beginAutoScrollState(list){
+  const previous=list.dataset.autoScrolling;
+  list.dataset.autoScrolling='true';
+  return function(){
+    try{
+      if(previous===undefined)delete list.dataset.autoScrolling;
+      else list.dataset.autoScrolling=previous;
+    }catch(_){ /* detached node */ }
+  };
+}
+
+function snapScrollToTarget(list, targetTop, owner, ownerToken){
+  cancelScrollAnimationFor(list);
+  const settle=beginAutoScrollState(list);
+  writeScrollTop(list,targetTop,owner);
+  settle();
+  endScrollOwner(list,ownerToken);
+}
+
+function animateScroll(list, config){
+  const { owner, ownerToken, startTop, targetTop, distance, liveTarget, resolveTarget, options, plan: injectedPlan }=config;
+  const plan=injectedPlan||planMotionForUser(Math.abs(distance),options.motion);
+  const duration=plan.duration;
+  const ease=typeof plan.ease==='function'?plan.ease:easeOutHouse;
+  cancelScrollAnimationFor(list);
+  const settle=beginAutoScrollState(list);
   let resolvePromise;
-  const promise = new Promise(function(resolve){ resolvePromise = resolve; });
-  {
-    let startedAt = 0;
-    let handle = 0;
-    let cancelled = false;
-    let lastWrittenTop = startTop;
-
-    /* P_scroll-cancel-user — a bottom-follow animation can still be in
-       flight when the reader starts scrolling away (keyboard lift,
-       streaming growth). scrollPill.js turns wheel/touch/keyboard input
-       into state._userScrolledAway, so honour that flag mid-flight and
-       stop writing scrollTop. Also cancel if any foreign scroll write
-       moves the list off our last interpolated value (scrollbar drag,
-       direct scrollTop assignment), so the reader keeps their position. */
-    function onScroll(){
-      if (cancelled) return;
-      if (Math.abs(list.scrollTop - lastWrittenTop) > 1) stop();
-    }
-    function stop(){
-      if (cancelled) return;
-      cancelled = true;
-      if (handle) cancelAnimationFrame(handle);
-      list.removeEventListener('scroll', onScroll);
-      if (activeScrollAnims) activeScrollAnims.delete(list);
-      endScrollOwner(list, ownerToken);
-      settle();
-      resolvePromise();
-    }
-    list.addEventListener('scroll', onScroll, { passive: true });
-
-    const tick = function(now){
-      if (cancelled) return;
-      /* P_send-anchor-ownership — a keyboard/composer scroll animation can
-         outlive the focus event that started it. Once the send path marks
-         the new turn as the viewport owner, stop the older bottom-follow
-         animation before it pulls the prompt back under the top edge. */
-      if (list.dataset && list.dataset.turnViewportOwner === 'turn') {
-        stop();
-        return;
-      }
-      if (typeof window !== 'undefined' && window.stateStore.read("_userScrolledAway")) {
-        stop();
-        return;
-      }
-      if (!startedAt) startedAt = now;
-      const elapsed = now - startedAt;
-      if (elapsed >= duration) {
-        writeScrollTop(list, liveTarget ? resolveTarget() : targetTop, owner);
-        stop();
-        return;
-      }
-      const t = elapsed / duration;
-      let next;
-      if (liveTarget) {
-        const to = resolveTarget();
-        next = startTop + (to - startTop) * ease(t);
-        /* A target that moves further along the glide must never pull the
-           viewport backwards: hold the last written position until the
-           curve catches up. Only a target that genuinely retreats behind
-           the viewport (content removed above it) moves it back. */
-        if (direction > 0) { next = Math.max(next, lastWrittenTop); if (next > to) next = to; }
-        else { next = Math.min(next, lastWrittenTop); if (next < to) next = to; }
-      } else {
-        next = startTop + distance * ease(t);
-      }
-      /* Read the value back after writing: the browser clamps scrollTop to
-         the real maximum, so the "last value we wrote" must be the clamped
-         position or our own scroll event would look like a foreign write. */
-      writeScrollTop(list, next, owner);
-      lastWrittenTop = list.scrollTop;
-      handle = requestAnimationFrame(tick);
-    };
-    if (activeScrollAnims) activeScrollAnims.set(list, {
-      cancel: stop,
-      retargetKey: o.retarget === true ? 'bottom-follow' : null,
-      promise,
-    });
-    handle = requestAnimationFrame(tick);
-  }
+  const promise=new Promise(function(resolve){resolvePromise=resolve;});
+  const animation={
+    list,owner,ownerToken,startTop,targetTop,distance,liveTarget,resolveTarget,
+    duration,ease,settle,promise,resolvePromise,
+    direction:distance>0?1:-1,
+    startedAt:0,handle:0,cancelled:false,lastWrittenTop:startTop,
+    stop:null,onScroll:null,
+  };
+  animation.stop=function(){stopScrollAnimation(animation);};
+  animation.onScroll=function(){cancelOnForeignScroll(animation);};
+  list.addEventListener('scroll',animation.onScroll,{passive:true});
+  if(activeScrollAnims)activeScrollAnims.set(list,{
+    cancel:animation.stop,
+    retargetKey:options.retarget===true?'bottom-follow':null,
+    promise,
+  });
+  animation.handle=requestAnimationFrame((now)=>advanceScrollAnimation(animation,now));
   return promise;
+}
+
+function cancelOnForeignScroll(animation){
+  if(animation.cancelled)return;
+  if(Math.abs(animation.list.scrollTop-animation.lastWrittenTop)>1)animation.stop();
+}
+
+function stopScrollAnimation(animation){
+  if(animation.cancelled)return;
+  animation.cancelled=true;
+  if(animation.handle)cancelAnimationFrame(animation.handle);
+  animation.list.removeEventListener('scroll',animation.onScroll);
+  if(activeScrollAnims)activeScrollAnims.delete(animation.list);
+  endScrollOwner(animation.list,animation.ownerToken);
+  animation.settle();
+  animation.resolvePromise();
+}
+
+function advanceScrollAnimation(animation,now){
+  if(animation.cancelled)return;
+  const {list}=animation;
+  if((list.dataset&&list.dataset.turnViewportOwner==='turn')||
+      (typeof window!=='undefined'&&window.stateStore.read('_userScrolledAway'))){
+    animation.stop();
+    return;
+  }
+  if(!animation.startedAt)animation.startedAt=now;
+  const elapsed=now-animation.startedAt;
+  if(elapsed>=animation.duration){
+    writeScrollTop(list,animation.liveTarget?animation.resolveTarget():animation.targetTop,animation.owner);
+    animation.stop();
+    return;
+  }
+  const next=nextScrollPosition(animation,elapsed/animation.duration);
+  writeScrollTop(list,next,animation.owner);
+  animation.lastWrittenTop=list.scrollTop;
+  animation.handle=requestAnimationFrame((frameTime)=>advanceScrollAnimation(animation,frameTime));
+}
+
+function nextScrollPosition(animation,progress){
+  const {startTop,distance,ease,liveTarget,resolveTarget,direction,lastWrittenTop}=animation;
+  if(!liveTarget)return startTop+distance*ease(progress);
+  const target=resolveTarget();
+  let next=startTop+(target-startTop)*ease(progress);
+  if(direction>0){
+    next=Math.max(next,lastWrittenTop);
+    if(next>target)next=target;
+  }else{
+    next=Math.min(next,lastWrittenTop);
+    if(next<target)next=target;
+  }
+  return next;
+}
+
+function measureContentGrowth(previous,current,list){
+  var sameMessage=!!(previous&&current&&previous.msg&&
+    previous.msg===current.msg&&
+    previous.msgHeight!=null&&current.msgHeight!=null);
+  var growth=sameMessage?current.msgHeight-previous.msgHeight:null;
+  var grew=!!current&&(growth!=null
+    ?growth>1
+    :(!!previous&&current.scrollHeight>previous.scrollHeight+1));
+  var beforeGrowth=previous&&list?{
+    scrollHeight:growth!=null?current.scrollHeight-growth:previous.scrollHeight,
+    scrollTop:list.scrollTop,
+    clientHeight:previous.clientHeight
+  }:null;
+  return {grew:grew,beforeGrowth:beforeGrowth};
+}
+
+function contentFollowIsBlocked(list,lastMessage){
+  var retryOwnsViewport=!!(lastMessage&&
+    lastMessage.getAttribute("data-viewport-anchor")==="retry");
+  var turnAnchorSettling=!!(list&&list.dataset&&list.dataset.turnAnchorSettling==="true");
+  var turnAnchorHold=!!(list&&list.dataset&&list.dataset.turnAnchorHold==="true");
+  return retryOwnsViewport||turnAnchorSettling||turnAnchorHold;
+}
+
+function createMessageObservers(list,hooks){
+  var resizeObserver=typeof ResizeObserver==="function"
+    ?new ResizeObserver(function(){hooks.scheduleContentFollow();})
+    :null;
+  var subtreeObserver=typeof MutationObserver==="function"
+    ?new MutationObserver(function(){
+      var baseline=hooks.getContentBaseline();
+      if(hooks.getContentFrame())return;
+      hooks.setContentFrame(requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          hooks.setContentFrame(0);
+          hooks.scheduleContentFollow(baseline);
+        });
+      }));
+    })
+    :null;
+
+  function observeLastMessage(){
+    if(!list||!resizeObserver)return;
+    var messages=list.querySelectorAll(":scope > .msg");
+    var next=messages.length?messages[messages.length-1]:null;
+    if(next===hooks.getLastMessage())return;
+    resizeObserver.disconnect();
+    hooks.setLastMessage(next);
+    /* Appending or replacing a row is not in-message content growth. */
+    hooks.setContentMetrics(hooks.readMetrics());
+    if(next)resizeObserver.observe(next);
+    if(subtreeObserver){
+      subtreeObserver.disconnect();
+      if(next)subtreeObserver.observe(next,{subtree:true,childList:true});
+    }
+  }
+
+  var mutationObserver=typeof MutationObserver==="function"
+    ?new MutationObserver(function(){
+      observeLastMessage();
+      hooks.rememberMetrics();
+    })
+    :null;
+
+  function observe(){
+    observeLastMessage();
+    if(mutationObserver)mutationObserver.observe(list,{childList:true});
+  }
+
+  function disconnect(){
+    if(resizeObserver)resizeObserver.disconnect();
+    if(subtreeObserver)subtreeObserver.disconnect();
+    if(mutationObserver)mutationObserver.disconnect();
+  }
+
+  return {observe:observe,disconnect:disconnect};
 }
 
 /* Glide the scrollable chat container to its current bottom using the
@@ -300,6 +387,117 @@ export function smoothScrollToBottom(list, opts){
   }:o);
 }
 
+function createComposerResizeHandler(list,pinState,hooks,pinSlack){
+  return function(){
+    var current=hooks.readMetrics();
+    var heightBeforeResize=pinState.observedViewportHeight;
+    if(current)pinState.observedViewportHeight=current.clientHeight;
+    if(hooks.keyboardTransitionActive()||!list||hooks.userScrolledAway())return;
+
+    var pinnedBeforeResize=pinState.lastPinned;
+    if(!pinnedBeforeResize&&current){
+      var previous=pinState.lastMetrics;
+      var heightBefore=heightBeforeResize!=null?heightBeforeResize:
+        (previous?previous.clientHeight:null);
+      if(heightBefore!=null){
+        pinnedBeforeResize=current.scrollHeight-current.scrollTop-heightBefore<=pinSlack;
+      }
+    }
+    if(!pinnedBeforeResize){hooks.rememberMetrics();return;}
+    if(list.__socratesTurnViewportOwner===true)return;
+    smoothScrollToBottom(list,{smooth:false});
+    hooks.rememberMetrics();
+    hooks.armComposerFollow();
+  };
+}
+
+function observeComposerLayout(list,chatView,followResize,keyboardTransitionActive,armComposerFollow){
+  var resizeObserver=typeof ResizeObserver==="function"&&chatView
+    ?new ResizeObserver(followResize):null;
+  if(resizeObserver){
+    try{resizeObserver.observe(chatView,{box:"border-box"});}
+    catch(_){resizeObserver.observe(chatView);}
+    try{resizeObserver.observe(list,{box:"border-box"});}
+    catch(_){resizeObserver.observe(list);}
+  }
+
+  var keyboardStyleFollowFrame=0;
+  var styleObserver=typeof MutationObserver==="function"&&document.documentElement
+    ?new MutationObserver(function(){
+      var root=document.documentElement;
+      var inset=parseFloat(root.style.getPropertyValue("--keyboard-inset"))||0;
+      if(inset<=0||root.dataset.keyboardOpen==="true"||keyboardTransitionActive()||keyboardStyleFollowFrame)return;
+      keyboardStyleFollowFrame=requestAnimationFrame(function(){
+        keyboardStyleFollowFrame=0;
+        followResize();
+      });
+    })
+    :null;
+  if(styleObserver)styleObserver.observe(document.documentElement,{attributes:true,attributeFilter:["style"]});
+
+  function onTransition(event){
+    if(keyboardTransitionActive())return;
+    var target=event&&event.target;
+    if(target&&target.closest&&target.closest(".composer-input-wrap"))armComposerFollow();
+  }
+  if(chatView){
+    chatView.addEventListener("transitionrun",onTransition);
+    chatView.addEventListener("transitionstart",onTransition);
+  }
+
+  function disconnect(){
+    if(resizeObserver)resizeObserver.disconnect();
+    if(keyboardStyleFollowFrame)cancelAnimationFrame(keyboardStyleFollowFrame);
+    if(styleObserver)styleObserver.disconnect();
+    if(chatView){
+      chatView.removeEventListener("transitionrun",onTransition);
+      chatView.removeEventListener("transitionstart",onTransition);
+    }
+  }
+  return {disconnect:disconnect};
+}
+
+function createPinMetrics(list,pinState,getLastMessage,pinSlack){
+  function readMetrics(){
+    if(!list)return null;
+    var message=getLastMessage();
+    return {
+      scrollHeight:list.scrollHeight,
+      scrollTop:list.scrollTop,
+      clientHeight:list.clientHeight,
+      msg:message,
+      msgHeight:message?message.offsetHeight:null
+    };
+  }
+  function userScrolledAway(){return !!window.stateStore.read("_userScrolledAway")}
+  function wasPinned(metrics){
+    return !!metrics&&!userScrolledAway()&&
+      metrics.scrollHeight-metrics.scrollTop-metrics.clientHeight<=pinSlack;
+  }
+  function rememberMetrics(){
+    var current=readMetrics();
+    if(!current)return;
+    var previous=pinState.lastMetrics;
+    var geometryOnly=pinState.lastPinned&&previous&&
+      current.scrollHeight===previous.scrollHeight&&
+      current.clientHeight!==previous.clientHeight&&
+      Math.abs(current.scrollTop-previous.scrollTop)<=1;
+    pinState.lastMetrics=current;
+    if(!geometryOnly)pinState.lastPinned=wasPinned(current);
+  }
+  function rememberScrollPosition(){
+    var current=readMetrics();
+    if(!current)return;
+    var previous=pinState.lastMetrics;
+    var previousTop=previous?previous.scrollTop:current.scrollTop;
+    var previousHeight=previous&&previous.clientHeight;
+    if(previousHeight!=null&&current.clientHeight<previousHeight-1&&current.scrollTop>=previousTop-1)return;
+    pinState.lastMetrics=current;
+    pinState.lastPinned=wasPinned(current);
+  }
+  return {readMetrics,userScrolledAway,wasPinned,rememberMetrics,rememberScrollPosition};
+}
+
 /* Keep a reader who was pinned to the bottom of the transcript
    pinned there as the latest answer renders, attachments expand, or
    rich content (images, KaTeX, tool cards) settles in. The composer
@@ -320,81 +518,30 @@ export function smoothScrollToBottom(list, opts){
 export function initChatComposerReserve(options){
   options=options||{};
   var list=options.list||document.getElementById("msgList");
-  if(!list)return function(){};
+  if(!list)return () => undefined;
 
   var contentFrame=0;
   var pinSlack=96;
-  var lastMetrics=null;
+  var pinState={lastMetrics:null,lastPinned:false,observedViewportHeight:null};
+  var lastMessage=null;
+  var pinMetrics=createPinMetrics(list,pinState,function(){return lastMessage},pinSlack);
+  var readMetrics=pinMetrics.readMetrics;
+  var userScrolledAway=pinMetrics.userScrolledAway;
+  var wasPinned=pinMetrics.wasPinned;
+  var rememberMetrics=pinMetrics.rememberMetrics;
+  var rememberScrollPosition=pinMetrics.rememberScrollPosition;
   /* Scroll events may arrive after layout growth but before its observer.
      They must not consume the previous message-height measurement. */
   var contentMetrics=null;
-  var lastPinned=false;
   var composerFollowFrame=0;
   var composerFollowUntil=0;
   /* The transcript viewport height as the ResizeObserver last saw it. Only
-     this observer writes the value. The shared metrics snapshot (lastMetrics)
+     this observer writes the value. The shared metrics snapshot
      is refreshed by the content-follow path and by the scroll listener, so by
      the time a composer resize is delivered it can already describe the
      shrunken viewport — and the pin recovery below would read "the reader
      sits 188px above the bottom" and refuse to re-pin a reader who never left
      the bottom. */
-  var observedViewportHeight=null;
-
-  function readMetrics(){
-    if(!list)return null;
-    return {
-      scrollHeight:list.scrollHeight,
-      scrollTop:list.scrollTop,
-      clientHeight:list.clientHeight,
-      /* The tracked last message and its own height, so a later sample can
-         measure this message's growth directly instead of relying on the
-         list-level baseline (which can hold a transient mid-commit height). */
-      msg:lastMessage,
-      msgHeight:lastMessage?lastMessage.offsetHeight:null
-    };
-  }
-  function userScrolledAway(){
-    return !!window.stateStore.read("_userScrolledAway");
-  }
-  function wasPinned(metrics){
-    return !!metrics&&!userScrolledAway()&&
-      metrics.scrollHeight-metrics.scrollTop-metrics.clientHeight<=pinSlack;
-  }
-  function rememberMetrics(){
-    var current=readMetrics();
-    if(!current)return;
-    var previous=lastMetrics;
-    var geometryOnly=lastPinned&&previous&&
-      current.scrollHeight===previous.scrollHeight&&
-      current.clientHeight!==previous.clientHeight&&
-      Math.abs(current.scrollTop-previous.scrollTop)<=1;
-    lastMetrics=current;
-    /* A composer/keyboard resize changes the list's viewport height before
-       the border-box observer can re-anchor it. Keep the previous intent
-       through that geometry-only sample; otherwise the transient distance
-       from the old bottom looks like a manual scroll and the next observer
-       delivery is skipped. */
-    if(geometryOnly)return;
-    lastPinned=!!current&&wasPinned(current);
-  }
-  function rememberScrollPosition(){
-    var current=readMetrics();
-    if(!current)return;
-    var previousTop=lastMetrics?lastMetrics.scrollTop:current.scrollTop;
-    var previousHeight=lastMetrics&&lastMetrics.clientHeight;
-    /* A queued bottom scroll can arrive after flex shrinks the viewport but
-       before ResizeObserver. Preserve the OLD viewport metrics until that
-       observer recovers pin intent from the new scrollTop; even lastPinned
-       may still describe the position before the first bottom scroll.
-       Upward movement still samples normally, and real wheel/touch/key
-       intent independently blocks follow through _userScrolledAway. */
-    if(previousHeight!=null
-       && current.clientHeight<previousHeight-1
-       && current.scrollTop>=previousTop-1)return;
-    lastMetrics=current;
-    lastPinned=wasPinned(current);
-  }
-
   /* A CSS focus transition can resize the flex viewport between two
      ResizeObserver deliveries. Keep the bottom anchor alive only for the
      short, observable composer transition; this is a bounded rAF sequence,
@@ -416,7 +563,7 @@ export function initChatComposerReserve(options){
       stopComposerFollow();
       return;
     }
-    if(!list||userScrolledAway()||!lastPinned||
+    if(!list||userScrolledAway()||!pinState.lastPinned||
        (list.querySelector&&list.querySelector(".turn-viewport-anchor"))){
       stopComposerFollow();
       return;
@@ -430,7 +577,7 @@ export function initChatComposerReserve(options){
     }
   }
   function armComposerFollow(){
-    if(!list||userScrolledAway()||!lastPinned)return;
+    if(!list||userScrolledAway()||!pinState.lastPinned)return;
     composerFollowUntil=Date.now()+420;
     if(!composerFollowFrame)composerFollowFrame=requestAnimationFrame(runComposerFollow);
   }
@@ -445,105 +592,16 @@ export function initChatComposerReserve(options){
   var chatView=typeof document!=="undefined"
     ?document.querySelector("#chatView, .chat-view")
     :null;
-  var followComposerResize=function(){
-      /* ui/keyboard owns the scroll anchor during its opening/closing
-         rAF. A ResizeObserver delivery from the same flex reflow must not
-         write scrollTop a second time, or the composer appears to wobble even
-         when its inset is monotonic. */
-      var current=readMetrics();
-      /* The viewport height from BEFORE this resize. Read it before the new
-         height is recorded, and keep it in a slot no other path refreshes. */
-      var heightBeforeResize=observedViewportHeight;
-      if(current)observedViewportHeight=current.clientHeight;
-      if(keyboardTransitionActive())return;
-      if(!list||userScrolledAway())return;
-      /* A programmatic scrollTop write dispatches its scroll event after the
-         current task. If a keyboard/layout change arrives in that same task,
-         lastPinned can still describe the pre-message position. Compare the
-         current top against the previous viewport metrics to recover the
-         user's pre-resize bottom intent without adding another scroll owner. */
-      var previous=lastMetrics;
-      var pinnedBeforeResize=lastPinned;
-      if(!pinnedBeforeResize&&current){
-        /* "Was the reader at the bottom before the viewport changed?" The
-           content height has to be the CURRENT one: rows revealed by
-           content-visibility settle the real scrollHeight after the last
-           metrics sample, and a stale height turns the distance into a
-           number the reader never had — 154px instead of 0 for a reader who
-           was pinned. That reads as "the reader left the bottom" and strands
-           the transcript above the newest message. The viewport height has to
-           be the PRE-resize one, because the resize is what moved the reader
-           away from the bottom in the first place. */
-        var heightBefore=heightBeforeResize!=null?heightBeforeResize:
-          (previous?previous.clientHeight:null);
-        if(heightBefore!=null){
-          pinnedBeforeResize=current.scrollHeight-current.scrollTop-heightBefore<=pinSlack;
-        }
-      }
-      /* Only a reader who was following the bottom gets re-pinned. An
-         external --keyboard-inset write (a native bridge that changes the
-         inset without the app's own keyboard flag) still has to respect
-         the reader's position: a history reader keeps their exact
-         scrollTop instead of being dragged to the latest message. The
-         inset-driven re-anchor for the live keyboard path belongs to
-         ui/keyboard/index.ts, which captures pin intent before the first
-         frame writes. */
-      if(!pinnedBeforeResize){rememberMetrics();return;}
-      /* A newly submitted turn deliberately owns the prompt's viewport
-         offset while the composer changes height. The send path marks that
-         ownership on the live list; history/layout-only updates do not. */
-      if(list.__socratesTurnViewportOwner===true)return;
-      /* ResizeObserver runs after the flex layout has committed. Snap in
-         that same delivery rather than waiting another frame: during a
-         focus/keyboard transition a second frame can expose a short-lived
-         1–3px gap and let the scroll-intent listener misclassify the reader
-         before the next notification arrives. scrollTop writes do not change
-         the observed border-box, so this is not a ResizeObserver loop. */
-      smoothScrollToBottom(list,{smooth:false});
-      rememberMetrics();
-      armComposerFollow();
-    };
-  var composerResizeObserver=typeof ResizeObserver==="function"&&chatView
-    ?new ResizeObserver(followComposerResize)
-    :null;
-  if(composerResizeObserver){
-    try{composerResizeObserver.observe(chatView,{box:"border-box"});}
-    catch(_){composerResizeObserver.observe(chatView);}
-    try{composerResizeObserver.observe(list,{box:"border-box"});}
-    catch(_){composerResizeObserver.observe(list);}
-  }
-  /* Some WebViews update --keyboard-inset from an external keyboard bridge
-     without producing a reliable ResizeObserver delivery for the flex
-     column. Cover that edge with one coalesced style-attribute fallback,
-     but only for an inset that is visibly open while the app's own keyboard
-     flag is still closed. ui/keyboard/index.ts sets the flag before its
-     measured writes, so normal keyboard motion keeps its single scroll
-     owner and is not re-snapped by this observer. */
-  var keyboardStyleFollowFrame=0;
-  var keyboardStyleObserver=typeof MutationObserver==="function"&&
-    typeof document!=="undefined"&&document.documentElement
-    ?new MutationObserver(function(){
-      var rootEl=document.documentElement;
-      var inset=parseFloat(rootEl.style.getPropertyValue("--keyboard-inset"))||0;
-      if(inset<=0||rootEl.dataset.keyboardOpen==="true"||keyboardTransitionActive()||keyboardStyleFollowFrame)return;
-      keyboardStyleFollowFrame=requestAnimationFrame(function(){
-        keyboardStyleFollowFrame=0;
-        followComposerResize();
-      });
-    })
-    :null;
-  if(keyboardStyleObserver){
-    keyboardStyleObserver.observe(document.documentElement,{attributes:true,attributeFilter:["style"]});
-  }
-  function onComposerTransition(event){
-    if(keyboardTransitionActive())return;
-    var target=event&&event.target;
-    if(target&&target.closest&&target.closest(".composer-input-wrap"))armComposerFollow();
-  }
-  if(chatView){
-    chatView.addEventListener("transitionrun",onComposerTransition);
-    chatView.addEventListener("transitionstart",onComposerTransition);
-  }
+  var followComposerResize=createComposerResizeHandler(list,pinState,{
+    readMetrics:readMetrics,
+    keyboardTransitionActive:keyboardTransitionActive,
+    userScrolledAway:userScrolledAway,
+    rememberMetrics:rememberMetrics,
+    armComposerFollow:armComposerFollow
+  },pinSlack);
+  var composerLayout=observeComposerLayout(
+    list,chatView,followComposerResize,keyboardTransitionActive,armComposerFollow
+  );
 
   /* Rich content can keep changing size after the stream has finished:
      images decode, KaTeX/fonts settle, diagrams mount, and tool cards
@@ -556,7 +614,7 @@ export function initChatComposerReserve(options){
     if(contentFrame||!list)return;
     /* The mutation fallback passes the baseline captured BEFORE the DOM
        change; neither path uses a baseline advanced by scroll events. */
-    var previous=baselineOverride||contentMetrics||lastMetrics;
+    var previous=baselineOverride||contentMetrics||pinState.lastMetrics;
     contentFrame=requestAnimationFrame(function(){
       contentFrame=0;
       /* Read at execution, not notification: more growth may be coalesced into
@@ -570,39 +628,9 @@ export function initChatComposerReserve(options){
          same message element persists between samples, undo just its own
          height delta — an append to it never moves scrollTop, so this
          reconstructs the true pre-growth bottom exactly. */
-      var sameMessage=!!(previous&&current&&previous.msg&&
-        previous.msg===current.msg&&
-        previous.msgHeight!=null&&current.msgHeight!=null);
-      var growth=sameMessage?current.msgHeight-previous.msgHeight:null;
-      var grew=!!current&&(growth!=null
-        ?growth>1
-        :(!!previous&&current.scrollHeight>previous.scrollHeight+1));
-      /* ResizeObserver fires after layout. Compare the current scrollTop with
-         the PREVIOUS scrollHeight to recover whether the reader was pinned
-         before the latest message grew. This also handles a scrollTop write and
-         a rich-content resize occurring in the same task, before the browser
-         dispatches the scroll event. */
-      var beforeGrowth=previous&&list?{
-        scrollHeight:growth!=null?current.scrollHeight-growth:previous.scrollHeight,
-        scrollTop:list.scrollTop,
-        clientHeight:previous.clientHeight
-      }:null;
-      /* Retry positioning intentionally keeps the replacement at the failed
-         answer's visible offset. Its dedicated viewport anchor owns scrolling;
-         snapping it to the bottom here would erase that position. */
-      var retryOwnsViewport=!!(lastMessage&&
-        lastMessage.getAttribute("data-viewport-anchor")==="retry");
-      /* A fresh send owns the scroll while its anchor is still gliding and
-         converging (chat/turnAnchor.ts). Once that window closes, growth that
-         pushes the answer past the reserved room follows the tail again when
-         the reader is still pinned — the prompt-anchor itself does not block
-         sticky-bottom. The hold window (the post-settle ResizeObserver guard
-         that keeps the prompt at the top offset while the answer grows in
-         its reserve) likewise blocks follow: hold writes scrollTop instantly
-         and any concurrent content-follow tween would race against it. */
-      var turnAnchorSettling=!!(list&&list.dataset&&list.dataset.turnAnchorSettling==="true");
-      var turnAnchorHold=!!(list&&list.dataset&&list.dataset.turnAnchorHold==="true");
-      var shouldFollow=grew&&!retryOwnsViewport&&!turnAnchorSettling&&!turnAnchorHold&&wasPinned(beforeGrowth);
+      var growth=measureContentGrowth(previous,current,list);
+      var shouldFollow=growth.grew&&!contentFollowIsBlocked(list,lastMessage)
+        &&wasPinned(growth.beforeGrowth);
       if(shouldFollow&&!userScrolledAway()){
         /* Keep one bottom-follow animation active; its live target moves with
            streamed content instead of restarting the easing curve per update. */
@@ -613,85 +641,28 @@ export function initChatComposerReserve(options){
     });
   }
 
-  var lastMessage=null;
-  var messageResizeObserver=typeof ResizeObserver==="function"&&list
-    /* ResizeObserver passes entries, not our optional pre-mutation metrics.
-       Forwarding that array as baselineOverride silently disables the resize
-       growth check, leaving sticky-bottom dependent on mutation timing. */
-    ?new ResizeObserver(function(){scheduleContentFollow();})
-    :null;
-  /* P_content-follow-fallback — headless/backgrounded frames can delay
-     ResizeObserver delivery on the last message. Watch the last message's
-     subtree for DOM changes (streaming writes, late image/tool mounting)
-     and re-run the growth check on the next frame as a deterministic
-     fallback; contentFrame coalesces bursts into one follow per frame. */
-  /* P_content-follow-fallback — headless/backgrounded frames can delay
-     ResizeObserver delivery on the last message. Watch the last message's
-     subtree for DOM changes (streaming writes, late image/tool mounting)
-     and re-run the growth check on the next frame as a deterministic
-     fallback; contentFrame coalesces bursts into one follow per frame.
-     Send-time anchors are excluded inside scheduleContentFollow. */
-  var messageSubtreeObserver=typeof MutationObserver==="function"
-    ?new MutationObserver(function(){
-      var baselineBefore=contentMetrics||lastMetrics;
-      if(!contentFrame){
-        contentFrame=requestAnimationFrame(function(){
-          /* Defer one more frame so send-time anchor positioning (which
-             runs right after the message DOM lands) gets to set its
-             viewport before we decide whether the reader is still pinned. */
-          requestAnimationFrame(function(){
-            contentFrame=0;
-            scheduleContentFollow(baselineBefore);
-          });
-        });
-      }
-    })
-    :null;
-  function observeLastMessage(){
-    if(!list||!messageResizeObserver)return;
-    var messages=list.querySelectorAll(":scope > .msg");
-    var next=messages.length?messages[messages.length-1]:null;
-    if(next===lastMessage)return;
-    messageResizeObserver.disconnect();
-    lastMessage=next;
-    /* Appending/replacing a row is not in-message content growth. */
-    contentMetrics=readMetrics();
-    if(lastMessage)messageResizeObserver.observe(lastMessage);
-    if(messageSubtreeObserver){
-      messageSubtreeObserver.disconnect();
-      if(lastMessage)messageSubtreeObserver.observe(lastMessage,{subtree:true,childList:true});
-    }
-  }
+  var messageObservers=createMessageObservers(list,{
+    getLastMessage:function(){return lastMessage},
+    setLastMessage:function(next){lastMessage=next},
+    readMetrics:readMetrics,
+    setContentMetrics:function(metrics){contentMetrics=metrics},
+    getContentBaseline:function(){return contentMetrics||pinState.lastMetrics},
+    getContentFrame:function(){return contentFrame},
+    setContentFrame:function(frame){contentFrame=frame},
+    scheduleContentFollow:scheduleContentFollow,
+    rememberMetrics:rememberMetrics
+  });
 
-  var messageMutationObserver=typeof MutationObserver==="function"&&list
-    ?new MutationObserver(function(){
-      observeLastMessage();
-      /* Adding/removing a message has its own positioning path in main.js and
-         React. Record the new baseline here; only a later ResizeObserver
-         callback for actual in-message growth should auto-follow. */
-      rememberMetrics();
-    })
-    :null;
-
-  lastMetrics=readMetrics();
-  lastPinned=wasPinned(lastMetrics);
+  pinState.lastMetrics=readMetrics();
+  pinState.lastPinned=wasPinned(pinState.lastMetrics);
   list.addEventListener("scroll",rememberScrollPosition,{passive:true});
-  observeLastMessage();
-  if(messageMutationObserver)messageMutationObserver.observe(list,{childList:true});
+  messageObservers.observe();
 
   return function(){
     if(contentFrame)cancelAnimationFrame(contentFrame);
     stopComposerFollow();
-    if(messageResizeObserver)messageResizeObserver.disconnect();
-    if(messageSubtreeObserver)messageSubtreeObserver.disconnect();
-    if(composerResizeObserver)composerResizeObserver.disconnect();
-    if(keyboardStyleFollowFrame)cancelAnimationFrame(keyboardStyleFollowFrame);
-    if(keyboardStyleObserver)keyboardStyleObserver.disconnect();
-    if(chatView){
-      chatView.removeEventListener("transitionrun",onComposerTransition);
-      chatView.removeEventListener("transitionstart",onComposerTransition);
-    }
-    if(messageMutationObserver)messageMutationObserver.disconnect();
+    messageObservers.disconnect();
+    composerLayout.disconnect();
     list.removeEventListener("scroll",rememberScrollPosition);
   };
 }

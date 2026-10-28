@@ -1,3 +1,6 @@
+
+import { reportSwallow } from '../util/reportSwallow.ts';
+
 /* ui/composerShape.js — JS-owned composer shape flags (replaces :has hot path).
  *
  * The two-row composer layouts used to be keyed off
@@ -16,55 +19,63 @@
  * is exported for direct calls (React effects, tests).
  */
 
+function findComposerShells(scope) {
+  if (scope.classList && scope.classList.contains('composer-shell')) {
+    return [scope];
+  }
+  if (typeof scope.querySelectorAll !== 'function') return [];
+  try { return Array.from(scope.querySelectorAll('.composer-shell')); }
+  catch (_) { return []; /* selector unsupported */ }
+}
+
+function visibleAttachmentChips(shell) {
+  var chips = shell.querySelector(':scope > .attachment-chips');
+  if (!chips || chips.classList.contains('hidden')) return false;
+  if (chips.childElementCount > 0) return true;
+  // React may render whitespace only into an empty-but-visible host.
+  return (chips.textContent || '').trim().length > 0;
+}
+
+function readComposerShape(shell) {
+  var hasPlugins = false;
+  var hasFiles = false;
+  var hasQueue = false;
+  try {
+    hasPlugins = !!shell.querySelector('.composer-plugin-chips');
+    hasFiles = visibleAttachmentChips(shell);
+    hasQueue = !!shell.querySelector('.composer-queue-banner');
+  } catch (_) { /* detached node */ }
+  return { hasPlugins: hasPlugins, hasFiles: hasFiles, hasQueue: hasQueue };
+}
+
+function syncShellFlags(shell) {
+  var shape = readComposerShape(shell);
+  /* toggle(name, force) is a true no-op when the class already matches, so
+     it emits no MutationRecord. add()/remove() always mutate the attribute
+     (even for an existing/absent token) and would re-trigger the document
+     observer below every frame — an idle feedback loop. */
+  shell.classList.toggle('has-plugin-chips', shape.hasPlugins);
+  shell.classList.toggle('has-attachments', shape.hasFiles);
+  shell.classList.toggle('has-queue', shape.hasQueue);
+}
+
 export function syncComposerShellFlags(root) {
   var scope = root || (typeof document !== 'undefined' ? document : null);
   if (!scope) return;
-  var shells = [];
-  if (scope.classList && scope.classList.contains('composer-shell')) {
-    shells.push(scope);
-  } else if (typeof scope.querySelectorAll === 'function') {
-    try {
-      var found = scope.querySelectorAll('.composer-shell');
-      for (var i = 0; i < found.length; i++) shells.push(found[i]);
-    } catch (_) { /* selector unsupported */ }
-  }
+  var shells = findComposerShells(scope);
   // Document scope: also cover the singleton by id (fast path, no query).
   if (!shells.length && typeof document !== 'undefined' && scope === document) {
     var single = document.getElementById('composerInputWrap');
     if (single) shells.push(single);
   }
-  for (var s = 0; s < shells.length; s++) {
-    var shell = shells[s];
-    var hasPlugins = false;
-    var hasFiles = false;
-    var hasQueue = false;
-    try {
-      hasPlugins = !!shell.querySelector('.composer-plugin-chips');
-      var chips = shell.querySelector(':scope > .attachment-chips');
-      hasFiles = !!chips && !chips.classList.contains('hidden') && chips.childElementCount > 0;
-      // React attachment row toggles .hidden but keeps children during
-      // exit; count children so an empty-but-visible host can't stick the flag.
-      if (chips && !chips.classList.contains('hidden') && chips.childElementCount === 0) {
-        // Fall back to text check: React may render whitespace only.
-        hasFiles = (chips.textContent || '').trim().length > 0;
-      }
-      hasQueue = !!shell.querySelector('.composer-queue-banner');
-    } catch (_) { /* detached node */ }
-    /* toggle(name, force) is a true no-op when the class already matches, so
-       it emits no MutationRecord. add()/remove() always mutate the attribute
-       (even for an existing/absent token) and would re-trigger the document
-       observer below every frame — an idle feedback loop. */
-    shell.classList.toggle('has-plugin-chips', hasPlugins);
-    shell.classList.toggle('has-attachments', hasFiles);
-    shell.classList.toggle('has-queue', hasQueue);
-  }
+  for (var s = 0; s < shells.length; s++) syncShellFlags(shells[s]);
 }
 
 var _installed = false;
 
 export function installComposerShapeMirror() {
-  if (_installed) return function () {};
-  if (typeof document === 'undefined' || typeof MutationObserver !== 'function') return function () {};
+  if (_installed) return () => undefined;
+  if (typeof document === 'undefined' || typeof MutationObserver !== 'function') return () => undefined;
   _installed = true;
   var pending = false;
   function schedule() {
@@ -106,7 +117,7 @@ export function installComposerShapeMirror() {
   // Initial paint: stamp flags before first frame so no :has fallback flash.
   syncComposerShellFlags(document);
   return function () {
-    try { observer.disconnect(); } catch (_) {}
+    try { observer.disconnect(); } catch (error) { reportSwallow(error, 'ui/composerShape.js:109', 'expected'); }
     _installed = false;
   };
 }

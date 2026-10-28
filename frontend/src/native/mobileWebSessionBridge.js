@@ -2,6 +2,7 @@ import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
 import { openNav } from '../sidebar/navigation.service.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.js';
 import { openCheatsheet } from '../ui/cheatsheet.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 /*
  * Narrow bridge used only by the React Native embedded-workspace flow.
  *
@@ -16,6 +17,43 @@ const TARGETS = new Set([
   'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
   'profile', 'usage', 'storage', 'display', 'shortcuts', 'library', 'exam',
 ]);
+const NAV_TARGETS = new Set(['projects', 'scheduled', 'plugins', 'library', 'exam']);
+const IMPORTED_TARGET_ACTIONS = {
+  skills: openPromptTemplatesModal,
+  display: toggleDisplayPrefs,
+  shortcuts: openCheatsheet,
+};
+const WINDOW_TARGET_ACTIONS = {
+  'api-settings': 'openSettings',
+  profile: 'openProfile',
+  usage: 'openUsageModal',
+  storage: 'openStorageModal',
+};
+
+function invokeWindowAction(name, ...args) {
+  const action = window[name];
+  if (typeof action !== 'function') return false;
+  action(...args);
+  return true;
+}
+
+function openMobileTarget(target) {
+  if (NAV_TARGETS.has(target)) {
+    openNav(target);
+    return true;
+  }
+  if (target === 'knowledge' || target === 'mistakes') {
+    return invokeWindowAction('toggleSidebarView', target);
+  }
+  if (Object.prototype.hasOwnProperty.call(IMPORTED_TARGET_ACTIONS, target)) {
+    const action = IMPORTED_TARGET_ACTIONS[target];
+    if (typeof action !== 'function') return false;
+    action();
+    return true;
+  }
+  const actionName = WINDOW_TARGET_ACTIONS[target];
+  return actionName ? invokeWindowAction(actionName) : false;
+}
 
 function postToNative(message) {
   try {
@@ -92,44 +130,9 @@ export function openMobileTargetFromUrl() {
   const target = url.searchParams.get('mobile_target');
   if (!target || !TARGETS.has(target)) return false;
 
-  let opened = false;
+  let opened;
   try {
-    if (target === 'projects' || target === 'scheduled' || target === 'plugins' || target === 'library' || target === 'exam') {
-      openNav(target);
-      opened = true;
-    } else if (target === 'knowledge' || target === 'mistakes') {
-      if (typeof window.toggleSidebarView !== 'function') return false;
-      window.toggleSidebarView(target);
-      opened = true;
-    } else if (target === 'skills') {
-      if (typeof openPromptTemplatesModal !== 'function') return false;
-      openPromptTemplatesModal();
-      opened = true;
-    } else if (target === 'api-settings') {
-      if (typeof window.openSettings !== 'function') return false;
-      window.openSettings();
-      opened = true;
-    } else if (target === 'profile') {
-      if (typeof window.openProfile !== 'function') return false;
-      window.openProfile();
-      opened = true;
-    } else if (target === 'usage') {
-      if (typeof window.openUsageModal !== 'function') return false;
-      window.openUsageModal();
-      opened = true;
-    } else if (target === 'storage') {
-      if (typeof window.openStorageModal !== 'function') return false;
-      window.openStorageModal();
-      opened = true;
-    } else if (target === 'display') {
-      if (typeof toggleDisplayPrefs !== 'function') return false;
-      toggleDisplayPrefs();
-      opened = true;
-    } else if (target === 'shortcuts') {
-      if (typeof openCheatsheet !== 'function') return false;
-      openCheatsheet();
-      opened = true;
-    }
+    opened = openMobileTarget(target);
   } catch (_) {
     return false;
   }
@@ -141,10 +144,10 @@ export function openMobileTargetFromUrl() {
      * than the pre-navigation URL, otherwise this cleanup silently replaces
      * /projects with / and breaks reload/back-route parity. */
     let current = url;
-    try { current = new URL(window.location.href); } catch (_) {}
+    try { current = new URL(window.location.href); } catch (error) { reportSwallow(error, 'native/mobileWebSessionBridge.js:144'); }
     current.searchParams.delete('mobile_target');
     const next = current.pathname + current.search + current.hash;
-    try { window.history.replaceState(window.history.state, '', next); } catch (_) {}
+    try { window.history.replaceState(window.history.state, '', next); } catch (error) { reportSwallow(error, 'native/mobileWebSessionBridge.js:147', 'expected'); }
   }
   return opened;
 }

@@ -30,6 +30,76 @@ export interface MessageBranchInfo {
   variants: MessageBranchVariant[];
 }
 
+interface BranchSwitchContext {
+  index: number;
+  messages: LegacyChatMessage[];
+  currentMessage: LegacyChatMessage;
+  variants: MessageBranchVariant[];
+  currentIndex: number;
+}
+
+function getBranchSwitchContext(messageId: string, targetIndex: number): BranchSwitchContext | null {
+  const index = findMessageIndex(messageId);
+  if (index < 0) return null;
+  const messages = stateStore.read('messages') as LegacyChatMessage[];
+  const currentMessage = messages[index];
+  if (!currentMessage.branchInfo || !Array.isArray(currentMessage.branchInfo.variants)) return null;
+
+  const { variants, currentIndex } = currentMessage.branchInfo;
+  if (targetIndex < 0 || targetIndex >= variants.length || targetIndex === currentIndex) return null;
+  return { index, messages, currentMessage, variants, currentIndex };
+}
+
+function stashActiveBranchVariant(
+  variants: MessageBranchVariant[],
+  currentIndex: number,
+  currentMessage: LegacyChatMessage,
+  messages: LegacyChatMessage[],
+  index: number,
+): void {
+  variants[currentIndex] = {
+    ...variants[currentIndex],
+    rawText: currentMessage.rawText,
+    html: currentMessage.html,
+    attachments: currentMessage.attachments ? currentMessage.attachments.slice() : [],
+    toolCalls: currentMessage.toolCalls ? (currentMessage.toolCalls as unknown[]).slice() : [],
+    turnRuntime: currentMessage.turnRuntime,
+    reasoningContent: currentMessage.reasoningContent,
+    followingMessages: messages.slice(index + 1),
+  };
+}
+
+function createSwitchedMessage(
+  currentMessage: LegacyChatMessage,
+  target: MessageBranchVariant,
+  branchInfo: MessageBranchInfo,
+): LegacyChatMessage {
+  return {
+    ...currentMessage,
+    clientId: target.clientId || currentMessage.clientId,
+    id: target.id || currentMessage.id,
+    role: target.role || currentMessage.role,
+    rawText: target.rawText || '',
+    html: target.html || null,
+    attachments: (target.attachments as LegacyChatMessage['attachments']) || [],
+    toolCalls: (target.toolCalls as LegacyChatMessage['toolCalls']) || [],
+    turnRuntime: target.turnRuntime as LegacyChatMessage['turnRuntime'],
+    reasoningContent: target.reasoningContent || null,
+    branchInfo,
+  };
+}
+
+function replaceBranchSubtree(
+  messages: LegacyChatMessage[],
+  index: number,
+  switchedMessage: LegacyChatMessage,
+  target: MessageBranchVariant,
+): LegacyChatMessage[] {
+  const prefix = messages.slice(0, index);
+  const suffix = Array.isArray(target.followingMessages) ? target.followingMessages : [];
+  return [...prefix, switchedMessage, ...suffix];
+}
+
 export function findMessageIndex(messageId: string): number {
   const messages = stateStore.read('messages');
   if (!Array.isArray(messages)) return -1;
@@ -153,51 +223,20 @@ export function prepareAssistantRegenerateBranch(
 
 /** Switch active branch version of a message */
 export function switchMessageBranch(messageId: string, targetIndex: number): boolean {
-  const idx = findMessageIndex(messageId);
-  if (idx < 0) return false;
-  const messages = stateStore.read('messages') as LegacyChatMessage[];
-  const currentMsg = messages[idx];
-  if (!currentMsg.branchInfo || !Array.isArray(currentMsg.branchInfo.variants)) return false;
+  const context = getBranchSwitchContext(messageId, targetIndex);
+  if (!context) return false;
 
-  const { variants, currentIndex } = currentMsg.branchInfo;
-  if (targetIndex < 0 || targetIndex >= variants.length || targetIndex === currentIndex) return false;
-
-  const currentVariants = variants.map((v) => ({ ...v }));
-  // Stash current active state into currentVariants[currentIndex]
-  currentVariants[currentIndex] = {
-    ...currentVariants[currentIndex],
-    rawText: currentMsg.rawText,
-    html: currentMsg.html,
-    attachments: currentMsg.attachments ? currentMsg.attachments.slice() : [],
-    toolCalls: currentMsg.toolCalls ? (currentMsg.toolCalls as unknown[]).slice() : [],
-    turnRuntime: currentMsg.turnRuntime,
-    reasoningContent: currentMsg.reasoningContent,
-    followingMessages: messages.slice(idx + 1),
-  };
+  const { index, messages, currentMessage, variants, currentIndex } = context;
+  const currentVariants = variants.map((variant) => ({ ...variant }));
+  stashActiveBranchVariant(currentVariants, currentIndex, currentMessage, messages, index);
 
   const target = currentVariants[targetIndex];
   const updatedBranchInfo: MessageBranchInfo = {
     currentIndex: targetIndex,
     variants: currentVariants,
   };
-
-  const switchedMsg: LegacyChatMessage = {
-    ...currentMsg,
-    clientId: target.clientId || currentMsg.clientId,
-    id: target.id || currentMsg.id,
-    role: target.role || currentMsg.role,
-    rawText: target.rawText || '',
-    html: target.html || null,
-    attachments: target.attachments || [],
-    toolCalls: (target.toolCalls as LegacyChatMessage['toolCalls']) || [],
-    turnRuntime: target.turnRuntime as LegacyChatMessage['turnRuntime'],
-    reasoningContent: target.reasoningContent || null,
-    branchInfo: updatedBranchInfo,
-  };
-
-  const prefix = messages.slice(0, idx);
-  const suffix = Array.isArray(target.followingMessages) ? target.followingMessages : [];
-  const nextMessages = [...prefix, switchedMsg, ...suffix];
+  const switchedMessage = createSwitchedMessage(currentMessage, target, updatedBranchInfo);
+  const nextMessages = replaceBranchSubtree(messages, index, switchedMessage, target);
 
   stateStore.dispatch({ type: 'session/replace-messages', payload: nextMessages });
   publishReactChatRuntime({ type: 'state-synced', reason: 'message-branch-switched' });

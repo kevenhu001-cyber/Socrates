@@ -62,9 +62,7 @@ function _publishMorePopover(isOpen) {
    to be visible already so offsetHeight is real — see toggleMorePopover. */
 var GAP = 8;
 
-function _position(p, btn) {
-  if (!btn) return;
-  var r = restingRect(btn); /* not the mid-press box (ui/pressFeedback.js) */
+function _popoverWidth(p) {
   /* Width matches the popover's CSS (220px). Read it from computed
      style if available; fall back to the CSS-defined minimum. */
   var popW = 220;
@@ -75,13 +73,19 @@ function _position(p, btn) {
       if (!isNaN(n) && n > 0) popW = n;
     }
   } catch (_) { /* ignore */ }
+  return popW;
+}
+
+function _positionHorizontally(p, r, popW) {
   var left = r.right - popW;
   var maxLeft = window.innerWidth - popW - GAP;
   if (maxLeft >= GAP && left > maxLeft) left = maxLeft;
   if (left < GAP) left = GAP;
   p.style.left = left + "px";
   p.style.right = "auto";
+}
 
+function _positionVertically(p, r) {
   var h = p.offsetHeight || 0;
   if (h > 0 && r.top - GAP - h < GAP) {
     var top = r.bottom + GAP;
@@ -94,6 +98,13 @@ function _position(p, btn) {
     p.style.bottom = (window.innerHeight - r.top + GAP) + "px";
     p.style.top = "auto";
   }
+}
+
+function _position(p, btn) {
+  if (!btn) return;
+  var r = restingRect(btn); /* not the mid-press box (ui/pressFeedback.js) */
+  _positionHorizontally(p, r, _popoverWidth(p));
+  _positionVertically(p, r);
 }
 
 /* Close the popover and remove the outside-click + Esc listeners. */

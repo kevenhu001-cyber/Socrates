@@ -1,5 +1,6 @@
 import { esc } from '../render/helpers.ts';
 import { stateStore } from '../state/store.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function tr(key, vars) {
   var v = (typeof window.t === 'function') ? window.t(key) : key;
@@ -63,7 +64,7 @@ function renderKBDetailInner(node,idx){
     hist.slice(-8).reverse().forEach(function(h){
       var when=h&&(h.date||h.at);
       if(typeof when==="number"){
-        try{when=new Date(when).toISOString().slice(0,10)}catch(_){}
+        try{when=new Date(when).toISOString().slice(0,10)}catch (error) { reportSwallow(error, 'ui/knowledgeDetail.impl.mjs:66'); }
       }
       html+='<li><span class="kb-hist-date">'+esc(when||"")+'</span>'
           +(h&&h.summary?esc(h.summary):'')+'</li>';

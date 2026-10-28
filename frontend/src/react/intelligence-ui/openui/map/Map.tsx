@@ -1,7 +1,7 @@
 import { Button as UiButton } from '../../../ui/Button';
 // Adapted from thesysdev/open-intelligent-ui map.tsx (MIT); see ../LICENSE.
 import { defineComponent, reactive, useIsStreaming, useStateField } from '@openuidev/react-lang';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { z } from 'zod/v4';
 import { fetchRemote, MEDIA_API, useRemote } from '../remoteData';
@@ -50,6 +50,52 @@ function usePlaces(markers: unknown, streaming: boolean) {
   });
   const current = resolved?.signature === signature ? resolved : null;
   return { places: current?.places ?? direct, loading: !streaming && !current && inputs.length > direct.length, missing: Boolean(current?.missing) || inputs.length === 0 };
+}
+
+interface MapViewContentProps {
+  labels: ReturnType<typeof useRemoteLabels>;
+  root: RefObject<HTMLDivElement | null>;
+  canvas: RefObject<HTMLDivElement | null>;
+  places: Place[];
+  categories: string[];
+  activeGroup: string;
+  setGroup(value: string): void;
+  height: number;
+  ready: boolean;
+  error: boolean;
+  routeEnabled?: boolean;
+  routeError: boolean;
+  routeData?: Route;
+  routeLoading: boolean;
+  resolvedLoading: boolean;
+  resolvedMissing: boolean;
+  selected: string;
+  retry(): void;
+  recenter(): void;
+  selectPlace(place: Place): void;
+}
+
+function MapViewContent({
+  labels, root, canvas, places, categories, activeGroup, setGroup, height,
+  ready, error, routeEnabled, routeError, routeData, routeLoading,
+  resolvedLoading, resolvedMissing, selected, retry, recenter, selectPlace,
+}: MapViewContentProps) {
+  const routeState = routeError ? labels.routeUnavailable : routeData ? labels.routeDriving : labels.routeLoading;
+  return <section className="iui-map" ref={root} aria-label={labels.map} data-map-ready={ready ? 'true' : 'false'} data-route-state={routeData ? 'ready' : routeError ? 'error' : routeLoading ? 'loading' : 'none'}>
+    <div className="iui-map-frame" style={{ height }}>
+      <div className="iui-map-surface" ref={canvas} />
+      <div className="iui-map-controls">
+        {categories.length > 1 ? <select aria-label={labels.filterPlaces} value={activeGroup} onChange={(event) => setGroup(event.target.value)}><option value="">{labels.allPlaces}</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select> : null}
+        <UiButton type="button" className="iui-button iui-button-sm" onClick={recenter}>{labels.recenter}</UiButton>
+      </div>
+      {!ready && !error ? <p className="iui-map-notice" role="status">{labels.mapLoading}</p> : null}
+      {error ? <div className="iui-map-notice" role="status">{labels.mapUnavailable}<UiButton type="button" className="iui-button iui-button-sm" onClick={retry}>{labels.retry}</UiButton></div> : null}
+    </div>
+    {resolvedLoading ? <p className="iui-caption" role="status">{labels.mapLoading}</p> : null}
+    {resolvedMissing ? <p className="iui-caption" role="status">{labels.placesUnavailable}</p> : null}
+    <ol className="iui-map-places">{places.map((place) => <li key={place.key}><UiButton className="iui-button iui-button-outline" type="button" aria-pressed={selected === place.label} onClick={() => selectPlace(place)}>{place.label}</UiButton>{place.sourceUrl && webUrl(place.sourceUrl) ? <a href={webUrl(place.sourceUrl)!} target="_blank" rel="noopener noreferrer">{place.resolvedLabel}</a> : null}</li>)}</ol>
+    {routeEnabled && places.length > 1 ? <p className="iui-caption" role="status">{routeState}</p> : null}
+  </section>;
 }
 
 export const MapMarker = defineComponent({
@@ -156,20 +202,34 @@ export const MapView = defineComponent({
     }, [ready, route.data, route.error, props.route]);
 
     const height = Math.min(560, Math.max(240, props.height ?? 360));
-    return <section className="iui-map" ref={root} aria-label={labels.map} data-map-ready={ready ? 'true' : 'false'} data-route-state={route.data ? 'ready' : route.error ? 'error' : route.loading ? 'loading' : 'none'}>
-      <div className="iui-map-frame" style={{ height }}>
-        <div className="iui-map-surface" ref={canvas} />
-        <div className="iui-map-controls">
-          {categories.length > 1 ? <select aria-label={labels.filterPlaces} value={activeGroup} onChange={(event) => setGroup(event.target.value)}><option value="">{labels.allPlaces}</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</select> : null}
-          <UiButton type="button" className="iui-button iui-button-sm" onClick={() => { if (places.length) map.current?.fitBounds(boundsOf(places.map((place) => [place.lat, place.lng] as LatLng)), { padding: 60, maxZoom: 14 }); }}>{labels.recenter}</UiButton>
-        </div>
-        {!ready && !error ? <p className="iui-map-notice" role="status">{labels.mapLoading}</p> : null}
-        {error ? <div className="iui-map-notice" role="status">{labels.mapUnavailable}<UiButton type="button" className="iui-button iui-button-sm" onClick={() => setAttempt((previous) => previous + 1)}>{labels.retry}</UiButton></div> : null}
-      </div>
-      {resolved.loading ? <p className="iui-caption" role="status">{labels.mapLoading}</p> : null}
-      {resolved.missing ? <p className="iui-caption" role="status">{labels.placesUnavailable}</p> : null}
-      <ol className="iui-map-places">{places.map((place) => <li key={place.key}><UiButton className="iui-button iui-button-outline" type="button" aria-pressed={selected === place.label} onClick={() => { selection.setValue(place.label); map.current?.easeTo({ center: [place.lng, place.lat], zoom: 14, duration: 0 }); }}>{place.label}</UiButton>{place.sourceUrl && webUrl(place.sourceUrl) ? <a href={webUrl(place.sourceUrl)!} target="_blank" rel="noopener noreferrer">{place.resolvedLabel}</a> : null}</li>)}</ol>
-      {props.route && places.length > 1 ? <p className="iui-caption" role="status">{route.error ? labels.routeUnavailable : route.data ? labels.routeDriving : labels.routeLoading}</p> : null}
-    </section>;
+    const recenter = () => {
+      if (places.length) map.current?.fitBounds(boundsOf(places.map((place) => [place.lat, place.lng] as LatLng)), { padding: 60, maxZoom: 14 });
+    };
+    const selectPlace = (place: Place) => {
+      selection.setValue(place.label);
+      map.current?.easeTo({ center: [place.lng, place.lat], zoom: 14, duration: 0 });
+    };
+    return <MapViewContent
+      labels={labels}
+      root={root}
+      canvas={canvas}
+      places={places}
+      categories={categories}
+      activeGroup={activeGroup}
+      setGroup={setGroup}
+      height={height}
+      ready={ready}
+      error={error}
+      routeEnabled={props.route}
+      routeError={route.error}
+      routeData={route.data}
+      routeLoading={route.loading}
+      resolvedLoading={resolved.loading}
+      resolvedMissing={resolved.missing}
+      selected={selected}
+      retry={() => setAttempt((previous) => previous + 1)}
+      recenter={recenter}
+      selectPlace={selectPlace}
+    />;
   },
 });

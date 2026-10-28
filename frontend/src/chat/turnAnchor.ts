@@ -14,7 +14,7 @@
 
 import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { updateMessageSnapshot } from '../ui/messageSnapshot.js';
+import { updateMessageSnapshot } from '../ui/messageSnapshot.ts';
 import { velocityScrollTo, cancelScrollAnimation } from '../ui/scroll.js';
 import { writeScrollTop } from '../ui/scrollCoordinator.ts';
 import { suppressScrollPositionIntent, hideNewReplyPill } from '../ui/scrollPill.js';
@@ -124,6 +124,26 @@ export function scheduleTurnToTopForMessage(
   scheduleActiveTurnToTop(list, turnRowFor(list, null, id), msgIdx, retryViewport);
 }
 
+function hideStubAndPreserveScroll(list: TurnAnchorList, row: HTMLElement): void {
+  const users = list.querySelectorAll('.msg.user');
+  const reference = users.length ? users[users.length - 1] as HTMLElement : null;
+  const referenceTop = reference ? reference.getBoundingClientRect().top : null;
+  row.style.display = 'none';
+  if (!reference || referenceTop == null) return;
+  const drift = reference.getBoundingClientRect().top - referenceTop;
+  if (Math.abs(drift) <= 0.5) return;
+  suppressScrollPositionIntent(200);
+  writeScrollTop(list, Math.max(0, list.scrollTop + drift), 'turn');
+}
+
+function removeSupersededMessage(id: string): void {
+  const messages = stateStore.read('messages') as MessageEntry[];
+  const index = messages.findIndex((entry) => entry && entry.clientId === id);
+  if (index < 0) return;
+  stateStore.dispatch({ type: 'session/remove-message-at', index, clientId: id });
+  publishReactChatRuntime({ type: 'state-synced', reason: 'superseded-stub-removed' });
+}
+
 /**
  * Remove a superseded empty placeholder (kept as an invisible layout stub)
  * once it is spent. Defers while a send anchor is gliding so the
@@ -143,23 +163,8 @@ export function removeSupersededStub(clientId: string): void {
   const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&');
   const row = list.querySelector(`.msg[data-client-id="${esc}"]`) as HTMLElement | null;
   if (!row) return;
-  const users = list.querySelectorAll('.msg.user');
-  const ref = users.length ? (users[users.length - 1] as HTMLElement) : null;
-  const refTop = ref ? ref.getBoundingClientRect().top : null;
-  row.style.display = 'none';
-  if (ref && refTop != null) {
-    const drift = ref.getBoundingClientRect().top - refTop;
-    if (Math.abs(drift) > 0.5) {
-      suppressScrollPositionIntent(200);
-      writeScrollTop(list, Math.max(0, list.scrollTop + drift), 'turn');
-    }
-  }
-  const messages = stateStore.read('messages') as MessageEntry[];
-  const index = messages.findIndex((entry) => entry && entry.clientId === id);
-  if (index >= 0) {
-    stateStore.dispatch({ type: 'session/remove-message-at', index, clientId: id });
-    publishReactChatRuntime({ type: 'state-synced', reason: 'superseded-stub-removed' });
-  }
+  hideStubAndPreserveScroll(list, row);
+  removeSupersededMessage(id);
 }
 
 /**
@@ -243,6 +248,21 @@ function findAnchorEntry(clientId: string): MessageEntry | null {
 function latestUserRow(list: HTMLElement): HTMLElement | null {
   const users = list.querySelectorAll('.msg.user');
   return users.length ? (users[users.length - 1] as HTMLElement) : null;
+}
+
+function createPromptTarget(
+  list: HTMLElement,
+  anchor: Element,
+  anchorInList: number,
+  targetOffset: number,
+): () => number {
+  let promptNode: HTMLElement | null = anchor as HTMLElement;
+  return function promptTarget(): number {
+    if (!promptNode || !promptNode.isConnected) promptNode = latestUserRow(list);
+    if (!promptNode) return Math.max(0, list.scrollTop + anchorInList - targetOffset);
+    const live = promptNode.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    return Math.max(0, list.scrollTop + live - targetOffset);
+  };
 }
 
 /** Converge the prompt back to its target offset without animating: the
@@ -374,6 +394,346 @@ function startTurnViewportHold(
   holdTurnViewport();
 }
 
+function latestAssistantId(messages: MessageEntry[]): string {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i] && messages[i].role === 'assistant') return messages[i].clientId || '';
+  }
+  return '';
+}
+
+function retireSpentReserve(
+  list: TurnAnchorList,
+  row: HTMLElement,
+  stored: MessageEntry[],
+  clientId: string,
+  latestId: string,
+  listBottom: number,
+  stubIds: string[],
+): boolean {
+  const id = row.dataset ? row.dataset.clientId : '';
+  if ((clientId && id === clientId) || (latestId && id === latestId)) return false;
+  /* A reserve below the visible transcript belongs to a newer turn. */
+  if (row.getBoundingClientRect().top >= listBottom) return false;
+  row.classList.remove('turn-viewport-anchor');
+  row.style.minHeight = '';
+  row.style.marginTop = '';
+  if (id) {
+    const entry = stored.find((candidate) => candidate && candidate.clientId === id);
+    if (entry && (entry._turnAnchorMinHeight || entry._turnAnchorMarginTop)) {
+      updateMessageSnapshot(entry, {
+        _turnAnchorMinHeight: undefined,
+        _turnAnchorMarginTop: undefined,
+        _turnAnchorMode: undefined,
+        _turnViewportTarget: undefined,
+      }, true);
+    }
+    if (entry && entry._supersededStub) {
+      /* Hide the spent stub after it has held the layout open. */
+      row.style.display = 'none';
+      stubIds.push(id);
+    }
+  }
+  observeTurnViewportRow(row);
+  return true;
+}
+
+function removeRetiredStubMessages(stubIds: string[]): void {
+  for (const id of stubIds) {
+    const messages = stateStore.read('messages') as MessageEntry[];
+    const index = messages.findIndex((candidate) => candidate && candidate.clientId === id);
+    if (index >= 0) {
+      stateStore.dispatch({ type: 'session/remove-message-at', index, clientId: id });
+    }
+  }
+}
+
+function retireTurnReservesAboveViewport(list: TurnAnchorList | null, clientId: string): void {
+  if (!list) return;
+  const listRect = list.getBoundingClientRect();
+  const rows = list.querySelectorAll('.turn-viewport-anchor');
+  const stored = stateStore.read('messages') as MessageEntry[];
+  const latestId = latestAssistantId(stored);
+  const promptRows = list.querySelectorAll('.msg.user');
+  const promptRow = promptRows.length ? promptRows[promptRows.length - 1] as HTMLElement : null;
+  const promptOffsetBefore = promptRow
+    ? promptRow.getBoundingClientRect().top - list.getBoundingClientRect().top
+    : null;
+  const stubIds: string[] = [];
+  let cleared = 0;
+  for (let i = 0; i < rows.length; i += 1) {
+    if (retireSpentReserve(
+      list,
+      rows[i] as HTMLElement,
+      stored,
+      clientId,
+      latestId,
+      listRect.bottom,
+      stubIds,
+    )) cleared += 1;
+  }
+  if (!cleared) return;
+  if (promptRow && promptOffsetBefore != null) {
+    const drift = promptRow.getBoundingClientRect().top
+      - list.getBoundingClientRect().top
+      - promptOffsetBefore;
+    if (Math.abs(drift) > 0.5) {
+      suppressScrollPositionIntent(200);
+      writeScrollTop(list, Math.max(0, list.scrollTop + drift), 'turn');
+    }
+  }
+  removeRetiredStubMessages(stubIds);
+  publishReactChatRuntime({ type: 'state-synced', reason: 'turn-reserve-retire' });
+}
+
+interface AnchorStampContext {
+  row(): HTMLElement | null;
+  readMessage(): MessageEntry | null;
+  writeMessage(message: MessageEntry): void;
+  clientId: string;
+  isReactMounted(): boolean;
+}
+
+interface RetryPositionContext extends AnchorStampContext {
+  list: TurnAnchorList;
+  assistant: HTMLElement | null;
+  offset: number;
+}
+
+function stampTurnAnchor(
+  context: AnchorStampContext,
+  mode: string,
+  reserve: number,
+  targetOffset: number,
+): void {
+  const mounted = context.row();
+  if (!mounted && !context.isReactMounted()) return;
+  if (context.isReactMounted()) {
+    const message = context.readMessage();
+    if (!message || (message._turnAnchorMinHeight === reserve && message._turnAnchorMode === mode)) return;
+    const updated = updateMessageSnapshot(message, {
+      _turnAnchorMinHeight: reserve,
+      _turnAnchorMode: mode,
+      _turnViewportTarget: targetOffset,
+      _toolRunRev: (message._toolRunRev || 0) + 1,
+    }, true) as MessageEntry | null;
+    context.writeMessage(updated || message);
+    publishReactChatRuntime({ type: 'tool-run-updated', messageId: String(context.clientId || '') });
+    return;
+  }
+  mounted!.classList.add('turn-viewport-anchor');
+  mounted!.dataset.viewportAnchor = mode;
+  mounted!.dataset.viewportTarget = String(targetOffset);
+  mounted!.style.minHeight = reserve + 'px';
+  const message = context.readMessage();
+  if (!message) return;
+  const updated = updateMessageSnapshot(message, { _turnAnchorMinHeight: reserve }, true) as MessageEntry | null;
+  context.writeMessage(updated || message);
+}
+
+function hasTurnAnchorReserve(row: () => HTMLElement | null): boolean {
+  const mounted = row();
+  if (!mounted) return false;
+  return (parseFloat(mounted.style.minHeight) || 0) > 0
+    || (parseFloat(mounted.style.marginTop) || 0) > 0;
+}
+
+function positionRetryTurnAnchor(context: RetryPositionContext): boolean {
+  const { list, assistant } = context;
+  const mounted = context.row();
+  /* Repositioning must clear the previous correction before measuring, or
+     the next pass only sees its residual margin. */
+  if (mounted === assistant && mounted) mounted.style.marginTop = '';
+  const priorMessage = context.readMessage();
+  if (priorMessage) {
+    const updated = updateMessageSnapshot(priorMessage, { _turnAnchorMarginTop: undefined }, true) as MessageEntry | null;
+    context.writeMessage(updated || priorMessage);
+  }
+  const bottomPadding = parseFloat(getComputedStyle(list).paddingBottom) || 0;
+  const maxOffset = Math.max(8, list.clientHeight - bottomPadding - 64);
+  const targetOffset = Math.max(8, Math.min(maxOffset, context.offset));
+  const reserve = Math.max(
+    TURN_ANCHOR_MIN_RESERVE,
+    Math.round(list.clientHeight - bottomPadding - targetOffset),
+  );
+  stampTurnAnchor(context, 'retry', reserve, targetOffset);
+  /* React may still need a commit to mount the retry row. */
+  if (!mounted) return true;
+
+  const listRect = list.getBoundingClientRect();
+  const anchorRect = mounted.getBoundingClientRect();
+  const anchorInList = anchorRect.top - listRect.top;
+  let promptNode: HTMLElement | null = mounted;
+  const promptTarget = (): number => {
+    if (!promptNode || !promptNode.isConnected) promptNode = latestUserRow(list);
+    if (!promptNode) return Math.max(0, list.scrollTop + anchorInList - targetOffset);
+    const live = promptNode.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    return Math.max(0, list.scrollTop + live - targetOffset);
+  };
+  writeScrollTop(list, promptTarget(), 'retry');
+  const settleRetryAnchor = (attempt: number): void => {
+    const current = context.row();
+    if (!current) return;
+    const retryListRect = list.getBoundingClientRect();
+    const actualOffset = current.getBoundingClientRect().top - retryListRect.top;
+    const delta = Math.round(actualOffset - targetOffset);
+    if (Math.abs(delta) > 1) {
+      const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
+      const nextTop = Math.max(0, Math.min(maxScroll, list.scrollTop + delta));
+      if (Math.abs(nextTop - list.scrollTop) > 0.5) writeScrollTop(list, nextTop, 'retry');
+    }
+    if (attempt < 2) {
+      requestAnimationFrame(() => settleRetryAnchor(attempt + 1));
+      return;
+    }
+    const finalListRect = list.getBoundingClientRect();
+    const finalOffset = current.getBoundingClientRect().top - finalListRect.top;
+    const missingSpace = Math.max(0, Math.round(targetOffset - finalOffset));
+    const finalMaxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
+    if (missingSpace <= 1 || list.scrollTop < finalMaxScroll - 1) return;
+    if (current === assistant) {
+      current.style.marginTop = missingSpace + 'px';
+      const message = context.readMessage();
+      if (!message) return;
+      const updated = updateMessageSnapshot(message, { _turnAnchorMarginTop: missingSpace }, true) as MessageEntry | null;
+      context.writeMessage(updated || message);
+      return;
+    }
+    const message = context.readMessage();
+    if (!message) return;
+    const updated = updateMessageSnapshot(message, {
+      _turnAnchorMarginTop: missingSpace,
+      _toolRunRev: (message._toolRunRev || 0) + 1,
+    }, true) as MessageEntry | null;
+    context.writeMessage(updated || message);
+    publishReactChatRuntime({ type: 'tool-run-updated', messageId: String(context.clientId || '') });
+  };
+  requestAnimationFrame(settleRetryAnchor);
+  stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  return true;
+}
+
+function settleNormalTurnAnchor(
+  list: TurnAnchorList | null,
+  assistant: HTMLElement | null,
+  row: () => HTMLElement | null,
+  targetOffset: number,
+  deadline: number,
+  onDone?: () => void,
+): void {
+  const finish = (): void => { if (onDone) onDone(); };
+  if (!list || stateStore.read('_userScrolledAway')) { finish(); return; }
+  if ((!assistant || !assistant.isConnected) && !row()) { finish(); return; }
+  const anchor = latestUserRow(list);
+  if (!anchor || !anchor.isConnected) { finish(); return; }
+  const actualOffset = anchor.getBoundingClientRect().top - list.getBoundingClientRect().top;
+  const delta = actualOffset - targetOffset;
+  if (Math.abs(delta) > 1) {
+    const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
+    const nextTop = Math.max(0, Math.min(maxScroll, list.scrollTop + delta));
+    if (Math.abs(nextTop - list.scrollTop) > 0.5) writeScrollTop(list, nextTop, 'turn');
+  }
+  if (Date.now() < deadline) {
+    requestAnimationFrame(() => settleNormalTurnAnchor(list, assistant, row, targetOffset, deadline, onDone));
+  } else {
+    finish();
+  }
+}
+
+function releaseTurnAnchor(
+  list: TurnAnchorList,
+  assistant: HTMLElement | null,
+  clientId: string,
+  row: () => HTMLElement | null,
+  targetOffset: number,
+  settlingSeq: number,
+  clearSettling: () => void,
+): void {
+  const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
+  const done = (): void => {
+    retireTurnReservesAboveViewport(list, clientId);
+    clearSettling();
+  };
+  if (stateStore.read('_userScrolledAway')) { done(); return; }
+  if (settlingSeq !== settlingOwner) { done(); return; }
+  stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  startTurnViewportHold(list, row, holdClientId, targetOffset);
+  settleNormalTurnAnchor(list, assistant, row, targetOffset, Date.now() + 140, done);
+}
+
+interface NormalTurnMotionContext {
+  list: TurnAnchorList;
+  assistant: HTMLElement | null;
+  clientId: string;
+  row(): HTMLElement | null;
+  targetOffset: number;
+  settlingSeq: number;
+  clearSettling(): void;
+  target: number;
+  promptTarget(): number;
+}
+
+function startNormalTurnMotion(context: NormalTurnMotionContext): void {
+  const {
+    list, assistant, clientId, row, targetOffset, settlingSeq, clearSettling,
+    target, promptTarget,
+  } = context;
+  if (settlingSeq === settlingOwner) list.dataset.turnAnchorSettling = 'true';
+  const plan = planSendGlide(Math.abs(target - list.scrollTop), list.clientHeight);
+  const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
+  startTurnViewportHold(list, row, holdClientId, targetOffset, false);
+  if (!plan.snap) {
+    const promptRows = list.querySelectorAll('.msg.user');
+    const promptBubble = promptRows.length
+      ? (promptRows[promptRows.length - 1] as HTMLElement)
+      : null;
+    if (promptBubble) {
+      promptBubble.style.setProperty(
+        '--bubble-fade-duration',
+        Math.min(plan.duration, BUBBLE_FADE_MAX_MS) + 'ms',
+      );
+      promptBubble.dataset.bubbleArriving = 'true';
+    }
+  }
+  velocityScrollTo(list, target, { smooth: true, owner: 'turn', target: promptTarget, plan }).then(() => {
+    if (!list.isConnected) { clearSettling(); return; }
+    if (settlingSeq === settlingOwner) {
+      const promptRows = list.querySelectorAll('.msg.user');
+      const promptBubble = promptRows.length
+        ? (promptRows[promptRows.length - 1] as HTMLElement)
+        : null;
+      if (promptBubble) delete promptBubble.dataset.bubbleArriving;
+    }
+    releaseTurnAnchor(list, assistant, clientId, row, targetOffset, settlingSeq, clearSettling);
+  });
+}
+
+interface PositionRetryContext {
+  list: TurnAnchorList | null;
+  retryViewport: RetryViewportOffset | null;
+  row(): HTMLElement | null;
+  position(): void;
+  motionStarted(): boolean;
+  clearSettling(): void;
+}
+
+function scheduleAnchorPosition(context: PositionRetryContext): void {
+  let positionWaits = 0;
+  function positionSoon(): void {
+    context.position();
+    const ready = context.retryViewport
+      ? Boolean(context.row())
+      : Boolean(context.row()) && hasTurnAnchorReserve(context.row);
+    if (ready || ++positionWaits > 30) {
+      if (!context.motionStarted() && !context.retryViewport) context.clearSettling();
+      return;
+    }
+    requestAnimationFrame(positionSoon);
+  }
+  if (context.retryViewport && context.row()) context.position();
+  else positionSoon();
+  requestAnimationFrame(() => requestAnimationFrame(positionSoon));
+}
+
 /**
  * Reserve the new turn's leading space and converge the scroll so the
  * submitted prompt lands at the target offset. A React row takes its
@@ -418,219 +778,38 @@ export function scheduleActiveTurnToTop(
   function row(): HTMLElement | null {
     return turnRowFor(list, assistant, clientId);
   }
-  /* The stamped reserve must be painted before the anchor can glide, or the
-     target scrollTop is clamped by a still-short scrollHeight and the motion
-     undershoots, then snaps. React commits the reserve from the message entry
-     one frame after the stamp; the legacy path writes the style synchronously. */
-  function anchorReservePainted(): boolean {
-    const mounted = row() as HTMLElement | null;
-    if (!mounted) return false;
-    const minHeight = parseFloat(mounted.style.minHeight) || 0;
-    const marginTop = parseFloat(mounted.style.marginTop) || 0;
-    return minHeight > 0 || marginTop > 0;
-  }
-  /* Retire spent viewport reserves from earlier turns only once they sit
-     completely above the visible transcript. Clearing them on the send
-     frame collapsed the scroll range before the new turn's reserve
-     existed, so the browser clamped scrollTop and the whole conversation
-     jumped by the reserve height (the send "flash"). Here the layout
-     shrink is compensated 1:1, so the visible content never moves. */
-  function retireReservesAboveViewport(): void {
+  const anchorContext: AnchorStampContext = {
+    row,
+    clientId,
+    readMessage: () => message,
+    writeMessage: (next) => { message = next; },
+    isReactMounted: () => anchorDeps.isMsgListMounted(),
+  };
+  function position(): void {
     if (!list) return;
-    const listRect = list.getBoundingClientRect();
-    const listBottom = listRect.bottom;
-    const rows = list.querySelectorAll('.turn-viewport-anchor');
-    /* A previous turn's bounded settle callback can fire after the next
-       send has already stamped its reserve. Never retire the newest
-       assistant row's reserve, whichever turn is asking. */
-    const stored = stateStore.read('messages') as MessageEntry[];
-    let latestAssistantId = '';
-    for (let i = stored.length - 1; i >= 0; i -= 1) {
-      if (stored[i] && stored[i].role === 'assistant') {
-        latestAssistantId = stored[i].clientId || '';
-        break;
-      }
-    }
-    /* Keep the newest prompt visually still across the collapse: measure
-       its slot inside the transcript before and after and correct any drift
-       (the browser's clamp is already baked into the "after" measurement).
-       The measurement is list-relative rather than viewport-absolute, so a
-       reading taken in a later frame stays comparable when the transcript
-       itself moves in the viewport (a composer or keyboard resize). */
-    const promptRows = list.querySelectorAll('.msg.user');
-    const promptRow = promptRows.length ? (promptRows[promptRows.length - 1] as HTMLElement) : null;
-    const promptOffsetBefore = promptRow
-      ? promptRow.getBoundingClientRect().top - list.getBoundingClientRect().top
-      : null;
-    const stubIds: string[] = [];
-    let cleared = 0;
-    for (let i = 0; i < rows.length; i += 1) {
-      const el = rows[i] as HTMLElement;
-      const id = el.dataset ? el.dataset.clientId : '';
-      if (clientId && id === clientId) continue;
-      if (latestAssistantId && id === latestAssistantId) continue;
-      /* A reserve that sits fully below the visible transcript belongs to
-         a newer turn; never touch it. Intersecting/above rows are spent. */
-      if (el.getBoundingClientRect().top >= listBottom) continue;
-      el.classList.remove('turn-viewport-anchor');
-      el.style.minHeight = '';
-      el.style.marginTop = '';
-      if (id) {
-        const entry = stored.find((candidate) => candidate && candidate.clientId === id);
-        if (entry && (entry._turnAnchorMinHeight || entry._turnAnchorMarginTop)) {
-          updateMessageSnapshot(entry, {
-            _turnAnchorMinHeight: undefined,
-            _turnAnchorMarginTop: undefined,
-            _turnAnchorMode: undefined,
-            _turnViewportTarget: undefined,
-          }, true);
-        }
-        if (entry && entry._supersededStub) {
-          /* A superseded empty placeholder held the layout open until this
-             point; hide the rest of its row now that it is spent. */
-          el.style.display = 'none';
-          stubIds.push(id);
-        }
-      }
-      cleared += 1;
-      /* The hold re-aligns the prompt whenever the layout moves it. This
-         row's retirement is exactly such a move, and it only becomes
-         visible on the next React commit — so hand the row to the hold
-         instead of measuring the drift here, where the collapse has not
-         happened yet. */
-      observeTurnViewportRow(el);
-    }
-    if (!cleared) return;
-    if (promptRow && promptOffsetBefore != null) {
-      const drift = promptRow.getBoundingClientRect().top
-        - list.getBoundingClientRect().top
-        - promptOffsetBefore;
-      if (Math.abs(drift) > 0.5) {
-        suppressScrollPositionIntent(200);
-        writeScrollTop(list, Math.max(0, list.scrollTop + drift), 'turn');
-      }
-    }
-    for (const id of stubIds) {
-      const messages = stateStore.read('messages') as MessageEntry[];
-      const index = messages.findIndex((candidate) => candidate && candidate.clientId === id);
-      if (index >= 0) {
-        stateStore.dispatch({ type: 'session/remove-message-at', index, clientId: id });
-      }
-    }
-    publishReactChatRuntime({ type: 'state-synced', reason: 'turn-reserve-retire' });
-  }
-  /* Reserve the row's leading space. A React row takes it from the message
-     entry (MessageItem renders minHeight / .turn-viewport-anchor /
-     data-viewport-anchor from there), which survives the next commit instead
-     of being wiped by it — and lets the chrome be written one frame early,
-     while the row is still only in stateStore.read("messages"). On the legacy path the
-     bubble is already in the document, so the style goes straight on it. */
-  function stampAnchor(mode: string, reserve: number, targetOffset: number): void {
-    const mounted = row();
-    if (!mounted && !anchorDeps.isMsgListMounted()) return;
-    if (anchorDeps.isMsgListMounted()) {
-      if (!message) return;
-      if (message._turnAnchorMinHeight === reserve && message._turnAnchorMode === mode) return;
-      message =
-        (updateMessageSnapshot(message, {
-          _turnAnchorMinHeight: reserve,
-          _turnAnchorMode: mode,
-          _turnViewportTarget: targetOffset,
-          _toolRunRev: (message._toolRunRev || 0) + 1,
-        }, true) as MessageEntry | null) || message;
-      publishReactChatRuntime({ type: 'tool-run-updated', messageId: String(clientId || '') });
+    if (retryViewport) {
+      positionRetryTurnAnchor({
+        list,
+        assistant,
+        offset: retryViewport.offset,
+        ...anchorContext,
+      });
       return;
     }
-    mounted!.classList.add('turn-viewport-anchor');
-    mounted!.dataset.viewportAnchor = mode;
-    mounted!.dataset.viewportTarget = String(targetOffset);
-    mounted!.style.minHeight = reserve + 'px';
-    if (message) {
-      message =
-        (updateMessageSnapshot(message, { _turnAnchorMinHeight: reserve }, true) as MessageEntry | null) ||
-        message;
-    }
-  }
-  /* The composer can still be in its short focus/keyboard transition when
-     the stream bubble is mounted. Keep the submitted prompt at the target
-     offset while that bounded layout change settles; stop immediately when
-     the reader expresses upward intent. `onDone` fires on every exit path so
-     the anchor-ownership flag is released even when the loop stops early. */
-  function settleNormalTurnAnchor(
-    targetOffset: number,
-    deadline: number,
-    onDone?: () => void,
-  ): void {
-    const finish = () => { if (onDone) onDone(); };
-    if (!list || stateStore.read('_userScrolledAway')) { finish(); return; }
-    /* Stop once this turn's row is gone — the loop only promises to hold the
-       prompt still while the composer's layout settles. */
-    if ((!assistant || !assistant.isConnected) && !row()) { finish(); return; }
-    const users = list.querySelectorAll && list.querySelectorAll('.msg.user');
-    const anchor = users && users.length ? users[users.length - 1] : null;
-    if (!anchor || !anchor.isConnected) { finish(); return; }
-    const actualOffset = anchor.getBoundingClientRect().top - list.getBoundingClientRect().top;
-    const delta = actualOffset - targetOffset;
-    if (Math.abs(delta) > 1) {
-      const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
-      const nextTop = Math.max(0, Math.min(maxScroll, list.scrollTop + delta));
-      if (Math.abs(nextTop - list.scrollTop) > 0.5) writeScrollTop(list, nextTop, 'turn');
-    }
-    if (Date.now() < deadline) {
-      requestAnimationFrame(function () {
-        settleNormalTurnAnchor(targetOffset, deadline, onDone);
-      });
-    } else {
-      finish();
-    }
-  }
-  function position(): void {
-    const mounted = row();
-    if (!list) return;
     const styles = getComputedStyle(list);
     const bottomPadding = parseFloat(styles.paddingBottom) || 0;
-    let anchor: Element | null;
-    let targetOffset = TURN_ANCHOR_TOP_OFFSET;
-    let reserve: number;
-    if (retryViewport) {
-      /* Re-running the positioning pass must be idempotent. Clear the
-         previous leading-space correction before measuring; otherwise the
-         next pass measures the already-correct offset and overwrites the
-         full margin with only the tiny residual delta. */
-      if (mounted === assistant) (mounted as HTMLElement).style.marginTop = '';
-      if (message) {
-        message =
-          (updateMessageSnapshot(
-            message,
-            { _turnAnchorMarginTop: undefined },
-            true,
-          ) as MessageEntry | null) || message;
-      }
-      const maxOffset = Math.max(8, list.clientHeight - bottomPadding - 64);
-      targetOffset = Math.max(8, Math.min(maxOffset, retryViewport.offset));
-      reserve = Math.max(
-        TURN_ANCHOR_MIN_RESERVE,
-        Math.round(list.clientHeight - bottomPadding - targetOffset),
-      );
-      stampAnchor('retry', reserve, targetOffset);
-      /* The retry row is a React commit away: the reserve is already on the
-         entry so its first paint has the right height, and positionSoon
-         comes back with the node in hand to do the measurement. */
-      if (!mounted) return;
-      anchor = mounted;
-    } else {
-      const users = list.querySelectorAll('.msg.user');
-      anchor = users.length ? users[users.length - 1] : null;
-      if (!anchor) return;
-      reserve = turnAnchorReserve(
-        list.clientHeight,
-        anchor.getBoundingClientRect().height,
-        bottomPadding,
-      );
-      stampAnchor('turn', reserve, targetOffset);
-    }
-    if (!retryViewport && !anchorReservePainted()) return;
-    if (!retryViewport) list.__socratesTurnViewportOwner = true;
+    const users = list.querySelectorAll('.msg.user');
+    const anchor = users.length ? users[users.length - 1] : null;
+    if (!anchor) return;
+    const targetOffset = TURN_ANCHOR_TOP_OFFSET;
+    const reserve = turnAnchorReserve(
+      list.clientHeight,
+      anchor.getBoundingClientRect().height,
+      bottomPadding,
+    );
+    stampTurnAnchor(anchorContext, 'turn', reserve, targetOffset);
+    if (!hasTurnAnchorReserve(row)) return;
+    list.__socratesTurnViewportOwner = true;
     /* Read layout once. Both rects land in the same flush and reusing
        `anchorInList` below skips a separate `offsetTop` read, which
        would otherwise force a second layout flush in this rAF body. */
@@ -649,191 +828,31 @@ export function scheduleActiveTurnToTop(
        snapping, and it never chases its own tail. Re-resolving the prompt
        node is O(1) while it stays mounted and falls back to the send-time
        measurement only if it is replaced. Retry shares the same expression. */
-    let promptNode: HTMLElement | null = anchor as HTMLElement;
-    const promptTarget = (): number => {
-      if (!promptNode || !promptNode.isConnected) {
-        promptNode = latestUserRow(list) as HTMLElement | null;
-      }
-      if (!promptNode) {
-        return Math.max(0, list.scrollTop + anchorInList - targetOffset);
-      }
-      const live = promptNode.getBoundingClientRect().top - list.getBoundingClientRect().top;
-      return Math.max(0, list.scrollTop + live - targetOffset);
-    };
+    const promptTarget = createPromptTarget(list, anchor, anchorInList, targetOffset);
     const target = promptTarget();
-    /* The retry placeholder's min-height and the React removal of the
-       failed row can settle over several frames. A single scrollTop write
-       therefore runs against stale scrollHeight and leaves the retry well
-       below its captured viewport position. Re-align after layout settles,
-       then use margin only when the scroller genuinely has no more range.
-       Retries stay an instant, exact restore of the failed answer's visible
-       offset — they are not a fresh send and must not animate. */
-    if (retryViewport) {
-      writeScrollTop(list, target, 'retry');
-      requestAnimationFrame(function settleRetryAnchor(attempt: number) {
-        const current = row();
-        if (!current) return;
-        const retryListRect = list.getBoundingClientRect();
-        const actualOffset = current.getBoundingClientRect().top - retryListRect.top;
-        const delta = Math.round(actualOffset - targetOffset);
-        if (Math.abs(delta) > 1) {
-          const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
-          const nextTop = Math.max(0, Math.min(maxScroll, list.scrollTop + delta));
-          if (Math.abs(nextTop - list.scrollTop) > 0.5) writeScrollTop(list, nextTop, 'retry');
-        }
-        if (attempt < 2) {
-          requestAnimationFrame(function () {
-            settleRetryAnchor(attempt + 1);
-          });
-          return;
-        }
-        const finalListRect = list.getBoundingClientRect();
-        const finalOffset = current.getBoundingClientRect().top - finalListRect.top;
-        const missingSpace = Math.max(0, Math.round(targetOffset - finalOffset));
-        const finalMaxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
-        if (missingSpace > 1 && list.scrollTop >= finalMaxScroll - 1) {
-          if (current === assistant) {
-            current.style.marginTop = missingSpace + 'px';
-            if (message) {
-              message =
-                (updateMessageSnapshot(
-                  message,
-                  { _turnAnchorMarginTop: missingSpace },
-                  true,
-                ) as MessageEntry | null) || message;
-            }
-          } else if (message) {
-            message =
-              (updateMessageSnapshot(message, {
-                _turnAnchorMarginTop: missingSpace,
-                _toolRunRev: (message._toolRunRev || 0) + 1,
-              }, true) as MessageEntry | null) || message;
-            publishReactChatRuntime({ type: 'tool-run-updated', messageId: String(clientId || '') });
-          }
-        }
-      });
-      stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
-      return;
-    }
     if (anchorMotionStarted) return;
     anchorMotionStarted = true;
-    /* A normal send glides: the previous turns slide up and the submitted
-       prompt settles at the target offset instead of teleporting there.
-       `turnAnchorSettling` tells the content-follow observer to leave the
-       scroll alone until the motion and its convergence window finish. */
-    if (settlingSeq === settlingOwner) list.dataset.turnAnchorSettling = 'true';
-    const releaseAnchor = () => {
-      const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
-      const done = () => {
-        retireReservesAboveViewport();
-        clearSettling();
-      };
-      if (stateStore.read('_userScrolledAway')) { done(); return; }
-      /* A newer send already owns the transcript: its own glide/hold is
-         converging the same prompt. A superseded pass must not write
-         scrollTop or start a competing hold — its settle loop would
-         instant-correct the remaining distance and cut the newer glide
-         short. */
-      if (settlingSeq !== settlingOwner) { done(); return; }
-      stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
-      /* The glide is over but the layout around the prompt is not settled:
-         the keyboard or the composer can still change the transcript's
-         height. The hold keeps the reserve matched to the live viewport
-         from the first of those changes, while the settle loop below
-         converges the offset itself. */
-      startTurnViewportHold(list, row, holdClientId, targetOffset);
-      /* The settle window runs just long enough for the keyboard/composer
-         transition to finish; the hold's ResizeObserver keeps correcting
-         drift past that. A shorter window means content-follow can pick
-         up the streaming answer sooner, so the user-bubble fade (capped
-         at BUBBLE_FADE_MAX_MS) hands off to the camera follow with no
-         visible dead zone on a typical 120-200ms glide. */
-      settleNormalTurnAnchor(targetOffset, Date.now() + 140, done);
-    };
-    /* P_send-glide — whatever the reader was looking at (the bottom, one
-       screen up, or the first message of a long session), glide the whole
-       way: planSendGlide grows the duration with the log of the distance so
-       a far send is a visible, continuous motion rather than a blur. The
-       target is re-read every frame, so a reserve repaint or React commit
-       during the glide bends the motion instead of snapping at the end. */
-    const plan = planSendGlide(Math.abs(target - list.scrollTop), list.clientHeight);
-    /* The composer can still be collapsing (and on mobile the keyboard may
-       still be opening) while the glide runs — each change moves
-       scrollHeight - clientHeight, so a reserve stamped from the send-time
-       measurement leaves the live target clamped short of the slot: the
-       eased curve stalls above the top and the post-glide hold then snaps
-       the remainder. Starting the hold now re-syncs the reserve on every
-       mid-glide viewport change so the target stays reachable; `align:false`
-       keeps it off scrollTop until the eased motion lands. */
-    if (!retryViewport) {
-      const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
-      startTurnViewportHold(list, row, holdClientId, targetOffset, false);
-    }
-    /* Tie the user-bubble fade to the glide duration — the bubble lands
-       on full opacity at the exact frame the camera lands on its target,
-       so the user reads a single coordinated arrival. The fade is capped
-       so a far glide (up to SEND_GLIDE_MAX_MS) never leaves the prompt
-       dimmed while the camera is still travelling — beyond the cap the
-       bubble is already settled and the motion continues alone. A snap
-       plan has no motion to coordinate with, so the bubble stays fully
-       present instead of starting a fade that outlives the scroll. */
-    if (!retryViewport && !plan.snap) {
-      const promptRows = list.querySelectorAll('.msg.user');
-      const promptBubble = promptRows.length
-        ? (promptRows[promptRows.length - 1] as HTMLElement)
-        : null;
-      if (promptBubble) {
-        promptBubble.style.setProperty(
-          '--bubble-fade-duration',
-          Math.min(plan.duration, BUBBLE_FADE_MAX_MS) + 'ms',
-        );
-        promptBubble.dataset.bubbleArriving = 'true';
-      }
-    }
-    velocityScrollTo(list, target, { smooth: true, owner: 'turn', target: promptTarget, plan }).then(() => {
-      if (!list.isConnected) { clearSettling(); return; }
-      /* The CSS animation is `both` so the bubble holds opacity:1 even
-         after we drop the attribute; removing it just stops a future
-         rule from re-running on top of the settled state. Skipped when a
-         newer send superseded this one — it re-arms the same attribute
-         with its own duration, and stripping it mid-glide would snap the
-         fade. */
-      if (!retryViewport && list && settlingSeq === settlingOwner) {
-        const promptRows = list.querySelectorAll('.msg.user');
-        const promptBubble = promptRows.length
-          ? (promptRows[promptRows.length - 1] as HTMLElement)
-          : null;
-        if (promptBubble) delete promptBubble.dataset.bubbleArriving;
-      }
-      releaseAnchor();
+    startNormalTurnMotion({
+      list,
+      assistant,
+      clientId,
+      row,
+      targetOffset,
+      settlingSeq,
+      clearSettling,
+      target,
+      promptTarget,
     });
   }
   /* A retry bubble is already mounted in the legacy list and its target
      offset is known. Position it synchronously so the first visible frame
      cannot flash at the top while waiting for the deferred layout pass. */
-  let positionWaits = 0;
-  function positionSoon(): void {
-    /* Under React the live row is a commit away — when the stream starts the
-       entry is only in `stateStore.read("messages")`. Bailing on that first null is what
-       made the send-time anchor a no-op, so keep asking (bounded) until the
-       row exists, its reserve is painted, and the scroll can be measured
-       against a target the scroller can actually reach. */
-    position();
-    const ready = retryViewport
-      ? Boolean(row())
-      : Boolean(row()) && anchorReservePainted();
-    if (ready || ++positionWaits > 30) {
-      /* Gave up without starting the glide (the row never mounted, the
-         prompt was removed): hand scrolling back to content-follow instead
-         of leaving it blocked. */
-      if (!anchorMotionStarted && !retryViewport) clearSettling();
-      return;
-    }
-    requestAnimationFrame(positionSoon);
-  }
-  if (retryViewport && row()) position();
-  else positionSoon();
-  requestAnimationFrame(function () {
-    requestAnimationFrame(positionSoon);
+  scheduleAnchorPosition({
+    list,
+    retryViewport,
+    row,
+    position,
+    motionStarted: () => anchorMotionStarted,
+    clearSettling,
   });
 }

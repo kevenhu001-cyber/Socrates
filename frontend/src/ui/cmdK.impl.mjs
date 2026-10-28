@@ -2,6 +2,7 @@ import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';
 import { loadSession } from '../session/loader.ts';
 import { ensureFuse } from '../vendor/lazy.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* Deferred Cmd-K search runtime. */
 var _cmdKIndex = null;
@@ -107,9 +108,6 @@ function openCmdK() {
   if (overlay) overlay.classList.remove("hidden");
   var input = document.getElementById("cmdKInput");
   if (input) { input.value = ""; setTimeout(function () { input.focus(); }, 0); }
-  renderCmdKResults(_cmdKRecent.length ? [
-    { kind: "recent", label: "Recent", items: _cmdKRecent.slice(0, 5) },
-  ] : []);
   _cmdKResults = [];
   _cmdKSelected = 0;
   _publishCmdKState();
@@ -124,9 +122,9 @@ function closeCmdK() {
 function onCmdKInput(q) {
   q = (q || "").trim();
   if (!q) {
-    renderCmdKResults(_cmdKRecent.length ? [
-      { kind: "recent", label: "Recent", items: _cmdKRecent.slice(0, 5) },
-    ] : []);
+    _cmdKResults = [];
+    _cmdKSelected = 0;
+    _publishCmdKState();
     return;
   }
   var hits = _cmdKIndex ? _cmdKIndex.search(q, { limit: 20 }) : [];
@@ -156,12 +154,8 @@ function onCmdKInput(q) {
   } catch (_) { /* swallow */ }
   _cmdKResults = hits;
   _cmdKSelected = 0;
-  renderCmdKResultsHits(q, hits);
   _publishCmdKState();
 }
-
-function renderCmdKResultsHits(_q, _hits) {}
-function renderCmdKResults(_sections) {}
 
 function updateCmdKSelected() {
   var rows = document.querySelectorAll("#cmdKResults .cmd-k-row");
@@ -180,7 +174,7 @@ function openCmdKResult(idx) {
     _cmdKRecent = _cmdKRecent.filter(function (x) { return x !== q; });
     _cmdKRecent.unshift(q);
     _cmdKRecent = _cmdKRecent.slice(0, 10);
-    try { localStorage.setItem("socrates-search-recent", JSON.stringify(_cmdKRecent)); } catch (_) {}
+    try { localStorage.setItem("socrates-search-recent", JSON.stringify(_cmdKRecent)); } catch (error) { reportSwallow(error, 'ui/cmdK.impl.mjs:183', 'expected'); }
   }
   if (item.kind === "session") loadSession(item.id);
   else if (item.kind === "message" && item.sessionId) loadSession(item.sessionId);
@@ -221,7 +215,6 @@ function onCmdKKey(ev) {
               return { item: { kind: "remote", id: h.id, sessionId: h.sessionId, title: h.title, snippet: h.snippet || "" } };
             });
             _cmdKSelected = 0;
-            renderCmdKResultsHits(q, _cmdKResults);
             _publishCmdKState();
           } else showToast("No matches");
         }).catch(function () { showToast("Search failed"); });
@@ -233,8 +226,7 @@ function onCmdKKey(ev) {
 
 export {
   rebuildCmdKIndex, openCmdK, closeCmdK,
-  onCmdKInput, onCmdKKey, renderCmdKResults,
-  renderCmdKResultsHits,
+  onCmdKInput, onCmdKKey,
   openCmdKResult, updateCmdKSelected,
   markCmdKIndexDirty,
 };

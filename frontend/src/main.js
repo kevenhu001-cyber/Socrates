@@ -32,7 +32,7 @@ import { selectAppMode, toggleMobileModeMenu } from './ui/mobileModeSwitch.js';
 import { openFindInSession } from './react/find-in-session/findInSession.actions.ts';
 import { initChatComposerReserve } from './ui/scroll.js';
 import { initKeyboardLift } from './ui/keyboard/index.ts';
-import { initTopicFocusAssist } from './ui/topicFocusAssist.js';
+import { initTopicFocusAssist } from './ui/topicFocusAssist.ts';
 import './ui/composerAnim.js';
 import { installComposerShapeMirror } from './ui/composerShape.js';
 import { installKeyboardShortcuts } from './ui/keyboardShortcuts.js';
@@ -139,7 +139,7 @@ installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindo
 configurePromptSuffixes({ getUserMemories: getUserMemories });
 
 /* Legacy session persistence reads this flag before a user toggles it. */
-try{window.incognitoOn=false;}catch(_){}
+window.incognitoOn = false;
 
 /* Wire the extracted feature modules into the auth-aware app bootstrap. */
 bootstrapApp({

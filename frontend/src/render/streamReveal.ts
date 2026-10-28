@@ -79,6 +79,97 @@ function suffixOf(root: Element): { text: string; leaves: Leaf[] } {
   return { text, leaves };
 }
 
+interface AppendMeasure {
+  length: number;
+  resetRuns: boolean;
+}
+
+function measureAppend(source: string, nextSource: string, suffix: string, nextText: string): AppendMeasure {
+  let length = Math.min(nextText.length, MAX_CHARS);
+  if (!source || !nextSource.startsWith(source)) return { length, resetRuns: true };
+
+  // Markdown syntax may add fewer visible characters than source bytes.
+  // Compare only a bounded suffix, preferring the source-sized append.
+  const overlap = Math.min(suffix.length, nextText.length, 32);
+  length = Math.min(length, nextSource.length - source.length, nextText.length - overlap);
+  while (length > 0 && !suffix.endsWith(nextText.slice(0, nextText.length - length))) length--;
+  return { length, resetRuns: !length && nextText !== suffix };
+}
+
+function updateRevealRuns(runs: Run[], added: number, now: number): Run[] {
+  const active = runs.filter((run) => now - run.at < STREAM_REVEAL_MS);
+  if (added) {
+    active.push({
+      length: added,
+      at: now,
+      tier: revealTier(active.map((run) => run.at), now),
+    });
+  }
+  return active.slice(-MAX_RUNS);
+}
+
+function renderRevealRange(
+  root: Element,
+  leaves: Leaf[],
+  distance: number,
+  run: Run,
+  isNewest: boolean,
+  now: number,
+  alreadyRendered: number,
+): { spans: number; limitReached: boolean } {
+  let spans = alreadyRendered;
+  for (const leaf of leaves) {
+    const near = Math.max(distance, leaf.start);
+    const far = Math.min(distance + run.length, leaf.end);
+    if (near >= far) continue;
+    const value = leaf.node.data;
+    let from = value.length - (far - leaf.start);
+    const to = value.length - (near - leaf.start);
+    // Avoid splitting a UTF-16 surrogate pair at a chunk boundary.
+    if (from > 0 && /[\uDC00-\uDFFF]/.test(value[from])) from--;
+    const part = leaf.node.splitText(from);
+    part.splitText(to - from);
+    const span = root.ownerDocument.createElement('span');
+    /* Only the newest run carries the blur: a filter forces an offscreen
+       pass, and the older runs are already on their way out. */
+    span.className = isNewest
+      ? 'stream-append-reveal'
+      : 'stream-append-reveal stream-append-aged';
+    span.style.animationDelay = `${revealDelay(now - run.at, run.tier)}ms`;
+    part.replaceWith(span);
+    span.appendChild(part);
+    // Splits shorten the original node, so adjust its end-distance for
+    // subsequent (older) runs while retaining the original offset base.
+    leaf.start += value.length - from;
+    spans++;
+    if (spans >= MAX_SPANS) return { spans, limitReached: true };
+  }
+  return { spans, limitReached: false };
+}
+
+function renderRevealRuns(root: Element, leaves: Leaf[], runs: Run[], now: number): number {
+  let spans = 0;
+  let distance = 0;
+  // Leaves and runs are processed from the end. Rebuilding HTML resumes
+  // each chunk's original animation age instead of re-fading older text.
+  for (let i = runs.length - 1; i >= 0; i--) {
+    const run = runs[i];
+    const rendered = renderRevealRange(
+      root,
+      leaves,
+      distance,
+      run,
+      i === runs.length - 1,
+      now,
+      spans,
+    );
+    spans = rendered.spans;
+    if (rendered.limitReached) return spans;
+    distance += run.length;
+  }
+  return spans;
+}
+
 export function createStreamReveal() {
   let source = '';
   let suffix = '';
@@ -92,63 +183,11 @@ export function createStreamReveal() {
       return 0;
     }
     const next = suffixOf(root);
-    let added = Math.min(next.text.length, MAX_CHARS);
-    if (source && nextSource.startsWith(source)) {
-      // Markdown syntax may add fewer visible characters than source bytes.
-      // Compare only a bounded suffix, preferring the source-sized append.
-      const overlap = Math.min(suffix.length, next.text.length, 32);
-      added = Math.min(added, nextSource.length - source.length, next.text.length - overlap);
-      while (added > 0 && !suffix.endsWith(next.text.slice(0, next.text.length - added))) added--;
-      if (!added && next.text !== suffix) runs = [];
-    } else {
-      runs = [];
-    }
+    const addition = measureAppend(source, nextSource, suffix, next.text);
+    if (addition.resetRuns) runs = [];
     source = nextSource;
     suffix = next.text;
-    runs = runs.filter((run) => now - run.at < STREAM_REVEAL_MS);
-    if (added) {
-      runs.push({
-        length: added,
-        at: now,
-        tier: revealTier(runs.map((run) => run.at), now),
-      });
-    }
-    runs = runs.slice(-MAX_RUNS);
-
-    let spans = 0;
-    let distance = 0;
-    // Leaves and runs are processed from the end. Rebuilding HTML resumes
-    // each chunk's original animation age instead of re-fading older text.
-    for (let i = runs.length - 1; i >= 0; i--) {
-      const run = runs[i];
-      for (const leaf of next.leaves) {
-        const near = Math.max(distance, leaf.start);
-        const far = Math.min(distance + run.length, leaf.end);
-        if (near >= far) continue;
-        const value = leaf.node.data;
-        let from = value.length - (far - leaf.start);
-        const to = value.length - (near - leaf.start);
-        // Avoid splitting a UTF-16 surrogate pair at a chunk boundary.
-        if (from > 0 && /[\uDC00-\uDFFF]/.test(value[from])) from--;
-        const part = leaf.node.splitText(from);
-        part.splitText(to - from);
-        const span = root.ownerDocument.createElement('span');
-        /* Only the newest run carries the blur: a filter forces an offscreen
-           pass, and the older runs are already on their way out. */
-        span.className = i === runs.length - 1
-          ? 'stream-append-reveal'
-          : 'stream-append-reveal stream-append-aged';
-        span.style.animationDelay = `${revealDelay(now - run.at, run.tier)}ms`;
-        part.replaceWith(span);
-        span.appendChild(part);
-        // Splits shorten the original node, so adjust its end-distance for
-        // subsequent (older) runs while retaining the original offset base.
-        leaf.start += value.length - from;
-        spans++;
-        if (spans >= MAX_SPANS) return spans;
-      }
-      distance += run.length;
-    }
-    return spans;
+    runs = updateRevealRuns(runs, addition.length, now);
+    return renderRevealRuns(root, next.leaves, runs, now);
   };
 }

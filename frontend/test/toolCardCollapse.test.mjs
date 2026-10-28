@@ -33,7 +33,7 @@ globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.MutationObserver = dom.window.MutationObserver;
 globalThis.Node = dom.window.Node;
 
-const { appendToolModule } = await import('../src/ui/toolCards.js');
+const { appendToolModule, extractCodeFromArgs, toolFormatInput } = await import('../src/ui/toolCards.js');
 const { createLiveOutputBuffer, renderLivePreview } = await import('../src/chat/liveOutput.ts');
 
 /* Mount a live (running) tool card and hand back the card + its header
@@ -64,6 +64,29 @@ function retireCard(card) {
   card.dataset.endedAt = String(Date.now());
   if (card.parentElement) card.parentElement.remove();
 }
+
+test('tool input previews keep tool-specific labels and unknown fallbacks', () => {
+  assert.equal(toolFormatInput('code_interpreter', { language: 'python', code: 'print(1)\nprint(2)' }), 'python  -  print(1)');
+  assert.equal(toolFormatInput('render_visualization', { template: 'chart', title: 'Growth' }), 'chart  -  Growth');
+  assert.equal(toolFormatInput('zotero_search', {}), '(all items)');
+  assert.equal(toolFormatInput('unknown_tool', { query: 'hello', page: 1 }), '{"query":"hello","page":1}');
+  assert.equal(toolFormatInput('code_interpreter', null), '');
+});
+
+test('tool argument extraction preserves parsed and truncated stream states', () => {
+  assert.deepEqual(extractCodeFromArgs('code_interpreter', '{"code":"print(1)","language":"python"}'), {
+    code: 'print(1)', language: 'python', parsed: true, truncated: false,
+  });
+  assert.deepEqual(extractCodeFromArgs('web_search', '{"query":"climate"}'), {
+    code: 'climate', language: 'query', parsed: true, truncated: false,
+  });
+  assert.deepEqual(extractCodeFromArgs('code_interpreter', '{"code":"print(1)\\npri'), {
+    code: 'print(1)\npri', language: 'python', parsed: false, truncated: true,
+  });
+  assert.deepEqual(extractCodeFromArgs('web_search', '{"query":"climate'), {
+    code: 'climate', language: 'query', parsed: false, truncated: true,
+  });
+});
 
 test('a running tool card starts expanded with .open and aria-expanded=true', () => {
   const { card, head, cardBody } = mountRunningCard('code_interpreter', { code: '', language: 'python' });

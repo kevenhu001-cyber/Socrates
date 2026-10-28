@@ -15,6 +15,7 @@
 import { validateIntelligentUi } from '@socrates/core';
 import { LazyIntelligenceUiBlock } from '../intelligence-ui/LazyIntelligenceUiBlock';
 import { useEffect, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
 import { attachmentOutputsOf, toolRunStateOf, type ToolCallRecord } from './toolRunModel';
@@ -68,6 +69,35 @@ function intelligenceUiDocumentOf(call: ToolCallRecord): IntelligenceUiDocument 
   return parseIntelligenceUiDocument(call.argumentsText);
 }
 
+function renderIntelligenceUiAttachment(
+  call: ToolCallRecord,
+  tools: ReadonlyArray<ToolCallRecord>,
+  readOnly?: boolean,
+): ReactElement | null | false {
+  const state = toolRunStateOf(call);
+  const surface = call.uiSurface;
+  if (surface?.phase === 'aborted' && state !== 'done') return false;
+  const document = surface && surface.phase !== 'aborted'
+    ? { version: 1, nodes: surface.nodes }
+    : intelligenceUiDocumentOf(call);
+  /* A validated-looking document may be painted as soon as its arguments
+     are complete; the tool row remains the authority for final success. */
+  if (!document || state === 'error' || state === 'stopped') return null;
+  const source = document.nodes.map((node) => JSON.stringify(node)).join('\n');
+  if (!source) return null;
+  return (
+    <div className="tool-inline-attachments" data-tool-anchor={call.id}>
+      <LazyIntelligenceUiBlock
+        source={source}
+        showActivityCue={false}
+        tools={tools}
+        open={surface && surface.phase !== 'aborted' ? surface.phase === 'streaming' : state === 'running' || state === 'awaiting'}
+        readOnly={readOnly}
+      />
+    </div>
+  );
+}
+
 export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAttachmentsProps) {
   const outputs = attachmentOutputsOf(call);
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -80,27 +110,9 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
   }, [call.id]);
 
   if (call.name === 'render_intelligent_ui') {
-    const state = toolRunStateOf(call);
-    const surface = call.uiSurface;
-    if (surface?.phase === 'aborted' && state !== 'done') return null;
-    const document = surface && surface.phase !== 'aborted' ? { version: 1, nodes: surface.nodes } : intelligenceUiDocumentOf(call);
-    /* A validated-looking document may be painted as soon as its arguments
-       are complete; the tool row remains the authority for final success.
-       Failed/stopped calls never expose rejected UI data. */
-    if (document && state !== 'error' && state !== 'stopped') {
-      const source = document.nodes.map((node) => JSON.stringify(node)).join('\n');
-      if (source) {
-        return <div className="tool-inline-attachments" data-tool-anchor={call.id}>
-          <LazyIntelligenceUiBlock
-            source={source}
-            showActivityCue={false}
-            tools={tools}
-            open={surface && surface.phase !== 'aborted' ? surface.phase === 'streaming' : state === 'running' || state === 'awaiting'}
-            readOnly={readOnly}
-          />
-        </div>;
-      }
-    }
+    const intelligentUiAttachment = renderIntelligenceUiAttachment(call, tools, readOnly);
+    if (intelligentUiAttachment === false) return null;
+    if (intelligentUiAttachment) return intelligentUiAttachment;
   }
   if (!outputs.length) return null;
 

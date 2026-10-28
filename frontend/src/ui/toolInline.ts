@@ -123,6 +123,44 @@ function groupDurationMs(members: InlineToolGroupMember[]): number {
   return total;
 }
 
+function isFailedGroupMember(member: InlineToolGroupMember): boolean {
+  return !!member.failed || !!(member.result && member.result.ok === false);
+}
+
+function groupStatusLabel(
+  cancelled: boolean,
+  failed: boolean,
+  name: string,
+  members: InlineToolGroupMember[],
+): string {
+  if (cancelled) return translate('tool.statusStopped', 'Stopped');
+  if (failed) return groupErrorLabel(members);
+  return groupDoneLabel(name, members);
+}
+
+function applyGroupFailureMetadata(
+  row: HTMLElement,
+  members: InlineToolGroupMember[],
+  failed: boolean,
+): void {
+  const firstFailed = members.find(isFailedGroupMember);
+  if (firstFailed && firstFailed.result && firstFailed.result.errorCode) {
+    row.dataset.errorCode = String(firstFailed.result.errorCode);
+  } else {
+    try { delete row.dataset.errorCode; } catch (e) { reportSwallow(e, 'toolInline.settleInlineToolGroupRow.clearErrorCode'); /* ignore */ }
+  }
+
+  const allRetryable = failed && members.every((member) => {
+    if (!isFailedGroupMember(member)) return true;
+    return !!member.result && member.result.retryable !== false;
+  });
+  if (failed) {
+    row.dataset.retryable = allRetryable ? '1' : '0';
+  } else {
+    try { delete row.dataset.retryable; } catch (e) { reportSwallow(e, 'toolInline.settleInlineToolGroupRow.clearRetryable'); /* ignore */ }
+  }
+}
+
 /** Settle a grouped row with per-member aggregate status + details. */
 export function settleInlineToolGroupRow(
   row: HTMLElement,
@@ -131,7 +169,7 @@ export function settleInlineToolGroupRow(
 ): void {
   const name = row.dataset.tool || '';
   const cancelledAll = !!(opts && opts.cancelled);
-  const failed = members.some((m) => m.failed || (m.result && m.result.ok === false));
+  const failed = members.some(isFailedGroupMember);
   const cancelled = cancelledAll || members.every((m) => m.cancelled);
   const state = cancelled ? 'stopped' : failed ? 'error' : 'done';
   row.dataset.state = state;
@@ -143,11 +181,7 @@ export function settleInlineToolGroupRow(
   const label = row.querySelector('.tool-inline-label');
   if (label) {
     label.classList.remove('shimmer-text');
-    label.textContent = cancelled
-      ? translate('tool.statusStopped', 'Stopped')
-      : failed
-        ? groupErrorLabel(members)
-        : groupDoneLabel(name, members);
+    label.textContent = groupStatusLabel(cancelled, failed, name, members);
   }
   const meta = row.querySelector('.tool-inline-meta');
   const duration = groupDurationMs(members);
@@ -160,21 +194,7 @@ export function settleInlineToolGroupRow(
      compute an aggregate retryable flag (true only when every failed
      member is retryable). Mirrors the writeback in renderInlineDetails
      for non-grouped rows. */
-  const firstFailed = members.find((m) => m.failed || (m.result && m.result.ok === false));
-  if (firstFailed && firstFailed.result && firstFailed.result.errorCode) {
-    row.dataset.errorCode = String(firstFailed.result.errorCode);
-  } else {
-    try { delete row.dataset.errorCode; } catch (e) { reportSwallow(e, 'toolInline.settleInlineToolGroupRow.clearErrorCode'); /* ignore */ }
-  }
-  const allRetryable = failed && members.every((m) => {
-    if (!(m.failed || (m.result && m.result.ok === false))) return true;
-    return m.result && m.result.retryable !== false;
-  });
-  if (failed) {
-    row.dataset.retryable = allRetryable ? '1' : '0';
-  } else {
-    try { delete row.dataset.retryable; } catch (e) { reportSwallow(e, 'toolInline.settleInlineToolGroupRow.clearRetryable'); /* ignore */ }
-  }
+  applyGroupFailureMetadata(row, members, failed);
   renderInlineGroupDetails(row, members, state);
 }
 
@@ -400,6 +420,56 @@ export function replaceLiveInlineToolRow(host: HTMLElement | null, next: HTMLEle
   return next;
 }
 
+interface InlineSettlementState {
+  cancelled: boolean;
+  awaitingApproval: boolean;
+  failed: boolean;
+  state: 'stopped' | 'awaiting' | 'error' | 'done';
+}
+
+function getInlineSettlementState(
+  result: InlineToolResult | null,
+  opts?: { cancelled?: boolean },
+): InlineSettlementState {
+  const cancelled = !!(opts && opts.cancelled);
+  const awaitingApproval = !!result && result.status === 'awaiting_approval';
+  const failed = !cancelled && !!result && result.ok === false;
+  const state = cancelled ? 'stopped' : awaitingApproval ? 'awaiting' : failed ? 'error' : 'done';
+  return { cancelled, awaitingApproval, failed, state };
+}
+
+function inlineSettlementLabel(
+  name: string,
+  result: InlineToolResult | null,
+  state: InlineSettlementState,
+  input: unknown,
+): string {
+  if (state.cancelled) return translate('tool.statusStopped', 'Stopped');
+  if (state.awaitingApproval) return translate('tool.awaitingApproval', 'Waiting for your decision');
+  if (state.failed) return errorLabel(name, result, input);
+  return doneLabel(name, result, input);
+}
+
+function updateInlineDuration(
+  row: HTMLElement,
+  result: InlineToolResult | null,
+  settlement: InlineSettlementState,
+): void {
+  const meta = row.querySelector('.tool-inline-meta');
+  if (!meta) return;
+  const backend = durationText(result);
+  if (backend) {
+    meta.textContent = backend;
+  } else if (settlement.cancelled || !settlement.awaitingApproval) {
+    const startedAt = Number(row.dataset.startedAt) || Date.now();
+    meta.textContent = toolCardView(
+      { id: '', tool: '', phase: 'succeeded', startedAt, endedAt: Date.now() },
+      Date.now(),
+    ).timeLabel;
+  }
+  if (meta.textContent) meta.classList.add('is-visible');
+}
+
 /** Settle the row in place: done / error / stopped. */
 export function settleInlineToolRow(
   row: HTMLElement,
@@ -407,11 +477,8 @@ export function settleInlineToolRow(
   opts?: { cancelled?: boolean },
 ): void {
   const name = row.dataset.tool || '';
-  const cancelled = !!(opts && opts.cancelled);
-  const awaitingApproval = !!result && result.status === 'awaiting_approval';
-  const failed = !cancelled && !!result && result.ok === false;
-  const state = cancelled ? 'stopped' : awaitingApproval ? 'awaiting' : failed ? 'error' : 'done';
-  row.dataset.state = state;
+  const settlement = getInlineSettlementState(result, opts);
+  row.dataset.state = settlement.state;
   // Terminal reached — drop out of the shared elapsed timer so it can
   // stop once no running rows remain (Req 3.3). The final duration is
   // written below from result.durationMs.
@@ -423,29 +490,18 @@ export function settleInlineToolRow(
   const label = row.querySelector('.tool-inline-label');
   if (label) {
     label.classList.remove('shimmer-text');
-    label.textContent = cancelled
-      ? translate('tool.statusStopped', 'Stopped')
-      : awaitingApproval ? translate('tool.awaitingApproval', 'Waiting for your decision')
-      : failed ? errorLabel(name, result, (row as HTMLElement & { _toolInput?: unknown })._toolInput) : doneLabel(name, result, (row as HTMLElement & { _toolInput?: unknown })._toolInput);
+    label.textContent = inlineSettlementLabel(
+      name,
+      result,
+      settlement,
+      (row as HTMLElement & { _toolInput?: unknown })._toolInput,
+    );
   }
   // Write the final total duration into the meta (Req 3.3): prefer the
   // backend's authoritative durationMs; fall back to the wall-clock span
   // the live timer was tracking so a settled row never shows a stale
   // mid-run value.
-  const meta = row.querySelector('.tool-inline-meta');
-  if (meta) {
-    const backend = durationText(result);
-    if (backend) {
-      meta.textContent = backend;
-    } else if (cancelled || !awaitingApproval) {
-      const startedAt = Number(row.dataset.startedAt) || Date.now();
-      meta.textContent = toolCardView(
-        { id: '', tool: '', phase: 'succeeded', startedAt, endedAt: Date.now() },
-        Date.now(),
-      ).timeLabel;
-    }
-    if (meta.textContent) meta.classList.add('is-visible');
-  }
+  updateInlineDuration(row, result, settlement);
   const input = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
-  renderInlineDetails(row, input, result, state);
+  renderInlineDetails(row, input, result, settlement.state);
 }

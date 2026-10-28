@@ -24,6 +24,43 @@ interface BranchState {
   }>;
 }
 
+function updateActiveBranchVariant(state: TurnRuntimeState, visibleFinal: string | null): void {
+  const current = readTurnMessage(state.msgIdx);
+  const branch = current?.branchInfo as BranchState | undefined;
+  if (!current || !branch || !Array.isArray(branch.variants)) return;
+  const active = branch.variants[branch.currentIndex];
+  if (!active) return;
+  active.rawText = state.full;
+  active.html = visibleFinal;
+  active.reasoningContent = state.fullReasoning || null;
+  active.toolCalls = current.toolCalls;
+  active.turnRuntime = current.turnRuntime;
+}
+
+function releaseFinishedTurn(state: TurnRuntimeState): void {
+  if (turnState.activeChatCtl !== state.ret) return;
+  turnState.chatStreaming = false;
+  try { setChatStopState(false); }
+  catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.setChatStopState'); }
+  try { markTurnEnded(); }
+  catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.markTurnEnded'); }
+  turnState.activeChatCtl = null;
+
+  const currentSessionId = stateStore.read('currentSessionId') as string | null;
+  const nextPrompt = dequeuePrompt(currentSessionId);
+  if (!nextPrompt) return;
+  setTimeout(() => {
+    try {
+      const win = window as Window & { submitChatMessage?: (text: string, options: { bypassQueue: boolean }) => unknown };
+      if (typeof win.submitChatMessage === 'function') {
+        void win.submitChatMessage(nextPrompt.text, { bypassQueue: true });
+      }
+    } catch (error) {
+      reportSwallow(error, 'streamingTurn.finishAfterRender.drainPromptQueue');
+    }
+  }, 50);
+}
+
 export interface FinishLifecycle {
   finish(): void;
 }
@@ -109,19 +146,7 @@ export function createFinishLifecycle(
       }
     } catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.announceTranscript'); }
 
-    /* Branch variant update — commit final text & html into active variant */
-    const currentMsg = readTurnMessage(state.msgIdx);
-    const bInfo = currentMsg?.branchInfo as BranchState | undefined;
-    if (currentMsg && bInfo && Array.isArray(bInfo.variants)) {
-      const currIdx = bInfo.currentIndex;
-      if (bInfo.variants[currIdx]) {
-        bInfo.variants[currIdx].rawText = state.full;
-        bInfo.variants[currIdx].html = visibleFinal;
-        bInfo.variants[currIdx].reasoningContent = state.fullReasoning || null;
-        bInfo.variants[currIdx].toolCalls = currentMsg.toolCalls;
-        bInfo.variants[currIdx].turnRuntime = currentMsg.turnRuntime;
-      }
-    }
+    updateActiveBranchVariant(state, visibleFinal);
 
     const kbNodes = stateStore.read('kbNodes') as readonly unknown[];
     if (stateStore.read('phase') === 'chat'
@@ -131,30 +156,7 @@ export function createFinishLifecycle(
 
     /* An older turn must not clear the Stop control installed by a newer
        turn that started before this one finished unwinding. */
-    if (turnState.activeChatCtl === state.ret) {
-      turnState.chatStreaming = false;
-      try { setChatStopState(false); }
-      catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.setChatStopState'); }
-      try { markTurnEnded(); }
-      catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.markTurnEnded'); }
-      turnState.activeChatCtl = null;
-
-      /* Prompt Queueing (ChatGPT-style) — auto-drain queued prompt if one is waiting. */
-      const currentSessionId = stateStore.read('currentSessionId') as string | null;
-      const nextPrompt = dequeuePrompt(currentSessionId);
-      if (nextPrompt) {
-        setTimeout(() => {
-          try {
-            const win = window as Window & { submitChatMessage?: (text: string, options: { bypassQueue: boolean }) => unknown };
-            if (typeof win.submitChatMessage === 'function') {
-              void win.submitChatMessage(nextPrompt.text, { bypassQueue: true });
-            }
-          } catch (error) {
-            reportSwallow(error, 'streamingTurn.finishAfterRender.drainPromptQueue');
-          }
-        }, 50);
-      }
-    }
+    releaseFinishedTurn(state);
 
     finishViewport.settle();
   }

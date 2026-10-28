@@ -21,7 +21,7 @@ import {
 import {
   extractDiagQuestionsBalanced,
   normalizeDiagQuestions,
-} from '../src/chat/diagnosticParser.js';
+} from '../src/chat/diagnosticParser.ts';
 import {
   categoryAxisLayout,
   formatCategoryLabel,

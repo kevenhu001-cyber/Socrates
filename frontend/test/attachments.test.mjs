@@ -24,7 +24,7 @@ import {
   attachmentPointerLine,
   buildMessageContent,
 } from '../src/attachments.js';
-import { buildUserContentParts } from '../src/chat/history.js';
+import { buildUserContentParts } from '../src/chat/history.ts';
 
 async function withProvider(provider, fn) {
   const prev = globalThis.window;

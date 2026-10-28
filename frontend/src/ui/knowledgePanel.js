@@ -5,6 +5,7 @@
 import { stateStore } from '../state/store.js';
 import { renderKnowledgeView } from './knowledgeView.js';
 import { kbNodeHtml, toggleKBDetail } from './knowledgeDetail.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
   try {
@@ -12,14 +13,14 @@ function _t(key, fallback) {
       var v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'ui/knowledgePanel.js:15'); }
   return fallback != null ? fallback : key;
 }
 
 function _tutorSocratic() {
   try {
     if (typeof window !== 'undefined' && window.tutorSocratic) return window.tutorSocratic;
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'ui/knowledgePanel.js:22'); }
   return null;
 }
 
@@ -37,7 +38,7 @@ export function updateKB() {
   var _ts = _tutorSocratic();
   /* Mode banner and teaching plan re-render in the new module. */
   if (_ts) {
-    try { _ts.renderTeachingPlan(); } catch (_) {}
+    try { _ts.renderTeachingPlan(); } catch (error) { reportSwallow(error, 'ui/knowledgePanel.js:40'); }
   }
   var cont = document.getElementById('kbContent');
   if (!cont) return;

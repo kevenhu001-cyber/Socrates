@@ -12,7 +12,7 @@ export interface OverflowAction {
 }
 
 const readMobile = () => window.matchMedia('(max-width: 768px)').matches;
-const subscribeClosed = () => () => {};
+const subscribeClosed = () => () => undefined;
 function subscribeMobile(onChange: () => void) {
   const media = window.matchMedia('(max-width: 768px)');
   media.addEventListener('change', onChange);

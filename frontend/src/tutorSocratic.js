@@ -1,6 +1,7 @@
 import { stateStore } from './state/store.js';
 import { esc } from './render/helpers.ts';
 import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
+import { reportSwallow } from './util/reportSwallow.ts';
 
 /* =====================================================================
  * tutorSocratic.js
@@ -77,7 +78,7 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
       try {
         var v = window.t(key);
         if (v && v !== key) return v;
-      } catch (_) {}
+      } catch (error) { reportSwallow(error, 'tutorSocratic.js:80'); }
     }
     return fallback;
   }
@@ -218,7 +219,7 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
         key: 'session.fourOptionDialog',
         value: { questionPreview: preview, at: Date.now() }
       });
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'tutorSocratic.js:221'); }
   }
 
   /* ----------------------------------------------------------------
@@ -344,6 +345,69 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
     });
   }
 
+  function renderKnowledgeSections(sections) {
+    var html = '';
+    if (sections.internalized.length) {
+      html += '<div class="kb-section-title">'
+           + ti('tutor.kbSectionInternalized', currentLang() === 'zh' ? '已内化' : 'Internalized')
+           + ' <span class="kb-section-count">' + sections.internalized.length + '</span></div>';
+      sections.internalized.forEach(function (entry) {
+        var verified = entry.node.verifiedCount || entry.node.questions || 0;
+        html += '<div class="kb-node kb-node-internalized">'
+             + '<div class="kb-node-name">'
+             + esc(entry.node.name || ('Node ' + (entry.idx + 1)))
+             + ' <span class="kb-verify-tag">'
+             + ti('tutor.kbVerifiedTag', currentLang() === 'zh' ? '验证 x' : 'verified x') + verified
+             + '</span></div>'
+             + '</div>';
+      });
+    }
+    if (sections.fuzzy.length) {
+      html += '<div class="kb-section-title">'
+           + ti('tutor.kbSectionFuzzy', currentLang() === 'zh' ? '模糊' : 'Fuzzy')
+           + ' <span class="kb-section-count">' + sections.fuzzy.length + '</span></div>';
+      sections.fuzzy.forEach(function (entry) {
+        html += '<div class="kb-node kb-node-fuzzy">';
+        html += '<div class="kb-node-name">'
+             + esc(entry.node.name || ('Node ' + (entry.idx + 1))) + '</div>';
+        if (entry.node.system_note) {
+          html += '<div class="kb-node-system-note"><span class="kb-tag-system">[系统]</span> '
+               + esc(entry.node.system_note) + '</div>';
+        }
+        if (entry.node.user_note) {
+          html += '<div class="kb-node-user-note"><span class="kb-tag-user">[我]</span> '
+               + esc(entry.node.user_note) + '</div>';
+        }
+        html += '</div>';
+      });
+    }
+    if (sections.blank.length) {
+      html += '<div class="kb-section-title">'
+           + ti('tutor.kbSectionBlank', currentLang() === 'zh' ? '未探测' : 'Not yet explored')
+           + ' <span class="kb-section-count">' + sections.blank.length + '</span></div>';
+      sections.blank.forEach(function (entry) {
+        html += '<div class="kb-node kb-node-blank">'
+             + '<div class="kb-node-name">'
+             + esc(entry.node.name || ('Node ' + (entry.idx + 1))) + '</div>'
+             + '</div>';
+      });
+    }
+    return html;
+  }
+
+  function renderBoundaryHistory(history) {
+    if (!history.length) return '';
+    var html = '<div class="kb-section-title kb-section-title-secondary">'
+      + ti('tutor.kbHistory', currentLang() === 'zh' ? '存档历史' : 'Snapshot history')
+      + '</div><ul class="kb-history-list">';
+    history.slice(-8).reverse().forEach(function (entry) {
+      html += '<li class="kb-history-item">'
+           + '<span class="kb-history-date">' + esc(entry.date) + '</span>'
+           + '<span class="kb-history-summary">' + esc(entry.summary || '') + '</span></li>';
+    });
+    return html + '</ul>';
+  }
+
   function renderKnowledgeBoundaryFile(opts) {
     opts = opts || {};
     var cont = document.getElementById('kbContent');
@@ -398,68 +462,11 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
        sectioned text view below stays as the accessible fallback. */
     html += buildKBGraphHtml(nodes);
 
-    if (sections.internalized.length) {
-      html += '<div class="kb-section-title">'
-           + ti('tutor.kbSectionInternalized', currentLang() === 'zh' ? '已内化' : 'Internalized')
-           + ' <span class="kb-section-count">' + sections.internalized.length + '</span></div>';
-      sections.internalized.forEach(function (e) {
-        var v = e.node.verifiedCount || e.node.questions || 0;
-        html += '<div class="kb-node kb-node-internalized">'
-             + '<div class="kb-node-name">'
-             + esc(e.node.name || ('Node ' + (e.idx + 1)))
-             + ' <span class="kb-verify-tag">'
-             + ti('tutor.kbVerifiedTag', currentLang() === 'zh' ? '验证 x' : 'verified x') + v
-             + '</span></div>'
-             + '</div>';
-      });
-    }
-    if (sections.fuzzy.length) {
-      html += '<div class="kb-section-title">'
-           + ti('tutor.kbSectionFuzzy', currentLang() === 'zh' ? '模糊' : 'Fuzzy')
-           + ' <span class="kb-section-count">' + sections.fuzzy.length + '</span></div>';
-      sections.fuzzy.forEach(function (e) {
-        html += '<div class="kb-node kb-node-fuzzy">';
-        html += '<div class="kb-node-name">'
-             + esc(e.node.name || ('Node ' + (e.idx + 1))) + '</div>';
-        if (e.node.system_note) {
-          html += '<div class="kb-node-system-note"><span class="kb-tag-system">[系统]</span> '
-               + esc(e.node.system_note) + '</div>';
-        }
-        if (e.node.user_note) {
-          html += '<div class="kb-node-user-note"><span class="kb-tag-user">[我]</span> '
-               + esc(e.node.user_note) + '</div>';
-        }
-        html += '</div>';
-      });
-    }
-    if (sections.blank.length) {
-      html += '<div class="kb-section-title">'
-           + ti('tutor.kbSectionBlank', currentLang() === 'zh' ? '未探测' : 'Not yet explored')
-           + ' <span class="kb-section-count">' + sections.blank.length + '</span></div>';
-      sections.blank.forEach(function (e) {
-        html += '<div class="kb-node kb-node-blank">'
-             + '<div class="kb-node-name">'
-             + esc(e.node.name || ('Node ' + (e.idx + 1))) + '</div>'
-             + '</div>';
-      });
-    }
     /* §6.5 — change log. Keep the most recent 8 entries; older ones
        stay in the session save and are not lost. */
     var history = window.stateStore.read("boundariesHistory") || [];
-    if (history.length) {
-      html += '<div class="kb-section-title kb-section-title-secondary">'
-           + ti('tutor.kbHistory', currentLang() === 'zh' ? '存档历史' : 'Snapshot history')
-           + '</div>';
-      html += '<ul class="kb-history-list">';
-      history.slice(-8).reverse().forEach(function (h) {
-        html += '<li class="kb-history-item">'
-             + '<span class="kb-history-date">' + esc(h.date) + '</span>'
-             + '<span class="kb-history-summary">'
-             + esc(h.summary || '')
-             + '</span></li>';
-      });
-      html += '</ul>';
-    }
+    html += renderKnowledgeSections(sections);
+    html += renderBoundaryHistory(history);
     cont.innerHTML = html;
     /* P1.2 — attach node click / keyboard handlers via addEventListener
        (NOT inline onclick) so the boot inline-handler hash guard is
@@ -495,10 +502,10 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
           boundariesSavedAt: Date.now()
         }
       });
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'tutorSocratic.js:498'); }
     renderKnowledgeBoundaryFile();
     if (typeof window.saveCurrentSession === 'function') {
-      try { window.saveCurrentSession(); } catch (_) {}
+      try { window.saveCurrentSession(); } catch (error) { reportSwallow(error, 'tutorSocratic.js:501'); }
     }
   }
 
@@ -631,9 +638,9 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
    * "all" / "unresolved" / "by node" so the view stops being noise.
    * ---------------------------------------------------------------- */
   function setMistakeFilter(value) {
-    try { stateStore.dispatch({ type: 'state/set', key: 'mistakeFilter', value: value }); } catch (_) {}
+    try { stateStore.dispatch({ type: 'state/set', key: 'mistakeFilter', value: value }); } catch (error) { reportSwallow(error, 'tutorSocratic.js:634'); }
     if (typeof window.renderMistakes === 'function') {
-      try { window.renderMistakes(); } catch (_) {}
+      try { window.renderMistakes(); } catch (error) { reportSwallow(error, 'tutorSocratic.js:636'); }
     }
   }
   function renderMistakeFilterBar() {
@@ -689,7 +696,7 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
       value: [entry].concat(Array.isArray(mistakes) ? mistakes : [])
     });
     if (typeof window.renderMistakes === 'function') {
-      try { window.renderMistakes(); } catch (_) {}
+      try { window.renderMistakes(); } catch (error) { reportSwallow(error, 'tutorSocratic.js:692'); }
     }
     return entry;
   }

@@ -63,27 +63,38 @@ export var TOOL_ICONS = STROKE_ICONS;
 /* Extract the human-readable input preview shown in the collapsed
    header. Keeps the header a single line so multiple tool cards stack
    cleanly. */
+function formatCodeInterpreterInput(input) {
+  if (!input.code) return "";
+  const first = ((input.code || "").split("\n")[0] || "").slice(0, 80);
+  return `${input.language || "python"}  -  ${first}`;
+}
+
+function formatVisualizationInput(input) {
+  return (input.template || "visual") + "  -  " + (input.title || "");
+}
+
+function formatRepositoryFilter(input) {
+  return input.query ? `filter: ${input.query}` : "(all repos)";
+}
+
+const TOOL_INPUT_FORMATTERS = new Map([
+  ["web_search", (input) => input.query || ""],
+  ["web_fetch", (input) => input.url || ""],
+  ["create_plan", (input) => input.title || ""],
+  ["create_spec", (input) => input.title || ""],
+  ["render_visualization", formatVisualizationInput],
+  ["code_interpreter", formatCodeInterpreterInput],
+  ["workspace_agent", (input) => input.task || "project workspace task"],
+  ["arxiv_search", (input) => input.query || ""],
+  ["zotero_search", (input) => input.query || "(all items)"],
+  ["notion_search_pages", (input) => input.query || ""],
+  ["github_list_repos", formatRepositoryFilter],
+  ["gitee_list_repos", formatRepositoryFilter],
+]);
+
 export function toolFormatInput(name, inp) {
   if (!inp || typeof inp !== "object") return "";
-  switch (name) {
-    case "web_search":  return inp.query || "";
-    case "web_fetch":   return inp.url || "";
-    case "create_plan": return inp.title || "";
-    case "create_spec": return inp.title || "";
-    case "render_visualization": return (inp.template || "visual") + "  -  " + (inp.title || "");
-    case "code_interpreter": {
-      if (!inp.code) return "";
-      const first = ((inp.code || "").split("\n")[0] || "").slice(0, 80);
-      return `${inp.language || "python"}  -  ${first}`;
-    }
-    case "workspace_agent": return inp.task || "project workspace task";
-    case "arxiv_search":       return inp.query || "";
-    case "zotero_search":      return inp.query || "(all items)";
-    case "notion_search_pages": return inp.query || "";
-    case "github_list_repos":  return inp.query ? `filter: ${inp.query}` : "(all repos)";
-    case "gitee_list_repos":   return inp.query ? `filter: ${inp.query}` : "(all repos)";
-    default:                   return stringifyPreview(inp, 160);
-  }
+  return TOOL_INPUT_FORMATTERS.get(name)?.(inp) ?? stringifyPreview(inp, 160);
 }
 
 function stringifyPreview(value, maxLen) {
@@ -144,40 +155,48 @@ function syncToolCopyActions(card) {
    safety: when the upstream maxes out and the JSON gets cut off
    mid-string (the closing `"` is missing), we still extract the
    code as-is rather than dropping it on the floor. */
+function parseToolArguments(argsJson) {
+  try { return JSON.parse(argsJson); } catch (_) { return null; }
+}
+
+function extractCodeInterpreterArgs(parsed, argsJson, truncated) {
+  if (parsed && typeof parsed === "object" && typeof parsed.code === "string") {
+    return { code: parsed.code, language: parsed.language || "python", parsed: true, truncated: false };
+  }
+  // Mid-stream / truncated partial JSON — keep the latest complete code fragment.
+  const match = argsJson.match(/"code"\s*:\s*"((?:\\.|[^"\\])*)/);
+  if (!match) return { code: "", language: (parsed && parsed.language) || "python", parsed: false, truncated };
+  const language = argsJson.match(/"language"\s*:\s*"([^"]+)"/);
+  return {
+    code: decodeJsonStringFragment(match[1], truncated),
+    language: language ? language[1] : "python",
+    parsed: false,
+    truncated,
+  };
+}
+
+function extractWebSearchArgs(parsed, argsJson, truncated) {
+  if (parsed && typeof parsed === "object" && typeof parsed.query === "string") {
+    return { code: parsed.query, language: "query", parsed: true, truncated: false };
+  }
+  const match = argsJson.match(/"query"\s*:\s*"((?:\\.|[^"\\])*)/);
+  if (!match) return { code: "", language: "query", parsed: false, truncated };
+  return {
+    code: decodeJsonStringFragment(match[1], truncated),
+    language: "query",
+    parsed: false,
+    truncated,
+  };
+}
+
 export function extractCodeFromArgs(name, argsJson) {
-  if (!argsJson || typeof argsJson !== "string") return { code: "", language: "python", parsed: false, truncated: false };
-  // Try to parse as JSON; fall back to the raw string when mid-stream.
-  let parsed;
-  try { parsed = JSON.parse(argsJson); } catch (_) { parsed = null; }
+  if (!argsJson || typeof argsJson !== "string") {
+    return { code: "", language: "python", parsed: false, truncated: false };
+  }
+  const parsed = parseToolArguments(argsJson);
   const truncated = parsed === null && argsJson.length > 0;
-  if (name === "code_interpreter") {
-    if (parsed && typeof parsed === "object" && typeof parsed.code === "string") {
-      return { code: parsed.code, language: parsed.language || "python", parsed: true, truncated: false };
-    }
-    // Mid-stream / truncated partial JSON — try to pull out a
-    // "code":"..." fragment by hand so the user sees the code
-    // appear progressively even before the closing brace lands.
-    // When truncated mid-escape (e.g. "...\\n" without the closing
-    // quote), backtrack to the last safe boundary so we don't
-    // surface a half-escaped sequence.
-    const m = argsJson.match(/"code"\s*:\s*"((?:\\.|[^"\\])*)/);
-    if (m) {
-      const code = decodeJsonStringFragment(m[1], truncated);
-      const langMatch = argsJson.match(/"language"\s*:\s*"([^"]+)"/);
-      return { code, language: langMatch ? langMatch[1] : "python", parsed: false, truncated };
-    }
-    return { code: "", language: (parsed && parsed.language) || "python", parsed: false, truncated };
-  }
-  if (name === "web_search") {
-    if (parsed && typeof parsed === "object" && typeof parsed.query === "string") {
-      return { code: parsed.query, language: "query", parsed: true, truncated: false };
-    }
-    const m = argsJson.match(/"query"\s*:\s*"((?:\\.|[^"\\])*)/);
-    if (m) {
-      return { code: decodeJsonStringFragment(m[1], truncated), language: "query", parsed: false, truncated };
-    }
-    return { code: "", language: "query", parsed: false, truncated };
-  }
+  if (name === "code_interpreter") return extractCodeInterpreterArgs(parsed, argsJson, truncated);
+  if (name === "web_search") return extractWebSearchArgs(parsed, argsJson, truncated);
   return { code: argsJson, language: "", parsed: parsed !== null, truncated };
 }
 
@@ -200,31 +219,24 @@ export function findToolCard(tcId, root) {
   return scope.querySelector(`[data-tcid="${safeId}"]`);
 }
 
-/* Append a "tool module" to the target assistant bubble.
-   Layout (collapsed):  [icon]  Short name  ·  input preview       ▾
-   Layout (expanded):    + code/command body
-                         + live output (streamed) */
-export function appendToolModule(toolName, toolInput, body, opts) {
-  opts = opts || {};
+function resolveToolCardBody(body) {
+  if (body) return body;
+  const list = document.getElementById("msgList");
+  if (!list) return null;
+  const last = list.lastElementChild;
+  if (last && last.classList.contains("assistant")) body = last.querySelector(".msg-body");
   if (!body) {
-    const list = document.getElementById("msgList");
-    if (!list) return null;
-    const last = list.lastElementChild;
-    if (last && last.classList.contains("assistant")) {
-      body = last.querySelector(".msg-body");
-    }
-  }
-  if (!body) {
-    const list2 = document.getElementById("msgList");
-    const div = document.createElement("div");
-    div.className = "msg assistant";
+    const message = document.createElement("div");
+    message.className = "msg assistant";
     body = document.createElement("div");
     body.className = "msg-body";
-    div.appendChild(body);
-    list2.appendChild(div);
+    message.appendChild(body);
+    list.appendChild(message);
   }
-  const meta = TOOL_META[toolName] || { cls: "", short: toolName, tone: "neutral" };
+  return body;
+}
 
+function createToolCard(toolName, toolInput, opts, meta) {
   const card = document.createElement("div");
   const detailId = "tool-detail-" + Math.random().toString(36).slice(2, 10);
   card.className = `agent-tool-card tool-${meta.tone} ${meta.cls}`;
@@ -264,12 +276,18 @@ export function appendToolModule(toolName, toolInput, body, opts) {
         <div class="agent-tool-out"></div>
       </section>
     </div>`;
+  return { card, isRunningCard };
+}
 
+function setToolCardLabels(card, toolName, toolInput, opts, meta) {
   card.querySelector(".agent-tool-name").textContent = meta.short;
   card.querySelector(".agent-tool-input").textContent = toolFormatInput(toolName, toolInput);
   card.querySelector(".agent-tool-status").textContent = opts.restored
     ? trTool(opts.isError ? "tool.statusFailed" : "tool.statusDone", opts.isError ? "Failed" : "Done")
     : trTool("tool.statusRunning", "Running");
+}
+
+function wireToolCardCopyActions(card) {
   var copyCodeButton = card.querySelector('[data-tool-copy="code"]');
   var copyOutputButton = card.querySelector('[data-tool-copy="output"]');
   copyCodeButton.textContent = trTool("tool.copyCode", "Copy code");
@@ -286,17 +304,9 @@ export function appendToolModule(toolName, toolInput, body, opts) {
     copyText(output && output.textContent).then(function () { setCopyFeedback(copyOutputButton, true); })
       .catch(function () { setCopyFeedback(copyOutputButton, false); });
   });
+}
 
-  // Always mount the code/body block; we hide it via [hidden] until
-  // there's something to show, so the streaming path doesn't have to
-  // re-wire the DOM.
-  const codeEl = card.querySelector(".agent-tool-code");
-  const codeInner = codeEl.querySelector("code");
-  const bodyEl = card.querySelector(".agent-tool-body");
-
-  // Pre-fill with whatever the tool_use event sent us (may be empty
-  // for first-delta renders). The streaming controller will call
-  // updateToolCardCode() repeatedly as tool_call_delta events arrive.
+function initializeToolCardCode(card, toolName, toolInput, codeEl, codeInner, bodyEl) {
   const initial = extractCodeFromArgs(toolName, (toolInput && toolInput.__raw) || JSON.stringify(toolInput || {}));
   if (initial.code) {
     codeInner.textContent = initial.code;
@@ -314,9 +324,9 @@ export function appendToolModule(toolName, toolInput, body, opts) {
     codeEl.hidden = false;
     bodyEl.hidden = true;
   }
+}
 
-  // Click/keyboard to expand/collapse.
-  const head = card.querySelector(".agent-tool-head");
+function wireToolCardDisclosure(card, head, bodyEl) {
   function toggleCard() {
     const open = card.classList.toggle("open");
     head.setAttribute("aria-expanded", open ? "true" : "false");
@@ -327,24 +337,43 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   head.addEventListener("keydown", function (event) {
     if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleCard(); }
   });
+}
+
+function expandRunningToolCard(card, head, bodyEl) {
+  card.classList.add("open");
+  head.setAttribute("aria-expanded", "true");
+  bodyEl.hidden = false;
+}
+
+/* Append a "tool module" to the target assistant bubble.
+   Layout (collapsed):  [icon]  Short name  ·  input preview       ▾
+   Layout (expanded):    + code/command body
+                         + live output (streamed) */
+export function appendToolModule(toolName, toolInput, body, opts) {
+  opts = opts || {};
+  body = resolveToolCardBody(body);
+  if (!body) return null;
+  const meta = TOOL_META[toolName] || { cls: "", short: toolName, tone: "neutral" };
+  const { card, isRunningCard } = createToolCard(toolName, toolInput, opts, meta);
+  setToolCardLabels(card, toolName, toolInput, opts, meta);
+  wireToolCardCopyActions(card);
+
+  // Always mount the code/body block; [hidden] keeps it ready for stream updates.
+  const codeEl = card.querySelector(".agent-tool-code");
+  const codeInner = codeEl.querySelector("code");
+  const bodyEl = card.querySelector(".agent-tool-body");
+  initializeToolCardCode(card, toolName, toolInput, codeEl, codeInner, bodyEl);
+  const head = card.querySelector(".agent-tool-head");
+  wireToolCardDisclosure(card, head, bodyEl);
+
   // Mark the card as live-wired so the delegated fallback toggle below
   // (for cards revived from serialized session HTML, which lose their
   // listeners) does not double-toggle this one.
   card.dataset.wired = "1";
 
-  // Collapse default (Req 3.1): a card that is still running expands so
-  // the reader can watch progress; a terminal (restored) card starts
-  // collapsed so completed tool-heavy answers stay scannable. The .open
-  // class drives the CSS disclosure; aria-expanded mirrors it.
-  if (isRunningCard) {
-    card.classList.add("open");
-    head.setAttribute("aria-expanded", "true");
-    bodyEl.hidden = false;
-  }
+  // Running cards expand so readers can watch progress; restored cards stay collapsed.
+  if (isRunningCard) expandRunningToolCard(card, head, bodyEl);
 
-  // Auto-open the body once there's content. Cards that begin as
-  // "code is empty" stay closed until the live stream starts
-  // filling in.
   body.appendChild(card);
   // Stash the rich return on the card so updateToolCardCode can
   // reach the code element without re-querying. We still return
@@ -391,6 +420,34 @@ if (typeof document !== "undefined" && !document.__socratesToolCardDelegate) {
    streams into the card in real time. We use a single textContent
    assignment so the browser doesn't re-tokenise on every char and
    hljs only re-highlights on the final frame. */
+function updateToolCardCodeContent(card, codeEl, codeInner, extracted, language) {
+  if (!extracted.code) return;
+  const inputEl = card.querySelector(".agent-tool-input");
+  const preview = toolInputPreviewFromExtracted(card.dataset.tool, extracted);
+  if (inputEl && preview && inputEl.textContent !== preview) inputEl.textContent = preview;
+  if (codeInner.textContent !== extracted.code) {
+    codeInner.textContent = extracted.code;
+    if (language && !codeInner.className.includes(language)) codeInner.className = `language-${language}`;
+  }
+  codeEl.hidden = false;
+  codeEl.classList.add("agent-tool-code-streaming");
+  syncToolCopyActions(card);
+}
+
+function updateToolCardTruncation(codeEl, extracted) {
+  if (extracted.truncated && extracted.parsed === false) {
+    codeEl.classList.add("agent-tool-code-truncated");
+  } else if (extracted.parsed) {
+    codeEl.classList.remove("agent-tool-code-truncated");
+  }
+}
+
+function highlightFinalToolCardCode(codeEl, codeInner, extracted) {
+  if (!extracted.parsed) return;
+  codeEl.classList.remove("agent-tool-code-streaming");
+  highlightCodeElement(codeInner);
+}
+
 export function updateToolCardCode(tcId, argsJson, language) {
   const card = findToolCard(tcId);
   if (!card) return null;
@@ -404,42 +461,9 @@ export function updateToolCardCode(tcId, argsJson, language) {
 
   const extracted = extractCodeFromArgs(card.dataset.tool, argsJson);
   const lang = language || extracted.language || "";
-  if (extracted.code) {
-    const inputEl = card.querySelector(".agent-tool-input");
-    const preview = toolInputPreviewFromExtracted(card.dataset.tool, extracted);
-    if (inputEl && preview && inputEl.textContent !== preview) {
-      inputEl.textContent = preview;
-    }
-    // Only write when the text actually changed — avoids a layout
-    // pass per frame when the upstream emits an empty delta.
-    if (codeInner.textContent !== extracted.code) {
-      codeInner.textContent = extracted.code;
-      if (lang && !codeInner.className.includes(lang)) {
-        codeInner.className = `language-${lang}`;
-      }
-    }
-    codeEl.hidden = false;
-    // Content can stream into a collapsed card. Users opt into details
-    // via the header, rather than every tool call expanding the message.
-    // Mark the card as actively streaming so the blinking caret
-    // shows until the final frame clears it.
-    codeEl.classList.add("agent-tool-code-streaming");
-    syncToolCopyActions(card);
-  }
-  // Truncation marker: a small red dot after the last character
-  // when the upstream was cut off mid-string. Helps the user
-  // notice that a long run got trimmed by max_tokens.
-  if (extracted.truncated && extracted.parsed === false) {
-    codeEl.classList.add("agent-tool-code-truncated");
-  } else if (extracted.parsed) {
-    codeEl.classList.remove("agent-tool-code-truncated");
-  }
-  // Final frame: run highlight once. Streaming frames skip
-  // highlight to keep typing smooth.
-  if (extracted.parsed) {
-    codeEl.classList.remove("agent-tool-code-streaming");
-    highlightCodeElement(codeInner);
-  }
+  updateToolCardCodeContent(card, codeEl, codeInner, extracted, lang);
+  updateToolCardTruncation(codeEl, extracted);
+  highlightFinalToolCardCode(codeEl, codeInner, extracted);
   if (typeof window.scrollMainToBottom === "function") window.scrollMainToBottom();
   return extracted;
 }

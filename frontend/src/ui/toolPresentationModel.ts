@@ -272,182 +272,215 @@ function connectorLabel(call: ToolCallLike): RunLabel | null {
   return { text: description ? tf('tool.connectorNamedAction', '{service} · {action}', { service, action: description }) : service };
 }
 
+function runningCommandLabel(call: ToolCallLike, name: string): RunLabel | null {
+  if (name !== 'Bash' && !(toolCategory(name) === 'write' && commandOf(call.input))) return null;
+  const command = commandOf(call.input);
+  return command ? { text: `$ ${clip(command)}`, mono: true, meta: [] } : null;
+}
+
+function runningCodeLabel(call: ToolCallLike): RunLabel {
+  /* Once the sandbox has printed something, "executing" is stale: the wait
+     is on the analysis, and the reader sees that. */
+  const phase = String(call._progressPhase || '');
+  if (phase === 'stdout' || phase === 'stderr') return { text: translate('tool.actionAnalyze', 'Analyzing data…') };
+  const run = (call as Record<string, unknown>)._run as Record<string, unknown> | undefined;
+  if (run?.phase === 'running') return { text: translate('tool.actionCode', 'Executing code…') };
+  if (call.argumentsText && !call.output && !phase) {
+    return { text: translate('tool.actionDraftPython', 'Drafting Python code…') };
+  }
+  return { text: translate('tool.actionCode', 'Executing code…') };
+}
+
+function runningAttachmentLabel(call: ToolCallLike): RunLabel {
+  const { fileName, isImage } = attachmentInfo(call);
+  if (isImage) {
+    return fileName
+      ? { text: tf('tool.recognizingImage', 'Recognizing image {file}…', { file: clip(fileName, 32) }) }
+      : { text: translate('tool.actionRecognizeImage', 'Recognizing image…') };
+  }
+  return fileName
+    ? { text: tf('tool.readingAttachment', 'Reading attachment {file}…', { file: clip(fileName, 32) }) }
+    : { text: translate('tool.actionRead', 'Reading files') };
+}
+
+function runningFileLabel(call: ToolCallLike, name: string): RunLabel {
+  const path = basename(filePathOf(call.input));
+  if (name === 'Read' || name === 'Glob' || name === 'Grep') {
+    const file = path || clip(queryOf(call.input), 32);
+    return file
+      ? { text: tf('tool.readingFile', 'Reading {file}…', { file }) }
+      : { text: translate('tool.actionRead', 'Reading files') };
+  }
+  if (name === 'Write' && path) return { text: tf('tool.creatingFile', 'Creating {file}…', { file: path }) };
+  if (name === 'Edit' && path) return { text: tf('tool.editingFile', 'Editing {file}…', { file: path }) };
+  return { text: translate('tool.actionWrite', 'Updating files') };
+}
+
+function runningChartLabel(call: ToolCallLike): RunLabel {
+  const { type, title } = chartInfo(call);
+  return title
+    ? { text: tf('tool.creatingChartWithTitle', 'Creating {type}: “{title}”…', { type, title: clip(title, 24) }) }
+    : { text: tf('tool.creatingChart', 'Creating {type}…', { type }) };
+}
+
+const RUNNING_STATIC_LABELS = new Map<string, () => RunLabel>([
+  ['cite_sources', () => ({ text: translate('tool.actionCite', 'Checking references…') })],
+  ['patch_intelligent_ui', () => ({ text: translate('tool.actionPatchUi', 'Updating the visual…') })],
+  ['render_intelligent_ui', () => ({ text: translate('tool.actionVisual', 'Creating a visual') })],
+  ['workspace_agent', () => ({ text: translate('tool.actionCodex', 'Working in the workspace…') })],
+  ['initialize_workspace', () => ({ text: translate('tool.actionInitWorkspace', 'Initializing the workspace…') })],
+  ['create_plan', () => ({ text: translate('tool.actionPlan', 'Drafting a plan…') })],
+  ['create_spec', () => ({ text: translate('tool.actionSpec', 'Drafting a spec…') })],
+  ['create_site', () => ({ text: translate('tool.actionSite', 'Building and publishing the site…') })],
+]);
+
+function runningSearchLabel(call: ToolCallLike): RunLabel {
+  const query = queryOf(call.input);
+  return query
+    ? { text: tf('tool.searchingFor', 'Searching "{query}"…', { query }) }
+    : { text: translate('tool.actionSearch', 'Searching the web…') };
+}
+
+const RUNNING_LABEL_HANDLERS = new Map<string, (call: ToolCallLike) => RunLabel>([
+  ['web_fetch', runningFetchLabel], ['WebFetch', runningFetchLabel],
+  ['code_interpreter', runningCodeLabel], ['Code', runningCodeLabel],
+  ['render_visualization', runningChartLabel], ['read_attachment', runningAttachmentLabel],
+  ['Read', (call) => runningFileLabel(call, 'Read')],
+  ['Glob', (call) => runningFileLabel(call, 'Glob')],
+  ['Grep', (call) => runningFileLabel(call, 'Grep')],
+  ['Write', (call) => runningFileLabel(call, 'Write')],
+  ['Edit', (call) => runningFileLabel(call, 'Edit')],
+]);
+
+function runningFetchLabel(call: ToolCallLike): RunLabel {
+  const host = hostOf(urlOf(call.input));
+  return host
+    ? { text: tf('tool.readingHost', 'Reading {host}…', { host }) }
+    : { text: translate('tool.actionFetch', 'Reading the page…') };
+}
+
 function runningLabel(call: ToolCallLike): RunLabel {
   const name = String(call.name || '');
-  const meta: string[] = [];
-  if (name === 'Bash' || (toolCategory(name) === 'write' && commandOf(call.input))) {
-    const cmd = commandOf(call.input);
-    if (cmd) return { text: `$ ${clip(cmd)}`, mono: true, meta };
-  }
-  if (isInlineSearchTool(name)) {
-    const q = queryOf(call.input);
-    if (q) return { text: tf('tool.searchingFor', 'Searching "{query}"…', { query: q }) };
-    return { text: translate('tool.actionSearch', 'Searching the web…') };
-  }
-  if (name === 'web_fetch' || name === 'WebFetch') {
-    const host = hostOf(urlOf(call.input));
-    if (host) return { text: tf('tool.readingHost', 'Reading {host}…', { host }) };
-    return { text: translate('tool.actionFetch', 'Reading the page…') };
-  }
-  if (name === 'code_interpreter' || name === 'Code') {
-    /* Once the sandbox has printed something, "executing" is stale: the wait
-       is on the analysis, and the reader sees that. `tool_progress` records
-       the last phase on the entry, which is what the legacy DOM writer used
-       to upgrade its own label from. */
-    const phase = String(call._progressPhase || '');
-    if (phase === 'stdout' || phase === 'stderr') {
-      return { text: translate('tool.actionAnalyze', 'Analyzing data…') };
-    }
-    const runPhase = (call as Record<string, unknown>)._run && ((call as Record<string, unknown>)._run as Record<string, unknown>).phase;
-    if (runPhase === 'running') {
-      return { text: translate('tool.actionCode', 'Executing code…') };
-    }
-    if (call.argumentsText && !call.output && !call._progressPhase) {
-      return { text: translate('tool.actionDraftPython', 'Drafting Python code…') };
-    }
-    return { text: translate('tool.actionCode', 'Executing code…') };
-  }
-  if (name === 'cite_sources') return { text: translate('tool.actionCite', 'Checking references…') };
-  if (name === 'patch_intelligent_ui') return { text: translate('tool.actionPatchUi', 'Updating the visual…') };
-  if (name === 'render_intelligent_ui') return { text: translate('tool.actionVisual', 'Creating a visual') };
-  if (name === 'render_visualization') {
-    const { type, title } = chartInfo(call);
-    if (title) {
-      return { text: tf('tool.creatingChartWithTitle', 'Creating {type}: “{title}”…', { type, title: clip(title, 24) }) };
-    }
-    return { text: tf('tool.creatingChart', 'Creating {type}…', { type }) };
-  }
-  if (name === 'read_attachment') {
-    const { fileName, isImage } = attachmentInfo(call);
-    if (isImage) {
-      if (fileName) return { text: tf('tool.recognizingImage', 'Recognizing image {file}…', { file: clip(fileName, 32) }) };
-      return { text: translate('tool.actionRecognizeImage', 'Recognizing image…') };
-    }
-    if (fileName) return { text: tf('tool.readingAttachment', 'Reading attachment {file}…', { file: clip(fileName, 32) }) };
-    return { text: translate('tool.actionRead', 'Reading files') };
-  }
-  if (name === 'workspace_agent') {
-    return { text: translate('tool.actionCodex', 'Working in the workspace…') };
-  }
-  if (name === 'initialize_workspace') {
-    return { text: translate('tool.actionInitWorkspace', 'Initializing the workspace…') };
-  }
-  if (name === 'Read' || name === 'Glob' || name === 'Grep') {
-    const file = basename(filePathOf(call.input)) || clip(queryOf(call.input), 32);
-    if (file) return { text: tf('tool.readingFile', 'Reading {file}…', { file }) };
-    return { text: translate('tool.actionRead', 'Reading files') };
-  }
-  if (name === 'Write') {
-    const file = basename(filePathOf(call.input));
-    if (file) return { text: tf('tool.creatingFile', 'Creating {file}…', { file }) };
-    return { text: translate('tool.actionWrite', 'Updating files') };
-  }
-  if (name === 'Edit') {
-    const file = basename(filePathOf(call.input));
-    if (file) return { text: tf('tool.editingFile', 'Editing {file}…', { file }) };
-    return { text: translate('tool.actionWrite', 'Updating files') };
-  }
-  if (name === 'create_plan') return { text: translate('tool.actionPlan', 'Drafting a plan…') };
-  if (name === 'create_spec') return { text: translate('tool.actionSpec', 'Drafting a spec…') };
-  if (name === 'create_site') return { text: translate('tool.actionSite', 'Building and publishing the site…') };
-  return connectorLabel(call) || { text: translate('tool.actionDefault', 'Using a tool') };
+  const dynamicLabel = isInlineSearchTool(name)
+    ? runningSearchLabel(call)
+    : RUNNING_LABEL_HANDLERS.get(name)?.(call);
+  return runningCommandLabel(call, name)
+    || dynamicLabel
+    || RUNNING_STATIC_LABELS.get(name)?.()
+    || connectorLabel(call)
+    || { text: translate('tool.actionDefault', 'Using a tool') };
 }
 
 /* ── Settled copy ──────────────────────────────────────────────────────── */
 
-function doneLabel(call: ToolCallLike): RunLabel {
-  if (call.name === 'cite_sources') return { text: translate('tool.doneCite', 'Added references') };
-  if (call.name === 'patch_intelligent_ui') return { text: translate('tool.donePatchUi', 'Updated the visual') };
-  if (call.name === 'render_intelligent_ui') return { text: translate('tool.doneVisual', 'Created a visual') };
-  const name = String(call.name || '');
-  const meta: string[] = [];
-  const category = toolCategory(name);
+function doneSearchLabel(call: ToolCallLike): RunLabel {
+  const count = resultCount(call);
+  const query = queryOf(call.input);
+  const meta = count > 0
+    ? [count === 1 ? translate('tool.nSourceOne', '1 source') : tf('tool.nSources', '{n} sources', { n: count })]
+    : [];
+  const text = query
+    ? tf('tool.searchedFor', 'Searched for “{query}”', { query })
+    : count > 0
+      ? tf('tool.searchDone', 'Found {n} web results', { n: count })
+      : translate('tool.searchEmpty', 'No web results found');
+  return { text, meta, hosts: resultHosts(call) };
+}
 
-  if (isInlineSearchTool(name)) {
-    const n = resultCount(call);
-    const q = queryOf(call.input);
-    if (n > 0) meta.push(n === 1 ? translate('tool.nSourceOne', '1 source') : tf('tool.nSources', '{n} sources', { n }));
-    if (q) return { text: tf('tool.searchedFor', 'Searched for “{query}”', { query: q }), meta, hosts: resultHosts(call) };
-    return {
-      text: n > 0
-        ? tf('tool.searchDone', 'Found {n} web results', { n })
-        : translate('tool.searchEmpty', 'No web results found'),
-      meta,
-      hosts: resultHosts(call),
-    };
+function doneAttachmentLabel(call: ToolCallLike): RunLabel {
+  const { fileName, isImage } = attachmentInfo(call);
+  if (isImage) {
+    return fileName
+      ? { text: tf('tool.recognizedImage', 'Recognized image {file}', { file: clip(fileName, 32) }) }
+      : { text: translate('tool.actionRecognizeImage', 'Recognized image') };
   }
-  if (name === 'web_fetch' || name === 'WebFetch') {
-    const host = hostOf(urlOf(call.input));
-    if (host) return { text: tf('tool.fetchedHost', 'Read {host}', { host }) };
-    return { text: translate('tool.doneFetch', 'Read the page') };
-  }
-  if (name === 'code_interpreter' || name === 'Code') {
-    const outcome = outcomeOf(call.output);
-    if (outcome) meta.push(outcome);
-    return { text: translate('tool.ranCode', 'Ran Python'), meta };
-  }
-  if (name === 'render_visualization') {
-    const { type, title } = chartInfo(call);
-    if (title) {
-      return { text: tf('tool.createdChartWithTitle', 'Created {type}: “{title}”', { type, title: clip(title, 24) }) };
-    }
-    return { text: tf('tool.createdChart', 'Created {type}', { type }) };
-  }
-  if (name === 'read_attachment') {
-    const { fileName, isImage } = attachmentInfo(call);
-    if (isImage) {
-      if (fileName) return { text: tf('tool.recognizedImage', 'Recognized image {file}', { file: clip(fileName, 32) }) };
-      return { text: translate('tool.actionRecognizeImage', 'Recognized image') };
-    }
-    if (fileName) return { text: tf('tool.readAttachment', 'Read attachment {file}', { file: clip(fileName, 32) }) };
-    return { text: translate('tool.doneRead', 'Read files') };
-  }
-  if (name === 'workspace_agent') {
-    return { text: translate('tool.doneCodex', 'Workspace run') };
-  }
-  if (name === 'initialize_workspace') {
-    return { text: translate('tool.doneInitWorkspace', 'Workspace ready') };
-  }
-  if (name === 'Bash') {
-    const cmd = commandOf(call.input);
-    const outcome = outcomeOf(call.output);
-    if (outcome) meta.push(outcome);
-    if (cmd) return { text: `$ ${clip(cmd)}`, mono: true, meta };
-    return { text: translate('tool.ranCommand', 'Ran a command'), meta };
-  }
+  return fileName
+    ? { text: tf('tool.readAttachment', 'Read attachment {file}', { file: clip(fileName, 32) }) }
+    : { text: translate('tool.doneRead', 'Read files') };
+}
+
+function doneFileLabel(call: ToolCallLike, name: string): RunLabel {
+  const file = basename(filePathOf(call.input));
   if (name === 'Read' || name === 'Glob' || name === 'Grep') {
-    const file = basename(filePathOf(call.input)) || clip(queryOf(call.input), 32);
-    if (file) return { text: tf('tool.readFile', 'Read {file}', { file }) };
-    return { text: translate('tool.doneRead', 'Read files') };
+    const target = file || clip(queryOf(call.input), 32);
+    return target ? { text: tf('tool.readFile', 'Read {file}', { file: target }) }
+      : { text: translate('tool.doneRead', 'Read files') };
   }
-  if (name === 'Write') {
-    const file = basename(filePathOf(call.input));
-    if (file) return { text: tf('tool.createdFile', 'Created {file}', { file }) };
-    return { text: translate('tool.doneWrite', 'Edited files') };
-  }
-  if (name === 'Edit') {
-    const file = basename(filePathOf(call.input));
-    if (file) return { text: tf('tool.editedFile', 'Edited {file}', { file }) };
-    return { text: translate('tool.doneWrite', 'Edited files') };
-  }
-  if (name === 'create_plan') return { text: translate('tool.donePlan', 'Drafted a plan') };
-  if (name === 'create_spec') return { text: translate('tool.doneSpec', 'Drafted a spec') };
-  if (name === 'create_site') return { text: translate('tool.doneSite', 'Site published') };
+  if (name === 'Write' && file) return { text: tf('tool.createdFile', 'Created {file}', { file }) };
+  if (name === 'Edit' && file) return { text: tf('tool.editedFile', 'Edited {file}', { file }) };
+  return { text: translate('tool.doneWrite', 'Edited files') };
+}
 
+function doneBashLabel(call: ToolCallLike): RunLabel {
+  const meta = outcomeOf(call.output);
+  const command = commandOf(call.input);
+  return command
+    ? { text: `$ ${clip(command)}`, mono: true, meta: meta ? [meta] : [] }
+    : { text: translate('tool.ranCommand', 'Ran a command'), meta: meta ? [meta] : [] };
+}
+
+function doneFetchLabel(call: ToolCallLike): RunLabel {
+  const host = hostOf(urlOf(call.input));
+  return host
+    ? { text: tf('tool.fetchedHost', 'Read {host}', { host }) }
+    : { text: translate('tool.doneFetch', 'Read the page') };
+}
+
+function doneCodeLabel(call: ToolCallLike): RunLabel {
+  const outcome = outcomeOf(call.output);
+  return { text: translate('tool.ranCode', 'Ran Python'), meta: outcome ? [outcome] : [] };
+}
+
+function doneChartLabel(call: ToolCallLike): RunLabel {
+  const { type, title } = chartInfo(call);
+  return title
+    ? { text: tf('tool.createdChartWithTitle', 'Created {type}: “{title}”', { type, title: clip(title, 24) }) }
+    : { text: tf('tool.createdChart', 'Created {type}', { type }) };
+}
+
+const DONE_LABEL_HANDLERS = new Map<string, (call: ToolCallLike) => RunLabel>([
+  ['web_fetch', doneFetchLabel], ['WebFetch', doneFetchLabel],
+  ['code_interpreter', doneCodeLabel], ['Code', doneCodeLabel],
+  ['render_visualization', doneChartLabel], ['read_attachment', doneAttachmentLabel],
+  ['Bash', doneBashLabel],
+  ['Read', (call) => doneFileLabel(call, 'Read')],
+  ['Glob', (call) => doneFileLabel(call, 'Glob')],
+  ['Grep', (call) => doneFileLabel(call, 'Grep')],
+  ['Write', (call) => doneFileLabel(call, 'Write')],
+  ['Edit', (call) => doneFileLabel(call, 'Edit')],
+]);
+
+function doneSpecificLabel(call: ToolCallLike, name: string): RunLabel | null {
+  if (isInlineSearchTool(name)) return doneSearchLabel(call);
+  return DONE_LABEL_HANDLERS.get(name)?.(call) || null;
+}
+
+const DONE_STATIC_LABELS = new Map<string, () => RunLabel>([
+  ['cite_sources', () => ({ text: translate('tool.doneCite', 'Added references') })],
+  ['patch_intelligent_ui', () => ({ text: translate('tool.donePatchUi', 'Updated the visual') })],
+  ['render_intelligent_ui', () => ({ text: translate('tool.doneVisual', 'Created a visual') })],
+  ['workspace_agent', () => ({ text: translate('tool.doneCodex', 'Workspace run') })],
+  ['initialize_workspace', () => ({ text: translate('tool.doneInitWorkspace', 'Workspace ready') })],
+  ['create_plan', () => ({ text: translate('tool.donePlan', 'Drafted a plan') })],
+  ['create_spec', () => ({ text: translate('tool.doneSpec', 'Drafted a spec') })],
+  ['create_site', () => ({ text: translate('tool.doneSite', 'Site published') })],
+]);
+
+function doneLabel(call: ToolCallLike): RunLabel {
+  const name = String(call.name || '');
+  const staticLabel = DONE_STATIC_LABELS.get(name);
+  if (staticLabel) return staticLabel();
+  const specific = doneSpecificLabel(call, name);
+  if (specific) return specific;
   const connector = connectorLabel(call);
   if (connector) return connector;
 
   const outcome = outcomeOf(call.output);
-  if (outcome) meta.push(outcome);
+  const meta = outcome ? [outcome] : [];
   const target = clip(queryOf(call.input) || filePathOf(call.input) || urlOf(call.input), 32);
-  if (target) {
-    return {
-      text: tf('tool.usedToolOn', '{tool} · {target}', { tool: name || 'tool', target }),
-      meta,
-    };
-  }
-  if (category === 'other') return { text: translate('tool.doneDefault', 'Finished using tool'), meta };
-  return { text: translate('tool.doneDefault', 'Finished using tool'), meta };
+  return target
+    ? { text: tf('tool.usedToolOn', '{tool} · {target}', { tool: name || 'tool', target }), meta }
+    : { text: translate('tool.doneDefault', 'Finished using tool'), meta };
 }
 
 function errorLabel(call: ToolCallLike): RunLabel {

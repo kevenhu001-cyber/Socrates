@@ -108,6 +108,19 @@ function publishSelectionAndProviders(providers: readonly ProviderConfig[], acti
   publishProviderConfig({ providers, activeId, fetched });
 }
 
+function resolveActiveProviderId(
+  lastId: string | null,
+  customProviders: ProviderConfig[],
+  hasBuiltIn: boolean,
+): string | null {
+  if (lastId === BUILT_IN_ID && hasBuiltIn) return lastId;
+  if (lastId && customProviders.some((provider) => provider.id === lastId)) return lastId;
+  const serverActiveId = customProviders.find((provider) => provider.serverIsActive)?.id || null;
+  if (serverActiveId) return serverActiveId;
+  if (hasBuiltIn) return BUILT_IN_ID;
+  return customProviders[0]?.id || null;
+}
+
 export async function refreshProviderConfig(): Promise<ProviderConfigSnapshot> {
   if (!window.CURRENT_USER) {
     credentialDrafts.clear();
@@ -134,15 +147,9 @@ export async function refreshProviderConfig(): Promise<ProviderConfigSnapshot> {
       capabilities: normalizeCapabilities(result?.builtInCapabilities),
     };
     const lastId = loadLastActiveId();
-    let activeId: string | null = null;
-
     // Preserve selection precedence: local preference, server active row,
     // configured Beagle, then first user-configured provider.
-    if (lastId === BUILT_IN_ID && hasBuiltIn) activeId = lastId;
-    else if (lastId && customProviders.some((provider) => provider.id === lastId)) activeId = lastId;
-    if (!activeId) activeId = customProviders.find((provider) => provider.serverIsActive)?.id || null;
-    if (!activeId && hasBuiltIn) activeId = BUILT_IN_ID;
-    if (!activeId && customProviders.length) activeId = customProviders[0].id;
+    const activeId = resolveActiveProviderId(lastId, customProviders, hasBuiltIn);
 
     const providers = hasBuiltIn ? [builtIn, ...customProviders] : customProviders;
     credentialDrafts.clear();

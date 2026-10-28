@@ -5,47 +5,40 @@
  */
 import { toggleSidebar } from '../sidebar/sidebar.service.ts';
 import { renderKnowledgeView } from './knowledgeView.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 export var sidebarOpen = true;
 
 function _renderRecents() {
-  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (error) { reportSwallow(error, 'ui/sidebarChrome.js:12'); }
 }
 function _renderMistakes() {
-  try { if (typeof window !== 'undefined' && typeof window.renderMistakes === 'function') window.renderMistakes(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderMistakes === 'function') window.renderMistakes(); } catch (error) { reportSwallow(error, 'ui/sidebarChrome.js:15'); }
 }
 /* Localize the sidebar toggle copy. `window.t` is installed by i18n.js at
    boot; fall back to the English string so a pre-i18n paint still reads. */
 function _tr(key, fallback) {
-  try { if (typeof window !== 'undefined' && typeof window.t === 'function') { var v = window.t(key); if (v && v !== key) return v; } } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.t === 'function') { var v = window.t(key); if (v && v !== key) return v; } } catch (error) { reportSwallow(error, 'ui/sidebarChrome.js:20'); }
   return fallback;
 }
 
-export function syncSidebarBtns() {
-  var ob = document.getElementById('sidebarOpenBtn');
-  var cb = document.getElementById('sidebarCloseBtn');
-  /* Derive from the DOM (.collapsed) — toggleSidebar() lives in
-     sidebar/sidebar.service.ts and can't write this module's `sidebarOpen`
-     var, so reading the var here would desync after the first toggle. */
-  var s = document.getElementById('sidebar');
-  var open = s ? !s.classList.contains('collapsed') : sidebarOpen;
+function syncDesktopSidebarButtons(ob, cb, open) {
   /* Desktop collapses to chatgpt.com's 52px icon rail (styles/parity/
      sidebar.css): the rail keeps its own toggle, so the header button stays
      reachable in both states and the top-bar opener is never needed. */
-  if (!isMobileViewport()) {
-    if (ob) {
-      ob.style.display = 'none';
-      ob.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-    if (cb) {
-      cb.style.display = '';
-      cb.removeAttribute('aria-hidden');
-      cb.setAttribute('aria-expanded', open ? 'true' : 'false');
-      cb.setAttribute('aria-label', _tr(open ? 'chrome.closeSidebar' : 'chrome.openSidebar', open ? 'Close sidebar' : 'Open sidebar'));
-      cb.setAttribute('title', _tr(open ? 'chrome.closeSidebarKbd' : 'chrome.openSidebarKbd', open ? 'Close sidebar (⌘B)' : 'Open sidebar (⌘B)'));
-    }
-    return;
+  if (ob) {
+    ob.style.display = 'none';
+    ob.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
+  if (!cb) return;
+  cb.style.display = '';
+  cb.removeAttribute('aria-hidden');
+  cb.setAttribute('aria-expanded', open ? 'true' : 'false');
+  cb.setAttribute('aria-label', _tr(open ? 'chrome.closeSidebar' : 'chrome.openSidebar', open ? 'Close sidebar' : 'Open sidebar'));
+  cb.setAttribute('title', _tr(open ? 'chrome.closeSidebarKbd' : 'chrome.openSidebarKbd', open ? 'Close sidebar (⌘B)' : 'Open sidebar (⌘B)'));
+}
+
+function syncMobileSidebarButtons(ob, cb, open) {
   /* Keep the top-bar toggle button hidden when sidebar is open
      (the close button inside the sidebar header is visible then).
      Show the toggle button only when sidebar is collapsed so the
@@ -64,6 +57,18 @@ export function syncSidebarBtns() {
     if (open) cb.removeAttribute('aria-hidden');
     else cb.setAttribute('aria-hidden', 'true');
   }
+}
+
+export function syncSidebarBtns() {
+  var ob = document.getElementById('sidebarOpenBtn');
+  var cb = document.getElementById('sidebarCloseBtn');
+  /* Derive from the DOM (.collapsed) — toggleSidebar() lives in
+     sidebar/sidebar.service.ts and can't write this module's `sidebarOpen`
+     var, so reading the var here would desync after the first toggle. */
+  var sidebar = document.getElementById('sidebar');
+  var open = sidebar ? !sidebar.classList.contains('collapsed') : sidebarOpen;
+  if (isMobileViewport()) syncMobileSidebarButtons(ob, cb, open);
+  else syncDesktopSidebarButtons(ob, cb, open);
 }
 
 /* Mobile only: tap anywhere outside the sidebar (and outside the toggle
@@ -108,14 +113,14 @@ export function initSidebarChrome() {
     if (sbPref === '0' || (sbPref === null && window.innerWidth < 768)) {
       sidebarOpen = false; document.getElementById('sidebar').classList.add('collapsed');
     }
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'ui/sidebarChrome.js:111', 'expected'); }
   syncSidebarBtns();
   /* Re-localize the JS-owned toggle copy whenever the language changes. It
      carries the state-dependent ⌘B hint, so it is written by
      syncSidebarBtns() rather than a static data-i18n hook; without this the
      title would stay in the previous language until the sidebar is toggled. */
   document.addEventListener('socrates:langchange', syncSidebarBtns);
-  try { window.sidebarOpen = sidebarOpen; } catch (_) {}
+  try { window.sidebarOpen = sidebarOpen; } catch (error) { reportSwallow(error, 'ui/sidebarChrome.js:118'); }
 
   document.addEventListener('click', function (e) {
     var sbEl = document.getElementById('sidebar');

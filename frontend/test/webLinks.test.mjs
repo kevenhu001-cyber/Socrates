@@ -1,12 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
-import { fetchPagesForContext } from '../src/chat/webLinks.ts';
+import { extractHttpUrls, fetchPagesForContext } from '../src/chat/webLinks.ts';
 
 const dom = new JSDOM('', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 const urls = ['https://example.com/page'];
+
+test('URL extraction accepts domains while filtering filenames and IP addresses', () => {
+  const text = 'Read https://example.com/article, then example.org/about. Avoid report.pdf and 192.168.1.1.';
+  assert.deepEqual(extractHttpUrls(text), [
+    'https://example.com/article',
+    'https://example.org/about',
+  ]);
+});
 
 test('page preparation preserves successful content and preview metadata', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({

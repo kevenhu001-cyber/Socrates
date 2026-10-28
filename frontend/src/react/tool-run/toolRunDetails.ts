@@ -163,29 +163,50 @@ export function clippedText(value: unknown): { text: string; fullText?: string }
     : { text: shown.trim() };
 }
 
+interface SourceCandidate {
+  key: string;
+  title: string;
+  url: string;
+  date: string;
+  source: string;
+}
+
+function sourceCandidateOf(value: unknown): SourceCandidate | null {
+  const item = value as { title?: unknown; url?: unknown; date?: unknown; source?: unknown } | null;
+  if (!item) return null;
+  const url = String(item.url || '').trim();
+  const title = String(item.title || url || '').trim();
+  if (!title) return null;
+  return {
+    key: url || title,
+    title,
+    url,
+    date: typeof item.date === 'string' ? item.date.trim() : '',
+    source: typeof item.source === 'string' ? item.source.trim() : '',
+  };
+}
+
+function sourceHost(url: string): string {
+  try {
+    if (/^https?:\/\//i.test(url)) return new URL(url).hostname.replace(/^www\./i, '');
+  } catch (_) { /* unparseable url keeps an empty host */ }
+  return '';
+}
+
 export function normalizeSources(results: ReadonlyArray<unknown> | null | undefined): SourceItem[] {
   const list = Array.isArray(results) ? results : [];
   const out: SourceItem[] = [];
   const seen = new Set<string>();
   for (let i = 0; i < list.length && out.length < MAX_SOURCE_HOSTS; i++) {
-    const item = list[i] as { title?: unknown; url?: unknown; date?: unknown; source?: unknown } | null;
-    if (!item) continue;
-    const url = String(item.url || '').trim();
-    const title = String(item.title || url || '').trim();
-    if (!title) continue;
-    const key = url || title;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    let host = '';
-    try {
-      if (/^https?:\/\//i.test(url)) host = new URL(url).hostname.replace(/^www\./i, '');
-    } catch (_) { /* unparseable url keeps an empty host */ }
-    const date = typeof item.date === 'string' ? item.date.trim() : '';
-    const source = typeof item.source === 'string' ? item.source.trim() : '';
+    const candidate = sourceCandidateOf(list[i]);
+    if (!candidate || seen.has(candidate.key)) continue;
+    seen.add(candidate.key);
     out.push({
-      title: clip(title, 120), url: /^https?:\/\//i.test(url) ? url : '', host,
-      ...(date ? { date: clip(date, 30) } : {}),
-      ...(source ? { source: clip(source, 32) } : {}),
+      title: clip(candidate.title, 120),
+      url: /^https?:\/\//i.test(candidate.url) ? candidate.url : '',
+      host: sourceHost(candidate.url),
+      ...(candidate.date ? { date: clip(candidate.date, 30) } : {}),
+      ...(candidate.source ? { source: clip(candidate.source, 32) } : {}),
     });
   }
   return out;
@@ -304,6 +325,21 @@ function appendArgumentsAndLiveDetails(
   }
 }
 
+function appendSupplementalDetails(view: ToolRunView, call: ToolCallRecord): void {
+  const approval = approvalViewOf(call);
+  if (approval) view.approval = approval;
+  if (Array.isArray(call.steps) && call.steps.length) {
+    view.agentRun = {
+      runId: call.runId ?? null,
+      steps: call.steps,
+      plan: call.plan ?? null,
+      durationMs: (call._run && call._run.durationMs) || call.durationMs || null,
+    };
+  }
+  const summary = fileSummaryOf([call]);
+  if (summary) view.fileSummary = summary;
+}
+
 export function toolRunView(call: ToolCallRecord): ToolRunView {
   const state = toolRunStateOf(call);
   const label = toolRunLabel(call, state);
@@ -334,18 +370,7 @@ export function toolRunView(call: ToolCallRecord): ToolRunView {
   else if (state !== 'running') appendSettledDetails(view, call, sources, output);
 
   appendArgumentsAndLiveDetails(view, call, state, failed);
-  const approval = approvalViewOf(call);
-  if (approval) view.approval = approval;
-  if (Array.isArray(call.steps) && call.steps.length) {
-    view.agentRun = {
-      runId: call.runId ?? null,
-      steps: call.steps,
-      plan: call.plan ?? null,
-      durationMs: (call._run && call._run.durationMs) || call.durationMs || null,
-    };
-  }
-  const summary = fileSummaryOf([call]);
-  if (summary) view.fileSummary = summary;
+  appendSupplementalDetails(view, call);
   return view;
 }
 
@@ -395,24 +420,31 @@ function extractFieldFromJson(argsJson: string, ...keys: string[]): string {
 }
 
 export function extractVisualizationPreview(argsJson: string, input?: unknown): string {
-  let parsed: Record<string, unknown> | null = null;
+  const parsed = visualizationInputOf(argsJson, input);
+  if (!parsed) return rawVisualizationPreview(argsJson);
+  return formatVisualizationPreview(parsed);
+}
+
+function visualizationInputOf(argsJson: string, input?: unknown): Record<string, unknown> | null {
   if (input && typeof input === 'object' && Object.keys(input).length > 0) {
-    parsed = input as Record<string, unknown>;
-  } else if (argsJson.trim()) {
-    for (const candidate of [argsJson, argsJson + '"}', argsJson + '}', argsJson + '"}}', argsJson + '"}']) {
-      try {
-        const candidateObj = JSON.parse(candidate);
-        if (candidateObj && typeof candidateObj === 'object') {
-          parsed = candidateObj as Record<string, unknown>;
-          break;
-        }
-      } catch (_) { /* keep trying */ }
-    }
+    return input as Record<string, unknown>;
   }
-  if (!parsed) {
-    const raw = argsJson.trim().replace(/^\s*\{?\s*"[a-z_]+?"\s*:\s*"?/i, '');
-    return raw.length >= 3 ? clip(raw, 120) : '';
+  if (!argsJson.trim()) return null;
+  for (const candidate of [argsJson, argsJson + '"}', argsJson + '}', argsJson + '"}}', argsJson + '"}']) {
+    try {
+      const candidateObj = JSON.parse(candidate);
+      if (candidateObj && typeof candidateObj === 'object') return candidateObj as Record<string, unknown>;
+    } catch (_) { /* keep trying */ }
   }
+  return null;
+}
+
+function rawVisualizationPreview(argsJson: string): string {
+  const raw = argsJson.trim().replace(/^\s*\{?\s*"[a-z_]+?"\s*:\s*"?/i, '');
+  return raw.length >= 3 ? clip(raw, 120) : '';
+}
+
+function formatVisualizationPreview(parsed: Record<string, unknown>): string {
   const template = String(parsed.template || parsed.type || '');
   const title = String(parsed.title || parsed.caption || '');
   const lines: string[] = [];

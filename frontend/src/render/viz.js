@@ -250,6 +250,40 @@ function _markReady(id) {
   delete _vizCards[id];
 }
 
+function _errorBannerSource(entry, card) {
+  var entrySource = entry && entry.iframe && entry.iframe.getAttribute('data-srcdoc');
+  var iframe = card.querySelector('iframe');
+  var cardSource = iframe && iframe.getAttribute('data-srcdoc');
+  return (entrySource || cardSource || '').slice(0, 2000);
+}
+
+function _insertErrorBanner(card, entry, message) {
+  var body = card.querySelector('.viz-body');
+  if (!body) return;
+  var banner = document.createElement('div');
+  banner.className = 'viz-error';
+  banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(message || 'Canvas failed to render') + '</span>' +
+    '<button type="button" class="viz-error-btn">Show source</button>' +
+    '<button type="button" class="viz-error-fix">Fix with AI</button>' +
+    '<pre class="viz-error-source" hidden>' + esc(_errorBannerSource(entry, card)) + '</pre>';
+  var iframe = entry && entry.iframe;
+  if (!iframe) iframe = card.querySelector('iframe');
+  if (iframe && iframe.parentNode === body) body.insertBefore(banner, iframe);
+  _bindAction(banner.querySelector('.viz-error-btn'));
+  _bindAction(banner.querySelector('.viz-error-fix'));
+}
+
+function _clearErrorRegistry(id, entry) {
+  if (entry && entry.maxTimer) clearTimeout(entry.maxTimer);
+  if (entry && entry.pingTimer) clearTimeout(entry.pingTimer);
+  _dropErrorRegistry(id);
+}
+
+function _dropErrorRegistry(id) {
+  delete _pendingReady[id];
+  delete _vizCards[id];
+}
+
 function _markError(id, message) {
   /* P_viz-cleanup — the iframe may report a viz-error after the
      registry entry has already been removed (e.g. timeout fired
@@ -259,29 +293,13 @@ function _markError(id, message) {
   var entry = _pendingReady[id] || _vizCards[id];
   var card = entry && entry.card;
   if (!card) card = document.getElementById(id);
-  if (!card) { delete _pendingReady[id]; delete _vizCards[id]; return; }
+  if (!card) { _dropErrorRegistry(id); return; }
   if (card.getAttribute('data-viz-state') === 'error') return;
   card.setAttribute('data-viz-state', 'error');
   _rememberLiveVizCard(id, card);
   _hideLoading(card);
-  var body = card.querySelector('.viz-body');
-  if (body) {
-    var banner = document.createElement('div');
-    banner.className = 'viz-error';
-    banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(message || 'Canvas failed to render') + '</span>' +
-      '<button type="button" class="viz-error-btn">Show source</button>' +
-      '<button type="button" class="viz-error-fix">Fix with AI</button>' +
-      '<pre class="viz-error-source" hidden>' + esc((entry && entry.iframe && entry.iframe.getAttribute('data-srcdoc')) || card.querySelector('iframe') && card.querySelector('iframe').getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
-    var iframeEl = entry && entry.iframe;
-    if (!iframeEl) iframeEl = card.querySelector('iframe');
-    if (iframeEl && iframeEl.parentNode === body) body.insertBefore(banner, iframeEl);
-    _bindAction(banner.querySelector('.viz-error-btn'));
-    _bindAction(banner.querySelector('.viz-error-fix'));
-  }
-  if (entry && entry.maxTimer) clearTimeout(entry.maxTimer);
-  if (entry && entry.pingTimer) clearTimeout(entry.pingTimer);
-  delete _pendingReady[id];
-  delete _vizCards[id];
+  _insertErrorBanner(card, entry, message);
+  _clearErrorRegistry(id, entry);
 }
 
 /* P_viz-source-check — viz ids are predictable (`viz-card-N`), so
@@ -306,38 +324,44 @@ function _vizSenderFrame(source) {
 }
 
 var _msgListenerInstalled = false;
+
+function _handleVizReady(id, data) {
+  var entry = _pendingReady[id];
+  if (!entry) return;
+  entry.lastHeight = data.h || 0;
+  if (!entry.ready) {
+    entry.ready = true;
+    _markReady(id);
+  }
+}
+
+function _handleVizResize(sender, id, data) {
+  var height = Number(data.h);
+  if (!isFinite(height)) return;
+  var clamped = Math.min(Math.max(height, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H);
+  sender.iframe.style.height = clamped + 'px';
+  /* A pending card keeps lastHeight current so a viz-ready
+     arriving later doesn't snap the iframe back to a stale size. */
+  var pending = _pendingReady[id];
+  if (pending) pending.lastHeight = clamped;
+}
+
+function _handleVizMessage(ev) {
+  var data = ev && ev.data;
+  if (!data || typeof data !== 'object') return;
+  var type = data.type;
+  if (type !== 'viz-ready' && type !== 'viz-error' && type !== 'viz-resize') return;
+  var sender = _vizSenderFrame(ev.source);
+  if (!sender) return;
+  if (type === 'viz-ready') _handleVizReady(sender.id, data);
+  else if (type === 'viz-error') _markError(sender.id, data.message);
+  else _handleVizResize(sender, sender.id, data);
+}
+
 function _ensureMessageListener() {
   if (_msgListenerInstalled || typeof window === 'undefined') return;
   _msgListenerInstalled = true;
-  window.addEventListener('message', function (ev) {
-    var data = ev && ev.data;
-    if (!data || typeof data !== 'object') return;
-    var type = data.type;
-    if (type !== 'viz-ready' && type !== 'viz-error' && type !== 'viz-resize') return;
-    var sender = _vizSenderFrame(ev.source);
-    if (!sender) return;
-    var id = sender.id;
-    if (type === 'viz-ready') {
-      var entry = _pendingReady[id];
-      if (!entry) return;
-      entry.lastHeight = data.h || 0;
-      if (!entry.ready) {
-        entry.ready = true;
-        _markReady(id);
-      }
-    } else if (type === 'viz-error') {
-      _markError(id, data.message);
-    } else if (type === 'viz-resize') {
-      var h = Number(data.h);
-      if (!isFinite(h)) return;
-      var clamped = Math.min(Math.max(h, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H);
-      sender.iframe.style.height = clamped + 'px';
-      /* A pending card keeps lastHeight current so a viz-ready
-         arriving later doesn't snap the iframe back to a stale size. */
-      var pending = _pendingReady[id];
-      if (pending) pending.lastHeight = clamped;
-    }
-  });
+  window.addEventListener('message', _handleVizMessage);
 }
 
 export function renderVizError(htmlStr, errorMsg) {
@@ -383,18 +407,22 @@ function _bindActionsInCard(item) {
   for (var i = 0; i < actions.length; i++) _bindAction(actions[i]);
 }
 
-function _bindAction(el) {
-  if (!el || el.__vizActionBound) return;
+function _vizActionOf(el) {
   /* Dispatch by class, not data-action: the buttons no longer carry the
      attribute (M4 Step 4.2). A data-action fallback is kept only for any
      legacy markup still floating around during the migration. */
-  var act = el.classList.contains('viz-btn-reload') ? 'viz-reload'
+  return el.classList.contains('viz-btn-reload') ? 'viz-reload'
     : el.classList.contains('viz-btn-source') ? 'viz-source'
     : el.classList.contains('viz-btn-expand') ? 'viz-expand'
     : el.classList.contains('viz-error-btn') ? 'viz-toggle-source'
     : el.classList.contains('viz-error-fix') ? 'viz-fix'
     : el.classList.contains('viz-seg-btn') ? 'viz-set-view'
     : el.getAttribute('data-action');
+}
+
+function _bindAction(el) {
+  if (!el || el.__vizActionBound) return;
+  var act = _vizActionOf(el);
   if (act === 'viz-reload') {
     el.addEventListener('click', function (ev) {
       ev.preventDefault();

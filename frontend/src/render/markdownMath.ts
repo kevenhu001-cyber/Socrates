@@ -282,36 +282,36 @@ export function replaceInlineDollarMath(
    prose after a currency amount (`$5+ tax`, `$10 and`), not a formula. */
 const TAIL_PROSE_WORD_RE = /(?:^|[^\\A-Za-z])[a-z]{3,}(?![A-Za-z(])/;
 
-export function _looksLikeInlineMathTail(s: string): boolean {
-  const trimmed = String(s).trim();
-  if (!trimmed) return false;
-  if (/\s/.test(trimmed) && !/\\/.test(trimmed) && TAIL_PROSE_WORD_RE.test(trimmed)) return false;
-  if (_looksLikeLatex(s)) return true;
-  if (/[\\^_{}[\]]/.test(trimmed)) return true;
+function looksLikeCurrencyProseTail(trimmed: string): boolean {
+  return /\s/.test(trimmed) && !/\\/.test(trimmed) && TAIL_PROSE_WORD_RE.test(trimmed);
+}
 
+function looksLikeOpenCoordinate(trimmed: string): boolean {
   /* Live open coordinates / tuples, e.g. "设在 $(0, 0" or "设 $(x, y" */
-  if (/^\([A-Za-z0-9\s,.'"+\-*/|=<>!:;\\^_{}[\]]*$/.test(trimmed) && trimmed.includes(',')) {
-    return true;
-  }
+  return /^\([A-Za-z0-9\s,.'"+\-*/|=<>!:;\\^_{}[\]]*$/.test(trimmed) && trimmed.includes(',');
+}
 
+function looksLikeOpenFraction(trimmed: string): boolean {
   /* Live open fractions, e.g. "$1/" or "$x/" */
-  if (/^[+-]?(?:\d+|[A-Za-z])\s*\/$/.test(trimmed)) {
-    return true;
-  }
+  return /^[+-]?(?:\d+|[A-Za-z])\s*\/$/.test(trimmed);
+}
 
-  if (/\s/.test(trimmed)) {
-    /* Same widening as the closed pass: `$x, y` renders live while a
-       spaced prose tail (`$5 USD`) still waits for its closing `$`. */
-    return _isSpacedMathList(trimmed)
-      || (SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed));
-  }
+function looksLikeSpacedMathTail(trimmed: string): boolean {
+  /* Same widening as the closed pass: `$x, y` renders live while a
+     spaced prose tail (`$5 USD`) still waits for its closing `$`. */
+  return _isSpacedMathList(trimmed)
+    || (SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed));
+}
+
+function looksLikeNumericMathTail(trimmed: string): boolean {
   /* P_numeric-math — an unclosed letter-free formula renders live only when a
      fraction / power / equation operator already marks it (`$1/2`, `$3+4=7`);
      a bare amount (`$5`, `$1,000`) waits for its closing `$`, so currency on
      the live tail never flashes as math. */
-  if (!/[A-Za-z]/.test(trimmed)) {
-    return /[/^=]/.test(trimmed) && _looksLikeNumericMath(trimmed, '');
-  }
+  return /[/^=]/.test(trimmed) && _looksLikeNumericMath(trimmed, '');
+}
+
+function looksLikeCompactMathTail(trimmed: string): boolean {
   if (!COMPACT_MATH_RE.test(trimmed)) return false;
   if (/[^A-Za-z]/.test(trimmed) || trimmed.length === 1) return true;
   /* Mirror the closed pass for capital-led identifiers (`$Oxyz` renders
@@ -320,6 +320,16 @@ export function _looksLikeInlineMathTail(s: string): boolean {
      more likely the start of `$USD (about …` prose than a point label,
      and a tail that rendered live but reverted at the close would flash. */
   return /^[A-Z]/.test(trimmed) && /[a-z]/.test(trimmed);
+}
+
+export function _looksLikeInlineMathTail(s: string): boolean {
+  const trimmed = String(s).trim();
+  if (!trimmed || looksLikeCurrencyProseTail(trimmed)) return false;
+  if (_looksLikeLatex(s) || /[\\^_{}[\]]/.test(trimmed)) return true;
+  if (looksLikeOpenCoordinate(trimmed) || looksLikeOpenFraction(trimmed)) return true;
+  if (/\s/.test(trimmed)) return looksLikeSpacedMathTail(trimmed);
+  if (!/[A-Za-z]/.test(trimmed)) return looksLikeNumericMathTail(trimmed);
+  return looksLikeCompactMathTail(trimmed);
 }
 
 /* Inline code spans are opaque: a `$D$` or `\alpha` behind backticks is
@@ -332,11 +342,11 @@ export function _stashInlineCode(source: string): { text: string; restore: (s: s
   const text = source.replace(/`[^`\n]+`/g, function (m) {
     const id = stash.length;
     stash.push(m);
-    return '\x01CODE' + id + '\x01';
+    return '\uE000SOCRATES_CODE_' + id + '\uE001';
   });
   return {
     text,
-    restore: (s: string) => s.replace(/\x01CODE(\d+)\x01/g, function (_m, id: string) {
+    restore: (s: string) => s.replace(/\uE000SOCRATES_CODE_(\d+)\uE001/g, function (_m, id: string) {
       return stash[Number(id)];
     }),
   };

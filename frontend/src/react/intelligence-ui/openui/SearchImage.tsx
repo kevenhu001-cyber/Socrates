@@ -6,7 +6,89 @@ import { useRemoteLabels } from './remoteLabels';
 import { localImageUrl, MEDIA_API, useRemote } from './remoteData';
 import { radius, radiusSchema, webUrl } from './style';
 
-interface SearchResult { images: { url: string; title: string; sourceUrl: string; author?: string; license?: string }[] }
+interface SearchImageResult {
+  url: string;
+  title: string;
+  sourceUrl: string;
+  author?: string;
+  license?: string;
+}
+
+interface SearchResult { images: SearchImageResult[] }
+
+function SearchImageFrame({
+  image,
+  term,
+  aspectRatio,
+  rounding,
+  fit,
+  loading,
+  loadingLabel,
+  failedLabel,
+  retryLabel,
+  onImageError,
+  onRetry,
+}: {
+  image?: SearchImageResult;
+  term: string;
+  aspectRatio: number;
+  rounding: unknown;
+  fit: string;
+  loading: boolean;
+  loadingLabel: string;
+  failedLabel: string;
+  retryLabel: string;
+  onImageError(): void;
+  onRetry(): void;
+}) {
+  return (
+    <div className="iui-search-image-frame" style={{ aspectRatio: Math.min(4, Math.max(.5, aspectRatio)), borderRadius: radius(rounding) }}>
+      {image ? <img
+        src={image.url}
+        alt={image.title || term}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        style={{ objectFit: fit === 'contain' ? 'contain' : 'cover' }}
+        onError={onImageError}
+      /> : <div className="iui-media-status" role="status">
+        {loading ? loadingLabel : failedLabel}
+        {!loading ? <UiButton type="button" className="iui-button iui-button-outline" onClick={onRetry}>{retryLabel}</UiButton> : null}
+      </div>}
+    </div>
+  );
+}
+
+function SearchImageCaption({
+  image,
+  images,
+  index,
+  labels,
+  onPrevious,
+  onNext,
+}: {
+  image?: SearchImageResult;
+  images: SearchImageResult[];
+  index: number;
+  labels: ReturnType<typeof useRemoteLabels>;
+  onPrevious(): void;
+  onNext(): void;
+}) {
+  if (!image) return null;
+  return (
+    <figcaption className="iui-search-image-caption">
+      <a href={webUrl(image.sourceUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`${labels.imageSource}: ${image.title}`}>
+        {image.title || labels.imageSource}
+      </a>
+      {image.author || image.license ? <span>{[image.author, image.license].filter(Boolean).join(' · ')}</span> : null}
+      {images.length > 1 ? <span className="iui-image-pager">
+        <UiButton type="button" className="iui-button iui-button-sm" aria-label={labels.previousImage} onClick={onPrevious}>‹</UiButton>
+        <span>{index + 1} / {images.length}</span>
+        <UiButton type="button" className="iui-button iui-button-sm" aria-label={labels.nextImage} onClick={onNext}>›</UiButton>
+      </span> : null}
+    </figcaption>
+  );
+}
 
 function SearchPhoto({ query, aspectRatio = 1.5, radius: rounding = 'lg', fit = 'cover' }: { query: string; aspectRatio?: number; radius?: unknown; fit?: string }) {
   const labels = useRemoteLabels();
@@ -20,16 +102,27 @@ function SearchPhoto({ query, aspectRatio = 1.5, radius: rounding = 'lg', fit = 
   const image = images[index];
   const change = (offset: number) => setChoice({ query: term, index: (index + offset + images.length) % images.length });
   return <figure className="iui-search-image">
-    <div className="iui-search-image-frame" style={{ aspectRatio: Math.min(4, Math.max(.5, aspectRatio)), borderRadius: radius(rounding) }}>
-      {image ? <img src={image.url} alt={image.title || term} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ objectFit: fit === 'contain' ? 'contain' : 'cover' }} onError={() => setFailed((previous) => [...previous, image.url])} /> : <div className="iui-media-status" role="status">{result.loading ? labels.imageLoading : labels.imageFailed}
-        {!result.loading ? <UiButton type="button" className="iui-button iui-button-outline" onClick={() => { setFailed([]); result.retry(); }}>{labels.retry}</UiButton> : null}
-      </div>}
-    </div>
-    {image ? <figcaption className="iui-search-image-caption">
-      <a href={webUrl(image.sourceUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`${labels.imageSource}: ${image.title}`}>{image.title || labels.imageSource}</a>
-      {image.author || image.license ? <span>{[image.author, image.license].filter(Boolean).join(' · ')}</span> : null}
-      {images.length > 1 ? <span className="iui-image-pager"><UiButton type="button" className="iui-button iui-button-sm" aria-label={labels.previousImage} onClick={() => change(-1)}>‹</UiButton><span>{index + 1} / {images.length}</span><UiButton type="button" className="iui-button iui-button-sm" aria-label={labels.nextImage} onClick={() => change(1)}>›</UiButton></span> : null}
-    </figcaption> : null}
+    <SearchImageFrame
+      image={image}
+      term={term}
+      aspectRatio={aspectRatio}
+      rounding={rounding}
+      fit={fit}
+      loading={result.loading}
+      loadingLabel={labels.imageLoading}
+      failedLabel={labels.imageFailed}
+      retryLabel={labels.retry}
+      onImageError={() => setFailed((previous) => [...previous, image!.url])}
+      onRetry={() => { setFailed([]); result.retry(); }}
+    />
+    <SearchImageCaption
+      image={image}
+      images={images}
+      index={index}
+      labels={labels}
+      onPrevious={() => change(-1)}
+      onNext={() => change(1)}
+    />
   </figure>;
 }
 

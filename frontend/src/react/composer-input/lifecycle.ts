@@ -4,7 +4,7 @@ import {
   readComposerSurface,
 } from '../../composer/controller.ts';
 import { clearComposerPlugins } from '../../composer/pluginSelection.ts';
-import { updateComposerBtn } from '../../ui/topicSetup.js';
+import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import type { LegacyComposer } from '../legacy/types';
 

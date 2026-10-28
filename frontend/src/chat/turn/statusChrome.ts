@@ -13,7 +13,7 @@
  * `state.msgIdx`); keeping them as a single factory avoids each method
  * re-binding its own copies.
  */
-import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
+import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { LiveStatus, TurnMessage, TurnRuntimeState } from './runtimeState.ts';
 

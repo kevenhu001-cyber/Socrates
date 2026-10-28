@@ -94,26 +94,37 @@ export function installGlobalErrorGuard() {
     } catch (_) { /* swallow */ }
   }
 
+  function isExpectedTurnAbort(payload) {
+    var sig = '';
+    try { sig = String((payload && payload.reason != null ? payload.reason : '') + ' ' + ((payload && payload.message) || payload)).toLowerCase(); } catch (_) { /* empty-catch: intentional — safe stringify */ }
+    if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(sig)) {
+      try { console.log('[global-error] ignored expected turn abort:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
+      return true;
+    }
+    var nm = '';
+    try { nm = String(payload && payload.name || ''); } catch (_) { /* empty-catch: intentional — safe stringify */ }
+    if (nm === 'AbortError' && /abort/i.test(sig)) {
+      try { console.log('[global-error] ignored AbortError:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
+      return true;
+    }
+    return false;
+  }
+
+  function showErrorBanner(correl, label) {
+    if (typeof document === 'undefined' || !document.body) return;
+    const hint = label === 'unhandledrejection'
+      ? 'Something went off-script. Try refreshing — if it repeats, share the code below.'
+      : 'Something broke. Try refreshing — if it repeats, share the code below.';
+    showBanner(correl, hint);
+  }
+
   function handle(label, payload) {
     if (inHandler) return;
     /* P_turn-abort-quiet — lifecycle aborts (session-expired, user-stop,
        superseded, …) are intentional control flow. A late rejection that
        escaped a guarded turn path must not raise the red banner or file
        a client-error report; a one-line console note keeps it greppable. */
-    if (label === 'unhandledrejection') {
-      var sig = '';
-      try { sig = String((payload && payload.reason != null ? payload.reason : '') + ' ' + ((payload && payload.message) || payload)).toLowerCase(); } catch (_) { /* empty-catch: intentional — safe stringify */ }
-      if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(sig)) {
-        try { console.log('[global-error] ignored expected turn abort:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
-        return;
-      }
-      var nm = '';
-      try { nm = String(payload && payload.name || ''); } catch (_) { /* empty-catch: intentional — safe stringify */ }
-      if (nm === 'AbortError' && /abort/i.test(sig)) {
-        try { console.log('[global-error] ignored AbortError:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
-        return;
-      }
-    }
+    if (label === 'unhandledrejection' && isExpectedTurnAbort(payload)) return;
     inHandler = true;
     try {
       const correl = shortCorrel();
@@ -121,12 +132,7 @@ export function installGlobalErrorGuard() {
       // see the stack; banner shows only the correlation token.
       console.error('[global-error]', label, correl, payload);
       reportError(correl, label, payload);
-      if (typeof document !== 'undefined' && document.body) {
-        const hint = label === 'unhandledrejection'
-          ? 'Something went off-script. Try refreshing — if it repeats, share the code below.'
-          : 'Something broke. Try refreshing — if it repeats, share the code below.';
-        showBanner(correl, hint);
-      }
+      showErrorBanner(correl, label);
     } finally {
       inHandler = false;
     }

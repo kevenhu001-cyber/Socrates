@@ -85,7 +85,14 @@ export interface ToolProgressFrame {
 }
 export type TurnSummaryFrame = string | { summary?: unknown; phase?: string } | null | undefined;
 
-export function toolCallbacksForStream(ctl: StreamingTurnController) {
+export interface ToolStreamCallbackOptions {
+  workspaceRunFinishedMessage?: string;
+}
+
+export function toolCallbacksForStream(
+  ctl: StreamingTurnController,
+  options: ToolStreamCallbackOptions = {},
+) {
   return {
     onToolUse(calls: unknown): void {
       if (!Array.isArray(calls)) return;
@@ -109,7 +116,7 @@ export function toolCallbacksForStream(ctl: StreamingTurnController) {
           agentWaiting ? 'running' : (result.ok === false ? 'failed' : 'succeeded'),
           {
             message: result.error
-              || (agentWaiting ? 'Approval required' : 'Codex workspace run finished'),
+              || (agentWaiting ? 'Approval required' : (options.workspaceRunFinishedMessage || 'Codex workspace run finished')),
           },
         );
       }

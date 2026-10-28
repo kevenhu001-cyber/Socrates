@@ -58,6 +58,7 @@ export function SettingsNavigation({
             key={key}
             data-section={key}
             className={section === key ? 'active' : ''}
+            aria-current={section === key ? 'page' : undefined}
             onClick={() => onSectionChange(key)}
           >{name}</Button>
         ))}

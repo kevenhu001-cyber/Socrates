@@ -5,9 +5,11 @@ import { animateSpring, readScale } from '../../ui/motion/spring';
 import { SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { MessageOverflow } from './MessageOverflow';
 import type { LegacyChatMessage } from '../types/domain';
+import type { MessageToolbarCallbacks } from './types';
 import { useMessageToolbarCallbacks } from './useMessageActions';
 import { i18n } from '../legacy/gateway';
 import { IconButton } from '../ui';
+import { openWorkbench } from '../workbench/workbenchStore';
 
 const ShareIcon = getIconDescriptor('share').children;
 const ThumbsUpIcon = getIconDescriptor('thumbsUp').children;
@@ -74,8 +76,97 @@ interface MessageToolbarProps {
   pending?: boolean;
 }
 
+interface MessageToolbarActionsProps {
+  message: LegacyChatMessage;
+  role: 'user' | 'assistant';
+  callbacks: MessageToolbarCallbacks;
+  copied: boolean;
+  liked: boolean;
+  onCopy: () => void;
+  onThumbsUp: () => void;
+  likeButtonRef: React.RefObject<HTMLButtonElement | null>;
+}
+
+function MessageToolbarActions({
+  message,
+  role,
+  callbacks,
+  copied,
+  liked,
+  onCopy,
+  onThumbsUp,
+  likeButtonRef,
+}: MessageToolbarActionsProps): React.ReactElement {
+  const openMessageWorkbench = () => openWorkbench({
+    id: String(message.clientId || message.id || Date.now()),
+    title: i18n('workbench.conversationTitle', 'Conversation'),
+    titleKey: 'workbench.conversationTitle',
+    type: 'document',
+    code: message.rawText || '',
+    previewHtml: message.html || undefined,
+  }, 'preview');
+
+  return (
+    <>
+      <IconButton
+        variant="shared"
+        size="touch"
+        label={copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy')}
+        onClick={onCopy}
+        className={`msg-toolbar-btn${copied ? ' active' : ''}${copied ? ' is-copied' : ''}`}
+        icon={copied ? toolbarIcon('check') : toolbarIcon('copy')}
+      />
+      {role === 'user' && (
+        <>
+          <IconButton variant="shared" size="touch" className="msg-toolbar-btn"
+            label={i18n('message.edit', 'Edit message')} onClick={() => callbacks.onEdit?.()}
+            icon={toolbarIcon('edit')} />
+          <IconButton variant="shared" size="touch" className="msg-toolbar-btn"
+            label={i18n('message.delete', 'Delete message')} onClick={() => callbacks.onDelete?.()}
+            icon={toolbarIcon('trash')} />
+        </>
+      )}
+      {role === 'assistant' && (
+        <>
+          <IconButton variant="shared" size="touch" className="msg-toolbar-btn"
+            label={i18n('message.regenerate', 'Regenerate response')} onClick={() => callbacks.onRegenerate?.()}
+            icon={toolbarIcon('regenerate')} />
+          <span className="msg-toolbar-feedback">
+            <IconButton
+              variant="shared"
+              size="touch"
+              className={`msg-toolbar-btn${liked ? ' active' : ''}`}
+              label={i18n('message.helpful', 'Helpful')}
+              aria-pressed={liked}
+              onClick={onThumbsUp}
+              ref={likeButtonRef}
+              icon={toolbarIcon('thumbsUp')}
+            />
+            <IconButton variant="shared" size="touch" className="msg-toolbar-btn"
+              label={i18n('message.notHelpful', 'Not helpful')} onClick={() => callbacks.onThumbsDown?.()}
+              icon={toolbarIcon('thumbsDown')} />
+          </span>
+          <MessageOverflow actions={[
+            {
+              label: i18n('workbench.open', '在工作台打开'),
+              icon: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /></>,
+              onClick: openMessageWorkbench,
+            },
+            { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => callbacks.onShare?.() },
+            { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => callbacks.onBranch?.() },
+            { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event) => callbacks.onReadAloud?.(event) },
+            { label: i18n('message.reExplain', 'Re-explain from a different angle'), icon: ReExplainIcon, onClick: () => callbacks.onReExplain?.() },
+            { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, mobileOnly: true, onClick: () => callbacks.onThumbsUp?.() },
+            { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, mobileOnly: true, onClick: () => callbacks.onThumbsDown?.() },
+          ]} />
+        </>
+      )}
+    </>
+  );
+}
+
 function MessageToolbar({ message, role, pending = false }: MessageToolbarProps): React.ReactElement | null {
-  const c = useMessageToolbarCallbacks(message);
+  const callbacks = useMessageToolbarCallbacks(message);
   const [copied, setCopied] = React.useState(false);
   const [liked, setLiked] = React.useState(false);
   const likeButtonRef = React.useRef<HTMLButtonElement | null>(null);
@@ -91,7 +182,7 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
     : '';
 
   const handleCopy = () => {
-    c.onCopy?.();
+    callbacks.onCopy?.();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -122,7 +213,7 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
   };
 
   const handleThumbsUp = () => {
-    c.onThumbsUp?.();
+    callbacks.onThumbsUp?.();
     const next = !liked;
     setLiked(next);
     if (next) playLikePop();
@@ -140,97 +231,24 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
 
   return (
     <div className="msg-toolbar" data-role={role} data-message-id={id}>
-      {hasBranches && c.onSwitchBranch && (
+      {hasBranches && callbacks.onSwitchBranch && (
         <MessageBranchSwitcher
           currentIndex={branchInfo.currentIndex}
           total={branchInfo.variants.length}
-          onPrev={() => c.onSwitchBranch?.(branchInfo.currentIndex - 1)}
-          onNext={() => c.onSwitchBranch?.(branchInfo.currentIndex + 1)}
+          onPrev={() => callbacks.onSwitchBranch?.(branchInfo.currentIndex - 1)}
+          onNext={() => callbacks.onSwitchBranch?.(branchInfo.currentIndex + 1)}
         />
       )}
-      <IconButton
-        variant="shared"
-        size="touch"
-        label={copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy')}
-        onClick={handleCopy}
-        className={`msg-toolbar-btn${copied ? ' active' : ''}${copied ? ' is-copied' : ''}`}
-        icon={copied ? toolbarIcon('check') : toolbarIcon('copy')}
+      <MessageToolbarActions
+        message={message}
+        role={role}
+        callbacks={callbacks}
+        copied={copied}
+        liked={liked}
+        onCopy={handleCopy}
+        onThumbsUp={handleThumbsUp}
+        likeButtonRef={likeButtonRef}
       />
-      {role === 'user' && (
-        <>
-          <IconButton
-            variant="shared"
-            size="touch"
-            className="msg-toolbar-btn"
-            label={i18n('message.edit', 'Edit message')}
-            onClick={() => c.onEdit?.()}
-            icon={toolbarIcon('edit')}
-          />
-          <IconButton
-            variant="shared"
-            size="touch"
-            className="msg-toolbar-btn"
-            label={i18n('message.delete', 'Delete message')}
-            onClick={() => c.onDelete?.()}
-            icon={toolbarIcon('trash')}
-          />
-        </>
-      )}
-      {role === 'assistant' && (
-        <>
-          <IconButton
-            variant="shared"
-            size="touch"
-            className="msg-toolbar-btn"
-            label={i18n('message.regenerate', 'Regenerate response')}
-            onClick={() => c.onRegenerate?.()}
-            icon={toolbarIcon('regenerate')}
-          />
-          <span className="msg-toolbar-feedback">
-          <IconButton
-            variant="shared"
-            size="touch"
-            className={`msg-toolbar-btn${liked ? ' active' : ''}`}
-            label={i18n('message.helpful', 'Helpful')}
-            onClick={handleThumbsUp}
-            ref={likeButtonRef}
-            icon={toolbarIcon('thumbsUp')}
-          />
-          <IconButton
-            variant="shared"
-            size="touch"
-            className="msg-toolbar-btn"
-            label={i18n('message.notHelpful', 'Not helpful')}
-            onClick={() => c.onThumbsDown?.()}
-            icon={toolbarIcon('thumbsDown')}
-          />
-          </span>
-          <MessageOverflow actions={[
-            {
-              label: i18n('workbench.open', '在工作台打开'),
-              icon: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /></>,
-              onClick: () => {
-                import('../workbench/workbenchStore').then(({ openWorkbench }) => {
-                  openWorkbench({
-                    id: String(message.clientId || message.id || Date.now()),
-                    title: i18n('workbench.conversationTitle', 'Conversation'),
-                    titleKey: 'workbench.conversationTitle',
-                    type: 'document',
-                    code: message.rawText || '',
-                    previewHtml: message.html || undefined,
-                  }, 'preview');
-                });
-              },
-            },
-            { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => c.onShare?.() },
-            { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => c.onBranch?.() },
-            { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event) => c.onReadAloud?.(event) },
-            { label: i18n('message.reExplain', 'Re-explain from a different angle'), icon: ReExplainIcon, onClick: () => c.onReExplain?.() },
-            { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, mobileOnly: true, onClick: () => c.onThumbsUp?.() },
-            { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, mobileOnly: true, onClick: () => c.onThumbsDown?.() },
-          ]} />
-        </>
-      )}
     </div>
   );
 }

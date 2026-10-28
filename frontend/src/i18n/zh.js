@@ -400,6 +400,7 @@ export const zh = {
     "library.filter.audio":"音频",
     "library.filter.video":"视频",
     "library.filterByType":"按文件类型筛选",
+    "library.viewMode":"资料库视图模式",
     "library.emptyImages":"还没有图片",
     "library.emptyImagesDesc":"添加的图片会显示在这里。",
     /* PR-B — Library panel */

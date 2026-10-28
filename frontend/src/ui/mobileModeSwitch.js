@@ -1,5 +1,6 @@
 import { stateStore } from '../state/store.js';
 import { syncSocraticMasteryUI } from '../tutor/socraticMastery.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* ui/mobileModeSwitch.js — mobile-only 对话/导师 (Chat/Tutor) switcher.
  *
@@ -146,7 +147,7 @@ export function syncConversationActive() {
   _lastActive = active;
   try {
     document.body.setAttribute("data-conversation-active", active ? "true" : "false");
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:149'); }
   /* P_hide-mode-switch-in-conversation — inline-style fallback. CSS
      specificity wars with the cowork theme make a pure-CSS rule
      fragile (the cowork mobile block re-asserts display:flex with
@@ -171,7 +172,7 @@ function _applyModeSwitchVisibility(hidden) {
   if (el) {
     try {
       el.style.setProperty("display", hidden ? "none" : "", "important");
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:174'); }
   }
   var top = document.getElementById("topModeSwitch");
   if (top) {
@@ -180,7 +181,7 @@ function _applyModeSwitchVisibility(hidden) {
          hides it on phones. An inline `display:none !important` beats that
          media query without a second owner for the same rule. */
       top.style.setProperty("display", hidden ? "none" : "", "important");
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:183'); }
   }
 }
 
@@ -196,9 +197,9 @@ function _watchMsgList() {
   _watching = true;
   try {
     new MutationObserver(function () {
-      try { syncConversationActive(); } catch (_) {}
+      try { syncConversationActive(); } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:199'); }
     }).observe(msgList, { childList: true });
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:201'); }
 }
 
 /* Register window globals used by the inline onclick handlers in
@@ -247,13 +248,13 @@ if (typeof document !== "undefined") {
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    try { syncMobileModeSwitch(); } catch (_) {}
-    try { syncConversationActive(); } catch (_) {}
+    try { syncMobileModeSwitch(); } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:250'); }
+    try { syncConversationActive(); } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:251'); }
     _watchMsgList();
   });
   if (document.readyState !== "loading") {
-    try { syncMobileModeSwitch(); } catch (_) {}
-    try { syncConversationActive(); } catch (_) {}
+    try { syncMobileModeSwitch(); } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:255'); }
+    try { syncConversationActive(); } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.js:256'); }
     _watchMsgList();
   }
 }

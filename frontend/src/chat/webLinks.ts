@@ -4,6 +4,19 @@ import { linkAbortSignal } from '../util/api/request.ts';
 export const CHAT_PAGE_CONTEXT_TIMEOUT_MS = 2500;
 // Research workflows allow the server's existing eight-second page timeout.
 const PAGE_CONTEXT_TIMEOUT_MS = 10_000;
+const FILE_EXTENSIONS = new Set(("pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz " +
+  "jpg jpeg png gif webp svg mp3 mp4 mov avi mkv exe dmg iso " +
+  "txt md rtf csv json xml html htm").split(" "));
+
+function isValidBareUrl(domain: string | undefined): boolean {
+  if (!domain || domain.indexOf('.') === -1) return false;
+  const host = domain.split('/')[0];
+  const tld = host.slice(host.lastIndexOf('.') + 1);
+  if (!/^[a-z]{2,}$/i.test(tld) || /^\d+(\.\d+)+$/.test(domain)) return false;
+  const hasPath = domain.indexOf('/') !== -1;
+  const hasWww = /^www\./i.test(domain);
+  return hasPath || hasWww || !FILE_EXTENSIONS.has(tld.toLowerCase());
+}
 
 /* Heuristic: returns true if the user's text seems to refer to a
    website but we couldn't pull a usable URL out of it. We look for
@@ -64,38 +77,10 @@ export function extractHttpUrls(text: string): string[] {
      are valid in a URL host or path. We allow an optional path/query
      so things like "example.com/about" or "news.ycombinator.com/item?id=1"
      are picked up. */
-  /* Known file extensions we should NOT treat as TLDs when the user
-     wrote something like "report.pdf" or "image.png" — those are
-     filenames, not URLs. We still allow the same token if the user
-     wrote "www." or included a "/" path. */
-  const FILE_EXTS=("pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz "+
-    "jpg jpeg png gif webp svg mp3 mp4 mov avi mkv exe dmg iso "+
-    "txt md rtf csv json xml html htm").split(" ");
   const re2=/(?:^|[^\w一-鿿＠@])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]*)?)/gi;
   while((m=re2.exec(text))!==null){
     const d = m[1];
-    if(!d)continue;
-    if(d.indexOf(".")===-1)continue;
-    /* TLD is the part after the LAST dot in the host portion only.
-       The host stops at the first "/" so "example.com/about" reads
-       the TLD as "com", not the path's last segment. */
-    const host = d.split("/")[0];
-    const lastDot = host.lastIndexOf(".");
-    const tld = host.slice(lastDot + 1);
-    if(!/^[a-z]{2,}$/i.test(tld))continue;
-    if(/^\d+(\.\d+)+$/.test(d))continue;
-    /* Reject filename-style matches: "report.pdf" — no path AND no
-       "www." AND the last segment is a known file extension. If the
-       user actually wants a URL ending in .pdf, they'll paste the
-       full https:// form, which the first regex already handles. */
-    const hasPath = d.indexOf("/") !== -1;
-    const hasWww = /^www\./i.test(d);
-    if(!hasPath&&!hasWww){
-      const t = tld.toLowerCase();
-      let isFile = false;
-      for (const ext of FILE_EXTS) { if (ext === t) { isFile = true; break; } }
-      if(isFile)continue;
-    }
+    if (!isValidBareUrl(d)) continue;
     add("https://"+d);
     if(out.length>=3)break;
   }
@@ -118,6 +103,33 @@ export interface FetchedPage {
 export interface ReferencedPageBlocks {
   blocks: string[];
   results: FetchedPage[];
+}
+
+function formatReferencedPage(url: string, page: FetchedPage | undefined): string {
+  if (page && page.ok && page.content) {
+    return '[Referenced page] ' + url + '\n'
+      + (page.title ? 'Title: ' + page.title + '\n' : '')
+      + (page.truncated ? '(truncated excerpt)\n' : '')
+      + page.content;
+  }
+  const reason = (page && page.reason) || 'fetch failed';
+  return '[Referenced page] ' + url + '\n(could not retrieve: ' + reason + ')';
+}
+
+function formatReferencedPages(urls: string[], results: FetchedPage[]): string[] {
+  const blocks: string[] = [];
+  for (let index = 0; index < urls.length; index++) {
+    blocks.push(formatReferencedPage(urls[index], results[index]));
+  }
+  return blocks;
+}
+
+function failedPageContext(urls: string[], error: unknown): ReferencedPageBlocks {
+  const message = (error as { message?: string })?.message || String(error);
+  return {
+    blocks: urls.map((url) => '[Referenced page] ' + url + '\n(could not retrieve: ' + message + ')'),
+    results: urls.map(() => ({ ok: false, reason: message })),
+  };
 }
 
 export async function fetchPagesForContext(
@@ -144,29 +156,10 @@ export async function fetchPagesForContext(
       apiFetch("/api/fetch-batch",{method:"POST",body:{urls:urls},signal:linked.controller.signal}),
       aborted,
     ]) as { results?: FetchedPage[] } | null;
-    const results=(r&&r.results)||[];
-    const blocks: string[] = [];
-    for(let i=0;i<urls.length;i++){
-      const u=urls[i];
-      const f=results[i];
-      if(f&&f.ok&&f.content){
-        blocks.push(
-          "[Referenced page] "+u+"\n"+
-          (f.title?"Title: "+f.title+"\n":"")+
-          (f.truncated?"(truncated excerpt)\n":"")+
-          f.content
-        );
-      }else{
-        const reason=(f&&f.reason)||"fetch failed";
-        blocks.push("[Referenced page] "+u+"\n(could not retrieve: "+reason+")");
-      }
-    }
-    return{blocks:blocks,results:results};
+    const results = (r && r.results) || [];
+    return { blocks: formatReferencedPages(urls, results), results };
   }catch(e){
-    const emsg=(e as { message?: string })?.message||String(e);
-    const blocks=urls.map(function(u){return"[Referenced page] "+u+"\n(could not retrieve: "+emsg+")"});
-    const results: FetchedPage[] =urls.map(function(){return{ok:false,reason:emsg}});
-    return{blocks:blocks,results:results};
+    return failedPageContext(urls, e);
   } finally {
     clearTimeout(timer);
     linked.controller.signal.removeEventListener('abort', rejectOnAbort);

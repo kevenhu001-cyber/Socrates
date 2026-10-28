@@ -7,6 +7,7 @@ import { publishSessionList } from '../session/sessionListPublisher.ts';
 import { hasCachedProjects, loadCachedProjects } from '../projects/projectCache.ts';
 import { refreshRecentsFilterChipData } from '../sidebar/sidebar.service.ts';
 import { apiFetch } from '../util/api.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 var _renderRecentsPending = false;
 
@@ -56,7 +57,7 @@ var RECENTS_SEARCH_QUERY = "";
 
 export function setRecentsSearch(q) {
   RECENTS_SEARCH_QUERY = q || "";
-  try { window.RECENTS_SEARCH_QUERY = RECENTS_SEARCH_QUERY; } catch (_) {}
+  try { window.RECENTS_SEARCH_QUERY = RECENTS_SEARCH_QUERY; } catch (error) { reportSwallow(error, 'ui/recentsView.js:59'); }
   var input = document.getElementById("sidebarSearch");
   if (input && input.value !== RECENTS_SEARCH_QUERY) input.value = RECENTS_SEARCH_QUERY;
   renderRecents();

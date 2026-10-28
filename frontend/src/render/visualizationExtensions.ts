@@ -21,28 +21,36 @@ export interface ExtensionSpec {
    parent, the network, or cookies. Same containment the fenced
    ```viz blocks already rely on. `svg_illustration` stays
    script-free: it is static art and gains nothing from executing. */
-function extensionIsSafe(source: unknown, allowScripts: boolean): boolean {
-  const src = String(source || '');
+function containsUnsafeMarkup(src: string, allowScripts: boolean): boolean {
   const tagBan = allowScripts
     ? /<(?:iframe|object|embed|form)\b/i
     : /<(?:script|iframe|object|embed|form)\b/i;
-  if (tagBan.test(src)) return false;
-  if (!allowScripts && /\son\w+\s*=/i.test(src)) return false;
-  if (/\b(?:fetch|xmlhttprequest|websocket|sendbeacon|eventsource)\b/i.test(src)) return false;
-  if (/@import\b/i.test(src)) return false;
-  const attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+  return tagBan.test(src)
+    || (!allowScripts && /\son\w+\s*=/i.test(src))
+    || /\b(?:fetch|xmlhttprequest|websocket|sendbeacon|eventsource)\b/i.test(src)
+    || /@import\b/i.test(src);
+}
+
+function isAllowedInlineResource(value: string): boolean {
+  if (/^(?:javascript|vbscript|livescript|mocha|data\s*:\s*text\/html)/i.test(value)) return false;
+  return /^(?:#|data:(?:image\/|font\/)|blob:)/i.test(value);
+}
+
+function hasUnsafeResourceReference(src: string, referencePattern: RegExp): boolean {
   let match: RegExpExecArray | null;
-  while ((match = attrRe.exec(src)) !== null) {
+  while ((match = referencePattern.exec(src)) !== null) {
     const value = String(match[1] || match[2] || match[3] || '').trim();
-    if (/^(?:javascript|vbscript|livescript|mocha|data\s*:\s*text\/html)/i.test(value)) return false;
-    if (!/^(?:#|data:(?:image\/|font\/)|blob:)/i.test(value)) return false;
+    if (!isAllowedInlineResource(value)) return true;
   }
+  return false;
+}
+
+function extensionIsSafe(source: unknown, allowScripts: boolean): boolean {
+  const src = String(source || '');
+  if (containsUnsafeMarkup(src, allowScripts)) return false;
+  const attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
   const cssUrlRe = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi;
-  while ((match = cssUrlRe.exec(src)) !== null) {
-    const cssUrl = String(match[1] || match[2] || match[3] || '').trim();
-    if (!/^(?:#|data:(?:image\/|font\/)|blob:)/i.test(cssUrl)) return false;
-  }
-  return true;
+  return !hasUnsafeResourceReference(src, attrRe) && !hasUnsafeResourceReference(src, cssUrlRe);
 }
 
 function standaloneSvgSource(source: unknown): string {

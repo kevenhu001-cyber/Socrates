@@ -17,39 +17,43 @@ type ChatResultWindow = Window & {
    We search the FULL response text for any recognizable tool call
    format — the model may embed it in conversation text or wrap it
    in [TOOL_CALL] tags despite the instruction to output it alone. */
-function parseToolCall(text: string): { tool: string; query: string } | null {
-  if (!text || typeof text !== 'string') return null;
+type ParsedToolCall = { tool: string; query: string };
+
+function normalizeJsonToolCall(value: unknown): ParsedToolCall | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as { tool?: unknown; query?: unknown };
+  if (candidate.tool !== 'web_search' || typeof candidate.query !== 'string' || !candidate.query.trim()) return null;
+  return { tool: 'web_search', query: candidate.query.trim().slice(0, 200) };
+}
+
+function parseJsonToolCall(value: string): ParsedToolCall | null {
   try {
-    const trimmed = text.trim();
-    const obj = JSON.parse(trimmed);
-    if (obj && obj.tool === 'web_search' && typeof obj.query === 'string' && obj.query.trim())
-      return { tool: 'web_search', query: obj.query.trim().slice(0, 200) };
+    return normalizeJsonToolCall(JSON.parse(value));
   } catch (_) { /* not JSON */ }
-  const fence = text.match(/```(?:json)?\s*(\{[\s\S]*?"tool"\s*:\s*"web_search"[\s\S]*?\})\s*```/i);
-  if (fence) {
-    try {
-      const obj2 = JSON.parse(fence[1]);
-      if (obj2 && obj2.tool === 'web_search' && typeof obj2.query === 'string' && obj2.query.trim())
-        return { tool: 'web_search', query: obj2.query.trim().slice(0, 200) };
-    } catch (_) { /* not JSON */ }
-  }
-  const tcMatch = text.match(/\[TOOL_CALL\]\s*(\{[\s\S]*?["']tool["']\s*:\s*["']web_search["'][\s\S]*?\})\s*\[\/TOOL_CALL\]/i);
-  if (tcMatch) {
-    try {
-      const obj3 = JSON.parse(tcMatch[1]);
-      if (obj3 && obj3.tool === 'web_search' && typeof obj3.query === 'string' && obj3.query.trim())
-        return { tool: 'web_search', query: obj3.query.trim().slice(0, 200) };
-    } catch (_) { /* not JSON */ }
-  }
-  const bare = text.match(/\{\s*["']tool["']\s*:\s*["']web_search["']\s*,\s*["']query["']\s*:\s*["']([^"']+)["']\s*\}/i);
-  if (bare) {
-    return { tool: 'web_search', query: bare[1].slice(0, 200) };
-  }
-  const lenient = text.match(/\{\s*["']?tool["']?\s*:\s*["']?web_search["']?\s*,\s*["']?query["']?\s*:\s*["']?([^"'}\s][^"'}]*?)["']?\s*\}/i);
-  if (lenient) {
-    return { tool: 'web_search', query: lenient[1].slice(0, 200) };
-  }
   return null;
+}
+
+function parseMatchedJsonToolCall(text: string, pattern: RegExp): ParsedToolCall | null {
+  const match = text.match(pattern);
+  return match ? parseJsonToolCall(match[1]) : null;
+}
+
+function parseLooseToolCall(text: string): ParsedToolCall | null {
+  const bare = text.match(/\{\s*["']tool["']\s*:\s*["']web_search["']\s*,\s*["']query["']\s*:\s*["']([^"']+)["']\s*\}/i);
+  if (bare) return { tool: 'web_search', query: bare[1].slice(0, 200) };
+
+  const lenient = text.match(/\{\s*["']?tool["']?\s*:\s*["']?web_search["']?\s*,\s*["']?query["']?\s*:\s*["']?([^"'}\s][^"'}]*?)["']?\s*\}/i);
+  if (lenient) return { tool: 'web_search', query: lenient[1].slice(0, 200) };
+  return null;
+}
+
+function parseToolCall(text: string): ParsedToolCall | null {
+  if (typeof text !== 'string' || !text) return null;
+  const trimmed = text.trim();
+  return parseJsonToolCall(trimmed)
+    || parseMatchedJsonToolCall(text, /```(?:json)?\s*(\{[\s\S]*?"tool"\s*:\s*"web_search"[\s\S]*?\})\s*```/i)
+    || parseMatchedJsonToolCall(text, /\[TOOL_CALL\]\s*(\{[\s\S]*?["']tool["']\s*:\s*["']web_search["'][\s\S]*?\})\s*\[\/TOOL_CALL\]/i)
+    || parseLooseToolCall(text);
 }
 
 /* Format the search results into the same [Web research] block the

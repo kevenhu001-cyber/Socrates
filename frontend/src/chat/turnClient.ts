@@ -111,6 +111,71 @@ export interface TurnSubscribeHandlers {
   maxEvents?: number;
 }
 
+function parseTurnEventFrame(frame: string): TurnEventFrame | null {
+  const lines = frame.split('\n');
+  let eventName: string | null = null;
+  const dataParts: string[] = [];
+  for (const line of lines) {
+    if (line.indexOf('event:') === 0) eventName = line.slice(6).trim() || eventName;
+    else if (line.indexOf('data:') === 0) dataParts.push(line.slice(5).trim());
+  }
+  if (eventName !== 'turn_event' || !dataParts.length) return null;
+  try {
+    const parsed = JSON.parse(dataParts.join('\n')) as TurnEventFrame;
+    return parsed && typeof parsed.sequence === 'number' ? parsed : null;
+  } catch { /* malformed frame — skip */ }
+  return null;
+}
+
+async function readTurnEventStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  signal: AbortSignal | null,
+  handlers: TurnSubscribeHandlers,
+): Promise<void> {
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let seen = 0;
+  const maxEvents = handlers.maxEvents || 10_000;
+  const processFrame = (frame: string): void => {
+    const parsed = parseTurnEventFrame(frame);
+    if (!parsed) return;
+    seen += 1;
+    handlers.onEvent?.(parsed);
+  };
+  for (;;) {
+    if (signal?.aborted) break;
+    const step = await reader.read();
+    if (step.done) break;
+    buffer += decoder.decode(step.value, { stream: true });
+    buffer = consumeSseBuffer(buffer, processFrame);
+    if (seen >= maxEvents) break;
+  }
+  buffer += decoder.decode();
+  if (buffer && buffer.indexOf('data:') >= 0) processFrame(buffer);
+}
+
+async function consumeTurnEventStream(
+  resp: Response,
+  signal: AbortSignal | null,
+  handlers: TurnSubscribeHandlers,
+): Promise<void> {
+  if (!resp.body || typeof resp.body.getReader !== 'function') {
+    handlers.onDone?.();
+    return;
+  }
+  const reader = resp.body.getReader();
+  try {
+    await readTurnEventStream(reader, signal, handlers);
+    handlers.onDone?.();
+  } catch (err) {
+    handlers.onError?.(err);
+    throw err;
+  } finally {
+    try { reader.releaseLock(); }
+    catch { /* ignore */ }
+  }
+}
+
 /**
  * Subscribe to a turn's event stream from `after` (inclusive-exclusive:
  * server sends sequence > after). Resolves when the stream ends or the
@@ -123,9 +188,9 @@ export async function subscribeChatTurnEvents(
   signal: AbortSignal | null,
   handlers: TurnSubscribeHandlers = {},
 ): Promise<void> {
-  let resp;
+  let response: Response;
   try {
-    resp = await apiFetchRaw(
+    response = await apiFetchRaw(
       `/api/chat-turns/${encodeURIComponent(turnId)}/events?after=${encodeURIComponent(String(Math.max(0, after || 0)))}`,
       { signal: signal || undefined },
     );
@@ -133,52 +198,7 @@ export async function subscribeChatTurnEvents(
     handlers.onError?.(err);
     throw err;
   }
-  if (!resp.body || typeof resp.body.getReader !== 'function') {
-    handlers.onDone?.();
-    return;
-  }
-  const reader = resp.body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let buf = '';
-  let seen = 0;
-  const maxEvents = handlers.maxEvents || 10_000;
-  const processFrame = (frame: string) => {
-    const lines = frame.split('\n');
-    let eventName: string | null = null;
-    const dataParts: string[] = [];
-    for (const line of lines) {
-      if (line.indexOf('event:') === 0) eventName = line.slice(6).trim() || eventName;
-      else if (line.indexOf('data:') === 0) dataParts.push(line.slice(5).trim());
-    }
-    if (eventName !== 'turn_event' || !dataParts.length) return;
-    try {
-      const parsed = JSON.parse(dataParts.join('\n')) as TurnEventFrame;
-      if (parsed && typeof parsed.sequence === 'number') {
-        seen += 1;
-        handlers.onEvent?.(parsed);
-      }
-    } catch { /* malformed frame — skip */ }
-  };
-  try {
-    for (;;) {
-      if (signal?.aborted) break;
-      const step = await reader.read();
-      if (step.done) break;
-      buf += decoder.decode(step.value, { stream: true });
-      buf = consumeSseBuffer(buf, processFrame);
-      if (seen >= maxEvents) break;
-    }
-    buf += decoder.decode();
-    if (buf && buf.indexOf('data:') >= 0) processFrame(buf);
-    handlers.onDone?.();
-  } catch (err) {
-    handlers.onError?.(err);
-    throw err;
-  } finally {
-    try {
-      reader.releaseLock();
-    } catch { /* ignore */ }
-  }
+  await consumeTurnEventStream(response, signal, handlers);
 }
 
 /* ── Pending-turn pointer (localStorage) ────────────────────────── */

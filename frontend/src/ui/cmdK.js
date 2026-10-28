@@ -64,8 +64,6 @@ export function onCmdKInput(q) { invoke('onCmdKInput', [q], true); }
 export function onCmdKKey(ev) { invoke('onCmdKKey', [ev], true); }
 export function openCmdKResult(idx) { invoke('openCmdKResult', [idx], true); }
 export function rebuildCmdKIndex() { invoke('rebuildCmdKIndex', [], true); }
-export function renderCmdKResults(sections) { invoke('renderCmdKResults', [sections], true); }
-export function renderCmdKResultsHits(q, hits) { invoke('renderCmdKResultsHits', [q, hits], true); }
 export function updateCmdKSelected() { invoke('updateCmdKSelected', [], true); }
 
 export { loadCmdKRuntime };

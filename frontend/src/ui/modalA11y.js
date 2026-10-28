@@ -1,3 +1,6 @@
+
+import { reportSwallow } from '../util/reportSwallow.ts';
+
 /* ── Modal focus + Esc helper ──
    Wire focus management and Escape-to-close onto the legacy modal
    overlays. Pattern from `morePopover.js` (capture-phase Esc listener
@@ -70,12 +73,12 @@ export function trapFocus(e, container) {
   if (e.shiftKey) {
     if (document.activeElement === first || !container.contains(document.activeElement)) {
       e.preventDefault();
-      try { last.focus(); } catch (_) {}
+      try { last.focus(); } catch (error) { reportSwallow(error, 'ui/modalA11y.js:73', 'expected'); }
     }
   } else {
     if (document.activeElement === last || !container.contains(document.activeElement)) {
       e.preventDefault();
-      try { first.focus(); } catch (_) {}
+      try { first.focus(); } catch (error) { reportSwallow(error, 'ui/modalA11y.js:78', 'expected'); }
     }
   }
 }
@@ -151,7 +154,7 @@ export function installModalA11y(opts) {
   _wired[opts.overlayId] = true;
 
   function handleOpen() {
-    try { _openTracker.set(opts.overlayId, document.activeElement); } catch (_) {}
+    try { _openTracker.set(opts.overlayId, document.activeElement); } catch (error) { reportSwallow(error, 'ui/modalA11y.js:154'); }
     updateAppShellInert();
     setTimeout(function () { focusFirst(overlay); }, 50);
     if (typeof opts.onOpen === 'function') opts.onOpen();
@@ -162,7 +165,7 @@ export function installModalA11y(opts) {
     _openTracker.delete(opts.overlayId);
     updateAppShellInert();
     if (prev && typeof prev.focus === 'function') {
-      try { prev.focus({ preventScroll: true }); } catch (_) {}
+      try { prev.focus({ preventScroll: true }); } catch (error) { reportSwallow(error, 'ui/modalA11y.js:165', 'expected'); }
     }
     if (typeof opts.onClose === 'function') opts.onClose();
   }

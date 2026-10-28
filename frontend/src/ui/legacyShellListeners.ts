@@ -5,17 +5,49 @@ import { readComposerSurface } from '../composer/controller.ts';
 
 let mounted = false;
 
-export function mountLegacyShellListeners(actions) {
-  if (mounted || typeof document === 'undefined') return function () {};
+interface LegacyShellActions {
+  toggleSidebar: () => void;
+  startNewChat: () => void;
+  toggleIncognito: () => void;
+  openFind: () => void;
+  openShare: () => void;
+  openSettings: () => void;
+  startSession: () => void;
+  sendMessage: () => void;
+  toggleComposerTools: (target: HTMLElement | null, surface: string) => void;
+  toggleEffort: (target: HTMLElement | null) => void;
+  selectMode: (mode: string | undefined) => void;
+  toggleMobileMode: () => void;
+  searchRecents: (query: string) => void;
+  switchTab: (tab: string) => void;
+  toggleSidebarView: (view: string) => void;
+}
+
+declare global {
+  interface Window {
+    toggleSpeechInput?: (surface: string) => unknown;
+  }
+}
+
+function guardComposerReentry(button: HTMLButtonElement | null, streaming: boolean): void {
+  if (streaming || !button?.classList.contains('active')) return;
+  button.style.pointerEvents = 'none';
+  const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : null;
+  if (raf) raf(() => { button.style.pointerEvents = ''; });
+  else setTimeout(() => { button.style.pointerEvents = ''; }, 16);
+}
+
+export function mountLegacyShellListeners(actions: LegacyShellActions): () => void {
+  if (mounted || typeof document === 'undefined') return () => undefined;
   mounted = true;
-  const cleanups = [];
-  const bind = (element, type, listener) => {
+  const cleanups: Array<() => void> = [];
+  const bind = (element: EventTarget | null, type: string, listener: EventListener) => {
     if (!element || typeof listener !== 'function') return;
     element.addEventListener(type, listener);
     cleanups.push(() => element.removeEventListener(type, listener));
   };
-  const byId = (id) => document.getElementById(id);
-  const click = (id, action) => bind(byId(id), 'click', action);
+  const byId = (id: string): HTMLElement | null => document.getElementById(id);
+  const click = (id: string, action: EventListener) => bind(byId(id), 'click', action);
 
   click('sidebarOpenBtn', actions.toggleSidebar);
   click('mobileIncognitoBtn', actions.toggleIncognito);
@@ -24,8 +56,8 @@ export function mountLegacyShellListeners(actions) {
   click('shareBtn', actions.openShare);
   click('apiSettingsBtn', actions.openSettings);
   bind(document, 'socrates:open-settings', actions.openSettings);
-  click('composerPrimaryBtn', () => {
-    const button = byId('composerPrimaryBtn');
+  click('composerPrimaryBtn', (() => {
+    const button = byId('composerPrimaryBtn') as HTMLButtonElement | null;
     if (button && button.disabled) return;
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
@@ -38,15 +70,7 @@ export function mountLegacyShellListeners(actions) {
        pointer-events:none for one animation frame so the second
        synthetic click cannot land on the same button; the next rAF
        restores it after the React commit. */
-    const guardReentrancy = !streaming && button?.classList.contains('active');
-    if (guardReentrancy && button) {
-      button.style.pointerEvents = 'none';
-      const raf = typeof requestAnimationFrame === 'function'
-        ? requestAnimationFrame
-        : null;
-      if (raf) raf(() => { button.style.pointerEvents = ''; });
-      else setTimeout(() => { button.style.pointerEvents = ''; }, 16);
-    }
+    guardComposerReentry(button, Boolean(streaming));
     /* P_composer-primary-split — the primary is submit-only. It used to
        start dictation when the draft was empty, which gave the composer two
        controls that announced the same action ("Voice input"); the
@@ -56,7 +80,7 @@ export function mountLegacyShellListeners(actions) {
       return;
     }
     actions.startSession();
-  });
+  }) as EventListener);
   click('composerMicBtn', () => {
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
@@ -68,32 +92,32 @@ export function mountLegacyShellListeners(actions) {
     byId('mobileModeTrigger')?.setAttribute('aria-expanded', 'false');
     actions.toggleEffort(byId('mobileModeTrigger'));
   });
-  click('sidebarSearchBtn', (event) => {
+  click('sidebarSearchBtn', ((event: Event) => {
     const sidebar = byId('sidebar');
     const input = byId('sidebarSearch');
-    const button = event.currentTarget;
+    const button = event.currentTarget as HTMLElement | null;
     const open = !sidebar?.classList.contains('search-open');
     sidebar?.classList.toggle('search-open', open);
     button?.setAttribute('aria-expanded', String(open));
     if (open) requestAnimationFrame(() => input?.focus());
-  });
+  }) as EventListener);
 
-  bind(byId('composerToolsBtn'), 'click', (event) => {
+  bind(byId('composerToolsBtn'), 'click', ((event: Event) => {
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
-    actions.toggleComposerTools(event.currentTarget, surface);
-  });
-  document.querySelectorAll('.effort-trigger').forEach((element) => {
+    actions.toggleComposerTools(event.currentTarget as HTMLElement | null, surface);
+  }) as EventListener);
+  document.querySelectorAll<HTMLElement>('.effort-trigger').forEach((element) => {
     bind(element, 'click', () => actions.toggleEffort(element));
   });
   /* The top-bar Chat/Tutor pill was removed; the dropdown items in
      #mobileModeMenu are the remaining in-shell mode affordance. */
-  document.querySelectorAll('#mobileModeMenu .mobile-mode-item[data-mode]').forEach((element) => {
+  document.querySelectorAll<HTMLElement>('#mobileModeMenu .mobile-mode-item[data-mode]').forEach((element) => {
     bind(element, 'click', () => actions.selectMode(element.dataset.mode));
   });
 
   const search = byId('sidebarSearch');
-  bind(search, 'input', (event) => actions.searchRecents(event.currentTarget.value));
+  bind(search, 'input', ((event: Event) => actions.searchRecents((event.currentTarget as HTMLInputElement).value)) as EventListener);
   bind(search, 'focus', () => actions.switchTab('recents'));
   click('tabKnowledge', () => actions.toggleSidebarView('knowledge'));
   click('tabMistakes', () => actions.toggleSidebarView('mistakes'));

@@ -269,7 +269,9 @@ export function restoreConnectorReturnContext() {
   var chatId = query.get("chat");
   if (chatId) {
     activateMainView("chatView", document);
-    Promise.resolve(loadSession(chatId)).catch(function () {});
+    Promise.resolve(loadSession(chatId)).catch(function (error) {
+      reportSwallow(error, 'sidebar/nav.restoreConnectorSession');
+    });
   } else {
     activateMainView("topicSetup", document);
   }

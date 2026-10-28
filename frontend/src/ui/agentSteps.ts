@@ -176,6 +176,62 @@ function stepsHost(section: HTMLElement): HTMLElement {
   return list || section;
 }
 
+function findOrCreateStepRow(list: HTMLElement, stepId: string): HTMLElement {
+  const selector = `.agent-step[data-step-id="${cssEscape(stepId)}"]`;
+  const existing = list.querySelector(selector) as HTMLElement | null;
+  if (existing) return existing;
+  const row = document.createElement('details');
+  row.className = 'agent-step';
+  row.dataset.stepId = stepId;
+  row.innerHTML = '<summary class="agent-step-head">'
+    + '<span class="agent-step-icon" aria-hidden="true"></span>'
+    + '<span class="agent-step-label"></span>'
+    + '<code class="agent-step-cmd"></code>'
+    + '<span class="agent-step-meta"></span>'
+    + '</summary>'
+    + '<div class="agent-step-body"></div>';
+  list.appendChild(row);
+  return row;
+}
+
+function updateStepIcon(row: HTMLElement, step: AgentStepData): void {
+  const icon = row.querySelector('.agent-step-icon') as HTMLElement | null;
+  if (icon) icon.innerHTML = agentStepIcon(step.kind);
+}
+
+function updateStepLabel(row: HTMLElement, step: AgentStepData): void {
+  const label = row.querySelector('.agent-step-label') as HTMLElement | null;
+  if (!label) return;
+  label.textContent = agentStepLabel(step);
+  label.classList.remove('shimmer-text');
+}
+
+function inlineStepCommand(step: AgentStepData): string {
+  /* A finished command already names itself in the label, so the inline code
+     slot carries the detail instead (query, file list, MCP tool). For a file
+     change the diff counts live in meta, so the excerpt only shows paths. */
+  if (step.kind === 'command' && step.status !== 'running') return '';
+  return truncate(fileNames(step) || step.detail || step.command || '', MAX_COMMAND_CHARS);
+}
+
+function updateStepCommand(row: HTMLElement, step: AgentStepData): void {
+  const command = row.querySelector('.agent-step-cmd') as HTMLElement | null;
+  if (!command) return;
+  const inline = inlineStepCommand(step);
+  command.textContent = inline;
+  command.hidden = !inline;
+}
+
+function updateStepMeta(row: HTMLElement, step: AgentStepData): void {
+  const meta = row.querySelector('.agent-step-meta') as HTMLElement | null;
+  if (!meta) return;
+  const bits = [diffStatText(step), stepDuration(step.durationMs)].filter(Boolean);
+  if (step.status === 'failed') {
+    bits.push(step.exitCode != null ? `exit ${step.exitCode}` : translate(LABELS.failed));
+  }
+  meta.textContent = bits.join('  ·  ');
+}
+
 /**
  * Create or update one step row, keyed by `stepId`.
  *
@@ -191,51 +247,13 @@ export function upsertAgentStep(
   if (!host || !step || !step.stepId) return null;
   const section = ensureAgentRunSection(host, runId);
   const list = stepsHost(section);
-  const selector = `.agent-step[data-step-id="${cssEscape(String(step.stepId))}"]`;
-  let row = list.querySelector(selector) as HTMLElement | null;
-  if (!row) {
-    row = document.createElement('details');
-    row.className = 'agent-step';
-    row.dataset.stepId = String(step.stepId);
-    row.innerHTML = '<summary class="agent-step-head">'
-      + '<span class="agent-step-icon" aria-hidden="true"></span>'
-      + '<span class="agent-step-label"></span>'
-      + '<code class="agent-step-cmd"></code>'
-      + '<span class="agent-step-meta"></span>'
-      + '</summary>'
-      + '<div class="agent-step-body"></div>';
-    list.appendChild(row);
-  }
-
+  const row = findOrCreateStepRow(list, String(step.stepId));
   row.dataset.kind = step.kind;
   row.dataset.state = step.status;
-  const icon = row.querySelector('.agent-step-icon') as HTMLElement | null;
-  if (icon) icon.innerHTML = agentStepIcon(step.kind);
-  const label = row.querySelector('.agent-step-label') as HTMLElement | null;
-  if (label) {
-    label.textContent = agentStepLabel(step);
-    label.classList.remove('shimmer-text');
-  }
-  const command = row.querySelector('.agent-step-cmd') as HTMLElement | null;
-  if (command) {
-    /* A finished command already names itself in the label, so the inline
-       code slot carries the detail instead (query, file list, MCP tool).
-       For a file change the diff counts live in the meta column, so the
-       excerpt shows only the paths and never repeats them. */
-    const inline = step.kind === 'command' && step.status !== 'running'
-      ? ''
-      : truncate(fileNames(step) || step.detail || step.command || '', MAX_COMMAND_CHARS);
-    command.textContent = inline;
-    command.hidden = !inline;
-  }
-  const meta = row.querySelector('.agent-step-meta') as HTMLElement | null;
-  if (meta) {
-    const bits = [diffStatText(step), stepDuration(step.durationMs)].filter(Boolean);
-    if (step.status === 'failed') {
-      bits.push(step.exitCode != null ? `exit ${step.exitCode}` : translate(LABELS.failed));
-    }
-    meta.textContent = bits.join('  ·  ');
-  }
+  updateStepIcon(row, step);
+  updateStepLabel(row, step);
+  updateStepCommand(row, step);
+  updateStepMeta(row, step);
   renderStepBody(row, step);
   return row;
 }

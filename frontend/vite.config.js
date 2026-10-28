@@ -439,6 +439,24 @@ export default defineConfig({
       return undefined;
     },
     rollupOptions: {
+      onwarn(warning, defaultHandler) {
+        const source = String(warning.id || (warning.loc && warning.loc.file) || warning.message || '')
+          .replace(/\\/g, '/');
+        /* Client-only React packages publish a `use client` boundary for
+           frameworks with server components. This Vite SPA bundles every
+           imported module for the browser, so Rollup drops that directive
+           without changing behavior. Keep every other build warning visible. */
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE'
+            && warning.message.includes('"use client"')
+            && source.includes('node_modules/')) return;
+        /* Zod 4.6 ships two misplaced @__PURE__ comments. Rollup removes
+           those comments itself because they are outside a call expression;
+           ignore only that discarded-annotation notice from the dependency. */
+        if (warning.code === 'INVALID_ANNOTATION'
+            && warning.message.includes('comment will be removed')
+            && source.includes('node_modules/zod/')) return;
+        defaultHandler(warning);
+      },
       output: {
         manualChunks(id) {
           const f = id.split('\\').join('/');

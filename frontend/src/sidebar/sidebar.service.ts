@@ -29,6 +29,12 @@ function mainSidebarInset(main: HTMLElement): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+function visibleMainOffset(main: HTMLElement | null): number {
+  if (!main || !mainShiftAnimation) return 0;
+  const transform = getComputedStyle(main).transform;
+  return transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m41;
+}
+
 /**
  * Desktop open/close uses a FLIP-style compositor transition.
  *
@@ -120,11 +126,7 @@ export function toggleSidebar(): void {
      committed inset already points at the previous destination, while the
      compositor is still in flight. Carry its current offset into the next
      FLIP so the content never snaps to that unfinished destination. */
-  let visibleOffset = 0;
-  if (main && mainShiftAnimation) {
-    const transform = getComputedStyle(main).transform;
-    if (transform !== 'none') visibleOffset = new DOMMatrixReadOnly(transform).m41;
-  }
+  const visibleOffset = visibleMainOffset(main);
   const beforeInset = main ? mainSidebarInset(main) + visibleOffset : 0;
   cancelDesktopSidebarMotion();
 

@@ -61,44 +61,45 @@ function errorMessage(error: unknown): string {
   return String(value || 'model request failed');
 }
 
+/* SPA lifecycle aborts are expected control flow, not errors; these names
+   must unwind a stream quietly without a retry or global error banner. */
+const USER_ABORT_REASONS = new Set([
+  'user-stop',
+  'user_stop',
+  'user stop',
+  'cancelled',
+  'canceled',
+  'session-expired',
+  'session-switch',
+  'session-switching',
+  'session-deleted',
+  'session-purged',
+  'session-reset',
+  'archived-session',
+  'new-session',
+  'superseded',
+  'msg-edit',
+  'msg-regen',
+  'signout',
+  'sign-out',
+  'first-delta-timeout',
+]);
+
+function isGenericAbortReason(reason: string): boolean {
+  return !reason
+    || reason === 'abort'
+    || reason.startsWith('aborterror')
+    || reason.includes('operation was aborted');
+}
+
 export function isUserAbort(error: unknown, signal?: AbortSignal): boolean {
   const record = asRecord(error);
   const reason = String(record?.reason ?? signal?.reason ?? '').trim().toLowerCase();
-  if (reason === 'user-stop'
-    || reason === 'user_stop'
-    || reason === 'user stop'
-    || reason === 'cancelled'
-    || reason === 'canceled') return true;
-  /* P_session-abort — lifecycle aborts issued by the SPA itself
-     (auth expiry, session switch/delete/reset, turn superseded,
-     message edit/regen) are intentional control flow, not errors.
-     They must unwind the in-flight stream as a quiet cancel:
-     no retry, no error bubble, no global-error banner. Without
-     this, handleAuthExpired's `_activeChatAbort("session-expired")`
-     surfaced as `AbortError: session-expired` in an
-     unhandledrejection with a red banner. */
-  if (reason === 'session-expired'
-    || reason === 'session-switch'
-    || reason === 'session-switching'
-    || reason === 'session-deleted'
-    || reason === 'session-purged'
-    || reason === 'session-reset'
-    || reason === 'archived-session'
-    || reason === 'new-session'
-    || reason === 'superseded'
-    || reason === 'msg-edit'
-    || reason === 'msg-regen'
-    || reason === 'signout'
-    || reason === 'sign-out'
-    || reason === 'first-delta-timeout') return true;
+  if (USER_ABORT_REASONS.has(reason)) return true;
   /* AbortController.abort() without an explicit reason is how the Codex
      Stop button cancels its turn. The client never aborts on a timer, so
      an unnamed DOM abort is safe to classify as user intent. */
-  return !!signal?.aborted
-    && (!reason
-      || reason === 'abort'
-      || reason.startsWith('aborterror')
-      || reason.includes('operation was aborted'));
+  return Boolean(signal?.aborted && isGenericAbortReason(reason));
 }
 
 /**

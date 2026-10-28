@@ -64,6 +64,189 @@ function getMarked(): MarkedLike | undefined {
   return (globalThis as { marked?: MarkedLike }).marked;
 }
 
+interface PlaceholderBank {
+  blocks: string[];
+  vizBlocks: string[];
+  save(html: string): string;
+  saveViz(html: string): string;
+  restoreBlocks(html: string): string;
+  restoreViz(html: string): string;
+}
+
+function createPlaceholderBank(): PlaceholderBank {
+  /* Random tokens prevent user text from impersonating a trusted HTML slot. */
+  const nonce = Math.random().toString(36).slice(2, 10);
+  const blockPrefix = '§SCRTB' + nonce;
+  const vizPrefix = '§SCRTV' + nonce;
+  const blockRe = new RegExp(blockPrefix + '(\\d+)§', 'g');
+  const vizRe = new RegExp(vizPrefix + '(\\d+)§', 'g');
+  const blocks: string[] = [];
+  const vizBlocks: string[] = [];
+  return {
+    blocks,
+    vizBlocks,
+    save(html) {
+      const id = blocks.push(html) - 1;
+      return blockPrefix + id + '§';
+    },
+    saveViz(html) {
+      const id = vizBlocks.push(html) - 1;
+      return vizPrefix + id + '§';
+    },
+    restoreBlocks(html) {
+      return html.replace(blockRe, (_match, id: string) => blocks[parseInt(id)]);
+    },
+    restoreViz(html) {
+      return html.replace(vizRe, (_match, id: string) => vizBlocks[parseInt(id)]);
+    },
+  };
+}
+
+function renderProgressiveScaffold(
+  tag: string,
+  content: string,
+  attrs: string,
+  bank: PlaceholderBank,
+): string {
+  const plugin = findStreamScaffold(tag);
+  if (plugin) {
+    try {
+      const parsed = plugin.parse(content);
+      if (parsed) {
+        const html = plugin.render(parsed);
+        if (html) return bank.save(html);
+      }
+    } catch {
+      /* Plugin threw — fall through to preview and plain text. */
+    }
+  }
+  const preview = renderStreamScaffoldPreview(tag, content, attrs, formatMsgProgressive);
+  if (preview) return bank.save(preview);
+
+  const label = streamScaffoldFallbackLabel(tag);
+  let text = streamScaffoldFallbackText(content);
+  text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, math: string) => {
+    const html = renderStreamMath(math, true, false);
+    return html === null ? match : bank.save(html);
+  });
+  text = text.replace(/\$(.+?)\$/g, (match, math: string) => {
+    const html = renderStreamMath(math, false, false);
+    return html === null ? match : bank.save(html);
+  });
+  return bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
+    + label + '</span> ' + escHTML(text) + '</div>');
+}
+
+function replaceProgressiveScaffolds(source: string, bank: PlaceholderBank): string {
+  source = source.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
+  /* Thinking text is shown in the live status line, not in the transcript. */
+  source = source.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  source = source.replace(/<think>[\s\S]*$/gi, '');
+  source = source.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b([^>]*)>([\s\S]*?)<\/\1>/gi,
+    (_match, tag: string, attrs: string, content: string) => renderProgressiveScaffold(tag, content, attrs, bank));
+  return source.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b([^>]*)>([\s\S]*?)$/gi,
+    (_match, tag: string, attrs: string, content: string) => renderProgressiveScaffold(tag, content, attrs, bank));
+}
+
+function replaceProgressiveCodeBlocks(
+  source: string,
+  complete: boolean,
+  bank: PlaceholderBank,
+): string {
+  source = source.replace(/```mermaid\s*\n?([\s\S]*?)```/g, (_match, code: string) => {
+    const trimmed = code.trim();
+    return trimmed ? bank.saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })) : '';
+  });
+  source = source.replace(/```mermaid\s*\n?([\s\S]*?)$/g, (_match, body: string) => {
+    const trimmed = body.trim();
+    return bank.saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId('mermaid', trimmed) }));
+  });
+  source = source.replace(/```plot\s*\n?([\s\S]*?)```/g, (_match, spec: string) => {
+    const trimmed = spec.trim();
+    return trimmed ? bank.saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
+  });
+  source = source.replace(/```plot\s*\n?([\s\S]*?)$/g, (_match, body: string) => {
+    const trimmed = body.trim();
+    return bank.saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId('plot', trimmed) }));
+  });
+  source = source.replace(/```(\w*)\n?([\s\S]*?)```/g, (_match, lang: string, code: string) => {
+    const trimmed = code.trim();
+    const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
+    const hasSvgTag = /<svg[\s>]/i.test(trimmed);
+    const looksLikeHtml = isHtmlLang || hasSvgTag || (
+      trimmed.length > 30 && /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
+    );
+    if (isHtmlLang || (looksLikeHtml && (trimmed.length > 20 || hasSvgTag))) {
+      return bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
+    }
+    const hljsLang = safeHljsLang(lang);
+    const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
+    return bank.save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
+  });
+  return source.replace(/```(\w*)\n?([\s\S]*)$/g, (_match, lang: string, body: string) => {
+    const trimmed = body.trim();
+    if (!trimmed) return bank.save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
+    const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
+    if (isHtmlLang) {
+      return bank.saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang || 'html', trimmed) }));
+    }
+    if (complete) {
+      const hljsLang = safeHljsLang(lang);
+      const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
+      return bank.save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
+    }
+    return bank.save('<div class="stream-code-pending"><div class="stream-code-pending-header">'
+      + '<span class="stream-code-badge">' + escHTML(lang || 'code') + '</span>'
+      + '<span class="stream-code-dots shimmer-text">…</span></div></div>');
+  });
+}
+
+function replaceProgressiveDisplayMath(source: string, complete: boolean, bank: PlaceholderBank): string {
+  const replaceClosed = (match: string, math: string) => {
+    const html = renderStreamMath(math, true, false);
+    return html === null ? match : bank.save(html);
+  };
+  const replaceOpen = (match: string, math: string) => {
+    const html = renderStreamMath(math, true, true);
+    if (html !== null) return bank.save(html);
+    return complete ? match : bank.save('<div class="katex-display math-stream-placeholder" style="min-height:2em;opacity:0.5;"><span class="scaffold-stream-placeholder shimmer-text">…</span></div>');
+  };
+  source = source.replace(/\$\$([\s\S]+?)\$\$/g, replaceClosed);
+  source = source.replace(/\\\[([\s\S]+?)\\\]/g, replaceClosed);
+  source = source.replace(/\$\$([\s\S]+)$/g, replaceOpen);
+  return source.replace(/\\\[([\s\S]+)$/g, replaceOpen);
+}
+
+function replaceProgressiveInlineMath(source: string, complete: boolean, bank: PlaceholderBank): string {
+  source = replaceInlineDollarMath(source, false, (math: string) => {
+    const html = renderStreamMath(math, false, false);
+    return html === null ? null : bank.save(html);
+  });
+  source = source.replace(/\\\((.+?)\\\)/g, (match, math: string) => {
+    const html = renderStreamMath(math, false, false);
+    return html === null ? match : bank.save(html);
+  });
+  source = source.replace(/\$([^\n$]+)$/g, (match, math: string) => {
+    if (complete || !_looksLikeInlineMathTail(math.trim())) return match;
+    const html = renderStreamMath(math, false, true);
+    if (html !== null) return bank.save(html);
+    return bank.save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
+  });
+  return source.replace(/\\\(([^\n\\]+)$/g, (match, math: string) => {
+    const html = renderStreamMath(math, false, true);
+    if (html !== null) return bank.save(html);
+    return complete ? match : bank.save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
+  });
+}
+
+function renderProgressiveMarkdown(source: string, bank: PlaceholderBank): string {
+  const marked = getMarked();
+  const html = marked
+    ? marked.parse(source, { breaks: true, gfm: true })
+    : '<p>' + escHTML(source).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+  return bank.restoreViz(sanitizeHtml(bank.restoreBlocks(html), { chineseProse: true }));
+}
+
 interface RenderMathInElementOpts {
   delimiters: Array<{ left: string; right: string; display: boolean }>;
   throwOnError: boolean;
@@ -110,213 +293,29 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
   if (s.charCodeAt(s.length - 1) === 10) { s = s.slice(0, -1); }
   if (!s) return '';
 
-  /* Nonce placeholders — a literal "XVIZBLOCK0X" in user text must never
-     be replaced with viz HTML. The token is random per call so attacker
-     text cannot guess it. */
-  const nonce = Math.random().toString(36).slice(2, 10);
-  const blockPrefix = '§SCRTB' + nonce;
-  const vizPrefix = '§SCRTV' + nonce;
-  const blockRe = new RegExp(blockPrefix + '(\\d+)§', 'g');
-  const vizRe = new RegExp(vizPrefix + '(\\d+)§', 'g');
-  const blocks: string[] = [];
-  let pid = 0;
-  function save(html: string): string {
-    const id = pid++;
-    blocks.push(html);
-    return blockPrefix + id + '§';
-  }
-  const vizBlocks: string[] = [];
-  let vizPid = 0;
-  function saveViz(html: string): string {
-    const id = vizPid++;
-    vizBlocks.push(html);
-    return vizPrefix + id + '§';
-  }
+  const bank = createPlaceholderBank();
 
-  s = s.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
+  s = replaceProgressiveScaffolds(s, bank);
 
-  /* P_chatgpt-parity — strip <think> blocks so thinking process does not
-     clutter the chat bubble or persistent transcript; the live status line
-     (TurnStatus) handles the transient thinking cue during streaming. */
-  s = s.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  s = s.replace(/<think>[\s\S]*$/gi, '');
-
-  function _streamScaffoldFallback(tag: string, content: string): string {
-    const label = streamScaffoldFallbackLabel(tag);
-    let txt = streamScaffoldFallbackText(content);
-    txt = txt.replace(/\$\$([\s\S]*?)\$\$/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, false);
-      return html === null ? _ : save(html);
-    });
-    txt = txt.replace(/\$(.+?)\$/g, function (_, math: string) {
-      const html = renderStreamMath(math, false, false);
-      return html === null ? _ : save(html);
-    });
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
-                + label + '</span> ' + escHTML(txt) + '</div>');
-  }
-  function _streamScaffold(tag: string, content: string, attrs = ''): string {
-    const plugin = findStreamScaffold(tag);
-    if (plugin) {
-      try {
-        const parsed = plugin.parse(content);
-        if (parsed) {
-          const html = plugin.render(parsed);
-          if (html) return save(html);
-        }
-      } catch {
-        /* Plugin threw — fall through to plain-text preview. */
-      }
-    }
-    const preview = renderStreamScaffoldPreview(tag, content, attrs, formatMsgProgressive);
-    if (preview) return save(preview);
-    return _streamScaffoldFallback(tag, content);
-  }
-  s = s.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b([^>]*)>([\s\S]*?)<\/\1>/gi, function (_, tag: string, attrs: string, content: string) {
-    return _streamScaffold(tag, content, attrs);
-  });
-  s = s.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b([^>]*)>([\s\S]*?)$/gi, function (_, tag: string, attrs: string, content: string) {
-    return _streamScaffold(tag, content, attrs);
-  });
-
-  s = s.replace(/```mermaid\s*\n?([\s\S]*?)```/g, function (_, code: string) {
-    const trimmed = code.trim();
-    return trimmed ? saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })) : '';
-  });
-  s = s.replace(/```mermaid\s*\n?([\s\S]*?)$/g, function (_, body: string) {
-    const trimmed = body.trim();
-    return saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId('mermaid', trimmed) }));
-  });
-
-  s = s.replace(/```plot\s*\n?([\s\S]*?)```/g, function (_, spec: string) {
-    const trimmed = spec.trim();
-    return trimmed ? saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
-  });
-  s = s.replace(/```plot\s*\n?([\s\S]*?)$/g, function (_, body: string) {
-    const trimmed = body.trim();
-    return saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId('plot', trimmed) }));
-  });
-
-  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_, lang: string, code: string) {
-    const trimmed = code.trim();
-    const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
-    const hasSvgTag = /<svg[\s>]/i.test(trimmed);
-    const looksLikeHtml = isHtmlLang || hasSvgTag || (
-      trimmed.length > 30 &&
-      /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
-    );
-    if (isHtmlLang || (looksLikeHtml && (trimmed.length > 20 || hasSvgTag))) {
-      return saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
-    }
-    const hljsLang = safeHljsLang(lang);
-    const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
-    return save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
-  });
-
-  s = s.replace(/```(\w*)\n?([\s\S]*)$/g, function (_, lang: string, body: string) {
-    const trimmed = body.trim();
-    if (trimmed) {
-      const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
-      if (isHtmlLang) {
-        return saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang || 'html', trimmed) }));
-      }
-      if (opts?.complete) {
-        const hljsLang = safeHljsLang(lang);
-        const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
-        return save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
-      }
-      return save(
-        '<div class="stream-code-pending">' +
-          '<div class="stream-code-pending-header">' +
-            '<span class="stream-code-badge">' + escHTML(lang || 'code') + '</span>' +
-            '<span class="stream-code-dots shimmer-text">…</span>' +
-          '</div>' +
-        '</div>'
-      );
-    }
-    return save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
-  });
+  s = replaceProgressiveCodeBlocks(s, !!opts?.complete, bank);
 
   const katex = getKatex(s);
   const inlineCodeGuard = _stashInlineCode(s);
   s = inlineCodeGuard.text;
 
   if (typeof katex !== 'undefined') {
-    /* Closed display math: $$...$$ and \[...\] */
-    s = s.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, false);
-      return html === null ? _ : save(html);
-    });
-    s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, false);
-      return html === null ? _ : save(html);
-    });
-    /* Display math still arriving: the closing `$$` or `\]` has not appeared.
-       If incomplete, defer with a smooth height placeholder instead of flashing raw LaTeX code. */
-    s = s.replace(/\$\$([\s\S]+)$/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, true);
-      if (html !== null) return save(html);
-      return opts?.complete ? _ : save('<div class="katex-display math-stream-placeholder" style="min-height:2em;opacity:0.5;"><span class="scaffold-stream-placeholder shimmer-text">…</span></div>');
-    });
-    s = s.replace(/\\\[([\s\S]+)$/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, true);
-      if (html !== null) return save(html);
-      return opts?.complete ? _ : save('<div class="katex-display math-stream-placeholder" style="min-height:2em;opacity:0.5;"><span class="scaffold-stream-placeholder shimmer-text">…</span></div>');
-    });
-  }
-
-  if (typeof katex !== 'undefined') {
-    /* Closed inline math: $...$ and \(...\) */
-    s = replaceInlineDollarMath(s, false, function (math: string) {
-      const html = renderStreamMath(math, false, false);
-      return html === null ? null : save(html);
-    });
-    s = s.replace(/\\\((.+?)\\\)/g, function (m, math: string) {
-      const html = renderStreamMath(math, false, false);
-      return html === null ? m : save(html);
-    });
-    /* Inline math still arriving: closing `$` or `\)` has not appeared.
-       Defer unclosed tail so incomplete raw syntax is never shown to the user. */
-    s = s.replace(/\$([^\n$]+)$/g, function (m, math: string) {
-      /* Text that cannot grow has no "still arriving" formula: the final
-         renderer leaves an unpaired `$` literal, so this pass must too. */
-      if (opts?.complete) return m;
-      if (!_looksLikeInlineMathTail(math.trim())) return m;
-      const html = renderStreamMath(math, false, true);
-      if (html !== null) return save(html);
-      return opts?.complete ? m : save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
-    });
-    s = s.replace(/\\\(([^\n\\]+)$/g, function (m, math: string) {
-      const html = renderStreamMath(math, false, true);
-      if (html !== null) return save(html);
-      return opts?.complete ? m : save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
-    });
+    s = replaceProgressiveDisplayMath(s, !!opts?.complete, bank);
+    s = replaceProgressiveInlineMath(s, !!opts?.complete, bank);
   }
 
   s = inlineCodeGuard.restore(s);
 
   if (!opts?.complete) {
     s = s.replace(/(?:^|\n)((?:\|[^\n]+\|\s*\n?)+)$/, function () {
-      return save('<div class="table-stream-placeholder shimmer-text"><span class="table-stream-icon">⊞</span> 正在生成表格…</div>');
+      return bank.save('<div class="table-stream-placeholder shimmer-text"><span class="table-stream-icon">⊞</span> 正在生成表格…</div>');
     });
   }
-
-  let html: string;
-  const marked = getMarked();
-  if (typeof marked !== 'undefined') {
-    html = marked.parse(s, { breaks: true, gfm: true });
-  } else {
-    html = '<p>' + escHTML(s).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
-  }
-
-  html = html.replace(blockRe, function (_, id: string) {
-    return blocks[parseInt(id)];
-  });
-
-  const sanitized = sanitizeHtml(html, { chineseProse: true });
-  return sanitized.replace(vizRe, function (_, id: string) {
-    return vizBlocks[parseInt(id)];
-  });
+  return renderProgressiveMarkdown(s, bank);
 }
 
 export function formatMsg(t: string | null | undefined): string {
@@ -330,6 +329,202 @@ export function formatMsg(t: string | null | undefined): string {
   }
 }
 
+function formatWithoutMarked(t: string): string {
+  const fallbackViz: string[] = [];
+  const saveFallbackViz = (html: string): string => {
+    const id = fallbackViz.push(html) - 1;
+    return 'XVIZFALLBACK' + id + 'X';
+  };
+  let raw = preprocessMarkdown(t);
+  raw = raw.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/gi, (_match, lang: string, content: string) => {
+    const trimmed = content.trim();
+    return trimmed ? saveFallbackViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
+  });
+  raw = raw.replace(/```plot\s*\n?([\s\S]*?)```/gi, (_match, content: string) => {
+    const trimmed = content.trim();
+    return trimmed ? saveFallbackViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
+  });
+  raw = raw.replace(/```(viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, (_match, lang: string, body: string) => (
+    saveFallbackViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang, String(body || '').trim()) }))
+  ));
+  const escaped = esc(raw).replace(/```(\w*)\r?\n?([\s\S]*?)```/g,
+    (_match, _lang: string, code: string) => '<pre><code>' + esc(code.trim()) + '</code></pre>');
+  const fallbackHtml = '<p>' + escaped
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>') + '</p>';
+  return sanitizeHtml(fallbackHtml, { chineseProse: true }).replace(/XVIZFALLBACK(\d+)X/g,
+    (_match, id: string) => fallbackViz[parseInt(id, 10)] || '');
+}
+
+function boundedScaffoldText(content: string): string {
+  const text = content.replace(/<[^>]+>/g, '').trim();
+  return text.length > 300 ? text.slice(0, 300) + '…' : text;
+}
+
+function replaceSettledScaffolds(
+  source: string,
+  katex: ReturnType<typeof getKatex>,
+  bank: PlaceholderBank,
+): string {
+  source = source.replace(/<(quiz|example|practice|definition|flashcard)\b[^>]*>([\s\S]*?)<\/\1>/gi,
+    (_match, tag: string, content: string) => {
+      const labels: Record<string, string> = {
+        quiz: 'Quiz', example: 'Example', practice: 'Practice',
+        definition: 'Definition', flashcard: 'Flashcard',
+      };
+      const label = '[' + (labels[tag] || 'Flashcard') + ']';
+      return bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
+        + label + '</span>' + esc(boundedScaffoldText(content)) + '</div>');
+    });
+  source = source.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi, (_match, content: string) => (
+    bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span>'
+      + esc(boundedScaffoldText(content)) + '</div>')
+  ));
+  source = source.replace(/<(proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)<\/\1>/gi,
+    (_match, tag: string, content: string) => {
+      const labels: Record<string, string> = {
+        proof: 'Proof', theorem: 'Theorem', 'key-point': 'Key Point', derivation: 'Derivation',
+      };
+      let text = boundedScaffoldText(content);
+      if (typeof katex !== 'undefined') {
+        text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_mathMatch, math: string) => {
+          try {
+            return bank.save(katex.renderToString(math.trim(), {
+              displayMode: true, throwOnError: false, macros: KATEX_MACROS,
+            }));
+          } catch {
+            return bank.save('<pre>' + esc('$$' + math + '$$') + '</pre>');
+          }
+        });
+        text = replaceInlineDollarMath(text, false, (math: string) => {
+          try {
+            return bank.save(katex.renderToString(math.trim(), {
+              displayMode: false, throwOnError: false, macros: KATEX_MACROS,
+            }));
+          } catch {
+            return bank.save('<code>' + esc('$' + math + '$') + '</code>');
+          }
+        });
+      }
+      return bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">['
+        + (labels[tag] || 'Derivation') + ']</span>' + esc(text) + '</div>');
+    });
+  return source.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)$/gi,
+    (_match, tag: string) => bank.save('<span class="scaffold-stream scaffold-stream-unclosed">…' + esc(tag) + '…</span>'));
+}
+
+function replaceSettledCodeBlocks(source: string, bank: PlaceholderBank): string {
+  source = source.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
+  /* Settled messages and reloaded history omit collapsible thinking blocks. */
+  source = source.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  source = source.replace(/<think>[\s\S]*$/gi, '');
+  source = source.replace(/```mermaid\s*\n?([\s\S]*?)```/g, (_match, code: string) => {
+    const trimmed = code.trim();
+    return trimmed ? bank.saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })) : '';
+  });
+  source = source.replace(/```mermaid\s*\n?([\s\S]*?)$/g, (_match, body: string) => (
+    bank.saveViz(renderVizLoading({ stableId: _getStreamingVizId('mermaid', String(body || '').trim()) }))
+  ));
+  source = source.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/g, (_match, lang: string, content: string) => {
+    const trimmed = content.trim();
+    return trimmed ? bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
+  });
+  source = source.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)$/g, (_match, lang: string, body: string) => (
+    bank.saveViz(renderVizLoading({ stableId: _getStreamingVizId(lang, String(body || '').trim()) }))
+  ));
+  source = source.replace(/```plot\s*\n?([\s\S]*?)```/g, (_match, spec: string) => {
+    const trimmed = spec.trim();
+    return trimmed ? bank.saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
+  });
+  source = source.replace(/```plot\s*\n?([\s\S]*?)$/g, (_match, body: string) => (
+    bank.saveViz(renderVizLoading({ stableId: _getStreamingVizId('plot', String(body || '').trim()) }))
+  ));
+  return source.replace(/```(\w*)\n?([\s\S]*?)```/g, (_match, lang: string, code: string) => {
+    const trimmed = code.trim();
+    const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
+    const hasSvgTag = /<svg[\s>]/i.test(trimmed);
+    const looksLikeHtml = isHtmlLang || hasSvgTag || (
+      trimmed.length > 30 && /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
+    );
+    if (isHtmlLang || (looksLikeHtml && (trimmed.length > 20 || hasSvgTag))) {
+      return bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
+    }
+    const hljsLang = safeHljsLang(lang);
+    const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
+    return bank.save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
+  });
+}
+
+function replaceSettledMath(
+  source: string,
+  katex: ReturnType<typeof getKatex>,
+  bank: PlaceholderBank,
+): string {
+  if (typeof katex === 'undefined') return source;
+  source = source.replace(/\$\$([\s\S]+?)\$\$/g, (match, math: string) => {
+    const html = renderStreamMath(math, true, false);
+    return html === null ? match : bank.save(html);
+  });
+  source = source.replace(/\\\[([\s\S]+?)\\\]/g, (match, math: string) => {
+    const html = renderStreamMath(math, true, false);
+    return html === null ? match : bank.save(html);
+  });
+  source = source.replace(/\$\$([\s\S]+?)$/g, (match, math: string) => {
+    const html = renderStreamMath(math, true, true);
+    return html === null ? match : bank.save(html);
+  });
+  source = source.replace(/\\\[([\s\S]+?)$/g, (match, math: string) => {
+    const html = renderStreamMath(math, true, true);
+    return html === null ? match : bank.save(html);
+  });
+  source = replaceInlineDollarMath(source, true, (math: string) => {
+    const html = renderStreamMath(math, false, false);
+    return html === null ? null : bank.save(html);
+  });
+  return source.replace(/\\\(([\s\S]+?)\\\)/g, (match, math: string) => {
+    const html = renderStreamMath(math, false, false);
+    return html === null ? match : bank.save(html);
+  });
+}
+
+function applyAutoRenderedMath(html: string, bank: PlaceholderBank): string {
+  if (typeof window === 'undefined' || typeof window.renderMathInElement !== 'function'
+      || typeof document === 'undefined') return bank.restoreViz(sanitizeHtml(html, { chineseProse: true }));
+
+  /* Sanitize before detached parsing so hostile markup cannot start resource loads. */
+  const clean = sanitizeHtml(html, { chineseProse: true });
+  if (!/\$|\\\(|\\\[/.test(clean)) return bank.restoreViz(clean);
+  try {
+    const host = document.createElement('div');
+    host.innerHTML = clean;
+    window.renderMathInElement(host, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '\\[', right: '\\]', display: true },
+      ],
+      throwOnError: false,
+      macros: KATEX_MACROS,
+      ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'annotation'],
+    });
+    html = host.innerHTML;
+  } catch (error) {
+    console.warn('[formatMsg] auto-render pass skipped:', error && (error as Error).message);
+  }
+  return bank.restoreViz(sanitizeHtml(html, { chineseProse: true }));
+}
+
+function finishMarkedMessage(source: string, bank: PlaceholderBank): string {
+  const marked = getMarked();
+  if (!marked) return '';
+  const html = bank.restoreBlocks(sanitizeUrls(marked.parse(source, { breaks: true, gfm: true })));
+  return applyAutoRenderedMath(html, bank);
+}
+
 function _formatMsg(t: string): string {
   const marked = getMarked();
   const katex = getKatex(t);
@@ -338,225 +533,24 @@ function _formatMsg(t: string): string {
      structural Markdown such as `---` remains a horizontal rule instead of
      falling back to escaped plain text. Math delimiters can remain literal
      until KaTeX becomes available. */
-  if (typeof marked === 'undefined') {
-    const fallbackViz: string[] = [];
-    function saveFallbackViz(html: string): string {
-      const id = fallbackViz.length;
-      fallbackViz.push(html);
-      return 'XVIZFALLBACK' + id + 'X';
-    }
-    let raw = preprocessMarkdown(t);
-    raw = raw.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/gi, function (_, lang: string, content: string) {
-      const trimmed = content.trim();
-      return trimmed ? saveFallbackViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
-    });
-    raw = raw.replace(/```plot\s*\n?([\s\S]*?)```/gi, function (_, content: string) {
-      const trimmed = content.trim();
-      return trimmed ? saveFallbackViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
-    });
-    raw = raw.replace(/```(viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, function (_, lang: string, body: string) {
-      return saveFallbackViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang, String(body || '').trim()) }));
-    });
-    const fallbackHtml = '<p>' + esc(raw).replace(/```(\w*)\r?\n?([\s\S]*?)```/g, function (_, _l: string, c: string) { return '<pre><code>' + esc(c.trim()) + '</code></pre>'; }).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
-    return sanitizeHtml(fallbackHtml, { chineseProse: true }).replace(/XVIZFALLBACK(\d+)X/g, function (_, id: string) { return fallbackViz[parseInt(id, 10)] || ''; });
-  }
-  const blocks: string[] = [];
-  const msgNonce = Math.random().toString(36).slice(2, 10);
-  const msgBlockPrefix = '§SCRTB' + msgNonce;
-  const msgVizPrefix = '§SCRTV' + msgNonce;
-  const msgBlockRe = new RegExp(msgBlockPrefix + '(\\d+)§', 'g');
-  const msgVizRe = new RegExp(msgVizPrefix + '(\\d+)§', 'g');
-  let pid = 0;
-  function save(html: string): string {
-    const id = pid++;
-    blocks.push(html);
-    return msgBlockPrefix + id + '§';
-  }
-  const vizBlocks: string[] = [];
-  let vizPid = 0;
-  function saveViz(html: string): string {
-    const id = vizPid++;
-    vizBlocks.push(html);
-    return msgVizPrefix + id + '§';
-  }
+  if (typeof marked === 'undefined') return formatWithoutMarked(t);
+  const bank = createPlaceholderBank();
 
   let procT = String(t ?? '');
   procT = procT.replace(/&lt;think&gt;/g, '<think>').replace(/&lt;\/think&gt;/g, '</think>');
   procT = stripChatArtifacts(procT);
   procT = preprocessMarkdown(procT);
 
-  procT = procT.replace(/<(quiz|example|practice|definition|flashcard)\b[^>]*>([\s\S]*?)<\/\1>/gi, function (_, tag: string, content: string) {
-    const label = '[' + (tag === 'quiz' ? 'Quiz' : tag === 'example' ? 'Example' : tag === 'practice' ? 'Practice' : tag === 'definition' ? 'Definition' : 'Flashcard') + ']';
-    let txt = content.replace(/<[^>]+>/g, '').trim();
-    if (txt.length > 300) txt = txt.slice(0, 300) + '…';
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">' + label + '</span>' + esc(txt) + '</div>');
-  });
-  procT = procT.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi, function (_, content: string) {
-    let txt = content.replace(/<[^>]+>/g, '').trim();
-    if (txt.length > 300) txt = txt.slice(0, 300) + '…';
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span>' + esc(txt) + '</div>');
-  });
-  procT = procT.replace(/<(proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)<\/\1>/gi, function (_, tag: string, content: string) {
-    const label = '[' + (tag === 'proof' ? 'Proof' : tag === 'theorem' ? 'Theorem' : tag === 'key-point' ? 'Key Point' : 'Derivation') + ']';
-    let txt = content.replace(/<[^>]+>/g, '').trim();
-    if (txt.length > 300) txt = txt.slice(0, 300) + '…';
-    if (typeof katex !== 'undefined') {
-      txt = txt.replace(/\$\$([\s\S]*?)\$\$/g, function (_, math: string) {
-        try { return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS })); }
-        catch { return save('<pre>' + esc('$$' + math + '$$') + '</pre>'); }
-      });
-      txt = replaceInlineDollarMath(txt, false, function (math: string) {
-        try { return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS })); }
-        catch { return save('<code>' + esc('$' + math + '$') + '</code>'); }
-      });
-    }
-    return save('<div class="scaffold-stream"><span class="scaffold-stream-label">' + label + '</span>' + esc(txt) + '</div>');
-  });
-  procT = procT.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)$/gi, function (_, tag: string) {
-    return save('<span class="scaffold-stream scaffold-stream-unclosed">…' + esc(tag) + '…</span>');
-  });
+  procT = replaceSettledScaffolds(procT, katex, bank);
 
-  procT = procT.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
-
-  /* P_chatgpt-parity — settled messages and reloaded history do not retain
-     collapsible thinking blocks; user sees only the finished answer. */
-  procT = procT.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  procT = procT.replace(/<think>[\s\S]*$/gi, '');
-
-  procT = procT.replace(/```mermaid\s*\n?([\s\S]*?)```/g, function (_, code: string) {
-    const trimmed = code.trim();
-    /* Content-derived ids match the ids the streaming pass assigned, so a
-       finish/history re-render reuses the same card element (see
-       reclaimVizCards) instead of reloading the iframe/diagram. */
-    return trimmed ? saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })) : '';
-  });
-  procT = procT.replace(/```mermaid\s*\n?([\s\S]*?)$/g, function (_, body: string) {
-    return saveViz(renderVizLoading({ stableId: _getStreamingVizId('mermaid', String(body || '').trim()) }));
-  });
-
-  procT = procT.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/g, function (_, lang: string, json: string) {
-    const trimmed = json.trim();
-    /* Same key derivation as the streaming pass (lang || 'html'). */
-    return trimmed ? saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
-  });
-  procT = procT.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)$/g, function (_, lang: string, body: string) {
-    return saveViz(renderVizLoading({ stableId: _getStreamingVizId(lang, String(body || '').trim()) }));
-  });
-
-  procT = procT.replace(/```plot\s*\n?([\s\S]*?)```/g, function (_, spec: string) {
-    const trimmed = spec.trim();
-    return trimmed ? saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
-  });
-  procT = procT.replace(/```plot\s*\n?([\s\S]*?)$/g, function (_, body: string) {
-    return saveViz(renderVizLoading({ stableId: _getStreamingVizId('plot', String(body || '').trim()) }));
-  });
-
-  procT = procT.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_, lang: string, code: string) {
-    const trimmed = code.trim();
-    const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
-    const hasSvgTag = /<svg[\s>]/i.test(trimmed);
-    const looksLikeHtml = isHtmlLang || hasSvgTag || (
-      trimmed.length > 30 &&
-      /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
-    );
-    if (isHtmlLang || (looksLikeHtml && (trimmed.length > 20 || hasSvgTag))) {
-      return saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
-    }
-    const hljsLang = safeHljsLang(lang);
-    const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
-    return save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
-  });
+  procT = replaceSettledCodeBlocks(procT, bank);
 
   const inlineCodeGuard = _stashInlineCode(procT);
   procT = inlineCodeGuard.text;
-
-  if (typeof katex !== 'undefined') {
-    procT = procT.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, false);
-      return html === null ? _ : save(html);
-    });
-    procT = procT.replace(/\\\[([\s\S]+?)\\\]/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, false);
-      return html === null ? _ : save(html);
-    });
-    /* Final pass on a message whose `$$` or `\]` never closed (truncated output,
-       a Stop mid-formula). Auto-close open environments and neutralize
-       parse-error spans so the stored answer shows calm partial math
-       instead of a red KaTeX error block. */
-    procT = procT.replace(/\$\$([\s\S]+?)$/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, true);
-      return html === null ? _ : save(html);
-    });
-    procT = procT.replace(/\\\[([\s\S]+?)$/g, function (_, math: string) {
-      const html = renderStreamMath(math, true, true);
-      return html === null ? _ : save(html);
-    });
-
-    procT = replaceInlineDollarMath(procT, true, function (math: string) {
-      const html = renderStreamMath(math, false, false);
-      return html === null ? null : save(html);
-    });
-    procT = procT.replace(/\\\(([\s\S]+?)\\\)/g, function (m, math: string) {
-      const html = renderStreamMath(math, false, false);
-      return html === null ? m : save(html);
-    });
-  }
+  procT = replaceSettledMath(procT, katex, bank);
 
   procT = inlineCodeGuard.restore(procT);
-
-  let html = marked.parse(procT, { breaks: true, gfm: true });
-  html = sanitizeUrls(html);
-  html = html.replace(msgBlockRe, function (_, id: string) {
-    return blocks[parseInt(id)];
-  });
-
-  if (typeof window !== 'undefined' && typeof window.renderMathInElement === 'function'
-     && typeof document !== 'undefined') {
-    /* Sanitize BEFORE the detached host parses the markup. Setting
-       innerHTML starts resource loads and fires their error handlers
-       even when the node is not in the document, so an
-       `<img onerror=…>` payload would run against the live page
-       before the final sanitize pass. */
-    const clean = sanitizeHtml(html, { chineseProse: true });
-    /* P_single-sanitize — the auto-render pass exists for math the regex
-       passes above did not claim. With no delimiter left in the markup it
-       cannot change anything, and `clean` is already the final sanitized
-       output — so skip the detached re-parse and the second DOMPurify run,
-       which together were ~half the cost of rendering a KaTeX-heavy answer.
-       Any delimiter at all (a literal "$5" included) takes the full path. */
-    if (!/\$|\\\(|\\\[/.test(clean)) {
-      return clean.replace(msgVizRe, function (_, id: string) {
-        return vizBlocks[parseInt(id)];
-      });
-    }
-    try {
-      const _arHost = document.createElement('div');
-      /* The final sanitize below still runs (idempotent) to cover this
-         pass's own output. */
-      _arHost.innerHTML = clean;
-      window.renderMathInElement(_arHost, {
-        delimiters: [
-          { left: '$$', right: '$$', display: true },
-          { left: '$', right: '$', display: false },
-          { left: '\\(', right: '\\)', display: false },
-          { left: '\\[', right: '\\]', display: true },
-        ],
-        throwOnError: false,
-        macros: KATEX_MACROS,
-        /* `annotation` carries the raw TeX inside KaTeX's MathML and must
-           never be re-scanned for delimiters. */
-        ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'annotation'],
-      });
-      html = _arHost.innerHTML;
-    } catch (_arErr) {
-      console.warn('[formatMsg] auto-render pass skipped:', _arErr && (_arErr as Error).message);
-    }
-  }
-
-  const sanitized = sanitizeHtml(html, { chineseProse: true });
-  return sanitized.replace(msgVizRe, function (_, id: string) {
-    return vizBlocks[parseInt(id)];
-  });
+  return finishMarkedMessage(procT, bank);
 }
 
 /* Copy controls are wired after Markdown module initialization. */

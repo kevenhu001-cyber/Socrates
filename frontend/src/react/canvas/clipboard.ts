@@ -1,4 +1,5 @@
-/**
+
+import { reportSwallow } from '../../util/reportSwallow.ts';/**
  * P_canvas-mode — write-to-clipboard helper used by CanvasBlock's Copy
  * and Iterate actions. Tries navigator.clipboard first, falls back to a
  * hidden textarea + execCommand("copy") for older browsers / restricted
@@ -12,7 +13,7 @@ export function copyToClipboard(text: string): boolean {
       navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
       return true;
     }
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'react/canvas/clipboard.ts:15', 'expected'); }
   fallbackCopy(text);
   return true;
 }
@@ -29,7 +30,7 @@ function fallbackCopy(text: string): void {
     ta.select();
     try {
       document.execCommand('copy');
-    } catch (_) {}
+    } catch (error) { reportSwallow(error, 'react/canvas/clipboard.ts:32', 'expected'); }
     document.body.removeChild(ta);
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'react/canvas/clipboard.ts:34', 'expected'); }
 }

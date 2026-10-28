@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { hasActiveModeSession, resolveNextAppMode } from '../src/app/lifecycle/modeDecision.js';
+import { hasActiveModeSession, resolveNextAppMode } from '../src/app/lifecycle/modeDecision.ts';
 
 test('mode selection honors explicit destinations and keeps the legacy toggle behavior', () => {
   assert.equal(resolveNextAppMode('tutor', 'chat'), 'tutor');

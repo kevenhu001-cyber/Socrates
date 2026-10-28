@@ -100,6 +100,18 @@ function indexOfId(sessions: ReadonlyArray<SessionRow>, id: string): number {
   return -1;
 }
 
+function firstTruthy<T>(first: T | null | undefined, second: T | null | undefined, fallback: T): T {
+  return (first || second || fallback) as T;
+}
+
+function resolveProjectId(saved: string | null | undefined, payload: string | null | undefined): string | null {
+  return saved != null ? saved : (payload || null);
+}
+
+function resolveArchivedAt(value: number | string | null | undefined): number | string | null {
+  return value == null ? null : value;
+}
+
 /* Build a list row for a session the server just created. There is nothing to
    patch yet, so this is a row the next reconcile would have created anyway —
    built from the save response plus the payload we just sent, which together
@@ -107,22 +119,22 @@ function indexOfId(sessions: ReadonlyArray<SessionRow>, id: string): number {
 function buildFreshRow(saved: SavedSession, payload: SessionSavePayload): SessionRow {
   return {
     id: saved.id,
-    topic: saved.topic || payload.topic || '',
-    title: saved.title || payload.title || '',
+    topic: firstTruthy(saved.topic, payload.topic, ''),
+    title: firstTruthy(saved.title, payload.title, ''),
     domain: payload.domain || '',
-    mode: saved.mode || payload.mode || '',
-    phase: saved.phase || payload.phase || '',
-    kind: saved.kind || '',
-    projectId: saved.projectId != null ? saved.projectId : (payload.projectId || null),
+    mode: firstTruthy(saved.mode, payload.mode, ''),
+    phase: firstTruthy(saved.phase, payload.phase, ''),
+    kind: firstTruthy(saved.kind, null, ''),
+    projectId: resolveProjectId(saved.projectId, payload.projectId),
     pinned: !!saved.pinned,
-    archivedAt: saved.archivedAt == null ? null : saved.archivedAt,
+    archivedAt: resolveArchivedAt(saved.archivedAt),
     /* getVisibleSessions() sorts on updated_at first, so the row has to carry
        the same key the server's list endpoint returns. */
-    updated_at: saved.updatedAt || saved.updated_at || null,
-    created_at: saved.createdAt || saved.created_at || null,
-    total_q: saved.totalQ || 0,
+    updated_at: firstTruthy(saved.updatedAt, saved.updated_at, null),
+    created_at: firstTruthy(saved.createdAt, saved.created_at, null),
+    total_q: firstTruthy(saved.totalQ, null, 0),
     tags: [],
-    branchedFrom: saved.branchedFrom || null,
+    branchedFrom: firstTruthy(saved.branchedFrom, null, null),
   };
 }
 

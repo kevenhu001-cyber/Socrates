@@ -15,30 +15,45 @@
  */
 
 import { webSearchOn, setWebSearchOn } from '../config/providers.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* React migration bridge — publishes current profile state so the React
    compatibility root can render the modal content via useSyncExternalStore. */
+function userInitials(name) {
+  var parts = name.trim().split(/\s+/);
+  return parts.length > 1
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : name.slice(0, 2).toUpperCase();
+}
+
+function joinedDate(createdAt) {
+  if (!createdAt) return "—";
+  try { return new Date(createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }); }
+  catch { return createdAt; }
+}
+
+function profileUserSnapshot(user) {
+  return {
+    initials: userInitials(user.displayName || user.email || "?"),
+    displayName: user.displayName || "",
+    email: user.email || "",
+    joinedAt: joinedDate(user.createdAt),
+    verifiedAt: user.verifiedAt || null,
+    userId: user.id || "—",
+    tier: user.tier || "diophantus",
+    subEnd: user.subscriptionEnd || null,
+  };
+}
+
 function _publishProfileState() {
   try {
     var bridge = window.__socratesProfileBridge;
     if (!bridge || typeof bridge.publish !== "function") return;
     var cu = window.CURRENT_USER || {};
-    var name = cu.displayName || cu.email || "?";
-    var parts = name.trim().split(/\s+/);
-    var initials = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
     var inst = loadCustomInstructions();
     bridge.publish({
       isOpen: !document.getElementById("profileOverlay").classList.contains("hidden"),
-      user: {
-        initials: initials,
-        displayName: cu.displayName || "",
-        email: cu.email || "",
-        joinedAt: cu.createdAt ? (function(){try{return new Date(cu.createdAt).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}catch {return cu.createdAt}})() : "—",
-        verifiedAt: cu.verifiedAt || null,
-        userId: cu.id || "—",
-        tier: cu.tier || "diophantus",
-        subEnd: cu.subscriptionEnd || null,
-      },
+      user: profileUserSnapshot(cu),
       webSearchOn: !!webSearchOn,
       currentLang: (typeof window._currentLang === "string") ? window._currentLang : "en",
       instResponse: (inst && inst.response) || "",
@@ -56,38 +71,39 @@ function _publishProfileState() {
    footer React component can render the avatar, name, and tier badge.
    Installed by frontend/src/react/sidebar-chrome/sidebarChromeStore.ts
    under `?react=1`; legacy mode never sees a subscriber. */
+function sidebarUserSnapshot(user) {
+  if (!user) return { initials: "?", displayName: "Guest", email: "", tier: "diophantus", tierLabel: "Free", isSignedIn: false };
+  /* P_cowork-landing — the footer row is ~150px wide once the avatar and
+     the three icon buttons take their share, so a full address ellipsised
+     to "jiache…" identified nobody. Fall back to the address's local part;
+     the complete address stays visible in the profile modal. */
+  var localPart = String(user.email || "").split("@")[0];
+  var name = user.displayName || localPart || "?";
+  var tier = user.tier || 'diophantus';
+  return {
+    initials: userInitials(name),
+    displayName: name === "?" ? "" : name,
+    email: user.email || "",
+    tier: tier,
+    tierLabel: tier.charAt(0).toUpperCase() + tier.slice(1),
+    isSignedIn: true,
+  };
+}
+
+function syncDocumentTier(user) {
+  try { document.documentElement.dataset.userTier = user?.tier || "diophantus"; }
+  catch (_) { /* swallow */ }
+}
+
 function _publishSidebarChrome() {
   try {
     var cu = window.CURRENT_USER || null;
     /* Mirror the tier onto <html> so CSS can gate free-tier affordances
        (the mobile "升级" pill in the top bar) without a JS listener. */
-    try {
-      document.documentElement.dataset.userTier = (cu && cu.tier) || "diophantus";
-    } catch (_) { /* swallow */ }
+    syncDocumentTier(cu);
     var bridge = window.__socratesSidebarChromeBridge;
     if (!bridge || typeof bridge.publish !== "function") return;
-    var initials, displayName, tier, tierLabel;
-    if (cu) {
-      /* P_cowork-landing — the footer row is ~150px wide once the avatar and
-         the three icon buttons take their share, so a full address ellipsised
-         to "jiache…" identified nobody. Fall back to the address's local part;
-         the complete address stays visible in the profile modal. */
-      var localPart = String(cu.email || "").split("@")[0];
-      var name = cu.displayName || localPart || "?";
-      var parts = name.trim().split(/\s+/);
-      initials = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
-      displayName = name === "?" ? "" : name;
-      tier = cu.tier || 'diophantus';
-      tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-    } else {
-      initials = '?';
-      displayName = 'Guest';
-      tier = 'diophantus';
-      tierLabel = 'Free';
-    }
-    bridge.publish({
-      user: { initials: initials, displayName: displayName, email: (cu && cu.email) || "", tier: tier, tierLabel: tierLabel, isSignedIn: !!cu },
-    });
+    bridge.publish({ user: sidebarUserSnapshot(cu) });
   } catch (_) { /* swallow */ }
 }
 
@@ -145,12 +161,12 @@ function loadCustomInstructions() {
   try {
     var raw = localStorage.getItem("socrates-custom-instructions");
     if (raw) return JSON.parse(raw) || {};
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'ui/profile.js:148', 'expected'); }
   return {};
 }
 
 function saveCustomInstructions(value) {
-  try { localStorage.setItem("socrates-custom-instructions", JSON.stringify(value)); } catch (_) {}
+  try { localStorage.setItem("socrates-custom-instructions", JSON.stringify(value)); } catch (error) { reportSwallow(error, 'ui/profile.js:153', 'expected'); }
 }
 
 function loadCustomInstructionsIntoUI() {
@@ -178,7 +194,7 @@ function onCustomInstructionsChange() {
     window.apiFetch("/api/users/me", {
       method: "PATCH",
       body: { customInstructions: buildCustomInstructionsString(value) },
-    }).then(function () {}).catch(function () {
+    }).catch(function () {
       console.log("[custom-inst] server sync failed");
     });
   }, 600);

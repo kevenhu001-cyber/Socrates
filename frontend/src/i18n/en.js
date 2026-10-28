@@ -416,6 +416,7 @@ export const en = {
     "library.filter.audio":"Audio",
     "library.filter.video":"Video",
     "library.filterByType":"Filter by file type",
+    "library.viewMode":"Library view mode",
     "library.emptyImages":"No images yet",
     "library.emptyImagesDesc":"Images you add will appear here.",
     /* PR-B — Library panel */

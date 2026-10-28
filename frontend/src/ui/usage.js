@@ -72,157 +72,162 @@ export function loadUsageData(){
     _publishUsageState();
   });
 }
-export function renderUsageHeatmap(data,body,limits,period){
-  period=period||'year';
-  var entries=data.entries||[];
-  var lookup={};
-  var totalTokens=0,totalMsgs=0;
-  entries.forEach(function(e){
-    lookup[e.day]=e;
-    totalTokens+=parseInt(e.tokens,10)||0;
-    totalMsgs+=parseInt(e.messages,10)||0;
+function collectUsageEntries(entries) {
+  var lookup = {};
+  var totalTokens = 0;
+  var totalMsgs = 0;
+  var maxDay = 1;
+  entries.forEach(function (entry) {
+    lookup[entry.day] = entry;
+    totalTokens += parseInt(entry.tokens, 10) || 0;
+    totalMsgs += parseInt(entry.messages, 10) || 0;
+    maxDay = Math.max(maxDay, parseInt(entry.tokens, 10) || 0);
   });
-  /* Compute max daily tokens for color scaling */
-  var maxDay=entries.reduce(function(m,e){return Math.max(m,parseInt(e.tokens,10)||0)},1);
-  function level(t){var v=parseInt(t,10)||0;if(v===0)return 0;var r=v/maxDay;return r>0.8?5:r>0.6?4:r>0.4?3:r>0.2?2:1;}
+  return { lookup: lookup, totalTokens: totalTokens, totalMsgs: totalMsgs, maxDay: maxDay };
+}
 
-  /* Build date grid */
-  var now=new Date();
-  var end=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  var dayRange=period==='month'?30:364;
-  var start=new Date(end);start.setDate(start.getDate()-dayRange);
-  /* Align start to Sunday */
-  var startDow=start.getDay();
-  start.setDate(start.getDate()-startDow);
+function usageCalendarWeeks(lookup, period) {
+  var now = new Date();
+  var end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var start = new Date(end);
+  start.setDate(start.getDate() - (period === 'month' ? 30 : 364));
+  start.setDate(start.getDate() - start.getDay());
 
-  var days=[];
-  var cursor=new Date(start);
-  while(cursor<=end){
-    days.push(new Date(cursor));
-    cursor.setDate(cursor.getDate()+1);
-  }
-
-  /* Build weeks array: array of 7-element arrays */
-  var weeks=[];
-  var curWeek=[];
-  days.forEach(function(d){
-    var key=d.toISOString().slice(0,10);
-    var e=lookup[key];
-    curWeek.push({date:key,tokens:e?parseInt(e.tokens,10):0,msgs:e?parseInt(e.messages,10):0,day:d.getDay()});
-    if(curWeek.length===7){weeks.push(curWeek);curWeek=[];}
-  });
-  if(curWeek.length){weeks.push(curWeek);}
-
-  /* Month labels */
-  var monthLabels=[];
-  var lastMth="";
-  weeks.forEach(function(w,i){
-    if(!w.length)return;
-    var d=new Date(w[0].date);
-    var mth=d.toLocaleDateString("en-US",{month:"short"});
-    if(mth!==lastMth){monthLabels.push({col:i,label:mth});lastMth=mth;}
-  });
-
-  /* Build HTML */
-  var html='';
-
-  /* Beagle monthly usage bar (only shown when usage > 0 or user is free tier) */
-  if(limits&&limits.beagleLimit){
-    var beagleUsed=parseInt(limits.beagleUsed,10)||0;
-    var beagleLimit=limits.beagleLimit;
-    var beaglePct=Math.min(100,Math.round(beagleUsed/beagleLimit*100));
-    var barColor=beaglePct>=90?'hsl(0 65% 55%)':beaglePct>=70?'hsl(35 80% 55%)':'hsl(var(--accent-000))';
-    html+='<div class="usage-beagle-section" style="margin-bottom:20px;padding:14px 16px;background:hsl(var(--bg-100));border-radius:10px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-    html+='<div style="font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-000))">Beagle Monthly Usage</div>';
-    html+='<div style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))">'+beagleUsed.toLocaleString()+' / '+beagleLimit.toLocaleString()+' tokens</div>';
-    html+='</div>';
-    html+='<div style="height:8px;background:hsl(var(--bg-300));border-radius:4px;overflow:hidden">';
-    html+='<div style="height:100%;width:'+beaglePct+'%;background:'+barColor+';border-radius:4px;transition:width .3s ease"></div>';
-    html+='</div>';
-    if(beaglePct>=100){
-      html+='<div style="margin-top:6px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(0 65% 55%);font-weight:500">Limit reached. Add your own API key in Account → API Keys to continue using Beagle.</div>';
-    }else if(beaglePct>=80){
-      html+='<div style="margin-top:6px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(35 80% 55%)">Approaching monthly limit ('+beaglePct+'% used).</div>';
+  var weeks = [];
+  var week = [];
+  var cursor = new Date(start);
+  while (cursor <= end) {
+    var date = new Date(cursor);
+    var key = date.toISOString().slice(0, 10);
+    var entry = lookup[key];
+    week.push({
+      date: key,
+      tokens: entry ? parseInt(entry.tokens, 10) : 0,
+      msgs: entry ? parseInt(entry.messages, 10) : 0,
+      day: date.getDay(),
+    });
+    if (week.length === 7) {
+      weeks.push(week);
+      week = [];
     }
-    html+='</div>';
+    cursor.setDate(cursor.getDate() + 1);
   }
+  if (week.length) weeks.push(week);
+  return weeks;
+}
 
-  /* Summary stats */
-  html+='<div class="usage-summary">';
-  html+='<div class="usage-stat"><div class="usage-stat-val">'+totalTokens.toLocaleString()+'</div><div class="usage-stat-lbl">Total tokens</div></div>';
-  html+='<div class="usage-stat"><div class="usage-stat-val">'+totalMsgs.toLocaleString()+'</div><div class="usage-stat-lbl">Messages</div></div>';
-  var dayCount=entries.length;
-  html+='<div class="usage-stat"><div class="usage-stat-val">'+(dayCount>0?Math.round(totalTokens/dayCount).toLocaleString():0)+'</div><div class="usage-stat-lbl">Avg tokens / active day</div></div>';
-  html+='<div class="usage-stat"><div class="usage-stat-val">'+(dayCount>0?Math.round(totalMsgs/dayCount).toLocaleString():0)+'</div><div class="usage-stat-lbl">Avg msgs / active day</div></div>';
-  html+='</div>';
-
-  /* Period tabs */
-  html+='<div class="usage-section-title">Daily Activity</div>';
-  html+='<div class="usage-period-tabs">';
-  html+='<button class="usage-period-tab'+(period==='year'?' active':'')+'" data-usage-period="year">Last 12 months</button>';
-  html+='<button class="usage-period-tab'+(period==='month'?' active':'')+'" data-usage-period="month">This month</button>';
-  html+='</div>';
-
-  /* Heatmap grid */
-  html+='<div class="usage-calendar-wrap"><div class="usage-calendar">';
-
-  /* Day-of-week labels */
-  var dowLbl=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  weeks.forEach(function(w,wi){
-    /* Month label row for first week only */
-    if(wi===0){
-      html+='<div class="usage-cal-day-lbl"></div>';
-      var mthIdx=0;
-      for(var c=0;c<weeks.length;c++){
-        var lbl="";
-        if(mthIdx<monthLabels.length&&monthLabels[mthIdx].col===c){
-          lbl=monthLabels[mthIdx].label;mthIdx++;
-        }
-        html+='<div style="font-size:calc(8px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:center">'+lbl+'</div>';
-      }
+function usageMonthLabels(weeks) {
+  var labels = [];
+  var lastMonth = '';
+  weeks.forEach(function (week, index) {
+    if (!week.length) return;
+    var month = new Date(week[0].date).toLocaleDateString('en-US', { month: 'short' });
+    if (month !== lastMonth) {
+      labels.push({ col: index, label: month });
+      lastMonth = month;
     }
   });
-  /* Day rows */
-  for(var row=0;row<7;row++){
-    html+='<div class="usage-cal-day-lbl">'+dowLbl[row]+'</div>';
-    weeks.forEach(function(w){
-      if(row<w.length){
-        var d=w[row];
-        var lv=d.tokens>0?level(d.tokens):0;
-        html+='<div class="usage-cal-day lv'+lv+'" data-date="'+d.date+'" data-tokens="'+d.tokens+'" data-msgs="'+d.msgs+'"></div>';
-      }else{
-        html+='<div></div>';
+  return labels;
+}
+
+function usageLevel(tokens, maxDay) {
+  var value = parseInt(tokens, 10) || 0;
+  if (value === 0) return 0;
+  var ratio = value / maxDay;
+  return ratio > 0.8 ? 5 : ratio > 0.6 ? 4 : ratio > 0.4 ? 3 : ratio > 0.2 ? 2 : 1;
+}
+
+function beagleUsageMarkup(limits) {
+  if (!limits || !limits.beagleLimit) return '';
+  var used = parseInt(limits.beagleUsed, 10) || 0;
+  var limit = limits.beagleLimit;
+  var percent = Math.min(100, Math.round(used / limit * 100));
+  var color = percent >= 90 ? 'hsl(0 65% 55%)' : percent >= 70 ? 'hsl(35 80% 55%)' : 'hsl(var(--accent-000))';
+  var html = '<div class="usage-beagle-section" style="margin-bottom:20px;padding:14px 16px;background:hsl(var(--bg-100));border-radius:10px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  html += '<div style="font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-000))">Beagle Monthly Usage</div>';
+  html += '<div style="font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))">' + used.toLocaleString() + ' / ' + limit.toLocaleString() + ' tokens</div>';
+  html += '</div><div style="height:8px;background:hsl(var(--bg-300));border-radius:4px;overflow:hidden">';
+  html += '<div style="height:100%;width:' + percent + '%;background:' + color + ';border-radius:4px;transition:width .3s ease"></div></div>';
+  if (percent >= 100) {
+    html += '<div style="margin-top:6px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(0 65% 55%);font-weight:500">Limit reached. Add your own API key in Account → API Keys to continue using Beagle.</div>';
+  } else if (percent >= 80) {
+    html += '<div style="margin-top:6px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(35 80% 55%)">Approaching monthly limit (' + percent + '% used).</div>';
+  }
+  return html + '</div>';
+}
+
+function usageSummaryMarkup(entries, totalTokens, totalMsgs, period) {
+  var dayCount = entries.length;
+  var html = '<div class="usage-summary">';
+  html += '<div class="usage-stat"><div class="usage-stat-val">' + totalTokens.toLocaleString() + '</div><div class="usage-stat-lbl">Total tokens</div></div>';
+  html += '<div class="usage-stat"><div class="usage-stat-val">' + totalMsgs.toLocaleString() + '</div><div class="usage-stat-lbl">Messages</div></div>';
+  html += '<div class="usage-stat"><div class="usage-stat-val">' + (dayCount > 0 ? Math.round(totalTokens / dayCount).toLocaleString() : 0) + '</div><div class="usage-stat-lbl">Avg tokens / active day</div></div>';
+  html += '<div class="usage-stat"><div class="usage-stat-val">' + (dayCount > 0 ? Math.round(totalMsgs / dayCount).toLocaleString() : 0) + '</div><div class="usage-stat-lbl">Avg msgs / active day</div></div></div>';
+  html += '<div class="usage-section-title">Daily Activity</div><div class="usage-period-tabs">';
+  html += '<button class="usage-period-tab' + (period === 'year' ? ' active' : '') + '" data-usage-period="year">Last 12 months</button>';
+  html += '<button class="usage-period-tab' + (period === 'month' ? ' active' : '') + '" data-usage-period="month">This month</button></div>';
+  return html;
+}
+
+function usageCalendarMarkup(weeks, monthLabels, maxDay) {
+  var html = '<div class="usage-calendar-wrap"><div class="usage-calendar"><div class="usage-cal-day-lbl"></div>';
+  var monthIndex = 0;
+  for (var column = 0; column < weeks.length; column++) {
+    var label = '';
+    if (monthIndex < monthLabels.length && monthLabels[monthIndex].col === column) {
+      label = monthLabels[monthIndex].label;
+      monthIndex++;
+    }
+    html += '<div style="font-size:calc(8px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:center">' + label + '</div>';
+  }
+  var dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  for (var row = 0; row < 7; row++) {
+    html += '<div class="usage-cal-day-lbl">' + dayLabels[row] + '</div>';
+    weeks.forEach(function (week) {
+      if (row < week.length) {
+        var day = week[row];
+        var level = day.tokens > 0 ? usageLevel(day.tokens, maxDay) : 0;
+        html += '<div class="usage-cal-day lv' + level + '" data-date="' + day.date + '" data-tokens="' + day.tokens + '" data-msgs="' + day.msgs + '"></div>';
+      } else {
+        html += '<div></div>';
       }
     });
   }
+  html += '</div></div>';
+  html += '<div class="usage-legend">Less<div class="usage-legend-cell usage-cal-day lv0"></div><div class="usage-legend-cell usage-cal-day lv1"></div><div class="usage-legend-cell usage-cal-day lv2"></div><div class="usage-legend-cell usage-cal-day lv3"></div><div class="usage-legend-cell usage-cal-day lv4"></div><div class="usage-legend-cell usage-cal-day lv5"></div>More</div>';
+  return html + '<div class="usage-tooltip" id="usageTooltip"></div>';
+}
 
-  html+='</div></div>';
-
-  /* Legend */
-  html+='<div class="usage-legend">Less<div class="usage-legend-cell usage-cal-day lv0"></div><div class="usage-legend-cell usage-cal-day lv1"></div><div class="usage-legend-cell usage-cal-day lv2"></div><div class="usage-legend-cell usage-cal-day lv3"></div><div class="usage-legend-cell usage-cal-day lv4"></div><div class="usage-legend-cell usage-cal-day lv5"></div>More</div>';
-  html+='<div class="usage-tooltip" id="usageTooltip"></div>';
-
-  /* Monthly breakdown */
-  html+='<div class="usage-breakdown"><div class="usage-section-title">Monthly Summary</div><table><thead><tr><th>Month</th><th>Days active</th><th>Tokens</th><th>Messages</th></tr></thead><tbody>';
-  var monthMap={};
-  entries.forEach(function(e){
-    var m=e.day.slice(0,7);
-    if(!monthMap[m])monthMap[m]={days:{},tokens:0,msgs:0};
-    monthMap[m].days[e.day]=true;
-    monthMap[m].tokens+=parseInt(e.tokens,10)||0;
-    monthMap[m].msgs+=parseInt(e.messages,10)||0;
+function monthlyBreakdownMarkup(entries) {
+  var monthMap = {};
+  entries.forEach(function (entry) {
+    var month = entry.day.slice(0, 7);
+    if (!monthMap[month]) monthMap[month] = { days: {}, tokens: 0, msgs: 0 };
+    monthMap[month].days[entry.day] = true;
+    monthMap[month].tokens += parseInt(entry.tokens, 10) || 0;
+    monthMap[month].msgs += parseInt(entry.messages, 10) || 0;
   });
-  var mKeys=Object.keys(monthMap).sort().reverse();
-  mKeys.forEach(function(m){
-    var d=new Date(m+"-01");
-    var lbl=d.toLocaleDateString("en-US",{year:"numeric",month:"long"});
-    var mm=monthMap[m];
-    html+='<tr><td>'+lbl+'</td><td>'+Object.keys(mm.days).length+'</td><td>'+mm.tokens.toLocaleString()+'</td><td>'+mm.msgs.toLocaleString()+'</td></tr>';
+  var html = '<div class="usage-breakdown"><div class="usage-section-title">Monthly Summary</div><table><thead><tr><th>Month</th><th>Days active</th><th>Tokens</th><th>Messages</th></tr></thead><tbody>';
+  Object.keys(monthMap).sort().reverse().forEach(function (month) {
+    var date = new Date(month + '-01');
+    var label = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+    var summary = monthMap[month];
+    html += '<tr><td>' + label + '</td><td>' + Object.keys(summary.days).length + '</td><td>' + summary.tokens.toLocaleString() + '</td><td>' + summary.msgs.toLocaleString() + '</td></tr>';
   });
-  html+='</tbody></table></div>';
+  return html + '</tbody></table></div>';
+}
 
-  body.innerHTML=html;
+export function renderUsageHeatmap(data, body, limits, period) {
+  period = period || 'year';
+  var entries = data.entries || [];
+  var totals = collectUsageEntries(entries);
+  var weeks = usageCalendarWeeks(totals.lookup, period);
+  var html = beagleUsageMarkup(limits);
+  html += usageSummaryMarkup(entries, totals.totalTokens, totals.totalMsgs, period);
+  html += usageCalendarMarkup(weeks, usageMonthLabels(weeks), totals.maxDay);
+  html += monthlyBreakdownMarkup(entries);
+  body.innerHTML = html;
   _publishUsageState();
 }
 export function showUsageTip(ev){

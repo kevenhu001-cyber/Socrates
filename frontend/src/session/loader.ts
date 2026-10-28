@@ -13,7 +13,7 @@
 import { stateStore } from '../state/store.js';
 import { turnState } from '../chat/turnState.ts';
 import { clearComposer } from '../composer/controller.ts';
-import { updateComposerBtn } from '../ui/topicSetup.js';
+import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import type {

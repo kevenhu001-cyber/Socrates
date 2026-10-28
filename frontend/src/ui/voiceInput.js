@@ -1,5 +1,6 @@
 import { getComposerMarkdown, insertComposerText } from '../composer/controller.ts';
 import { showToast } from './toast.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 let activeSession = null;
 
@@ -13,7 +14,7 @@ function copy(key, english, chinese) {
       const translated = window.t(key);
       if (translated && translated !== key) return translated;
     }
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'ui/voiceInput.js:16'); }
   return document.documentElement.lang === 'zh' ? chinese : english;
 }
 
@@ -58,9 +59,9 @@ function stopTracks(stream) {
   if (!stream || typeof stream.getTracks !== 'function') return;
   try {
     stream.getTracks().forEach(function (track) {
-      try { track.stop(); } catch (_) {}
+      try { track.stop(); } catch (error) { reportSwallow(error, 'ui/voiceInput.js:61', 'expected'); }
     });
-  } catch (_) {}
+  } catch (error) { reportSwallow(error, 'ui/voiceInput.js:63', 'expected'); }
 }
 
 async function requestMicStream() {
@@ -247,7 +248,9 @@ function setupAudioMeter(session) {
     session.audioData = new Uint8Array(analyser.fftSize);
     if (audioContext.state === 'suspended' && typeof audioContext.resume === 'function') {
       const resume = audioContext.resume();
-      if (resume && typeof resume.catch === 'function') resume.catch(function () {});
+      if (resume && typeof resume.catch === 'function') {
+        resume.catch((error) => reportSwallow(error, 'ui/voiceInput.resumeWaveform', 'expected'));
+      }
     }
   } catch (_) {
     /* Recognition remains useful if a browser exposes a microphone but not
@@ -274,8 +277,28 @@ function cleanupAudio(session) {
   if (session.audioContext && typeof session.audioContext.close === 'function') {
     try {
       const close = session.audioContext.close();
-      if (close && typeof close.catch === 'function') close.catch(function () {});
-    } catch (_) {}
+      if (close && typeof close.catch === 'function') {
+        close.catch((error) => reportSwallow(error, 'ui/voiceInput.closeAudioContext', 'expected'));
+      }
+    } catch (error) { reportSwallow(error, 'ui/voiceInput.js:278'); }
+  }
+}
+
+function insertFinalTranscript(session, transcript) {
+  if (!transcript || session.inserted || session.discard) return;
+  session.inserted = true;
+  const existing = getComposerMarkdown(session.surface).trim();
+  insertComposerText(session.surface, `${existing ? ' ' : ''}${transcript}`);
+}
+
+function notifyFinishedSession(session, transcript) {
+  if (session.discard) return;
+  if (session.error === 'not-allowed' || session.error === 'service-not-allowed') {
+    notify(copy('voice.permission', 'Please allow microphone access to use voice input.', '请允许麦克风权限后使用语音输入。'));
+  } else if (session.error === 'no-speech' && !transcript && !session.stopRequested) {
+    notify(copy('voice.noSpeech', 'No speech detected.', '没有检测到语音。'));
+  } else if (session.error && session.error !== 'aborted' && session.error !== 'no-speech') {
+    notify(copy('voice.error', 'Voice input could not start. Please check microphone access.', '语音输入启动失败，请检查麦克风权限。'));
   }
 }
 
@@ -293,20 +316,8 @@ function finishSession(session) {
   if (activeSession === session) activeSession = null;
 
   const transcript = session.finalTranscript.trim();
-  if (transcript && !session.inserted && !session.discard) {
-    session.inserted = true;
-    const existing = getComposerMarkdown(session.surface).trim();
-    insertComposerText(session.surface, `${existing ? ' ' : ''}${transcript}`);
-  }
-
-  if (session.discard) return;
-  if (session.error === 'not-allowed' || session.error === 'service-not-allowed') {
-    notify(copy('voice.permission', 'Please allow microphone access to use voice input.', '请允许麦克风权限后使用语音输入。'));
-  } else if (session.error === 'no-speech' && !transcript && !session.stopRequested) {
-    notify(copy('voice.noSpeech', 'No speech detected.', '没有检测到语音。'));
-  } else if (session.error && session.error !== 'aborted' && session.error !== 'no-speech') {
-    notify(copy('voice.error', 'Voice input could not start. Please check microphone access.', '语音输入启动失败，请检查麦克风权限。'));
-  }
+  insertFinalTranscript(session, transcript);
+  notifyFinishedSession(session, transcript);
 }
 
 function collectRecognitionResult(session, event) {
@@ -328,7 +339,7 @@ function collectRecognitionResult(session, event) {
 function wireRecognition(session, recognition) {
   session.recognition = recognition;
   var voiceLanguage = 'auto';
-  try { voiceLanguage = localStorage.getItem('socrates-voice-language') || 'auto'; } catch (_) {}
+  try { voiceLanguage = localStorage.getItem('socrates-voice-language') || 'auto'; } catch (error) { reportSwallow(error, 'ui/voiceInput.js:331', 'expected'); }
   recognition.lang = voiceLanguage === 'auto' ? (document.documentElement.lang || navigator.language || 'en-US') : voiceLanguage;
   recognition.continuous = true;
   recognition.interimResults = true;

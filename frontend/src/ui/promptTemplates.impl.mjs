@@ -137,14 +137,18 @@ function openPromptTemplateEditor(id) {
   }, 50);
 }
 
+function readPromptEditorValue(id, fallback = "") {
+  return (document.getElementById(id) || {}).value || fallback;
+}
+
 function onPromptTemplateEditorSave(id) {
-  var title = ((document.getElementById("ptTitle") || {}).value || "").trim();
-  var shortcut = ((document.getElementById("ptShortcut") || {}).value || "").trim();
-  var description = ((document.getElementById("ptDescription") || {}).value || "").trim();
-  var icon = ((document.getElementById("ptIcon") || {}).value || "pg").trim();
-  var category = ((document.getElementById("ptCategory") || {}).value || "other");
-  var body = ((document.getElementById("ptBody") || {}).value || "");
-  var systemPrompt = ((document.getElementById("ptSystemPrompt") || {}).value || "");
+  var title = readPromptEditorValue("ptTitle").trim();
+  var shortcut = readPromptEditorValue("ptShortcut").trim();
+  var description = readPromptEditorValue("ptDescription").trim();
+  var icon = readPromptEditorValue("ptIcon", "pg").trim();
+  var category = readPromptEditorValue("ptCategory", "other");
+  var body = readPromptEditorValue("ptBody");
+  var systemPrompt = readPromptEditorValue("ptSystemPrompt");
   if (!title) { showToast("Title is required"); return; }
   if (!/^\/[a-z0-9-]+$/.test(shortcut)) { showToast("Shortcut must look like /my-template"); return; }
   var existing = findTemplateByShortcut(shortcut);

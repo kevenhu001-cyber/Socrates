@@ -33,6 +33,7 @@ export interface StreamingTurnController extends ActiveChatController {
   recordTurnEvent(payload: unknown): void;
   recordTurnActivity(payload: unknown): void;
   recordTurnSummary(text: string, phase?: string): void;
+  setRetryStatus?(notice: unknown): void;
 }
 
 /** The live turn that the status line's Retry affordance would re-run. */

@@ -80,6 +80,18 @@ function sameToolCalls(previous: unknown, current: unknown): boolean {
   return true;
 }
 
+function matchesFingerprintEntry(
+  entry: CacheEntry | undefined,
+  raw: string,
+  type: string,
+  htmlLen: number,
+  tools: number,
+  calls: unknown[] | null,
+): entry is CacheEntry {
+  return !!entry && entry.raw === raw && entry.type === type && entry.htmlLen === htmlLen
+    && entry.tools === tools && sameToolCalls(entry.calls, calls);
+}
+
 export function messageFingerprint(m: MessageLike | null | undefined): string {
   if (!m) return '';
   const clientId = m.clientId || m.id || '';
@@ -126,8 +138,7 @@ export function createFingerprintCache(cap?: number): FingerprintCache {
          update. Tool-call entries are replaced on result updates; comparing
          member identities also covers shallow-copied arrays in save snapshots. */
       const hit = cache.get(clientId);
-      if (hit && hit.raw === raw && hit.type === type && hit.htmlLen === htmlLen
-          && hit.tools === tools && sameToolCalls(hit.calls, calls)) {
+      if (matchesFingerprintEntry(hit, raw, type, htmlLen, tools, calls)) {
         return hit.fp;
       }
       const toolsSig = toolCallsFingerprint(calls);

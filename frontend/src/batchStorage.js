@@ -30,7 +30,7 @@ function _notifyStorageBlockedOnce() {
   _storageBlockedNotified = true;
   try {
     showToast("Browser tracking prevention blocked session storage — your chat won't persist across reloads. Open this site in a regular tab to save sessions.", 12000);
-  } catch (_) {}
+  } catch (_) { /* empty-catch: intentional — a failed toast must not block the storage fallback. */ }
 }
 
 /* P_storage-shim — Replace `window.localStorage` and `window.sessionStorage`
@@ -48,7 +48,7 @@ function _overrideStorageInstances() {
   _storageBlocked = true;
   _memStorage = new Map();
   _memSessionStorage = new Map();
-  try { window.SOCRATES_STORAGE_BLOCKED = true; } catch (_) {}
+  try { window.SOCRATES_STORAGE_BLOCKED = true; } catch (_) { /* empty-catch: intentional — the diagnostic flag is optional outside a writable browser global. */ }
   function _makeShim(bag) {
     return {
       setItem: function (k, v) { bag.set(String(k), String(v)); },
@@ -71,7 +71,7 @@ function _overrideStorageInstances() {
     Object.defineProperty(window, 'sessionStorage', {
       value: sessionShim, writable: false, configurable: true,
     });
-  } catch (_) {}
+  } catch (_) { /* empty-catch: intentional — a host may forbid replacing sessionStorage; the prototype fallback still runs. */ }
   /* Prototype fallback — captures of the old localStorage / sessionStorage
      (taken before the defineProperty ran) still need to hit our shim. */
   try {
@@ -91,7 +91,7 @@ function _overrideStorageInstances() {
       var bag = (this === sessionShim) ? _memSessionStorage : _memStorage;
       bag.clear();
     };
-  } catch (_) {}
+  } catch (_) { /* empty-catch: intentional — some hosts freeze Storage.prototype; instance shims remain active where supported. */ }
 }
 
 (function _probeStorage() {

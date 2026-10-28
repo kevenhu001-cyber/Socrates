@@ -1,5 +1,6 @@
 import { esc } from '../render/helpers.ts';
 import { formatRelativeTime } from './recentsHelpers.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* P_mistakes-i18n — this panel shipped raw English literals while zh is
    the default locale, and echoed the internal mistake.type enum straight
@@ -11,6 +12,160 @@ function t(key, vars) {
   return String(v).replace(/\{(\w+)\}/g, function (whole, name) {
     return Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : whole;
   });
+}
+
+function renderMistakeList(stateStore, getTutorSocratic, onRedo) {
+  var cont = document.getElementById('mistakesList');
+  if (!cont) return;
+  var panel = document.getElementById('mistakesPanel');
+  if (panel && panel.classList.contains('hidden')) {
+    panel.dataset.mistakesDirty = '1';
+    return;
+  }
+  if (panel) delete panel.dataset.mistakesDirty;
+  var tutorSocratic = getTutorSocratic();
+  if (tutorSocratic && typeof tutorSocratic.renderMistakeFilterBar === 'function') {
+    try { tutorSocratic.renderMistakeFilterBar(); } catch (error) { reportSwallow(error, 'ui/mistakeBook.renderMistakeFilterBar'); }
+  }
+  var mistakes = stateStore.read('mistakes') || [];
+  if (mistakes.length === 0) {
+    cont.innerHTML = '<div class="recents-empty">' + esc(t('mistakes.empty'))
+      + '<br>' + esc(t('mistakes.emptyHint')) + '</div>';
+    return;
+  }
+  var filter = stateStore.read('mistakeFilter') || 'all';
+  var filtered = mistakes.slice();
+  if (filter === 'unresolved') {
+    filtered = filtered.filter(function (mistake) { return !mistake.resolved && !mistake.isResolved; });
+  } else if (filter === 'resolved') {
+    filtered = filtered.filter(function (mistake) { return !!(mistake.resolved || mistake.isResolved); });
+  }
+  if (!filtered.length) {
+    cont.innerHTML = '<div class="recents-empty">'
+      + esc(filter === 'resolved' ? t('mistakes.filterEmptyResolved') : t('mistakes.filterEmptyOther'))
+      + '</div>';
+    return;
+  }
+  var html = '';
+  filtered.forEach(function (mistake) {
+    var optionsHtml = '';
+    (mistake.options || []).forEach(function (option) {
+      var tag = option.letter === mistake.correct ? 'correct-tag' : (option.letter === mistake.userAnswer ? 'wrong-tag' : '');
+      optionsHtml += '<div class="mistake-opt ' + tag + '"><span class="mistake-opt-letter">' + esc(option.letter) + '</span><span>' + esc(option.text) + '</span></div>';
+    });
+    var resolved = !!(mistake.resolved || mistake.isResolved);
+    var typeKey = 'mistakes.type.' + (mistake.type || '');
+    var typeLabel = t(typeKey);
+    html += '<div class="mistake-card' + (resolved ? ' mistake-card-resolved' : '') + '" data-mistake-id="' + esc(mistake.id) + '">';
+    html += '<div class="mistake-meta"><span class="mistake-type">' + esc(typeLabel === typeKey ? (mistake.type || '') : typeLabel) + '</span><span class="mistake-topic">' + esc(mistake.topic || '') + '</span><span class="mistake-time">' + formatRelativeTime(mistake.timestamp) + '</span>'
+      + (resolved ? '<span class="mistake-resolved-tag">' + esc(t('mistakes.conquered')) + '</span>' : '')
+      + '</div>';
+    html += '<div class="mistake-q">' + esc(mistake.q || '') + '</div>';
+    html += '<div class="mistake-opts">' + optionsHtml + '</div>';
+    if (mistake.redoCount) {
+      html += '<div class="mistake-redo-count">'
+        + esc(mistake.redoCount === 1 ? t('mistakes.redoneOne') : t('mistakes.redoneMany', { n: mistake.redoCount }))
+        + '</div>';
+    }
+    html += '<button class="mistake-redo-btn" data-redo="' + esc(mistake.id) + '">' + esc(t('mistakes.redo')) + '</button>';
+    html += '</div>';
+  });
+  cont.innerHTML = html;
+  cont.querySelectorAll('[data-redo]').forEach(function (btn) {
+    btn.onclick = function () { onRedo(btn.getAttribute('data-redo')); };
+  });
+}
+
+function updateMistakeRedoState(stateStore, mistakeId) {
+  var mistakes = stateStore.read('mistakes') || [];
+  var mistake = mistakes.find(function (item) { return item.id === mistakeId; });
+  if (!mistake) return null;
+  var updated = Object.assign({}, mistake, { redoCount: (mistake.redoCount || 0) + 1 });
+  stateStore.dispatch({
+    type: 'state/set', key: 'mistakes',
+    value: mistakes.map(function (item) { return item.id === mistakeId ? updated : item; }),
+  });
+  return updated;
+}
+
+function createRedoMessage(slotClass, quizId) {
+  var message = document.createElement('div');
+  message.className = 'msg assistant';
+  var body = document.createElement('div');
+  body.className = 'msg-body';
+  var slot = quizId
+    ? '<div class="' + slotClass + '" data-quiz-id="' + quizId + '"></div>'
+    : '<div class="' + slotClass + '"></div>';
+  body.innerHTML = '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px">— Redoing a question you got wrong —</div>' + slot;
+  message.appendChild(body);
+  return message;
+}
+
+function scrollToLatestMessage(scrollContainer) {
+  var scroll = scrollContainer();
+  requestAnimationFrame(function () { scroll.scrollTop = scroll.scrollHeight; });
+}
+
+function mountPracticeRedo(mistake, mountPracticeWidget, scrollContainer) {
+  var message = createRedoMessage('practice-slot');
+  var list = document.getElementById('msgList');
+  if (list) list.appendChild(message);
+  scrollToLatestMessage(scrollContainer);
+  var slot = message.querySelector('.practice-slot');
+  if (slot) mountPracticeWidget(slot, { problem: mistake.q || '', correct: mistake.correct || null });
+}
+
+function quizPayload(mistake, slotId) {
+  return {
+    q: mistake.q,
+    options: mistake.options.map(function (option) { return { letter: option.letter, text: option.text }; }),
+    correct: mistake.correct,
+    slotId,
+  };
+}
+
+function mountExistingQuizRedo(mistake, mountQuizWidget) {
+  if (!mistake.quizSlotId) return false;
+  var slot = document.querySelector('[data-quiz-id="' + mistake.quizSlotId + '"]');
+  if (!slot) return false;
+  var parent = slot.closest('.inline-quiz');
+  if (!parent) return false;
+  var fresh = document.createElement('div');
+  parent.parentNode.replaceChild(fresh, parent);
+  mountQuizWidget(fresh, quizPayload(mistake, mistake.quizSlotId));
+  return true;
+}
+
+function mountFallbackQuizRedo(mistake, mountQuizWidget, saveCurrentSession, scrollContainer) {
+  var quizId = 'redo-' + Date.now().toString(36);
+  var message = createRedoMessage('quiz-slot', quizId);
+  var list = document.getElementById('msgList');
+  if (list) list.appendChild(message);
+  scrollToLatestMessage(scrollContainer);
+  var slot = message.querySelector('.quiz-slot');
+  if (!slot) return;
+  var parsed = quizPayload(mistake, slot.getAttribute('data-quiz-id'));
+  mistake.quizSlotId = parsed.slotId;
+  saveCurrentSession();
+  mountQuizWidget(slot, parsed);
+}
+
+function performMistakeRedo(dependencies, mistakeId) {
+  var mistake = updateMistakeRedoState(dependencies.stateStore, mistakeId);
+  if (!mistake) return;
+  dependencies.saveCurrentSession();
+  var isPractice = mistake.type === 'practice' || !(mistake.options || []).length;
+  if (isPractice && typeof dependencies.mountPracticeWidget === 'function') {
+    mountPracticeRedo(mistake, dependencies.mountPracticeWidget, dependencies.scrollContainer);
+    return;
+  }
+  if (mountExistingQuizRedo(mistake, dependencies.mountQuizWidget)) return;
+  mountFallbackQuizRedo(
+    mistake,
+    dependencies.mountQuizWidget,
+    dependencies.saveCurrentSession,
+    dependencies.scrollContainer,
+  );
 }
 
 /**
@@ -27,6 +182,14 @@ export function createMistakeBook({
   scrollContainer,
   getTutorSocratic = () => (typeof window !== 'undefined' ? window.tutorSocratic : undefined),
 }) {
+  const redoDependencies = {
+    stateStore,
+    saveCurrentSession,
+    mountQuizWidget,
+    mountPracticeWidget,
+    scrollContainer,
+  };
+
   function persistMistake(mistakeData) {
     var sid = stateStore.read('currentSessionId');
     if (typeof sid !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sid)) sid = null;
@@ -105,142 +268,11 @@ export function createMistakeBook({
   }
 
   function renderMistakes() {
-    var cont = document.getElementById('mistakesList');
-    if (!cont) return;
-    var panel = document.getElementById('mistakesPanel');
-    if (panel && panel.classList.contains('hidden')) {
-      panel.dataset.mistakesDirty = '1';
-      return;
-    }
-    if (panel) delete panel.dataset.mistakesDirty;
-    var tutorSocratic = getTutorSocratic();
-    if (tutorSocratic && typeof tutorSocratic.renderMistakeFilterBar === 'function') {
-      try { tutorSocratic.renderMistakeFilterBar(); } catch (_) {}
-    }
-    var mistakes = stateStore.read('mistakes') || [];
-    if (mistakes.length === 0) {
-      cont.innerHTML = '<div class="recents-empty">' + esc(t('mistakes.empty'))
-        + '<br>' + esc(t('mistakes.emptyHint')) + '</div>';
-      return;
-    }
-    var filter = stateStore.read('mistakeFilter') || 'all';
-    var filtered = mistakes.slice();
-    if (filter === 'unresolved') {
-      filtered = filtered.filter(function (mistake) { return !mistake.resolved && !mistake.isResolved; });
-    } else if (filter === 'resolved') {
-      filtered = filtered.filter(function (mistake) { return !!(mistake.resolved || mistake.isResolved); });
-    }
-    if (!filtered.length) {
-      cont.innerHTML = '<div class="recents-empty">'
-        + esc(filter === 'resolved' ? t('mistakes.filterEmptyResolved') : t('mistakes.filterEmptyOther'))
-        + '</div>';
-      return;
-    }
-    var html = '';
-    filtered.forEach(function (mistake) {
-      var optionsHtml = '';
-      (mistake.options || []).forEach(function (option) {
-        var tag = option.letter === mistake.correct ? 'correct-tag' : (option.letter === mistake.userAnswer ? 'wrong-tag' : '');
-        optionsHtml += '<div class="mistake-opt ' + tag + '"><span class="mistake-opt-letter">' + esc(option.letter) + '</span><span>' + esc(option.text) + '</span></div>';
-      });
-      var resolved = !!(mistake.resolved || mistake.isResolved);
-      /* mistake.type is the internal 'quiz' / 'practice' enum — a label,
-         not something to show a learner verbatim. */
-      var typeKey = 'mistakes.type.' + (mistake.type || '');
-      var typeLabel = t(typeKey);
-      html += '<div class="mistake-card' + (resolved ? ' mistake-card-resolved' : '') + '" data-mistake-id="' + esc(mistake.id) + '">';
-      html += '<div class="mistake-meta"><span class="mistake-type">' + esc(typeLabel === typeKey ? (mistake.type || '') : typeLabel) + '</span><span class="mistake-topic">' + esc(mistake.topic || '') + '</span><span class="mistake-time">' + formatRelativeTime(mistake.timestamp) + '</span>'
-        + (resolved ? '<span class="mistake-resolved-tag">' + esc(t('mistakes.conquered')) + '</span>' : '')
-        + '</div>';
-      html += '<div class="mistake-q">' + esc(mistake.q || '') + '</div>';
-      html += '<div class="mistake-opts">' + optionsHtml + '</div>';
-      if (mistake.redoCount) {
-        html += '<div class="mistake-redo-count">'
-          + esc(mistake.redoCount === 1 ? t('mistakes.redoneOne') : t('mistakes.redoneMany', { n: mistake.redoCount }))
-          + '</div>';
-      }
-      html += '<button class="mistake-redo-btn" data-redo="' + esc(mistake.id) + '">' + esc(t('mistakes.redo')) + '</button>';
-      html += '</div>';
-    });
-    cont.innerHTML = html;
-    cont.querySelectorAll('[data-redo]').forEach(function (btn) {
-      btn.onclick = function () { handleMistakeRedo(btn.getAttribute('data-redo')); };
-    });
+    renderMistakeList(stateStore, getTutorSocratic, handleMistakeRedo);
   }
 
   function handleMistakeRedo(mistakeId) {
-    var mistakes = stateStore.read('mistakes') || [];
-    var mistake = mistakes.find(function (item) { return item.id === mistakeId; });
-    if (!mistake) return;
-    var updatedMistake = Object.assign({}, mistake, { redoCount: (mistake.redoCount || 0) + 1 });
-    stateStore.dispatch({
-      type: 'state/set', key: 'mistakes',
-      value: mistakes.map(function (item) {
-        return item.id === mistakeId ? updatedMistake : item;
-      }),
-    });
-    mistake = updatedMistake;
-    saveCurrentSession();
-    /* U-L4 — practice mistakes have no options, so mounting a quiz
-       widget produced an empty shell. Mount the free-form practice
-       widget instead (problem + textarea + self-grading against the
-       stored correct answer). */
-    var isPractice = mistake.type === 'practice' || !(mistake.options || []).length;
-    if (isPractice && typeof mountPracticeWidget === 'function') {
-      var pDiv = document.createElement('div');
-      pDiv.className = 'msg assistant';
-      var pBody = document.createElement('div');
-      pBody.className = 'msg-body';
-      pBody.innerHTML = '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px">— Redoing a question you got wrong —</div><div class="practice-slot"></div>';
-      pDiv.appendChild(pBody);
-      var pList = document.getElementById('msgList');
-      if (pList) pList.appendChild(pDiv);
-      var pSc = scrollContainer();
-      requestAnimationFrame(function () { pSc.scrollTop = pSc.scrollHeight; });
-      var pSlot = pDiv.querySelector('.practice-slot');
-      if (pSlot) mountPracticeWidget(pSlot, { problem: mistake.q || '', correct: mistake.correct || null });
-      return;
-    }
-    if (mistake.quizSlotId) {
-      var slot = document.querySelector('[data-quiz-id="' + mistake.quizSlotId + '"]');
-      if (slot) {
-        var parent = slot.closest('.inline-quiz');
-        if (parent) {
-          const parsed = {
-            q: mistake.q,
-            options: mistake.options.map(function (option) { return { letter: option.letter, text: option.text }; }),
-            correct: mistake.correct,
-            slotId: mistake.quizSlotId,
-          };
-          var fresh = document.createElement('div');
-          parent.parentNode.replaceChild(fresh, parent);
-          mountQuizWidget(fresh, parsed);
-          return;
-        }
-      }
-    }
-    var div = document.createElement('div');
-    div.className = 'msg assistant';
-    var body = document.createElement('div');
-    body.className = 'msg-body';
-    body.innerHTML = '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px">— Redoing a question you got wrong —</div><div class="quiz-slot" data-quiz-id="redo-' + Date.now().toString(36) + '"></div>';
-    div.appendChild(body);
-    var list = document.getElementById('msgList');
-    if (list) list.appendChild(div);
-    var sc = scrollContainer();
-    requestAnimationFrame(function () { sc.scrollTop = sc.scrollHeight; });
-    var quizSlot = div.querySelector('.quiz-slot');
-    if (quizSlot) {
-      const parsed = {
-        q: mistake.q,
-        options: mistake.options.map(function (option) { return { letter: option.letter, text: option.text }; }),
-        correct: mistake.correct,
-        slotId: quizSlot.getAttribute('data-quiz-id'),
-      };
-      mistake.quizSlotId = parsed.slotId;
-      saveCurrentSession();
-      mountQuizWidget(quizSlot, parsed);
-    }
+    performMistakeRedo(redoDependencies, mistakeId);
   }
 
   return { recordMistake, removeMistakeForQuizSlot, updateMistakesBadge, renderMistakes };

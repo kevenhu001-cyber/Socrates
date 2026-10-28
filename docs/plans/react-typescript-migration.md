@@ -56,6 +56,10 @@ Concrete progress since the runtime landed:
   (`export * from './foo.ts'`) in the `.js` siblings; everything
   else was stale code drifting away from its live `.js` twin
   (commits `77394bc`, `734e5f3`).
+- Pure lifecycle decision helpers `modeDecision` and `resetDecision` migrated
+  to typed `.ts` modules; their JS callers and focused test imports now point
+  directly to the typed sources. The tracked untyped-JS inventory shrank from
+  109 to 107 paths.
 
 Remaining work is described in the [legacy DOM/window
 compatibility layer removal section](#legacy-domwindow-compatibility-layer-removal)

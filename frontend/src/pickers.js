@@ -10,6 +10,7 @@ import { getProviderConfigSnapshot, getActiveProvider as getActiveProviderConfig
 import { subscribeToProviderConfig } from './config/providerConfig.store.ts';
 import { stateStore } from './state/store.js';
 import { openNav } from './sidebar/navigation.service.ts';
+import { reportSwallow } from './util/reportSwallow.ts';
 
 /* ── getActiveProvider — closely tied to model picker ── */
 function getActiveProvider(){
@@ -214,6 +215,49 @@ function closeModelPicker(){
   var t=document.getElementById("modelPickerTrigger");
   if(t)t.setAttribute("aria-expanded","false");
 }
+
+function resolvePickerProvider(providers, activeId) {
+  var active = providers.find(function (provider) { return provider && provider.id === activeId; });
+  if (!active) {
+    var builtIn = providers.find(function (provider) { return provider && provider.id === 'beagle-built-in'; });
+    if (builtIn) {
+      setActiveProviderLocal(builtIn.id);
+      return { active: builtIn, activeId: builtIn.id };
+    }
+  }
+  return { active: active, activeId: activeId };
+}
+
+function showPickerLoading(label, trigger, menu) {
+  label.textContent = "Model";
+  label.title = "";
+  trigger.classList.remove("has-model");
+  menu.innerHTML = '<div class="model-picker-empty" style="opacity:0.5">Loading…</div>';
+}
+
+function updatePickerSelection(label, trigger, providers, active) {
+  if (active) {
+    label.textContent = (active.label && active.label !== "Default")
+      ? active.label
+      : (active.model || active.label || "Model");
+    label.title = active.isBuiltIn ? "" : ((active.url || "") + " · " + (active.model || ""));
+    trigger.classList.add("has-model");
+    return;
+  }
+  label.textContent = providers.length ? "Pick a model" : "Add a model";
+  label.title = "";
+  trigger.classList.remove("has-model");
+}
+
+function renderPickerMenu(menu, providers, activeId) {
+  var html = renderProviderItemsHTML(providers, activeId);
+  if (html) html += '<div class="model-picker-divider"></div>';
+  html += '<button type="button" class="model-picker-add">';
+  html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
+  html += providers.length ? 'Manage models…' : 'Add a model…';
+  menu.innerHTML = html + '</button>';
+}
+
 function syncModelPills(){
   var picker=document.getElementById("modelPicker");
   var label=document.getElementById("modelPickerLabel");
@@ -225,44 +269,16 @@ function syncModelPills(){
      "Add a model"은 서버 응답 후 진짜 빈 상태일 때만 노출. */
   var providers=providerConfig.providers||[];
   if(!providerConfig.fetched && !providers.length){
-    label.textContent="Model";
-    label.title="";
-    trigger.classList.remove("has-model");
-    menu.innerHTML='<div class="model-picker-empty" style="opacity:0.5">Loading…</div>';
+    showPickerLoading(label, trigger, menu);
     _syncChatModelInternal();
     return;
   }
-  var activeId = providerConfig.activeId;
-  var active=providers.find(function(p){return p&&p.id===activeId});
+  var { active, activeId } = resolvePickerProvider(providers, providerConfig.activeId);
   /* P_model-autofallback — if no activeId is set but the providers
      list includes the configured built-in provider, auto-select it so the model
      picker never shows "Pick a model" on cold boot. */
-  if(!active){
-    var beagle = providers.find(function(p){return p && p.id === 'beagle-built-in'});
-    if(beagle){
-      setActiveProviderLocal(beagle.id);
-      activeId = beagle.id;
-      active = beagle;
-    }
-  }
-  if(active){
-    label.textContent=(active.label && active.label!=="Default") ? active.label : (active.model||active.label||"Model");
-    label.title=active.isBuiltIn?"":((active.url||"")+" · "+(active.model||""));
-    trigger.classList.add("has-model");
-  }else{
-    label.textContent=providers.length?"Pick a model":"Add a model";
-    label.title="";
-    trigger.classList.remove("has-model");
-  }
-  var html = renderProviderItemsHTML(providers, activeId);
-  if (html) {
-    html += '<div class="model-picker-divider"></div>';
-  }
-  html += '<button type="button" class="model-picker-add">';
-  html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
-  html += providers.length ? 'Manage models…' : 'Add a model…';
-  html += '</button>';
-  menu.innerHTML=html;
+  updatePickerSelection(label, trigger, providers, active);
+  renderPickerMenu(menu, providers, activeId);
   _syncChatModelInternal();
 }
 /* Click outside the picker closes the menu. */
@@ -321,28 +337,41 @@ function _syncChatModelInternal(){
   var glyphEl=trigger && trigger.querySelector(".chat-model-glyph");
   if(!label && !glyphEl)return;
   var p=getActiveProvider();
-  var displayName=p?((p.label&&p.label!=="Default")?p.label:(p.model||p.label||"Model")):"Model";
-  if(label){
-    label.textContent=displayName;
-    label.title=p&&!p.isBuiltIn?(p.model||""):"";
-  }
-  if(trigger){
-    if(p){
-      trigger.classList.add("has-model");
-      trigger.setAttribute("data-glyph", (_glyphFromProvider(p)).kind);
-    } else {
-      trigger.classList.remove("has-model");
-      trigger.removeAttribute("data-glyph");
-    }
-    /* Update the accessible label to match the visible glyph so AT
-       users hear the same provider name everyone else sees. */
-    if(p) trigger.setAttribute("aria-label", "Model: " + displayName + ". Click to switch.");
-    else trigger.setAttribute("aria-label", "Pick or configure the model for this conversation");
-  }
-  if(glyphEl){
-    var g = p ? _glyphFromProvider(p) : { kind: "compass", tint: "var(--accent-000)" };
-    glyphEl.innerHTML = modelGlyphSVG(g, { size: 14 });
-  }
+  var displayName = providerDisplayName(p);
+  updateChatModelLabel(label, p, displayName);
+  updateChatModelTrigger(trigger, p, displayName);
+  updateChatModelGlyph(glyphEl, p);
+}
+
+function providerDisplayName(provider) {
+  if (!provider) return "Model";
+  return (provider.label && provider.label !== "Default")
+    ? provider.label
+    : (provider.model || provider.label || "Model");
+}
+
+function updateChatModelLabel(label, provider, displayName) {
+  if (!label) return;
+  label.textContent = displayName;
+  label.title = provider && !provider.isBuiltIn ? (provider.model || "") : "";
+}
+
+function updateChatModelTrigger(trigger, provider, displayName) {
+  if (!trigger) return;
+  trigger.classList.toggle("has-model", !!provider);
+  if (provider) trigger.setAttribute("data-glyph", _glyphFromProvider(provider).kind);
+  else trigger.removeAttribute("data-glyph");
+  /* Keep the accessible label aligned with the visible model glyph. */
+  trigger.setAttribute(
+    "aria-label",
+    provider ? "Model: " + displayName + ". Click to switch." : "Pick or configure the model for this conversation",
+  );
+}
+
+function updateChatModelGlyph(glyphEl, provider) {
+  if (!glyphEl) return;
+  var glyph = provider ? _glyphFromProvider(provider) : { kind: "compass", tint: "var(--accent-000)" };
+  glyphEl.innerHTML = modelGlyphSVG(glyph, { size: 14 });
 }
 function syncChatModel(){
   _syncChatModelInternal();
@@ -430,7 +459,7 @@ var EXTENSIONS=[
    icon: EXTENSION_ICONS.extensiveThinking,
    on:!!window.extensiveThinkingOn, onChange:function(v){
      window.extensiveThinkingOn=v;
-     try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch {}
+     try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch (error) { reportSwallow(error, 'pickers.js:433', 'expected'); }
      /* Use setActiveTemplate to show the chip when active */
      if(v && typeof window.setActiveTemplate === "function"){
        window.setActiveTemplate({
@@ -510,7 +539,7 @@ function extDcl(){
 }
 if(typeof window !== "undefined"){
   window.addEventListener("DOMContentLoaded", extDcl);
-  if(document.readyState !== "loading"){ try{ extDcl(); }catch(_){} }
+  if(document.readyState !== "loading"){ try{ extDcl(); }catch (error) { reportSwallow(error, 'pickers.js:513'); } }
 }
 function countActiveExtensions(){
   return EXTENSIONS.filter(function(e){return e.on}).length;

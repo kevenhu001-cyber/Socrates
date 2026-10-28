@@ -1,3 +1,6 @@
+
+import { reportSwallow } from '../util/reportSwallow.ts';
+
 /* ui/share.js — lightweight share facade.
  *
  * The full share/read-only-session renderer pulls tool cards and
@@ -44,7 +47,7 @@ function toggleShareBtn() {
   var findBtn = document.getElementById('findBtn');
   if (findBtn) findBtn.classList.toggle('hidden', !show);
   if (!show && typeof window.closeFindInSession === 'function') {
-    try { window.closeFindInSession(); } catch (_) {}
+    try { window.closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.js:47'); }
   }
 }
 
@@ -56,7 +59,7 @@ function closeShareModal() {
   if (_shareImpl) {
     _shareImpl.closeShareModal();
   } else if (_shareImplPromise) {
-    void _shareImplPromise.then(function (module) { module.closeShareModal(); }).catch(function () {});
+    void _shareImplPromise.then(function (module) { module.closeShareModal(); }).catch(() => undefined);
   }
 }
 
@@ -87,7 +90,7 @@ function resetShareToken() {
   if (_shareImpl) {
     _shareImpl.resetShareToken();
   } else if (_shareImplPromise) {
-    void _shareImplPromise.then(function (module) { module.resetShareToken(); }).catch(function () {});
+    void _shareImplPromise.then(function (module) { module.resetShareToken(); }).catch(() => undefined);
   }
 }
 

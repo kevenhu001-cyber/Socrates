@@ -76,25 +76,32 @@ const REVALIDATE_AFTER_MS = 30_000;
    read `.length`. The message bodies dominate the payload, so summing their
    string fields (plus a per-row allowance for keys and small fields) is
    within a few percent and costs nothing. */
-function serializedBytes(response: CachedDetailResponse): number {
-  const msgs = Array.isArray(response.messages) ? response.messages : [];
-  let total = 2048;
-  for (let i = 0; i < msgs.length; i++) {
-    const m = msgs[i];
-    if (!m) continue;
-    total += 256 + (m.html ? m.html.length : 0) + (m.rawText ? m.rawText.length : 0)
-      + (m.reasoningContent ? m.reasoningContent.length : 0);
-    if (Array.isArray(m.attachments) && m.attachments.length) {
-      for (let a = 0; a < m.attachments.length; a++) {
-        const at = m.attachments[a] as { dataUrl?: string | null; text?: string | null } | null | undefined;
-        if (at) total += 128 + (at.dataUrl ? at.dataUrl.length : 0) + (at.text ? at.text.length : 0);
-      }
-    }
-    if (Array.isArray(m.toolCalls) && m.toolCalls.length) {
-      try { total += JSON.stringify(m.toolCalls).length; } catch { return Infinity; }
-    }
+function attachmentBytes(attachments: CachedMessage['attachments']): number {
+  if (!Array.isArray(attachments)) return 0;
+  let total = 0;
+  for (const attachment of attachments) {
+    const item = attachment as { dataUrl?: string | null; text?: string | null } | null | undefined;
+    if (item) total += 128 + (item.dataUrl ? item.dataUrl.length : 0) + (item.text ? item.text.length : 0);
   }
   return total;
+}
+
+function toolCallBytes(toolCalls: CachedMessage['toolCalls']): number {
+  if (!Array.isArray(toolCalls)) return 0;
+  try { return JSON.stringify(toolCalls).length; } catch { return Infinity; }
+}
+
+function messageBytes(message: CachedMessage | null | undefined): number {
+  if (!message) return 0;
+  return 256 + (message.html ? message.html.length : 0) + (message.rawText ? message.rawText.length : 0)
+    + (message.reasoningContent ? message.reasoningContent.length : 0)
+    + attachmentBytes(message.attachments)
+    + toolCallBytes(message.toolCalls);
+}
+
+function serializedBytes(response: CachedDetailResponse): number {
+  const messages = Array.isArray(response.messages) ? response.messages : [];
+  return messages.reduce((total, message) => total + messageBytes(message), 2048);
 }
 
 /**
@@ -267,6 +274,65 @@ const SCALAR_KEYS = [
   'streamingText', 'streamingReasoning', 'createdAt', 'updatedAt', 'userId',
 ];
 
+function copySavedScalars(
+  response: CachedDetailResponse,
+  saved: Record<string, unknown> | null | undefined,
+): CachedDetailResponse {
+  const next: CachedDetailResponse = {};
+  for (const key of SCALAR_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(response, key)) next[key] = response[key];
+  }
+  if (saved && typeof saved === 'object') {
+    for (const key of SCALAR_KEYS) {
+      if (saved[key] !== undefined) next[key] = saved[key];
+    }
+  }
+  return next;
+}
+
+function indexMessages(messages: CachedMessage[]): Record<string, number> {
+  const indexByClient: Record<string, number> = Object.create(null);
+  for (let index = 0; index < messages.length; index++) {
+    const row = messages[index];
+    const key = row && (row.clientId || row.id);
+    if (key) indexByClient[key] = index;
+  }
+  return indexByClient;
+}
+
+function mergeSavedMessage(
+  messages: CachedMessage[],
+  indexByClient: Record<string, number>,
+  row: CachedMessage | null | undefined,
+): void {
+  if (!row) return;
+  const byClientId = row.clientId ? indexByClient[row.clientId] : undefined;
+  const byRowId = row.id ? indexByClient[row.id] : undefined;
+  const match = byClientId != null ? byClientId : (byRowId != null ? byRowId : -1);
+  if (match >= 0) {
+    /* Keep the server's row id — the cache is keyed by it, and the
+       client's copy may not know it yet. */
+    const merged = Object.assign({}, messages[match], row);
+    merged.id = messages[match].id;
+    messages[match] = merged;
+    return;
+  }
+  messages.push(row);
+  const key = row.clientId || row.id;
+  if (key) indexByClient[key] = messages.length - 1;
+}
+
+function foldSavedRows(
+  currentRows: CachedMessage[] | null | undefined,
+  savedRows: CachedMessage[] | null | undefined,
+): CachedMessage[] | null | undefined {
+  if (!Array.isArray(savedRows) || !savedRows.length) return currentRows;
+  const messages = Array.isArray(currentRows) ? currentRows.slice() : [];
+  const indexByClient = indexMessages(messages);
+  for (const row of savedRows) mergeSavedMessage(messages, indexByClient, row);
+  return messages;
+}
+
 /**
  * Fold a completed save back into the cached detail response instead of
  * dropping it.
@@ -296,51 +362,12 @@ export function foldSave(
   if (!e) return;
 
   const response = e.response;
-  const next: CachedDetailResponse = {};
   /* Start from the cached copy, then overlay only the scalars the save
      response actually carried. The save handler deliberately drops the big
      JSONB blobs from its reply, so anything it omits must keep the value the
      cached detail already had — a blind replace would blank kbNodes etc. */
-  for (let i = 0; i < SCALAR_KEYS.length; i++) {
-    const key = SCALAR_KEYS[i];
-    if (Object.prototype.hasOwnProperty.call(response, key)) next[key] = response[key];
-  }
-  if (saved && typeof saved === 'object') {
-    for (let s = 0; s < SCALAR_KEYS.length; s++) {
-      const sk = SCALAR_KEYS[s];
-      if (saved[sk] !== undefined) next[sk] = saved[sk];
-    }
-  }
-
-  if (Array.isArray(rows) && rows.length) {
-    const msgs = Array.isArray(response.messages) ? response.messages.slice() : [];
-    const byClient: Record<string, number> = Object.create(null);
-    for (let m = 0; m < msgs.length; m++) {
-      const ck = msgs[m] && (msgs[m].clientId || msgs[m].id);
-      if (ck) byClient[ck] = m;
-    }
-    for (let r = 0; r < rows.length; r++) {
-      const row = rows[r];
-      if (!row) continue;
-      const byClientId = row.clientId ? byClient[row.clientId] : undefined;
-      const byRowId = row.id ? byClient[row.id] : undefined;
-      const match = byClientId != null ? byClientId : (byRowId != null ? byRowId : -1);
-      if (match >= 0) {
-        /* Keep the server's row id — the cache is keyed by it, and the
-           client's copy may not know it yet. */
-        const merged = Object.assign({}, msgs[match], row);
-        merged.id = msgs[match].id;
-        msgs[match] = merged;
-      } else {
-        msgs.push(row);
-        const nk = row.clientId || row.id;
-        if (nk) byClient[nk] = msgs.length - 1;
-      }
-    }
-    next.messages = msgs;
-  } else {
-    next.messages = response.messages;
-  }
+  const next = copySavedScalars(response, saved);
+  next.messages = foldSavedRows(response.messages, rows);
 
   e.response = next;
   e.sig = signature(next);

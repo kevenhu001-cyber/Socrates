@@ -40,6 +40,7 @@ function _supported() {
 }
 
 import { showToast } from './toast.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _notify(msg) {
   showToast(msg);
@@ -67,16 +68,16 @@ function _clearActive() {
 
 export function stopSpeaking() {
   if (_cloudAudio) {
-    try { _cloudAudio.pause(); } catch (_) {}
-    try { _cloudAudio.src = ""; } catch (_) {}
+    try { _cloudAudio.pause(); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.mjs:70', 'expected'); }
+    try { _cloudAudio.src = ""; } catch (error) { reportSwallow(error, 'ui/readAloud.impl.mjs:71'); }
     _cloudAudio = null;
   }
   if (_cloudAbort) {
-    try { _cloudAbort.abort(); } catch (_) {}
+    try { _cloudAbort.abort(); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.mjs:75', 'expected'); }
     _cloudAbort = null;
   }
   if (_supported()) {
-    try { window.speechSynthesis.cancel(); } catch (_) {}
+    try { window.speechSynthesis.cancel(); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.mjs:79', 'expected'); }
   }
   _clearActive();
 }
@@ -127,7 +128,7 @@ function _speakCloud(clean, lang, messageId) {
   }).catch(function () {
     _cloudFailures += 1;
     if (_cloudFailures >= _CLOUD_FAILURE_LIMIT) {
-      try { localStorage.setItem(CLOUD_DISABLED_KEY, "1"); } catch (_) {}
+      try { localStorage.setItem(CLOUD_DISABLED_KEY, "1"); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.mjs:130', 'expected'); }
     }
     return false;
   }).finally(function () {
@@ -194,5 +195,5 @@ export function toggleReadAloud(btn, text, messageId) {
 
 /* Stop speaking if the user navigates away / resets the app. */
 if (typeof window !== "undefined") {
-  window.addEventListener("beforeunload", function () { try { stopSpeaking(); } catch (_) {} });
+  window.addEventListener("beforeunload", function () { try { stopSpeaking(); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.mjs:197'); } });
 }

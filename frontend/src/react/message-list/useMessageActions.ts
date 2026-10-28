@@ -84,6 +84,41 @@ function doReadAloud(message: LegacyChatMessage, ev: React.MouseEvent<HTMLButton
   else legacy.messages.toggleReadAloud(ev.currentTarget, text);
 }
 
+function userMessageCallbacks(
+  role: string,
+  id: string | null,
+  legacy: ReturnType<typeof getLegacyActions> | null,
+): Pick<MessageToolbarCallbacks, 'onEdit' | 'onDelete'> {
+  if (role !== 'user' || !id || !legacy) return {};
+  return {
+    onEdit: () => legacy.messages.editUserMessage(id),
+    onDelete: () => legacy.messages.deleteUserMessage(id),
+  };
+}
+
+function assistantMessageCallbacks(
+  message: LegacyChatMessage,
+  role: string,
+  id: string | null,
+  legacy: ReturnType<typeof getLegacyActions> | null,
+): Pick<MessageToolbarCallbacks, 'onShare' | 'onRegenerate' | 'onThumbsUp' | 'onThumbsDown' | 'onBranch' | 'onReExplain' | 'onReadAloud' | 'onSwitchBranch'> {
+  if (role !== 'assistant') return {};
+  const callbacks: Pick<MessageToolbarCallbacks, 'onShare' | 'onRegenerate' | 'onThumbsUp' | 'onThumbsDown' | 'onBranch' | 'onReExplain' | 'onReadAloud' | 'onSwitchBranch'> = {
+    onShare: () => getLegacyActions().messages.openShareModal(),
+  };
+  if (!id || !legacy) return callbacks;
+  return {
+    ...callbacks,
+    onRegenerate: () => legacy.messages.regenerateAssistantMessage(id),
+    onThumbsUp: () => legacy.messages.sendFeedback(id, 'up'),
+    onThumbsDown: () => legacy.messages.sendFeedback(id, 'down'),
+    onBranch: () => legacy.messages.branchFromMessage(id),
+    onReExplain: () => legacy.messages.branchFromMessage(id, { reExplain: true }),
+    onReadAloud: (event) => doReadAloud(message, event),
+    onSwitchBranch: (targetIndex) => legacy.messages.switchMessageBranch(id, targetIndex),
+  };
+}
+
 /**
  * Returns the click handler bundle the toolbar expects. Each handler is
  * either a thin dispatcher to a legacy window global or a local helper.
@@ -97,35 +132,7 @@ export function useMessageToolbarCallbacks(message: LegacyChatMessage): MessageT
 
   return {
     onCopy: () => doCopy(message),
-    onEdit: role === 'user' && legacy
-      ? () => legacy.messages.editUserMessage(id!)
-      : undefined,
-    onDelete: role === 'user' && legacy
-      ? () => legacy.messages.deleteUserMessage(id!)
-      : undefined,
-    onShare: role === 'assistant'
-      ? () => getLegacyActions().messages.openShareModal()
-      : undefined,
-    onRegenerate: role === 'assistant' && legacy
-      ? () => legacy.messages.regenerateAssistantMessage(id!)
-      : undefined,
-    onThumbsUp: role === 'assistant' && legacy
-      ? () => legacy.messages.sendFeedback(id!, 'up')
-      : undefined,
-    onThumbsDown: role === 'assistant' && legacy
-      ? () => legacy.messages.sendFeedback(id!, 'down')
-      : undefined,
-    onBranch: role === 'assistant' && legacy
-      ? () => legacy.messages.branchFromMessage(id!)
-      : undefined,
-    onReExplain: role === 'assistant' && legacy
-      ? () => legacy.messages.branchFromMessage(id!, { reExplain: true })
-      : undefined,
-    onReadAloud: role === 'assistant' && id
-      ? (ev: React.MouseEvent<HTMLButtonElement>) => doReadAloud(message, ev)
-      : undefined,
-    onSwitchBranch: legacy && id
-      ? (targetIndex: number) => legacy.messages.switchMessageBranch(id!, targetIndex)
-      : undefined,
+    ...userMessageCallbacks(role, id, legacy),
+    ...assistantMessageCallbacks(message, role, id, legacy),
   };
 }

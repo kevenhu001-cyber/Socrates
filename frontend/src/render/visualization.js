@@ -13,6 +13,7 @@ import { dispatchExtensionRepair, renderExtension } from './visualizationExtensi
 import { asVisualizationSpec } from './visualizationSpec.ts';
 import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { openWorkbench } from '../react/workbench/workbenchStore';
 export { parseFunctionExpression, sampleFunction, categoryAxisLayout, formatCategoryLabel };
 
 var echartsPromise = null;
@@ -187,17 +188,15 @@ function bindCard(card, spec, chart, opts) {
   var wbBtn = card.querySelector('[data-viz-action="workbench"]');
   if (wbBtn) {
     wbBtn.addEventListener('click', function () {
-      import('../react/workbench/workbenchStore').then(function (m) {
-        m.openWorkbench({
-          id: card.dataset.visualizationId || ('viz-' + Date.now()),
-          title: spec.title || vizT('workbench.chartTitle', 'Visualization'),
-          titleKey: spec.title ? undefined : 'workbench.chartTitle',
-          type: 'chart',
-          code: JSON.stringify(spec, null, 2),
-          language: 'json',
-          previewHtml: card.outerHTML,
-        }, 'preview');
-      });
+      openWorkbench({
+        id: card.dataset.visualizationId || ('viz-' + Date.now()),
+        title: spec.title || vizT('workbench.chartTitle', 'Visualization'),
+        titleKey: spec.title ? undefined : 'workbench.chartTitle',
+        type: 'chart',
+        code: JSON.stringify(spec, null, 2),
+        language: 'json',
+        previewHtml: card.outerHTML,
+      }, 'preview');
     });
   }
 }
@@ -217,44 +216,15 @@ function vizT(key, fallback) {
   return fallback;
 }
 
-export async function mountVisualization(spec, host, options) {
-  if (!spec || spec.version !== 1 || !host) return null;
-  /* The spec is model output: every renderer below reads spec.template and
-     spec.payload without re-checking them, so normalise once here. A blank
-     template returns null (nothing can render it); a missing payload becomes
-     {} so `payload.series` et al. cannot throw. */
-  spec = asVisualizationSpec(spec);
-  if (!spec) return null;
-  options = options || {};
-  _ensureThemeWatcher();
-  var cardId = options.toolCallId || ('visual-' + (++visualCounter));
-  /* A mounted card whose React host is being torn down aborts the mount
-     through this signal; every await below re-checks it and disposes the
-     half-built card instead of attaching a renderer nobody can see. */
-  var isCancelled = function () { return !!(options.signal && options.signal.aborted); };
-  // Synchronous dedup: check DOM first, then the per-host in-memory map to
-  // guard against concurrent calls that yield the event loop between the
-  // DOM check and host.appendChild.
-  var existing = Array.from(host.querySelectorAll('.visualization-card[data-visualization-id]'))
-    .find(function (candidate) { return candidate.dataset.visualizationId === cardId; });
-  if (existing) return existing;
-  var mounting = _mountingFor(host);
-  if (mounting.has(cardId)) {
-    // Another call is already mounting this card for the same host.
-    return mounting.get(cardId);
-  }
+const CHART_TEMPLATES = ['line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'];
+const EXTENSION_TEMPLATES = ['svg_illustration', 'interactive_simulation'];
+
+function createVisualizationCard(spec, host, cardId, mounting) {
   var card = document.createElement('section');
-  card.className = 'visualization-card'; card.dataset.visualizationId = cardId;
+  card.className = 'visualization-card';
+  card.dataset.visualizationId = cardId;
   card.setAttribute('aria-label', spec.title + '. ' + spec.accessibilitySummary);
-  // Register in the in-memory map BEFORE any async yield so concurrent
-  // calls with the same cardId see it.
   mounting.set(cardId, card);
-  var chartTemplates = ['line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'];
-  var extension = ['svg_illustration', 'interactive_simulation'].includes(spec.template);
-  /* P_viz-actions-i18n — the four action buttons used to be
-     hardcoded Chinese with `title=` only. Now they go through
-     `vizT` (with English fallbacks) AND get explicit `aria-label`s
-     so screen readers announce a semantic label, not a tooltip. */
   var actionTable = vizT('viz.action.table', 'Data');
   var actionReset = vizT('viz.action.reset', 'Reset view');
   var actionDownload = vizT('viz.action.download', 'Download PNG');
@@ -264,209 +234,276 @@ export async function mountVisualization(spec, host, options) {
   host.appendChild(card);
   mounting.delete(cardId);
   renderCardMath(card);
-  var stage = card.querySelector('.visualization-stage'), chart = null, liveEntry = null;
-  try {
-    // Model-provided table data must share the chart's per-card recovery boundary.
-    card.querySelector('.visualization-data').innerHTML = renderVisualizationTable(spec, esc, vizT);
-    if (usesSpecializedRenderer(spec.template)) {
-      await whenFontsReady('Noto Sans SC');
-      var specialized = await mountSpecializedVisualization(spec, stage, {
-        sampleFunction: sampleFunction,
-      });
-      /* Register cleanup before any cancellation check so a torn-down mount
-         releases whatever the adapter already created (RAF, observers,
-         controls, WebGL context). */
-      card._visualizationCleanup = specialized.cleanup;
-      if (isCancelled()) { disposeCard(card); return null; }
-      chart = specialized.chart || null;
-      card.dataset.visualizationRenderer = spec.template === 'function' || spec.template === 'paper_chart'
-        ? 'plotly'
-        : spec.template === 'geometry_3d'
-          ? 'three'
-          : spec.template === 'math_construction'
-            ? 'geogebra'
-            : spec.template === 'whiteboard'
-              ? 'tldraw'
-              : 'mermaid';
-    } else if (chartTemplates.includes(spec.template)) {
-      await whenFontsReady('Noto Sans SC');
-      var echarts = await loadEcharts();
-      if (isCancelled()) { disposeCard(card); return null; }
-      var useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series) { return series.data && series.data.length > 1200; });
-      chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });
-      card.dataset.visualizationRenderer = 'echarts';
-      var chartOpts = optionForChart(spec, palette());
-      if (!chartOpts) {
-        chart.dispose();
-        stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button" data-viz-fallback="retry">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button> <button type="button" data-viz-fallback="fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button></div>';
-        stage.querySelector('[data-viz-fallback="retry"]').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
-        stage.querySelector('[data-viz-fallback="fix"]').addEventListener('click', function () { dispatchExtensionRepair(card, spec, 'renderer returned no chart option'); });
-        reportSwallow(new Error('renderer returned no chart option'), 'visualization/' + spec.template + '/empty_options', 'recoverable');
-        chart = null;
-      } else if (isCancelled()) {
-        chart.dispose();
-        chart = null;
-        disposeCard(card);
-        return null;
-      } else {
-        chart.setOption(chartOpts, { notMerge: true });
-        liveEntry = { chart: chart, spec: spec };
-        _liveCharts.push(liveEntry);
-        /* P_viz-resize-guard — resizing synchronously from the
-           ResizeObserver can re-enter ECharts while its progressive
-           render pipeline is mid-flight (setOption(notMerge) or the
-           theme refresh mutates the SVG, which changes the stage size
-           and fires the observer in the same frame). That crashes
-           inside chart views with "Cannot read properties of
-           undefined (reading 'childAt')".
-           Solution: track a pendingResize flag; try resize() inline
-           (succeeds when the chart is idle), and if it fails (chart
-           is animating), the 'finished' event retries after all
-           entrance/transition animations settle. */
-        var resizeRaf = 0;
-        var pendingResize = false;
-        chart.on('finished', function () {
-          if (pendingResize) {
-            pendingResize = false;
-            if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
-            try { chart.resize(); } catch (_) { /* chart was disposed mid-animation */ }
-          }
-        });
-        var resize = new ResizeObserver(function () {
-          if (resizeRaf) return;
-          resizeRaf = requestAnimationFrame(function () {
-            resizeRaf = 0;
-            if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
-            pendingResize = true;
-            try { chart.resize(); pendingResize = false; } catch (_) { /* deferred to 'finished' */ }
-          });
-        });
-        resize.observe(stage);
-        card._visualizationCleanup = function () {
-          resize.disconnect();
-          if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
-          chart.dispose();
-          if (liveEntry) {
-            var idx = _liveCharts.indexOf(liveEntry);
-            if (idx >= 0) _liveCharts.splice(idx, 1);
-          }
-        };
-      }
-    } else if (extension) {
-      stage.innerHTML = renderExtension(spec, cardId, esc);
-      var frame = stage.querySelector('iframe');
-      var receiveExtensionMsg = function (event) {
-        var data = event.data || {};
-        if (event.source !== frame.contentWindow || data.cardId !== cardId || data.nonce !== frame.dataset.nonce) return;
-        if (data.type === 'socrates-viz-ready') {
-          frame.dataset.ready = 'true';
-        } else if (data.type === 'socrates-viz-error') {
-          /* P_ext-viz-error — surface a script failure inside the
-             sandboxed extension iframe, and offer "Fix with AI" so the
-             error rides the tool-retry pipeline back to the model
-             instead of dying silently in an opaque-origin frame. */
-          var errMsg = String(data.message || 'render error').slice(0, 300);
-          reportSwallow(new Error('sandboxed visualization reported a runtime error'), 'visualization/' + spec.template + '/iframe_runtime_error', 'recoverable');
-          var errBanner = stage.querySelector('.visualization-ext-error');
-          if (!errBanner) {
-            errBanner = document.createElement('div');
-            errBanner.className = 'visualization-ext-error viz-error';
-            stage.insertBefore(errBanner, frame);
-          }
-          errBanner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(errMsg) + '</span>' +
-            '<button type="button" class="viz-error-fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button>';
-          var fixBtn = errBanner.querySelector('.viz-error-fix');
-          if (fixBtn && !fixBtn.__vizBound) {
-            fixBtn.__vizBound = true;
-            fixBtn.addEventListener('click', function (ev) {
-              ev.preventDefault();
-              ev.stopPropagation();
-              dispatchExtensionRepair(card, spec, errMsg);
-            });
-          }
-        }
-      };
-      window.addEventListener('message', receiveExtensionMsg);
-      frame.addEventListener('error', function () {
-        reportSwallow(new Error('sandboxed visualization iframe failed to load'), 'visualization/' + spec.template + '/iframe_load_error', 'recoverable');
-      });
-      card._visualizationCleanup = function () { window.removeEventListener('message', receiveExtensionMsg); };
-    } else {
-      var semanticSvg = renderSemanticVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
-      stage.innerHTML = semanticSvg || renderStructureVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
-      chart = svgStageChart(stage);
+  return card;
+}
+
+function rendererName(template) {
+  if (template === 'function' || template === 'paper_chart') return 'plotly';
+  if (template === 'geometry_3d') return 'three';
+  if (template === 'math_construction') return 'geogebra';
+  if (template === 'whiteboard') return 'tldraw';
+  return 'mermaid';
+}
+
+async function mountSpecializedRenderer(spec, card, stage, renderState, isCancelled) {
+  await whenFontsReady('Noto Sans SC');
+  var specialized = await mountSpecializedVisualization(spec, stage, { sampleFunction: sampleFunction });
+  card._visualizationCleanup = specialized.cleanup;
+  if (isCancelled()) { disposeCard(card); return true; }
+  renderState.chart = specialized.chart || null;
+  card.dataset.visualizationRenderer = rendererName(spec.template);
+  return false;
+}
+
+function watchChartResize(card, stage, chart, liveEntry) {
+  var resizeRaf = 0;
+  var pendingResize = false;
+  chart.on('finished', function () {
+    if (!pendingResize) return;
+    pendingResize = false;
+    if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
+    try { chart.resize(); } catch (_) { /* chart was disposed mid-animation */ }
+  });
+  var resize = new ResizeObserver(function () {
+    if (resizeRaf) return;
+    resizeRaf = requestAnimationFrame(function () {
+      resizeRaf = 0;
+      if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
+      pendingResize = true;
+      try { chart.resize(); pendingResize = false; } catch (_) { /* deferred to 'finished' */ }
+    });
+  });
+  resize.observe(stage);
+  card._visualizationCleanup = function () {
+    resize.disconnect();
+    if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
+    chart.dispose();
+    if (liveEntry) {
+      var index = _liveCharts.indexOf(liveEntry);
+      if (index >= 0) _liveCharts.splice(index, 1);
     }
-    if (isCancelled()) { disposeCard(card); return null; }
-    var echartsInstance = chartTemplates.includes(spec.template) ? chart : null;
-    // OpenUI controls update native charts in place; keep zoom and the card identity.
-    if (echartsInstance) card._visualizationUpdate = function (next) {
-      if (card._visualizationDisposed || echartsInstance.isDisposed() || next.template !== spec.template) return false;
-      var nextOptions = optionForChart(next, palette());
-      if (!nextOptions) return false;
-      echartsInstance.setOption(nextOptions, { replaceMerge: ['series'] });
-      spec = next;
-      if (liveEntry) liveEntry.spec = next;
-      card.querySelector('.visualization-header h3').textContent = next.title || '';
-      card.querySelector('.visualization-summary').textContent = next.accessibilitySummary || '';
-      card.setAttribute('aria-label', (next.title || '') + '. ' + (next.accessibilitySummary || ''));
-      card.querySelector('.visualization-data').innerHTML = renderVisualizationTable(next, esc, vizT);
-      var caption = card.querySelector('.visualization-caption');
-      if (!caption && next.caption) {
-        caption = document.createElement('figcaption');
-        caption.className = 'visualization-caption';
-        card.querySelector('.visualization-figure').appendChild(caption);
-      }
-      if (caption) caption.textContent = next.caption || '';
-      return true;
-    };
+  };
+}
+
+function renderChartFallback(spec, host, options, card, stage) {
+  stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button" data-viz-fallback="retry">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button> <button type="button" data-viz-fallback="fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button></div>';
+  stage.querySelector('[data-viz-fallback="retry"]').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
+  stage.querySelector('[data-viz-fallback="fix"]').addEventListener('click', function () { dispatchExtensionRepair(card, spec, 'renderer returned no chart option'); });
+  reportSwallow(new Error('renderer returned no chart option'), 'visualization/' + spec.template + '/empty_options', 'recoverable');
+}
+
+async function mountChartRenderer(spec, host, options, card, stage, renderState, isCancelled) {
+  await whenFontsReady('Noto Sans SC');
+  var echarts = await loadEcharts();
+  if (isCancelled()) { disposeCard(card); return true; }
+  var useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series) {
+    return series.data && series.data.length > 1200;
+  });
+  var chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });
+  renderState.chart = chart;
+  card.dataset.visualizationRenderer = 'echarts';
+  var chartOptions = optionForChart(spec, palette());
+  if (!chartOptions) {
+    chart.dispose();
+    renderChartFallback(spec, host, options, card, stage);
+    renderState.chart = null;
+    return false;
+  }
+  if (isCancelled()) {
+    chart.dispose();
+    renderState.chart = null;
+    disposeCard(card);
+    return true;
+  }
+  chart.setOption(chartOptions, { notMerge: true });
+  renderState.liveEntry = { chart: chart, spec: spec };
+  _liveCharts.push(renderState.liveEntry);
+  watchChartResize(card, stage, chart, renderState.liveEntry);
+  return false;
+}
+
+function mountExtensionRenderer(spec, card, stage, cardId) {
+  stage.innerHTML = renderExtension(spec, cardId, esc);
+  var frame = stage.querySelector('iframe');
+  var receiveExtensionMsg = function (event) {
+    var data = event.data || {};
+    if (event.source !== frame.contentWindow || data.cardId !== cardId || data.nonce !== frame.dataset.nonce) return;
+    if (data.type === 'socrates-viz-ready') {
+      frame.dataset.ready = 'true';
+      return;
+    }
+    if (data.type !== 'socrates-viz-error') return;
+    var errorMessage = String(data.message || 'render error').slice(0, 300);
+    reportSwallow(new Error('sandboxed visualization reported a runtime error'), 'visualization/' + spec.template + '/iframe_runtime_error', 'recoverable');
+    var errorBanner = stage.querySelector('.visualization-ext-error');
+    if (!errorBanner) {
+      errorBanner = document.createElement('div');
+      errorBanner.className = 'visualization-ext-error viz-error';
+      stage.insertBefore(errorBanner, frame);
+    }
+    errorBanner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(errorMessage) + '</span>' +
+      '<button type="button" class="viz-error-fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button>';
+    var fixButton = errorBanner.querySelector('.viz-error-fix');
+    if (fixButton && !fixButton.__vizBound) {
+      fixButton.__vizBound = true;
+      fixButton.addEventListener('click', function (event2) {
+        event2.preventDefault();
+        event2.stopPropagation();
+        dispatchExtensionRepair(card, spec, errorMessage);
+      });
+    }
+  };
+  window.addEventListener('message', receiveExtensionMsg);
+  frame.addEventListener('error', function () {
+    reportSwallow(new Error('sandboxed visualization iframe failed to load'), 'visualization/' + spec.template + '/iframe_load_error', 'recoverable');
+  });
+  card._visualizationCleanup = function () { window.removeEventListener('message', receiveExtensionMsg); };
+}
+
+function mountSemanticRenderer(spec, stage) {
+  var semanticSvg = renderSemanticVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
+  stage.innerHTML = semanticSvg || renderStructureVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
+  return svgStageChart(stage);
+}
+
+async function mountTemplateRenderer(spec, host, options, card, stage, cardId, renderState, isCancelled) {
+  if (usesSpecializedRenderer(spec.template)) {
+    return mountSpecializedRenderer(spec, card, stage, renderState, isCancelled);
+  }
+  if (CHART_TEMPLATES.includes(spec.template)) {
+    return mountChartRenderer(spec, host, options, card, stage, renderState, isCancelled);
+  }
+  if (EXTENSION_TEMPLATES.includes(spec.template)) {
+    mountExtensionRenderer(spec, card, stage, cardId);
+    return false;
+  }
+  renderState.chart = mountSemanticRenderer(spec, stage);
+  return false;
+}
+
+function invalidVisualizationInput(spec, host) {
+  return !spec || spec.version !== 1 || !host;
+}
+
+function findExistingCard(host, cardId) {
+  var existing = Array.from(host.querySelectorAll('.visualization-card[data-visualization-id]'))
+    .find(function (candidate) { return candidate.dataset.visualizationId === cardId; });
+  if (existing) return { card: existing, mounting: null };
+  var mounting = _mountingFor(host);
+  return { card: mounting.has(cardId) ? mounting.get(cardId) : null, mounting: mounting };
+}
+
+function stopCancelledMount(cancelled, card, isCancelled) {
+  if (cancelled) return true;
+  if (!isCancelled()) return false;
+  disposeCard(card);
+  return true;
+}
+
+function chartRuntimeForCard(spec, card, renderState) {
+  if (!CHART_TEMPLATES.includes(spec.template) || !renderState.chart) return null;
+  var runtime = createChartRuntime(card, renderState.chart, spec, renderState.liveEntry);
+  card._visualizationUpdate = runtime.update;
+  return runtime;
+}
+
+function cardSkipsChartReset(spec, card) {
+  return card.dataset.visualizationRenderer === 'mermaid'
+    || !usesSpecializedRenderer(spec.template) && !CHART_TEMPLATES.includes(spec.template);
+}
+
+function createChartRuntime(card, chart, initialSpec, liveEntry) {
+  var currentSpec = initialSpec;
+  function update(next) {
+    if (card._visualizationDisposed || chart.isDisposed() || next.template !== currentSpec.template) return false;
+    var nextOptions = optionForChart(next, palette());
+    if (!nextOptions) return false;
+    chart.setOption(nextOptions, { replaceMerge: ['series'] });
+    currentSpec = next;
+    if (liveEntry) liveEntry.spec = next;
+    card.querySelector('.visualization-header h3').textContent = next.title || '';
+    card.querySelector('.visualization-summary').textContent = next.accessibilitySummary || '';
+    card.setAttribute('aria-label', (next.title || '') + '. ' + (next.accessibilitySummary || ''));
+    card.querySelector('.visualization-data').innerHTML = renderVisualizationTable(next, esc, vizT);
+    var caption = card.querySelector('.visualization-caption');
+    if (!caption && next.caption) {
+      caption = document.createElement('figcaption');
+      caption.className = 'visualization-caption';
+      card.querySelector('.visualization-figure').appendChild(caption);
+    }
+    if (caption) caption.textContent = next.caption || '';
+    return true;
+  }
+  function reset() {
+    if (chart.isDisposed()) return;
+    var fresh = optionForChart(currentSpec, palette());
+    if (!fresh) return;
+    chart.clear();
+    chart.setOption(fresh, { notMerge: true });
+  }
+  return { update: update, reset: reset };
+}
+
+function handleVisualizationMountFailure(error, spec, host, options, card, stage, renderState, isCancelled) {
+  if (isCancelled()) { disposeCard(card); return null; }
+  var cleanup = card._visualizationCleanup;
+  card._visualizationCleanup = null;
+  if (typeof cleanup === 'function') {
+    try { cleanup(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
+  }
+  if (renderState.liveEntry) {
+    var failedChartIndex = _liveCharts.indexOf(renderState.liveEntry);
+    if (failedChartIndex >= 0) _liveCharts.splice(failedChartIndex, 1);
+  }
+  var chart = renderState.chart;
+  if (chart && typeof chart.dispose === 'function') {
+    try { if (!chart.isDisposed || !chart.isDisposed()) chart.dispose(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
+  }
+  reportSwallow(error, 'visualization/' + spec.template + '/render_failure', 'recoverable');
+  stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p>' +
+    '<button type="button" data-viz-fallback="retry">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button>' +
+    ' <button type="button" data-viz-fallback="fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button></div>';
+  var retryButton = stage.querySelector('[data-viz-fallback="retry"]');
+  if (retryButton) retryButton.addEventListener('click', function () { remountVisualization(spec, host, options, card); });
+  var fixButton = stage.querySelector('[data-viz-fallback="fix"]');
+  if (fixButton) fixButton.addEventListener('click', function () {
+    dispatchExtensionRepair(card, spec, error && error.message);
+  });
+  console.warn('[visualization] render failed', error && error.name || 'Error');
+  return card;
+}
+
+export async function mountVisualization(spec, host, options) {
+  if (invalidVisualizationInput(spec, host)) return null;
+  spec = asVisualizationSpec(spec);
+  if (!spec) return null;
+  options = options || {};
+  _ensureThemeWatcher();
+  var cardId = options.toolCallId || ('visual-' + (++visualCounter));
+  var isCancelled = function () { return !!(options.signal && options.signal.aborted); };
+  var mounted = findExistingCard(host, cardId);
+  if (mounted.card) return mounted.card;
+  var card = createVisualizationCard(spec, host, cardId, mounted.mounting);
+  var stage = card.querySelector('.visualization-stage');
+  var renderState = { chart: null, liveEntry: null };
+  try {
+    card.querySelector('.visualization-data').innerHTML = renderVisualizationTable(spec, esc, vizT);
+    var cancelled = await mountTemplateRenderer(spec, host, options, card, stage, cardId, renderState, isCancelled);
+    if (stopCancelledMount(cancelled, card, isCancelled)) return null;
+    var chart = renderState.chart;
+    var chartRuntime = chartRuntimeForCard(spec, card, renderState);
     bindCard(card, spec, chart, {
       /* ECharts' toolbox `restore` action crashes some series types
          (radar: "reading 'childAt'"); re-applying the option is the
          reliable way to return to the initial view. */
-      onReset: echartsInstance ? function () {
-        if (echartsInstance.isDisposed()) return;
-        var fresh = optionForChart(spec, palette());
-        if (!fresh) return;
-        echartsInstance.clear();
-        echartsInstance.setOption(fresh, { notMerge: true });
-      } : null,
-      noReset: card.dataset.visualizationRenderer === 'mermaid' || !usesSpecializedRenderer(spec.template) && !chartTemplates.includes(spec.template) });
-  } catch (error) {
-    /* A cancelled mount must not paint a fallback into a host React has
-       already abandoned; dispose and let the caller's teardown stay final. */
-    if (isCancelled()) { disposeCard(card); return null; }
-    var cleanup = card._visualizationCleanup;
-    card._visualizationCleanup = null;
-    if (typeof cleanup === 'function') {
-      try { cleanup(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
-    }
-    if (liveEntry) {
-      var failedChartIndex = _liveCharts.indexOf(liveEntry);
-      if (failedChartIndex >= 0) _liveCharts.splice(failedChartIndex, 1);
-    }
-    if (chart && typeof chart.dispose === 'function') {
-      try { if (!chart.isDisposed || !chart.isDisposed()) chart.dispose(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
-    }
-    reportSwallow(error, 'visualization/' + spec.template + '/render_failure', 'recoverable');
-    stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p>' +
-      '<button type="button" data-viz-fallback="retry">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button>' +
-      ' <button type="button" data-viz-fallback="fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button></div>';
-    /* "Retry locally" re-mounts the SAME spec — useful for transient
-       renderer faults (CDN, init race). "Fix with AI" sends the error
-       back through the tool-retry pipeline so the model can produce a
-       corrected spec — the only useful move when the spec itself is
-       the problem. */
-    var retryBtn = stage.querySelector('[data-viz-fallback="retry"]');
-    if (retryBtn) retryBtn.addEventListener('click', function () { remountVisualization(spec, host, options, card); });
-    var fixBtn = stage.querySelector('[data-viz-fallback="fix"]');
-    if (fixBtn) fixBtn.addEventListener('click', function () {
-      dispatchExtensionRepair(card, spec, error && error.message);
+      onReset: chartRuntime ? chartRuntime.reset : null,
+      noReset: cardSkipsChartReset(spec, card),
     });
-    console.warn('[visualization] render failed', error && error.name || 'Error');
+  } catch (error) {
+    return handleVisualizationMountFailure(error, spec, host, options, card, stage, renderState, isCancelled);
   }
   return card;
 }
-
 export function disposeVisualizations(host) {
   if (!host) return;
   host.querySelectorAll('.visualization-card').forEach(function (card) { cleanupCard(card); });

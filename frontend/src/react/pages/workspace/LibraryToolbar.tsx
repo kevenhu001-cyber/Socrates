@@ -106,11 +106,11 @@ export function LibraryToolbar({
             ) : null}
           </div>
           <div className="library-toolbar-divider" />
-          <div className="library-view-switcher">
-            <UiButton type="button" className={'library-view-btn' + (viewMode === 'grid' ? ' active' : '')} onClick={() => onViewModeChange('grid')} aria-label={translate('chrome.gridView')} data-i18n-aria="chrome.gridView">
+          <div className="library-view-switcher" role="group" aria-label={i18n('library.viewMode', 'View mode')}>
+            <UiButton type="button" className={'library-view-btn' + (viewMode === 'grid' ? ' active' : '')} onClick={() => onViewModeChange('grid')} aria-label={translate('chrome.gridView')} aria-pressed={viewMode === 'grid'} data-i18n-aria="chrome.gridView">
               <GridIcon />
             </UiButton>
-            <UiButton type="button" className={'library-view-btn' + (viewMode === 'list' ? ' active' : '')} onClick={() => onViewModeChange('list')} aria-label={translate('chrome.listView')} data-i18n-aria="chrome.listView">
+            <UiButton type="button" className={'library-view-btn' + (viewMode === 'list' ? ' active' : '')} onClick={() => onViewModeChange('list')} aria-label={translate('chrome.listView')} aria-pressed={viewMode === 'list'} data-i18n-aria="chrome.listView">
               <ListIcon />
             </UiButton>
           </div>

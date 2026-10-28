@@ -29,7 +29,7 @@ export function stopSpeaking() {
   /* No implementation means no voice could have started. If a first toggle
      is still loading, let it settle and immediately cancel before playback. */
   if (_implPromise) {
-    void _implPromise.then(function (module) { module.stopSpeaking(); }).catch(function () {});
+    void _implPromise.then(function (module) { module.stopSpeaking(); }).catch(() => undefined);
   }
 }
 

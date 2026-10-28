@@ -50,6 +50,7 @@ test('prepareAssistantRegenerateBranch captures assistant state and prepares nex
 
   const res = prepareAssistantRegenerateBranch('a1');
   assert.ok(res);
+  assert.equal(res.userEntry.clientId, 'u1');
   assert.equal(res.branchInfo.currentIndex, 1);
   assert.equal(res.branchInfo.variants.length, 2);
   assert.equal(res.branchInfo.variants[0].rawText, 'Answer 1');

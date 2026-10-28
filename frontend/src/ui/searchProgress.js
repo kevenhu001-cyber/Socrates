@@ -77,17 +77,54 @@ export function _formatEngineBreakdown(engines) {
   }).join(', ');
 }
 
-export function startSearchProgress(topic, opts) {
-  opts = opts || {};
+const SEARCH_EVENT_RENDERERS = new Map([
+  ['expanding', function (data) {
+    return { text: trSearchLabel('expanding', { n: data.count || 0 }), kind: 'running' };
+  }],
+  ['querying', function (data) {
+    return { text: trSearchLabel('querying', { query: data.query || '' }), kind: 'running' };
+  }],
+  ['got_results', function (data) {
+    return { text: trSearchLabel('got_results', { n: data.count || 0 }), kind: data.count > 0 ? 'ok' : 'warn' };
+  }],
+  ['retry', function () { return { text: trSearchLabel('retry'), kind: 'warn' }; }],
+  ['fetching', function (data) {
+    return { text: trSearchLabel('fetching', { n: data.count || 0 }), kind: 'running' };
+  }],
+  ['fetched', function (data) {
+    if (data.error) return { text: trSearchLabel('warn', { msg: data.error }), kind: 'warn' };
+    return { text: trSearchLabel('fetched', { ok: data.okCount || 0, total: data.total || 0 }), kind: data.okCount > 0 ? 'ok' : 'warn' };
+  }],
+  ['scored', function (data) {
+    return { text: trSearchLabel('scored', { topRel: data.topRel || 0 }), kind: 'running' };
+  }],
+  ['filtered', function (data) {
+    return { text: trSearchLabel('filtered', { kept: data.keptCount || 0, dropped: data.droppedCount || 0 }), kind: 'running' };
+  }],
+  ['error', function (data) {
+    return { text: trSearchLabel('error', { msg: data.message || 'failed' }), kind: 'err' };
+  }],
+]);
+
+function renderSearchEvent(event) {
+  var render = SEARCH_EVENT_RENDERERS.get(event.kind);
+  return render ? render(event.data || {}) : null;
+}
+
+function resolveSearchProgressMount(opts) {
   var mount = opts.mount;
   if (!mount) {
     var lastAssistant = document.querySelector('.msg.assistant:last-child .msg-body');
-    if (lastAssistant) mount = lastAssistant;
+    if (lastAssistant) return lastAssistant;
   }
   if (!mount) {
     var diag = document.querySelector('#diagnosticView .diag-loading-text, #diagnosticView .diag-loading');
-    if (diag) mount = diag;
+    if (diag) return diag;
   }
+  return mount;
+}
+
+function createSearchProgressElements(topic, opts) {
   var root = document.createElement('div');
   root.className = 'search-progress running';
   if (opts.collapsed === false) root.classList.add('open');
@@ -110,7 +147,10 @@ export function startSearchProgress(topic, opts) {
   stepsList.setAttribute('role', 'log');
   stepsList.setAttribute('aria-live', 'polite');
   root.appendChild(stepsList);
+  return { root: root, head: head, stepsList: stepsList };
+}
 
+function mountSearchProgress(root, mount) {
   if (mount) {
     if (mount.firstChild) mount.insertBefore(root, mount.firstChild);
     else mount.appendChild(root);
@@ -123,7 +163,9 @@ export function startSearchProgress(topic, opts) {
       document.body.appendChild(root);
     }
   }
+}
 
+function bindSearchProgressToggle(root, head) {
   function toggleOpen() {
     root.classList.toggle('open');
     head.setAttribute('aria-expanded', root.classList.contains('open') ? 'true' : 'false');
@@ -135,27 +177,48 @@ export function startSearchProgress(topic, opts) {
       toggleOpen();
     }
   });
+}
+
+function createSearchProgressStep(stepsList, text, kind) {
+  var li = document.createElement('li');
+  li.className = 'search-progress-step ' + (kind || 'running');
+  var icon = document.createElement('span');
+  icon.className = 'icon';
+  icon.textContent = kind === 'ok' ? '+' : kind === 'warn' ? '!' : kind === 'err' ? 'x' : '\u00B7';
+  var label = document.createElement('span');
+  label.className = 'text';
+  label.textContent = text;
+  li.appendChild(icon);
+  li.appendChild(label);
+  stepsList.appendChild(li);
+  return li;
+}
+
+function finalSearchProgressTitle(state, summary) {
+  if (state === 'err') return trSearchLabel('error', { msg: summary.message || 'failed' });
+  if (state === 'warn') return trSearchLabel('warn', { msg: summary.message || '' });
+  return trSearchLabel('done', {
+    n: summary.finalCount || 0,
+    engines: _formatEngineBreakdown(summary.engines) || '\u2014',
+    fetched: summary.fetchedCount || 0,
+  });
+}
+
+export function startSearchProgress(topic, opts) {
+  opts = opts || {};
+  var mount = resolveSearchProgressMount(opts);
+  var elements = createSearchProgressElements(topic, opts);
+  var root = elements.root;
+  var head = elements.head;
+  var stepsList = elements.stepsList;
+  mountSearchProgress(root, mount);
+  bindSearchProgressToggle(root, head);
 
   var startedAt = Date.now();
   var elapsedEl = head.querySelector('.search-progress-elapsed');
   var elapsedTimer = setInterval(function () {
     if (elapsedEl) elapsedEl.textContent = Math.max(0, Math.floor((Date.now() - startedAt) / 1000)) + 's';
   }, 1000);
-
-  function makeStepEl(text, kind) {
-    var li = document.createElement('li');
-    li.className = 'search-progress-step ' + (kind || 'running');
-    var icon = document.createElement('span');
-    icon.className = 'icon';
-    icon.textContent = kind === 'ok' ? '+' : kind === 'warn' ? '!' : kind === 'err' ? 'x' : '\u00B7';
-    var t = document.createElement('span');
-    t.className = 'text';
-    t.textContent = text;
-    li.appendChild(icon);
-    li.appendChild(t);
-    stepsList.appendChild(li);
-    return li;
-  }
 
   var pendingSteps = [];
   var rafScheduled = false;
@@ -168,41 +231,10 @@ export function startSearchProgress(topic, opts) {
       pendingSteps = [];
       for (var i = 0; i < pending.length; i++) {
         var p = pending[i];
-        makeStepEl(p.text, p.kind);
+        createSearchProgressStep(stepsList, p.text, p.kind);
         if (p.autoscroll && typeof window.scrollMainToBottom === 'function') window.scrollMainToBottom();
       }
     });
-  }
-
-  function renderEvent(ev) {
-    var d = ev.data || {};
-    switch (ev.kind) {
-      case 'started':
-        return null;
-      case 'expanding':
-        return { text: trSearchLabel('expanding', { n: d.count || 0 }), kind: 'running' };
-      case 'querying':
-        return { text: trSearchLabel('querying', { query: d.query || '' }), kind: 'running' };
-      case 'got_results':
-        return { text: trSearchLabel('got_results', { n: d.count || 0 }), kind: d.count > 0 ? 'ok' : 'warn' };
-      case 'retry':
-        return { text: trSearchLabel('retry'), kind: 'warn' };
-      case 'fetching':
-        return { text: trSearchLabel('fetching', { n: d.count || 0 }), kind: 'running' };
-      case 'fetched':
-        if (d.error) return { text: trSearchLabel('warn', { msg: d.error }), kind: 'warn' };
-        return { text: trSearchLabel('fetched', { ok: d.okCount || 0, total: d.total || 0 }), kind: d.okCount > 0 ? 'ok' : 'warn' };
-      case 'scored':
-        return { text: trSearchLabel('scored', { topRel: d.topRel || 0 }), kind: 'running' };
-      case 'filtered':
-        return { text: trSearchLabel('filtered', { kept: d.keptCount || 0, dropped: d.droppedCount || 0 }), kind: 'running' };
-      case 'done':
-        return null;
-      case 'error':
-        return { text: trSearchLabel('error', { msg: d.message || 'failed' }), kind: 'err' };
-      default:
-        return null;
-    }
   }
 
   function appendSynthetic(text, kind) {
@@ -211,7 +243,7 @@ export function startSearchProgress(topic, opts) {
   }
 
   function onStep(ev) {
-    var step = renderEvent(ev);
+    var step = renderSearchEvent(ev);
     if (step) appendSynthetic(step.text, step.kind);
   }
 
@@ -226,27 +258,12 @@ export function startSearchProgress(topic, opts) {
     if (elapsedEl) elapsedEl.textContent = elapsedSec + 's';
     var titleEl = head.querySelector('.search-progress-title');
     var chev = head.querySelector('.search-progress-chev');
-    if (opts.collapsed === false) {
-      /* Keep .open. */
-    } else {
+    if (opts.collapsed !== false) {
       root.classList.remove('open');
       head.setAttribute('aria-expanded', 'false');
     }
     if (chev) chev.style.display = '';
-    if (st === 'err') {
-      if (titleEl) titleEl.textContent = trSearchLabel('error', { msg: summary.message || 'failed' });
-    } else if (st === 'warn') {
-      if (titleEl) titleEl.textContent = trSearchLabel('warn', { msg: summary.message || '' });
-    } else {
-      var engineStr = _formatEngineBreakdown(summary.engines);
-      if (titleEl) {
-        titleEl.textContent = trSearchLabel('done', {
-          n: summary.finalCount || 0,
-          engines: engineStr || '\u2014',
-          fetched: summary.fetchedCount || 0,
-        });
-      }
-    }
+    if (titleEl) titleEl.textContent = finalSearchProgressTitle(st, summary);
   }
 
   function remove() {

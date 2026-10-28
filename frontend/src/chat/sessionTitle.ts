@@ -47,23 +47,120 @@ export function normalizeSessionTitle(value: unknown): string {
   return compactTitle(value);
 }
 
-export function generateSessionTitle(): void {
+interface TitleGenerationContext {
+  sessionId: string;
+  topic: string;
+  currentTitle: string;
+}
+
+function getTitleGenerationContext(): TitleGenerationContext | null {
   const sessionId = stateStore.read("currentSessionId") as string;
-  const topic=(stateStore.read("topic")||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
-  if(!sessionId||!topic)return;
+  const topic = (stateStore.read("topic") || "")
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<think>[\s\S]*$/gi, "")
+    .trim();
+  if (!sessionId || !topic) return null;
   const currentTitle = (stateStore.read("sessionTitle") as string) || "";
-  const ownsFallback=_titleFallbackSession===sessionId&&currentTitle===_titleFallbackValue;
-  if(currentTitle&&!ownsFallback)return;
-  if(_titleGenQueued&&_titleGenSession===sessionId)return;
+  const ownsFallback = _titleFallbackSession === sessionId && currentTitle === _titleFallbackValue;
+  if (currentTitle && !ownsFallback) return null;
+  if (_titleGenQueued && _titleGenSession === sessionId) return null;
   /* P_title-429 — background title generation must not turn repeated saves
      into a request storm after a rate-limit response. */
-  if(_titleGenSession===sessionId&&Date.now()<_titleGenRetryAfter)return;
-  const fallback = fallbackTitle(topic);
-  if(!currentTitle&&fallback){
-    stateStore.dispatch({type:'state/set',key:'sessionTitle',value:fallback});
-    _titleFallbackSession=sessionId;
-    _titleFallbackValue=fallback;
+  if (_titleGenSession === sessionId && Date.now() < _titleGenRetryAfter) return null;
+  return { sessionId, topic, currentTitle };
+}
+
+function seedFallbackTitle(context: TitleGenerationContext): void {
+  const fallback = fallbackTitle(context.topic);
+  if (context.currentTitle || !fallback) return;
+  stateStore.dispatch({ type: 'state/set', key: 'sessionTitle', value: fallback });
+  _titleFallbackSession = context.sessionId;
+  _titleFallbackValue = fallback;
+}
+
+function titleUsesChinese(topic: string): boolean {
+  if (/[\u4e00-\u9fff]/.test(topic)) return true;
+  if (/[A-Za-z]/.test(topic)) return false;
+  return (window as { _currentLang?: string })._currentLang === "zh";
+}
+
+function createTitlePrompt(topic: string): { prompt: string; sysContent: string } {
+  if (titleUsesChinese(topic)) {
+    return {
+      prompt: "基于用户的第一条消息，生成一个简短的中文陈述式标题（3-8个字），"+
+        "概括会话内容。示例：「探索量子计算」、「理解机器学习基础」、「学会更优写作」。\n"+
+        "不要使用问句或标签 — 必须是一个陈述。只输出标题本身，不要引号，不要多余文字。\n\n"+
+        topic.slice(0, 300),
+      sysContent: "不要输出<think>思考块、内部推理或思维链。直接输出最终的标题，纯文字，无前缀。",
+    };
   }
+  return {
+    prompt: "Based on the user's first message below, generate a SHORT "+
+      "declarative title (3-8 words) in a statement tone that names what the "+
+      "session is about. Examples: \"Exploring quantum computing\", "+
+      "\"Understanding machine learning basics\", \"Writing better essays\". "+
+      "Do NOT use a question or a label — it must read as a statement. "+
+      "Output ONLY the title, no quotes, no extra text.\n\n"+topic.slice(0,300),
+    sysContent: "Do NOT output <think>...</think> blocks, internal reasoning, or chain-of-thought. Reply directly with the final title in clean prose. No preamble.",
+  };
+}
+
+interface TitleGenerationResponse {
+  content?: unknown;
+  choices?: Array<{ message?: { content?: unknown } }>;
+}
+
+function responseTitle(response: TitleGenerationResponse | null | undefined): unknown {
+  if (response && typeof response.content === 'string') return response.content;
+  return response?.choices?.[0]?.message?.content || '';
+}
+
+function canAdoptGeneratedTitle(sessionId: string): boolean {
+  const latestTitle = (stateStore.read('sessionTitle') as string) || '';
+  const ownsFallback = _titleFallbackSession === sessionId && latestTitle === _titleFallbackValue;
+  return !latestTitle || ownsFallback;
+}
+
+function saveGeneratedTitle(title: string, sessionId: string): void {
+  stateStore.dispatch({ type: 'state/set', key: 'sessionTitle', value: title });
+  if (_titleFallbackSession === sessionId) {
+    _titleFallbackSession = null;
+    _titleFallbackValue = null;
+  }
+  _titleGenRetryAfter = 0;
+  const win = window as { saveCurrentSession?: () => void };
+  if (typeof win.saveCurrentSession === 'function') win.saveCurrentSession();
+}
+
+function handleGeneratedTitle(response: TitleGenerationResponse | null | undefined, sessionId: string): void {
+  if (_titleGenSession === sessionId) _titleGenQueued = false;
+  if (stateStore.read('currentSessionId') !== sessionId) return;
+  const raw = responseTitle(response);
+  if (!raw || !canAdoptGeneratedTitle(sessionId)) return;
+  const title = normalizeSessionTitle(raw);
+  if (title.length <= 2) return;
+  /* P_title-save-race — the active-session check prevents an old response
+     from saving its title after the user switches sessions. */
+  saveGeneratedTitle(title, sessionId);
+}
+
+function handleTitleGenerationFailure(error: unknown, sessionId: string): void {
+  if (_titleGenSession === sessionId) _titleGenQueued = false;
+  /* P_title-quiet — 401 and 429 are already surfaced by the main turn. */
+  const status = (error as { status?: number })?.status;
+  if (status === 429) {
+    if (_titleGenSession === sessionId) _titleGenRetryAfter = Date.now() + 5 * 60 * 1000;
+    return;
+  }
+  if (status === 401) return;
+  console.log('[title gen] failed');
+}
+
+export function generateSessionTitle(): void {
+  const context = getTitleGenerationContext();
+  if (!context) return;
+  const { sessionId, topic } = context;
+  seedFallbackTitle(context);
   if(!hasUsableActive())return;
   _titleGenQueued=true;
   _titleGenSession=sessionId;
@@ -71,26 +168,7 @@ export function generateSessionTitle(): void {
   /* Title language follows the language the user actually wrote the
      topic in; the UI preference is only a fallback when the topic
      carries no detectable language signal. */
-  const isZh = /[\u4e00-\u9fff]/.test(topic)
-    ? true
-    : (/[A-Za-z]/.test(topic) ? false : (window as { _currentLang?: string })._currentLang === "zh");
-  let prompt: string;
-  let sysContent: string;
-  if (isZh) {
-    prompt = "基于用户的第一条消息，生成一个简短的中文陈述式标题（3-8个字），"+
-      "概括会话内容。示例：「探索量子计算」、「理解机器学习基础」、「学会更优写作」。\n"+
-      "不要使用问句或标签 — 必须是一个陈述。只输出标题本身，不要引号，不要多余文字。\n\n"+
-      topic.slice(0, 300);
-    sysContent = "不要输出<think>思考块、内部推理或思维链。直接输出最终的标题，纯文字，无前缀。";
-  } else {
-    prompt = "Based on the user's first message below, generate a SHORT "+
-      "declarative title (3-8 words) in a statement tone that names what the "+
-      "session is about. Examples: \"Exploring quantum computing\", "+
-      "\"Understanding machine learning basics\", \"Writing better essays\". "+
-      "Do NOT use a question or a label — it must read as a statement. "+
-      "Output ONLY the title, no quotes, no extra text.\n\n"+topic.slice(0,300);
-    sysContent = "Do NOT output <think>...</think> blocks, internal reasoning, or chain-of-thought. Reply directly with the final title in clean prose. No preamble.";
-  }
+  const { prompt, sysContent } = createTitlePrompt(topic);
   const msgs2 = [
     { role: "system", content: sysContent },
     { role: "user", content: prompt },
@@ -100,47 +178,10 @@ export function generateSessionTitle(): void {
      must fail silently — the main chat turn already owns the user-visible
      429 toast / sign-in gate, and a duplicate handleAuthExpired from here
      would re-enter the gate + abort the stream a second time. */
-  apiFetch("/api/chat",{method:"POST",_authEndpoint:true,body:{messages:msgs2,temperature:0.3,max_tokens:30,mode:"chat"}}).then(function(r){
-    if(_titleGenSession===sessionId)_titleGenQueued=false;
-    if(stateStore.read("currentSessionId")!==sessionId)return;
-    const raw=(r&&typeof r.content==="string")?r.content:
-      (r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content)||"";
-    if(!raw)return;
-    /* Mirror the strips formatMsg() / stripChatArtifacts() apply to
-     * chat output, plus a few extra guards for title-gen quirks:
-     *  - closed <think>…</think> and unclosed trailing <think>…$
-     *  - chat-template tokens (<|im_start|>, <s>, [INST], etc.)
-     *  - any leading punctuation the model added (quotes, dashes,
-     *    bullets) that would look ugly in a sidebar title. */
-    const title = normalizeSessionTitle(raw);
-    const latestTitle = (stateStore.read("sessionTitle") as string) || "";
-    const stillOwnsTitle=_titleFallbackSession===sessionId&&latestTitle===_titleFallbackValue;
-    if(latestTitle&&!stillOwnsTitle)return;
-    if(title&&title.length>2){
-      /* P_title-save-race — only save the title if the session is
-         still active. A previous session may have been deleted or
-         reset while the title generation was in-flight, and calling
-         saveCurrentSession() would either resurrect the deleted
-         session or attach a stale title to the wrong session. */
-      stateStore.dispatch({type:'state/set',key:'sessionTitle',value:title});
-      if(_titleFallbackSession===sessionId){
-        _titleFallbackSession=null;
-        _titleFallbackValue=null;
-      }
-      _titleGenRetryAfter=0;
-      const win = window as { saveCurrentSession?: () => void };
-      if (typeof win.saveCurrentSession === "function") win.saveCurrentSession();
-    }
-  }).catch(function(e: unknown){
-    if(_titleGenSession===sessionId)_titleGenQueued=false;
-    /* P_title-quiet — 401 (session gone; the main turn already showed the
-       gate) and 429 (rate-limited; the main turn already owns the retry
-       toast) are expected background failures: stay silent and, for 429,
-       back off longer so the next save doesn't re-hit the same bucket.
-       Only log unexpected failures to keep the console useful. */
-    const st=(e as { status?: number })?.status;
-    if(st===429){if(_titleGenSession===sessionId)_titleGenRetryAfter=Date.now()+5*60*1000;return;}
-    if(st===401)return;
-    console.log("[title gen] failed");
-  });
+  apiFetch<TitleGenerationResponse>("/api/chat", {
+    method: "POST",
+    _authEndpoint: true,
+    body: { messages: msgs2, temperature: 0.3, max_tokens: 30, mode: "chat" },
+  }).then((response) => handleGeneratedTitle(response, sessionId))
+    .catch((error: unknown) => handleTitleGenerationFailure(error, sessionId));
 }

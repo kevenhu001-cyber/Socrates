@@ -31,52 +31,73 @@ function indent(value: string, prefix: string): string {
     .join('\n');
 }
 
+type NodeRenderer = (node: JSONContent, depth: number) => string;
+
+function renderDocument(node: JSONContent, depth: number): string {
+  return (node.content ?? []).map((child) => renderNode(child, depth)).filter(Boolean).join('\n\n');
+}
+
+function renderParagraph(node: JSONContent): string {
+  return (node.content ?? []).map(renderInline).join('');
+}
+
+function renderHeading(node: JSONContent): string {
+  const level = Math.min(3, Math.max(1, Number(node.attrs?.level ?? 1)));
+  return `${'#'.repeat(level)} ${(node.content ?? []).map(renderInline).join('')}`;
+}
+
+function renderBlockquote(node: JSONContent, depth: number): string {
+  return renderDocument({ type: 'doc', content: node.content ?? [] }, depth)
+    .split('\n')
+    .map((line) => `> ${line}`)
+    .join('\n');
+}
+
+function renderCodeBlock(node: JSONContent): string {
+  const language = typeof node.attrs?.language === 'string' ? node.attrs.language : '';
+  const code = (node.content ?? []).map((child) => child.text ?? '').join('');
+  return `\`\`\`${language}\n${code}\n\`\`\``;
+}
+
+function renderList(node: JSONContent, depth: number): string {
+  return (node.content ?? []).map((child) => renderNode(child, depth)).join('\n');
+}
+
+function renderOrderedList(node: JSONContent, depth: number): string {
+  const start = Number(node.attrs?.start ?? 1);
+  return (node.content ?? [])
+    .map((child, index) => renderNode({ ...child, attrs: { ...child.attrs, ordinal: start + index } }, depth))
+    .join('\n');
+}
+
+function renderListItem(node: JSONContent, depth: number): string {
+  const body = (node.content ?? []).map((child) => renderNode(child, depth + 1)).join('\n');
+  const prefix = node.type === 'taskItem'
+    ? `- [${node.attrs?.checked ? 'x' : ' '}] `
+    : node.attrs?.ordinal
+      ? `${node.attrs.ordinal}. `
+      : '- ';
+  return indent(body, `${'  '.repeat(depth)}${prefix}`);
+}
+
+const NODE_RENDERERS: Record<string, NodeRenderer> = {
+  doc: renderDocument,
+  paragraph: renderParagraph,
+  heading: renderHeading,
+  blockquote: renderBlockquote,
+  codeBlock: renderCodeBlock,
+  bulletList: renderList,
+  taskList: renderList,
+  orderedList: renderOrderedList,
+  listItem: renderListItem,
+  taskItem: renderListItem,
+  horizontalRule: () => '---',
+};
+
 function renderNode(node: JSONContent, depth = 0): string {
-  const children = node.content ?? [];
-  switch (node.type) {
-    case 'doc':
-      return children.map((child) => renderNode(child, depth)).filter(Boolean).join('\n\n');
-    case 'paragraph':
-      return children.map(renderInline).join('');
-    case 'heading': {
-      const level = Math.min(3, Math.max(1, Number(node.attrs?.level ?? 1)));
-      return `${'#'.repeat(level)} ${children.map(renderInline).join('')}`;
-    }
-    case 'blockquote':
-      return renderNode({ type: 'doc', content: children }, depth)
-        .split('\n')
-        .map((line) => `> ${line}`)
-        .join('\n');
-    case 'codeBlock': {
-      const language = typeof node.attrs?.language === 'string' ? node.attrs.language : '';
-      const code = children.map((child) => child.text ?? '').join('');
-      return `\`\`\`${language}\n${code}\n\`\`\``;
-    }
-    case 'bulletList':
-      return children.map((child) => renderNode(child, depth)).join('\n');
-    case 'orderedList': {
-      const start = Number(node.attrs?.start ?? 1);
-      return children
-        .map((child, index) => renderNode({ ...child, attrs: { ...child.attrs, ordinal: start + index } }, depth))
-        .join('\n');
-    }
-    case 'taskList':
-      return children.map((child) => renderNode(child, depth)).join('\n');
-    case 'listItem':
-    case 'taskItem': {
-      const body = children.map((child) => renderNode(child, depth + 1)).join('\n');
-      const prefix = node.type === 'taskItem'
-        ? `- [${node.attrs?.checked ? 'x' : ' '}] `
-        : node.attrs?.ordinal
-          ? `${node.attrs.ordinal}. `
-          : '- ';
-      return indent(body, `${'  '.repeat(depth)}${prefix}`);
-    }
-    case 'horizontalRule':
-      return '---';
-    default:
-      return children.map((child) => renderNode(child, depth)).join('');
-  }
+  const renderer = NODE_RENDERERS[node.type ?? ''];
+  if (renderer) return renderer(node, depth);
+  return (node.content ?? []).map((child) => renderNode(child, depth)).join('');
 }
 
 export function tiptapJSONToMarkdown(doc: JSONContent | null | undefined): string {

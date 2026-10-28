@@ -36,6 +36,28 @@ const numberText = (value: unknown) => {
   return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
 };
 
+interface SliderDisplayProps {
+  min: number;
+  max: number;
+  step?: number;
+  unit?: string;
+  marks?: { value: number; label: string }[];
+}
+
+function sliderDisplay(props: SliderDisplayProps, fieldValue: unknown) {
+  const min = Number.isFinite(props.min) ? props.min : 0;
+  const max = Number.isFinite(props.max) && props.max > min ? props.max : min + 100;
+  const step = props.step && props.step > 0 ? props.step : 1;
+  const raw = typeof fieldValue === "number" ? fieldValue : Number(fieldValue);
+  const value = Number.isFinite(raw) ? Math.min(max, Math.max(min, raw)) : min;
+  const unit = props.unit ?? "";
+  const prefix = /^[$€£¥₹]/.test(unit);
+  const readout = prefix ? `${unit}${numberText(value)}` : `${numberText(value)}${unit}`;
+  const marks = (props.marks ?? []).filter((mark) => mark && Number.isFinite(mark.value) && mark.value >= min && mark.value <= max);
+  const progress = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
+  return { min, max, step, value, readout, marks, progress };
+}
+
 function Field({ label, children: content }: { label?: string; children: ReactNode }) {
   if (!label) return <>{content}</>;
   return (
@@ -299,21 +321,12 @@ export const Slider = defineComponent({
   description: 'Shows label and value; unit like "%" or "$" formats the value.',
   component: function SliderView({ props, statementId }) {
     const field = useStateField(useFieldName(props.label, statementId), props.value);
-    const min = Number.isFinite(props.min) ? props.min : 0;
-    const max = Number.isFinite(props.max) && props.max > min ? props.max : min + 100;
-    const step = props.step && props.step > 0 ? props.step : 1;
-    const raw = typeof field.value === "number" ? field.value : Number(field.value);
-    const value = Number.isFinite(raw) ? Math.min(max, Math.max(min, raw)) : min;
-    const unit = props.unit ?? "";
-    const prefix = /^[$€£¥₹]/.test(unit);
-    const readout = prefix ? `${unit}${numberText(value)}` : `${numberText(value)}${unit}`;
-    const marks = (props.marks ?? []).filter((m) => m && Number.isFinite(m.value) && m.value >= min && m.value <= max);
+    const { min, max, step, value, readout, marks, progress } = sliderDisplay(props, field.value);
     const id = useId();
     /* The visible rail and knob are drawn from the position the control
        publishes, so the native input can stay transparent: it keeps the
        keyboard contract and the pointer target without painting a box around
        a track, and the focus ring lands on the knob instead of the frame. */
-    const progress = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
     return (
       <div className="iui-slider">
         {(props.label || props.unit) && (

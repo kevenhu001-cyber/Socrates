@@ -21,6 +21,7 @@ import test from 'node:test';
 import {
   isParagraphStart,
   paragraphEndAfter,
+  restoredToolRowAnchorOffset,
   snapToolOffsetOutOfBlock,
   toolRowAnchorOffset,
 } from '../src/render/streaming.ts';
@@ -158,6 +159,8 @@ test('finalized layout mounts every row (nothing starves)', () => {
 test('restored layout keeps tool rows near their fire sentence in a long paragraph', () => {
   const raw = '先检索一下资料。下面是整理后的完整回答。';
   const calls = [call({ id: 's', textOffset: '先检索一下'.length, output: 'ok' })];
+
+  assert.equal(restoredToolRowAnchorOffset(raw, calls[0].textOffset), '先检索一下资料。'.length);
 
   const restored = buildTurnLayout(raw, calls, { restoredFromHistory: true });
   assert.deepEqual(restored.map((segment) => segment.kind), ['text', 'group', 'text']);

@@ -25,12 +25,63 @@ interface KatexLegacyWindow extends Window {
   __socratesRerenderMath?: () => void;
 }
 
+interface MathRepaintTarget {
+  index: number;
+  clientId?: string;
+}
+
 function _renderAssistantHtml(rawText: unknown): string {
   const win = window as KatexLegacyWindow;
   if (typeof window !== 'undefined' && typeof win.renderAssistantHTML === 'function') {
     return win.renderAssistantHTML(String(rawText || ''));
   }
   return String(rawText || '');
+}
+
+function collectMathRepaintTargets(messages: RepaintableMessage[], revision: number): MathRepaintTarget[] {
+  const targets: MathRepaintTarget[] = [];
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (!message || message.role !== 'assistant' || typeof message.rawText !== 'string') continue;
+    if (!/\$|\\\(|\\\[/.test(message.rawText)) continue;
+    if (message._katexRenderedRev === revision) continue;
+    targets.push({ index, clientId: message.clientId });
+  }
+  return targets;
+}
+
+function repaintLegacyMathNode(list: HTMLElement, clientId: string, html: string): void {
+  const escapedId = typeof CSS !== 'undefined' && CSS.escape
+    ? CSS.escape(clientId)
+    : clientId.replace(/["\\]/g, '\\$&');
+  const node = list.querySelector('[data-client-id="' + escapedId + '"] .msg-body');
+  if (!node || node.closest('[data-react-owned]')) return;
+  node.innerHTML = html;
+  try { reclaimVizCards(node); } catch { /* empty-catch: intentional — best-effort repaint */ }
+  try { processPendingMermaid(); } catch { /* empty-catch: intentional — best-effort repaint */ }
+  try { processPendingViz(); } catch { /* empty-catch: intentional — best-effort repaint */ }
+  try { processPendingVizActions(); } catch { /* empty-catch: intentional — best-effort repaint */ }
+  try { wireCodeBlockHeaders(node); } catch { /* empty-catch: intentional — best-effort repaint */ }
+}
+
+function repaintMathTarget(
+  list: HTMLElement,
+  target: MathRepaintTarget,
+  revision: number,
+): boolean {
+  const messages = stateStore.read('messages') as RepaintableMessage[];
+  const live = messages[target.index];
+  if (!live || live.clientId !== target.clientId || live.role !== 'assistant') return false;
+  if (live._katexRenderedRev === revision) return false;
+  let html: string;
+  try { html = _renderAssistantHtml(live.rawText); } catch { return false; }
+  stateStore.dispatch({
+    type: 'session/update-message', index: target.index, clientId: target.clientId,
+    patch: { html, _katexRenderedRev: revision },
+  });
+  const id = live.clientId || live.id || '';
+  if (id) repaintLegacyMathNode(list, id, html);
+  return true;
 }
 
 export function rerenderMathAfterKatex(): void {
@@ -49,17 +100,7 @@ export function rerenderMathAfterKatex(): void {
        one pass is a main-thread long task AND makes every formula on the
        page flip in the same frame. Newest first — that is the answer the
        reader is most likely looking at. */
-    const targets: Array<{ index: number; clientId?: string }> = [];
-    for (let mi = msgs.length - 1; mi >= 0; mi--) {
-      const m = msgs[mi];
-      if (!m || m.role !== "assistant" || typeof m.rawText !== "string") continue;
-      if (!/\$|\\\(|\\\[/.test(m.rawText)) continue;
-      /* Idempotent re-paint: a message whose html was recomputed after the
-         katex-ready bump is already correct — touching it again (e.g. a
-         second onKatexReady after a vendor retry) would only churn its DOM. */
-      if (m._katexRenderedRev === rev) continue;
-      targets.push({ index: mi, clientId: m.clientId });
-    }
+    const targets = collectMathRepaintTargets(msgs, rev);
     if (!targets.length) return;
     const raf: (cb: () => void) => void = typeof requestAnimationFrame === "function"
       ? function (cb) { requestAnimationFrame(cb); }
@@ -70,37 +111,8 @@ export function rerenderMathAfterKatex(): void {
       /* Two messages per frame keeps each slice well under a frame budget
          even on heavy formula pages; the rest lands on following frames. */
       for (let n = 0; n < 2 && ti < targets.length; n++, ti++) {
-        const t = targets[ti];
-        const liveMessages = stateStore.read("messages") as RepaintableMessage[];
-        const live = liveMessages[t.index];
-        /* Guard against a session swap between slices: only repaint the
-           slot while it still holds the same message object identity. */
-        if (!live || live.clientId !== t.clientId || live.role !== "assistant") continue;
-        if (live._katexRenderedRev === rev) continue;
-        let html: string;
-        try { html = _renderAssistantHtml(live.rawText); } catch { continue; }
-        /* React's MessageItem memo skips re-renders when the entry object
-           reference is unchanged (the legacy finish() path relies on the
-           entry being mounted fresh). Replacing the object with a shallow
-           copy carrying the new html is what makes the katex-ready repaint
-           actually land in the React message list. */
-        stateStore.dispatch({
-          type: "session/update-message", index: t.index, clientId: t.clientId,
-          patch: { html: html, _katexRenderedRev: rev },
-        });
-        changed = true;
-        const id = live.clientId || live.id || "";
-        if (!id) continue;
-        const escId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(id) : String(id).replace(/["\\]/g, "\\$&");
-        const node = list.querySelector('[data-client-id="' + escId + '"] .msg-body');
-        if (node && !node.closest('[data-react-owned]')) {
-          node.innerHTML = html;
-          try { reclaimVizCards(node); } catch { /* empty-catch: intentional — best-effort repaint */ }
-          try { processPendingMermaid(); } catch { /* empty-catch: intentional — best-effort repaint */ }
-          try { processPendingViz(); } catch { /* empty-catch: intentional — best-effort repaint */ }
-          try { processPendingVizActions(); } catch { /* empty-catch: intentional — best-effort repaint */ }
-          try { wireCodeBlockHeaders(node); } catch { /* empty-catch: intentional — best-effort repaint */ }
-        }
+        /* A session swap between slices invalidates the captured message ID/index. */
+        if (repaintMathTarget(list, targets[ti], rev)) changed = true;
       }
       if (changed) publishReactChatRuntime({ type: "state-synced", reason: "katex-ready" });
       if (ti < targets.length) raf(repaintSlice);

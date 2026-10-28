@@ -13,6 +13,9 @@ import { apiFetch } from '../util/api.ts';
 import { esc } from '../render/helpers.ts';
 import { showToast } from '../ui/toast.js';
 import type { SessionItem } from '../react/session-list/types.ts';
+import { sameSessionRow as _sameRow, sessionRowFields as _sessionRowFields } from './sessionRowModel.ts';
+
+export { _sameRow, _sessionRowFields };
 
 /** Window surfaces this module reads or writes. */
 interface OrganizeWindow extends Window {
@@ -299,45 +302,6 @@ export function moveSessionToProject(sessionId: string, projectId: string): void
    the mapper minted fresh objects each time and React.memo on SessionRow
    could never hit. */
 const _rowCache: Record<string, SessionItem> = Object.create(null);
-export function _sessionRowFields(s: SessionRow): SessionItem {
-  return {
-    id: s.id,
-    title: (s.title as string) || '',
-    projectId: typeof s.projectId === 'string' ? s.projectId : typeof s.project_id === 'string' ? s.project_id : null,
-    topic: (s.topic as string) || '',
-    updatedAt: (s.updated_at || s.updatedAt || null) as string | number | null,
-    createdAt: (s.created_at || s.createdAt || null) as string | number | null,
-    totalQ: (s.total_q || s.totalQ || 0) as number,
-    mode: (s.mode as string) || '',
-    phase: (s.phase as string) || '',
-    kind: (s.kind as string) || '',
-    pinned: !!s.pinned,
-    tags: Array.isArray(s.tags) ? s.tags as string[] : [],
-    label: '',
-    archivedAt: typeof s.archivedAt === 'number' ? s.archivedAt : null,
-    branchedFrom: (s.branchedFrom || null) as SessionItem['branchedFrom'],
-  };
-}
-export function _sameRow(a: SessionItem | undefined, b: SessionItem): boolean {
-  if (!a || !b) return false;
-  if (a.title !== b.title || a.topic !== b.topic || a.updatedAt !== b.updatedAt
-    || a.createdAt !== b.createdAt || a.totalQ !== b.totalQ || a.mode !== b.mode
-    || a.phase !== b.phase || a.kind !== b.kind || a.pinned !== b.pinned
-    || a.label !== b.label || a.archivedAt !== b.archivedAt || a.projectId !== b.projectId) return false;
-  if (a.branchedFrom !== b.branchedFrom) {
-    if (!a.branchedFrom || !b.branchedFrom) return false;
-    if (a.branchedFrom.sessionId !== b.branchedFrom.sessionId
-      || a.branchedFrom.messageId !== b.branchedFrom.messageId
-      || a.branchedFrom.reExplain !== b.branchedFrom.reExplain) return false;
-  }
-  if (a.tags !== b.tags) {
-    const at = a.tags || [];
-    const bt = b.tags || [];
-    if (at.length !== bt.length) return false;
-    for (let i = 0; i < at.length; i++) { if (at[i] !== bt[i]) return false; }
-  }
-  return true;
-}
 export function _stableSessionRow(s: SessionRow): SessionItem {
   const next = _sessionRowFields(s);
   const prev = _rowCache[next.id];

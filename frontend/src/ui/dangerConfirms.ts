@@ -50,30 +50,53 @@ export function confirmClearSettings(): void {
   }).catch(() => { /* noop */ });
 }
 
+function clearDeletedAccountStorage(): void {
+  const keys = [
+    'socrates-sessions-v2',
+    'socrates-api',
+    'socrates-provider-keys',
+    'socrates-websearch',
+  ];
+  for (const key of keys) {
+    try { localStorage.removeItem(key); } catch { /* empty-catch: intentional — wipe best effort */ }
+  }
+}
+
+async function deleteAccountOnServer(w: DangerWindow | undefined): Promise<void> {
+  if (typeof w?.apiFetch === 'function') {
+    await w.apiFetch('/api/auth/account', { method: 'DELETE' });
+  }
+}
+
+function resetAfterAccountDeletion(w: DangerWindow | undefined): void {
+  if (w) w.CURRENT_USER = null;
+  clearDeletedAccountStorage();
+  w?.resetState?.();
+  w?.resetApp?.();
+  w?.showGate?.();
+  renderUserFooter();
+  w?.closeProfile?.();
+  w?.showAuthSignin?.();
+}
+
+function reportAccountDeletionFailure(error: unknown): void {
+  const msg = error instanceof Error ? error.message : String(error);
+  alert(t('settings.action.deleteAccount').replace('{msg}', msg));
+}
+
+async function performAccountDeletion(): Promise<void> {
+  const w = getWindow();
+  try {
+    await deleteAccountOnServer(w);
+    resetAfterAccountDeletion(w);
+  } catch (error: unknown) {
+    reportAccountDeletionFailure(error);
+  }
+}
+
 export function confirmDeleteAccount(): void {
   showConfirm(t('confirm.deleteAccount.title'), t('confirm.deleteAccount.msg'), true).then((yes) => {
     if (!yes) return;
-    void (async () => {
-      const w = getWindow();
-      try {
-        if (typeof w?.apiFetch === 'function') {
-          await w.apiFetch('/api/auth/account', { method: 'DELETE' });
-        }
-        if (w) w.CURRENT_USER = null;
-        try { localStorage.removeItem('socrates-sessions-v2'); } catch { /* empty-catch: intentional — wipe best effort */ }
-        try { localStorage.removeItem('socrates-api'); } catch { /* empty-catch: intentional — wipe best effort */ }
-        try { localStorage.removeItem('socrates-provider-keys'); } catch { /* empty-catch: intentional — wipe best effort */ }
-        try { localStorage.removeItem('socrates-websearch'); } catch { /* empty-catch: intentional — wipe best effort */ }
-        w?.resetState?.();
-        w?.resetApp?.();
-        w?.showGate?.();
-        renderUserFooter();
-        w?.closeProfile?.();
-        w?.showAuthSignin?.();
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        alert(t('settings.action.deleteAccount').replace('{msg}', msg));
-      }
-    })();
+    void performAccountDeletion();
   });
 }

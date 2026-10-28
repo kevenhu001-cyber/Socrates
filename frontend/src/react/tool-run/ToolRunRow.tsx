@@ -17,22 +17,33 @@ export interface ToolRunRowProps {
   actionsOnly?: boolean;
 }
 
-export function ToolRunRow({ view, startedAt, messageId, readOnly, nested, activityOnly, actionsOnly }: ToolRunRowProps) {
-  const { open, setOpen } = useToolRunDisclosure(view.id);
-  const inFlight = view.state === 'running' || view.state === 'awaiting';
-  const elapsedMs = useElapsed(startedAt || 0, inFlight && !actionsOnly);
-  const expandable = Boolean(view.sections.length || view.tech.length || view.livePreview || view.liveOutput);
-  const rowData = {
-    className: `tool-inline${inFlight ? ' is-live' : ''}`,
-    'data-tcid': view.id, 'data-tool': view.name, 'data-state': view.state,
-    'data-nested': nested ? '1' : undefined, 'data-react-owned': '1',
-    'data-error': view.state === 'error' ? '1' : undefined,
-  };
-  const error = view.sections.find((section) => section.kind === 'error');
+interface ToolRunActivityProps {
+  view: ToolRunView;
+  elapsedMs: number;
+  inFlight: boolean;
+  expandable: boolean;
+  open: boolean;
+  setOpen(open: boolean): void;
+  rowData: Record<string, string | undefined>;
+  readOnly?: boolean;
+  actionsOnly?: boolean;
+}
 
+function ToolRunActivity({
+  view,
+  elapsedMs,
+  inFlight,
+  expandable,
+  open,
+  setOpen,
+  rowData,
+  readOnly,
+  actionsOnly,
+}: ToolRunActivityProps) {
+  if (actionsOnly) return null;
   return (
     <>
-      {!actionsOnly ? (expandable ? <details
+      {expandable ? <details
         {...rowData}
         data-expandable="1"
         open={open}
@@ -44,21 +55,64 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested, activ
         {open ? <ToolRunDetail view={view} inFlight={inFlight} readOnly={readOnly} /> : null}
       </details> : <div {...rowData}>
         <div className="tool-inline-head"><ToolRunRowHead view={view} elapsedMs={elapsedMs} /></div>
-      </div>) : null}
-      {!actionsOnly && view.agentRun ? (
+      </div>}
+      {view.agentRun ? (
         <ToolRunAgentSteps
           run={view.agentRun}
           live={inFlight}
           state={agentRunStateOf(view.state)}
         />
       ) : null}
-      {!activityOnly ? <>
-        {error?.kind === 'error' ? <p className="tool-inline-error" role="alert">{error.text.trim().split('\n')[0].slice(0, 180)}</p> : null}
-        <RetryButton view={view} readOnly={readOnly} />
-        {view.approval ? (
-          <ToolRunApproval view={view.approval} messageId={messageId || ''} toolCallId={view.id} readOnly={readOnly} />
-        ) : null}
-      </> : null}
+    </>
+  );
+}
+
+function ToolRunActions({
+  view,
+  messageId,
+  readOnly,
+}: {
+  view: ToolRunView;
+  messageId?: string;
+  readOnly?: boolean;
+}) {
+  const error = view.sections.find((section) => section.kind === 'error');
+  return (
+    <>
+      {error?.kind === 'error' ? <p className="tool-inline-error" role="alert">{error.text.trim().split('\n')[0].slice(0, 180)}</p> : null}
+      <RetryButton view={view} readOnly={readOnly} />
+      {view.approval ? (
+        <ToolRunApproval view={view.approval} messageId={messageId || ''} toolCallId={view.id} readOnly={readOnly} />
+      ) : null}
+    </>
+  );
+}
+
+export function ToolRunRow({ view, startedAt, messageId, readOnly, nested, activityOnly, actionsOnly }: ToolRunRowProps) {
+  const { open, setOpen } = useToolRunDisclosure(view.id);
+  const inFlight = view.state === 'running' || view.state === 'awaiting';
+  const elapsedMs = useElapsed(startedAt || 0, inFlight && !actionsOnly);
+  const expandable = Boolean(view.sections.length || view.tech.length || view.livePreview || view.liveOutput);
+  const rowData = {
+    className: `tool-inline${inFlight ? ' is-live' : ''}`,
+    'data-tcid': view.id, 'data-tool': view.name, 'data-state': view.state,
+    'data-nested': nested ? '1' : undefined, 'data-react-owned': '1',
+    'data-error': view.state === 'error' ? '1' : undefined,
+  };
+  return (
+    <>
+      <ToolRunActivity
+        view={view}
+        elapsedMs={elapsedMs}
+        inFlight={inFlight}
+        expandable={expandable}
+        open={open}
+        setOpen={setOpen}
+        rowData={rowData}
+        readOnly={readOnly}
+        actionsOnly={actionsOnly}
+      />
+      {!activityOnly ? <ToolRunActions view={view} messageId={messageId} readOnly={readOnly} /> : null}
     </>
   );
 }

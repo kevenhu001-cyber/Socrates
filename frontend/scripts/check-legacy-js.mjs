@@ -4,14 +4,14 @@
  *
  * `frontend/tsconfig.json` runs with `allowJs: true, checkJs: false`: the
  * `.js` modules are bundled, imported by typed code, and never type-checked.
- * `npm run lint` therefore reports a clean `tsc` even though 189 first-party
- * files (as of 2026-10-17) sit outside `strict`. The migration is real — the
- * extracted modules under `src/` are `.ts` — but nothing stops the next
- * helper from being written in `.js` and quietly widening that hole.
+ * The committed path list below is the inventory of that untyped source.
+ * Without this guard, a new helper could be written in `.js` and quietly
+ * widen the hole even while the aggregate file count stays the same.
  *
- * This ratchet freezes the current set instead of demanding a big-bang
- * conversion. New frontend source is `.ts`/`.tsx`; converting a file to TS
- * lowers the baseline with `--update`.
+ * This ratchet freezes the exact current path set instead of demanding a
+ * big-bang conversion. New frontend source is `.ts`/`.tsx`; converting a file
+ * to TS lowers the baseline with `--update`. A removed path must be recorded
+ * before the check passes, and `--update` refuses to absorb new JS paths.
  *
  * Vendored UMD bundles (`src/vendor-files/**`) are third-party bytes and are
  * not counted.
@@ -56,27 +56,46 @@ function writeBaseline(next) {
   );
 }
 
+const baselineFiles = Array.isArray(baseline?.files) ? baseline.files : [];
+const baselineSet = new Set(baselineFiles);
+const currentSet = new Set(files);
+const added = files.filter((file) => !baselineSet.has(file));
+const removed = baselineFiles.filter((file) => !currentSet.has(file));
+
 if (!baseline) {
   writeBaseline(files);
   console.log(`legacy JS: no baseline found — wrote scripts/legacy-js.baseline.json (${files.length} files).`);
   console.log('Commit the baseline; growth beyond it now fails.');
 } else if (UPDATE) {
-  /* Shrink-only: an update may drop files, never add one. */
-  const allowed = new Set(baseline.files ?? files);
-  const next = files.filter((file) => allowed.has(file));
-  writeBaseline(next);
-  console.log(`legacy JS: baseline updated to ${next.length} files (counts only ever shrink).`);
-} else if (files.length > baseline.count) {
-  const known = new Set(baseline.files ?? []);
-  const added = files.filter((file) => !known.has(file));
-  console.error(
-    `legacy JS check FAILED: ${files.length} > baseline ${baseline.count} (+${files.length - baseline.count}).`,
-  );
-  console.error('Write new frontend modules in TypeScript instead:');
-  for (const file of added) console.error(`  ${file}`);
-  process.exitCode = 1;
+  /* Shrink-only: an update may drop known paths, never add new ones. */
+  if (added.length) {
+    console.error('legacy JS baseline update refused: new JS paths are not allowed.');
+    console.error('Write new frontend modules in TypeScript instead:');
+    for (const file of added) console.error(`  ${file}`);
+    process.exitCode = 1;
+  } else {
+    writeBaseline(files);
+    console.log(`legacy JS: baseline updated to ${files.length} paths (the allow-list only shrinks).`);
+  }
 } else {
-  console.log(
-    `legacy JS check passed (${files.length}/${baseline.count} untyped .js files under src/; baseline only shrinks).`,
-  );
+  const failures = [];
+  if (baseline.count !== baselineFiles.length) {
+    failures.push(`baseline count ${baseline.count} does not match its ${baselineFiles.length} paths; run --update after reviewing the inventory`);
+  }
+  if (added.length) {
+    failures.push('new untyped JavaScript paths are not allowed; write new frontend modules in TypeScript:');
+    for (const file of added) failures.push(`  ${file}`);
+  }
+  if (removed.length) {
+    failures.push('the inventory has shrunk; review the migration and run --update to record removed paths:');
+    for (const file of removed) failures.push(`  ${file}`);
+  }
+
+  if (failures.length) {
+    console.error('legacy JS check FAILED:');
+    for (const failure of failures) console.error(`  ${failure}`);
+    process.exitCode = 1;
+  } else {
+    console.log(`legacy JS check passed (${files.length} paths match the frozen allow-list).`);
+  }
 }
