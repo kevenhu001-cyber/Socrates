@@ -42,8 +42,8 @@
 .inline-quiz-q{font-weight:var(--ui-font-weight-semibold);margin-bottom:8px;color:hsl(var(--text-100))}
 
 .inline-quiz-opts{display:flex;flex-direction:column;gap:5px;margin-top:6px}
-.inline-quiz-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-100));font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-align:left;width:100%;cursor:pointer;transition:background .12s,border-color .12s,color .12s;line-height:1.45;font-family:inherit}
-.inline-quiz-opt:hover:not(:disabled){background:hsl(var(--bg-300));border-color:hsl(var(--border-300)/0.5);color:hsl(var(--text-100))}
+.inline-quiz-opt{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-md);border:1px solid var(--input);background:transparent;font-size:var(--ui-font-size-sm);color:var(--foreground);text-align:left;width:100%;cursor:pointer;transition:background-color var(--ui-duration-fast) ease,border-color var(--ui-duration-fast) ease,color var(--ui-duration-fast) ease;line-height:1.45;font-family:inherit}
+.inline-quiz-opt:hover:not(:disabled){background:var(--accent);border-color:var(--border);color:var(--accent-foreground)}
 .inline-quiz-opt:disabled{cursor:default}
 /* The "A." / "B." chip needs to sit on the same baseline as the option
    text — but KaTeX renders inline math with its own vertical-align that
@@ -55,12 +55,12 @@
 .inline-quiz-opt-letter{flex-shrink:0;min-width:18px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:var(--ui-font-weight-semibold);line-height:1;align-self:center;font-variant-numeric:tabular-nums}
 .inline-quiz-opt-text{display:inline-block;line-height:1.55}
 .inline-quiz-opt-text .katex{vertical-align:baseline}
-.inline-quiz-opt.selected{background:hsl(var(--accent-000)/0.10);border-color:hsl(var(--accent-000)/0.45);color:hsl(var(--text-100))}
-.inline-quiz-opt.selected .inline-quiz-opt-letter{color:hsl(var(--accent-000))}
-.inline-quiz-opt.correct{background:hsl(145 50% 50%/0.10);border-color:hsl(145 50% 55%/0.6);color:hsl(145 55% 50%)}
-.inline-quiz-opt.correct .inline-quiz-opt-letter{color:hsl(145 55% 45%)}
-.inline-quiz-opt.wrong{background:hsl(0 60% 50%/0.10);border-color:hsl(0 60% 55%/0.6);color:hsl(0 60% 55%)}
-.inline-quiz-opt.wrong .inline-quiz-opt-letter{color:hsl(0 60% 50%)}
+.inline-quiz-opt.selected{background:var(--accent);border-color:var(--ring);color:var(--accent-foreground)}
+.inline-quiz-opt.selected .inline-quiz-opt-letter{color:var(--accent-foreground)}
+.inline-quiz-opt.correct{background:color-mix(in srgb, var(--ui-success) 12%, transparent);border-color:color-mix(in srgb, var(--ui-success) 55%, transparent);color:var(--ui-success)}
+.inline-quiz-opt.correct .inline-quiz-opt-letter{color:var(--ui-success)}
+.inline-quiz-opt.wrong{background:color-mix(in srgb, var(--destructive) 12%, transparent);border-color:color-mix(in srgb, var(--destructive) 55%, transparent);color:var(--destructive)}
+.inline-quiz-opt.wrong .inline-quiz-opt-letter{color:var(--destructive)}
 .inline-quiz-feedback{margin-top:8px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
 .inline-quiz-feedback.ok{color:hsl(145 55% 50%)}
 .inline-quiz-feedback.bad{color:hsl(0 60% 55%)}
@@ -74,8 +74,8 @@
 .inline-example-solution{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200))}
 .inline-example-solution .label,
 .inline-example-problem .label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-right:4px;font-weight:var(--ui-font-weight-medium)}
-.inline-example-reveal{display:inline-block;margin-top:8px;padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
-.inline-example-reveal:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+.inline-example-reveal{display:inline-flex;align-items:center;margin-top:8px;height:var(--ui-control-sm);padding:0 12px;background:var(--background);border:1px solid var(--input);border-radius:var(--radius-md);color:var(--foreground);font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:background-color var(--ui-duration-fast) ease,color var(--ui-duration-fast) ease}
+.inline-example-reveal:hover,.inline-example-reveal:focus-visible{background:var(--accent);color:var(--accent-foreground);border-color:var(--border);outline:0;box-shadow:var(--ui-focus-shadow)}
 
 /* Practice: problem text + hint toggle + textarea + Reveal-answer
    (optional) + Submit button row. Hint and answer text get the
@@ -92,11 +92,11 @@
 .inline-practice-textarea:focus{border-color:hsl(var(--accent-000)/0.5)}
 .inline-practice-textarea:disabled{opacity:.6;cursor:default}
 .inline-practice-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.inline-practice-reveal{padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
-.inline-practice-reveal:hover:not(:disabled){background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+.inline-practice-reveal{height:var(--ui-control-sm);padding:0 12px;background:var(--background);border:1px solid var(--input);border-radius:var(--radius-md);color:var(--foreground);font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:background-color var(--ui-duration-fast) ease,color var(--ui-duration-fast) ease}
+.inline-practice-reveal:hover:not(:disabled),.inline-practice-reveal:focus-visible:not(:disabled){background:var(--accent);color:var(--accent-foreground);border-color:var(--border);outline:0;box-shadow:var(--ui-focus-shadow)}
 .inline-practice-reveal:disabled{opacity:0.5;cursor:default}
-.inline-practice-submit{padding:5px 14px;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:background .12s,opacity .12s}
-.inline-practice-submit:hover:not(:disabled){background:hsl(var(--accent-100))}
+.inline-practice-submit{height:var(--ui-control-sm);padding:0 14px;background:var(--primary);color:var(--primary-foreground);border:0;border-radius:var(--radius-md);font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:filter var(--ui-duration-fast) ease,opacity var(--ui-duration-fast) ease}
+.inline-practice-submit:hover:not(:disabled){filter:brightness(0.94)}
 .inline-practice-submit:disabled{opacity:0.5;cursor:default}
 .inline-practice-feedback{margin-top:4px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
 .inline-practice-feedback.ok{color:hsl(145 55% 50%)}
@@ -164,8 +164,8 @@
 .inline-theorem-proof{margin-top:0;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1))}
 .inline-theorem-proof>.ui-collapse-inner{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0}
 .inline-theorem-proof.collapsed>.ui-collapse-inner{margin-top:0}
-.inline-theorem-proof-toggle{display:inline-block;margin-top:6px;padding:4px 10px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-300));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
-.inline-theorem-proof-toggle:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+.inline-theorem-proof-toggle{display:inline-flex;align-items:center;margin-top:6px;height:var(--ui-control-sm);padding:0 12px;background:var(--background);border:1px solid var(--input);border-radius:var(--radius-md);color:var(--muted-foreground);font-size:var(--ui-font-size-xs);font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:background-color var(--ui-duration-fast) ease,color var(--ui-duration-fast) ease}
+.inline-theorem-proof-toggle:hover,.inline-theorem-proof-toggle:focus-visible{background:var(--accent);color:var(--accent-foreground);border-color:var(--border);outline:0;box-shadow:var(--ui-focus-shadow)}
 
 /* Key Point — pops out: thicker accent border, soft accent wash. */
 .inline-key-point{border:1px solid hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}

@@ -394,18 +394,25 @@
   gap: 4px;
   background: transparent;
   border: 0;
-  color: var(--ui-text-tertiary);
+  color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
   cursor: pointer;
-  padding: 0 6px;
+  padding: 0 8px;
   min-height: 24px;
-  border-radius: var(--ui-radius-xs);
-  transition: color var(--ui-duration-hover), background var(--ui-duration-hover);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
 }
 
-.code-block-workbench-btn:hover {
-  color: var(--foreground);
+.code-block-workbench-btn:hover,
+.code-block-workbench-btn:focus-visible {
+  color: var(--accent-foreground);
   background: var(--accent);
+}
+
+.code-block-workbench-btn:focus-visible {
+  outline: 0;
+  box-shadow: var(--ui-focus-shadow);
 }
 
 /* =========================================================================

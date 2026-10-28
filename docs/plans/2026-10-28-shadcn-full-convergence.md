@@ -100,6 +100,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B2 composer 工具菜单 | 完成（2026-10-29） | 见下 |
 | B3 auth 登录页 | 皮肤完成（2026-10-29） | 见下；标记仍是保留 HTML，React 化未做 |
 | B3 workspace 弹窗表单 | 皮肤完成（2026-10-29） | 见下；模板仍是 HTML 字符串 |
+| B4 代码块与 tutor 内联控件 | 完成（2026-10-29） | 见下；仍是 legacy DOM 构建 |
 | B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
@@ -176,6 +177,22 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 
 验证：`projects-directory`、`plugin-directory`、`scheduled-tasks`、
 `reference-ui-visual` 共 14 例通过；build 与 lint 通过。
+
+### B4 · 代码块与 tutor 内联控件（2026-10-29）
+
+遗留 DOM 层里最常出现的两组控件换成 shadcn 语法（节点仍由 `createElement` 构建，
+这一批只换皮肤，不动构建方式）：
+
+- 代码块头：`Copy code` / `Open in Workbench` 两个按钮 → 24px、`rounded-sm`、
+  `text-xs`/medium、`hover:bg-accent`、焦点 `--ui-focus-shadow`；
+  `copied` / `copy-failed` 状态改用 `--primary` / `--destructive`
+- tutor 内联控件：`隐藏答案`、`隐藏提示`、`查看答案` 三个 reveal/toggle 按钮 →
+  32px、`rounded-md`、`border-input`、`bg-background`；`提交` → `bg-primary`；
+  选择题选项 → `rounded-md` + `border-input`，选中态 `bg-accent` + `ring` 边框，
+  正确/错误态改用 `--ui-success` / `--destructive` 的 color-mix，不再写死色相
+
+验证：`code-copy-visual`、`tutor-inline-widgets` 共 5 例通过；截图确认代码块头与
+tutor 卡片的新观感；build 与 lint 通过。
 
 ## 待决问题
 
