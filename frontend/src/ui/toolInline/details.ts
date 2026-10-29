@@ -195,7 +195,9 @@ function appendRetryAction(detail: HTMLElement, row: HTMLElement, name: string, 
     kind: 'retry',
     className: 'tool-inline-retry',
     label: translate('tool.retry', 'Retry search'),
-    onClick: function () {
+    onClick: function (event) {
+    event.preventDefault();
+    event.stopPropagation();
     const stored = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
     const query = stored && typeof stored === 'object' && (stored as { query?: unknown }).query;
     row.dispatchEvent(new CustomEvent('tool-retry', {

@@ -49,7 +49,7 @@ test('the stylesheet entry does not reconnect historical parity layers', async (
 });
 
 test('migrated workspace panels are single React-owned page hosts', async () => {
-  const [html, workspacePage, pageMounts, navJs, navService, navAdapters, mainJs, destinations] = await Promise.all([
+  const [html, workspacePage, pageMounts, navJs, navService, navAdapters, mainJs, destinations, libraryUploadInput] = await Promise.all([
     read('index.html'),
     read('src/react/pages/workspace/WorkspacePage.tsx'),
     read('src/react/lib/boot/pageMounts.ts'),
@@ -58,13 +58,16 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
     read('src/sidebar/navigation.adapters.ts'),
     read('src/main.js'),
     read('src/sidebar/navigation.destinations.ts'),
+    read('src/react/pages/workspace/LibraryUploadInput.tsx'),
   ]);
   assert.equal(html.includes('id="libraryList"'), false, 'legacy inner Library host must stay removed');
   assert.equal(html.includes('id="spacesList"'), false, 'legacy inner Projects host must stay removed');
   assert.equal(html.includes('id="pluginsList"'), false, 'legacy inner Plugins host must stay removed');
   assert.equal(html.includes('id="scheduledList"'), false, 'legacy inner Scheduled host must stay removed');
   assert.equal(html.includes('id="adminPanelBody"'), false, 'legacy inner Admin host must stay removed');
-  assert.match(html, /<div class="library-panel main-page hidden" id="libraryPanel"><\/div>\s*<input type="file" id="libraryUploadInput"/);
+  assert.match(html, /<div class="library-panel main-page hidden" id="libraryPanel"><\/div>\s*<div id="libraryUploadReactRoot"><\/div>/);
+  assert.equal(html.includes('id="libraryUploadInput"'), false, 'React owns the Library upload input');
+  assert.match(libraryUploadInput, /id="libraryUploadInput"/);
   assert.match(html, /<div class="spaces-panel main-page hidden" id="spacesPanel"><\/div>/);
   assert.match(html, /<div class="plugins-panel main-page hidden" id="pluginsPanel"><\/div>/);
   assert.match(html, /<div class="scheduled-panel main-page hidden" id="scheduledPanel"><\/div>/);

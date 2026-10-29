@@ -1,10 +1,11 @@
+import type { MouseEvent } from 'react';
 import { Button } from '../ui/shadcn/button';
 
 export interface ArtifactControlProps {
   kind: 'retry' | 'fullscreen' | 'open';
   label: string;
   className: string;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   title?: string;
   i18nTitle?: string;
   i18nAria?: string;

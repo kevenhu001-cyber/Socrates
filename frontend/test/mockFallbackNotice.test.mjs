@@ -6,6 +6,9 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
+globalThis.CustomEvent = dom.window.CustomEvent;
+localStorage.setItem('socrates-lang-app', 'en');
+window.stateStore = { read: () => false };
 
 /* `showToast` appends a real `.msg-toast` node to document.body, so the
    notice is observable through the DOM without stubbing the toast layer. */
@@ -40,9 +43,16 @@ test('reset re-arms the notice for the next session', () => {
 
 test('the notice resolves a localized string through window.t', async () => {
   await import('../src/i18n.js');
+  await window.__i18nReady;
   const en = window.t('toast.mockFallback');
   assert.ok(en && en !== 'toast.mockFallback', 'English dictionary defines toast.mockFallback');
 
-  await import('../src/i18n/zh.js');
+  const zhReady = new Promise((resolve) => {
+    document.addEventListener('socrates:langchange', (event) => {
+      if (event.detail.lang === 'zh') resolve();
+    }, { once: true });
+  });
+  window.setLang('zh');
+  await zhReady;
   assert.ok(window.t('toast.mockFallback'), 'the key still resolves after zh loads');
 });

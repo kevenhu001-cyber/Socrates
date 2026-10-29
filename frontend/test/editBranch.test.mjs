@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
+import { act } from 'react';
 
 const dom = new JSDOM('<!doctype html><body></body>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { stateStore } = await import('../src/state/store.js');
 /* The public editBranch.js path is now a lazy command facade. This unit test
    targets the implementation's synchronous DOM/state semantics directly;
@@ -35,9 +37,12 @@ test('editing a frozen message replaces it and replays only after the server pat
   };
   window.askChatTurn = text => { replayed.push(text); };
   try {
-    editUserMessage('edit-user');
-    document.querySelector('.msg-edit-area').value = 'updated';
-    document.querySelector('.msg-edit-submit').click();
+    await act(() => editUserMessage('edit-user'));
+    const textarea = document.querySelector('.msg-edit-area');
+    const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value').set;
+    setValue.call(textarea, 'updated');
+    await act(() => textarea.dispatchEvent(new dom.window.Event('input', { bubbles: true })));
+    await act(() => document.querySelector('.msg-edit-submit').click());
     assert.deepEqual(errors, []);
     const messages = stateStore.read('messages');
     assert.equal(messages.length, 1);
