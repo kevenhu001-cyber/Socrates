@@ -55,7 +55,8 @@ test('light and dark surfaces keep SVG contrast and hover geometry stable', asyn
       const target = page.locator(selector).first();
       if (await target.count() === 0) continue;
       const before = await target.boundingBox();
-      await target.hover();
+      if (!before) throw new Error(`Missing hover target bounds for ${selector}`);
+      await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
       await page.waitForTimeout(120);
       const after = await target.boundingBox();
       expect(before).not.toBeNull();

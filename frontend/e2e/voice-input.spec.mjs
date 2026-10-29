@@ -194,7 +194,7 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   await page.screenshot({ path: 'test-results/socrates-composer-with-text.png', fullPage: true });
   await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
   await editor.press('Backspace');
-  await expect(primary).not.toHaveClass(/active/);
+  expect(await primary.evaluate((button) => button.classList.contains('active'))).toBe(false);
   // Clearing the draft disables the primary again; dictation stays on the mic.
   await expect(primary.locator('.icon-arrow')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);

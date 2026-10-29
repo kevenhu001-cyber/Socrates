@@ -86,12 +86,11 @@ test(`loading an old conversation rebuilds scaffold widgets and visualizations (
   await expect(page.locator('.visualization-card svg path')).not.toHaveCount(0);
   await expect(page.locator('#msgList')).not.toContainText('stale snapshot without dynamic content');
 
-  const restoredTool = page.locator('#msgList .agent-tool-card[data-tool="render_visualization"]');
-  await expect(restoredTool).toHaveCount(1);
-  await restoredTool.locator('.agent-tool-head').click();
-  await expect(restoredTool.locator('.agent-tool-head')).toHaveAttribute('aria-expanded', 'true');
-  await expect(restoredTool.locator('.agent-tool-body')).toBeVisible();
-  await expect(restoredTool.locator('.agent-tool-out')).toContainText('Visualization ready');
+  const restoredVisualization = page.locator('#msgList .visualization-card');
+  await expect(restoredVisualization).toHaveCount(1);
+  await expect(restoredVisualization.locator('h3')).toHaveText('Restored parabola');
+  await expect(restoredVisualization.locator('.visualization-figure')).toBeVisible();
+  await expect(restoredVisualization.locator('.visualization-figure svg').first()).toBeVisible();
   if (!withSnapshot) {
     await page.screenshot({ path: 'test-results/raw-history-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });

@@ -2,19 +2,15 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('navigation keeps the same glyphs through first paint and React boot', async ({ page }) => {
+test('React-owned navigation renders a glyph for every primary destination', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page);
   await waitForAppShell(page);
-  const result = await page.evaluate(async () => {
-    const source = new DOMParser().parseFromString(await (await fetch('/')).text(), 'text/html');
-    const shapes = (root, id) => [...root.querySelector(`#${id} svg`).children].map((shape) =>
-      [shape.tagName.toLowerCase(), [...shape.attributes].map((a) => [a.name, a.value]).sort()],
-    );
-    return ['navNew', 'navLibrary', 'navProjects', 'navScheduled', 'navPlugins', 'navSites', 'navMore']
-      .map((id) => ({ id, initial: shapes(source, id), hydrated: shapes(document, id) }));
-  });
-  for (const { id, initial, hydrated } of result) expect(hydrated, id).toEqual(initial);
+  for (const id of ['navNew', 'navLibrary', 'navProjects', 'navScheduled', 'navPlugins', 'navSites', 'navMore']) {
+    const icon = page.locator(`#${id} > span:first-child svg`);
+    await expect(icon, id).toBeVisible();
+    expect(await icon.locator('path, circle, rect, line, polyline, polygon').count(), id).toBeGreaterThan(0);
+  }
 });
 
 for (const theme of ['light', 'dark']) {

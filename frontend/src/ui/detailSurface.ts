@@ -69,7 +69,7 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
     if (!surface.active || event.defaultPrevented) return;
     if (event.key === 'Escape') {
       event.preventDefault();
-      close();
+      onClose();
     } else if (event.key === 'Tab' && surface.panel.getAttribute('aria-modal') === 'true') {
       const controls = [...surface.panel.querySelectorAll<HTMLElement>('button, a[href], input, textarea, select, iframe, [tabindex="0"]')]
         .filter((el) => !el.hasAttribute('disabled') && !el.hidden && el.getClientRects().length > 0);
@@ -95,7 +95,7 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
   return surface;
 }
 
-export function openDetailSurface(options: DetailOptions, doc: Document = document): void {
+export function openDetailSurface(options: DetailOptions, doc: Document = document): Promise<boolean> {
   let surface = surfaces.get(doc);
   if (!surface) {
     const previousPending = pendingOptions.get(doc);
@@ -103,23 +103,25 @@ export function openDetailSurface(options: DetailOptions, doc: Document = docume
     const request = (openRequests.get(doc) || 0) + 1;
     openRequests.set(doc, request);
     pendingOptions.set(doc, options);
-    void import('../react/detailSurface/DetailSurfaceView').then(({ DetailSurfaceView }) => {
-      if (openRequests.get(doc) !== request) return;
+    return import('../react/detailSurface/DetailSurfaceView').then(({ DetailSurfaceView }) => {
+      if (openRequests.get(doc) !== request) return false;
       const pending = pendingOptions.get(doc);
-      if (!pending) return;
+      if (!pending) return false;
       pendingOptions.delete(doc);
       surface = ensureSurface(doc, DetailSurfaceView);
       activateSurface(surface, pending, doc);
+      return true;
     }).catch((error) => {
       if (openRequests.get(doc) === request) {
         pendingOptions.delete(doc);
         options.onClose?.();
       }
       reportSwallow(error, 'ui/detailSurface.ts:openDetailSurface');
+      return false;
     });
-    return;
   }
   activateSurface(surface, options, doc);
+  return Promise.resolve(true);
 }
 
 function activateSurface(surface: Surface, options: DetailOptions, doc: Document): void {

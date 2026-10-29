@@ -206,8 +206,8 @@ export function openLibraryItem(id: string, _kind: string, collection?: string):
   const { html: body, isMedia } = libraryFilePreviewBody(mime, name, rawUrl);
 
   const downloadRow = `<div class="library-file-download"><a class="workspace-row-action" href="${escapeHtml(downloadUrl)}" download="${escapeHtml(name)}">${escapeHtml(i18n('library.download', 'Download original'))}</a></div>`;
-  openLibraryDetail(name, mime || i18n('library.preview.file', 'File'), downloadRow + body, i18n('dialog.close', 'Close'));
-  if (!isMedia) void loadLibraryFileContent(file.id);
+  const detailReady = openLibraryDetail(name, mime || i18n('library.preview.file', 'File'), downloadRow + body, i18n('dialog.close', 'Close'));
+  if (!isMedia) void detailReady.then((opened) => { if (opened) return loadLibraryFileContent(file.id); });
 }
 
 async function loadLibraryFileContent(id: string): Promise<void> {
