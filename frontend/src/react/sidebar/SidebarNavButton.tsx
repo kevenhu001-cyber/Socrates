@@ -1,7 +1,6 @@
 import type { MouseEvent } from 'react';
 import { t as translate } from '../legacy/gateway.ts';
 import { Button } from '../ui/shadcn/button';
-import { Badge } from '../ui/shadcn/badge';
 import { navButtonId, type NavButtonSpec } from './sidebarNav.items';
 
 function i18n(key: string, fallback: string): string {
@@ -9,27 +8,29 @@ function i18n(key: string, fallback: string): string {
   return value !== key ? value : fallback;
 }
 
-/* Keep the measured row size and shell hook; shadcn's ghost recipe owns the
- * control skin and interaction states. */
+/*
+ * Geometry comes from the control ladder, not from shadcn's defaults:
+ * a --ui-control-desktop row, the chatgpt.com 6/10 padding rhythm and the
+ * --ui-radius-row radius. Everything else is the ghost variant's own paint.
+ * `sidebar-nav-btn` survives only as the row marker the shell's structural
+ * rules (collapsed rail, press tint, per-destination order) key off.
+ */
 const ROW_CLASS = [
   'sidebar-nav-btn',
-  'relative flex max-[768px]:grid w-full shrink-0 items-center justify-start max-[768px]:justify-center',
-  'h-(--ui-control-desktop) min-h-(--ui-control-desktop) max-[768px]:h-(--ui-mobile-row) max-[768px]:min-h-(--ui-mobile-row)',
-  'gap-1.5 max-[768px]:gap-x-3 px-2.5 py-1.5 max-[768px]:px-4 max-[768px]:py-0',
-  'text-start',
+  'relative flex w-full shrink-0 items-center justify-start max-[768px]:justify-center',
+  'h-(--ui-control-desktop) min-h-(--ui-control-desktop)',
+  'gap-1.5 border-0 rounded-[var(--ui-radius-row)] bg-transparent px-2.5 py-1.5',
+  'text-base font-normal leading-[var(--ui-text-body-line)] text-foreground text-start',
   'whitespace-nowrap cursor-pointer select-none',
-  'aria-[current=page]:font-medium',
+  'transition-colors duration-(--ui-duration-hover)',
+  'hover:bg-accent focus-visible:bg-accent',
+  'aria-[current=page]:bg-accent [&[aria-current=page]]:[font-weight:var(--ui-font-weight-medium)]',
+  'active:not-aria-[haspopup]:translate-y-0',
   "[&_svg:not([class*='size-'])]:size-5",
 ].join(' ');
 
 const GLYPH_CLASS = 'grid size-5 basis-5 shrink-0 place-items-center';
 const LABEL_CLASS = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap';
-
-function visibilityClass(key: NavButtonSpec['key']): string {
-  if (key === 'images') return 'min-[769px]:hidden max-[768px]:grid';
-  if (key === 'assistants' || key === 'exam' || key === 'skills') return 'hidden';
-  return '';
-}
 
 export function SidebarNavButton({
   item,
@@ -44,8 +45,8 @@ export function SidebarNavButton({
   return (
     <Button
       type="button"
-      variant={item.key === 'new' ? 'secondary' : 'ghost'}
-      className={`${ROW_CLASS} ${visibilityClass(item.key)}`}
+      variant="ghost"
+      className={`${ROW_CLASS}${active ? ' active' : ''}`}
       data-nav={item.key}
       id={navButtonId(item.key)}
       data-i18n-title={item.i18nKey}
@@ -56,7 +57,7 @@ export function SidebarNavButton({
       {item.badgeKey ? (
         <span className={`nav-label-wrap ${LABEL_CLASS}`}>
           <span data-i18n-key={item.i18nKey}>{label}</span>
-          <Badge variant="secondary" className="nav-new-badge" data-i18n-key={item.badgeKey}>{i18n(item.badgeKey, 'New')}</Badge>
+          <span className="nav-new-badge" data-i18n-key={item.badgeKey}>{i18n(item.badgeKey, 'New')}</span>
         </span>
       ) : (
         <span className={LABEL_CLASS} data-i18n-key={item.i18nKey}>{label}</span>

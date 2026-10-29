@@ -1,4 +1,3 @@
-@layer compatibility {
 /*
  * polish/overlays.css — one contract for every floating surface:
  * hairline border, shared popover/dialog radii, two-layer shadows,
@@ -12,7 +11,8 @@
 .display-prefs-popover,
 .model-picker-menu,
 .extensions-menu,
-.tag-editor-popover {
+.tag-editor-popover,
+.mobile-mode-menu {
   border-color: var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
   color: var(--foreground);
@@ -31,7 +31,8 @@
 .display-prefs-popover,
 .model-picker-menu,
 .extensions-menu,
-.tag-editor-popover {
+.tag-editor-popover,
+.mobile-mode-menu {
   border-radius: var(--ui-radius-popover);
 }
 .chat-config-pop {
@@ -73,6 +74,30 @@
 .chat-config-divider { margin: 3px 8px; }
 .chat-config-empty { padding: 16px 12px; font-size: var(--ui-font-size-xs); }
 .chat-config-slider { padding: 4px 6px 10px; }
+
+/* Menu rows: 8px radius everywhere, quiet hover. */
+.chat-config-pop button,
+.sidebar-more-popover .sidebar-more-item,
+.display-prefs-popover .display-prefs-seg,
+.mobile-mode-menu .mobile-mode-item,
+.model-picker-menu button {
+  border-radius: var(--ui-radius-control, 8px);
+}
+
+/* Display-prefs segmented control + toggles. */
+.display-prefs-popover .display-prefs-segs {
+  background: var(--ui-bg-surface);
+  border-radius: var(--ui-radius-md, 8px);
+}
+.display-prefs-popover .display-prefs-seg {
+  border-radius: var(--ui-radius-sm, 6px);
+  color: var(--ui-text-tertiary);
+}
+.display-prefs-popover .display-prefs-seg.active,
+.display-prefs-popover .display-prefs-seg[aria-checked="true"] {
+  background: var(--ui-bg-segment-active);
+  color: var(--foreground);
+}
 
 /* ── Backdrops: one flat dim ──
    The dim comes from --ui-backdrop (40% light / 50% dark). The legacy
@@ -362,6 +387,9 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   background: var(--ui-bg-raised);
 }
 .settings-account-avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 15px;
   flex: 0 0 auto;
 }
 .settings-account-id {
@@ -498,6 +526,4 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   padding: 12px 4px;
   font-style: italic;
   line-height: 1.4;
-}
-
 }

@@ -160,9 +160,19 @@
 }
 
 @media (max-width: 768px) {
+
+#appShell .top-mode-tabs .app-mode-toggle {
+  border-radius: 999px;
+  color: var(--cgv-text-3);
+}
 }
 
 @media (max-width: 768px) {
+
+#appShell .top-mode-tabs .app-mode-toggle.active {
+  color: var(--cgv-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
 }
 
 /* P_mobile-composer-center — the 14px nudge below is a desktop-only
@@ -332,9 +342,18 @@ html[data-mode="light"] #appShell {
 
 @media (max-width: 768px) {
 
+#appShell .top-mode-tabs {
+  border-color: var(--cg-border-strong) !important;
+  background: var(--cg-surface) !important;
+}
 }
 
 @media (max-width: 768px) {
+
+#appShell .top-mode-tabs .app-mode-toggle.active {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
 }
 
 @media (max-width: 768px) {

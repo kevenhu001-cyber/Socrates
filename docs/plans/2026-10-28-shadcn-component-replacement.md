@@ -120,57 +120,29 @@ P3–P5 move them.
 stale local `node_modules` fails the build with `TS2307` until `npm ci` runs;
 CI installs from the lockfile, so the gate itself is unaffected.
 
-## Follow-up: official component visuals (2026-10-29)
+## Remaining scope
 
-At the owner's request, the remaining migrated control skins now use the
-official base-nova shadcn recipes and semantic palettes. The Socrates theme
-uses Neutral and Philosophy uses Stone. Button, Badge, Card, Switch, Tabs and
-DropdownMenu visuals now own their hover, selected, disabled and focus states;
-the competing legacy paint rules were removed from migrated surfaces.
+- ADR 0024 P3 (transcript rows and toolbars), P4 (composer chrome) and P5
+  (CSS cleanup and ratchet shrink) are not started. `parity/topbar.css` and
+  `parity/sidebar.css` still own their geometry.
+- `settings-btn-mini` survives on two settings buttons
+  (`PersonalizationMemorySection.tsx:64`, `ModelsProviderSection.tsx:30`) but no
+  rule owns that class any more, so it is a dead name in the DOM. ADR 0022
+  still lists it as retained; the P5 cleanup has to either delete the class or
+  restore a rule for it.
+- The entry-chunk budget was raised from 360 KB to 365 KB in `55dad805` to
+  admit the shadcn primitives. The measured static JS closure is **361,682 B**
+  (`dist/.vite/entry-graph.json`: html 11,676 B + js 361,682 B + css 172,867 B
+  = 546,225 B against the 588,000 B total cap), so the original 360 KB JS
+  budget is still missed by 1,682 B (0.47%) and P3/P4 will add more entry-chunk
+  code.
+- `cn` is a new, narrowly scoped runtime dependency (published 2026-10-16) and
+  now backs eleven source files. It is worth an explicit supply-chain
+  decision before the shell migration pulls more of the registry in.
 
-The desktop Chat/Tutor selector and plugin-workspace tabs use shadcn `Tabs`;
-the phone mode selector uses `DropdownMenu`. Sidebar actions, transcript
-toolbar buttons, composer tools, workspace cards and settings controls use
-the same semantic variants. Existing confirmation and mode persistence flows
-remain behind the component callbacks. Route state owns desktop mode-tab
-visibility because lower cascade-layer legacy rules cannot override its
-utilities. Inputs are the explicit exception: the previous height, recipe and
-shared focus ring are retained.
+### Visual migration rollback
 
-Measured page geometry and mobile density remain with their existing surface
-owners, as required by ADR 0024. The official recipes now own control visuals
-and states; parity sheets only keep placement and measured sizing where needed.
-
-### Follow-up verification
-
-- `npm run lint`: passed, including the zero-baseline shadcn adoption guard,
-  surface ownership and surface-ladder checks.
-- `npm run build`: passed. Current entry graph: HTML gzip **4,269 B**, static JS
-  gzip **345,233 B**, linked CSS gzip **171,332 B**; total **520,834 B**.
-- `mainViewController.test.mjs`: **4 passed**.
-- `npm run test:unit`: **1,195 tests, 1,184 passed, 0 failed, 11 skipped**. The
-  first run after the follow-up failed on four stale assertions: the shared
-  `Button` now carries the shadcn recipe instead of the caller's class alone,
-  and the dark canvas declares the official 500 / 700 weights. The assertions
-  were realigned with the new contract, and the AGENTS.md row for
-  `check-font-weight.mjs` was corrected to stop advertising the retired
-  450 / 600 step-down.
-- Entry graph re-measured from the local production build: HTML gzip
-  **4,269 B**, static JS gzip **345,285 B**, linked CSS gzip **171,332 B**;
-  total **520,886 B**, still **14,715 B** under the 360,000 B static-JS budget.
-- Focused Playwright: **68 passed** across light/dark palettes, theme switching,
-  chat/composer, workspace and plugin navigation, mobile alignment, reference
-  surfaces, plugin tabs, settings controls and deferred loading. The production
-  entry budget assertion also passed after the final build. Browser coverage
-  used Chromium through the repository runner.
-- Focused Playwright re-run after the assertion repair: **13 passed** across
-  `shadcn-theme`, `shadcn-component-replacement`, `theme-system` and
-  `reference-ui-visual`.
-
-### Remaining scope
-
-- Surface layout geometry and the narrow-phone density remain owned by the
-  existing parity/polish sheets; the visual skin migration did not move these
-  measured layout rules into Tailwind utilities.
-- `cn` remains a runtime dependency used by the shadcn registry sources; its
-  independent supply-chain review is still open.
+The owner requested reverting `fbc5075f` on 2026-10-29. Its control skins,
+semantic palettes and shell mode controls return to their preceding versions.
+The later tutor-session behavior and the OpenUI/code-interpreter fixes in
+`cafb46a5` remain in place.

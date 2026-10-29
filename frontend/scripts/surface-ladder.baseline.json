@@ -1,8 +1,101 @@
 {
-  "palettes": {
-    "socrates": "neutral",
-    "philosophy": "stone"
+  "themes": {
+    "philosophy": {
+      "scale": null,
+      "shared": false,
+      "legacyTolerance": 0.5,
+      "dark": {
+        "page": {
+          "step": null,
+          "value": "#121110"
+        },
+        "rail": {
+          "step": null,
+          "value": "#181715"
+        },
+        "panel": {
+          "step": null,
+          "value": "#201e1b"
+        },
+        "elevated": {
+          "step": null,
+          "value": "#282622"
+        }
+      },
+      "light": {
+        "page": {
+          "step": null,
+          "value": "#f7f4ee"
+        },
+        "rail": {
+          "step": null,
+          "value": "#f0ece1"
+        },
+        "panel": {
+          "step": null,
+          "value": "#e8e3d6"
+        },
+        "elevated": {
+          "step": null,
+          "value": "#fcfbf9"
+        }
+      }
+    },
+    "socrates": {
+      "scale": "geist",
+      "shared": true,
+      "legacyTolerance": 0.05,
+      "dark": {
+        "page": {
+          "step": "background-100",
+          "value": "#0a0a0a"
+        },
+        "rail": {
+          "step": "gray-100",
+          "value": "#1a1a1a"
+        },
+        "panel": {
+          "step": "gray-200",
+          "value": "#1f1f1f"
+        },
+        "elevated": {
+          "step": "gray-300",
+          "value": "#292929"
+        }
+      },
+      "light": {
+        "page": {
+          "step": "background-200",
+          "value": "#fafafa"
+        },
+        "rail": {
+          "step": "gray-100",
+          "value": "#f2f2f2"
+        },
+        "panel": {
+          "step": "gray-200",
+          "value": "#ebebeb"
+        },
+        "elevated": {
+          "step": "background-100",
+          "value": "#ffffff"
+        }
+      }
+    }
   },
-  "webOnly": true,
+  "legacyChannels": {
+    "dark": {
+      "--bg-000": "page",
+      "--bg-100": "rail",
+      "--bg-200": "panel",
+      "--bg-300": "elevated"
+    },
+    "light": {
+      "--bg-000": "elevated",
+      "--bg-100": "page",
+      "--bg-200": "rail",
+      "--bg-300": "panel"
+    }
+  },
   "generatedBy": "check-surface-ladder.mjs --update"
 }

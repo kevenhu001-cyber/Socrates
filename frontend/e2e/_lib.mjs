@@ -11,43 +11,15 @@ export const test = base;
 /**
  * Resolved 8-bit RGB channels of a computed colour value.
  *
- * Computed colors may be serialized as rgb(), color(srgb …), or OKLCH. Keep
- * visual assertions independent of that notation by resolving each form to
- * 8-bit sRGB channels.
+ * The layered palette expresses its surfaces as `color(srgb r g b / a)` —
+ * channels are 0..1 — while plain tokens stay `rgb(r, g, b)` with 0..255
+ * channels. Comparing the serialised strings made every colour gate fail the
+ * moment a surface became translucent, even though the hue was unchanged.
+ * Compare the channels instead: the geometry and palette assertions keep
+ * their meaning, and only the notation stops mattering.
  */
 export function rgbChannels(value) {
   const text = String(value ?? '');
-  const oklch = text.match(/oklch\(\s*([+-]?(?:\d*\.)?\d+%?)\s+([+-]?(?:\d*\.)?\d+)\s+([+-]?(?:\d*\.)?\d+)(deg|rad|turn)?/i);
-  if (oklch) {
-    const lightness = oklch[1].endsWith('%')
-      ? Number.parseFloat(oklch[1]) / 100
-      : Number.parseFloat(oklch[1]);
-    const chroma = Number.parseFloat(oklch[2]);
-    let hue = Number.parseFloat(oklch[3]);
-    if (oklch[4] === 'rad') hue = (hue * 180) / Math.PI;
-    else if (oklch[4] === 'turn') hue *= 360;
-    const radians = (hue * Math.PI) / 180;
-    const a = chroma * Math.cos(radians);
-    const b = chroma * Math.sin(radians);
-    const lRoot = lightness + 0.3963377774 * a + 0.2158037573 * b;
-    const mRoot = lightness - 0.1055613458 * a - 0.0638541728 * b;
-    const sRoot = lightness - 0.0894841775 * a - 1.291485548 * b;
-    const l = lRoot ** 3;
-    const m = mRoot ** 3;
-    const s = sRoot ** 3;
-    const linear = [
-      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
-    ];
-    return linear.map((channel) => {
-      const clamped = Math.min(1, Math.max(0, channel));
-      const srgb = clamped <= 0.0031308
-        ? 12.92 * clamped
-        : 1.055 * (clamped ** (1 / 2.4)) - 0.055;
-      return Math.round(srgb * 255);
-    });
-  }
   const numbers = (text.match(/[\d.]+/g) ?? []).map(Number);
   if (numbers.length < 3) return null;
   const scale = text.includes('srgb') ? 255 : 1;
@@ -60,6 +32,12 @@ export function sameRgb(left, right) {
   const b = rgbChannels(right);
   return a !== null && b !== null && a.every((channel, index) => channel === b[index]);
 }
+
+/* The shell's selected-state marker is the whole class token `active`. The
+   shadcn primitives also ship `active:` and `aria-[current=page]:` variants,
+   so a bare /active/ regex matches every migrated button — always match the
+   token. */
+export const ACTIVE_CLASS = /(?:^|\s)active(?:\s|$)/;
 
 export const REQUIRED_BINDINGS = [
   'setLang', 't', 'setRecentsSearch', 'setRecentsFilter', 'clearRecentsFilter',

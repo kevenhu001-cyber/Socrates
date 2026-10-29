@@ -68,7 +68,7 @@ export function TagEditorPopover({ tags, knownTags, labels, onAdd, onRemove, onC
               <Button
                 variant="ghost"
                 size="icon-xs"
-                className="text-destructive"
+                className="size-4 rounded-full text-muted-foreground hover:bg-transparent hover:text-destructive"
                 aria-label={`${labels.remove}: ${tag}`}
                 title={labels.remove}
                 onClick={() => onRemove(tag)}
@@ -114,7 +114,7 @@ export function TagEditorPopover({ tags, knownTags, labels, onAdd, onRemove, onC
               key={tag}
               variant="outline"
               size="xs"
-              className="max-w-[160px]"
+              className="max-w-[160px] rounded-full"
               title={tag}
               onClick={() => onAdd(tag)}
             >

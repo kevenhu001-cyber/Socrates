@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
-import { sameRgb } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('mobile conversation home matches the compact dark reference layout', async ({ page }) => {
@@ -40,7 +39,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       /* .main is a transparent layout box; the painted surface is
          .main-content (the shell's canonical page colour). */
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
-      pageToken: getComputedStyle(document.documentElement).getPropertyValue('--background').trim(),
+      pageToken: getComputedStyle(document.getElementById('appShell')).getPropertyValue('--ui-bg-page').trim(),
     };
   });
 
@@ -61,8 +60,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(550);
-  /* The mobile canvas shares the shadcn background role with desktop. */
-  expect(sameRgb(geometry.background, geometry.pageToken)).toBe(true);
+  /* The mobile canvas shares the Geist-aligned page token with desktop. */
+  expect(geometry.background).toBe('rgb(10, 10, 10)');
+  expect(geometry.pageToken).toBe('#0a0a0a');
 
   /* P_greeting-mobile-center — the landing greeting must be visually
      centred horizontally on the viewport and sit just above the optical
@@ -118,7 +118,6 @@ test('mobile conversation home matches the compact dark reference layout', async
         height: rect.height,
         borderStyle: style.borderStyle,
         borderWidth: style.borderWidth,
-        borderColor: style.borderColor,
         background: style.backgroundColor,
       } : null;
     };
@@ -134,10 +133,15 @@ test('mobile conversation home matches the compact dark reference layout', async
       shareLabelVisible: Boolean(document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length),
     };
   });
-  /* The header controls stay on the 44px mobile touch rung in both states;
-     icon size and background treatment carry the visual distinction.
-     #findBtn / #shareBtn use the same 44px rung. */
-  expect(headerVisual.sidebar?.width).toBe(44);
+  /* This block deliberately flips body[data-conversation-active="true"]
+     above, so the mobile header is in its in-conversation form. That state
+     has two documented sizes (restore/chat-surface.css: "Landing top-bar
+     buttons are 44px tactile chips; the in-conversation header keeps its
+     existing 40px unframed utilities"), and this expectation was still
+     asserting the landing size for #sidebarOpenBtn, so it failed at 40.
+     #findBtn / #shareBtn are 44 in both states (fixes.css pins them on
+     phone regardless of surface). */
+  expect(headerVisual.sidebar?.width).toBe(40);
   expect(headerVisual.find?.width).toBe(44);
   expect(headerVisual.share?.width).toBe(44);
   expect(headerVisual.modelSwitcher?.width).toBeGreaterThan(0);
@@ -153,12 +157,8 @@ test('mobile conversation home matches the compact dark reference layout', async
     expect(boxes.switcherWidth).toBeGreaterThan(0);
     expect(boxes.switcherRight).toBeLessThanOrEqual(boxes.newChatLeft);
   }
-  /* The official Button root keeps its 1px transparent border. It contributes
-     no visible stroke while preserving the primitive's box model. */
-  expect(headerVisual.find?.borderWidth).toBe('1px');
-  expect(headerVisual.find?.borderColor).toBe('rgba(0, 0, 0, 0)');
-  expect(headerVisual.share?.borderWidth).toBe('1px');
-  expect(headerVisual.share?.borderColor).toBe('rgba(0, 0, 0, 0)');
+  expect(headerVisual.find?.borderWidth).toBe('0px');
+  expect(headerVisual.share?.borderWidth).toBe('0px');
   /* The reference header shows no always-on status dot next to the
      sidebar toggle, so it stays display:none on mobile. */
   expect(headerVisual.sidebarStatus?.width).toBe(0);

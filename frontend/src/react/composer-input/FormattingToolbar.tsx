@@ -18,8 +18,8 @@ function ToolbarButton({
   return (
     <Button
       type="button"
-      variant={active ? "secondary" : "ghost"}
-      size="sm"
+      variant="surface"
+      size="surface"
       className={`rich-composer-tool${active ? ' active' : ''}`}
       disabled={disabled}
       aria-label={label}

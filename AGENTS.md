@@ -53,9 +53,9 @@
 | `check-empty-catch.mjs` | Every empty `catch` carries a reasoned `empty-catch: intentional — …` marker (AST-based, so strings/regexes never count) |
 | `check-composer-css.mjs` | Exactly one owner for composer CSS: `styles/parity/composer-unified.css` |
 | `check-surface-ownership.mjs` | Sidebar / topbar / transcript each have one desktop owner under `styles/parity/` |
-| `check-surface-ladder.mjs` | The frontend palette uses the official shadcn Neutral semantic roles and the official Stone scale for its alternate theme. It checks role values, the runtime `THEME_STYLES` registry, and legacy token bridges. Its baseline is web-only; `packages/theme` remains separately owned until the Universal App palette migration (also `lint:surface-ladder`) |
+| `check-surface-ladder.mjs` | The four-step background ladder holds for **every** theme discovered in `themes.css`: exactly four rungs, no pure black, role order, steps inside the 1.5%–7% band, and the legacy HSL channels tracking the rungs they carry. Themes are cross-checked against the runtime `THEME_STYLES` list, so a theme registered in one place but not the other fails. The baseline records each theme's scale / shared-projection policy (also `lint:surface-ladder`) |
 | `check-focus-ring.mjs` | Focus states use the `--ui-focus-shadow` double ring with a ≥3:1 outer ring; no bare visible `outline` survives, and every `!important` that clears an outline carries a forced-colors fallback (also `lint:focus-ring`) |
-| `check-font-weight.mjs` | Font weights come from tokens, not literals, and the dark canvas declares the official component weights (500 / 700) rather than a 450/600 step-down (also `lint:font-weight`) |
+| `check-font-weight.mjs` | Font weights come from tokens, not literals, and the dark canvas steps medium and bold down to 450 / 600 (also `lint:font-weight`) |
 | `check-prompt-dashes.mjs` | Prompt text uses a single dash convention; the baseline records the entries that are deliberately exempt (also `lint:prompt-dashes`) |
 | `check-mobile-css.mjs` | Mobile CSS stays in the mobile owner files |
 | `check-i18n-locales.mjs` | `en` and `zh` carry the same key set |

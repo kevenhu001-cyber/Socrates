@@ -19,6 +19,8 @@ interface LegacyShellActions {
   sendMessage: () => void;
   toggleComposerTools: (target: HTMLElement | null, surface: string) => void;
   toggleEffort: (target: HTMLElement | null) => void;
+  selectMode: (mode: string | undefined) => void;
+  toggleMobileMode: () => void;
   searchRecents: (query: string) => void;
   switchTab: (tab: string) => void;
   toggleSidebarView: (view: string) => void;
@@ -108,6 +110,7 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput(surface);
   });
+  onShellClick('#mobileModeTrigger', () => actions.toggleMobileMode());
   onShellClick('#mobileConfigBtn', () => {
     byId('mobileMode')?.setAttribute('data-open', 'false');
     byId('mobileModeTrigger')?.setAttribute('aria-expanded', 'false');
@@ -119,6 +122,13 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
     actions.toggleComposerTools(element, surface);
   });
   onShellClick('.effort-trigger', (element) => actions.toggleEffort(element));
+  /* The top-bar Chat/Tutor pill was removed; the dropdown items in
+     #mobileModeMenu are the remaining in-shell mode affordance. They live in
+     the React header, so they are matched by selector at click time. */
+  onShellClick('#mobileModeMenu .mobile-mode-item[data-mode]', (element) => {
+    actions.selectMode(element.dataset.mode);
+  });
+
   bind(document, 'input', ((event: Event) => {
     const target = event.target;
     if (target instanceof HTMLInputElement && target.id === 'sidebarSearch') actions.searchRecents(target.value);

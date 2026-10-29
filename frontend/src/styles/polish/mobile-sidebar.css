@@ -61,6 +61,18 @@
     min-height: var(--ui-mobile-row);
     height: var(--ui-mobile-row);
     padding: 0 16px;
+    border-radius: var(--ui-radius-row);
+    font-size: calc(16px * var(--app-type-scale));
+    font-weight: var(--ui-font-weight-regular);
+    line-height: 24px;
+    color: var(--foreground);
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:hover {
+    background: var(--accent);
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:active {
+    background: var(--ui-bg-active);
   }
   #appShell #sidebarNav .sidebar-nav-btn svg { width: 24px; height: 24px; }
   #appShell #sidebarNav .nav-label { line-height: 24px; }
@@ -97,6 +109,7 @@
   :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navImages { display: none; }
   :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navSites { display: grid; order: 6; }
   #appShell #sidebarHeader #newChatBtn { display: none; }
+  #appShell #sidebarNav #navNew, #appShell #sidebarNav .sidebar-nav-btn.active { background: var(--ui-bg-selected); }
   #appShell .recents-panel {
     padding: 0;
     margin-top: 0;
@@ -214,11 +227,13 @@
   #appShell #sidebarUserRow .sidebar-account-trigger[aria-expanded="true"] {
     background: var(--accent);
   }
+  #appShell #sidebarUserRow .user-avatar { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; }
   #appShell #sidebarUserRow .user-name { font-size: var(--ui-font-size-md); line-height: 22px; font-weight: var(--ui-font-weight-regular); }
   #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: var(--ui-font-size-sm); line-height: 18px; color: var(--ui-text-muted); }
   #appShell .sidebar-account-menu { width: min(242px, calc(var(--ui-sidebar-mobile) - 12px)); padding: 12px; }
   #appShell .sidebar-account-menu :is(button, a) { height: 40px; min-height: 40px; font-size: var(--ui-font-size-sm); }
   #appShell .sidebar-account-menu .account-menu-identity { height: 44px; gap: 8px; }
+  #appShell .sidebar-account-menu .user-avatar { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; font-size: 10px; border-radius: 50%; background: var(--ui-avatar-bg); color: var(--primary-foreground); }
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
   #appShell .sidebar-account-menu .user-name { font-size: 15px; font-weight: var(--ui-font-weight-regular); }
   #appShell .sidebar-account-menu .user-plan { font-size: var(--ui-font-size-xs); color: var(--ui-text-muted); }
@@ -233,4 +248,20 @@
     stroke-linecap: round;
     stroke-linejoin: round;
   }
+  [data-mode="dark"] #appShell :is(#sidebar) :is(
+    #sidebarNav .sidebar-nav-btn,
+    .recent-item,
+    .recent-item-text,
+    .sidebar-logo,
+    .recents-title,
+    .nav-new-badge,
+    #sidebarSearch,
+    #sidebarSearch::placeholder
+  ),
+  [data-mode="dark"] #appShell #sidebarUserRow :is(
+    .sidebar-account-trigger,
+    .user-name,
+    .user-plan,
+    .tier-badge
+  ) { color: var(--ui-sidebar-glyph); }
 }

@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test';
-import { sameRgb } from './_lib.mjs';
 import {
   WORKBENCH_VIEWPORTS,
   completeFrame,
@@ -40,8 +39,6 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
     return {
       page: shellStyle.getPropertyValue('--ui-bg-page').trim(),
       surface: shellStyle.getPropertyValue('--ui-bg-surface').trim(),
-      semanticPage: shellStyle.getPropertyValue('--background').trim(),
-      semanticSidebar: shellStyle.getPropertyValue('--sidebar').trim(),
       mainBackgroundImage: mainBackgroundStyle.backgroundImage,
       pageBackground: shellStyle.backgroundColor,
       sidebarBackground: sidebarStyle.backgroundColor,
@@ -52,9 +49,10 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(contract.page).not.toBe('');
   expect(contract.surface).not.toBe('');
   expect(contract.mainBackgroundImage).toBe('none');
-  /* Shell surfaces resolve to shadcn's page and sidebar roles. */
-  expect(sameRgb(contract.pageBackground, contract.semanticPage)).toBe(true);
-  expect(sameRgb(contract.sidebarBackground, contract.semanticSidebar)).toBe(true);
+  /* The Lobe-aligned page and slightly brighter sidebar are adjacent
+     neutral foundation steps separated by a hairline. */
+  expect(contract.pageBackground).toBe('rgb(10, 10, 10)');
+  expect(contract.sidebarBackground).toBe('rgb(26, 26, 26)');
   expect(contract.sidebarBorder).not.toBe('0px');
   expect(contract.topbarHeight).toBeGreaterThanOrEqual(50);
 
@@ -149,7 +147,7 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
-test('desktop idle composer uses shadcn controls and stays optically aligned', async ({ page }) => {
+test('desktop idle composer keeps its edge controls circular and optically aligned', async ({ page }) => {
   await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
 
   const geometry = await page.evaluate(() => {
@@ -162,7 +160,6 @@ test('desktop idle composer uses shadcn controls and stays optically aligned', a
         height: Math.round(rect.height),
         centerY: rect.top + rect.height / 2,
         radius: style.borderRadius,
-        slot: node.getAttribute('data-slot'),
         background: style.backgroundColor,
       } : null;
     };
@@ -176,17 +173,15 @@ test('desktop idle composer uses shadcn controls and stays optically aligned', a
 
   expect(geometry.wrap?.height).toBe(52);
   expect(geometry.wrap?.radius).toBe('28px');
-  /* The official button variant keeps a rounded-rectangle silhouette; the
-     plus and primary actions share one optical row with dictation. */
+  /* The reference's composer controls are 36px circles; the plus and the
+     primary action share one optical row with the dictation control. */
   expect(geometry.attach?.width).toBe(36);
   expect(geometry.attach?.height).toBe(36);
-  expect(geometry.attach?.slot).toBe('button');
-  expect(geometry.attach?.radius).not.toBe('50%');
+  expect(geometry.attach?.radius).toBe('50%');
   expect(geometry.attach?.background).toBe('rgba(0, 0, 0, 0)');
   expect(geometry.send?.width).toBe(36);
   expect(geometry.send?.height).toBe(36);
-  expect(geometry.send?.slot).toBe('button');
-  expect(geometry.send?.radius).not.toBe('50%');
+  expect(geometry.send?.radius).toBe('50%');
   /* All three controls share the capsule's one control row. The ±2px
      tolerance (instead of sub-pixel) covers the fractional grid-row height
      Chrome reports for the 52px capsule: two 36px circles centred in the

@@ -228,6 +228,13 @@
     background: var(--accent);
     color: var(--foreground);
   }
+  #appShell #sidebarUserRow .user-avatar {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+    border-radius: 50%;
+  }
   #appShell #sidebarUserRow .user-name {
     font-size: var(--ui-font-size-xs);
     line-height: 16px;
@@ -313,10 +320,18 @@
 /* ── Primary nav — one row rhythm: 34px, 8px radius, 20px glyphs ── */
 
 @media (max-width: 768px) {
+#appShell .sidebar-nav-btn {
+  /* Reference drawer renders nav labels and glyphs at primary brightness,
+     same as the session titles below them. */
+  color: var(--foreground);
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+}
 }
 @media (max-width: 768px) {
+#appShell .sidebar-nav-btn:hover { background: var(--accent); color: var(--foreground); }
 }
 @media (max-width: 768px) {
+#appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--foreground); }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn .nav-kbd {
@@ -575,6 +590,11 @@
 #appShell #navExam,
 #appShell #navSkills {
   display: none;
+}
+#appShell .sidebar-nav-btn[data-nav="new"] {
+  background: var(--ui-bg-surface);
+  color: var(--foreground);
+  border-radius: var(--ui-radius-row);
 }
 }
 

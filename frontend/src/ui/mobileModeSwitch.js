@@ -2,19 +2,20 @@ import { stateStore } from '../state/store.js';
 import { syncSocraticMasteryUI } from '../tutor/socraticMastery.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
-/* ui/mobileModeSwitch.js — bridges shadcn's desktop/mobile mode controls.
+/* ui/mobileModeSwitch.js — mobile-only 对话/导师 (Chat/Tutor) switcher.
  *
- * TopBar renders a shadcn Tabs control on desktop and DropdownMenu on phones.
- * Both dispatch mode intent here so the existing confirmation flow remains
- * authoritative. This module keeps both controls synchronized:
+ * The mobile dropdown (#mobileMode) is the only user-facing mode switch on
+ * narrow viewports and the a11y fallback after the top-bar #modeSegmentedTop
+ * pill was removed. This module keeps the dropdown synchronized:
  *
- *   - toggleMobileModeMenu()  opens the mobile DropdownMenu trigger
+ *   - toggleMobileModeMenu()  opens/closes the popover (#mobileModeMenu)
  *   - selectAppMode(mode)     switches mode via window.toggleAppMode()
- *   - syncMobileModeSwitch()  publishes mode for both React controls;
+ *   - syncMobileModeSwitch()  refreshes the trigger label + active item;
  *                             called from providers.js syncAppModeUI().
  *
- * The mobile popover animation is CSS-driven off [data-open] on #mobileMode.
- * `_applyModeSwitchVisibility` hides both controls during a live conversation.
+ * The popover animation is CSS-driven off [data-open] on #mobileMode; we
+ * only flip that attribute + aria-expanded here. `_applyModeSwitchVisibility`
+ * hides the dropdown for the duration of a live conversation.
  */
 
 function _t(key, fallback) {
@@ -45,26 +46,44 @@ export function syncMobileModeSwitch() {
     label.removeAttribute("data-i18n-key");
     label.textContent = mode === "tutor" ? _t(key, "Tutor") : "Socrates";
   }
-  document.dispatchEvent(new CustomEvent("socrates:mobile-mode-sync", { detail: mode }));
-  syncTopModeSwitch();
+  document.querySelectorAll("#mobileModeMenu .mobile-mode-item").forEach(function (item) {
+    item.classList.toggle("active", item.getAttribute("data-mode") === mode);
+  });
+  syncTopModeSwitch(mode);
 }
 
 /* P_mode-segment-top — the desktop header's segmented control. It reads the
-   same `appMode` the dropdown does, so the two stay in sync. The tabs own
-   their selected visual state and roving focus. */
-function syncTopModeSwitch() {
+   same `appMode` the dropdown does, so the two can never disagree: both are
+   written from here, and both call the same toggleAppMode. The active class
+   and `data-active` are kept in sync because the class styles the label and
+   the attribute positions the sliding thumb. */
+function syncTopModeSwitch(mode) {
+  var group = document.getElementById("topModeSwitch");
+  if (!group) return;
+  group.setAttribute("data-active", mode);
+  var options = group.querySelectorAll(".top-mode-switch-option");
+  for (var i = 0; i < options.length; i += 1) {
+    var active = options[i].getAttribute("data-mode") === mode;
+    options[i].classList.toggle("is-active", active);
+    options[i].setAttribute("aria-selected", active ? "true" : "false");
+    /* Roving tabindex: a tablist is one tab stop, and arrow keys move
+       between its tabs. Without this, Tab walks both buttons separately
+       and the control is two stops where it should be one. */
+    options[i].setAttribute("tabindex", active ? "0" : "-1");
+  }
   try { syncSocraticMasteryUI(); } catch (_) { /* empty-catch: intentional — socratic mastery sync is best-effort */ }
 }
 
-/** Select a mode requested by a shadcn Tabs or RadioGroup control. */
+/** Select a mode from the header pill (or an arrow key on it). */
 function selectTopMode(mode) {
   if (mode === _currentMode()) return;
   selectAppMode(mode);
 }
 
 export function toggleMobileModeMenu() {
-  var trigger = document.getElementById("mobileModeTrigger");
-  if (trigger) trigger.click();
+  var wrap = document.getElementById("mobileMode");
+  if (!wrap) return;
+  _setOpen(wrap.getAttribute("data-open") !== "true");
 }
 
 export function selectAppMode(mode) {
@@ -199,11 +218,31 @@ if (typeof document !== "undefined") {
     if (e.key === "Escape") _setOpen(false);
   });
 
-  /* The React Tabs and RadioGroup controls dispatch intent; this adapter
-     preserves the existing confirmation and app-mode transition flow. */
-  document.addEventListener("socrates:mode-switch-select", function (event) {
-    var mode = event.detail;
-    if (mode === "chat" || mode === "tutor") selectTopMode(mode);
+  /* P_mode-segment-top — the header pill is a tablist, so it gets the two
+     behaviours a tablist owes its users: click, and arrow-key traversal.
+     Delegated from the document, not the group: the pill is React-owned
+     (src/react/topbar/TopBar.tsx), so it does not exist yet when this module
+     evaluates and its buttons re-render without re-binding. */
+  document.addEventListener("click", function (e) {
+    var option = e.target && e.target.closest && e.target.closest("#topModeSwitch .top-mode-switch-option");
+    if (!option) return;
+    selectTopMode(option.getAttribute("data-mode"));
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    var focusedOption = e.target && e.target.closest && e.target.closest("#topModeSwitch .top-mode-switch-option");
+    if (!focusedOption) return;
+    e.preventDefault();
+    var group = focusedOption.closest("#topModeSwitch");
+    var options = group ? Array.prototype.slice.call(group.querySelectorAll(".top-mode-switch-option")) : [];
+    var index = options.indexOf(focusedOption);
+    if (index < 0) return;
+    /* Wrap around: a two-position control has nowhere to go, so reversing
+       direction keeps both arrows meaningful instead of dead-ending. */
+    var next = (index + (e.key === "ArrowRight" ? 1 : options.length - 1)) % options.length;
+    var target = options[next];
+    if (target.focus) target.focus();
+    selectTopMode(target.getAttribute("data-mode"));
   });
 
   window.addEventListener("DOMContentLoaded", function () {

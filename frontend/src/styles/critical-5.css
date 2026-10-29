@@ -6,6 +6,6 @@
  * deferring home.css would flash unstyled landing rows on desktop, and
  * deferring mobile.css would flash the desktop layout on phones. See
  * critical-1.css for the contract. */
-@import './polish/auth.css' layer(compatibility);
-@import './polish/home.css' layer(compatibility);
-@import './polish/mobile.css' layer(compatibility);
+@import './polish/auth.css';
+@import './polish/home.css';
+@import './polish/mobile.css';

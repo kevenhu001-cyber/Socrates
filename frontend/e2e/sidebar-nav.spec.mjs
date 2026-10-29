@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+/* `active` is the shell's selected-state marker, not the primitive's press
+   variant (`active:translate-y-0`), so match the class as a whole token. */
+const NAV_ACTIVE = /(?:^|\s)active(?:\s|$)/;
+
 test.beforeEach(async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
@@ -31,24 +35,22 @@ test('sidebar exposes the primary destinations', async ({ page }) => {
 
 test('Plugins is a direct sidebar destination', async ({ page }) => {
   await page.locator('#navPlugins').click();
-  await expect(page.locator('#navPlugins')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#navPlugins')).toHaveClass(NAV_ACTIVE);
   await expect(page.locator('#pluginsPanel')).toBeVisible();
-  await expect(page.locator('#topModeSwitch')).toBeHidden();
   /* The React directory opens on the public scope (plugin-directory.spec
      owns the detailed scope/filter matrix). The default smoke catalog has
      no connected apps, so the landing view lists every plugin. */
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await expect(page.locator('.plugin-directory-row')).toHaveCount(5);
-  /* The React workspace tabs live in the shell header, not inside this panel. */
+  /* The static 插件 / 技能 switch was removed from the shell header. */
   await expect(page.locator('#pluginsPanel .plugins-panel-tabs')).toHaveCount(0);
-  await expect(page.locator('#pluginWorkspaceTabs')).toBeVisible();
 });
 
 test('direct workspace routes restore navigation and browser history', async ({ page }) => {
   await gotoAndSettle(page, '/projects');
   await waitForAppShell(page);
   await expect(page.locator('.projects-directory')).toBeVisible();
-  await expect(page.locator('#navProjects')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#navProjects')).toHaveClass(NAV_ACTIVE);
 
   await page.locator('#navLibrary').click();
   await expect(page).toHaveURL(/\/library$/);
@@ -56,10 +58,10 @@ test('direct workspace routes restore navigation and browser history', async ({ 
   await page.goBack();
   await expect(page).toHaveURL(/\/projects$/);
   await expect(page.locator('.projects-directory')).toBeVisible();
-  await expect(page.locator('#navProjects')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#navProjects')).toHaveClass(NAV_ACTIVE);
   await page.goForward();
   await expect(page).toHaveURL(/\/library$/);
-  await expect(page.locator('#navLibrary')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#navLibrary')).toHaveClass(NAV_ACTIVE);
 });
 
 test('workspace destinations replace the chat landing instead of stacking under it', async ({ page }) => {
@@ -68,7 +70,7 @@ test('workspace destinations replace the chat landing instead of stacking under 
      greeting/composer on screen and pushed the panel below the fold. */
   for (const [navId, panelId] of [['navPlugins', '#pluginsPanel'], ['navProjects', '#spacesPanel']]) {
     await page.locator(`#${navId}`).click();
-    await expect(page.locator(`#${navId}`)).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator(`#${navId}`)).toHaveClass(NAV_ACTIVE);
     await expect(page.locator(panelId)).toBeInViewport();
     await expect(page.locator('#topicSetup')).toBeHidden();
     await expect(page.locator('#chatView')).toBeHidden();
@@ -129,7 +131,7 @@ test('desktop share control renders its svg, not the text label', async ({ page 
 
 test('Exam is a direct sidebar destination', async ({ page }) => {
   await page.evaluate(() => window.openNav('exam'));
-  await expect(page.locator('#navExam')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#navExam')).toHaveClass(NAV_ACTIVE);
   await expect(page.locator('#examView')).toBeVisible();
 });
 
@@ -159,16 +161,11 @@ test('account row exposes profile and settings through its menu', async ({ page 
   await expect(row).toHaveAttribute('aria-label', new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   const geo = await row.evaluate((el) => {
     const c = (sel) => { const r = el.querySelector(sel).getBoundingClientRect(); return { w: r.width, h: r.height, cy: r.top + r.height / 2 }; };
-    const avatar = el.querySelector('.user-avatar');
-    return {
-      avatar: c('.user-avatar'),
-      identity: c('.user-identity'),
-      shadcnAvatar: avatar.getAttribute('data-slot') === 'avatar' && avatar.classList.contains('rounded-full'),
-    };
+    return { avatar: c('.user-avatar'), identity: c('.user-identity'), radius: getComputedStyle(el.querySelector('.user-avatar')).borderTopLeftRadius };
   });
-  expect(Math.round(geo.avatar.w)).toBe(32);
-  expect(Math.round(geo.avatar.h)).toBe(32);
-  expect(geo.shadcnAvatar).toBe(true);
+  expect(Math.round(geo.avatar.w)).toBe(28);
+  expect(Math.round(geo.avatar.h)).toBe(28);
+  expect(geo.radius).toBe('50%');
   expect(Math.abs(geo.avatar.cy - geo.identity.cy)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/sidebar-account-row.png', clip: await page.locator('#sidebarFooter').boundingBox() });
   await row.click();
@@ -270,18 +267,18 @@ test('history home restores the landing and More preserves the selected page', a
   await expect(page.locator('#spacesPanel')).toBeVisible();
   await page.locator('#navMore').click();
   await page.keyboard.press('Escape');
-  await expect(page.locator('#navProjects')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#navProjects')).toHaveClass(NAV_ACTIVE);
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#spacesPanel')).toBeHidden();
-  await expect(page.locator('#sidebarNav .sidebar-nav-btn[aria-current="page"]')).toHaveCount(0);
+  await expect(page.locator('#sidebarNav .sidebar-nav-btn.active')).toHaveCount(0);
   await page.goForward();
   await expect(page.locator('#spacesPanel')).toBeVisible();
-  await expect(page.locator('#navProjects')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#navProjects')).toHaveClass(NAV_ACTIVE);
   await page.reload();
   await expect(page.locator('#spacesPanel')).toBeVisible();
-  await expect(page.locator('#navProjects')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#navProjects')).toHaveClass(NAV_ACTIVE);
 });
 
 test('every routed destination restores its page host after a direct visit', async ({ page }) => {
@@ -295,7 +292,7 @@ test('every routed destination restores its page host after a direct visit', asy
     await expect(page.locator('#' + host)).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-main-view', host);
     if (destination !== 'admin') {
-      await expect(page.locator('#nav' + destination[0].toUpperCase() + destination.slice(1))).toHaveAttribute('aria-current', 'page');
+      await expect(page.locator('#nav' + destination[0].toUpperCase() + destination.slice(1))).toHaveClass(NAV_ACTIVE);
     }
     await expect(page.locator('#topicSetup')).toBeHidden();
   }

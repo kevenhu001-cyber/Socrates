@@ -33,17 +33,29 @@
 }
 
 @media (max-width: 768px) {
+
+#appShell .sidebar-nav-btn {
+  color: var(--cg-text-secondary);
+}
 }
 
 @media (max-width: 768px) {
 
 #appShell .sidebar-nav-btn:hover,
 #appShell .sidebar-nav-btn:focus-visible {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
   outline: none;
 }
 }
 
 @media (max-width: 768px) {
+
+#appShell .sidebar-nav-btn.active,
+#appShell .sidebar-nav-btn[aria-current="page"] {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
 }
 
 /* "New chat" keeps its primary-action pill on the home surface, matching the
@@ -51,9 +63,19 @@
    conversation, workspace page or exam is active, only that section's pill
    stays lit (React publishes .active / aria-current for those states). */
 @media (max-width: 768px) {
+#appShell #navNew.sidebar-nav-btn {
+  color: var(--cg-text);
+  background: transparent !important;
+}
 }
 
 @media (max-width: 768px) {
+
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell
+  #navNew.sidebar-nav-btn {
+  background: var(--cg-surface-hover) !important;
+}
 }
 
 /* Reference section order: 新聊天 / 资料库 / 项目 / 定时任务 / 插件 / ….
@@ -132,9 +154,18 @@
    in both themes without touching chat/tutor switching behavior.
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
+#appShell .top-mode-tabs {
+  background: var(--cg-surface-raised);
+  border-color: transparent;
+}
 }
 
 @media (max-width: 768px) {
+
+#appShell .top-mode-tabs .app-mode-toggle.active {
+  background: var(--cg-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+}
 }
 
 /* --------------------------------------------------------------------------
@@ -171,15 +202,34 @@
    of them is re-pointed at the theme tokens when [data-mode="light"].
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
+[data-mode="light"] #appShell .sidebar-nav-btn {
+  color: var(--ui-text-primary) !important;
+}
 }
 
 @media (max-width: 768px) {
+
+[data-mode="light"] #appShell .sidebar-nav-btn:hover,
+[data-mode="light"] #appShell .sidebar-nav-btn:focus-visible {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
 }
 
 @media (max-width: 768px) {
+
+[data-mode="light"] #appShell .sidebar-nav-btn.active,
+[data-mode="light"] #appShell .sidebar-nav-btn[aria-current="page"] {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
 }
 
 @media (max-width: 768px) {
+
+[data-mode="light"] #appShell #navNew.sidebar-nav-btn {
+  color: var(--cg-text) !important;
+}
 }
 
 @media (max-width: 768px) {
@@ -293,12 +343,30 @@ body.workspace-active #appShell .main-page {
 
 @media (max-width: 768px) {
 
+[data-mode="light"] #appShell .top-mode-tabs {
+  background: #f3f4f6 !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
 }
 
 @media (max-width: 768px) {
+
+[data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle {
+  border-radius: 9999px !important;
+  padding: 5px 16px !important;
+  font-size: 14px !important;
+  font-weight: var(--ui-font-weight-medium) !important;
+  color: #6b7280 !important;
+}
 }
 
 @media (max-width: 768px) {
+
+[data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle.active {
+  background: #ffffff !important;
+  color: #111827 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
 }
 
 /* --------------------------------------------------------------------------
@@ -616,9 +684,25 @@ body.workspace-active #appShell .main-page {
    and this block sits last so it also wins ties. Hover keeps its wash.
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
+#appShell#appShell .sidebar-nav-btn.active,
+#appShell#appShell .sidebar-nav-btn[aria-current="page"],
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell
+  #navNew.sidebar-nav-btn {
+  background: transparent !important;
+}
+#appShell#appShell .sidebar-nav-btn,
+#appShell#appShell #navNew.sidebar-nav-btn {
+  background: transparent !important;
+}
 }
 
 @media (max-width: 768px) {
+
+#appShell#appShell .sidebar-nav-btn:hover,
+#appShell#appShell .sidebar-nav-btn:focus-visible {
+  background: var(--cg-surface-hover) !important;
+}
 }
 
 /* #navNew carries an extra id in its transparent resting rule, so the
@@ -627,6 +711,16 @@ body.workspace-active #appShell .main-page {
    row. The home-state selector needs the same body:not prefix as its
    transparent counterpart to win that tie too. */
 @media (max-width: 768px) {
+#appShell#appShell #navNew.sidebar-nav-btn:hover,
+#appShell#appShell #navNew.sidebar-nav-btn:focus-visible,
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell
+  #navNew.sidebar-nav-btn:hover,
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell
+  #navNew.sidebar-nav-btn:focus-visible {
+  background: var(--cg-surface-hover) !important;
+}
 }
 
 /* --------------------------------------------------------------------------
@@ -700,9 +794,22 @@ body.workspace-active #appShell .main-page {
 }
 
 @media (max-width: 768px) {
+
+#appShell .top-mode-tabs .app-mode-toggle {
+  color: var(--cg-text-muted) !important;
+  border-radius: 999px !important;
+  font-family: var(--cg-font);
+  font-weight: var(--ui-font-weight-regular) !important;
+}
 }
 
 @media (max-width: 768px) {
+
+#appShell .top-mode-tabs .app-mode-toggle.active {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface) !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 24%) !important;
+}
 }
 
 #appShell .workspace-search-field,

@@ -20,11 +20,21 @@ const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
  * box and the skin, the stylesheet keeps the composer grid slot, the phone
  * overrides and the glyph/× cross-fade. The classes stay on the nodes because
  * the e2e specs and `composerShapeGeometry.ts` read them. */
-const CHIP_BOX = 'max-w-[220px] min-w-0 shrink-0';
-const TOOL_CHIP_BOX = 'composer-tool-chip';
+const CHIP_BOX = [
+  'inline-flex items-center justify-start gap-1.5 grow-0 shrink basis-auto min-w-0 max-w-[220px]',
+  'h-(--composer-control) rounded-md border border-border bg-secondary px-2.5 py-0 pr-1',
+  'text-sm font-normal leading-5 text-secondary-foreground whitespace-normal',
+].join(' ');
+const TOOL_CHIP_BOX = [
+  'inline-flex items-center gap-1 grow-0 shrink-0 basis-auto',
+  'h-(--composer-control) rounded-md px-3 py-0 pl-2 font-medium leading-5',
+].join(' ');
 const CHIP_ICON_BOX = 'grid shrink-0 grow-0 basis-4 place-items-center w-4 h-4 overflow-hidden rounded-sm';
 const CHIP_LABEL_BOX = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap';
-const CHIP_REMOVE_BOX = 'composer-plugin-chip-remove';
+const CHIP_REMOVE_BOX = [
+  'grid shrink-0 grow-0 basis-(--ui-control-xs) place-items-center size-(--ui-control-xs)',
+  'rounded-sm p-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-3.5',
+].join(' ');
 
 function useWebSearchOn(): boolean {
   const read = () => isWebSearchOn()
@@ -127,7 +137,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
           type="button"
           variant="secondary"
           size="sm"
-          className={`composer-plugin-chip composer-plugin-chip-more ${CHIP_BOX}`}
+          className={`composer-plugin-chip composer-plugin-chip-more ${CHIP_BOX} pr-2.5`}
           onClick={openTools}
         >
           {i18n('composer.plugin.more', '+{count} more').replace('{count}', String(hiddenCount))}

@@ -5,7 +5,7 @@
  * the generic ringSpin/fadeIn keyframes referenced by tutor/viz spinners,
  * and a frozen spinner during the thinking state would read as a hang.
  * See critical-1.css for the contract. */
-@import './legacy/04-topbar-menus.css' layer(compatibility);
-@import './legacy/05-chat-landing.css' layer(compatibility);
-@import './legacy/06-chat-transcript.css' layer(compatibility);
-@import './legacy/07-composer-settings.css' layer(compatibility);
+@import './legacy/04-topbar-menus.css';
+@import './legacy/05-chat-landing.css';
+@import './legacy/06-chat-transcript.css';
+@import './legacy/07-composer-settings.css';

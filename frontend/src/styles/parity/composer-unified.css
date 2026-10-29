@@ -260,6 +260,8 @@
 
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
   position: static;
+  display: inline-grid;
+  place-items: center;
   align-self: end;
   box-sizing: border-box;
   width: var(--composer-control);
@@ -268,18 +270,62 @@
   min-height: var(--composer-control);
   margin: 0;
   padding: 0;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  transform: none;
+  opacity: 1;
+  cursor: pointer;
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
 }
 /* In single-row desktop layout, keep controls centered on the editor's text line
    so buttons never jump vertically as text approaches the single-line margin. */
 #appShell .composer-shell:not(.composer-multiline):not(.has-plugin-chips) :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-picker) {
   align-self: center;
 }
-/* Ghost Button variants own the tools and microphone controls' paint and
-   focus states; this owner only places them in the composer grid. */
+/* The resting shadow is reset above because these are flat discs, but the
+   focus contract is a box-shadow too — without this the send and tools
+   buttons would carry no focus indicator at all. */
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+}
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
+  background: transparent;
+  color: var(--muted-foreground);
+}
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn):hover,
+#appShell .composer-shell .composer-tools-trigger[aria-expanded="true"] {
+  background: var(--accent);
+  color: var(--foreground);
+}
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) svg { display: block; width: 20px; height: 20px; }
 
-/* The shadcn Button variants own control paint, focus, hover, disabled and
-   pressed states; this owner keeps only composer-specific icon placement. */
+/* Primary action: send when there is a draft, stop while a turn streams —
+   one filled circle, like chatgpt.com. The fill is the accent role, not a
+   text token: the dark theme's --ui-text-primary is #e6e6e6, which reads as
+   a greyed-out control rather than the inverted disc the reference ships. */
+#appShell .composer-shell .composer-primary-btn {
+  /* The send button is the product's one saturated fill: the reference
+     draws it as a blue disc with a light up-arrow. The glyph is a control
+     glyph, so it is held to WCAG's 3:1 non-text contrast (3.8:1 on this
+     blue), not to the 4.5:1 of body text. */
+  background: var(--ui-accent-action);
+  color: var(--ui-on-action);
+  font-weight: var(--ui-font-weight-medium);
+}
+#appShell .composer-shell .composer-primary-btn:hover:not(:disabled) { opacity: var(--ui-press-opacity); }
+/* Paint-only feedback for compact composer controls; polish/press.css keeps
+   their circles and SVG geometry fixed throughout the press. They dim a
+   step further than wide buttons so the 36px disc still reads as pressed. */
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
+  --press-opacity: var(--ui-press-opacity-sm);
+}
+/* The controls' resting opacity is pinned by this owner. Mirror the pressed
+   paint here too so the generic press rule is not lost to that specificity. */
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):not(:disabled):is(:active, .is-pressed) {
+  opacity: var(--press-opacity);
+}
+#appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.3; cursor: default; }
 #appShell .composer-shell .composer-primary-btn > span { display: grid; place-items: center; }
 #appShell .composer-shell .composer-primary-btn svg { display: block; width: 20px; height: 20px; }
 

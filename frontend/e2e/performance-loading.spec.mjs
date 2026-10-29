@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { resolve } from 'node:path';
-import { gotoAndSettle, login } from './_lib.mjs';
+import { ACTIVE_CLASS, gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
@@ -208,7 +208,7 @@ test('late workspace imports cannot reveal an inactive page', async ({ page }) =
     release();
     await expect(page.locator('.projects-directory')).toBeVisible();
     await expect(page.locator('#libraryPanel')).toBeHidden();
-    await expect(page.locator('#navProjects')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('#navProjects')).toHaveClass(ACTIVE_CLASS);
     await expect(page).toHaveURL(/\/projects$/);
   } finally {
     release();
@@ -236,7 +236,7 @@ test('late creation imports cannot replace a newer navigation destination', asyn
     release();
     await expect(page.locator('.library-directory')).toBeVisible();
     await expect(page.locator('#sitesPanel')).toBeHidden();
-    await expect(page.locator('#navLibrary')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('#navLibrary')).toHaveClass(ACTIVE_CLASS);
     await expect(page).toHaveURL(/\/library$/);
   } finally {
     release();

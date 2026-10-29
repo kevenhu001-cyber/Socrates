@@ -14,13 +14,7 @@ function renderButton(component, props, children) {
 test('button preserves form intent, surface classes and explicit busy state', () => {
   const ordinary = renderButton(Button, { className: 'settings-close', 'aria-busy': true }, 'Close');
   assert.equal(ordinary.type, 'button');
-  /* The shared Button delegates to the shadcn recipe, so the class list is the
-     recipe plus the caller's own class — never the caller's class alone. The
-     caller's class still has to survive the delegation. */
-  const classes = ordinary.className.split(/\s+/);
-  assert.ok(classes.includes('settings-close'), 'the caller class survives');
-  assert.ok(classes.includes('group/button'), 'the shadcn recipe owns the skin');
-  assert.ok(classes.includes('bg-primary'), 'the default variant paints with the semantic primary role');
+  assert.equal(ordinary.className, 'settings-close');
   assert.equal(ordinary.getAttribute('aria-busy'), 'true');
   assert.equal(ordinary.disabled, false);
 

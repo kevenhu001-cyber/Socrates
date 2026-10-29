@@ -205,6 +205,11 @@
      role: it has to survive the pointer leaving the row, and it must not
      be the same value a hover paints, or the two states are
      indistinguishable. */
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell #sidebarNav #navNew.sidebar-nav-btn {
+    background: var(--ui-bg-selected);
+    color: var(--foreground);
+  }
   /* Same visible set and order as before the parity pass. */
   #appShell #sidebarNav #navImages.sidebar-nav-btn,
   #appShell #sidebarNav #navAssistants.sidebar-nav-btn,
@@ -550,6 +555,12 @@
   display: inline-block;
   margin-left: 6px;
   padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text-tertiary);
+  font-size: 10px;
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 14px;
   letter-spacing: 0.02em;
   vertical-align: 1px;
 }
@@ -559,6 +570,10 @@
      be re-stated here as --ui-radius-lg (12px) for the same selectors, which
      silently won by order and made the desktop rail a different shape from
      the phone drawer (polish/mobile-sidebar.css keeps the 10px row). */
+  #appShell #sidebarNav .sidebar-nav-btn,
+  #appShell #sidebar .recent-item {
+    transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+  }
 
   #appShell #sidebarNav .sidebar-nav-btn svg,
   #appShell #sidebar .recent-item svg {
@@ -597,7 +612,24 @@
   border-radius: var(--ui-radius-row);
   cursor: default;
 }
-/* Avatar size, fallback colors and border come from the shadcn Avatar. */
+#appShell #sidebarUserRow .user-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--ui-avatar-bg);
+  /* The initials take the accent's own contrast colour, so the disc flips
+     with the mode instead of keeping a white letter on a white disc. */
+  color: var(--primary-foreground);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
 #appShell #sidebarUserRow .user-identity {
   display: flex;
   flex-direction: column;

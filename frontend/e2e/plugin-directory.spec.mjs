@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { ACTIVE_CLASS, gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const CONNECTORS = [
@@ -139,6 +139,7 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await page.locator('#navNew').click();
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#pluginsPanel')).toBeHidden();
+  await expect(page.locator('#navPlugins')).not.toHaveClass(ACTIVE_CLASS);
   await expect(page.locator('#navPlugins')).not.toHaveAttribute('aria-current', 'page');
 
   await page.locator('#navScheduled').click();

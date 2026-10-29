@@ -48,7 +48,7 @@ test('activateMainView makes one workspace page authoritative', () => {
   assert.equal(document.body.classList.contains('plugins-active'), false);
   assert.equal(document.body.classList.contains('admin-active'), false);
   assert.equal(document.body.classList.contains('exam-active'), false);
-  assert.equal(isHidden(document, 'pluginWorkspaceTabs'), true);
+  assert.equal(document.getElementById('pluginWorkspaceTabs').hidden, true);
 });
 
 test('activateMainView applies plugin, admin and exam shell flags', () => {
@@ -56,7 +56,7 @@ test('activateMainView applies plugin, admin and exam shell flags', () => {
 
   activateMainView('pluginsPanel', document);
   assert.equal(document.body.classList.contains('plugins-active'), true);
-  assert.equal(isHidden(document, 'pluginWorkspaceTabs'), false);
+  assert.equal(document.getElementById('pluginWorkspaceTabs').hidden, false);
   assert.equal(document.getElementById('mobileMode').style.display, '');
 
   activateMainView('adminPanel', document);

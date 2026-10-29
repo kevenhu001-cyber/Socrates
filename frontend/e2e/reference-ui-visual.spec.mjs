@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
-import { sameRgb } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 /* These screenshots are written to gitignored test-results/. The spec checks the
@@ -84,7 +83,6 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
       plus: read('#composerToolsBtn'),
       send: read('#composerPrimaryBtn'),
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
-      pageToken: getComputedStyle(document.documentElement).getPropertyValue('--background').trim(),
     };
   });
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
@@ -93,8 +91,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(769);
   expect(mobileGeometry.plus?.width).toBe(36);
   expect(mobileGeometry.send?.width).toBe(36);
-  /* The mobile canvas shares the shadcn background role with desktop. */
-  expect(sameRgb(mobileGeometry.background, mobileGeometry.pageToken)).toBe(true);
+  /* The mobile canvas shares the Geist-aligned page surface with desktop. */
+  expect(mobileGeometry.background).toBe('rgb(10, 10, 10)');
 
   await page.locator('#composerToolsBtn').click();
   const toolsMenu = page.locator('#composerToolsMenu');

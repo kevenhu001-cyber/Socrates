@@ -46,13 +46,13 @@ export function HomeQuickActions() {
     <>
       {QUICK_ACTIONS.map(({ action, label, fallback, icon }) => (
         <div className="home-quick-action" key={action}>
-          <Button variant="outline" type="button" className="home-quick-action-primary" data-home-action={action}>
+          <Button variant="surface" type="button" className="home-quick-action-primary" data-home-action={action}>
             <span className="home-quick-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{icon}</svg>
             </span>
             <span className="home-quick-action-copy"><span data-i18n-key={label}>{t(label, fallback)}</span></span>
           </Button>
-          <Button variant="ghost" type="button" className="home-quick-action-dismiss" data-home-dismiss
+          <Button variant="surface" type="button" className="home-quick-action-dismiss" data-home-dismiss
             data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss"
             aria-label={t('home.quick.dismiss', 'Dismiss quick action')} title={t('home.quick.dismiss', 'Dismiss quick action')}>
             <DismissIcon />
@@ -69,7 +69,7 @@ export function HomeTutorStarters() {
       <h2 id="homeTutorHeading" data-i18n-key="home.tutor.heading">{t('home.tutor.heading', 'Start with a good question')}</h2>
       <div className="home-tutor-grid">
         {TUTOR_PROMPTS.map(({ prompt, glyph }) => (
-          <Button variant="outline" type="button" className="home-tutor-card" data-home-prompt={prompt} key={prompt}>
+          <Button variant="surface" type="button" className="home-tutor-card" data-home-prompt={prompt} key={prompt}>
             <span className="home-tutor-card-icon" aria-hidden="true">{glyph}</span>
             <strong data-i18n-key={`home.tutor.${prompt}.title`}>{t(`home.tutor.${prompt}.title`, '')}</strong>
             <span data-i18n-key={`home.tutor.${prompt}.hint`}>{t(`home.tutor.${prompt}.hint`, '')}</span>

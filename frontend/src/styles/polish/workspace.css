@@ -1,4 +1,3 @@
-@layer compatibility {
 /*
  * polish/workspace.css — Projects / workspace directory refinement.
  * Canonical owner of the projects directory head and filter rail density:
@@ -1142,5 +1141,3 @@
   border: 0;
 }
 .detail-body > .creation-preview-frame { width: 100%; height: 100%; flex: 1; min-height: 0; border: 0; background: var(--background); }
-
-}

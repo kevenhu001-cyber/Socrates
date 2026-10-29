@@ -169,6 +169,10 @@
   transform:translate(-50%,-50%);
   display:flex;
   align-items:center;
+  gap:2px;
+  padding:3px;
+  border-radius:999px;
+  background:hsl(var(--bg-300)/0.6);
   z-index:1;
   pointer-events:auto;
 }
@@ -216,10 +220,81 @@ body.admin-active #topicDisclaimer{display:none!important}
     transform:translate(-50%,-50%);
     z-index:6;
   }
+  .mobile-mode-trigger{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:6px 10px;
+    border:0;
+    background:transparent;
+    color:hsl(var(--text-100));
+    font-size:calc(17px * var(--app-font-scale, 1));
+    font-weight:var(--ui-font-weight-bold);
+    line-height:1;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background-color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-mode-trigger:active{background:hsl(var(--bg-300)/0.6)}
   .mobile-mode-caret{
-    transition:transform .15s ease;
+    width:16px;height:16px;
+    color:hsl(var(--text-400));
+    transition:transform .2s cubic-bezier(.16,1,.3,1);
   }
   .mobile-mode[data-open="true"] .mobile-mode-caret{transform:rotate(180deg)}
+  .mobile-mode-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:50%;
+    transform:translateX(-50%) translateY(-6px) scale(.97);
+    transform-origin:top center;
+    min-width:230px;
+    max-width:calc(100vw - 32px);
+    padding:6px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    background:hsl(var(--bg-200));
+    border:0.5px solid hsl(var(--border-300)/0.5);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .16s ease,transform .2s cubic-bezier(.16,1,.3,1);
+  }
+  .mobile-mode[data-open="true"] .mobile-mode-menu{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateX(-50%) translateY(0) scale(1);
+  }
+  .mobile-mode-item{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    width:100%;
+    padding:10px 12px;
+    border:0;
+    background:transparent;
+    text-align:left;
+    cursor:pointer;
+    transition:background-color .12s ease;
+  }
+  .mobile-mode-item:active{background:hsl(var(--bg-300)/0.7)}
+  .mobile-mode-item-title{
+    font-size:calc(15px * var(--app-font-scale, 1));
+    font-weight:var(--ui-font-weight-semibold);
+    color:hsl(var(--text-100));
+    line-height:1.2;
+  }
+  .mobile-mode-item-desc{
+    font-size:calc(12px * var(--app-font-scale, 1));
+    color:hsl(var(--text-400));
+    line-height:1.3;
+  }
+  .mobile-mode-item.active{background:hsl(var(--bg-300))}
+  .mobile-mode-item.active .mobile-mode-item-title{color:hsl(var(--accent-000))}
+
   /* Right-side incognito toggle — moved into the sidebar 更多 popover so
      the mobile header matches the single-icon reference. The element
      stays mounted (syncIncognitoBtn still mirrors aria state onto it)

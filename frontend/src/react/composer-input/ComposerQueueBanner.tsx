@@ -1,6 +1,5 @@
 import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
-import { Card } from '../ui/shadcn/card';
 import { useLayoutEffect, useSyncExternalStore } from 'react';
 import {
   getQueuedPrompts,
@@ -42,9 +41,8 @@ export function ComposerQueueBanner({ surface }: { surface: ComposerSurface }) {
   };
 
   return (
-    <Card
-      size="sm"
-      className="composer-queue-banner flex-row items-center justify-between gap-2 px-2.5 py-2 text-muted-foreground"
+    <div
+      className="composer-queue-banner flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-xs text-muted-foreground"
       role="status"
       aria-live="polite"
     >
@@ -86,6 +84,6 @@ export function ComposerQueueBanner({ surface }: { surface: ComposerSurface }) {
           </svg>
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }

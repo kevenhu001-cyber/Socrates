@@ -113,9 +113,8 @@ function MessageToolbarActions({
     <>
       <ToolButton
         label={copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy')}
-        aria-pressed={copied}
         onClick={onCopy}
-        className={copied ? 'is-copied' : undefined}
+        className={`${copied ? 'active ' : ''}${copied ? 'is-copied' : ''}`}
       >
         {copied ? toolbarIcon('check') : toolbarIcon('copy')}
       </ToolButton>
@@ -140,6 +139,7 @@ function MessageToolbarActions({
               aria-pressed={liked}
               onClick={onThumbsUp}
               ref={likeButtonRef}
+              className={liked ? 'active' : undefined}
             >
               {toolbarIcon('thumbsUp')}
             </ToolButton>

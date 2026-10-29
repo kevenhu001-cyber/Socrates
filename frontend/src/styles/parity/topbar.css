@@ -14,9 +14,11 @@
 #appShell #topModelSwitcher { display: none; }
 
 /* ── Centered mode switch ────────────────────────────────────────────────
-   The shadcn TabsList/TabsTrigger recipes paint the track and selection.
-   This owner positions the tab list in the header and keeps it hidden on
-   surfaces that do not expose a session-mode choice.
+   P_mode-segment-top — a two-position pill centered in the header track,
+   matching the reference's 聊天/工作 control. The thumb is a single element
+   that slides between the two positions rather than a per-option background:
+   two independently-tinted buttons cannot animate the transition between
+   them, so the control snaps instead of sliding.
 
    The bar is a three-part flex row (left · center · right). The control is
    absolutely centered rather than a third flex child: the two groups either
@@ -37,7 +39,43 @@
   display: inline-flex;
   align-items: center;
   gap: 0;
+  padding: 2px;
+  border-radius: var(--ui-radius-pill);
+  /* Geist segmented control: the track is the quiet chip fill (5–6% ink
+     over the page), the thumb is the raised surface. A hairline ring on
+     the track as well would read as a field, not as a group. */
+  background: var(--ui-bg-chip);
+  isolation: isolate;
 }
+
+#appShell .top-mode-switch-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: var(--ui-radius-pill);
+  /* Geist thumb: the raised surface of the ladder with the control shadow.
+     The reference draws the active segment as a plain white shape lifted
+     off the track — a hairline ring around it read as a second, smaller
+     pill inside the first one and made the control look busy. */
+  background: var(--ui-bg-surface);
+  box-shadow: var(--ui-shadow-control);
+  transform: translateX(0);
+  transition: transform var(--ui-duration-normal) var(--ui-ease-out);
+  z-index: -1;
+}
+/* The thumb tracks the selected option rather than the other way round: it
+   slides one option-width to the right. Driven by a class, not a CSS
+   variable, so the two positions can differ if the labels ever do. */
+#appShell .top-mode-switch[data-active="tutor"] .top-mode-switch-thumb {
+  transform: translateX(100%);
+}
+
+/* The old light-mode override painted every segment in primary ink, which
+   left the switch with no state cue: the thumb still moved, but the label
+   did not say which side was selected. Geist states the selection in type
+   (active = primary, idle = secondary) on both modes. */
 
 .top-model-switcher-settings { display: none; }
 
@@ -307,4 +345,9 @@ html[data-main-view$="Panel"] #appShell #mobileMode,
 html[data-main-view$="Panel"] #appShell #mobileIncognitoBtn,
 html[data-main-view$="Panel"] #appShell #mobileNewChatBtn {
   display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell .top-mode-switch-thumb,
+  #appShell .top-mode-switch-option { transition: none; }
 }

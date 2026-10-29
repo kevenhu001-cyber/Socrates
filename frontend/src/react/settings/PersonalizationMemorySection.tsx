@@ -61,6 +61,7 @@ export function PersonalizationMemorySection({
         {memories.length > 0 && (
           <Button variant="destructive"
             type="button"
+            className="settings-btn-mini"
             onClick={() => {
               if (!window.confirm(label('确定要清空全部已保存的记忆吗？', 'Are you sure you want to clear all memories?'))) return;
               clearAllMemories();

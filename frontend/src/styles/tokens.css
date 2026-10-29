@@ -9,12 +9,11 @@
  * CSS-driven values agree on the same vocabulary.
  */
 
-@layer compatibility, theme, base, components, utilities;
+@layer theme, base, components, utilities;
 
 :root {
-  /* shadcn Base Nova default radius. Product compatibility radii remain
-     available through the separate --ui-radius-* tokens below. */
-  --radius: 0.625rem;
+  /* shadcn uses the same corner scale as the product. */
+  --radius: var(--ui-radius-md);
   /* Lobe UI v6 foundation metrics. Product tokens below may alias these
      rungs where semantics match; Socrates-specific geometry is not forced
      onto this ladder. */

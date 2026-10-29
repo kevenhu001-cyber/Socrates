@@ -53,7 +53,7 @@ export function LibraryToolbar({
         </div>
         <div className="library-head-actions">
           <div className="library-new-wrap">
-            <Button type="button" variant="secondary" size="lg" className="library-new-pill" onClick={() => onNewMenuOpenChange(!newMenuOpen)}>
+            <Button type="button" variant="secondary" className="library-new-pill rounded-full" onClick={() => onNewMenuOpenChange(!newMenuOpen)}>
               <span>{i18n('library.new', '新建')}</span>
               <ChevronDownIcon />
             </Button>
@@ -101,7 +101,7 @@ export function LibraryToolbar({
                     size="sm"
                     role="menuitemradio"
                     aria-checked={typeFilter === filter.id}
-                    className="library-filter-option w-full justify-start"
+                    className="library-filter-option w-full justify-start aria-checked:bg-muted aria-checked:text-foreground"
                     onClick={() => {
                       onTypeFilterChange(filter.id);
                       onFilterOpenChange(false);

@@ -211,10 +211,14 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   const recordingMode = await page.evaluate(() => ({
     mode: document.documentElement.dataset.mode,
     background: getComputedStyle(document.getElementById('composerInputWrap')).backgroundColor,
-    popover: getComputedStyle(document.documentElement).getPropertyValue('--popover').trim(),
   }));
   if (recordingMode.mode === 'dark') {
-    expect(rgbChannels(recordingMode.background)).toEqual(rgbChannels(recordingMode.popover));
+    /* The recording shell is the composer's own elevated rung, and it has to
+       stay a dark surface while dictating. ADR 0023 moved that rung onto
+       the Geist scale (#181818 → the elevated step #292929), so the check
+       pins the exact tone instead of a threshold: the surface may not
+       brighten behind the recording bar. */
+    expect(rgbChannels(recordingMode.background)).toEqual([41, 41, 41]);
   }
 
   const waveform = await bar.locator('.voice-recording-wave > span').evaluateAll((nodes) => ({

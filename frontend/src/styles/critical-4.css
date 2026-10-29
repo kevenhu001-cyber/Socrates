@@ -4,11 +4,11 @@
  * owner per surface enforced by check-surface-ownership.mjs) plus the
  * first polish run. The desktop sidebar / topbar / composer / transcript
  * paint from this slice. See critical-1.css for the contract. */
-@import './parity/sidebar.css' layer(compatibility);
-@import './parity/topbar.css' layer(compatibility);
-@import './parity/composer-unified.css' layer(compatibility);
-@import './parity/transcript.css' layer(compatibility);
-@import './polish/sidebar.css' layer(compatibility);
-@import './polish/topbar.css' layer(compatibility);
-@import './polish/composer.css' layer(compatibility);
-@import './polish/transcript.css' layer(compatibility);
+@import './parity/sidebar.css';
+@import './parity/topbar.css';
+@import './parity/composer-unified.css';
+@import './parity/transcript.css';
+@import './polish/sidebar.css';
+@import './polish/topbar.css';
+@import './polish/composer.css';
+@import './polish/transcript.css';

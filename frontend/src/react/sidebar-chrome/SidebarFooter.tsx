@@ -1,6 +1,5 @@
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button } from '../ui/shadcn/button';
-import { Avatar, AvatarFallback } from '../ui/shadcn/avatar';
 import { Icon } from '../../ui/Icon';
 import { useCallback, useState } from 'react';
 import { useUserInfo } from './sidebarChrome.bridge';
@@ -19,14 +18,14 @@ export function SidebarFooter() {
     await getLegacyActions().navigation.openSettings();
     document.dispatchEvent(new CustomEvent('socrates:settings-section', { detail: section }));
   };
-  const identity = <><Avatar className="user-avatar" aria-hidden="true"><AvatarFallback className="text-foreground">{user.initials}</AvatarFallback></Avatar>
+  const identity = <><span className="user-avatar" aria-hidden="true">{user.initials}</span>
     <span className="user-identity"><span className="user-name">{user.displayName}</span>
       <span className="user-plan"><span className={`tier-badge ${user.tier}`}>{tier}</span></span></span></>;
   return <div className="sidebar-footer-account-wrap">
     <DeferredMenu open={open} onOpenChange={setOpen} above className="sidebar-account-menu"
       label={label('账户', 'Account')}
       trigger={<Button variant="ghost" type="button"
-        className="sidebar-account-trigger"
+        className="sidebar-account-trigger active:not-aria-[haspopup]:translate-y-0"
         title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}>{identity}</Button>}>
       {({ FoundationMenuItem }) => <>
       <FoundationMenuItem className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<Icon name="chevronRight" /></FoundationMenuItem>

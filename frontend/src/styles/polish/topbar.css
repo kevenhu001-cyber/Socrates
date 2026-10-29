@@ -57,10 +57,41 @@
    Upgrade button; the pricing entry point is the account menu's "Upgrade
    plan" item, identical on desktop and phone. */
 @media (max-width: 768px) {
-  body.workspace-active #appShell .mobile-newchat-btn,
+  #appShell #pluginWorkspaceTabs,
+body #appShell #pluginWorkspaceTabs,
+body.plugins-active #appShell #pluginWorkspaceTabs,
+body.workspace-active #appShell #pluginWorkspaceTabs,
+body.workspace-active #appShell .mobile-newchat-btn,
 body.plugins-active #appShell .mobile-newchat-btn {
     display: none;
   }
+}
+
+@media (max-width: 768px) {
+#appShell #pluginWorkspaceTabs {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-raised);
+}
+#appShell #pluginWorkspaceTabs .plugin-workspace-tab {
+  border-radius: var(--ui-radius-pill);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-text-tertiary);
+  transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
+}
+#appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
+  color: var(--foreground);
+  font-weight: var(--ui-font-weight-semibold);
+}
+[data-mode="dark"] #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
+  background: rgb(255 255 255 / 10%);
+}
+[data-mode="light"] #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
+  background: var(--ui-bg-surface, rgb(255 255 255));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 4%);
+}
 }
 
 /* In-chat affordances (share/find/model) keep the same quiet skin. */

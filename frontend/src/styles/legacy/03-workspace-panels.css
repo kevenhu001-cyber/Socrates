@@ -1,4 +1,3 @@
-@layer compatibility {
 /* ==========================================================================
    03-workspace-panels.css — slice of the pre-modular base stylesheet (src/styles.css).
    Covers: workspace surfaces, spaces/scheduled/plugins panels, Clerk button, display prefs, more popover.
@@ -114,5 +113,3 @@
 .sidebar-more-item-danger:hover{background:hsl(0 60% 30% / .25);color:hsl(0 70% 80%)}
 .sidebar-more-item-danger:hover svg{color:hsl(0 70% 80%)}
 
-
-}
