@@ -456,9 +456,15 @@ fi
 # values are restored on exit. Set DEPLOY_BYPASS_PROXY=0 to keep using a
 # proxy throughout the run (e.g. on hosts that need it to reach npm).
 DEPLOY_BYPASS_PROXY="${DEPLOY_BYPASS_PROXY:-1}"
+DEPLOY_PROXY_RESTORE=()
+restore_deploy_proxy() {
+  local assignment
+  for assignment in "${DEPLOY_PROXY_RESTORE[@]}"; do
+    export "$assignment"
+  done
+}
 if [[ "$DEPLOY_BYPASS_PROXY" == "1" ]]; then
   PROXY_VARS=(HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy)
-  DEPLOY_PROXY_RESTORE=()
   for proxy_var in "${PROXY_VARS[@]}"; do
     if [[ -n "${!proxy_var:-}" ]]; then
       DEPLOY_PROXY_RESTORE+=("$proxy_var=${!proxy_var}")
@@ -468,12 +474,6 @@ if [[ "$DEPLOY_BYPASS_PROXY" == "1" ]]; then
   if (( ${#DEPLOY_PROXY_RESTORE[@]} > 0 )); then
     echo "deploy: proxy detected — temporarily bypassing for this run (restored on exit)" >&2
   fi
-  restore_deploy_proxy() {
-    local assignment
-    for assignment in "${DEPLOY_PROXY_RESTORE[@]}"; do
-      export "$assignment"
-    done
-  }
 fi
 
 # The app nginx config is normally a symlink from sites-enabled to
@@ -486,14 +486,11 @@ APP_ENABLED_CONF_REAL=$(readlink -f "$APP_ENABLED_CONF" 2>/dev/null || echo "$AP
 if [[ "$APP_ENABLED_CONF" != "$NGINX_APP_CONF" && -f "$APP_ENABLED_CONF" && "$APP_ENABLED_CONF_REAL" != "$APP_CONF_REAL" ]]; then
   APP_NGINX_CONFIGS+=("$APP_ENABLED_CONF")
 fi
-# P_build-heap — the legacy 4 GB ceiling was needed because Rollup walked
-# mermaid's 38 lazy diagram imports + cytoscape/fcose/dagre, 4 echarts
-# sub-modules + zrender, and the 4.85 MB plotly bundle. With those three
-# heavy viz libs moved to the CDN (window.mermaid / window.echarts /
-# window.Plotly), the module count dropped from ~3,700 to ~1,100 and
-# the build fits comfortably in 1 GB. Keep this override configurable for
-# smaller or larger deployment hosts.
-FRONTEND_NODE_OPTIONS="${FRONTEND_NODE_OPTIONS:---max-old-space-size=1024}"
+# P_build-heap — chunk rendering for the current 4,285-module frontend build
+# exceeds a 1 GB V8 heap. The production build passes with 1.5 GB, which still
+# leaves headroom for the API service and native build tools. Keep this
+# configurable for smaller or larger deployment hosts.
+FRONTEND_NODE_OPTIONS="${FRONTEND_NODE_OPTIONS:---max-old-space-size=1536}"
 
 # ─── Workspace agent runtime ─────────────────────────────────────────
 # The conversational and scheduled workspace agent runs on the Pi coding
