@@ -1,12 +1,7 @@
-/* Page-owned styles for Images, Assistants and Sites.
- *
- * These surfaces are still built from HTML templates in
- * `src/ui/creationSurfaces.js`, so the shadcn grammar is expressed here in
- * CSS: `--card` panels, `--border` hairlines, `rounded-md` fields, the
- * 36px control rung, `--primary` for the one action that commits, `ghost`
- * for row actions, and `--accent` / `--muted` for hover and selected
- * states. No legacy `--chatgpt-*` palette survives — every colour resolves
- * through the same semantic tokens the React components use. */
+/* Page-owned geometry for the Images, Assistants and Sites React surfaces.
+ * Their inputs, buttons, toggles, menus and field labels come from the
+ * shared shadcn components; these selectors retain page layout and the
+ * 36px control rung while resolving colours through semantic tokens. */
 @media (max-width: 768px) {
 #appShell #navMore.sidebar-nav-btn { order:6; } }
 #appShell .creation-panel {

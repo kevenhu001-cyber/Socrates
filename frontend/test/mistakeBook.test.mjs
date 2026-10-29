@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { createMistakeBook } from '../src/ui/mistakeBook.js';
+import { disposeActionButtonRoots } from '../src/react/legacy-controls/actionButtonHost.tsx';
 
 function createHarness() {
   const calls = [];
@@ -95,7 +96,7 @@ test('MistakeBook records a quiz error, persists it, and clears it by slot', () 
   }
 });
 
-function withRedoDom(run) {
+async function withRedoDom(run) {
   const originalDocument = globalThis.document;
   const originalWindow = globalThis.window;
   const originalRaf = globalThis.requestAnimationFrame;
@@ -104,8 +105,10 @@ function withRedoDom(run) {
   globalThis.window = dom.window;
   globalThis.requestAnimationFrame = (callback) => { callback(); return 1; };
   try {
-    run(dom.window.document);
+    await run(dom.window.document);
   } finally {
+    disposeActionButtonRoots();
+    await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
     if (originalDocument === undefined) delete globalThis.document;
     else globalThis.document = originalDocument;
     if (originalWindow === undefined) delete globalThis.window;
@@ -116,8 +119,16 @@ function withRedoDom(run) {
   }
 }
 
+async function waitForRedoButton(document, id) {
+  const deadline = Date.now() + 1000;
+  while (!document.querySelector(`[data-redo="${id}"]`) && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  assert.ok(document.querySelector(`[data-redo="${id}"]`), 'lazy redo action mounts');
+}
+
 test('MistakeBook redo mounts the free-form practice widget and increments its count', () => {
-  withRedoDom((document) => {
+  return withRedoDom(async (document) => {
     const state = {
       mistakes: [{
         id: 'practice-1', type: 'practice', q: 'Explain your reasoning', correct: 'Because...',
@@ -143,6 +154,7 @@ test('MistakeBook redo mounts the free-form practice widget and increments its c
     });
 
     runtime.renderMistakes();
+    await waitForRedoButton(document, 'practice-1');
     document.querySelector('[data-redo="practice-1"]').click();
 
     assert.equal(state.mistakes[0].redoCount, 1);
@@ -153,7 +165,7 @@ test('MistakeBook redo mounts the free-form practice widget and increments its c
 });
 
 test('MistakeBook redo creates and persists a quiz slot when no original slot remains', () => {
-  withRedoDom((document) => {
+  return withRedoDom(async (document) => {
     const state = {
       mistakes: [{
         id: 'quiz-1', type: 'quiz', q: '2 + 2?', correct: 'A',
@@ -179,6 +191,7 @@ test('MistakeBook redo creates and persists a quiz slot when no original slot re
     });
 
     runtime.renderMistakes();
+    await waitForRedoButton(document, 'quiz-1');
     document.querySelector('[data-redo="quiz-1"]').click();
 
     assert.equal(state.mistakes[0].redoCount, 1);

@@ -93,7 +93,8 @@ test('a running tool card starts expanded with .open and aria-expanded=true', ()
   try {
     assert.ok(card.classList.contains('open'), 'running card should mount expanded');
     assert.equal(head.getAttribute('aria-expanded'), 'true');
-    assert.equal(head.getAttribute('role'), 'button');
+    assert.equal(head.tagName, 'BUTTON');
+    assert.equal(head.type, 'button');
     assert.equal(cardBody.hidden, false, 'body is visible while expanded');
   } finally {
     retireCard(card);

@@ -5,6 +5,7 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isInlineSearchTool } from '../../render/toolCategory.ts';
 import { translate } from './labels.ts';
 import type { InlineToolGroupMember, InlineToolResult } from './types.ts';
+import { renderArtifactControl } from '../../react/toolArtifacts/artifactControlHost';
 
 interface SourceItem {
   title: string;
@@ -188,13 +189,13 @@ function appendRetryAction(detail: HTMLElement, row: HTMLElement, name: string, 
   if (!isInlineSearchTool(name) || result.retryable === false) return false;
   const actions = document.createElement('div');
   actions.className = 'tool-inline-error-actions';
-  const retry = document.createElement('button');
-  retry.type = 'button';
-  retry.className = 'tool-inline-retry';
-  retry.textContent = translate('tool.retry', 'Retry search');
-  retry.addEventListener('click', function (event) {
-    event.preventDefault();
-    event.stopPropagation();
+  const retryHost = document.createElement('span');
+  actions.appendChild(retryHost);
+  renderArtifactControl(retryHost, {
+    kind: 'retry',
+    className: 'tool-inline-retry',
+    label: translate('tool.retry', 'Retry search'),
+    onClick: function () {
     const stored = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
     const query = stored && typeof stored === 'object' && (stored as { query?: unknown }).query;
     row.dispatchEvent(new CustomEvent('tool-retry', {
@@ -206,8 +207,8 @@ function appendRetryAction(detail: HTMLElement, row: HTMLElement, name: string, 
         errorCode: result.errorCode || null,
       },
     }));
+    },
   });
-  actions.appendChild(retry);
   detail.appendChild(actions);
   return true;
 }

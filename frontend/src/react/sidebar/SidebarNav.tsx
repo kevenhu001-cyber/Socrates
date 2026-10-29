@@ -61,10 +61,10 @@ export interface SidebarNavHandle {
 }
 
 /**
- * Hydrate the legacy `#sidebarNav` element with React. Idempotent — a
+ * Mount React into the stable `#sidebarNav` host. Idempotent — a
  * second call returns the existing handle. The nav element itself is
  * preserved (same id, same `aria-label`, same nav DOM siblings); React
- * owns only its direct children (the 8 buttons). The /admin operator
+ * owns its full child tree. The /admin operator
  * console is intentionally NOT a sidebar destination: it is a
  * standalone page reached by direct URL (legacy WORKSPACE_ROUTES +
  * openAdmin), so the admin surface is not advertised in the nav.
@@ -72,7 +72,7 @@ export interface SidebarNavHandle {
  * Callers claim the element through the module-private ownership registry.
  * React reads active destination state from the typed navigation store.
  */
-export function hydrateSidebarNav(): SidebarNavHandle | null {
+export function mountSidebarNav(): SidebarNavHandle | null {
   const nav = document.getElementById(NAV_ID);
   if (!nav) return null;
   return { nav, ...mountOwnedRoot(nav, 'sidebar-nav', <SidebarNav />) };

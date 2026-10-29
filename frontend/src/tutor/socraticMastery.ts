@@ -1,5 +1,6 @@
 import { stateStore } from '../state/store.js';
 import { setComposerMarkdown } from '../composer/controller.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function translate(key: string, fallback: string): string {
   if (typeof (window as unknown as { t?: (k: string) => string }).t === 'function') {
@@ -69,37 +70,17 @@ export function showSocraticSuggestions(customSuggestions?: string[]): void {
   ];
 
   const prompts = (customSuggestions && customSuggestions.length > 0) ? customSuggestions : defaultPrompts;
-  container.innerHTML = '';
-
-  prompts.forEach((promptText) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'socratic-chip';
-    chip.setAttribute('aria-label', promptText);
-
-    const icon = document.createElement('span');
-    icon.className = 'socratic-chip-icon';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = '◇';
-    chip.appendChild(icon);
-
-    const text = document.createElement('span');
-    text.textContent = promptText;
-    chip.appendChild(text);
-
-    chip.addEventListener('click', () => {
-      try {
-        setComposerMarkdown('chat', promptText);
-        const editor = document.querySelector<HTMLElement>('#composerRoot [contenteditable="true"]');
-        if (editor) {
-          editor.focus();
-        }
-        clearSocraticSuggestions();
-      } catch (_) { /* empty-catch: intentional — focus composer from chip click is best-effort */ }
+  void import('../react/tutor/socraticSuggestionsHost').then(({ renderSocraticSuggestions }) => {
+    if (!container.isConnected || container.classList.contains('hidden')) return;
+    renderSocraticSuggestions(container, prompts, (promptText) => {
+    try {
+      setComposerMarkdown('chat', promptText);
+      const editor = document.querySelector<HTMLElement>('#composerRoot [contenteditable="true"]');
+      if (editor) editor.focus();
+      clearSocraticSuggestions();
+    } catch (_) { /* empty-catch: intentional — focus composer from chip click is best-effort */ }
     });
-
-    container.appendChild(chip);
-  });
+  }).catch((error) => reportSwallow(error, 'tutor/socraticMastery:renderSuggestions'));
 
   container.classList.remove('hidden');
 }
@@ -107,7 +88,9 @@ export function showSocraticSuggestions(customSuggestions?: string[]): void {
 export function clearSocraticSuggestions(): void {
   const container = document.getElementById('socraticSuggestions');
   if (container) {
-    container.innerHTML = '';
     container.classList.add('hidden');
+    void import('../react/tutor/socraticSuggestionsHost').then(({ clearSocraticSuggestions }) => {
+      clearSocraticSuggestions(container);
+    }).catch((error) => reportSwallow(error, 'tutor/socraticMastery:clearSuggestions'));
   }
 }

@@ -56,41 +56,12 @@
 .viz[data-viz-state="ready"] .viz-status-dot{background:hsl(145 45% 45%)}
 .viz[data-viz-state="error"] .viz-status-label::before{content:"Needs attention"}
 .viz[data-viz-state="error"] .viz-status-dot{background:hsl(30 70% 48%)}
-.viz-btn{
-  width:26px;height:26px;border:0;
-  border-radius:6px;
-  background:hsl(var(--bg-200)/0.9);
-  color:hsl(var(--text-400));
-  cursor:pointer;
-  display:inline-flex;align-items:center;justify-content:center;
-  opacity:.35;
-  transform:translateY(0);
-  transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),opacity .18s cubic-bezier(.4,0,.2,1),transform .12s ease;
-}
+.viz-btn{opacity:.35;transform:translateY(0);transition:opacity .18s cubic-bezier(.4,0,.2,1),transform .12s ease}
 .viz:hover .viz-btn,.viz:focus-within .viz-btn{opacity:1}
-.viz-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.95);transform:translateY(-1px)}
-
-.viz-btn:focus-visible{opacity:1;outline:2px solid transparent;outline-offset:1px}
-.viz-btn svg{width:13px;height:13px;display:block}
+.viz-btn:hover{transform:translateY(-1px)}
 /* Preview / Code segmented toggle. Unlike the icon buttons it stays
    visible without hover — discoverability is the point: teaching code
    inside a canvas card must be one click away. */
-.viz-seg{
-  display:inline-flex;align-items:center;
-  border-radius:6px;overflow:hidden;
-  background:hsl(var(--bg-200)/0.9);
-}
-.viz-seg-btn{
-  border:0;background:transparent;
-  color:hsl(var(--text-400));
-  font-size:calc(10.5px * var(--app-font-scale, 1));
-  line-height:1;height:26px;padding:0 9px;
-  cursor:pointer;white-space:nowrap;
-  transition:color .15s ease,background .15s ease;
-}
-.viz-seg-btn:hover{color:hsl(var(--text-200))}
-.viz-seg-btn.is-on{background:hsl(var(--bg-300)/0.95);color:hsl(var(--text-100))}
-.viz-seg-btn:focus-visible{outline:2px solid transparent;outline-offset:-1px}
 /* Code view: hide the live iframe + loading skeleton, show the source
    pane. Error banners are siblings of the iframe inside .viz-body, so
    they remain visible in both views. */
@@ -189,13 +160,7 @@
   border-radius:50%;background:hsl(30 70% 50%/0.2);color:hsl(30 70% 45%);
   font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-bold);margin-top:2px;
 }
-.viz-error-btn{
-  font:inherit;font-size:calc(11px * var(--app-font-scale, 1));
-  padding:2px 8px;border:0;border-radius:5px;
-  background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-400));
-  cursor:pointer;white-space:nowrap;
-}
-.viz-error-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.viz-error-actions{display:flex;gap:6px;align-items:center}
 .viz-error-source{
   width:100%;overflow-x:auto;
   font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));
@@ -228,31 +193,13 @@
   flex-shrink:0;
 }
 .viz-modal-title{font-size:calc(13px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);flex:1}
-.viz-modal-close{
-  width:26px;height:26px;border:0;border-radius:6px;
-  background:transparent;color:hsl(var(--text-400));
-  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
-}
-.viz-modal-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.viz-modal-close svg{width:14px;height:14px;display:block}
+.viz-modal-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
 .viz-modal-body{flex:1;min-height:0;background:transparent}
 .viz-modal-body-raw{display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:hsl(var(--bg-200)/0.6)}
 .img-lightbox{display:flex;align-items:center;justify-content:center;max-width:100%;max-height:100%}
 .img-lightbox img{max-width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:6px;box-shadow:0 8px 24px hsl(var(--always-black)/0.3)}
 .viz-modal-body iframe{width:100%;height:100%;border:0;background:transparent;display:block}
 .viz-source-modal{width:min(92vw,920px);height:min(82vh,720px)}
-.viz-source-copy{
-  border:0;
-  padding:4px 7px;
-  border-radius:5px;
-  background:transparent;
-  color:hsl(var(--accent-000));
-  font:inherit;
-  font-size:calc(11px * var(--app-font-scale, 1));
-  cursor:pointer;
-}
-.viz-source-copy:hover{background:hsl(var(--bg-300)/.65)}
-.viz-source-copy:focus-visible{outline:2px solid transparent;outline-offset:1px}
 .viz-source-body{overflow:auto;background:hsl(var(--bg-100)/.72)}
 .viz-source-code{
   min-height:100%;
@@ -311,9 +258,7 @@
 .msg-body .code-block-header:hover{opacity:1}
 .msg-body .code-block-header + pre{border-radius:0 0 16px 16px;margin-top:0;border-top:none}
 .code-block-header-lang{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);text-transform:lowercase}
-.code-block-expand{width:22px;height:22px;border:0;border-radius:5px;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .12s,background .12s}
-.code-block-expand:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.code-block-expand svg{width:12px;height:12px;display:block}
+.code-block-actions{display:flex;align-items:center;gap:4px;flex:none}
 /* P_smooth-stream tail fade — freshly revealed text of the LIVE tail
    (render/tailReveal.ts). Opacity only: no rise, no blur, and the spans
    stay `display:inline` so line breaking — CJK included — never changes.

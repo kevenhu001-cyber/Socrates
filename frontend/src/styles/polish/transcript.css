@@ -44,19 +44,6 @@
 }
 }
 @media (max-width: 768px) {
-#appShell#appShell .msg-body .code-block-expand,
-#appShell#appShell .msg-body .code-block-copy {
-  color: var(--ui-text-tertiary);
-}
-}
-@media (max-width: 768px) {
-#appShell#appShell .msg-body .code-block-expand:hover,
-#appShell#appShell .msg-body .code-block-copy:hover {
-  background: var(--ui-bg-hover-ghost);
-  color: var(--foreground);
-}
-}
-@media (max-width: 768px) {
 #appShell#appShell .msg-body pre {
   border-radius: var(--ui-radius-lg);
   border: 1px solid var(--ui-border-code);
@@ -89,18 +76,6 @@
 
 
 /* Edit-in-place textarea and actions bar */
-#appShell .msg-edit-area {
-  width: 100%;
-  min-height: 60px;
-  background: transparent;
-  border: none;
-  outline: none;
-  padding: 4px 0;
-  font: inherit;
-  color: inherit;
-  resize: vertical;
-  line-height: 1.5;
-}
 #appShell .msg.user .msg-body:has(.msg-edit-area) {
   max-width: 100%;
   width: 100%;
@@ -118,35 +93,6 @@
   align-items: center;
   gap: 8px;
   margin-top: 4px;
-}
-#appShell .msg-edit-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px 14px;
-  border-radius: var(--ui-radius-pill);
-  font-size: var(--ui-font-size-xs);
-  font-weight: var(--ui-font-weight-medium);
-  cursor: pointer;
-  border: none;
-  transition: opacity var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
-}
-#appShell .msg-edit-cancel {
-  background: rgba(128, 128, 128, 0.22);
-  color: inherit;
-}
-#appShell .msg-edit-cancel:hover {
-  background: rgba(128, 128, 128, 0.32);
-}
-/* Primary action = the app's one inverted primary (same as the send
-   button). `--primary` is not defined anywhere, so this used to fall back
-   to a saturated #0080ff with 3.7:1 white text in both modes. */
-#appShell .msg-edit-submit {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-#appShell .msg-edit-submit:hover {
-  opacity: 0.88;
 }
 
 

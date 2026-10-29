@@ -256,6 +256,10 @@ export interface LiveTurnStatus {
   /** Timeout / failure copy shown in place of the answer. */
   error?: string | null;
   retryable?: boolean;
+  /** Retry callback belongs to a restored transcript row, not a live turn owner. */
+  retryMode?: 'restored';
+  /** Legacy retry host id used to preserve its viewport capture sequence. */
+  retryButtonId?: string;
 }
 
 export interface ChatRuntimeSnapshot {

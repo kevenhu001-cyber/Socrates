@@ -11,6 +11,7 @@
 import { attachments, addFiles, retryAttachment } from '../attachments.js';
 import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { createAttachmentMediaInput } from '../react/attachments/mediaPickerInputHost.tsx';
 
 /* React migration bridge — fires whenever the pending attachments array
    changes so the React compatibility root can mirror the chip row via
@@ -269,22 +270,22 @@ export function openAttachmentPicker(inputId){
  * regular Upload action from inheriting a stale camera-only accept list. */
 const MEDIA_INPUTS = {};
 function mediaInput(kind){
-  if(MEDIA_INPUTS[kind] && MEDIA_INPUTS[kind].isConnected) return MEDIA_INPUTS[kind];
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "image/*";
-  input.hidden = true;
-  input.id = kind === "camera" ? "cameraCaptureInput" : "photoPickerInput";
-  if(kind === "camera") input.setAttribute("capture", "environment");
-  else input.multiple = true;
-  input.addEventListener("change", async function(){
-    if(!input.files || !input.files.length) return;
-    await addFiles(input.files, renderAndRefresh, updateProgressOnly, dedupToast);
-    refreshAllSendBtns();
+  if(MEDIA_INPUTS[kind] && MEDIA_INPUTS[kind].input.isConnected) return MEDIA_INPUTS[kind].input;
+  const id = kind === "camera" ? "cameraCaptureInput" : "photoPickerInput";
+  const mounted = createAttachmentMediaInput({
+    id,
+    accept: "image/*",
+    capture: kind === "camera" ? "environment" : undefined,
+    multiple: kind !== "camera",
+    onChange: async function(files){
+      if(!files.length) return;
+      await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
+      refreshAllSendBtns();
+    },
   });
-  document.body.appendChild(input);
-  MEDIA_INPUTS[kind] = input;
-  return input;
+  document.body.appendChild(mounted.host);
+  MEDIA_INPUTS[kind] = mounted;
+  return mounted.input;
 }
 
 export function openMediaPicker(kind){
@@ -373,6 +374,9 @@ function wireDocumentDrag(){
 let booted = false;
 function autoWire(){
   if(booted) return;
+  // The authenticated React shell is mounted after DOMContentLoaded. Keep the
+  // early pass cheap and retry when ComposerShell commits its native picker.
+  if(!document.getElementById("composerAttachInput") || !document.getElementById("composerInputWrap")) return;
   booted = true;
   wireDocumentDrag();
   /* P_composer-single — one shell, one wiring. barId names both view
@@ -397,8 +401,13 @@ function dcl(){
   if(dcl.ran)return; dcl.ran=true;
   autoWire();
 }
+function onComposerReady(){
+  try { autoWire(); }
+  catch (error) { reportSwallow(error, 'attachments/render.js:composerready'); }
+}
 if(typeof window !== "undefined"){
   window.addEventListener("DOMContentLoaded", dcl);
+  document.addEventListener("socrates:composerready", onComposerReady);
   /* If the script runs after DOMContentLoaded (rare — Vite HMR,
      extension injection, SSR hydration), fire immediately. */
   if(document.readyState !== "loading"){ try{ dcl(); }catch (error) { reportSwallow(error, 'attachments/render.js:403'); } }

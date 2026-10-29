@@ -88,9 +88,12 @@ export interface ExamQuestion {
 
 /** The lazily-loaded exam module surface used by the restore path. */
 interface ExamModule {
+  clearExamSetup?(): void;
+  clearExamQuestionCards?(): void;
   mountExamListeners?(): void;
   prepareExamView?(): void;
   renderExamNav(): void;
+  renderExamFooterActions(actions: Array<{ command: string; label: string; variant?: 'default' | 'outline' | 'destructive' }>): void;
   renderExamResults(): void;
   syncExamNav(): void;
   paintQuestionCard(idx: number, question: ExamQuestion, host: HTMLElement): void;
@@ -224,9 +227,11 @@ function restoreExamState(session: LoadedSession, questions: ExamQuestion[]): vo
 }
 
 function paintRestoredExamQuestions(questions: ExamQuestion[]): void {
-  const body = document.getElementById('examViewBody') as HTMLElement;
-  body.innerHTML = '<div id="examQuestionsContainer"></div>';
-  const container = body.querySelector('#examQuestionsContainer') as HTMLElement;
+  const body = (document.getElementById('examViewLegacyBody') || document.getElementById('examViewBody')) as HTMLElement;
+  body.replaceChildren();
+  const container = document.createElement('div');
+  container.id = 'examQuestionsContainer';
+  body.appendChild(container);
   questions.forEach((question, index) => {
     const card = document.createElement('div');
     card.className = 'exam-q-card';
@@ -244,12 +249,14 @@ function paintRestoredExamChrome(module: ExamModule): void {
     : (stateStore.read('examTopic') as string);
   const titleBar = document.getElementById('examTitleBar');
   if (titleBar) titleBar.textContent = (stateStore.read('examTopic') as string) || 'Generate Exam';
-  const footer = document.getElementById('examViewFooter') as HTMLElement;
   module.renderExamNav();
   if (stateStore.read('examSubmitted')) {
     module.renderExamResults();
   } else {
-    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="submit">Submit for Grading</button><button class="exam-btn secondary" data-exam-command="close">Close</button>';
+    module.renderExamFooterActions([
+      { command: 'submit', label: _t('exam.submit', 'Submit for Grading') },
+      { command: 'close', label: _t('common.close', 'Close'), variant: 'outline' },
+    ]);
   }
 }
 
@@ -269,6 +276,8 @@ function bindRestoredExamScroll(syncExamNav: ExamModule['syncExamNav']): void {
 
 export async function loadExamSession(session: LoadedSession): Promise<void> {
   const module = await _ensureExamModule();
+  module.clearExamSetup?.();
+  module.clearExamQuestionCards?.();
   prepareRestoredExamView(module);
   const questions = restoredExamQuestions(session);
   restoreExamState(session, questions);

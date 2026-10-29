@@ -21,20 +21,7 @@ export function copyText(text) {
   if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
     return navigator.clipboard.writeText(value);
   }
-  return new Promise(function (resolve, reject) {
-    try {
-      var area = document.createElement("textarea");
-      area.value = value;
-      area.setAttribute("readonly", "");
-      area.style.position = "fixed";
-      area.style.opacity = "0";
-      document.body.appendChild(area);
-      area.select();
-      var ok = document.execCommand("copy");
-      area.remove();
-      if (ok) resolve(); else reject(new Error("copy failed"));
-    } catch (err) { reject(err); }
-  });
+  return import('../react/legacy-controls/clipboardTextarea.tsx').then(({ copyTextWithShadcnTextarea }) => copyTextWithShadcnTextarea(value));
 }
 
 export function setCopyFeedback(button, ok) {

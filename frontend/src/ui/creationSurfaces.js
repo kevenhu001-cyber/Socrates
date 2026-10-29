@@ -9,11 +9,33 @@ const copy = {
 const state = { images: [], assistants: [], sites: [], page: null, loading: false, error: '', editor: null, busy: false, query: '', siteView: 'list', siteMenu: null };
 const lang = () => window._currentLang === 'en' ? 'en' : 'zh';
 const t = (key) => copy[lang()][key] || key;
-const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const panel = (name) => document.getElementById(`${name}Panel`);
 const api = (url, options) => window.apiFetch(url, options);
 const notice = (message) => typeof window.showToast === 'function' ? window.showToast(message) : window.alert(message);
 const imageUrl = (id) => `/api/files/${encodeURIComponent(id)}/raw`;
+
+function snapshot(name) {
+  return {
+    name,
+    items: [...state[name]],
+    loading: state.loading,
+    error: state.error,
+    editor: state.editor,
+    busy: state.busy,
+    query: state.query,
+    siteView: state.siteView,
+    siteMenu: state.siteMenu,
+    locale: lang(),
+    text: copy[lang()],
+    imageModel: localStorage.getItem('socrates-image-model') || '',
+  };
+}
+
+function notifySurface(name) {
+  panel(name)?.dispatchEvent(new CustomEvent('socrates:creation-surface-state', {
+    detail: snapshot(name),
+  }));
+}
 
 function ensurePanels() {
   const host = document.getElementById('mainInner');
@@ -29,66 +51,26 @@ function ensurePanels() {
     section.addEventListener('input', (event) => {
       if (event.target?.matches('[data-search]')) {
         state.query = event.target.value;
-        const list = section.querySelector('[data-creation-list]');
-        if (list) list.innerHTML = listMarkup(name);
+        render(name);
       }
     });
+    section.addEventListener('socrates:creation-search', (event) => {
+      if (state.query === event.detail.query) return;
+      state.query = event.detail.query;
+      render(name);
+    });
+    section.addEventListener('socrates:creation-action', (event) => {
+      runAction(name, event.detail.action, event.detail);
+    });
     section.addEventListener('submit', (event) => { event.preventDefault(); handleSubmit(name, event.target); });
+    void import('../react/creation/creationSurfaceHost.tsx').then(({ mountCreationSurface }) => {
+      mountCreationSurface(section, name, snapshot(name));
+    }).catch((error) => reportSwallow(error, 'ui/creationSurfaces.mountReactSurface', 'unexpected'));
   }
 }
-
-function header(name) {
-  const action = name === 'images' ? 'createImage' : name === 'assistants' ? 'createAssistant' : 'createSite';
-  if (name === 'sites') return `<header class="creation-header creation-sites-header"><h1>${t(name)}</h1><button class="creation-primary creation-sites-new" data-action="new">${t('create')}</button></header><label class="workspace-search-field creation-sites-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input data-search type="search" placeholder="${t('searchSites')}" aria-label="${t('searchSites')}" value="${esc(state.query)}"></label><div class="creation-sites-view" role="group" aria-label="${t('listView')}"><button type="button" data-action="site-view" data-view="grid" aria-label="${t('gridView')}" aria-pressed="${state.siteView === 'grid'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button><button type="button" data-action="site-view" data-view="list" aria-label="${t('listView')}" aria-pressed="${state.siteView === 'list'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r=".8"/><circle cx="3.5" cy="12" r=".8"/><circle cx="3.5" cy="18" r=".8"/></svg></button></div><div class="creation-site-banner"><span class="creation-site-banner-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="2"/><rect x="3" y="14" width="8" height="7" rx="2"/></svg></span><div><strong>${t('siteBanner')}</strong><small>${t('siteBannerBody')}</small></div><button class="creation-primary" data-action="new">${t('createSite')}</button></div>`;
-  return `<header class="creation-header"><div><h1>${t(name)}</h1></div><div class="creation-header-actions"><label class="workspace-search-field creation-header-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input data-search type="search" placeholder="${t('search')}" aria-label="${t('search')}" value="${esc(state.query)}"></label><button class="creation-primary" data-action="new">${t(action)}</button></div></header>`;
-}
-
-function listMarkup(name) {
-  if (state.loading) return `<div class="creation-empty" role="status">${t('loading')}</div>`;
-  if (state.error) return `<div class="creation-empty" role="alert">${esc(state.error)} <button data-action="retry">${t('retry')}</button></div>`;
-  const query = state.query.toLocaleLowerCase();
-  const items = state[name].filter((item) => (item.title || item.name || '').toLocaleLowerCase().includes(query));
-  if (!items.length) return `<div class="creation-empty">${t(name === 'images' ? 'emptyImages' : name === 'assistants' ? 'emptyAssistants' : 'emptySites')}</div>`;
-  if (name === 'images') return `<div class="creation-gallery">${items.map((item) => `<div class="creation-image-card"><button data-action="view-image" data-id="${esc(item.id)}"><img src="${imageUrl(item.id)}" loading="lazy" alt="${esc(item.name)}"></button><span>${esc(item.name)}</span><button class="creation-image-edit" data-action="edit-image" data-id="${esc(item.id)}">${t('edit')}</button></div>`).join('')}</div>`;
-  if (name === 'sites') return `<div class="creation-table creation-sites-table ${state.siteView === 'grid' ? 'is-grid' : ''}"><div class="creation-table-head"><span>${t('sites')}</span><span>${t('sharedWith')}</span><span></span></div>${items.map((item) => `<div class="creation-row"><button class="creation-site-main" data-action="edit" data-id="${esc(item.id)}"><iframe class="creation-site-thumb" tabindex="-1" sandbox="" srcdoc="${esc(item.source || '')}" title="${esc(item.title)}"></iframe><span><strong>${esc(item.title)}</strong><small>${esc(new Date(item.updatedAt || item.createdAt || Date.now()).toLocaleDateString(lang() === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' }))}</small></span></button><span class="creation-site-visibility">${item.visibility === 'private' ? t('private') : item.visibility === 'public' ? t('public') : t('unlisted')}</span><div class="creation-row-actions"><button type="button" data-action="site-menu" data-id="${esc(item.id)}" aria-label="${t('name')}: ${esc(item.title)}" aria-expanded="${state.siteMenu === item.id}">⋯</button>${state.siteMenu === item.id ? `<div class="creation-site-row-menu" role="menu"><button type="button" role="menuitem" data-action="preview" data-id="${esc(item.id)}">${t('preview')}</button><button type="button" role="menuitem" data-action="edit" data-id="${esc(item.id)}">${t('edit')}</button><button type="button" role="menuitem" data-action="delete" data-id="${esc(item.id)}">${t('delete')}</button></div>` : ''}</div></div>`).join('')}</div>`;
-  return `<div class="creation-table"><div class="creation-table-head"><span>${t('name')}</span><span></span></div>${items.map((item) => `<div class="creation-row"><div><strong>${esc(item.title)}</strong><small>${esc(assistantDescription(item))}</small></div><div class="creation-row-actions"><button data-action="use" data-id="${esc(item.id)}">${t('use')}</button><button data-action="edit" data-id="${esc(item.id)}">${t('edit')}</button><button data-action="delete" data-id="${esc(item.id)}" aria-label="${t('delete')}">⋯</button></div></div>`).join('')}</div>`;
-}
-
-function assistantDescription(item) {
-  try { return JSON.parse(item.source).description || ''; } catch { return ''; }
-}
-
-function imageComposer() {
-  const reference = state.editor?.type === 'images' ? state.editor.item : null;
-  return `<form id="creationImageForm" class="creation-image-form">${reference ? `<div class="creation-image-reference"><img src="${imageUrl(reference.id)}" alt="${esc(reference.name)}"><span>${esc(reference.name)}</span><button type="button" data-action="close">×</button></div>` : ''}<textarea name="prompt" rows="3" placeholder="${t('imagePrompt')}" aria-label="${t('imagePrompt')}" required></textarea><div class="creation-image-actions"><input name="model" placeholder="${t('imageModel')}" aria-label="${t('imageModel')}" value="${esc(localStorage.getItem('socrates-image-model') || '')}"><button class="creation-primary" type="submit" ${state.busy ? 'disabled' : ''}>${state.busy ? t('loading') : t('create')}</button></div></form>`;
-}
-
-function editorMarkup(name) {
-  if (name === 'images' || !state.editor || state.editor.type !== name) return '';
-  const item = state.editor.item;
-  return name === 'assistants' ? assistantEditorMarkup(item) : siteEditorMarkup(item);
-}
-
-function assistantEditorMarkup(item) {
-  let config = {};
-  try { config = JSON.parse(item?.source || '{}'); } catch { /* empty draft */ }
-  return `<div class="creation-editor-page"><form class="creation-editor" data-editor="assistants"><header><h2>${item ? t('edit') : t('createAssistant')}</h2><button type="button" data-action="close" aria-label="${t('cancel')}">×</button></header><label>${t('name')}<input name="title" maxlength="120" required value="${esc(item?.title)}"></label><label>${t('description')}<input name="description" maxlength="240" value="${esc(config.description)}"></label><label>${t('instructions')}<textarea name="instructions" rows="7" required>${esc(config.instructions)}</textarea></label><label>${t('starter')}<input name="starter" maxlength="300" value="${esc(config.starter)}"></label><footer><button type="button" data-action="close">${t('cancel')}</button><button class="creation-primary" type="submit" ${state.busy ? 'disabled' : ''}>${t('save')}</button></footer></form></div>`;
-}
-
-function siteEditorMarkup(item) {
-  const source = item?.source || '<!doctype html>\n<html lang="zh"><meta charset="utf-8"><title>Socrates Site</title><style>body{font-family:system-ui;max-width:720px;margin:10vh auto;padding:24px}</style><h1>我的站点</h1><p>在这里开始创作。</p></html>';
-  return `<div class="creation-editor-page"><form class="creation-editor creation-site-editor" data-editor="sites"><header><h2>${item ? t('edit') : t('createSite')}</h2><button type="button" data-action="close" aria-label="${t('cancel')}">×</button></header><label>${t('name')}<input name="title" maxlength="120" required value="${esc(item?.title)}"></label><div class="creation-generation"><textarea name="prompt" rows="2" placeholder="${t('sitePrompt')}" aria-label="${t('sitePrompt')}"></textarea><button type="button" data-action="generate-site">${t('generateSite')}</button></div><label>${t('code')}<textarea name="source" rows="12" required spellcheck="false">${esc(source)}</textarea></label><div class="creation-publish-controls"><label>${t('publish')}<select name="visibility"><option value="private" ${!item || item.visibility === 'private' ? 'selected' : ''}>${t('private')}</option><option value="unlisted" ${item?.visibility === 'unlisted' ? 'selected' : ''}>${t('unlisted')}</option><option value="public" ${item?.visibility === 'public' ? 'selected' : ''}>${t('public')}</option></select></label><button type="button" data-action="preview-draft">${t('preview')}</button></div><footer><button type="button" data-action="close">${t('cancel')}</button><button class="creation-primary" type="submit" ${state.busy ? 'disabled' : ''}>${t('save')}</button></footer></form></div>`;
-}
-
 function render(name) {
   ensurePanels();
-  const el = panel(name);
-  if (!el) return;
-  if (name !== 'images' && state.editor?.type === name) {
-    el.innerHTML = editorMarkup(name);
-    return;
-  }
-  el.innerHTML = header(name) + (name === 'images' ? imageComposer() : '') + `<div data-creation-list>${listMarkup(name)}</div>` + editorMarkup(name);
+  notifySurface(name);
 }
 
 async function load(name) {
@@ -183,14 +165,18 @@ function clickHandlers(name, button, item) {
   };
 }
 
-async function handleClick(name, event) {
-  const button = event.target.closest('[data-action]');
-  if (!button) return;
-  const action = button.dataset.action;
+async function runAction(name, action, detail = {}) {
+  const button = detail.button || { dataset: { id: detail.id, view: detail.view } };
   if (['close', 'edit', 'new'].includes(action)) closeDetailSurface('site-preview');
   const item = state[name].find((entry) => entry.id === button.dataset.id);
   const handlers = clickHandlers(name, button, item);
   return Object.hasOwn(handlers, action) ? handlers[action]?.() : undefined;
+}
+
+async function handleClick(name, event) {
+  const button = event.target.closest('[data-action]');
+  if (!button) return;
+  return runAction(name, button.dataset.action, { button });
 }
 
 async function submitImageForm(form) {
@@ -247,6 +233,7 @@ async function handleSubmit(name, form) {
   } finally {
     state.busy = false;
     if (button) button.disabled = false;
+    render(name);
   }
 }
 

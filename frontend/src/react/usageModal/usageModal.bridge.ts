@@ -19,7 +19,7 @@ declare global {
 type Action = Omit<UsageSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<UsageSnapshot, Action>({
-  initial: { isOpen: false, bodyHtml: '', revision: 0 },
+  initial: { isOpen: false, bodyHtml: '', period: 'year', revision: 0 },
   reducer: (_state, action) => action,
 });
 

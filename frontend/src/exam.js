@@ -3,13 +3,14 @@
    navigation and result rendering live under ./exam/.
    ============================================================ */
 
-import { esc } from './render/helpers.ts';
 import { stateStore } from './state/store.js';
 import { pushChatIdToURL, setExamIdInURL } from './session/store.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 
 import { activateMainView } from './ui/mainViewController.js';
 import { getProviderConfigSnapshot } from './config/providerConfig.service.ts';
+import { clearExamSetup, renderExamActions, renderExamSetup } from './react/exam/examUiHost.tsx';
+import { clearExamNavigation } from './react/exam/examNavigationHost.tsx';
 import { parseExamArrayJSON, parseSingleExamQuestion } from './exam/parsing.js';
 import {
   examNavCurrentIdx, examNavJump, examNavStep, refreshExamNavTally, renderExamNav, syncExamNav,
@@ -17,8 +18,8 @@ import {
 import { renderExamResults } from './exam/results.js';
 import {
   appendExamErrorCard, cancelExamGeneration, finishExamGeneration, paintQuestionCard,
-  renderAllQuestions, replaceStreamingCardWithQuestion, restoreExamActiveProvider,
-  runExamGeneration, selectExamOpt,
+  clearExamQuestionCards, renderAllQuestions, replaceStreamingCardWithQuestion, restoreExamActiveProvider,
+  refreshExamGenerationStatus, runExamGeneration, selectExamOpt,
 } from './exam/generation.js';
 import {
   doSaveExamSession, resetExamSaveState, saveExamSession, setExamAnswer,
@@ -29,18 +30,20 @@ import {
 } from './exam/ui.js';
 
 export { parseExamArrayJSON, parseSingleExamQuestion };
+export { clearExamSetup };
 export { examNavCurrentIdx, examNavJump, examNavStep, refreshExamNavTally, renderExamNav, syncExamNav };
 export { renderExamResults };
 export {
   appendExamErrorCard, cancelExamGeneration, doSaveExamSession, finishExamGeneration,
-  paintQuestionCard, renderAllQuestions, replaceStreamingCardWithQuestion,
-  resetExamSaveState, saveExamSession, scheduleExamAnswerSave, selectExamOpt, setExamAnswer, submitExam,
+  clearExamQuestionCards, paintQuestionCard, renderAllQuestions, replaceStreamingCardWithQuestion,
+  refreshExamGenerationStatus, resetExamSaveState, saveExamSession, scheduleExamAnswerSave, selectExamOpt, setExamAnswer, submitExam,
 };
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
 var _examDifficulty = "intermediate";
 var _examListenersMounted = false;
+var _examFormRevision = 0;
 
 const EXAM_COMMANDS = {
   close: () => closeExamView(),
@@ -51,6 +54,8 @@ const EXAM_COMMANDS = {
   'toggle-model': () => toggleExamModelMenu(),
   'select-model': (target) => selectExamModel(target.dataset.mid || ""),
   'toggle-type': (target) => toggleExamType(target.dataset.type || ""),
+  'set-types': (detail) => { _examSelectedTypes = Object.assign({}, detail.selectedTypes); },
+  'set-difficulty': (detail) => { _examDifficulty = detail.difficulty || "intermediate"; },
   difficulty: (target) => selectExamDifficulty(target.dataset.diff || "intermediate"),
   count: (target) => adjustExamCount(Number(target.dataset.delta || 0)),
   'answer-option': (target) => selectExamOpt(Number(target.dataset.eidx), Number(target.dataset.oidx)),
@@ -64,6 +69,16 @@ function handleExamClick(event) {
   if (!target || !view.contains(target)) return;
   const handler = EXAM_COMMANDS[target.getAttribute("data-exam-command")];
   if (handler) handler(target);
+}
+
+function handleExamCustomCommand(event) {
+  const detail = event.detail || {};
+  if (detail.command === 'answer-option') {
+    selectExamOpt(Number(detail.eidx), Number(detail.oidx));
+    return;
+  }
+  const handler = EXAM_COMMANDS[detail.command];
+  if (handler) handler(detail);
 }
 
 function handleExamInput(event) {
@@ -80,6 +95,7 @@ export function mountExamListeners() {
   if (!view || _examListenersMounted) return;
   _examListenersMounted = true;
   view.addEventListener("click", handleExamClick);
+  view.addEventListener("socrates:exam-command", handleExamCustomCommand);
   view.addEventListener("input", handleExamInput);
 }
 
@@ -177,130 +193,102 @@ function toggleExamOnlyTopBar(show) {
    an intro line, a required Topic field, a Settings card with the model
    dropdown + segmented Difficulty control + a stepper for the question
    count, question-type pills, and an optional instructions box. */
-export function renderExamForm() {
-  var body = _examBody();
-  var footer = _examFooter();
+function examFormCopy(L) {
+  return {
+    eyebrow: L("Assessment studio", "测评工作室"),
+    heroTitle: L("Build a focused practice exam", "创建一份专注的练习考卷"),
+    heroDescription: L("Choose the scope and challenge. Socrates will compose a balanced paper you can complete at your own pace.", "确定范围与难度，Socrates 会生成一份结构均衡、可按自己节奏完成的考卷。"),
+    topic: window.t("exam.topic"),
+    topicHelp: L("Name the subject or learning objective", "填写学科、章节或学习目标"),
+    topicPlaceholder: L("e.g. Linear Algebra, World War II...", "如：线性代数、量子力学、二战…"),
+    settings: L("Paper settings", "考卷设置"),
+    settingsHelp: L("Select the model, difficulty, and length", "选择生成模型、难度与题量"),
+    model: L("Model", "生成模型"),
+    modelPlaceholder: L("Select a model", "选择模型"),
+    noModels: L("No models available", "无可用模型"),
+    difficulty: window.t("exam.difficulty"),
+    count: window.t("exam.count"),
+    fewer: L("Fewer", "减少"),
+    more: L("More", "增加"),
+    types: window.t("exam.types"),
+    typesHelp: L("Keep at least one response format", "至少保留一种作答形式"),
+    multipleChoice: L("Multiple choice", "选择题"),
+    multipleChoiceHelp: L("Choose one answer", "从选项中选择答案"),
+    fillBlank: L("Fill blank", "填空题"),
+    fillBlankHelp: L("Recall key terms", "回忆关键概念或结果"),
+    shortAnswer: L("Short answer", "简答题"),
+    shortAnswerHelp: L("Explain your reasoning", "用自己的语言说明推理"),
+    instructions: window.t("exam.instructions"),
+    instructionsHelp: L("Optional constraints for the examiner", "可选，补充覆盖范围或出题偏好"),
+    instructionsPlaceholder: L("Specific topics to cover, or leave blank...", "具体说明要覆盖的知识点，留空则由 AI 决定…"),
+    cancel: window.t("common.cancel"),
+    generate: window.t("exam.generate"),
+    beginner: L("Beginner", "入门"),
+    intermediate: L("Intermediate", "中级"),
+    hard: L("Hard", "困难"),
+    expert: L("Expert", "专家"),
+  };
+}
+
+function examProviderOptions() {
+  const providerConfig = getProviderConfigSnapshot();
+  const providerList = Array.isArray(providerConfig.providers) ? providerConfig.providers : [];
+  const providers = providerList.filter((provider) => provider?.id).map((provider) => ({
+    id: provider.id,
+    label: provider.label || provider.model || provider.id,
+  }));
+  return {
+    providers,
+    activeId: providers.find((provider) => provider.id === providerConfig.activeId)?.id || "",
+  };
+}
+
+function buildExamSetupSnapshot(draft, key) {
+  const L = (en, zh) => window._currentLang === "zh" ? zh : en;
+  const defaults = { mc: true, fb: true, sa: false };
+  _examSelectedTypes = Object.assign({}, defaults, draft?.types ?? {});
+  _examDifficulty = draft?.difficulty ?? "intermediate";
+  const { providers, activeId } = examProviderOptions();
+  return {
+    key,
+    locale: window._currentLang === "en" ? "en" : "zh",
+    topic: String(draft?.topic ?? ""),
+    instructions: String(draft?.instructions ?? ""),
+    count: String(draft?.count ?? "5"),
+    model: String(draft?.model || activeId),
+    difficulty: _examDifficulty,
+    selectedTypes: Object.assign({}, _examSelectedTypes),
+    providers,
+    text: examFormCopy(L),
+  };
+}
+
+export function renderExamFooterActions(actions) {
+  const host = document.getElementById('examViewReactFooter');
+  if (host) renderExamActions(host, actions);
+}
+
+export function renderExamForm(draft = null) {
+  clearExamQuestionCards();
+  clearExamNavigation();
+  const legacyBody = _examBody();
+  const legacyFooter = _examFooter();
+  if (legacyBody) legacyBody.replaceChildren();
+  if (legacyFooter) legacyFooter.replaceChildren();
   _setExamTitle(window._currentLang === "zh" ? "生成考卷" : "Generate Exam");
-  var meta = document.getElementById("examViewMeta");
+  const meta = document.getElementById("examViewMeta");
   if (meta) meta.textContent = "";
   stateStore.dispatch({type:'state/batch',patch:{
     examCancel:false,examQuestions:[],examAnswers:{},examSubmitted:false
   }});
-  _examSelectedTypes = { mc: true, fb: true, sa: false };
-  _examDifficulty = "intermediate";
-  var L = function (en, zh) { return window._currentLang === "zh" ? zh : en };
 
-  /* Build provider options for the custom dropdown */
-  var provItems = [];
-  var activeId = "";
-  var providerConfig = getProviderConfigSnapshot();
-  if (Array.isArray(providerConfig.providers)) {
-    providerConfig.providers.forEach(function (p) {
-      if (!p || !p.id) return;
-      provItems.push({ id: p.id, label: p.label || p.model || p.id });
-      if (p.id === providerConfig.activeId) activeId = p.id;
-    });
-  }
-  var activeLabel = activeId
-    ? (provItems.find(function (p) { return p.id === activeId }) || {}).label || activeId
-    : L("Select a model", "选择模型");
+  const snapshot = buildExamSetupSnapshot(draft, ++_examFormRevision);
 
-  function togglePill(type, label, isActive) {
-    var activeClass = isActive ? ' active' : '';
-    var descriptions = {
-      mc: L("Choose one answer", "从选项中选择答案"),
-      fb: L("Recall key terms", "回忆关键概念或结果"),
-      sa: L("Explain your reasoning", "用自己的语言说明推理")
-    };
-    return '<button type="button" class="exam-form-toggle-card' + activeClass + '" data-type="' + type + '" data-exam-command="toggle-type" aria-pressed="' + isActive + '"><span class="tog-dot"></span><span class="exam-type-copy"><strong>' + esc(label) + '</strong><small>' + esc(descriptions[type]) + '</small></span></button>';
-  }
-
-  function sectionHeader(index, title, description) {
-    return '<div class="exam-form-section-header"><span class="exam-section-index">' + index + '</span><span><span class="exam-form-section-title">' + esc(title) + '</span><small>' + esc(description) + '</small></span></div>';
-  }
-
-  /* Difficulty segmented control. Canonical values stay English (models
-     understand them); labels localize. */
-  var DIFFS = [
-    { v: "beginner", label: L("Beginner", "入门") },
-    { v: "intermediate", label: L("Intermediate", "中级") },
-    { v: "hard", label: L("Hard", "困难") },
-    { v: "expert", label: L("Expert", "专家") }
-  ];
-  var diffHtml = DIFFS.map(function (d) {
-    return '<button type="button" class="exam-seg-btn' + (d.v === _examDifficulty ? ' active' : '') +
-      '" data-diff="' + d.v + '" data-exam-command="difficulty">' + esc(d.label) + '</button>';
-  }).join("");
-
-  /* Build custom model dropdown HTML */
-  var modelOptsHtml = "";
-  provItems.forEach(function (p) {
-    modelOptsHtml += '<button class="exam-model-opt' + (p.id === activeId ? ' active' : '') + '" data-mid="' + esc(p.id) + '" data-exam-command="select-model">' + esc(p.label) + '</button>';
-  });
-  if (!modelOptsHtml) {
-    modelOptsHtml = '<button class="exam-model-opt" disabled style="color:hsl(var(--text-500));cursor:default">' + L("No models available", "无可用模型") + '</button>';
-  }
-
-  var html = '<div class="exam-form-container">';
-
-  /* Editorial hero */
-  html += '<header class="exam-form-hero"><span class="exam-form-eyebrow">' + L("Assessment studio", "测评工作室") + '</span>'
-    + '<h3>' + L("Build a focused practice exam", "创建一份专注的练习考卷") + '</h3>'
-    + '<p>' + L("Choose the scope and challenge. Socrates will compose a balanced paper you can complete at your own pace.", "确定范围与难度，Socrates 会生成一份结构均衡、可按自己节奏完成的考卷。") + '</p></header>';
-
-  /* Topic */
-  html += '<div class="exam-form-section">'
-    + sectionHeader("01", window.t("exam.topic"), L("Name the subject or learning objective", "填写学科、章节或学习目标"))
-    + '<input class="exam-form-input" id="examTopic" name="examTopic" autocomplete="off" placeholder="' + L("e.g. Linear Algebra, World War II...", "如：线性代数、量子力学、二战…") + '">'
-    + '</div>';
-
-  /* Settings: model + difficulty + count */
-  html += '<div class="exam-form-section">'
-    + sectionHeader("02", L("Paper settings", "考卷设置"), L("Select the model, difficulty, and length", "选择生成模型、难度与题量"))
-    /* Model */
-    + '<div class="exam-form-field"><label class="exam-form-label" for="examModelTrigger">' + L("Model", "生成模型") + '</label>'
-    + '<div class="exam-model-wrap">'
-    + '<button class="exam-model-trigger" id="examModelTrigger" type="button" data-exam-command="toggle-model">'
-    + '<span class="exam-model-label" id="examModelLabel">' + esc(activeLabel) + '</span>'
-    + '<svg class="exam-model-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
-    + '</button>'
-    + '<div class="exam-model-menu" id="examModelMenu">' + modelOptsHtml + '</div>'
-    + '<input type="hidden" id="examModel" value="' + esc(activeId) + '">'
-    + '</div></div>'
-    /* Difficulty + Count share a row on desktop, stack on narrow screens */
-    + '<div class="exam-form-row">'
-    /* Difficulty */
-    + '<div class="exam-form-field"><label class="exam-form-label">' + window.t("exam.difficulty") + '</label>'
-    + '<div class="exam-seg" id="examDifficultySeg">' + diffHtml + '</div></div>'
-    /* Count */
-    + '<div class="exam-form-field"><label class="exam-form-label">' + window.t("exam.count") + '</label>'
-    + '<div class="exam-stepper">'
-    + '<button type="button" class="exam-stepper-btn" data-exam-command="count" data-delta="-1" aria-label="' + L("Fewer", "减少") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>'
-    + '<span class="exam-stepper-val" id="examCountDisplay">5</span>'
-    + '<button type="button" class="exam-stepper-btn" data-exam-command="count" data-delta="1" aria-label="' + L("More", "增加") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>'
-    + '<input type="hidden" id="examCount" value="5">'
-    + '</div></div>'
-    + '</div>'
-    + '</div>';
-
-  /* Question types */
-  html += '<div class="exam-form-section">'
-    + sectionHeader("03", window.t("exam.types"), L("Keep at least one response format", "至少保留一种作答形式"))
-    + '<div class="exam-form-card-toggles" id="examTypePicker">'
-    + togglePill("mc", L("Multiple choice", "选择题"), true)
-    + togglePill("fb", L("Fill blank", "填空题"), true)
-    + togglePill("sa", L("Short answer", "简答题"), false)
-    + '</div></div>';
-
-  /* Instructions */
-  html += '<div class="exam-form-section">'
-    + sectionHeader("04", window.t("exam.instructions"), L("Optional constraints for the examiner", "可选，补充覆盖范围或出题偏好"))
-    + '<textarea class="exam-form-textarea" id="examInstructions" name="examInstructions" placeholder="' + L("Specific topics to cover, or leave blank...", "具体说明要覆盖的知识点，留空则由 AI 决定…") + '" rows="3"></textarea>'
-    + '</div>';
-
-  html += '</div>';
-  body.innerHTML = html;
-  footer.innerHTML = '<button class="exam-btn secondary" data-exam-command="close">' + window.t("common.cancel") + '</button><button class="exam-btn primary" data-exam-command="generate">' + window.t("exam.generate") + '</button>';
+  const bodyHost = document.getElementById("examViewReactBody");
+  const footerHost = document.getElementById("examViewReactFooter");
+  const commandHost = document.getElementById("examView");
+  if (!bodyHost || !footerHost || !commandHost) return;
+  renderExamSetup(bodyHost, footerHost, commandHost, snapshot);
 }
 
 /* ── Custom model dropdown ── */
@@ -393,26 +381,7 @@ function refreshExamFormI18n() {
     difficulty: _examDifficulty,
     types: Object.assign({}, _examSelectedTypes)
   };
-  renderExamForm();
-  var topic = document.getElementById("examTopic");
-  var instructions = document.getElementById("examInstructions");
-  var count = document.getElementById("examCount");
-  var countDisplay = document.getElementById("examCountDisplay");
-  if (topic) topic.value = snapshot.topic;
-  if (instructions) instructions.value = snapshot.instructions;
-  if (count) count.value = snapshot.count;
-  if (countDisplay) countDisplay.textContent = snapshot.count;
-  _examDifficulty = snapshot.difficulty;
-  document.querySelectorAll("#examDifficultySeg .exam-seg-btn").forEach(function (btn) {
-    btn.classList.toggle("active", btn.getAttribute("data-diff") === snapshot.difficulty);
-  });
-  _examSelectedTypes = snapshot.types;
-  document.querySelectorAll("#examTypePicker .exam-form-toggle-card").forEach(function (btn) {
-    var active = !!snapshot.types[btn.getAttribute("data-type")];
-    btn.classList.toggle("active", active);
-    btn.setAttribute("aria-pressed", String(active));
-  });
-  if (snapshot.model) selectExamModel(snapshot.model);
+  renderExamForm(snapshot);
   return true;
 }
 
@@ -421,25 +390,26 @@ function refreshExamQuestionsI18n() {
   if (!Array.isArray(questions) || !questions.length) return false;
   renderAllQuestions();
   renderExamNav();
-  var footer = _examFooter();
-  if (!footer) return true;
+  if (!document.getElementById('examViewReactFooter')) return true;
   var valid = questions.some(function (q) { return q.type !== "error"; });
-  footer.innerHTML = valid
-    ? '<button class="exam-btn primary" data-exam-command="submit">' + _examUiL("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>'
-    : '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try Again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
+  renderExamFooterActions(valid
+    ? [
+      { command: 'submit', label: _examUiL('Submit for Grading', '提交批改') },
+      { command: 'close', label: _examUiL('Close', '关闭'), variant: 'outline' },
+    ]
+    : [
+      { command: 'form', label: _examUiL('Try Again', '重新出题') },
+      { command: 'close', label: _examUiL('Close', '关闭'), variant: 'outline' },
+    ]);
   return true;
 }
 
 function refreshExamGenerationI18n() {
-  var genMsg = document.getElementById("examGenMsg");
-  var genStep = document.getElementById("examGenProgressStep");
-  var genSub = document.getElementById("examGenSubMsg");
-  if (genMsg) genMsg.textContent = _examUiL("Generating your exam…", "正在生成考卷…");
-  if (genStep) genStep.innerHTML = '<span class="exam-progress-spin"></span>' + _examUiL("Preparing…", "准备出题…");
-  if (genSub) genSub.textContent = _examUiL("The AI is preparing your questions. This usually takes a few seconds.", "AI 正在为您出题，请稍候片刻");
-  var footer2 = _examFooter();
-  if (footer2 && document.getElementById("examGenStatus")) {
-    footer2.innerHTML = '<button class="exam-btn secondary" data-exam-command="cancel">' + _examUiL("Cancel", "取消") + '</button>';
+  refreshExamGenerationStatus();
+  if (document.querySelector('#examViewReactBody [data-slot="progress"]')) {
+    renderExamFooterActions([
+      { command: 'cancel', label: _examUiL('Cancel', '取消'), variant: 'outline' },
+    ]);
   }
 }
 

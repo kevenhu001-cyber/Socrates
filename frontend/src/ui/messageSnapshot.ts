@@ -10,6 +10,8 @@ interface LiveStatusSnapshot {
   elapsedSec?: unknown;
   toolName?: unknown;
   retryable?: unknown;
+  retryMode?: unknown;
+  retryButtonId?: unknown;
 }
 
 interface MessageSnapshot {
@@ -20,7 +22,7 @@ interface MessageSnapshot {
 }
 
 const LIVE_STATUS_FIELDS: ReadonlyArray<keyof LiveStatusSnapshot> = [
-  'phase', 'label', 'state', 'mode', 'error', 'elapsedSec', 'toolName',
+  'phase', 'label', 'state', 'mode', 'error', 'elapsedSec', 'toolName', 'retryMode', 'retryButtonId',
 ];
 
 /** Update one message in the authoritative session store by identity. */

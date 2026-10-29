@@ -3,6 +3,18 @@ import { esc } from './render/helpers.ts';
 import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 
+function renderTutorMistakeFilter(...args) {
+  void import('./react/tutor/tutorMistakeFilterHost.tsx').then(({ renderTutorMistakeFilter: render }) => {
+    if (args[0]?.isConnected) render(...args);
+  }).catch((error) => reportSwallow(error, 'tutorSocratic.js:renderMistakeFilter'));
+}
+
+function renderTutorSnapshotAction(...args) {
+  void import('./react/tutor/tutorSnapshotActionHost.tsx').then(({ renderTutorSnapshotAction: render }) => {
+    if (args[0]?.isConnected) render(...args);
+  }).catch((error) => reportSwallow(error, 'tutorSocratic.js:renderSnapshotAction'));
+}
+
 /* =====================================================================
  * tutorSocratic.js
  * ---------------------------------------------------------------------
@@ -453,9 +465,7 @@ import { reportSwallow } from './util/reportSwallow.ts';
     html += '<div class="kb-file-meta">'
          + ti('tutor.kbLastUpdated', currentLang() === 'zh' ? '最后更新' : 'Last updated')
          + ': ' + today + '</div>';
-    html += '<button class="kb-file-snapshot" type="button">'
-         + ti('tutor.kbSnapshot', currentLang() === 'zh' ? '存档当前版本' : 'Save snapshot')
-         + '</button>';
+    html += '<span class="kb-file-snapshot-host"></span>';
     html += '</div>';
 
     /* P1.2 — force-directed graph sits at the top of the panel; the
@@ -475,8 +485,14 @@ import { reportSwallow } from './util/reportSwallow.ts';
     /* Wire the snapshot button. We capture a one-line summary of
        the section sizes so the user can compare past snapshots
        at a glance (§6.6). */
-    var btn = cont.querySelector('.kb-file-snapshot');
-    if (btn) btn.onclick = function () { saveBoundarySnapshot(); };
+    var snapshotHost = cont.querySelector('.kb-file-snapshot-host');
+    if (snapshotHost) {
+      renderTutorSnapshotAction(
+        snapshotHost,
+        ti('tutor.kbSnapshot', currentLang() === 'zh' ? '存档当前版本' : 'Save snapshot'),
+        saveBoundarySnapshot
+      );
+    }
   }
 
   function saveBoundarySnapshot() {
@@ -653,17 +669,14 @@ import { reportSwallow } from './util/reportSwallow.ts';
       if (panel) panel.insertBefore(cont, panel.firstChild);
     }
     var cur = window.stateStore.read("mistakeFilter") || 'all';
-    var opts = [
-      { v: 'all',        key: 'tutor.mistakeFilterAll' },
-      { v: 'unresolved', key: 'tutor.mistakeFilterUnresolved' },
-      { v: 'resolved',   key: 'tutor.mistakeFilterResolved' }
-    ];
-    cont.innerHTML = opts.map(function (o) {
-      var label = ti(o.key, o.v);
-      return '<button class="mistake-filter-btn' + (cur === o.v ? ' active' : '') + '" data-v="' + o.v + '" type="button">' + esc(label) + '</button>';
-    }).join('');
-    Array.prototype.forEach.call(cont.querySelectorAll('.mistake-filter-btn'), function (b) {
-      b.onclick = function () { setMistakeFilter(b.getAttribute('data-v')); };
+    renderTutorMistakeFilter(cont, {
+      value: cur,
+      labels: {
+        all: ti('tutor.mistakeFilterAll', 'all'),
+        unresolved: ti('tutor.mistakeFilterUnresolved', 'unresolved'),
+        resolved: ti('tutor.mistakeFilterResolved', 'resolved')
+      },
+      onChange: setMistakeFilter
     });
   }
 

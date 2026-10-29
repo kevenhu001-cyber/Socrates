@@ -17,10 +17,10 @@ interface MermaidItem {
 }
 
 let _rememberLiveVizCard: ((id: string, el: Element) => void) | undefined;
-let _processPendingVizActions: (() => void) | undefined;
+let _processPendingVizActions: ((root?: ParentNode) => void) | undefined;
 export function configureVizMermaidQueue(handlers: {
   rememberLiveVizCard?: (id: string, el: Element) => void;
-  processPendingVizActions?: () => void;
+  processPendingVizActions?: (root?: ParentNode) => void;
 }): void {
   if (handlers && typeof handlers.rememberLiveVizCard === 'function') _rememberLiveVizCard = handlers.rememberLiveVizCard;
   if (handlers && typeof handlers.processPendingVizActions === 'function') _processPendingVizActions = handlers.processPendingVizActions;
@@ -176,6 +176,45 @@ function _holdMermaidUntilVisible(item: MermaidItem, el: Element): boolean {
   return true;
 }
 
+function findMermaidCard(id: string): { el: HTMLElement; body: Element } | null {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const body = el.querySelector('.viz-body');
+  return body ? { el, body } : null;
+}
+
+function renderMermaidError(item: MermaidItem, message: string, source: string): HTMLElement | null {
+  const card = findMermaidCard(item.id);
+  if (!card) return null;
+  card.body.innerHTML = vizErrorHtml(message, source);
+  card.el.setAttribute('data-viz-state', 'error');
+  _processPendingVizActions?.(card.body);
+  return card.el;
+}
+
+function renderMermaidResult(
+  item: MermaidItem,
+  result: { svg: string; bindFunctions?: (element: Element) => void },
+): void {
+  const card = findMermaidCard(item.id);
+  if (!card) return;
+  card.body.innerHTML = result.svg;
+  card.el.setAttribute('data-viz-state', 'ready');
+  _rememberLiveVizCard?.(item.id, card.el);
+  if (result.bindFunctions) result.bindFunctions(card.body);
+  const svg = card.body.querySelector('svg') as SVGElement | null;
+  if (svg) { svg.style.maxWidth = '100%'; svg.style.height = 'auto'; }
+}
+
+function mermaidErrorMessage(error: unknown): string {
+  return esc((error as Error)?.message || String(error)).slice(0, 300);
+}
+
+function renderMermaidFailure(item: MermaidItem, error: unknown): void {
+  const card = renderMermaidError(item, mermaidErrorMessage(error), esc(item.code || ''));
+  if (card) _rememberLiveVizCard?.(item.id, card);
+}
+
 function renderPendingMermaidItem(item: MermaidItem): void {
   const liveEl = document.getElementById(item.id);
   /* A card reclaimed from the live-card registry is already rendered —
@@ -185,12 +224,7 @@ function renderPendingMermaidItem(item: MermaidItem): void {
      this code unless mermaid was still loading when it was queued, so
      only pay for the check when that result is genuinely missing. */
   if (!item.validated && !validMermaid(item.code)) {
-    const el = document.getElementById(item.id);
-    if (!el) return;
-    const body = el.querySelector('.viz-body');
-    if (!body) return;
-    body.innerHTML = vizErrorHtml('Diagram syntax error', item.code);
-    el.setAttribute('data-viz-state', 'error');
+    renderMermaidError(item, 'Diagram syntax error', item.code);
     return;
   }
   if (_mermaidInFlight[item.id]) return;
@@ -198,42 +232,13 @@ function renderPendingMermaidItem(item: MermaidItem): void {
     const inflight = mermaid.render('mermaid-svg-' + item.id, item.code);
     _mermaidInFlight[item.id] = inflight;
     inflight
-      .then(function (result) {
-        const el = document.getElementById(item.id);
-        if (!el) return;
-        const body = el.querySelector('.viz-body');
-        if (!body) return;
-        body.innerHTML = result.svg;
-        el.setAttribute('data-viz-state', 'ready');
-        _rememberLiveVizCard?.(item.id, el);
-        if (result.bindFunctions) result.bindFunctions(body);
-        const svg = body.querySelector('svg') as SVGElement | null;
-        if (svg) { svg.style.maxWidth = '100%'; svg.style.height = 'auto'; }
-      })
-      .catch(function (err: unknown) {
-        const el = document.getElementById(item.id);
-        if (!el) return;
-        const body = el.querySelector('.viz-body');
-        if (!body) return;
-        const msg = esc((err as Error)?.message || String(err)).slice(0, 300);
-        const src = esc(item.code || '');
-        body.innerHTML = vizErrorHtml(msg, src);
-        el.setAttribute('data-viz-state', 'error');
-        _rememberLiveVizCard?.(item.id, el);
-      })
+      .then((result) => renderMermaidResult(item, result))
+      .catch((error: unknown) => renderMermaidFailure(item, error))
       .then(function () {
         delete _mermaidInFlight[item.id];
       });
-  } catch (e) {
-    const el = document.getElementById(item.id);
-    if (!el) return;
-    const body = el.querySelector('.viz-body');
-    if (!body) return;
-    const msg = esc((e as Error)?.message || String(e)).slice(0, 300);
-    const src = esc(item.code || '');
-    body.innerHTML = vizErrorHtml(msg, src);
-    el.setAttribute('data-viz-state', 'error');
-    _rememberLiveVizCard?.(item.id, el);
+  } catch (error) {
+    renderMermaidFailure(item, error);
     delete _mermaidInFlight[item.id];
   }
 }

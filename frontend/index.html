@@ -211,72 +211,10 @@
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-inner">
-    <div class="sidebar-header" id="sidebarHeader">
-      <div class="sidebar-logo">
-        <img class="sidebar-logo-img" src="/logo.png" alt="" aria-hidden="true" width="20" height="20">
-        <span>Socrates</span>
-        <svg class="cg-sidebar-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 9.5 5 5 5-5"/></svg>
-      </div>
-      <div class="sidebar-header-actions">
-        <button class="btn-icon sidebar-search-btn" id="sidebarSearchBtn" type="button" title="Search chats" aria-label="Search chats" data-i18n-title="sidebar.searchPlaceholder" data-i18n-aria="sidebar.searchPlaceholder" aria-controls="sidebarSearch" aria-expanded="false" data-slot="button" data-ui-legacy="">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 4.5 4.5"/></svg>
-        </button>
-        <button class="btn-icon compose-btn" id="newChatBtn" title="Start a new chat" aria-label="Start a new chat" data-i18n-title="sidebar.startNewChat" data-i18n-aria="sidebar.startNewChat" data-slot="button" data-ui-legacy="">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
-        </button>
-        <button class="btn-icon" id="sidebarCloseBtn" title="Close sidebar" aria-label="Close sidebar" aria-controls="sidebar" data-slot="button" data-ui-legacy="">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17"/></svg>
-        </button>
-      </div>
-    </div>
-    <!-- Keep this fallback navigation aligned with the React-owned drawer. -->
-    <nav class="sidebar-nav" id="sidebarNav" aria-label="Primary navigation" data-i18n-aria="chrome.primaryNav">
-      <button type="button" class="sidebar-nav-btn active" data-nav="new" id="navNew" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
-        <span data-i18n-key="sidebar.nav.new">New chat</span>
-        <span class="nav-kbd">⌘K</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="images" id="navImages" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M4 17.5 8 13a2 2 0 0 1 3 0l2 2 1.5-1.5a2 2 0 0 1 3 0l3 3.5"/></svg>
-        <span data-i18n-key="sidebar.nav.images">Images</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="library" id="navLibrary" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.5 4h10A2.5 2.5 0 0 1 20 6.5v13a.5.5 0 0 1-.5.5h-12A3.5 3.5 0 0 1 4 16.5v-9A3.5 3.5 0 0 1 7.5 4ZM4 16.5A2.5 2.5 0 0 1 6.5 14H20M8 4v10M9 17h6"/></svg>
-        <span data-i18n-key="sidebar.nav.library">Artifacts</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="scheduled" id="navScheduled" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.25"/><path d="M12 7.5V12l3 2"/></svg>
-        <span data-i18n-key="sidebar.nav.scheduled">Scheduled</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="plugins" id="navPlugins" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4.5H6.5a2 2 0 0 0-2 2V10H6a2 2 0 0 1 0 4H4.5v3.5a2 2 0 0 0 2 2H10V18a2 2 0 0 1 4 0v1.5h3.5a2 2 0 0 0 2-2V14H18a2 2 0 0 1 0-4h1.5V6.5a2 2 0 0 0-2-2H14V4a2.5 2.5 0 0 0-5 0v.5Z"/></svg>
-        <span data-i18n-key="sidebar.nav.plugins">Plugins</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="projects" id="navProjects" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 8V7A2.5 2.5 0 0 1 6 4.5h3a2 2 0 0 1 1.6.8l1.2 1.4a2 2 0 0 0 1.6.8H18a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 18 19.5H6A2.5 2.5 0 0 1 3.5 17V8Z"/></svg>
-        <span data-i18n-key="sidebar.nav.projects">Projects</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="more" id="navMore" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
-        <span data-i18n-key="sidebar.nav.more">更多</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="assistants" id="navAssistants" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="6"/><circle cx="8.5" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10" r="1" fill="currentColor" stroke="none"/><path d="M9 14.5c1.7 1.5 4.3 1.5 6 0"/></svg>
-        <span data-i18n-key="sidebar.nav.assistants">Assistants</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="sites" id="navSites" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M9 9.5v10"/><circle cx="6.75" cy="7" r="0.65" fill="currentColor" stroke="none"/><circle cx="9.5" cy="7" r="0.65" fill="currentColor" stroke="none"/></svg>
-        <span class="nav-label-wrap"><span data-i18n-key="sidebar.nav.sites">Sites</span><span class="nav-new-badge" data-i18n-key="sidebar.nav.newBadge">新</span></span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="exam" id="navExam" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="4.5" width="14" height="16" rx="3"/><rect x="9" y="2.5" width="6" height="4" rx="1.5"/><path d="m8.5 13 2.5 2.5 4.5-5"/></svg>
-        <span data-i18n-key="sidebar.nav.exam">Exam</span>
-      </button>
-      <button type="button" class="sidebar-nav-btn" data-nav="skills" id="navSkills" data-slot="button" data-ui-legacy="">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="6" height="6" rx="2"/><rect x="14" y="4" width="6" height="6" rx="2"/><rect x="4" y="14" width="6" height="6" rx="2"/><path d="M17 13c.4 2.3 1.7 3.6 4 4-2.3.4-3.6 1.7-4 4-.4-2.3-1.7-3.6-4-4 2.3-.4 3.6-1.7 4-4Z"/></svg>
-        <span data-i18n-key="sidebar.nav.skills">Skills</span>
-      </button>
-    </nav>
+    <!-- React renders the sidebar chrome and navigation; keep these stable
+         hosts empty so the static shell does not duplicate control markup. -->
+    <div class="sidebar-header" id="sidebarHeader"></div>
+    <nav class="sidebar-nav" id="sidebarNav" aria-label="Primary navigation" data-i18n-aria="chrome.primaryNav"></nav>
     <!-- P_sidebar-parity — reference chat splits the rail into a destination
          block and a conversation block with a hairline between them, so the
          eye can find where navigation stops and history begins. -->
@@ -289,39 +227,13 @@
          existing switchTab() logic drives panel visibility unchanged. In
          Chat mode both icons are hidden, so the row is just the search box
          over a single list. -->
-    <div class="sidebar-search-row">
-      <div class="sidebar-search-row-inner">
-      <div class="sidebar-search">
-        <svg class="sidebar-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75"/><path d="m16 16 4.5 4.5"/></svg>
-        <input type="text" id="sidebarSearch" name="sidebarSearch" autocomplete="off" spellcheck="false" placeholder="Search chats" data-i18n-placeholder="sidebar.searchPlaceholder" aria-label="Search chats" data-slot="input" data-ui-legacy="">
-      </div>
-      <button class="sidebar-view-btn tutor-only" id="tabKnowledge" title="Knowledge" data-i18n-title="sidebar.knowledge" aria-label="Knowledge" data-slot="button" data-ui-legacy="">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="10.5" cy="18" r="2.5"/><path d="m8.5 6.4 7 1.2M6.9 8.4l2.7 7.2m6.9-5.7-4.4 6.2"/></svg>
-      </button>
-      <button class="sidebar-view-btn tutor-only" id="tabMistakes" title="Mistakes" data-i18n-title="sidebar.mistakes" aria-label="Mistakes" data-slot="button" data-ui-legacy="">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3.5h8A2.5 2.5 0 0 1 18.5 6v13.5a.75.75 0 0 1-1.2.6L12 16l-5.3 4.1a.75.75 0 0 1-1.2-.6V6A2.5 2.5 0 0 1 8 3.5Z"/></svg>
-        <span class="tab-badge" id="mistakesTabBadge"></span>
-      </button>
-      </div>
-    </div>
+    <div class="sidebar-search-row" id="sidebarSearchRow"></div>
     <div class="knowledge-panel tutor-only hidden" id="knowledgePanel">
       <div id="teachingPlanContent"></div>
       <div id="kbContent"><div class="kb-empty" data-i18n-key="tutor.kbTopicFirst">Set a topic to build your knowledge map.</div></div>
     </div>
     <div class="recents-panel" id="recentsPanel">
-      <div class="recents-header">
-        <span class="recents-title" data-i18n-key="sidebar.recentSessions">Recents</span>
-        <!-- Trailing actions mirroring the reference drawer's 最近 header:
-             compose starts a new chat; React mounts the organization menu. -->
-        <span class="recents-header-actions">
-          <button type="button" class="recents-head-btn" id="recentsNewBtn" title="New chat" data-i18n-title="sidebar.newChat" data-i18n-aria="sidebar.newChat" aria-label="New chat" data-slot="button" data-ui-legacy="">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
-          </button>
-          <button type="button" class="recents-head-btn" id="recentsMoreBtn" title="Organize chats" data-i18n-title="sidebar.organize" data-i18n-aria="sidebar.organize" aria-label="Organize chats" aria-haspopup="menu" aria-expanded="false" data-slot="button" data-ui-legacy="">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>
-          </button>
-        </span>
-      </div>
+      <div class="recents-header"></div>
       <!-- P2.2 — tag filter chip row. "All" plus a few of the user's
            most-used tags. Renders inline; the active chip is highlighted. -->
       <div class="recents-filter-chips" id="recentsFilterChips"></div>
@@ -337,83 +249,7 @@
            drawer's two-line identity block (React's SidebarFooter replaces
            this pre-paint placeholder with the same structure). -->
       <div class="user-row" id="sidebarUserRow"><div class="user-avatar" aria-hidden="true">?</div><div class="user-identity"><div class="user-name"></div><div class="user-plan">Free</div></div></div>
-      <div class="sidebar-footer-actions">
-        <button type="button" class="btn-icon theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme" data-i18n-title="display.themeToggle" data-i18n-aria="display.themeToggle" data-slot="button" data-ui-legacy="">
-          <svg class="theme-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.75"/><path d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21M5.6 5.6l1 1m10.8 10.8 1 1M5.6 18.4l1-1M17.4 6.6l1-1"/></svg>
-          <svg class="theme-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.2 13.7A8.5 8.5 0 0 1 10.3 3.8a8.5 8.5 0 1 0 9.9 9.9Z"/></svg>
-        </button>
-        <button type="button" class="btn-icon" id="displayPrefsBtn" title="Display settings" aria-label="Display settings" data-i18n-title="chrome.displaySettings" data-i18n-aria="chrome.displaySettings" data-slot="button" data-ui-legacy="">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h7m4 0h5M4 17h3m4 0h9"/><circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
-        </button>
-        <button class="btn-icon" id="apiSettingsBtn" title="API Settings" aria-label="API Settings" data-i18n-title="chrome.apiSettings" data-i18n-aria="chrome.apiSettings" data-slot="button" data-ui-legacy="">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9.5 4 .5-1h4l.5 1 .6 1.8 1.9.5 1.8-.4 2 3.4-1.3 1.3-.5 1.4.5 1.4 1.3 1.3-2 3.4-1.8-.4-1.9.5-.6 1.8-.5 1h-4l-.5-1-.6-1.8-1.9-.5-1.8.4-2-3.4 1.3-1.3.5-1.4-.5-1.4-1.3-1.3 2-3.4 1.8.4 1.9-.5.6-1.8Z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-        <div class="display-prefs-popover hidden" id="displayPrefsPopover">
-          <div class="display-prefs-row">
-            <!-- P_display-prefs-no-dup — a segmented control states its own
-                 selection (the checked radio), so the right-hand value readout
-                 repeated the same word twice on screen. The row is now just
-                 the setting's name plus the control that carries the value. -->
-            <div class="display-prefs-label">
-              <span data-i18n-key="display.theme">Theme</span>
-            </div>
-            <div class="display-prefs-segs display-theme-segs" id="displayThemeSegs" role="radiogroup" data-i18n-aria="display.theme" aria-label="Theme">
-              <button class="display-prefs-seg" type="button" data-theme-option="system" role="radio" aria-checked="false" data-i18n-key="display.themeSystem" data-slot="button" data-ui-legacy="">System</button>
-              <button class="display-prefs-seg" type="button" data-theme-option="light" role="radio" aria-checked="false" data-i18n-key="display.themeLight" data-slot="button" data-ui-legacy="">Light</button>
-              <button class="display-prefs-seg" type="button" data-theme-option="dark" role="radio" aria-checked="true" data-i18n-key="display.themeDark" data-slot="button" data-ui-legacy="">Dark</button>
-            </div>
-          </div>
-          <div class="display-prefs-row">
-            <div class="display-prefs-label">
-              <span data-i18n-key="display.themeStyle">Theme style</span>
-            </div>
-            <div class="display-prefs-segs display-theme-style-segs" id="displayThemeStyleSegs" role="radiogroup" data-i18n-aria="display.themeStyle" aria-label="Theme style">
-              <button class="display-prefs-seg on" type="button" data-theme-style-option="socrates" role="radio" aria-checked="true" data-i18n-key="display.styleModern" data-slot="button" data-ui-legacy="">Modern</button>
-              <button class="display-prefs-seg" type="button" data-theme-style-option="philosophy" role="radio" aria-checked="false" data-i18n-key="display.stylePhilosophy" data-slot="button" data-ui-legacy="">Philosophy</button>
-            </div>
-          </div>
-          <div class="display-prefs-row">
-            <div class="display-prefs-label"><span data-i18n-key="sidebar.textSize">Text size</span></div>
-            <div class="display-prefs-segs" id="displayPrefsFontSegs" role="radiogroup" data-i18n-aria="sidebar.textSize" aria-label="Text size">
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-font="1" data-slot="button" data-ui-legacy="">S</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.125" data-slot="button" data-ui-legacy="">M</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.25" data-slot="button" data-ui-legacy="">L</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.375" data-slot="button" data-ui-legacy="">XL</button>
-            </div>
-          </div>
-          <div class="display-prefs-row">
-            <div class="display-prefs-label"><span data-i18n-key="sidebar.contentWidth">Content width</span></div>
-            <div class="display-prefs-segs" id="displayPrefsWidthSegs" role="radiogroup" data-i18n-aria="sidebar.contentWidth" aria-label="Content width">
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-width="0.85" title="Narrow" data-i18n-title="sidebar.narrow" data-slot="button" data-ui-legacy="">S</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1" title="Medium" data-i18n-title="sidebar.medium" data-slot="button" data-ui-legacy="">M</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1.3" title="Wide" data-i18n-title="sidebar.wide" data-slot="button" data-ui-legacy="">L</button>
-              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1.7" title="Full width" data-i18n-title="sidebar.fullWidth" data-slot="button" data-ui-legacy="">XL</button>
-            </div>
-          </div>
-          <!-- Grid background toggle -->
-          <div class="display-prefs-row display-prefs-toggle-row">
-            <div class="display-prefs-label"><span data-i18n-key="chrome.backgroundGrid">Background grid</span></div>
-            <button class="grid-toggle" id="gridToggle" type="button" title="Toggle background grid" aria-label="Toggle background grid" data-i18n-title="chrome.toggleBackgroundGrid" data-i18n-aria="chrome.toggleBackgroundGrid" data-slot="button" data-ui-legacy="">
-              <div class="toggle-knob"></div>
-            </button>
-          </div>
-          <!-- Background color pickers — separate per mode -->
-          <div class="display-prefs-row">
-            <div class="display-prefs-label"><span data-i18n-key="chrome.darkModeBg">Dark mode BG</span></div>
-            <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgDark" value="#141414" title="Dark mode page background" data-i18n-title="chrome.darkModePageBg" data-slot="native-color" data-ui-legacy="">
-              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgDarkReset" title="Reset dark mode to theme default" data-i18n-title="chrome.resetDarkBg" data-slot="button" data-ui-legacy="">↺</button>
-            </div>
-          </div>
-          <div class="display-prefs-row">
-            <div class="display-prefs-label"><span data-i18n-key="chrome.lightModeBg">Light mode BG</span></div>
-            <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgLight" value="#ffffff" title="Light mode page background" data-i18n-title="chrome.lightModePageBg" data-slot="native-color" data-ui-legacy="">
-              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgLightReset" title="Reset light mode to theme default" data-i18n-title="chrome.resetLightBg" data-slot="button" data-ui-legacy="">↺</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="sidebar-footer-actions" id="sidebarFooterActions"></div>
     </div>
     <div class="sidebar-resize-handle" id="sidebarResizeHandle" aria-label="Drag to resize sidebar" title="Drag to resize sidebar" data-i18n-aria="chrome.resizeSidebar" data-i18n-title="chrome.resizeSidebar"></div>
   </div>
@@ -452,51 +288,7 @@
              #chatComposerSlot when a conversation view activates; the
              editor, draft, focus and chips travel with it, so the input box
              never rebuilds between surfaces. -->
-        <div class="composer-input-wrap composer-shell" id="composerInputWrap">
-          <!-- Chip strip above the editor. Shares the same
-               .attachment-chips class and renderAttachmentChips() path for
-               every surface; there is only one chips container now. -->
-          <div class="attachment-chips hidden" id="composerAttachmentChips"></div>
-          <div id="composerRoot" class="composer-editor-root" aria-label="Message input"></div>
-          <div class="composer-footer">
-            <div class="footer-left-group">
-              <button class="attach-btn composer-tools-trigger" id="composerToolsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files" data-i18n-aria="chrome.addToolsFiles" data-i18n-title="chrome.addToolsFiles" data-slot="button" data-ui-legacy="">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
-              </button>
-              <input type="file" id="composerAttachInput" multiple
-                     accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif,text/*,application/json,application/xml,application/javascript,application/x-javascript,application/typescript,application/x-typescript,application/yaml,application/x-yaml,application/x-sh,application/sql,application/toml,application/pdf,application/rtf,text/rtf,application/epub+zip,application/msword,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/webm,audio/mp4,audio/x-m4a,audio/aac,audio/flac,.txt,.md,.markdown,.csv,.tsv,.log,.json,.jsonl,.ndjson,.xml,.yaml,.yml,.toml,.ini,.cfg,.conf,.env,.tex,.bib,.py,.pyw,.js,.mjs,.cjs,.ts,.tsx,.jsx,.java,.c,.h,.cpp,.cc,.cxx,.hpp,.hh,.cs,.go,.rs,.rb,.php,.swift,.kt,.kts,.m,.mm,.scala,.sh,.bash,.zsh,.fish,.pl,.pm,.lua,.r,.jl,.sql,.css,.scss,.less,.vue,.svelte,.dart,.ex,.exs,.erl,.hrl,.clj,.cljs,.hs,.ml,.fs,.vb,.ps1,.bat,.cmd,.ipynb,.diff,.patch,.gitignore,.dockerignore,.proto,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.epub,.rtf,.odt,.ods,.odp,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.flac,.aac"
-                     hidden data-slot="native-file" data-ui-legacy="">
-            </div>
-            <!-- P_cowork-landing — reasoning effort sits with the send button,
-                 not with the attach button. Everything that decides *how* the
-                 turn runs now reads left-to-right into the send action, which
-                 leaves "+" alone on the left as the only add-content control.
-                 The label is filled by syncEffortUI() (ui/effortPicker.js) and
-                 the chosen value feeds chat/stream.js's reasoning_effort. -->
-            <div class="effort-picker" data-open="false">
-              <button type="button" class="effort-trigger" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort" data-slot="button" data-ui-legacy="">
-                <span class="effort-label" data-i18n-key="effort.label">Effort</span>
-                <span class="effort-value" aria-hidden="true"></span>
-                <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-            </div>
-            <!-- P_composer-primary-split — the microphone is the one and only
-                 dictation entry point, and the primary is submit-only
-                 (send / stop). They used to call the same
-                 toggleSpeechInput(surface) and both announced "Voice input",
-                 so a screen-reader user met two indistinguishable controls
-                 at 1440px and at 390px alike. The reference composer is
-                 `+ / mic / send`; that is what ships now. The primary starts
-                 disabled at 30% (parity/composer-unified.css) until a draft
-                 or attachment exists, and updateComposerBtn re-enables it. -->
-            <button class="mobile-mic-btn" id="composerMicBtn" type="button" aria-label="Voice input" title="Voice input" data-i18n-aria="chrome.voiceInput" data-i18n-title="chrome.voiceInput" data-slot="button" data-ui-legacy="">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3M9 20.5h6"/></svg>
-            </button>
-            <button class="composer-primary-btn" id="composerPrimaryBtn" type="button" disabled aria-label="Send" title="Send" data-i18n-aria="chat.send" data-i18n-title="chat.send" data-slot="button" data-ui-legacy="">
-              <span id="composerPrimaryBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></span>
-            </button>
-          </div>
-        </div>
+        <div class="composer-input-wrap composer-shell" id="composerInputWrap"></div>
         </div>
 
         <!-- Landing shortcuts: each row delegates to an existing composer
@@ -505,63 +297,10 @@
              suggestions block (id="homeSuggestionsWrap") was removed — those
              chips read as noise on mobile and were the most-skipped UI on the
              landing surface. -->
-        <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions" data-i18n-aria="chrome.quickActions">
-          <div class="home-quick-action">
-            <button type="button" class="home-quick-action-primary" data-home-action="upload" data-slot="button" data-ui-legacy="">
-            <span class="home-quick-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M4 17.5 8 13a2 2 0 0 1 3 0l2 2 1.5-1.5a2 2 0 0 1 3 0l3 3.5"/></svg>
-            </span>
-            <span class="home-quick-action-copy"><span data-i18n-key="home.quick.upload">添加图片或文件</span></span>
-            </button>
-            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作" data-slot="button" data-ui-legacy="">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17"/></svg>
-            </button>
-          </div>
-          <div class="home-quick-action">
-            <button type="button" class="home-quick-action-primary" data-home-action="write" data-slot="button" data-ui-legacy="">
-            <span class="home-quick-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z"/></svg>
-            </span>
-            <span class="home-quick-action-copy"><span data-i18n-key="home.quick.write">撰写或编辑</span></span>
-            </button>
-            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作" data-slot="button" data-ui-legacy="">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17"/></svg>
-            </button>
-          </div>
-          <div class="home-quick-action">
-            <button type="button" class="home-quick-action-primary" data-home-action="research" data-slot="button" data-ui-legacy="">
-            <span class="home-quick-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c4.5 4.7 4.5 12.3 0 17-4.5-4.7-4.5-12.3 0-17Z"/></svg>
-            </span>
-            <span class="home-quick-action-copy"><span data-i18n-key="home.quick.research">搜索网页</span></span>
-            </button>
-            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作" data-slot="button" data-ui-legacy="">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17"/></svg>
-            </button>
-          </div>
-        </div>
+        <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions" data-i18n-aria="chrome.quickActions"></div>
 
 
-        <section class="home-tutor-starters" aria-labelledby="homeTutorHeading">
-          <h2 id="homeTutorHeading" data-i18n-key="home.tutor.heading">从一个好问题开始</h2>
-          <div class="home-tutor-grid">
-            <button type="button" class="home-tutor-card" data-home-prompt="understand" data-slot="button" data-ui-legacy="">
-              <span class="home-tutor-card-icon" aria-hidden="true">◇</span>
-              <strong data-i18n-key="home.tutor.understand.title"></strong>
-              <span data-i18n-key="home.tutor.understand.hint"></span>
-            </button>
-            <button type="button" class="home-tutor-card" data-home-prompt="practice" data-slot="button" data-ui-legacy="">
-              <span class="home-tutor-card-icon" aria-hidden="true">↗</span>
-              <strong data-i18n-key="home.tutor.practice.title"></strong>
-              <span data-i18n-key="home.tutor.practice.hint"></span>
-            </button>
-            <button type="button" class="home-tutor-card" data-home-prompt="plan" data-slot="button" data-ui-legacy="">
-              <span class="home-tutor-card-icon" aria-hidden="true">☷</span>
-              <strong data-i18n-key="home.tutor.plan.title"></strong>
-              <span data-i18n-key="home.tutor.plan.hint"></span>
-            </button>
-          </div>
-        </section>
+        <section class="home-tutor-starters" id="homeTutorStarters" aria-labelledby="homeTutorHeading"></section>
 
       </div>
 
@@ -577,7 +316,7 @@
 
     <!-- Main-content pages for Library, Projects, Scheduled, Plugins -->
     <div class="library-panel main-page hidden" id="libraryPanel"></div>
-    <input type="file" id="libraryUploadInput" multiple hidden data-slot="native-file" data-ui-legacy="">
+    <div id="libraryUploadReactRoot"></div>
     <div class="spaces-panel main-page hidden" id="spacesPanel"></div>
     <div class="scheduled-panel main-page hidden" id="scheduledPanel"></div>
     <div class="plugins-panel main-page hidden" id="pluginsPanel"></div>
@@ -594,8 +333,15 @@
       <!-- The visible exam title lives in the app top bar. Keep this heading
            for programmatic announcements without rendering a duplicate title. -->
       <h2 class="sr-only" id="examViewTitle">Generate Exam</h2>
-      <div class="exam-view-body" id="examViewBody"></div>
-      <div class="exam-view-footer" id="examViewFooter"></div>
+      <div class="exam-view-body" id="examViewBody">
+        <div class="exam-root-slot" id="examViewReactNav"></div>
+        <div class="exam-root-slot" id="examViewReactBody"></div>
+        <div class="exam-root-slot" id="examViewLegacyBody"></div>
+      </div>
+      <div class="exam-view-footer" id="examViewFooter">
+        <div class="exam-root-slot" id="examViewReactFooter"></div>
+        <div class="exam-root-slot" id="examViewLegacyFooter"></div>
+      </div>
     </div>
     <!-- #chatPage is the single structural owner of the chat surface:
          transcript + composer live under it in one vertical flex column.
@@ -616,20 +362,7 @@
              control scoped to #msgList (distinct from the global Cmd-K
              palette). Opened by Ctrl-F / the #findBtn header button;
              logic lives in src/ui/findInSession.js. -->
-        <div class="find-bar hidden" id="findBar" role="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="find-bar-icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false" data-slot="input" data-ui-legacy="">
-          <span class="find-count" id="findCount" aria-live="polite"></span>
-          <button class="find-nav-btn" type="button" title="Previous match" aria-label="Previous match" data-i18n-title="chrome.previousMatch" data-i18n-aria="chrome.previousMatch" data-slot="button" data-ui-legacy="">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
-          </button>
-          <button class="find-nav-btn" type="button" title="Next match" aria-label="Next match" data-i18n-title="chrome.nextMatch" data-i18n-aria="chrome.nextMatch" data-slot="button" data-ui-legacy="">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <button class="find-close-btn" type="button" title="Close find" aria-label="Close find" data-i18n-title="chrome.closeFind" data-i18n-aria="chrome.closeFind" data-slot="button" data-ui-legacy="">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
-        </div>
+        <div class="find-bar hidden" id="findBar" role="search"></div>
         <div class="chat-input-bar" id="chatInputBar">
           <!-- P_socratic-suggestions — Proactive cognitive scaffolding chips in Tutor mode -->
           <div class="socratic-suggestions tutor-only hidden" id="socraticSuggestions" role="region" aria-label="启发式思维建议" data-i18n-aria="tutor.suggestion.prefix"></div>
@@ -657,7 +390,7 @@
 
 <!-- Settings Modal -->
 <!-- P1.2 — global search modal. Toggled by `Cmd/Ctrl+K` (and
-     `Esc` to close). The modal owns a single <input> that drives
+     `Esc` to close). The modal owns a single file picker that drives
      a fuse.js fuzzy index over:
        - session titles + topics (SERVER_SESSIONS)
        - message raw text inside the active session
@@ -689,6 +422,9 @@
 <div class="usage-overlay hidden" id="usageOverlay" role="dialog" aria-modal="true" aria-label="Token usage" data-i18n-aria="profile.usage">
   <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
 </div>
+
+<!-- First-visit consent controls render from the lightweight React boot slice. -->
+<div id="cookieConsentReactRoot"></div>
 
 </body>
 </html>

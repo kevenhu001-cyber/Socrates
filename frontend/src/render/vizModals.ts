@@ -1,4 +1,15 @@
 /* Fullscreen and source dialogs for sandboxed visualization cards. */
+import { createElement } from 'react';
+import { flushSync } from 'react-dom';
+import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
+import { VizModalActions } from '../react/visualization/VizModalActions.tsx';
+
+function mountModalActions(host: HTMLElement, onClose: () => void, onCopy?: () => Promise<void>): () => void {
+  const content = createElement(VizModalActions, { onClose, onCopy });
+  const root = mountOwnedRoot(host, 'viz-modal-actions', content);
+  flushSync(() => root.render(content));
+  return () => root.destroy();
+}
 
 export function decodeSrcdoc(srcdoc: string | null | undefined): string {
   return String(srcdoc || '')
@@ -18,7 +29,9 @@ export function openVizModal(srcdoc: string | null | undefined, title?: string):
   const modal = document.createElement("div");
   modal.className = "viz-modal-backdrop";
   modal.onclick = function (e) { if (e.target === modal) close(); };
+  let disposeActions: (() => void) | null = null;
   function close(): void {
+    disposeActions?.();
     modal.remove();
     document.removeEventListener("keydown", onKey);
     if (opener && typeof opener.focus === "function") opener.focus();
@@ -39,13 +52,9 @@ export function openVizModal(srcdoc: string | null | undefined, title?: string):
   titleEl.textContent = title || "Canvas";
   head.appendChild(titleEl);
 
-  const closeButton = document.createElement("button");
-  closeButton.type = "button";
-  closeButton.className = "viz-modal-close";
-  closeButton.setAttribute("aria-label", "Close");
-  closeButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-  closeButton.addEventListener("click", close);
-  head.appendChild(closeButton);
+  const actions = document.createElement("div");
+  actions.className = "viz-modal-actions";
+  head.appendChild(actions);
 
   const modalBody = document.createElement("div");
   modalBody.className = "viz-modal-body";
@@ -65,7 +74,8 @@ export function openVizModal(srcdoc: string | null | undefined, title?: string):
   dialog.appendChild(modalBody);
   modal.appendChild(dialog);
   document.body.appendChild(modal);
-  closeButton.focus();
+  disposeActions = mountModalActions(actions, close);
+  actions.querySelector("button")?.focus();
 }
 
 /* P_modal-raw — like openVizModal but the body is raw HTML, not a
@@ -79,8 +89,10 @@ export function openVizModalRaw(html: string | null | undefined, title?: string)
   const opener = document.activeElement as HTMLElement | null;
   const modal = document.createElement("div");
   modal.className = "viz-modal-backdrop";
+  let disposeActions: (() => void) | null = null;
   modal.onclick = function (e) { if (e.target === modal) close(); };
   function close(): void {
+    disposeActions?.();
     modal.remove();
     document.removeEventListener("keydown", onKey);
     if (opener && typeof opener.focus === "function") opener.focus();
@@ -100,13 +112,9 @@ export function openVizModalRaw(html: string | null | undefined, title?: string)
   titleEl.textContent = title || "Fullscreen";
   head.appendChild(titleEl);
 
-  const closeButton = document.createElement("button");
-  closeButton.type = "button";
-  closeButton.className = "viz-modal-close";
-  closeButton.setAttribute("aria-label", "Close");
-  closeButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-  closeButton.addEventListener("click", close);
-  head.appendChild(closeButton);
+  const actions = document.createElement("div");
+  actions.className = "viz-modal-actions";
+  head.appendChild(actions);
 
   const modalBody = document.createElement("div");
   modalBody.className = "viz-modal-body viz-modal-body-raw";
@@ -116,7 +124,8 @@ export function openVizModalRaw(html: string | null | undefined, title?: string)
   dialog.appendChild(modalBody);
   modal.appendChild(dialog);
   document.body.appendChild(modal);
-  closeButton.focus();
+  disposeActions = mountModalActions(actions, close);
+  actions.querySelector("button")?.focus();
 }
 
 export function openVizSourceModal(srcdoc: string | null | undefined, title?: string): void {
@@ -125,7 +134,9 @@ export function openVizSourceModal(srcdoc: string | null | undefined, title?: st
   const opener = document.activeElement as HTMLElement | null;
   const modal = document.createElement("div");
   modal.className = "viz-modal-backdrop";
+  let disposeActions: (() => void) | null = null;
   function close(): void {
+    disposeActions?.();
     modal.remove();
     document.removeEventListener("keydown", onKey);
     if (opener && typeof opener.focus === "function") opener.focus();
@@ -147,26 +158,9 @@ export function openVizSourceModal(srcdoc: string | null | undefined, title?: st
   titleEl.textContent = (title || "Canvas") + " source";
   head.appendChild(titleEl);
 
-  const copyButton = document.createElement("button");
-  copyButton.type = "button";
-  copyButton.className = "viz-source-copy";
-  copyButton.textContent = "Copy source";
-  copyButton.addEventListener("click", function () {
-    if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") return;
-    navigator.clipboard.writeText(decoded).then(function () {
-      copyButton.textContent = "Copied";
-      setTimeout(function () { copyButton.textContent = "Copy source"; }, 1200);
-    }).catch(function () { copyButton.textContent = "Copy failed"; });
-  });
-  head.appendChild(copyButton);
-
-  const closeButton = document.createElement("button");
-  closeButton.type = "button";
-  closeButton.className = "viz-modal-close";
-  closeButton.setAttribute("aria-label", "Close");
-  closeButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-  closeButton.addEventListener("click", close);
-  head.appendChild(closeButton);
+  const actions = document.createElement("div");
+  actions.className = "viz-modal-actions";
+  head.appendChild(actions);
 
   const body = document.createElement("div");
   body.className = "viz-modal-body viz-source-body";
@@ -179,5 +173,9 @@ export function openVizSourceModal(srcdoc: string | null | undefined, title?: st
   dialog.appendChild(body);
   modal.appendChild(dialog);
   document.body.appendChild(modal);
-  closeButton.focus();
+  disposeActions = mountModalActions(actions, close, async () => {
+    if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") throw new Error("Clipboard is unavailable");
+    await navigator.clipboard.writeText(decoded);
+  });
+  actions.querySelector("button")?.focus();
 }

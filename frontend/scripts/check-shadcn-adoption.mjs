@@ -79,6 +79,7 @@ function collectRetained() {
   const counts = {
     retainedMarkupControls: 0,
     legacyDomControls: 0,
+    legacyMjsDomControls: 0,
     legacyTemplateControls: 0,
     reactTemplateControls: 0,
   };
@@ -89,7 +90,7 @@ function collectRetained() {
     // `src/react/ui` holds the shared adapters and the shadcn sources; they
     // are allowed to render native markup on purpose.
     if (name.startsWith('src/vendor-files/')) continue;
-    if (!/\.(?:js|ts|tsx)$/.test(name)) continue;
+    if (!/\.(?:mjs|js|ts|tsx)$/.test(name)) continue;
     const source = readFileSync(path, 'utf8');
     const templateControls = (source.match(/<(?:button|input|select|textarea)\b/g) || []).length;
     if (name.startsWith('src/react/')) {
@@ -97,7 +98,9 @@ function collectRetained() {
       continue;
     }
     counts.legacyTemplateControls += templateControls;
-    counts.legacyDomControls += (source.match(/createElement\(\s*['"](?:button|input|select|textarea)['"]/g) || []).length;
+    const domControls = (source.match(/createElement\(\s*['"](?:button|input|select|textarea)['"]/g) || []).length;
+    if (name.endsWith('.mjs')) counts.legacyMjsDomControls += domControls;
+    else counts.legacyDomControls += domControls;
   }
   return counts;
 }
@@ -118,7 +121,7 @@ function main() {
     for (const key of exceeded) console.error(`shadcn adoption regression: ${key} is ${counts[key]}, baseline allows ${baseline[key]}`);
     process.exitCode = 1;
   } else {
-    console.log(`shadcn adoption passed (${counts.rawControls}/${baseline.rawControls} raw controls, ${counts.unadaptedPrimitives}/${baseline.unadaptedPrimitives} unadapted primitives, ${counts.compatibilityControls}/${baseline.compatibilityControls} compatibility controls in migrated features, ${counts.retainedMarkupControls}/${baseline.retainedMarkupControls} retained markup controls, ${counts.legacyDomControls}/${baseline.legacyDomControls} legacy DOM controls, ${counts.legacyTemplateControls}/${baseline.legacyTemplateControls} legacy template controls, ${counts.reactTemplateControls}/${baseline.reactTemplateControls} retained React template controls).`);
+    console.log(`shadcn adoption passed (${counts.rawControls}/${baseline.rawControls} raw controls, ${counts.unadaptedPrimitives}/${baseline.unadaptedPrimitives} unadapted primitives, ${counts.compatibilityControls}/${baseline.compatibilityControls} compatibility controls in migrated features, ${counts.retainedMarkupControls}/${baseline.retainedMarkupControls} retained markup controls, ${counts.legacyDomControls}/${baseline.legacyDomControls} legacy DOM controls, ${counts.legacyMjsDomControls}/${baseline.legacyMjsDomControls} legacy MJS DOM controls, ${counts.legacyTemplateControls}/${baseline.legacyTemplateControls} legacy template controls, ${counts.reactTemplateControls}/${baseline.reactTemplateControls} retained React template controls).`);
   }
 }
 

@@ -15,14 +15,11 @@ const CLOSE_ICON =
 const SEARCH_ICON = sidebarIcons.search;
 
 /*
- * `btn-icon` is the marker the shell's icon-button rules key off (32px circle
- * in the header, squared in the footer, tap-target expansion on the phone).
- * The primitive underneath is the shadcn button; its own base classes sit in
- * @layer utilities, so the unlayered owner rules keep the last word until they
- * are retired (docs/adr/0024-shadcn-shell-geometry-ownership.md). The press
- * row must not shift, so the primitive's translate is cancelled here.
+ * `btn-icon` is the phone-specific tap-target marker. Desktop size and radius
+ * come from shadcn's icon-sm size and the shell radius token; the phone owner
+ * may still expand the target to its reference-pinned 40px.
  */
-const ICON_BUTTON = 'btn-icon active:not-aria-[haspopup]:translate-y-0';
+const ICON_BUTTON = 'btn-icon rounded-[var(--ui-radius-sm)] border-0 active:not-aria-[haspopup]:translate-y-0';
 
 export function SidebarHeader() {
   // Subscribe to the chrome bridge so the header re-renders on user change
@@ -47,6 +44,7 @@ export function SidebarHeader() {
       <div className="sidebar-header-actions">
         <Button
           variant="ghost"
+          size="icon-sm"
           className={`${ICON_BUTTON} sidebar-search-btn`}
           id="sidebarSearchBtn"
           type="button"
@@ -69,6 +67,7 @@ export function SidebarHeader() {
         />
         <Button
           variant="ghost"
+          size="icon-sm"
           className={`${ICON_BUTTON} compose-btn`}
           id="newChatBtn"
           title={t('sidebar.startNewChat')}
@@ -83,6 +82,7 @@ export function SidebarHeader() {
         />
         <Button
           variant="ghost"
+          size="icon-sm"
           className={ICON_BUTTON}
           id="sidebarCloseBtn"
           title={t('chrome.closeSidebar')}

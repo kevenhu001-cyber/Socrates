@@ -101,13 +101,6 @@
   height: 36px;
   min-height: 36px;
   flex: 0 0 36px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--foreground);
-  color: var(--background);
-  cursor: pointer;
-  transition: background-color .15s var(--ui-ease-out), color .15s var(--ui-ease-out), opacity .15s var(--ui-ease-out);
 }
 #appShell .voice-recording-stop svg { display: block; width: 16px; height: 16px; }
 

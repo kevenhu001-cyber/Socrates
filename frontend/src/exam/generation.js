@@ -1,4 +1,3 @@
-import { esc } from '../render/helpers.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { callAPIStream } from '../chat/stream.ts';
 import { stateStore } from '../state/store.js';
@@ -7,14 +6,59 @@ import { getProviderConfigSnapshot, setActiveProviderLocal } from '../config/pro
 import { detectExamLang, parseSingleExamQuestion } from './parsing.js';
 import { renderExamNav } from './navigation.js';
 import { saveExamSession, setExamAnswer } from './persistence.js';
-import { examBody as _examBody, examFooter as _examFooter, examUiIsZh as _examUiIsZh, examUiL as _examUiL, setExamTitle as _setExamTitle } from './ui.js';
+import { clearExamSetup, renderExamActions, renderExamStatus } from '../react/exam/examUiHost.tsx';
+import { clearExamQuestionCards, renderExamQuestionCard } from '../react/exam/examQuestionHost.tsx';
+import { clearExamNavigation } from '../react/exam/examNavigationHost.tsx';
+import { examBody as _examBody, examUiIsZh as _examUiIsZh, examUiL as _examUiL, setExamTitle as _setExamTitle } from './ui.js';
+
+let generationProgress = { index: 0, total: 1, step: '' };
+
+function reactBodyHost() {
+  return document.getElementById('examViewReactBody');
+}
+
+function reactFooterHost() {
+  return document.getElementById('examViewReactFooter');
+}
+
+function renderExamStatusView(snapshot) {
+  const host = reactBodyHost();
+  if (host) renderExamStatus(host, snapshot);
+}
+
+function renderExamActionView(actions) {
+  const host = reactFooterHost();
+  if (host) renderExamActions(host, actions);
+}
+
+function examAction(command, label, variant = 'default') {
+  return { command, label, variant };
+}
+
+function loadingSubtitle(index, total) {
+  if (index >= total) return _examUiL('Finishing your exam…', '正在完成考卷…');
+  return _examUiIsZh()
+    ? '正在生成第 ' + (index + 1) + ' / ' + total + ' 题…'
+    : 'Generating question ' + (index + 1) + ' of ' + total + '…';
+}
+
+function renderGenerationProgress() {
+  renderExamStatusView({
+    kind: 'loading',
+    progress: generationProgress.total > 0 ? Math.round(92 * generationProgress.index / generationProgress.total) : 0,
+    message: _examUiL('Generating your exam…', '正在生成考卷…'),
+    step: generationProgress.step || _examUiL('Preparing…', '准备出题…'),
+    subtitle: loadingSubtitle(generationProgress.index, generationProgress.total),
+  });
+}
 
 function showProviderRequiredState() {
+  clearExamSetup();
+  clearExamNavigation();
   const message = _examUiL("Add and select a model in Settings first", "请先在设置中添加并选择一个模型");
-  const body = _examBody();
-  const footer = _examFooter();
-  if (body) body.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + esc(message) + '</div>';
-  if (footer) footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Back", "返回") + '</button>';
+  _examBody()?.replaceChildren();
+  renderExamStatusView({ kind: 'empty', message });
+  renderExamActionView([examAction('form', _examUiL('Back', '返回'))]);
 }
 
 function selectedQuestionTypes(selection) {
@@ -43,22 +87,16 @@ function activateSelectedProvider(chosenModel, providerConfig) {
 }
 
 function renderGenerationStart(topic, count, difficulty, providerConfig) {
+  clearExamSetup();
+  clearExamNavigation();
+  _examBody()?.replaceChildren();
   _setExamTitle(topic);
   const meta = document.getElementById("examViewMeta");
   const provider = providerConfig.providers.find((item) => item && item.id === providerConfig.activeId) || {};
   if (meta) meta.textContent = count + " " + _examUiL("questions · ", "题 · ") + (provider.label || provider.model || "") + " · " + difficulty;
-  const body = _examBody();
-  if (body) {
-    body.innerHTML = '<div class="exam-loading" id="examGenStatus">' +
-      '<span class="loading"><span></span><span></span><span></span></span>' +
-      '<div class="exam-loading-msg" id="examGenMsg">' + _examUiL("Generating your exam…", "正在生成考卷…") + '</div>' +
-      '<div class="exam-progress"><div class="exam-progress-bar"><div class="exam-progress-fill" id="examGenProgressFill"></div></div>' +
-      '<div class="exam-progress-step" id="examGenProgressStep"><span class="exam-progress-spin"></span>' + _examUiL("Preparing…", "准备出题…") + '</div></div>' +
-      '<div class="exam-loading-sub" id="examGenSubMsg">' + _examUiL("The AI is preparing your questions — this usually takes a few seconds.", "AI 正在为您出题，请稍候片刻") + '</div>' +
-      '</div>';
-  }
-  const footer = _examFooter();
-  if (footer) footer.innerHTML = '<button class="exam-btn secondary" data-exam-command="cancel">' + _examUiL("Cancel", "取消") + '</button>';
+  generationProgress = { index: 0, total: count, step: _examUiL('Preparing…', '准备出题…') };
+  renderGenerationProgress();
+  renderExamActionView([examAction('cancel', _examUiL('Cancel', '取消'), 'outline')]);
 }
 
 export function runExamGeneration(selection = {}) {
@@ -120,35 +158,30 @@ export function restoreExamActiveProvider() {
 export function cancelExamGeneration() {
   stateStore.dispatch({type:'state/set',key:'examCancel',value:true});
   restoreExamActiveProvider();
-  var body = _examBody();
-  body.innerHTML = '<div class="exam-empty">' + (_examUiL("Generation cancelled", "已取消出题") + '.</div>');
-  _examFooter().innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
+  clearExamNavigation();
+  _examBody()?.replaceChildren();
+  renderExamStatusView({ kind: 'empty', message: _examUiL('Generation cancelled', '已取消出题') + '.' });
+  renderExamActionView([
+    examAction('form', _examUiL('Try again', '重新出题')),
+    examAction('close', _examUiL('Close', '关闭'), 'outline'),
+  ]);
   _setExamTitle(_examUiL("Cancelled", "已取消"));
 }
 
 function updateExamProgress(index, total, message) {
-  const fill = document.getElementById("examGenProgressFill");
-  const step = document.getElementById("examGenProgressStep");
-  const subtitle = document.getElementById("examGenSubMsg");
-  if (fill) fill.style.width = (total > 0 ? Math.round(92 * index / total) : 0) + "%";
-  if (step) step.innerHTML = '<span class="exam-progress-spin"></span>' + message;
-  if (subtitle && index < total) {
-    subtitle.textContent = _examUiIsZh()
-      ? "正在生成第 " + (index + 1) + " / " + total + " 题…"
-      : "Generating question " + (index + 1) + " of " + total + "…";
-  }
+  generationProgress = { index, total, step: message };
+  renderGenerationProgress();
 }
 
 function failExamGeneration(message, detail) {
   restoreExamActiveProvider();
-  const body = _examBody();
-  if (body) {
-    body.innerHTML = '<div class="exam-empty"><strong>' + esc(message) + '</strong>' +
-      (detail ? '<div style="margin-top:10px;font-size:13px;color:hsl(var(--text-500));line-height:1.5">' + esc(detail) + '</div>' : '') +
-      '</div>';
-  }
-  const footer = _examFooter();
-  if (footer) footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
+  clearExamNavigation();
+  _examBody()?.replaceChildren();
+  renderExamStatusView({ kind: 'error', message, detail });
+  renderExamActionView([
+    examAction('form', _examUiL('Try again', '重新出题')),
+    examAction('close', _examUiL('Close', '关闭'), 'outline'),
+  ]);
 }
 
 function buildQuestionPrompt({ topic, difficulty, questionType, lang, index, total, instructions, previousTexts }) {
@@ -259,9 +292,12 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
 export function renderAllQuestions() {
   var body = _examBody();
   if (!body) return;
-  body.innerHTML = '<div id="examQuestionsContainer"></div>';
-  var cont = document.getElementById("examQuestionsContainer");
-  if (!cont) return;
+  clearExamQuestionCards();
+  clearExamSetup();
+  body.replaceChildren();
+  var cont = document.createElement('div');
+  cont.id = 'examQuestionsContainer';
+  body.appendChild(cont);
   window.stateStore.read("examQuestions").forEach(function (q, idx) {
     var ph = document.createElement("div");
     ph.className = "exam-q-card";
@@ -271,6 +307,8 @@ export function renderAllQuestions() {
   });
 }
 
+export { clearExamQuestionCards };
+
 export function paintQuestionCard(idx, q, container) {
   var savedAnswer = (window.stateStore.read("examAnswers") || {})[idx];
   var typeLabels = {
@@ -279,23 +317,24 @@ export function paintQuestionCard(idx, q, container) {
     "short-answer": _examUiL("Short answer", "简答题"),
     "error": _examUiL("Failed", "生成失败")
   };
-  var html = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (idx + 1) + ' / ' + window.stateStore.read("examQuestions").length + ' <span class="exam-q-type">' + esc(typeLabels[q.type] || q.type) + '</span></div>';
-  html += '<div class="exam-q-text">' + formatMsg(q.q) + '</div>';
-  if (q.type === "multiple-choice" && q.opts) {
-    html += '<div class="exam-q-opts">';
-    q.opts.forEach(function (o, oi) {
-      html += '<button class="exam-q-opt' + (savedAnswer === oi ? ' selected' : '') + '" data-eidx="' + idx + '" data-oidx="' + oi + '" data-exam-command="answer-option">';
-      html += '<span class="exam-q-opt-letter">' + esc(o.letter) + '</span>';
-      html += '<span class="exam-q-opt-text">' + formatMsg(o.text) + '</span>';
-      html += '</button>';
-    });
-    html += '</div>';
-  } else if (q.type === "fill-blank") {
-    html += '<input class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" value="' + esc(savedAnswer == null ? "" : savedAnswer) + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '">';
-  } else if (q.type === "short-answer") {
-    html += '<textarea class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" rows="3" style="min-height:80px;resize:vertical">' + esc(savedAnswer == null ? "" : savedAnswer) + '</textarea>';
-  }
-  container.innerHTML = html;
+  const commandHost = document.getElementById('examView');
+  if (!commandHost) return;
+  const options = Array.isArray(q.opts) ? q.opts.map((option) => ({
+    letter: option.letter,
+    html: formatMsg(option.text),
+  })) : [];
+  renderExamQuestionCard(container, commandHost, {
+    index: idx,
+    total: window.stateStore.read("examQuestions").length,
+    type: q.type,
+    questionLabel: _examUiL("Question", "题目"),
+    typeLabel: typeLabels[q.type] || q.type,
+    questionHtml: formatMsg(q.q),
+    options,
+    savedAnswer: savedAnswer == null ? null : savedAnswer,
+    answerLabel: _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案"),
+    placeholder: _examUiL("Type your answer…", "输入你的答案…"),
+  });
 }
 
 export function replaceStreamingCardWithQuestion(i, q) {
@@ -309,41 +348,53 @@ export function appendExamErrorCard(i, msg) {
   var ph = document.createElement("div");
   ph.className = "exam-q-card";
   ph.id = "examQ" + i;
-  ph.innerHTML = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-wrong">' + _examUiL("Failed", "生成失败") + '</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">' + esc(msg) + '</div>';
+  const errorQuestion = { q: msg, type: 'error', opts: [], _idx: i };
   stateStore.dispatch({
     type:'state/set',key:'examQuestions',
     value:window.stateStore.read("examQuestions").concat([{ q:"[failed]",type:"error",explanation:"",_idx:i }])
   });
   var cont = document.getElementById("examQuestionsContainer");
-  if (cont) cont.appendChild(ph);
+  if (cont) {
+    cont.appendChild(ph);
+    paintQuestionCard(i, errorQuestion, ph);
+  }
   renderExamNav();
 }
 
 export function selectExamOpt(qidx, oidx) {
   if (window.stateStore.read("examSubmitted")) return;
   setExamAnswer(qidx,oidx);
-  var btns = document.querySelectorAll('.exam-q-opt[data-eidx="' + qidx + '"]');
-  btns.forEach(function (b, i) { b.classList.toggle("selected", i === oidx); });
   renderExamNav();
   saveExamSession();
 }
 
 export function finishExamGeneration() {
-  var st = document.getElementById("examGenStatus");
-  if (st) st.style.display = "none";
   var valid = window.stateStore.read("examQuestions").filter(function (q) { return q.type !== "error"; });
-  var footer = _examFooter();
   var _L = _examUiL;
   if (window.stateStore.read("examCancel")) {
-    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _L("Start New Exam", "新考试") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
+    clearExamSetup();
+    renderExamActionView([
+      examAction('form', _L('Start New Exam', '新考试')),
+      examAction('close', _L('Close', '关闭'), 'outline'),
+    ]);
     renderExamNav();
     return;
   }
   if (valid.length > 0) {
-    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="submit">' + _L("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
+    renderExamActionView([
+      examAction('submit', _L('Submit for Grading', '提交批改')),
+      examAction('close', _L('Close', '关闭'), 'outline'),
+    ]);
   } else {
-    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _L("Try Again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
+    renderExamActionView([
+      examAction('form', _L('Try Again', '重新出题')),
+      examAction('close', _L('Close', '关闭'), 'outline'),
+    ]);
   }
   renderExamNav();
   saveExamSession();
+}
+
+export function refreshExamGenerationStatus() {
+  renderGenerationProgress();
 }

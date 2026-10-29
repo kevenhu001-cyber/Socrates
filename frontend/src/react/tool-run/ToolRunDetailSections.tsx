@@ -88,20 +88,15 @@ function ExpandableTextSection({ section }: { section: Extract<DetailSection, { 
       if (attempt !== copyAttempt.current) return;
       /* Clipboard can be denied (permissions, insecure context) — fall
          back to a selection copy path. */
-      const textarea = document.createElement('textarea');
       const focused = document.activeElement;
       try {
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        copied = document.execCommand('copy');
+        const { copyTextWithShadcnTextarea } = await import('../legacy-controls/clipboardTextarea');
+        await copyTextWithShadcnTextarea(text);
+        copied = true;
       } catch (_) {
         // Clipboard denial is recoverable; report failure and allow another try.
         copied = false;
       } finally {
-        textarea.remove();
         if (focused instanceof window.HTMLElement && focused.isConnected) focused.focus({ preventScroll: true });
       }
     }

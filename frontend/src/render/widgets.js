@@ -2,6 +2,9 @@
 
 import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { createElement } from 'react';
+import { mountTutorWidget } from '../react/tutor-widgets/widgetHost.tsx';
+import { ExampleWidget, FlashcardWidget, PracticeWidget, QuizWidget, TheoremWidget } from '../react/tutor-widgets/InlineTutorWidgets.tsx';
 
 let runtime = {
   formatMsg: (value) => String(value ?? ''),
@@ -17,17 +20,13 @@ export function configureWidgetRuntime(nextRuntime) {
 
 export function mountExampleWidget(slot, parsed) {
   const { formatMsg, t } = runtime;
-  const el = document.createElement('div'); el.className = 'inline-example';
-  if (parsed.title) { const node = document.createElement('div'); node.className = 'inline-example-title'; node.innerHTML = formatMsg(parsed.title); el.appendChild(node); }
-  if (parsed.problem) { const node = document.createElement('div'); node.className = 'inline-example-problem'; node.innerHTML = formatMsg(parsed.problem); el.appendChild(node); }
-  if (parsed.solution) {
-    const reveal = document.createElement('button'); reveal.type = 'button'; reveal.className = 'inline-example-reveal';
-    const solution = document.createElement('div'); solution.className = 'inline-example-solution'; solution.innerHTML = formatMsg(parsed.solution);
-    if (!parsed._revealed) solution.hidden = true;
-    const update = () => { solution.hidden = !solution.hidden; parsed._revealed = !solution.hidden; reveal.textContent = t(parsed._revealed ? 'tutor.hideSolution' : 'tutor.showSolution'); };
-    reveal.textContent = t(parsed._revealed ? 'tutor.hideSolution' : 'tutor.showSolution'); reveal.onclick = update; el.append(reveal, solution);
-  }
-  slot.replaceWith(el);
+  return mountTutorWidget(slot, 'example', createElement(ExampleWidget, {
+    title: parsed.title ? formatMsg(parsed.title) : '',
+    problem: parsed.problem ? formatMsg(parsed.problem) : '',
+    solution: parsed.solution ? formatMsg(parsed.solution) : '',
+    parsed,
+    t,
+  }));
 }
 
 export function mountDefinitionWidget(slot, parsed) {
@@ -44,18 +43,21 @@ export function mountStepList(slot, steps) {
 }
 
 export function mountFlashcardWidget(slot, parsed) {
-  const el = document.createElement('div'); el.className = 'inline-flashcard'; el.setAttribute('role', 'button'); el.tabIndex = 0; el.setAttribute('aria-label', runtime.t('tutor.flashcardAria'));
-  const front = document.createElement('div'); front.className = 'inline-flashcard-front'; front.innerHTML = runtime.formatMsg(parsed.front || '');
-  const back = document.createElement('div'); back.className = 'inline-flashcard-back'; back.innerHTML = runtime.formatMsg(parsed.back || ''); back.hidden = true; el.append(front, back);
-  const flip = () => { front.hidden = !front.hidden; back.hidden = !back.hidden; }; el.onclick = flip; el.onkeydown = (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); flip(); } }; slot.replaceWith(el);
+  return mountTutorWidget(slot, 'flashcard', createElement(FlashcardWidget, {
+    front: runtime.formatMsg(parsed.front || ''),
+    back: runtime.formatMsg(parsed.back || ''),
+    label: runtime.t('tutor.flashcardAria'),
+  }));
 }
 
 export function mountTheoremWidget(slot, parsed) {
-  const el = document.createElement('div'); el.className = 'inline-theorem';
-  if (parsed.title) { const node = document.createElement('div'); node.className = 'inline-theorem-title'; node.innerHTML = runtime.formatMsg(parsed.title); el.appendChild(node); }
-  if (parsed.statement) { const node = document.createElement('div'); node.className = 'inline-theorem-statement'; node.innerHTML = runtime.formatMsg(parsed.statement); el.appendChild(node); }
-  if (parsed.proofBody) { const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'inline-theorem-proof-toggle'; const proof = document.createElement('div'); proof.className = 'inline-theorem-proof ui-collapse collapsed'; const inner = document.createElement('div'); inner.className = 'ui-collapse-inner'; if (parsed.proofTitle) { const title = document.createElement('div'); title.className = 'inline-proof-title'; title.innerHTML = runtime.formatMsg(parsed.proofTitle); inner.appendChild(title); } const body = document.createElement('div'); body.className = 'inline-proof-body'; body.innerHTML = runtime.formatMsg(parsed.proofBody); inner.appendChild(body); proof.appendChild(inner); toggle.textContent = runtime.t('tutor.showProof'); toggle.onclick = () => { const collapsed = proof.classList.toggle('collapsed'); toggle.textContent = runtime.t(collapsed ? 'tutor.showProof' : 'tutor.hideProof'); }; el.append(toggle, proof); }
-  slot.replaceWith(el);
+  return mountTutorWidget(slot, 'theorem', createElement(TheoremWidget, {
+    title: parsed.title ? runtime.formatMsg(parsed.title) : '',
+    statement: parsed.statement ? runtime.formatMsg(parsed.statement) : '',
+    proofTitle: parsed.proofTitle ? runtime.formatMsg(parsed.proofTitle) : '',
+    proofBody: parsed.proofBody ? runtime.formatMsg(parsed.proofBody) : '',
+    t: runtime.t,
+  }));
 }
 
 export function mountProofWidget(slot, parsed) { const el = document.createElement('div'); el.className = 'inline-proof'; if (parsed.title) { const node = document.createElement('div'); node.className = 'inline-proof-title'; node.innerHTML = runtime.formatMsg(parsed.title); el.appendChild(node); } if (parsed.body) { const node = document.createElement('div'); node.className = 'inline-proof-body'; node.innerHTML = runtime.formatMsg(parsed.body); el.appendChild(node); } slot.replaceWith(el); }
@@ -64,120 +66,31 @@ export function mountKeyPointWidget(slot, parsed) { const el = document.createEl
 
 export function mountPracticeWidget(slot, parsed) {
   const { formatMsg, t, submitChatMessage, stateStore, recordMistake } = runtime;
-  const el = document.createElement('div');
-  el.className = 'inline-practice';
-  const problem = document.createElement('div');
-  problem.className = 'inline-practice-problem';
-  problem.innerHTML = formatMsg(parsed.problem);
-  el.appendChild(problem);
-  let hint;
-  if (parsed.hint) {
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'inline-practice-hint-toggle';
-    toggle.textContent = t('tutor.showHint');
-    hint = document.createElement('div');
-    hint.className = 'inline-practice-hint';
-    hint.setAttribute('hidden', '');
-    hint.innerHTML = formatMsg(parsed.hint);
-    toggle.onclick = () => {
-      const hidden = hint.hasAttribute('hidden');
-      hint.toggleAttribute('hidden', !hidden);
-      toggle.textContent = t(hidden ? 'tutor.hideHint' : 'tutor.showHint');
-    };
-    el.append(toggle, hint);
-  }
-  const form = document.createElement('form');
-  form.className = 'inline-practice-form';
-  form.onsubmit = () => false;
-  const textarea = document.createElement('textarea');
-  textarea.className = 'inline-practice-textarea';
-  textarea.rows = 3;
-  textarea.placeholder = t('tutor.practicePlaceholder');
-  form.appendChild(textarea);
-  const actions = document.createElement('div');
-  actions.className = 'inline-practice-actions';
-  let reveal;
-  if (parsed.correct) {
-    reveal = document.createElement('button');
-    reveal.type = 'button';
-    reveal.className = 'inline-practice-reveal';
-    reveal.textContent = t('tutor.revealAnswer');
-    actions.appendChild(reveal);
-  }
-  const submit = document.createElement('button');
-  submit.type = 'button';
-  submit.className = 'inline-practice-submit';
-  submit.textContent = t('tutor.submitAnswer');
-  actions.appendChild(submit);
-  form.appendChild(actions);
-  const feedback = document.createElement('div');
-  feedback.className = 'inline-practice-feedback';
-  form.appendChild(feedback);
-  el.appendChild(form);
   if (slot?.getAttribute && !parsed.slotId) parsed.slotId = slot.getAttribute('data-practice-id');
-  submit.onclick = () => {
-    const answer = textarea.value.trim();
-    if (!answer) {
-      feedback.className = 'inline-practice-feedback bad';
-      feedback.textContent = t('tutor.practiceEmpty');
-      return;
-    }
-    submit.disabled = true;
-    if (reveal) reveal.disabled = true;
-    textarea.disabled = true;
-    submitChatMessage?.(t('tutor.practicePrefix') + answer, { origin: 'practice' });
-    if (!parsed.correct) {
-      feedback.className = 'inline-practice-feedback recorded';
-      feedback.textContent = t('tutor.practiceSent');
-      return;
-    }
-    const normalize = (value) => String(value).toLowerCase().replace(/[\s.,;:!?()[\]'"]+/g, '').trim();
-    const isCorrect = normalize(answer) === normalize(parsed.correct);
-    feedback.className = `inline-practice-feedback ${isCorrect ? 'ok' : 'bad'}`;
-    feedback.textContent = isCorrect ? t('tutor.practiceSelfCorrect') : `${t('tutor.practiceSelfWrong')} ${parsed.correct}`;
-    if (isCorrect) {
-      stateStore.dispatch?.({ type: 'state/set', key: 'practiceAttempts', value: 0 });
-    } else {
-      recordMistake?.({ type: 'practice', q: parsed.problem, options: [], correct: parsed.correct, userAnswer: answer, judgedAnswer: parsed.correct, practiceSlotId: parsed.slotId || null });
-    }
-  };
-  reveal?.addEventListener('click', () => {
-    reveal.disabled = true;
-    submit.disabled = true;
-    textarea.disabled = true;
-    feedback.className = 'inline-practice-feedback recorded';
-    feedback.innerHTML = formatMsg(parsed.correct);
-  });
-  slot.replaceWith(el);
+  return mountTutorWidget(slot, 'practice', createElement(PracticeWidget, {
+    problem: parsed.problem || '',
+    hint: parsed.hint || '',
+    correct: parsed.correct || '',
+    t,
+    formatMsg,
+    submitChatMessage,
+    stateStore,
+    recordMistake,
+    slotId: parsed.slotId,
+  }));
 }
 
 export function mountQuizWidget(slot, parsed) {
   const { formatMsg, handleQuizPick } = runtime;
   if (slot?.getAttribute && !parsed.slotId) parsed.slotId = slot.getAttribute('data-quiz-id');
-  const card = document.createElement('div');
-  card.className = 'inline-quiz';
-  const question = document.createElement('div');
-  question.className = 'inline-quiz-q';
-  question.innerHTML = formatMsg(parsed.q);
-  card.appendChild(question);
-  const options = document.createElement('div');
-  options.className = 'inline-quiz-opts';
-  const buttons = [];
-  parsed.options.forEach((option) => {
-    const button = document.createElement('button');
-    button.className = 'inline-quiz-opt';
-    button.setAttribute('data-letter', option.letter);
-    button.innerHTML = `<span class="inline-quiz-opt-letter">${option.letter}.</span><span class="inline-quiz-opt-text">${formatMsg(option.text)}</span>`;
-    button.onclick = () => handleQuizPick?.(card, options, feedback, buttons, option, parsed);
-    options.appendChild(button);
-    buttons.push(button);
-  });
-  card.appendChild(options);
-  const feedback = document.createElement('div');
-  feedback.className = 'inline-quiz-feedback';
-  card.appendChild(feedback);
-  slot.replaceWith(card);
+  return mountTutorWidget(slot, 'quiz', createElement(QuizWidget, {
+    question: formatMsg(parsed.q || ''),
+    options: (parsed.options || []).map((option) => ({ ...option, html: formatMsg(option.text) })),
+    correct: parsed.correct || '',
+    handleQuizPick,
+    parsed,
+    questionLabel: String(parsed.q || ''),
+  }));
 }
 
 function showQuizFeedback(feedback, buttons, picked, correct, isRight, services) {

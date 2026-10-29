@@ -37,7 +37,6 @@
   }
   #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
-    border-radius: var(--ui-radius-sm);
     color: var(--foreground);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);

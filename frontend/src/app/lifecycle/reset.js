@@ -92,8 +92,10 @@ function renderTopicSetupAfterReset(examWasOpen) {
   try { renderGreeting(); }
   catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.renderGreeting'); }
   if (examWasOpen) {
-    const examBody = document.getElementById('examViewBody');
-    if (examBody) examBody.innerHTML = '';
+    const examBody = document.getElementById('examViewLegacyBody') || document.getElementById('examViewBody');
+    const examFooter = document.getElementById('examViewLegacyFooter') || document.getElementById('examViewFooter');
+    if (examBody) examBody.replaceChildren();
+    if (examFooter) examFooter.replaceChildren();
   }
   clearLegacyMsgListChildren();
   resetComposerForNewSession();

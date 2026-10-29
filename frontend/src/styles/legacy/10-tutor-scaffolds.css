@@ -25,15 +25,10 @@
 .inline-quiz,
 .inline-example,
 .inline-practice,
-.inline-definition,
-.inline-step-list,
-.inline-flashcard,
-.inline-block-fallback{margin:14px 0;padding:10px 12px 12px;border:0.5px solid hsl(var(--border-300)/0.35);border-radius:8px;background:hsl(var(--bg-200)/0.4);font-size:calc(13.5px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-100))}
+.inline-flashcard{margin:14px 0;font-size:calc(13.5px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-100))}
 .inline-quiz:first-child,
 .inline-example:first-child,
 .inline-practice:first-child,
-.inline-definition:first-child,
-.inline-step-list:first-child,
 .inline-flashcard:first-child{margin-top:8px}
 
 /* Quiz: question line followed by tappable options. Options are
@@ -42,9 +37,7 @@
 .inline-quiz-q{font-weight:var(--ui-font-weight-semibold);margin-bottom:8px;color:hsl(var(--text-100))}
 
 .inline-quiz-opts{display:flex;flex-direction:column;gap:5px;margin-top:6px}
-.inline-quiz-opt{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-md);border:1px solid var(--input);background:transparent;font-size:var(--ui-font-size-sm);color:var(--foreground);text-align:left;width:100%;cursor:pointer;transition:background-color var(--ui-duration-fast) ease,border-color var(--ui-duration-fast) ease,color var(--ui-duration-fast) ease;line-height:1.45;font-family:inherit}
-.inline-quiz-opt:hover:not(:disabled){background:var(--accent);border-color:var(--border);color:var(--accent-foreground)}
-.inline-quiz-opt:disabled{cursor:default}
+.inline-quiz-opt{height:auto;min-height:var(--ui-control-sm);width:100%;justify-content:flex-start;white-space:normal;text-align:left;line-height:1.45}
 /* The "A." / "B." chip needs to sit on the same baseline as the option
    text — but KaTeX renders inline math with its own vertical-align that
    pushes the .katex span off the text baseline. Without these two
@@ -74,8 +67,6 @@
 .inline-example-solution{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200))}
 .inline-example-solution .label,
 .inline-example-problem .label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-right:4px;font-weight:var(--ui-font-weight-medium)}
-.inline-example-reveal{display:inline-flex;align-items:center;margin-top:8px;height:var(--ui-control-sm);padding:0 12px;background:var(--background);border:1px solid var(--input);border-radius:var(--radius-md);color:var(--foreground);font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:background-color var(--ui-duration-fast) ease,color var(--ui-duration-fast) ease}
-.inline-example-reveal:hover,.inline-example-reveal:focus-visible{background:var(--accent);color:var(--accent-foreground);border-color:var(--border);outline:0;box-shadow:var(--ui-focus-shadow)}
 
 /* Practice: problem text + hint toggle + textarea + Reveal-answer
    (optional) + Submit button row. Hint and answer text get the
@@ -85,19 +76,9 @@
 .inline-practice-problem{margin-bottom:8px}
 .inline-practice-hint{margin-top:6px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200));font-size:calc(12.5px * var(--app-font-scale, 1))}
 .inline-practice-hint .label{color:hsl(var(--text-500));margin-right:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium)}
-.inline-practice-hint-toggle{display:inline-block;margin-top:8px;padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
-.inline-practice-hint-toggle:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
 .inline-practice-form{margin-top:10px;display:flex;flex-direction:column;gap:8px}
-.inline-practice-textarea{width:100%;min-height:54px;padding:8px 10px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.35);border-radius:8px;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(13px * var(--app-font-scale, 1));line-height:1.5;resize:vertical;outline:none;box-sizing:border-box}
-.inline-practice-textarea:focus{border-color:hsl(var(--accent-000)/0.5)}
-.inline-practice-textarea:disabled{opacity:.6;cursor:default}
+.inline-practice-textarea{resize:vertical}
 .inline-practice-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.inline-practice-reveal{height:var(--ui-control-sm);padding:0 12px;background:var(--background);border:1px solid var(--input);border-radius:var(--radius-md);color:var(--foreground);font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:background-color var(--ui-duration-fast) ease,color var(--ui-duration-fast) ease}
-.inline-practice-reveal:hover:not(:disabled),.inline-practice-reveal:focus-visible:not(:disabled){background:var(--accent);color:var(--accent-foreground);border-color:var(--border);outline:0;box-shadow:var(--ui-focus-shadow)}
-.inline-practice-reveal:disabled{opacity:0.5;cursor:default}
-.inline-practice-submit{height:var(--ui-control-sm);padding:0 14px;background:var(--primary);color:var(--primary-foreground);border:0;border-radius:var(--radius-md);font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:filter var(--ui-duration-fast) ease,opacity var(--ui-duration-fast) ease}
-.inline-practice-submit:hover:not(:disabled){filter:brightness(0.94)}
-.inline-practice-submit:disabled{opacity:0.5;cursor:default}
 .inline-practice-feedback{margin-top:4px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
 .inline-practice-feedback.ok{color:hsl(145 55% 50%)}
 .inline-practice-feedback.bad{color:hsl(0 60% 55%)}
@@ -119,11 +100,8 @@
 /* Flashcard: front and back are just two stacked prose blocks.
    The whole card is clickable; we add a faint separator between
    sides. */
-.inline-flashcard{cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s}
-.inline-flashcard:hover{background:hsl(var(--bg-200)/0.55)}
-.inline-flashcard-front,
-.inline-flashcard-back{padding:2px 0}
-.inline-flashcard-back{margin-top:8px;padding-top:8px;border-top:0.5px dashed hsl(var(--border-300)/0.4);color:hsl(var(--text-200))}
+.inline-flashcard{-webkit-user-select:none;user-select:none}
+.inline-flashcard-back{margin-top:8px;padding-top:8px;border-top:1px dashed hsl(var(--border-300)/0.4);color:hsl(var(--text-200))}
 
 
 /* Fallback for malformed XML — show the raw content as muted
@@ -154,7 +132,7 @@
 /* Theorem — authoritative: 2px accent top border, statement is the
    focal point, nested proof is slightly subdued and (for long proofs)
    collapsible. */
-.inline-theorem{border-top:2px solid hsl(var(--accent-000)/0.55);background:linear-gradient(hsl(var(--bg-200)/0.55),hsl(var(--bg-200)/0.4))}
+.inline-theorem{border-top:2px solid hsl(var(--accent-000)/0.55)}
 .inline-theorem-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));margin-bottom:6px;font-weight:var(--ui-font-weight-semibold);letter-spacing:0.02em;text-transform:none}
 .inline-theorem-statement{margin-bottom:8px;color:hsl(var(--text-100))}
 /* The proof collapses on grid-template-rows (foundations/collapse.css): the
@@ -162,10 +140,8 @@
    The visual box lives on the inner child so the closed state has no padding
    or border left behind. */
 .inline-theorem-proof{margin-top:0;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1))}
+.inline-theorem-proof{margin-top:0;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1))}
 .inline-theorem-proof>.ui-collapse-inner{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0}
-.inline-theorem-proof.collapsed>.ui-collapse-inner{margin-top:0}
-.inline-theorem-proof-toggle{display:inline-flex;align-items:center;margin-top:6px;height:var(--ui-control-sm);padding:0 12px;background:var(--background);border:1px solid var(--input);border-radius:var(--radius-md);color:var(--muted-foreground);font-size:var(--ui-font-size-xs);font-weight:var(--ui-font-weight-medium);cursor:pointer;font-family:inherit;transition:background-color var(--ui-duration-fast) ease,color var(--ui-duration-fast) ease}
-.inline-theorem-proof-toggle:hover,.inline-theorem-proof-toggle:focus-visible{background:var(--accent);color:var(--accent-foreground);border-color:var(--border);outline:0;box-shadow:var(--ui-focus-shadow)}
 
 /* Key Point — pops out: thicker accent border, soft accent wash. */
 .inline-key-point{border:1px solid hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
@@ -203,17 +179,10 @@
 .kb-detail-status-internalized{background:hsl(145 50% 50%/0.18);color:hsl(145 50% 65%)}
 .kb-detail-status-fuzzy{background:hsl(43 77% 62%/0.18);color:hsl(43 77% 70%)}
 .kb-detail-status-blank{background:hsl(var(--bg-300));color:hsl(var(--text-400))}
-.kb-go-btn{font-size:calc(11px * var(--app-font-scale, 1));padding:3px 9px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);cursor:pointer;transition:background-color .1s,color .1s}
-.kb-go-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .kb-detail-row{display:flex;flex-direction:column;gap:4px}
 .kb-detail-label{font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
 .kb-conf-row{display:flex;gap:4px;align-items:center}
-.kb-conf-dot{width:14px;height:14px;border-radius:50%;background:transparent;border:1.5px solid hsl(var(--text-500));cursor:pointer;padding:0;transition:background-color .12s,border-color .12s}
-.kb-conf-dot:hover{border-color:hsl(var(--accent-000))}
-.kb-conf-dot.on{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
 .kb-system-note{font-size:calc(12.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-300));padding:6px 0}
-.kb-user-note{width:100%;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:8px;padding:8px 10px;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(12.5px * var(--app-font-scale, 1));line-height:1.5;resize:vertical;min-height:54px;outline:none}
-.kb-user-note:focus{border-color:hsl(var(--accent-000)/0.4)}
 .kb-history{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:3px}
 .kb-history li{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.5}
 .kb-hist-date{color:hsl(var(--text-500));margin-right:6px}
@@ -249,8 +218,6 @@
 .mistake-opt.correct-tag .mistake-opt-letter{border-color:hsl(145 50% 55%);background:hsl(145 50% 55%);color:white}
 .mistake-opt.wrong-tag .mistake-opt-letter{border-color:hsl(0 60% 60%);background:hsl(0 60% 60%);color:white}
 .mistake-redo-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));margin-bottom:6px}
-.mistake-redo-btn{width:100%;padding:6px 10px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);font-size:calc(11px * var(--sidebar-font-scale));font-weight:var(--ui-font-weight-medium);cursor:pointer;transition:background-color .1s,color .1s}
-.mistake-redo-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 
 
 /* Thinking dot — shown until the first stream delta arrives.

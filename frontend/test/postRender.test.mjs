@@ -16,7 +16,8 @@ test('code block headers infer markup and remain idempotent', () => {
   const header = body.querySelector('.code-block-header');
   assert.equal(header.nextElementSibling, pre);
   assert.equal(header.querySelector('.code-block-header-lang').textContent, 'html');
-  assert.equal(header.querySelector('.code-block-expand').getAttribute('aria-label'), 'Expand code');
+  assert.ok(header.querySelector('[data-code-block-actions-root]'));
+  assert.equal(header.querySelector('button'), null, 'interactive controls are mounted by the React action island');
 
   wireCodeBlockHeaders(body);
   assert.equal(body.querySelectorAll('.code-block-header').length, 1);

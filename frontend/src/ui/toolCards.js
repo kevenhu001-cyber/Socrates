@@ -15,9 +15,20 @@
 
 import { formatToolOutput } from '../render/toolOutput.ts';
 import { highlightCodeElement } from '../render/highlight.ts';
-import { copyText, setCopyFeedback, trTool } from './toolCardHelpers.js';
+import { copyText, trTool } from './toolCardHelpers.js';
 import { startToolCardTimer } from './toolCardTimer.js';
 import { STROKE_ICONS, toolIcon } from './icons/toolIcons.ts';
+import { renderToolCardDisclosure } from '../react/toolCards/toolCardDisclosureHost.tsx';
+import { reportSwallow } from '../util/reportSwallow.ts';
+
+function renderToolCardAction(method, ...args) {
+  void import('../react/toolCards/toolCardActionsHost.tsx').then((host) => {
+    host[method](...args);
+  }).catch((error) => reportSwallow(error, `ui/toolCards.js:${method}`));
+}
+
+const renderToolCardCopyAction = (...args) => renderToolCardAction('renderToolCardCopyAction', ...args);
+const renderToolOutputToggle = (...args) => renderToolCardAction('renderToolOutputToggle', ...args);
 
 export { stopToolCardTimerForCard } from './toolCardTimer.js';
 export { renderWebSearchResults } from './toolSearchResults.js';
@@ -138,13 +149,29 @@ function syncToolCopyActions(card) {
   if (!card) return;
   var code = card.querySelector(".agent-tool-code code");
   var output = card.querySelector(".agent-tool-output-pre");
-  var codeButton = card.querySelector('[data-tool-copy="code"]');
-  var outputButton = card.querySelector('[data-tool-copy="output"]');
+  var codeHost = card.querySelector('[data-tool-copy-host="code"]');
+  var outputHost = card.querySelector('[data-tool-copy-host="output"]');
   var isSearch = card.dataset.tool === "web_search";
-  if (codeButton) codeButton.hidden = isSearch || !(code && code.textContent.trim());
-  if (outputButton) outputButton.hidden = isSearch || !(output && output.textContent.trim());
+  var codeVisible = !isSearch && !!(code && code.textContent.trim());
+  var outputVisible = !isSearch && !!(output && output.textContent.trim());
+  if (codeHost) renderToolCardCopyAction(codeHost, {
+    kind: 'code',
+    label: trTool('tool.copyCode', 'Copy code'),
+    copiedLabel: trTool('tool.copied', 'Copied'),
+    failedLabel: trTool('tool.copyFailed', 'Copy failed'),
+    hidden: !codeVisible,
+    onCopy: function () { return copyText(code && code.textContent); },
+  });
+  if (outputHost) renderToolCardCopyAction(outputHost, {
+    kind: 'output',
+    label: trTool('tool.copyOutput', 'Copy output'),
+    copiedLabel: trTool('tool.copied', 'Copied'),
+    failedLabel: trTool('tool.copyFailed', 'Copy failed'),
+    hidden: !outputVisible,
+    onCopy: function () { return copyText(output && output.textContent); },
+  });
   var toolbar = card.querySelector(".agent-tool-toolbar");
-  if (toolbar) toolbar.hidden = (!codeButton || codeButton.hidden) && (!outputButton || outputButton.hidden);
+  if (toolbar) toolbar.hidden = !codeVisible && !outputVisible;
 }
 
 /* Pull the readable code body out of a tool call's argument JSON.
@@ -252,7 +279,7 @@ function createToolCard(toolName, toolInput, opts, meta) {
   // single, serialization-safe source on the card itself.
   if (isRunningCard) card.dataset.startedAt = String(Date.now());
   card.innerHTML = `
-    <div class="agent-tool-head" role="button" tabindex="0" aria-expanded="false" aria-controls="${detailId}">
+    <div class="agent-tool-head-host">
       <span class="agent-tool-state-icon" aria-hidden="true"></span>
       <span class="agent-tool-icon" aria-hidden="true">${toolIcon(toolName)}</span>
       <span class="agent-tool-name"></span>
@@ -264,18 +291,20 @@ function createToolCard(toolName, toolInput, opts, meta) {
       <section class="agent-tool-section agent-tool-input-section">
         <div class="agent-tool-section-head">
           <span>Input</span>
-          <button type="button" class="agent-tool-action" data-tool-copy="code" hidden></button>
+          <span data-tool-copy-host="code"></span>
         </div>
         <pre class="agent-tool-code"><code></code></pre>
       </section>
       <section class="agent-tool-section agent-tool-output-section">
         <div class="agent-tool-section-head">
           <span>Output</span>
-          <button type="button" class="agent-tool-action" data-tool-copy="output" hidden></button>
+          <span data-tool-copy-host="output"></span>
         </div>
         <div class="agent-tool-out"></div>
       </section>
     </div>`;
+  const headHost = card.querySelector('.agent-tool-head-host');
+  renderToolCardDisclosure(headHost, headHost.innerHTML, detailId);
   return { card, isRunningCard };
 }
 
@@ -285,25 +314,6 @@ function setToolCardLabels(card, toolName, toolInput, opts, meta) {
   card.querySelector(".agent-tool-status").textContent = opts.restored
     ? trTool(opts.isError ? "tool.statusFailed" : "tool.statusDone", opts.isError ? "Failed" : "Done")
     : trTool("tool.statusRunning", "Running");
-}
-
-function wireToolCardCopyActions(card) {
-  var copyCodeButton = card.querySelector('[data-tool-copy="code"]');
-  var copyOutputButton = card.querySelector('[data-tool-copy="output"]');
-  copyCodeButton.textContent = trTool("tool.copyCode", "Copy code");
-  copyOutputButton.textContent = trTool("tool.copyOutput", "Copy output");
-  copyCodeButton.addEventListener("click", function (event) {
-    event.stopPropagation();
-    var code = card.querySelector(".agent-tool-code code");
-    copyText(code && code.textContent).then(function () { setCopyFeedback(copyCodeButton, true); })
-      .catch(function () { setCopyFeedback(copyCodeButton, false); });
-  });
-  copyOutputButton.addEventListener("click", function (event) {
-    event.stopPropagation();
-    var output = card.querySelector(".agent-tool-output-pre");
-    copyText(output && output.textContent).then(function () { setCopyFeedback(copyOutputButton, true); })
-      .catch(function () { setCopyFeedback(copyOutputButton, false); });
-  });
 }
 
 function initializeToolCardCode(card, toolName, toolInput, codeEl, codeInner, bodyEl) {
@@ -356,7 +366,6 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   const meta = TOOL_META[toolName] || { cls: "", short: toolName, tone: "neutral" };
   const { card, isRunningCard } = createToolCard(toolName, toolInput, opts, meta);
   setToolCardLabels(card, toolName, toolInput, opts, meta);
-  wireToolCardCopyActions(card);
 
   // Always mount the code/body block; [hidden] keeps it ready for stream updates.
   const codeEl = card.querySelector(".agent-tool-code");
@@ -516,18 +525,24 @@ export function renderToolTextOutput(out, text, opts) {
     const summary = document.createElement("span");
     summary.className = "agent-tool-output-summary";
     summary.textContent = trTool("tool.outputChars", "{n} chars", { n: value.length.toLocaleString() });
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "agent-tool-output-toggle";
-    button.textContent = trTool("tool.showFullOutput", "Show full output");
-    button.addEventListener("click", function () {
-      const collapsed = wrap.classList.toggle("is-collapsed");
-      button.textContent = collapsed
-        ? trTool("tool.showFullOutput", "Show full output")
-        : trTool("tool.collapseOutput", "Collapse output");
-    });
+    const toggleHost = document.createElement("span");
+    toggleHost.className = "agent-tool-output-toggle-host";
+    const showLabel = trTool("tool.showFullOutput", "Show full output");
+    const collapseLabel = trTool("tool.collapseOutput", "Collapse output");
+    function renderToggle(collapsed) {
+      renderToolOutputToggle(toggleHost, {
+        collapsed,
+        showLabel,
+        collapseLabel,
+        onToggle: function (nextCollapsed) {
+          wrap.classList.toggle("is-collapsed", nextCollapsed);
+          renderToggle(nextCollapsed);
+        },
+      });
+    }
+    renderToggle(true);
     controls.appendChild(summary);
-    controls.appendChild(button);
+    controls.appendChild(toggleHost);
     wrap.appendChild(controls);
   }
 

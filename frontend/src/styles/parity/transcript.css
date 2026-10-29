@@ -184,26 +184,6 @@
     text-transform: lowercase;
     letter-spacing: 0.02em;
   }
-  #appShell #msgList .msg-body .code-block-copy,
-  #appShell #msgList .msg-body .code-block-expand {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    height: 28px;
-    padding: 0 8px;
-    border: 0;
-    border-radius: var(--ui-radius-md);
-    background: transparent;
-    color: var(--ui-text-tertiary);
-    font: inherit;
-    cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
-  }
-  #appShell #msgList .msg-body .code-block-copy:hover,
-  #appShell #msgList .msg-body .code-block-expand:hover {
-    background: var(--ui-bg-hover-ghost);
-    color: var(--foreground);
-  }
   #appShell #msgList .msg-body pre:not(.tool-inline-detail-value) {
     margin: 0 0 16px;
     padding: 16px;

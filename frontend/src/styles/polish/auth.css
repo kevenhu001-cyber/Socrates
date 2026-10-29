@@ -131,20 +131,12 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-.browser-login-handoff .auth-btn:not([hidden]) {
+.browser-login-handoff [data-slot="button"]:not([hidden]),
+.browser-login-handoff .browser-login-handoff-link {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: var(--ui-control-touch);
   margin-top: var(--ui-space-sm);
-  padding: var(--ui-space-sm) var(--ui-space-lg);
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control);
-  background: var(--ui-bg-raised);
-  color: var(--foreground);
   text-decoration: none;
-  cursor: pointer;
 }
-.browser-login-handoff .auth-btn:hover { background: var(--accent); }
-.browser-login-handoff .auth-btn:disabled { opacity: .5; cursor: wait; }

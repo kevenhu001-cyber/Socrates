@@ -4,7 +4,11 @@
   position: fixed;
   inset: 0;
   z-index: var(--ui-z-backdrop);
+  width: auto;
+  height: auto;
+  padding: 0;
   border: 0;
+  border-radius: 0;
   background: var(--ui-backdrop);
 }
 .detail-surface {
@@ -37,18 +41,8 @@
 .detail-heading h2 { margin: 0; font-size: var(--ui-font-size-md); font-weight: var(--ui-font-weight-medium); overflow-wrap: anywhere; }
 .detail-meta { margin: var(--ui-space-xs) 0 0; color: var(--ui-text-tertiary); font-size: var(--ui-font-size-xs); }
 .detail-close {
-  display: grid;
-  place-items: center;
-  width: var(--ui-control-md);
-  height: var(--ui-control-md);
   flex: 0 0 auto;
-  border: 0;
-  border-radius: var(--ui-radius-control);
-  background: transparent;
-  color: var(--muted-foreground);
-  cursor: pointer;
 }
-.detail-close:hover { background: var(--accent); }
 .detail-close svg { width: 18px; height: 18px; }
 .detail-body { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 .detail-body > div { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -388,33 +382,6 @@
   background: var(--accent);
 }
 
-.code-block-workbench-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  border: 0;
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-xs);
-  font-weight: var(--ui-font-weight-medium);
-  cursor: pointer;
-  padding: 0 8px;
-  min-height: 24px;
-  border-radius: var(--radius-sm);
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
-}
-
-.code-block-workbench-btn:hover,
-.code-block-workbench-btn:focus-visible {
-  color: var(--accent-foreground);
-  background: var(--accent);
-}
-
-.code-block-workbench-btn:focus-visible {
-  outline: 0;
-  box-shadow: var(--ui-focus-shadow);
-}
-
 /* =========================================================================
  * Socratic Mastery Pill & Proactive Cognitive Scaffolding Chips
  * ======================================================================= */
@@ -488,30 +455,6 @@
 
 .socratic-suggestions::-webkit-scrollbar {
   display: none;
-}
-
-.socratic-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  min-height: 32px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-xs);
-  font-weight: var(--ui-font-weight-regular);
-  cursor: pointer;
-  white-space: nowrap;
-  flex: 0 0 auto;
-  transition: background var(--ui-duration-hover), color var(--ui-duration-hover), border-color var(--ui-duration-hover);
-}
-
-.socratic-chip:hover {
-  background: var(--accent);
-  color: var(--foreground);
-  border-color: var(--ui-border-strong);
 }
 
 .socratic-chip-icon {

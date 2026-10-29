@@ -1,10 +1,16 @@
 import { beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
+import { act } from 'react';
 import { configureWidgetRuntime, handleQuizPick, mountPracticeWidget, mountQuizWidget } from '../src/render/widgets.js';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.document = dom.window.document;
+globalThis.window = dom.window;
+globalThis.HTMLElement = dom.window.HTMLElement;
+globalThis.Node = dom.window.Node;
+globalThis.MutationObserver = dom.window.MutationObserver;
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const translations = {
   'tutor.quizCorrect': 'Correct: {answer}',
   'tutor.quizWrong': 'Wrong: {answer}',
@@ -36,16 +42,29 @@ function slot(kind) {
 }
 
 function quiz(correct = 'A') {
-  mountQuizWidget(slot('quiz'), {
+  act(() => mountQuizWidget(slot('quiz'), {
     q: '2 + 2?', options: [{ letter: 'A', text: '4' }, { letter: 'B', text: '5' }], correct,
-  });
+  }));
   return document.querySelector('.inline-quiz');
 }
 
 function practice(correct = '42') {
-  mountPracticeWidget(slot('practice'), { problem: '6 × 7?', hint: 'Multiply.', correct });
+  act(() => mountPracticeWidget(slot('practice'), { problem: '6 × 7?', hint: 'Multiply.', correct }));
   return document.querySelector('.inline-practice');
 }
+
+function click(target) {
+  act(() => target.click());
+}
+
+function fill(target, value) {
+  target.value = value;
+}
+
+/*
+ * React's delegated events and state updates must run inside act() here so
+ * assertions observe the same committed widget tree a browser user sees.
+ */
 
 function teachingStore(stage, attempts, dispatches) {
   return {
@@ -56,12 +75,12 @@ function teachingStore(stage, attempts, dispatches) {
 
 test('absent optional services preserve standalone quiz and practice behavior', () => {
   const card = quiz();
-  card.querySelector('button').click();
+  click(card.querySelector('button'));
   assert.equal(card.querySelector('button').disabled, false);
   assert.equal(card.querySelector('.inline-quiz-feedback').textContent, '');
   const exercise = practice();
-  exercise.querySelector('textarea').value = '42';
-  exercise.querySelector('.inline-practice-submit').click();
+  fill(exercise.querySelector('textarea'), '42');
+  click(exercise.querySelector('.inline-practice-submit'));
   assert.equal(exercise.querySelector('.inline-practice-feedback').classList.contains('ok'), true);
 });
 
@@ -73,8 +92,9 @@ test('wrong quiz choice marks both options, records the slot and increments atte
     updateKB: () => persisted.push('kb'), saveCurrentSession: () => persisted.push('session'),
   });
   const card = quiz();
-  card.querySelector('[data-letter="B"]').click();
-  assert.equal(card.querySelector('[data-letter="B"]').className, 'inline-quiz-opt selected wrong');
+  click(card.querySelector('[data-letter="B"]'));
+  assert.equal(card.querySelector('[data-letter="B"]').classList.contains('selected'), true);
+  assert.equal(card.querySelector('[data-letter="B"]').classList.contains('wrong'), true);
   assert.equal(card.querySelector('[data-letter="A"]').classList.contains('correct'), true);
   assert.ok([...card.querySelectorAll('button')].every((button) => button.disabled));
   assert.equal(card.querySelector('.inline-quiz-feedback').textContent, 'Wrong: A');
@@ -94,7 +114,7 @@ test('correct exercise choice removes its mistake and advances to check', () => 
     stateStore: teachingStore('exercise', 4, dispatches),
   });
   const card = quiz();
-  card.querySelector('[data-letter="A"]').click();
+  click(card.querySelector('[data-letter="A"]'));
   assert.equal(card.querySelector('.inline-quiz-feedback').textContent, 'Correct: A');
   assert.deepEqual(removed, ['quiz-slot']);
   assert.deepEqual(dispatches, [{ type: 'state/batch', patch: { teachingStage: 'check', practiceAttempts: 0 } }]);
@@ -103,7 +123,7 @@ test('correct exercise choice removes its mistake and advances to check', () => 
 test('check-stage correct choice resets attempts', () => {
   const dispatches = [];
   configureWidgetRuntime({ handleQuizPick, stateStore: teachingStore('check', 3, dispatches) });
-  quiz().querySelector('[data-letter="A"]').click();
+  click(quiz().querySelector('[data-letter="A"]'));
   assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 0 }]);
 });
 
@@ -114,7 +134,7 @@ test('tutor follow-up submits grading context and leaves persistence to the turn
     submitChatMessage: (...args) => submitted.push(args),
     updateKB: () => persisted.push('kb'), saveCurrentSession: () => persisted.push('session'),
   });
-  quiz().querySelector('[data-letter="B"]').click();
+  click(quiz().querySelector('[data-letter="B"]'));
   assert.deepEqual(submitted, [['I chose B. 5 (Result: incorrect, correct is A.)', { origin: 'quiz' }]]);
   assert.deepEqual(persisted, []);
 });
@@ -122,7 +142,7 @@ test('tutor follow-up submits grading context and leaves persistence to the turn
 test('quiz without an answer records the selection without inventing a correct answer', () => {
   configureWidgetRuntime({ handleQuizPick });
   const card = quiz('');
-  card.querySelector('[data-letter="B"]').click();
+  click(card.querySelector('[data-letter="B"]'));
   assert.equal(card.querySelector('.inline-quiz-feedback').textContent, 'Recorded: B');
   assert.equal(card.querySelector('.inline-quiz-feedback').className, 'inline-quiz-feedback');
 });
@@ -136,7 +156,7 @@ test('independent persistence failures are reported without losing grading feedb
     saveCurrentSession: () => { persisted.push('session'); throw new Error('Session failed'); },
   });
   const card = quiz();
-  card.querySelector('[data-letter="A"]').click();
+  click(card.querySelector('[data-letter="A"]'));
   assert.deepEqual(persisted, ['kb', 'session']);
   assert.deepEqual(diagnostics.map((entry) => entry[1]), ['widgets.quiz.updateKB', 'widgets.quiz.saveCurrentSession']);
   assert.equal(card.querySelector('.inline-quiz-feedback').textContent, 'Correct: A');
@@ -149,7 +169,7 @@ test('a runtime reconfiguration during recording affects only later answers', ()
     recordMistake: () => configureWidgetRuntime({ stateStore: teachingStore('check', 99, dispatches), updateKB: () => persisted.push('new') }),
     updateKB: () => persisted.push('original'),
   });
-  quiz().querySelector('[data-letter="B"]').click();
+  click(quiz().querySelector('[data-letter="B"]'));
   assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 3 }]);
   assert.deepEqual(persisted, ['original']);
 });
@@ -158,14 +178,14 @@ test('practice validates empty answers and toggles the hint without submitting',
   const submitted = [];
   configureWidgetRuntime({ submitChatMessage: (...args) => submitted.push(args) });
   const card = practice();
-  card.querySelector('.inline-practice-submit').click();
+  click(card.querySelector('.inline-practice-submit'));
   assert.equal(card.querySelector('.inline-practice-feedback').textContent, 'tutor.practiceEmpty');
   assert.equal(card.querySelector('textarea').disabled, false);
   const hint = card.querySelector('.inline-practice-hint');
   assert.equal(hint.hidden, true);
-  card.querySelector('.inline-practice-hint-toggle').click();
+  click(card.querySelector('.inline-practice-hint-toggle'));
   assert.equal(hint.hidden, false);
-  card.querySelector('.inline-practice-hint-toggle').click();
+  click(card.querySelector('.inline-practice-hint-toggle'));
   assert.equal(hint.hidden, true);
   assert.deepEqual(submitted, []);
 });
@@ -176,9 +196,9 @@ test('correct practice answer is normalized, sent once, and clears attempts', ()
     submitChatMessage: (...args) => submitted.push(args), stateStore: teachingStore('exercise', 3, dispatches),
   });
   const card = practice('The Answer');
-  card.querySelector('textarea').value = ' the answer! ';
+  fill(card.querySelector('textarea'), ' the answer! ');
   const submit = card.querySelector('.inline-practice-submit');
-  submit.click(); submit.click();
+  click(submit); click(submit);
   assert.equal(card.querySelector('.inline-practice-feedback').textContent, 'tutor.practiceSelfCorrect');
   assert.deepEqual(submitted, [['My answer: the answer!', { origin: 'practice' }]]);
   assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 0 }]);
@@ -189,8 +209,8 @@ test('wrong practice answer records the mounted slot', () => {
   const mistakes = [];
   configureWidgetRuntime({ recordMistake: (entry) => mistakes.push(entry) });
   const card = practice();
-  card.querySelector('textarea').value = '41';
-  card.querySelector('.inline-practice-submit').click();
+  fill(card.querySelector('textarea'), '41');
+  click(card.querySelector('.inline-practice-submit'));
   assert.deepEqual(mistakes, [{ type: 'practice', q: '6 × 7?', options: [], correct: '42', userAnswer: '41', judgedAnswer: '42', practiceSlotId: 'practice-slot' }]);
 });
 
@@ -198,7 +218,7 @@ test('practice reveal disables grading and does not send a chat message', () => 
   const submitted = [];
   configureWidgetRuntime({ submitChatMessage: (...args) => submitted.push(args) });
   const card = practice();
-  card.querySelector('.inline-practice-reveal').click();
+  click(card.querySelector('.inline-practice-reveal'));
   assert.equal(card.querySelector('.inline-practice-feedback').textContent, '42');
   assert.equal(card.querySelector('textarea').disabled, true);
   assert.equal(card.querySelector('.inline-practice-submit').disabled, true);
@@ -209,8 +229,8 @@ test('practice without an answer key sends the response for tutor grading', () =
   const submitted = [];
   configureWidgetRuntime({ submitChatMessage: (...args) => submitted.push(args) });
   const card = practice('');
-  card.querySelector('textarea').value = 'My explanation';
-  card.querySelector('.inline-practice-submit').click();
+  fill(card.querySelector('textarea'), 'My explanation');
+  click(card.querySelector('.inline-practice-submit'));
   assert.equal(card.querySelector('.inline-practice-reveal'), null);
   assert.equal(card.querySelector('.inline-practice-feedback').textContent, 'tutor.practiceSent');
   assert.deepEqual(submitted, [['My answer: My explanation', { origin: 'practice' }]]);

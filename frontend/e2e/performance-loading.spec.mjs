@@ -104,14 +104,11 @@ test('production entry keeps the static closure gzip transfer under budget', () 
   };
   expect(metrics).toEqual(report.metrics);
   expect(metrics.htmlGzipBytes).toBeLessThan(19_000);
-  /* 365 KB: the shell replacement (ADR 0024, P1/P2) moved the sidebar and
-     header chrome onto the local shadcn primitives, which puts the primitive
-     tree into the entry chunk by design — the plan forbids raw controls in
-     `src/react/**` while `#sidebarNav` and `#sideBarHeader` must stay
-     statically mounted. Measured 361,688 B after both phases; the cap keeps
-     the old 360 KB budget plus a 5 KB allowance so the next regression is
-     still caught. The total-closure cap below is unchanged. */
-  expect(metrics.staticJsGzipBytes).toBeLessThan(365_000);
+  /* The original 360 KB entry budget is restored after moving locale tables
+     and low-frequency React control hosts out of the static import closure.
+     Keep this guard at the original limit; the total-closure cap below is
+     unchanged. */
+  expect(metrics.staticJsGzipBytes).toBeLessThan(360_000);
   expect(metrics.linkedCssGzipBytes).toBeLessThan(210_000);
   expect(Object.values(metrics).reduce((sum, bytes) => sum + bytes, 0)).toBeLessThan(588_000);
 

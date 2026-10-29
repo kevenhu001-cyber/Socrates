@@ -1,6 +1,7 @@
 export interface UsageSnapshot {
   isOpen: boolean;
   bodyHtml: string;
+  period: 'year' | 'month';
   revision: number;
 }
 

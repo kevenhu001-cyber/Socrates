@@ -1,6 +1,6 @@
 /* ui/homeSurface.js — Contextual landing shortcuts.
- * The home surface is plain markup inside #topicSetup; this module only owns
- * its click affordances so the visual layer stays declarative. */
+ * React renders the home controls; this module delegates their existing
+ * composer and web-search actions from the stable #topicSetup host. */
 
 import { focusComposer, getComposerMarkdown, setComposerMarkdown } from '../composer/controller.ts';
 import { toggleWebSearch } from '../pickers.js';
@@ -51,9 +51,10 @@ function handleHomeAction(actionTarget, syncSearch) {
 export function installHomeSurface() {
   const home = document.getElementById('topicSetup');
   if (!home) return;
-  const search = home.querySelector('[data-home-action="research"]');
-  const syncSearch = () => search?.setAttribute('aria-pressed', String(!!window.webSearchOn));
+  const syncSearch = () => home.querySelector('[data-home-action="research"]')
+    ?.setAttribute('aria-pressed', String(!!window.webSearchOn));
   syncSearch();
+  document.addEventListener('socrates:homeactionsready', syncSearch);
   document.addEventListener('socrates:websearchchange', syncSearch);
 
   home.addEventListener('click', (event) => {

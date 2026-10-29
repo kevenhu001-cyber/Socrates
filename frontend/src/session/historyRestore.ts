@@ -72,6 +72,7 @@ export interface RestoredMessage {
   reasoningDurationSec: number | null;
   summary: unknown;
   turnRuntime: ReturnType<typeof normalizeTurnRuntime>;
+  _liveStatus?: { phase: 'error'; label: string; retryable: true; retryMode: 'restored' };
   attachments: unknown[];
   toolCalls: unknown[];
   actions: null;
@@ -255,7 +256,6 @@ export function restoreInterruptedResponse(session: RestorableSession, msgList: 
   const partialHtml = '<div class="msg-content">' + partialRendered + '</div>' +
     '<div class="msg-error" style="margin-top:8px">' +
       '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>' +
-      '<button type="button" class="msg-retry-btn stream-retry-btn" data-stream-retry>Retry</button>' +
     '</div>';
   const partialClientId = 'stream-recovered-' + Date.now();
   const partialIdx: number = stateStore.dispatch({ type: 'session/append-message', payload: {
@@ -264,6 +264,7 @@ export function restoreInterruptedResponse(session: RestorableSession, msgList: 
     rawText: partialText,
     html: partialHtml,
     type: 'assistant',
+    _liveStatus: { phase: 'error', label: '(response interrupted — tap Retry to continue)', retryable: true, retryMode: 'restored' },
   } });
   const retryDelegated = function (ev: MouseEvent): void {
     const target = ev.target as Element | null;

@@ -4,6 +4,7 @@ import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
 import { openLibraryDetail } from '../../../ui/libraryDetail.js';
 import { mountDialogCard, unmountDialogCard } from './workspace.dialogHost';
+import { renderActionButton } from '../../../ui/actionButton.ts';
 import {
   AgentRunView,
   ArxivSearchView,
@@ -294,12 +295,17 @@ async function renderProjectRunHistory(projectId: string): Promise<void> {
       const status = document.createElement('span');
       status.textContent = runStatusLabel(run.status) + (timeLabel(run.startedAt) ? ' · ' + timeLabel(run.startedAt) : '');
       copy.append(title, status);
-      const open = document.createElement('button');
-      open.type = 'button';
-      open.className = 'workspace-row-action project-run-open';
-      open.textContent = i18n('dialog.project.viewRun', 'View run');
-      open.addEventListener('click', () => { void openAgentRunDetails(String(run.id)); });
-      row.append(copy, open);
+      const openHost = document.createElement('span');
+      openHost.style.display = 'contents';
+      row.append(copy, openHost);
+      renderActionButton(openHost, {
+        type: 'button',
+        variant: 'outline',
+        size: 'sm',
+        className: 'workspace-row-action project-run-open',
+        onClick: () => { void openAgentRunDetails(String(run.id)); },
+        children: i18n('dialog.project.viewRun', 'View run'),
+      });
       current.appendChild(row);
     });
   } catch {

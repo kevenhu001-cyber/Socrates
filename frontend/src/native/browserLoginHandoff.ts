@@ -1,3 +1,7 @@
+import type { OwnedRootHandle } from '../react/lib/boot/ownedRoot';
+import type { BrowserLoginDialogProps } from '../react/browserLogin/BrowserLoginDialog';
+import { reportSwallow } from '../util/reportSwallow.ts';
+
 /* Chrome keeps its HttpOnly sid. Only a short-lived, PKCE-bound code leaves
  * the browser, after an explicit account confirmation and link click. */
 const ORIGIN = 'https://app.topodrive.top';
@@ -89,15 +93,23 @@ export function captureBrowserLoginRequest(): void {
     history.replaceState(null, '', CALLBACK_PATH);
     const dialog = document.createElement('dialog');
     dialog.className = 'browser-login-handoff';
-    const message = document.createElement('p');
-    message.textContent = '未能自动打开 Android 应用。请在系统设置中允许 Socrates 打开支持的链接，然后从应用重新发起登录。';
-    const close = document.createElement('button');
-    close.className = 'auth-btn secondary';
-    close.textContent = '关闭';
-    close.addEventListener('click', () => { dialog.close(); dialog.remove(); });
-    dialog.append(message, close);
+    let root: OwnedRootHandle | null = null;
+    const dismiss = () => { dialog.close(); root?.destroy(); dialog.remove(); };
+    dialog.addEventListener('cancel', (event) => { event.preventDefault(); dismiss(); });
     document.body.append(dialog);
-    dialog.showModal();
+    const props: BrowserLoginDialogProps = {
+      mode: 'fallback',
+      description: '未能自动打开 Android 应用。请在系统设置中允许 Socrates 打开支持的链接，然后从应用重新发起登录。',
+      onCancel: dismiss,
+    };
+    void import('../react/browserLogin/browserLoginDialogHost').then(({ mountBrowserLoginDialog }) => {
+      if (!dialog.isConnected) return;
+      root = mountBrowserLoginDialog(dialog, props);
+      dialog.showModal();
+    }).catch((error) => {
+      reportSwallow(error, 'native/browserLoginHandoff:capture');
+      dismiss();
+    });
     return;
   }
   if (!url.searchParams.has('native_login')) return;
@@ -125,67 +137,78 @@ export function offerBrowserLoginHandoff(): void {
   dialog.id = 'androidLoginHandoff';
   dialog.className = 'browser-login-handoff';
   dialog.setAttribute('aria-labelledby', 'androidLoginHandoffTitle');
-  const title = document.createElement('h2');
-  title.id = 'androidLoginHandoffTitle';
-  title.textContent = '登录 Socrates Android';
-  const description = document.createElement('p');
   const user = window.CURRENT_USER as { id?: unknown; email?: unknown } | null | undefined;
-  description.textContent = `将使用当前网页账号${typeof user?.email === 'string' ? '（' + user.email + '）' : ''}登录 Android 应用。仅当你刚从该应用发起登录时才继续。`;
-  const status = document.createElement('p');
-  status.setAttribute('role', 'status');
-  const consent = document.createElement('button');
-  consent.className = 'auth-btn primary';
-  consent.textContent = '确认此账号并继续';
-  const cancel = document.createElement('button');
-  cancel.className = 'auth-btn secondary';
-  cancel.textContent = '取消';
-  const link = document.createElement('a');
-  link.className = 'auth-btn primary';
-  link.textContent = '返回 Socrates Android';
-  link.rel = 'noreferrer';
-  link.referrerPolicy = 'no-referrer';
-  link.hidden = true;
+  const description = `将使用当前网页账号${typeof user?.email === 'string' ? '（' + user.email + '）' : ''}登录 Android 应用。仅当你刚从该应用发起登录时才继续。`;
   let cancelled = false;
   let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+  let status = '';
+  let consentDisabled = false;
+  let consentHidden = false;
+  let linkUrl: string | null = null;
   const abort = new AbortController();
+  let root: OwnedRootHandle | null = null;
+  let updateDialog: ((root: OwnedRootHandle, props: BrowserLoginDialogProps) => void) | null = null;
+  const getDialogProps = (): BrowserLoginDialogProps => ({
+    mode: 'handoff',
+    title: '登录 Socrates Android',
+    description,
+    status,
+    consentDisabled,
+    consentHidden,
+    linkUrl,
+    onConsent: authorize,
+    onCancel: dismiss,
+    onLinkClick: () => {
+      clearPending();
+      status = '正在打开应用。如果仍停留在 Chrome，请检查系统的“打开支持的链接”设置，并从应用重新登录。';
+      render();
+    },
+  });
+  const render = () => {
+    if (root && updateDialog) updateDialog(root, getDialogProps());
+  };
   const dismiss = () => {
     cancelled = true;
     abort.abort();
     if (expiryTimer) clearTimeout(expiryTimer);
     clearPending();
     dialog.close();
+    root?.destroy();
     dialog.remove();
   };
-  cancel.addEventListener('click', dismiss);
-  dialog.addEventListener('cancel', dismiss);
-  link.addEventListener('click', () => {
-    clearPending();
-    status.textContent = '正在打开应用。如果仍停留在 Chrome，请检查系统的“打开支持的链接”设置，并从应用重新登录。';
-  });
-  consent.addEventListener('click', async () => {
-    consent.disabled = true;
-    status.textContent = '正在准备安全登录…';
+  async function authorize() {
+    consentDisabled = true;
+    status = '正在准备安全登录…';
+    render();
     try {
       const { callback, expiresAt } = await authorizeBrowserLogin(request, user?.id, abort.signal);
       if (cancelled) return;
       clearPending();
-      consent.hidden = true;
-      link.href = callback;
-      link.hidden = false;
-      status.textContent = '已就绪。点击下方链接返回应用，链接仅短时有效且只能使用一次。';
+      consentHidden = true;
+      linkUrl = callback;
+      status = '已就绪。点击下方链接返回应用，链接仅短时有效且只能使用一次。';
       expiryTimer = setTimeout(() => {
-        link.removeAttribute('href');
-        link.hidden = true;
-        status.textContent = '登录链接已过期，请从 Android 应用重新发起登录。';
+        linkUrl = null;
+        status = '登录链接已过期，请从 Android 应用重新发起登录。';
+        render();
       }, expiresAt - Date.now());
-      link.focus();
+      render();
     } catch {
       if (cancelled) return;
       clearPending();
-      status.textContent = '未能完成交接。请关闭此提示，从 Android 应用重新发起登录。';
+      status = '未能完成交接。请关闭此提示，从 Android 应用重新发起登录。';
+      render();
     }
-  });
-  dialog.append(title, description, status, consent, link, cancel);
+  }
+  dialog.addEventListener('cancel', (event) => { event.preventDefault(); dismiss(); });
   document.body.append(dialog);
-  dialog.showModal();
+  void import('../react/browserLogin/browserLoginDialogHost').then((host) => {
+    if (cancelled || !dialog.isConnected) return;
+    updateDialog = host.renderBrowserLoginDialog;
+    root = host.mountBrowserLoginDialog(dialog, getDialogProps());
+    dialog.showModal();
+  }).catch((error) => {
+    reportSwallow(error, 'native/browserLoginHandoff:offer');
+    dismiss();
+  });
 }

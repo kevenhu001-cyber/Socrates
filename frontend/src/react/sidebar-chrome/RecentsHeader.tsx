@@ -2,7 +2,6 @@ import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { useCallback, useEffect, useReducer, useState } from 'react';
-import { List } from 'lucide-react';
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { useSessionOrganization, type SessionOrganization } from '../../sidebar/organization.store';
@@ -32,7 +31,7 @@ export function RecentsHeader() {
       <div className="organize-menu-heading">{i18n('sidebar.organize', 'Organize chats')}</div>
       <FoundationMenuRadioGroup value={organization} onValueChange={select}>
       <FoundationMenuRadioItem value="list">
-        <List strokeWidth={1.75} aria-hidden="true" /><span>{i18n('sidebar.organize.list', 'As a list')}</span>{organization === 'list' ? <Icon name="check" className="organize-menu-check" /> : null}
+        <Icon name="list" /><span>{i18n('sidebar.organize.list', 'As a list')}</span>{organization === 'list' ? <Icon name="check" className="organize-menu-check" /> : null}
       </FoundationMenuRadioItem>
       <FoundationMenuRadioItem value="projects">
         <Icon name="folder" /><span>{i18n('sidebar.organize.projects', 'Group by project')}</span>{organization === 'projects' ? <Icon name="check" className="organize-menu-check" /> : null}

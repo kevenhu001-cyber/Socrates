@@ -1,7 +1,11 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { createElement } from 'react';
+import { flushSync } from 'react-dom';
 import DOMPurify from 'dompurify';
 
 import type { ComposerExtensionToken } from '../../composer/types.ts';
+import { mountOwnedRoot, type OwnedRootHandle } from '../lib/boot/ownedRoot';
+import { Button } from '../ui/shadcn/button';
 
 export interface ExtensionTokenOptions {
   onRemove: (key: string) => void;
@@ -76,25 +80,33 @@ export const ExtensionToken = Node.create<ExtensionTokenOptions>({
       label.className = 'composer-extension-token-label';
       label.textContent = attrs.title;
 
-      const remove = document.createElement('button');
-      remove.type = 'button';
-      remove.className = 'composer-extension-token-remove';
-      remove.setAttribute('aria-label', `Remove ${attrs.title} workflow`);
-      remove.title = 'Remove workflow';
-      remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-      remove.addEventListener('mousedown', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-      });
-      remove.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.options.onRemove(attrs.key);
+      const removeHost = document.createElement('span');
+      removeHost.className = 'composer-extension-token-remove-host';
+      let removeRoot!: OwnedRootHandle;
+      flushSync(() => {
+        removeRoot = mountOwnedRoot(removeHost, 'composer-extension-token-remove', createElement(Button, {
+          type: 'button',
+          variant: 'ghost',
+          size: 'icon-xs',
+          className: 'composer-extension-token-remove',
+          'aria-label': `Remove ${attrs.title} workflow`,
+          title: 'Remove workflow',
+          onMouseDown: (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          },
+          onClick: (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.options.onRemove(attrs.key);
+          },
+          children: '×',
+        }));
       });
 
-      token.append(icon, label, remove);
+      token.append(icon, label, removeHost);
       dom.append(token);
-      return { dom };
+      return { dom, destroy: () => removeRoot.destroy() };
     };
   },
 });

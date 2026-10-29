@@ -1,26 +1,30 @@
+import { createElement } from 'react';
+import { flushSync } from 'react-dom';
+import { mountOwnedRoot, type OwnedRootHandle } from '../react/lib/boot/ownedRoot';
+import type { DetailSurfaceOptions } from '../react/detailSurface/DetailSurfaceView';
+import { reportSwallow } from '../util/reportSwallow.ts';
+
 /** Reusable detail shell for artifact previews. */
-type DetailOptions = {
-  owner: string;
-  title: string;
-  meta?: string;
-  closeLabel: string;
-  content: HTMLElement;
-  onClose?: () => void;
-};
+type DetailOptions = DetailSurfaceOptions;
+type DetailView = typeof import('../react/detailSurface/DetailSurfaceView').DetailSurfaceView;
 
 type Surface = {
   root: HTMLElement;
+  reactRoot: OwnedRootHandle;
   backdrop: HTMLButtonElement;
   panel: HTMLElement;
   title: HTMLElement;
   meta: HTMLElement;
   close: HTMLButtonElement;
   body: HTMLElement;
+  view: DetailView;
   active: DetailOptions | null;
   trigger: HTMLElement | null;
   inert: boolean | null;
 };
 const surfaces = new WeakMap<Document, Surface>();
+const pendingOptions = new WeakMap<Document, DetailOptions>();
+const openRequests = new WeakMap<Document, number>();
 
 function syncLayout(doc: Document, surface: Surface) {
   const app = doc.getElementById('appShell');
@@ -36,33 +40,31 @@ function syncLayout(doc: Document, surface: Surface) {
   }
 }
 
-function ensureSurface(doc: Document): Surface {
+function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
   const existing = surfaces.get(doc);
   if (existing) return existing;
   const root = doc.createElement('div');
   root.className = 'detail-root';
   root.hidden = true;
-  root.innerHTML = '<button type="button" class="detail-backdrop" tabindex="-1"></button>'
-    + '<aside class="detail-surface" role="dialog" aria-labelledby="detailSurfaceTitle">'
-    + '<header class="detail-header"><div class="detail-heading"><h2 id="detailSurfaceTitle"></h2>'
-    + '<p class="detail-meta"></p></div><button type="button" class="detail-close">'
-    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
-    + '</button></header><div class="detail-body"></div></aside>';
   doc.body.appendChild(root);
+  const onClose = () => closeDetailSurface(undefined, doc);
+  let reactRoot!: OwnedRootHandle;
+  flushSync(() => {
+    reactRoot = mountOwnedRoot(root, 'detail-surface', createElement(DetailSurfaceView, { options: null, onClose }));
+  });
   const surface: Surface = {
     root,
+    reactRoot,
     backdrop: root.querySelector<HTMLButtonElement>('.detail-backdrop')!,
     panel: root.querySelector<HTMLElement>('.detail-surface')!,
     title: root.querySelector<HTMLElement>('h2')!,
     meta: root.querySelector<HTMLElement>('.detail-meta')!,
     close: root.querySelector<HTMLButtonElement>('.detail-close')!,
     body: root.querySelector<HTMLElement>('.detail-body')!,
+    view: DetailSurfaceView,
     active: null, trigger: null, inert: null,
   };
   surfaces.set(doc, surface);
-  const close = () => closeDetailSurface(undefined, doc);
-  surface.close.addEventListener('click', close);
-  surface.backdrop.addEventListener('click', close);
   doc.addEventListener('keydown', (event) => {
     if (!surface.active || event.defaultPrevented) return;
     if (event.key === 'Escape') {
@@ -94,44 +96,73 @@ function ensureSurface(doc: Document): Surface {
 }
 
 export function openDetailSurface(options: DetailOptions, doc: Document = document): void {
-  const surface = ensureSurface(doc);
+  let surface = surfaces.get(doc);
+  if (!surface) {
+    const previousPending = pendingOptions.get(doc);
+    if (previousPending && previousPending.owner !== options.owner) previousPending.onClose?.();
+    const request = (openRequests.get(doc) || 0) + 1;
+    openRequests.set(doc, request);
+    pendingOptions.set(doc, options);
+    void import('../react/detailSurface/DetailSurfaceView').then(({ DetailSurfaceView }) => {
+      if (openRequests.get(doc) !== request) return;
+      const pending = pendingOptions.get(doc);
+      if (!pending) return;
+      pendingOptions.delete(doc);
+      surface = ensureSurface(doc, DetailSurfaceView);
+      activateSurface(surface, pending, doc);
+    }).catch((error) => {
+      if (openRequests.get(doc) === request) {
+        pendingOptions.delete(doc);
+        options.onClose?.();
+      }
+      reportSwallow(error, 'ui/detailSurface.ts:openDetailSurface');
+    });
+    return;
+  }
+  activateSurface(surface, options, doc);
+}
+
+function activateSurface(surface: Surface, options: DetailOptions, doc: Document): void {
   const previous = surface.active;
   if (!previous) surface.trigger = doc.activeElement as HTMLElement | null;
   surface.active = options;
   // Ownership changes replace content in place, without a second entrance.
   if (previous && previous.owner !== options.owner) previous.onClose?.();
   surface.root.hidden = false;
-  surface.panel.dataset.detailOwner = options.owner;
-  surface.panel.className = 'detail-surface artifact-preview-drawer';
-  surface.close.className = 'detail-close artifact-preview-close';
-  surface.backdrop.className = 'detail-backdrop';
-  surface.title.textContent = options.title;
-  surface.meta.textContent = options.meta ?? '';
-  surface.meta.hidden = !options.meta;
-  surface.close.setAttribute('aria-label', options.closeLabel);
-  surface.backdrop.setAttribute('aria-label', options.closeLabel);
-  if (surface.body.firstChild !== options.content) surface.body.replaceChildren(options.content);
+  flushSync(() => surface.reactRoot.render(createElement(surface.view, { options, onClose: () => closeDetailSurface(undefined, doc) })));
   doc.documentElement.dataset.detailOpen = 'true';
   syncLayout(doc, surface);
   if (!previous) surface.close.focus();
 }
 
 export function updateDetailSurface(owner: string, meta: string, doc: Document = document): void {
+  const pending = pendingOptions.get(doc);
+  if (pending?.owner === owner) {
+    pendingOptions.set(doc, { ...pending, meta });
+    return;
+  }
   const surface = surfaces.get(doc);
   if (surface?.active?.owner !== owner) return;
   surface.meta.textContent = meta;
   surface.meta.hidden = !meta;
 }
 
+function cancelPendingOpen(owner: string | undefined, doc: Document): void {
+  const pending = pendingOptions.get(doc);
+  if (!pending || (owner && pending.owner !== owner)) return;
+  pendingOptions.delete(doc);
+  openRequests.set(doc, (openRequests.get(doc) || 0) + 1);
+  pending.onClose?.();
+}
+
 export function closeDetailSurface(owner?: string, doc: Document = document, restoreFocus = true): void {
+  cancelPendingOpen(owner, doc);
   const surface = surfaces.get(doc);
   if (!surface?.active || (owner && surface.active.owner !== owner)) return;
   const previous = surface.active;
   surface.active = null;
   surface.root.hidden = true;
-  surface.panel.className = 'detail-surface';
-  surface.panel.removeAttribute('data-detail-owner');
-  surface.body.replaceChildren();
+  flushSync(() => surface.reactRoot.render(createElement(surface.view, { options: null, onClose: () => closeDetailSurface(undefined, doc) })));
   delete doc.documentElement.dataset.detailOpen;
   delete doc.documentElement.dataset.detailLayout;
   const app = doc.getElementById('appShell');

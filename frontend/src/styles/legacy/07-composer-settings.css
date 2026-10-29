@@ -266,8 +266,6 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .usage-stat-lbl{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:2px}
 .usage-section-title{font-size:calc(12px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
 .usage-period-tabs{display:flex;gap:4px;margin-bottom:14px}
-.usage-period-tab{padding:5px 12px;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;background:hsl(var(--bg-200));color:hsl(var(--text-400));transition:background-color .1s,color .1s;border:none;font-family:inherit}
-.usage-period-tab.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .usage-calendar-wrap{overflow-x:auto;padding:4px 0 8px}
 .usage-calendar{display:grid;grid-template-columns:auto repeat(53,1fr);gap:2px;font-size:calc(10px * var(--app-font-scale, 1));min-width:560px}
 

@@ -117,20 +117,6 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden)
   height: var(--ui-control-sm);
   min-width: var(--ui-control-sm);
   flex: 0 0 var(--ui-control-sm);
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ui-text-muted);
-  cursor: pointer;
-  transition: background-color var(--ui-duration-hover) ease,
-              color var(--ui-duration-hover) ease,
-              opacity var(--ui-duration-hover) ease;
-}
-#appShell .voice-recording-cancel:hover,
-#appShell .voice-recording-cancel:focus-visible {
-  background: var(--accent);
-  color: var(--foreground);
 }
 #appShell .voice-recording-cancel svg { display: block; width: 15px; height: 15px; }
 

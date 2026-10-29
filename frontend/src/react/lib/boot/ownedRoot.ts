@@ -113,9 +113,12 @@ export function createRootSlot(label: string) {
   let current: { host: HTMLElement; handle: OwnedRootHandle } | null = null;
   return {
     mount(host: HTMLElement, content: ReactNode, install?: () => unknown): OwnedRootHandle {
-      if (current && current.host !== host) {
+      if (current?.host === host) {
+        current.handle.render(content);
+        return current.handle;
+      }
+      if (current) {
         current.handle.destroy();
-        current = null;
       }
       const handle = mountOwnedRoot(host, label, content, install);
       current = { host, handle };

@@ -31,6 +31,10 @@
 
 import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { createElement } from 'react';
+import { flushSync } from 'react-dom';
+import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
+import { VizCardControls, VizErrorActions } from '../react/visualization/VizCardControls.tsx';
 import { decodeSrcdoc, openVizModal, openVizSourceModal } from './vizModals.ts';
 import {
   configureVizCardRegistry, findLiveVizFrame, parkVizCardForTest, reclaimVizCards,
@@ -50,6 +54,7 @@ import {
   takePendingViz,
   takePendingActions,
   nextVizId,
+  queueVizActions,
   setVizViewPref,
 } from './vizStubs.js';
 
@@ -92,6 +97,7 @@ function dispatchVizRepair(card, errMsg) {
    and remove it from the map. */
 var _pendingReady = Object.create(null);
 var _vizCards = Object.create(null);
+var _vizReactRoots = new WeakMap();
 var VIZ_MAX_WAIT_MS = 5000;
 /* Grace window after the parent pings the iframe: vizRuntime answers
    viz-ping with a fresh viz-ready almost instantly, so a short wait
@@ -103,6 +109,73 @@ var VIZ_PING_WAIT_MS = 800;
    document from producing a kilometre-tall card. */
 var VIZ_IFRAME_MIN_H = 60;
 var VIZ_IFRAME_MAX_H = 2400;
+
+function mountVizReactSurface(host, label, content) {
+  if (!host) return null;
+  var root = _vizReactRoots.get(host);
+  if (!root) {
+    root = mountOwnedRoot(host, 'viz-' + label, content);
+    _vizReactRoots.set(host, root);
+  }
+  flushSync(function () { root.render(content); });
+  return root;
+}
+
+function unmountVizReactSurface(host) {
+  var root = host && _vizReactRoots.get(host);
+  if (!root) return;
+  root.destroy();
+  _vizReactRoots.delete(host);
+}
+
+function mountVizCardControls(host) {
+  if (!host || !host.isConnected) return;
+  var cardId = host.getAttribute('data-viz-card-id') || '';
+  var content = createElement(VizCardControls, {
+    cardId: cardId,
+    initialView: host.closest('.viz')?.getAttribute('data-viz-view') === 'code' ? 'code' : 'preview',
+    showSource: host.getAttribute('data-viz-show-source') === 'true',
+    viewToggle: host.getAttribute('data-viz-view-toggle') === 'true',
+    onViewChange: function (view) {
+      var card = document.getElementById(cardId);
+      if (!card) return;
+      card.setAttribute('data-viz-view', view);
+      setVizViewPref(view);
+      try { localStorage.setItem('socrates-viz-view', view); }
+      catch (error) { reportSwallow(error, 'viz.setVizViewPref.persist'); }
+    },
+    onSource: function () {
+      var card = document.getElementById(cardId);
+      if (!card) return;
+      var frame = card.querySelector('iframe');
+      openVizSourceModal((frame && (frame.dataset.source || frame.dataset.srcdoc)) || '', card.dataset.title || 'Canvas');
+    },
+    onReload: function () { reloadVizCard(document.getElementById(cardId)); },
+    onExpand: function () {
+      var card = document.getElementById(cardId);
+      if (!card) return;
+      var frame = card.querySelector('iframe');
+      openVizModal((frame && frame.dataset.srcdoc) || '', card.dataset.title || 'Canvas');
+    },
+  });
+  mountVizReactSurface(host, 'card-controls', content);
+}
+
+function mountVizErrorActions(host) {
+  if (!host || !host.isConnected) return;
+  var content = createElement(VizErrorActions, {
+    onToggleSource: function () {
+      var banner = host.closest('.viz-error');
+      var source = banner && banner.querySelector('.viz-error-source');
+      if (source) source.hidden = !source.hidden;
+    },
+    onFix: function () {
+      var banner = host.closest('.viz-error');
+      dispatchVizRepair(banner && banner.closest('.viz'), banner && banner.querySelector('.viz-error-msg')?.textContent || '');
+    },
+  });
+  mountVizReactSurface(host, 'error-actions', content);
+}
 
 export function processPendingViz(root) {
   /* A React-owned message may be recreated from already-rendered HTML.
@@ -188,18 +261,7 @@ export function processPendingViz(root) {
             // Keep the iframe mounted so the user can see what
             // was rendered (it might be partially done) but show
             // a thin warning bar.
-            var banner = document.createElement('div');
-            banner.className = 'viz-error';
-            banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">Canvas took too long to render</span>' +
-              '<button type="button" class="viz-error-btn">Show source</button>' +
-              '<button type="button" class="viz-error-fix">Fix with AI</button>' +
-              '<pre class="viz-error-source" hidden>' + esc(iframe.getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
-            // Insert banner ABOVE the iframe
-            if (iframe.parentNode === body) body.insertBefore(banner, iframe);
-            // Bind the buttons immediately. The card self-binds;
-            // there is no global data-action scan anymore.
-            _bindAction(banner.querySelector('.viz-error-btn'));
-            _bindAction(banner.querySelector('.viz-error-fix'));
+            _insertErrorBanner(card, entry, 'Canvas took too long to render');
           }
           _rememberLiveVizCard(item.id, card);
           _hideLoading(card);
@@ -262,15 +324,24 @@ function _insertErrorBanner(card, entry, message) {
   if (!body) return;
   var banner = document.createElement('div');
   banner.className = 'viz-error';
-  banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(message || 'Canvas failed to render') + '</span>' +
-    '<button type="button" class="viz-error-btn">Show source</button>' +
-    '<button type="button" class="viz-error-fix">Fix with AI</button>' +
-    '<pre class="viz-error-source" hidden>' + esc(_errorBannerSource(entry, card)) + '</pre>';
+  var icon = document.createElement('span');
+  icon.className = 'viz-error-icon';
+  icon.textContent = '!';
+  var messageNode = document.createElement('span');
+  messageNode.className = 'viz-error-msg';
+  messageNode.textContent = message || 'Canvas failed to render';
+  var actionHost = document.createElement('div');
+  actionHost.className = 'viz-error-action-host';
+  actionHost.setAttribute('data-viz-error-actions-root', '');
+  var source = document.createElement('pre');
+  source.className = 'viz-error-source';
+  source.hidden = true;
+  source.textContent = _errorBannerSource(entry, card);
+  banner.append(icon, messageNode, actionHost, source);
   var iframe = entry && entry.iframe;
   if (!iframe) iframe = card.querySelector('iframe');
   if (iframe && iframe.parentNode === body) body.insertBefore(banner, iframe);
-  _bindAction(banner.querySelector('.viz-error-btn'));
-  _bindAction(banner.querySelector('.viz-error-fix'));
+  mountVizErrorActions(actionHost);
 }
 
 function _clearErrorRegistry(id, entry) {
@@ -367,8 +438,12 @@ function _ensureMessageListener() {
 export function renderVizError(htmlStr, errorMsg) {
   var id = "viz-card-" + (nextVizId());
   var msg = esc((errorMsg || 'Could not load canvas').slice(0, 240));
+  var source = esc(htmlStr || '');
+  queueVizActions(id);
   return '<div class="viz" id="' + id + '" data-viz-state="error">' +
-    '<div class="viz-body"><div class="viz-error"><span class="viz-error-icon">!</span><span>' + msg + '</span></div></div>' +
+    '<div class="viz-actions" data-viz-actions-root data-viz-card-id="' + id + '" data-viz-show-source="true"></div>' +
+    '<div class="viz-body"><div class="viz-error"><span class="viz-error-icon">!</span><span class="viz-error-msg">' + msg + '</span>' +
+      '<div class="viz-error-action-host" data-viz-error-actions-root></div><pre class="viz-error-source" hidden>' + source + '</pre></div></div>' +
   '</div>';
 }
 
@@ -390,109 +465,23 @@ export function getLiveVizCardIds() {
 
 export function processPendingVizActions(root) {
   /* React can recreate a completed card without going through renderViz(),
-     so bind only actions within the supplied message body. Calls without a
-     root keep the pending-queue-only behavior and never scan the document. */
+     so mount only control hosts inside the supplied message root. */
   if (root && typeof root.querySelectorAll === 'function') {
-    var rootActions = root.querySelectorAll('.viz .viz-btn, .viz .viz-error-btn, .viz .viz-seg-btn');
-    for (var ri = 0; ri < rootActions.length; ri++) _bindAction(rootActions[ri]);
+    var actionHosts = root.querySelectorAll('.viz [data-viz-actions-root]');
+    for (var ai = 0; ai < actionHosts.length; ai++) mountVizCardControls(actionHosts[ai]);
+    var errorHosts = root.querySelectorAll('.viz-error [data-viz-error-actions-root]');
+    for (var ei = 0; ei < errorHosts.length; ei++) mountVizErrorActions(errorHosts[ei]);
+    if (root.matches && root.matches('.viz [data-viz-actions-root]')) mountVizCardControls(root);
+    if (root.matches && root.matches('.viz-error [data-viz-error-actions-root]')) mountVizErrorActions(root);
   }
   var pending = takePendingActions();
-  pending.forEach(_bindActionsInCard);
-}
-
-function _bindActionsInCard(item) {
-  var el = document.getElementById(item && item.id);
-  if (!el) return;
-  var actions = el.querySelectorAll('.viz-btn, .viz-error-btn, .viz-error-fix, .viz-seg-btn');
-  for (var i = 0; i < actions.length; i++) _bindAction(actions[i]);
-}
-
-function _vizActionOf(el) {
-  /* Dispatch by class, not data-action: the buttons no longer carry the
-     attribute (M4 Step 4.2). A data-action fallback is kept only for any
-     legacy markup still floating around during the migration. */
-  return el.classList.contains('viz-btn-reload') ? 'viz-reload'
-    : el.classList.contains('viz-btn-source') ? 'viz-source'
-    : el.classList.contains('viz-btn-expand') ? 'viz-expand'
-    : el.classList.contains('viz-error-btn') ? 'viz-toggle-source'
-    : el.classList.contains('viz-error-fix') ? 'viz-fix'
-    : el.classList.contains('viz-seg-btn') ? 'viz-set-view'
-    : el.getAttribute('data-action');
-}
-
-function _bindAction(el) {
-  if (!el || el.__vizActionBound) return;
-  var act = _vizActionOf(el);
-  if (act === 'viz-reload') {
-    el.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      var cardId = el.getAttribute('data-viz-card');
-      var c = cardId && document.getElementById(cardId);
-      reloadVizCard(c);
-    });
-  } else if (act === 'viz-source') {
-    el.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      var cardId = el.getAttribute('data-viz-card');
-      var c = cardId && document.getElementById(cardId);
-      if (!c) return;
-      var f = c.querySelector('iframe');
-      openVizSourceModal((f && (f.dataset.source || f.dataset.srcdoc)) || '', c.dataset.title || 'Canvas');
-    });
-  } else if (act === 'viz-expand') {
-    el.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      var cardId = el.getAttribute('data-viz-card');
-      var c = cardId && document.getElementById(cardId);
-      if (!c) return;
-      var f = c.querySelector('iframe');
-      openVizModal(
-        (f && f.dataset.srcdoc) || '',
-        c.dataset.title || 'Canvas'
-      );
-    });
-  } else if (act === 'viz-toggle-source') {
-    el.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      /* The banner may carry extra buttons between the toggle and the
-         <pre> (e.g. viz-error-fix), so resolve the source block by
-         class inside the banner rather than nextElementSibling. */
-      var banner = el.closest('.viz-error');
-      var n = (banner && banner.querySelector('.viz-error-source')) || el.nextElementSibling;
-      if (n) n.hidden = !n.hidden;
-    });
-  } else if (act === 'viz-fix') {
-    el.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      var banner = el.closest('.viz-error');
-      var card = el.closest('.viz');
-      var msgEl = banner && banner.querySelector('.viz-error-msg');
-      dispatchVizRepair(card, msgEl ? msgEl.textContent : '');
-    });
-  } else if (act === 'viz-set-view') {
-    el.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      var cardId = el.getAttribute('data-viz-card');
-      var c = cardId && document.getElementById(cardId);
-      if (!c) return;
-      var view = el.getAttribute('data-viz-view-opt') === 'code' ? 'code' : 'preview';
-      c.setAttribute('data-viz-view', view);
-      var segs = c.querySelectorAll('.viz-seg-btn');
-      for (var si = 0; si < segs.length; si++) {
-        segs[si].classList.toggle('is-on', segs[si].getAttribute('data-viz-view-opt') === view);
-      }
-      setVizViewPref(view);
-      try { localStorage.setItem('socrates-viz-view', view); } catch (e) { reportSwallow(e, 'viz.setVizViewPref.persist'); /* ignore */ }
-    });
-  } else if (act === 'viz-close-modal') {
-    el.addEventListener('click', function (ev) {
-      ev.preventDefault();
-      var m = el.closest('.viz-modal-backdrop');
-      if (m) m.remove();
-    });
-  }
-  el.__vizActionBound = true;
+  pending.forEach(function (item) {
+    var card = document.getElementById(item && item.id);
+    if (!card) return;
+    mountVizCardControls(card.querySelector('[data-viz-actions-root]'));
+    var errorHosts = card.querySelectorAll('.viz-error [data-viz-error-actions-root]');
+    for (var ei = 0; ei < errorHosts.length; ei++) mountVizErrorActions(errorHosts[ei]);
+  });
 }
 
 function reloadVizCard(card) {
@@ -506,7 +495,10 @@ function reloadVizCard(card) {
   card.removeAttribute('data-viz-parked');
   card.setAttribute('data-viz-state', 'loading');
   var oldError = card.querySelector('.viz-error');
-  if (oldError) oldError.remove();
+  if (oldError) {
+    unmountVizReactSurface(oldError.querySelector('[data-viz-error-actions-root]'));
+    oldError.remove();
+  }
   var loading = card.querySelector('.viz-loading');
   if (loading) loading.style.display = '';
   iframe.removeAttribute('srcdoc');

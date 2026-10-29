@@ -26,6 +26,13 @@ function cleanup(dom) {
   dom.window.close();
   for (const name of ['window', 'document', 'location', 'history', 'sessionStorage']) delete globalThis[name];
 }
+async function waitForButtons(count = 1) {
+  const deadline = Date.now() + 1000;
+  while (document.querySelectorAll('dialog button').length < count && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  assert.ok(document.querySelectorAll('dialog button').length >= count, 'lazy browser login dialog mounts');
+}
 
 test('request accepts only production origin and singleton well-formed parameters', () => {
   assert.deepEqual(parseBrowserLoginRequest(new URL(start), 123), { state, codeChallenge: challenge, createdAt: 123 });
@@ -108,6 +115,7 @@ test('explicit consent issues one cookie/CSRF request then exposes only validate
     offerBrowserLoginHandoff();
     offerBrowserLoginHandoff();
     assert.equal(document.querySelectorAll('dialog').length, 1);
+    await waitForButtons(2);
     assert.ok(document.body.textContent.includes('test@example.test'));
     assert.equal(calls.length, 0);
     document.querySelector('button').click();
@@ -143,6 +151,7 @@ test('cancel never issues a handoff and failed/unsafe responses cannot expose a 
         return { ok: !unsafe, json: async () => ({ url: 'https://evil.test/#secret', expiresAt: new Date(Date.now() + 300000).toISOString() }) };
       };
       offerBrowserLoginHandoff();
+      await waitForButtons(2);
       document.querySelectorAll('button')[1].click();
       assert.equal(count, 0);
       assert.equal(sessionStorage.getItem(key), null);
@@ -151,6 +160,7 @@ test('cancel never issues a handoff and failed/unsafe responses cannot expose a 
       history.replaceState(null, '', start);
       captureBrowserLoginRequest();
       offerBrowserLoginHandoff();
+      await waitForButtons(2);
       document.querySelector('button').click();
       await new Promise((resolve) => setTimeout(resolve, 0));
       assert.equal(document.querySelector('a').hidden, true);
@@ -173,6 +183,7 @@ test('a changed browser account cannot authorize the identity shown in the confi
       return { ok: true, json: async () => ({ user: { id: 'different-user' } }) };
     };
     offerBrowserLoginHandoff();
+    await waitForButtons(2);
     document.querySelector('button').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(paths.some((path) => path.endsWith('/authorize')), false);
@@ -195,6 +206,7 @@ test('cancelling an in-flight handoff never reveals its returned code', async ()
       return new Promise((resolve) => { complete = resolve; });
     };
     offerBrowserLoginHandoff();
+    await waitForButtons(2);
     document.querySelector('button').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(typeof complete, 'function');

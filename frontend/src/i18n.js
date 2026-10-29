@@ -1,17 +1,14 @@
 import {renderGreeting} from './ui/greeting.js';
-import {en} from './i18n/en.js';
 import {syncThemeUI} from './displayPrefs.js';
 import { reportSwallow } from './util/reportSwallow.ts';
 
-var I18N={en};
+var I18N={};
 var _currentLang="zh";
-/* P_perf-i18n-split — the zh table (~39 KB) ships as its own async chunk
-   (src/i18n/zh.js). It is fetched in parallel with the boot auth fetches
-   for zh users (the default locale), or on first setLang("zh") for en
-   users. Until it lands, t() falls back to the en table; the boot-loading
-   mask hides the brief English flash, and auth/boot.js gives the chunk a
-   bounded grace before revealing any UI. */
+/* Keep both locale tables out of the entry chunk. The saved locale loads in
+   parallel with auth preflight; boot waits for that request before revealing
+   either the app or auth gate. */
 var _zhReady=null;
+var _enReady=null;
 var LANG_OPTION_IDS=["profileLangEn","profileLangZh"];
 function ensureZh(){
   if(I18N.zh)return Promise.resolve();
@@ -20,7 +17,14 @@ function ensureZh(){
   }
   return _zhReady;
 }
-function t(key){var v=I18N[_currentLang]&&I18N[_currentLang][key];if(typeof v!=="undefined")return v;v=I18N.en[key];if(typeof v!=="undefined")return v;return key;}
+function ensureEn(){
+  if(I18N.en)return Promise.resolve();
+  if(!_enReady){
+    _enReady=import("./i18n/en.js").then(function(m){I18N.en=m.en||m.default||m;}).catch(function(err){_enReady=null;try{console.error("[i18n] en locale failed to load",err)}catch(e){reportSwallow(e, 'i18n.ensureEn.logError'); /* ignore */}});
+  }
+  return _enReady;
+}
+function t(key){var table=I18N[_currentLang];var v=table&&table[key];if(typeof v!=="undefined")return v;v=I18N.en&&I18N.en[key];if(typeof v!=="undefined")return v;return key;}
 function syncLanguageToggleOptions(lang){
   for(var i=0;i<LANG_OPTION_IDS.length;i++){
     var el=document.getElementById(LANG_OPTION_IDS[i]);
@@ -33,8 +37,11 @@ function syncLanguageToggleOptions(lang){
 }
 function setLang(lang){
   if(!I18N[lang]){
-    /* zh may still be in flight — apply as soon as it lands. */
-    if(lang==="zh"){ensureZh().then(function(){if(I18N.zh)setLang("zh")});}
+    /* A locale may still be in flight — apply as soon as it lands. */
+    if(lang==="zh"||lang==="en"){
+      var ready=lang==="zh"?ensureZh():ensureEn();
+      ready.then(function(){if(I18N[lang])setLang(lang)});
+    }
     return;
   }
   _currentLang=lang;
@@ -173,9 +180,8 @@ function applyI18n(){
    entry and gives a single load() call a self-healing behavior. */
 try{
   var s=localStorage.getItem("socrates-lang-app");
-  /* The zh table may still be in flight (async chunk) — validate the
-     stored value against the locale NAMES, not I18N membership, or a
-     stored "zh" would be wiped as "stale" before the chunk lands. */
+  /* Validate saved language against supported names, not the async-loaded
+     locale table, or a valid preference would be wiped before it lands. */
   if(s==="en"||s==="zh"){
     _currentLang=s;
   }else if(!s){
@@ -189,24 +195,18 @@ try{
     try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.resetStale', 'expected'); }
   }
 }catch(e){reportSwallow(e, 'i18n.bootstrap.readPref', 'expected'); }
-/* Fetch the zh chunk in parallel with boot for zh users; en users never
-   pay for it until they toggle. When it lands, run the full setLang path
-   so JS-rendered strings (greeting, topic copy, toggles) repaint too. */
-if(_currentLang==="zh"){
-  ensureZh().then(function(){if(_currentLang==="zh"){try{setLang("zh")}catch(e){reportSwallow(e, 'i18n.bootstrap.zhRetry'); /* applyI18n retry covers stragglers */ }}});
-}
-/* P_lang-init — run applyI18n SYNCHRONOUSLY at module load so every
-   data-i18n-key element is in the saved language BEFORE main.js
-   finishes initializing (syncAppModeUI, renderRecents, etc.). The
-   previous setTimeout(0) deferred translation to the next event-loop
-   tick, which meant main.js rendered a flash of English first —
-   and the partial re-render that followed left the page in a
-   mixed-language state. */
+/* Fetch only the saved locale in parallel with boot. When it lands, run the
+   full setLang path so DOM-owned strings and React language listeners repaint. */
+var _initialLocaleReady=_currentLang==="zh"?ensureZh():ensureEn();
+_initialLocaleReady.then(function(){if(I18N[_currentLang]){try{setLang(_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.localeRetry'); /* applyI18n retry covers stragglers */ }}});
+/* Set the document's language before boot. The selected async locale calls
+   setLang() on arrival and applies every data-i18n string before auth boot
+   reveals the app or gate. */
 try{
   var lbl=document.getElementById("langToggleLabel");
   if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
   document.documentElement.lang=_currentLang==="zh"?"zh":"en";
-  applyI18n();
+  if(I18N[_currentLang])applyI18n();
 }catch(e){reportSwallow(e, 'i18n.bootstrap.initialApply'); }
 
 /* Expose i18n functions as globals for main.js and other modules. */
@@ -214,6 +214,5 @@ window._currentLang = _currentLang;
 window.t = t;
 window.setLang = setLang;
 window.applyI18n = applyI18n;
-/* auth/boot.js awaits this (bounded) before revealing UI so zh users
-   never see an English first paint. Always a Promise. */
-window.__i18nReady = _zhReady || Promise.resolve();
+/* auth/boot.js awaits this (bounded) before revealing UI. Always a Promise. */
+window.__i18nReady = _initialLocaleReady;

@@ -2,8 +2,9 @@
   "rawControls": 0,
   "unadaptedPrimitives": 0,
   "compatibilityControls": 0,
-  "retainedMarkupControls": 60,
-  "legacyDomControls": 30,
-  "legacyTemplateControls": 129,
+  "retainedMarkupControls": 0,
+  "legacyDomControls": 0,
+  "legacyMjsDomControls": 0,
+  "legacyTemplateControls": 0,
   "reactTemplateControls": 0
 }

@@ -70,15 +70,6 @@ function bindStoppedResend(state: TurnRuntimeState): void {
   claimLiveRetry(state.ret, function () {
     try { resendLastUserMessage(); } catch { /* resend handler threw */ }
   });
-  const delegatedResend = function (event: Event): void {
-    const target = event.target as Element | null;
-    if (!(target && target.closest && target.closest('[data-chat-resend]'))) return;
-    try { state.list.removeEventListener('click', delegatedResend); }
-    catch { /* listener already detached */ }
-    resendLastUserMessage();
-  };
-  try { state.list.addEventListener('click', delegatedResend); }
-  catch { /* list unavailable */ }
   try { saveCurrentSession(); }
   catch { /* save failed */ }
 }
@@ -92,8 +83,6 @@ function finalizeStoppedMessage(
   const stoppedHtml = renderStoppedHtml(state, stoppedRaw, visibleStoppedRaw);
   const resendHtml = '<div class="msg-error msg-resend" style="margin-top:8px">' +
     '<span class="msg-error-text">' + esc(state.t('chat.stopped') || 'Response stopped') + '</span>' +
-    '<button type="button" class="msg-retry-btn chat-resend-btn" data-chat-resend>' +
-    esc(state.t('chat.resend') || 'Resend') + '</button>' +
     '</div>';
   const finalized = state.patchOwnedMessage({
     rawText: stoppedRaw,

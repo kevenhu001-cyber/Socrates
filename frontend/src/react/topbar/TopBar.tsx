@@ -13,13 +13,18 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
  * rendered childless on purpose so an imperative write is never clobbered by
  * a re-render.
  *
- * Geometry stays in parity/topbar.css until it is measured and retired
- * (docs/adr/0024-shadcn-shell-geometry-ownership.md); the primitives below
- * carry the semantic variants only.
+ * Shell layout and custom model/action geometry stay in parity/topbar.css;
+ * the mode option buttons own their 36px control geometry through shadcn
+ * variants and token classes (docs/adr/0024-shadcn-shell-geometry-ownership.md).
  */
 
 /** Controls keep the shell's own rules as their surface marker. */
 const CHROME_BUTTON = 'active:not-aria-[haspopup]:translate-y-0';
+const MODE_OPTION = [
+  'top-mode-switch-option min-w-[104px] rounded-full border-0 bg-transparent px-[var(--ui-space-md)]',
+  'text-muted-foreground leading-[var(--ui-text-ui-line)] cursor-pointer transition-colors',
+  'duration-(--ui-duration-hover) hover:bg-transparent hover:text-foreground aria-selected:text-foreground',
+].join(' ');
 
 function t(key: string, fallback: string): string {
   return i18n(key, fallback);
@@ -109,8 +114,8 @@ function ModeSwitch() {
   return (
     <div className="top-mode-switch" id="topModeSwitch" role="tablist" data-i18n-aria="chrome.sessionMode" aria-label="Session mode">
       <span className="top-mode-switch-thumb" id="topModeSwitchThumb" aria-hidden="true" />
-      <Button variant="ghost" className={`top-mode-switch-option is-active ${CHROME_BUTTON}`} id="topModeChat" role="tab" aria-selected="true" data-mode="chat" data-i18n-key="tutor.modeChat">{t('tutor.modeChat', '聊天')}</Button>
-      <Button variant="ghost" className={`top-mode-switch-option ${CHROME_BUTTON}`} id="topModeTutor" role="tab" aria-selected="false" data-mode="tutor" data-i18n-key="tutor.modeTutor">{t('tutor.modeTutor', '辅导')}</Button>
+      <Button variant="ghost" className={`${MODE_OPTION} is-active ${CHROME_BUTTON}`} id="topModeChat" role="tab" aria-selected="true" data-mode="chat" data-i18n-key="tutor.modeChat">{t('tutor.modeChat', '聊天')}</Button>
+      <Button variant="ghost" className={`${MODE_OPTION} ${CHROME_BUTTON}`} id="topModeTutor" role="tab" aria-selected="false" data-mode="tutor" data-i18n-key="tutor.modeTutor">{t('tutor.modeTutor', '辅导')}</Button>
     </div>
   );
 }

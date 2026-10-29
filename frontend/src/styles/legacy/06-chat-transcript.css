@@ -383,7 +383,6 @@ body.admin-active #topicDisclaimer{display:none!important}
 /* Edit-in-place textarea — the user bubble itself is the rounded gray
    container (open-webui edit surface), so the textarea stays chromeless
    and the bubble stretches to full column width while editing. */
-.msg-edit-area{width:100%;min-height:60px;background:transparent;border:none;outline:none;padding:2px 0;font:inherit;color:inherit;resize:vertical}
 .msg.user .msg-body:has(.msg-edit-area){max-width:100%;width:100%;border-radius:20px}
 /* Alert notifications — Ant Design-inspired toast system.
    Types: success / info / warning / error. Each uses the app's

@@ -505,31 +505,6 @@
   gap: 4px;
 }
 
-#appShell .visualization-actions button {
-  height: var(--ui-control-xs);
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: var(--ui-radius-control);
-  background: transparent;
-  color: var(--muted-foreground);
-  font-family: var(--font-sans);
-  font-size: var(--ui-font-size-xs);
-  font-weight: var(--ui-font-weight-medium);
-  cursor: pointer;
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, border-color var(--ui-duration-fast) ease;
-}
-
-#appShell .visualization-actions button:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
-
-#appShell .visualization-actions button[aria-expanded="true"] {
-  background: var(--accent);
-  color: var(--foreground);
-  border-color: var(--border);
-}
-
 @media (max-width: 768px) {
   #appShell .workspace-surface,
   #appShell .main-page { padding-inline: 16px; }

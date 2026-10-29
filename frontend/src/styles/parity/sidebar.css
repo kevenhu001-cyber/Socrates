@@ -107,22 +107,10 @@
     gap: 2px;
   }
   #appShell #sidebarSearchBtn { display: none; }
-  /* P_sidebar-parity — 图1's two header affordances are standalone circles,
-     not the squared icon-btn the rest of the app uses. They share
-     --ui-control-sm (32px) with the footer's icon buttons so every icon
-     control in the rail is one size; only the shape differs (circle here,
-     8px square in the footer). They used to be a literal 34px, which put
-     them off the control ladder and 2px away from their own footer
-     siblings. */
+  /* The shadcn buttons own their 32px size and radius. The shell keeps only
+     the state colors and icon drawing size here. */
   #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
-    display: inline-grid;
-    place-items: center;
-    width: var(--ui-control-sm);
-    height: var(--ui-control-sm);
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
     background: transparent;
     color: var(--muted-foreground);
     cursor: pointer;

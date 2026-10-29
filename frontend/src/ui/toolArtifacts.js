@@ -4,6 +4,12 @@ import { trTool } from "./toolCardHelpers.js";
 import { openArtifactPreview } from "./artifactPreview.js";
 import { reportSwallow } from '../util/reportSwallow.ts';
 
+function renderArtifactControl(host, props) {
+  void import('../react/toolArtifacts/artifactControlHost.tsx').then(({ renderArtifactControl: render }) => {
+    render(host, props);
+  }).catch((error) => reportSwallow(error, 'ui/toolArtifacts.js:renderArtifactControl'));
+}
+
 /* Build the diagnostic placeholder shown when an inline artifact
    fails to load. */
 export function makeArtifactError(fileId, mimeType, url, reason) {
@@ -17,10 +23,14 @@ export function makeArtifactError(fileId, mimeType, url, reason) {
     '</svg>' +
     `<span class="artifact-error-text">图片产物暂时无法加载</span>` +
     '<a class="artifact-error-open" target="_blank" rel="noopener" download>打开原文件</a>' +
-    '<button type="button" class="artifact-error-retry">重试</button>' +
+    '<span class="artifact-error-retry-host"></span>' +
     `<details class="artifact-error-detail"><summary>查看详情</summary><code>${esc(reason || 'load failed')} · ${esc(fileId)}</code></details>`;
   box.querySelector('.artifact-error-open').href = url;
-  box.querySelector(".artifact-error-retry").addEventListener("click", function () {
+  renderArtifactControl(box.querySelector('.artifact-error-retry-host'), {
+    kind: 'retry',
+    className: 'artifact-error-retry',
+    label: trTool('tool.retry', 'Retry'),
+    onClick: function () {
     const fresh = document.createElement("img");
     fresh.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_=" + Date.now();
     fresh.alt = "execution artifact";
@@ -28,6 +38,7 @@ export function makeArtifactError(fileId, mimeType, url, reason) {
     fresh.addEventListener("load", function () { fresh.classList.add("loaded"); });
     fresh.addEventListener("error", function () { fresh.replaceWith(makeArtifactError(fileId, mimeType, url, "load failed")); });
     if (box.parentNode) box.parentNode.replaceChild(fresh, box);
+    },
   });
   return box;
 }
@@ -90,13 +101,23 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
   actions.className = "exec-artifact-actions";
   const fsLabel = trTool('chrome.fullscreen', 'Fullscreen');
   const dlLabel = trTool('chrome.download', 'Download');
-  actions.innerHTML =
-    '<button type="button" class="exec-artifact-btn" title="' + esc(fsLabel) + '" aria-label="' + esc(fsLabel) + '" data-i18n-title="chrome.fullscreen" data-i18n-aria="chrome.fullscreen">' +
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>' +
-    '</button>' +
-    '<a class="exec-artifact-btn" href="' + esc(url) + '" download target="_blank" rel="noopener" title="' + esc(dlLabel) + '" aria-label="' + esc(dlLabel) + '" data-i18n-title="chrome.download" data-i18n-aria="chrome.download">' +
+  const fullscreenHost = document.createElement('span');
+  fullscreenHost.className = 'exec-artifact-fullscreen-host';
+  actions.appendChild(fullscreenHost);
+  const download = document.createElement('a');
+  download.className = 'exec-artifact-download';
+  download.href = url;
+  download.download = '';
+  download.target = '_blank';
+  download.rel = 'noopener';
+  download.title = dlLabel;
+  download.setAttribute('aria-label', dlLabel);
+  download.dataset.i18nTitle = 'chrome.download';
+  download.dataset.i18nAria = 'chrome.download';
+  download.innerHTML =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>' +
-    '</a>';
+    '';
+  actions.appendChild(download);
   wrap.appendChild(actions);
 
   const img = new Image();
@@ -176,13 +197,21 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
       name: artifactName || displayName(fileId, mimeType) || 'Artifact'
     });
   }
+  renderArtifactControl(fullscreenHost, {
+    kind: 'fullscreen',
+    className: 'exec-artifact-fullscreen',
+    title: fsLabel,
+    i18nTitle: 'chrome.fullscreen',
+    i18nAria: 'chrome.fullscreen',
+    label: fsLabel,
+    onClick: function (event) { openLightbox(event); },
+  });
   wrap.addEventListener("click", function (ev) {
     var t = ev && ev.target;
     if (!t) return;
-    /* The download action is an <a download>: let its default behaviour
-       run (nothing to intercept). The expand action is the <button>. */
-    if (t.closest && t.closest('a.exec-artifact-btn')) return;
-    if (t.closest && t.closest('button.exec-artifact-btn')) {
+    /* Download anchors keep their browser behavior. */
+    if (t.closest && t.closest('a.exec-artifact-download')) return;
+    if (t.closest && t.closest('button.exec-artifact-fullscreen')) {
       openLightbox(ev);
       return;
     }
@@ -212,15 +241,16 @@ function appendInlineHtml(fileId, mimeType, url, out, artifactName) {
   const name = document.createElement('span');
   name.className = 'exec-artifact-meta-name';
   name.textContent = artifactName || displayName(fileId, mimeType) || 'HTML';
-  const open = document.createElement('button');
-  open.type = 'button';
-  open.className = 'exec-artifact-open';
-  open.textContent = t('artifact.openPreview');
-  open.addEventListener('click', function () {
-    openArtifactPreview({ url: url, mimeType: mimeType, name: name.textContent });
+  const openHost = document.createElement('span');
+  openHost.className = 'exec-artifact-open-host';
+  renderArtifactControl(openHost, {
+    kind: 'open',
+    className: 'exec-artifact-open',
+    label: t('artifact.openPreview'),
+    onClick: function () { openArtifactPreview({ url: url, mimeType: mimeType, name: name.textContent }); },
   });
   caption.appendChild(name);
-  caption.appendChild(open);
+  caption.appendChild(openHost);
   wrap.appendChild(caption);
   out.appendChild(wrap);
 }

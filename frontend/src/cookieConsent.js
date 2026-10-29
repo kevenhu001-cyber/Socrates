@@ -31,6 +31,9 @@ var ESSENTIAL_COOKIE_NAMES = new Set([
 
 var _cookieGuardInstalled = false;
 var _cookieGuardDocument = null;
+var _cookieConsentInitialized = false;
+var _cookieConsentPrivacyUrl = '/privacy';
+var _cookieConsentAuthPlacement = false;
 
 function normalizePreference(raw) {
   if (!raw || typeof raw !== 'object') return null;
@@ -182,40 +185,37 @@ export function installCookieGuard() {
   } catch (_) { /* unsupported host — skip the client-side guard */ }
 }
 
-function localT(key) {
-  if (typeof window !== 'undefined' && typeof window.t === 'function') {
-    try {
-      var v = window.t(key);
-      if (typeof v === 'string' && v !== key) return v;
-    } catch (error) { reportSwallow(error, 'cookieConsent.js:187'); }
-  }
-  var fallback = {
-    'consent.title': 'We respect your privacy',
-    'consent.message': 'We use strictly necessary cookies to make Socrates work. Non-essential cookies (for example analytics) are only placed after you choose to allow them.',
-    'consent.accept': 'Accept all',
-    'consent.essential': 'Essential only',
-    'consent.learnMore': 'Privacy policy',
-  };
-  return fallback[key] || key;
-}
-
 /* Keep the first-visit banner visible without covering the auth form.  The
  * auth gate is a scroll container, so placing the banner in its flow lets a
  * visitor finish the sign-in form and then review consent below it.  Once the
- * app shell is active, move it back to body so it returns to the compact
- * fixed bottom treatment used by the product shell. */
+ * app shell is active, move the React root back to body so the banner returns
+ * to the compact fixed bottom treatment used by the product shell. */
 export function syncCookieConsentPlacement(authVisible) {
   if (typeof document === 'undefined' || !document.body) return;
+  var root = document.getElementById('cookieConsentReactRoot');
   var banner = document.getElementById('socratesCookieConsent');
-  if (!banner) return;
+  if (!banner) {
+    _cookieConsentAuthPlacement = !!authVisible;
+    return;
+  }
+  if (!root) return;
   var gate = document.getElementById('authGate');
   if (authVisible && gate) {
-    gate.appendChild(banner);
+    gate.appendChild(root);
     banner.classList.add('socrates-cookie-consent--auth');
   } else {
-    document.body.appendChild(banner);
+    document.body.appendChild(root);
     banner.classList.remove('socrates-cookie-consent--auth');
   }
+  _cookieConsentAuthPlacement = !!authVisible;
+}
+
+export function getCookieConsentPrivacyUrl() {
+  return _cookieConsentPrivacyUrl;
+}
+
+export function getCookieConsentAuthPlacement() {
+  return _cookieConsentAuthPlacement;
 }
 
 export function initCookieConsent(options) {
@@ -230,64 +230,10 @@ export function initCookieConsent(options) {
     }
     return { shown: false };
   }
-  if (document.getElementById('socratesCookieConsent')) return { shown: false };
+  if (_cookieConsentInitialized || document.getElementById('socratesCookieConsent')) return { shown: false };
+  _cookieConsentInitialized = true;
+  _cookieConsentPrivacyUrl = options.privacyUrl || '/privacy';
   if (getConsentPreference()) return { shown: false };
-
-  var banner = document.createElement('div');
-  banner.id = 'socratesCookieConsent';
-  banner.className = 'socrates-cookie-consent';
-  banner.setAttribute('role', 'region');
-  banner.setAttribute('aria-label', localT('consent.title'));
-  banner.setAttribute('data-testid', 'cookie-consent-banner');
-
-  var title = document.createElement('strong');
-  title.className = 'socrates-cookie-consent-title';
-  title.textContent = localT('consent.title');
-
-  var message = document.createElement('p');
-  message.className = 'socrates-cookie-consent-message';
-  message.textContent = localT('consent.message');
-
-  var actions = document.createElement('div');
-  actions.className = 'socrates-cookie-consent-actions';
-
-  function choose(choice) {
-    setConsentPreference(choice);
-    if (banner.parentNode) banner.parentNode.removeChild(banner);
-  }
-
-  var essentialBtn = document.createElement('button');
-  essentialBtn.type = 'button';
-  essentialBtn.className = 'socrates-cookie-consent-btn secondary';
-  essentialBtn.textContent = localT('consent.essential');
-  essentialBtn.setAttribute('data-consent-choice', CONSENT_ESSENTIAL);
-  essentialBtn.addEventListener('click', function () { choose(CONSENT_ESSENTIAL); });
-
-  var acceptBtn = document.createElement('button');
-  acceptBtn.type = 'button';
-  acceptBtn.className = 'socrates-cookie-consent-btn primary';
-  acceptBtn.textContent = localT('consent.accept');
-  acceptBtn.setAttribute('data-consent-choice', CONSENT_ACCEPT);
-  acceptBtn.addEventListener('click', function () { choose(CONSENT_ACCEPT); });
-
-  actions.appendChild(essentialBtn);
-  actions.appendChild(acceptBtn);
-
-  var privacyUrl = options.privacyUrl || '/privacy';
-  var link = document.createElement('a');
-  link.className = 'socrates-cookie-consent-link';
-  link.href = privacyUrl;
-  link.textContent = localT('consent.learnMore');
-  if (/^https?:/i.test(privacyUrl)) {
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-  }
-
-  banner.appendChild(title);
-  banner.appendChild(message);
-  banner.appendChild(actions);
-  banner.appendChild(link);
-  document.body.appendChild(banner);
   var gate = document.getElementById('authGate');
   syncCookieConsentPlacement(!!(gate && !gate.classList.contains('hidden') &&
     document.documentElement.dataset.bootState === 'auth'));

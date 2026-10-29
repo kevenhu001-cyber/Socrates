@@ -23,9 +23,9 @@ globalThis.CustomEvent = dom.window.CustomEvent;
 const { publishProviderConfig, getProviderConfigSnapshot, resetProviderConfig } = await import(
   '../src/config/providerConfig.store.ts'
 );
-const { syncModelPills, syncChatModel } = await import('../src/pickers.js');
+const { openModelPicker, syncModelPills, syncChatModel } = await import('../src/pickers.js');
 
-test('model picker selects the configured built-in fallback and renders it accessibly', () => {
+test('model picker selects the configured built-in fallback and renders it accessibly', async () => {
   resetProviderConfig();
   publishProviderConfig({
     providers: [
@@ -37,6 +37,7 @@ test('model picker selects the configured built-in fallback and renders it acces
   });
 
   syncModelPills();
+  await openModelPicker();
 
   assert.equal(document.getElementById('modelPickerLabel').textContent, 'Beagle');
   assert.equal(document.getElementById('modelPickerTrigger').classList.contains('has-model'), true);

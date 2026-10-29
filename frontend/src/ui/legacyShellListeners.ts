@@ -52,7 +52,6 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
     cleanups.push(() => element.removeEventListener(type, listener));
   };
   const byId = (id: string): HTMLElement | null => document.getElementById(id);
-  const click = (id: string, action: EventListener) => bind(byId(id), 'click', action);
 
   /* Delegated controls: selector → action, first match wins. `actions` run
      with the matched element, which stands in for `event.currentTarget`. */
@@ -78,9 +77,11 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
   onShellClick('#findBtn', () => actions.openFind());
   onShellClick('#shareBtn', () => actions.openShare());
   onShellClick('#apiSettingsBtn', () => actions.openSettings());
+  onShellClick('#tabKnowledge', () => actions.toggleSidebarView('knowledge'));
+  onShellClick('#tabMistakes', () => actions.toggleSidebarView('mistakes'));
   bind(document, 'socrates:open-settings', actions.openSettings);
-  click('composerPrimaryBtn', (() => {
-    const button = byId('composerPrimaryBtn') as HTMLButtonElement | null;
+  onShellClick('#composerPrimaryBtn', (element) => {
+    const button = element as HTMLButtonElement;
     if (button && button.disabled) return;
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
@@ -103,8 +104,8 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
       return;
     }
     actions.startSession();
-  }) as EventListener);
-  click('composerMicBtn', () => {
+  });
+  onShellClick('#composerMicBtn', () => {
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput(surface);
@@ -115,24 +116,12 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
     byId('mobileModeTrigger')?.setAttribute('aria-expanded', 'false');
     actions.toggleEffort(byId('mobileModeTrigger'));
   });
-  click('sidebarSearchBtn', ((event: Event) => {
-    const sidebar = byId('sidebar');
-    const input = byId('sidebarSearch');
-    const button = event.currentTarget as HTMLElement | null;
-    const open = !sidebar?.classList.contains('search-open');
-    sidebar?.classList.toggle('search-open', open);
-    button?.setAttribute('aria-expanded', String(open));
-    if (open) requestAnimationFrame(() => input?.focus());
-  }) as EventListener);
-
-  bind(byId('composerToolsBtn'), 'click', ((event: Event) => {
+  onShellClick('#composerToolsBtn', (element) => {
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
-    actions.toggleComposerTools(event.currentTarget as HTMLElement | null, surface);
-  }) as EventListener);
-  document.querySelectorAll<HTMLElement>('.effort-trigger').forEach((element) => {
-    bind(element, 'click', () => actions.toggleEffort(element));
+    actions.toggleComposerTools(element, surface);
   });
+  onShellClick('.effort-trigger', (element) => actions.toggleEffort(element));
   /* The top-bar Chat/Tutor pill was removed; the dropdown items in
      #mobileModeMenu are the remaining in-shell mode affordance. They live in
      the React header, so they are matched by selector at click time. */
@@ -140,11 +129,14 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
     actions.selectMode(element.dataset.mode);
   });
 
-  const search = byId('sidebarSearch');
-  bind(search, 'input', ((event: Event) => actions.searchRecents((event.currentTarget as HTMLInputElement).value)) as EventListener);
-  bind(search, 'focus', () => actions.switchTab('recents'));
-  click('tabKnowledge', () => actions.toggleSidebarView('knowledge'));
-  click('tabMistakes', () => actions.toggleSidebarView('mistakes'));
+  bind(document, 'input', ((event: Event) => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement && target.id === 'sidebarSearch') actions.searchRecents(target.value);
+  }) as EventListener);
+  bind(document, 'focusin', ((event: Event) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest('#sidebarSearch')) actions.switchTab('recents');
+  }) as EventListener);
 
   /* The React RecentsHeader owns compose and the organization menu. */
 

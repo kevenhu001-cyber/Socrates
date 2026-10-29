@@ -1,9 +1,9 @@
 export function examBody() {
-  return document.getElementById('examViewBody');
+  return document.getElementById('examViewLegacyBody') || document.getElementById('examViewBody');
 }
 
 export function examFooter() {
-  return document.getElementById('examViewFooter');
+  return document.getElementById('examViewLegacyFooter') || document.getElementById('examViewFooter');
 }
 
 export function examTitle() {

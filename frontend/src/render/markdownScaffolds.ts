@@ -156,7 +156,7 @@ function renderExamplePreview(inner: string, markdown: StreamMarkdownRenderer): 
     '<div class="inline-example-title">' + markdown(title) + '</div>' +
     '<div class="inline-example-problem">' + markdown(problem, 'Problem') + '</div>' +
     (solution
-      ? '<button type="button" class="inline-example-reveal" aria-disabled="true" tabindex="-1">Show solution</button>' +
+      ? '<span class="inline-example-reveal" aria-hidden="true">Show solution</span>' +
         '<div class="inline-example-solution" hidden>' + markdown(solution) + '</div>'
       : ''));
 }
@@ -167,14 +167,14 @@ function renderPracticePreview(inner: string, markdown: StreamMarkdownRenderer):
   return streamCard('practice',
     '<div class="inline-practice-problem">' + markdown(problem, 'Problem') + '</div>' +
     (hint
-      ? '<button type="button" class="inline-practice-hint-toggle" aria-disabled="true" tabindex="-1">Show hint</button>' +
+      ? '<span class="inline-practice-hint-toggle" aria-hidden="true">Show hint</span>' +
         '<div class="inline-practice-hint" hidden>' + markdown(hint) + '</div>'
       : '') +
-    '<form class="inline-practice-form">' +
-      '<textarea class="inline-practice-textarea" rows="3" placeholder="Type your answer…" aria-disabled="true" tabindex="-1"></textarea>' +
-      '<div class="inline-practice-actions"><button type="button" class="inline-practice-submit" aria-disabled="true" tabindex="-1">Submit</button></div>' +
+    '<div class="inline-practice-form" aria-hidden="true">' +
+      '<div class="inline-practice-textarea">Type your answer…</div>' +
+      '<div class="inline-practice-actions"><span class="inline-practice-submit">Submit</span></div>' +
       '<div class="inline-practice-feedback"></div>' +
-    '</form>');
+    '</div>');
 }
 
 function renderFlashcardPreview(inner: string, markdown: StreamMarkdownRenderer): string {
@@ -223,9 +223,9 @@ function renderQuizPreview(inner: string, markdown: StreamMarkdownRenderer): str
   const optionRe = /<o\s+letter=["']([A-Da-d])["'][^>]*>([\s\S]*?)(?:<\/o>|$)/gi;
   let match: RegExpExecArray | null;
   while ((match = optionRe.exec(inner)) !== null) {
-    options.push('<button type="button" class="inline-quiz-opt" aria-disabled="true" tabindex="-1">' +
+    options.push('<div class="inline-quiz-opt" aria-hidden="true">' +
       '<span class="inline-quiz-opt-letter">' + escHTML(match[1].toUpperCase()) + '.</span>' +
-      '<span class="inline-quiz-opt-text">' + markdown(decodeEntities(match[2].trim())) + '</span></button>');
+      '<span class="inline-quiz-opt-text">' + markdown(decodeEntities(match[2].trim())) + '</span></div>');
   }
   return streamCard('quiz',
     '<div class="inline-quiz-q">' + markdown(question, 'Question') + '</div>' +

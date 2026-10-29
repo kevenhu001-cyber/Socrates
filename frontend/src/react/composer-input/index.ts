@@ -1,4 +1,5 @@
 export { RichComposer } from './RichComposer';
+export { ComposerShell } from './ComposerShell';
 export {
   composerController,
   clearComposer,

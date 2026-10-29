@@ -21,7 +21,7 @@ declare global {
 type Action = Omit<PromptTemplatesSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<PromptTemplatesSnapshot, Action>({
-  initial: { open: false, bodyHTML: '', revision: 0 },
+  initial: { open: false, view: 'list', builtins: [], customs: [], editor: null, revision: 0 },
   reducer: (_state, action) => action,
 });
 

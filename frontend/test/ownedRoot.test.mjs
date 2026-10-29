@@ -59,7 +59,7 @@ test('owned roots reuse hosts, isolate replacements and ignore stale destroy han
   }
 });
 
-test('feature root slots release subscriptions and portal ownership on host replacement', async () => {
+test('feature root slots update the current host and release it on host replacement', async () => {
   const { createRootSlot } = await import('../src/react/lib/boot/ownedRoot.ts');
   const dom = new JSDOM('<!doctype html><div id="root"></div><div id="portal"></div>');
   const previous = { window: globalThis.window, document: globalThis.document, act: globalThis.IS_REACT_ACT_ENVIRONMENT };
@@ -71,9 +71,15 @@ test('feature root slots release subscriptions and portal ownership on host repl
   try {
     const first = document.getElementById('root');
     const portal = document.getElementById('portal');
-    await act(() => { slot.mount(first, createElement(Fragment, null, createElement('button', null, 'First'),
+    let firstHandle;
+    await act(() => { firstHandle = slot.mount(first, createElement(Fragment, null, createElement('button', null, 'First'),
       createPortal(createElement('button', null, 'Portaled'), portal)), () => () => cleanupCount++); });
     assert.equal(portal.textContent, 'Portaled');
+    let updatedHandle;
+    await act(() => { updatedHandle = slot.mount(first, createElement('button', null, 'Updated')); });
+    assert.equal(updatedHandle, firstHandle);
+    assert.equal(first.textContent, 'Updated');
+    assert.equal(portal.textContent, '', 'updating removes obsolete portals');
     const second = document.createElement('div');
     second.id = first.id;
     first.replaceWith(second);
@@ -154,6 +160,52 @@ test('grouped roots preserve component state across updates and release every me
   } finally {
     await act(() => group.releaseAll());
     globalThis.window = previous.window; globalThis.document = previous.document; globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
+    dom.window.close();
+  }
+});
+
+test('observed root groups reuse roots and release hosts removed by legacy DOM updates', async () => {
+  const { createObservedRootGroup } = await import('../src/react/lib/boot/observedRootGroup.ts');
+  const dom = new JSDOM('<div id="root"></div>');
+  const previous = {
+    window: globalThis.window,
+    document: globalThis.document,
+    MutationObserver: globalThis.MutationObserver,
+    act: globalThis.IS_REACT_ACT_ENVIRONMENT,
+  };
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.MutationObserver = dom.window.MutationObserver;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const group = createObservedRootGroup('legacy-test');
+  let unmounted = 0;
+  const { useEffect } = await import('react');
+  function View({ label }) {
+    useEffect(() => () => { unmounted++; }, []);
+    return createElement('button', null, label);
+  }
+  try {
+    const host = document.getElementById('root');
+    let first;
+    await act(() => { first = group.render(host, createElement(View, { label: 'First' })); });
+    await act(() => { assert.equal(group.render(host, createElement(View, { label: 'Updated' })), first); });
+    assert.equal(host.textContent, 'Updated');
+
+    await act(async () => {
+      host.remove();
+      await new Promise((resolve) => dom.window.setTimeout(resolve, 0));
+    });
+    assert.equal(host.textContent, '');
+    assert.equal(hostIsMounted(host), false);
+    assert.equal(unmounted, 1);
+
+    group.releaseAll();
+  } finally {
+    group.releaseAll();
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+    globalThis.MutationObserver = previous.MutationObserver;
+    globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
     dom.window.close();
   }
 });

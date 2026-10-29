@@ -1,8 +1,9 @@
 import { NativeSelect as ShadcnNativeSelect } from '../../../ui/shadcn/native-select';
-import { Button as UiButton } from '../../../ui/Button';
+import { Button as ShadcnButton } from '../../../ui/shadcn/button';
 // Adapted from thesysdev/open-intelligent-ui map.tsx (MIT); see ../LICENSE.
 import { defineComponent, reactive, useIsStreaming, useStateField } from '@openuidev/react-lang';
-import { useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { createElement, useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { flushSync } from 'react-dom';
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { z } from 'zod/v4';
 import { fetchRemote, MEDIA_API, useRemote } from '../remoteData';
@@ -10,10 +11,38 @@ import { useRemoteLabels } from '../remoteLabels';
 import { webUrl } from '../style';
 import { boundsOf, coordinate, type LatLng } from './geometry';
 import { loadMapLibre, vectorStyle } from './basemap';
+import { mountOwnedRoot, type OwnedRootHandle } from '../../../lib/boot/ownedRoot';
 
 interface Place { key: string; label: string; lat: number; lng: number; category?: string; sourceUrl?: string; resolvedLabel?: string }
 interface MarkerInput { type?: string; typeName?: string; partial?: boolean; props?: { label?: string; lat?: number; lng?: number; category?: string; place?: string } }
 interface Route { points: [number, number][]; profile: 'driving'; distance: number; duration: number }
+
+function createMapPinHost(place: Place, index: number, selected: boolean, onSelect: () => void): { host: HTMLSpanElement; root: OwnedRootHandle } {
+  const host = document.createElement('span');
+  host.className = 'iui-map-pin-host';
+  let root!: OwnedRootHandle;
+  flushSync(() => {
+    root = mountOwnedRoot(host, 'openui-map-pin', createElement(ShadcnButton, {
+      type: 'button',
+      variant: 'default',
+      className: 'iui-map-pin',
+      title: place.label,
+      'aria-label': place.label,
+      'aria-pressed': selected,
+      onClick: onSelect,
+      children: String(index + 1),
+    }));
+  });
+  return { host, root };
+}
+
+function clearMapPins(pins: Array<{ marker: Marker; root: OwnedRootHandle }>): void {
+  pins.forEach(({ marker, root }) => {
+    marker.remove();
+    root.destroy();
+  });
+  pins.length = 0;
+}
 
 function markerInputs(value: unknown) {
   return (Array.isArray(value) ? value.flat() as MarkerInput[] : []).filter((item) => item?.typeName === 'MapMarker' && !item.partial && typeof item.props?.label === 'string').slice(0, 12);
@@ -87,14 +116,14 @@ function MapViewContent({
       <div className="iui-map-surface" ref={canvas} />
       <div className="iui-map-controls">
         {categories.length > 1 ? <ShadcnNativeSelect aria-label={labels.filterPlaces} value={activeGroup} onChange={(event) => setGroup(event.target.value)}><option value="">{labels.allPlaces}</option>{categories.map((category) => <option key={category} value={category}>{category}</option>)}</ShadcnNativeSelect> : null}
-        <UiButton type="button" className="iui-button iui-button-sm" onClick={recenter}>{labels.recenter}</UiButton>
+      <ShadcnButton type="button" variant="outline" className="iui-button iui-button-sm" onClick={recenter}>{labels.recenter}</ShadcnButton>
       </div>
       {!ready && !error ? <p className="iui-map-notice" role="status">{labels.mapLoading}</p> : null}
-      {error ? <div className="iui-map-notice" role="status">{labels.mapUnavailable}<UiButton type="button" className="iui-button iui-button-sm" onClick={retry}>{labels.retry}</UiButton></div> : null}
+      {error ? <div className="iui-map-notice" role="status">{labels.mapUnavailable}<ShadcnButton type="button" variant="outline" className="iui-button iui-button-sm" onClick={retry}>{labels.retry}</ShadcnButton></div> : null}
     </div>
     {resolvedLoading ? <p className="iui-caption" role="status">{labels.mapLoading}</p> : null}
     {resolvedMissing ? <p className="iui-caption" role="status">{labels.placesUnavailable}</p> : null}
-    <ol className="iui-map-places">{places.map((place) => <li key={place.key}><UiButton className="iui-button iui-button-outline" type="button" aria-pressed={selected === place.label} onClick={() => selectPlace(place)}>{place.label}</UiButton>{place.sourceUrl && webUrl(place.sourceUrl) ? <a href={webUrl(place.sourceUrl)!} target="_blank" rel="noopener noreferrer">{place.resolvedLabel}</a> : null}</li>)}</ol>
+    <ol className="iui-map-places">{places.map((place) => <li key={place.key}><ShadcnButton variant="outline" className="iui-button iui-button-outline" type="button" aria-pressed={selected === place.label} onClick={() => selectPlace(place)}>{place.label}</ShadcnButton>{place.sourceUrl && webUrl(place.sourceUrl) ? <a href={webUrl(place.sourceUrl)!} target="_blank" rel="noopener noreferrer">{place.resolvedLabel}</a> : null}</li>)}</ol>
     {routeEnabled && places.length > 1 ? <p className="iui-caption" role="status">{routeState}</p> : null}
   </section>;
 }
@@ -127,7 +156,7 @@ export const MapView = defineComponent({
     const root = useRef<HTMLDivElement>(null);
     const canvas = useRef<HTMLDivElement>(null);
     const map = useRef<MapLibreMap | null>(null);
-    const pins = useRef<Marker[]>([]);
+    const pins = useRef<Array<{ marker: Marker; root: OwnedRootHandle }>>([]);
     const select = useRef(selection.setValue);
     select.current = selection.setValue;
     const [ready, setReady] = useState(false);
@@ -135,6 +164,7 @@ export const MapView = defineComponent({
     const [attempt, setAttempt] = useState(0);
 
     useEffect(() => {
+      const activePins = pins.current;
       let active = true;
       let instance: MapLibreMap | null = null;
       let observer: ResizeObserver | null = null;
@@ -160,27 +190,24 @@ export const MapView = defineComponent({
         });
         theme.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
       }).catch(() => { if (active) setError(true); });
-      return () => { active = false; observer?.disconnect(); theme?.disconnect(); pins.current.forEach((pin) => pin.remove()); pins.current = []; instance?.remove(); map.current = null; };
+      return () => { active = false; observer?.disconnect(); theme?.disconnect(); clearMapPins(activePins); instance?.remove(); map.current = null; };
     }, [attempt]);
 
     useEffect(() => {
+      const activePins = pins.current;
       if (!ready || !map.current) return;
       const instance = map.current;
       let active = true;
-      pins.current.forEach((pin) => pin.remove()); pins.current = [];
+      clearMapPins(activePins);
       loadMapLibre().then((lib) => {
         if (!active) return;
         (JSON.parse(signature) as Place[]).forEach((place, index) => {
-          const button = document.createElement('button');
-          button.type = 'button'; button.className = 'iui-map-pin';
-          button.textContent = String(index + 1); button.title = place.label;
-          button.setAttribute('aria-label', place.label); button.setAttribute('aria-pressed', String(selected === place.label));
-          button.addEventListener('click', () => select.current(place.label));
-          const pin = new lib.Marker({ element: button }).setLngLat([place.lng, place.lat]).addTo(instance);
-          pins.current.push(pin);
+          const pin = createMapPinHost(place, index, selected === place.label, () => select.current(place.label));
+          const marker = new lib.Marker({ element: pin.host }).setLngLat([place.lng, place.lat]).addTo(instance);
+          activePins.push({ marker, root: pin.root });
         });
       }).catch(() => { if (active) setError(true); });
-      return () => { active = false; pins.current.forEach((pin) => pin.remove()); pins.current = []; };
+      return () => { active = false; clearMapPins(activePins); };
     }, [ready, signature, selected]);
 
     useEffect(() => {

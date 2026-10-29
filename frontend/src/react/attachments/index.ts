@@ -1,4 +1,4 @@
-export { hydrateAttachmentChipsRows } from './AttachmentChipsRow';
+export { ComposerAttachmentChips } from './AttachmentChipsRow';
 export {
   installAttachmentsBridge,
   getAttachmentsSnapshot,

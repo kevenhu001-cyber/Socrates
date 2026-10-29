@@ -567,7 +567,6 @@
   gap: var(--ui-space-xs);
   margin: calc(var(--ui-space-xxs) * -1) 0 var(--ui-space-sm) var(--tc-nested-text);
 }
-.msg.assistant .msg-body.is-declarative .tool-inline-retry,
 .msg.assistant .msg-body.is-declarative .tool-inline-action,
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-action {
   display: inline-flex;
@@ -583,7 +582,6 @@
   cursor: pointer;
   transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
 }
-.msg.assistant .msg-body.is-declarative .tool-inline-retry:hover,
 .msg.assistant .msg-body.is-declarative .tool-inline-action:hover,
 .msg.assistant .msg-body.is-declarative .tool-inline-approval-action:hover:not(:disabled) {
   border-color: var(--border);
@@ -597,7 +595,6 @@
   margin: var(--ui-space-xs) 0 0;
 }
 /* Secondary actions are quiet text links with a full touch target. */
-.msg.assistant .msg-body.is-declarative .tool-inline-retry,
 .msg.assistant .msg-body.is-declarative .tool-inline-action {
   padding: 0 var(--ui-space-xs);
   border: 0;
@@ -606,7 +603,6 @@
   box-shadow: none;
   font-weight: var(--ui-font-weight-regular);
 }
-.msg.assistant .msg-body.is-declarative .tool-inline-retry:hover,
 .msg.assistant .msg-body.is-declarative .tool-inline-action:hover {
   background: transparent;
   text-decoration: underline;

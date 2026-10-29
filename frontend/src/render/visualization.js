@@ -14,6 +14,11 @@ import { asVisualizationSpec } from './visualizationSpec.ts';
 import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { openWorkbench } from '../react/workbench/workbenchStore';
+import { createElement } from 'react';
+import { flushSync } from 'react-dom';
+import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
+import { VisualizationActions, VisualizationFallbackActions } from '../react/visualization/VisualizationActions.tsx';
+import { Button } from '../react/ui/shadcn/button';
 export { parseFunctionExpression, sampleFunction, categoryAxisLayout, formatCategoryLabel };
 
 var echartsPromise = null;
@@ -44,12 +49,31 @@ function _mountingFor(host) {
 function cleanupCard(card) {
   if (!card || card._visualizationDisposed) return;
   card._visualizationDisposed = true;
+  disposeCardReactRoots(card);
   var cleanup = card._visualizationCleanup;
   card._visualizationCleanup = null;
   if (typeof cleanup === 'function') {
     try { cleanup(); }
     catch (error) { reportSwallow(error, 'visualization.cleanupCard'); }
   }
+}
+
+function disposeCardReactRoots(card) {
+  var reactRoots = card._visualizationReactRoots || [];
+  card._visualizationReactRoots = [];
+  reactRoots.forEach(function (root) {
+    try { root.destroy(); }
+    catch (error) { reportSwallow(error, 'visualization.disposeReactActions'); }
+  });
+}
+
+function mountCardReactSurface(card, host, label, content) {
+  if (!host) return null;
+  var root = mountOwnedRoot(host, 'visualization-' + label, content);
+  if (!card._visualizationReactRoots) card._visualizationReactRoots = [];
+  if (!card._visualizationReactRoots.includes(root)) card._visualizationReactRoots.push(root);
+  flushSync(function () { root.render(content); });
+  return root;
 }
 
 function removeCard(card) {
@@ -136,10 +160,6 @@ function svgStageChart(stage) {
   };
 }
 
-function hideAction(btn) {
-  if (btn) { btn.hidden = true; btn.setAttribute('aria-hidden', 'true'); }
-}
-
 function renderCardMath(card) {
   try {
     if (typeof renderMathInElement === 'function') renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
@@ -149,45 +169,23 @@ function renderCardMath(card) {
 function bindCard(card, spec, chart, opts) {
   opts = opts || {};
   var table = card.querySelector('.visualization-data');
-  var tableBtn = card.querySelector('[data-viz-action="table"]');
-  if (!table.querySelector('table')) hideAction(tableBtn);
-  tableBtn.addEventListener('click', function () { table.hidden = !table.hidden; this.setAttribute('aria-expanded', String(!table.hidden)); });
-  var fsBtn = card.querySelector('[data-viz-action="fullscreen"]');
   var requestFs = card.requestFullscreen || card.webkitRequestFullscreen;
-  if (!requestFs) hideAction(fsBtn);
-  fsBtn.addEventListener('click', function () {
-    if (!card.requestFullscreen) {
-      if (card.webkitRequestFullscreen) card.webkitRequestFullscreen();
-      return;
-    }
-    /* P_viz-fullscreen-err — surface the failure instead of
-       silently swallowing. Common causes: not in a user-gesture
-       handler (we are), element hidden (rare), or the browser
-       denying permission for cross-origin iframes inside the
-       card. The toast uses the existing notify channel if any
-       is exposed, otherwise a console warn. */
-    card.requestFullscreen().catch(function (err) {
-      reportSwallow(err, 'visualization.fullscreen');
-    });
-  });
-  var reset = card.querySelector('[data-viz-action="reset"]');
-  if (opts.noReset || (!opts.onReset && typeof chart?.dispatchAction !== 'function')) hideAction(reset);
-  if (reset) reset.addEventListener('click', function () {
-    if (opts.onReset) { opts.onReset(); return; }
-    chart?.dispatchAction?.({ type: 'restore' });
-  });
-  var download = card.querySelector('[data-viz-action="download"]');
-  if (!chart) hideAction(download);
-  download.addEventListener('click', function () {
-    if (!chart) return;
-    var dataUrl = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: token('--bg-100', '#fff') });
-    Promise.resolve(dataUrl).then(function (resolved) {
-      if (resolved) downloadDataUrl((spec.title || 'visualization').replace(/[^\w-]+/g, '-') + dataUrlExtension(resolved), resolved);
-    });
-  });
-  var wbBtn = card.querySelector('[data-viz-action="workbench"]');
-  if (wbBtn) {
-    wbBtn.addEventListener('click', function () {
+  var labels = {
+    workbench: vizT('workbench.title', 'Workbench'),
+    table: vizT('viz.action.table', 'Data'),
+    reset: vizT('viz.action.reset', 'Reset view'),
+    download: vizT('viz.action.download', 'Download PNG'),
+    fullscreen: vizT('viz.action.fullscreen', 'Fullscreen'),
+  };
+  var content = createElement(VisualizationActions, {
+    labels: labels,
+    tableAvailable: !!(table && table.querySelector('table')),
+    resetAvailable: !opts.noReset && (!!opts.onReset || typeof chart?.dispatchAction === 'function'),
+    downloadAvailable: !!chart,
+    fullscreenAvailable: !!requestFs,
+    onWorkbench: function () {
+      var preview = card.cloneNode(true);
+      preview.querySelector('[data-viz-actions-root]')?.remove();
       openWorkbench({
         id: card.dataset.visualizationId || ('viz-' + Date.now()),
         title: spec.title || vizT('workbench.chartTitle', 'Visualization'),
@@ -195,10 +193,41 @@ function bindCard(card, spec, chart, opts) {
         type: 'chart',
         code: JSON.stringify(spec, null, 2),
         language: 'json',
-        previewHtml: card.outerHTML,
+        previewHtml: preview.outerHTML,
       }, 'preview');
-    });
-  }
+    },
+    onReset: function () {
+      if (opts.onReset) { opts.onReset(); return; }
+      chart?.dispatchAction?.({ type: 'restore' });
+    },
+    onDownload: function () {
+      if (!chart) return;
+      var dataUrl = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: token('--bg-100', '#fff') });
+      Promise.resolve(dataUrl).then(function (resolved) {
+        if (resolved) downloadDataUrl((spec.title || 'visualization').replace(/[^\w-]+/g, '-') + dataUrlExtension(resolved), resolved);
+      });
+    },
+    onFullscreen: function () {
+      if (!card.requestFullscreen) {
+        if (card.webkitRequestFullscreen) card.webkitRequestFullscreen();
+        return;
+      }
+      Promise.resolve(card.requestFullscreen()).catch(function (error) {
+        reportSwallow(error, 'visualization.fullscreen');
+      });
+    },
+  });
+  mountCardReactSurface(card, card.querySelector('[data-viz-actions-root]'), 'actions', content);
+}
+
+function mountFallbackActions(card, host, spec, options, error) {
+  var content = createElement(VisualizationFallbackActions, {
+    retryLabel: vizT('viz.action.retry', 'Retry locally'),
+    fixLabel: vizT('viz.action.fixWithAi', 'Fix with AI'),
+    onRetry: function () { remountVisualization(spec, host, options, card); },
+    onFix: function () { dispatchExtensionRepair(card, spec, error && error.message || 'renderer returned no chart option'); },
+  });
+  mountCardReactSurface(card, card.querySelector('[data-viz-fallback-root]'), 'fallback-actions', content);
 }
 
 /* P_viz-i18n — read a translation key with an English fallback.
@@ -225,12 +254,7 @@ function createVisualizationCard(spec, host, cardId, mounting) {
   card.dataset.visualizationId = cardId;
   card.setAttribute('aria-label', spec.title + '. ' + spec.accessibilitySummary);
   mounting.set(cardId, card);
-  var actionTable = vizT('viz.action.table', 'Data');
-  var actionReset = vizT('viz.action.reset', 'Reset view');
-  var actionDownload = vizT('viz.action.download', 'Download PNG');
-  var actionFullscreen = vizT('viz.action.fullscreen', 'Fullscreen');
-  var actionWorkbench = vizT('workbench.title', 'Workbench');
-  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions"><button type="button" data-viz-action="workbench" aria-label="' + esc(actionWorkbench) + '" title="' + esc(actionWorkbench) + '">' + esc(actionWorkbench) + '</button><button type="button" data-viz-action="table" aria-expanded="false" aria-label="' + esc(actionTable) + '" title="' + esc(actionTable) + '">' + esc(actionTable) + '</button><button type="button" data-viz-action="reset" aria-label="' + esc(actionReset) + '" title="' + esc(actionReset) + '">' + esc(actionReset) + '</button><button type="button" data-viz-action="download" aria-label="' + esc(actionDownload) + '" title="' + esc(actionDownload) + '">' + esc(actionDownload) + '</button><button type="button" data-viz-action="fullscreen" aria-label="' + esc(actionFullscreen) + '" title="' + esc(actionFullscreen) + '">' + esc(actionFullscreen) + '</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
+  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions" data-viz-actions-root></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
   host.appendChild(card);
   mounting.delete(cardId);
   renderCardMath(card);
@@ -286,9 +310,8 @@ function watchChartResize(card, stage, chart, liveEntry) {
 }
 
 function renderChartFallback(spec, host, options, card, stage) {
-  stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button" data-viz-fallback="retry">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button> <button type="button" data-viz-fallback="fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button></div>';
-  stage.querySelector('[data-viz-fallback="retry"]').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
-  stage.querySelector('[data-viz-fallback="fix"]').addEventListener('click', function () { dispatchExtensionRepair(card, spec, 'renderer returned no chart option'); });
+  stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><div data-viz-fallback-root></div></div>';
+  mountFallbackActions(card, host, spec, options, null);
   reportSwallow(new Error('renderer returned no chart option'), 'visualization/' + spec.template + '/empty_options', 'recoverable');
 }
 
@@ -339,19 +362,30 @@ function mountExtensionRenderer(spec, card, stage, cardId) {
     if (!errorBanner) {
       errorBanner = document.createElement('div');
       errorBanner.className = 'visualization-ext-error viz-error';
+      var errorIcon = document.createElement('span');
+      errorIcon.className = 'viz-error-icon';
+      errorIcon.textContent = '!';
+      var errorText = document.createElement('span');
+      errorText.className = 'viz-error-msg';
+      var errorAction = document.createElement('div');
+      errorAction.className = 'viz-error-action-host';
+      errorAction.setAttribute('data-viz-error-action-root', '');
+      errorBanner.append(errorIcon, errorText, errorAction);
       stage.insertBefore(errorBanner, frame);
     }
-    errorBanner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(errorMessage) + '</span>' +
-      '<button type="button" class="viz-error-fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button>';
-    var fixButton = errorBanner.querySelector('.viz-error-fix');
-    if (fixButton && !fixButton.__vizBound) {
-      fixButton.__vizBound = true;
-      fixButton.addEventListener('click', function (event2) {
-        event2.preventDefault();
-        event2.stopPropagation();
+    errorBanner.querySelector('.viz-error-msg').textContent = errorMessage;
+    var fixButton = createElement(Button, {
+      variant: 'outline',
+      size: 'sm',
+      className: 'viz-error-fix',
+      type: 'button',
+      onClick: function (clickEvent) {
+        clickEvent.stopPropagation();
         dispatchExtensionRepair(card, spec, errorMessage);
-      });
-    }
+      },
+      children: vizT('viz.action.fixWithAi', 'Fix with AI'),
+    });
+    mountCardReactSurface(card, errorBanner.querySelector('[data-viz-error-action-root]'), 'extension-error-action', fixButton);
   };
   window.addEventListener('message', receiveExtensionMsg);
   frame.addEventListener('error', function () {
@@ -446,6 +480,7 @@ function createChartRuntime(card, chart, initialSpec, liveEntry) {
 
 function handleVisualizationMountFailure(error, spec, host, options, card, stage, renderState, isCancelled) {
   if (isCancelled()) { disposeCard(card); return null; }
+  disposeCardReactRoots(card);
   var cleanup = card._visualizationCleanup;
   card._visualizationCleanup = null;
   if (typeof cleanup === 'function') {
@@ -460,15 +495,9 @@ function handleVisualizationMountFailure(error, spec, host, options, card, stage
     try { if (!chart.isDisposed || !chart.isDisposed()) chart.dispose(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
   }
   reportSwallow(error, 'visualization/' + spec.template + '/render_failure', 'recoverable');
-  stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p>' +
-    '<button type="button" data-viz-fallback="retry">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button>' +
-    ' <button type="button" data-viz-fallback="fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button></div>';
-  var retryButton = stage.querySelector('[data-viz-fallback="retry"]');
-  if (retryButton) retryButton.addEventListener('click', function () { remountVisualization(spec, host, options, card); });
-  var fixButton = stage.querySelector('[data-viz-fallback="fix"]');
-  if (fixButton) fixButton.addEventListener('click', function () {
-    dispatchExtensionRepair(card, spec, error && error.message);
-  });
+  stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><div data-viz-fallback-root></div></div>';
+  mountFallbackActions(card, host, spec, options, error);
+  bindCard(card, spec, null, { noReset: true });
   console.warn('[visualization] render failed', error && error.name || 'Error');
   return card;
 }

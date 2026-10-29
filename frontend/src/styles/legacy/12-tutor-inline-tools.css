@@ -106,18 +106,6 @@
   border-bottom:0.5px solid hsl(var(--border-300)/0.08);
   background:transparent;
 }
-.mistake-filter-btn{
-  background:transparent;border:none;
-  color:hsl(var(--text-400));
-  padding:4px 10px;border-radius:6px;
-  font-size:calc(11px * var(--app-font-scale, 1));
-  cursor:pointer;transition:background .12s,color .12s;
-}
-.mistake-filter-btn:hover{background:hsl(var(--bg-200)/0.25);color:hsl(var(--text-100))}
-.mistake-filter-btn.active{
-  background:hsl(var(--bg-200)/0.5);
-  color:hsl(var(--text-000));
-}
 
 /* =====================================================================
  * v3.0 design — Long-term plan setup (topic-setup screen)
@@ -142,14 +130,10 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tutor-explore-dialog h2{margin:0;color:hsl(var(--text-100));font-family:var(--font-serif);font-size:25px;font-weight:var(--ui-font-weight-semibold);line-height:1.2;letter-spacing:-.025em}
 .tutor-explore-dialog>p{margin:12px 0 22px;color:hsl(var(--text-300));font-size:14px;line-height:1.65}
 .tutor-explore-count{display:grid;grid-template-columns:1fr 82px;align-items:center;gap:5px 14px;padding:14px 16px;border:1px solid hsl(var(--border-300)/.24);border-radius:14px;background:hsl(var(--bg-100)/.55);color:hsl(var(--text-200));font-size:13px;font-weight:var(--ui-font-weight-semibold)}
-.tutor-explore-count input{grid-column:2;grid-row:1/3;width:100%;height:44px;box-sizing:border-box;border:1px solid hsl(var(--border-300)/.34);border-radius:10px;background:hsl(var(--bg-000));color:hsl(var(--text-100));font:var(--ui-font-weight-semibold) 17px var(--font-sans);text-align:center;outline:none}
-.tutor-explore-count input:focus{border-color:hsl(var(--accent-000)/.7);box-shadow:var(--ui-focus-shadow)}
+.tutor-explore-count input{grid-column:2;grid-row:1/3;width:100%}
 .tutor-explore-count small{color:hsl(var(--text-500));font-size:11px;font-weight:var(--ui-font-weight-regular)}
 .tutor-explore-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:22px}
-.tutor-explore-actions button{min-height:40px;padding:0 15px;border-radius:10px;border:1px solid hsl(var(--border-300)/.3);font:var(--ui-font-weight-semibold) 13px var(--font-sans);cursor:pointer}
-.tutor-explore-skip{background:transparent;color:hsl(var(--text-300))}
-.tutor-explore-start{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))!important;color:hsl(var(--oncolor-100))}
-@media(max-width:520px){.tutor-explore-dialog{padding:22px}.tutor-explore-actions{flex-direction:column-reverse}.tutor-explore-actions button{width:100%}}
+@media(max-width:520px){.tutor-explore-dialog{padding:22px}.tutor-explore-actions{flex-direction:column-reverse}.tutor-explore-actions [data-slot="button"]{width:100%}}
 
 /* §8.5 — practice progress chip. Now an inline span inside
  * the chat header (sits next to the mode chip when the exercise
@@ -460,33 +444,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   margin-top:8px;
   padding-top:6px;
   border-top:1px dashed hsl(var(--border-300)/0.22);
-}
-.tool-inline-retry{
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  padding:4px 11px;
-  border:1px solid color-mix(in srgb, hsl(var(--accent-000)) 30%, var(--tool-card-border-strong));
-  border-radius:999px;
-  background:transparent;
-  color:hsl(var(--accent-000));
-  font:var(--ui-font-weight-medium) calc(11.5px * var(--app-font-scale,1))/1 var(--font-sans);
-  cursor:pointer;
-  transition:background .14s ease,color .14s ease,border-color .14s ease,transform .12s ease;
-}
-.tool-inline-retry:hover{
-  background:color-mix(in srgb, hsl(var(--accent-000)) 12%, transparent);
-  border-color:hsl(var(--accent-000));
-}
-
-.tool-inline-retry:focus-visible{
-  outline:2px solid transparent;
-  outline-offset:2px;
-}
-.tool-inline-retry::before{
-  content:"↻";
-  font-size:12px;
-  line-height:1;
 }
 /* Expand/copy affordance for long tool outputs — same pill look as
    .tool-inline-retry but without the leading icon, and left-aligned so

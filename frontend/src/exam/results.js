@@ -1,6 +1,8 @@
-import { esc } from '../render/helpers.ts';
 import { formatMsg } from '../render/markdown.ts';
-import { examBody as _examBody, examFooter as _examFooter, examUiL as _examUiL, setExamTitle as _setExamTitle } from './ui.js';
+import { clearExamSetup, renderExamActions, renderExamResultsView } from '../react/exam/examUiHost.tsx';
+import { clearExamQuestionCards } from '../react/exam/examQuestionHost.tsx';
+import { clearExamNavigation } from '../react/exam/examNavigationHost.tsx';
+import { examBody as _examBody, examUiL as _examUiL, setExamTitle as _setExamTitle } from './ui.js';
 
 function resultTypeLabel(type, translate) {
   const labels = {
@@ -8,105 +10,86 @@ function resultTypeLabel(type, translate) {
     'fill-blank': translate('Fill blank', '填空题'),
     'short-answer': translate('Short answer', '简答题'),
   };
-  return esc(labels[type] || type);
+  return labels[type] || type;
 }
 
-function renderMultipleChoiceOptions(question, selectedAnswer) {
-  if (!question.opts) return '';
-  const options = question.opts.map(function (option, index) {
-    const selected = selectedAnswer === index;
-    const isAnswer = option.letter === question.answer;
-    let className = 'exam-q-opt';
-    if (isAnswer) className += ' correct';
-    if (selected && !isAnswer) className += ' wrong';
-    if (selected) className += ' selected';
-    return '<div class="' + className + '"><span class="exam-q-opt-letter">'
-      + esc(option.letter) + '</span><span class="exam-q-opt-text">'
-      + formatMsg(option.text) + '</span></div>';
-  }).join('');
-  return '<div class="exam-q-opts">' + options + '</div>';
-}
-
-function renderFillBlankAnswer(question, answer, correct, translate) {
-  const className = 'exam-q-fill-input' + (correct ? ' correct' : ' wrong');
-  let html = '<input class="' + className + '" value="' + esc(answer || '') + '" readonly>';
-  if (!correct) {
-    html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">'
-      + translate('Correct answer', '正确答案') + ': <strong>'
-      + esc((question.answers || []).join(', ')) + '</strong></div>';
+function gradeExamQuestion(question, answer) {
+  if (question.type === 'multiple-choice') {
+    const selected = answer;
+    return selected !== undefined && question.opts?.[selected]?.letter === question.answer;
   }
-  return html;
-}
-
-function renderShortAnswer(question, answer, correct, translate) {
-  const className = 'exam-q-fill-input' + (correct ? ' correct' : ' wrong');
-  let html = '<textarea class="' + className + '" readonly rows="2">' + esc(answer || '') + '</textarea>';
-  if (!correct) {
-    html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">'
-      + translate('Expected', '期望答案') + ': <strong>' + esc(question.answer || '') + '</strong></div>';
+  if (question.type === 'fill-blank') {
+    const submitted = String(answer || '').trim().toLowerCase();
+    return (question.answers || []).some((candidate) => submitted === String(candidate).trim().toLowerCase());
   }
-  return html;
-}
-
-function renderQuestionAnswer(result, translate) {
-  const question = result.q;
-  if (question.type === 'multiple-choice') return renderMultipleChoiceOptions(question, result.ans);
-  if (question.type === 'fill-blank') return renderFillBlankAnswer(question, result.ans, result.isCorrect, translate);
-  if (question.type === 'short-answer') return renderShortAnswer(question, result.ans, result.isCorrect, translate);
-  return '';
-}
-
-function renderExamQuestionResult(result, index, translate) {
-  const question = result.q;
-  const statusClass = result.isCorrect ? 'correct' : 'wrong';
-  const statusLabel = result.isCorrect ? translate('Correct', '正确') : translate('Incorrect', '错误');
-  let html = '<div class="exam-q-card">';
-  html += '<div class="exam-q-num">' + translate('Question', '题目') + ' ' + (index + 1)
-    + ' — <span class="exam-result-' + statusClass + '">' + statusLabel
-    + '</span><span class="exam-q-type">' + resultTypeLabel(question.type, translate) + '</span></div>';
-  html += '<div class="exam-q-text">' + formatMsg(question.q) + '</div>';
-  html += renderQuestionAnswer(result, translate);
-  if (question.explanation) {
-    html += '<div class="exam-q-result ' + statusClass + '"><span class="label">'
-      + translate('Explanation', '解释') + ':</span><div class="explain">'
-      + formatMsg(question.explanation) + '</div></div>';
+  if (question.type === 'short-answer') {
+    const submitted = String(answer || '').trim().toLowerCase();
+    const expected = String(question.answer || '').trim().toLowerCase();
+    const keywords = expected.split(/[,\s]+/).filter((keyword) => keyword.length > 3);
+    return keywords.length === 0 || keywords.some((keyword) => submitted.includes(keyword));
   }
-  return html + '</div>';
+  return false;
+}
+
+function resultQuestion(question, answer, isCorrect) {
+  const translate = _examUiL;
+  const options = question.type === 'multiple-choice'
+    ? (question.opts || []).map((option, index) => ({
+      letter: option.letter,
+      html: formatMsg(option.text),
+      isCorrect: option.letter === question.answer,
+      isSelected: answer === index,
+    }))
+    : [];
+  const isFillBlank = question.type === 'fill-blank';
+  return {
+    type: question.type,
+    typeLabel: resultTypeLabel(question.type, translate),
+    questionLabel: translate('Question', '题目'),
+    questionHtml: formatMsg(question.q),
+    answer: typeof answer === 'string' ? answer : '',
+    options,
+    isCorrect,
+    statusLabel: isCorrect ? translate('Correct', '正确') : translate('Incorrect', '错误'),
+    expectedLabel: isFillBlank ? translate('Correct answer', '正确答案') : translate('Expected', '期望答案'),
+    expectedAnswer: isFillBlank ? (question.answers || []).join(', ') : String(question.answer || ''),
+    explanationLabel: translate('Explanation', '解释'),
+    explanationHtml: question.explanation ? formatMsg(question.explanation) : '',
+  };
 }
 
 export function renderExamResults() {
-  var qs = window.stateStore.read("examQuestions");
-  var ans = window.stateStore.read("examAnswers");
-  var body = _examBody();
-  var footer = _examFooter();
-  var _L = _examUiL;
-  _setExamTitle(_L("Exam Results", "考试结果") + ": " + window.stateStore.read("examTopic"));
-  var correct = 0, total = 0;
-  var resultDetails = [];
-  qs.forEach(function (q, i) {
-    if (q.type === "error") return;
-    total++;
-    var isCorrect = false;
-    if (q.type === "multiple-choice") {
-      var sel = ans[i];
-      if (sel !== undefined && q.opts && q.opts[sel]) isCorrect = q.opts[sel].letter === q.answer;
-    } else if (q.type === "fill-blank") {
-      const ua = String(ans[i] || "").trim().toLowerCase();
-      isCorrect = (q.answers || []).some(function (a) { return ua === String(a).trim().toLowerCase(); });
-    } else if (q.type === "short-answer") {
-      const ua = String(ans[i] || "").trim().toLowerCase();
-      var expected = String(q.answer || "").trim().toLowerCase();
-      var keywords = expected.split(/[,\s]+/).filter(function (k) { return k.length > 3 });
-      isCorrect = keywords.length === 0 || keywords.some(function (k) { return ua.indexOf(k) >= 0; });
-    }
+  clearExamSetup();
+  clearExamQuestionCards();
+  clearExamNavigation();
+  const questions = window.stateStore.read('examQuestions');
+  const answers = window.stateStore.read('examAnswers') || {};
+  const legacyBody = _examBody();
+  const bodyHost = document.getElementById('examViewReactBody');
+  const footerHost = document.getElementById('examViewReactFooter');
+  if (legacyBody) legacyBody.replaceChildren();
+  if (!bodyHost || !footerHost) return;
+
+  _setExamTitle(_examUiL('Exam Results', '考试结果') + ': ' + window.stateStore.read('examTopic'));
+  let correct = 0;
+  const details = [];
+  questions.forEach((question, index) => {
+    if (question.type === 'error') return;
+    const answer = answers[index];
+    const isCorrect = gradeExamQuestion(question, answer);
     if (isCorrect) correct++;
-    resultDetails.push({ q: q, ans: ans[i], isCorrect: isCorrect });
+    details.push(resultQuestion(question, answer, isCorrect));
   });
-  var pct = total > 0 ? Math.round(correct / total * 100) : 0;
-  var html = '<div class="exam-score"><div class="exam-score-val"><span class="score-correct">' + correct + '</span><span class="score-total">/ ' + total + '</span></div><div class="exam-score-lbl">' + pct + ' ' + _L("correct", "正确") + '</div></div>';
-  html += resultDetails.map(function (result, index) {
-    return renderExamQuestionResult(result, index, _L);
-  }).join('');
-  body.innerHTML = html;
-  footer.innerHTML = '<button class="exam-btn success" data-exam-command="form">' + _L("New Exam", "新考试") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
+  const total = details.length;
+  renderExamResultsView(bodyHost, {
+    correct,
+    total,
+    percent: total > 0 ? Math.round(correct / total * 100) : 0,
+    correctLabel: _examUiL('correct', '正确'),
+    questions: details,
+  });
+  renderExamActions(footerHost, [
+    { command: 'form', label: _examUiL('New Exam', '新考试') },
+    { command: 'close', label: _examUiL('Close', '关闭'), variant: 'outline' },
+  ]);
 }

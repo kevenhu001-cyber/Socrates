@@ -39,19 +39,10 @@ function stripHtmlToText(html: string): string {
 }
 
 function fallbackCopy(text: string): void {
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    getLegacyActions().messages.showToast?.(i18n('clipboard.copied', 'Copied to clipboard'));
-  } catch (_) {
-    getLegacyActions().messages.showToast?.(i18n('clipboard.failed', 'Copy failed'));
-  }
+  void import('../legacy-controls/clipboardTextarea').then(({ copyTextWithShadcnTextarea }) => copyTextWithShadcnTextarea(text)).then(
+    () => getLegacyActions().messages.showToast?.(i18n('clipboard.copied', 'Copied to clipboard')),
+    () => getLegacyActions().messages.showToast?.(i18n('clipboard.failed', 'Copy failed')),
+  );
 }
 
 function doCopy(message: LegacyChatMessage): void {

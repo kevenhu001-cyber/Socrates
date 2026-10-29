@@ -38,13 +38,6 @@ function renderPromptTemplatesModal() {
   runPromptTemplatesAction(function (module) { module.renderPromptTemplatesModal(); });
 }
 
-/* Kept only for legacy compatibility. First-party rendering happens inside
-   the implementation module, so callers should not depend on this helper
-   synchronously before the feature has loaded. */
-function renderPromptRow(template, editable) {
-  return loadPromptTemplatesImpl().then(function (module) { return module.renderPromptRow(template, editable); });
-}
-
 function onPromptRowDelete(id) {
   runPromptTemplatesAction(function (module) { module.onPromptRowDelete(id); });
 }
@@ -60,6 +53,6 @@ function onPromptTemplateEditorSave(id) {
 export {
   loadPromptTemplatesImpl,
   openPromptTemplatesModal, closePromptTemplatesModal, renderPromptTemplatesModal,
-  renderPromptRow, onPromptRowDelete, openPromptTemplateEditor,
+  onPromptRowDelete, openPromptTemplateEditor,
   onPromptTemplateEditorSave,
 };

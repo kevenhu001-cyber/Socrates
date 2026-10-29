@@ -2,10 +2,8 @@
  * chat/turn/errorPath.ts — replaceWithError path for addStreamingMessage.
  *
  * A transient failure (network, 429, 5xx) renders the partial answer plus
- * an inline retry button. The button lives in the message HTML and clicks
- * are delegated on the React-owned list (or attached directly when a real
- * `<button>` DOM node is present). The same handler feeds React's status
- * pill via claimLiveRetry.
+ * a retry control in the React turn status. The status keeps the viewport
+ * capture sequence delegated through the message list.
  *
  * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
  * split. The split is structural only: every callback, capture, and read
@@ -87,7 +85,6 @@ function renderErrorMessage(
   const errorText = String(errMsg || 'Generation failed');
   const errorHtml = partialHtml + '<div class="msg-error">' +
     '<span class="msg-error-text">' + esc(errorText) + '</span>' +
-    '<button type="button" class="msg-retry-btn" id="' + state.retryBtnId + '">Retry</button>' +
     '</div>';
   if (state.ownsMessageSlot()) {
     const message = state.patchOwnedMessage({ html: errorHtml, type: 'assistant' });
@@ -95,6 +92,7 @@ function renderErrorMessage(
       setReactLiveStatus(message, {
         phase: 'error', label: errorText, error: errorText,
         retryable: typeof onRetry === 'function',
+        retryButtonId: state.retryBtnId,
       });
     }
   }

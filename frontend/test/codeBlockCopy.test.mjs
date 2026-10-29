@@ -14,7 +14,10 @@ const dom = new JSDOM(
 );
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
+globalThis.HTMLElement = dom.window.HTMLElement;
+globalThis.Node = dom.window.Node;
 globalThis.MutationObserver = dom.window.MutationObserver;
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const { installCodeBlockCopy } = await import('../src/render/markdown.ts');
 
@@ -32,7 +35,8 @@ test('an inserted code-block header gets the copy control', async () => {
   pre.parentNode.insertBefore(header, pre);
   await nextMutation();
 
-  assert.ok(header.querySelector('.code-block-copy'), 'copy button was not wired');
+  assert.ok(header.querySelector('.code-block-copy'), 'shadcn copy button was not mounted');
+  assert.ok(header.querySelector('.code-block-expand'), 'shadcn expand button was not mounted');
 });
 
 test('a header inside a tool card is left alone', async () => {

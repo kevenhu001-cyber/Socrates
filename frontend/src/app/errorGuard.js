@@ -3,8 +3,24 @@
  * Zero-behavior-change lift; self-contained (window/document only).
  */
 import { CLIENT_ERROR_PATH } from '../util/clientErrorReporter.ts';
+import { renderActionButton } from '../ui/actionButton.ts';
 
 export var __socratesGlobalErrorHandlerInstalled = false;
+
+function renderDismissButton(host, onDismiss) {
+  renderActionButton(host, {
+    type: 'button',
+    variant: 'outline',
+    size: 'sm',
+    className: 'global-error-banner-dismiss',
+    style: {
+      background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,0.6)',
+      borderRadius: '4px', padding: '3px 8px', cursor: 'pointer', fontSize: '12px',
+    },
+    onClick: onDismiss,
+    children: 'Dismiss',
+  });
+}
 
 export function installGlobalErrorGuard() {
   if (typeof window === 'undefined') return;
@@ -58,17 +74,15 @@ export function installGlobalErrorGuard() {
       id.textContent = '#' + correl;
       id.style.cssText = 'background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;font-size:12px';
 
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = 'Dismiss';
-      btn.style.cssText = 'background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.6);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px';
-      btn.addEventListener('click', () => {
+      const btnHost = document.createElement('span');
+      btnHost.className = 'global-error-banner-dismiss-host';
+      renderDismissButton(btnHost, () => {
         if (el.parentNode) el.parentNode.removeChild(el);
       });
 
       el.appendChild(msg);
       el.appendChild(id);
-      el.appendChild(btn);
+      el.appendChild(btnHost);
       // Auto-dismiss after 12 s so it doesn't pile up.
       setTimeout(() => {
         if (el.parentNode) el.parentNode.removeChild(el);

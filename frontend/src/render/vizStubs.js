@@ -43,7 +43,7 @@ export var VIZ_THEME_RESET =
     'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em}' +
   '</style>';
 
-import { esc } from './helpers.ts';
+import { esc, escAttr } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* Runtime snippet that runs at the END of every iframe body. It
@@ -131,20 +131,9 @@ try {
 if (_vizViewPref !== 'code') _vizViewPref = 'preview';
 
 function vizActions(cardId, showSource, viewToggle) {
-  return '<div class="viz-actions">' +
-    (viewToggle ?
-      '<span class="viz-seg" role="group" aria-label="Card view">' +
-        '<button type="button" class="viz-seg-btn' + (_vizViewPref === 'code' ? '' : ' is-on') + '" data-viz-card="' + cardId + '" data-viz-view-opt="preview">Preview</button>' +
-        '<button type="button" class="viz-seg-btn' + (_vizViewPref === 'code' ? ' is-on' : '') + '" data-viz-card="' + cardId + '" data-viz-view-opt="code">Code</button>' +
-      '</span>' : '') +
-    '<span class="viz-status" role="status"><span class="viz-status-dot"></span><span class="viz-status-label"></span></span>' +
-    (showSource ? '<button type="button" class="viz-btn viz-btn-source" title="View source" aria-label="View source" data-viz-card="' + cardId + '">' +
-      VIZ_ICON_SOURCE + '</button>' : '') +
-    '<button type="button" class="viz-btn viz-btn-reload" title="Reload" aria-label="Reload" data-viz-card="' + cardId + '">' +
-      VIZ_ICON_RELOAD + '</button>' +
-    '<button type="button" class="viz-btn viz-btn-expand" title="Expand" aria-label="Expand" data-viz-card="' + cardId + '">' +
-      VIZ_ICON_EXPAND + '</button>' +
-  '</div>';
+  return '<div class="viz-actions" data-viz-actions-root data-viz-card-id="' + escAttr(cardId) +
+    '" data-viz-show-source="' + (showSource ? 'true' : 'false') +
+    '" data-viz-view-toggle="' + (viewToggle ? 'true' : 'false') + '"></div>';
 }
 
 export function vizErrorHtml(message, source) {
@@ -153,8 +142,7 @@ export function vizErrorHtml(message, source) {
   return '<div class="viz-error">' +
     '<span class="viz-error-icon">!</span>' +
     '<span class="viz-error-msg">' + msg + '</span>' +
-    '<button type="button" class="viz-error-btn">Show source</button>' +
-    '<button type="button" class="viz-error-fix">Fix with AI</button>' +
+    '<div class="viz-error-action-host" data-viz-error-actions-root></div>' +
     '<pre class="viz-error-source" hidden>' + src + '</pre>' +
   '</div>';
 }
@@ -201,7 +189,11 @@ export function renderMermaid(code, opts) {
         _mermaidCheckedCount++;
       }
       if (!ok) {
-        return '<div class="viz" data-viz-state="error"><div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
+        var errorId = opts.stableId || 'mermaid-card-' + (++_vizId);
+        queueVizActions(errorId);
+        return '<div class="viz" id="' + escAttr(errorId) + '" data-viz-state="error">' +
+          vizActions(errorId) +
+          '<div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
       }
     }
   }

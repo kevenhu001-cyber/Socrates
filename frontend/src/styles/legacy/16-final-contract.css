@@ -155,42 +155,14 @@
   line-height:var(--chat-assistant-line-height);
 }
 
-/* Code blocks — header + copy affordance (ChatGPT look). The header already
-   exists atop `<pre>` blocks in assistant markdown (`.code-block-header`); the
-   copy control (`.code-block-copy`, added by the markdown post-render pass in
-   Task 7.1) is styled here as a quiet button that flips to the accent on a
-   successful copy and to the danger hue when the clipboard write fails. */
+/* Code blocks — the React header keeps the code surface geometry while the
+   interactive actions use shadcn button variants. */
 .msg-body .code-block-header{background:var(--chat-code-bg)}
 .msg-body .code-block-header + pre{
   background:var(--chat-code-bg);
   border-radius:0 0 var(--chat-code-radius) var(--chat-code-radius);
 }
 /* shadcn ghost rung: 24px, rounded-sm, accent hover, ring focus. */
-.code-block-copy{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  height:24px;
-  padding:0 8px;
-  border:0;
-  border-radius:var(--radius-sm);
-  background:transparent;
-  color:var(--muted-foreground);
-  font-family:var(--font-sans);
-  font-size:var(--ui-font-size-xs);
-  font-weight:var(--ui-font-weight-medium);
-  line-height:1;
-  cursor:pointer;
-  flex-shrink:0;
-  transition:background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
-}
-.code-block-copy:hover,
-.code-block-copy:focus-visible{background:var(--accent);color:var(--accent-foreground)}
-.code-block-copy:focus-visible{outline:0;box-shadow:var(--ui-focus-shadow)}
-.code-block-copy svg{width:12px;height:12px;display:block}
-.code-block-copy.copied{color:var(--primary)}
-.code-block-copy.copy-failed{color:var(--destructive)}
-
 /* Tool card — collapsible chrome, running shimmer, terminal states.
    Collapse is driven by the `.open` class (the card head is a toggle button
    with `aria-expanded`); the body/code/out only show while open. Phase comes

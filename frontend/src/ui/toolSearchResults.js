@@ -1,5 +1,6 @@
 import { sanitizeUrl } from "../util/safe.ts";
-import { copyText, setCopyFeedback, trTool } from "./toolCardHelpers.js";
+import { copyText, trTool } from "./toolCardHelpers.js";
+import { renderToolCardCopyAction } from "../react/toolCards/toolCardActionsHost.tsx";
 
 function hostFromUrl(url) {
   try {
@@ -35,17 +36,18 @@ function normalizeSearchResults(results) {
 }
 
 function createCopyAction(className, label, getText) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = className;
-  button.textContent = label;
-  button.addEventListener("click", function (event) {
-    event.preventDefault();
-    event.stopPropagation();
-    copyText(getText()).then(function () { setCopyFeedback(button, true); })
-      .catch(function () { setCopyFeedback(button, false); });
+  const host = document.createElement('span');
+  host.className = className + '-host';
+  renderToolCardCopyAction(host, {
+    kind: 'sources',
+    className,
+    label,
+    copiedLabel: trTool('tool.copied', 'Copied'),
+    failedLabel: trTool('tool.copyFailed', 'Copy failed'),
+    hidden: false,
+    onCopy: function () { return copyText(getText()); },
   });
-  return button;
+  return host;
 }
 
 function sourceCitation(source, index) {

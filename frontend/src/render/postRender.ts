@@ -13,14 +13,7 @@ function inferCodeLanguage(code: HTMLElement): string {
   return '';
 }
 
-function expandCode(code: HTMLElement, lang: string, event: Event): void {
-  event.stopPropagation();
-  const rawCode = code.textContent || '';
-  const html = `<pre style="margin:0;border:0;background:transparent;padding:18px 20px;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:hsl(var(--text-200));white-space:pre-wrap;word-break:break-word;max-height:calc(100vh - 120px);overflow:auto"><code>${esc(rawCode)}</code></pre>`;
-  openVizModalRaw(html, `${lang || 'code'} source`);
-}
-
-function createCodeBlockHeader(code: HTMLElement, lang: string): HTMLElement {
+function createCodeBlockHeader(lang: string): HTMLElement {
   const header = document.createElement('div');
   header.className = 'code-block-header';
   const label = document.createElement('span');
@@ -28,14 +21,10 @@ function createCodeBlockHeader(code: HTMLElement, lang: string): HTMLElement {
   label.textContent = lang || 'code';
   header.appendChild(label);
 
-  const expand = document.createElement('button');
-  expand.type = 'button';
-  expand.className = 'code-block-expand';
-  expand.setAttribute('aria-label', 'Expand code');
-  expand.title = 'Expand';
-  expand.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21 3 21 3 15"/><path d="M21 3 14 10"/><path d="M3 21 10 14"/></svg>';
-  expand.addEventListener('click', (event) => expandCode(code, lang, event));
-  header.appendChild(expand);
+  const actions = document.createElement('div');
+  actions.className = 'code-block-actions';
+  actions.setAttribute('data-code-block-actions-root', '');
+  header.appendChild(actions);
   return header;
 }
 
@@ -53,7 +42,7 @@ export function wireCodeBlockHeaders(body: Element | null): void {
     highlightCodeElement(code);
     if (pre.previousElementSibling?.matches('.code-block-header')) continue;
     const lang = inferCodeLanguage(code);
-    const header = createCodeBlockHeader(code, lang);
+    const header = createCodeBlockHeader(lang);
     (pre.parentNode as ParentNode).insertBefore(header, pre);
   }
 }

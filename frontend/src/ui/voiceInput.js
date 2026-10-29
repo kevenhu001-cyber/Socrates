@@ -1,6 +1,8 @@
 import { getComposerMarkdown, insertComposerText } from '../composer/controller.ts';
 import { showToast } from './toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { createElement } from 'react';
+import { renderActionButton } from './actionButton.ts';
 
 let activeSession = null;
 
@@ -135,29 +137,41 @@ function createRecordingBar(session) {
 
   /* Discard affordance — left-edge ghost "×". Without it the only way out
      of a recording was committing whatever transcript had accumulated. */
-  const cancelButton = document.createElement('button');
-  cancelButton.className = 'btn-icon btn-touch circle voice-recording-cancel';
-  cancelButton.type = 'button';
-  cancelButton.dataset.voiceCancel = 'true';
-  cancelButton.setAttribute('aria-label', copy('voice.cancel', 'Cancel voice input', '取消语音输入'));
-  cancelButton.title = copy('voice.cancel', 'Cancel voice input', '取消语音输入');
-  cancelButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
-  cancelButton.addEventListener('click', cancelSpeechInput);
+  const cancelHost = document.createElement('span');
+  cancelHost.className = 'voice-recording-action-host';
+  renderActionButton(cancelHost, {
+    type: 'button',
+    variant: 'ghost',
+    size: 'icon-sm',
+    className: 'voice-recording-cancel',
+    'data-voice-cancel': 'true',
+    'aria-label': copy('voice.cancel', 'Cancel voice input', '取消语音输入'),
+    title: copy('voice.cancel', 'Cancel voice input', '取消语音输入'),
+    children: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
+      createElement('path', { d: 'm6 6 12 12M18 6 6 18' })),
+    onClick: cancelSpeechInput,
+  });
 
-  const stopButton = document.createElement('button');
-  stopButton.className = 'btn-icon btn-touch circle voice-recording-stop';
-  stopButton.type = 'button';
-  stopButton.dataset.voiceStop = 'true';
-  stopButton.setAttribute('aria-label', copy('voice.stop', 'Stop voice input', '停止语音输入'));
-  stopButton.title = copy('voice.stop', 'Stop voice input', '停止语音输入');
-  stopButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>';
-  stopButton.addEventListener('click', stopSpeechInput);
+  const stopHost = document.createElement('span');
+  stopHost.className = 'voice-recording-action-host';
+  renderActionButton(stopHost, {
+    type: 'button',
+    variant: 'default',
+    size: 'icon-lg',
+    className: 'voice-recording-stop rounded-full',
+    'data-voice-stop': 'true',
+    'aria-label': copy('voice.stop', 'Stop voice input', '停止语音输入'),
+    title: copy('voice.stop', 'Stop voice input', '停止语音输入'),
+    children: createElement('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
+      createElement('rect', { x: 7, y: 7, width: 10, height: 10, rx: 2 })),
+    onClick: stopSpeechInput,
+  });
 
-  bar.appendChild(cancelButton);
+  bar.appendChild(cancelHost);
   bar.appendChild(indicator);
   bar.appendChild(copyWrap);
   bar.appendChild(wave);
-  bar.appendChild(stopButton);
+  bar.appendChild(stopHost);
   wrap.appendChild(bar);
   session.bar = bar;
   return bar;

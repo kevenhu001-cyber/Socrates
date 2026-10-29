@@ -5,6 +5,7 @@
 // through src/windowExports.js.
 
 import { apiFetch } from '../util/api.ts';
+var _usagePeriod='year';
 var _usageListenersMounted=false;
 
 export function mountUsageListeners(){
@@ -44,6 +45,7 @@ function _publishUsageState(bodyHtml) {
       bridge.publish({
         isOpen: !document.getElementById("usageOverlay").classList.contains("hidden"),
         bodyHtml: bodyHtml || document.getElementById("usageBody").innerHTML || "",
+        period: _usagePeriod,
       });
     }
   } catch (_) { /* swallow */ }
@@ -59,6 +61,7 @@ export function closeUsageModal(){
   _publishUsageState();
 }
 export function loadUsageData(){
+  _usagePeriod='year';
   var body=document.getElementById("usageBody");
   body.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
   _publishUsageState();
@@ -157,16 +160,14 @@ function beagleUsageMarkup(limits) {
   return html + '</div>';
 }
 
-function usageSummaryMarkup(entries, totalTokens, totalMsgs, period) {
+function usageSummaryMarkup(entries, totalTokens, totalMsgs) {
   var dayCount = entries.length;
   var html = '<div class="usage-summary">';
   html += '<div class="usage-stat"><div class="usage-stat-val">' + totalTokens.toLocaleString() + '</div><div class="usage-stat-lbl">Total tokens</div></div>';
   html += '<div class="usage-stat"><div class="usage-stat-val">' + totalMsgs.toLocaleString() + '</div><div class="usage-stat-lbl">Messages</div></div>';
   html += '<div class="usage-stat"><div class="usage-stat-val">' + (dayCount > 0 ? Math.round(totalTokens / dayCount).toLocaleString() : 0) + '</div><div class="usage-stat-lbl">Avg tokens / active day</div></div>';
   html += '<div class="usage-stat"><div class="usage-stat-val">' + (dayCount > 0 ? Math.round(totalMsgs / dayCount).toLocaleString() : 0) + '</div><div class="usage-stat-lbl">Avg msgs / active day</div></div></div>';
-  html += '<div class="usage-section-title">Daily Activity</div><div class="usage-period-tabs">';
-  html += '<button class="usage-period-tab' + (period === 'year' ? ' active' : '') + '" data-usage-period="year">Last 12 months</button>';
-  html += '<button class="usage-period-tab' + (period === 'month' ? ' active' : '') + '" data-usage-period="month">This month</button></div>';
+  html += '<div class="usage-section-title">Daily Activity</div><div data-usage-period-placeholder></div>';
   return html;
 }
 
@@ -220,11 +221,12 @@ function monthlyBreakdownMarkup(entries) {
 
 export function renderUsageHeatmap(data, body, limits, period) {
   period = period || 'year';
+  _usagePeriod=period;
   var entries = data.entries || [];
   var totals = collectUsageEntries(entries);
   var weeks = usageCalendarWeeks(totals.lookup, period);
   var html = beagleUsageMarkup(limits);
-  html += usageSummaryMarkup(entries, totals.totalTokens, totals.totalMsgs, period);
+  html += usageSummaryMarkup(entries, totals.totalTokens, totals.totalMsgs);
   html += usageCalendarMarkup(weeks, usageMonthLabels(weeks), totals.maxDay);
   html += monthlyBreakdownMarkup(entries);
   body.innerHTML = html;
@@ -245,6 +247,7 @@ export function showUsageTip(ev){
 }
 export function hideUsageTip(){var tip=document.getElementById("usageTooltip");if(tip)tip.style.display="none";}
 export function loadUsageMonth(){
+  _usagePeriod='month';
   var body=document.getElementById("usageBody");
   body.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
   _publishUsageState();

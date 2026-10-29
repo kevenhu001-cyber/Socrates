@@ -1,28 +1,31 @@
 # shadcn 全量收敛
 
-目标（2026-10-28 决定）：**视觉与语义全量统一**。所有表面——React 组件、保留 HTML
-标记、遗留 JS DOM 层——都使用 shadcn 的语义 token 与同一套控件外观；不再有独立的
-遗留视觉归属。
+目标（2026-10-28 决定，2026-10-29 用户扩大范围）：**所有交互控件都由 shadcn
+React 组件渲染**。按钮、文本框、选择器、开关、单选/复选、弹窗与表单控件不得继续
+由静态 HTML、`createElement` 或 HTML 字符串模板各自实现；原生 file / color / range
+等输入通过 `NativeControl` 保留浏览器语义。组件接管后继续使用 shadcn 的语义变体与
+token。非交互内容（例如消息正文、SVG 图表、代码高亮结果）仍可由现有渲染层生成。
 
-不在本轮范围：把遗留 DOM 层重写为 React 组件。那是
-`docs/plans/react-typescript-migration.md` 的量级，且要拆掉 `check-chat-layering`
-隔离。本轮只要求"看起来、用起来、语义上都是 shadcn"。
+2026-10-29 用户明确要求“全量替换为 shadcn 组件”，因此本轮覆盖遗留 DOM 控件到
+React 的迁移；此前“只统一视觉语义、不重写遗留 DOM”的范围说明已失效。保留
+`check-chat-layering`：共享契约放在 `react/types` 或 `ui` 边界，不让旧 chat 层依赖
+React 组件树。
 
 前置：`docs/plans/2026-10-28-frontend-shadcn-adaptation.md`（主题桥接，已完成）、
 `docs/plans/2026-10-28-shadcn-component-replacement.md`（功能表面组件化，已完成）、
 `docs/adr/0024-shadcn-shell-geometry-ownership.md`（几何归属决策）。
 
-## 现状（2026-10-28 实测）
+## 现状（2026-10-29 工作树实测）
 
 | 表面 | 状态 | 残留 |
 | --- | --- | --- |
 | React 功能表面（settings / profile / admin / 分享 / 库 / 项目 / 插件 / 计划任务） | 已 shadcn | 0（守卫 `lint:shadcn` 报 0/0/0） |
 | 主壳 P1 侧栏 / P2 顶栏 | 结构已 React 化 | 几何仍归 `parity/sidebar.css`、`parity/topbar.css`（P5 删除范围） |
-| 主壳 P3 转录行 / P4 composer chrome | 未开始 | 仍是 legacy 层渲染 |
-| `index.html` 保留标记 | 未收敛 | 64 `<button>` + 20 `<input>` + 13 `<label>`（auth 表单、侧栏骨架、知识面板等） |
-| 遗留 JS DOM 层 | 未收敛 | 32 处 `createElement('button'/'input'/'select'/'textarea')`（render 11 / ui 4 / native 3 / tutor / app / cookieConsent），约 60 个文件用 `innerHTML` 模板 |
-| `pages/workspace/workspace.dialogs.ts` | 未收敛 | 项目/任务/插件/连接器表单是 HTML 字符串 + 原生 `<form>`（提交真实 FormData） |
-| `ui/NativeControl.tsx` | 有意保留 | 8 处调用点：file / color / range / 混合态 checkbox / radio |
+| 主壳 P3 转录行 / P4 composer chrome | 控件已迁入 React + shadcn | 消息正文、SVG/图表与 artifact 输出仍由内容渲染层负责；surface 几何清理归 P5 |
+| `index.html` 保留标记 | 已收敛 | 收敛守卫计数 0；静态入口只保留空宿主 |
+| 遗留 JS DOM 层 | 已收敛 | 收敛守卫计数 0：DOM 控件 0、MJS DOM 控件 0、遗留模板控件 0 |
+| `pages/workspace/workspace.dialogs.ts` | 已收敛 | 表单由 React + shadcn 渲染，继续保留原生 `<form>` 与真实 `FormData` 提交契约 |
+| `ui/NativeControl.tsx` | 有意保留 | file / color / range / checkbox / radio 使用保留原生语义的共享适配器 |
 
 ## 不变量
 
@@ -38,8 +41,8 @@
   是独立参考，不与桌面对齐。
 - 守卫：`check-surface-ownership`、`check-css-debt`、`check-button-sizes`、
   `check-z-index`、`check-focus-ring`、`check-surface-ladder` 继续有效，且基线只降不升。
-- 首屏预算：`staticJsGzipBytes` 当前 361,682 B，上限 365,000 B。原 360,000 B 预算
-  尚未恢复；每批交付后必须重测，不得靠抬阈值过关。
+- 首屏预算：`staticJsGzipBytes` 上限 360,000 B。全控件迁移后的测量值记录在本页
+  收敛记录中；不得靠抬阈值过关。
 
 ## 分批交付
 
@@ -68,17 +71,18 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 36px、tools 菜单 244–260 × 300–368）；`reference-ui-visual` 等快照因换皮而变时更新
 基线，而不是改回旧皮肤。
 
-### B3 — 保留标记收敛（`index.html`）
+### B3 — 保留标记组件化（`index.html`）
 
-按表面分批把 auth 表单、侧栏骨架、知识面板等保留标记改为同一套 shadcn 控件类，
-保留全部 id 与表单行为。优先做 auth（用户可见最密集、控件最多）。
+按表面把 auth、shell、首页、知识面板等交互控件迁入 React + shadcn 组件，保留稳定的
+空宿主、全部 id 与表单行为。原生 file / color / range 输入从 React 通过 `NativeControl`
+渲染。
 
-### B4 — 遗留 DOM 层收敛
+### B4 — 遗留 DOM 控件迁移
 
 `src/render/**`、`src/ui/**`、`src/native/**`、`src/tutor*`、`src/cookieConsent.js`
-中的 `createElement('button'|'input'|'select'|'textarea')` 与 `innerHTML` 模板改为
-同一套 shadcn 控件类；遗留视觉（`.btn`、`legacy/**`、`restore/**` 的控件规则）随之
-删除，几何回到 `--ui-*` token。
+和 `pages/workspace/workspace.dialogs.ts` 中生成交互控件的 DOM / HTML 字符串改为
+React + shadcn 组件；保留 DOM id、事件和 FormData 契约。遗留模板计数逐批收缩至零后，
+再清理对应的控件 CSS 与 surface owner。
 
 ### B5 — CSS 归属清理与 ratchet 收缩（ADR 0024 P5）
 
@@ -101,14 +105,61 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B3 auth 登录页 | 完成（2026-10-29） | 见下；标记整体搬进 React，保留标记 97 → 60 |
 | B3 workspace 弹窗表单 | 完成（2026-10-29） | 见下；HTML 字符串模板已整体删除，改 React 视图 |
 | B4 代码块与 tutor 内联控件 | 完成（2026-10-29） | 见下；仍是 legacy DOM 构建 |
-| B4 cookie 同意条 | 完成（2026-10-29） | 见下 |
+| B4 cookie 同意条 | 完成（2026-10-29） | banner 按钮迁入 React + shadcn；保留首屏轻量挂载和 cookie gate 逻辑，DOM 控件 30 → 28；focused unit 1/1、cookie E2E 2/2 通过 |
 | B4 工具卡片 | 完成（2026-10-29） | 见下；保留「无边框行」的转录语法 |
 | B4 creation 表面（Images / Assistants / Sites） | 完成（2026-10-29） | 见下；模板仍是 HTML 字符串，皮肤归 shadcn 语义 |
 | B4 exam 考试页与分享弹窗 | 完成（2026-10-29） | 见下；`legacy/08-exam.css` 的 HSL 通道清零 |
 | B5 tools 菜单归属清理 | 完成（2026-10-29） | 见下；删掉两处重复 owner，基线随之下调 |
 | B3 session 标签编辑器 | 完成（2026-10-29） | 见下；遗留模板控件 140 → 135，`legacy/01-sidebar.css` 的 tag 规则清零 |
 | B4 tutor 诊断视图 | 完成（2026-10-29） | 见下；`#diagnosticView` 单一 React owner，模板控件 135 → 129 |
-| B2 其余（转录行正文、composer 主控件） | 未开始 | 主控件在 `index.html` 保留标记里，需先做 B3 的 React 挂载 |
+| B3 shell / 首页 / 外观控件 | 完成（2026-10-29） | composer、侧栏导航/搜索/底栏、Find 栏、首页快捷操作、tutor 卡片与 library file input 均为 React + shadcn；保留控件守卫收敛为 0 |
+| B2 转录交互控件 | 完成（2026-10-29） | 消息工具、代码块操作、工具卡片与状态动作均迁入 React + shadcn；正文和 artifact 输出是内容，不属于控件 |
+| B4 全部遗留控件 | 完成（2026-10-29） | adoption 守卫所有类目 0/0；完整 lint、production build、相关 focused unit 9 个文件与 Playwright 16/16 通过 |
+| B5 CSS owner 收尾 | 完成（2026-10-29） | 侧栏按钮尺寸/圆角与 topbar 模式选项由组件持有；删除对应重复 parity/polish 规则，响应式布局规则保留 |
+| B6 首屏预算 | 完成（2026-10-29） | `staticJsGzipBytes` 实测 343,132 B，低于原 360,000 B 预算 16,868 B；E2E 阈值已恢复为 360,000 B |
+
+### 2026-10-29 全控件收敛检查
+
+- `lint:shadcn` 全部计数已降至 0：React 裸控件、未适配原语、兼容控件、保留 HTML、
+  legacy DOM / MJS DOM / 模板控件以及 React 模板控件均为 `0/0`。
+- 原生文件、颜色、范围、复选和单选输入经共享 `NativeControl` 适配器渲染；其他标准
+  按钮、文本框、选择器、开关、弹窗和表单控件由 shadcn React 组件渲染。
+- 通过：production build、完整 `npm run lint`、9 个 focused unit 文件，以及
+  `tool-card-lifecycle`、`browser-login-handoff`、`attachments-compat` 三组 Playwright
+  共 16 条用例。entry graph 另行测量为 384,774 B；B6 尚未达标。
+
+### B5 / B6 收尾（2026-10-29）
+
+- B5：`SidebarHeader` 的按钮使用 shadcn `icon-sm` 和 radius token；移除
+  `parity/sidebar.css` 对 `#newChatBtn` / `#sidebarCloseBtn` 的尺寸、内边距、边框与圆角
+  声明，并移除 `polish/sidebar.css` 重复圆角。TopBar 模式选项把最小宽度、圆角、间距、
+  字色和交互状态移入 shadcn token class，删除 `parity/topbar.css` 的基础控件规则；
+  container query 的窄屏最小宽度仍由 CSS 负责。
+- B5 ratchet：`check-surface-ownership` 通过；CSS debt live/frozen 保持
+  `important 14/621`、`hex 32/50`、`radius 2/218`、`stackedId 41/59`、
+  `font-size 60/415`、`legacyChannel 0/990`。本轮删除的是组件已有尺寸和形状的重复
+  owner，不命中 debt 计数；button-size 与 z-index 均为 `0/0`，所以没有可再收缩的基线。
+- B6：英文与中文词表都按保存的语言异步加载；auth boot 等所选 locale 后才显示 app 或
+  auth gate。entry graph 实测 `html 4,270 B`、`static JS 343,132 B`、
+  `linked CSS 170,505 B`；`performance-loading` 断言保持在 360,000 B。
+- 相关验证：`npm run build`、`npm run lint`、entry graph 审计，以及详情面板、浏览器登录、
+  工具卡片折叠/重做和代码复制 focused unit 均通过。Playwright 的
+  `performance-loading`、`chrome-i18n`、`session-start`、`browser-login-handoff`、
+  `tool-card-lifecycle`、`reference-ui-visual` 六组共 29/29 通过；已查看桌面与手机截图，
+  侧栏、topbar 与 composer 几何正常。完整 lint 只留下原有的 Mermaid 复杂度 warning。
+
+### 补充 · React host 生命周期收敛（2026-10-29）
+
+- 工具卡披露、工具动作、artifact 控件和通用动作按钮共用
+  `createObservedRootGroup`：统一每个 DOM host 的 root 复用、脱离节点清理和 observer
+  释放；需要立即可查询 DOM 的调用方通过 `synchronous` 显式保留 `flushSync`。
+- tutor 诊断、快照动作和 workspace 弹窗改用 `createRootSlot`。修正 slot 的同 host
+  更新语义：复用 root 时也提交新内容，替换 host 时先销毁旧树；workspace 的表单绑定
+  仍在 `flushSync` 后执行。
+- 验证：focused unit `ownedRoot`、`tutorFlow`、`toolCardCollapse`、`mistakeBook` 通过；
+  Playwright `diagnostic-view` 1/1、`projects-directory` 3/3、`tool-card-lifecycle` 4/4
+  通过；production build、完整 lint 和 shadcn adoption 守卫通过。lint 保留原有的
+  `vizMermaidQueue.ts` 复杂度 warning。
 
 ### B2 · composer 芯片行与队列条（2026-10-29）
 

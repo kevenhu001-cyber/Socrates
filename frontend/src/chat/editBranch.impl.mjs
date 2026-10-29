@@ -17,6 +17,7 @@ import { stripMarkdown, formatMsg } from '../render/markdown.ts';
 import { buildUserContentParts } from '../chat/history.ts';
 import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
+import { mountMessageEditForm } from '../ui/messageEditHost.tsx';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
 import {
@@ -64,47 +65,17 @@ export function editUserMessage(messageId){
   if(!div){return}
   var body=div.querySelector(".msg-body");
   if(!body){return}
-  /* Swap the rendered body for a textarea with explicit Cancel / Send actions (ChatGPT-style). */
-  var wrap=document.createElement("div");
-  wrap.className="msg-edit-wrap";
-
-  var ta=document.createElement("textarea");
-  ta.className="msg-edit-area";
-  ta.value=stripMarkdown(entry.rawText||"");
-
-  var actions=document.createElement("div");
-  actions.className="msg-edit-actions";
-
-  var cancelBtn=document.createElement("button");
-  cancelBtn.type="button";
-  cancelBtn.className="msg-edit-btn msg-edit-cancel";
-  cancelBtn.textContent=_t("common.cancel")||"Cancel";
-
-  var submitBtn=document.createElement("button");
-  submitBtn.type="button";
-  submitBtn.className="msg-edit-btn msg-edit-submit";
-  submitBtn.textContent=_t("chat.send")||"Send";
-
-  actions.appendChild(cancelBtn);
-  actions.appendChild(submitBtn);
-
-  wrap.appendChild(ta);
-  wrap.appendChild(actions);
-
-  body.innerHTML="";
-  body.appendChild(wrap);
-  ta.focus();
-  ta.setSelectionRange(ta.value.length,ta.value.length);
-
+  var disposeEditForm = null;
   function cancel(){
+    if(disposeEditForm)disposeEditForm();
     restoreMessageBody(entry,body);
   }
 
-  function commit(){
-    var next=ta.value.trim();
+  function commit(text){
+    var next=String(text||"").trim();
     if(!next||next===entry.rawText){
       /* No change — restore. */
-      restoreMessageBody(entry,body);
+      cancel();
       return;
     }
     /* P_edit — "edit a message" means "roll the conversation back
@@ -122,6 +93,7 @@ export function editUserMessage(messageId){
       patch:{rawText:editedText,html:formatMsg(editedText),branchInfo:branchInfo},
     });
     if(!entry)return;
+    disposeEditForm();
     restoreMessageBody(entry,body);
     var dropped=rollbackMessagesAfter(messageId);
     /* PATCH /api/messages/<id>?regenerate=false&discardFollowing=true
@@ -187,24 +159,12 @@ export function editUserMessage(messageId){
        linters don't drop it. */
     void patchPromise;
   }
-  cancelBtn.addEventListener("click",function(ev){
-    ev.preventDefault();
-    ev.stopPropagation();
-    cancel();
-  });
-  submitBtn.addEventListener("click",function(ev){
-    ev.preventDefault();
-    ev.stopPropagation();
-    commit();
-  });
-  ta.addEventListener("keydown",function(ev){
-    if(ev.key==="Enter"&&(ev.metaKey||ev.ctrlKey)){
-      ev.preventDefault();
-      commit();
-    }else if(ev.key==="Escape"){
-      ev.preventDefault();
-      cancel();
-    }
+  disposeEditForm = mountMessageEditForm(body, {
+    initialText: stripMarkdown(entry.rawText||""),
+    cancelLabel: _t("common.cancel")||"Cancel",
+    submitLabel: _t("chat.send")||"Send",
+    onCancel: cancel,
+    onCommit: commit,
   });
 }
 

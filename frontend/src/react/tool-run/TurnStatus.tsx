@@ -24,7 +24,13 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
     <div className="turn-surface-status msg-error" data-turn-surface-part="terminal">
       <span className="msg-error-text">{message}</span>
       {readOnly || status.retryable === false ? null : (
-        <Button type="button" className="msg-retry-btn" onClick={retry}>
+        <Button
+          type="button"
+          className="msg-retry-btn"
+          id={status.retryButtonId}
+          data-stream-retry={status.retryMode === 'restored' ? '' : undefined}
+          onClick={status.retryMode === 'restored' || status.retryButtonId ? undefined : retry}
+        >
           {i18n('common.retry', 'Retry')}
         </Button>
       )}

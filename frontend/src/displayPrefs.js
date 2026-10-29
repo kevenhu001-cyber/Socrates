@@ -19,6 +19,7 @@ export const THEME_STYLES = ["socrates", "philosophy"];
 export var displayPrefs = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: false };
 
 var _systemThemeQuery = null;
+var _themeControlsDelegated = false;
 
 function isThemePreference(value) {
   return THEME_PREFERENCES.indexOf(value) !== -1;
@@ -138,22 +139,19 @@ export function initTheme() {
   document.documentElement.setAttribute("data-theme", style);
   setEffectiveThemeMode(resolveThemeMode(preference));
   watchSystemTheme();
-  var options = document.querySelectorAll("[data-theme-option]");
-  options.forEach(function (option) {
-    if (option.dataset.themeWired === "true") return;
-    option.dataset.themeWired = "true";
-    option.addEventListener("click", function () {
-      setThemePreference(option.getAttribute("data-theme-option"));
+  if (!_themeControlsDelegated) {
+    document.addEventListener("click", function (event) {
+      var target = event.target && event.target.nodeType === 1 ? event.target : event.target && event.target.parentElement;
+      var themeOption = target && target.closest("[data-theme-option]");
+      if (themeOption) {
+        setThemePreference(themeOption.getAttribute("data-theme-option"));
+        return;
+      }
+      var styleOption = target && target.closest("[data-theme-style-option]");
+      if (styleOption) setThemeStyle(styleOption.getAttribute("data-theme-style-option"));
     });
-  });
-  var styleOptions = document.querySelectorAll("[data-theme-style-option]");
-  styleOptions.forEach(function (option) {
-    if (option.dataset.styleWired === "true") return;
-    option.dataset.styleWired = "true";
-    option.addEventListener("click", function () {
-      setThemeStyle(option.getAttribute("data-theme-style-option"));
-    });
-  });
+    _themeControlsDelegated = true;
+  }
   syncThemeUI();
 }
 
@@ -283,7 +281,11 @@ export function syncDisplayPrefsUI() {
   var lightInput = document.getElementById("displayPrefsBgLight");
   if (lightInput) lightInput.value = displayPrefs.lightBg || DEFAULT_LIGHT_PICKER;
   var gt = document.getElementById("gridToggle");
-  if (gt) gt.classList.toggle("on", displayPrefs.showGrid !== false);
+  if (gt) {
+    var gridOn = displayPrefs.showGrid !== false;
+    gt.classList.toggle("on", gridOn);
+    gt.setAttribute("aria-checked", gridOn ? "true" : "false");
+  }
 }
 
 /* ── font / width ── */
@@ -344,66 +346,54 @@ export function toggleGrid() {
   saveDisplayPrefs();
 }
 
-/* The display-preferences popover is legacy markup, but it owns its own
- * controls. Mounting the listeners here keeps theme/background
- * changes independent from the document-wide data-action dispatcher. */
+/* React owns the display-preferences controls. These document-level bridges
+ * keep the long-standing ids and external toggleDisplayPrefs() callers
+ * working after the component mounts, without binding to short-lived nodes. */
 export function mountDisplayPrefsListeners(){
-  var popover=document.getElementById("displayPrefsPopover");
-  var button=document.getElementById("displayPrefsBtn");
-  if(!popover||!button||popover.dataset.displayPrefsListenersMounted==="1")return null;
-  popover.dataset.displayPrefsListenersMounted="1";
-  var cleanups=[];
+  var marker = document.documentElement;
+  if (marker.dataset.displayPrefsListenersMounted === "1") return null;
+  marker.dataset.displayPrefsListenersMounted = "1";
 
-  function bind(el,type,handler){
-    if(!el)return;
-    el.addEventListener(type,handler);
-    cleanups.push(function(){el.removeEventListener(type,handler)});
+  function onClick(event) {
+    var target = event.target && event.target.nodeType === 1 ? event.target : event.target && event.target.parentElement;
+    if (!target) return;
+    if (target.closest("#displayPrefsBtn")) {
+      event.preventDefault();
+      toggleDisplayPrefs();
+      return;
+    }
+    if (target.closest("#themeToggle")) {
+      event.preventDefault();
+      toggleTheme();
+      return;
+    }
+    var font = target.closest("#displayPrefsFontSegs [data-font]");
+    if (font) { setDisplayFont(parseFloat(font.dataset.font)); return; }
+    var width = target.closest("#displayPrefsWidthSegs [data-width]");
+    if (width) { setDisplayWidth(parseFloat(width.dataset.width)); return; }
+    if (target.closest("#gridToggle")) { event.preventDefault(); toggleGrid(); return; }
+    if (target.closest("#displayPrefsBgDarkReset")) { event.preventDefault(); resetBackgroundDark(); return; }
+    if (target.closest("#displayPrefsBgLightReset")) { event.preventDefault(); resetBackgroundLight(); }
   }
-  function bindAll(selector,type,handler){
-    popover.querySelectorAll(selector).forEach(function(el){bind(el,type,handler)});
+
+  function onInput(event) {
+    var target = event.target;
+    if (!target) return;
+    /* React's onChange owns native picker changes. This fallback preserves
+       callers that dispatch the long-standing bubbling `input` event. */
+    if (target.id === "displayPrefsBgDark" && target.value !== displayPrefs.darkBg) {
+      setBackgroundDark(target.value);
+    } else if (target.id === "displayPrefsBgLight" && target.value !== displayPrefs.lightBg) {
+      setBackgroundLight(target.value);
+    }
   }
 
-  bind(button,"click",function(e){
-    e.preventDefault();
-    toggleDisplayPrefs();
-  });
-  bind(document.getElementById("themeToggle"),"click",function(e){
-    e.preventDefault();
-    toggleTheme();
-  });
-  /* Keep clicks inside the popover from reaching unrelated document
-     delegates. toggleDisplayPrefs()'s capture-phase outside listener still
-     sees the event first and explicitly ignores targets inside this host. */
-  bind(popover,"click",function(e){e.stopPropagation()});
-
-  bindAll("#displayPrefsFontSegs [data-font]","click",function(e){
-    setDisplayFont(parseFloat(e.currentTarget.dataset.font));
-  });
-  bindAll("#displayPrefsWidthSegs [data-width]","click",function(e){
-    setDisplayWidth(parseFloat(e.currentTarget.dataset.width));
-  });
-  bind(document.getElementById("gridToggle"),"click",function(e){
-    e.preventDefault();
-    toggleGrid();
-  });
-  bind(document.getElementById("displayPrefsBgDark"),"input",function(e){
-    setBackgroundDark(e.currentTarget.value);
-  });
-  bind(document.getElementById("displayPrefsBgDarkReset"),"click",function(e){
-    e.preventDefault();
-    resetBackgroundDark();
-  });
-  bind(document.getElementById("displayPrefsBgLight"),"input",function(e){
-    setBackgroundLight(e.currentTarget.value);
-  });
-  bind(document.getElementById("displayPrefsBgLightReset"),"click",function(e){
-    e.preventDefault();
-    resetBackgroundLight();
-  });
-
-  return function unmountDisplayPrefsListeners(){
-    cleanups.splice(0).forEach(function(cleanup){cleanup()});
-    if(popover.dataset.displayPrefsListenersMounted==="1")delete popover.dataset.displayPrefsListenersMounted;
+  document.addEventListener("click", onClick);
+  document.addEventListener("input", onInput);
+  return function unmountDisplayPrefsListeners() {
+    document.removeEventListener("click", onClick);
+    document.removeEventListener("input", onInput);
+    delete marker.dataset.displayPrefsListenersMounted;
   };
 }
 

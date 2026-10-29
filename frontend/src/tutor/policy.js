@@ -1,3 +1,8 @@
+import { createElement } from 'react';
+import { flushSync } from 'react-dom';
+import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
+import { reportSwallow } from '../util/reportSwallow.ts';
+
 const CURRENTNESS_PATTERNS = [
   /\b(today|tonight|yesterday|tomorrow|latest|current|currently|recent|recently|now|this (?:week|month|year)|as of|price|score|schedule|weather|news|election|president|ceo|version|release)\b/i,
   /(今天|今日|昨天|明天|最新|当前|目前|近期|最近|现在|本周|本月|今年|截至|价格|比分|赛程|天气|新闻|选举|总统|首相|CEO|版本|发布)/i,
@@ -77,42 +82,45 @@ export function buildFallbackDiagnosticQuestions(topic, count, isZh) {
   }));
 }
 
+let activeTutorExplorationFinish = null;
+
 export function requestTutorExploration(options = {}) {
   const isZh = options.isZh === true;
   return new Promise((resolve) => {
-    document.getElementById('tutorExplorationDialog')?.remove();
+    activeTutorExplorationFinish?.(null);
     const overlay = document.createElement('div');
     overlay.id = 'tutorExplorationDialog';
     overlay.className = 'tutor-explore-overlay';
-    overlay.innerHTML = `
-      <section class="tutor-explore-dialog" role="dialog" aria-modal="true" aria-labelledby="tutorExploreTitle">
-        <div class="tutor-explore-kicker">${isZh ? '可选的学习起点' : 'Optional starting point'}</div>
-        <h2 id="tutorExploreTitle">${isZh ? '先厘清你的知识边界吗？' : 'Explore your knowledge boundary first?'}</h2>
-        <p>${isZh ? '回答几道选择题可以帮助导师调整起点。你也可以跳过，直接开始学习。' : 'A short multiple-choice exploration helps the tutor choose a starting point. You can also skip it and begin learning.'}</p>
-        <label class="tutor-explore-count">
-          <span>${isZh ? '问题数量' : 'Number of questions'}</span>
-          <input id="tutorExploreCount" type="number" inputmode="numeric" min="1" max="10" value="5" aria-describedby="tutorExploreCountHint">
-          <small id="tutorExploreCountHint">${isZh ? '1 至 10 道，全部为选择题' : '1 to 10, all multiple choice'}</small>
-        </label>
-        <div class="tutor-explore-actions">
-          <button type="button" class="tutor-explore-skip">${isZh ? '直接开始' : 'Start without questions'}</button>
-          <button type="button" class="tutor-explore-start">${isZh ? '开始探索' : 'Start exploration'}</button>
-        </div>
-      </section>`;
-    const onKeyDown = (event) => { if (event.key === 'Escape') finish(null); };
+    let root = null;
+    let settled = false;
     const finish = (result) => {
+      if (settled) return;
+      settled = true;
       document.removeEventListener('keydown', onKeyDown);
+      if (activeTutorExplorationFinish === finish) activeTutorExplorationFinish = null;
+      root?.destroy();
       overlay.remove();
       resolve(result);
     };
-    overlay.querySelector('.tutor-explore-skip').addEventListener('click', () => finish({ enabled: false, count: 0 }));
-    overlay.querySelector('.tutor-explore-start').addEventListener('click', () => {
-      finish({ enabled: true, count: clampTutorQuestionCount(overlay.querySelector('#tutorExploreCount').value) });
-    });
+    const onKeyDown = (event) => { if (event.key === 'Escape') finish(null); };
     overlay.addEventListener('click', (event) => { if (event.target === overlay) finish(null); });
-    document.addEventListener('keydown', onKeyDown);
     document.body.appendChild(overlay);
-    overlay.querySelector('#tutorExploreCount').focus();
+    activeTutorExplorationFinish = finish;
+    document.addEventListener('keydown', onKeyDown);
+
+    import('../react/tutor/TutorExplorationDialog.tsx').then((dialog) => {
+      if (settled || !overlay.isConnected) return;
+      const content = createElement(dialog.TutorExplorationDialog, {
+        isZh,
+        onSkip: () => finish({ enabled: false, count: 0 }),
+        onStart: (count) => finish({ enabled: true, count: clampTutorQuestionCount(count) }),
+      });
+      root = mountOwnedRoot(overlay, 'tutor-exploration-dialog', content);
+      flushSync(() => root.render(content));
+    }).catch((error) => {
+      reportSwallow(error, 'tutor/policy.js:requestTutorExploration');
+      finish(null);
+    });
   });
 }
 

@@ -1,6 +1,7 @@
 import { esc } from '../render/helpers.ts';
 import { formatRelativeTime } from './recentsHelpers.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { renderActionButton } from './actionButton.ts';
 
 /* P_mistakes-i18n — this panel shipped raw English literals while zh is
    the default locale, and echoed the internal mistake.type enum straight
@@ -67,12 +68,21 @@ function renderMistakeList(stateStore, getTutorSocratic, onRedo) {
         + esc(mistake.redoCount === 1 ? t('mistakes.redoneOne') : t('mistakes.redoneMany', { n: mistake.redoCount }))
         + '</div>';
     }
-    html += '<button class="mistake-redo-btn" data-redo="' + esc(mistake.id) + '">' + esc(t('mistakes.redo')) + '</button>';
+    html += '<span class="mistake-redo-action-host" data-redo-host="' + esc(mistake.id) + '"></span>';
     html += '</div>';
   });
   cont.innerHTML = html;
-  cont.querySelectorAll('[data-redo]').forEach(function (btn) {
-    btn.onclick = function () { onRedo(btn.getAttribute('data-redo')); };
+  cont.querySelectorAll('.mistake-redo-action-host[data-redo-host]').forEach(function (host) {
+    var mistakeId = host.getAttribute('data-redo-host');
+    renderActionButton(host, {
+      type: 'button',
+      variant: 'default',
+      size: 'sm',
+      className: 'mistake-redo-btn w-full',
+      'data-redo': mistakeId,
+      children: t('mistakes.redo'),
+      onClick: function () { onRedo(mistakeId); },
+    });
   });
 }
 

@@ -5,7 +5,7 @@ import { loadSession } from "../session/loader.ts";
 import { workspaceForPath, replaceRoute } from "../app/router.js";
 import { openNav } from "./navigation.service.ts";
 import { reportSwallow } from "../util/reportSwallow.ts";
-import { refreshProjectPlugin, uploadLibraryFiles } from "../react/pages/workspace/workspace.service.ts";
+import { refreshProjectPlugin } from "../react/pages/workspace/workspace.service.ts";
 
 var workspaceCache = { connectors: [] };
 /* Route matching and return-path replacement are provided by app/router.js. */
@@ -295,5 +295,3 @@ export function restoreConnectorReturnContext() {
 }
 
 window.rememberConnectorReturnContext = rememberConnectorReturnContext;
-var libraryUpload = byId("libraryUploadInput");
-if (libraryUpload && !libraryUpload.dataset.wired) { libraryUpload.dataset.wired = "1"; libraryUpload.addEventListener("change", async function () { await uploadLibraryFiles(libraryUpload.files || []); libraryUpload.value = ""; }); }

@@ -72,31 +72,6 @@
   transform: translateX(100%);
 }
 
-#appShell .top-mode-switch-option {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  /* The 36px desktop density rung — the baseline's "centered 36px
-     segmented pill", the same step as the model switcher and the library
-     toolbar, not the 40px mobile rung. */
-  height: var(--ui-control-desktop);
-  min-width: 104px;
-  margin: 0;
-  padding: 0 var(--ui-space-md);
-  border: 0;
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--muted-foreground);
-  font: inherit;
-  font-size: var(--ui-text-ui);
-  font-weight: var(--ui-font-weight-medium);
-  line-height: var(--ui-text-ui-line);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color var(--ui-duration-hover) ease;
-}
-#appShell .top-mode-switch-option:hover { color: var(--foreground); }
-#appShell .top-mode-switch-option.is-active { color: var(--foreground); }
 /* The old light-mode override painted every segment in primary ink, which
    left the switch with no state cue: the thumb still moved, but the label
    did not say which side was selected. Geist states the selection in type

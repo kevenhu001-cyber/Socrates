@@ -18,15 +18,14 @@ import type { MountSpec } from './registry';
    entry chunk; they still mount during the boot registry pass, just a
    tick later. Visible chrome (sidebar nav, recents, session list,
    message list, attachment chips) stays statically imported. */
-import { hydrateRecentsFilterChips, hydrateSidebarNav } from '../../sidebar';
+import { hydrateRecentsFilterChips, mountSidebarNav } from '../../sidebar';
 import { mountSidebarChrome } from '../../sidebar-chrome';
 import { mountSessionList } from '../../session-list';
 import { mountMessageList } from '../../message-list';
 import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
 import { handleComposerEscape, submitComposer } from '../../composer-input/lifecycle';
-import { hydrateAttachmentChipsRows } from '../../attachments/AttachmentChipsRow';
 
-import { NewReplyPill, PrimaryButton } from './indicatorComponents';
+import { NewReplyPill } from './indicatorComponents';
 
 /* Portal helpers — lazily create a body-level host element when the
    page didn't ship one in index.html. */
@@ -65,15 +64,32 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'newReplyPill', label: 'new-reply-pill', mount: (host) => {
       hydrateOwnedRoot(host, 'new-reply-pill', <StrictMode><NewReplyPill host={host} /></StrictMode>);
     } },
-    { hostId: 'composerPrimaryBtnContent', label: 'primary-button', mount: (host) => {
-      mountOwnedRoot(host, 'primary-button', <StrictMode><PrimaryButton /></StrictMode>);
-    } },
     /* 2. Overlays / modals / popovers */
+    { hostId: 'cookieConsentReactRoot', label: 'cookie-consent', mount: (host) => {
+      return import('../../cookieConsent/CookieConsent').then(({ CookieConsent }) => {
+        mountOwnedRoot(host, 'cookie-consent', <CookieConsent />);
+      });
+    } },
     { hostId: 'cmdKOverlay', label: 'cmd-k',
       mount: () => import('../../cmdk/CommandPalette').then((m) => m.hydrateCmdKOverlay()) },
     { hostId: 'findBar', label: 'find-in-session',
       mount: () => import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()) },
-    { hostId: 'sidebarNav', label: 'sidebar-nav', mount: () => hydrateSidebarNav() },
+    { hostId: 'sidebarNav', label: 'sidebar-nav', mount: () => mountSidebarNav() },
+    { hostId: 'sidebarSearchRow', label: 'sidebar-search-row', mount: (host) => {
+      return import('../../sidebar-chrome/SidebarSearchRow').then(({ SidebarSearchRow }) => {
+        mountOwnedRoot(host, 'sidebar-search-row', <SidebarSearchRow />);
+      });
+    } },
+    { hostId: 'homeQuickActions', label: 'home-quick-actions', mount: (host) => {
+      return import('../../home/HomeStartComponents').then(({ HomeQuickActions }) => {
+        mountOwnedRoot(host, 'home-quick-actions', <HomeQuickActions />);
+      });
+    } },
+    { hostId: 'homeTutorStarters', label: 'home-tutor-starters', mount: (host) => {
+      return import('../../home/HomeStartComponents').then(({ HomeTutorStarters }) => {
+        mountOwnedRoot(host, 'home-tutor-starters', <HomeTutorStarters />);
+      });
+    } },
     /* The header chrome — one root renders every control inside
        `<div class="top-bar" id="topBar">`. Its ids are the shell
        contract for the legacy runtime, so the React tree owns the
@@ -86,10 +102,6 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'recentsFilterChips', label: 'recents-filter-chips', mount: () => hydrateRecentsFilterChips() },
     { hostId: 'composerToolsMenu', label: 'composer-tools-menu',
       mount: () => import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu()) },
-    /* The single composer shell owns one chips host; the registry mounts
-       it once. */
-    { hostId: 'composerAttachmentChips', label: 'attachment-chips',
-      mount: () => { hydrateAttachmentChipsRows(); } },
     { hostId: 'moreNavPopover', label: 'more-popover',
       mount: () => import('../../morePopover').then((m) => m.hydrateMorePopover()) },
     { hostId: 'shareOverlay', label: 'share-modal',
@@ -101,10 +113,20 @@ export function mountRegistryList(): MountSpec[] {
     /* 3. Sidebar chrome — one root owns the header and portaled user
        footer; they share the bridge snapshot (sidebar-chrome/mount.tsx). */
     { hostId: 'sidebarHeader', label: 'sidebar-chrome', mount: () => { mountSidebarChrome(); } },
+    { hostId: 'sidebarFooterActions', label: 'sidebar-footer-actions', mount: (host) => {
+      return import('../../sidebar-chrome/SidebarFooterActions').then(({ SidebarFooterActions }) => {
+        mountOwnedRoot(host, 'sidebar-footer-actions', <SidebarFooterActions />);
+      });
+    } },
     /* 4. Workspace pages — the registry tags each panel as React-owned;
        the nav mounts them on demand through pageMounts.ts. */
     { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => undefined },
     { hostId: 'libraryPanel', label: 'workspace-page', mount: () => undefined },
+    { hostId: 'libraryUploadReactRoot', label: 'library-upload-input', mount: (host) => {
+      return import('../../pages/workspace/LibraryUploadInput').then(({ LibraryUploadInput }) => {
+        mountOwnedRoot(host, 'library-upload-input', <LibraryUploadInput />);
+      });
+    } },
     /* /admin operator console — the React page owns #adminPanel when
        the sidebar routes to it. */
     { hostId: 'adminPanel', label: 'admin-page', mount: () => undefined },
@@ -153,9 +175,9 @@ export function mountRegistryList(): MountSpec[] {
        mounted, preserving each draft, token, focus and chip. The typed
        lifecycle commands branch on the live surface, so the editor does not
        remount when the view flips. */
-    { hostId: 'composerRoot', label: 'rich-composer', mount: (host) => {
-      return import('../../composer-input').then(({ RichComposer }) => {
-        mountOwnedRoot(host, 'rich-composer', <ErrorBoundary><RichComposer
+    { hostId: 'composerInputWrap', label: 'composer-shell', mount: (host) => {
+      return import('../../composer-input').then(({ ComposerShell }) => {
+        mountOwnedRoot(host, 'composer-shell', <ErrorBoundary><ComposerShell
           placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
           onSubmit={() => submitComposer(legacyComposer)}
           onEscape={() => handleComposerEscape(legacyComposer)} /></ErrorBoundary>);

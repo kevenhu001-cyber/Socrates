@@ -1,9 +1,6 @@
-import { createRootSlot } from '../lib/boot/ownedRoot';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
-import type { Root } from 'react-dom/client';
 
 import {
-  installAttachmentsBridge,
   useAttachments,
   useAttachmentsRemove,
   useAttachmentsRetry,
@@ -25,13 +22,8 @@ function ChipsRow({ targetId }: ChipsRowProps) {
   const onRemove = useAttachmentsRemove();
   const onRetry = useAttachmentsRetry();
 
-  // The host element (e.g. #attachmentChips) is the hydration root — we
-  // never re-render the host itself, only its children. React keeps the
-  // host's id / classes / CSS in sync via attribute reconciliation;
-  // mutating the `hidden` class on the host would still be safe via
-  // useEffect, but the legacy CSS relies on `.hidden` toggling, so we
-  // leave class management to the parent's logic (the host element
-  // already gets the right class via React's reconciliation).
+  // React owns the attachment row inside the composer root. The outer host
+  // keeps its stable id and class because legacy layout code reads both.
   useEffect(() => {
     const el = document.getElementById(targetId);
     if (!el) return;
@@ -63,28 +55,9 @@ function ChipsRow({ targetId }: ChipsRowProps) {
     [attachments, onRemove, onRetry],
   );
 
-  // Fragment — the legacy-created host element stays as the React root;
-  // we just append chips inside it.
   return <>{chips}</>;
 }
 
-export interface AttachmentChipsHandle {
-  roots: Root[];
-  destroy: () => void;
-}
-
-/**
- * Hydrate the single chips container of the single composer shell.
- * Idempotent — second call returns the existing handle. The host keeps
- * its id / classes / CSS — React owns only its direct children (the
- * chip buttons). The legacy renderer in `src/attachments/render.js` is
- * suppressed by the ownership registry so the two never collide.
- */
-const rootSlot = createRootSlot('attachment-chips');
-
-export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
-  const target = document.getElementById(CHIPS_ID);
-  if (!target) { rootSlot.destroy(); return null; }
-  const handle = rootSlot.mount(target, <ChipsRow targetId={CHIPS_ID} />, installAttachmentsBridge);
-  return { roots: [handle.root], destroy: handle.destroy };
+export function ComposerAttachmentChips() {
+  return <ChipsRow targetId={CHIPS_ID} />;
 }

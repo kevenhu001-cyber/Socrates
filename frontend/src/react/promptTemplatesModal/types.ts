@@ -1,6 +1,21 @@
+export interface PromptTemplateData {
+  id: string;
+  title: string;
+  description?: string;
+  icon?: string;
+  category: string;
+  shortcut: string;
+  body: string;
+  systemPrompt: string;
+  isBuiltin: boolean;
+}
+
 export interface PromptTemplatesSnapshot {
   open: boolean;
-  bodyHTML: string;
+  view: 'list' | 'editor';
+  builtins: PromptTemplateData[];
+  customs: PromptTemplateData[];
+  editor: PromptTemplateData | null;
   revision: number;
 }
 

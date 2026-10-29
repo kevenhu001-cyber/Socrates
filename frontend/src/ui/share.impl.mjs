@@ -25,6 +25,7 @@ import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } 
 
 import { mountVisualization, disposeVisualizations } from '../render/vizStubs.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { renderSharedExamFooter as renderSharedExamFooterAction } from '../react/exam/sharedExamFooterHost.tsx';
 
 var _shareSessionId = null;
 var _shareVisibility = "public";
@@ -429,7 +430,7 @@ function prepareSharedExamChrome(session, exam) {
 }
 
 function renderSharedExamQuestions(questions) {
-  var body = document.getElementById("examViewBody");
+  var body = document.getElementById("examViewLegacyBody") || document.getElementById("examViewBody");
   if (!body) return;
   body.innerHTML = '<div id="examQuestionsContainer"></div>';
   var container = body.querySelector("#examQuestionsContainer");
@@ -444,10 +445,10 @@ function renderSharedExamQuestions(questions) {
 }
 
 function renderSharedExamFooter() {
-  var footer = document.getElementById("examViewFooter");
+  var footer = document.getElementById("examViewLegacyFooter") || document.getElementById("examViewFooter");
   if (!footer) return;
   var closeLabel = (window._currentLang === "zh") ? "关闭" : "Close";
-  footer.innerHTML = '<button class="exam-btn secondary" data-exam-command="close">' + closeLabel + '</button>';
+  renderSharedExamFooterAction(footer, closeLabel);
 }
 
 function revealSharedExam() {
@@ -461,6 +462,13 @@ function revealSharedExam() {
 
 async function loadSharedExamSession(session) {
   if (!session) return;
+  try {
+    const examModule = await window.__loadExamModule?.();
+    examModule?.clearExamSetup?.();
+    examModule?.clearExamQuestionCards?.();
+  } catch (error) {
+    reportSwallow(error, 'ui/share.impl.mjs:loadSharedExamSession.clearReactSetup');
+  }
   var exam = session.examData || {};
   var questions = Array.isArray(exam.questions) ? exam.questions : [];
   prepareSharedExamState(session, exam, questions);
@@ -490,10 +498,10 @@ function renderSharedQuestionCard(idx, q) {
     html += '</div>';
   } else if (q.type === "fill-blank") {
     var v = (typeof saved === "string") ? saved : "";
-    html += '<input class="exam-q-fill-input" value="' + esc(v) + '" readonly>';
+    html += '<div class="exam-q-fill-display">' + esc(v) + '</div>';
   } else if (q.type === "short-answer") {
     var vv = (typeof saved === "string") ? saved : "";
-    html += '<textarea class="exam-q-fill-input" readonly rows="3" style="min-height:60px;resize:vertical">' + esc(vv) + '</textarea>';
+    html += '<div class="exam-q-fill-display exam-q-fill-display-multiline">' + esc(vv) + '</div>';
   }
   ph.innerHTML = html;
 }
