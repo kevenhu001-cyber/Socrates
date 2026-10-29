@@ -903,17 +903,11 @@ async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse> {
   let result: WorkerResult;
   try {
     await fs.mkdir(sessionScratchDir, { recursive: true });
-    /* P_scratch-header — prepend a small stdout header that lists
-       the current files in the scratch dir so the AI knows what's
-       available without guessing. This runs BEFORE the user's code
-       so the listing appears at the top of stdout. Use a unique
-       marker name that cannot collide with user code. */
-    const scratchMarker = '___socrates_scratch_' + executionId.replace(/-/g, '_') + '___';
-    const scratchHeader = 'import os; ' + scratchMarker + ' = os.getcwd(); print(f\'[scratch] cwd: {os.listdir(' + scratchMarker + ') if os.path.isdir(' + scratchMarker + ') else "(not a dir)"}\')';
-    const wrappedCode = code.includes(scratchMarker) ? code : scratchHeader + '\n' + code;
+    // The worker prints the scratch header separately. Preserve source bytes
+    // so future imports and traceback line numbers keep their Python meaning.
     result = await runOnWorker({
       executionId,
-      code: wrappedCode,
+      code,
       timeoutMs,
       signal,
       scratchDir: sessionScratchDir,

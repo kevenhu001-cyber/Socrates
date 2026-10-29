@@ -736,8 +736,11 @@
 .intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]) .intui-surface-toolbar {
   pointer-events: auto;
 }
-.intui-surface-shell:not([data-has-title="true"]) .iui-card > .iui-title:first-child {
-  padding-right: calc(var(--intui-action-size) * 2 + var(--ui-space-sm));
+/* Generated content can begin with a grid, a control or a nested card. Keep
+   toolbar clearance outside the document instead of shrinking its headings. */
+.intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]):has(> .intui-surface-document .intui-openui) > .intui-surface-header {
+  position: static;
+  padding: var(--ui-foundation-space-md) var(--ui-foundation-space-md) 0;
 }
 .intui-surface-label {
   position: absolute;

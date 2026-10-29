@@ -433,7 +433,7 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
      because print() only flushes when flush=True. The hook is
      best-effort: a thrown transport just no-ops, the canonical
      stdout/stderr in the final `result` is the source of truth. */
-  const makeHook = (stream: string) => (chunk: unknown) => {
+  const makeHook = (stream: string) => (_label: unknown, chunk: unknown) => {
     try {
       parentPort!.postMessage({
         id, type: stream, stream, chunk: String(chunk || ''),
@@ -584,15 +584,9 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     // body to Python's parser, so a multi-line exec body that contains
     // an unterminated string literal on the first line fails to parse.
     //
-    // P_no-top-level-await — the wrapper previously `raise`d after
-    // printing the error marker. That re-raise made Python's default
-    // unhandled-exception handler ALSO print a multi-line traceback
-    // (frame names, file `<socrates>`, line numbers) to stderr,
-    // showing the user the raw internals. We now exit the wrapper
-    // cleanly via sys.exit(1) — the marker is the only diagnostic
-    // they see, and the JS side reads it via the deferred-error
-    // path below. The `_socrates_user_failed` flag lets the JS catch
-    // distinguish "user code raised" from "Pyodide itself blew up".
+    // Keep user failures and SystemExit inside Python. Propagating
+    // SystemExit through Pyodide can terminate the worker rather than
+    // reject runPythonAsync. Flags below carry the outcome to JS.
     //
     // P_compact-traceback — a bare `Type: msg` line told the model
     // WHAT failed but not WHERE, so a fix attempt had to guess which
@@ -625,11 +619,20 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     const wrapped = [
       '_socrates_user_code = "' + oneLine + '"',
       '_socrates_user_failed = False',
+      '_socrates_exit_code = None',
       'try:',
       '    _socrates_compiled = compile(_socrates_user_code, "<socrates>", "exec")',
       '    exec(_socrates_compiled, {"__name__": "__main__"})',
       'except SystemExit as _socrates_se:',
-      '    raise',
+      '    _socrates_exit_code = _socrates_se.code',
+      '    if _socrates_exit_code is None:',
+      '        _socrates_exit_code = 0',
+      '    elif not isinstance(_socrates_exit_code, int):',
+      '        import sys',
+      '        print(str(_socrates_exit_code), file=sys.stderr)',
+      '        _socrates_exit_code = 1',
+      '    else:',
+      '        _socrates_exit_code = int(_socrates_exit_code)',
       'except KeyboardInterrupt:',
       '    raise',
       'except BaseException as _socrates_e:',
@@ -662,34 +665,18 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       '    print(type(_socrates_e).__name__ + ": " + str(_socrates_e), file=sys.stderr)',
       '    print("---SOCRATES-ERROR-END---", file=sys.stderr)',
       '    _socrates_user_failed = True',
-      '    sys.exit(1)',
     ].join('\n');
     let pyodideThrew = false;
-    let sysExitCode: number | null = null;
     let interrupted = false;
     try {
       await pyodide.runPythonAsync(wrapped);
     } catch (err) {
-      // P_pyodide-throw-classify — `runPythonAsync` re-raises the
-      // Python exception across the JS bridge. The user-side
-      // traceback frames (file `<exec>`, etc.) leak into
-      // err.message. We ignore that here and rely on the stderr
-      // marker for the friendly message. Distinguish four cases:
-      //   - User code called sys.exit(N)            → re-raised SystemExit
-      //   - SIGINT interrupt buffer fired           → re-raised KeyboardInterrupt
-      //   - User code raised any other BaseException → re-raised as a PythonError
-      //   - Pyodide itself blew up                  → some other JS error
-      // We use the err.type / err.name / err.code to tell them apart.
+      // SystemExit is handled inside Python; only interrupts or an
+      // unexpected bridge/runtime error should escape the wrapper.
       pyodideThrew = true;
       const errType = String(err && ((err as PyRunError).type || (err as PyRunError).constructor?.name) || '');
       const errMsg = String(err && (err as PyRunError).message || err);
-      if (errType === 'SystemExit' || /SystemExit/.test(errMsg)) {
-        // A clean sys.exit from user code. The exit code is on
-        // err.args / err.code in Pyodide 0.26. Pull it if we can;
-        // otherwise default to 0 (Python's sys.exit() with no arg).
-        const code = (err && ((err as PyRunError).code != null ? (err as PyRunError).code : (Array.isArray((err as PyRunError).args) ? (err as PyRunError).args[0] : null))) ?? 0;
-        sysExitCode = typeof code === 'number' ? code : (code == null ? 0 : 1);
-      } else if (errType === 'KeyboardInterrupt' || /KeyboardInterrupt/.test(errMsg)) {
+      if (errType === 'KeyboardInterrupt' || /KeyboardInterrupt/.test(errMsg)) {
         /* The wrapper deliberately re-raises KeyboardInterrupt so a
            SIGINT-buffer interrupt (parent timeout or caller cancel)
            reports as `timeout` instead of a generic user failure.
@@ -702,42 +689,35 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     // P_user-failed-finalise — if the wrapper hit a user-code
     // error, the JS-side status/errorMessage haven't been set yet.
     // Finalise them now from the marker that was just printed.
-    if (pyodideThrew) {
-      const userFailed = (() => {
-        try { return pyodide.runPython('_socrates_user_failed'); } catch (_) { return true; }
-      })();
-      if (userFailed) {
-        status = 'failed';
-        exitCode = 1;
-        pendingPyType = 'PythonError';
-      } else if (interrupted) {
-        /* SIGINT-buffer interrupt (parent timeout / caller abort). The
-           parent still discriminates: a user-raised KeyboardInterrupt
-           with no timedOut flag becomes 'worker_interrupt'. */
-        status = 'timeout';
-        errorMessage = 'timeout';
-        exitCode = 124;
-      } else if (sysExitCode !== null) {
-        // User called sys.exit(N). Treat as completed unless the
-        // code is non-zero. Pyodide's `runPythonAsync` propagates
-        // SystemExit as a JS exception regardless of the exit code;
-        // we discriminate here so a clean sys.exit(0) doesn't
-        // surface as a worker crash.
-        if (sysExitCode === 0) {
-          status = 'completed';
-          exitCode = 0;
-        } else {
-          status = 'failed';
-          exitCode = typeof sysExitCode === 'number' ? sysExitCode : 1;
-          errorMessage = `sys.exit(${sysExitCode})`;
-        }
+    const userFailed = (() => {
+      try { return pyodide.runPython('_socrates_user_failed'); } catch (_) { return true; }
+    })();
+    const sysExitCode = pyodide.runPython('_socrates_exit_code') ?? null;
+    if (userFailed) {
+      status = 'failed';
+      exitCode = 1;
+      pendingPyType = 'PythonError';
+    } else if (interrupted) {
+      /* SIGINT-buffer interrupt (parent timeout / caller abort). The
+         parent still discriminates: a user-raised KeyboardInterrupt
+         with no timedOut flag becomes 'worker_interrupt'. */
+      status = 'timeout';
+      errorMessage = 'timeout';
+      exitCode = 124;
+    } else if (sysExitCode !== null) {
+      // User called sys.exit(N). Treat as completed unless non-zero.
+      if (sysExitCode === 0) {
+        status = 'completed';
+        exitCode = 0;
       } else {
-        // Pyodide-level failure (worker died, OOM, etc.) — surface
-        // the raw JS error so the operator can diagnose.
         status = 'failed';
-        exitCode = 1;
-        errorMessage = 'pyodide_internal_error: code_interpreter worker failed; see server logs';
+        exitCode = typeof sysExitCode === 'number' ? sysExitCode : 1;
+        errorMessage = `sys.exit(${sysExitCode})`;
       }
+    } else if (pyodideThrew) {
+      status = 'failed';
+      exitCode = 1;
+      errorMessage = 'pyodide_internal_error: code_interpreter worker failed; see server logs';
     }
   } catch (err) {
     const name = err && ((err as PyRunError).constructor?.name || '');

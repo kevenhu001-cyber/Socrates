@@ -1,4 +1,4 @@
-import { createParser, evaluate, split, tokenize, type ASTNode, type LibraryJSONSchema } from '@openuidev/lang-core';
+import { createParser, evaluate, split, tokenize, walkAST, type ASTNode, type LibraryJSONSchema } from '@openuidev/lang-core';
 import { openUiProgramIssues, openUiRuntimeIssues } from '../../../packages/core/src/openUiProgram.js';
 import { validateVisualizationSpec } from './visualization.js';
 import { OPENUI_SCHEMA } from './openUiPrompt.generated.js';
@@ -91,11 +91,20 @@ function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unkn
           if (!input || typeof input !== 'object') return input;
           if (Array.isArray(input)) return input.map(resolve);
           const item = input as Record<string, unknown>;
-          if (typeof item.k === 'string') return evaluate(input as ASTNode, {
-            getState: (name) => state[name],
-            resolveRef: () => { unresolved = true; return undefined; },
-            reportError: () => { unresolved = true; },
-          });
+          if (typeof item.k === 'string') {
+            // Library functions run only in the client. Without that library,
+            // evaluate() mistakes their mapped arguments for component props.
+            let clientOnly = false;
+            walkAST(input as ASTNode, (ast) => {
+              if (ast.k === 'Comp' && ast.fn) clientOnly = true;
+            });
+            if (clientOnly) { unresolved = true; return undefined; }
+            return evaluate(input as ASTNode, {
+              getState: (name) => state[name],
+              resolveRef: () => { unresolved = true; return undefined; },
+              reportError: () => { unresolved = true; },
+            });
+          }
           return Object.fromEntries(Object.entries(item).map(([key, entry]) => [key, resolve(entry)]));
         };
         const spec = resolve({ version: 1, ...props });

@@ -203,7 +203,7 @@ test('the slider draws its own rail and keeps the knob on the value', async ({ p
   // draw a box around the rail; the focus ring belongs to the knob.
   expect(await ui.locator('.iui-range').evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
   await ui.getByRole('slider', { name: 'Amount' }).focus();
-  await expect.poll(() => knob.evaluate((el) => getComputedStyle(el).boxShadow)).toContain('rgb');
+  await expect.poll(() => knob.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none');
 });
 
 test('buttons without actions cannot accidentally send chat and offer explicit repair', async ({ page }) => {
@@ -218,4 +218,43 @@ test('buttons without actions cannot accidentally send chat and offer explicit r
   await ui.getByRole('button', { name: 'Fix with AI' }).click();
   await expect.poll(() => page.evaluate(() => window.__repairRequests.length)).toBe(1);
   expect(await page.evaluate(() => window.__repairRequests[0].prompt)).toContain('Button requires an explicit action');
+});
+
+for (const viewport of ['desktop', 'mobile']) {
+  test(`OpenUI card titles retain readable width and nested card frames (${viewport})`, async ({ page }) => {
+    const source = 'root = Col([Grid([Card([Title("学习计划","lg"),Text("每日练习")]),Card([Title("复习安排","lg"),Text("温故知新")]),Card([Title("学习成果","lg"),Text("记录进步")])],3),Row([Title("课程说明","lg"),Text("通过每日练习和及时复习逐步掌握知识，调整学习节奏并记录自己的进步。")])])';
+    await prepareChatWorkbench(page, { messages: [message(source)], viewport: WORKBENCH_VIEWPORTS[viewport] });
+    const ui = page.locator('.intui-openui');
+    await expect(ui.locator('.iui-card')).toHaveCount(3);
+    for (const title of await ui.getByRole('heading').all()) {
+      const geometry = await title.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return { height: el.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), paddingRight: parseFloat(style.paddingRight) };
+      });
+      expect(geometry.height).toBeLessThanOrEqual(geometry.lineHeight + 1);
+      expect(geometry.paddingRight).toBe(0);
+    }
+    expect(await ui.locator('.iui-card').first().evaluate((el) => parseFloat(getComputedStyle(el).borderTopWidth))).toBeGreaterThan(0);
+    const header = await page.locator('.intui-surface-header').boundingBox();
+    const firstCard = await ui.locator('.iui-card').first().boundingBox();
+    expect(header.y + header.height).toBeLessThanOrEqual(firstCard.y);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: `test-results/openui-card-layout-${encodeURIComponent(viewport)}.png`, fullPage: true });
+  });
+}
+
+test('correcting an initially invalid input clears diagnostics and never displays a fabricated result', async ({ page }) => {
+  const source = 'root = Col([Input($n,"N","number"),Text("Result: " + (10 / $n))])\n$n = 0';
+  await prepareChatWorkbench(page, { messages: [message(source)] });
+  const ui = page.locator('.intui-openui');
+  await expect(ui.locator('.iui-program')).toHaveAttribute('data-invalid-result', 'true');
+  await expect(ui.getByText('Result: 0', { exact: true })).toBeHidden();
+  await expect(ui.locator('p[role="status"]')).toBeVisible();
+  await ui.getByRole('textbox', { name: 'N', exact: true }).fill('2');
+  await expect(ui.getByText('Result: 5', { exact: true })).toBeVisible();
+  await expect(ui.locator('p[role="status"]')).toHaveCount(0);
+  await expect(ui.getByRole('button', { name: 'Fix with AI' })).toHaveCount(0);
+  await ui.getByRole('textbox', { name: 'N', exact: true }).fill('0');
+  await expect(ui.locator('.iui-program')).toHaveAttribute('data-invalid-result', 'true');
+  await expect(ui.locator('.iui-text')).toBeHidden();
 });

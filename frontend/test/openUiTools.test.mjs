@@ -74,6 +74,10 @@ test('arithmetic diagnostics catch invalid operations while respecting guards an
   const source = 'root = Col([Input($n,"N","number"),Text(10 / $n)])\n$n = 2';
   assert.deepEqual(runtimeProgramIssues(source, { $n: 2 }), []);
   assert.match(runtimeProgramIssues(source, { $n: 0 }).join(), /zero/);
+  const invalidDefault = source.replace('$n = 2', '$n = 0');
+  assert.deepEqual(programIssues(invalidDefault), []);
+  assert.match(runtimeProgramIssues(invalidDefault, {}).join(), /zero/);
+  assert.deepEqual(runtimeProgramIssues(invalidDefault, { $n: 2 }), []);
   assert.deepEqual(programIssues('root = Col([Input($n,"N","number"),Text($n == 0 ? "Enter a nonzero number" : 10 / $n)])\n$n = 0'), []);
   assert.deepEqual(programIssues('root = Col([Input($n,"N","number"),Button("Go",@Set($r,10 / $n),null,null,null,null,$n == 0),Text($r)])\n$n = 0\n$r = 0'), []);
 });

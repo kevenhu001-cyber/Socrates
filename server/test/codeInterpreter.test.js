@@ -90,6 +90,14 @@ describe('codeInterpreter.execute — input guard rails', () => {
     }
   });
 
+  test('the service passes original source to the worker without a Python preamble', async () => {
+    const source = new URL('../src/services/codeInterpreter.ts', import.meta.url);
+    const serviceSource = await fsPromises.readFile(source, 'utf8');
+    // The worker owns the scratch listing. Inserting Python ahead of user
+    // code rejects future imports and shifts every traceback line by one.
+    assert.match(serviceSource, /result = await runOnWorker\(\{\s*executionId,\s*code,/);
+  });
+
   test('rejects sources larger than MAX_CODE_CHARS without touching the pool', async () => {
     const huge = 'x'.repeat(400_000);
     const res = await codeInterpreter.execute({ userId: '00000000-0000-4000-8000-000000000001', sessionId: null, code: huge, language: 'python' });

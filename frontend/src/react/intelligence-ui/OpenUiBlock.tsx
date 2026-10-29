@@ -85,12 +85,10 @@ function OpenUiUnavailableNotice({
 /** OpenUI is loaded only when a response actually contains an OpenUI program. */
 export default function OpenUiBlock({ source, open = false, readOnly = false, embedded = false }: OpenUiBlockProps) {
   const host = useRef<HTMLDivElement>(null);
-  const currentState = useRef<Record<string, unknown>>({});
-  const [stateIssue, setStateIssue] = useState<string | null>(null);
+  const [currentState, setCurrentState] = useState<Record<string, unknown>>({});
   const onStateUpdate = useCallback((state: Record<string, unknown>) => {
-    currentState.current = state;
-    setStateIssue(open ? null : runtimeProgramIssues(source, state)[0] ?? null);
-  }, [source, open]);
+    setCurrentState(state);
+  }, []);
   const [runtimeErrors, setRuntimeErrors] = useState<string[]>([]);
   const [hasRoot, setHasRoot] = useState<boolean | null>(null);
   const onParseResult = useCallback((result: ParseResult | null) => {
@@ -105,12 +103,13 @@ export default function OpenUiBlock({ source, open = false, readOnly = false, em
   const labels = Object.fromEntries(Object.entries(remoteLabelDefaults).map(([key, fallback]) => [key, i18n(`intui.${key}`, fallback)])) as typeof remoteLabelDefaults;
   const tooLarge = source.length > 60000;
   const issues = useMemo(() => open || source.length > 60000 ? [] : programIssues(source), [source, open]);
+  const stateIssue = useMemo(() => open || tooLarge ? null : runtimeProgramIssues(source, currentState)[0] ?? null, [source, open, tooLarge, currentState]);
   const unavailable = Boolean(tooLarge || (!open && (stateIssue || runtimeErrors.length > 0 || hasRoot === false || issues.length > 0)));
   const repair = () => {
     if (readOnly || open) return;
     host.current?.dispatchEvent(new CustomEvent('tool-retry', { bubbles: true, detail: {
       tool: 'intelligent_ui',
-      prompt: `Repair this OpenUI view with render_intelligent_ui. Problems: ${[...issues, ...runtimeErrors, stateIssue].filter(Boolean).join('; ') || 'Client runtime error'}. Every enabled Button needs an explicit action, inputs bind to declared $state, and outputs must update locally. Preserve the requested tool and connect its inputs, actions and results. Use local actions for deterministic calculations, filtering and list edits; use @ToAssistant only for explicitly requesting assistant work.\n\n${source}\n\nCurrent local state: ${JSON.stringify(currentState.current, (_, value: unknown) => typeof value === 'number' && !Number.isFinite(value) ? String(value) : value).slice(0, 10000)}`,
+      prompt: `Repair this OpenUI view with render_intelligent_ui. Problems: ${[...issues, ...runtimeErrors, stateIssue].filter(Boolean).join('; ') || 'Client runtime error'}. Every enabled Button needs an explicit action, inputs bind to declared $state, and outputs must update locally. Preserve the requested tool and connect its inputs, actions and results. Use local actions for deterministic calculations, filtering and list edits; use @ToAssistant only for explicitly requesting assistant work.\n\n${source}\n\nCurrent local state: ${JSON.stringify(currentState, (_, value: unknown) => typeof value === 'number' && !Number.isFinite(value) ? String(value) : value).slice(0, 10000)}`,
     } }));
   };
   const content = <div className="intui-openui" ref={host} data-openui-streaming={open ? 'true' : 'false'}>

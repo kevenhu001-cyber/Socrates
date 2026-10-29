@@ -14,7 +14,7 @@ const flexStyle = (p: FlexProps, column = false): CSSProperties => ({
   gap: space(p.gap),
   alignItems: p.align ? FLEX[p.align] : undefined,
   justifyContent: p.justify ? FLEX[p.justify] : undefined,
-  flexWrap: p.wrap ? "wrap" : undefined,
+  flexWrap: !column && p.wrap !== false ? "wrap" : p.wrap ? "wrap" : undefined,
   // A centered column centers its wrapped lines too.
   textAlign: column && (p.align === "center" || p.align === "end") ? p.align : undefined,
 });
@@ -72,7 +72,7 @@ export const Row = defineComponent({
     justify: justify.optional(),
     wrap: z.boolean().optional(),
   }),
-  description: "Horizontal layout; items are vertically centered.",
+  description: "Horizontal layout; items are vertically centered and wrap on narrow screens. Use Col for a heading followed by explanatory text. Set wrap=false only for deliberately compact rows.",
   component: ({ props, renderNode }) => (
     <div className="iui-row" style={flexStyle(props)}>
       {renderNode(props.children)}
@@ -99,12 +99,13 @@ export const Grid = defineComponent({
     minChildWidth: z.number().optional(),
     gap: z.number().optional(),
   }),
-  description: "Equal columns (default 2). With minChildWidth (px), columns drop on narrow screens.",
+  description: "Equal columns (default 2), dropping columns on narrow screens. minChildWidth defaults to 180px; set it to 0 only for deliberately compact grids such as keypads.",
   component: ({ props, renderNode }) => {
     const columns = Math.min(12, Math.max(1, Math.round(props.columns ?? 2)));
     const gap = space(props.gap) ?? "12px";
     // At most `columns` columns, each at least minChildWidth wide.
-    const min = props.minChildWidth ? `max(${Math.max(0, props.minChildWidth)}px, (100% - ${columns - 1} * ${gap}) / ${columns})` : null;
+    const minChildWidth = props.minChildWidth ?? 180;
+    const min = minChildWidth > 0 ? `max(${minChildWidth}px, (100% - ${columns - 1} * ${gap}) / ${columns})` : null;
     return (
       <div
         className="iui-grid"

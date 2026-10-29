@@ -5,6 +5,7 @@ import { createParser } from '@openuidev/react-lang';
 import { JSDOM } from 'jsdom';
 import { read } from '../src/react/intelligence-ui/openui/functions/shared.ts';
 import { library } from '../src/react/intelligence-ui/openui/library.ts';
+import { Grid, Row } from '../src/react/intelligence-ui/openui/layout.tsx';
 import { webUrl, bg, size } from '../src/react/intelligence-ui/openui/style.ts';
 import { runOpenUiAction } from '../src/react/intelligence-ui/openui/actionBridge.ts';
 import { validateIntelligentUi } from '@socrates/core';
@@ -48,6 +49,17 @@ test('model-controlled URLs and styles cannot introduce executable resource load
   assert.equal(bg('url(https://example.com/tracker)'), undefined);
   assert.equal(bg('red;position:fixed'), undefined);
   assert.equal(size('expression(alert(1))'), undefined);
+});
+
+test('layouts reflow by default while supporting explicitly compact rows and grids', () => {
+  const renderNode = () => null;
+  const grid = (props) => Grid.component({ props: { children: [], ...props }, renderNode });
+  const row = (props) => Row.component({ props: { children: [], ...props }, renderNode });
+  assert.match(grid({ columns: 3 }).props.style.gridTemplateColumns, /auto-fill.*180px/);
+  assert.match(grid({ columns: 2, minChildWidth: 240 }).props.style.gridTemplateColumns, /auto-fill.*240px/);
+  assert.equal(grid({ columns: 4, minChildWidth: 0 }).props.style.gridTemplateColumns, 'repeat(4, minmax(0, 1fr))');
+  assert.equal(row({}).props.style.flexWrap, 'wrap');
+  assert.equal(row({ wrap: false }).props.style.flexWrap, undefined);
 });
 
 test('host actions reuse chat, preserve submitted values and block readonly requests', () => {

@@ -38,6 +38,7 @@
 .intui-openui :is(.iui-col, .iui-box, .iui-form, .iui-card) { display: flex; flex-direction: column; min-width: 0; }
 .intui-openui .iui-row { display: flex; flex-direction: row; align-items: center; gap: var(--ui-space-sm); min-width: 0; }
 .intui-openui .iui-row > * { min-width: 0; }
+.intui-openui .iui-row > .iui-title { flex-shrink: 0; max-width: 100%; }
 .intui-openui .iui-flow { gap: var(--ui-space-lg); }
 .intui-openui .iui-grid { display: grid; min-width: 0; }
 .intui-openui .iui-spacer { flex: 1; }
@@ -45,7 +46,7 @@
 .intui-openui .iui-card-soft { background: var(--iui-surface); }
 /* Renderer supplies busy and visibility wrappers; the outer shell already
    frames a single root card. Nested and deliberately filled cards keep theirs. */
-.intui-surface-document > .intui-openui > .iui-program :is([aria-busy], div, form) > .iui-card:not(.iui-card-soft),
+.intui-surface-document > .intui-openui > .iui-program > [aria-busy] > div > .iui-card:not(.iui-card-soft),
 .intui-surface-document > .intui-openui > .iui-program > div > .iui-card:not(.iui-card-soft),
 .intui-surface-document > .intui-openui > .iui-program > .iui-card:not(.iui-card-soft) {
   padding: 0;

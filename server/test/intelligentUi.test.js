@@ -116,6 +116,22 @@ test('Intelligent UI tool results expose extracted visuals to native clients', a
   assert.equal(events[0][1].visualizations[0].template, 'bar');
 });
 
+test('client-only OpenUI functions do not invalidate otherwise valid visualizations', () => {
+  for (const expression of ['@Payment($n,0,12)', '@Round(@Payment($n,0,12),2)', '@Pow($n,2) + 1']) {
+    const source = `root = Col([Slider($n,1,100),Visualization("bar","Computed",{categories:["A"],series:[{data:[${expression}]}]},"Computed value"),Visualization("bar","Static",{categories:["A"],series:[{data:[3]}]},"Static value")])\n$n = 12`;
+    const result = validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source }] });
+    assert.equal(result.ok, true, JSON.stringify(result));
+    assert.deepEqual(result.visualizations.map((visual) => visual.title), ['Static']);
+  }
+});
+
+test('built-in OpenUI calculations still produce validated native snapshots', () => {
+  const source = 'root = Col([Slider($n,1,100),Visualization("bar","Rounded",{categories:["A"],series:[{data:[@Round($n / 3,2)]}]},"Rounded value")])\n$n = 10';
+  const result = validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source }] });
+  assert.equal(result.ok, true);
+  assert.equal(result.visualizations[0].payload.series[0].data[0], 3.33);
+});
+
 test('the Visualization envelope misuse is reported as the argument shape it is', () => {
   const envelope = '{"version":1,"template":"bar","title":"T","accessibilitySummary":"S","payload":{"categories":["A"],"series":[{"name":"n","data":[1]}]}}';
   /* Passing the whole native envelope as the first argument, or nesting it in
