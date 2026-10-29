@@ -78,6 +78,7 @@ export function buildFallbackDiagnosticQuestions(topic, count, isZh) {
   return Array.from({ length: total }, (_, index) => ({
     q: stems[index].replace('{topic}', topic),
     knowledgePoint: isZh ? `知识边界探测 ${index + 1}` : `knowledge boundary probe ${index + 1}`,
+    nodeIdx: index % 5,
     opts: options.map((option) => ({ ...option })),
   }));
 }

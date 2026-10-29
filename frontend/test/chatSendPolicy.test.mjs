@@ -16,6 +16,16 @@ test('tutor progress counts detailed free-form answers but excludes quiz and pra
   assert.equal(countsTowardTutorProgress(substantiveAnswer, undefined), true);
   assert.equal(countsTowardTutorProgress(substantiveAnswer, 'quiz'), false);
   assert.equal(countsTowardTutorProgress(substantiveAnswer, 'practice'), false);
+  assert.equal(countsTowardTutorProgress(substantiveAnswer, 'hint'), false);
+});
+
+test('detailed CJK answers count without whitespace while brief replies do not', () => {
+  const answer = '导数表示函数在某一点附近的瞬时变化率，可以通过割线斜率的极限来理解，它不是简单地把函数值除以自变量。';
+  assert.equal(isSubstantiveTutorAnswer(answer), true);
+  assert.equal(countsTowardTutorProgress(answer), true);
+  assert.equal(isSubstantiveTutorAnswer('我不知道'), false);
+  assert.equal(isSubstantiveTutorAnswer('这是一个很短的回答'), false);
+  assert.equal(isSubstantiveTutorAnswer(' '.repeat(60)), false);
 });
 
 test('teaching stages advance one step per substantive answer and stop at check', () => {
@@ -23,6 +33,7 @@ test('teaching stages advance one step per substantive answer and stop at check'
   assert.equal(nextTutorStage('illustrate', true), 'exercise');
   assert.equal(nextTutorStage('exercise', true, 'practice'), 'check');
   assert.equal(nextTutorStage('define', true, 'quiz'), null);
+  assert.equal(nextTutorStage('define', true, 'hint'), null);
   assert.equal(nextTutorStage('check', true), null);
   assert.equal(nextTutorStage('define', false), null);
 });

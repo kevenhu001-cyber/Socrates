@@ -20,8 +20,8 @@ const TOKENS = `
 
 const THEMES = `
 [data-mode="dark"] {
-  --ui-font-weight-medium: 450;
-  --ui-font-weight-bold: 600;
+  --ui-font-weight-medium: 500;
+  --ui-font-weight-bold: 700;
 }
 `;
 
@@ -45,7 +45,7 @@ test('a literal weight is caught in every spelling', () => {
   }
 });
 
-test('a spelled weight is caught too — it bypasses the dark step-down the same way', () => {
+test('a spelled weight is caught too — it bypasses the weight token the same way', () => {
   for (const css of [
     '.a { font-weight: bold; }',
     '.a { font-weight: bolder; }',
@@ -103,7 +103,7 @@ test('a declaration reports its own line, even after a long comment', () => {
   assert.equal(scanCss(css).literals[0].line, 5);
 });
 
-test('the token ladder has to be complete and the dark canvas has to step down', () => {
+test('the token ladder has to be complete and the dark canvas has to declare the official weights', () => {
   const ok = checkTokenLadder(TOKENS, THEMES);
   assert.deepEqual(ok.failures, []);
   for (const name of REQUIRED_TOKENS) {
@@ -112,7 +112,9 @@ test('the token ladder has to be complete and the dark canvas has to step down',
 });
 
 test('a missing dark override or a wrong one is reported', () => {
-  assert.equal(checkTokenLadder(TOKENS, '[data-mode="dark"] { --ui-font-weight-bold: 600; }').failures.length, 1);
+  /* A dark block without a medium weight reports the missing token. */
+  assert.equal(checkTokenLadder(TOKENS, '[data-mode="dark"] { --ui-font-weight-bold: 700; }').failures.length, 1);
+  /* A dark block with the wrong medium weight reports the wrong value. */
   assert.equal(
     checkTokenLadder(TOKENS, '[data-mode="dark"] { --ui-font-weight-medium: 450; --ui-font-weight-bold: 700; }').failures.length,
     1,
@@ -120,7 +122,7 @@ test('a missing dark override or a wrong one is reported', () => {
   assert.equal(checkTokenLadder(TOKENS, ':root { --ui-font-weight-regular: 400; }').failures.length, 1);
 });
 
-test('the dark canvas drops exactly medium and bold', () => {
-  assert.equal(DARK_MEDIUM, 450);
-  assert.equal(DARK_BOLD, 600);
+test('the dark canvas uses the official component weights', () => {
+  assert.equal(DARK_MEDIUM, 500);
+  assert.equal(DARK_BOLD, 700);
 });

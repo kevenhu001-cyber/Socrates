@@ -11,12 +11,8 @@ function resultsNotice(isZh) {
    delegated handler in `tutor/diagnosticFlow.js` working unchanged. */
 export function renderDiagResultsScreen(state, isZh) {
   var summary = { internalized: 0, fuzzy: 0, blank: 0 };
-  state.diagQuestions.forEach(function (q, i) {
-    var ans = state.diagAnswers[i];
-    if (ans === undefined || ans === -1) return;
-    var level = q.opts[ans].level;
-    /* Use the downscaled status for display consistency */
-    var status = level === "blank" ? "blank" : "fuzzy";
+  state.kbNodes.forEach(function (node) {
+    var status = node.status === "fuzzy" ? "fuzzy" : "blank";
     summary[status] = (summary[status] || 0) + 1;
   });
 

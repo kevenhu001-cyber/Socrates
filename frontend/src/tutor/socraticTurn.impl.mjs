@@ -45,6 +45,7 @@ export async function generateSocraticQuestionStream(node, domain, onDelta, onTh
     var isFirst = history.length === 0;
     var msgs = buildSocraticMessages(node, domain, history, isFirst);
     var result = await callAPIStream(msgs, MAX_TOKENS_CHAT, onDelta, onThinking, streamOpts);
+    if (result && result.cancelled) return result;
     if (result && result.text && result.text.trim()) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
       return result; // {text, html, widgets}
@@ -52,7 +53,6 @@ export async function generateSocraticQuestionStream(node, domain, onDelta, onTh
     /* User explicitly clicked Stop — propagate the cancelled flag so
        the caller (askNextQuestion) can clean up the bubble without
        showing an error or falling back to the mock question. */
-    if (result && result.cancelled) { return result; }
     if (!stateStore.read('lastCallError')) stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: 'Stream returned no content' });
     stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' });
   } else { stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' }); }
@@ -100,6 +100,7 @@ export async function generateFollowUpStream(answer, node, domain, onDelta, onTh
     var history = extractHistory();
     var msgs = buildFollowUpMessages(answer, node, domain, history);
     var result = await callAPIStream(msgs, MAX_TOKENS_CHAT, onDelta, onThinking, streamOpts);
+    if (result && result.cancelled) return result;
     if (result && result.text && result.text.trim()) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
       return result.text.trim();

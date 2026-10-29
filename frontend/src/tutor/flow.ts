@@ -234,7 +234,7 @@ export function buildFollowUpMessages(
       'Do NOT restart the entire topic from scratch on every turn; instead, advance the lesson while keeping the foundation as the persistent anchor for any new material.',
   );
   return injectTemplateSystemPrompt(
-    [{ role: 'system', content: prompt }]
+    appendClientContextMessages([{ role: 'system', content: prompt }], true)
       .concat(history)
       .concat([{ role: 'user', content: answer }]),
   );

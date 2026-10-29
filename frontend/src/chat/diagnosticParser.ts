@@ -80,7 +80,7 @@ export function parseOneDiagResponse(resp: unknown,index: number): NormalizedDia
     /* Pin nodeIdx to the question slot so each step maps to its
        own KB node. The model may return a nodeIdx but we trust
        the round-robin slot more. */
-    parsed.nodeIdx=index;
+    parsed.nodeIdx=index%5;
     return normalizeDiagQuestions([parsed])[0]||null;
   }catch(e){
     setLastCallError("Diag JSON parse failed: "+parseErrorMessage(e));
@@ -107,10 +107,11 @@ function normalizeDiagOptions(value: unknown): NormalizedDiagnosticOption[] | nu
     normalized.push({
       letter:DIAG_LETTERS[normalized.length]||(normalized.length+""),
       text:text,
-      level:DIAG_LEVELS[normalized.length]||"fuzzy"
+      level:typeof source.level==="string"&&DIAG_LEVELS.includes(source.level)
+        ?source.level:DIAG_LEVELS[normalized.length]||"blank"
     });
   }
-  return normalized.length>=3?normalized.slice(0,3):null;
+  return normalized.length>=3?normalized:null;
 }
 
 function normalizeDiagQuestion(value: unknown,index: number): NormalizedDiagnosticQuestion | null {

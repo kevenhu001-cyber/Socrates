@@ -110,6 +110,10 @@ async function runTutorFollowUp(
       (thinking: string) => streamController.appendThinking(thinking),
       toolCallbacksForStream(streamController),
     );
+    if (response && typeof response === 'object' && response.cancelled) {
+      streamController.abort();
+      return;
+    }
     if (response != null) {
       streamController.finish();
     } else if (stateStore.read('lastCallError')) {

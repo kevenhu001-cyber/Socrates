@@ -148,11 +148,24 @@ and states; parity sheets only keep placement and measured sizing where needed.
 - `npm run build`: passed. Current entry graph: HTML gzip **4,269 B**, static JS
   gzip **345,233 B**, linked CSS gzip **171,332 B**; total **520,834 B**.
 - `mainViewController.test.mjs`: **4 passed**.
+- `npm run test:unit`: **1,195 tests, 1,184 passed, 0 failed, 11 skipped**. The
+  first run after the follow-up failed on four stale assertions: the shared
+  `Button` now carries the shadcn recipe instead of the caller's class alone,
+  and the dark canvas declares the official 500 / 700 weights. The assertions
+  were realigned with the new contract, and the AGENTS.md row for
+  `check-font-weight.mjs` was corrected to stop advertising the retired
+  450 / 600 step-down.
+- Entry graph re-measured from the local production build: HTML gzip
+  **4,269 B**, static JS gzip **345,285 B**, linked CSS gzip **171,332 B**;
+  total **520,886 B**, still **14,715 B** under the 360,000 B static-JS budget.
 - Focused Playwright: **68 passed** across light/dark palettes, theme switching,
   chat/composer, workspace and plugin navigation, mobile alignment, reference
   surfaces, plugin tabs, settings controls and deferred loading. The production
   entry budget assertion also passed after the final build. Browser coverage
   used Chromium through the repository runner.
+- Focused Playwright re-run after the assertion repair: **13 passed** across
+  `shadcn-theme`, `shadcn-component-replacement`, `theme-system` and
+  `reference-ui-visual`.
 
 ### Remaining scope
 

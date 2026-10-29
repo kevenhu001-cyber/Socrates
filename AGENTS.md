@@ -55,7 +55,7 @@
 | `check-surface-ownership.mjs` | Sidebar / topbar / transcript each have one desktop owner under `styles/parity/` |
 | `check-surface-ladder.mjs` | The frontend palette uses the official shadcn Neutral semantic roles and the official Stone scale for its alternate theme. It checks role values, the runtime `THEME_STYLES` registry, and legacy token bridges. Its baseline is web-only; `packages/theme` remains separately owned until the Universal App palette migration (also `lint:surface-ladder`) |
 | `check-focus-ring.mjs` | Focus states use the `--ui-focus-shadow` double ring with a ≥3:1 outer ring; no bare visible `outline` survives, and every `!important` that clears an outline carries a forced-colors fallback (also `lint:focus-ring`) |
-| `check-font-weight.mjs` | Font weights come from tokens, not literals, and the dark mode's 450/600 step-down stays a real variable-font axis rather than snapping to a static neighbour (also `lint:font-weight`) |
+| `check-font-weight.mjs` | Font weights come from tokens, not literals, and the dark canvas declares the official component weights (500 / 700) rather than a 450/600 step-down (also `lint:font-weight`) |
 | `check-prompt-dashes.mjs` | Prompt text uses a single dash convention; the baseline records the entries that are deliberately exempt (also `lint:prompt-dashes`) |
 | `check-mobile-css.mjs` | Mobile CSS stays in the mobile owner files |
 | `check-i18n-locales.mjs` | `en` and `zh` carry the same key set |

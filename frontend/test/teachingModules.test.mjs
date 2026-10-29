@@ -21,7 +21,9 @@ import {
 import {
   extractDiagQuestionsBalanced,
   normalizeDiagQuestions,
+  parseOneDiagResponse,
 } from '../src/chat/diagnosticParser.ts';
+import { applyDiagnosticResults } from '../src/chat/diagnosticResults.ts';
 import {
   categoryAxisLayout,
   formatCategoryLabel,
@@ -146,6 +148,35 @@ test('diagnostic: normalizeDiagQuestions drops malformed questions and caps at 5
     opts: [{ text: 'a' }, { text: 'b' }, { text: 'c' }],
   }));
   assert.equal(normalizeDiagQuestions(many).length, 5);
+});
+
+test('diagnostic: preserves all four options and their declared assessment levels', () => {
+  const question = parseOneDiagResponse(JSON.stringify({
+    q: 'Choose your understanding',
+    opts: [
+      { text: 'New to me', level: 'blank' },
+      { text: 'Some gaps', level: 'fuzzy' },
+      { text: 'Can explain it', level: 'internalized' },
+      { text: 'Need examples', level: 'blank' },
+    ],
+  }), 2);
+  assert.deepEqual(question.opts.map(({ letter, level }) => ({ letter, level })), [
+    { letter: 'A', level: 'blank' },
+    { letter: 'B', level: 'fuzzy' },
+    { letter: 'C', level: 'internalized' },
+    { letter: 'D', level: 'blank' },
+  ]);
+  const nodes = applyDiagnosticResults({
+    kbNodes: Array.from({ length: 5 }, (_, i) => ({ name: `Node ${i}`, status: 'blank' })),
+    diagQuestions: [question], diagAnswers: [2],
+  });
+  assert.equal(nodes[2].status, 'fuzzy', 'baseline familiarity is not verified mastery');
+});
+
+test('diagnostic: questions six through ten map back to the five knowledge dimensions', () => {
+  const payload = JSON.stringify({ q: 'Q', opts: [{ text: 'A' }, { text: 'B' }, { text: 'C' }] });
+  assert.deepEqual(Array.from({ length: 10 }, (_, i) => parseOneDiagResponse(payload, i).nodeIdx),
+    [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
 });
 
 test('diagnostic: extractDiagQuestionsBalanced recovers objects from a fixed array body', () => {

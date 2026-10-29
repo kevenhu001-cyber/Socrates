@@ -3,11 +3,15 @@ export type TeachingStage = 'motivate' | 'define' | 'develop' | 'illustrate' | '
 const TEACHING_STAGES: TeachingStage[] = ['motivate', 'define', 'develop', 'illustrate', 'exercise', 'check'];
 
 export function isSubstantiveTutorAnswer(text: unknown): boolean {
-  return String(text || '').length > 40 && String(text || '').split(/\s+/).length > 8;
+  const answer = String(text || '').trim();
+  if (answer.length <= 40) return false;
+  // CJK prose usually has no spaces, so a whitespace-only word count never advances lessons.
+  const cjkLength = (answer.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu) || []).length;
+  return answer.split(/\s+/).length > 8 || cjkLength >= 20;
 }
 
 export function countsTowardTutorProgress(text: unknown, origin?: string | null): boolean {
-  return isSubstantiveTutorAnswer(text) && origin !== 'quiz' && origin !== 'practice';
+  return isSubstantiveTutorAnswer(text) && origin !== 'quiz' && origin !== 'practice' && origin !== 'hint';
 }
 
 export function nextTutorStage(
@@ -15,7 +19,7 @@ export function nextTutorStage(
   isSubstantive: boolean,
   origin?: string | null,
 ): string | null {
-  if (!isSubstantive || origin === 'quiz' || currentStage === 'check') return null;
+  if (!isSubstantive || origin === 'quiz' || origin === 'hint' || currentStage === 'check') return null;
   const currentIndex = TEACHING_STAGES.indexOf((currentStage || 'motivate') as TeachingStage);
   if (currentIndex < 0 || currentIndex >= TEACHING_STAGES.length - 1) return null;
   return TEACHING_STAGES[currentIndex + 1];

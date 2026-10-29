@@ -21,11 +21,12 @@ var _installedBook = null;
 export function getMistakeBookUI() {
   if (_installedBook) {
     return {
+      recordMistake: _installedBook.recordMistake,
       updateMistakesBadge: _installedBook.updateMistakesBadge,
       renderMistakes: _installedBook.renderMistakes,
     };
   }
-  return { updateMistakesBadge: null, renderMistakes: null };
+  return { recordMistake: null, updateMistakesBadge: null, renderMistakes: null };
 }
 
 export function installWidgetRuntime() {

@@ -86,6 +86,7 @@ export function finishDiagnostic() {
    teaching phase. Separated from finishDiagnostic so the user has a
    moment to read the interpretation before teaching begins. */
 export function proceedToTeaching() {
+  if (stateStore.read('phase') !== 'diagnostic') return;
   activateMainView('chatView', document);
   try { updateKB(); } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.js:89'); }
 
@@ -110,7 +111,9 @@ export function proceedToTeaching() {
   try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.js:109'); }
 
   /* First Socratic question */
+  var sessionId = stateStore.read('currentSessionId');
   setTimeout(function () {
+    if (stateStore.read('currentSessionId') !== sessionId || stateStore.read('phase') !== 'chat') return;
     try {
       if (typeof window.askNextQuestion === 'function') window.askNextQuestion();
     } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.js:115'); }

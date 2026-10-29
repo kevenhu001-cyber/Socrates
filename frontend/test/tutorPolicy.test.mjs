@@ -25,6 +25,7 @@ test('fallback diagnostic honors requested count and stays multiple choice', () 
   const questions = buildFallbackDiagnosticQuestions('复变函数', 10, true);
   assert.equal(questions.length, 10);
   assert.ok(questions.every((question) => question.opts.length === 4));
+  assert.deepEqual(questions.map((question) => question.nodeIdx), [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
 });
 
 test('Tutor quiz requests AI only after a wrong self-graded choice', () => {

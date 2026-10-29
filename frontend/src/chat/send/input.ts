@@ -47,6 +47,7 @@ export interface SendPayload {
 }
 
 export interface CommitSendOptions {
+  origin?: string | null;
   blurAfterSend?: boolean;
   bypassQueue?: boolean;
 }
