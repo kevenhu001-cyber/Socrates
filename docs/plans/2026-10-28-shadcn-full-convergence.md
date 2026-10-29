@@ -98,7 +98,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 | B1 守卫扩容 | 完成（2026-10-29） | `c9483ad1`：四条基线入库（97 / 30 / 140 / 32），`npm run lint` 全绿 |
 | B2 composer 芯片行与队列条 | 完成（2026-10-29） | 见下 |
 | B2 composer 工具菜单 | 完成（2026-10-29） | 见下 |
-| B3 auth 登录页 | 皮肤完成（2026-10-29） | 见下；标记仍是保留 HTML，React 化未做 |
+| B3 auth 登录页 | 完成（2026-10-29） | 见下；标记整体搬进 React，保留标记 97 → 60 |
 | B3 workspace 弹窗表单 | 完成（2026-10-29） | 见下；HTML 字符串模板已整体删除，改 React 视图 |
 | B4 代码块与 tutor 内联控件 | 完成（2026-10-29） | 见下；仍是 legacy DOM 构建 |
 | B4 cookie 同意条 | 完成（2026-10-29） | 见下 |
@@ -379,6 +379,32 @@ PUT `/tags` 载荷、移除、Esc 关闭。遗留模板控件 140 → 135；css-
 新增 `e2e/diagnostic-view.spec.mjs`（失败卡 → 内置题 → 作答 → 结果页）。
 `legacyChannel` 1120 → 1097、`literalFontSize` 444 → 436、`literalRadius` 248 → 244；
 遗留模板控件 135 → 129。
+
+### B3 · auth gate React 化（2026-10-29）
+
+登录页是保留标记里最大的一块（46 个控件、10 个视图）。`auth/shell.ts` 从一开始就是
+按"以后换成 React"设计的：所有 DOM 操作都按 id 收敛成单个函数，点击/提交按选择器
+绑在 `#authGate` 上。所以这轮**只换渲染，不动行为**：
+
+- `react/auth/AuthGate.tsx` 承载全部 10 个视图，控件换成 shadcn
+  `Button` / `Input` / `Label`，两个 checkbox 用 `NativeControl`（`isChecked()` 读
+  `.checked`，base-ui 的 Checkbox 不满足这个契约）。
+- 这棵树是**无状态**的：`auth/shell.ts` 仍用 `classList` 切视图、用 `textContent`
+  写错误、用 `disabled` + `textContent` 切按钮忙碌态，React 不重渲染就不会覆盖它们。
+  这是刻意的选择 —— 让 `forms.ts`、`shell.ts` 和它们的单测一行不改。
+- 所有 id、`data-i18n-*`、绑定选择器（`.auth-foot a`、`.auth-back-link`、
+  `.auth-inline-link-right`、`.auth-code-login-link`、`.auth-btn.primary`）原样保留。
+- `#authGate` 本身留在 `index.html` 当宿主：`showGate`/`hideGate` 切的是它的
+  `hidden` 类，listener 绑的也是它，React 只拥有它的子节点。
+- `react/auth/authGateHost.tsx` 用 `flushSync` 挂载，`mountAuthListeners()` 之后
+  才绑定；挂载完补一次 `applyLegacyI18n()`（i18n 的首扫发生在模块求值期，早于挂载）。
+- `react/legacy/gateway.ts` 新增 `applyLegacyI18n()`，React 侧不直接读
+  `window.applyI18n`（`check-react-globals` 的 0 基线保持不变）。
+
+验证：`auth-direct-handlers`、`chrome-i18n`（含 auth gate 中英切换）、
+`browser-login-handoff`、`a11y-focus-trap`、`settings-modal`（走真实登录提交）、
+`boot`、`session-start`、`visual-system-convergence` 共 40 例通过；暗/亮两套截图
+逐视图核对（signin / register / code-login）。保留标记基线 97 → 60。
 
 ## 待决问题
 

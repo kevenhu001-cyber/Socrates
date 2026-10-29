@@ -113,6 +113,21 @@ export function i18n(key: string, fallback: string): string {
   return v !== key ? v : fallback;
 }
 
+/**
+ * Repaint every `[data-i18n-*]` node in the active locale.
+ *
+ * The legacy i18n pass runs during module evaluation, which is before the
+ * React auth gate mounts; surfaces that render `data-i18n-key` nodes after
+ * that point have to replay it.
+ */
+export function applyLegacyI18n(): void {
+  try {
+    window.applyI18n?.();
+  } catch {
+    /* empty-catch: intentional — translation is best-effort */
+  }
+}
+
 // ─── Typed accessors for lazily-published legacy globals ─────────────────────
 
 /**

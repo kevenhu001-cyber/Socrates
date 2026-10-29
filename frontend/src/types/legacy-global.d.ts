@@ -40,6 +40,9 @@ declare global {
     /** I18n translation function. Both legacy JS and React use this. */
     t: (key: string, ...args: unknown[]) => string;
 
+    /** Repaint every `data-i18n-*` node in the active locale. */
+    applyI18n?: () => void;
+
     // ── Legacy state (read-only from React) ──────────────────────────
 
     /** Global reactive state object (Proxy). */

@@ -1,5 +1,6 @@
 import { installModalA11y } from '../ui/modalA11y.js';
 import { bootstrapReactCompatibilityRuntime } from '../react/bootstrap.tsx';
+import { mountAuthGate } from '../react/auth/authGateHost.tsx';
 import { mountAuthListeners } from '../auth/index.ts';
 import { mountLegacyShellListeners } from '../ui/legacyShellListeners.ts';
 import { bootstrapOutbox } from '../session/mutationOutbox.ts';
@@ -19,6 +20,9 @@ export function bootstrapApp(options) {
   options.syncSidebarForMode();
   options.loadTonePreset();
   options.loadMemories();
+  /* The gate markup is a React tree now, so it has to be committed before the
+     auth listeners bind to `#authGate` by selector. */
+  mountAuthGate();
   mountAuthListeners();
   /* P0.1 A4 — replay message edits/deletes that never reached the server
      (the user edited while offline, closed the tab, and came back). Runs
