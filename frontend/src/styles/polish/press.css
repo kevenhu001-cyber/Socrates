@@ -1,3 +1,4 @@
+@layer compatibility {
 /*
  * polish/press.css — the single press-feedback contract for every control.
  *
@@ -47,57 +48,19 @@
    wobble, so these acknowledge the press with a tint only. The #appShell
    branch outranks the shell's own `#appShell .row.active` / `:hover`
    backgrounds, so the currently selected row still visibly presses. */
-:is(
-  [role="menuitem"],
-  [role="option"],
-  .press-tint,
-  .recent-item,
-  .composer-tools-item,
-  .tool-run-summary,
-  .sidebar-nav-btn,
-  .sidebar-more-item,
-  .user-row,
-  .kb-node,
-  .mobile-mode-item,
-  .mobile-mode-trigger,
-  .home-quick-action,
-  .model-picker-item,
-  .extensions-item,
-  .thinking-status-clickable
-):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed),
-#appShell :is(
-  [role="menuitem"],
-  [role="option"],
-  .press-tint,
-  .recent-item,
-  .composer-tools-item,
-  .tool-run-summary,
-  .sidebar-nav-btn,
-  .sidebar-more-item,
-  .user-row,
-  .kb-node,
-  .mobile-mode-item,
-  .mobile-mode-trigger,
-  .home-quick-action,
-  .model-picker-item,
-  .extensions-item,
-  .thinking-status-clickable
-):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed) {
-  background-color: var(--ui-press-tint);
-}
 
 @media (prefers-reduced-motion: no-preference) {
   :is(button, [role="button"], [role="tab"]):not(
     :disabled,
     [aria-disabled="true"],
     [role="menuitem"],
+    [role="menuitemradio"],
     [role="option"],
     .press-tint,
     .recent-item,
     .composer-tools-item,
     .tool-run-summary,
-    .sidebar-nav-btn,
-    .sidebar-more-item,
+      .sidebar-more-item,
     .user-row,
     .kb-node,
     .mobile-mode-item,
@@ -110,24 +73,19 @@
     scale: 1;
     /* A press must not replace the button's hover colors with an opacity-only
        transition. Keep the same paint channels through press and release. */
-    transition: opacity var(--ui-duration-fast) var(--ui-ease-out),
-                background-color var(--ui-duration-hover) var(--ui-ease-out),
-                border-color var(--ui-duration-hover) var(--ui-ease-out),
-                color var(--ui-duration-hover) var(--ui-ease-out),
-                box-shadow var(--ui-duration-hover) var(--ui-ease-out);
   }
 
   :is(button, [role="button"], [role="tab"]):not(
     :disabled,
     [aria-disabled="true"],
     [role="menuitem"],
+    [role="menuitemradio"],
     [role="option"],
     .press-tint,
     .recent-item,
     .composer-tools-item,
     .tool-run-summary,
-    .sidebar-nav-btn,
-    .sidebar-more-item,
+      .sidebar-more-item,
     .user-row,
     .kb-node,
     .mobile-mode-item,
@@ -145,13 +103,13 @@
     :disabled,
     [aria-disabled="true"],
     [role="menuitem"],
+    [role="menuitemradio"],
     [role="option"],
     .press-tint,
     .recent-item,
     .composer-tools-item,
     .tool-run-summary,
-    .sidebar-nav-btn,
-    .sidebar-more-item,
+      .sidebar-more-item,
     .user-row,
     .kb-node,
     .mobile-mode-item,
@@ -170,4 +128,6 @@
     scale: 1;
     opacity: var(--ui-press-opacity);
   }
+}
+
 }

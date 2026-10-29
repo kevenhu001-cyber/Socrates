@@ -14,12 +14,8 @@ const CLOSE_ICON =
 
 const SEARCH_ICON = sidebarIcons.search;
 
-/*
- * `btn-icon` is the phone-specific tap-target marker. Desktop size and radius
- * come from shadcn's icon-sm size and the shell radius token; the phone owner
- * may still expand the target to its reference-pinned 40px.
- */
-const ICON_BUTTON = 'btn-icon rounded-[var(--ui-radius-sm)] border-0 active:not-aria-[haspopup]:translate-y-0';
+/* `btn-icon` is a shell hook; shadcn's icon-sm recipe owns the control skin. */
+const ICON_BUTTON = 'btn-icon';
 
 export function SidebarHeader() {
   // Subscribe to the chrome bridge so the header re-renders on user change

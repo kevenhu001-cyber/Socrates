@@ -37,7 +37,15 @@ button { -webkit-tap-highlight-color: transparent; }
  * composer tools, the account name, the workspace fields — so there is
  * exactly one ring in the product and this layer stays the single place
  * that defines its shape. */
-:focus-visible {
+:focus-visible:not([data-slot]) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+/* The text input is intentionally excluded from the shadcn skin migration;
+   preserve its existing product focus ring while other slots use their own. */
+[data-slot="input"]:focus-visible {
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow: var(--ui-focus-shadow);

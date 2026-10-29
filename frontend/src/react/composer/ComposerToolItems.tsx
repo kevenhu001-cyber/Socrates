@@ -17,8 +17,8 @@ export function MenuItem({
   return (
     <Button
       type="button"
-      variant="surface"
-      size="surface"
+      variant={active ? "secondary" : "ghost"}
+      size="sm"
       className={`composer-tools-item${active ? ' is-active' : ''}`}
       role={spec.kind === 'toggle' ? 'menuitemcheckbox' : 'menuitem'}
       data-composer-action={spec.key}
@@ -56,8 +56,8 @@ export function MobileMenuItem({
   return (
     <Button
       type="button"
-      variant="surface"
-      size="surface"
+      variant="ghost"
+      size="sm"
       className={`composer-tools-item composer-tools-mobile-item${active ? ' is-active' : ''}`}
       role="menuitem"
       data-composer-action={action}

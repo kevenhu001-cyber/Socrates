@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '../ui/shadcn/dropdown-menu';
+import { Tabs, TabsList, TabsTrigger } from '../ui/shadcn/tabs';
 import { i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 
@@ -18,16 +21,46 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
  * variants and token classes (docs/adr/0024-shadcn-shell-geometry-ownership.md).
  */
 
-/** Controls keep the shell's own rules as their surface marker. */
-const CHROME_BUTTON = 'active:not-aria-[haspopup]:translate-y-0';
-const MODE_OPTION = [
-  'top-mode-switch-option min-w-[104px] rounded-full border-0 bg-transparent px-[var(--ui-space-md)]',
-  'text-muted-foreground leading-[var(--ui-text-ui-line)] cursor-pointer transition-colors',
-  'duration-(--ui-duration-hover) hover:bg-transparent hover:text-foreground aria-selected:text-foreground',
-].join(' ');
-
 function t(key: string, fallback: string): string {
   return i18n(key, fallback);
+}
+
+type AppMode = 'chat' | 'tutor';
+
+function readAppMode(): AppMode {
+  return document.body.getAttribute('data-app-mode') === 'tutor' ? 'tutor' : 'chat';
+}
+
+function requestAppMode(mode: string): void {
+  if (mode === 'chat' || mode === 'tutor') {
+    document.dispatchEvent(new CustomEvent('socrates:mode-switch-select', { detail: mode }));
+  }
+}
+
+function useAppMode(): AppMode {
+  const [mode, setMode] = useState<AppMode>(readAppMode);
+  useEffect(() => {
+    const sync = (event: Event) => {
+      const next = (event as CustomEvent<AppMode>).detail;
+      if (next === 'chat' || next === 'tutor') setMode(next);
+    };
+    document.addEventListener('socrates:mobile-mode-sync', sync);
+    return () => document.removeEventListener('socrates:mobile-mode-sync', sync);
+  }, []);
+  return mode;
+}
+
+function useModeSwitchVisible(): boolean {
+  const isVisible = () => !['workspace-active', 'exam-active', 'admin-active']
+    .some((className) => document.body.classList.contains(className));
+  const [visible, setVisible] = useState(isVisible);
+  useEffect(() => {
+    const sync = () => setVisible(isVisible());
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+  return visible;
 }
 
 /* ── Left: sidebar toggle · model switcher · tutor pill · exam title ───── */
@@ -36,7 +69,7 @@ function SidebarToggle() {
   return (
     <Button
       variant="ghost"
-      className={`toggle-sidebar cg-circle-btn ${CHROME_BUTTON}`}
+      className="toggle-sidebar cg-circle-btn"
       id="sidebarOpenBtn"
       title="Toggle sidebar (⌘B)"
       aria-controls="sidebar"
@@ -59,8 +92,8 @@ function SidebarToggle() {
 function ModelSwitcher() {
   return (
     <Button
-      variant="ghost"
-      className={`top-model-switcher ${CHROME_BUTTON}`}
+      variant="outline"
+      className="top-model-switcher min-w-0 shrink"
       id="topModelSwitcher"
       data-chat-config-trigger=""
       aria-haspopup="dialog"
@@ -101,22 +134,21 @@ function TopBarLeft() {
 /* ── Center: the 聊天 / 辅导 segmented control ─────────────────────────── */
 
 /**
- * A two-position pill centered in the header track. The thumb is one element
- * that slides between the positions (`data-active` on the track), so the
- * options are plain buttons rather than a ToggleGroup: Base UI's Toggle would
- * pull its runtime into the entry chunk, and the product thumb is what paints
- * the selection here, not a per-option background.
+ * A shadcn-style segmented tab list centered in the header track. The mode
+ * synchronizer updates aria-selected, which paints the selected state without
+ * a product-owned sliding thumb.
  *
- * Selecting a mode mid-conversation asks for confirmation first
- * (app/lifecycle/mode.js), which is why each option stays a button.
+ * The Tabs component owns selection and keyboard behavior; a mode request
+ * still goes through the legacy confirmation flow before this control changes.
  */
-function ModeSwitch() {
+function ModeSwitch({ mode, visible }: { mode: AppMode; visible: boolean }) {
   return (
-    <div className="top-mode-switch" id="topModeSwitch" role="tablist" data-i18n-aria="chrome.sessionMode" aria-label="Session mode">
-      <span className="top-mode-switch-thumb" id="topModeSwitchThumb" aria-hidden="true" />
-      <Button variant="ghost" className={`${MODE_OPTION} is-active ${CHROME_BUTTON}`} id="topModeChat" role="tab" aria-selected="true" data-mode="chat" data-i18n-key="tutor.modeChat">{t('tutor.modeChat', '聊天')}</Button>
-      <Button variant="ghost" className={`${MODE_OPTION} ${CHROME_BUTTON}`} id="topModeTutor" role="tab" aria-selected="false" data-mode="tutor" data-i18n-key="tutor.modeTutor">{t('tutor.modeTutor', '辅导')}</Button>
-    </div>
+    <Tabs value={mode} onValueChange={requestAppMode} className={`top-mode-switch inline-flex items-center gap-0 ${visible ? '' : 'hidden'}`} id="topModeSwitch">
+      <TabsList className="w-full" aria-label="Session mode" data-i18n-aria="chrome.sessionMode" activateOnFocus>
+        <TabsTrigger className="top-mode-switch-option min-w-[104px] max-[768px]:min-w-0" id="topModeChat" value="chat" data-mode="chat" data-i18n-key="tutor.modeChat">{t('tutor.modeChat', '聊天')}</TabsTrigger>
+        <TabsTrigger className="top-mode-switch-option min-w-[104px] max-[768px]:min-w-0" id="topModeTutor" value="tutor" data-mode="tutor" data-i18n-key="tutor.modeTutor">{t('tutor.modeTutor', '辅导')}</TabsTrigger>
+      </TabsList>
+    </Tabs>
   );
 }
 
@@ -125,11 +157,11 @@ function ModeSwitch() {
 function MobileActions() {
   return (
     <>
-      <Button variant="ghost" className={`mobile-newchat-btn ${CHROME_BUTTON}`} id="mobileNewChatBtn"
+      <Button variant="ghost" className="mobile-newchat-btn" id="mobileNewChatBtn"
         data-i18n-title="sidebar.nav.new" data-i18n-aria="sidebar.nav.new" title={t('sidebar.nav.new', 'New chat')} aria-label={t('sidebar.nav.new', 'New chat')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4" /><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z" /></svg>
       </Button>
-      <Button variant="ghost" className={`mobile-incognito-btn ${CHROME_BUTTON}`} id="mobileIncognitoBtn" aria-pressed="false"
+      <Button variant="ghost" className="mobile-incognito-btn" id="mobileIncognitoBtn" aria-pressed="false"
         aria-label="Incognito chat" title={t('sidebar.nav.incognito', 'Incognito chat')}
         data-i18n-aria="sidebar.nav.incognito" data-i18n-title="sidebar.nav.incognito">
         <svg className="incognito-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -152,7 +184,7 @@ function MobileActions() {
 function ChatModelPicker() {
   return (
     <div className="chat-model-wrap hidden" id="chatModelWrap">
-      <Button variant="ghost" className={`chat-model-trigger ${CHROME_BUTTON}`} id="chatModel" aria-haspopup="listbox" aria-expanded="false"
+      <Button variant="ghost" className="chat-model-trigger" id="chatModel" aria-haspopup="listbox" aria-expanded="false"
         aria-label={t('chrome.pickModel', 'Pick or configure the model for this conversation')}
         title={t('chrome.pickModel', 'Pick or configure the model for this conversation')}
         data-i18n-aria="chrome.pickModel" data-i18n-title="chrome.pickModel">
@@ -168,12 +200,12 @@ function ChatModelPicker() {
 function ConversationActions() {
   return (
     <>
-      <Button variant="ghost" className={`find-btn hidden ${CHROME_BUTTON}`} id="findBtn"
+      <Button variant="ghost" className="find-btn hidden" id="findBtn"
         data-i18n-title="find.title" data-i18n-aria="find.title"
         title={t('find.title', 'Find in conversation')} aria-label={t('find.title', 'Find in conversation')}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75" /><path d="m16 16 4.5 4.5" /></svg>
       </Button>
-      <Button variant="ghost" className={`share-btn hidden ${CHROME_BUTTON}`} id="shareBtn"
+      <Button variant="ghost" className="share-btn hidden" id="shareBtn"
         title={t('chrome.shareConversation', 'Share this conversation')} aria-label={t('chrome.shareConversation', 'Share this conversation')}
         data-i18n-title="chrome.shareConversation" data-i18n-aria="chrome.shareConversation">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M4.5 13v4.5a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3V13M12 15V3.5m-4 4 4-4 4 4" /></svg>
@@ -186,34 +218,53 @@ function ConversationActions() {
 /* ── Directory tabs · phone mode menu ──────────────────────────────────── */
 
 function PluginWorkspaceTabs() {
+  const [value, setValue] = useState('plugins');
+  const [visible, setVisible] = useState(() => document.body.classList.contains('plugins-active'));
+  useEffect(() => {
+    const sync = () => {
+      setValue(document.getElementById('promptTemplatesOverlay') ? 'skills' : 'plugins');
+      setVisible(document.body.classList.contains('plugins-active'));
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="top-mode-tabs plugin-workspace-tabs" id="pluginWorkspaceTabs" role="tablist" aria-label="Plugin workspace" data-i18n-aria="chrome.pluginWorkspace" hidden>
-      <Button variant="ghost" className={`plugin-workspace-tab active ${CHROME_BUTTON}`} id="pluginWorkspacePluginsTab" role="tab" aria-selected="true" data-i18n-key="plugins.pluginsTab">{t('plugins.pluginsTab', '插件')}</Button>
-      <Button variant="ghost" className={`plugin-workspace-tab ${CHROME_BUTTON}`} id="pluginWorkspaceSkillsTab" role="tab" aria-selected="false" data-i18n-key="plugins.skillsTab">{t('plugins.skillsTab', '技能')}</Button>
-    </div>
+    <Tabs value={value} onValueChange={setValue} className={`top-mode-tabs plugin-workspace-tabs gap-0 ${visible ? '' : 'hidden'} max-[768px]:hidden`} id="pluginWorkspaceTabs">
+      <TabsList className="plugin-workspace-tablist w-full" aria-label="Plugin workspace" data-i18n-aria="chrome.pluginWorkspace">
+        <TabsTrigger className="plugin-workspace-tab" id="pluginWorkspacePluginsTab" value="plugins" data-i18n-key="plugins.pluginsTab">{t('plugins.pluginsTab', '插件')}</TabsTrigger>
+        <TabsTrigger className="plugin-workspace-tab" id="pluginWorkspaceSkillsTab" value="skills" data-i18n-key="plugins.skillsTab">{t('plugins.skillsTab', '技能')}</TabsTrigger>
+      </TabsList>
+    </Tabs>
   );
 }
 
-function MobileMode() {
+function MobileMode({ mode }: { mode: AppMode }) {
   return (
     <div className="mobile-mode" id="mobileMode">
-      <Button variant="ghost" className={`mobile-mode-trigger ${CHROME_BUTTON}`} id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false">
-        <span className="mobile-mode-label" id="mobileModeLabel" data-i18n-key="tutor.modeChat">{t('tutor.modeChat', 'Chat')}</span>
-        <svg className="mobile-mode-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-      </Button>
-      <div className="mobile-mode-menu" id="mobileModeMenu" role="menu" aria-label="Session mode" data-i18n-aria="chrome.sessionMode">
-        <Button variant="ghost" className={`mobile-mode-item ${CHROME_BUTTON}`} data-mode="chat" role="menuitem">
-          <span className="mobile-mode-item-title" data-i18n-key="tutor.modeChat">{t('tutor.modeChat', 'Chat')}</span>
-          <span className="mobile-mode-item-desc" data-i18n-key="tutor.modeChatDesc">{t('tutor.modeChatDesc', 'Plain conversation, no scaffolding')}</span>
-        </Button>
-        <Button variant="ghost" className={`mobile-mode-item ${CHROME_BUTTON}`} data-mode="tutor" role="menuitem">
-          <span className="mobile-mode-item-title" data-i18n-key="tutor.modeTutor">{t('tutor.modeTutor', 'Tutor')}</span>
-          <span className="mobile-mode-item-desc" data-i18n-key="tutor.modeTutorDesc">{t('tutor.modeTutorDesc', 'AI asks, follows up, and tracks what you know')}</span>
-        </Button>
-        <Button variant="ghost" className={`mobile-mode-item ${CHROME_BUTTON}`} id="mobileConfigBtn" data-chat-config-trigger="" role="menuitem">
-          <span className="mobile-mode-item-title" data-i18n-key="topbar.modelSwitcher">{t('topbar.modelSwitcher', 'Model and reasoning')}</span>
-        </Button>
-      </div>
+      <DropdownMenu modal={false} onOpenChange={(open) => document.getElementById('mobileMode')?.setAttribute('data-open', String(open))}>
+        <DropdownMenuTrigger render={<Button variant="ghost" className="mobile-mode-trigger gap-1.5" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false">
+          <span className="mobile-mode-label" id="mobileModeLabel">{mode === 'tutor' ? t('tutor.modeTutor', 'Tutor') : 'Socrates'}</span>
+          <svg className="mobile-mode-caret size-4 text-muted-foreground transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </Button>} />
+        <DropdownMenuContent id="mobileModeMenu" align="center" side="bottom" sideOffset={6} className="mobile-mode-menu w-60 max-w-[calc(100vw-2rem)]" aria-label="Session mode" data-i18n-aria="chrome.sessionMode">
+          <DropdownMenuRadioGroup value={mode} onValueChange={requestAppMode}>
+            <DropdownMenuRadioItem value="chat" data-mode="chat" nativeButton className="mobile-mode-item h-auto min-h-9 w-full flex-col items-start gap-0.5 whitespace-normal" render={<Button variant="ghost" className="mobile-mode-item h-auto min-h-9 w-full flex-col items-start justify-center gap-0.5 whitespace-normal text-left" />}>
+              <span className="mobile-mode-item-title text-sm leading-tight font-medium text-foreground" data-i18n-key="tutor.modeChat">{t('tutor.modeChat', 'Chat')}</span>
+              <span className="mobile-mode-item-desc text-xs leading-snug text-muted-foreground" data-i18n-key="tutor.modeChatDesc">{t('tutor.modeChatDesc', 'Plain conversation, no scaffolding')}</span>
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="tutor" data-mode="tutor" nativeButton className="mobile-mode-item h-auto min-h-9 w-full flex-col items-start gap-0.5 whitespace-normal" render={<Button variant="ghost" className="mobile-mode-item h-auto min-h-9 w-full flex-col items-start justify-center gap-0.5 whitespace-normal text-left" />}>
+              <span className="mobile-mode-item-title text-sm leading-tight font-medium text-foreground" data-i18n-key="tutor.modeTutor">{t('tutor.modeTutor', 'Tutor')}</span>
+              <span className="mobile-mode-item-desc text-xs leading-snug text-muted-foreground" data-i18n-key="tutor.modeTutorDesc">{t('tutor.modeTutorDesc', 'AI asks, follows up, and tracks what you know')}</span>
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+          <DropdownMenuItem nativeButton id="mobileConfigBtn" className="mobile-mode-item w-full" render={<Button variant="ghost" className="mobile-mode-item w-full justify-start text-left" />}>
+            <span className="mobile-mode-item-title text-sm leading-tight font-medium text-foreground" data-i18n-key="topbar.modelSwitcher">{t('topbar.modelSwitcher', 'Model and reasoning')}</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
@@ -223,12 +274,14 @@ function MobileMode() {
    second `.top-bar` (which would become one opaque flex item and collapse
    the left/right groups to zero width). */
 export function TopBar() {
+  const mode = useAppMode();
+  const modeSwitchVisible = useModeSwitchVisible();
   return (
     <>
       <PluginWorkspaceTabs />
-      <MobileMode />
+      <MobileMode mode={mode} />
       <TopBarLeft />
-      <ModeSwitch />
+      <ModeSwitch mode={mode} visible={modeSwitchVisible} />
       <div className="top-bar-right">
         <MobileActions />
         <ChatModelPicker />

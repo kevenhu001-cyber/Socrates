@@ -21,7 +21,7 @@ export function PersonalizationToneSection({
         <h3>{label('助手语调风格', 'Tone & voice')}</h3>
         <p>{label('选择助手的说话风格。', 'Choose how Socrates speaks in a session.')}</p>
       </div>
-      <ToggleGroup variant="outline" className="tone-preset-options w-full" id="tonePresetOptions" value={[selectedTone]}
+      <ToggleGroup variant="outline" className="tone-preset-options grid w-full" id="tonePresetOptions" value={[selectedTone]}
         aria-label={label('助手语调风格', 'Tone & voice')}
         onValueChange={(values) => { if (values[0]) onSelect(values[0]); }}>
         {getAvailablePresets().map((preset) => {

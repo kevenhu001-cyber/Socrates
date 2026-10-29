@@ -19,37 +19,42 @@
 @import './tokens.css';
 
 /* Tier 2 — compatibility foundation (order-sensitive) */
-@import './legacy/index.css';
+@import './legacy/index.css' layer(compatibility);
 
 /* Tier 3 — canonical component layer */
 @import './foundations/fonts.css';
 @import './foundations/base.css';
 @import './foundations/shadcn.css';
-@import './foundations/collapse.css';
-@import './layout/app-shell.css';
-@import './components/sidebar.css';
-@import './components/composer.css';
-@import './components/chat.css';
-@import './components/intelligence-ui.css';
-@import './components/turn-evidence.css';
-@import './components/research-jobs.css';
-@import './components/input.css';
-@import './components/menu.css';
-@import './components/detail.css';
-@import './components/wave.css';
-@import './features/surfaces.css';
-@import './components/tool-card.css';
-@import './features/tool-surfaces.css';
-@import './features/thinking-activity.css';
+@import './foundations/collapse.css' layer(compatibility);
+@import './layout/app-shell.css' layer(compatibility);
+@import './components/sidebar.css' layer(compatibility);
+@import './components/composer.css' layer(compatibility);
+@import './components/chat.css' layer(compatibility);
+@import './components/intelligence-ui.css' layer(compatibility);
+@import './components/turn-evidence.css' layer(compatibility);
+@import './components/research-jobs.css' layer(compatibility);
+@import './components/input.css' layer(compatibility);
+@import './components/menu.css' layer(compatibility);
+@import './components/detail.css' layer(compatibility);
+@import './components/wave.css' layer(compatibility);
+@import './features/surfaces.css' layer(compatibility);
+@import './components/tool-card.css' layer(compatibility);
+@import './features/tool-surfaces.css' layer(compatibility);
+@import './features/thinking-activity.css' layer(compatibility);
 
 /* Compatibility visuals still consumed by unmigrated feature surfaces */
-@import './restore/index.css';
+@import './restore/index.css' layer(compatibility);
 
 /* Canonical desktop surface owners */
-@import './parity/index.css';
+@import './parity/index.css' layer(compatibility);
 
 /* Canonical cross-surface details and interaction states */
-@import './polish/index.css';
+@import './polish/index.css' layer(compatibility);
+
+/* Tailwind's component display utilities must not erase application-owned
+   visibility states on shadcn buttons. This bridge owns display state only;
+   component paint and semantic colors remain with shadcn + themes.css. */
+@import './polish/shadcn-state.css';
 
 /* Tier 4 — one final palette and legacy-token bridge */
 @import './themes.css';

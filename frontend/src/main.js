@@ -28,7 +28,7 @@ import { initCookieConsent } from './cookieConsent.js';
 import { installHomeSurface } from './ui/homeSurface.js';
 import { toggleComposerTools } from './ui/composerTools.js';
 import { toggleEffortPicker } from './ui/effortPicker.js';
-import { selectAppMode, toggleMobileModeMenu } from './ui/mobileModeSwitch.js';
+import './ui/mobileModeSwitch.js';
 import { openFindInSession } from './react/find-in-session/findInSession.actions.ts';
 import { initChatComposerReserve } from './ui/scroll.js';
 import { initKeyboardLift } from './ui/keyboard/index.ts';
@@ -160,8 +160,6 @@ bootstrapApp({
   sendMessage: window.handleSendClick,
   toggleComposerTools: toggleComposerTools,
   toggleEffort: toggleEffortPicker,
-  selectMode: selectAppMode,
-  toggleMobileMode: toggleMobileModeMenu,
   searchRecents: setRecentsSearch,
   switchTab: switchTab,
   toggleSidebarView: toggleSidebarView,

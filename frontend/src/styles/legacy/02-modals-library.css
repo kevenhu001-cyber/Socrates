@@ -1,3 +1,4 @@
+@layer compatibility {
 /* ==========================================================================
    02-modals-library.css — slice of the pre-modular base stylesheet (src/styles.css).
    Covers: shared modal chrome, shortcut/storage/slash-palette/prompt-template modals, session states, viz cards, library panel.
@@ -217,3 +218,5 @@
 .library-rename-input{width:100%;padding:2px 4px;border:0.5px solid hsl(var(--border-300)/.75);border-radius:4px;outline:none;background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(12px * var(--sidebar-font-scale));font-family:var(--font-sans);font-weight:var(--ui-font-weight-semibold)}
 .library-rename-input:focus{border-color:hsl(var(--accent-000)/.65);box-shadow:var(--ui-focus-shadow)}
 
+
+}

@@ -26,14 +26,14 @@ function ProjectsView({ projects, dispatch }: {
   }, [projects, query, scope]);
 
   const projectTabs = (
-    <ToggleGroup className="projects-filter-tabs w-full min-w-0" value={[scope]} aria-label={i18n('projects.filter', 'Project filter')}
+    <ToggleGroup className="projects-filter-tabs" value={[scope]} aria-label={i18n('projects.filter', 'Project filter')}
       onValueChange={(values) => {
         const nextScope = values[0];
         if (nextScope === 'all' || nextScope === 'owned' || nextScope === 'shared') setScope(nextScope);
       }}>
-      <ToggleGroupItem type="button" value="all" className="rounded-full text-muted-foreground aria-pressed:text-foreground">{i18n('projects.all', 'All')}</ToggleGroupItem>
-      <ToggleGroupItem type="button" value="owned" className="rounded-full text-muted-foreground aria-pressed:text-foreground">{i18n('projects.owned', 'Created by you')}</ToggleGroupItem>
-      <ToggleGroupItem type="button" value="shared" className="rounded-full text-muted-foreground aria-pressed:text-foreground">{i18n('projects.shared', 'Shared with you')}</ToggleGroupItem>
+      <ToggleGroupItem type="button" value="all">{i18n('projects.all', 'All')}</ToggleGroupItem>
+      <ToggleGroupItem type="button" value="owned">{i18n('projects.owned', 'Created by you')}</ToggleGroupItem>
+      <ToggleGroupItem type="button" value="shared">{i18n('projects.shared', 'Shared with you')}</ToggleGroupItem>
     </ToggleGroup>
   );
 

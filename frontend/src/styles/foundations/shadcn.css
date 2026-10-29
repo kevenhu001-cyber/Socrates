@@ -1,8 +1,8 @@
 /* Tailwind is opt-in: omit Preflight so retained HTML, editor content and
  * reference-pinned geometry keep their native contracts. Palette values live
  * only in themes.css, which remains the final stylesheet in the cascade. */
-@layer theme, base, components, utilities;
-@import 'tailwindcss/theme.css' layer(theme);
+@layer compatibility, theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme) theme(static);
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
 
 @source '../../react';
@@ -52,11 +52,12 @@
   --text-lg: var(--ui-font-size-lg);
   --text-xl: var(--ui-font-size-xl);
   --text-2xl: var(--ui-font-size-xxl);
-  --radius-sm: var(--ui-radius-sm);
-  --radius-md: var(--ui-radius-control);
-  --radius-lg: var(--ui-radius-lg);
-  --radius-xl: var(--ui-radius-xl);
-  --radius-2xl: var(--ui-radius-2xl);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
 }
 
 /* Upstream components assume Preflight's box model and border defaults.

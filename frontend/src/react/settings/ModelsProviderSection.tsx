@@ -27,7 +27,7 @@ export function ModelsProviderSection({
       <div className="settings-field">
         <div className="settings-label-row">
           <span className="settings-label">{i18n('settings.models', 'Models')}</span>
-          <Button variant="default" className="settings-btn-mini" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
+          <Button variant="default" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
             {i18n('settings.addProvider', '+ Add')}
           </Button>
         </div>

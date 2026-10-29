@@ -4,8 +4,9 @@
  * themes.css still closes the cascade as its own final <link> (sole palette
  * owner, imported exactly once and last). See critical-1.css for the
  * contract. */
-@import './polish/buttons.css';
-@import './polish/mobile-controls.css';
-@import './polish/mobile-shell.css';
-@import './polish/mobile-sidebar.css';
-@import './polish/mobile-directories.css';
+@import './polish/buttons.css' layer(compatibility);
+@import './polish/mobile-controls.css' layer(compatibility);
+@import './polish/mobile-shell.css' layer(compatibility);
+@import './polish/mobile-sidebar.css' layer(compatibility);
+@import './polish/mobile-directories.css' layer(compatibility);
+@import './polish/shadcn-state.css';

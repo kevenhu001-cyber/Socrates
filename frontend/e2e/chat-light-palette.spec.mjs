@@ -3,24 +3,19 @@
 // Pins the readability contract for the conversation surface:
 //   - user bubble must be a light card with dark text (the workbench's
 //     dark override used to leak into light mode);
-//   - the sidebar identity avatar is the brand disc (saturated teal) with
-//     legible initials, not a neutral grey placeholder;
+//   - the sidebar identity avatar uses the shadcn muted fallback and remains
+//     legible in both modes;
 //   - the in-session composer keeps a visible outline;
-//   - the send control is the action blue with a legible arrow, in both
-//     modes.
+//   - the send control uses shadcn's primary / primary-foreground roles.
 
 import { test, expect } from '@playwright/test';
 import { WORKBENCH_VIEWPORTS, prepareChatWorkbench } from './_chat-workbench.mjs';
+import { rgbChannels, sameRgb } from './_lib.mjs';
 
 const BASE_MESSAGES = [
   { clientId: 'fixture-user', role: 'user', rawText: '你好啊', html: '<p>你好啊</p>', type: 'user' },
   { clientId: 'fixture-assistant', role: 'assistant', rawText: 'Hello!', html: '<p>Hello!</p>', type: 'assistant' },
 ];
-
-function parseRgb(value) {
-  const channels = (value.match(/\d+(?:\.\d+)?/g) ?? []).slice(0, 3).map(Number);
-  return channels.length === 3 ? channels : null;
-}
 
 function luminance(rgb) {
   const [r, g, b] = rgb.map((channel) => {
@@ -49,11 +44,19 @@ async function snapshotPalette(page) {
         borderColor: computed.borderTopColor,
       };
     };
+    const tokens = getComputedStyle(document.documentElement);
     return {
       bubble: style('#msgList .msg.user .msg-body'),
-      avatar: style('#appShell .user-avatar'),
+      avatar: style('#appShell [data-slot="avatar-fallback"]'),
       composer: style('#composerInputWrap'),
       send: style('#composerPrimaryBtn'),
+      semantic: {
+        secondary: tokens.getPropertyValue('--secondary').trim(),
+        muted: tokens.getPropertyValue('--muted').trim(),
+        foreground: tokens.getPropertyValue('--foreground').trim(),
+        primary: tokens.getPropertyValue('--primary').trim(),
+        primaryForeground: tokens.getPropertyValue('--primary-foreground').trim(),
+      },
     };
   });
 }
@@ -72,39 +75,36 @@ test('light conversation surface stays readable and neutral', async ({ page }) =
   expect(palette.composer).not.toBeNull();
   expect(palette.send).not.toBeNull();
 
-  const bubbleBg = parseRgb(palette.bubble.background);
-  const bubbleFg = parseRgb(palette.bubble.color);
+  const bubbleBg = rgbChannels(palette.bubble.background);
+  const bubbleFg = rgbChannels(palette.bubble.color);
   expect(bubbleBg).not.toBeNull();
   expect(bubbleFg).not.toBeNull();
   // Light card on a white page, not a dark chip.
   expect(luminance(bubbleBg)).toBeGreaterThan(0.8);
   expect(contrast(bubbleFg, bubbleBg)).toBeGreaterThanOrEqual(4.5);
+  expect(sameRgb(palette.bubble.background, palette.semantic.secondary)).toBe(true);
 
-  // The identity avatar is the brand disc: the reference draws a saturated
-  // teal circle with light initials, and the system carries that as
-  // --ui-brand-accent. It must not be the ochre accent, and the initials
-  // have to stay legible on it (AA on the light page).
-  const avatarBg = parseRgb(palette.avatar.background);
-  const avatarFg = parseRgb(palette.avatar.color);
+  // AvatarFallback keeps shadcn's muted surface and uses the foreground role
+  // so the initials meet the text contrast threshold on neutral palettes.
+  const avatarBg = rgbChannels(palette.avatar.background);
+  const avatarFg = rgbChannels(palette.avatar.color);
   expect(avatarBg).not.toBeNull();
-  expect(Math.max(...avatarBg) - Math.min(...avatarBg)).toBeGreaterThan(40);
-  expect(palette.avatar.background).not.toBe('rgb(174, 116, 21)');
+  expect(sameRgb(palette.avatar.background, palette.semantic.muted)).toBe(true);
+  expect(sameRgb(palette.avatar.color, palette.semantic.foreground)).toBe(true);
   expect(contrast(avatarFg, avatarBg)).toBeGreaterThanOrEqual(4.5);
 
   // Composer hairline is actually painted in light mode.
   expect(parseFloat(palette.composer.borderWidth)).toBeGreaterThanOrEqual(1);
 
-  // The send control is the action blue with a light up-arrow. The arrow is
-  // a control glyph, so it is held to WCAG's 3:1 non-text contrast rather
-  // than to the 4.5:1 of body text.
-  const sendBg = parseRgb(palette.send.background);
-  const sendFg = parseRgb(palette.send.color);
-  expect(sendBg).not.toBeNull();
-  expect(sendBg[2] - sendBg[0]).toBeGreaterThan(120);
+  // The arrow is a control glyph, so retain the 3:1 non-text contrast floor.
+  const sendBg = rgbChannels(palette.send.background);
+  const sendFg = rgbChannels(palette.send.color);
+  expect(sameRgb(palette.send.background, palette.semantic.primary)).toBe(true);
+  expect(sameRgb(palette.send.color, palette.semantic.primaryForeground)).toBe(true);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 
-test('dark conversation surface keeps the action-blue send control', async ({ page }) => {
+test('dark conversation surface uses shadcn semantic component colors', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.addInitScript(() => {
     try { localStorage.setItem('socrates-theme', 'dark'); } catch (_) {}
@@ -113,18 +113,16 @@ test('dark conversation surface keeps the action-blue send control', async ({ pa
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
 
   const palette = await snapshotPalette(page);
-  const bubbleBg = parseRgb(palette.bubble.background);
-  const bubbleFg = parseRgb(palette.bubble.color);
+  const bubbleBg = rgbChannels(palette.bubble.background);
+  const bubbleFg = rgbChannels(palette.bubble.color);
   expect(luminance(bubbleBg)).toBeLessThan(0.2);
   expect(contrast(bubbleFg, bubbleBg)).toBeGreaterThanOrEqual(4.5);
+  expect(sameRgb(palette.bubble.background, palette.semantic.secondary)).toBe(true);
 
-  // The dark mode keeps the same action blue and the same light arrow: the
-  // send control does not flip with the mode, the way the baseline's
-  // monochrome send used to.
-  const sendBg = parseRgb(palette.send.background);
-  const sendFg = parseRgb(palette.send.color);
-  expect(sendBg).not.toBeNull();
-  expect(sendBg[2] - sendBg[0]).toBeGreaterThan(120);
+  const sendBg = rgbChannels(palette.send.background);
+  const sendFg = rgbChannels(palette.send.color);
+  expect(sameRgb(palette.send.background, palette.semantic.primary)).toBe(true);
+  expect(sameRgb(palette.send.color, palette.semantic.primaryForeground)).toBe(true);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 
@@ -166,11 +164,11 @@ test('mobile light conversation inverts header controls and the canvas fade', as
   expect(mobile.inputBar.backgroundImage).not.toContain('rgb(0, 0, 0) 24px');
 
   // Header controls are borderless dark glyphs on the page now.
-  const canvas = parseRgb(mobile.canvas);
-  const openFg = parseRgb(mobile.openBtn.color);
+  const canvas = rgbChannels(mobile.canvas);
+  const openFg = rgbChannels(mobile.openBtn.color);
   expect(contrast(openFg, canvas)).toBeGreaterThanOrEqual(4.5);
 
   // …and the icon-only actions are dark on the page.
-  expect(contrast(parseRgb(mobile.findBtn.color), canvas)).toBeGreaterThanOrEqual(4.5);
-  expect(contrast(parseRgb(mobile.shareBtn.color), canvas)).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(rgbChannels(mobile.findBtn.color), canvas)).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(rgbChannels(mobile.shareBtn.color), canvas)).toBeGreaterThanOrEqual(4.5);
 });

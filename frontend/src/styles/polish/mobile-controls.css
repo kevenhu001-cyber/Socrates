@@ -230,11 +230,7 @@
      selector; mobile-sidebar.css imports later, so the 13px never shipped —
      the phone drawer just carried two declared sizes for one label. */
   #appShell .sidebar-account-menu .user-plan { color: var(--ui-text-muted); }
-  /* The account-menu avatar shares --ui-avatar-bg with the sidebar identity
-     row (parity/sidebar.css), which paints its letter white. A dark letter
-     on that tint only reaches 3.1:1 in light mode, so it matches the
-     desktop rule instead of inheriting the page's text colour. */
-  #appShell .sidebar-account-menu .user-avatar { place-items: center; background: var(--ui-avatar-bg); color: var(--primary-foreground); }
+  /* Avatar fallback colors are provided by the shared shadcn Avatar. */
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
 }
 @media (max-width: 768px) {

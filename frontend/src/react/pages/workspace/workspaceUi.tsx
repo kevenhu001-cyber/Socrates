@@ -133,7 +133,7 @@ function WorkspacePageHeader({ title, description, query, onQuery, actionLabel, 
         {/* The legacy class stays: it is the geometry contract for the
             directory headers and the selector the projects e2e spec drives.
             The component owns the structure, the owner keeps the pixels. */}
-        <Button type="button" variant="default" className={'workspace-create-button' + (compactAction ? ' projects-create-button' : ' rounded-full')} onClick={onAction}>{compactAction ? null : <PlusIcon />}<span>{actionLabel}</span></Button>
+        <Button type="button" variant="default" size="lg" className={'workspace-create-button' + (compactAction ? ' projects-create-button' : '')} onClick={onAction}>{compactAction ? null : <PlusIcon />}<span>{actionLabel}</span></Button>
       </div>
     </div>
   );

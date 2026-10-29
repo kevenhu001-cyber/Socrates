@@ -55,11 +55,12 @@ test('search shortcut mirrors the composer toggle and returns keyboard focus', a
   await expect(page.locator('[data-home-action="write"]')).toBeFocused();
 });
 
-test('reduced motion stops the mode slider and tutor entrance', async ({ page }) => {
+test('reduced motion stops shadcn mode-tab transitions and tutor entrance', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.locator('#topModeTutor').click();
   await expect(page.locator('.home-tutor-starters')).toBeVisible();
-  expect(await page.locator('.top-mode-switch-thumb').evaluate(el => parseFloat(getComputedStyle(el).transitionDuration))).toBeLessThanOrEqual(0.001);
+  await expect(page.locator('.top-mode-switch-thumb')).toHaveCount(0);
+  expect(await page.locator('#topModeTutor').evaluate(el => parseFloat(getComputedStyle(el).transitionDuration))).toBeLessThanOrEqual(0.001);
   expect(await page.locator('.home-tutor-starters').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   await page.screenshot({ path: 'test-results/home-tutor-empty-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

@@ -98,10 +98,6 @@ body,
 }
 
 @media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn {
-  color: var(--cg-text-secondary);
-}
 }
 
 @media (max-width: 768px) {
@@ -116,31 +112,14 @@ body,
 
 #appShell .sidebar-nav-btn:hover,
 #appShell .sidebar-nav-btn:focus-visible {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
   outline: none;
 }
 }
 
 @media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn.active,
-#appShell .sidebar-nav-btn[aria-current="page"] {
-  color: var(--cg-text);
-  background: var(--cg-surface);
-}
-
-#appShell #navNew.sidebar-nav-btn {
-  color: var(--cg-text);
-  background: var(--cg-surface);
-}
 }
 
 @media (max-width: 768px) {
-
-#appShell #navNew.sidebar-nav-btn:hover {
-  background: var(--cg-surface-hover);
-}
 }
 
 @media (max-width: 768px) {
@@ -225,12 +204,6 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .user-avatar {
-  /* Default identity mark is neutral gray; the gold accent stays reserved
-     for interactive/active surfaces instead of every avatar. */
-  background: var(--cg-surface-hover);
-  color: var(--cg-text);
-}
 }
 
 @media (max-width: 768px) {
@@ -277,30 +250,12 @@ body,
 }
 
 @media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle {
-  padding: 7px 20px;
-  border-radius: var(--cg-radius-pill);
-  color: var(--cg-text-muted);
-  font-size: 14px;
-  font-weight: var(--ui-font-weight-semibold);
-}
 }
 
 @media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle:hover {
-  color: var(--cg-text);
-}
 }
 
 @media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle.active {
-  color: var(--cg-text);
-  background: var(--cg-surface-raised) !important;
-  box-shadow: none !important;
-}
 }
 
 #appShell .top-bar .toggle-sidebar {
@@ -913,11 +868,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
   #appShell .top-mode-tabs {
     min-width: 166px;
-  }
-
-  #appShell .top-mode-tabs .app-mode-toggle {
-    padding-inline: 10px;
-    font-size: 13px;
   }
 
   #appShell #mainInner,

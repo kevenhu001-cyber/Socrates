@@ -11,5 +11,5 @@
  * This slice: structural tokens + legacy foundation + sidebar compat.
  * Everything here styles the boot shell / auth gate / app chrome. */
 @import './tokens.css';
-@import './legacy/00-foundations.css';
-@import './legacy/01-sidebar.css';
+@import './legacy/00-foundations.css' layer(compatibility);
+@import './legacy/01-sidebar.css' layer(compatibility);

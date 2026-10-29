@@ -24,9 +24,6 @@
 
 
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn {
-  color: var(--foreground);
-}
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn svg { color: inherit; }
@@ -35,28 +32,15 @@
 #appShell .sidebar-nav-btn .nav-new-badge {
   margin-left: 4px;
   padding: 1px 6px 2px;
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-pill);
-  color: var(--ui-text-tertiary);
-  font-size: 10px;
-  line-height: 16px;
 }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn:hover,
-#appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--foreground); }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn.active { font-weight: var(--ui-font-weight-regular); }
 }
 /* The landing surface IS the new-chat surface — keep its row raised like
    the reference drawer does, until another surface takes over. */
 @media (max-width: 768px) {
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-active):not(.exam-active)
-  #appShell .sidebar-nav-btn[data-nav="new"] {
-  background: var(--ui-bg-raised);
-  color: var(--foreground);
-}
 }
 @media (max-width: 768px) {
 #appShell .nav-kbd { display: none; }

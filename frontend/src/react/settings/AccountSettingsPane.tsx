@@ -1,6 +1,7 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
+import { Avatar, AvatarFallback } from '../ui/shadcn/avatar';
 import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
 import type { SettingsPaneProps } from './settings.types';
 
@@ -13,7 +14,9 @@ export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {
       <h2>{label('账户', 'Account')}</h2>
       <section className="settings-section">
         <div className="settings-account-card">
-          <span className="user-avatar settings-account-avatar">{profile.user.initials || '?'}</span>
+          <Avatar size="lg" className="user-avatar settings-account-avatar" aria-hidden="true">
+            <AvatarFallback className="text-foreground">{profile.user.initials || '?'}</AvatarFallback>
+          </Avatar>
           <div className="settings-account-id">
             <ShadcnInput
               className="settings-account-name"

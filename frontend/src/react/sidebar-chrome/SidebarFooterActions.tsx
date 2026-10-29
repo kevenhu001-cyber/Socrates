@@ -1,4 +1,5 @@
 import { Button } from '../ui/shadcn/button';
+import { Switch } from '../ui/shadcn/switch';
 import { NativeControl } from '../ui/NativeControl';
 import { i18n } from '../legacy/gateway.ts';
 import { useState } from 'react';
@@ -16,7 +17,11 @@ import {
   getThemeStyle,
   setBackgroundDark,
   setBackgroundLight,
+  toggleGrid,
 } from '../../displayPrefs.js';
+
+const SEGMENT_GROUP = 'display-prefs-segs inline-flex w-full items-center justify-center gap-1 rounded-lg bg-muted p-[3px] text-muted-foreground';
+const SEGMENT_OPTION = 'display-prefs-seg flex-1 min-w-0 text-foreground/60 aria-checked:bg-background aria-checked:text-foreground aria-checked:shadow-sm';
 
 function t(key: string, fallback: string): string {
   return i18n(key, fallback);
@@ -40,10 +45,10 @@ function DisplayPreferences() {
 
   return <div className="display-prefs-popover hidden" id="displayPrefsPopover">
     <div className="display-prefs-row">
-      <div className="display-prefs-label"><span data-i18n-key="display.theme">{t('display.theme', 'Theme')}</span></div>
-      <div className="display-prefs-segs display-theme-segs" id="displayThemeSegs" role="radiogroup" data-i18n-aria="display.theme" aria-label={t('display.theme', 'Theme')}>
+      <div className="display-prefs-label text-sm font-medium"><span data-i18n-key="display.theme">{t('display.theme', 'Theme')}</span></div>
+      <div className={`${SEGMENT_GROUP} display-theme-segs`} id="displayThemeSegs" role="radiogroup" data-i18n-aria="display.theme" aria-label={t('display.theme', 'Theme')}>
         {(['system', 'light', 'dark'] as const).map((option) => (
-          <Button key={option} variant="ghost" size="xs" type="button" className={`display-prefs-seg${theme === option ? ' on' : ''}`}
+          <Button key={option} variant="ghost" size="xs" type="button" className={SEGMENT_OPTION}
             data-theme-option={option} role="radio" aria-checked={theme === option}
             data-i18n-key={`display.theme${option[0].toUpperCase()}${option.slice(1)}`}>
             {t(`display.theme${option[0].toUpperCase()}${option.slice(1)}`, option[0].toUpperCase() + option.slice(1))}
@@ -53,12 +58,12 @@ function DisplayPreferences() {
     </div>
 
     <div className="display-prefs-row">
-      <div className="display-prefs-label"><span data-i18n-key="display.themeStyle">{t('display.themeStyle', 'Theme style')}</span></div>
-      <div className="display-prefs-segs display-theme-style-segs" id="displayThemeStyleSegs" role="radiogroup" data-i18n-aria="display.themeStyle" aria-label={t('display.themeStyle', 'Theme style')}>
+      <div className="display-prefs-label text-sm font-medium"><span data-i18n-key="display.themeStyle">{t('display.themeStyle', 'Theme style')}</span></div>
+      <div className={`${SEGMENT_GROUP} display-theme-style-segs`} id="displayThemeStyleSegs" role="radiogroup" data-i18n-aria="display.themeStyle" aria-label={t('display.themeStyle', 'Theme style')}>
         {(['socrates', 'philosophy'] as const).map((option) => {
           const key = option === 'socrates' ? 'display.styleModern' : 'display.stylePhilosophy';
-          const fallback = option === 'socrates' ? 'Modern' : 'Philosophy';
-          return <Button key={option} variant="ghost" size="xs" type="button" className={`display-prefs-seg${themeStyle === option ? ' on' : ''}`}
+          const fallback = option === 'socrates' ? 'Neutral' : 'Stone';
+          return <Button key={option} variant="ghost" size="xs" type="button" className={SEGMENT_OPTION}
             data-theme-style-option={option} role="radio" aria-checked={themeStyle === option} data-i18n-key={key}>
             {t(key, fallback)}
           </Button>;
@@ -67,22 +72,22 @@ function DisplayPreferences() {
     </div>
 
     <div className="display-prefs-row">
-      <div className="display-prefs-label"><span data-i18n-key="sidebar.textSize">{t('sidebar.textSize', 'Text size')}</span></div>
-      <div className="display-prefs-segs" id="displayPrefsFontSegs" role="radiogroup" data-i18n-aria="sidebar.textSize" aria-label={t('sidebar.textSize', 'Text size')}>
+      <div className="display-prefs-label text-sm font-medium"><span data-i18n-key="sidebar.textSize">{t('sidebar.textSize', 'Text size')}</span></div>
+      <div className={SEGMENT_GROUP} id="displayPrefsFontSegs" role="radiogroup" data-i18n-aria="sidebar.textSize" aria-label={t('sidebar.textSize', 'Text size')}>
         {DISPLAY_FONT_STEPS.map((step, index) => (
-          <Button key={step} variant="ghost" size="xs" type="button" className={`display-prefs-seg${display.font === step ? ' on' : ''}`}
+          <Button key={step} variant="ghost" size="xs" type="button" className={SEGMENT_OPTION}
             role="radio" aria-checked={display.font === step} data-font={step}>{FONT_LABELS[index]}</Button>
         ))}
       </div>
     </div>
 
     <div className="display-prefs-row">
-      <div className="display-prefs-label"><span data-i18n-key="sidebar.contentWidth">{t('sidebar.contentWidth', 'Content width')}</span></div>
-      <div className="display-prefs-segs" id="displayPrefsWidthSegs" role="radiogroup" data-i18n-aria="sidebar.contentWidth" aria-label={t('sidebar.contentWidth', 'Content width')}>
+      <div className="display-prefs-label text-sm font-medium"><span data-i18n-key="sidebar.contentWidth">{t('sidebar.contentWidth', 'Content width')}</span></div>
+      <div className={SEGMENT_GROUP} id="displayPrefsWidthSegs" role="radiogroup" data-i18n-aria="sidebar.contentWidth" aria-label={t('sidebar.contentWidth', 'Content width')}>
         {DISPLAY_WIDTH_STEPS.map((step, index) => {
           const keys = ['sidebar.narrow', 'sidebar.medium', 'sidebar.wide', 'sidebar.fullWidth'];
           const fallbacks = ['Narrow', 'Medium', 'Wide', 'Full width'];
-          return <Button key={step} variant="ghost" size="xs" type="button" className={`display-prefs-seg${display.width === step ? ' on' : ''}`}
+          return <Button key={step} variant="ghost" size="xs" type="button" className={SEGMENT_OPTION}
             role="radio" aria-checked={display.width === step} data-width={step}
             title={t(keys[index], fallbacks[index])} data-i18n-title={keys[index]}>{WIDTH_LABELS[index]}</Button>;
         })}
@@ -90,18 +95,19 @@ function DisplayPreferences() {
     </div>
 
     <div className="display-prefs-row display-prefs-toggle-row">
-      <div className="display-prefs-label"><span data-i18n-key="chrome.backgroundGrid">{t('chrome.backgroundGrid', 'Background grid')}</span></div>
-      <Button variant="ghost" size="icon-xs" type="button" className={`grid-toggle${display.showGrid !== false ? ' on' : ''}`}
-        id="gridToggle" role="switch" aria-checked={display.showGrid !== false}
+      <div className="display-prefs-label text-sm font-medium"><span data-i18n-key="chrome.backgroundGrid">{t('chrome.backgroundGrid', 'Background grid')}</span></div>
+      <Switch className="grid-toggle" id="gridToggle" checked={display.showGrid !== false}
+        onCheckedChange={(checked) => {
+          if (checked !== (displayPrefs.showGrid !== false)) toggleGrid();
+          setDisplay({ ...displayPrefs });
+        }}
         title={t('chrome.toggleBackgroundGrid', 'Toggle background grid')}
         aria-label={t('chrome.toggleBackgroundGrid', 'Toggle background grid')}
-        data-i18n-title="chrome.toggleBackgroundGrid" data-i18n-aria="chrome.toggleBackgroundGrid">
-        <span className="toggle-knob" />
-      </Button>
+        data-i18n-title="chrome.toggleBackgroundGrid" data-i18n-aria="chrome.toggleBackgroundGrid" />
     </div>
 
     <div className="display-prefs-row">
-      <div className="display-prefs-label"><span data-i18n-key="chrome.darkModeBg">{t('chrome.darkModeBg', 'Dark mode BG')}</span></div>
+      <div className="display-prefs-label text-sm font-medium"><span data-i18n-key="chrome.darkModeBg">{t('chrome.darkModeBg', 'Dark mode BG')}</span></div>
       <div className="display-prefs-bg-picker">
         <NativeControl type="color" id="displayPrefsBgDark" value={display.darkBg || DEFAULT_DARK_PICKER}
           onChange={(event) => apply(() => setBackgroundDark(event.currentTarget.value))}
@@ -112,7 +118,7 @@ function DisplayPreferences() {
     </div>
 
     <div className="display-prefs-row">
-      <div className="display-prefs-label"><span data-i18n-key="chrome.lightModeBg">{t('chrome.lightModeBg', 'Light mode BG')}</span></div>
+      <div className="display-prefs-label text-sm font-medium"><span data-i18n-key="chrome.lightModeBg">{t('chrome.lightModeBg', 'Light mode BG')}</span></div>
       <div className="display-prefs-bg-picker">
         <NativeControl type="color" id="displayPrefsBgLight" value={display.lightBg || DEFAULT_LIGHT_PICKER}
           onChange={(event) => apply(() => setBackgroundLight(event.currentTarget.value))}

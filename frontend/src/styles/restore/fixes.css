@@ -196,13 +196,6 @@
     padding: 2px;
   }
 
-  #appShell#appShell .top-mode-tabs .app-mode-toggle {
-    flex: 1 1 50%;
-    min-width: 0;
-    height: 26px;
-    min-height: 26px;
-  }
-
   #appShell#appShell#appShell #findBtn,
 #appShell#appShell#appShell #shareBtn {
     width: 44px;
@@ -330,55 +323,15 @@
    on the light rail) that also answers hover. The body:not() prefix mirrors
    the home-state rule in ref-baseline.css so this wins that tie. */
 @media (max-width: 768px) {
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn {
-  background: rgb(255 255 255 / 10%) !important;
-}
-#appShell#appShell#appShell #navNew.sidebar-nav-btn {
-  background: rgb(255 255 255 / 10%) !important;
-}
 }
 
 @media (max-width: 768px) {
-
-[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn {
-  background: rgb(0 0 0 / 5%) !important;
-}
-
-[data-mode="light"] #appShell#appShell#appShell #navNew.sidebar-nav-btn {
-  background: rgb(0 0 0 / 5%) !important;
-}
 }
 
 @media (max-width: 768px) {
-
-#appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
-#appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn:hover,
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn:focus-visible {
-  background: rgb(255 255 255 / 10%) !important;
-}
 }
 
 @media (max-width: 768px) {
-
-[data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
-[data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
-[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn:hover,
-[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn:focus-visible {
-  background: rgb(0 0 0 / 5%) !important;
-}
 }
 
 /* Footer disclaimer — the reference paints the legal line at #afafaf on the

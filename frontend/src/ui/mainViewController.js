@@ -25,7 +25,7 @@ function setHidden(doc, ids, hidden) {
 function resetShellState(doc) {
   doc.body.classList.remove('workspace-active', 'plugins-active', 'library-active', 'projects-active', 'scheduled-active', 'admin-active', 'exam-active');
   const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
-  if (pluginTabs) pluginTabs.hidden = true;
+  if (pluginTabs) pluginTabs.classList.add('hidden');
   doc.querySelectorAll("[data-exam-only='true']").forEach((element) => element.classList.add('hidden'));
 }
 
@@ -84,7 +84,7 @@ export function activateMainView(viewId, doc) {
     currentDocument.body.classList.toggle('scheduled-active', viewId === 'scheduledPanel');
     currentDocument.body.classList.toggle('admin-active', viewId === 'adminPanel');
     const pluginTabs = currentDocument.getElementById('pluginWorkspaceTabs');
-    if (pluginTabs) pluginTabs.hidden = viewId !== 'pluginsPanel';
+    if (pluginTabs) pluginTabs.classList.toggle('hidden', viewId !== 'pluginsPanel');
   } else if (viewId === 'examView') {
     currentDocument.body.classList.add('exam-active');
   }

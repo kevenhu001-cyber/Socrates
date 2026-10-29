@@ -9,9 +9,8 @@
  *      override can never reach — and a half step like 450 is worse than
  *      inert, because the browser silently snaps it to a real face while
  *      the stylesheet still claims a weight that does not exist;
- *   2. the dark canvas drops the two weights that carry most of the
- *      interface one step: medium 500 → 450, bold 700 → 600. Regular and
- *      semibold stay put — they anchor the scale;
+ *   2. light and dark themes keep the official component weights stable:
+ *      medium 500 and bold 700; color mode does not change the type recipe;
  *   3. a weight token that no longer exists would resolve to nothing and
  *      silently fall back to the browser default, so every reference has
  *      to name a token that is defined.
@@ -35,9 +34,9 @@ const UPDATE = process.argv.includes('--update');
 /* The weights the product is allowed to name. */
 export const REQUIRED_TOKENS = ['regular', 'medium', 'semibold', 'bold'];
 
-/* The dark-mode step-down. */
-export const DARK_MEDIUM = 450;
-export const DARK_BOLD = 600;
+/* Official shadcn component weights are the same in both color modes. */
+export const DARK_MEDIUM = 500;
+export const DARK_BOLD = 700;
 
 export function stripComments(text) {
   /* Comments are blanked rather than removed, so the line numbers the
@@ -220,12 +219,12 @@ export function checkTokenLadder(tokensCss, themesCss) {
   const medium = darkVars.get('--ui-font-weight-medium');
   const bold = darkVars.get('--ui-font-weight-bold');
   if (medium === undefined) {
-    failures.push('themes.css: [data-mode="dark"] does not step --ui-font-weight-medium down');
+    failures.push('themes.css: [data-mode="dark"] does not declare the official --ui-font-weight-medium');
   } else if (Number.parseFloat(medium) !== DARK_MEDIUM) {
     failures.push(`themes.css: dark --ui-font-weight-medium is ${medium}, expected ${DARK_MEDIUM}`);
   }
   if (bold === undefined) {
-    failures.push('themes.css: [data-mode="dark"] does not step --ui-font-weight-bold down');
+    failures.push('themes.css: [data-mode="dark"] does not declare the official --ui-font-weight-bold');
   } else if (Number.parseFloat(bold) !== DARK_BOLD) {
     failures.push(`themes.css: dark --ui-font-weight-bold is ${bold}, expected ${DARK_BOLD}`);
   }

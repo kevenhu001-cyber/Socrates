@@ -25,6 +25,9 @@ for (const theme of ['light', 'dark']) {
     ] });
     const tabs = page.locator('#topModeSwitch');
     await expect(tabs).toBeVisible();
+    await expect(tabs).toHaveAttribute('data-slot', 'tabs');
+    await expect(tabs.locator('[data-slot="tabs-list"]')).toBeVisible();
+    await expect(page.locator('#topModeTutor')).toHaveAttribute('data-slot', 'tabs-trigger');
     const rect = await tabs.boundingBox();
     expect(Math.abs(rect.x + rect.width / 2 - 195)).toBeLessThanOrEqual(1);
     await expect(page.locator('#mobileMode')).toBeHidden();

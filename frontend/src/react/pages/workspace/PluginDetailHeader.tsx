@@ -30,7 +30,7 @@ export function PluginDetailHeader({
   return (
     <>
       <div className="plugin-detail-nav">
-        <Button type="button" variant="ghost" size="sm" className="plugin-detail-back-btn -ml-2 text-sm text-muted-foreground" onClick={onBack} aria-label={i18n('plugins.detail.back', 'Back to plugins')}>
+        <Button type="button" variant="ghost" size="sm" className="plugin-detail-back-btn -ml-2" onClick={onBack} aria-label={i18n('plugins.detail.back', 'Back to plugins')}>
           <BackIcon />
           <span>{i18n('plugins.detail.backLabel', 'Plugins')}</span>
         </Button>
@@ -56,11 +56,11 @@ export function PluginDetailHeader({
       <div className="plugin-detail-cta-bar">
         {isConnected ? (
           <div className="plugin-detail-cta-group">
-            <Button type="button" variant="default" size="lg" className="plugin-detail-btn-primary min-w-0 flex-1 rounded-full" onClick={onUseInChat}>{i18n('plugins.detail.useInChat', 'Use in chat')}</Button>
-            <Button type="button" variant="outline" size="lg" className="plugin-detail-btn-secondary shrink-0 rounded-full" onClick={onManage}>{i18n('plugins.detail.manage', 'Manage')}</Button>
+            <Button type="button" variant="default" size="lg" className="plugin-detail-btn-primary min-w-0 flex-1" onClick={onUseInChat}>{i18n('plugins.detail.useInChat', 'Use in chat')}</Button>
+            <Button type="button" variant="outline" size="lg" className="plugin-detail-btn-secondary shrink-0" onClick={onManage}>{i18n('plugins.detail.manage', 'Manage')}</Button>
           </div>
         ) : (
-          <Button type="button" variant="default" size="lg" className="plugin-detail-btn-primary w-full rounded-full" disabled={!connectable} onClick={onConnect}>
+          <Button type="button" variant="default" size="lg" className="plugin-detail-btn-primary w-full" disabled={!connectable} onClick={onConnect}>
             {connectable ? i18n('plugins.detail.connect', 'Install & connect') : i18n('plugins.detail.unavailable', 'Unavailable')}
           </Button>
         )}

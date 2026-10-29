@@ -75,10 +75,9 @@ function ensureSessionShape(s?: Record<string, unknown> | null): Record<string, 
 }
 
 function syncAppModeUI(): void {
-  /* The top-bar Chat/Tutor pill (#modeSegmentedTop / .app-mode-toggle) was
-     removed, so there is no segmented indicator to drive here. Mode state is
-     mirrored onto <body data-app-mode> below; #mobileMode (narrow viewports)
-     and the tutor mode banner own their own per-mode UI. */
+  /* Desktop Tabs and the mobile DropdownMenu both read the mirrored body mode.
+     Their React owner updates selected state from socrates:mobile-mode-sync;
+     the tutor banner and legacy visibility rules keep using data-app-mode. */
   try { localStorage.setItem("socrates-appmode", appMode); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI'); }
   /* Mirror appMode to body[data-app-mode] so the CSS rule
      body[data-app-mode="chat"] .tutor-only{display:none !important}

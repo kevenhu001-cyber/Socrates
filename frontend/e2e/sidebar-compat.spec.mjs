@@ -4,12 +4,8 @@
 // state are held by typed stores and have no published snapshot aliases.
 
 import { test, expect } from '@playwright/test';
-import { ACTIVE_CLASS, gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
-
-/* `active` is the shell's selected-state marker, not the primitive's press
-   variant (`active:translate-y-0`), so match the class as a whole token. */
-const CHIP_ACTIVE = ACTIVE_CLASS;
 
 test('Sidebar React mode hydrates #sidebarNav and #recentsFilterChips', async ({ page }) => {
   await mockAuthedApp(page);
@@ -41,9 +37,8 @@ test('Sidebar React nav buttons navigate and reflect active state', async ({ pag
   await page.locator('#navPlugins').click();
   await expect(page).toHaveURL(/\/plugins$/);
 
-  // The Plugins button should now have the .active class (React re-renders).
+  // The shadcn nav button exposes the current destination semantically.
   const pluginsBtn = page.locator('#navPlugins');
-  await expect(pluginsBtn).toHaveClass(ACTIVE_CLASS);
   await expect(pluginsBtn).toHaveAttribute('aria-current', 'page');
 });
 
@@ -67,14 +62,14 @@ test('typed recents filter updates while the compact drawer hides chips', async 
   // React should always render the "All" chip first.
   const allChip = page.locator('#recentsFilterChips .recents-filter-chip-btn[data-filter="all"]').first();
   await expect(allChip).toBeAttached();
-  await expect(allChip).not.toHaveClass(CHIP_ACTIVE);
+  await expect(allChip).not.toHaveAttribute('aria-pressed', 'true');
 
   await expect(allChip).toBeHidden();
   // Exercise the mounted control without making it visible in the drawer.
   await allChip.evaluate((button) => button.click());
   const filterAfter = await page.evaluate(() => localStorage.getItem('socrates-recents-filter'));
   expect(filterAfter).toBeNull();
-  await expect(allChip).toHaveClass(CHIP_ACTIVE);
+  await expect(allChip).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('React recents chips refresh after project and session caches change', async ({ page }) => {

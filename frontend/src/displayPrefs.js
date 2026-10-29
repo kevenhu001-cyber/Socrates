@@ -85,14 +85,12 @@ export function syncThemeUI() {
   var options = document.querySelectorAll("[data-theme-option]");
   options.forEach(function (option) {
     var active = option.getAttribute("data-theme-option") === preference;
-    option.classList.toggle("on", active);
     option.setAttribute("aria-checked", active ? "true" : "false");
   });
   var currentStyle = html.getAttribute("data-theme") || getThemeStyle();
   var styleOptions = document.querySelectorAll("[data-theme-style-option]");
   styleOptions.forEach(function (option) {
     var active = option.getAttribute("data-theme-style-option") === currentStyle;
-    option.classList.toggle("on", active);
     option.setAttribute("aria-checked", active ? "true" : "false");
   });
   /* P_display-prefs-no-dup — the theme row is a radiogroup, so the checked
@@ -240,41 +238,12 @@ export function syncDisplayPrefsUI() {
   var fWrap = document.getElementById("displayPrefsFontSegs");
   if (fWrap) Array.from(fWrap.children).forEach(function (b) {
     var active = parseFloat(b.dataset.font) === displayPrefs.font;
-    b.classList.toggle("on", active);
     b.setAttribute("aria-checked", active ? "true" : "false");
   });
   var wWrap = document.getElementById("displayPrefsWidthSegs");
   if (wWrap) Array.from(wWrap.children).forEach(function (b) {
     var active = parseFloat(b.dataset.width) === displayPrefs.width;
-    b.classList.toggle("on", active);
     b.setAttribute("aria-checked", active ? "true" : "false");
-  });
-  /* Drive the sliding ::before indicator on each segs wrapper.
-     After toggling .on, the active button's offsetLeft/offsetWidth
-     reflects its new layout position — we copy those to CSS custom
-     properties so the indicator animates between segments instead
-     of snapping. Uses rAF on the first sync so the indicator lands
-     at the correct position before the popover reveals, avoiding a
-     flash from (0,0) to the real coordinates. */
-  var sWrap = document.getElementById("displayThemeStyleSegs");
-  var tWrap = document.getElementById("displayThemeSegs");
-  [fWrap, wWrap, sWrap, tWrap].forEach(function (wrap) {
-    if (!wrap) return;
-    var onBtn = wrap.querySelector(".display-prefs-seg.on");
-    if (!onBtn) return;
-    /* If we already have the seg vars set, the transition will
-       animate; otherwise wait one frame so initial layout is in
-       place (avoids a 0,0 flash on first reveal). */
-    var hasVars = wrap.style.getPropertyValue("--seg-x") && wrap.style.getPropertyValue("--seg-w");
-    var apply = function () {
-      var x = onBtn.offsetLeft;
-      var w = onBtn.offsetWidth;
-      if (w === 0) return;
-      wrap.style.setProperty("--seg-x", x + "px");
-      wrap.style.setProperty("--seg-w", w + "px");
-    };
-    if (!hasVars) requestAnimationFrame(apply);
-    else apply();
   });
   var darkInput = document.getElementById("displayPrefsBgDark");
   if (darkInput) darkInput.value = displayPrefs.darkBg || DEFAULT_DARK_PICKER;
@@ -283,7 +252,6 @@ export function syncDisplayPrefsUI() {
   var gt = document.getElementById("gridToggle");
   if (gt) {
     var gridOn = displayPrefs.showGrid !== false;
-    gt.classList.toggle("on", gridOn);
     gt.setAttribute("aria-checked", gridOn ? "true" : "false");
   }
 }
@@ -371,7 +339,12 @@ export function mountDisplayPrefsListeners(){
     if (font) { setDisplayFont(parseFloat(font.dataset.font)); return; }
     var width = target.closest("#displayPrefsWidthSegs [data-width]");
     if (width) { setDisplayWidth(parseFloat(width.dataset.width)); return; }
-    if (target.closest("#gridToggle")) { event.preventDefault(); toggleGrid(); return; }
+    if (target.closest("#gridToggle")) {
+      /* The React shadcn Switch owns its checked state and persistence. Keep
+         this bridge only for any retained control that may still use the id. */
+      if (target.closest('#gridToggle[data-slot="switch"]')) return;
+      event.preventDefault(); toggleGrid(); return;
+    }
     if (target.closest("#displayPrefsBgDarkReset")) { event.preventDefault(); resetBackgroundDark(); return; }
     if (target.closest("#displayPrefsBgLightReset")) { event.preventDefault(); resetBackgroundLight(); }
   }

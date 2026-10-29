@@ -122,19 +122,33 @@ line-height 28；折叠 36×36 / padding 0 / 居中；移动 260×48 / grid / li
  legacy 运行时在这三个节点存在之前就把模型名、字形与模式标签写进去了，
  首次 React 渲染会覆盖掉。
 
-### 与计划的两处有意偏差
+### P1/P2 原始实现时与计划的两处有意偏差
 
 1. **不用 `ToggleGroup`。** `toggle-group.tsx` / `toggle.tsx` 都 import `@base-ui/react`，
    静态引入会把该运行时拉进 entry chunk；且分段控件的选中态由产品自己的滑动 thumb 绘制，
    不是每个 option 的背景。改用两个 `Button` + `data-active` 轨道。
-2. **不用 `Tooltip` / `DropdownMenu` 包裹顶栏控件。** `#topModelSwitcher` 已有的
-   chat-configuration 弹层（`data-chat-config-trigger`）与 find/share 的直接动作已是既有契约，
-   套一层 base-ui 浮层只会增加 entry chunk 成本。
+2. **模型配置控件继续使用既有弹层。** `#topModelSwitcher` 已有的 chat-configuration
+   弹层（`data-chat-config-trigger`）与 find/share 的直接动作是既有契约；不再给它们套一层
+   DropdownMenu。手机端模式选择在 2026-10-29 改用 shadcn `DropdownMenu`。
 
-### 未完成项
+### P3–P5 组件视觉迁移（2026-10-29）
 
-- `performance-loading.spec.mjs` 的 `staticJsGzipBytes` 实测 **361,688 B**，上限 360,000（超
-  1,688 B / 0.47%）。顶栏根已改为动态导入（`specs.tsx`）以回收大部分体积，仍差一点；
-  需要在 P3 之前把 entry chunk 压回预算内，或单独评估该阈值。
-- P3（转录行 / 工具条）、P4（composer chrome）、P5（CSS 清理与 ratchet 收缩）尚未开始；
-  `parity/topbar.css` 与 `parity/sidebar.css` 仍各自持有其几何，属 P5 的删除范围。
+- shadcn Button/Badge/Card/Switch/Tabs/DropdownMenu variants 承接侧栏、顶栏、工作区、设置、
+  转录工具条和 composer 工具的控件状态与表面；冲突的旧按钮、选中态、轨道和焦点皮肤已删除。
+- `themes.css` 使用官方 Neutral 与 Stone 语义色阶；既有 `--ui-*` / HSL 变量只作为保留
+  HTML 的桥接。输入框明确保留原有尺寸、组件配方和焦点环。
+- P3 的消息工具条与操作按钮、P4 的 composer 工具/发送控件已迁移。P5 删除迁移区域的重复
+  视觉规则并收缩 surface ladder 基线；布局几何仍按本 ADR 由 parity surface owners 管理。
+- 桌面模式切换使用 shadcn `Tabs`，手机模式切换使用 shadcn `DropdownMenu`。模式请求仍通过
+  既有确认/切换流程；插件工作区标签也由 `Tabs` 持有状态。
+- 顶栏模式 Tabs 的路由可见性由 React 根据 body 路由状态控制。旧兼容层隐藏规则位于较低
+  cascade layer，会被组件 utilities 层的 `inline-flex` 覆盖；把可见性放回组件状态也消除了
+  插件页上两个分段控件重叠的问题。
+- 最新构建 entry graph：静态 JS gzip **345,233 B**（360,000 B 预算内），链接 CSS gzip
+  **171,332 B**，HTML gzip **4,269 B**；总计 **520,834 B**（588,000 B 总上限内）。
+
+### 仍保留的后续项
+
+- 完整 shell 几何所有权迁移仍由 ADR 0024 规定的 surface owner 负责；这次迁移清除了旧控件
+  的视觉皮肤，没有把测量过的布局间距、尺寸和移动端密度移进 utilities。
+- `cn` 仍是 shadcn 源使用的运行时依赖；独立的供应链复审尚未记录。

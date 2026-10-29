@@ -12,7 +12,6 @@ var workspaceCache = { connectors: [] };
 var CONNECTOR_RETURN_CONTEXT_KEY = "socrates-connector-return-v1";
 var CONNECTOR_RETURN_CONTEXT_TTL = 10 * 60 * 1000;
 
-function byId(id) { return document.getElementById(id); }
 function esc(value) { return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 function api(path, options) { return window.apiFetch(path, options); }
 
@@ -132,24 +131,6 @@ function bindPluginWorkspaceTabs() {
   if (_pluginWorkspaceTabsBound) return;
   _pluginWorkspaceTabsBound = true;
 
-  var lastSkillsOpen = null;
-  function syncSelection() {
-    var pluginsTab = byId("pluginWorkspacePluginsTab");
-    var skillsTab = byId("pluginWorkspaceSkillsTab");
-    if (!pluginsTab || !skillsTab) return;
-    var skillsOpen = !!document.getElementById("promptTemplatesOverlay");
-    /* P_nav-observer-cheap — the observer below fires for every DOM change
-       anywhere in the document (each streamed token, each history row).
-       Only touch the tabs when the answer actually changed; rewriting the
-       same classes/attributes on every frame kept restyling them. */
-    if (skillsOpen === lastSkillsOpen) return;
-    lastSkillsOpen = skillsOpen;
-    pluginsTab.classList.toggle("active", !skillsOpen);
-    skillsTab.classList.toggle("active", skillsOpen);
-    pluginsTab.setAttribute("aria-selected", String(!skillsOpen));
-    skillsTab.setAttribute("aria-selected", String(skillsOpen));
-  }
-
   document.addEventListener("click", function (event) {
     var target = event.target;
     if (!target || typeof target.closest !== "function") return;
@@ -157,14 +138,10 @@ function bindPluginWorkspaceTabs() {
     if (!tab) return;
     if (tab.id === "pluginWorkspacePluginsTab") {
       openNav("plugins");
-      syncSelection();
       return;
     }
     openPromptTemplatesModal();
-    window.requestAnimationFrame(syncSelection);
   });
-  new MutationObserver(syncSelection).observe(document.body, { childList: true, subtree: true });
-  syncSelection();
 }
 bindPluginWorkspaceTabs();
 

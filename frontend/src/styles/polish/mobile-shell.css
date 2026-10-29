@@ -30,13 +30,6 @@
     width: min(152px, calc(100vw - 112px));
     top: calc(50% + env(safe-area-inset-top, 0px) / 2);
   }
-  #appShell .top-mode-switch-option {
-    flex: 1;
-    min-width: 0;
-    height: var(--ui-control-sm);
-    padding-inline: 12px;
-    font-size: var(--ui-text-ui);
-  }
   body:not([data-conversation-active="true"]) #appShell .mobile-newchat-btn { display: none; }
   body:not([data-conversation-active="true"]) #appShell #topModelSwitcher {
     position: absolute;

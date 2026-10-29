@@ -126,6 +126,30 @@ function hexToRgb(hex) {
   return [0, 2, 4].map((i) => parseInt(clean.slice(i, i + 2), 16));
 }
 
+function parseColor(value) {
+  const hex = hexToRgb(value);
+  if (hex) return hex;
+  const match = /^oklch\(\s*([\d.]+)(%)?\s+([\d.]+)\s+([\d.]+)(?:\s*\/[^)]+)?\s*\)$/.exec(value.trim());
+  if (!match) return null;
+  const lightness = Number(match[1]) / (match[2] ? 100 : 1);
+  const chroma = Number(match[3]);
+  const hue = Number(match[4]) * Math.PI / 180;
+  const a = chroma * Math.cos(hue);
+  const b = chroma * Math.sin(hue);
+  const l = Math.pow(lightness + 0.3963377774 * a + 0.2158037573 * b, 3);
+  const m = Math.pow(lightness - 0.1055613458 * a - 0.0638541728 * b, 3);
+  const s = Math.pow(lightness - 0.0894841775 * a - 1.2914855480 * b, 3);
+  const linear = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+  ];
+  return linear.map((channel) => {
+    const srgb = channel <= 0.0031308 ? channel * 12.92 : 1.055 * Math.pow(channel, 1 / 2.4) - 0.055;
+    return Math.round(Math.max(0, Math.min(1, srgb)) * 255);
+  });
+}
+
 /* Composite a translucent foreground over an opaque background. */
 function composite(fg, alpha, bg) {
   return fg.map((channel, i) => Math.round(channel * alpha + bg[i] * (1 - alpha)));
@@ -267,9 +291,9 @@ function main() {
     let ringAlpha = 1;
     if (mix) {
       ringAlpha = Number.parseFloat(mix[2]) / 100;
-      rgb = hexToRgb(resolveValue(vars.get(mix[1]) || '', vars));
+      rgb = parseColor(resolveValue(vars.get(mix[1]) || '', vars));
     } else {
-      rgb = hexToRgb(resolveValue(ringRaw, vars));
+      rgb = parseColor(resolveValue(ringRaw, vars));
     }
     if (!rgb) {
       failures.push(
@@ -282,7 +306,7 @@ function main() {
       const raw = vars.get(`--ui-bg-${rung}`);
       if (!raw) continue;
       const resolved = resolveValue(raw, vars);
-      const rungRgb = hexToRgb(resolved);
+      const rungRgb = parseColor(resolved);
       if (rungRgb) ladder[rung] = rungRgb;
     }
     const minContrast = Math.min(
@@ -304,18 +328,18 @@ function main() {
   const baseRaw = readFileSync(BASE_CSS, 'utf8');
   const baseRules = parseRules(stripComments(baseRaw));
   const contract = baseRules.find(
-    (rule) => rule.selector === ':focus-visible',
+    (rule) => rule.selector === ':focus-visible:not([data-slot])',
   );
   if (!contract) {
-    failures.push('foundations/base.css: no :focus-visible rule — the global focus contract is missing');
+    failures.push('foundations/base.css: no native :focus-visible fallback rule — the legacy focus contract is missing');
   } else {
     if (!/box-shadow\s*:\s*var\(--ui-focus-shadow\)/.test(contract.body)) {
-      failures.push('foundations/base.css: the :focus-visible contract must paint var(--ui-focus-shadow)');
+      failures.push('foundations/base.css: the native :focus-visible fallback must paint var(--ui-focus-shadow)');
     }
     const outline = /outline\s*:\s*([^;]+)/.exec(contract.body);
     if (!outline || !isInvisibleOutline(outline[1])) {
       failures.push(
-        'foundations/base.css: the :focus-visible outline must stay transparent — a painted outline would read as a third ring',
+        'foundations/base.css: the native :focus-visible outline must stay transparent — a painted outline would read as a third ring',
       );
     }
   }

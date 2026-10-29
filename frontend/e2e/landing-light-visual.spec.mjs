@@ -32,6 +32,8 @@ test('light conversation home has a neutral readable palette and balanced compos
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
       pageBackground: rgb('.main-content'),
       sidebarBackground: rgb('#sidebar'),
+      semanticPage: getComputedStyle(document.documentElement).getPropertyValue('--background').trim(),
+      semanticSidebar: getComputedStyle(document.documentElement).getPropertyValue('--sidebar').trim(),
       composerBackground: rgb('#composerInputWrap'),
       titleColor: rgb('#topicTitle', 'color'),
       titleSize: getComputedStyle(document.querySelector('#topicTitle')).fontSize,
@@ -68,11 +70,10 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
-  // The light ladder runs paper → canvas: the page sits on L2 (#fafafa) and
-  // the quiet navigation rail one rung below it (#f2f2f2). The composer is
-  // the paper itself (#ffffff), so it reads as raised against the page.
-  expect(geometry.pageBackground).toBe('rgb(250, 250, 250)');
-  expect(geometry.sidebarBackground).toBe('rgb(242, 242, 242)');
+  // Surfaces resolve from the active shadcn semantic roles; channel parsing
+  // keeps these checks stable across rgb() and oklch() serialization.
+  expect(rgbChannels(geometry.pageBackground)).toEqual(rgbChannels(geometry.semanticPage));
+  expect(rgbChannels(geometry.sidebarBackground)).toEqual(rgbChannels(geometry.semanticSidebar));
   expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
   expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);
@@ -87,7 +88,7 @@ test('light conversation home has a neutral readable palette and balanced compos
   }));
   expect(focusedControl.matchesVisible).toBe(true);
   expect(focusedControl.outlineStyle).toBe('solid');
-  expect(focusedControl.outlineWidth).toBe('2px');
+  expect(focusedControl.outlineWidth).toBe('3px');
 
   const beforeFocus = await page.locator('#composerInputWrap').boundingBox();
   await editor.click();

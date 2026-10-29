@@ -83,30 +83,9 @@
   display: flex;
   width: 184px;
   height: var(--ui-control-desktop);
-  padding: 2px;
   transform: translate(-50%, -50%);
-  border: 0;
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-raised);
 }
 #appShell #pluginWorkspaceTabs[hidden] { display: none !important; }
-#appShell #pluginWorkspaceTabs .plugin-workspace-tab {
-  flex: 1 1 50%;
-  min-width: 0;
-  height: 32px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--ui-text-tertiary);
-  font-size: calc(15px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-regular);
-}
-#appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
-  background: var(--ui-bg-segment-active);
-  color: var(--foreground);
-  font-weight: var(--ui-font-weight-medium);
-}
 
 
 @media (min-width: 769px) {

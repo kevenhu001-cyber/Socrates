@@ -30,7 +30,7 @@ export function GeneralSettingsPane({ hidden, label, language, onLanguageChange,
           void savePreference({ theme });
         }} />
       <PreferenceSelect id="settings-theme-style" label={label('主题风格', 'Theme style')} value={style}
-        options={[{ value: 'socrates', label: label('现代科技', 'Modern') }, { value: 'philosophy', label: label('古典哲学', 'Philosophy') }]}
+        options={[{ value: 'socrates', label: label('Neutral 中性色', 'Neutral') }, { value: 'philosophy', label: label('Stone 石色', 'Stone') }]}
         onValueChange={(next) => {
           setStyle(next);
           document.querySelector<HTMLElement>('[data-theme-style-option="' + next + '"]')?.click();

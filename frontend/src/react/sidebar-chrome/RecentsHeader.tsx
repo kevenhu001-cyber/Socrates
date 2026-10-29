@@ -22,10 +22,10 @@ export function RecentsHeader() {
   return <>
     <span className="recents-title" data-i18n-key="sidebar.recentSessions">{i18n('sidebar.recentSessions', 'Recents')}</span>
     <span className="recents-header-actions">
-      <Button variant="ghost" className="recents-head-btn active:not-aria-[haspopup]:translate-y-0" id="recentsNewBtn" aria-label={i18n('sidebar.newChat', 'New chat')}
+      <Button variant="ghost" className="recents-head-btn" id="recentsNewBtn" aria-label={i18n('sidebar.newChat', 'New chat')}
         title={i18n('sidebar.newChat', 'New chat')} onClick={() => { void getLegacyActions().navigation.startNewChat(); }}><Icon name="newChat" /></Button>
       <DeferredMenu open={open} onOpenChange={setOpen} className="recents-organize-menu" label={i18n('sidebar.organize', 'Organize chats')} spill
-        trigger={<Button variant="ghost" className="recents-head-btn active:not-aria-[haspopup]:translate-y-0" id="recentsMoreBtn"
+        trigger={<Button variant="ghost" className="recents-head-btn" id="recentsMoreBtn"
           aria-label={i18n('sidebar.organize', 'Organize chats')} title={i18n('sidebar.organize', 'Organize chats')}><Icon name="more" /></Button>}>
       {({ FoundationMenuItem, FoundationMenuRadioGroup, FoundationMenuRadioItem }) => <>
       <div className="organize-menu-heading">{i18n('sidebar.organize', 'Organize chats')}</div>

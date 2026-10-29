@@ -1,3 +1,4 @@
+@layer compatibility {
 /* Page-owned geometry for the Images, Assistants and Sites React surfaces.
  * Their inputs, buttons, toggles, menus and field labels come from the
  * shared shadcn components; these selectors retain page layout and the
@@ -172,4 +173,6 @@
   #appShell #sitesPanel .creation-sites-table.is-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #appShell #sitesPanel .creation-sites-table.is-grid .creation-row { position: relative; }
   #appShell #sitesPanel .creation-sites-table.is-grid .creation-row-actions { align-self: flex-end; }
+}
+
 }

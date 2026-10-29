@@ -1,9 +1,9 @@
 // e2e/sidebar-rail.spec.mjs — desktop sidebar geometry and palette.
 // The geometry is chatgpt.com parity (docs/ref/chatgpt-parity.md): 36px rows,
-// single-line history, a 52px icon rail when collapsed. The palette is the
-// light ladder: a quiet #f6f6f6 rail one rung below the #fafafa canvas.
+// single-line history, a 52px icon rail when collapsed. Surface colors come
+// from the active shadcn sidebar and muted roles.
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, sameRgb } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SESSIONS = ['贝叶斯定理', '导数的几何意义', '光合作用'].map((title, i) => ({
@@ -41,7 +41,11 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
       metaVisible: getComputedStyle(item.querySelector('.recent-item-meta')).display !== 'none',
       modeBadgeVisible: Boolean(badge && getComputedStyle(badge).display !== 'none'),
       sidebarBg: sidebar.backgroundColor,
-      sidebarBorder: `${sidebar.borderRightWidth} ${sidebar.borderRightColor}`,
+      sidebarBorderWidth: sidebar.borderRightWidth,
+      sidebarBorderColor: sidebar.borderRightColor,
+      sidebarRole: getComputedStyle(document.documentElement).getPropertyValue('--sidebar').trim(),
+      sidebarBorderRole: getComputedStyle(document.documentElement).getPropertyValue('--sidebar-border').trim(),
+      mutedRole: getComputedStyle(document.documentElement).getPropertyValue('--muted').trim(),
       headerH: Math.round(box(header).height),
       logoFontSize: getComputedStyle(logo).fontSize,
       footerBorderTop: getComputedStyle(footer).borderTopWidth,
@@ -56,21 +60,20 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.modeBadgeVisible).toBe(false);
-  /* The rail is one rung below the canvas on the light ladder. */
-  expect(rows.sidebarBg).toBe('rgb(242, 242, 242)');
-  /* --ui-sidebar-border → --ui-border-default (#eaeaea): the Geist default
-     hairline, the same 1px the inputs and cards draw. */
-  expect(rows.sidebarBorder).toBe('1px rgb(234, 234, 234)');
+  expect(sameRgb(rows.sidebarBg, rows.sidebarRole)).toBe(true);
+  expect(rows.sidebarBorderWidth).toBe('1px');
+  expect(sameRgb(rows.sidebarBorderColor, rows.sidebarBorderRole)).toBe(true);
   expect(rows.headerH).toBe(52);
   expect(rows.logoFontSize).toBe('18px');
   expect(rows.footerBorderTop).toBe('0px');
-  expect(rows.avatarSize).toBe(28);
+  expect(rows.avatarSize).toBe(32);
 
-  /* Keep the shared translucent hover wash over the navigation rail. The
-     wash is now Geist's own alpha step (gray-alpha-100 = 5% ink), not the
-     3% the old palette mixed by hand. */
+  /* Ghost buttons use the muted semantic hover surface. */
   await page.locator('#navProjects').hover();
-  await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.05)');
+  await expect.poll(async () => {
+    const hoveredBackground = await page.locator('#navProjects').evaluate((node) => getComputedStyle(node).backgroundColor);
+    return sameRgb(hoveredBackground, rows.mutedRole);
+  }).toBe(true);
 });
 
 test('collapsing keeps a 52px icon rail with named buttons and reopens from it', async ({ page }) => {

@@ -166,7 +166,7 @@ function CreationList({ host, state }: { host: HTMLElement; state: CreationSnaps
       <div className="creation-gallery">
         {items.map((item) => (
           <div className="creation-image-card" key={item.id}>
-            <Button variant="ghost" className="h-auto w-full rounded-none p-0" data-action="view-image" data-id={item.id} aria-label={item.name || ''}>
+            <Button variant="ghost" className="h-auto w-full p-0" data-action="view-image" data-id={item.id} aria-label={item.name || ''}>
               <img src={imageUrl(item.id)} loading="lazy" alt={item.name || ''} />
             </Button>
             <span>{item.name}</span>
