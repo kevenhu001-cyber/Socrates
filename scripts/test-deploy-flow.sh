@@ -64,7 +64,7 @@ if [[ "${1:-}" == "run" && "${2:-}" == "build" ]]; then
     echo "mock frontend build failure" >&2
     exit 1
   fi
-  if [[ "${NODE_OPTIONS:-}" != *"--max-old-space-size=1024"* ]]; then
+  if [[ "${NODE_OPTIONS:-}" != *"--max-old-space-size=1536"* ]]; then
     echo "frontend build heap limit missing: ${NODE_OPTIONS:-unset}" >&2
     exit 1
   fi
@@ -323,7 +323,7 @@ grep -q 'ci.gate  SKIPPED by DEPLOY_SKIP_CI_CHECK=1' "$ci_skip_base/output.log"
 grep -q '"ciGate": "skipped-by-operator"' "$ci_skip_base/deploy-state.json"
 
 ci_success_base=$(make_fixture ci-success)
-run_deploy "$ci_success_base" >"$ci_success_base/output.log" 2>&1
+run_deploy "$ci_success_base" DEPLOY_BYPASS_PROXY=0 >"$ci_success_base/output.log" 2>&1
 grep -q 'all required workflows green' "$ci_success_base/output.log"
 grep -q '"ciGate": "green"' "$ci_success_base/deploy-state.json"
 
