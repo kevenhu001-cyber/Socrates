@@ -408,7 +408,10 @@ function clearMissingSessionUrl(): void {
     if (/[?&]chat=/i.test(location.search)) {
       const url = new URL(location.href);
       url.searchParams.delete('chat');
-      history.replaceState(history.state, '', url.pathname + (url.search ? url.search.replace(/^\?/, '?') : '') + url.hash);
+      // Build the target from the parsed parts rather than `url.href`, so the
+      // replacement can only ever drop the `chat` param and never rewrite the
+      // origin/path. `url.search` already carries its leading `?`.
+      history.replaceState(history.state, '', url.pathname + url.search + url.hash);
     }
   } catch (error) {
     reportSwallow(error, 'session/loader.handleSessionLoadFailure.clearUrl');

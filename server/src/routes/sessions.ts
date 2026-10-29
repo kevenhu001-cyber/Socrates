@@ -22,6 +22,7 @@ import { indexMessageChunks } from '../services/embeddings/chunkIndex.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { getSessionLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
+import { sanitizeLogValue } from '../lib/log.js';
 
 /* P_chunk-dirty — md5 of the message text, matching the SQL-side
  * `md5(coalesce(raw_text, ''))` probe used to decide whether a row's
@@ -1110,7 +1111,7 @@ router.delete('/:id', async (req, res, next) => {
        would catch that case anyway. */
     await codeInterpreter.reapSessionScratch(req.params.id, req.userId!).catch(() => {});
     await removeSessionWorkspacesForUser(req.userId!, [req.params.id]).catch((err) => {
-      console.warn(`[sessions] workspace cleanup deferred for ${req.params.id}: ${(err as Error).message}`);
+      console.warn(`[sessions] workspace cleanup deferred for ${sanitizeLogValue(req.params.id, 64)}: ${sanitizeLogValue((err as Error).message, 300)}`);
     });
 
     return res.status(204).end();

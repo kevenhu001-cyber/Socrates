@@ -1,6 +1,7 @@
 import { apiFetch } from '../util/api.ts';
 import { hasUsableActive } from '../config/providers.ts';
 import { stateStore } from '../state/store.js';
+import { stripHtmlTags } from '../util/stripHtml.ts';
 
 /* Generate a declarative session title based on the user's first input.
    Called fire-and-forget on first save. A short cooldown prevents repeated
@@ -16,17 +17,20 @@ let _titleFallbackValue: string | null = null;
  *  provider is unavailable. Keeps Chinese under ~8 chars and English under
  *  ~6 words so the Recents row never wraps. */
 function cleanTitle(value: unknown): string {
-  return String(value||"")
-    .replace(/<think>[\s\S]*?<\/think>/gi,"")
-    .replace(/<think>[\s\S]*$/gi,"")
-    .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/g,"")
-    .replace(/<\|[a-z_]+\|>/gi,"")
-    .replace(/<\/?s>/g,"")
-    .replace(/\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/g,"")
-    .replace(/<[^>]*>/g,"")
-    .replace(/^\s*(?:Title|标题)\s*[:：-]\s*/i,"")
+  /* Model chatter is stripped in two stages: the tagged wrappers first, then
+     any markup left over — stripHtmlTags repeats its pass, because a single
+     one over `<<script>` leaves a live `<script` behind. */
+  const text = String(value || '')
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
+    .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/g, '')
+    .replace(/<\|[a-z_]+\|>/gi, '')
+    .replace(/<\/?s>/g, '')
+    .replace(/\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/g, '');
+  return stripHtmlTags(text)
+    .replace(/^\s*(?:Title|标题)\s*[:：-]\s*/i, '')
     .trim()
-    .replace(/^[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+|[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+$/g,"");
+    .replace(/^[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+|[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+$/g, '');
 }
 
 function compactTitle(value: unknown): string {

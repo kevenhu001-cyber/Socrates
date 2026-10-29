@@ -370,7 +370,9 @@
     document.querySelectorAll('.ed-plan input').forEach(function(r){
       r.addEventListener('change', function(){
         var label = this.closest('.ed-plan');
-        var price = label.getAttribute('data-price');
+        /* Coerce to a number before it reaches innerHTML: the attribute is
+           page markup today, but a string there would be interpolated as HTML. */
+        var price = String(Number(label.getAttribute('data-price')) || 0);
         var name = label.querySelector('.ed-plan-name').textContent;
         $('checkoutTotal').innerHTML = '<strong>$' + price + '</strong><span>.00 USD</span>';
         $('submitPlanName').textContent = name;
@@ -381,7 +383,12 @@
 
     var planParam = new URLSearchParams(location.search).get('plan');
     if (planParam) {
-      var radio = document.querySelector('.ed-plan input[value="' + planParam + '"]');
+      /* Compare values directly: interpolating the query parameter into a
+         selector lets a crafted value break out of the attribute match. */
+      var radio = Array.prototype.filter.call(
+        document.querySelectorAll('.ed-plan input'),
+        function (input) { return input.value === planParam; },
+      )[0];
       if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
     }
 

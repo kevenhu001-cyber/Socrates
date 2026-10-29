@@ -171,7 +171,10 @@ async function authenticateClient(req: Request): Promise<OAuthClient | null> {
 
   const authorization = req.headers.authorization;
   if (typeof authorization === 'string') {
-    const basic = /^Basic\s+(.+)$/i.exec(authorization.trim());
+    /* Bounded both sides: `\s+(.+)` with an end anchor backtracks
+       polynomially on a header full of spaces. Credentials are
+       base64/base64url, so a precise character class is safe here. */
+    const basic = /^Basic[ \t]+([A-Za-z0-9+/=_-]{1,4096})$/i.exec(authorization.trim());
     if (basic) {
       try {
         const decoded = Buffer.from(basic[1], 'base64').toString('utf8');

@@ -93,7 +93,10 @@ async function _downloadCjkFontOnce(): Promise<string | null> {
     if (st.isFile() && st.size > 100000) return target;
   } catch (_) { /* not cached yet */ }
   try {
-    await fs.mkdir(CJK_FONT_HOST_DIR, { recursive: true });
+    /* 0700: in dev this directory sits under os.tmpdir(); a world-writable
+       cache dir would let another local user replace the font we later
+       load into Pyodide. */
+    await fs.mkdir(CJK_FONT_HOST_DIR, { recursive: true, mode: 0o700 });
   } catch (_) { /* race with another boot */ }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CJK_FONT_BOOT_TIMEOUT_MS);
@@ -108,7 +111,18 @@ async function _downloadCjkFontOnce(): Promise<string | null> {
       console.warn(`[pyodide] CJK font download too small (${buf.length} bytes); skipping`);
       return null;
     }
-    await fs.writeFile(target, buf);
+    /* Stage the download inside a private mkdtemp directory and rename it
+       into place. Writing straight to the cache path would follow a
+       symlink planted at that predictable /tmp location; rename replaces
+       the link itself instead of its target. */
+    const stagingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'socrates-cjk-'));
+    const stagingPath = path.join(stagingDir, 'font.otf');
+    try {
+      await fs.writeFile(stagingPath, buf, { mode: 0o600 });
+      await fs.rename(stagingPath, target);
+    } finally {
+      await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
+    }
     console.log(`[pyodide] Cached CJK font (${(buf.length / 1024 / 1024).toFixed(1)} MB) at ${target}`);
     return target;
   } catch (err) {

@@ -24,11 +24,11 @@ const ODF_MIMES = [
 
 test('dispatcher maps the new formats and still leaves legacy .ppt unmapped', async () => {
   for (const m of ['application/msword', 'application/vnd.ms-excel', ...ODF_MIMES]) {
-    assert.equal(typeof PARSERS[m], 'function', `${m} should have a parser`);
+    assert.equal(typeof PARSERS.get(m), 'function', `${m} should have a parser`);
     assert.ok(SUPPORTED_MIMES.includes(m), `SUPPORTED_MIMES missing ${m}`);
   }
   // .ppt stays metadata-only: no pure-JS extractor, must not crash dispatch.
-  assert.equal(PARSERS['application/vnd.ms-powerpoint'], undefined);
+  assert.equal(PARSERS.get('application/vnd.ms-powerpoint'), undefined);
   await assert.rejects(
     extractText('application/vnd.ms-powerpoint', '/nonexistent'),
     /unsupported_mime/,

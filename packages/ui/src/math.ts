@@ -123,7 +123,10 @@ export function stripCitationMarkers(input: string): string {
   return out + source.slice(last);
 }
 
-const FOOTNOTE_DEF_RE = /^\[\^([^\]]+)\]:[ \t]*(.+)$/gm;
+/* \`[ \\t]*\` and \`(.+)\` both accept tabs, so a definition indented with a
+   long tab run forced the engine to retry every split (quadratic). Requiring
+   the body to start with a non-space makes the boundary unambiguous. */
+const FOOTNOTE_DEF_RE = /^\[\^([^\]]+)\]:[ \t]*(\S.*)$/gm;
 
 /** Lift `[^id]: text` definitions out of the body; inline `[^id]` refs
  * become `[n]` pointing at the Notes section. Unknown refs are untouched. */

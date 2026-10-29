@@ -5,6 +5,7 @@ import { sessions, messages, apiKeys } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { ensureSessionWorkspaceForSession } from '../services/tools/agentRuntime.js';
+import { sanitizeLogValue } from '../lib/log.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -40,7 +41,7 @@ router.post('/', async (req, res, next) => {
         try {
           await ensureSessionWorkspaceForSession(req.userId!, sessionId, null);
         } catch (workspaceErr) {
-          console.warn(`[migrate] workspace initialization deferred for ${sessionId}: ${(workspaceErr as Error).message}`);
+          console.warn(`[migrate] workspace initialization deferred for ${sanitizeLogValue(sessionId, 64)}: ${sanitizeLogValue((workspaceErr as Error).message, 300)}`);
         }
 
         if (Array.isArray(s.messages)) {

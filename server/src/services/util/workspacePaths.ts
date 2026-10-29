@@ -12,7 +12,7 @@
 
 import os from 'node:os';
 import path from 'node:path';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 export const WORKSPACE_ROOT = String(
   process.env.WORKSPACE_ROOT
@@ -64,6 +64,22 @@ export function ensureWorkspaceForKey(userId: string | null, workspaceKey: strin
 }
 
 /**
+ * Create a file only when it does not exist yet.
+ *
+ * `existsSync` followed by `writeFileSync` is a TOCTOU: another process can
+ * create the path in between, and the write then silently replaces it. The
+ * `wx` flag makes creation and the existence check one atomic syscall, so
+ * an existing file always wins and `EEXIST` is the expected outcome.
+ */
+function writeFileIfAbsent(target: string, contents: string): void {
+  try {
+    writeFileSync(target, contents, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+  }
+}
+
+/**
  * Keep project guidance inside the server-owned workspace. The agent loads
  * a root AGENTS.md automatically; the file is only created when absent so
  * deliberate workspace instructions are preserved.
@@ -80,32 +96,26 @@ export function ensureWorkspaceInstructions(workspacePath: string, projectInstru
     { encoding: 'utf8', mode: 0o600 },
   );
   const agentsPath = path.join(workspacePath, 'AGENTS.md');
-  if (!existsSync(agentsPath)) {
-    writeFileSync(
-      agentsPath,
-      [
-        '# Socrates workspace',
-        '',
-        'This directory is a project workspace managed by Socrates. Follow the user task and the server-enforced sandbox and resource policy.',
-        instructions ? `\n## Project guidance\n\n${instructions.slice(0, 50_000)}` : '',
-        '',
-      ].join('\n'),
-      { encoding: 'utf8', mode: 0o600 },
-    );
-  }
+  writeFileIfAbsent(
+    agentsPath,
+    [
+      '# Socrates workspace',
+      '',
+      'This directory is a project workspace managed by Socrates. Follow the user task and the server-enforced sandbox and resource policy.',
+      instructions ? `\n## Project guidance\n\n${instructions.slice(0, 50_000)}` : '',
+      '',
+    ].join('\n'),
+  );
   const skillsReadme = path.join(skillsDir, 'README.md');
-  if (!existsSync(skillsReadme)) {
-    writeFileSync(
-      skillsReadme,
-      [
-        '# Project skills',
-        '',
-        'This directory is managed by Socrates. Skills placed here are project guidance for the agent; they cannot change the server sandbox, provider, or credential policy.',
-        '',
-      ].join('\n'),
-      { encoding: 'utf8', mode: 0o600 },
-    );
-  }
+  writeFileIfAbsent(
+    skillsReadme,
+    [
+      '# Project skills',
+      '',
+      'This directory is managed by Socrates. Skills placed here are project guidance for the agent; they cannot change the server sandbox, provider, or credential policy.',
+      '',
+    ].join('\n'),
+  );
 }
 
 /** Best-effort removal for an archived project workspace. */

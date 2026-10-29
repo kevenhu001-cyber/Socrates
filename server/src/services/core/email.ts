@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from 'nodemailer';
+import { sanitizeLogValue } from '../../lib/log.js';
 
 // NOTE: must start as `undefined` (not null) — the memoization guard
 // below is `transporter !== undefined`, so initialising to null would
@@ -56,7 +57,7 @@ export async function sendEmail({ to, subject, text, html }: {
     // Dev-only masked log; never print the full body or token.
     const subjMask = (subject || '').slice(0, 40);
     const bodyMask = ((text || html || '').replace(/\s+/g, ' ').slice(0, 80) + '…');
-    console.log(`[email:dev] masked preview — to: ${to}, subj: ${subjMask}, body: ${bodyMask}`);
+    console.log(`[email:dev] masked preview — to: ${sanitizeLogValue(to, 200)}, subj: ${sanitizeLogValue(subjMask, 40)}, body: ${sanitizeLogValue(bodyMask, 80)}`);
     return;
   }
   try {

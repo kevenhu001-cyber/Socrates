@@ -1,5 +1,11 @@
 import type { JSONContent } from '@tiptap/react';
 
+/* Inside a code span a backslash is literal, so it has to be doubled before
+   the backtick escapes are added — otherwise a trailing backslash lets the
+   closing fence end the span early and the rest is parsed as markdown. */
+const escapeCodeSpan = (value: string): string =>
+  value.replace(/\\/g, '\\\\').replace(/`/g, '\\`');
+
 const escapeText = (value: string): string =>
   value.replace(/([\\`*_{}[\]()#+.!>|~-])/g, '\\$1');
 
@@ -10,7 +16,7 @@ function renderMarks(text: string, marks: JSONContent['marks'] = []): string {
     else if (mark.type === 'italic') output = `*${output}*`;
     else if (mark.type === 'strike') output = `~~${output}~~`;
     else if (mark.type === 'underline') output = `<u>${output}</u>`;
-    else if (mark.type === 'code') output = `\`${text.replace(/`/g, '\\`')}\``;
+    else if (mark.type === 'code') output = `\`${escapeCodeSpan(text)}\``;
     else if (mark.type === 'link' && typeof mark.attrs?.href === 'string') {
       output = `[${output}](${mark.attrs.href})`;
     }

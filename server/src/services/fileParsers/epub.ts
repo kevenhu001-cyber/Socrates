@@ -10,15 +10,17 @@
  * preserved for block elements (p, div, h1-6, li, tr, td).
  */
 import EPub from 'epub';
+import { decodeHtmlEntities, htmlToPlainText } from '../../lib/sanitize.js';
 
 function htmlToText(html: string) {
-  return String(html || '')
+  /* Decode first: `&lt;p&gt;` is a real paragraph tag once decoded, so
+     block-break detection has to run on the decoded text and the tag
+     strip has to follow it. Doing the strip first would both miss that
+     paragraph and then emit a literal `<p>` into the extracted text. */
+  const withBreaks = decodeHtmlEntities(html)
     .replace(/<\s*br\s*\/?>/gi, '\n')
-    .replace(/<\s*\/(p|div|h[1-6]|li|tr|td)\s*>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/<\s*\/(p|div|h[1-6]|li|tr|td)\s*>/gi, '\n');
+  return htmlToPlainText(withBreaks)
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

@@ -22,9 +22,12 @@ async function storeGeneratedImage(userId: string, prompt: string, encoded: stri
   const bytes = Buffer.from(encoded, 'base64');
   if (bytes.length < 8 || bytes.length > 25 * 1024 * 1024 || !bytes.subarray(0, 8).equals(imageSignature)) throw new BadRequest('Invalid PNG image response');
   const dir = process.env.UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/uploads' : path.join(os.tmpdir(), 'socrates-uploads'));
-  await fs.mkdir(dir, { recursive: true });
+  await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+  /* The filename is server-generated (randomUUID) and never derived from
+     request input; `wx` refuses to follow a pre-planted symlink and 0600
+     keeps the bytes readable only by this process. */
   const storagePath = path.join(dir, `${crypto.randomUUID()}.png`);
-  await fs.writeFile(storagePath, bytes);
+  await fs.writeFile(storagePath, bytes, { flag: 'wx', mode: 0o600 });
   try {
     const row = await getDb().transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId}))`);

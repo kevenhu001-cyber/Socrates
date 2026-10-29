@@ -19,7 +19,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { getDb } from '../db/index.js';
 import { auditEvents } from '../db/schema/index.js';
-import { safeUrl } from '../lib/log.js';
+import { safeUrl, sanitizeLogValue } from '../lib/log.js';
 
 /**
  * Create an audit-logging middleware for a specific action.
@@ -51,11 +51,11 @@ export function audit(
       if (!ok) {
         if (!logFailures) return;
         const path = safeUrl(req.originalUrl);
-        const ua = (req.headers['user-agent'] || '').slice(0, 200);
-        const email = detail.email ? String(detail.email).slice(0, 200) : '-';
+        const ua = sanitizeLogValue(req.headers['user-agent'], 200);
+        const email = detail.email ? sanitizeLogValue(detail.email, 200) : '-';
         console.warn(
-          `[audit] ${action}_failed status=${res.statusCode} ip=${req.ip || '-'} ` +
-          `email=${email} path=${path} ua="${ua}"`
+          `[audit] ${action}_failed status=${res.statusCode} ip=${sanitizeLogValue(req.ip, 64)} ` +
+          `email=${email} path=${sanitizeLogValue(path, 400)} ua="${ua}"`
         );
         return;
       }

@@ -7,7 +7,7 @@
  * workspace-agent path used by Chat, Tutor and scheduled jobs.
  */
 
-import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { asc, and, desc, eq, inArray, max } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
@@ -269,9 +269,12 @@ async function collectWorkspaceArtifacts(
   for (const filePath of candidates) {
     let source = '';
     try {
-      const stat = statSync(filePath);
-      if (stat.size <= 0 || stat.size > 250_000) continue;
-      source = readFileSync(filePath, 'utf8');
+      /* Read once and size-check the buffer we actually got. A separate
+         statSync followed by readFileSync is a TOCTOU: the file can be
+         replaced with a huge one between the two calls. */
+      const raw = readFileSync(filePath);
+      if (raw.length <= 0 || raw.length > 250_000) continue;
+      source = raw.toString('utf8');
       if (source.includes('\u0000')) continue;
     } catch { continue; }
     const relativeName = path.relative(workspacePath, filePath).replace(/\\/g, '/');

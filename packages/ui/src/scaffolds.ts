@@ -44,19 +44,50 @@ export function decodeEntities(value: string): string {
 }
 
 export function stripTags(value: string): string {
-  return String(value).replace(/<[^>]+>/g, '');
+  /* Repeated until stable: one pass over "<<script>" leaves "<script". */
+  let text = String(value ?? '');
+  for (let pass = 0; pass < 8; pass += 1) {
+    const next = text.replace(/<[^>]*>/g, '');
+    if (next === text) break;
+    text = next;
+  }
+  return text;
+}
+
+/** Body of the first \`<tag>\u2026</tag>\` run, or null.
+ *  The equivalent \`/<tag>([\\s\\S]*?)<\\/tag>/i\` rescans the whole tail from
+ *  every opener, which goes quadratic on a block that repeats the opener;
+ *  two indexOf calls stay linear. */
+function innerOf(source: string, tag: string): string | null {
+  const lower = source.toLowerCase();
+  if (lower.length !== source.length) return null;
+  const openTag = '<' + tag + '>';
+  const closeTag = '</' + tag + '>';
+  const open = lower.indexOf(openTag);
+  if (open === -1) return null;
+  const close = lower.indexOf(closeTag, open + openTag.length);
+  if (close === -1) return null;
+  return source.slice(open + openTag.length, close);
 }
 
 /** Parse the inner XML of a `<quiz>` block into `{q, options, correct}`. */
 export function parseQuizInner(inner: string): ParsedQuiz | null {
-  const qMatch = inner.match(/<q>([\s\S]*?)<\/q>/i);
-  if (!qMatch) return null;
-  const q = stripTags(decodeEntities(qMatch[1].trim()));
+  const qInner = innerOf(inner, 'q');
+  if (qInner === null) return null;
+  const q = stripTags(decodeEntities(qInner.trim()));
   const options: QuizOption[] = [];
-  const optRe = /<o\s+letter="([A-Da-d])"[^>]*>([\s\S]*?)<\/o>/gi;
+  /* Scanned by hand rather than `/<o …>([\s\S]*?)<\/o>/g`: with many
+     unclosed `<o letter="…">` openers the lazy form rescans the tail once per
+     opener (quadratic), while indexOf walks the string exactly once. */
+  const lowerInner = inner.toLowerCase();
+  const optOpen = /<o\s+letter="([A-Da-d])"[^>]*>/gi;
   let m: RegExpExecArray | null;
-  while ((m = optRe.exec(inner)) !== null) {
-    options.push({ letter: m[1].toUpperCase(), text: stripTags(decodeEntities(m[2].trim())) });
+  while (lowerInner.length === inner.length && (m = optOpen.exec(inner)) !== null) {
+    const close = lowerInner.indexOf('</o>', m.index + m[0].length);
+    if (close === -1) break;
+    const body = inner.slice(m.index + m[0].length, close);
+    options.push({ letter: m[1].toUpperCase(), text: stripTags(decodeEntities(body.trim())) });
+    optOpen.lastIndex = close + 4;
   }
   if (options.length < 2) return null;
   const correct = inner.match(/<correct>([A-Da-d])<\/correct>/i);
@@ -66,14 +97,14 @@ export function parseQuizInner(inner: string): ParsedQuiz | null {
 /** Parse `<practice>…</practice>` inner. Fields stay as raw markdown
  * (entities decoded) so math survives into the widget's own renderer. */
 export function parsePracticeInner(inner: string, correct?: string | null): ParsedPractice | null {
-  const title = inner.match(/<title>([\s\S]*?)<\/title>/i);
-  const problem = inner.match(/<problem>([\s\S]*?)<\/problem>/i);
-  const hint = inner.match(/<hint>([\s\S]*?)<\/hint>/i);
-  if (!problem) return null;
+  const title = innerOf(inner, 'title');
+  const problem = innerOf(inner, 'problem');
+  const hint = innerOf(inner, 'hint');
+  if (problem === null) return null;
   return {
-    title: title ? decodeEntities(title[1].trim()) : 'Practice',
-    problem: decodeEntities(problem[1].trim()),
-    hint: hint ? decodeEntities(hint[1].trim()) : '',
+    title: title === null ? 'Practice' : decodeEntities(title.trim()),
+    problem: decodeEntities(problem.trim()),
+    hint: hint === null ? '' : decodeEntities(hint.trim()),
     correct: correct || null,
   };
 }

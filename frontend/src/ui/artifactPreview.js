@@ -3,6 +3,24 @@ import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
 
 let initialized = false;
 
+/* Artifact URLs come from API payloads. Only our own origin, or a plain
+   https host, may reach an <img src>, an <iframe src> or an <a href>:
+   `javascript:` / `data:text/html` there would run in THIS document, and a
+   bare http: URL would leak the preview into a cleartext channel. */
+function safeArtifactUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  let parsed;
+  try {
+    parsed = new URL(value, window.location.origin);
+  } catch (_) {
+    return '';
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+  if (parsed.protocol === 'http:' && parsed.origin !== window.location.origin) return '';
+  return parsed.href;
+}
+
 function translate(key, fallback) {
   try {
     const value = typeof window.t === 'function' ? window.t(key) : '';
@@ -18,7 +36,7 @@ export function closeArtifactPreview() {
 
 export function openArtifactPreview(options) {
   const opts = options || {};
-  const url = String(opts.url || '').trim();
+  const url = safeArtifactUrl(opts.url);
   if (!url) return;
   const mime = String(opts.mimeType || 'application/octet-stream');
   const kind = mime.indexOf('image/') === 0 ? 'image' : mime.indexOf('text/html') === 0 ? 'html' : 'file';

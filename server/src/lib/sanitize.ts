@@ -130,3 +130,50 @@ export function sanitizePlainText(text: unknown) {
   // eslint-disable-next-line no-control-regex
   return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
 }
+
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+};
+
+/**
+ * Decode HTML entities in a single left-to-right pass.
+ *
+ * Sequential `replace(/&amp;/g, '&')` followed by
+ * `replace(/&lt;/g, '<')` decodes twice: the text `&amp;lt;` first
+ * becomes `&lt;` and then `<`, so an escaped tag turns into a live one
+ * (CWE-020 double unescaping). One regex that only consumes the original
+ * input can never re-read the text it just produced.
+ */
+export function decodeHtmlEntities(input: unknown): string {
+  const source = String(input ?? '');
+  if (!source.includes('&')) return source;
+  return source.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, body: string) => {
+    if (body.startsWith('#')) {
+      const hex = body[1] === 'x' || body[1] === 'X';
+      const codePoint = hex ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+      if (!Number.isFinite(codePoint) || codePoint <= 0 || codePoint > 0x10ffff) return match;
+      try { return String.fromCodePoint(codePoint); } catch { return match; }
+    }
+    const named = NAMED_ENTITIES[body.toLowerCase()];
+    return named === undefined ? match : named;
+  });
+}
+
+/**
+ * Reduce scraped markup to plain text.
+ *
+ * Entities are decoded first so `&lt;script&gt;` becomes a real tag, then
+ * tags are removed until the string stops changing (a single pass leaves
+ * `<<script>>`-style nesting behind), and finally any surviving `<` or
+ * `>` is dropped. The last step is what makes the output guaranteed
+ * tag-free: it cannot depend on the shape of whatever markup came in.
+ */
+export function htmlToPlainText(input: unknown): string {
+  let text = decodeHtmlEntities(input);
+  for (let pass = 0; pass < 4; pass += 1) {
+    const next = text.replace(/<[^>]*>/g, '');
+    if (next === text) break;
+    text = next;
+  }
+  return text.replace(/[<>]/g, '');
+}

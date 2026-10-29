@@ -14,9 +14,30 @@ export function generateId(): string {
       return crypto.randomUUID();
     }
   } catch { /* empty-catch: intentional — insecure context; fall through to the manual generator */ }
-  /* Fallback: produce a UUIDv4-compatible string so the server
-     recognises it. Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-     where x is random hex and y is 8, 9, a, or b. */
-  function h(): string { return Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'); }
-  return h() + h() + '-' + h() + '-4' + h().slice(1) + '-' + (8 + Math.floor(Math.random() * 4)).toString(16) + h().slice(1) + '-' + h() + h() + h();
+  /* `getRandomValues` still works outside a secure context (only
+     `randomUUID` and `crypto.subtle` are gated), so it covers the case
+     the fast path misses without falling back to Math.random — a
+     predictable session ID would let one client guess another's. */
+  const bytes = new Uint8Array(16);
+  let filled = false;
+  try {
+    crypto.getRandomValues(bytes);
+    filled = true;
+  } catch { /* empty-catch: intentional — no Web Crypto at all; see below */ }
+  if (!filled) {
+    /* Last resort. Uniqueness, not unpredictability, is what the column
+       needs from here: a timestamp plus a monotonic counter cannot repeat
+       within a page and keeps the UUID shape the server validates. */
+    _fallbackSeq = (_fallbackSeq + 1) % 0x1000000;
+    const seed = (Date.now().toString(16) + _fallbackSeq.toString(16)).padStart(32, '0').slice(-32);
+    for (let i = 0; i < 16; i += 1) bytes[i] = parseInt(seed.slice(i * 2, i * 2 + 2), 16);
+  }
+  /* Stamp the version (4) and variant (10xx) nibbles the server expects. */
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16)
+    + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
 }
+
+let _fallbackSeq = 0;

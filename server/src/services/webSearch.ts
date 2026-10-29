@@ -12,6 +12,7 @@ import {
   tokenizeQuery,
 } from './embeddings/scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
+import { decodeHtmlEntities } from '../lib/sanitize.js';
 import {expandQuery} from './queryExpander.js';
 import {searchMinimax} from './searchEngines/minimax.js';
 import {searchMmx} from './searchEngines/mmx.js';
@@ -469,17 +470,7 @@ interface ImageResult {
 }
 
 function decodeEntities(s: string): string {
-  if (!s) return s;
-  return s
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&#x([0-9a-fA-F]+);/g, (_: string, h: string) => {
-      try { return String.fromCodePoint(parseInt(h, 16)); } catch (_) { return ''; }
-    })
-    .replace(/&#(\d+);/g, (_: string, d: string) => {
-      try { return String.fromCodePoint(parseInt(d, 10)); } catch (_) { return ''; }
-    });
+  return decodeHtmlEntities(s);
 }
 
 export function parseBingImageHtml(html: string): ImageResult[] {

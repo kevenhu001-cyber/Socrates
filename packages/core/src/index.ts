@@ -124,11 +124,31 @@ export type ChatHistoryMessage = {
 export const CHAT_HISTORY_MAX_TURNS = 30;
 export const CHAT_HISTORY_MAX_CHARS = 2000;
 
+/** Remove every \`<tag>\u2026</tag>\` run in one left-to-right sweep.
+ *  \`/<tag>[\\s\\S]*?<\\/tag>/g\` restarts its lazy scan at each opener, so a
+ *  message that repeats \`<tag>\` costs O(n\u00b2); indexOf is linear. */
+function stripTaggedBlocks(value: string, tag: string): string {
+  const lower = value.toLowerCase();
+  if (lower.length !== value.length) return value;
+  const openTag = '<' + tag + '>';
+  const closeTag = '</' + tag + '>';
+  let out = '';
+  let cursor = 0;
+  for (;;) {
+    const open = lower.indexOf(openTag, cursor);
+    if (open === -1) break;
+    const close = lower.indexOf(closeTag, open + openTag.length);
+    if (close === -1) break;
+    out += value.slice(cursor, open);
+    cursor = close + closeTag.length;
+  }
+  return out + value.slice(cursor);
+}
+
 function stripThinking(value: string) {
-  return value
+  return stripTaggedBlocks(value, 'think')
     .replace(/^Thinking\.\.\.\s*/i, '')
     .replace(/^Thinking\s*/i, '')
-    .replace(/<think>[\s\S]*?<\/think>/gi, '')
     .replace(/<\/?think>/gi, '')
     .trim();
 }

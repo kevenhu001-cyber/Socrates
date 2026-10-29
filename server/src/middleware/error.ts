@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../lib/errors.js';
-import { safeUrl } from '../lib/log.js';
+import { safeUrl, sanitizeLogValue } from '../lib/log.js';
 import { wwwAuthenticateChallenge, OAUTH_AUTHORIZATION_ENDPOINT } from '../lib/oauthMeta.js';
 
 /**
@@ -85,15 +85,15 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   // Strip tokens from the logged URL — share / verify / reset links
   // carry long-lived credentials in the query string and we don't
   // want those landing in operator log streams.
-  const meta = req ? `${req.method} ${safeUrl(req.originalUrl)}` : '';
+  const meta = req ? `${sanitizeLogValue(req.method, 16)} ${sanitizeLogValue(safeUrl(req.originalUrl), 400)}` : '';
   // In production we MUST NOT print full stack traces: they leak
   // internal paths, file layout, and (occasionally) secrets embedded
   // in error messages. Operators can still find the matching request
   // id and look up the structured fields in the database.
   if (process.env.NODE_ENV === 'production') {
-    console.error('[error]', `req=${rid}`, meta, err && err.message ? err.message : err);
+    console.error('[error]', `req=${sanitizeLogValue(rid, 64)}`, meta, sanitizeLogValue(err && err.message ? err.message : err, 800));
   } else {
-    console.error('[error]', `req=${rid}`, meta, err.stack ? err.stack.slice(0, 1200) : err);
+    console.error('[error]', `req=${sanitizeLogValue(rid, 64)}`, meta, err && err.stack ? sanitizeLogValue(err.stack, 1200) : sanitizeLogValue(err, 800));
   }
 
   // Echo the request id back so the browser can correlate too —

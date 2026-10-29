@@ -2,6 +2,7 @@ import { stripIntelligenceUiBlocks } from '@socrates/core';
 import type { LegacyChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { stripHtmlTags } from '../../util/stripHtml.ts';
 
 function messageIdOf(message: LegacyChatMessage): string | null {
   if (message.id) return message.id;
@@ -34,7 +35,7 @@ function stripHtmlToText(html: string): string {
     }
     return (container.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
   } catch (_) {
-    return String(html || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+    return stripHtmlTags(html).replace(/&nbsp;/g, ' ').trim();
   }
 }
 

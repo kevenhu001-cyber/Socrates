@@ -104,6 +104,25 @@ test('strips multiline blockquote markers around display math', () => {
   assert.match(streaming, /\$\$\nx = 1\ny = 2\n\$\$/);
 });
 
+test('strips blockquote markers separated by whitespace', () => {
+  // The marker run may mix tabs and spaces on either side of each `>`, and
+  // the whole run has to resolve to the same display block either way.
+  const preprocessed = preprocessMarkdown('>\t>  $$\n> x = 1\n> $$');
+  assert.doesNotMatch(preprocessed, />/);
+  assert.equal(preprocessed, '$$\nx = 1\n$$');
+});
+
+test('blockquote-math marker run resolves in linear time', () => {
+  // `>\t>\t>…` used to backtrack exponentially: each gap of whitespace could
+  // fall on either side of a marker. 30 repetitions took ~8s, 40 never
+  // returned; the linear form finishes in under a millisecond.
+  const adversarial = '>' + '\t>'.repeat(30) + 'x';
+  const started = performance.now();
+  preprocessMarkdown(adversarial);
+  const elapsed = performance.now() - started;
+  assert.ok(elapsed < 2000, `expected a linear scan, took ${Math.round(elapsed)}ms`);
+});
+
 test('stripMarkdown removes multiline display math blocks', () => {
   const input = '公式如下：\n$$\n\\begin{aligned}x=1\\end{aligned}\n$$\n完成';
   const stripped = stripMarkdown(input);

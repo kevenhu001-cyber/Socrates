@@ -389,10 +389,34 @@ export function normalizeDiagQuestions(parsed: unknown): DiagQuestion[] {
 /** Parse one model response into a diagnostic question. Pins nodeIdx to
  * the question slot (round-robin is trusted over the model). Null on
  * failure — read `diagError()` for the reason. */
+/** Drop every complete \`<think>\u2026</think>\` run in one linear sweep; the
+ *  lazy-regex form is quadratic when the model repeats the opener. */
+function stripThinkBlocks(value: string): string {
+  const lower = value.toLowerCase();
+  if (lower.length !== value.length) return value;
+  let out = '';
+  let cursor = 0;
+  for (;;) {
+    const open = lower.indexOf('<think>', cursor);
+    if (open === -1) break;
+    const close = lower.indexOf('</think>', open + 7);
+    if (close === -1) break;
+    out += value.slice(cursor, open);
+    cursor = close + 8;
+  }
+  return out + value.slice(cursor);
+}
+
+/** An unterminated \`<think>\` swallows the rest of the response. */
+function stripUnclosedThink(value: string): string {
+  const at = value.toLowerCase().indexOf('<think>');
+  return at === -1 ? value : value.slice(0, at);
+}
+
 export function parseDiagResponse(resp: string, index: number): DiagQuestion | null {
   let raw = String(resp || '');
-  raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  raw = raw.replace(/<think>[\s\S]*$/gi, '');
+  raw = stripThinkBlocks(raw);
+  raw = stripUnclosedThink(raw);
   raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const start = raw.indexOf('{');
   const end = raw.lastIndexOf('}');

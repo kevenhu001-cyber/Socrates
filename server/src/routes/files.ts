@@ -21,6 +21,7 @@ import {
   formatBytes,
 } from '../services/embeddings/attachmentReader.js';
 import { isUuid } from '../lib/validate.js';
+import { resolveInsideRoot } from '../lib/pathSafety.js';
 
 import os from 'node:os';
 
@@ -190,14 +191,14 @@ router.get('/:id/content', async (req, res, next) => {
     } else if (file.mimeType === 'application/pdf') {
       const mod = await import('pdf-parse');
       const pdfParse = mod.default || mod;
-      const result = await pdfParse(await fs.readFile(file.storagePath));
+      const result = await pdfParse(await fs.readFile(resolveInsideRoot(UPLOAD_DIR, file.storagePath)));
       text = String((result && result.text) || '');
       meta = { pageCount: result && result.numpages ? Number(result.numpages) : 0 };
     } else if (['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'application/epub+zip', 'application/rtf'].includes(file.mimeType)) {
-      const result = await extractDocumentText(file.mimeType, file.storagePath);
+      const result = await extractDocumentText(file.mimeType, resolveInsideRoot(UPLOAD_DIR, file.storagePath));
       text = String(result.text || '');
       meta = result.meta || {};
       truncated = !!result.truncated;
@@ -223,7 +224,7 @@ router.get('/:id/content', async (req, res, next) => {
  * path where a user could upload a 250 MB plain-text file.
  */
 async function readHead(storagePath: string, maxBytes: number): Promise<Buffer> {
-  const handle = await fs.open(storagePath, 'r');
+  const handle = await fs.open(resolveInsideRoot(UPLOAD_DIR, storagePath), 'r');
   try {
     const buf = Buffer.alloc(maxBytes);
     const { bytesRead } = await handle.read(buf, 0, maxBytes, 0);
@@ -241,7 +242,7 @@ async function readHead(storagePath: string, maxBytes: number): Promise<Buffer> 
 function hashFileStreaming(storagePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
-    const stream = createReadStream(storagePath);
+    const stream = createReadStream(resolveInsideRoot(UPLOAD_DIR, storagePath));
     stream.on('data', (chunk) => hash.update(chunk));
     stream.on('end', () => resolve(hash.digest('hex')));
     stream.on('error', reject);
@@ -279,7 +280,7 @@ router.post('/', uploadLimiter, (req, res, next) => {
       // Multer may leave a truncated file on disk when the client aborts
       // or exceeds LIMIT_FILE_SIZE — remove it so partial bytes never linger.
       const partial = (req as any).file?.path as string | undefined;
-      if (partial) await fs.unlink(partial).catch(() => {});
+      if (partial) await fs.unlink(resolveInsideRoot(UPLOAD_DIR, partial)).catch(() => {});
       if ((multerErr as { code?: string }).code === 'LIMIT_FILE_SIZE') {
         return next(new PayloadTooLarge(`File exceeds the ${MAX_SIZE / 1024 / 1024} MB limit`));
       }
@@ -292,13 +293,14 @@ router.post('/', uploadLimiter, (req, res, next) => {
     // content masquerading as an allowed type (e.g. `<svg` bytes labelled
     // image/png). Text/code formats have no magic, so only binary kinds
     // and active-content sniffing are enforced here.
+    const uploadPath = resolveInsideRoot(UPLOAD_DIR, String(file.path || ''));
     try {
-      await assertSafeContent(file.path, String(file.mimetype || ''), String(file.originalname || ''));
+      await assertSafeContent(uploadPath, String(file.mimetype || ''), String(file.originalname || ''));
     } catch (sigErr) {
-      await fs.unlink(file.path).catch(() => {});
+      await fs.unlink(uploadPath).catch(() => {});
       throw sigErr;
     }
-    const sha256 = await hashFileStreaming(file.path);
+    const sha256 = await hashFileStreaming(uploadPath);
 
     /* Optional session link: an attachment uploaded from a chat composer
        carries sessionId so the file's share/lifecycle follows that
@@ -338,7 +340,7 @@ router.post('/', uploadLimiter, (req, res, next) => {
           size: file.size,
           kind: mimeKind(file.mimetype, file.originalname),
           sha256,
-          storagePath: file.path,
+          storagePath: uploadPath,
           sessionId,
         }).returning();
         return row;
@@ -348,11 +350,11 @@ router.post('/', uploadLimiter, (req, res, next) => {
       // Any failure after multer saved the file must unlink — otherwise a
       // DB outage leaves orphan bytes that count against no quota row
       // and are never reaped.
-      if (file?.path) await fs.unlink(file.path).catch(() => {});
+      if (file?.path) await fs.unlink(uploadPath).catch(() => {});
       throw err;
     }
     if (!record) {
-      await fs.unlink(file.path).catch(() => {});
+      await fs.unlink(uploadPath).catch(() => {});
       throw new PayloadTooLarge('Storage quota exceeded.');
     }
 
@@ -463,7 +465,7 @@ router.delete('/:id', async (req, res, next) => {
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
-    await fs.unlink(file.storagePath).catch(() => {});
+    await fs.unlink(resolveInsideRoot(UPLOAD_DIR, file.storagePath)).catch(() => {});
     await db.delete(files).where(eq(files.id, req.params.id));
     return res.status(204).end();
   } catch (err) { next(err); }

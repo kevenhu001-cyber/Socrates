@@ -12,6 +12,7 @@ import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPrepr
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { sanitizeUrls } from '../util/safe.ts';
 import { sanitizeHtml } from './sanitizeHtml.ts';
+import { stripHtmlTags } from '../util/stripHtml.ts';
 import { installCodeBlockCopy } from './markdownCodeCopy.ts';
 import {
   findStreamScaffold, renderStreamScaffoldPreview,
@@ -360,7 +361,7 @@ function formatWithoutMarked(t: string): string {
 }
 
 function boundedScaffoldText(content: string): string {
-  const text = content.replace(/<[^>]+>/g, '').trim();
+  const text = stripHtmlTags(content).trim();
   return text.length > 300 ? text.slice(0, 300) + '…' : text;
 }
 

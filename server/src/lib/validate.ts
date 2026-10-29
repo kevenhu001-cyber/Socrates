@@ -17,4 +17,27 @@ export function isUuid(s: unknown): s is string {
   return typeof s === 'string' && UUID_RE.test(s);
 }
 
+/**
+ * Structural e-mail check.
+ *
+ * The obvious one-liner (`[^\s@]+@[^\s@]+\.[^\s@]+`) puts two unbounded
+ * `+` quantifiers around a literal, which backtracks polynomially on a
+ * long run of characters that almost matches (CWE-1333). Splitting at the
+ * last `@` and validating the halves with bounded, non-overlapping tests
+ * keeps the check linear while still rejecting whitespace, missing
+ * domains, and a trailing dot.
+ */
+export function isEmail(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  if (value.length < 3 || value.length > 254) return false;
+  const at = value.lastIndexOf('@');
+  if (at <= 0 || at === value.length - 1) return false;
+  const local = value.slice(0, at);
+  const domain = value.slice(at + 1);
+  if (local.length > 64 || domain.length > 253) return false;
+  if (/[\s@]/.test(local) || /[\s@]/.test(domain)) return false;
+  const dot = domain.lastIndexOf('.');
+  return dot > 0 && dot < domain.length - 1;
+}
+
 export { UUID_RE };

@@ -3,9 +3,38 @@ import { ApiError } from '../lib/errors.js';
 export const remoteUnavailable = () => new ApiError(502, 'UI_REMOTE_UNAVAILABLE', 'The map or image service is temporarily unavailable');
 const HEADERS = { 'User-Agent': 'Socrates/1.0 (+https://topodrive.top; Intelligence UI)' };
 
-/** Read through the configured fetch/proxy, never redirect to an unvalidated host. */
+/** Bing thumbnails: tse1-4 / tss1-4, never an arbitrary subdomain. */
+const BING_THUMB_HOST = /^t(?:se|s)[1-4]\.mm\.bing\.net$/;
+
+/**
+ * Read through the configured fetch/proxy, never redirect to an unvalidated host.
+ *
+ * Every caller passes a URL built from a fixed provider origin, but the
+ * value still crosses a module boundary (and the image proxy forwards a
+ * user-supplied thumbnail URL), so the host is re-checked here: only the
+ * providers this module actually queries are reachable, over https, with
+ * no embedded credentials. An internal or loopback address can never be
+ * reached through the proxy.
+ */
 export async function remoteBytes(url: string, maxBytes = 2_000_000, timeout = 10000) {
-  const response = await fetch(url, { headers: HEADERS, redirect: 'error', signal: AbortSignal.timeout(timeout) });
+  let target: URL;
+  try {
+    target = new URL(url);
+  } catch {
+    throw remoteUnavailable();
+  }
+  const hostname = target.hostname;
+  const allowedHost = hostname === 'commons.wikimedia.org'
+    || hostname === 'duckduckgo.com'
+    || hostname === 'photon.komoot.io'
+    || hostname === 'router.project-osrm.org'
+    || hostname === 'tiles.openfreemap.org'
+    || hostname === 'upload.wikimedia.org'
+    || BING_THUMB_HOST.test(hostname);
+  if (target.protocol !== 'https:' || target.username || target.password || !allowedHost) {
+    throw remoteUnavailable();
+  }
+  const response = await fetch(target.href, { headers: HEADERS, redirect: 'error', signal: AbortSignal.timeout(timeout) });
   if (!response.ok || !response.body) throw remoteUnavailable();
   const length = Number(response.headers.get('content-length'));
   if (length > maxBytes) { await response.body.cancel(); throw remoteUnavailable(); }

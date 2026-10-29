@@ -34,6 +34,7 @@ import { persistArtifact } from './util/fileArtifacts.js';
 import { publish, subscribe as pubsubSubscribe } from '../lib/pubsub.js';
 import { parseChatSessionId, requireOwnedSession } from '../lib/sessionOwnership.js';
 import { isUuid } from '../lib/validate.js';
+import { resolveInsideRoot } from '../lib/pathSafety.js';
 import { createSessionExecutionLock } from './sessionExecutionLock.js';
 import { MAX_TOOL_STRING_FIELD_CHARS } from './tools/toolCallSafety.js';
 
@@ -120,11 +121,11 @@ const SCRATCH_DIR = process.env.EXEC_SCRATCH_DIR
  * ID. Session IDs are globally unique, yet user scoping makes the filesystem
  * boundary match the database/files API boundary as well. */
 function sessionScratchPath(userId: string, sessionId: string) {
-  return path.join(SCRATCH_DIR, userId, sessionId);
+  return resolveInsideRoot(SCRATCH_DIR, path.join(userId, sessionId));
 }
 
 function executionScratchPath(userId: string, executionId: string) {
-  return path.join(SCRATCH_DIR, userId, 'executions', executionId);
+  return resolveInsideRoot(SCRATCH_DIR, path.join(userId, 'executions', executionId));
 }
 
 interface PyodideWorkerEntry {
@@ -1120,12 +1121,12 @@ export const codeInterpreter = {
        this path for execution; it merely clears legacy root-layout dirs and
        discovers the owner namespace during deletion/cleanup. UUID validation
        above keeps every joined path beneath SCRATCH_DIR. */
-    await fs.rm(path.join(SCRATCH_DIR, sessionId), { recursive: true, force: true }).catch(() => {});
+    await fs.rm(resolveInsideRoot(SCRATCH_DIR, sessionId), { recursive: true, force: true }).catch(() => {});
     let owners: import('node:fs').Dirent[] = [];
     try { owners = await fs.readdir(SCRATCH_DIR, { withFileTypes: true }); } catch { return; }
     await Promise.all(owners
       .filter((entry) => entry.isDirectory() && isUuid(entry.name))
-      .map((entry) => fs.rm(path.join(SCRATCH_DIR, entry.name, sessionId), { recursive: true, force: true }).catch(() => {})));
+      .map((entry) => fs.rm(resolveInsideRoot(SCRATCH_DIR, path.join(entry.name, sessionId)), { recursive: true, force: true }).catch(() => {})));
   },
 
   async reapExecutionScratch(executionId?: string | null, userId?: string | null) {

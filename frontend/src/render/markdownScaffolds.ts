@@ -1,5 +1,6 @@
 /* Incremental previews and plugin registry for Tutor scaffolds during streaming. */
 import { decodeEntities, escAttr, escHTML, stripTags } from './helpers.ts';
+import { stripHtmlTags } from '../util/stripHtml.ts';
 
 /* Stream-time scaffold plugins. */
 interface StreamScaffoldPlugin {
@@ -102,7 +103,7 @@ export function streamScaffoldFallbackLabel(tag: string): string {
 }
 
 export function streamScaffoldFallbackText(content: string): string {
-  const text = String(content || '').replace(/<[^>]+>/g, '').trim();
+  const text = stripHtmlTags(content).trim();
   return text.length > 200 ? text.slice(0, 200) + '…' : text;
 }
 

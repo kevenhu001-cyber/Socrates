@@ -39,6 +39,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { uploadLimiter } from '../middleware/rateLimit.js';
 import { BadRequest, PayloadTooLarge } from '../lib/errors.js';
 import { extractText as dispatch, SUPPORTED_MIMES } from '../services/fileParsers/index.js';
+import { resolveInsideRoot } from '../lib/pathSafety.js';
 
 const MAX_UPLOAD = 25 * 1024 * 1024;        // 25 MB — matches /api/files
 const MAX_TEXT_BYTES = 200 * 1024;          // 200 KB extracted text
@@ -116,10 +117,14 @@ const router = Router();
  */
 router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
   upload.single('file')(req, res, async (multerErr: (Error & { code?: string }) | null) => {
-    const cleanup = () => (req as any).file?.path
-      ? fs.unlink((req as any).file.path).catch(() => {})
-      : Promise.resolve();
+    /* Multer names the temp file with a server-generated uuid, but the
+       value still reaches us through the request object. Resolve it
+       through the temp root once, so every read/unlink below uses a
+       path that is provably contained. */
+    let uploadPath: string | null = null;
+    const cleanup = () => (uploadPath ? fs.unlink(uploadPath).catch(() => {}) : Promise.resolve());
     try {
+      if ((req as any).file?.path) uploadPath = resolveInsideRoot(TMP_DIR, String((req as any).file.path));
       if (multerErr) {
         if (multerErr.code === 'LIMIT_FILE_SIZE') {
           await cleanup();
@@ -142,13 +147,13 @@ router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
              (not a path); files.ts preview uses the same convention. */
           const mod = await import('pdf-parse');
           const pdfParse = mod.default || mod;
-          const result = await pdfParse(await fs.readFile((req as any).file.path));
+          const result = await pdfParse(await fs.readFile(uploadPath!));
           extractResult = {
             text: String((result && result.text) || ''),
             meta: { pageCount: result && result.numpages ? Number(result.numpages) : 0 },
           };
         } else {
-          extractResult = await dispatch(mime, (req as any).file.path);
+          extractResult = await dispatch(mime, uploadPath!);
         }
       } catch (e) {
         await cleanup();

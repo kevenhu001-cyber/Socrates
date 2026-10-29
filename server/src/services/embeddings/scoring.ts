@@ -190,8 +190,13 @@ export function contentQualityBoost(wordCount: number): number {
 /* ─── Tokenization ─── */
 
 /* Unicode ranges for major scripts. Used to detect the language cluster
- * of a query or result and to apply length-aware token filters. */
-const CJK_RE = /[㐀-鿿豈-﫿가-힯]/;
+ * of a query or result and to apply length-aware token filters.
+ *
+ * Spelled as escapes rather than literal glyphs: the previous literal
+ * form silently encoded U+8C48 instead of the intended U+F900 (the two
+ * render identically), which made the compatibility-ideograph range
+ * overlap the main CJK block and swallow unrelated code points. */
+const CJK_RE = /[\u3400-\u9FFF\uF900-\uFAFF\uAC00-\uD7AF]/;
 const CYRILLIC_RE = /[Ѐ-ӿ]/;
 const LATIN_RE = /[A-Za-zÀ-ÖØ-öø-ÿĀ-ſ]/;
 

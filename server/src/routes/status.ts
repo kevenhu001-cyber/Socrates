@@ -4,6 +4,7 @@ import { getDb } from '../db/index.js';
 import { statusMonitorEvents, statusSubscribers } from '../db/schema/index.js';
 import { COMPONENTS, startStatusMonitor, getLiveState, getRequestMetrics, HOST_REBOOTS, overlapMs } from '../services/util/statusMonitor.js';
 import { sendStatusSubscriptionEmail } from '../services/core/email.js';
+import { isEmail } from '../lib/validate.js';
 import crypto from 'node:crypto';
 
 const router = Router();
@@ -340,7 +341,7 @@ router.get('/', async (_req, res) => {
 router.post('/subscribe', async (req, res, next) => {
   try {
     const { email } = req.body;
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!isEmail(email)) {
       return res.status(400).json({ error: 'Valid email required' });
     }
     const db = getDb();

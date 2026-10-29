@@ -8,6 +8,8 @@
  * Bing is accessible from China and returns results in ~3-5s.
  */
 
+import { decodeHtmlEntities, htmlToPlainText } from '../../lib/sanitize.js';
+
 const REQUEST_TIMEOUT = 12_000;
 const MAX_RESULTS = 12;
 
@@ -37,17 +39,28 @@ function randomUA() {
 }
 
 function decodeEntities(s: string): string {
-  if (!s) return s;
-  return s
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&#x([0-9a-fA-F]+);/g, (_: string, h: string) => {
-      try { return String.fromCodePoint(parseInt(h, 16)); } catch { return ''; }
-    })
-    .replace(/&#(\d+);/g, (_: string, d: string) => {
-      try { return String.fromCodePoint(parseInt(d, 10)); } catch { return ''; }
-    });
+  return decodeHtmlEntities(s);
+}
+
+/** Strip markup from a scraped fragment and collapse its whitespace. */
+function cleanFragment(html: string): string {
+  return htmlToPlainText(html).replace(/\s+/g, ' ').trim();
+}
+
+/** Hostname of a URL, or '' when it does not parse. */
+function hostOf(url: string): string {
+  try { return new URL(url).hostname.toLowerCase(); } catch { return ''; }
+}
+
+/**
+ * Reference sites the ranking heuristic promotes. The check runs on the
+ * parsed hostname, not on the URL text: `evil.test/?u=wikipedia.org`
+ * contains the substring without being Wikipedia.
+ */
+function isHighAuthorityHost(hostname: string): boolean {
+  if (!hostname) return false;
+  if (hostname === 'wikipedia.org' || hostname.endsWith('.wikipedia.org')) return true;
+  return hostname.endsWith('.edu') || hostname.startsWith('edu.');
 }
 
 /**
@@ -85,18 +98,18 @@ function parseBingWebHtml(html: string): SearchResult[] {
 
     // Extract title from <a> or <h2> text
     const titleMatch = li.match(/<h2[^>]*>([\s\S]*?)<\/h2>/);
-    const title = titleMatch ? decodeEntities(titleMatch[1].replace(/<[^>]+>/g, '').trim()) : '';
+    const title = titleMatch ? cleanFragment(titleMatch[1]) : '';
 
     // Extract snippet from <p> or .b_caption p or <div class="b_caption">
     let snippet = '';
     const pMatch = li.match(/<p[^>]*>([\s\S]*?)<\/p>/);
     if (pMatch) {
-      snippet = decodeEntities(pMatch[1].replace(/<[^>]+>/g, '').trim());
+      snippet = cleanFragment(pMatch[1]);
     }
     if (!snippet) {
       const capMatch = li.match(/<div[^>]*class="[^"]*b_caption[^"]*"[^>]*>([\s\S]*?)<\/div>/);
       if (capMatch) {
-        snippet = decodeEntities(capMatch[1].replace(/<[^>]+>/g, '').trim());
+        snippet = cleanFragment(capMatch[1]);
       }
     }
 
@@ -107,7 +120,7 @@ function parseBingWebHtml(html: string): SearchResult[] {
       url,
       snippet: snippet.slice(0, 500),
       date: extractDate(snippet),
-      authority: url.includes('wikipedia.org') || url.includes('.edu.') ? 'high' : 'normal',
+      authority: isHighAuthorityHost(hostOf(url)) ? 'high' : 'normal',
       source: 'bing',
     });
 

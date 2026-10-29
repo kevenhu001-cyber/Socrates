@@ -18,10 +18,9 @@
  *     for user-initiated image uploads, not for tight loops.
  */
 
-import { writeFile, unlink, stat } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import nodePath from 'node:path';
-import crypto from 'node:crypto';
 import { isMmxCliAvailable, runMmx } from '../../lib/spawnMmx.js';
 
 const MAX_BYTES = 8 * 1024 * 1024;          // 8 MB
@@ -91,8 +90,13 @@ export async function describeImage({ dataUrl, prompt }: { dataUrl?: string; pro
     throw reject(413, `Image too large (${parsed.buffer.length} > ${MAX_BYTES} bytes)`);
   }
 
-  const tmpPath = nodePath.join(tmpdir(), `mmx-vision-${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${extForMime(parsed.mimeType)}`);
-  await writeFile(tmpPath, parsed.buffer);
+  /* Private scratch directory: mkdtemp hands back a 0700 directory owned
+     by this process, so the uploaded image never lands at a predictable
+     path inside a world-writable /tmp where another local user could
+     plant or read it. */
+  const tmpDir = await mkdtemp(nodePath.join(tmpdir(), 'mmx-vision-'));
+  const tmpPath = nodePath.join(tmpDir, `image.${extForMime(parsed.mimeType)}`);
+  await writeFile(tmpPath, parsed.buffer, { mode: 0o600 });
 
   /* Atomic cleanup — the temp file MUST be unlinked on every exit
      path (success, mmx failure, parse failure, syntax error, OOM,
@@ -105,7 +109,7 @@ export async function describeImage({ dataUrl, prompt }: { dataUrl?: string; pro
   try {
     return await describeImageFile({ path: tmpPath, prompt });
   } finally {
-    await unlink(tmpPath).catch(() => {});
+    await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }
 }
 

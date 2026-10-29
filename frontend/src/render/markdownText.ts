@@ -1,15 +1,13 @@
 /* Plain-text helpers used by message-editing flows. */
 import { _looksLikeInlineMath } from './markdownMath.ts';
 import { stateStore } from '../state/store.js';
+import { stripHtmlTags } from '../util/stripHtml.ts';
 
 /* ── Plain-text helpers (used by message-editing flows) ──────────── */
 
 export function stripMarkdown(s: string | null | undefined): string {
   if (!s) return '';
-  return String(s)
-    .replace(/<\/?[a-zA-Z][^>]*>/g, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '')
+  return stripHtmlTags(String(s))
     .replace(/```[\s\S]*?```/g, '')
     .replace(/~~~[\s\S]*?~~~/g, '')
     .replace(/\$\$[\s\S]*?\$\$/g, '')

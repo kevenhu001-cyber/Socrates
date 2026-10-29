@@ -8,7 +8,8 @@ import { CSP_INLINE_SCRIPT_HASHES } from './generated/cspInlineHashes.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler, timeoutMiddleware } from './middleware/error.js';
-import { searchLimiter, fetchLimiter, clientErrorLimiter } from './middleware/rateLimit.js';
+import { sanitizeLogValue } from './lib/log.js';
+import { searchLimiter, fetchLimiter, clientErrorLimiter, webhookLimiter } from './middleware/rateLimit.js';
 import {
   normalizeClientErrorSeverity,
   clientErrorLogLevel,
@@ -335,7 +336,7 @@ app.use(compression({
 
 // GitHub signatures cover the exact bytes. This must precede express.json
 // and CSRF, otherwise the body is mutated before signature verification.
-app.post('/api/connectors/github/webhook', express.raw({ type: 'application/json', limit: '2mb' }), githubWebhookHandler);
+app.post('/api/connectors/github/webhook', webhookLimiter, express.raw({ type: 'application/json', limit: '2mb' }), githubWebhookHandler);
 
 // Body parsing.
 // P_image-payload-alignment — the limit must fit a full chat payload with
@@ -405,12 +406,12 @@ app.post('/api/client-error', clientErrorLimiter, express.json({ limit: '10kb' }
   write(
     '[client-error]',
     clientErrorLabel(kind, severity),
-    String(correl ?? '').slice(0, 64),
-    String(msg ?? '').slice(0, 500),
-    String(href ?? '').slice(0, 300),
-    String(ua ?? '').slice(0, 200),
+    sanitizeLogValue(correl, 64),
+    sanitizeLogValue(msg, 500),
+    sanitizeLogValue(href, 300),
+    sanitizeLogValue(ua, 200),
   );
-  if (stack) console.error('[client-error-stack]', String(stack).slice(0, 4000));
+  if (stack) console.error('[client-error-stack]', sanitizeLogValue(stack, 4000));
   res.status(204).end();
 });
 
@@ -420,7 +421,7 @@ app.use(csrfProtection);
 // Request logging (lightweight)
 app.use((req, _res, next) => {
   if (process.env.NODE_ENV !== 'production') {
-    console.log(`${req.method} ${req.path}`);
+    console.log(`${sanitizeLogValue(req.method, 16)} ${sanitizeLogValue(req.path, 400)}`);
   }
   next();
 });

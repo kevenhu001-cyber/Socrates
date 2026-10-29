@@ -261,7 +261,7 @@ function guardUserScripts(html, vizId) {
      until the 5s max-timer fired. The wrapper is self-contained —
      no external globals — so it works under sandbox="allow-scripts". */
   var idJson = JSON.stringify(vizId);
-  return String(html || '').replace(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi, function (_, attrs, code) {
+  return String(html || '').replace(/<script(\s[^>]*)?>([\s\S]*?)<\/script\s*>/gi, function (_, attrs, code) {
     var safe = '(function(){' +
       'try{' + code + '}catch(e){' +
       'window.__vizErr=String((e&&e.message)||e).slice(0,300);' +

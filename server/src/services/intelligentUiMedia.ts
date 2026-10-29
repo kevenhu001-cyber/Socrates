@@ -1,10 +1,13 @@
 import { BadRequest } from '../lib/errors.js';
 import { imageSearch } from './webSearch.js';
 import { createRemoteCache, remoteBytes, remoteJson, remoteUnavailable } from './intelligentUiRemote.js';
+import { htmlToPlainText } from '../lib/sanitize.js';
 
 const PREFIX = '/api/v2/intelligent-ui';
 const TILE_ORIGIN = 'https://tiles.openfreemap.org';
-const text = (value: unknown, length = 300): string => typeof value === 'string' ? value.replace(/<[^>]*>/g, '').trim().slice(0, length) : '';
+const text = (value: unknown, length = 300): string => typeof value === 'string'
+  ? htmlToPlainText(value).replace(/\s+/g, ' ').trim().slice(0, length)
+  : '';
 export function queryText(value: unknown): string {
   if (typeof value !== 'string') throw new BadRequest('q must be 2–200 characters');
   const query = value.replace(/\s+/g, ' ').trim();

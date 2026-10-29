@@ -20,9 +20,15 @@ export { recoverUnclosedDisplayMathBeforeHeading } from './markdownBoundary.ts';
    line, which has no trailing newline, be promoted. On a live tail that line
    is still being typed: `$a$` there is as likely to continue as
    `$a$ 和 $b$ …` on the next token, and promoting it would flash a centred
-   formula for one frame. */
-const STANDALONE_MATH_LINE_RE = /(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n|$)/g;
-const STANDALONE_MATH_CLOSED_LINE_RE = /(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n)/g;
+   formula for one frame.
+
+   The content class already excludes both `$` and newline, so the previous
+   `(?:\\[^$\n]*)*` group added no matching power — it only
+   made the two alternatives overlap, which is exponential backtracking on a
+   line full of backslashes. `[^$\n]+` alone accepts exactly the
+   same strings. */
+const STANDALONE_MATH_LINE_RE = /(^|\n)\$([^$\n]+)\$(\s*\n|$)/g;
+const STANDALONE_MATH_CLOSED_LINE_RE = /(^|\n)\$([^$\n]+)\$(\s*\n)/g;
 
 export function promoteStandaloneInlineMath(s: string, complete: boolean): string {
   return s.replace(
@@ -115,8 +121,12 @@ export function preprocessMarkdown(t: string | null | undefined): string {
   /* Strip blockquote markers from lines that contain math.
      Weak models sometimes wrap a formula in `> $$...$$` (even multi-line)
      or `> $...$`, which marked parses as a blockquote and renders
-     with a left border bar that looks like a spurious `>` symbol. */
-  s = s.replace(/(^|\n)(?:[ \t]*>[ \t]*)+\$\$([\s\S]*?)\$\$/g, function (_, lead: string, inner: string) {
+     with a left border bar that looks like a spurious `>` symbol.
+     The `>` stays mandatory inside the repeat, so every gap of whitespace
+     between markers has exactly one parse; the earlier
+     `(?:[ \t]*>[ \t]*)+` let each gap fall on either side of a marker
+     and backtracked exponentially on `>\t>\t>...`. */
+  s = s.replace(/(^|\n)[ \t]*(?:>[ \t]*)+\$\$([\s\S]*?)\$\$/g, function (_, lead: string, inner: string) {
     const cleaned = inner.replace(/^[ \t]*>[ \t]?/gm, '');
     return lead + '$$\n' + cleaned.trim() + '\n$$';
   });
@@ -214,7 +224,7 @@ export function preprocessMarkdownForStreaming(
   s = s.replace(/([^\n])\n(-{3,})\s*(?=\n|$)/g, '$1\n\n$2');
   /* Strip blockquote markers from lines that contain math (mirrors
      the same fix in preprocessMarkdown). */
-  s = s.replace(/(^|\n)(?:[ \t]*>[ \t]*)+\$\$([\s\S]*?)\$\$/g, function (_, lead: string, inner: string) {
+  s = s.replace(/(^|\n)[ \t]*(?:>[ \t]*)+\$\$([\s\S]*?)\$\$/g, function (_, lead: string, inner: string) {
     const cleaned = inner.replace(/^[ \t]*>[ \t]?/gm, '');
     return lead + '$$\n' + cleaned.trim() + '\n$$';
   });

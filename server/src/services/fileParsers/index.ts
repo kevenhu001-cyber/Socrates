@@ -32,32 +32,37 @@ type ExtractResult = {
 
 type Parser = (filepath: string) => Promise<ExtractResult>;
 
-export const PARSERS: Record<string, Parser | null> = {
-  'application/pdf': null, // PDF stays on pdf-parse (separate path in routes/fileExtract.js)
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': docxExtract,
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': xlsxExtract,
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': pptxExtract,
-  'application/epub+zip': epubExtract,
-  'application/rtf': rtfExtract,
-  'text/rtf': rtfExtract,
+/* A Map rather than a plain object: `PARSERS[mimeType]` on an object
+   literal also resolves inherited members, so a caller sending
+   `mimeType = "constructor"` would reach `Object` instead of an
+   extractor. `Map.get` only ever returns a value that was registered. */
+export const PARSERS = new Map<string, Parser>([
+  ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', docxExtract],
+  ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', xlsxExtract],
+  ['application/vnd.openxmlformats-officedocument.presentationml.presentation', pptxExtract],
+  ['application/epub+zip', epubExtract],
+  ['application/rtf', rtfExtract],
+  ['text/rtf', rtfExtract],
   /* Legacy Office — OLE/BIFF binaries via word-extractor / SheetJS. */
-  'application/msword': legacyDocExtract,
-  'application/vnd.ms-excel': legacyXlsExtract,
+  ['application/msword', legacyDocExtract],
+  ['application/vnd.ms-excel', legacyXlsExtract],
   /* OpenDocument — ZIP+XML via the same JSZip+xml2js stack as PPTX. */
-  'application/vnd.oasis.opendocument.text': extractOdt,
-  'application/vnd.oasis.opendocument.spreadsheet': extractOds,
-  'application/vnd.oasis.opendocument.presentation': extractOdp,
+  ['application/vnd.oasis.opendocument.text', extractOdt],
+  ['application/vnd.oasis.opendocument.spreadsheet', extractOds],
+  ['application/vnd.oasis.opendocument.presentation', extractOdp],
   /* Legacy .ppt has no pure-JS extractor — intentionally unmapped so
-     callers fall back to the metadata-only note instead of crashing. */
-};
+     callers fall back to the metadata-only note instead of crashing.
+     PDF is unmapped for the same reason: routes/fileExtract.ts keeps it
+     on pdf-parse, which needs a Buffer rather than a path. */
+]);
 
 /**
  * Dispatch extraction by MIME type. Returns `{ text, truncated, meta }`
  * or throws on unsupported / parse failure.
  */
 export async function extractText(mimeType: string, filepath: string) {
-  const fn = PARSERS[mimeType];
-  if (typeof fn !== 'function') {
+  const fn = PARSERS.get(mimeType);
+  if (!fn) {
     const err = new Error(`unsupported_mime:${mimeType}`) as Error & { code: string };
     err.code = 'UNSUPPORTED_MIME';
     throw err;
@@ -65,4 +70,4 @@ export async function extractText(mimeType: string, filepath: string) {
   return await fn(filepath);
 }
 
-export const SUPPORTED_MIMES = Object.keys(PARSERS).filter((m) => m !== 'application/pdf');
+export const SUPPORTED_MIMES = [...PARSERS.keys()];

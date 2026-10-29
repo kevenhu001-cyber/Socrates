@@ -27,7 +27,11 @@ const FENCE_RE = /^```([a-zA-Z0-9_+-]*)[ \t]*\r?\n([\s\S]*?)\r?\n?```[ \t]*$/;
 
 function formatCodeBlock(lang: string, code: string): string {
   const safeLang = safeHljsLang(lang);
-  const langClass = safeLang ? ` class="language-${escHTML(safeLang)}"` : '';
+  /* Whitelist the class token: safeHljsLang returns the raw lowercased tag
+     when highlight.js is not loaded yet, and escHTML leaves quotes alone —
+     a tag like `x" onload="` would break out of the attribute. */
+  const langToken = safeLang.replace(/[^a-z0-9_+-]/g, '');
+  const langClass = langToken ? ` class="language-${langToken}"` : '';
   return `<pre class="agent-tool-output-pre"><code${langClass}>${escHTML(code)}</code></pre>`;
 }
 

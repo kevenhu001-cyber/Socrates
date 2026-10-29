@@ -13,6 +13,8 @@ import {
   BadRequest, Unauthorized, Forbidden, NotFound, Conflict,
 } from '../../lib/errors.js';
 import { invalidateAuthCache, invalidateAuthCacheForUser } from '../../lib/authCache.js';
+import { sanitizeLogValue } from '../../lib/log.js';
+import { isEmail } from '../../lib/validate.js';
 import {
   sendVerificationEmail, sendPasswordResetEmail, sendLoginCode,
   sendDuplicateRegistrationEmail,
@@ -377,7 +379,7 @@ export async function register(email: string, password: string) {
   if (!email || !password) throw new BadRequest('Email and password are required');
 
   const normalizedEmail = email.toLowerCase().trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+  if (!isEmail(normalizedEmail)) {
     throw new BadRequest('Invalid email format');
   }
   if (password.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
@@ -392,7 +394,7 @@ export async function register(email: string, password: string) {
   // caller's perspective as a fresh registration.
   const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (existing) {
-    console.log(`[auth] register: user already exists for ${maskEmail(normalizedEmail)} — sending duplicate-registration notice`);
+    console.log(`[auth] register: user already exists for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)} — sending duplicate-registration notice`);
     try { await sendDuplicateRegistrationEmail(normalizedEmail); } catch (e) { console.warn('[auth] duplicate-registration notice failed:', (e as Error).message); }
     return { ok: true };
   }
@@ -452,13 +454,13 @@ export async function resendVerification(email: string) {
   const [existing] = await db.select().from(users)
     .where(eq(users.email, normalizedEmail)).limit(1);
   if (!pending && !existing) {
-    console.log(`[auth] resend-verification: no pending or existing user for ${maskEmail(normalizedEmail)}`);
+    console.log(`[auth] resend-verification: no pending or existing user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`);
     return { ok: true };
   }
   if (existing) {
     // Already verified — send the duplicate-registration notice so
     // the address owner is informed.
-    console.log(`[auth] resend-verification: existing verified user for ${maskEmail(normalizedEmail)} — sending duplicate-registration notice`);
+    console.log(`[auth] resend-verification: existing verified user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)} — sending duplicate-registration notice`);
     try { await sendDuplicateRegistrationEmail(normalizedEmail); } catch (e) { console.warn('[auth] duplicate-registration notice failed:', (e as Error).message); }
     return { ok: true };
   }
@@ -621,7 +623,7 @@ export async function sendCode(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!user) {
     // Don't reveal whether the user exists; still "send" the code
-    console.log(`[auth] send-code: no user for ${maskEmail(normalizedEmail)}`);
+    console.log(`[auth] send-code: no user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`);
     return;
   }
 
@@ -714,7 +716,7 @@ export async function forgotPassword(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!user) {
     // Don't reveal whether the user exists
-    console.log(`[auth] forgot-password: no user for ${maskEmail(normalizedEmail)}`);
+    console.log(`[auth] forgot-password: no user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`);
     return;
   }
 

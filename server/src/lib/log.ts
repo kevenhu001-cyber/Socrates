@@ -86,3 +86,23 @@ export function stripQuery(rawUrl: unknown): string {
   const qIdx = rawUrl.indexOf('?');
   return qIdx < 0 ? rawUrl : rawUrl.slice(0, qIdx);
 }
+
+/**
+ * Neutralise a value before it is interpolated into a log line.
+ *
+ * Request paths, headers, e-mail addresses and upstream error messages are
+ * all shaped by the caller. With CR/LF intact they can terminate the real
+ * line and forge a second one (log injection / CWE-117), which breaks
+ * `grep`-based alerting and lets an attacker plant "audit passed" entries.
+ * Every raw string that reaches `console.*` goes through here first.
+ *
+ * Line separators are replaced with a single space so the substituted text
+ * stays readable; other control characters are dropped outright. The
+ * optional length cap keeps a 10 MB header from filling the log stream.
+ */
+export function sanitizeLogValue(value: unknown, maxLength = 300): string {
+  return String(value ?? '')
+    .replace(/[\r\n\u2028\u2029]+/g, ' ')
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')
+    .slice(0, maxLength);
+}

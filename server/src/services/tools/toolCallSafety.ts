@@ -850,7 +850,10 @@ export function wrapUntrustedToolResult(toolName: string | undefined, content: u
   const raw = String(content ?? '');
   const truncated = raw.length > MAX_TOOL_RESULT_CHARS;
   const escaped = (truncated ? raw.slice(0, MAX_TOOL_RESULT_CHARS) : raw)
-    .replace(/<\/?tool_data\b[^>]*>/gi, (tag) => tag.replace('<', '&lt;').replace('>', '&gt;'));
+    /* Escape every angle bracket in the matched tag, not just the first
+       two: a single `.replace('<', …)` leaves the rest of an attribute
+       value able to close the wrapper tag. */
+    .replace(/<\/?tool_data\b[^>]*>/gi, (tag) => tag.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
   const label = String(toolName || 'tool').replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 128);
   const body = truncated
     ? `${escaped}\n\n[...truncated to ${MAX_TOOL_RESULT_CHARS} chars — the remainder of the tool output was dropped...]`

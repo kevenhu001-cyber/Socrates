@@ -5,6 +5,8 @@
    but the renderer's helpers follow the existing calling conventions
    in the 600-line formatMsg function). */
 
+import { stripHtmlTags } from '../util/stripHtml.ts';
+
 export function esc(s: unknown): string {
   if (s == null) return '';
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -28,7 +30,7 @@ export function decodeEntities(s: string): string {
 }
 
 export function stripTags(s: string): string {
-  return s.replace(/<[^>]+>/g, '');
+  return stripHtmlTags(s);
 }
 
 /* P_strip-citations — remove [1] / [2,3] / [1][2][3] / 【1】 style web-search
@@ -325,8 +327,11 @@ export function _autoWrapBareBracketMath(s: string): string {
    `$$…$$` / `\[…\]` display math are left alone: `#` there is a KaTeX
    parse error, not a heading. `#include`/`#!`-style unfenced code lines
    bail out via a small directive guard — a real heading virtually never
-   reads `#include`. */
-const HEADING_RUN_RE = /^([ \t]{0,3}(?:(?:>[ \t]*)+|(?:[-*+]|\d{1,9}[.)])[ \t]+)*)([#＃]+)/;
+   reads `#include`. The container prefix takes one `>` per repeat rather
+   than a `+` group of them: with the group form a `>\t>\t…` run had two
+   ways to place each gap of whitespace and backtracked exponentially on
+   every streaming frame. */
+const HEADING_RUN_RE = /^([ \t]{0,3}(?:>[ \t]*|(?:[-*+]|\d{1,9}[.)])[ \t]+)*)([#＃]+)/;
 
 /* P_heading-repair — heading shapes CommonMark rejects that models emit:
 
@@ -430,7 +435,7 @@ function repairHeadingRun(lines: string[], index: number): void {
     lines[index] = prefix + run + rest;
   }
   if (!/\S/.test(rest)) {
-    lines[index] = prefix + run.replace(/#/g, '\\#');
+    lines[index] = prefix + run.replace(/\\/g, '\\\\').replace(/#/g, '\\#');
     return;
   }
   if (/^[ \t]/.test(rest)) return;
