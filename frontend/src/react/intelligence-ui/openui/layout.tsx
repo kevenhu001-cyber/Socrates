@@ -128,7 +128,7 @@ export const Card = defineComponent({
     padding: z.number().optional(),
     gap: z.number().optional(),
   }),
-  description: "Panel with a border; soft is a filled panel for summaries.",
+  description: "Borderless semantic group with compact spacing. Prefer plain Col for a continuous explanation; soft adds a subtle filled surface for a distinct summary. Avoid nesting cards.",
   component: ({ props, renderNode }) => (
     <section
       className={cx("iui-card", props.variant === "soft" && "iui-card-soft", props.gap == null && "iui-flow")}

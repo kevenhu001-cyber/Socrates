@@ -1,5 +1,14 @@
 /* English locale table. Kept synchronous because it is the fallback for all locales. */
 export const en = {
+    "intui.simSpeed": "Speed",
+    "intui.simAngle": "Angle",
+    "intui.simGravity": "Gravity",
+    "intui.simIdeal": "Ideal projectile · no air resistance · axes auto-scale",
+    "intui.simTime": "Time",
+    "intui.simPlay": "Play",
+    "intui.simPause": "Pause",
+    "intui.simReset": "Reset",
+
     "chat.modelBusyCooldown": "The model is busy. Try again in about {seconds}s, or switch models.",
     "sidebar.organize": "Organize chats",
     "sidebar.organize.list": "As a list",

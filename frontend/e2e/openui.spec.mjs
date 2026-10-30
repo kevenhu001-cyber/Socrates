@@ -221,7 +221,7 @@ test('buttons without actions cannot accidentally send chat and offer explicit r
 });
 
 for (const viewport of ['desktop', 'mobile']) {
-  test(`OpenUI card titles retain readable width and nested card frames (${viewport})`, async ({ page }) => {
+  test(`OpenUI card titles retain readable width without nested card frames (${viewport})`, async ({ page }) => {
     const source = 'root = Col([Grid([Card([Title("学习计划","lg"),Text("每日练习")]),Card([Title("复习安排","lg"),Text("温故知新")]),Card([Title("学习成果","lg"),Text("记录进步")])],3),Row([Title("课程说明","lg"),Text("通过每日练习和及时复习逐步掌握知识，调整学习节奏并记录自己的进步。")])])';
     await prepareChatWorkbench(page, { messages: [message(source)], viewport: WORKBENCH_VIEWPORTS[viewport] });
     const ui = page.locator('.intui-openui');
@@ -234,7 +234,7 @@ for (const viewport of ['desktop', 'mobile']) {
       expect(geometry.height).toBeLessThanOrEqual(geometry.lineHeight + 1);
       expect(geometry.paddingRight).toBe(0);
     }
-    expect(await ui.locator('.iui-card').first().evaluate((el) => parseFloat(getComputedStyle(el).borderTopWidth))).toBeGreaterThan(0);
+    await expect(ui.locator('.iui-card').first()).toHaveCSS('border-top-width', '0px');
     const header = await page.locator('.intui-surface-header').boundingBox();
     const firstCard = await ui.locator('.iui-card').first().boundingBox();
     expect(header.y + header.height).toBeLessThanOrEqual(firstCard.y);

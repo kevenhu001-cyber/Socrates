@@ -73,6 +73,8 @@ Conventions these follow: a failing check prints the offending `file:line` and e
 
 ## Incremental testing (required)
 
+**Testing cadence (user instruction, 2026-10-30):** Complete all planned changes in the current UI/UX consistency pass before starting builds or tests. Then run one consolidated verification pass scoped to the final diff. Do not alternate between implementing small batches and testing each batch. After a verification failure, fix the issue and rerun only the affected checks. This timing rule takes precedence over any earlier instruction to build or test during implementation.
+
 Do not run the full `test:unit` / Playwright suites for every change. Tests are slow
 (unit ≈2 min, full Playwright much longer), so map the diff to tests and run only those.
 

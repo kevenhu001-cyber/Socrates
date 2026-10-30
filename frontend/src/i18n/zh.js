@@ -3,6 +3,15 @@
    pay for it, and zh users fetch it in parallel with the auth boot
    fetches while the boot-loading screen is still up. */
 export const zh = {
+    "intui.simSpeed": "初速度",
+    "intui.simAngle": "发射角度",
+    "intui.simGravity": "重力加速度",
+    "intui.simIdeal": "理想抛体 · 忽略空气阻力 · 坐标轴自动缩放",
+    "intui.simTime": "时间",
+    "intui.simPlay": "播放",
+    "intui.simPause": "暂停",
+    "intui.simReset": "重置",
+
     "chat.modelBusyCooldown": "模型繁忙，约 {seconds} 秒后可重试，也可以切换模型。",
     "sidebar.organize": "整理聊天",
     "sidebar.organize.list": "按列表",
