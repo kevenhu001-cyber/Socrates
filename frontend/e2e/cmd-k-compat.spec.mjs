@@ -1,8 +1,7 @@
 // e2e/cmd-k-compat.spec.mjs — Batch 1.5 of the React + TypeScript migration
 // Spec: when the app boots with ?react=1, the Cmd+K palette is owned by
 // React. The legacy window.openCmdK() / onCmdKInput() entry points still
-// drive behaviour — React renders the modal contents, the legacy module
-// owns the state machine.
+// drive behavior — React renders the modal contents from the shared module store.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -15,7 +14,7 @@ test('Cmd-K React mode hydrates the overlay with React', async ({ page }) => {
   await waitForAppShell(page);
 
   // The overlay element is the same DOM node the legacy app uses; ownership
-  // is module-private and the installed bridge is the observable contract.
+  // is module-private and no global state bridge is installed.
   const overlay = page.locator('#cmdKOverlay');
   await expect(overlay).not.toHaveAttribute('data-mounted-by', /.+/);
 
@@ -23,24 +22,8 @@ test('Cmd-K React mode hydrates the overlay with React', async ({ page }) => {
   const modal = page.locator('#cmdKModal, .cmd-k-modal').first();
   await expect(modal).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  // Cmd-K bridge should be installed and expose a snapshot.
-  const snapshot = await page.evaluate(() => {
-    const bridge = window.__socratesCmdK;
-    if (!bridge || typeof bridge.getSnapshot !== 'function') return null;
-    const s = bridge.getSnapshot();
-    return {
-      isOpen: s.isOpen,
-      revision: s.revision,
-      hasQuery: typeof s.query === 'string',
-      resultsIsArray: Array.isArray(s.results),
-    };
-  });
-  expect(snapshot).not.toBeNull();
-  expect(snapshot).toMatchObject({
-    isOpen: false,
-    hasQuery: true,
-    resultsIsArray: true,
-  });
+  await expect(modal).toHaveAttribute('data-react-cmdk-state', 'closed');
+  expect(await page.evaluate(() => !('__socratesCmdK' in window))).toBe(true);
 });
 
 test('Cmd-K React mode opens via the legacy entry point and React renders the modal', async ({ page }) => {
@@ -49,8 +32,12 @@ test('Cmd-K React mode opens via the legacy entry point and React renders the mo
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Trigger via the legacy window.openCmdK() — proves the React bridge
-  // observes the same entry point the rest of the app uses.
+  // Return a server result so the shared state publication is observable in React.
+  await page.route('**/search**', (route) => route.fulfill({
+    json: { hits: [{ id: 'cmdk-e2e-result', title: 'React search result', snippet: 'module store result' }] },
+  }));
+
+  // Trigger via the legacy window.openCmdK() used by the rest of the app.
   await page.evaluate(() => {
     if (typeof window.openCmdK === 'function') window.openCmdK();
   });
@@ -66,12 +53,10 @@ test('Cmd-K React mode opens via the legacy entry point and React renders the mo
   await page.keyboard.type('react', { delay: 30 });
   await expect(input).toHaveValue(/react/);
 
-  // Bridge snapshot should reflect the open state + query.
-  const afterType = await page.evaluate(() => {
-    const s = window.__socratesCmdK?.getSnapshot();
-    return s ? { isOpen: s.isOpen, query: s.query } : null;
-  });
-  expect(afterType).toMatchObject({ isOpen: true, query: 'react' });
+  await expect(page.locator('#cmdKModal')).toHaveAttribute('data-react-cmdk-state', 'open');
+  const result = page.locator('.cmd-k-row[data-id="cmdk-e2e-result"]');
+  await expect(result).toBeVisible();
+  await expect(result).toHaveClass(/selected/);
 
   // Escape closes the palette — the React component dispatches through
   // the legacy onCmdKKey, which still toggles the overlay's hidden class.
@@ -88,6 +73,6 @@ test('Cmd-K React mode always loads (no ?react=1 flag needed)', async ({ page })
   const overlay = page.locator('#cmdKOverlay');
   await expect(overlay).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  const hasBridge = await page.evaluate(() => typeof window.__socratesCmdK === 'object' && window.__socratesCmdK !== null);
-  expect(hasBridge).toBe(true);
+  const retired = await page.evaluate(() => !('__socratesCmdK' in window));
+  expect(retired).toBe(true);
 });

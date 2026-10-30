@@ -63,6 +63,9 @@ index.html                         静态 shell / 挂载宿主 / CSP
 - Recents/session-list 数据由 `session/sessionListPublisher.ts` 汇总后发布到 `ui/sessionListState.ts`；
   React 与 composer queue banner 订阅同一模块状态，选中行的即时高亮也更新此 store，不再依赖
   `window.__socratesSessionListBridge`。`window.SERVER_SESSIONS` 仍是旧 session cache 的兼容入口。
+- Cmd-K 搜索状态由 `ui/cmdKState.ts` 持有；懒加载的 `ui/cmdK.impl.ts` 发布搜索结果，React 菜单订阅
+  同一模块 store。命令动作仍通过 `window.openCmdK` 等兼容入口触发，不再经 `window.__socratesCmdK`
+  发布状态。
 - 消息列表直接订阅聊天运行时；没有消费者的独立消息列表 bridge 已删除。
 - `auth` 的 `__socratesMountReactCompatibility` 仍是兼容启动通知，保留认证后才加载
   editor / modal 的时序。消息挂载和分享接管的四个 window 字段已由中立模块替代。
@@ -151,7 +154,7 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 | 第五轮：模态无障碍标准化、桥接直调解耦与附件类型化 | 24/24 | 26 个用例全通：sidebar-nav 16/16，message-list 7/7，recents-archive 1/1，storage-bootstrap 1/1 |
 | 第六轮：Admin 模态标准化、10 个遗留模块 TS 迁移与基线紧缩 | 14/14 | 22 个用例全通：sidebar-nav 16/16，chrome-i18n 4/4，recents-archive 1/1，storage-bootstrap 1/1 |
 
-当前最小单测：ownedRoot、modalA11y、cookieConsent、foundationTokens、legacyGateway、attachments、proseRenderer。
+当前最小单测：ownedRoot、modalA11y、cookieConsent、foundationTokens、legacyGateway、attachments、sessionListState、cmdKState、proseRenderer。
 先 build，再按 diff 跑 message-list-compat、share-view、whiteboard-lifecycle、chat-send、
 chat-stop-resend、streaming-render、react-compat、storage-bootstrap、recents-archive 等 Playwright。
 frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告保持 gitignored。
@@ -175,7 +178,7 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
 5. 生产打包零警告（0 project warnings）：彻底解决 Rollup 中由于动态按需导入与静态首屏引入冲突导致的模块 chunk 合并警告。
 6. KaTeX 数学重新渲染版本计数解耦，由类型化模块 `render/mathRevision.ts` 集中管理，消除 `MessageList` 与 `proseRenderer` 跨层直读 `window.__socratesMathRenderRev`。
 7. `ui/toast.js` 统一重构为类型化 `ui/toast.ts`，修复并兼容毫秒数字直传参数，收窄遗留 JS 资产基线。
-8. 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile、sidebar 用户摘要、Composer Tools、附件与 session-list 状态分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts`、`ui/composerToolsState.ts`、`ui/attachmentsState.ts`、`ui/sessionListState.ts` 持有；十个相应 window bridge 已删除。
+8. 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile、sidebar 用户摘要、Composer Tools、附件、session-list 与 Cmd-K 状态分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts`、`ui/composerToolsState.ts`、`ui/attachmentsState.ts`、`ui/sessionListState.ts`、`ui/cmdKState.ts` 持有；十一个相应 window bridge 已删除。
 
 历史阶段验证均为 Chromium + localhost mock API。未以此宣称 Safari / Android / iOS 原生签收或帧率基准。
 

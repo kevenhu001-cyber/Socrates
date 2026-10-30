@@ -2,13 +2,10 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useEffect, useRef } from 'react';
 import type { Root } from 'react-dom/client';
 
-import { installCmdKBridge } from './cmdk.bridge';
 import {
   useCmdKCommands,
-  useCmdKResults,
   useCmdKSnapshot,
-  useIsCmdKOpen,
-} from './cmdk.bridge';
+} from './cmdk.store';
 import { CmdKSearchInput } from './CmdKSearchInput';
 import { CommandPaletteResults } from './CommandPaletteResults';
 import { t } from './text';
@@ -41,13 +38,13 @@ function PaletteFooter() {
 }
 
 /**
- * Results come from the typed command palette snapshot; the established row
+ * Results come from the shared command palette state; the established row
  * classes keep the existing visual styles, while React owns the event wiring.
  */
 function CommandPalette() {
   const snapshot = useCmdKSnapshot();
-  const open = useIsCmdKOpen();
-  const results = useCmdKResults();
+  const open = snapshot.isOpen;
+  const results = snapshot.results;
   const commands = useCmdKCommands();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -117,5 +114,5 @@ export interface CmdKReactRootHandle {
 export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  return { overlay, ...mountOwnedRoot(overlay, 'cmd-k', <CommandPalette />, installCmdKBridge) };
+  return { overlay, ...mountOwnedRoot(overlay, 'cmd-k', <CommandPalette />) };
 }

@@ -1,15 +1,13 @@
 export { hydrateCmdKOverlay } from './CommandPalette';
 export {
-  installCmdKBridge,
   getCmdKSnapshot,
   subscribeToCmdK,
   useCmdKSnapshot,
   useIsCmdKOpen,
   useCmdKResults,
   useCmdKCommands,
-} from './cmdk.bridge';
+} from './cmdk.store';
 export type {
-  CmdKBridge,
   CmdKSnapshot,
   CmdKHit,
   CmdKDoc,
@@ -18,4 +16,4 @@ export type {
   CmdKSessionDoc,
   CmdKMessageDoc,
   CmdKRemoteDoc,
-} from './types';
+} from '../../ui/cmdKState.ts';

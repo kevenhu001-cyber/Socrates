@@ -195,6 +195,8 @@ New files: `src/react/confirm/{ConfirmDialog.tsx, confirm.bridge.ts, types.ts, i
 
 **Follow-up (2026-10-30):** `window.__socratesSessionListBridge` was retired. `session/sessionListPublisher.ts` publishes filtered rows to `ui/sessionListState.ts`, and React session-list components plus the composer queue banner subscribe to that module. The duplicate, unused organizer-side bridge publisher was removed; the performance fixture now updates the existing `window.SERVER_SESSIONS` array and invokes `window.renderRecents()`. `sessionListState.test.mjs` covers immutable snapshots and optimistic selection; the performance fixture covers 20/500/2000 rows through the actual publisher path.
 
+**Follow-up (2026-10-30):** `window.__socratesCmdK` was retired. Lazy `ui/cmdK.impl.ts` publishes open/query/results/recent state through `ui/cmdKState.ts`; React subscribes to the module store, while the legacy `window.openCmdK` and input/key actions remain available. `cmdKState.test.mjs` covers snapshot copying, and `cmd-k-compat.spec.mjs` now verifies rendered search results and the removed global.
+
 ### Step 4.3 rebaseline (2026-09-01)
 
 The original Step 4.3 estimate assumed that Step 4.2 would leave `ui/delegate.js` unused. The audit after 4.2 found that the static shell in `index.html` still contained 143 `data-action` attributes across roughly 40 actions, while `windowExports.js` still exposed about 100 `window.X = X` bindings. Step 4.3 is therefore split into independently reviewable substeps: Auth, display preferences, sidebar/navigation, composer/mode, workspace controls, modal backdrops, and finally delegate deletion.

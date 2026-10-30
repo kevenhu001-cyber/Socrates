@@ -4,23 +4,15 @@ import { loadSession } from '../session/loader.ts';
 import { ensureFuse } from '../vendor/lazy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { publishCmdKState } from './cmdKState.ts';
+import type { CmdKDoc, CmdKRemoteDoc, CmdKHit } from './cmdKState.ts';
 
 
 /* Deferred Cmd-K search runtime. */
-interface CmdKDocument {
-  kind: 'session' | 'message' | 'remote';
-  id: string;
-  sessionId?: string;
-  title: string;
-  topic?: string;
-  mode?: string;
-  updatedAt?: string | number;
-  snippet: string;
-}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
-function parseRemoteHit(value: unknown): CmdKDocument | null {
+function parseRemoteHit(value: unknown): CmdKRemoteDoc | null {
   if (!isRecord(value) || (typeof value.id !== 'string' && typeof value.id !== 'number')) return null;
   if (typeof value.title !== 'string') return null;
   return {
@@ -31,17 +23,14 @@ function parseRemoteHit(value: unknown): CmdKDocument | null {
     snippet: typeof value.snippet === 'string' ? value.snippet : '',
   };
 }
-let _cmdKIndex: import('fuse.js').default<CmdKDocument> | null = null;
-interface CmdKResult {
-  item: CmdKDocument;
-  refIndex?: number;
-  matches?: ReadonlyArray<unknown>;
+let _cmdKIndex: import('fuse.js').default<CmdKDoc> | null = null;
+interface CmdKResult extends CmdKHit {
+  item: CmdKDoc;
   score?: number;
   _remote?: true;
 }
 type RemoteCmdKResult = CmdKResult & { _remote: true };
 let _cmdKIndexDirty = false;
-let _cmdKIndexDocs: CmdKDocument[] = [];
 let _cmdKResults: CmdKResult[] = [];
 let _cmdKSelected = 0;
 let _cmdKRecent: string[] = [];
@@ -58,7 +47,6 @@ function markCmdKIndexDirty() { _cmdKIndexDirty = true; }
 export function resetCmdKSearchState() {
   _cmdKIndex = null;
   _cmdKIndexDirty = false;
-  _cmdKIndexDocs = [];
   _cmdKResults = [];
   _cmdKSelected = 0;
   _cmdKRecent = [];
@@ -69,21 +57,15 @@ export function resetCmdKSearchState() {
 }
 
 function _publishCmdKState() {
-  try {
-    const bridge = browserWindow.__socratesCmdK;
-    if (bridge && typeof bridge.publish === "function") {
-      bridge.publish({
-        isOpen: !document.getElementById("cmdKOverlay")!.classList.contains("hidden"),
-        query: ((document.getElementById("cmdKInput") || {}) as HTMLInputElement).value || "",
-        results: _cmdKResults,
-        selectedIndex: _cmdKSelected,
-        recent: _cmdKRecent,
-      });
-    }
-  } catch (_) {
-    reportSwallow(_, 'empty catch: ui/cmdK.impl.ts:44', 'expected');
-    /* best-effort bridge */
-  }
+  const overlay = document.getElementById("cmdKOverlay");
+  const input = document.getElementById("cmdKInput") as HTMLInputElement | null;
+  publishCmdKState({
+    isOpen: !!overlay && !overlay.classList.contains("hidden"),
+    query: input?.value || "",
+    results: _cmdKResults,
+    selectedIndex: _cmdKSelected,
+    recent: _cmdKRecent,
+  });
 }
 
 function rebuildCmdKIndex() {
@@ -111,7 +93,7 @@ function rebuildCmdKIndex() {
     }
     return;
   }
-  const docs: CmdKDocument[] = [];
+  const docs: CmdKDoc[] = [];
   const sessions = browserWindow.SERVER_SESSIONS || [];
   sessions.forEach(function (s) {
     docs.push({
@@ -138,7 +120,6 @@ function rebuildCmdKIndex() {
       snippet: message.rawText.slice(0, 200),
     });
   });
-  _cmdKIndexDocs = docs;
   _cmdKIndex = new browserWindow.Fuse(docs, {
     keys: ["title", "topic", "snippet"],
     threshold: 0.4,

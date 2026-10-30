@@ -80,7 +80,6 @@ declare global {
     // exact type here.
 
     __socratesReactChatBridge?: unknown;
-    __socratesCmdK?: unknown;
 
     // ── Legacy inline handler functions (windowExports.js) ──────────
 
