@@ -175,8 +175,11 @@ export function createStreamReveal() {
   let suffix = '';
   let runs: Run[] = [];
   return (root: Element, nextSource: string, now = performance.now()): number => {
-    const view = root.ownerDocument.defaultView as (Window & { __socratesSmoothStream?: boolean }) | null;
-    if (view?.__socratesSmoothStream === false || view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    const view = root.ownerDocument.defaultView;
+    let smoothStreamDisabled = false;
+    try { smoothStreamDisabled = view?.localStorage.getItem('socrates:smoothStream') === 'off'; }
+    catch { /* empty-catch: intentional — localStorage may be unavailable in an opaque document. */ }
+    if (smoothStreamDisabled || view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       source = nextSource;
       suffix = '';
       runs = [];

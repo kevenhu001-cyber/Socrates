@@ -21,7 +21,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "__loadExamModule": () => Promise<typeof import("../exam")>;
   "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;
   "__socratesKeyboard": ReturnType<typeof import("../ui/keyboard/index")["initKeyboardLift"]>;
-  "__socratesSmoothStream": unknown;
   "__testActivateMainView": (viewId: string) => boolean;
   "_activeTemplate": import("../chat/templateSystemPrompt").ActiveTemplate | null;
   "addMessage": typeof import("../chat/messages")["addMessage"];

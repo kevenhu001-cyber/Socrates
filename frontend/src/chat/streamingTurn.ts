@@ -85,13 +85,11 @@ function _appMode() {
    playback stream: upstream deltas only fill a buffer, and an adaptive
    playback clock reveals characters at a steady visual rate so an upstream
    burst or stall never reaches the reader as a jump or a freeze. It is on by
-   default; a kill switch (window.__socratesSmoothStream === false, or
-   localStorage 'socrates:smoothStream' === 'off') falls back to painting the
-   whole arrived text every frame — the pre-player behaviour — for debugging
-   or if a provider interaction ever misbehaves. */
+   default; localStorage 'socrates:smoothStream' === 'off' falls back to
+   painting the whole arrived text every frame — the pre-player behaviour —
+   for debugging or if a provider interaction ever misbehaves. */
 function _smoothStreamEnabled() {
   try {
-    if (typeof window !== 'undefined' && browserWindow.__socratesSmoothStream === false) return false;
     if (typeof localStorage !== 'undefined'
         && localStorage.getItem('socrates:smoothStream') === 'off') return false;
   } catch (e) { reportSwallow(e, 'streamingTurn._smoothStreamEnabled.readPref', 'expected'); }

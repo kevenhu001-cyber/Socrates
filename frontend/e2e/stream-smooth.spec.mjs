@@ -9,14 +9,15 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
  *      paced within the display-lag budget;
  *   2. an upstream STALL with an empty buffer shows the starved cursor (one
  *      slowed dot) rather than freezing or fabricating content;
- *   3. the kill switch restores the old "paint everything" behaviour;
+ *   3. the persisted kill switch restores the old "paint everything" behaviour;
  *   4. paced publication adds bounded, time-anchored opacity reveals only to
  *      new tail text, and settled blocks remain stable.
  */
 
 async function startStream(page, { deltas, gapMs = 400, smooth = true, holdOpenMs = 0 }) {
   await page.evaluate(async ({ deltas, gapMs, smooth, holdOpenMs }) => {
-    window.__socratesSmoothStream = smooth;
+    if (smooth) localStorage.removeItem('socrates:smoothStream');
+    else localStorage.setItem('socrates:smoothStream', 'off');
     const originalFetch = window.fetch.bind(window);
     window.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
@@ -228,6 +229,8 @@ test('kill switch paints the whole arrived text immediately', async ({ page }) =
   // With smoothing off, the first paint after the delta already carries the
   // whole arrived text — no gradual reveal window.
   await expect(live).toContainText('disables smooth playback entirely');
+  await expect(live.locator('.stream-append-reveal')).toHaveCount(0);
+  expect(await page.evaluate(() => typeof window.__socratesSmoothStream)).toBe('undefined');
 });
 
 test('input stays responsive during a network gap and the resumed burst is paced', async ({ page }) => {
