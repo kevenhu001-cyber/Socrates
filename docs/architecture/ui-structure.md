@@ -79,6 +79,8 @@ index.html                         静态 shell / 挂载宿主 / CSP
   `window.__socratesReactChatBridge`。构建后浏览器集成可用 `socrates:chat-runtime-publish` 事件发布，
   观察方通过 `socrates:chat-runtime-changed` 接收生命周期通知。泛型 `createImmutableBridge` 也不再支持
   `windowKey` 发布。
+- KaTeX 懒加载就绪时直接订阅模块导出的重绘函数，render revision 也由模块单例持有；不再发布没有读取方的
+  `window.__socratesRerenderMath` 回调。
 - `auth` 的 `__socratesMountReactCompatibility` 仍是兼容启动通知，保留认证后才加载
   editor / modal 的时序。消息挂载和分享接管的四个 window 字段已由中立模块替代。
 - 扩展定义由 `extensions/index.ts` 注册并导出 `dispatchExtension()`；picker、composer tools、首页写作入口

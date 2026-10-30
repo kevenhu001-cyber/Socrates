@@ -21,8 +21,6 @@ interface RepaintableMessage {
 /** Legacy globals this module reads through the window bridge. */
 interface KatexLegacyWindow extends Window {
   renderAssistantHTML?: (rawText: string) => string;
-  /** Legacy hook main.js calls after a vendor retry. */
-  __socratesRerenderMath?: () => void;
 }
 
 interface MathRepaintTarget {
@@ -121,7 +119,4 @@ export function rerenderMathAfterKatex(): void {
   } catch { /* empty-catch: intentional — a failed repaint must not break boot */ }
 }
 
-if (typeof window !== 'undefined') {
-  (window as KatexLegacyWindow).__socratesRerenderMath = rerenderMathAfterKatex;
-}
 try { onKatexReady(rerenderMathAfterKatex); } catch { /* empty-catch: intentional — vendor loader is optional */ }

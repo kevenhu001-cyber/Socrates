@@ -67,6 +67,7 @@ test('math alone loads KaTeX and a transient failure recovers with a single repa
     release();
     await expect(page.locator('#msgList .katex')).toHaveCount(2);
     expect(await page.evaluate(() => '__socratesMathRenderRev' in window)).toBe(false);
+    expect(await page.evaluate(() => '__socratesRerenderMath' in window)).toBe(false);
     expect(await page.evaluate(() => !!window.hljs)).toBe(false);
     await page.screenshot({ path: 'test-results/round2-math-ready.png' });
   } finally { release(); }
