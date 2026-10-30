@@ -55,8 +55,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "isInAuthGraceWindow": typeof import("../app/lifecycle")["isInAuthGraceWindow"];
   "launchDeepResearch": () => Promise<void>;
   "markAuthSuccess": typeof import("../app/lifecycle")["markAuthSuccess"];
-  "onCmdKInput": typeof import("../ui/cmdK")["onCmdKInput"];
-  "onCmdKKey": typeof import("../ui/cmdK")["onCmdKKey"];
   "openAttachmentPicker": typeof import("../attachments/render")["openAttachmentPicker"];
   "openCheatsheet": typeof import("../ui/cheatsheet")["openCheatsheet"];
   "openCmdK": typeof import("../ui/cmdK")["openCmdK"];

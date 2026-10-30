@@ -103,10 +103,8 @@ browserWindow.closeConfirm = closeConfirm;
 browserWindow.showConfirm = showConfirm;
 
 /* ─── ui/cmdK.ts ─── */
-import { closeCmdK, onCmdKInput, onCmdKKey, openCmdK } from './ui/cmdK.ts';
+import { closeCmdK, openCmdK } from './ui/cmdK.ts';
 browserWindow.closeCmdK = closeCmdK;
-browserWindow.onCmdKInput = onCmdKInput;
-browserWindow.onCmdKKey = onCmdKKey;
 browserWindow.openCmdK = openCmdK;
 
 /* ─── ui/findInSession.js — P0.2 in-session find (Ctrl-F) ─── */

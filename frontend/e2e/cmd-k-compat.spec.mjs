@@ -1,7 +1,7 @@
 // e2e/cmd-k-compat.spec.mjs — Batch 1.5 of the React + TypeScript migration
 // Spec: when the app boots with ?react=1, the Cmd+K palette is owned by
-// React. The legacy window.openCmdK() / onCmdKInput() entry points still
-// drive behavior — React renders the modal contents from the shared module store.
+// React. The legacy window.openCmdK() entry still opens it; React sends input
+// and key actions through the typed legacy gateway and shared module store.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -32,6 +32,11 @@ test('Cmd-K React mode opens via the legacy entry point and React renders the mo
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
+  expect(await page.evaluate(() => ({
+    onCmdKInput: typeof window.onCmdKInput,
+    onCmdKKey: typeof window.onCmdKKey,
+  }))).toEqual({ onCmdKInput: 'undefined', onCmdKKey: 'undefined' });
+
   // Return a server result so the shared state publication is observable in React.
   await page.route('**/search**', (route) => route.fulfill({
     json: { hits: [{ id: 'cmdk-e2e-result', title: 'React search result', snippet: 'module store result' }] },
@@ -58,8 +63,8 @@ test('Cmd-K React mode opens via the legacy entry point and React renders the mo
   await expect(result).toBeVisible();
   await expect(result).toHaveClass(/selected/);
 
-  // Escape closes the palette — the React component dispatches through
-  // the legacy onCmdKKey, which still toggles the overlay's hidden class.
+  // Escape closes the palette through the typed cmdK action, which still
+  // toggles the overlay's hidden class.
   await page.keyboard.press('Escape');
   await expect(overlay).toHaveClass(/hidden/);
 });
