@@ -55,6 +55,8 @@ index.html                         静态 shell / 挂载宿主 / CSP
 - Profile 数据与 sidebar 账户摘要分别由 `ui/profileState.ts`、`ui/sidebarUserState.ts` 持有；React
   直接订阅模块状态，`ui/profile.ts` 保留账号动作、tier 属性同步和外层 overlay class，不再用两条
   window bridge 中转。
+- Composer Tools 的 `isOpen`、mode 与 trigger 由 `ui/composerToolsState.ts` 持有；旧模块继续负责菜单
+  定位和动作入口，React 直接订阅状态，不再从 `window.__socratesComposerToolsBridge` 读取。
 - 消息列表直接订阅聊天运行时；没有消费者的独立消息列表 bridge 已删除。
 - `auth` 的 `__socratesMountReactCompatibility` 仍是兼容启动通知，保留认证后才加载
   editor / modal 的时序。消息挂载和分享接管的四个 window 字段已由中立模块替代。
@@ -167,7 +169,7 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
 5. 生产打包零警告（0 project warnings）：彻底解决 Rollup 中由于动态按需导入与静态首屏引入冲突导致的模块 chunk 合并警告。
 6. KaTeX 数学重新渲染版本计数解耦，由类型化模块 `render/mathRevision.ts` 集中管理，消除 `MessageList` 与 `proseRenderer` 跨层直读 `window.__socratesMathRenderRev`。
 7. `ui/toast.js` 统一重构为类型化 `ui/toast.ts`，修复并兼容毫秒数字直传参数，收窄遗留 JS 资产基线。
-8. 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile 与 sidebar 用户摘要分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts` 持有；七个相应 window bridge 已删除。
+8. 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile、sidebar 用户摘要与 Composer Tools 分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts`、`ui/composerToolsState.ts` 持有；八个相应 window bridge 已删除。
 
 历史阶段验证均为 Chromium + localhost mock API。未以此宣称 Safari / Android / iOS 原生签收或帧率基准。
 

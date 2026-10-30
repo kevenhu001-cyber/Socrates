@@ -1,14 +1,11 @@
 export { hydrateComposerToolsMenu } from './ComposerToolsMenu';
 export {
-  installComposerToolsBridge,
   getComposerToolsSnapshot,
-  subscribeToComposerTools,
   useComposerToolsSnapshot,
   useIsComposerToolsOpen,
   useComposerToolsDispatch,
-} from './composerTools.bridge';
+} from './composerTools.store';
 export type {
-  ComposerToolsBridge,
   ComposerToolsSnapshot,
   ComposerToolsAction,
   ComposerMode,

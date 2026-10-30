@@ -3,14 +3,13 @@ import type { SpeechRecognitionRuntime } from "./speechRuntime.ts";
 import type { GeoGebraApi } from "./vendorRuntime.ts";
 /** Existing imperative shell hooks. This local contract adds no browser globals.
  * Publishers remain the owners; consumers share their exported signatures. */
-export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER_SESSIONS' | 'getArchivedSessions' | '__socratesCmdK' | '__socratesComposerToolsBridge' | '__socratesAttachmentsBridge'> & VendorGlobals & {
+export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER_SESSIONS' | 'getArchivedSessions' | '__socratesCmdK' | '__socratesAttachmentsBridge'> & VendorGlobals & {
   CURRENT_USER: (Partial<import('@socrates/contracts').User> & { subscriptionEnd?: string | null; verifiedAt?: string | null; createdAt?: string | null; customInstructions?: unknown }) | null | undefined;
   scrollToBottomIfPinned?: typeof import('../ui/scroll')['scrollToBottomIfPinned'];
   stateStore: typeof import('../state/store')['stateStore'];
   SERVER_SESSIONS: import('../session/store').SessionRow[];
   getArchivedSessions: typeof import('../session/recents')['getArchivedSessions'];
   __socratesCmdK?: { publish(snapshot: Record<string, unknown>): void };
-  __socratesComposerToolsBridge?: { publish(snapshot: Record<string, unknown>): void };
   __socratesAttachmentsBridge?: { publish(snapshot: Record<string, unknown>): void };
 
   "APP_LANG": string;

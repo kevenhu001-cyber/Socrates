@@ -13,7 +13,7 @@
 | 生产环境缺少 `SESSION_SECRET` 时不 fail-fast | **已关闭** | `server/src/boot/startup.ts` 与 `server/src/lib/crypto.ts` 均有生产启动检查。 |
 | 中文上下文预算与 usage 回退估算 | **本次已关闭** | usage 的估算回退复用 `estimateContextTokens`：ASCII 按每 4 字符向上取整，非 ASCII 按 UTF-8 字节数每 2 字节向上取整。供应商 usage 仍是首选计量；估算只在供应商未返回 usage 时启用。 |
 | 显式 `any` 与由此积压的 ESLint 告警 | **本次已关闭** | SPA 默认 API 响应类型改为 `unknown` 并为调用方补窄契约；语音、worker、SSE、连接器、规划和可视化输入均以 `unknown` 加运行时校验处理。服务端同类边界也已收窄。`no-explicit-any` 已提升为 ESLint error；AST 守卫扫描 SPA、服务端、共享 packages 和 Universal App，当前为 0/0。生成的 OpenUI prompt 中的 `any` 示例文本属于提示词内容，不是 TypeScript 类型。 |
-| React 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile 与 sidebar 用户摘要的 window 状态桥 | **累计已移除七项** | 七个状态域分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts` 与 React 共享模块实例；不再创建对应的 window bridge。Usage API 请求、Share 懒加载/API 动作、Profile 账号动作与 overlay class 仍由原模块负责。 |
+| React 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile、sidebar 用户摘要与 Composer Tools 的 window 状态桥 | **累计已移除八项** | 八个状态域分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts`、`ui/composerToolsState.ts` 与 React 共享模块实例；不再创建对应的 window bridge。Usage/Share 请求与懒加载、Profile 账号动作和 Composer Tools 菜单定位仍由原模块负责。 |
 
 ## 仍开放或尚无法确认
 
@@ -21,7 +21,7 @@
 |---|---|---|
 | 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
 | 中 | Expo / Universal App 依赖告警 | 审计当前仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；其共同来源是 Expo CLI 使用的 `zod@3.25.76`（GHSA-mrhx-c7xc-m3w5）。CLI 声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 不满足该范围；节点只在开发/构建工具链中。升级到 Expo 发布兼容版本后再移除例外，不通过不兼容的 major override 掩盖它。 |
-| 中 | SPA 旧 DOM 与 React、window bridge、兼容 CSS 并存 | 本轮再移除 Usage、Share、Profile 与 sidebar 用户状态的 window bridge。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、其他仍有消费者的 typed window bridge 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | SPA 旧 DOM 与 React、window bridge、兼容 CSS 并存 | 本轮再移除 Usage、Share、Profile、sidebar 用户与 Composer Tools 状态的 window bridge。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、其他仍有消费者的 typed window bridge 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -37,6 +37,7 @@
 - Share store 聚焦单测 1/1 通过；SPA 构建后 `share-view.spec.mjs` 4/4 通过，包含 share 创建与撤销流程。Usage 与 Share 共 5 条聚焦 Playwright 用例全部通过。
 - Profile 与 sidebar-user store 单测 2/2 通过；本轮 SPA 构建后 `profile-modal`、`settings-modal`、`sidebar-nav` Playwright 共 30/30 通过。
 - Profile/sidebar 迁移后的 SPA `npm run build`、`npm run lint`、`npm run lint:docs` 均通过；相关生成产物未加入版本控制。
+- Composer Tools store 单测 1/1 通过；迁移后 SPA 构建、前端 lint 通过，`composer-tools-compat.spec.mjs` 10/10 通过，旧全局快照断言已改为菜单与 trigger 行为断言。
 - 本轮最终 SPA `npm run build`、`npm run lint`、`npm run lint:docs` 均通过；构建产物未纳入版本控制。
 - 前端生产构建与 Universal App `export:web` 成功；最终构建后运行确认弹窗、会话列表和 tutor Playwright：29/29 通过。
 - `node scripts/audit-ratchet.mjs apps/socrates` 通过（3 条已审阅 high 节点，0 条新增）；`apps/socrates` 的 `npm run export:web` 成功。

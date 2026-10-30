@@ -81,7 +81,6 @@ declare global {
 
     __socratesReactChatBridge?: unknown;
     __socratesCmdK?: unknown;
-    __socratesComposerToolsBridge?: unknown;
     __socratesAttachmentsBridge?: unknown;
     __socratesSessionListBridge?: unknown;
 

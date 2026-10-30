@@ -1,8 +1,8 @@
 // e2e/composer-tools-compat.spec.mjs — Batch 3 of the React + TypeScript migration
 // Spec: when the app boots with ?react=1, the Composer "+" tools menu is
 // owned by React. The legacy entry point (toggleComposerTools) still drives
-// open/close/positioning; React renders the capability workflows via the
-// typed bridge. Item clicks dispatch through the legacy window.* actions.
+// open/close/positioning; React renders the capability workflows via a shared
+// module store. Item clicks dispatch through the legacy window.* actions.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -19,13 +19,6 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   await expect(menu).toBeAttached();
   await expect(menu).not.toHaveAttribute('data-mounted-by', /.+/);
   await expect(menu).toHaveClass(/hidden/);
-
-  // Bridge installed.
-  const installed = await page.evaluate(() => ({
-    bridge: typeof window.__socratesComposerToolsBridge === 'object' && window.__socratesComposerToolsBridge !== null,
-    isOpen: window.__socratesComposerToolsBridge?.getSnapshot().isOpen,
-  }));
-  expect(installed).toEqual({ bridge: true, isOpen: false });
 
   // All workflow items rendered with the expected data-action values.
   /* Scoped to the desktop list: the menu renders both item sets and lets CSS
@@ -82,12 +75,10 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).not.toHaveClass(/hidden/);
 
-  // Bridge snapshot reflects the open state + topic mode + trigger id.
-  const snap = await page.evaluate(() => {
-    const s = window.__socratesComposerToolsBridge?.getSnapshot();
-    return s ? { isOpen: s.isOpen, mode: s.mode, triggerId: s.triggerId } : null;
-  });
-  expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'composerToolsBtn' });
+  // The legacy owner records mode and trigger state on the actual control.
+  const trigger = page.locator('#composerToolsBtn');
+  await expect(trigger).toHaveAttribute('data-composer-mode', 'topic');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   /* Expanded card: every workflow is visible at once with no disclosure. */
   const desktopItems = menu.locator('.composer-tools-desktop-items [data-composer-action]');
   await expect(desktopItems).toHaveCount(10);
@@ -103,16 +94,10 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
     fullPage: true,
   });
 
-  // Clicking outside closes the menu — the legacy document-level listener
-  // still fires and closes via the bridge.
+  // Clicking outside closes the menu and resets its active trigger.
   await page.locator('#sidebar').click({ position: { x: 5, y: 5 } });
   await expect(menu).toHaveClass(/hidden/);
-
-  const afterClose = await page.evaluate(() => {
-    const s = window.__socratesComposerToolsBridge?.getSnapshot();
-    return s?.isOpen ?? null;
-  });
-  expect(afterClose).toBe(false);
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('Composer tools menu items dispatch through legacy window.* actions', async ({ page }) => {
@@ -170,10 +155,7 @@ test('Composer tools menu React mode always loads (no ?react=1 flag needed)', as
   await expect(menu).toBeAttached();
   await expect(menu).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  const installed = await page.evaluate(
-    () => typeof window.__socratesComposerToolsBridge === 'object' && window.__socratesComposerToolsBridge !== null,
-  );
-  expect(installed).toBe(true);
+  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(10);
 });
 
 test('mobile plus menu opens without expanding the chat composer', async ({ page }) => {

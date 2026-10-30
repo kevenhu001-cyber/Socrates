@@ -7,7 +7,7 @@ import {
   isExtensiveThinkingOn,
   isWebSearchOn,
 } from '../legacy/gateway.ts';
-import { installComposerToolsBridge, useComposerToolsDispatch, useComposerToolsSnapshot } from './composerTools.bridge';
+import { useComposerToolsDispatch, useComposerToolsSnapshot } from './composerTools.store';
 import { ComposerToolMenuItems } from './ComposerToolMenuItems';
 
 const MENU_ID = 'composerToolsMenu';
@@ -39,5 +39,5 @@ export interface ComposerToolsHandle {
 export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
   const menu = document.getElementById(MENU_ID);
   if (!menu) return null;
-  return { menu, ...mountOwnedRoot(menu, 'composer-tools-menu', <ComposerToolsMenu />, installComposerToolsBridge) };
+  return { menu, ...mountOwnedRoot(menu, 'composer-tools-menu', <ComposerToolsMenu />) };
 }

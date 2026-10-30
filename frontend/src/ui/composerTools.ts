@@ -1,7 +1,7 @@
 import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
 import { restingRect } from './pressFeedback.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
-import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+import { publishComposerToolsState, type ComposerMode } from './composerToolsState.ts';
 
 /* Compact, ChatGPT-style action menu for both composers.  Keeping the menu
  * in a body portal prevents the rounded input surface from clipping it. */
@@ -26,31 +26,21 @@ function menu() {
    trigger. */
 if (typeof document !== "undefined") menu();
 
-/* React migration bridge — fires whenever the menu opens/closes or
-   switches active trigger so the React compatibility root can mirror
-   the menu via useSyncExternalStore. Installed by
-   frontend/src/react/composer/composerToolsStore.ts under `?react=1`;
-   legacy mode never sees a subscriber so the helper is a cheap no-op. */
+/* Publish the open menu state through a shared module store. */
 function _publishComposerTools() {
-  try {
-    const el = document.getElementById(MENU_ID);
-    const bridge = browserWindow.__socratesComposerToolsBridge;
-    if (bridge && typeof bridge.publish === "function") {
-      bridge.publish({
-        isOpen: !!(el && !el.classList.contains("hidden")),
-        mode: activeTrigger && activeTrigger.dataset ? activeTrigger.dataset.composerMode : null,
-        triggerId: activeTrigger && activeTrigger.id ? activeTrigger.id : null,
-      });
-    }
-  } catch (_) {
-    reportEmptyCatch(_, 'empty catch: ui/composerTools.ts:44', 'expected');
-    /* swallow — bridge is best-effort */
-  }
+  const el = document.getElementById(MENU_ID);
+  const rawMode = activeTrigger?.dataset.composerMode;
+  const mode: ComposerMode | null = rawMode === 'topic' || rawMode === 'chat' ? rawMode : null;
+  publishComposerToolsState({
+    isOpen: !!(el && !el.classList.contains("hidden")),
+    mode,
+    triggerId: activeTrigger?.id || null,
+  });
 }
 
 /* React owns the composer-tools menu's children unconditionally under
    the always-on runtime — the menu element is pre-created on module
-   load (line above) and hydrated by `bootstrapReactCompatibilityRuntime`.
+   load (line above) and mounted at boot by `bootstrapReactCompatibilityRuntime`.
    The publish helper `_publishComposerTools()` is the only path that
    drives React. */
 

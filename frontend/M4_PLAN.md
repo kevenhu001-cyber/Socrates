@@ -189,6 +189,8 @@ New files: `src/react/confirm/{ConfirmDialog.tsx, confirm.bridge.ts, types.ts, i
 
 **Follow-up (2026-10-30):** `window.__socratesProfileBridge` and `window.__socratesSidebarChromeBridge` were retired. `ui/profile.ts` publishes profile fields and the normalized sidebar account summary to `ui/profileState.ts` and `ui/sidebarUserState.ts`. Profile and sidebar React components subscribe directly; overlay visibility and the document tier attribute remain shell responsibilities. `profileState.test.mjs` and `sidebarUserState.test.mjs` cover both store contracts.
 
+**Follow-up (2026-10-30):** `window.__socratesComposerToolsBridge` was retired. `ui/composerTools.ts` publishes open state, mode and trigger identity to `ui/composerToolsState.ts`; React subscribes directly, while the legacy module still owns menu geometry and delegated actions. Compatibility coverage now asserts visible menu and trigger semantics instead of inspecting a global store.
+
 ### Step 4.3 rebaseline (2026-09-01)
 
 The original Step 4.3 estimate assumed that Step 4.2 would leave `ui/delegate.js` unused. The audit after 4.2 found that the static shell in `index.html` still contained 143 `data-action` attributes across roughly 40 actions, while `windowExports.js` still exposed about 100 `window.X = X` bindings. Step 4.3 is therefore split into independently reviewable substeps: Auth, display preferences, sidebar/navigation, composer/mode, workspace controls, modal backdrops, and finally delegate deletion.

@@ -1,71 +1,21 @@
-/**
- * Composer tools menu bridge — M2 single-bridge migration.
- *
- * Legacy `ui/composerTools.ts` publishes the menu open/close state
- * through `window.__socratesComposerToolsBridge.publish(...)`. The
- * factory owns the snapshot/reducer/listener loop; this module adds
- * the legacy alias and the React hooks consumed by
- * `ComposerToolsMenu.tsx`.
- */
+/** React hooks and action routing for the composer tools menu. */
 
-import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
+import { useBridge, useBridgeSelector } from '../../lib/bridge/useBridge.ts';
+import { composerToolsState } from '../../ui/composerToolsState.ts';
 import { getLegacyActions, t as legacyT } from '../legacy/gateway.ts';
 import { loadPluginCatalog, normalisePluginId } from '../../composer/pluginCatalog.ts';
-import type {
-  ComposerMode,
-  ComposerToolsAction,
-  ComposerToolsBridge,
-  ComposerToolsSnapshot,
-} from './types';
-
-declare global {
-  interface Window {
-    __socratesComposerToolsBridge?: ComposerToolsBridge;
-  }
-}
-
-const HIDDEN: ComposerToolsSnapshot = Object.freeze({
-  isOpen: false,
-  mode: null,
-  triggerId: null,
-  revision: 0,
-});
-
-type Action = Omit<ComposerToolsSnapshot, 'revision'>;
-
-const factoryBridge = createImmutableBridge<ComposerToolsSnapshot, Action>({
-  initial: HIDDEN,
-  reducer: (_state, action) => action,
-});
-
-const bridge: ComposerToolsBridge = Object.assign(factoryBridge, {
-  publish: factoryBridge.dispatch,
-}) as ComposerToolsBridge;
-
-export function installComposerToolsBridge(): ComposerToolsBridge {
-  if (typeof window !== 'undefined') {
-    if (!window.__socratesComposerToolsBridge) {
-      window.__socratesComposerToolsBridge = bridge;
-    }
-    return window.__socratesComposerToolsBridge;
-  }
-  return bridge;
-}
+import type { ComposerMode, ComposerToolsAction, ComposerToolsSnapshot } from './types';
 
 export function getComposerToolsSnapshot(): ComposerToolsSnapshot {
-  return installComposerToolsBridge().getSnapshot();
-}
-
-export function subscribeToComposerTools(listener: () => void): () => void {
-  return installComposerToolsBridge().subscribe(listener);
+  return composerToolsState.getSnapshot();
 }
 
 export function useComposerToolsSnapshot(): ComposerToolsSnapshot {
-  return useBridge(factoryBridge);
+  return useBridge(composerToolsState);
 }
 
 export function useIsComposerToolsOpen(): boolean {
-  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isOpen);
+  return useBridgeSelector(composerToolsState, (snapshot) => snapshot.isOpen);
 }
 
 function openMobileAttachmentPicker(
@@ -117,6 +67,14 @@ function startImageCreation(actions: LegacyActionContext): void {
   }).catch(showPlugins);
 }
 
+function showImageConnectionRequired(): void {
+  const key = 'composer.createImage.connectRequired';
+  const value = legacyT(key);
+  getLegacyActions().messages.showToast?.(
+    value !== key ? value : 'Connect Jimeng AI in Plugins to create an image.',
+  );
+}
+
 function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null): void {
   if (isMobileAttachmentAction(action)) {
     openMobileAttachmentPicker(mode, action);
@@ -128,14 +86,6 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
     return;
   }
   COMPOSER_ACTION_HANDLERS[action]?.(actions);
-}
-
-function showImageConnectionRequired(): void {
-  const key = 'composer.createImage.connectRequired';
-  const value = legacyT(key);
-  getLegacyActions().messages.showToast?.(
-    value !== key ? value : 'Connect Jimeng AI in Plugins to create an image.',
-  );
 }
 
 export function useComposerToolsDispatch(): {

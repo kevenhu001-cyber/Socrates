@@ -7,7 +7,7 @@
  * to render the menu items.
  */
 
-export type ComposerMode = 'topic' | 'chat';
+export type { ComposerMode, ComposerToolsSnapshot } from '../../ui/composerToolsState.ts';
 
 export type ComposerToolsAction =
   | 'camera'
@@ -24,22 +24,3 @@ export type ComposerToolsAction =
   | 'exam'
   | 'skills'
   | 'managePlugins';
-
-export interface ComposerToolsSnapshot {
-  isOpen: boolean;
-  mode: ComposerMode | null;
-  triggerId: string | null;
-  revision: number;
-}
-
-export interface ComposerToolsBridge {
-  getSnapshot: () => ComposerToolsSnapshot;
-  publish: (snapshot: Omit<ComposerToolsSnapshot, 'revision'>) => void;
-  subscribe: (listener: () => void) => () => void;
-}
-
-declare global {
-  interface Window {
-    __socratesComposerToolsBridge?: ComposerToolsBridge;
-  }
-}
