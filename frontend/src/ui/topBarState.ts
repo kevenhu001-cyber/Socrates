@@ -33,7 +33,3 @@ export function setConversationChrome(active: boolean, doc?: Document | null) {
     try { view.syncConversationActive(); } catch (error) { reportSwallow(error, 'ui/topBarState.ts:30'); }
   }
 }
-
-export function toggleChatTopBarEls(show: boolean, doc?: Document | null) {
-  setConversationChrome(show, doc);
-}

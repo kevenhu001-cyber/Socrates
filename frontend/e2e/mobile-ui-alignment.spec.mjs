@@ -27,8 +27,13 @@ for (const theme of ['light', 'dark']) {
     await expect(tabs).toBeVisible();
     expect(await page.evaluate(() => ({
       selectAppMode: typeof window.selectAppMode,
+      toggleChatTopBarEls: typeof window.toggleChatTopBarEls,
       toggleMobileModeMenu: typeof window.toggleMobileModeMenu,
-    }))).toEqual({ selectAppMode: 'undefined', toggleMobileModeMenu: 'undefined' });
+    }))).toEqual({
+      selectAppMode: 'undefined',
+      toggleChatTopBarEls: 'undefined',
+      toggleMobileModeMenu: 'undefined',
+    });
     const rect = await tabs.boundingBox();
     expect(Math.abs(rect.x + rect.width / 2 - 195)).toBeLessThanOrEqual(1);
     await expect(page.locator('#mobileMode')).toBeHidden();

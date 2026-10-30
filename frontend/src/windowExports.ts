@@ -167,8 +167,6 @@ browserWindow.closeSettings = function () { if (_settingsImport) return _setting
 /* Share actions are wired through the typed legacy gateway; only the modal
    open/close entry points used by the shell stay on window. */
 import { openShareModal, closeShareModal } from './ui/share.ts';
-import { toggleChatTopBarEls } from './ui/topBarState.ts';
-browserWindow.toggleChatTopBarEls = toggleChatTopBarEls;
 browserWindow.openShareModal = openShareModal;
 browserWindow.closeShareModal = closeShareModal;
 

@@ -102,7 +102,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "syncSidebarBtns": typeof import("../ui/sidebarChrome")["syncSidebarBtns"];
   "thinkingOn": typeof import("../config/providers")["thinkingOn"];
   "toggleAppMode": typeof import("../app/lifecycle/mode")["toggleAppMode"];
-  "toggleChatTopBarEls": typeof import("../ui/topBarState")["toggleChatTopBarEls"];
   "toggleKBDetail": typeof import("../ui/knowledgeDetail")["toggleKBDetail"];
   "toggleSidebarView": typeof import("../ui/sidebarChrome")["toggleSidebarView"];
   "tutorSocratic": import("../tutorSocratic").TutorSocraticRuntime;
