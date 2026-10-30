@@ -103,7 +103,6 @@ interface ExamModule {
 /** Window surfaces the loader reads at call time. */
 interface LoaderWindow extends Window {
   appMode?: string;
-  __activeProject?: { id: string; name: string } | null;
   __loadExamModule?: () => Promise<ExamModule>;
   renderRecents?: () => void;
   renderMistakes?: () => void;
@@ -542,22 +541,13 @@ function restoreAssistantSelection(session: LoadedSession): void {
   }
 }
 
-function refreshLoadedSessionProject(
-  session: LoadedSession,
-  controller: AbortController,
-  win: LoaderWindow,
-): void {
+function refreshLoadedSessionProject(session: LoadedSession): void {
   if (session.projectId) {
-    refreshCachedProjects(() => apiFetch('/api/projects')).then((rows) => {
-      if (controller.signal.aborted || stateStore.read('currentSessionId') !== session.id) return;
-      win.__activeProject = rows.filter((project) => project.id === session.projectId)[0] || null;
-    }).catch(() => null);
-  } else {
-    win.__activeProject = null;
+    void refreshCachedProjects(() => apiFetch('/api/projects')).catch(() => null);
   }
 }
 
-function hydrateSessionFields(session: LoadedSession, controller: AbortController, win: LoaderWindow): void {
+function hydrateSessionFields(session: LoadedSession): void {
   /* Clear previous-session transients before restoring this session's title. */
   resetSessionTransients();
   stateStore.dispatch({ type: 'state/batch', patch: {
@@ -565,7 +555,7 @@ function hydrateSessionFields(session: LoadedSession, controller: AbortControlle
     ...buildSessionTeachingFields(session),
   } });
   restoreAssistantSelection(session);
-  refreshLoadedSessionProject(session, controller, win);
+  refreshLoadedSessionProject(session);
   toggleShareBtn();
   if (session.mode === 'chat' || session.mode === 'tutor') setAppMode(session.mode);
   syncAppModeUI();
@@ -625,7 +615,6 @@ export async function loadSession(id: string): Promise<void> {
      conversation it just loaded. No-op on desktop and when already closed. */
   try { closeSidebarOnMobile(); } catch (error) { reportSwallow(error, 'session/loader.closeSidebarOnMobile'); }
 
-  const win = window as LoaderWindow;
   const controller = beginSessionLoad(id);
   const cachedDetail = detailCache.lookup(id);
   const recovery: SessionLoadRecovery = { previousMessages: null, historyRebuildStarted: false };
@@ -636,7 +625,7 @@ export async function loadSession(id: string): Promise<void> {
     session.messages = Array.isArray(session.messages) ? session.messages : [];
     if (saveState.loadSessionId !== id) return;
 
-    hydrateSessionFields(session, controller, win);
+    hydrateSessionFields(session);
     if (session.kind === 'exam' && session.examData) {
       await loadExamSession(session);
       return;

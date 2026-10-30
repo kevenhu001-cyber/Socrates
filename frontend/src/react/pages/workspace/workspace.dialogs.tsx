@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { getApiFetch, getConnectorIconMarkupFn, getLegacyActions, i18n, setActiveProject, setNextProjectId } from '../../legacy/gateway.ts';
+import { getApiFetch, getConnectorIconMarkupFn, getLegacyActions, i18n, setNextProjectId } from '../../legacy/gateway.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
 import { openLibraryDetail } from '../../../ui/libraryDetail.ts';
@@ -240,13 +240,11 @@ export async function openProjectWorkspace(projectId: string): Promise<void> {
   );
   dialog.querySelector('[data-action="new-chat"]')?.addEventListener('click', async () => {
     setNextProjectId(projectId);
-    setActiveProject(project);
     closeWorkspaceDialog();
     await getLegacyActions().navigation.resetApp();
   });
   dialog.querySelector('[data-action="move-chat"]')?.addEventListener('click', async () => {
     dispatchSession({ type: 'session/set', key: 'currentProjectId', value: projectId });
-    setActiveProject(project);
     const sessionId = sessionStore.getState().currentSessionId;
     try {
       if (sessionId) await api()('/api/sessions/' + encodeURIComponent(sessionId), { method: 'PATCH', body: { projectId } });

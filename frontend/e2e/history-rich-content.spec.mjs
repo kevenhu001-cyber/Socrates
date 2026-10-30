@@ -72,7 +72,8 @@ test(`loading an old conversation rebuilds scaffold widgets and visualizations (
   // full-suite load the call can race boot completion. Wait for it first.
   await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
-  await expect.poll(() => page.evaluate(() => window.__activeProject?.id)).toBe('project-restore');
+  await expect.poll(() => page.evaluate(() => window.stateStore.read('currentProjectId'))).toBe('project-restore');
+  expect(await page.evaluate(() => '__activeProject' in window)).toBe(false);
 
   await expect(page.locator('#msgList .msg')).toHaveCount(2);
   /* A user bubble always renders its own raw text — never a persisted

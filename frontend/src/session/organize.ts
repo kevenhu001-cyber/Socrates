@@ -14,7 +14,6 @@ import type { TagEditorLabels, TagEditorPopoverProps } from '../react/session-ta
 /** Window surfaces this module reads or writes. */
 interface OrganizeWindow extends Window {
   renderRecents?: () => void;
-  __activeProject?: { id: string; name: string } | null;
 }
 
 /** The subset of an event the tag popover consumes. */
@@ -234,7 +233,6 @@ export function moveSessionToProject(sessionId: string, projectId: string): void
         /* Update local state. */
         if (stateStore.read('currentSessionId') === sessionId) {
           stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: projectId });
-          (window as OrganizeWindow).__activeProject = project;
         }
         closeSessionContextMenu();
         /* P_recents-amplify — a project move changes a row field the local
@@ -284,7 +282,6 @@ export function cycleActiveProject(): void {
   if (!next) return;
   /* Move current chat to the next project. */
   stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: next.id });
-  (window as OrganizeWindow).__activeProject = next;
   const sessionId = stateStore.read('currentSessionId') as string | null;
   if (sessionId) {
     /* The try/catch that used to wrap this call could never see a failure:

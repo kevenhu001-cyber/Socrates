@@ -24,6 +24,7 @@ const {
 const { setTonePreset } = await import('../src/config/tonePresets.ts');
 const { setAppMode } = await import('../src/config/providers.ts');
 const { stateStore } = await import('../src/state/store.ts');
+const { getProjectCacheSnapshot, setCachedProjects } = await import('../src/projects/projectCache.ts');
 
 test('toneVoiceSuffix is empty for the default preset', () => {
   setTonePreset('default');
@@ -90,18 +91,27 @@ test('project chats leave memory selection to the server', () => {
 });
 
 test('projectContextSuffix is empty without a matching active project', () => {
-  delete globalThis.window.__activeProject;
-  assert.equal(projectContextSuffix(), '');
+  const previousProjectId = stateStore.read('currentProjectId');
+  const previousProjects = getProjectCacheSnapshot();
+  stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: 'missing-project' });
+  setCachedProjects([]);
+  try {
+    assert.equal(projectContextSuffix(), '');
+  } finally {
+    stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: previousProjectId ?? null });
+    setCachedProjects(previousProjects);
+  }
 });
 
 test('projectContextSuffix renders the active project block', () => {
   const previousProjectId = stateStore.read('currentProjectId');
-  globalThis.window.__activeProject = {
+  const previousProjects = getProjectCacheSnapshot();
+  setCachedProjects([{
     id: 'p1',
     name: 'Physics',
     description: 'Mechanics',
     systemPrompt: 'Be concise.',
-  };
+  }]);
   stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: 'p1' });
   try {
     const suffix = projectContextSuffix();
@@ -110,16 +120,17 @@ test('projectContextSuffix renders the active project block', () => {
     assert.match(suffix, /Purpose: Mechanics/);
     assert.match(suffix, /Project instructions: Be concise\./);
   } finally {
-    delete globalThis.window.__activeProject;
     stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: previousProjectId ?? null });
+    setCachedProjects(previousProjects);
   }
 });
 
 test('appendClientContextMessages composes project context and research without client memories', () => {
   const previousProjectId = stateStore.read('currentProjectId');
   const previousSearch = stateStore.read('searchContext');
+  const previousProjects = getProjectCacheSnapshot();
   configurePromptSuffixes({ getUserMemories: () => ['likes tea'] });
-  globalThis.window.__activeProject = { id: 'p1', name: 'Physics' };
+  setCachedProjects([{ id: 'p1', name: 'Physics' }]);
   stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: 'p1' });
   stateStore.dispatch({ type: 'state/set', key: 'searchContext', value: 'evidence' });
   try {
@@ -135,8 +146,8 @@ test('appendClientContextMessages composes project context and research without 
     assert.equal(withoutResearch.length, 2);
   } finally {
     configurePromptSuffixes({ getUserMemories: () => [] });
-    delete globalThis.window.__activeProject;
     stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: previousProjectId ?? null });
     stateStore.dispatch({ type: 'state/set', key: 'searchContext', value: previousSearch ?? '' });
+    setCachedProjects(previousProjects);
   }
 });

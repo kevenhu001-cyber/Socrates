@@ -27,7 +27,6 @@ interface StandaloneGlobals {
   _currentLang?: string;
   apiFetch?: ApiFetchFn;
   _nextProjectId?: string | null;
-  __activeProject?: Record<string, unknown> | null;
   CURRENT_USER?: unknown;
 }
 
@@ -188,10 +187,6 @@ export function getApiFetch(): ApiFetchFn | null {
 /** Project context still consumed by the legacy session startup path. */
 export function setNextProjectId(projectId: string | null): void {
   standaloneWindow()._nextProjectId = projectId;
-}
-
-export function setActiveProject(project: Record<string, unknown> | null): void {
-  standaloneWindow().__activeProject = project;
 }
 
 /** The signed-in user record published by the legacy auth layer, or null. */

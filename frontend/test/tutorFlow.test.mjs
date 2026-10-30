@@ -15,6 +15,7 @@ const { configureTemplateSystemPrompt, injectTemplateSystemPrompt } = await impo
   '../src/chat/templateSystemPrompt.ts'
 );
 const { stateStore } = await import('../src/state/store.ts');
+const { getProjectCacheSnapshot, setCachedProjects } = await import('../src/projects/projectCache.ts');
 
 test('socratic prompt embeds topic, level, and context', () => {
   const previousSearch = stateStore.read('searchContext');
@@ -89,11 +90,11 @@ test('follow-up messages reflect practice attempts in exercise stage', () => {
 test('follow-up messages keep research evidence and project context separate from tutor instructions', () => {
   const previousSearch = stateStore.read('searchContext');
   const previousProject = stateStore.read('currentProjectId');
-  const previousActiveProject = window.__activeProject;
+  const previousProjects = getProjectCacheSnapshot();
   stateStore.dispatch({ type: 'state/batch', patch: {
     searchContext: '[Web research]\nTutor evidence', currentProjectId: 'tutor-project',
   } });
-  window.__activeProject = { id: 'tutor-project', name: 'Calculus notes', systemPrompt: 'Use the shared notation.' };
+  setCachedProjects([{ id: 'tutor-project', name: 'Calculus notes', systemPrompt: 'Use the shared notation.' }]);
   try {
     const messages = buildFollowUpMessages('My answer', { name: 'Derivatives' }, 'math', []);
     assert.ok(messages.some((message) => message.role === 'system' && message.content.includes('[Web research]\nTutor evidence')));
@@ -101,7 +102,7 @@ test('follow-up messages keep research evidence and project context separate fro
     assert.doesNotMatch(messages[0].content, /Tutor evidence|Calculus notes/);
   } finally {
     stateStore.dispatch({ type: 'state/batch', patch: { searchContext: previousSearch ?? '', currentProjectId: previousProject ?? null } });
-    window.__activeProject = previousActiveProject;
+    setCachedProjects(previousProjects);
   }
 });
 

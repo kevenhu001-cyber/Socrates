@@ -17,7 +17,6 @@ export interface PromptMessage {
   content: string;
 }
 
-/** Project metadata read from the window mirror. */
 export interface ActiveProjectInfo {
   id: string;
   name?: string;
@@ -36,6 +35,7 @@ import { getTonePreset, getToneVoice } from '../config/tonePresets.ts';
 import { getReasoningEffort } from '../ui/effortPicker.ts';
 import { injectMemoryContext } from '../storage/memoryStore.ts';
 import { stateStore } from '../state/store.ts';
+import { getCachedProjects } from '../projects/projectCache.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 let userMemoriesReader: () => unknown = () => [];
@@ -82,9 +82,10 @@ export function memoriesSuffix(): string {
 
 /** Return the active-project context block, or empty when not in a project. */
 export function projectContextSuffix(): string {
-  const w = window as unknown as { __activeProject?: ActiveProjectInfo };
-  const project = w.__activeProject;
-  if (!project || project.id !== stateStore.read('currentProjectId')) return '';
+  const currentProjectId = stateStore.read('currentProjectId');
+  if (typeof currentProjectId !== 'string') return '';
+  const project = getCachedProjects().find((candidate) => candidate.id === currentProjectId);
+  if (!project) return '';
   let suffix = '\n\n## Active project\nProject: ' + String(project.name || 'Untitled');
   if (project.description) suffix += '\nPurpose: ' + String(project.description);
   if (project.systemPrompt) suffix += '\nProject instructions: ' + String(project.systemPrompt);
