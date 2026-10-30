@@ -202,6 +202,7 @@ test('tutor help supports mistake saving, hints, explanations and another questi
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   const streams = await setupTutor(page);
+  expect(await page.evaluate(() => typeof window.getExplanation)).toBe('undefined');
   await openTutor(page);
   await page.locator('.tutor-explore-skip').click();
   await expect(page.locator('#msgList .msg.assistant .msg-body').last()).toContainText(LESSON);

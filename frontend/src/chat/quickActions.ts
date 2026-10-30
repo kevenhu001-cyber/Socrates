@@ -1,8 +1,7 @@
 /* chat/quickActions.ts — Wave 0e of main-js-split plan.
  * Dispatcher for "quick" option buttons rendered inside assistant messages.
  * Extracted from main.js region 26 (L8778). Reads the current snapshot and
- * calls global helpers (addMessage, askNextQuestion, saveCurrentSession,
- * getExplanation).
+ * calls the turn and session helpers it imports directly.
  */
 
 import { stateStore } from '../state/store.ts';

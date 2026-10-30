@@ -8,7 +8,6 @@ import { updateSessionMetadata } from '../session/rowActions.ts';
  */
 import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.ts';
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.ts';
-import { getExplanation } from '../tutor/socraticTurn.ts';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.ts';
 import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd } from '../session/organizeRuntime.ts';
 import { askChatTurn } from '../chat/turnController.js';
@@ -64,7 +63,6 @@ import { syncEffortUI } from '../ui/effortPicker.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
-browserWindow.getExplanation = getExplanation;
 browserWindow.setActiveTemplate = setActiveTemplate;
 browserWindow.clearActiveTemplate = clearActiveTemplate;
 browserWindow.closeTagEditor = closeTagEditor;
