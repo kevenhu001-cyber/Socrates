@@ -80,12 +80,6 @@ function prepareCurrentSessionForReset() {
   catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.clearPendingAttachments'); }
 }
 
-function restoreNextProjectAfterReset() {
-  if (!browserWindow._nextProjectId) return;
-  stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: browserWindow._nextProjectId });
-  browserWindow._nextProjectId = null;
-}
-
 function renderTopicSetupAfterReset(examWasOpen: boolean) {
   toggleShareBtn();
   clearSessionRouteInURL();
@@ -146,19 +140,20 @@ function publishResetState() {
   focusComposerForNewSession();
 }
 
-export interface ResetOptions { confirmActiveSession?: boolean }
+export interface ResetOptions { confirmActiveSession?: boolean; projectId?: string }
 
 /** Save, clear and return the app to topic setup while respecting live work. */
 export async function resetApp(options?: ResetOptions) {
   const decision = readResetDecision(options);
   if (!await confirmResetIfRequired(decision.requiresConfirmation)) {
-    browserWindow._nextProjectId = null;
     return false;
   }
 
   prepareCurrentSessionForReset();
   resetState();
-  restoreNextProjectAfterReset();
+  if (options?.projectId) {
+    stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: options.projectId });
+  }
   renderTopicSetupAfterReset(decision.examWasOpen);
   renderListsAfterReset();
   closeMobileSidebarAfterReset();

@@ -112,6 +112,31 @@ test('typed project actions create, edit, and open a workspace from API data', a
     }
     await route.fulfill({ json: { ok: true } });
   });
+  await page.route(/\/api\/(?:v2\/)?chat-turns(?:\?|$)/, async (route) => {
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        created: true,
+        turn: {
+          id: '33333333-3333-4333-8333-333333333333',
+          sessionId: '22222222-2222-4222-8222-222222222222',
+          clientTurnId: 'project-workspace-test',
+          status: 'queued',
+          model: null,
+          generation: 0,
+          fullText: null,
+          fullReasoning: null,
+          toolCalls: [],
+          usage: null,
+          error: null,
+        },
+      }),
+    });
+  });
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n' });
+  });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.locator('#navProjects').click();
@@ -143,4 +168,16 @@ test('typed project actions create, edit, and open a workspace from API data', a
   await page.locator('.project-main', { hasText: 'Reading and writing' }).click();
   await expect(page.locator('#workspaceDialog .project-workspace-actions')).toBeVisible();
   await expect(page.locator('#projectRunHistory')).toBeVisible();
+
+  await page.locator('#workspaceDialog [data-action="new-chat"]').click();
+  await expect(page.locator('#workspaceDialog')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.stateStore.read('currentProjectId'))).toBe('project-new');
+  expect(await page.evaluate(() => window._nextProjectId)).toBeUndefined();
+
+  await page.locator('#composerRoot .rich-composer-editor').fill('Start a project chat');
+  await page.evaluate(() => { window.__projectSessionPromise = window.startSession(); });
+  await expect(page.locator('#chatView')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.stateStore.read('currentProjectId'))).toBe('project-new');
+  await page.evaluate(() => window.__projectSessionPromise);
+  expect(await page.evaluate(() => window._nextProjectId)).toBeUndefined();
 });

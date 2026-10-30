@@ -25,7 +25,7 @@ export interface LegacyMessages {
 }
 
 export interface LegacyNavigation {
-  resetApp(options?: { confirmActiveSession?: boolean }): Promise<boolean>;
+  resetApp(options?: { confirmActiveSession?: boolean; projectId?: string }): Promise<boolean>;
   startNewChat(): Promise<boolean>;
   toggleSidebar(): void;
   openNav(key: string): void;

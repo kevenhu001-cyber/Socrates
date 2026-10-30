@@ -26,7 +26,6 @@ interface StandaloneGlobals {
   deepResearchOn?: boolean;
   extensiveThinkingOn?: boolean;
   apiFetch?: ApiFetchFn;
-  _nextProjectId?: string | null;
   CURRENT_USER?: unknown;
 }
 
@@ -182,11 +181,6 @@ export function getCurrentLang(): 'zh' | 'en' {
 export function getApiFetch(): ApiFetchFn | null {
   const fn = standaloneWindow().apiFetch;
   return typeof fn === 'function' ? (fn as ApiFetchFn) : null;
-}
-
-/** Project context still consumed by the legacy session startup path. */
-export function setNextProjectId(projectId: string | null): void {
-  standaloneWindow()._nextProjectId = projectId;
 }
 
 /** The signed-in user record published by the legacy auth layer, or null. */

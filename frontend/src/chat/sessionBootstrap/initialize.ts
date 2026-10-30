@@ -8,13 +8,7 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getAppMode } from './runtime.ts';
 import type { SessionStartContext } from './input.ts';
 
-/** Session-scoped bridges reset when a new session replaces the current one. */
-interface InitializeWindow extends Window {
-  _nextProjectId?: string | null;
-}
-
 export function initializeNewSession({ topic, deepResearchOn }: Pick<SessionStartContext, 'topic' | 'deepResearchOn'>): void {
-  const win = window as InitializeWindow;
   if (turnState.activeChatAbort) {
     try { turnState.activeChatAbort('new-session'); }
     catch (error) { reportSwallow(error, 'chat/sessionBootstrap.abortPreviousStream'); }
@@ -40,7 +34,7 @@ export function initializeNewSession({ topic, deepResearchOn }: Pick<SessionStar
       kbNodes: [],
       domain: topic,
       phase: getAppMode() === 'chat' || deepResearchOn ? 'chat' : 'diagnostic',
-      currentProjectId: win._nextProjectId || null,
+      currentProjectId: stateStore.read('currentProjectId') as string | null,
       diagQuestions: [],
       currentNode: 0,
       totalQ: 0,
@@ -62,8 +56,6 @@ export function initializeNewSession({ topic, deepResearchOn }: Pick<SessionStar
     },
   });
   stateStore.dispatch({ type: 'session/replace-messages', payload: [] });
-  if (win._nextProjectId) win._nextProjectId = null;
-
   setCurrentSessionId(sessionId);
   pushChatIdToURL(stateStore.read('currentSessionId') as string | null);
   copyComposerPlugins('topic', 'chat');
