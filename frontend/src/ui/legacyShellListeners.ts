@@ -5,6 +5,7 @@
 // nodes this module would have bound at boot are replaced moments later and
 // a direct listener would be dropped with them.
 import { readComposerSurface } from '../composer/controller.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 let mounted = false;
 
@@ -84,7 +85,10 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
     const button = element as HTMLButtonElement;
     if (button && button.disabled) return;
     let surface = 'topic';
-    try { surface = readComposerSurface(); } catch (_) { /* default above */ }
+    try { surface = readComposerSurface(); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: ui/legacyShellListeners.ts:87');
+      /* default above */
+    }
     const streaming = button?.dataset.stop === '1' || button?.classList.contains('chat-stop') || button?.classList.contains('agent-stop');
     /* P_composer-dblclick-guard — a fast double-click on the send
        button used to fire the full click chain twice (addMessage →
@@ -107,7 +111,10 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
   });
   onShellClick('#composerMicBtn', () => {
     let surface = 'topic';
-    try { surface = readComposerSurface(); } catch (_) { /* default above */ }
+    try { surface = readComposerSurface(); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: ui/legacyShellListeners.ts:110');
+      /* default above */
+    }
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput(surface);
   });
   onShellClick('#mobileModeTrigger', () => actions.toggleMobileMode());
@@ -118,7 +125,10 @@ export function mountLegacyShellListeners(actions: LegacyShellActions): () => vo
   });
   onShellClick('#composerToolsBtn', (element) => {
     let surface = 'topic';
-    try { surface = readComposerSurface(); } catch (_) { /* default above */ }
+    try { surface = readComposerSurface(); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: ui/legacyShellListeners.ts:121');
+      /* default above */
+    }
     actions.toggleComposerTools(element, surface);
   });
   onShellClick('.effort-trigger', (element) => actions.toggleEffort(element));

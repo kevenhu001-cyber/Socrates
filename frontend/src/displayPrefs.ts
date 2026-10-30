@@ -7,6 +7,7 @@ import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.ts';
 import { DEFAULT_DARK_PICKER, DEFAULT_LIGHT_PICKER } from './ui/tokens.ts';
 import { restingRect } from './ui/pressFeedback.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
+import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
 
 /* ── constants ── */
@@ -29,7 +30,7 @@ type ThemePreference = 'system' | 'light' | 'dark';
 type ThemeStyle = 'socrates' | 'philosophy';
 type ThemeMode = 'light' | 'dark';
 
-export let displayPrefs: DisplayPreferences = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: false };
+export const displayPrefs: DisplayPreferences = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: false };
 
 let _systemThemeQuery: MediaQueryList|null = null;
 let _themeControlsDelegated = false;
@@ -76,7 +77,10 @@ export function getThemePreference() {
   try {
     const saved = localStorage.getItem("socrates-theme");
     if (isThemePreference(saved)) return saved;
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:79', 'expected');
+    /* ignore */
+  }
   return "dark";
 }
 
@@ -89,7 +93,10 @@ function syncMermaidTheme(mode: ThemeMode) {
     if (typeof browserWindow.mermaid !== "undefined" && browserWindow.mermaid.initialize) {
       browserWindow.mermaid.initialize({ startOnLoad: false, theme: mode === "dark" ? "dark" : "default" });
     }
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:92', 'expected');
+    /* ignore */
+  }
 }
 
 export function syncThemeUI() {
@@ -126,7 +133,10 @@ function syncBrowserChromeColor(mode: ThemeMode) {
   let color = "";
   try {
     color = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
-  } catch (_) { /* computed style unavailable during boot — use the fallback */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:129', 'expected');
+    /* computed style unavailable during boot — use the fallback */
+  }
   if (!color || color.indexOf("var(") !== -1) {
     color = mode === "dark" ? "#121110" : "#f7f4ee";
   }
@@ -156,7 +166,10 @@ function watchSystemTheme() {
     } else if (typeof _systemThemeQuery.addListener === "function") {
       _systemThemeQuery.addListener(onChange);
     }
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:159', 'expected');
+    /* ignore */
+  }
 }
 
 export function initTheme() {
@@ -186,7 +199,10 @@ export function initTheme() {
 export function setThemePreference(preference: string | null) {
   if (!isThemePreference(preference)) return;
   document.documentElement.setAttribute("data-theme-preference", preference);
-  try { localStorage.setItem("socrates-theme", preference); } catch (_) { /* ignore */ }
+  try { localStorage.setItem("socrates-theme", preference); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:189', 'expected');
+    /* ignore */
+  }
   setEffectiveThemeMode(resolveThemeMode(preference));
   applyDisplayPrefs();
 }
@@ -204,13 +220,19 @@ export function loadDisplayPrefs() {
       if (p.showGrid === true) displayPrefs.showGrid = true;
       else displayPrefs.showGrid = false;
     }
-  } catch { /* ignore */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: displayPrefs.ts:207', 'expected');
+    /* ignore */
+  }
   /* One-time cleanup: the accent-colour picker was removed, so drop any
      persisted accent preference and never let it resurface. */
   try {
     localStorage.removeItem("socrates-accent-hex");
     localStorage.removeItem("socrates-accent-hue");
-  } catch { /* ignore */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: displayPrefs.ts:213', 'expected');
+    /* ignore */
+  }
   /* One-time migration (bgMigratedV1): earlier builds shipped warm/green
      default background picks (#252220 / #ded6c8) and let users store any
      hue, which fought the neutral ChatGPT-black theme ("跑色"). Strip any
@@ -234,7 +256,10 @@ export function loadDisplayPrefs() {
       localStorage.setItem("socrates-bg-migrated-v1", "1");
       if (stripped) saveDisplayPrefs();
     }
-  } catch { /* ignore */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: displayPrefs.ts:237', 'expected');
+    /* ignore */
+  }
   applyDisplayPrefs();
 }
 
@@ -257,7 +282,10 @@ export function applyDisplayPrefs() {
 }
 
 export function saveDisplayPrefs() {
-  try { localStorage.setItem("socrates-display", JSON.stringify(displayPrefs)); } catch { /* ignore */ }
+  try { localStorage.setItem("socrates-display", JSON.stringify(displayPrefs)); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: displayPrefs.ts:260', 'expected');
+    /* ignore */
+  }
 }
 
 export function syncDisplayPrefsUI() {

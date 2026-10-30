@@ -2,9 +2,13 @@ import { useLayoutEffect, type RefObject } from 'react';
 
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { LegacyChatMessage } from '../types/domain';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 function runOptionalPostRender(action: (() => void) | undefined): void {
-  try { action?.(); } catch (_) { /* optional legacy renderer unavailable */ }
+  try { action?.(); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: react/message-list/useMessagePostRender.ts:7', 'expected');
+    /* optional legacy renderer unavailable */
+  }
 }
 
 export function useMessagePostRender(

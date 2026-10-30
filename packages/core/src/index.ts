@@ -2,9 +2,9 @@ export * from './intelligenceUi';
 export * from './turnRuntime.js';
 export { validateIntelligentUi } from './intelligentUiValidation.js';
 export * from './visualizationMath.js';
-import type { Attachment, ChatSseHandlers, JsonValue, Message, Session } from '@socrates/contracts';
+import type { Attachment, ChatSseHandlers, ChatStreamError, JsonValue, Message, Session } from '@socrates/contracts';
 
-export type { ChatSseHandlers, Message, Session } from '@socrates/contracts';
+export type { ChatSseHandlers, ChatStreamError, Message, Session } from '@socrates/contracts';
 
 export {
   createToolRunApi,
@@ -53,16 +53,31 @@ export function dispatchChatSseFrame(frame: string, handlers: ChatSseHandlers) {
   try { parsed = JSON.parse(payload); } catch { /* keep a useful text payload */ }
 
   if (event === 'error') {
-    const value = parsed as { error?: unknown; message?: unknown } | string;
-    handlers.onError?.(
-      typeof value === 'string'
-        ? value
-        : typeof value.error === 'string'
+    const value = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+    const message = typeof parsed === 'string'
+      ? parsed
+      : typeof value?.message === 'string'
+        ? value.message
+        : typeof value?.error === 'string'
           ? value.error
-          : typeof value.message === 'string'
-            ? value.message
-            : 'Stream failed',
-    );
+          : 'Stream failed';
+    const details: ChatStreamError = {
+      message,
+      ...(typeof value?.status === 'number' && Number.isInteger(value.status) && value.status >= 100 && value.status <= 599
+        ? { status: value.status }
+        : {}),
+      ...(typeof value?.code === 'string' ? { code: value.code } : {}),
+      ...(typeof value?.retryable === 'boolean' ? { retryable: value.retryable } : {}),
+      ...(typeof value?.upstreamStatus === 'number' && Number.isInteger(value.upstreamStatus) && value.upstreamStatus >= 100 && value.upstreamStatus <= 599
+        ? { upstreamStatus: value.upstreamStatus }
+        : {}),
+      ...(typeof value?.retryAfterMs === 'number' && Number.isFinite(value.retryAfterMs) && value.retryAfterMs >= 0
+        ? { retryAfterMs: Math.round(value.retryAfterMs) }
+        : {}),
+    };
+    handlers.onError?.(message, details);
     return;
   }
 
@@ -85,11 +100,12 @@ export function dispatchChatSseFrame(frame: string, handlers: ChatSseHandlers) {
   const delta = (parsed as { choices?: Array<{ delta?: { content?: unknown; reasoning_content?: unknown; reasoning?: unknown; thinking?: unknown } }> })
     ?.choices?.[0]?.delta;
   if (typeof delta?.content === 'string') handlers.onDelta?.(delta.content);
-  const rawReasoning = delta?.reasoning_content ?? (delta as any)?.reasoning ?? (delta as any)?.thinking;
+  const rawReasoning = delta?.reasoning_content ?? delta?.reasoning ?? delta?.thinking;
   const reasoning = typeof rawReasoning === 'string'
     ? rawReasoning
-    : (rawReasoning && typeof rawReasoning === 'object' && typeof (rawReasoning as any).text === 'string')
-      ? (rawReasoning as any).text
+    : rawReasoning !== null && typeof rawReasoning === 'object' && !Array.isArray(rawReasoning)
+      && 'text' in rawReasoning && typeof rawReasoning.text === 'string'
+      ? rawReasoning.text
       : '';
   if (reasoning) handlers.onReasoning?.(reasoning);
 }

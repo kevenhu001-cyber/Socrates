@@ -17,6 +17,7 @@ import type {
   ProviderFieldValue,
   ProviderSaveResult,
 } from './providerConfig.types.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 declare global {
   interface Window {
@@ -61,7 +62,8 @@ export function saveLastActiveId(id: string | null | undefined): void {
   try {
     if (!id || id === 'null' || id === 'undefined') localStorage.removeItem(LAST_ACTIVE_ID_KEY);
     else localStorage.setItem(LAST_ACTIVE_ID_KEY, String(id));
-  } catch {
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts:64', 'expected');
     /* Storage is optional; the in-memory selection remains authoritative. */
   }
 }
@@ -142,7 +144,7 @@ export async function refreshProviderConfig(): Promise<ProviderConfigSnapshot> {
   }
 
   try {
-    const result = await apiFetch('/api/api-key');
+    const result = await apiFetch<{ providers?: unknown; builtInCapabilities?: unknown }>('/api/api-key');
     const rows = Array.isArray(result?.providers)
       ? (result.providers as Record<string, unknown>[]).map(normalizeProvider)
       : [];
@@ -254,7 +256,10 @@ export async function setActiveProvider(id: string): Promise<void> {
   if (id === BUILT_IN_ID) {
     if (previous && previous !== BUILT_IN_ID) {
       try { await apiFetch(`/api/api-key/${encodeURIComponent(previous)}`, { method: 'PATCH', body: { isActive: false } }); }
-      catch { /* non-critical; next refresh reconciles the server flag */ }
+      catch (error) {
+        reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts:257');
+        /* non-critical; next refresh reconciles the server flag */
+      }
     }
     return;
   }
@@ -296,7 +301,7 @@ export function setSaving(saving: boolean): void {
 async function persistProvider(provider: ProviderConfig): Promise<{ originalId: string; id: string; label: string }> {
   const key = credentialDrafts.get(provider.id) || '';
   if (provider.id.startsWith('new-')) {
-    const response = await apiFetch('/api/api-key', {
+    const response = await apiFetch<{ id?: unknown }>('/api/api-key', {
       method: 'POST',
       body: {
         label: provider.label || '', url: provider.url || '', key,
@@ -393,7 +398,10 @@ export async function clearProviderConfig(): Promise<void> {
   const savedProviders = state.providers.filter((provider) => !provider.isBuiltIn && !provider.id.startsWith('new-'));
   await Promise.all(savedProviders.map((provider) => apiFetch(`/api/api-key/${encodeURIComponent(provider.id)}`, { method: 'DELETE' }).catch(() => undefined)));
   credentialDrafts.clear();
-  try { localStorage.removeItem('socrates-provider-keys'); } catch { /* legacy preference may not exist */ }
+  try { localStorage.removeItem('socrates-provider-keys'); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts:396');
+    /* legacy preference may not exist */
+  }
   saveLastActiveId(null);
   const hasBuiltIn = Boolean(window.SERVER_HAS_BEAGLE_KEY);
   publishSelectionAndProviders(hasBuiltIn ? [{ ...BUILT_IN_BASE, model: builtInModel }] : [], null);

@@ -14,6 +14,7 @@ import { Button } from '../ui/Button';
 import { useId, type MouseEvent } from 'react';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import type { ApprovalDecision, ApprovalView } from './toolRunModel';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface ToolRunApprovalProps {
   view: ApprovalView;
@@ -43,6 +44,7 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
     try {
       await getLegacyActions().liveTurn?.decideApproval(messageId, toolCallId, decision);
     } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-run/ToolRunApproval.tsx:45');
       /* The runtime recorded the failure in `approval.ui` (and re-enabled the
          buttons), so the panel already shows what went wrong. */
     }

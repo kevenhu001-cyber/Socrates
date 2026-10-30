@@ -83,9 +83,10 @@ browserWindow.askChatTurn = askChatTurn;
    inside addStreamingMessage) depend on it. The cold path returns a
    Promise; every internal call site awaits either way. */
 browserWindow.__loadStreamingTurn = _loadStreamingTurn;
-browserWindow.addStreamingMessage = function (opts: any) {
+type StreamingTurnModule = typeof import('../chat/streamingTurn.ts');
+browserWindow.addStreamingMessage = function (opts: Parameters<StreamingTurnModule['addStreamingMessage']>[0]) {
   if (_streamingModule) return _streamingModule.addStreamingMessage(opts);
-  return _loadStreamingTurn().then(function (m: { addStreamingMessage: (arg0: any) => any; }) { return m.addStreamingMessage(opts); });
+  return _loadStreamingTurn().then(function (m) { return m.addStreamingMessage(opts); });
 };
 browserWindow.syncSidebarBtns = syncSidebarBtns;
 browserWindow.toggleSidebarView = toggleSidebarView;
@@ -97,8 +98,8 @@ browserWindow.renderRecents = renderRecents;
 browserWindow.resendLastUserMessage = resendLastUserMessage;
 browserWindow.setChatStopState = setChatStopState;
 browserWindow.handleSendClick = handleSendClick;
-let _streamingImport: Promise<typeof import("../chat/streamingTurn.ts")>|null = null;
-let _streamingModule: { addStreamingMessage: any; }|null = null;
+let _streamingImport: Promise<StreamingTurnModule> | null = null;
+let _streamingModule: StreamingTurnModule | null = null;
 function _loadStreamingTurn() {
   if (!_streamingImport) {
     _streamingImport = import('../chat/streamingTurn.ts');
@@ -110,7 +111,8 @@ function _loadStreamingTurn() {
   }
   return _streamingImport;
 }
-let _dangerImport: Promise<any>|null = null;
+type DangerConfirmsModule = typeof import('../ui/dangerConfirms.js');
+let _dangerImport: Promise<DangerConfirmsModule> | null = null;
 function _loadDangerConfirms() {
   if (!_dangerImport) {
     _dangerImport = import('../ui/dangerConfirms.js');
@@ -130,7 +132,10 @@ browserWindow.toggleAppMode = toggleAppMode;
 browserWindow.addMessage = addMessage;
 browserWindow.askNextQuestion = askNextQuestion;
 browserWindow.saveCurrentSession = saveCurrentSession;
-browserWindow.fetchWebContext = function (query: any, opts: any) {
+browserWindow.fetchWebContext = function (
+  query: Parameters<typeof import('../chat/webSearch.ts')['fetchWebContext']>[0],
+  opts?: Parameters<typeof import('../chat/webSearch.ts')['fetchWebContext']>[1],
+) {
   return loadWebSearch().then(function (m) { return m.fetchWebContext(query, opts); });
 };
 browserWindow.openAttachmentPicker = openAttachmentPicker;
@@ -258,9 +263,9 @@ browserWindow.__socratesLegacy = {
     saveProfileName,
     onCustomInstructionsChange,
     toggleProfileWebSearch,
-    confirmClearCache: function () { return _loadDangerConfirms().then(function (m: { confirmClearCache: () => any; }) { return m.confirmClearCache(); }); },
-    confirmClearSettings: function () { return _loadDangerConfirms().then(function (m: { confirmClearSettings: () => any; }) { return m.confirmClearSettings(); }); },
-    confirmDeleteAccount: function () { return _loadDangerConfirms().then(function (m: { confirmDeleteAccount: () => any; }) { return m.confirmDeleteAccount(); }); },
+    confirmClearCache: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearCache(); }); },
+    confirmClearSettings: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearSettings(); }); },
+    confirmDeleteAccount: function () { return _loadDangerConfirms().then(function (m) { return m.confirmDeleteAccount(); }); },
     setLang: browserWindow.setLang,
   },
   postRender: {
@@ -287,7 +292,7 @@ browserWindow.__socratesLegacy = {
     },
     /* Teardown for one card React captured from mountVisualization's return
        value — survives a host the legacy pipeline emptied first. */
-    disposeVisualization: function (card) {
+    disposeVisualization: function (card: Parameters<typeof disposeVisualization>[0]) {
       if (typeof disposeVisualization === 'function') disposeVisualization(card);
     },
     appendInlineArtifact: function (fileId, mimeType, outEl, displayName) {

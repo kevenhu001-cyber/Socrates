@@ -40,7 +40,10 @@ function _publishAttachments(){
         attachments: attachments.slice(),
       });
     }
-  }catch(_){ /* swallow — bridge is best-effort */ }
+  }catch(_){
+    reportSwallow(_, 'empty catch: attachments/render.ts:43', 'expected');
+    /* swallow — bridge is best-effort */
+  }
 }
 
 /* Rejections surface per-file through addFiles' onRejected callback
@@ -93,7 +96,7 @@ function renderAndRefresh(){
 /* Error-chip retry — flips a failed upload back to pending and re-runs
    the job against the retained File handle, then re-syncs the send
    buttons (a failed chip still counts toward activation). */
-export function retryComposerAttachment(id: any){
+export function retryComposerAttachment(id: string){
   const ok = retryAttachment(id, renderAndRefresh);
   refreshAllSendBtns();
   return ok;
@@ -135,7 +138,7 @@ function refreshAllSendBtns(){
 /* Bar ids for the doc-level drop hint. Accepts one id or an array —
    hidden ancestors never paint, so the single wiring names both the
    landing and chat containers and the visible one lights up. */
-function wiredBarIds(w: { barId: any; }){
+function wiredBarIds(w: Pick<WiredInput, 'barId'>){
   if(!w.barId) return [];
   return Array.isArray(w.barId) ? w.barId : [w.barId];
 }
@@ -152,6 +155,79 @@ function findWiredForTarget(target: EventTarget|null){
   return null;
 }
 
+function wirePickerButton(btn: HTMLElement | null, input: HTMLElement) {
+  if (!btn) return;
+  btn.onclick = function() {
+    (input as HTMLInputElement).value = '';
+    input.click();
+  };
+}
+
+function wireInputFileChange(input: HTMLElement, btn: HTMLElement | null) {
+  input.onchange = async function() {
+    const files = (input as HTMLInputElement).files;
+    if (!files || !files.length) return;
+    const result = await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
+    refreshAllSendBtns();
+    if (!result.rejected.length || !btn) return;
+    btn.classList.add('has-error');
+    setTimeout(function() { btn.classList.remove('has-error'); }, 1500);
+  };
+}
+
+function wireComposerDrop(wrap: HTMLElement) {
+  ['dragenter', 'dragover'].forEach(function(eventName) {
+    wrap.addEventListener(eventName, function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      wrap.classList.add('drag-over');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function(eventName) {
+    wrap.addEventListener(eventName, function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      wrap.classList.remove('drag-over');
+    });
+  });
+  wrap.addEventListener('drop', async function(event) {
+    const files = event.dataTransfer?.files;
+    if (!files || !files.length) return;
+    await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
+  });
+}
+
+async function handlePasteFiles(event: ClipboardEvent) {
+  const clipboard = event.clipboardData;
+  const items = clipboard?.items;
+  const files: File[] = [];
+  if (items && items.length) {
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+      if (item.kind !== 'file') continue;
+      const file = item.getAsFile();
+      if (file) files.push(file);
+    }
+  } else if (clipboard?.files.length) {
+    for (let index = 0; index < clipboard.files.length; index++) files.push(clipboard.files[index]);
+  }
+  if (!files.length) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const result = await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
+  refreshAllSendBtns();
+  if (result.added > 0) {
+    dedupToast(result.added + ' file' + (result.added > 1 ? 's' : '') + ' pasted');
+  }
+}
+
+function wirePasteHandler(textarea: HTMLElement | null, wrap: HTMLElement) {
+  const target = textarea || wrap;
+  target.addEventListener('paste', function(event) {
+    void handlePasteFiles(event as ClipboardEvent);
+  });
+}
+
 /* Wire one composer. opts:
  *   btnId        — paperclip button id (opens the hidden file input)
  *   inputId      — hidden file input id
@@ -166,12 +242,12 @@ function findWiredForTarget(target: EventTarget|null){
  *                   mutations (updateComposerBtn)
  * Called once for the single composer; safe to call multiple times for
  * the same ids (de-duplicated by chipsId). */
-export function setupAttachmentInput(opts: { inputId: any; wrapId: any; textareaId: any; barId: any; chipsId: any; updateBtnName: any; btnId?: any; }){
+export function setupAttachmentInput(opts: WiredInput){
   if(!opts || !opts.inputId || !opts.wrapId) return;
   // De-dup: if a config with the same chipsId is already wired, skip.
   if(opts.chipsId && WIRED_INPUTS.some(function(w){ return w.chipsId === opts.chipsId; })) return;
 
-  const btn = document.getElementById(opts.btnId);
+  const btn = opts.btnId ? document.getElementById(opts.btnId) : null;
   const input = document.getElementById(opts.inputId);
   const wrap = document.getElementById(opts.wrapId);
   const textarea = opts.textareaId ? document.getElementById(opts.textareaId) : null;
@@ -187,84 +263,10 @@ export function setupAttachmentInput(opts: { inputId: any; wrapId: any; textarea
     updateBtnName: opts.updateBtnName || "updateComposerBtn",
   };
   WIRED_INPUTS.push(cfg);
-
-  if(btn) btn.onclick = function(){
-    /* Reset value first so re-selecting the same file fires `change`. */
-    (input as HTMLInputElement).value = "";
-    input.click();
-  };
-  input.onchange = async function(){
-    if(!(input as HTMLInputElement).files || !(input as HTMLInputElement).files!.length) return;
-    const res = await addFiles((input as HTMLInputElement).files, renderAndRefresh, updateProgressOnly, dedupToast);
-    refreshAllSendBtns();
-    if(res.rejected && res.rejected.length){
-      if(btn) {
-        btn.classList.add("has-error");
-        setTimeout(function(){ btn.classList.remove("has-error"); }, 1500);
-      }
-    }
-  };
-
-  // Drag-and-drop: visual hint + accept drops on this input wrap.
-  ["dragenter","dragover"].forEach(function(evt){
-    wrap.addEventListener(evt, function(e){
-      e.preventDefault(); e.stopPropagation();
-      wrap.classList.add("drag-over");
-    });
-  });
-  ["dragleave","drop"].forEach(function(evt){
-    wrap.addEventListener(evt, function(e){
-      e.preventDefault(); e.stopPropagation();
-      wrap.classList.remove("drag-over");
-    });
-  });
-  wrap.addEventListener("drop", async function(e){
-    const dt = e.dataTransfer;
-    if(!dt || !dt.files || !dt.files.length) return;
-    await addFiles(dt.files, renderAndRefresh, updateProgressOnly, dedupToast);
-  });
-
-  /* P_paste-attach — clipboard paste handler for the composer.
-     When the user pastes an image (e.g. screenshot from clipboard),
-     intercept it and send through addFiles() instead of dropping raw
-     base64 text into the textarea. Text-only pastes pass through
-     unchanged. */
-  async function handlePasteFiles(e: ClipboardEvent){
-    const items = e.clipboardData && e.clipboardData.items;
-    // TipTap/ProseMirror path (React composer) owns files when present —
-    // only act when the event also carries direct File objects and no
-    // editor handled it (legacy textarea-less composer, non-React mode).
-    const files = [];
-    if(items && items.length){
-      for(let i = 0; i < items.length; i++){
-        const item = items[i];
-        if(item.kind === "file" && item.getAsFile){
-          const f = item.getAsFile();
-          if(f) files.push(f);
-        }
-      }
-    } else if(e.clipboardData && e.clipboardData.files && e.clipboardData.files.length){
-      for(let i = 0; i < e.clipboardData.files.length; i++) files.push(e.clipboardData.files[i]);
-    }
-    if(!files.length) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const res = await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
-    refreshAllSendBtns();
-    if(res.added > 0){
-      dedupToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
-    }
-  }
-  const onPaste = (event: Event) => handlePasteFiles(event as ClipboardEvent);
-  if(textarea){
-    textarea.addEventListener("paste", onPaste);
-  } else {
-    // P_paste-attach-fallback — the single composer is a contenteditable
-    // (TipTap) with no textarea id, and non-React mode has no editor
-    // handlePaste. Listen on the wrap so clipboard images still attach
-    // instead of falling through as unrenderable blobs.
-    wrap.addEventListener("paste", onPaste);
-  }
+  wirePickerButton(btn, input);
+  wireInputFileChange(input, btn);
+  wireComposerDrop(wrap);
+  wirePasteHandler(textarea, wrap);
 }
 
 /* The compact composer menu owns the visible + button; file upload is one

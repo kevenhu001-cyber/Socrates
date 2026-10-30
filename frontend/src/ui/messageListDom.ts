@@ -1,4 +1,5 @@
 import { disposeVisualizations } from '../render/vizStubs.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /**
  * Remove only legacy-rendered message nodes from the shared message list.
@@ -7,11 +8,17 @@ import { disposeVisualizations } from '../render/vizStubs.ts';
 export function clearLegacyMsgListChildren() {
   const list = document.getElementById('msgList');
   if (!list) return;
-  try { disposeVisualizations(list); } catch (_) { /* best effort cleanup */ }
+  try { disposeVisualizations(list); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/messageListDom.ts:10', 'expected');
+    /* best effort cleanup */
+  }
 
   const children = Array.from(list.children);
   for (const node of children) {
     if (node.hasAttribute('data-react-owned')) continue;
-    try { list.removeChild(node); } catch (_) { /* node was already removed */ }
+    try { list.removeChild(node); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: ui/messageListDom.ts:15');
+      /* node was already removed */
+    }
   }
 }

@@ -11,6 +11,26 @@ import type { ComposerSurface } from '../composer/types.ts';
 
 
 interface WorkspaceConnector { id: string; name: string; auth?: string; connection?: unknown; }
+interface SerializedComposerPlugin {
+  id: string;
+  name: string;
+  description: string;
+  capabilities: string[];
+  directiveTemplate?: string;
+  iconMarkup: string;
+}
+interface ComposerReturnSnapshot {
+  topic: SerializedComposerPlugin[];
+  chat: SerializedComposerPlugin[];
+  drafts: Partial<Record<ComposerSurface, string>>;
+  surface: string | null;
+}
+interface ConnectorReturnContext {
+  connectorId: string;
+  returnPath: string;
+  createdAt: number;
+  composer: ComposerReturnSnapshot | null;
+}
 const workspaceCache: { connectors: WorkspaceConnector[] } = { connectors: [] };
 /* Route matching and return-path replacement are provided by app/router.ts. */
 const CONNECTOR_RETURN_CONTEXT_KEY = "socrates-connector-return-v1";
@@ -31,8 +51,16 @@ function api(path: string, options?: undefined) { return browserWindow.apiFetch(
    that no first-paint surface needs; it lazy-loads on first icon
    request (slash palette / connectors / workspace rows) and the
    hydrate pass swaps pending monograms for real marks. */
-let _ciMod: { getConnectorIconMarkup: any; normaliseConnectorId?: (value: unknown) => string; getConnectorActivityIconMarkup?: (id: unknown) => string; connectorIconIds?: () => ReadonlyArray<string>; }|null = null;
-let _ciReady: Promise<any>|null = null;
+type ConnectorIconModule = typeof import('../connector-icons.ts');
+let _ciMod: ConnectorIconModule | null = null;
+let _ciReady: Promise<ConnectorIconModule> | null = null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+function isWorkspaceConnector(value: unknown): value is WorkspaceConnector {
+  return isRecord(value) && typeof value.id === 'string' && typeof value.name === 'string'
+    && (value.auth === undefined || typeof value.auth === 'string');
+}
 export function ensureConnectorIcons() {
   if (!_ciReady) {
     _ciReady = import("../connector-icons.ts").then(function (m) {
@@ -52,14 +80,14 @@ export function ensureConnectorIcons() {
 }
 browserWindow.ensureConnectorIcons = ensureConnectorIcons;
 
-function _connectorMonogram(provider: any) {
+function _connectorMonogram(provider: unknown) {
   return '<span class="connector-logo-fallback" data-cicon="'
     + esc(String(provider || "?"))
     + '" style="display:flex" aria-hidden="true">'
     + esc(String(provider || "?").slice(0, 2).toUpperCase()) + '</span>';
 }
 
-function connectorIconWithFallback(provider: any) {
+export function connectorIconWithFallback(provider: unknown): string {
   const markup = _ciMod && _ciMod.getConnectorIconMarkup(provider);
   if (markup) return markup;
   if (!_ciMod) ensureConnectorIcons();
@@ -69,10 +97,10 @@ function connectorIconWithFallback(provider: any) {
 /* Swap pending monogram placeholders for real SVG marks once the icon
    pack resolves. Fallback spans carry data-cicon so the pass is
    idempotent and safe to re-run (also covers React-committed chips). */
-function hydrateConnectorIcons(root?: { querySelectorAll: any; }|undefined) {
+export function hydrateConnectorIcons(root?: ParentNode) {
   if (!_ciMod) return;
   const scope = root && typeof root.querySelectorAll === "function" ? root : document;
-  scope.querySelectorAll(".connector-logo-fallback[data-cicon]").forEach(function (el: { dataset: { cicon: any; }; outerHTML: any; }) {
+  scope.querySelectorAll<HTMLElement>(".connector-logo-fallback[data-cicon]").forEach(function (el) {
     const markup = _ciMod!.getConnectorIconMarkup(el.dataset.cicon);
     if (markup) el.outerHTML = markup;
   });
@@ -107,8 +135,9 @@ let _slashConnectorsLoaded = false;
 function ensureSlashApps() {
   ensureConnectorIcons();
   if (_slashConnectorsLoaded && workspaceCache.connectors.length) return Promise.resolve();
-  return api("/api/connectors").then(function (res: { connectors: any; }) {
-    workspaceCache.connectors = (res && res.connectors) || [];
+  return api("/api/connectors").then(function (res: unknown) {
+    const connectors = isRecord(res) ? res.connectors : undefined;
+    workspaceCache.connectors = Array.isArray(connectors) ? connectors.filter(isWorkspaceConnector) : [];
     _slashConnectorsLoaded = true;
   }).catch(function () { /* offline / not signed in — palette just shows templates */ });
 }
@@ -117,7 +146,16 @@ browserWindow.ensureSlashApps = ensureSlashApps;
    now: any connector with a live connection (arxiv_search is exposed
    only via the Connectors panel, never via the slash palette). Shape
    mirrors what the palette renderer expects. */
-browserWindow.getSlashApps = function () {
+export interface SlashApp {
+  id: string;
+  title: string;
+  shortcut: string;
+  description: string;
+  icon: string;
+  insert: string;
+}
+
+export function getSlashApps(): SlashApp[] {
   return (workspaceCache.connectors || []).filter(function (c) {
     if (!APP_SLASH_HINTS[c.id]) return false;
     return c.auth === "public" || !!c.connection;
@@ -125,7 +163,8 @@ browserWindow.getSlashApps = function () {
     const hint = APP_SLASH_HINTS[c.id];
     return { id: c.id, title: c.name, shortcut: "/" + c.id, description: hint.description, icon: connectorIconWithFallback(c.id), insert: hint.insert };
   });
-};
+}
+browserWindow.getSlashApps = getSlashApps;
 
 let _pluginWorkspaceTabsBound = false;
 /* Delegated on purpose: #pluginWorkspaceTabs is React-owned
@@ -174,7 +213,7 @@ bindPluginWorkspaceTabs();
 
 
 
-function safeConnectorReturnPath(value: any) {
+function safeConnectorReturnPath(value: unknown) {
   const path = String(value || "");
   if (!path || path.length > 512 || path.charAt(0) !== "/" || path.indexOf("//") === 0 || path.indexOf("\\") >= 0) return "/";
   return path;
@@ -198,7 +237,7 @@ function composerReturnSnapshot() {
         id: id,
         name: String(plugin.name || id).slice(0, 120),
         description: String(plugin.description || "").slice(0, 240),
-        capabilities: Array.isArray(plugin.capabilities) ? plugin.capabilities.slice(0, 8).map(function (item: any) { return String(item).slice(0, 80); }) : [],
+        capabilities: Array.isArray(plugin.capabilities) ? plugin.capabilities.slice(0, 8).map(function (item: unknown) { return String(item).slice(0, 80); }) : [],
         directiveTemplate: plugin.directiveTemplate ? String(plugin.directiveTemplate).slice(0, 300) : undefined,
         iconMarkup: icon || "",
       };
@@ -213,7 +252,7 @@ function composerReturnSnapshot() {
   };
 }
 
-function rememberConnectorReturnContext(connectorId: any) {
+export function rememberConnectorReturnContext(connectorId: string) {
   try {
     sessionStorage.setItem(CONNECTOR_RETURN_CONTEXT_KEY, JSON.stringify({
       connectorId: String(connectorId || ""),
@@ -224,18 +263,54 @@ function rememberConnectorReturnContext(connectorId: any) {
   } catch (e) { reportSwallow(e, 'sidebar/nav.rememberConnectorReturnContext'); /* storage can be unavailable in private/embedded contexts */ }
 }
 
-function readConnectorReturnContext() {
+function parseComposerReturnSnapshot(value: unknown): ComposerReturnSnapshot | null {
+  if (!isRecord(value)) return null;
+  const parsePlugins = (candidate: unknown): SerializedComposerPlugin[] => {
+    if (!Array.isArray(candidate)) return [];
+    return candidate.flatMap((item): SerializedComposerPlugin[] => {
+      if (!isRecord(item) || typeof item.id !== 'string') return [];
+      const capabilities = Array.isArray(item.capabilities) ? item.capabilities.map(String) : [];
+      return [{
+        id: item.id,
+        name: typeof item.name === 'string' ? item.name : item.id,
+        description: typeof item.description === 'string' ? item.description : '',
+        capabilities,
+        directiveTemplate: typeof item.directiveTemplate === 'string' ? item.directiveTemplate : undefined,
+        iconMarkup: typeof item.iconMarkup === 'string' ? item.iconMarkup : '',
+      }];
+    });
+  };
+  const draftsValue = isRecord(value.drafts) ? value.drafts : {};
+  const drafts: Partial<Record<ComposerSurface, string>> = {};
+  if (typeof draftsValue.topic === 'string') drafts.topic = draftsValue.topic;
+  if (typeof draftsValue.chat === 'string') drafts.chat = draftsValue.chat;
+  return {
+    topic: parsePlugins(value.topic),
+    chat: parsePlugins(value.chat),
+    drafts,
+    surface: typeof value.surface === 'string' ? value.surface : null,
+  };
+}
+
+function readConnectorReturnContext(): ConnectorReturnContext | null {
   try {
     const raw = sessionStorage.getItem(CONNECTOR_RETURN_CONTEXT_KEY);
     if (!raw) return null;
     sessionStorage.removeItem(CONNECTOR_RETURN_CONTEXT_KEY);
-    const context = JSON.parse(raw);
-    if (!context || Date.now() - Number(context.createdAt || 0) > CONNECTOR_RETURN_CONTEXT_TTL) return null;
-    return context;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return null;
+    const createdAt = Number(parsed.createdAt || 0);
+    if (Date.now() - createdAt > CONNECTOR_RETURN_CONTEXT_TTL) return null;
+    return {
+      connectorId: typeof parsed.connectorId === 'string' ? parsed.connectorId : '',
+      returnPath: safeConnectorReturnPath(parsed.returnPath),
+      createdAt,
+      composer: parseComposerReturnSnapshot(parsed.composer),
+    };
   } catch (_) { return null; }
 }
 
-function restoreComposerReturnState(composer: { [x: string]: any; drafts: { [x: string]: string; }; }) {
+function restoreComposerReturnState(composer: ComposerReturnSnapshot | null) {
   if (!composer) return;
   const controller = browserWindow.__socratesComposerController;
   if (controller && typeof controller.setMarkdown === "function" && composer.drafts) {

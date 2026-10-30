@@ -47,7 +47,7 @@ export const executeProjectConnector: ToolExecutor = async (
 ): Promise<ToolExecutionResult> => {
   const { emitter, req, projectConnectorConnectionsByProvider } = ctx;
   const toolName = call.function?.name || '';
-  const PROJECT_TOOL_TO_PROVIDER: Record<string, any> = {
+  const PROJECT_TOOL_TO_PROVIDER: Record<string, unknown> = {
     [PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY]:             projectConnectorConnectionsByProvider.github,
     [PROJECT_CONNECTOR_TOOL_NAMES.GMAIL_SEARCH]:                projectConnectorConnectionsByProvider.gmail,
     [PROJECT_CONNECTOR_TOOL_NAMES.GOOGLE_CALENDAR_LIST_EVENTS]: projectConnectorConnectionsByProvider.googlecalendar,

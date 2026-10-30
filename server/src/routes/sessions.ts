@@ -57,7 +57,7 @@ export const SessionPayloadSchema = z.object({
    * Lives on the same row as the session, so a single
    * POST /api/sessions carries the exam to the server and a single
    * GET /api/sessions/:id returns it for re-rendering. */
-  examData: z.any().optional().nullable(),
+  examData: z.unknown().optional().nullable(),
   /* M3 — "" or a malformed id degrades to null (unfiled) instead of a
    * 400 that blocks the entire conversation save. */
   projectId: z.preprocess(
@@ -74,7 +74,7 @@ export const SessionPayloadSchema = z.object({
     content: z.string().max(200000).optional().nullable(),
     html: z.string().max(500000).optional().nullable(),
     type: z.string().max(50).optional().nullable(),
-    sources: z.array(z.any()).max(100).optional().nullable(),
+    sources: z.array(z.unknown()).max(100).optional().nullable(),
     clientId: z.string().max(100).optional().nullable(),
     /* P_reasoning-persist — chain-of-thought text from reasoning
        models. Preserved so it survives session save/load. */
@@ -109,13 +109,13 @@ export const SessionPayloadSchema = z.object({
     toolCalls: z.array(z.object({
       id: z.string().max(200),
       name: z.string().max(100),
-      input: z.any().optional().nullable(),
+      input: z.unknown().optional().nullable(),
       output: z.string().max(500_000).optional().nullable(),
       isError: z.boolean().optional().nullable(),
       /* Preserve structured native-tool output and bounded execution metadata
        * so a reload has the same cards as the live SSE stream. */
-      plan: z.any().optional().nullable(),
-      spec: z.any().optional().nullable(),
+      plan: z.unknown().optional().nullable(),
+      spec: z.unknown().optional().nullable(),
       executionId: z.string().max(200).optional().nullable(),
       durationMs: z.number().nonnegative().max(86_400_000).optional().nullable(),
       progressPhase: z.string().max(200).optional().nullable(),
@@ -143,8 +143,8 @@ export const SessionPayloadSchema = z.object({
        * visualization specs the run produced. These are needed to
        * rebuild the inline text→row→chart layout on reload/share. */
       textOffset: z.number().int().nonnegative().max(10_000_000).optional().nullable(),
-      visualization: z.any().optional().nullable(),
-      visualizations: z.array(z.any()).max(8).optional(),
+      visualization: z.unknown().optional().nullable(),
+      visualizations: z.array(z.unknown()).max(8).optional(),
       /* P_tool-run-restore — the Codex step log and the terminal status the
        * declarative renderer (frontend/src/react/tool-run) needs to rebuild a
        * run's state without the live SSE stream. Steps are capped client-side
@@ -155,11 +155,11 @@ export const SessionPayloadSchema = z.object({
       /* Shape is validated where it is written (below) rather than here, so a
        * malformed step entry degrades to "no steps" instead of failing the
        * whole session save with a 400. */
-      steps: z.array(z.any()).max(60).optional(),
+      steps: z.array(z.unknown()).max(60).optional(),
     })).max(20).optional(),
   })).max(1000).optional(),
-  kbNodes: z.array(z.any()).max(5000).optional(),
-  mistakes: z.array(z.any()).max(1000).optional(),
+  kbNodes: z.array(z.unknown()).max(5000).optional(),
+  mistakes: z.array(z.unknown()).max(1000).optional(),
   pinned: z.boolean().optional(),
   totalQ: z.number().int().nonnegative().max(1000000).optional(),
   currentNode: z.number().int().nonnegative().max(1000000).optional(),
@@ -175,8 +175,8 @@ export const SessionPayloadSchema = z.object({
   currentExampleIdx: z.number().int().nonnegative().max(100000).optional().catch(undefined),
   practiceAttempts: z.number().int().nonnegative().max(1000000).optional().catch(undefined),
   practicePhase: z.string().max(50).optional().catch(undefined),
-  teachingPlan: z.any().optional().nullable(),
-  boundariesHistory: z.array(z.any()).max(100).optional().catch(undefined),
+  teachingPlan: z.unknown().optional().nullable(),
+  boundariesHistory: z.array(z.unknown()).max(100).optional().catch(undefined),
   mistakeFilter: z.string().max(50).optional().catch(undefined),
   branchedFrom: z.object({}).passthrough().optional().nullable().catch(null),
 }).passthrough();
@@ -208,7 +208,7 @@ function clipArr<T>(v: unknown, max: number, keep: 'first' | 'last' = 'first'): 
   return (keep === 'last' ? v.slice(v.length - max) : v.slice(0, max)) as T[];
 }
 
-export function sanitizeSessionPayload(body: any): any {
+export function sanitizeSessionPayload(body: unknown): unknown {
   if (!body || typeof body !== 'object') return body;
   const out: Record<string, unknown> = { ...(body as Record<string, unknown>) };
   out.topic = clipStr(out.topic, 10000);
@@ -216,8 +216,8 @@ export function sanitizeSessionPayload(body: any): any {
   out.domain = out.domain == null ? out.domain : clipStr(out.domain, 10000);
   if (Array.isArray(out.messages)) {
     // Keep the most recent turns: the tail holds the live context.
-    const msgs = clipArr<any>(out.messages, 1000, 'last') || [];
-    out.messages = msgs.map((m) => {
+    const msgs = clipArr<unknown>(out.messages, 1000, 'last') || [];
+    out.messages = msgs.map((m: unknown) => {
       if (!m || typeof m !== 'object') return { role: 'user', rawText: '' };
       const c: Record<string, unknown> = { ...(m as Record<string, unknown>) };
       c.role = typeof c.role === 'string' && c.role ? c.role : 'user';
@@ -232,7 +232,7 @@ export function sanitizeSessionPayload(body: any): any {
         c.sources = s;
       }
       if (Array.isArray(c.attachments)) {
-        c.attachments = (clipArr(c.attachments, 20) || []).map((a: any) => {
+        c.attachments = (clipArr<unknown>(c.attachments, 20) || []).map((a: unknown) => {
           if (!a || typeof a !== 'object') return { id: '', kind: 'file', name: 'file', mime: 'application/octet-stream', size: 0 };
           const x: Record<string, unknown> = { ...(a as Record<string, unknown>) };
           x.id = clipStr(x.id, 100) || '';
@@ -250,7 +250,7 @@ export function sanitizeSessionPayload(body: any): any {
         });
       }
       if (Array.isArray(c.toolCalls)) {
-        c.toolCalls = (clipArr(c.toolCalls, 20) || []).map((t: any) => {
+        c.toolCalls = (clipArr<unknown>(c.toolCalls, 20) || []).map((t: unknown) => {
           if (!t || typeof t !== 'object') return { id: '', name: 'tool' };
           const x: Record<string, unknown> = { ...(t as Record<string, unknown>) };
           x.id = clipStr(x.id, 200) || '';
@@ -287,7 +287,7 @@ export function sanitizeSessionPayload(body: any): any {
              blow past the 5 000-char schema bound and reject the entire
              session save with a 400. */
           if (Array.isArray(x.artifacts)) {
-            x.artifacts = (clipArr(x.artifacts, 20) || []).map((a: any) => {
+            x.artifacts = (clipArr<unknown>(x.artifacts, 20) || []).map((a: unknown) => {
               if (!a || typeof a !== 'object') return { id: '' };
               const y: Record<string, unknown> = { ...(a as Record<string, unknown>) };
               y.id = clipStr(y.id, 100) || '';
@@ -297,7 +297,7 @@ export function sanitizeSessionPayload(body: any): any {
             });
           }
           if (Array.isArray(x.results)) {
-            x.results = (clipArr(x.results, 20) || []).map((r: any) => {
+            x.results = (clipArr<unknown>(x.results, 20) || []).map((r: unknown) => {
               if (!r || typeof r !== 'object') return {};
               const y: Record<string, unknown> = { ...(r as Record<string, unknown>) };
               y.title = clipStr(y.title, 1000);
@@ -724,10 +724,10 @@ router.post('/', writeLimiter, async (req, res, next) => {
                      * malformed entry here costs that run its steps — which is
                      * still better than persisting junk or rejecting the save. */
                     steps: Array.isArray(tc.steps)
-                      ? tc.steps.filter(function (step) {
-                          return step && typeof step === 'object'
-                            && step.stepId != null && String(step.stepId).trim() !== '';
-                        }).slice(0, 60).map(function (step) {
+                      ? tc.steps.filter((step): step is Record<string, unknown> => (
+                          step !== null && typeof step === 'object' && !Array.isArray(step)
+                          && 'stepId' in step && step.stepId != null && String(step.stepId).trim() !== ''
+                        )).slice(0, 60).map(function (step) {
                           const clean: Record<string, unknown> = { stepId: String(step.stepId).slice(0, 200) };
                           /* 2 kB per field: a step line is a sentence, and the
                            * full tool output already lives in the run's result. */

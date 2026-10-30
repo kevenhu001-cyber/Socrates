@@ -7,6 +7,7 @@ import { syncComposerShellFlags } from '../../ui/composerShape.ts';
 import { getLegacyActions, i18n, isWebSearchOn } from '../legacy/gateway.ts';
 import { removeComposerPlugin } from '../../composer/pluginSelection.ts';
 import { useComposerPluginSelectionSnapshot } from '../composer/useComposerPluginSelection';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 /* Web search is picked from the "+" menu and then shown as a removable chip,
    the same affordance chatgpt.com uses. State lives in config/providers.js;
@@ -90,7 +91,10 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
     try {
       const host = document.getElementById('composerInputWrap');
       if (host) syncComposerShellFlags(host);
-    } catch (_) { /* detached shell */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/composer-input/ComposerPluginChips.tsx:93');
+      /* detached shell */
+    }
   }, [plugins.length, webSearchOn, surface]);
   if (!plugins.length && !webSearchOn) return null;
 

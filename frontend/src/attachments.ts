@@ -374,7 +374,7 @@ function finalizeAttachment(entry: PendingAttachment, uploadOutcome: UploadOutco
   return { ok: false, error: (uploadOutcome && uploadOutcome.error) || 'Upload failed' };
 }
 
-async function prepareAttachment(entry: PendingAttachment, file: File, reportProgress: UploadProgress = () => {}): Promise<UploadOutcome> {
+async function prepareAttachment(entry: PendingAttachment, file: File, reportProgress: UploadProgress = () => undefined): Promise<UploadOutcome> {
   const wantsInlineImage = entry.kind === 'image'
     && activeProviderSupportsImages()
     && file.size <= MAX_IMAGE_BYTES;
@@ -387,12 +387,12 @@ async function prepareAttachment(entry: PendingAttachment, file: File, reportPro
     let uploadOutcome = null;
     const uploadJob = uploadAttachmentFile(
       file,
-      (percent: number, loaded: any, total: any) => reportProgress(
+      (percent: number, loaded?: number, total?: number) => reportProgress(
         Math.min(99, percent),
         loaded,
         total,
       ),
-      (xhr: any) => abortHandleForXhr(entry, xhr),
+      (xhr: XMLHttpRequest) => abortHandleForXhr(entry, xhr),
       () => {
         entry.stage = 'processing';
         reportProgress(99);
@@ -447,7 +447,7 @@ async function prepareAttachment(entry: PendingAttachment, file: File, reportPro
  * @returns {Promise<{added:number, rejected:string[]}>}
  */
 function createRejectReporter(result: AddFilesResult, onRejected?: (message: string) => void) {
-  return (message: any) => {
+  return (message: string) => {
     result.rejected.push(message);
     if (!onRejected) return;
     try { onRejected(message); }
@@ -517,7 +517,7 @@ function createPendingEntry(file: File, { kind, signature }: { kind: AttachmentC
 }
 
 function trackAttachmentJob(entry: PendingAttachment, file: File, result: AddFilesResult, notifyProgress: () => void, onUpdate: (() => void) | undefined, reject: (message: string) => void) {
-  const onFileProgress = (percent: number, loaded: any, total: any) => {
+  const onFileProgress = (percent: number, loaded?: number, total?: number) => {
     entry.progress = Math.max(entry.progress || 0, percent);
     if (typeof loaded === 'number') entry.loaded = loaded;
     if (typeof total === 'number') entry.total = total;
@@ -644,7 +644,7 @@ export function retryAttachment(id: string, onUpdate?: () => void) {
   const notifyProgress = createProgressNotifier(onUpdate);
   const job = enqueueUploadJob(
     entry,
-    () => prepareAttachment(entry, entry._file!, function (pct: number, loaded: any, total: any) {
+    () => prepareAttachment(entry, entry._file!, function (pct: number, loaded?: number, total?: number) {
       entry.progress = Math.max(entry.progress || 0, pct);
       if (typeof loaded === 'number') entry.loaded = loaded;
       if (typeof total === 'number') entry.total = total;

@@ -49,5 +49,8 @@
     "@types/react": "~19.2.0",
     "babel-preset-expo": "~57.0.0",
     "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "node-forge": "1.4.2"
   }
 }

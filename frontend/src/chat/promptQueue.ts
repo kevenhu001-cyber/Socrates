@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+
 /* chat/promptQueue.ts — in-flight prompt queue (Prompt Queueing).
  *
  * When the model is generating, follow-up thoughts from the user are queued
@@ -20,7 +22,10 @@ let queuedPrompts: QueuedPrompt[] = [];
 function emit(): void {
   const snapshot = queuedPrompts.slice();
   for (const listener of listeners) {
-    try { listener(snapshot); } catch { /* swallow */ }
+    try { listener(snapshot); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/promptQueue.ts:23');
+      /* swallow */
+    }
   }
   if (typeof document !== 'undefined') {
     document.dispatchEvent(new CustomEvent('socrates:promptqueuechange', { detail: { count: queuedPrompts.length } }));

@@ -7,7 +7,7 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 let runtimePromise: Promise<FeatureRuntime> | null = null;
 let runtime: FeatureRuntime | null = null;
 
-function tr(key: string, vars: { [x: string]: any; n?: any; }) {
+function tr(key: string, vars?: Record<string, unknown>) {
   const value = typeof browserWindow.t === 'function' ? browserWindow.t(key) : key;
   if (!vars) return value;
   return String(value).replace(/\{(\w+)\}/g, function (whole, name) {
@@ -38,7 +38,7 @@ function loadKnowledgeDetailRuntime() {
   return runtimePromise;
 }
 
-export function toggleKBDetail(index: any) {
+export function toggleKBDetail(index: number) {
   if (runtime) {
     runtime.toggleKBDetail(index);
     return;

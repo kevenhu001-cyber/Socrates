@@ -1,4 +1,4 @@
-import type { VoiceSession, SpeechRecognitionRuntime } from "../types/speechRuntime.ts";
+import type { VoiceSession, SpeechRecognitionRuntime, SpeechResultEvent } from "../types/speechRuntime.ts";
 import { getComposerMarkdown, insertComposerText } from '../composer/controller.ts';
 import { showToast } from './toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -28,17 +28,17 @@ function copy(key: string, english: string, chinese: string) {
    regardless of which surface started the session. The surface argument
    is kept because transcripts still route through the controller's
    per-surface stash. */
-function wrapForSurface(surface: any) {
+function wrapForSurface(surface: VoiceSession['surface']) {
   void surface;
   return document.getElementById('composerInputWrap');
 }
 
-function mobileMicForSurface(surface: any) {
+function mobileMicForSurface(surface: VoiceSession['surface']) {
   void surface;
   return document.getElementById('composerMicBtn');
 }
 
-function setListening(surface: any, listening: boolean) {
+function setListening(surface: VoiceSession['surface'], listening: boolean) {
   /* P_composer-primary-split — only the microphone is a dictation control.
      The primary button is submit-only, so it must not carry the
      .is-listening state or an aria-pressed toggle: that made a screen
@@ -61,7 +61,7 @@ function notify(message: unknown) {
   showToast(message);
 }
 
-function stopTracks(stream: { getTracks: () => any[]; }|null) {
+function stopTracks(stream: MediaStream | null) {
   if (!stream || typeof stream.getTracks !== 'function') return;
   try {
     stream.getTracks().forEach(function (track: { stop: () => void; }) {
@@ -181,7 +181,7 @@ function createRecordingBar(session: VoiceSession) {
   return bar;
 }
 
-function setRecordingLabel(session: VoiceSession, value: any) {
+function setRecordingLabel(session: VoiceSession, value: string) {
   const label = session.bar && session.bar.querySelector('[data-voice-label]');
   if (label) label.textContent = value;
 }
@@ -271,6 +271,7 @@ function setupAudioMeter(session: VoiceSession) {
       }
     }
   } catch (_) {
+    reportSwallow(_, 'empty catch: ui/voiceInput.ts:273', 'expected');
     /* Recognition remains useful if a browser exposes a microphone but not
        the Web Audio analyser. The CSS/phase fallback keeps the affordance
        alive without blocking dictation. */
@@ -302,14 +303,14 @@ function cleanupAudio(session: VoiceSession) {
   }
 }
 
-function insertFinalTranscript(session: VoiceSession, transcript: any) {
+function insertFinalTranscript(session: VoiceSession, transcript: string) {
   if (!transcript || session.inserted || session.discard) return;
   session.inserted = true;
   const existing = getComposerMarkdown((session.surface as 'topic' | 'chat')).trim();
   insertComposerText((session.surface as 'topic' | 'chat'), `${existing ? ' ' : ''}${transcript}`);
 }
 
-function notifyFinishedSession(session: VoiceSession, transcript: any) {
+function notifyFinishedSession(session: VoiceSession, transcript: string) {
   if (session.discard) return;
   if (session.error === 'not-allowed' || session.error === 'service-not-allowed') {
     notify(copy('voice.permission', 'Please allow microphone access to use voice input.', '请允许麦克风权限后使用语音输入。'));
@@ -338,10 +339,10 @@ function finishSession(session: VoiceSession) {
   notifyFinishedSession(session, transcript);
 }
 
-function collectRecognitionResult(session: VoiceSession, event: { results: any; }) {
+function collectRecognitionResult(session: VoiceSession, event: SpeechResultEvent) {
   const results = event && event.results ? event.results : [];
-  const finalParts = [];
-  const interimParts = [];
+  const finalParts: string[] = [];
+  const interimParts: string[] = [];
   for (let index = 0; index < results.length; index += 1) {
     const result = results[index];
     const text = result && result[0] && result[0].transcript ? result[0].transcript : '';
@@ -368,10 +369,10 @@ function wireRecognition(session: VoiceSession, recognition: SpeechRecognitionRu
     setListening(session.surface, true);
     setRecordingLabel(session, copy('voice.listening', 'Listening…', '正在聆听…'));
   };
-  recognition.onresult = function (event: any) {
+  recognition.onresult = function (event: SpeechResultEvent) {
     collectRecognitionResult(session, event);
   };
-  recognition.onerror = function (event: { error: any; }) {
+  recognition.onerror = function (event: { error: string }) {
     setSessionError(session, event && event.error);
   };
   recognition.onend = function () {
@@ -379,7 +380,7 @@ function wireRecognition(session: VoiceSession, recognition: SpeechRecognitionRu
   };
 }
 
-async function startSpeechInput(surface: string) {
+async function startSpeechInput(surface: VoiceSession['surface']) {
   const Recognition = speechRecognitionConstructor();
   if (!Recognition) {
     notify(copy('voice.unsupported', 'Voice input is not supported in this browser.', '当前浏览器不支持语音输入。'));

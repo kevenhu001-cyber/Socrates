@@ -2,7 +2,7 @@ export function createInitialUiState() {
   return {
     _userScrolledAway: false,
     _examInView: false,
-    _canvasPendingId: null,
+    _canvasPendingId: null as string | null,
   };
 }
 

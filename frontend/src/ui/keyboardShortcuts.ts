@@ -36,7 +36,7 @@ function isVisible(id: string) {
   return Boolean(overlay && !overlay.classList.contains('hidden'));
 }
 
-function closeVisibleOverlay(event: KeyboardEvent, id: any, close: () => void) {
+function closeVisibleOverlay(event: KeyboardEvent, id: string, close: () => void) {
   if (!isVisible(id)) return false;
   event.preventDefault();
   close();

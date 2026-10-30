@@ -91,8 +91,8 @@ export function isInAuthGraceWindow(){
   return (Date.now()-_lastAuthSuccessAt) < AUTH_GRACE_MS;
 }
 
-export function handleAuthExpired(cause: any){
-  console.log("[auth] handleAuthExpired called, cause="+(cause||"apiFetch-401"));
+export function handleAuthExpired(cause: unknown){
+  console.log("[auth] handleAuthExpired called, cause="+(cause ? String(cause) : "apiFetch-401"));
   try{
     /* P_bleed-auth-expired — same per-user cache wipe as signOut().
        A 401 may fire mid-session while the user is still on the

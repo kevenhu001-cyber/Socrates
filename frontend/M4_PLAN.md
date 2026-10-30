@@ -181,6 +181,8 @@ New files: `src/react/confirm/{ConfirmDialog.tsx, confirm.bridge.ts, types.ts, i
 
 **Verification**: `npm run lint` pass · `lint:eslint` 0 errors · `test:unit` 309/309 · `npm run build` pass · Playwright: `re-explain.spec.mjs` "cancelling the re-explain confirm" + `settings-modal.spec.mjs` (which exercises the legacy `addProvider` flow and the React settings overlay) both pass.
 
+**Follow-up (2026-10-30):** `window.__socratesConfirmBridge` and `window.__socratesMorePopoverBridge` were retired. Legacy `showConfirm()` publishes through `src/ui/confirmState.ts`; sidebar More open/close publishes through `src/ui/morePopoverState.ts`. React subscribes to those shared module stores through hook adapters. `chineseTypography.test.mjs` verifies confirmation state and promise resolution; `morePopoverState.test.mjs` verifies More menu updates.
+
 ### Step 4.3 rebaseline (2026-09-01)
 
 The original Step 4.3 estimate assumed that Step 4.2 would leave `ui/delegate.js` unused. The audit after 4.2 found that the static shell in `index.html` still contained 143 `data-action` attributes across roughly 40 actions, while `windowExports.js` still exposed about 100 `window.X = X` bindings. Step 4.3 is therefore split into independently reviewable substeps: Auth, display preferences, sidebar/navigation, composer/mode, workspace controls, modal backdrops, and finally delegate deletion.

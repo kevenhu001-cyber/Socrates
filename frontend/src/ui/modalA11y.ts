@@ -89,7 +89,7 @@ export function trapFocus(e: KeyboardEvent, container: HTMLElement) {
 }
 
 function bindModalTabTrap(overlay: HTMLElement) {
-  overlay.addEventListener('keydown', function (e: any) {
+  overlay.addEventListener('keydown', function (e: KeyboardEvent) {
     trapFocus(e, overlay);
   }, true);
 }
@@ -153,7 +153,7 @@ function bindModalEsc(overlay: HTMLElement, closeFn: () => void) {
                   flows where the overlay's state is driven imperatively
                   and an observer would race with the host's logic).
 */
-export function installModalA11y(opts: { overlayId: any; closeFn: any; onOpen?: any; onClose?: any; skipObserve?: any; }) {
+export function installModalA11y(opts: { overlayId: string; closeFn: () => void; onOpen?: () => void; onClose?: () => void; skipObserve?: boolean }) {
   const overlay = document.getElementById(opts.overlayId);
   if (!overlay || _wired[opts.overlayId]) return;
   _wired[opts.overlayId] = true;

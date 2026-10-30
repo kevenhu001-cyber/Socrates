@@ -1,4 +1,5 @@
 import { bumpRecentsVersion, setSidebarRecentsFilter, useSidebarStore } from './sidebar.store';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 const RECENTS_FILTER_KEY = 'socrates-recents-filter';
 const DESKTOP_SIDEBAR_BREAKPOINT = 769;
@@ -96,7 +97,10 @@ export function setRecentsFilter(value: string | null): void {
   try {
     if (filter) localStorage.setItem(RECENTS_FILTER_KEY, filter);
     else localStorage.removeItem(RECENTS_FILTER_KEY);
-  } catch { /* storage is optional in private and embedded contexts */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: sidebar/sidebar.service.ts:99', 'expected');
+    /* storage is optional in private and embedded contexts */
+  }
   setSidebarRecentsFilter(filter);
   const legacyWindow = window as Window & { renderRecents?: () => void };
   legacyWindow.renderRecents?.();
@@ -147,7 +151,10 @@ export function toggleSidebar(): void {
   const legacyWindow = window as Window & { sidebarOpen?: boolean; syncSidebarBtns?: () => void };
   legacyWindow.sidebarOpen = open;
   legacyWindow.syncSidebarBtns?.();
-  try { localStorage.setItem('socrates-sb', open ? '1' : '0'); } catch { /* storage is optional */ }
+  try { localStorage.setItem('socrates-sb', open ? '1' : '0'); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: sidebar/sidebar.service.ts:150', 'expected');
+    /* storage is optional */
+  }
 }
 
 /**

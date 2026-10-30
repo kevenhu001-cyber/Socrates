@@ -162,6 +162,26 @@ function _serverRowToTemplate(row: PromptTemplate){
     systemPrompt:row.systemPrompt||"", isBuiltin:false
   };
 }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+function parseServerTemplate(value: unknown): PromptTemplate | null {
+  if (!isRecord(value) || typeof value.id !== 'string') return null;
+  return {
+    id: value.id,
+    title: typeof value.title === 'string' ? value.title : '',
+    description: typeof value.description === 'string' ? value.description : '',
+    icon: typeof value.icon === 'string' ? value.icon : 'pg',
+    category: typeof value.category === 'string' ? value.category : 'other',
+    shortcut: typeof value.shortcut === 'string' ? value.shortcut : '',
+    body: typeof value.body === 'string' ? value.body : '',
+    systemPrompt: typeof value.systemPrompt === 'string' ? value.systemPrompt : '',
+    isBuiltin: false,
+  };
+}
+function createdTemplateId(value: unknown): string | null {
+  return isRecord(value) && typeof value.id === 'string' ? value.id : null;
+}
 function _loadCustomTemplates(){
   return loadPromptTemplates().filter(function(x){return!x.isBuiltin;});
 }
@@ -178,10 +198,12 @@ export function syncPromptTemplates(force?: boolean|undefined){
   if(_syncInFlight)return _syncInFlight;
   _lastSyncAt=now;
   _syncInFlight=apiFetch("/api/prompts?scope=mine&limit=200")
-    .then(function(res: { templates: any; }){
-      const rows=(res&&Array.isArray(res.templates))?res.templates:[];
+    .then(function(res: unknown){
+      const rows = isRecord(res) && Array.isArray(res.templates)
+        ? res.templates.flatMap((row) => { const parsed = parseServerTemplate(row); return parsed ? [parsed] : []; })
+        : [];
       const remoteIds: Record<string, boolean> = {};
-      const merged: PromptTemplate[]=rows.map(function(row: PromptTemplate){
+      const merged: PromptTemplate[]=rows.map(function(row){
         remoteIds[row.id]=true;
         return _serverRowToTemplate(row);
       });
@@ -196,7 +218,7 @@ export function syncPromptTemplates(force?: boolean|undefined){
       /* Push never-synced local templates so they follow the account. */
       return Promise.all(pending.map(function(t){
         return apiFetch("/api/prompts",{method:"POST",body:_templateToServerRow(t)})
-          .then(function(created: { id: any; }){if(created&&created.id)t.id=created.id;})
+          .then(function(created: unknown){const id = createdTemplateId(created); if (id) t.id = id;})
           .catch(function(){ /* stays local-only until next sync */ });
       })).then(function(){
         savePromptTemplates(merged.concat(pending));
@@ -216,13 +238,14 @@ function _syncTemplateToServer(t: PromptTemplate){
   const row=_templateToServerRow(t);
   const op=_isServerId(t.id)
     ?apiFetch("/api/prompts/"+encodeURIComponent(t.id),{method:"PATCH",body:row})
-    :apiFetch("/api/prompts",{method:"POST",body:row}).then(function(created: { id: any; }){
-        if(created&&created.id&&created.id!==t.id){
+    :apiFetch("/api/prompts",{method:"POST",body:row}).then(function(created: unknown){
+        const createdId = createdTemplateId(created);
+        if(createdId&&createdId!==t.id){
           /* adopt the server uuid so future edits PATCH instead of duplicating */
           const customs=_loadCustomTemplates();
-          for(let i=0;i<customs.length;i++)if(customs[i].id===t.id){customs[i].id=created.id;break}
+          for(let i=0;i<customs.length;i++)if(customs[i].id===t.id){customs[i].id=createdId;break}
           savePromptTemplates(customs);
-          t.id=created.id;
+          t.id=createdId;
         }
       });
   op.catch(function () { /* noop: server sync failure is non-fatal */ });

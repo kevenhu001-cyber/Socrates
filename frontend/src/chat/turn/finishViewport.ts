@@ -10,6 +10,7 @@ import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
 import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 /** What `capture()` froze so `settle()` can reapply it. */
 interface FinishViewportCapture {
@@ -239,7 +240,10 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
   function capture(): void {
     if (!state.reactLive || !state.list) return;
     try { finishViewport = captureFinishViewport(state); }
-    catch { /* viewport capture failed; settle will no-op */ }
+    catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/finishViewport.ts:242');
+      /* viewport capture failed; settle will no-op */
+    }
   }
 
   /* Completion can retire status rows or mount tool outputs. Reapply the
@@ -257,7 +261,10 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
         return;
       }
       try { applyFinishCorrection(state, viewport); }
-      catch { /* frame apply failed */ }
+      catch (error) {
+        reportEmptyCatch(error, 'empty catch: chat/turn/finishViewport.ts:260');
+        /* frame apply failed */
+      }
       frames += 1;
       if (frames < 30) requestAnimationFrame(settleFrame);
       else intent.detach();

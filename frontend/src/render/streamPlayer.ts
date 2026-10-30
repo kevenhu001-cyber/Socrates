@@ -24,6 +24,7 @@ import {
   type PlaybackConfig,
   type PlaybackState,
 } from '@socrates/core';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export interface StreamPlayerFrame {
   state: PlaybackState;
@@ -83,7 +84,10 @@ function publishStateChange(
   onStateChange?: (state: PlaybackState) => void,
 ): PlaybackState {
   if (next === previous) return previous;
-  try { onStateChange?.(next); } catch (_) { /* listener threw */ }
+  try { onStateChange?.(next); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts:86');
+    /* listener threw */
+  }
   return next;
 }
 
@@ -174,7 +178,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
         unsubscribeVisibility = disposeCallback(unsubscribeVisibility);
         if (!doneFired) {
           doneFired = true;
-          try { onDone?.(); } catch (_) { /* listener threw */ }
+          try { onDone?.(); } catch (_) { reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts:177'); /* listener threw */ }
         }
         return; // clock is terminal; stop the loop
       }
@@ -229,7 +233,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       lastState = publishStateChange(lastState, 'done', onStateChange);
       if (!doneFired) {
         doneFired = true;
-        try { onDone?.(); } catch (_) { /* listener threw */ }
+        try { onDone?.(); } catch (_) { reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts:232'); /* listener threw */ }
       }
     },
     getState(): PlaybackState {

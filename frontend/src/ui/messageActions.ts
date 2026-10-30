@@ -113,7 +113,7 @@ export interface ToolCallEntry {
 
 /** Index of a message by client or server id, or -1 when absent. */
 export function findMessageIndex(messageId: string): number {
-  return stateStore.read('messages').findIndex(function (m: MessageEntry) {
+  return stateStore.read('messages').findIndex(function (m) {
     return m.clientId === messageId || m.id === messageId;
   });
 }

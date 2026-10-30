@@ -1,11 +1,11 @@
 export function createInitialSearchState() {
   return {
-    searchContext: null,
-    searchResults: [],
+    searchContext: null as string | null,
+    searchResults: [] as unknown[],
     searchContextAt: 0,
     searchContextCount: 0,
-    searchContextQuery: null,
-    searchContextError: null,
+    searchContextQuery: null as string | null,
+    searchContextError: null as string | null,
   };
 }
 

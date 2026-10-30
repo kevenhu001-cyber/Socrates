@@ -18,17 +18,27 @@ import { createToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js'
 import type { JsonSchemaNode } from '../../../services/tools/toolCallSafety.js';
 import type { Request } from 'express';
 
+type PersonalConnectorSnapshot = typeof connectorConnections.$inferSelect;
+type ProjectConnectorSnapshot = typeof projectConnectorConnections.$inferSelect;
+
+interface RuntimeToolDefinition {
+  function?: {
+    name?: string;
+    parameters?: JsonSchemaNode;
+  };
+}
+
 export interface StreamToolContext {
   toolPolicy: ReturnType<typeof createToolTurnPolicy>;
   MAX_TOOL_ITERATIONS: number;
   toolRegistry: ReturnType<typeof createToolRegistry>;
-  toolDefs: Array<Record<string, any>>;
+  toolDefs: RuntimeToolDefinition[];
   toolNames: string[];
   schemaForTool: (name: string) => JsonSchemaNode | null;
   toolExamples: Record<string, string>;
   FUZZY_SAFE: (name: string) => boolean;
-  connectorConnectionsByProvider: Record<string, any>;
-  projectConnectorConnectionsByProvider: Record<string, any>;
+  connectorConnectionsByProvider: Record<string, PersonalConnectorSnapshot>;
+  projectConnectorConnectionsByProvider: Record<string, ProjectConnectorSnapshot>;
 }
 
 /**
@@ -37,11 +47,11 @@ export interface StreamToolContext {
  * provider. arXiv is always enabled (public API).
  */
 async function loadConnectorSnapshots(userId?: string): Promise<{
-  connectorConnectionsByProvider: Record<string, any>;
-  projectConnectorConnectionsByProvider: Record<string, any>;
+  connectorConnectionsByProvider: Record<string, PersonalConnectorSnapshot>;
+  projectConnectorConnectionsByProvider: Record<string, ProjectConnectorSnapshot>;
 }> {
-  const connectorConnectionsByProvider: Record<string, any> = {};
-  const projectConnectorConnectionsByProvider: Record<string, any> = {};
+  const connectorConnectionsByProvider: Record<string, PersonalConnectorSnapshot> = {};
+  const projectConnectorConnectionsByProvider: Record<string, ProjectConnectorSnapshot> = {};
   if (!userId) return { connectorConnectionsByProvider, projectConnectorConnectionsByProvider };
   try {
     const db = getDb();
@@ -78,20 +88,18 @@ export async function createStreamToolContext(req: Request & { userId?: string }
   const { connectorConnectionsByProvider, projectConnectorConnectionsByProvider } =
     await loadConnectorSnapshots(req.userId);
 
-  const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider, projectConnectorConnectionsByProvider } as unknown as Parameters<typeof createToolRegistry>[0]);
-  const toolDefs = toolRegistry.definitions as Array<Record<string, any>>;
+  const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider, projectConnectorConnectionsByProvider });
+  const toolDefs = toolRegistry.definitions as RuntimeToolDefinition[];
 
   /* P_native-tool-contract — derive the prompt appendix from the same
    * definitions sent in the request. This keeps the injected system
    * guidance aligned with the current tool registry after additions or
    * connector changes. */
-  const toolNames = toolDefs.map((tool) => (tool as { function?: { name?: string } }).function?.name || '');
+  const toolNames = toolDefs.map((tool) => tool.function?.name || '');
 
   /** The `parameters` schema for a tool, used for repair and feedback. */
   const schemaForTool = (name: string): JsonSchemaNode | null => {
-    const definition = toolDefs.find((tool) => (
-      (tool as { function?: { name?: string } }).function?.name === name
-    )) as { function?: { parameters?: JsonSchemaNode } } | undefined;
+    const definition = toolDefs.find((tool) => tool.function?.name === name);
     return definition?.function?.parameters || null;
   };
 

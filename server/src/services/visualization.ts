@@ -282,26 +282,32 @@ const ENVELOPE_KEYS = new Set(['version', 'template', 'title', 'caption', 'acces
  * nesting them under `payload`. This step silently moves them into
  * payload so the strict envelope schema does not reject them.
  */
-function firstDefined(record: Record<string, any>, keys: string[]) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function firstDefined(record: Record<string, unknown>, keys: string[]): unknown {
   for (const key of keys) {
     if (record[key] !== undefined && record[key] !== null) return record[key];
   }
   return undefined;
 }
 
-function normalizeSpec(input: any) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
+function normalizeSpec(input: unknown): unknown {
+  if (!isRecord(input)) return input;
   /* Unwrap only a single, recognizable provider-added envelope. Arbitrary
      recursive unwrapping would make malformed calls ambiguous and harder to
      audit. */
-  const inputKeys = Object.keys(input);
+  let source = input;
+  const inputKeys = Object.keys(source);
   if (inputKeys.length === 1 && ['spec', 'input', 'arguments'].includes(inputKeys[0])
-      && input[inputKeys[0]] && typeof input[inputKeys[0]] === 'object') {
-    input = input[inputKeys[0]];
+      && isRecord(source[inputKeys[0]])) {
+    const nested = source[inputKeys[0]];
+    if (isRecord(nested)) source = nested;
   }
 
-  const normalized: Record<string, any> = { ...input };
-  normalized.payload = normalized.payload && typeof normalized.payload === 'object' && !Array.isArray(normalized.payload)
+  const normalized: Record<string, unknown> = { ...source };
+  normalized.payload = isRecord(normalized.payload)
     ? { ...normalized.payload }
     : {};
   if (normalized.version === '1') normalized.version = 1;
@@ -327,8 +333,8 @@ function normalizeSpec(input: any) {
       delete normalized[key];
     }
   }
-  normalized.payload = { ...extra, ...normalized.payload };
-  const payload = normalized.payload as Record<string, any>;
+  normalized.payload = { ...extra, ...(isRecord(normalized.payload) ? normalized.payload : {}) };
+  const payload = normalized.payload as Record<string, unknown>;
 
   if (normalized.template === 'function') {
     if (!Array.isArray(payload.functions)) {
@@ -336,9 +342,9 @@ function normalizeSpec(input: any) {
       if (typeof expression === 'string') payload.functions = [{ expression }];
     }
     if (Array.isArray(payload.functions)) {
-      payload.functions = payload.functions.map((item: any) => {
+      payload.functions = payload.functions.map((item: unknown) => {
         if (typeof item === 'string') return { expression: item };
-        if (!item || typeof item !== 'object') return item;
+        if (!isRecord(item)) return item;
         const fn = { ...item };
         if (!fn.expression) fn.expression = firstDefined(fn, ['expr', 'formula', 'equation', 'eq']);
         delete fn.expr; delete fn.formula; delete fn.equation; delete fn.eq;
@@ -347,19 +353,19 @@ function normalizeSpec(input: any) {
     }
   }
 
-  if (['line', 'area', 'bar', 'pie', 'histogram', 'radar', 'boxplot', 'paper_chart'].includes(normalized.template)) {
+  if (typeof normalized.template === 'string' && ['line', 'area', 'bar', 'pie', 'histogram', 'radar', 'boxplot', 'paper_chart'].includes(normalized.template)) {
     if (!payload.categories) payload.categories = firstDefined(payload, ['labels', 'xValues', 'x_values']);
     if (!payload.series) {
       const values = firstDefined(payload, ['values', 'yValues', 'y_values', 'data']);
       if (Array.isArray(values)) payload.series = [{ data: values }];
     }
     if (Array.isArray(payload.series)) {
-      if (payload.series.every((item: any) => typeof item === 'number')) {
+      if (payload.series.every((item: unknown) => typeof item === 'number')) {
         payload.series = [{ data: payload.series }];
       } else {
-        payload.series = payload.series.map((item: any) => {
+        payload.series = payload.series.map((item: unknown) => {
           if (Array.isArray(item)) return { data: item };
-          if (!item || typeof item !== 'object') return item;
+          if (!isRecord(item)) return item;
           const series = { ...item };
           if (!series.name) series.name = firstDefined(series, ['title', 'label']);
           if (!series.data) series.data = firstDefined(series, ['values', 'points', 'yValues', 'y_values']);
@@ -375,10 +381,10 @@ function normalizeSpec(input: any) {
     if (payload.series && payload.data) delete payload.data;
   }
 
-  if (['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map'].includes(normalized.template)) {
+  if (typeof normalized.template === 'string' && ['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map'].includes(normalized.template)) {
     if (Array.isArray(payload.nodes)) {
-      payload.nodes = payload.nodes.map((item: any) => {
-        if (!item || typeof item !== 'object') return item;
+      payload.nodes = payload.nodes.map((item: unknown) => {
+        if (!isRecord(item)) return item;
         const node = { ...item };
         if (!node.label) node.label = firstDefined(node, ['name', 'title', 'text']);
         delete node.name; delete node.title; delete node.text;
@@ -386,8 +392,8 @@ function normalizeSpec(input: any) {
       });
     }
     if (Array.isArray(payload.edges)) {
-      payload.edges = payload.edges.map((item: any) => {
-        if (!item || typeof item !== 'object') return item;
+      payload.edges = payload.edges.map((item: unknown) => {
+        if (!isRecord(item)) return item;
         const edge = { ...item };
         if (!edge.from) edge.from = edge.source;
         if (!edge.to) edge.to = edge.target;
@@ -398,9 +404,9 @@ function normalizeSpec(input: any) {
   }
 
   if (Array.isArray(payload.items)) {
-    payload.items = payload.items.map((item: any) => {
+    payload.items = payload.items.map((item: unknown) => {
       if (typeof item === 'string') return { label: item };
-      if (!item || typeof item !== 'object') return item;
+      if (!isRecord(item)) return item;
       const entry = { ...item };
       if (!entry.label) entry.label = firstDefined(entry, ['name', 'title', 'text']);
       delete entry.name; delete entry.title; delete entry.text;
@@ -423,10 +429,13 @@ export function validateVisualizationSpec(input: unknown) {
   if (!payload.success) return { ok: false as const, stage: 'payload_shape', template: parsed.data.template, issues: compactIssues(payload.error, 'payload') };
   const semanticIssues: Array<{ path: string; message: string }> = [];
   const addIssue = (path: string, message: string) => semanticIssues.push({ path, message });
-  const data = payload.data as Record<string, any>;
+  // `safeParse` above proves the shape for the current template. Keep the
+  // transport result unknown here and narrow it with the schema that matched.
+  const data: unknown = payload.data;
 
   if (parsed.data.template === 'function') {
-    (data.functions || []).forEach((fn: Record<string, any>, index: number) => {
+    const functionData = data as z.infer<typeof functionPayload>;
+    functionData.functions.forEach((fn, index) => {
       if (fn.domain && fn.domain[0] >= fn.domain[1]) {
         addIssue(`payload.functions.${index}.domain`, 'domain must be an increasing [min,max] pair.');
         return;
@@ -448,43 +457,50 @@ export function validateVisualizationSpec(input: unknown) {
       if (entry.data.length !== count) addIssue(`${path}.${index}.data`, `must contain exactly ${count} values to match the categories.`);
     });
   };
-  if (['line', 'area', 'bar', 'histogram', 'paper_chart'].includes(parsed.data.template) && Array.isArray(data.categories)) {
-    checkSeriesLengths(data.series, data.categories.length, 'payload.series');
+  if (['line', 'area', 'bar', 'histogram', 'paper_chart'].includes(parsed.data.template)) {
+    const chartData = parsed.data.template === 'paper_chart'
+      ? data as z.infer<typeof paperChartPayload>
+      : data as z.infer<typeof categoryChartPayload>;
+    if (Array.isArray(chartData.categories)) checkSeriesLengths(chartData.series, chartData.categories.length, 'payload.series');
   }
   if (parsed.data.template === 'histogram') {
-    data.series.forEach((series: { data: number[] }, seriesIndex: number) => series.data.forEach((value, index) => {
+    (data as z.infer<typeof categoryChartPayload>).series.forEach((series, seriesIndex) => series.data.forEach((value, index) => {
       if (value < 0) addIssue(`payload.series.${seriesIndex}.data.${index}`, 'histogram bin counts must be non-negative.');
     }));
   }
   if (parsed.data.template === 'pie') {
-    const values = data.series[0]?.data || [];
-    if (values.length !== data.categories.length) addIssue('payload.series.0.data', 'must contain one value for each category.');
-    if (!values.some((value: number) => value > 0)) addIssue('payload.series.0.data', 'at least one pie value must be greater than zero.');
-    values.forEach((value: number, index: number) => {
+    const pie = data as z.infer<typeof piePayload>;
+    const values = pie.series[0]?.data || [];
+    if (values.length !== pie.categories.length) addIssue('payload.series.0.data', 'must contain one value for each category.');
+    if (!values.some((value) => value > 0)) addIssue('payload.series.0.data', 'at least one pie value must be greater than zero.');
+    values.forEach((value, index) => {
       if (value < 0) addIssue(`payload.series.0.data.${index}`, 'pie values must be non-negative.');
     });
   }
-  if (parsed.data.template === 'scatter' && Object.hasOwn(data, 'categories')) {
+  if (parsed.data.template === 'scatter' && Object.hasOwn(data as object, 'categories')) {
     addIssue('payload.categories', 'scatter uses explicit [x,y] points and does not accept categories.');
   }
   if (parsed.data.template === 'heatmap') {
-    if (data.values.length !== data.yCategories.length) addIssue('payload.values', 'must contain one row for each yCategory.');
-    data.values.forEach((row: unknown[], index: number) => {
-      if (row.length !== data.xCategories.length) addIssue(`payload.values.${index}`, 'must contain one value for each xCategory.');
+    const heatmap = data as z.infer<typeof heatmapPayload>;
+    if (heatmap.values.length !== heatmap.yCategories.length) addIssue('payload.values', 'must contain one row for each yCategory.');
+    heatmap.values.forEach((row, index) => {
+      if (row.length !== heatmap.xCategories.length) addIssue(`payload.values.${index}`, 'must contain one value for each xCategory.');
     });
   }
   if (parsed.data.template === 'radar') {
-    data.series.forEach((series: { data: number[] }, seriesIndex: number) => {
-      if (series.data.length !== data.indicators.length) addIssue(`payload.series.${seriesIndex}.data`, 'must contain one value for each indicator.');
+    const radar = data as z.infer<typeof radarPayload>;
+    radar.series.forEach((series, seriesIndex) => {
+      if (series.data.length !== radar.indicators.length) addIssue(`payload.series.${seriesIndex}.data`, 'must contain one value for each indicator.');
       series.data.forEach((value, index) => {
-        const max = data.indicators[index]?.max;
+        const max = radar.indicators[index]?.max;
         if (max !== undefined && value > max) addIssue(`payload.series.${seriesIndex}.data.${index}`, `must not exceed indicator max ${max}.`);
       });
     });
   }
   if (parsed.data.template === 'boxplot') {
-    checkSeriesLengths(data.series, data.categories.length, 'payload.series');
-    data.series.forEach((series: { data: number[][] }, seriesIndex: number) => series.data.forEach((summary, index) => {
+    const boxplot = data as z.infer<typeof boxplotPayload>;
+    checkSeriesLengths(boxplot.series, boxplot.categories.length, 'payload.series');
+    boxplot.series.forEach((series, seriesIndex) => series.data.forEach((summary, index) => {
       if (!(summary[0] <= summary[1] && summary[1] <= summary[2] && summary[2] <= summary[3] && summary[3] <= summary[4])) {
         addIssue(`payload.series.${seriesIndex}.data.${index}`, 'five-number summary must be ordered min ≤ q1 ≤ median ≤ q3 ≤ max.');
       }
@@ -493,25 +509,26 @@ export function validateVisualizationSpec(input: unknown) {
 
   const graphTemplates = ['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map'];
   if (graphTemplates.includes(parsed.data.template)) {
+    const graph = data as z.infer<typeof graphPayload>;
     const ids = new Set<string>();
-    data.nodes.forEach((node: { id: string }, index: number) => {
+    graph.nodes.forEach((node, index) => {
       if (ids.has(node.id)) addIssue(`payload.nodes.${index}.id`, 'node ids must be unique.');
       ids.add(node.id);
     });
-    data.edges.forEach((edge: { from: string; to: string }, index: number) => {
+    graph.edges.forEach((edge, index) => {
       if (!ids.has(edge.from)) addIssue(`payload.edges.${index}.from`, 'must refer to an existing node id.');
       if (!ids.has(edge.to)) addIssue(`payload.edges.${index}.to`, 'must refer to an existing node id.');
     });
     if (['tree', 'mindmap'].includes(parsed.data.template)) {
       const parents = new Map<string, number>();
       const children = new Map<string, string[]>();
-      for (const node of data.nodes as Array<{ id: string }>) children.set(node.id, []);
-      for (const edge of data.edges as Array<{ from: string; to: string }>) {
+      for (const node of graph.nodes) children.set(node.id, []);
+      for (const edge of graph.edges) {
         parents.set(edge.to, (parents.get(edge.to) || 0) + 1);
         children.get(edge.from)?.push(edge.to);
       }
-      const roots = data.nodes.filter((node: { id: string }) => !parents.has(node.id));
-      if (roots.length !== 1 || data.edges.length !== data.nodes.length - 1 || [...parents.values()].some((count) => count !== 1)) {
+      const roots = graph.nodes.filter((node) => !parents.has(node.id));
+      if (roots.length !== 1 || graph.edges.length !== graph.nodes.length - 1 || [...parents.values()].some((count) => count !== 1)) {
         addIssue('payload.edges', 'tree and mindmap require one connected root with exactly one parent per other node.');
       } else {
         const visited = new Set<string>();
@@ -521,18 +538,19 @@ export function validateVisualizationSpec(input: unknown) {
           for (const child of children.get(id) || []) visit(child);
         };
         visit(roots[0].id);
-        if (visited.size !== data.nodes.length) addIssue('payload.edges', 'tree and mindmap must not contain cycles or disconnected nodes.');
+        if (visited.size !== graph.nodes.length) addIssue('payload.edges', 'tree and mindmap must not contain cycles or disconnected nodes.');
       }
     }
   }
 
   if (['timeline', 'comparison', 'process', 'number_line'].includes(parsed.data.template)) {
-    const items = Array.isArray(data.items) ? data.items : [];
+    const teaching = data as z.infer<typeof teachingPayload>;
+    const items = teaching.items || [];
     const minimum = ['comparison', 'number_line', 'timeline', 'process'].includes(parsed.data.template) ? 2 : 1;
     const maximum = parsed.data.template === 'comparison' ? 8 : ['number_line', 'timeline', 'process'].includes(parsed.data.template) ? 12 : 40;
     if (items.length < minimum || items.length > maximum) addIssue('payload.items', `must contain ${minimum}–${maximum} items for ${parsed.data.template}.`);
     if (parsed.data.template === 'number_line') {
-      const values = items.map((item: { value?: unknown }) => item.value);
+      const values = items.map((item) => item.value);
       if (values.some((value) => typeof value !== 'number' || !Number.isFinite(value))) addIssue('payload.items.value', 'each number-line item requires a finite numeric value.');
       if (new Set(values).size !== values.length) addIssue('payload.items.value', 'number-line values must be distinct.');
       if (values.some((value) => typeof value === 'number' && Math.abs(value) > 1_000_000_000)) addIssue('payload.items.value', 'number-line values must stay within ±1,000,000,000.');
@@ -540,7 +558,8 @@ export function validateVisualizationSpec(input: unknown) {
   }
 
   if (parsed.data.template === 'geometry') {
-    data.shapes.forEach((shape: Record<string, any>, index: number) => {
+    const geometry = data as z.infer<typeof geometryPayload>;
+    geometry.shapes.forEach((shape, index) => {
       const coordinates: number[] = shape.type === 'point' ? shape.at
         : shape.type === 'segment' ? [...shape.from, ...shape.to]
           : shape.type === 'circle' ? [...shape.center, shape.radius]
@@ -549,14 +568,15 @@ export function validateVisualizationSpec(input: unknown) {
     });
   }
   if (parsed.data.template === 'geometry_3d') {
-    data.objects.forEach((object: Record<string, any>, index: number) => {
-      if (object.size && object.size.some((value: number) => value <= 0 || value > 100)) addIssue(`payload.objects.${index}.size`, 'size values must be greater than zero and at most 100.');
-      if (object.position && object.position.some((value: number) => Math.abs(value) > 100)) addIssue(`payload.objects.${index}.position`, 'position values must stay within ±100.');
+    const geometry3d = data as z.infer<typeof geometry3dPayload>;
+    geometry3d.objects.forEach((object, index) => {
+      if (object.size && object.size.some((value) => value <= 0 || value > 100)) addIssue(`payload.objects.${index}.size`, 'size values must be greater than zero and at most 100.');
+      if (object.position && object.position.some((value) => Math.abs(value) > 100)) addIssue(`payload.objects.${index}.position`, 'position values must stay within ±100.');
     });
   }
 
   if (parsed.data.template === 'svg_illustration') {
-    const source = String(data.source || '').replace(/^\uFEFF?\s*<\?xml[^?]*\?>\s*/i, '').trim();
+    const source = String((data as z.infer<typeof extensionPayload>).source || '').replace(/^\uFEFF?\s*<\?xml[^?]*\?>\s*/i, '').trim();
     if (!/^<svg\b/i.test(source) || !/<\/svg>\s*$/i.test(source) && !/^<svg\b[^>]*\/>$/i.test(source)) {
       addIssue('payload.source', 'must be one complete standalone SVG document rooted at <svg>.');
     }
@@ -564,7 +584,7 @@ export function validateVisualizationSpec(input: unknown) {
 
   if (semanticIssues.length) return { ok: false as const, stage: 'semantic', template: parsed.data.template, issues: semanticIssues.slice(0, 8) };
   if (['svg_illustration', 'interactive_simulation'].includes(parsed.data.template)) {
-    const source = data.source;
+    const source = (data as z.infer<typeof extensionPayload>).source;
     /* P_interactive-sim-scripts — match the frontend's
        extensionIsSafe() split exactly. `interactive_simulation`
        allows inline <script> and event handlers: the extension

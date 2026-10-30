@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+
 export type ReasoningEffort = 'high' | 'medium' | 'low' | 'instant';
 export type ResponseSpeed = 'standard' | 'fast';
 
@@ -30,7 +32,10 @@ export function saveChatPreferences(effort: ReasoningEffort, speed: ResponseSpee
   try {
     localStorage.setItem(EFFORT_KEY, safeEffort);
     localStorage.setItem(SPEED_KEY, safeSpeed);
-  } catch { /* the storage shim may be unavailable in an isolated harness */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: config/chatPreferences.ts:33', 'expected');
+    /* the storage shim may be unavailable in an isolated harness */
+  }
   window.dispatchEvent(new window.CustomEvent('socrates:chat-preferences', {
     detail: { effort: safeEffort, speed: safeSpeed },
   }));

@@ -35,7 +35,7 @@ export function stopSpeaking() {
   }
 }
 
-export function toggleReadAloud(btn: any, text: any, messageId: any) {
+export function toggleReadAloud(btn: HTMLElement | null, text: unknown, messageId?: string | number) {
   if (_impl) {
     _impl.toggleReadAloud(btn, text, messageId);
     return;

@@ -6,7 +6,7 @@
  * provider credentials.
  */
 
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { startSseKeepalive, trackSseConnection, writeSseEvent, writeSseHeaders } from '../lib/sse.js';
 import {
@@ -26,9 +26,12 @@ import {
 } from '../services/tools/agentRuntime.js';
 import { projectAgentEvent } from '../services/tools/agentStepProjection.js';
 
+type AgentRunRecord = Awaited<ReturnType<typeof getAgentRun>>['run'];
+type AgentArtifactRecord = Awaited<ReturnType<typeof getAgentRun>>['artifacts'][number];
+
 const router = Router();
 
-function publicRun(run: any) {
+function publicRun(run: AgentRunRecord | null | undefined) {
   if (!run) return null;
   return {
     id: run.id,
@@ -52,10 +55,10 @@ function publicRun(run: any) {
   };
 }
 
-function publicArtifact(artifact: any) {
+function publicArtifact(artifact: AgentArtifactRecord) {
   return {
     id: artifact.id,
-    name: artifact.name || artifact.title,
+    name: artifact.name,
     type: artifact.type,
     language: artifact.language,
     createdAt: artifact.createdAt,
@@ -70,7 +73,7 @@ function publicArtifact(artifact: any) {
  * through the same mapper the chat stream uses, so the workspace page and
  * the chat transcript label Codex activity identically.
  */
-function sendRunEvent(res: any, event: AgentRuntimeEvent) {
+function sendRunEvent(res: Response, event: AgentRuntimeEvent) {
   writeSseEvent(res, 'agent_event', event);
   const projected = projectAgentEvent(event);
   if (projected?.type === 'step') {
@@ -80,7 +83,7 @@ function sendRunEvent(res: any, event: AgentRuntimeEvent) {
   }
 }
 
-async function streamRun(req: any, res: any, runId: string, run: Promise<unknown>) {
+async function streamRun(req: Request, res: Response, runId: string, run: Promise<unknown>) {
   let done = false;
   const abort = new AbortController();
   const finish = () => {

@@ -1,7 +1,8 @@
 # UI 结构与迁移边界
 
-更新：2026-10-26。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
+更新：2026-10-30。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
 历史迁移计划中的旧目录 / 旧工作流不能作为当前入口清单。
+前端 JavaScript → TypeScript 迁移已完成；窗口桥接和旧 DOM 写入者仍按领域逐步退役。
 
 ## 客户端职责
 
@@ -20,7 +21,7 @@
 
 ```text
 index.html                         静态 shell / 挂载宿主 / CSP
-  └─ src/main.ts                   启动组合，batchStorage.js 必须最先导入
+  └─ src/main.ts                   启动组合，batchStorage.ts 必须最先导入
       ├─ app/ + auth/              启动、认证、旧行为组合
       ├─ sidebar/                  导航目的地、服务和状态
       ├─ chat/ + session/          会话、持久化和流式业务
@@ -44,6 +45,9 @@ index.html                         静态 shell / 挂载宿主 / CSP
   实现的直接依赖已归零，插件选择不再依赖 window bridge。
 - Admin、聊天配置、快捷键、会话内查找、设置和存档 UI 的调用者直接使用各自模块状态；不再把这些
   状态发布到 window。其他仍有遗留调用者的 bridge 继续保留，按领域迁移。
+- 确认弹窗、prompt templates 与 More 菜单状态由 `ui/confirmState.ts`、
+  `ui/promptTemplatesState.ts`、`ui/morePopoverState.ts` 持有；React 通过 hook adapter
+  订阅同一模块实例，不再读写对应的 window bridge。More 菜单显隐仍由 sidebar DOM class 管理。
 - 消息列表直接订阅聊天运行时；没有消费者的独立消息列表 bridge 已删除。
 - `auth` 的 `__socratesMountReactCompatibility` 仍是兼容启动通知，保留认证后才加载
   editor / modal 的时序。消息挂载和分享接管的四个 window 字段已由中立模块替代。
@@ -116,8 +120,8 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 
 | 顺序 | 债务 | 处理边界 |
 |---|---|---|
-| 1 | 旧 DOM 页面、消息 fallback 与 React 并存 | 按功能转移 DOM 写入者，保留老消息兼容读取和回归；继续降低 `.js` / shim ratchet |
-| 2 | 部分领域仍使用 window bridge / 自定义事件 | 逐领域换成类型化模块接口，保留认证恢复和启动顺序；不一次改写 main.js |
+| 1 | 旧 DOM 页面、消息 fallback 与 React 并存 | 按功能转移 DOM 写入者，保留老消息兼容读取和回归；继续缩减仍有消费者的兼容壳 |
+| 2 | 部分领域仍使用 window bridge / 自定义事件 | 逐领域换成类型化模块接口，保留认证恢复和启动顺序；不一次重写 main.ts |
 | 3 | legacy / restore 仍有兼容几何 | 证实 selector 无消费者后删除，缩减 CSS debt，不新增竞争 palette / surface owner |
 | 4 | Universal 与 SPA 的功能签收 | 依据迁移计划逐模块验收；截图 fixture 不能替代全部平台、语言和浏览器验证 |
 
@@ -136,16 +140,27 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 先 build，再按 diff 跑 message-list-compat、share-view、whiteboard-lifecycle、chat-send、
 chat-stop-resend、streaming-render、react-compat、storage-bootstrap、recents-archive 等 Playwright。
 frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告保持 gitignored。
-空 catch 的冻结预算从 295 历经多轮缩减已降至 273；未类型化遗留 JS 从 122 进一步缩减至 109。
+当前守卫基线：未类型化前端 JS 为 0、转发 shim 为 0、未埋点空 catch 为 0。曾有 171 个空 catch 未接入遥测；本轮为其中 170 个添加 `reportSwallow`，包括将最佳努力与平台探测错误标记为 `expected`，其余按受限的 `recoverable` 遥测处理。遥测初始化自身的 Vite 元数据回退保留为一条有理由的豁免。
+
+## 状态更新（2026-10-30）
+
+- `frontend/src` 的 JavaScript → TypeScript 迁移已签收；不要再把 10 月 26 日记录的 109 个遗留 JS 当作当前数量。
+- 类型化兼容入口仍然存在：`app/legacyBridge.ts`、`ui/legacyShellListeners.ts` 和多项 `window.__socrates*Bridge` 仍由旧 DOM 与 React 边界消费。迁移到 TypeScript 消除了类型债，不代表这些运行时边界已退役。
+- 命名 SSE `error` 帧现在把状态码、错误码、是否可重试及限流等待提示一路保留到共享 API 的 `ApiError`。旧式只带消息的帧仍按 `502` 处理。
+- 未埋点空 catch 已清零：170 个调用点接入内容不外发、全局限流的 `reportSwallow`；76 个明确的可选能力、清理或最佳努力场景仅计入开发期预期吞错计数，其余异常按可恢复故障报告。剩下一处遥测初始化的 Vite 元数据回退有理由豁免。
+- 生产数据库迁移、Expo CLI 上游依赖修复、仍在使用的 SPA 兼容边界与跨端功能签收继续单独跟踪；
+  usage 缺失时的 token 估算已改为适配中文的保守回退。汇总见
+  [2026-10-30 技术债状态复核](../audits/2026-10-30-technical-debt-followup.md)。
 
 弹窗结构化与遗留治理进展：
 1. `AdminModal`、`Cheatsheet`、`StorageModal`、`PromptTemplatesModal` 与 `ResearchReportDialog` 全面接入 `FoundationDialog`，统一由 Base UI 拥有弹窗交互、Escape 键盘支持、焦点恢复与无障碍 `role="dialog"` 属性，配合 `data-ui-motion` 实现顺滑的进出场反向动画。
-2. `legacyBridge.js` 全面解耦：消除历史上在对象字面量中通过 `window.*` 间接读取本地模块符号的隐患（包括 `editUserMessage`、`openAttachmentPicker`、`showToast` 等），改为直接静态符号挂载；`extensions/index.ts` 显式导出扩展动作（`exploreAction`、`composeAction` 等），切断全局 window 竞态。
+2. `app/legacyBridge.ts` 已改为直接静态符号挂载，消除历史上通过 `window.*` 间接读取本地模块符号的启动顺序隐患（包括 `editUserMessage`、`openAttachmentPicker`、`showToast` 等）；`extensions/index.ts` 显式导出扩展动作。该兼容入口仍在 `main.ts` 启动链中，尚未退役。
 3. `attachments/limits.js` 与 `attachments/fileTypes.js` 重构为强类型 TypeScript 模块（`limits.ts` 与 `fileTypes.ts`），清晰定义文件归类类型与能力约束。
 4. 10 个轻量遗留 UI 模块全面迁移为类型化 TypeScript：`cheatsheet.ts`、`storage.ts`、`confirm.ts`、`dangerConfirms.ts`、`composerAnim.ts`、`composerLang.ts`、`sendGlyph.ts`、`liveRegion.ts`、`greeting.ts`；清除冗余的转接垫片 `tokens.js` 以及旧版 `cheatsheet.impl.mjs`、`storage.impl.mjs`，消除不必要的动态按需导入与未标注的空 catch 块。
 5. 生产打包零警告（0 project warnings）：彻底解决 Rollup 中由于动态按需导入与静态首屏引入冲突导致的模块 chunk 合并警告。
 6. KaTeX 数学重新渲染版本计数解耦，由类型化模块 `render/mathRevision.ts` 集中管理，消除 `MessageList` 与 `proseRenderer` 跨层直读 `window.__socratesMathRenderRev`。
 7. `ui/toast.js` 统一重构为类型化 `ui/toast.ts`，修复并兼容毫秒数字直传参数，收窄遗留 JS 资产基线。
+8. 确认弹窗、prompt templates 与 More 菜单状态分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts` 持有；三个相应 window bridge 已删除。
 
 历史阶段验证均为 Chromium + localhost mock API。未以此宣称 Safari / Android / iOS 原生签收或帧率基准。
 

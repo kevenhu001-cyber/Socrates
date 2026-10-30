@@ -21,6 +21,7 @@ import { turnState, streamRetryViewport } from '../turnState.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface ErrorPath {
   replaceWithError(errMsg: string, onRetry?: () => unknown): void;
@@ -34,7 +35,10 @@ function makeRetryHandler(state: TurnRuntimeState, onRetry: () => unknown): () =
       if (result && typeof (result as PromiseLike<unknown>).then === 'function') {
         (result as PromiseLike<unknown>).then(undefined, function () { /* retry async handler failed */ });
       }
-    } catch { /* retry handler threw */ }
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts:37');
+      /* retry handler threw */
+    }
   };
 }
 
@@ -102,8 +106,14 @@ function renderErrorMessage(
 function releaseFailedTurn(state: TurnRuntimeState): void {
   if (turnState.activeChatCtl !== state.ret) return;
   turnState.chatStreaming = false;
-  try { setChatStopState(false); } catch { /* stop state already cleared */ }
-  try { markTurnEnded(); } catch { /* turn already ended */ }
+  try { setChatStopState(false); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts:105');
+    /* stop state already cleared */
+  }
+  try { markTurnEnded(); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts:106');
+    /* turn already ended */
+  }
   turnState.activeChatCtl = null;
 }
 
@@ -113,7 +123,10 @@ function removeLegacyErrorShell(state: TurnRuntimeState): void {
     if (legacy && !legacy.hasAttribute('data-react-owned') && legacy.parentNode === state.list) {
       state.list.removeChild(legacy);
     }
-  } catch { /* legacy shell already gone */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts:116', 'expected');
+    /* legacy shell already gone */
+  }
 }
 
 function publishStreamFailure(state: TurnRuntimeState, errMsg: string): void {

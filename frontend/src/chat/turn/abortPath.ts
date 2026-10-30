@@ -27,6 +27,7 @@ import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnMessage, TurnRuntimeState } from './runtimeState.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface AbortPath {
   abort(): void;
@@ -52,7 +53,10 @@ function preserveEmptyAbortStub(state: TurnRuntimeState, message: TurnMessage | 
     _supersededStub: true,
   });
   setTimeout(function () {
-    try { removeSupersededStub(state.clientId); } catch { /* already gone */ }
+    try { removeSupersededStub(state.clientId); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:55', 'expected');
+      /* already gone */
+    }
   }, 700);
 }
 
@@ -68,10 +72,16 @@ function renderStoppedHtml(state: TurnRuntimeState, stoppedRaw: string, visibleS
 
 function bindStoppedResend(state: TurnRuntimeState): void {
   claimLiveRetry(state.ret, function () {
-    try { resendLastUserMessage(); } catch { /* resend handler threw */ }
+    try { resendLastUserMessage(); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:71');
+      /* resend handler threw */
+    }
   });
   try { saveCurrentSession(); }
-  catch { /* save failed */ }
+  catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:74');
+    /* save failed */
+  }
 }
 
 function finalizeStoppedMessage(
@@ -103,15 +113,24 @@ function evictLegacyAbortShell(state: TurnRuntimeState): void {
       if (legacy && !legacy.hasAttribute('data-react-owned') && legacy.parentNode === state.list) {
         state.list.removeChild(legacy);
       }
-    } catch { /* legacy shell already gone */ }
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:106', 'expected');
+      /* legacy shell already gone */
+    }
   });
 }
 
 function releaseActiveAbortTurn(state: TurnRuntimeState): void {
   if (turnState.activeChatCtl !== state.ret) return;
   turnState.chatStreaming = false;
-  try { setChatStopState(false); } catch { /* stop state already cleared */ }
-  try { markTurnEnded(); } catch { /* turn already ended */ }
+  try { setChatStopState(false); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:113');
+    /* stop state already cleared */
+  }
+  try { markTurnEnded(); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:114');
+    /* turn already ended */
+  }
 }
 
 function publishAbortedTurn(state: TurnRuntimeState): void {

@@ -13,8 +13,33 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
  * while the individual domains are migrated out of main.js.
  */
 
+interface BootstrapOptions {
+  syncModelPills: () => unknown;
+  syncWebSearchUI: () => unknown;
+  syncExtensionsUI: () => unknown;
+  syncAppModeUI: () => unknown;
+  syncSidebarForMode: () => unknown;
+  loadTonePreset: () => unknown;
+  loadMemories: () => unknown;
+  toggleSidebar: () => unknown;
+  startNewChat: () => unknown;
+  toggleIncognito: () => unknown;
+  openFind: () => unknown;
+  openShare: () => unknown;
+  openSettings?: () => unknown;
+  startSession: () => unknown;
+  sendMessage: () => unknown;
+  toggleComposerTools: (target: HTMLElement, surface: string) => unknown;
+  toggleEffort: (target: HTMLElement | null) => unknown;
+  selectMode: (mode: string) => unknown;
+  toggleMobileMode: () => unknown;
+  searchRecents: (query: string) => unknown;
+  switchTab: (tab: string) => unknown;
+  toggleSidebarView: (view: string) => unknown;
+}
+
 /** Boot the app after the legacy bridge has been assembled. */
-export function bootstrapApp(options: { syncModelPills: any; syncWebSearchUI: any; syncExtensionsUI: any; syncAppModeUI: any; syncSidebarForMode: any; loadTonePreset: any; loadMemories: any; toggleSidebar: any; startNewChat: any; toggleIncognito: any; openFind: any; openShare: any; openSettings?: (() => void)|undefined; startSession: any; sendMessage: any; toggleComposerTools: any; toggleEffort: any; selectMode: any; toggleMobileMode: any; searchRecents: any; switchTab: any; toggleSidebarView: any; }) {
+export function bootstrapApp(options: BootstrapOptions) {
   options.syncModelPills();
   options.syncWebSearchUI();
   options.syncExtensionsUI();
@@ -51,9 +76,9 @@ export function bootstrapApp(options: { syncModelPills: any; syncWebSearchUI: an
     openSettings: () => browserWindow.openSettings?.(),
     startSession: options.startSession,
     sendMessage: options.sendMessage,
-    toggleComposerTools: options.toggleComposerTools,
+    toggleComposerTools: (target, surface) => target ? options.toggleComposerTools(target, surface) : undefined,
     toggleEffort: options.toggleEffort,
-    selectMode: options.selectMode,
+    selectMode: (mode) => mode === undefined ? undefined : options.selectMode(mode),
     toggleMobileMode: options.toggleMobileMode,
     searchRecents: options.searchRecents,
     switchTab: options.switchTab,

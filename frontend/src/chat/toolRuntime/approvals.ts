@@ -1,4 +1,5 @@
 import { apiFetch } from '../../util/api.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface ToolApproval {
   id?: string;
@@ -35,6 +36,11 @@ interface ApprovalResult {
   output?: string;
   error?: string;
   artifacts?: Array<unknown>;
+}
+
+interface AgentRunPollResponse {
+  run?: { status?: string; summary?: string | null; error?: string | null } | null;
+  artifacts?: unknown[];
 }
 
 interface ApprovalRuntimeOptions<
@@ -97,7 +103,7 @@ export function createApprovalRuntime<
         const poll = async (): Promise<void> => {
           if (Date.now() - startedAt > 120_000) return;
           try {
-            const response = await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId));
+            const response = await apiFetch<AgentRunPollResponse>('/api/agent-runs/' + encodeURIComponent(approval.runId));
             const run = response && response.run;
             if (run && ['completed', 'failed', 'interrupted', 'disconnected'].includes(String(run.status))) {
               options.recordToolResult({
@@ -106,12 +112,15 @@ export function createApprovalRuntime<
                 ok: run.status === 'completed',
                 status: run.status,
                 output: run.summary || '',
-                error: run.error || null,
+                error: run.error || undefined,
                 artifacts: response.artifacts || [],
               });
               return;
             }
-          } catch (_) { /* a refresh/reconnect can retry on the next tick */ }
+          } catch (_) {
+            reportEmptyCatch(_, 'empty catch: chat/toolRuntime/approvals.ts:114');
+            /* a refresh/reconnect can retry on the next tick */
+          }
           window.setTimeout(() => { void poll(); }, 900);
         };
         window.setTimeout(() => { void poll(); }, 900);

@@ -22,6 +22,7 @@ import {
   upsertAgentStep,
 } from '../../ui/agentSteps.ts';
 import type { ToolRunView } from './toolRunModel';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface ToolRunAgentStepsProps {
   run: NonNullable<ToolRunView['agentRun']>;
@@ -67,6 +68,7 @@ export function ToolRunAgentSteps(props: ToolRunAgentStepsProps) {
         settleAgentRun(host, { runId: run.runId, state: state || 'done', durationMs: run.durationMs });
       }
     } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-run/ToolRunAgentSteps.tsx:69');
       /* Presentation only — the row's own status line still tells the truth. */
     }
   });

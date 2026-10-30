@@ -23,6 +23,7 @@ import {
   _looksLikeInlineMathTail, _looksLikeNumericMath, _stashInlineCode,
   getKatex, renderStreamMath, replaceInlineDollarMath,
 } from './markdownMath.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export function formatTickSlice(full: string, len: number): string {
   return formatMsgProgressive(full.slice(0, len));
@@ -117,7 +118,8 @@ function renderProgressiveScaffold(
         const html = plugin.render(parsed);
         if (html) return bank.save(html);
       }
-    } catch {
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: render/markdown.ts:120');
       /* Plugin threw — fall through to preview and plain text. */
     }
   }

@@ -5,6 +5,7 @@
 import { CLIENT_ERROR_PATH } from '../util/clientErrorReporter.ts';
 import { renderActionButton } from '../ui/actionButton.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 
 export let __socratesGlobalErrorHandlerInstalled = false;
@@ -22,6 +23,31 @@ function renderDismissButton(host: HTMLElement, onDismiss: () => void) {
     onClick: onDismiss,
     children: 'Dismiss',
   });
+}
+
+function payloadField(payload: unknown, key: string): unknown {
+  return payload !== null && typeof payload === 'object'
+    ? (payload as Record<string, unknown>)[key]
+    : undefined;
+}
+
+function isExpectedTurnAbort(payload: unknown) {
+  const reason = payloadField(payload, 'reason');
+  const message = payloadField(payload, 'message');
+  const name = payloadField(payload, 'name');
+  let sig = '';
+  try { sig = String((reason != null ? reason : '') + ' ' + (message || payload)).toLowerCase(); } catch (_) { /* empty-catch: intentional — safe stringify */ }
+  if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(sig)) {
+    try { console.log('[global-error] ignored expected turn abort:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
+    return true;
+  }
+  let nm = '';
+  try { nm = String(name || ''); } catch (_) { /* empty-catch: intentional — safe stringify */ }
+  if (nm === 'AbortError' && /abort/i.test(sig)) {
+    try { console.log('[global-error] ignored AbortError:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
+    return true;
+  }
+  return false;
 }
 
 export function installGlobalErrorGuard() {
@@ -89,16 +115,21 @@ export function installGlobalErrorGuard() {
       setTimeout(() => {
         if (el.parentNode) el.parentNode.removeChild(el);
       }, 12000);
-    } catch (_) { /* banner creation failed — swallow */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: app/errorGuard.ts:92');
+      /* banner creation failed — swallow */
+    }
   }
 
-  function reportError(correl: string, label: any, payload: { message: any; stack: any; }) {
+  function reportError(correl: string, label: string, payload: unknown) {
     try {
+      const message = payloadField(payload, 'message');
+      const stack = payloadField(payload, 'stack');
       const data = JSON.stringify({
         correl: correl,
         label: label,
-        msg: payload && payload.message ? payload.message : (typeof payload === 'string' ? payload : String(payload)),
-        stack: payload && payload.stack ? payload.stack : '',
+        msg: message ? String(message) : (typeof payload === 'string' ? payload : String(payload)),
+        stack: stack ? String(stack) : '',
         href: typeof window !== 'undefined' && browserWindow.location ? browserWindow.location.href : '',
         ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
       });
@@ -107,23 +138,10 @@ export function installGlobalErrorGuard() {
       } else if (typeof fetch !== 'undefined') {
         fetch(CLIENT_ERROR_PATH, { method: 'POST', body: data, keepalive: true }).catch(function () { /* noop: beacon fallback error */ });
       }
-    } catch (_) { /* swallow */ }
-  }
-
-  function isExpectedTurnAbort(payload: { reason: null; message: any; name: any; }) {
-    let sig = '';
-    try { sig = String((payload && payload.reason != null ? payload.reason : '') + ' ' + ((payload && payload.message) || payload)).toLowerCase(); } catch (_) { /* empty-catch: intentional — safe stringify */ }
-    if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(sig)) {
-      try { console.log('[global-error] ignored expected turn abort:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
-      return true;
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: app/errorGuard.ts:110');
+      /* swallow */
     }
-    let nm = '';
-    try { nm = String(payload && payload.name || ''); } catch (_) { /* empty-catch: intentional — safe stringify */ }
-    if (nm === 'AbortError' && /abort/i.test(sig)) {
-      try { console.log('[global-error] ignored AbortError:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
-      return true;
-    }
-    return false;
   }
 
   function showErrorBanner(correl: string, label: string) {
@@ -134,7 +152,7 @@ export function installGlobalErrorGuard() {
     showBanner(correl, hint);
   }
 
-  function handle(label: string, payload: any) {
+  function handle(label: string, payload: unknown) {
     if (inHandler) return;
     /* P_turn-abort-quiet — lifecycle aborts (session-expired, user-stop,
        superseded, …) are intentional control flow. A late rejection that

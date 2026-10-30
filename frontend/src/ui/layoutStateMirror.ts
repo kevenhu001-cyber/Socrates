@@ -30,10 +30,10 @@
  */
 
 const MIRRORS: { id: string; attr: string; on: (el: HTMLElement) => boolean }[] = [
-  { id: 'chatView', attr: 'data-chat-view-open', on: function (el: { classList: { contains: (arg0: string) => any; }; }) { return !el.classList.contains('hidden'); } },
-  { id: 'topicSetup', attr: 'data-topic-setup-open', on: function (el: { classList: { contains: (arg0: string) => any; }; }) { return !el.classList.contains('hidden'); } },
-  { id: 'pluginsPanel', attr: 'data-plugins-panel-open', on: function (el: { classList: { contains: (arg0: string) => any; }; }) { return !el.classList.contains('hidden'); } },
-  { id: 'sidebar', attr: 'data-sidebar-collapsed', on: function (el: { classList: { contains: (arg0: string) => any; }; }) { return el.classList.contains('collapsed'); } },
+  { id: 'chatView', attr: 'data-chat-view-open', on: function (el: HTMLElement) { return !el.classList.contains('hidden'); } },
+  { id: 'topicSetup', attr: 'data-topic-setup-open', on: function (el: HTMLElement) { return !el.classList.contains('hidden'); } },
+  { id: 'pluginsPanel', attr: 'data-plugins-panel-open', on: function (el: HTMLElement) { return !el.classList.contains('hidden'); } },
+  { id: 'sidebar', attr: 'data-sidebar-collapsed', on: function (el: HTMLElement) { return el.classList.contains('collapsed'); } },
 ];
 
 function setFlag(root: HTMLElement, attr: string, value: boolean) {
@@ -94,7 +94,7 @@ export function installLayoutStateMirror(doc?: Document | null) {
       const ts2 = d.getElementById('topicSetup');
       setFlag(root, 'data-topic-input-focus', !!ts2 && !ts2.classList.contains('hidden'));
     });
-    wrap2.addEventListener('focusout', function (e: { relatedTarget: any; }) {
+    wrap2.addEventListener('focusout', function (e: FocusEvent) {
       const next = e && e.relatedTarget;
       const ts3 = d.getElementById('topicSetup');
       const tv = !!ts3 && !ts3.classList.contains('hidden');

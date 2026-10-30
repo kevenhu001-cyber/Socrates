@@ -11,7 +11,7 @@
  * running detached, and the client re-attaches with ?after=lastSeq.
  */
 
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { BadRequest } from '../lib/errors.js';
@@ -26,11 +26,13 @@ import {
   type ChatTurnEvent,
 } from '../services/core/chatTurns.js';
 
+type ChatTurnRecord = Awaited<ReturnType<typeof getChatTurn>>;
+
 const router = Router();
 
 router.use(requireAuth, resourceScope('chat'));
 
-function publicTurn(turn: any) {
+function publicTurn(turn: ChatTurnRecord | null | undefined) {
   if (!turn) return null;
   return {
     id: turn.id,
@@ -51,7 +53,7 @@ function publicTurn(turn: any) {
   };
 }
 
-function sendTurnEvent(res: any, event: ChatTurnEvent) {
+function sendTurnEvent(res: Response, event: ChatTurnEvent) {
   writeSseEvent(res, 'turn_event', event);
   // Chat-protocol aliases so the existing SSE consumer can reuse its
   // per-event routing without knowing about the turn envelope.
@@ -64,7 +66,7 @@ function sendTurnEvent(res: any, event: ChatTurnEvent) {
   }
 }
 
-function writeSseData(res: any, data: unknown) {
+function writeSseData(res: Response, data: unknown) {
   const payload = typeof data === 'string' ? data : JSON.stringify(data);
   if (res.writableEnded || res.destroyed) return false;
   return res.write(`data: ${payload}\n\n`);

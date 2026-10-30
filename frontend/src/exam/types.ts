@@ -1,6 +1,8 @@
+export type ExamQuestionType = 'multiple-choice' | 'fill-blank' | 'short-answer' | 'error';
+
 export interface ExamQuestion {
  q: string;
- type: string;
+ type: ExamQuestionType;
  explanation?: string;
  opts?: { letter?: string; text?: string | null }[];
  answer?: string | number;

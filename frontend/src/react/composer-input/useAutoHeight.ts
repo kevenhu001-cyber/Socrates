@@ -8,6 +8,7 @@
 
 import { useEffect } from 'react';
 import { planMotionForUser } from '../../ui/motion.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 interface AutoHeightMotion {
   velocity?: number;
@@ -76,18 +77,27 @@ class AutoHeightController {
     } finally {
       try {
         if (locked) target.style.setProperty('height', locked, lockedPriority);
-      } catch (_) { /* detached */ }
+      } catch (_) {
+        reportEmptyCatch(_, 'empty catch: react/composer-input/useAutoHeight.ts:79');
+        /* detached */
+      }
     }
     return Math.max(cap.min, Math.min(cap.max, naturalRaw));
   }
 
   private lockAt(target: HTMLElement, value: number): void {
-    try { target.style.setProperty('height', value + 'px', 'important'); } catch (_) { /* detached */ }
+    try { target.style.setProperty('height', value + 'px', 'important'); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/composer-input/useAutoHeight.ts:85');
+      /* detached */
+    }
   }
 
   private cancelAnimation(): void {
     if (!this.animation) return;
-    try { this.animation.cancel(); } catch (_) { /* not animatable */ }
+    try { this.animation.cancel(); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/composer-input/useAutoHeight.ts:90');
+      /* not animatable */
+    }
     this.animation = null;
   }
 
@@ -184,7 +194,10 @@ class AutoHeightController {
     this.updatePending = false;
     this.mutationObserver?.disconnect();
     this.resizeObserver?.disconnect();
-    try { this.element.style.removeProperty('height'); } catch (_) { /* detached */ }
+    try { this.element.style.removeProperty('height'); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/composer-input/useAutoHeight.ts:187');
+      /* detached */
+    }
   }
 }
 

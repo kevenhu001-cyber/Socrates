@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+
 type FeatureRuntime = typeof import("./cmdK.impl.ts");
 
 /* Cmd+K compatibility facade.
@@ -37,18 +39,21 @@ function loadCmdKRuntime() {
 function invoke(name: keyof FeatureRuntime, args: unknown[], loadIfMissing: boolean) {
   if (runtime) {
     const action = runtime[name];
-    if (typeof action === 'function') (action as (...values: unknown[]) => unknown).apply(null, args);
+    if (typeof action === 'function') (action as (...values: unknown[]) => unknown)(...args);
     return;
   }
   if (!runtimePromise && loadIfMissing === false) return;
   loadCmdKRuntime().then(function (module: FeatureRuntime) {
     const action = module[name];
-    if (typeof action === 'function') (action as (...values: unknown[]) => unknown).apply(null, args);
+    if (typeof action === 'function') (action as (...values: unknown[]) => unknown)(...args);
   }).catch(function () { /* loader already reports the error */ });
 }
 
 export function resetCmdKSearchState() {
-  try { localStorage.removeItem('socrates-search-recent'); } catch (_) { /* private mode */ }
+  try { localStorage.removeItem('socrates-search-recent'); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/cmdK.ts:51');
+    /* private mode */
+  }
   if (runtime) {
     runtime.resetCmdKSearchState();
     pendingReset = false;
@@ -64,9 +69,9 @@ export function markCmdKIndexDirty() {
 
 export function openCmdK() { invoke('openCmdK', [], true); }
 export function closeCmdK() { invoke('closeCmdK', [], false); }
-export function onCmdKInput(q: any) { invoke('onCmdKInput', [q], true); }
-export function onCmdKKey(ev: any) { invoke('onCmdKKey', [ev], true); }
-export function openCmdKResult(idx: any) { invoke('openCmdKResult', [idx], true); }
+export function onCmdKInput(q: string) { invoke('onCmdKInput', [q], true); }
+export function onCmdKKey(ev: KeyboardEvent) { invoke('onCmdKKey', [ev], true); }
+export function openCmdKResult(idx: number) { invoke('openCmdKResult', [idx], true); }
 export function rebuildCmdKIndex() { invoke('rebuildCmdKIndex', [], true); }
 export function updateCmdKSelected() { invoke('updateCmdKSelected', [], true); }
 

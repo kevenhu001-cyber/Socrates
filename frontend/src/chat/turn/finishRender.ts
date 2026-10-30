@@ -21,6 +21,7 @@ import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState, TurnToolCall } from './runtimeState.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 /** The composer template the send started from. */
 interface ActiveTemplateWindow extends Window {
@@ -60,7 +61,10 @@ function stampToolOffsets(state: TurnRuntimeState): void {
 
 function finalizeThinkingStatus(state: TurnRuntimeState): void {
   if (!state.thinkCtl || typeof state.thinkCtl.finalize !== 'function') return;
-  try { state.thinkCtl.finalize(); } catch { /* status already finalized */ }
+  try { state.thinkCtl.finalize(); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/finishRender.ts:63');
+    /* status already finalized */
+  }
 }
 
 function finalizeOwnedMessage(
@@ -99,7 +103,10 @@ function markStreamDomSettled(state: TurnRuntimeState): void {
       const settledRow = state.list.querySelector('.msg[data-client-id="' + state.clientId + '"]') as HTMLElement | null;
       if (settledRow) settledRow.dataset.streamSettled = 'true';
     }
-  } catch { /* settled marker failed; React will reconcile */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/finishRender.ts:102');
+    /* settled marker failed; React will reconcile */
+  }
 }
 
 /**
@@ -123,7 +130,10 @@ export function createFinishRender(state: TurnRuntimeState): FinishRender {
        save/reload round-trip. */
     try {
       stampToolOffsets(state);
-    } catch { /* tool offset writeback failed; layout will fall back */ }
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/finishRender.ts:126');
+      /* tool offset writeback failed; layout will fall back */
+    }
     // Ordinary chat persists raw text. Its progressive DOM is already painted;
     // building final HTML here repeats all parsing and can register widgets twice.
     const visibleFinal = stripChatArtifacts(state.full)

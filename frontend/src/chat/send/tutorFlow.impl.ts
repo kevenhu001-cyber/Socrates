@@ -105,7 +105,7 @@ async function runTutorFollowUp(
     const response = await generateFollowUpStream(
       text,
       node,
-      stateStore.read('domain'),
+      stateStore.read('domain') || '',
       (delta: string) => streamController.append(delta),
       (thinking: string) => streamController.appendThinking(thinking),
       toolCallbacksForStream(streamController),
@@ -124,11 +124,11 @@ async function runTutorFollowUp(
     } else {
       streamController.abort();
       notifyMockFallbackOnce();
-      addAnchoredAssistant(_origGenerateFollowUp(text, node, stateStore.read('domain')));
+      addAnchoredAssistant(_origGenerateFollowUp(text, node, stateStore.read('domain') || ''));
     }
   } else {
     notifyMockFallbackOnce();
-    addAnchoredAssistant(_origGenerateFollowUp(text, node, stateStore.read('domain')));
+    addAnchoredAssistant(_origGenerateFollowUp(text, node, stateStore.read('domain') || ''));
   }
 
   stateStore.dispatch({

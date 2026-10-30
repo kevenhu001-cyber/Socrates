@@ -100,7 +100,7 @@ export function createClientErrorReporter(options: {
       // Never send message/stack, page URL, prompts, tokens, or session content.
       // Context, category and build are in msg because the existing server logs it.
       // `severity` and `kind` are the machine-readable fields: the server uses
-      // severity to keep ~480 best-effort catch sites from logging as hard
+      // severity to keep ~680 best-effort catch sites from logging as hard
       // errors. Keep them in sync with the text above.
       options.send(JSON.stringify({
         kind: 'swallow',

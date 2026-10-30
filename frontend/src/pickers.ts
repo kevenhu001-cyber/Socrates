@@ -40,6 +40,8 @@ function getActiveProvider(){
    rendered into both the trigger button and the dropdown rows with
    matching visuals. */
 const GLYPH_KINDS = ["compass", "hexagon", "diamond", "triangle", "tilt-square", "wave", "mountain", "leaf"];
+type GlyphProvider = Pick<ProviderConfig, 'id' | 'url' | 'model' | 'label' | 'isBuiltIn'>;
+interface ModelGlyph { kind: string; tint: string }
 
 function _hashString(s: string){
   /* djb2 — fast, deterministic, good enough for picking a stable
@@ -52,7 +54,7 @@ function _hashString(s: string){
   return Math.abs(h);
 }
 
-function _glyphFromProvider(p: { isBuiltIn: any; url: any; model: any; label: any; id: any; }){
+function _glyphFromProvider(p: GlyphProvider | null){
   if (!p) return { kind: "compass", tint: "var(--accent-000)" };
   if (p.isBuiltIn) return { kind: "compass", tint: "var(--accent-000)" };
   const url = (p.url || "").toLowerCase();
@@ -97,7 +99,7 @@ function _glyphFromProvider(p: { isBuiltIn: any; url: any; model: any; label: an
    `opacity` instead of a different colour, which keeps the glyph
    readable on both light and dark surfaces and lets the trigger's
    accent colour show through on the active model. */
-function modelGlyphSVG(g: { kind: string; tint: string; }, opts: { size?: any; }){
+function modelGlyphSVG(g: ModelGlyph, opts: { size?: number } = {}){
   opts = opts || {};
   const size = opts.size || 16;
   const sw = 1.5;
@@ -145,8 +147,8 @@ function modelGlyphSVG(g: { kind: string; tint: string; }, opts: { size?: any; }
 /* Public helpers — used by the trigger renderer and the dropdown
    rows. `getModelGlyph` returns the {kind,tint} object; the SVG
    string is built on demand so callers can size it independently. */
-export function getModelGlyph(p: any){ return _glyphFromProvider(p); }
-export function renderModelGlyph(p: any, opts: any){ return modelGlyphSVG(_glyphFromProvider(p), opts); }
+export function getModelGlyph(p: GlyphProvider | null): ModelGlyph { return _glyphFromProvider(p); }
+export function renderModelGlyph(p: GlyphProvider | null, opts?: { size?: number }){ return modelGlyphSVG(_glyphFromProvider(p), opts); }
 
 /* Shared typed data for the model menu rows in the landing and chat headers. */
 function providerPickerItems(providers: readonly ProviderConfig[]){
@@ -204,8 +206,8 @@ function closeModelPicker(){
   if(t)t.setAttribute("aria-expanded","false");
 }
 
-function resolvePickerProvider(providers: any[]|readonly ProviderConfig[], activeId: string|null) {
-  const active = providers.find(function (provider: { id: any; }) { return provider && provider.id === activeId; });
+function resolvePickerProvider(providers: readonly ProviderConfig[], activeId: string|null) {
+  const active = providers.find(function (provider) { return provider.id === activeId; });
   if (!active) {
     const builtIn = providers.find(function (provider: { id: string; }) { return provider && provider.id === 'beagle-built-in'; });
     if (builtIn) {
@@ -224,7 +226,7 @@ function showPickerLoading(label: HTMLElement, trigger: HTMLElement, menu: HTMLE
   menu.setAttribute("aria-busy", "true");
 }
 
-function updatePickerSelection(label: HTMLElement, trigger: HTMLElement, providers: string|any[]|readonly ProviderConfig[], active: { label: string; model: any; isBuiltIn: any; url: any; }) {
+function updatePickerSelection(label: HTMLElement, trigger: HTMLElement, providers: readonly ProviderConfig[], active: ProviderConfig | undefined) {
   if (active) {
     label.textContent = (active.label && active.label !== "Default")
       ? active.label
@@ -344,7 +346,7 @@ function providerDisplayName(provider: ProviderConfig|null) {
     : (provider.model || provider.label || "Model");
 }
 
-function updateChatModelLabel(label: HTMLElement|null, provider: ProviderConfig|null, displayName: any) {
+function updateChatModelLabel(label: HTMLElement|null, provider: ProviderConfig|null, displayName: string) {
   if (!label) return;
   label.textContent = displayName;
   label.title = provider && !provider.isBuiltIn ? (provider.model || "") : "";
@@ -402,7 +404,7 @@ function closeChatModelMenu(){
   if(trigger)trigger.classList.remove("menu-open");
   if(trigger)trigger.setAttribute("aria-expanded","false");
 }
-function pickChatModel(id: any){
+function pickChatModel(id: string){
   if(!id)return;
   pickActiveProviderById(id);
   closeChatModelMenu();
@@ -442,7 +444,7 @@ const EXTENSION_ICONS = {
 const EXTENSIONS=[
   {key:"extensiveThinking", name:"Extensive thinking",
    icon: EXTENSION_ICONS.extensiveThinking,
-   on:!!browserWindow.extensiveThinkingOn, onChange:function(v: any){
+   on:!!browserWindow.extensiveThinkingOn, onChange:function(v: boolean){
      browserWindow.extensiveThinkingOn=v;
      try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!browserWindow.extensiveThinkingOn))}catch (error) { reportSwallow(error, 'pickers.js:433', 'expected'); }
      /* Use setActiveTemplate to show the chip when active */

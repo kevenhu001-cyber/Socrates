@@ -17,7 +17,7 @@ import { shouldConfirmReset } from './resetDecision.ts';
 import { runtimeWindow as browserWindow } from "../../types/runtimeWindow.ts";
 
 
-function readResetDecision(options: { confirmActiveSession: boolean; }) {
+function readResetDecision(options?: ResetOptions) {
   const examWasOpen = Boolean(stateStore.read('_examInView'))
     || document.body.classList.contains('exam-active');
   return {
@@ -146,8 +146,10 @@ function publishResetState() {
   focusComposerForNewSession();
 }
 
+export interface ResetOptions { confirmActiveSession?: boolean }
+
 /** Save, clear and return the app to topic setup while respecting live work. */
-export async function resetApp(options?: any) {
+export async function resetApp(options?: ResetOptions) {
   const decision = readResetDecision(options);
   if (!await confirmResetIfRequired(decision.requiresConfirmation)) {
     browserWindow._nextProjectId = null;

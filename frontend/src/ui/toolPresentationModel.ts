@@ -13,6 +13,7 @@
 
 import { isInlineSearchTool, toolCategory } from '../render/toolCategory.ts';
 import { connectorActivityOf } from './toolActivity';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export interface ToolCallLike {
   id?: string;
@@ -53,7 +54,10 @@ export function translate(key: string, fallback: string): string {
       const s = (fn as (k: string) => string)(key);
       if (s && s !== key) return s;
     }
-  } catch (_) { /* non-browser harness */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/toolPresentationModel.ts:56');
+    /* non-browser harness */
+  }
   return fallback;
 }
 
@@ -119,7 +123,10 @@ export function hostOf(url: string): string {
   if (!raw) return '';
   try {
     if (/^https?:\/\//i.test(raw)) return new URL(raw).hostname.replace(/^www\./i, '');
-  } catch (_) { /* fall through */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/toolPresentationModel.ts:122');
+    /* fall through */
+  }
   const noProto = raw.replace(/^[a-z]+:\/\//i, '');
   return clip(noProto.split('/')[0], 32);
 }

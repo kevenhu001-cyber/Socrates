@@ -65,7 +65,7 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
    being read off `window.__vizId`. The user code may overwrite
    `window.__vizId`, which used to make the parent drop the postMessage
    on the floor (entry lookup on "" failed silently). */
-function vizRuntime(vizId: any) {
+function vizRuntime(vizId: string) {
   const idJson = JSON.stringify(vizId);
   return '<script>' +
     '(function(){' +
@@ -138,7 +138,7 @@ function vizActions(cardId: unknown, showSource?: boolean|undefined, viewToggle?
     '" data-viz-view-toggle="' + (viewToggle ? 'true' : 'false') + '"></div>';
 }
 
-export function vizErrorHtml(message: string, source: any) {
+export function vizErrorHtml(message: string, source: unknown) {
   const msg = esc(message || '');
   const src = esc(source || '');
   return '<div class="viz-error">' +
@@ -153,7 +153,7 @@ function vizLoadingHtml() {
   return '<div class="viz-loading"><span class="viz-spinner"></span><span>Rendering…</span></div>';
 }
 
-export function validMermaid(code: any) {
+export function validMermaid(code: string) {
   try { return typeof browserWindow.mermaid.parse === "function" ? browserWindow.mermaid.parse(code, { suppressErrors: true }) : true; }
   catch (_) { return false; }
 }
@@ -169,7 +169,7 @@ let _mermaidCheckedCount = 0;
    it; the worst case is one redundant mermaid.parse per diagram. */
 const MERMAID_CHECKED_MAX = 500;
 
-export function renderMermaid(code: any, opts: { stableId?: any; }) {
+export function renderMermaid(code: string, opts: { stableId?: string }) {
   opts = opts || {};
   const stableId = opts.stableId;
   /* P_mermaid-parse-once — mermaid.parse is synchronous and expensive, so
@@ -229,7 +229,7 @@ function encodeSrcdoc(doc: string) {
     .replace(/>/g, '&gt;');
 }
 
-export function renderVizLoading(opts: { streaming?: any; stableId?: any; }) {
+export function renderVizLoading(opts: { streaming?: boolean; stableId?: string }) {
   opts = opts || {};
   /* P_viz-no-streaming-spinner — when called during streaming
      (markdown.js passes opts.streaming=true), the spinner overlay
@@ -253,7 +253,7 @@ export function renderVizLoading(opts: { streaming?: any; stableId?: any; }) {
   '</div>';
 }
 
-function guardUserScripts(html: string, vizId: any) {
+function guardUserScripts(html: string, vizId: string) {
   /* P_viz-safety — wrap EVERY inline <script> in a try/catch so any
      synchronous error (not just explicit `throw`) posts a viz-error
      back to the parent. The previous version only wrapped scripts
@@ -274,7 +274,7 @@ function guardUserScripts(html: string, vizId: any) {
   });
 }
 
-export function renderViz(htmlStr: any, opts: { stableId?: any; }) {
+export function renderViz(htmlStr: string, opts: { stableId?: string }) {
   opts = opts || {};
   /* P_viz-stable-id — when formatMsgProgressive closes a fence
      and we transition from a loading placeholder to the real
@@ -327,7 +327,7 @@ export function renderViz(htmlStr: any, opts: { stableId?: any; }) {
      <expr> from <a> to <b>                  → explicit range
      <expr> from <a> to <b> color=<c> [width=<n>]
    <expr> may reference x, pi, e, and the usual math fns. */
-function parsePlotSpec(spec: any) {
+function parsePlotSpec(spec: string) {
   let src = String(spec || '').trim();
   if (!src) return { error: 'empty plot spec' };
   let color = '#3a6df0';
@@ -360,7 +360,7 @@ function parsePlotRangeNumber(tok: string) {
   return isFinite(n) ? n : 0;
 }
 
-export function renderPlot(spec: any, opts: { stableId?: any; }) {
+export function renderPlot(spec: string, opts: { stableId?: string }) {
   opts = opts || {};
   /* P_viz-stable-id — see renderViz for rationale. */
   const id = opts.stableId || "viz-card-" + (++_vizId);
@@ -484,13 +484,13 @@ export function renderPlot(spec: any, opts: { stableId?: any; }) {
 
 export let _pendingActions: { id: string }[] = [];
 
-export function queueVizActions(id: any) {
+export function queueVizActions(id: string) {
   if (id) _pendingActions.push({ id: id });
   loadVizRuntime();
 }
 /* ── Queue + shared-state accessors (the lazy half imports these) ── */
 
-export function dropPendingVizId(id: any) {
+export function dropPendingVizId(id: string) {
   _pendingViz = _pendingViz.filter(function (item) { return item.id !== id; });
   _pendingMermaid = _pendingMermaid.filter(function (item) { return item.id !== id; });
 }
@@ -521,7 +521,7 @@ export function vizViewPref() {
   return _vizViewPref;
 }
 
-export function setVizViewPref(view: any) {
+export function setVizViewPref(view: 'preview' | 'code') {
   _vizViewPref = view;
 }
 
@@ -564,7 +564,7 @@ export function processPendingViz() {
   if (_pendingViz.length) loadVizRuntime();
 }
 
-export function processPendingVizActions(root?: undefined) {
+export function processPendingVizActions(root?: ParentNode) {
   const m = _vizRuntime;
   if (m) return m.processPendingVizActions(root);
   if (_pendingActions.length) loadVizRuntime();
@@ -580,7 +580,7 @@ export function schedulePendingMermaid() {
   const m = _vizRuntime;
   if (m) return m.schedulePendingMermaid();
   if (_pendingMermaid.length) {
-    loadVizRuntime().then(function (r: { schedulePendingMermaid: () => void; }) { r.schedulePendingMermaid(); });
+    loadVizRuntime().then(function (r) { r.schedulePendingMermaid(); });
   }
 }
 
@@ -590,7 +590,7 @@ export function reclaimVizCards(root: Element) {
   /* Only worth pulling the runtime down when a card actually exists in
      the DOM — reclaim re-adopts .viz elements after innerHTML rewrites. */
   if (root && typeof root.querySelector === 'function' && root.querySelector('.viz')) {
-    loadVizRuntime().then(function (r: { reclaimVizCards: (arg0: any) => void; }) { r.reclaimVizCards(root); });
+    loadVizRuntime().then(function (r) { r.reclaimVizCards(root); });
   }
 }
 
@@ -598,30 +598,31 @@ export function getLiveVizCardIds() {
   return _vizRuntime ? _vizRuntime.getLiveVizCardIds() : [];
 }
 
-export function parkVizCardForTest(card: any) {
+type VizRuntimeModule = typeof import('./viz.ts');
+export function parkVizCardForTest(card: Parameters<VizRuntimeModule['parkVizCardForTest']>[0]) {
   const m = _vizRuntime;
   if (m) return m.parkVizCardForTest(card);
-  return loadVizRuntime().then(function (r: { parkVizCardForTest: (arg0: any) => any; }) { return r.parkVizCardForTest(card); });
+  return loadVizRuntime().then(function (r) { return r.parkVizCardForTest(card); });
 }
 
-export function unparkVizCardForTest(card: any) {
+export function unparkVizCardForTest(card: Parameters<VizRuntimeModule['unparkVizCardForTest']>[0]) {
   const m = _vizRuntime;
   if (m) return m.unparkVizCardForTest(card);
-  return loadVizRuntime().then(function (r: { unparkVizCardForTest: (arg0: any) => any; }) { return r.unparkVizCardForTest(card); });
+  return loadVizRuntime().then(function (r) { return r.unparkVizCardForTest(card); });
 }
 
-export function renderVizError(htmlStr: any, errorMsg: any) {
+export function renderVizError(htmlStr: unknown, errorMsg: unknown) {
   const m = _vizRuntime;
   if (m) return m.renderVizError(htmlStr, errorMsg);
-  return loadVizRuntime().then(function (r: { renderVizError: (arg0: any,arg1: any) => any; }) { return r.renderVizError(htmlStr, errorMsg); });
+  return loadVizRuntime().then(function (r) { return r.renderVizError(htmlStr, errorMsg); });
 }
 
-export function openVizModal(srcdoc: any, title: any) {
-  loadVizRuntime().then(function (r: { openVizModal: (arg0: any,arg1: any) => void; }) { r.openVizModal(srcdoc, title); });
+export function openVizModal(srcdoc: string | null | undefined, title?: string) {
+  loadVizRuntime().then(function (r) { r.openVizModal(srcdoc, title); });
 }
 
-export function openVizModalRaw(html: string, title: string) {
-  loadVizRuntime().then(function (r: { openVizModalRaw: (arg0: any,arg1: any) => void; }) { r.openVizModalRaw(html, title); });
+export function openVizModalRaw(html: string | null | undefined, title?: string) {
+  loadVizRuntime().then(function (r) { r.openVizModalRaw(html, title); });
 }
 
 /* ── Lazy visualization mounts (./visualization.js) ───────────────
@@ -631,8 +632,9 @@ export function openVizModalRaw(html: string, title: string) {
  * (nothing can be mounted before then), so they key off the import
  * promise rather than pulling the chunk for a no-op.
  */
-let _visModule: { mountVisualization: (arg0: any,arg1: any,arg2: any) => any; disposeVisualizations: (arg0: any) => void; disposeVisualization: (arg0: any) => void; }|null = null;
-let _visImport: Promise<any>|null = null;
+type VisualizationModule = typeof import('./visualization.ts');
+let _visModule: VisualizationModule | null = null;
+let _visImport: Promise<VisualizationModule> | null = null;
 
 export function loadVisualization() {
   if (!_visImport) {
@@ -648,23 +650,27 @@ export function loadVisualization() {
   return _visImport;
 }
 
-export function mountVisualization(spec: Record<string,unknown>, host: Element, opts: { toolCallId?: string; signal?: AbortSignal; }|undefined) {
+export function mountVisualization(
+  spec: Parameters<VisualizationModule['mountVisualization']>[0],
+  host: Parameters<VisualizationModule['mountVisualization']>[1],
+  opts: Parameters<VisualizationModule['mountVisualization']>[2],
+) {
   if (_visModule) return _visModule.mountVisualization(spec, host, opts);
-  return loadVisualization().then(function (m: { mountVisualization: (arg0: any,arg1: any,arg2: any) => any; }) { return m.mountVisualization(spec, host, opts); });
+  return loadVisualization().then(function (m) { return m.mountVisualization(spec, host, opts); });
 }
 
-export function disposeVisualizations(host: HTMLElement) {
+export function disposeVisualizations(host: Parameters<VisualizationModule['disposeVisualizations']>[0]) {
   if (_visModule) {
     _visModule.disposeVisualizations(host);
   } else if (_visImport) {
-    _visImport.then(function (m: { disposeVisualizations: (arg0: any) => void; }) { m.disposeVisualizations(host); });
+    _visImport.then(function (m) { m.disposeVisualizations(host); });
   }
 }
 
-export function disposeVisualization(card: unknown) {
+export function disposeVisualization(card: Parameters<VisualizationModule['disposeVisualization']>[0]) {
   if (_visModule) {
     _visModule.disposeVisualization(card);
   } else if (_visImport) {
-    _visImport.then(function (m: { disposeVisualization: (arg0: any) => void; }) { m.disposeVisualization(card); });
+    _visImport.then(function (m) { m.disposeVisualization(card); });
   }
 }

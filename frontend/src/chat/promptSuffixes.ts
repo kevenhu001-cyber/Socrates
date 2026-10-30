@@ -36,6 +36,7 @@ import { getTonePreset, getToneVoice } from '../config/tonePresets.ts';
 import { getReasoningEffort } from '../ui/effortPicker.ts';
 import { injectMemoryContext } from '../storage/memoryStore.ts';
 import { stateStore } from '../state/store.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 let userMemoriesReader: () => unknown = () => [];
 
@@ -72,7 +73,10 @@ export function memoriesSuffix(): string {
     if (ci && ci.trim()) {
       s += '\n\n## User custom instructions\n' + ci.trim() + '\n';
     }
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/promptSuffixes.ts:75', 'expected');
+    /* ignore */
+  }
   return s;
 }
 

@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+
 /* storage/memoryStore.ts — Cross-session memory.
  *
  * Lets the AI remember user preferences, facts, and goals across
@@ -61,7 +63,10 @@ function loadMemories(): MemoryEntry[] {
         return _memories;
       }
     }
-  } catch { /* ignore */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts:64', 'expected');
+    /* ignore */
+  }
   _memories = [];
   return _memories;
 }
@@ -73,7 +78,10 @@ function loadMemories(): MemoryEntry[] {
 function saveMemories(): void {
   try {
     localStorage.setItem(MEMORY_KEY, JSON.stringify(_memories || []));
-  } catch { /* localStorage full or private mode */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts:76');
+    /* localStorage full or private mode */
+  }
 }
 
 /* Load memories from the server on boot. Server rows carry { text,
@@ -106,7 +114,10 @@ function loadFromServer(): void {
         saveMemories();
       })
       .catch(function () { /* server fetch failed — use local */ });
-  } catch { /* ignore */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts:109', 'expected');
+    /* ignore */
+  }
 }
 
 /* Generate a short unique id for a memory entry. */

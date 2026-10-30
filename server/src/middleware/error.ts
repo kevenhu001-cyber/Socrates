@@ -77,7 +77,7 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
  * Must have 4 parameters (err, req, res, next) for Express to treat it
  * as an error handler rather than normal middleware.
  */
-export function errorHandler(err: any, req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
   // P6.x — `req.id` is set by the requestId middleware mounted
   // early in app.js. Including it in the log line lets an operator
   // grep one ID and find the matching client-side console error.
@@ -90,10 +90,13 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   // internal paths, file layout, and (occasionally) secrets embedded
   // in error messages. Operators can still find the matching request
   // id and look up the structured fields in the database.
+  const errorDetails = err && typeof err === 'object'
+    ? err as Record<string, unknown>
+    : null;
   if (process.env.NODE_ENV === 'production') {
-    console.error('[error]', `req=${sanitizeLogValue(rid, 64)}`, meta, sanitizeLogValue(err && err.message ? err.message : err, 800));
+    console.error('[error]', `req=${sanitizeLogValue(rid, 64)}`, meta, sanitizeLogValue(errorDetails?.message || err, 800));
   } else {
-    console.error('[error]', `req=${sanitizeLogValue(rid, 64)}`, meta, err && err.stack ? sanitizeLogValue(err.stack, 1200) : sanitizeLogValue(err, 800));
+    console.error('[error]', `req=${sanitizeLogValue(rid, 64)}`, meta, errorDetails?.stack ? sanitizeLogValue(errorDetails.stack, 1200) : sanitizeLogValue(err, 800));
   }
 
   // Echo the request id back so the browser can correlate too —
@@ -131,24 +134,24 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   // but embed the provider's raw response text in their message. Report the
   // status and code so the browser can tell an exhausted upstream budget from
   // a transient failure — and never forward the provider body.
-  if (err && (err.name === 'LlmProviderError' || err.code === 'LLM_UPSTREAM_ERROR') && typeof err.status === 'number') {
-    return res.status(err.status).json({
+  if (errorDetails && (errorDetails.name === 'LlmProviderError' || errorDetails.code === 'LLM_UPSTREAM_ERROR') && typeof errorDetails.status === 'number') {
+    return res.status(errorDetails.status).json({
       code: 'LLM_UPSTREAM_ERROR',
-      message: `LLM request failed (upstream ${err.status}). Try again later or switch model.`,
+      message: `LLM request failed (upstream ${errorDetails.status}). Try again later or switch model.`,
       // The server already spent its provider retry budget; replaying here
       // would just repeat the same paid failure.
       retryable: false,
-      upstreamStatus: err.status,
-      ...(Number.isFinite(err.retryAfterMs) ? { retryAfterMs: err.retryAfterMs } : {}),
+      upstreamStatus: errorDetails.status,
+      ...(typeof errorDetails.retryAfterMs === 'number' && Number.isFinite(errorDetails.retryAfterMs) ? { retryAfterMs: errorDetails.retryAfterMs } : {}),
     });
   }
 
   // Zod validation errors — strip issues in production to avoid
   // leaking schema details or user input through error messages.
-  if (err.name === 'ZodError') {
+  if (errorDetails?.name === 'ZodError') {
     const detail = process.env.NODE_ENV === 'production'
       ? undefined
-      : (err.issues || err.errors);
+      : (errorDetails.issues || errorDetails.errors);
     return res.status(400).json({
       code: 'VALIDATION_ERROR',
       message: 'Request validation failed',
@@ -157,7 +160,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   }
 
   // Multer / file-upload errors
-  if (err.code === 'LIMIT_FILE_SIZE') {
+  if (errorDetails?.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       code: 'FILE_TOO_LARGE',
       message: 'File exceeds the 25 MB size limit',
@@ -168,7 +171,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   return res.status(500).json({
     code: 'INTERNAL_ERROR',
     message: 'An unexpected error occurred',
-    ...(err?.retryable === false ? { retryable: false } : {}),
+    ...(errorDetails?.retryable === false ? { retryable: false } : {}),
   });
 }
 

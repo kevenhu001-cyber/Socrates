@@ -62,7 +62,10 @@ function _publishProfileState() {
       instAbout: (inst && inst.about) || "",
       instSaveState: null,
     });
-  } catch (_) { /* swallow — bridge is best-effort */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: ui/profile.ts:65', 'expected');
+    /* swallow — bridge is best-effort */
+  }
 }
 
 /* React owns the profile modal and sidebar user row unconditionally
@@ -94,7 +97,10 @@ function sidebarUserSnapshot(user: import("../types/runtimeWindow.ts").RuntimeWi
 
 function syncDocumentTier(user: import("../types/runtimeWindow.ts").RuntimeWindow["CURRENT_USER"]) {
   try { document.documentElement.dataset.userTier = user?.tier || "diophantus"; }
-  catch (_) { /* swallow */ }
+  catch (_) {
+    reportSwallow(_, 'empty catch: ui/profile.ts:97');
+    /* swallow */
+  }
 }
 
 function _publishSidebarChrome() {
@@ -106,7 +112,10 @@ function _publishSidebarChrome() {
     const bridge = browserWindow.__socratesSidebarChromeBridge;
     if (!bridge || typeof bridge.publish !== "function") return;
     bridge.publish({ user: sidebarUserSnapshot(cu) });
-  } catch (_) { /* swallow */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: ui/profile.ts:109');
+    /* swallow */
+  }
 }
 
 /* (legacy sidebar-footer renderer is dead code — see the always-on
@@ -136,7 +145,7 @@ function closeProfile() {
 
 /* ─── Rename user ─── */
 
-function saveProfileName(newName: any) {
+function saveProfileName(newName: string) {
   const name = (newName || "").trim();
   if (!name || !browserWindow.CURRENT_USER) return;
   if (name === browserWindow.CURRENT_USER.displayName) return;
@@ -159,21 +168,33 @@ function saveProfileName(newName: any) {
 
 let _customInstructionsSaveTimer: number|null|undefined = null;
 
-function loadCustomInstructions() {
+interface CustomInstructions { response: string; about: string; savedAt: string }
+
+function loadCustomInstructions(): CustomInstructions {
   try {
     const raw = localStorage.getItem("socrates-custom-instructions");
-    if (raw) return JSON.parse(raw) || {};
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const value = parsed as Record<string, unknown>;
+        return {
+          response: typeof value.response === 'string' ? value.response : '',
+          about: typeof value.about === 'string' ? value.about : '',
+          savedAt: typeof value.savedAt === 'string' ? value.savedAt : '',
+        };
+      }
+    }
   } catch (error) { reportSwallow(error, 'ui/profile.ts:148', 'expected'); }
-  return {};
+  return { response: '', about: '', savedAt: '' };
 }
 
-function saveCustomInstructions(value: { response: any; about: any; savedAt: string; }) {
+function saveCustomInstructions(value: CustomInstructions) {
   try { localStorage.setItem("socrates-custom-instructions", JSON.stringify(value)); } catch (error) { reportSwallow(error, 'ui/profile.ts:153', 'expected'); }
 }
 
 function loadCustomInstructionsIntoUI() {
   const data = loadCustomInstructions();
-  if (!data.response && browserWindow.CURRENT_USER && browserWindow.CURRENT_USER.customInstructions) {
+  if (!data.response && typeof browserWindow.CURRENT_USER?.customInstructions === 'string') {
     data.response = browserWindow.CURRENT_USER.customInstructions;
   }
   updateInstSaveState(data.savedAt);
@@ -202,7 +223,7 @@ function onCustomInstructionsChange() {
   }, 600);
 }
 
-function buildCustomInstructionsString(value: { response: any; about: any; savedAt?: string; }) {
+function buildCustomInstructionsString(value: Pick<CustomInstructions, 'response' | 'about'>) {
   const parts = [];
   if (value && value.response) parts.push("[How to respond]\n" + value.response);
   if (value && value.about) parts.push("[About the user]\n" + value.about);
@@ -244,9 +265,13 @@ function loadUserMemories() {
   browserWindow._userMemories = [];
   if (!browserWindow.CURRENT_USER) return Promise.resolve();
   try {
-    return browserWindow.apiFetch("/api/memory", { _authEndpoint: true }).then(function (r: any[]) {
-      if (r && Array.isArray(r)) {
-        browserWindow._userMemories = r.filter(function (m) { return m.enabled !== false; }).map(function (m) { return m.text; });
+    return browserWindow.apiFetch<unknown>("/api/memory", { _authEndpoint: true }).then(function (value) {
+      if (Array.isArray(value)) {
+        browserWindow._userMemories = value.flatMap(function (memory): string[] {
+          if (!memory || typeof memory !== 'object' || Array.isArray(memory)) return [];
+          const record = memory as Record<string, unknown>;
+          return record.enabled !== false && typeof record.text === 'string' ? [record.text] : [];
+        });
       }
     }).catch(function () {
       console.log("[memories] load failed");

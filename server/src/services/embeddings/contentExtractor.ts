@@ -37,6 +37,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import type { Readability } from '@mozilla/readability';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,6 +56,24 @@ export interface ExtractedArticle {
   date: string | null;
   method: string;
   truncated?: boolean;
+}
+
+type ReadabilityArticle = NonNullable<ReturnType<Readability['parse']>>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isExtractedArticle(value: unknown): value is ExtractedArticle {
+  return isRecord(value)
+    && typeof value.title === 'string'
+    && (typeof value.byline === 'string' || value.byline === null)
+    && (typeof value.siteName === 'string' || value.siteName === null)
+    && typeof value.excerpt === 'string'
+    && typeof value.content === 'string'
+    && typeof value.length === 'number'
+    && (typeof value.date === 'string' || value.date === null)
+    && typeof value.method === 'string';
 }
 
 class WorkerSlot {
@@ -285,10 +304,10 @@ async function runOne(html: string, url: string, maxChars?: number): Promise<Ext
       slot.release();
       resolve(val);
     };
-    const onMessage = (msg: any) => {
-      if (!msg || msg.id !== id) return;
+    const onMessage = (msg: unknown) => {
+      if (!isRecord(msg) || msg.id !== id) return;
       if (msg.type === 'result') {
-        finish(msg.payload);
+        finish(isExtractedArticle(msg.payload) ? msg.payload : null);
       } else if (msg.type === 'error') {
         finish(null);
       }
@@ -348,7 +367,7 @@ export async function stopContentExtractorPool(): Promise<void> {
    in tests where spawning a worker is overkill. NEVER call from a
    request hot-path — that's what `extractArticle` above is for. */
 export function extractArticleSync(html: string, url: string) {
-  let article: any = null;
+  let article: ReadabilityArticle | null = null;
   try {
     const { Readability } = require('@mozilla/readability');
     const { JSDOM, VirtualConsole } = require('jsdom');

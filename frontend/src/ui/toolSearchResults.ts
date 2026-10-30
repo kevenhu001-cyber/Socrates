@@ -16,32 +16,36 @@ function hostFromUrl(url: string|URL) {
   }
 }
 
+function normalizeSearchResult(raw: unknown): NormalizedSearchResult {
+  const source = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+  const rawUrl = String(source.url || "").trim();
+  const url = sanitizeUrl(rawUrl);
+  return {
+    title: String(source.title || rawUrl || "Untitled result").trim(),
+    rawUrl,
+    url,
+    host: hostFromUrl(url),
+    snippet: String(source.snippet || source.description || "").trim(),
+    date: String(source.date || source.published || "").trim(),
+    source: String(source.source || source.engine || "").trim(),
+    matchedQuery: String(source.matchedQuery || "").trim(),
+  };
+}
+
 function normalizeSearchResults(results: unknown[]): NormalizedSearchResult[] {
   const seen = new Set<string>();
   const normalized: NormalizedSearchResult[] = [];
   for (const raw of results) {
-    const source = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
-    const rawUrl = String(source.url || "").trim();
-    const url = sanitizeUrl(rawUrl);
-    const title = String(source.title || rawUrl || "Untitled result").trim();
-    const key = (url || "#") + "\n" + title.toLowerCase();
+    const result = normalizeSearchResult(raw);
+    const key = (result.url || "#") + "\n" + result.title.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    normalized.push({
-      title,
-      rawUrl,
-      url,
-      host: hostFromUrl(url),
-      snippet: String(source.snippet || source.description || "").trim(),
-      date: String(source.date || source.published || "").trim(),
-      source: String(source.source || source.engine || "").trim(),
-      matchedQuery: String(source.matchedQuery || "").trim(),
-    });
+    normalized.push(result);
   }
   return normalized;
 }
 
-function createCopyAction(className: string, label: string, getText: { (): any; (): string; (): unknown; }) {
+function createCopyAction(className: string, label: string, getText: () => string) {
   const host = document.createElement('span');
   host.className = className + '-host';
   renderToolCardCopyAction(host, {
@@ -163,7 +167,7 @@ export function renderWebSearchResults(out: { replaceChildren: (arg0: HTMLDivEle
   const wrap = document.createElement("div");
   wrap.className = "web-search-results";
   if (query) wrap.appendChild(createSearchHeader(sources, query));
-  sources.forEach(function (source: any, index: any) {
+  sources.forEach(function (source, index) {
     wrap.appendChild(createSearchResultItem(source, index));
   });
   out.replaceChildren(wrap);

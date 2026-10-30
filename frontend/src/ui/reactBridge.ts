@@ -1,4 +1,5 @@
 import type { ChatRuntimeEvent } from '../react/types/domain.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /* ui/reactBridge.ts — the cross-tree notification channel between the
    legacy JS pipeline (main.js) and the React tree (which mounts the
@@ -23,10 +24,16 @@ export function publishReactChatRuntime(event: ChatRuntimeEvent) {
   try {
     const bridge = (typeof window !== 'undefined') ? window.__socratesReactChatBridge : null;
     if (bridge && typeof bridge === 'object' && 'publish' in bridge && typeof bridge.publish === 'function') bridge.publish(event);
-  } catch (_) { /* ignore — a misbehaving React subscriber must not break the legacy pipeline */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/reactBridge.ts:26', 'expected');
+    /* ignore — a misbehaving React subscriber must not break the legacy pipeline */
+  }
   try {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('socrates:chat-runtime-changed', { detail: event || {} }));
     }
-  } catch (_) { /* same — no-op when CustomEvent is unavailable */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/reactBridge.ts:31', 'expected');
+    /* same — no-op when CustomEvent is unavailable */
+  }
 }

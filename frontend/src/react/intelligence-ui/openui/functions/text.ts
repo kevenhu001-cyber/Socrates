@@ -157,8 +157,8 @@ export const Duration = defineFunction({
 export const Default = defineFunction({
   name: "Default",
   description: 'value, or fallback when value is null, "" or not a number, e.g. an empty number input: @Default($weight, 0)',
-  params: z.object({ value: z.any().optional(), fallback: z.any() }),
-  returns: z.any(),
+  params: z.object({ value: z.unknown().optional(), fallback: z.unknown() }),
+  returns: z.unknown(),
   fn: ({ value, fallback }) =>
     value == null || value === "" || (typeof value === "number" && Number.isNaN(value)) ? fallback : value,
 });

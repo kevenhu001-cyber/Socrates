@@ -13,13 +13,14 @@
 
 import { showToast } from './ui/toast.js';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
+import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
 
-let _batchStoragePending: { [x: string]: any; }|null = null;
+let _batchStoragePending: Record<string, string> | null = null;
 let _storageBlockedNotified = false;
 let _storageBlocked = false;
-let _memStorage: Map<any,any>|null = null;
-let _memSessionStorage: Map<any,any>|null = null;
+let _memStorage: Map<string, string> | null = null;
+let _memSessionStorage: Map<string, string> | null = null;
 
 function _detectStorageBlocked(err: unknown) {
   if (!err || typeof err !== "object" || !("name" in err)) return false;
@@ -51,11 +52,11 @@ function _overrideStorageInstances() {
   _memStorage = new Map();
   _memSessionStorage = new Map();
   try { browserWindow.SOCRATES_STORAGE_BLOCKED = true; } catch (_) { /* empty-catch: intentional — the diagnostic flag is optional outside a writable browser global. */ }
-  function _makeShim(bag: Map<any,any>) {
+  function _makeShim(bag: Map<string, string>) {
     return {
-      setItem: function (k: any, v: any) { bag.set(String(k), String(v)); },
-      getItem: function (k: any) { return bag.has(String(k)) ? bag.get(String(k)) : null; },
-      removeItem: function (k: any) { bag.delete(String(k)); },
+      setItem: function (k: string, v: string) { bag.set(k, v); },
+      getItem: function (k: string) { return bag.has(k) ? bag.get(k) ?? null : null; },
+      removeItem: function (k: string) { bag.delete(k); },
       clear: function () { bag.clear(); },
       key: function (i: number) { return Array.from(bag.keys())[i] || null; },
       get length() { return bag.size; },
@@ -68,7 +69,10 @@ function _overrideStorageInstances() {
     Object.defineProperty(browserWindow, 'localStorage', {
       value: localShim, writable: false, configurable: true,
     });
-  } catch (_) { /* some hosts forbid redefining localStorage */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: batchStorage.ts:71');
+    /* some hosts forbid redefining localStorage */
+  }
   try {
     Object.defineProperty(browserWindow, 'sessionStorage', {
       value: sessionShim, writable: false, configurable: true,
@@ -83,7 +87,7 @@ function _overrideStorageInstances() {
     };
     Storage.prototype.getItem = function (k) {
       const bag = (this === sessionShim) ? _memSessionStorage : _memStorage;
-      return bag!.has(String(k)) ? bag!.get(String(k)) : null;
+      return bag!.get(String(k)) ?? null;
     };
     Storage.prototype.removeItem = function (k) {
       const bag = (this === sessionShim) ? _memSessionStorage : _memStorage;

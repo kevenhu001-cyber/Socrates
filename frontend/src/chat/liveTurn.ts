@@ -6,6 +6,7 @@
 import { stateStore } from '../state/store.ts';
 import { turnState } from './turnState.ts';
 import type { ActiveChatController, LiveTurnRuntime } from './turnState.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /** The store message the registries look turns up by. */
 export interface LiveTurnMessage {
@@ -43,7 +44,10 @@ export function retryLiveTurn(messageId?: string | null): boolean {
   const ownerId = typeof owner.owner.getClientId === 'function'
     ? owner.owner.getClientId() : owner.owner.clientId;
   if (messageId && String(ownerId || '') !== String(messageId)) return false;
-  try { owner.run(); } catch { /* the retry handler threw — the turn is unchanged */ }
+  try { owner.run(); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/liveTurn.ts:46');
+    /* the retry handler threw — the turn is unchanged */
+  }
   return true;
 }
 
@@ -121,7 +125,10 @@ export function installLiveTurnRetryListener(): void {
       /* P_tool_retry_prompt — pass the whole detail so repair prompts
          (viz-failure "Fix with AI") reach the handler alongside the
          legacy `query` field. */
-      try { handler(detail.query || '', detail); } catch { /* a failed retry is just a missed click */ }
+      try { handler(detail.query || '', detail); } catch (error) {
+        reportEmptyCatch(error, 'empty catch: chat/liveTurn.ts:124');
+        /* a failed retry is just a missed click */
+      }
     });
   }
 }

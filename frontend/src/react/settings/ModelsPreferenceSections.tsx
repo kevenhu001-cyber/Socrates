@@ -7,6 +7,7 @@ import { i18n } from '../legacy/gateway.ts';
 import { confirmClearSettings } from '../../ui/dangerConfirms.js';
 import { closeSettings } from './settings.service';
 import type { SettingsLabel, SaveSettingsPreference } from './settings.types';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 const SAVE_BTN_ID = 'saveSettingsBtn';
 
@@ -35,7 +36,8 @@ export function ImageVoiceSettingsSection({
     setImageModel(value);
     try {
       localStorage.setItem('socrates-image-model', value);
-    } catch {
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/settings/ModelsPreferenceSections.tsx:38');
       // Private browsing can disable localStorage; preference sync remains available.
     }
   };
@@ -43,7 +45,8 @@ export function ImageVoiceSettingsSection({
     setVoiceLanguage(value);
     try {
       localStorage.setItem('socrates-voice-language', value);
-    } catch {
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/settings/ModelsPreferenceSections.tsx:46');
       // Private browsing can disable localStorage; preference sync remains available.
     }
     void savePreference({ voiceLanguage: value });

@@ -126,11 +126,11 @@ export function mountQuizWidget(slot: Element, parsed: QuizMountData) {
 
 function showQuizFeedback(feedback: HTMLDivElement, buttons: HTMLButtonElement[], picked: PickedQuizOption, correct: string | null, isRight: boolean, services: WidgetRuntime) {
   const { t, esc: escape } = services;
-  buttons.forEach((button: { disabled: boolean; }) => { button.disabled = true; });
-  const chosen = buttons.find((button: { getAttribute: (arg0: string) => any; }) => button.getAttribute('data-letter') === picked.letter);
+  buttons.forEach((button) => { button.disabled = true; });
+  const chosen = buttons.find((button) => button.getAttribute('data-letter') === picked.letter);
   chosen?.classList.add('selected');
   chosen?.classList.add(isRight ? 'correct' : 'wrong');
-  if (correct && !isRight) buttons.find((button: { getAttribute: (arg0: string) => any; }) => button.getAttribute('data-letter') === correct)?.classList.add('correct');
+  if (correct && !isRight) buttons.find((button) => button.getAttribute('data-letter') === correct)?.classList.add('correct');
   if (correct) feedback.classList.add(isRight ? 'ok' : 'bad');
   feedback.textContent = correct
     ? (isRight ? t('tutor.quizCorrect') : t('tutor.quizWrong')).replace('{answer}', escape(correct))
@@ -139,7 +139,7 @@ function showQuizFeedback(feedback: HTMLDivElement, buttons: HTMLButtonElement[]
 
 function recordQuizOutcome(parsed: QuizMountData, picked: PickedQuizOption, isRight: boolean, services: WidgetRuntime) {
   if (parsed.correct && !isRight) {
-    services.recordMistake?.({ type: 'quiz', q: parsed.q, options: parsed.options.map((option: { letter: any; text: any; }) => ({ letter: option.letter, text: option.text })), correct: parsed.correct, userAnswer: picked.letter, quizSlotId: parsed.slotId || null });
+    services.recordMistake?.({ type: 'quiz', q: parsed.q, options: parsed.options.map((option) => ({ letter: option.letter, text: option.text })), correct: parsed.correct, userAnswer: picked.letter, quizSlotId: parsed.slotId || null });
   } else if (isRight && parsed.slotId) {
     services.removeMistakeForQuizSlot?.(parsed.slotId);
   }

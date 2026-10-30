@@ -42,8 +42,8 @@ export interface ToolRunnerDeps {
   toolPolicy: ToolTurnPolicy;
   onResult?: (toolCallId: string, result: import("./types.js").ToolResult) => void;
   schemaForTool: (name: string) => import('../../../services/tools/toolCallSafety.js').JsonSchemaNode | null;
-  connectorConnectionsByProvider: Record<string, any>;
-  projectConnectorConnectionsByProvider: Record<string, any>;
+  connectorConnectionsByProvider: ToolExecutorContext['connectorConnectionsByProvider'];
+  projectConnectorConnectionsByProvider: ToolExecutorContext['projectConnectorConnectionsByProvider'];
 }
 
 export type ToolRunner = (

@@ -6,6 +6,7 @@ import { getConnectorIconMarkup } from '../../../connector-icons';
 import type { PluginDetailViewProps } from './pluginDetail.types';
 import { PluginDetailHeader } from './PluginDetailHeader';
 import { PluginDetailSections } from './PluginDetailSections';
+import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
 
 export function PluginDetailView({ plugin, configured, dispatch, onBack, renderMark }: PluginDetailViewProps) {
   const isConnected = plugin.connection?.status === 'connected';
@@ -52,7 +53,8 @@ export function PluginDetailView({ plugin, configured, dispatch, onBack, renderM
         source: 'project',
       }, getConnectorIconMarkup(plugin.id) || '');
       focusComposer('topic');
-    } catch {
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/pages/workspace/PluginDetailView.tsx:55', 'expected');
       // Best effort; worst case the user lands on a plain new chat.
     }
   };

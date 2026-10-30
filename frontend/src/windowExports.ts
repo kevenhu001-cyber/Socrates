@@ -156,7 +156,7 @@ browserWindow.toggleComposerTools = toggleComposerTools;
    Lazy (~16KB): the mic button only loads the speech module when
    pressed. stopSpeechInput skips the import when speech was never
    started (module can't be mid-session if it never loaded). */
-let _voiceImport: Promise<any>|null = null;
+let _voiceImport: Promise<typeof import('./ui/voiceInput.ts')>|null = null;
 function _loadVoiceInput() {
   if (!_voiceImport) {
     _voiceImport = import('./ui/voiceInput.ts');
@@ -167,11 +167,11 @@ function _loadVoiceInput() {
   }
   return _voiceImport;
 }
-browserWindow.toggleSpeechInput = function (surface) { return _loadVoiceInput().then(function (m: { toggleSpeechInput: (arg0: string) => any; }) { return m.toggleSpeechInput(surface); }); };
-browserWindow.stopSpeechInput = function () { if (_voiceImport) return _voiceImport.then(function (m: { stopSpeechInput: () => any; }) { return m.stopSpeechInput(); }); };
+browserWindow.toggleSpeechInput = function (surface: string) { return _loadVoiceInput().then(function (m) { return m.toggleSpeechInput(surface); }); };
+browserWindow.stopSpeechInput = function () { if (_voiceImport) return _voiceImport.then(function (m) { return m.stopSpeechInput(); }); };
 /* ─── Settings React surface ───
    Lazy: Settings and its provider domain load only when opened. */
-let _settingsImport: Promise<any>|null = null;
+let _settingsImport: Promise<typeof import('./react/settings/settings.service.ts')>|null = null;
 function _loadSettingsModule() {
   if (!_settingsImport) {
     _settingsImport = import('./react/settings/settings.service.ts');
@@ -182,8 +182,8 @@ function _loadSettingsModule() {
   }
   return _settingsImport;
 }
-browserWindow.openSettings = function () { return _loadSettingsModule().then(function (m: { openSettings: () => any; }) { return m.openSettings(); }); };
-browserWindow.closeSettings = function () { if (_settingsImport) return _settingsImport.then(function (m: { closeSettings: () => any; }) { return m.closeSettings(); }); };
+browserWindow.openSettings = function () { return _loadSettingsModule().then(function (m) { return m.openSettings(); }); };
+browserWindow.closeSettings = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.closeSettings(); }); };
 
 /* ─── ui/share.ts ─── */
 /* Copy/load handlers are wired module-locally inside ui/share.ts and by
@@ -231,7 +231,7 @@ import './config/tonePresets.js';
 /* ─── agent/researchAgent.ts — Deep Research / Agent Mode ───
    Lazy (~18KB): the deep-research entry is a quick-action click, so the
    module loads on first use rather than at boot. */
-let _researchImport: Promise<any>|null = null;
+let _researchImport: Promise<typeof import('./agent/researchAgent.ts')>|null = null;
 function _loadResearchAgent() {
   if (!_researchImport) {
     _researchImport = import('./agent/researchAgent.ts');
@@ -242,8 +242,8 @@ function _loadResearchAgent() {
   }
   return _researchImport;
 }
-browserWindow.startDeepResearch = function (opts: any) { return _loadResearchAgent().then(function (m: { startDeepResearch: (arg0: any) => any; }) { return m.startDeepResearch(opts); }); };
-browserWindow.launchDeepResearch = function (opts: any) { return _loadResearchAgent().then(function (m: { launchDeepResearch: (arg0: any) => any; }) { return m.launchDeepResearch(opts); }); };
+browserWindow.startDeepResearch = function (query: string) { return _loadResearchAgent().then(function (m) { return m.startDeepResearch(query); }); };
+browserWindow.launchDeepResearch = function () { return _loadResearchAgent().then(function (m) { return m.launchDeepResearch(); }); };
 
 /* ─── attachments.js ─── */
 // attachments is a mutable array reference shared across modules
@@ -303,7 +303,7 @@ browserWindow.sleepBackoff = sleepBackoff;
    Period tab inline onclick handlers (usage.js:138-139) and heatmap cell
    inline onmouseenter/onmouseleave (usage.js:168) resolve through the
    window bridges below — they only exist once the module rendered them. */
-let _usageImport: Promise<any>|null = null;
+let _usageImport: Promise<typeof import('./ui/usage.ts')>|null = null;
 function _loadUsageModule() {
   if (!_usageImport) {
     _usageImport = import('./ui/usage.ts');
@@ -315,12 +315,12 @@ function _loadUsageModule() {
   }
   return _usageImport;
 }
-browserWindow.openUsageModal = function () { return _loadUsageModule().then(function (m: { openUsageModal: () => any; }) { return m.openUsageModal(); }); };
-browserWindow.closeUsageModal = function () { if (_usageImport) return _usageImport.then(function (m: { closeUsageModal: () => any; }) { return m.closeUsageModal(); }); };
-browserWindow.loadUsageData = function () { if (_usageImport) return _usageImport.then(function (m: { loadUsageData: () => any; }) { return m.loadUsageData(); }); };
-browserWindow.loadUsageMonth = function () { if (_usageImport) return _usageImport.then(function (m: { loadUsageMonth: () => any; }) { return m.loadUsageMonth(); }); };
-browserWindow.showUsageTip = function (ev: any) { if (_usageImport) return _usageImport.then(function (m: { showUsageTip: (arg0: any) => any; }) { return m.showUsageTip(ev); }); };
-browserWindow.hideUsageTip = function () { if (_usageImport) return _usageImport.then(function (m: { hideUsageTip: () => any; }) { return m.hideUsageTip(); }); };
+browserWindow.openUsageModal = function () { return _loadUsageModule().then(function (m) { return m.openUsageModal(); }); };
+browserWindow.closeUsageModal = function () { if (_usageImport) return _usageImport.then(function (m) { return m.closeUsageModal(); }); };
+browserWindow.loadUsageData = function () { if (_usageImport) return _usageImport.then(function (m) { return m.loadUsageData(); }); };
+browserWindow.loadUsageMonth = function () { if (_usageImport) return _usageImport.then(function (m) { return m.loadUsageMonth(); }); };
+browserWindow.showUsageTip = function (ev: Pick<Event, 'currentTarget'>) { if (_usageImport) return _usageImport.then(function (m) { return m.showUsageTip(ev); }); };
+browserWindow.hideUsageTip = function () { if (_usageImport) return _usageImport.then(function (m) { return m.hideUsageTip(); }); };
 
 
 /* ─── ui/knowledgePanel.ts ───
@@ -337,7 +337,7 @@ browserWindow.updateKB = updateKB;
    openExamModal or exam-session restore). Its domain flows live under
    src/exam/. window.__loadExamModule dedupes the import, mounts delegated
    listeners once, and exposes it for account-change resets. */
-let _examImport: Promise<any>|null = null;
+let _examImport: Promise<typeof import('./exam.ts')>|null = null;
 function _loadExamModule() {
   if (!_examImport) {
     _examImport = import('./exam.ts').then(function (m) {

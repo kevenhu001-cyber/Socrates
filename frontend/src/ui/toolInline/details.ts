@@ -22,7 +22,10 @@ function normalizeSources(results: unknown[]): SourceItem[] {
     const title = String(r.title || url || '').trim();
     if (!title) continue;
     let host = '';
-    try { if (/^https?:\/\//i.test(url)) host = new URL(url).hostname.replace(/^www\./, ''); } catch (_) { /* ignore */ }
+    try { if (/^https?:\/\//i.test(url)) host = new URL(url).hostname.replace(/^www\./, ''); } catch (_) {
+      reportSwallow(_, 'empty catch: ui/toolInline/details.ts:25', 'expected');
+      /* ignore */
+    }
     out.push({ title, url: /^https?:\/\//i.test(url) ? url : '', host });
   }
   return out;

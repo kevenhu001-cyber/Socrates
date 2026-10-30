@@ -76,14 +76,15 @@ _localEmitter.setMaxListeners(500);
 /* Topic → Set<handler>. Topic key is the full string ("exec_progress:abc-123").
    Handlers are called with the JSON-parsed payload; parse failures
    log at warn and skip. */
-const handlers = new Map();
+const handlers = new Map<string, Set<(payload: unknown) => void>>();
 
 /* Cached topics we already sent `LISTEN "topic"` for. PG is happy to
    receive repeated LISTEN commands, but we track so we don't spam the
    wire on hot subscribe paths (every SSE connect calls subscribe). */
 const listenedTopics = new Set();
 
-let pgClient: any = null;
+type PgClient = InstanceType<typeof pg.Client>;
+let pgClient: PgClient | null = null;
 let pgConnectPromise: Promise<void> | null = null;
 let reconnectAttempt = 0;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -105,12 +106,12 @@ let shuttingDown = false;
  * @param {object} [opts]
  * @param {boolean} [opts.local]  force the local emitter (bypass PG)
  */
-export async function publish(topic: string, payload: any, opts: { local?: boolean } = {}) {
+export async function publish(topic: string, payload: unknown, opts: { local?: boolean } = {}) {
   if (!isValidTopic(topic)) {
     logger.child({ module: 'pubsub' }).warn('publish_invalid_topic', { topic });
     return;
   }
-  const json = JSON.stringify(payload || {});
+  const json = JSON.stringify(payload || {}) ?? 'null';
   if (json.length > MAX_PAYLOAD_BYTES) {
     // Truncate rather than throw — losing the trailing chunk of a
     // huge stdout buffer is acceptable; losing the whole event
@@ -165,7 +166,7 @@ async function publishRaw(topic: string, json: string, forceLocal: boolean) {
  * @param {string} topic
  * @param {function} handler  called with the JSON-parsed payload
  */
-export async function subscribe(topic: string, handler: (payload: any) => void) {
+export async function subscribe(topic: string, handler: (payload: unknown) => void) {
   if (!isValidTopic(topic)) {
     throw new Error(`pubsub.subscribe: invalid topic "${topic}" (must start with one of: ${ALLOWED_TOPIC_PREFIXES.join(', ')})`);
   }
@@ -179,15 +180,19 @@ export async function subscribe(topic: string, handler: (payload: any) => void) 
 
   // Add to the in-process handler map first so an event that fires
   // between subscribe() and LISTEN isn't lost.
-  if (!handlers.has(enc)) handlers.set(enc, new Set());
-  handlers.get(enc).add(handler);
+  let topicHandlers = handlers.get(enc);
+  if (!topicHandlers) {
+    topicHandlers = new Set();
+    handlers.set(enc, topicHandlers);
+  }
+  topicHandlers.add(handler);
 
   // Ensure PG is listening on this topic. If the connection isn't up
   // yet, subscribe is still valid (the local emitter will fire while
   // we wait); once PG is ready we'll attach the LISTEN.
-  await ensureListener().catch((err) => {
+  await ensureListener().catch((err: unknown) => {
     logger.child({ module: 'pubsub', op: 'subscribe' }).warn('ensure_listener_failed', {
-      topic, error: err.message,
+      topic, error: err instanceof Error ? err.message : String(err),
     });
   });
 
@@ -210,11 +215,15 @@ export async function subscribe(topic: string, handler: (payload: any) => void) 
  * regardless of PG state. Used by the test harness. NOT for production
  * callers.
  */
-export function subscribeLocal(topic: string, handler: (payload: any) => void) {
+export function subscribeLocal(topic: string, handler: (payload: unknown) => void) {
   if (!isValidTopic(topic)) throw new Error(`invalid topic ${topic}`);
   const enc = encodeChannel(topic);
-  if (!handlers.has(enc)) handlers.set(enc, new Set());
-  handlers.get(enc).add(handler);
+  let topicHandlers = handlers.get(enc);
+  if (!topicHandlers) {
+    topicHandlers = new Set();
+    handlers.set(enc, topicHandlers);
+  }
+  topicHandlers.add(handler);
   return function unsubscribe() {
     const set = handlers.get(enc);
     if (!set) return;
@@ -357,11 +366,11 @@ async function safeListen(topic: string) {
   }
 }
 
-function onNotification(msg: { channel: string; payload?: string }) {
+function onNotification(msg: { channel: string; payload?: string | null }) {
   /* P_pg-channel-identifier — msg.channel arrives in encoded form
      (matches the key used by subscribe()). No re-encode needed. */
   const enc = msg.channel;
-  let payload;
+  let payload: unknown;
   try {
     payload = msg.payload ? JSON.parse(msg.payload) : {};
   } catch (err) {

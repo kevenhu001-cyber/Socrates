@@ -1,6 +1,8 @@
 import type { CreationName, CreationSnapshot } from '../react/creation/CreationSurface.tsx';
 type SurfaceName = CreationName;
-interface CreationItem { id: string; source: string; title: string; [key: string]: unknown }
+interface CreationItem { id: string; source: string; title: string; name?: string; [key: string]: unknown }
+interface CreationApiItem { id: string; source?: string; title?: string; name?: string; [key: string]: unknown }
+interface CreationCollectionResponse { images?: CreationApiItem[]; items?: CreationApiItem[] }
 interface CreationState {
  images: CreationItem[]; assistants: CreationItem[]; sites: CreationItem[];
  page: SurfaceName | null; loading: boolean; error: string;
@@ -28,9 +30,12 @@ const state: CreationState = { images: [], assistants: [], sites: [], page: null
 const lang = () => browserWindow._currentLang === 'en' ? 'en' : 'zh';
 const t = (key: string) => copy[lang()][key] || key;
 const panel = (name: SurfaceName) => document.getElementById(`${name}Panel`);
-const api = (url: string, options?: Parameters<typeof browserWindow.apiFetch>[1]) => browserWindow.apiFetch(url, options);
+const api = <T = unknown>(url: string, options?: Parameters<typeof browserWindow.apiFetch>[1]): Promise<T> => browserWindow.apiFetch<T>(url, options);
 const notice = (message: string) => typeof browserWindow.showToast === 'function' ? browserWindow.showToast(message) : browserWindow.alert(message);
 const imageUrl = (id: string|number|boolean) => `/api/files/${encodeURIComponent(id)}/raw`;
+function normalizeCreationItem(item: CreationApiItem): CreationItem {
+  return { ...item, title: item.title || item.name || '', source: item.source || '' };
+}
 
 function snapshot(name: SurfaceName): CreationSnapshot {
   return {
@@ -95,8 +100,9 @@ async function load(name: SurfaceName) {
   state.loading = true; state.error = ''; render(name);
   try {
     const url = name === 'images' ? '/api/creations/images' : `/api/creations/items/${name}`;
-    const result = await api(url);
-    state[name] = name === 'images' ? result.images || [] : result.items || [];
+    const result = await api<CreationCollectionResponse>(url);
+    const rows = name === 'images' ? result.images || [] : result.items || [];
+    state[name] = rows.map(normalizeCreationItem);
   } catch { state.error = t('error'); }
   state.loading = false; render(name);
 }
@@ -137,7 +143,10 @@ async function useAssistant(item: CreationItem) {
   if (didReset === false) return;
   sessionStorage.setItem('socrates-active-assistant', item.id);
   let starter = '';
-  try { starter = JSON.parse(item.source).starter || ''; } catch { /* assistants can have an empty draft */ }
+  try { starter = JSON.parse(item.source).starter || ''; } catch (error) {
+    reportSwallow(error, 'empty catch: ui/creationSurfaces.ts:140');
+    /* assistants can have an empty draft */
+  }
   const composer = browserWindow.__socratesComposerController;
   if (starter) composer?.setMarkdown('topic', starter);
   composer?.focus('topic');
@@ -150,7 +159,7 @@ async function generateSite(button: HTMLButtonElement, name: SurfaceName) {
   button.disabled = true;
   button.textContent = t('loading');
   try {
-    const result = await api('/api/creations/sites/generate', { method: 'POST', body: { prompt } });
+    const result = await api<{ source?: string }>('/api/creations/sites/generate', { method: 'POST', body: { prompt } });
     form!.elements.source.value = result.source || '';
   } catch (error) {
     notice((error as Error)?.message || t('error'));
@@ -186,7 +195,7 @@ function clickHandlers(name: SurfaceName, button: Pick<HTMLButtonElement, "datas
 async function runAction(name: SurfaceName, action: string, detail: CreationAction = {}) {
   const button = detail.button || { dataset: { id: detail.id, view: detail.view } };
   if (['close', 'edit', 'new'].includes(action)) closeDetailSurface('site-preview');
-  const item = state[name].find((entry: { id: any; }) => entry.id === button.dataset.id);
+  const item = state[name].find((entry) => entry.id === button.dataset.id);
   const handlers = clickHandlers(name, button, item);
   const handler = (handlers as Record<string, (() => unknown) | undefined>)[action];
   return handler?.();
@@ -211,7 +220,7 @@ async function submitImageForm(form: CreationForm) {
 
 async function publishSite(saved: CreationItem, form: CreationForm) {
   const visibility = form.elements.visibility.value;
-  const published = await api(`/api/creations/sites/${saved.id}/publish`, { method: 'POST', body: { visibility } });
+  const published = await api<{ url?: string | null }>(`/api/creations/sites/${saved.id}/publish`, { method: 'POST', body: { visibility } });
   if (!published.url) return;
   const publishedUrl = new URL(published.url, location.origin).href;
   let copied = false;
@@ -233,7 +242,7 @@ async function submitEditorForm(name: SurfaceName, form: CreationForm) {
     ? JSON.stringify({ description: form.elements.description.value.trim(), instructions: form.elements.instructions.value.trim(), starter: form.elements.starter.value.trim() })
     : form.elements.source.value;
   const url = `/api/creations/items/${name}${item ? `/${item.id}` : ''}`;
-  const saved = await api(url, { method: item ? 'PATCH' : 'POST', body: { title, source } });
+  const saved = normalizeCreationItem(await api<CreationApiItem>(url, { method: item ? 'PATCH' : 'POST', body: { title, source } }));
   if (name === 'sites') await publishSite(saved, form);
   state.editor = null;
 }

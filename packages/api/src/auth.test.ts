@@ -99,10 +99,27 @@ test('truncated SSE rejects and releases its reader', async () => {
   await assert.rejects(readChatStream(response, { onDelta: (t) => text += t }), /before the response finished/);
   assert.equal(text, 'partial'); assert.equal(response.body!.locked, false);
 });
-test('server stream errors do not become successful done', async () => {
+test('server stream errors retain structured status and retry metadata', async () => {
   let done = 0;
-  await assert.rejects(readChatStream(new Response('event: error\ndata: {"message":"provider failed"}\n\ndata: [DONE]\n\n'), { onDone: () => done++ }), /provider failed/);
+  const response = new Response('event: error\ndata: {"status":400,"code":"MODEL_MODE_UNSUPPORTED","message":"This model cannot use Instant mode.","retryable":false,"upstreamStatus":400,"retryAfterMs":0}\n\ndata: [DONE]\n\n');
+  await assert.rejects(readChatStream(response, { onDone: () => done++ }), (error: unknown) => {
+    assert.ok(error instanceof ApiError);
+    assert.equal(error.status, 400);
+    assert.equal(error.code, 'MODEL_MODE_UNSUPPORTED');
+    assert.equal(error.message, 'This model cannot use Instant mode.');
+    assert.equal(error.retryable, false);
+    assert.equal(error.upstreamStatus, 400);
+    assert.equal(error.retryAfterMs, 0);
+    return true;
+  });
   assert.equal(done, 0);
+});
+
+test('legacy message-only stream errors retain the 502 fallback', async () => {
+  await assert.rejects(
+    readChatStream(new Response('event: error\ndata: {"message":"provider failed"}\n\n'), {}),
+    (error: unknown) => error instanceof ApiError && error.status === 502 && error.message === 'provider failed',
+  );
 });
 test('sessions.list follows nextCursor and remove accepts real 204', async () => {
   let calls = 0;

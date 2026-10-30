@@ -14,6 +14,7 @@ import { getActiveProvider } from '../pickers.ts';
 import { generateId } from '../util/ids.ts';
 import { streamRetryViewport } from './turnState.ts';
 import { updateKB } from '../ui/knowledgePanel.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 function _renderAssistantHtml(text: string): string {
   const shell = window as { renderAssistantHTML?: (t: string) => string };
@@ -126,18 +127,30 @@ function publishMessageSideEffects(
   try {
     if (role === 'user' || role === 'assistant') {
       // empty-catch: intentional — local memory must not block the message append.
-      try { appendLocalMemory(role, typeof text === 'string' ? text : null); } catch { /* best effort */ }
+      try { appendLocalMemory(role, typeof text === 'string' ? text : null); } catch (error) {
+        reportEmptyCatch(error, 'empty catch: chat/messages.ts:129', 'expected');
+        /* best effort */
+      }
     }
     if (role === 'assistant') {
       if (stateStore.read('phase') === 'chat' || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
         const shell = window as { saveCurrentSession?: () => void };
-        try { if (typeof shell.saveCurrentSession === 'function') shell.saveCurrentSession(); } catch { /* best effort */ }
+        try { if (typeof shell.saveCurrentSession === 'function') shell.saveCurrentSession(); } catch (error) {
+          reportEmptyCatch(error, 'empty catch: chat/messages.ts:134', 'expected');
+          /* best effort */
+        }
       }
     }
     if (role === 'user' && shouldUpdateKnowledgeNode) {
-      try { updateKB(); } catch { /* best effort */ }
+      try { updateKB(); } catch (error) {
+        reportEmptyCatch(error, 'empty catch: chat/messages.ts:138', 'expected');
+        /* best effort */
+      }
     }
-  } catch { /* side effects are best effort */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/messages.ts:140', 'expected');
+    /* side effects are best effort */
+  }
 }
 
 export function addMessage(

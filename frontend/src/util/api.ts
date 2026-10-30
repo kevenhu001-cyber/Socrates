@@ -124,11 +124,10 @@ export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): P
 /**
  * Fetch and parse a JSON API response.
  *
- * The body is untyped by default (`T = any`) because the ~60 legacy call
- * sites read ad-hoc shapes from it; typed callers pass an explicit `T`.
+ * The body is unknown by default. Callers that consume fields must declare
+ * the response shape they expect or narrow the value at the API boundary.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function apiFetch<T = any>(path: string, opts: ApiRequestOptions = {}): Promise<T> {
+export async function apiFetch<T = unknown>(path: string, opts: ApiRequestOptions = {}): Promise<T> {
   const request = prepareApiRequest(path, opts, { cacheBustGet: true });
   const userSignal = opts.signal || null;
   const linkedSignal = linkAbortSignal(userSignal, 'util/api.apiFetch');

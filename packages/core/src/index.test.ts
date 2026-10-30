@@ -90,6 +90,25 @@ describe('@socrates/core', () => {
     assert.deepEqual(errors, ['inner-error', 'primary-message', 'bare-string']);
   });
 
+  it('preserves curated error status, code, retry, and cooldown metadata', () => {
+    const details: unknown[] = [];
+    const handlers = {
+      onError: (_message: string, error?: unknown) => details.push(error),
+    };
+    dispatchChatSseFrame(
+      'event: error\ndata: {"status":429,"code":"LLM_RATE_LIMITED","message":"Try again later","retryable":false,"upstreamStatus":429,"retryAfterMs":2500}\n\n',
+      handlers,
+    );
+    assert.deepEqual(details, [{
+      message: 'Try again later',
+      status: 429,
+      code: 'LLM_RATE_LIMITED',
+      retryable: false,
+      upstreamStatus: 429,
+      retryAfterMs: 2500,
+    }]);
+  });
+
   it('routes content and reasoning_content deltas independently in the same frame', () => {
     const content: string[] = [];
     const reasoning: string[] = [];

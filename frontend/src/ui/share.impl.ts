@@ -37,11 +37,59 @@ interface SharedMessage extends MessageEntry {
 }
 interface SharedExamQuestion { type: string; q?: unknown; opts?: unknown[] }
 interface SharedExamData { questions?: SharedExamQuestion[]; answers?: Record<string, unknown>; submitted?: boolean; topic?: string }
+interface SharedSession {
+  id: string;
+  topic?: string;
+  title?: string;
+  domain?: string;
+  kind?: string;
+  messages: SharedMessage[];
+  examData?: SharedExamData;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function parseSharedSession(value: unknown): SharedSession | null {
+  if (!isRecord(value) || typeof value.id !== 'string') return null;
+  const messages = Array.isArray(value.messages) ? value.messages.flatMap((message): SharedMessage[] => {
+    if (!isRecord(message) || typeof message.role !== 'string') return [];
+    return [{
+      id: typeof message.id === 'string' ? message.id : undefined,
+      role: message.role,
+      rawText: typeof message.rawText === 'string' ? message.rawText : undefined,
+      content: message.content,
+      html: typeof message.html === 'string' ? message.html : undefined,
+      reasoningContent: message.reasoningContent,
+      toolCalls: Array.isArray(message.toolCalls) ? message.toolCalls as SharedMessage['toolCalls'] : [],
+    }];
+  }) : [];
+  const rawExam = isRecord(value.examData) ? value.examData : null;
+  const examData = rawExam ? {
+    questions: Array.isArray(rawExam.questions) ? rawExam.questions.flatMap((question): SharedExamQuestion[] => {
+      if (!isRecord(question) || typeof question.type !== 'string') return [];
+      return [{ type: question.type, q: question.q, opts: Array.isArray(question.opts) ? question.opts : undefined }];
+    }) : [],
+    answers: isRecord(rawExam.answers) ? rawExam.answers : undefined,
+    submitted: typeof rawExam.submitted === 'boolean' ? rawExam.submitted : undefined,
+    topic: typeof rawExam.topic === 'string' ? rawExam.topic : undefined,
+  } : undefined;
+  return {
+    id: value.id,
+    topic: typeof value.topic === 'string' ? value.topic : undefined,
+    title: typeof value.title === 'string' ? value.title : undefined,
+    domain: typeof value.domain === 'string' ? value.domain : undefined,
+    kind: typeof value.kind === 'string' ? value.kind : undefined,
+    messages,
+    examData,
+  };
+}
 
 
-let _shareSessionId: unknown = null;
+let _shareSessionId: string | null = null;
 let _shareVisibility = "public";
-let _shareToken: null = null;
+let _shareToken: string | null = null;
 let _shareUrl = "";
 let _shareStatus = "";
 let _shareError = "";
@@ -61,7 +109,10 @@ function _publishShareState() {
         error: _shareError,
       });
     }
-  } catch (_) { /* swallow — bridge is best-effort */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: ui/share.impl.ts:64', 'expected');
+    /* swallow — bridge is best-effort */
+  }
 }
 
 /* React owns the share modal unconditionally under the always-on
@@ -90,7 +141,7 @@ function toggleShareBtn() {
   }
 }
 
-function openShareModal(sessionId: any) {
+function openShareModal(sessionId?: string) {
   _shareSessionId = typeof sessionId === "string" ? sessionId : browserWindow.stateStore.read("currentSessionId");
   const overlay = document.getElementById("shareOverlay");
   if (!overlay) return;
@@ -134,7 +185,7 @@ async function createShareLink() {
   _setShareError("");
   _setShareStatus("Creating share link…");
   try {
-    const r = await apiFetch("/api/sessions/" + encodeURIComponent(sessionId) + "/share", {
+    const r = await apiFetch<{ token?: string }>("/api/sessions/" + encodeURIComponent(sessionId) + "/share", {
       method: "POST",
       body: { visibility: _shareVisibility },
     });
@@ -308,11 +359,11 @@ function prepareSharedMessageList(msgList: HTMLElement) {
   msgList.innerHTML = "";
 }
 
-function _renderSharedMessageList(messages: any) {
+function _renderSharedMessageList(messages: SharedMessage[]) {
   const msgList = document.getElementById("msgList");
   if (!msgList) return;
   prepareSharedMessageList(msgList);
-  (messages || []).forEach(function (message: any) {
+  messages.forEach(function (message) {
     if (message) msgList.appendChild(renderSharedMessage(message));
   });
 }
@@ -351,13 +402,14 @@ function _switchToSharedChatView() {
   }
 }
 
-function restoreSharedMessage(message: { id: any; role: any; rawText: any; content: any; reasoningContent: any; toolCalls: any; }) {
+function restoreSharedMessage(message: SharedMessage) {
+  const rawText = typeof message.rawText === 'string' ? message.rawText : typeof message.content === 'string' ? message.content : '';
   return {
     clientId: message.id || ("shared-" + Math.random().toString(36).slice(2, 10)),
     role: message.role || "user",
     /* rawText is the markdown the inline tool rows are spliced into, so
        keep it distinct from the rendered `content` snapshot. */
-    rawText: message.rawText || message.content || "",
+    rawText: rawText,
     html: "",
     type: message.role || "user",
     reasoningContent: message.reasoningContent || null,
@@ -366,7 +418,7 @@ function restoreSharedMessage(message: { id: any; role: any; rawText: any; conte
   };
 }
 
-function installSharedSessionState(session: { topic: any; id: any; title: any; domain: any; messages: any; }) {
+function installSharedSessionState(session: SharedSession) {
   stateStore.dispatch({ type: 'state/batch', patch: {
     topic: session.topic || '',
     currentSessionId: session.id,
@@ -378,7 +430,7 @@ function installSharedSessionState(session: { topic: any; id: any; title: any; d
   });
 }
 
-function showSharedChatSession(session: { messages: any; }) {
+function showSharedChatSession(session: SharedSession) {
   _switchToSharedChatView();
   _renderSharedMessageList(session.messages || []);
   document.documentElement.dataset.bootState = "app";
@@ -399,8 +451,9 @@ function recoverFailedSharedSessionLoad() {
 async function loadSharedSession(token: string|number|boolean) {
   if (!token) return;
   try {
-    const session = await apiFetch("/api/shares/" + encodeURIComponent(token), { _authEndpoint: true });
-    if (!session || !session.id) throw new Error("Invalid response");
+    const response = await apiFetch<unknown>("/api/shares/" + encodeURIComponent(token), { _authEndpoint: true });
+    const session = parseSharedSession(response);
+    if (!session) throw new Error("Invalid response");
     installSharedSessionState(session);
     if (session.kind === "exam" && session.examData) {
       /* Awaited so a render failure lands in the catch below (toast + gate
@@ -442,7 +495,7 @@ function prepareSharedExamChrome(session: { topic?: string }, exam: SharedExamDa
   document.body.classList.add("exam-active");
 }
 
-function renderSharedExamQuestions(questions: any[]) {
+function renderSharedExamQuestions(questions: SharedExamQuestion[]) {
   const body = document.getElementById("examViewLegacyBody") || document.getElementById("examViewBody");
   if (!body) return;
   body.innerHTML = '<div id="examQuestionsContainer"></div>';
@@ -473,7 +526,7 @@ function revealSharedExam() {
   document.documentElement.dataset.bootState = "app";
 }
 
-async function loadSharedExamSession(session: { examData: SharedExamData; topic?: string }) {
+async function loadSharedExamSession(session: SharedSession) {
   if (!session) return;
   try {
     const examModule = await browserWindow.__loadExamModule?.();

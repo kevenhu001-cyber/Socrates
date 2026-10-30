@@ -8,6 +8,11 @@ export interface ChartInstance {
   dispatchAction(action: Record<string, unknown>): void;
   getDataURL(options: Record<string, unknown>): string;
 }
+export interface GeoGebraApi {
+  evalCommand(command: string): boolean;
+  setCoordSystem(xMin: number, xMax: number, yMin: number, yMax: number): void;
+  getPNGBase64(scale: number, transparent: boolean, dpi: number): string;
+}
 /** Narrow interfaces for the self-hosted classic-script renderers. */
 export interface MermaidRuntime {
   initialize(options: Record<string, unknown>): void;
@@ -22,5 +27,11 @@ export interface VendorGlobals {
   hljs: typeof import('highlight.js').default;
   katex: { renderToString(source: string, options?: Record<string, unknown>): string; render(source: string, target: Element, options?: Record<string, unknown>): void };
   echarts: { init(target: HTMLElement, theme?: string | null, options?: Record<string, unknown>): ChartInstance };
-  Plotly: { newPlot(target: HTMLElement | string, data: unknown[], layout?: unknown, config?: unknown): Promise<unknown>; purge(target: HTMLElement | string): void; react(target: HTMLElement | string, data: unknown[], layout?: unknown, config?: unknown): Promise<unknown> };
+  Plotly: {
+    newPlot(target: HTMLElement | string, data: unknown[], layout?: unknown, config?: unknown): Promise<unknown>;
+    purge(target: HTMLElement | string): void;
+    react(target: HTMLElement | string, data: unknown[], layout?: unknown, config?: unknown): Promise<unknown>;
+    relayout(target: HTMLElement | string, update: Record<string, unknown>): Promise<unknown>;
+    toImage(target: HTMLElement | string, options?: Record<string, unknown>): Promise<string>;
+  };
 }

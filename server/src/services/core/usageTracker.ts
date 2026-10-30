@@ -8,7 +8,7 @@
  *      the `usage` object on a non-streaming response or from the final
  *      `stream_options.include_usage` frame of a stream. These are exact.
  *
- *   2. `estimate` — the chars/4 approximation below, used only when the
+ *   2. `estimate` — a conservative text heuristic used only when the
  *      provider reported nothing. Some OpenAI-compatible gateways ignore
  *      `stream_options`, and a stream aborted mid-flight never reaches the
  *      usage frame, so the fallback has to stay.
@@ -88,14 +88,13 @@ export function normalizeProviderUsage(raw: unknown): NormalizedUsage | null {
 export const IMAGE_TOKEN_ESTIMATE = 765;
 
 export function estimateTokens(text: unknown): number {
-  if (!text) return 0;
-  return Math.max(1, Math.round(String(text).length / 4));
+  return estimateContextTokens(text);
 }
 
-/** Conservative context planning heuristic, separate from the historical
- * billing fallback. ASCII uses ceil(chars/4); non-ASCII uses ceil(UTF-8 bytes/2)
- * so Chinese, Japanese and emoji are not budgeted as English prose. This is
- * not a provider tokenizer or a price estimate; provider usage stays canonical. */
+/** Conservative fallback heuristic for both context planning and estimated
+ * usage. ASCII uses ceil(chars/4); non-ASCII uses ceil(UTF-8 bytes/2) so
+ * Chinese, Japanese and emoji are not budgeted as English prose. This is not
+ * a provider tokenizer or an exact price estimate; provider usage stays canonical. */
 export function estimateContextTokens(text: unknown): number {
   if (!text) return 0;
   const value = String(text);

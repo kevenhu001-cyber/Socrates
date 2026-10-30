@@ -13,6 +13,7 @@ import {
   flushDeferredMessageRows,
   restoreDeferredMessageRows,
 } from '../message-list/deferredRows';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 let _findMatches: HTMLElement[] = [];
 let _findIndex = -1;
@@ -50,7 +51,10 @@ function clearHighlights(): void {
       const parent = m.parentNode;
       if (!parent) return;
       parent.replaceChild(document.createTextNode(m.textContent || ''), m);
-      try { parent.normalize(); } catch (_) { /* ignore */ }
+      try { parent.normalize(); } catch (_) {
+        reportEmptyCatch(_, 'empty catch: react/find-in-session/findHighlight.ts:53', 'expected');
+        /* ignore */
+      }
     });
   }
   _findMatches = [];
@@ -62,7 +66,10 @@ function highlightTextNodes(query: string): { matchCount: number } {
   _findQuery = query;
   const list = msgList();
   if (!_findQuery || !list) {
-    try { restoreDeferredMessageRows(); } catch { /* empty-catch: best-effort bounded restore. */ }
+    try { restoreDeferredMessageRows(); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/find-in-session/findHighlight.ts:65', 'expected');
+      /* empty-catch: best-effort bounded restore. */
+    }
     return { matchCount: 0 };
   }
   /* The normal transcript is a bounded DOM window. Search explicitly opts
@@ -107,7 +114,10 @@ function setActive(i: number): void {
   if (el) {
     el.classList.add('find-hl-active');
     try { el.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }); }
-    catch (_) { try { el.scrollIntoView(); } catch (__) { /* ignore */ } }
+    catch (_) { try { el.scrollIntoView(); } catch (__) {
+      reportEmptyCatch(__, 'empty catch: react/find-in-session/findHighlight.ts:110', 'expected');
+      /* ignore */
+    } }
   }
 }
 
@@ -129,5 +139,8 @@ export function navigatePrev(): { matchCount: number; activeIndex: number } {
 export function closeHighlights(): void {
   clearHighlights();
   _findQuery = '';
-  try { restoreDeferredMessageRows(); } catch { /* empty-catch: closing search must remain safe. */ }
+  try { restoreDeferredMessageRows(); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/find-in-session/findHighlight.ts:132');
+    /* empty-catch: closing search must remain safe. */
+  }
 }

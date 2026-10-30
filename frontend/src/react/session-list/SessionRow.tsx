@@ -7,6 +7,7 @@ import { safeId } from './sessionListModel';
 import { SessionRowDetails } from './SessionRowDetails';
 import { SessionRowMenu } from './SessionRowMenu';
 import { useSessionRowActions } from './useSessionRowActions';
+import type { SessionRowMenuProps } from './types';
 
 export interface SessionRowProps {
   session: SessionItem;
@@ -20,6 +21,31 @@ export interface SessionRowProps {
   onDelete: (id: string, event: React.MouseEvent) => void;
   onDragStart: (event: React.DragEvent, id: string) => void;
   onDragEnd: (event: React.DragEvent) => void;
+}
+
+function SessionRowActionMenu(props: Omit<SessionRowMenuProps, 'trigger'>) {
+  return (
+    <SessionRowMenu
+      {...props}
+      trigger={<UiButton
+        className="btn-icon recent-item-overflow"
+        type="button"
+        title={t('session.moreActions')}
+        aria-label={t('session.moreActions')}
+        aria-haspopup="menu"
+        aria-expanded={props.open}
+        data-i18n-title="session.moreActions"
+        data-i18n-aria="session.moreActions"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="5" cy="12" r="2.1" />
+          <circle cx="12" cy="12" r="2.1" />
+          <circle cx="19" cy="12" r="2.1" />
+        </svg>
+      </UiButton>}
+    />
+  );
 }
 
 function SessionRowBase({
@@ -102,26 +128,7 @@ function SessionRowBase({
         onCancelRename={() => setRenaming(false)}
       />
       <div className="recent-item-actions">
-        <SessionRowMenu
-          trigger={<UiButton
-          className="btn-icon recent-item-overflow"
-          type="button"
-          title={t('session.moreActions')}
-          aria-label={t('session.moreActions')}
-          aria-haspopup="menu"
-          aria-expanded={actionsOpen}
-          data-i18n-title="session.moreActions"
-          data-i18n-aria="session.moreActions"
-          onClick={(event) => {
-            event.stopPropagation();
-          }}
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <circle cx="5" cy="12" r="2.1" />
-            <circle cx="12" cy="12" r="2.1" />
-            <circle cx="19" cy="12" r="2.1" />
-          </svg>
-        </UiButton>}
+        <SessionRowActionMenu
           session={session}
           open={actionsOpen}
           onOpenChange={setMenuOpen}

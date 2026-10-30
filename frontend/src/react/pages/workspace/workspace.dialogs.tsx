@@ -28,6 +28,7 @@ import {
   saveScheduledTask,
 } from '../scheduled/scheduled.service';
 import { useScheduledStore } from '../scheduled/scheduled.store';
+import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
 
 type Api = NonNullable<ReturnType<typeof getApiFetch>>;
 
@@ -139,7 +140,10 @@ function bindProjectForm(dialog: HTMLDivElement, project: CachedProject | null):
     try {
       await saveProjectRecord(project?.id || null, data);
       closeWorkspaceDialog();
-    } catch { /* service already reports the save failure */ }
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/pages/workspace/workspace.dialogs.tsx:142');
+      /* service already reports the save failure */
+    }
   });
   if (!project) return;
   dialog.querySelector('[data-action="delete-project"]')?.addEventListener('click', async () => {
@@ -214,7 +218,8 @@ async function loadLibraryFileContent(id: string): Promise<void> {
   const body = byId('libraryFilePreviewBody');
   if (!body) return;
   try {
-    const result = await api()('/api/files/' + encodeURIComponent(id) + '/content');
+    const request = api();
+    const result = await request<{ ok?: boolean; error?: string; text?: string; truncated?: boolean }>('/api/files/' + encodeURIComponent(id) + '/content');
     if (byId('libraryFilePreviewBody') !== body) return;
     if (!result || result.ok === false) throw new Error(result?.error || i18n('library.preview.failed', 'Could not load this file.'));
     body.innerHTML = `<pre class="library-file-preview-text">${escapeHtml(result.text || '')}</pre>${result.truncated ? `<p class="workspace-note library-file-preview-note">${i18n('library.preview.truncated', 'Only the first part of this file is shown.')}</p>` : ''}`;
@@ -398,7 +403,8 @@ function bindScheduledTaskForm(
   const agentSelect = form.elements.namedItem('agentKind') as HTMLSelectElement;
   agentSelect.value = task?.agentKind || 'native';
   (form.elements.namedItem('projectId') as HTMLSelectElement).value = String(activeProjectId);
-  void api()('/api/agent-runs/capabilities').then((capabilities) => {
+  const request = api();
+  void request<{ background?: boolean }>('/api/agent-runs/capabilities').then((capabilities) => {
     if (capabilities?.background === false) {
       const codex = agentSelect.querySelector<HTMLOptionElement>('option[value="codex"]');
       if (codex) codex.disabled = true;
@@ -420,7 +426,10 @@ function bindScheduledTaskForm(
     else delete body.nextRunAt;
     if (!body.projectId) body.projectId = null;
     try { await saveScheduledTask(task?.id || null, body); closeWorkspaceDialog(); }
-    catch { /* service already reports the save failure */ }
+    catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/pages/workspace/workspace.dialogs.tsx:423');
+      /* service already reports the save failure */
+    }
   });
 }
 

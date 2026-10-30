@@ -74,6 +74,7 @@ export default tseslint.config(
       // Auto-fixable (eslint --fix removes the unused specifiers).
       'unused-imports/no-unused-imports': 'error',
       'no-unused-vars': ['error', UNUSED_VARS_OPTIONS],
+      '@typescript-eslint/no-explicit-any': 'error',
       // Backlog rules: report-only until the counts are driven to zero.
       'no-empty': 'warn',
       'no-prototype-builtins': 'warn',
@@ -102,7 +103,6 @@ export default tseslint.config(
       // (no files scope) at error severity; JS files use the core rule and
       // the TS override below re-enables it for TS files only.
       '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-empty-function': 'warn',
       '@typescript-eslint/no-require-imports': 'warn',
       '@typescript-eslint/no-unused-expressions': 'warn',

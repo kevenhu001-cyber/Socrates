@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+
 // Desktop/hardware-keyboard visibility assist.
 //
 // Mobile software-keyboard movement is owned exclusively by ui/keyboard.
@@ -84,7 +86,10 @@ function onFocusIn(): void {
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = null;
-    try { ensureTopicComposerVisible(); } catch { /* detached focus target is no longer scrollable */ }
+    try { ensureTopicComposerVisible(); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: ui/topicFocusAssist.ts:87');
+      /* detached focus target is no longer scrollable */
+    }
   }, FOCUS_SETTLE_MS);
 }
 

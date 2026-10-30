@@ -8,6 +8,7 @@ import {
 } from './attachments.bridge';
 import { AttachmentChip } from './AttachmentChip';
 import { syncComposerShellFlags } from '../../ui/composerShape.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 const CHIPS_ID = 'composerAttachmentChips';
 
@@ -44,7 +45,10 @@ function ChipsRow({ targetId }: ChipsRowProps) {
         const fallback = document.getElementById('composerInputWrap');
         if (fallback) syncComposerShellFlags(fallback);
       }
-    } catch (_) { /* detached shell */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/attachments/AttachmentChipsRow.tsx:47');
+      /* detached shell */
+    }
   }, [attachments.length, targetId]);
 
   const chips = useMemo(

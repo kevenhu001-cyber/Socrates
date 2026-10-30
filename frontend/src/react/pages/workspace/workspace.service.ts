@@ -163,9 +163,10 @@ export async function deleteLibraryFile(id: string): Promise<void> {
 
 export async function saveProjectRecord(projectId: string | null, data: Record<string, unknown>): Promise<void> {
   try {
+    const request = api();
     const saved = projectId
-      ? await api()('/api/projects/' + encodeURIComponent(projectId), { method: 'PATCH', body: data })
-      : await api()('/api/projects', { method: 'POST', body: data });
+      ? await request<CachedProject | { project: CachedProject }>('/api/projects/' + encodeURIComponent(projectId), { method: 'PATCH', body: data })
+      : await request<CachedProject | { project: CachedProject }>('/api/projects', { method: 'POST', body: data });
     const current = [...getCachedProjects()];
     const record = saved && typeof saved === 'object' && 'project' in saved ? (saved as { project: CachedProject }).project : saved;
     if (projectId) setCachedProjects(current.map((project) => project.id === projectId ? { ...project, ...record } : project));
@@ -191,7 +192,8 @@ export async function deleteProjectRecord(id: string): Promise<void> {
 
 export async function connectProjectPlugin(id: string): Promise<void> {
   try {
-    const result = await api()('/api/project-connectors/' + encodeURIComponent(id) + '/connect', { method: 'POST' });
+    const request = api();
+    const result = await request<{ status?: string; authorizationUrl?: string }>('/api/project-connectors/' + encodeURIComponent(id) + '/connect', { method: 'POST' });
     if (result && result.status === 'connected') {
       await loadPluginsData();
       toast('App connected');
@@ -217,7 +219,8 @@ export async function refreshProjectPlugin(id: string): Promise<void> {
 
 export async function submitProjectPluginCredentials(id: string, body: Record<string, unknown>): Promise<void> {
   try {
-    const result = await api()('/api/project-connectors/' + encodeURIComponent(id) + '/connect', { method: 'POST', body });
+    const request = api();
+    const result = await request<{ status?: string; error?: string }>('/api/project-connectors/' + encodeURIComponent(id) + '/connect', { method: 'POST', body });
     if (!result || result.status !== 'connected') throw new Error(result?.error || 'Could not connect.');
     await loadPluginsData();
   } catch (error) {

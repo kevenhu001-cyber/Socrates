@@ -16,10 +16,9 @@ import {
   renderPromptTemplatesModal,
 } from '../../ui/promptTemplates.ts';
 import {
-  installPromptTemplatesBridge,
   usePromptTemplatesDispatch,
   usePromptTemplatesSnapshot,
-} from './promptTemplates.bridge';
+} from './promptTemplates.store';
 import type { PromptTemplateData } from './types';
 
 function PromptIcon({ template }: { template: PromptTemplateData }) {
@@ -178,7 +177,7 @@ export function mountPromptTemplatesModal(): void {
     container.id = 'promptTemplatesReactRoot';
     document.body.appendChild(container);
   }
-  rootSlot.mount(container, <PromptTemplatesModal />, installPromptTemplatesBridge);
+  rootSlot.mount(container, <PromptTemplatesModal />);
 }
 
 export function unmountPromptTemplatesModal(): void {

@@ -1,6 +1,7 @@
 type ToolActions = typeof import('../react/toolCards/toolCardActionsHost.tsx');
 interface ToolInput { code?: string; language?: string; query?: string; task?: string; template?: string; title?: string; url?: string; [key: string]: unknown }
 interface ToolCardOptions { restored?: boolean; isError?: boolean; kind?: string }
+interface ExtractedToolCode { code: string; language: string; parsed: boolean; truncated: boolean }
 interface ToolCardElement extends HTMLDivElement {
  _tcRefs?: { out: HTMLElement | null; code: HTMLElement | null; codeInner: HTMLElement | null; body: HTMLElement };
 }
@@ -116,10 +117,10 @@ export function toolFormatInput(name: string, inp: ToolInput) {
   return TOOL_INPUT_FORMATTERS.get(name)?.(inp) ?? stringifyPreview(inp, 160);
 }
 
-function stringifyPreview(value: any, maxLen: number) {
-  let text;
+function stringifyPreview(value: unknown, maxLen: number) {
+  let text: string;
   try {
-    text = typeof value === "string" ? value : JSON.stringify(value);
+    text = typeof value === "string" ? value : JSON.stringify(value) ?? String(value ?? '');
   } catch (_) {
     text = String(value || "");
   }
@@ -138,7 +139,7 @@ function toolInputPreviewFromExtracted(toolName: string, extracted: { code: stri
   return stringifyPreview(extracted.code, 160);
 }
 
-function decodeJsonStringFragment(raw: string|null, truncated: any) {
+function decodeJsonStringFragment(raw: string|null, truncated: boolean) {
   if (raw == null) return "";
   if (truncated && String(raw).endsWith("\\")) raw = String(raw).slice(0, -1);
   try {
@@ -191,16 +192,20 @@ function syncToolCopyActions(card: HTMLElement) {
    mid-string (the closing `"` is missing), we still extract the
    code as-is rather than dropping it on the floor. */
 function parseToolArguments(argsJson: string) {
-  try { return JSON.parse(argsJson); } catch (_) { return null; }
+  try { return JSON.parse(argsJson) as unknown; } catch (_) { return null; }
 }
 
-function extractCodeInterpreterArgs(parsed: { code: any; language: any; }, argsJson: string, truncated: boolean) {
-  if (parsed && typeof parsed === "object" && typeof parsed.code === "string") {
-    return { code: parsed.code, language: parsed.language || "python", parsed: true, truncated: false };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function extractCodeInterpreterArgs(parsed: unknown, argsJson: string, truncated: boolean): ExtractedToolCode {
+  if (isRecord(parsed) && typeof parsed.code === "string") {
+    return { code: parsed.code, language: typeof parsed.language === 'string' ? parsed.language : "python", parsed: true, truncated: false };
   }
   // Mid-stream / truncated partial JSON — keep the latest complete code fragment.
   const match = argsJson.match(/"code"\s*:\s*"((?:\\.|[^"\\])*)/);
-  if (!match) return { code: "", language: (parsed && parsed.language) || "python", parsed: false, truncated };
+  if (!match) return { code: "", language: isRecord(parsed) && typeof parsed.language === 'string' ? parsed.language : "python", parsed: false, truncated };
   const language = argsJson.match(/"language"\s*:\s*"([^"]+)"/);
   return {
     code: decodeJsonStringFragment(match[1], truncated),
@@ -210,8 +215,8 @@ function extractCodeInterpreterArgs(parsed: { code: any; language: any; }, argsJ
   };
 }
 
-function extractWebSearchArgs(parsed: { query: any; }, argsJson: string, truncated: boolean) {
-  if (parsed && typeof parsed === "object" && typeof parsed.query === "string") {
+function extractWebSearchArgs(parsed: unknown, argsJson: string, truncated: boolean): ExtractedToolCode {
+  if (isRecord(parsed) && typeof parsed.query === "string") {
     return { code: parsed.query, language: "query", parsed: true, truncated: false };
   }
   const match = argsJson.match(/"query"\s*:\s*"((?:\\.|[^"\\])*)/);
@@ -224,7 +229,7 @@ function extractWebSearchArgs(parsed: { query: any; }, argsJson: string, truncat
   };
 }
 
-export function extractCodeFromArgs(name: string, argsJson: string|any[]) {
+export function extractCodeFromArgs(name: string, argsJson: string): ExtractedToolCode {
   if (!argsJson || typeof argsJson !== "string") {
     return { code: "", language: "python", parsed: false, truncated: false };
   }
@@ -454,7 +459,7 @@ function updateToolCardCodeContent(card: HTMLElement, codeEl: HTMLElement, codeI
   syncToolCopyActions(card);
 }
 
-function updateToolCardTruncation(codeEl: { classList: { add: (arg0: string) => void; remove: (arg0: string) => void; }; }, extracted: { code?: any; language?: any; parsed: any; truncated: any; }) {
+function updateToolCardTruncation(codeEl: HTMLElement, extracted: ExtractedToolCode) {
   if (extracted.truncated && extracted.parsed === false) {
     codeEl.classList.add("agent-tool-code-truncated");
   } else if (extracted.parsed) {
@@ -462,13 +467,13 @@ function updateToolCardTruncation(codeEl: { classList: { add: (arg0: string) => 
   }
 }
 
-function highlightFinalToolCardCode(codeEl: { classList: { remove: (arg0: string) => void; }; }, codeInner: HTMLElement, extracted: { code?: any; language?: any; parsed: any; truncated?: any; }) {
+function highlightFinalToolCardCode(codeEl: HTMLElement, codeInner: HTMLElement, extracted: ExtractedToolCode) {
   if (!extracted.parsed) return;
   codeEl.classList.remove("agent-tool-code-streaming");
   highlightCodeElement(codeInner);
 }
 
-export function updateToolCardCode(tcId: any, argsJson: any, language: any) {
+export function updateToolCardCode(tcId: string, argsJson: string, language?: string) {
   const card = findToolCard(tcId);
   if (!card) return null;
   // Use the cached refs from appendToolModule when available — saves
@@ -505,7 +510,7 @@ export function setLastToolOutput(text: unknown, isError?: boolean, outEl?: HTML
   });
 }
 
-export function renderToolTextOutput(out: { replaceChildren: (arg0: HTMLDivElement) => void; classList: { add: (arg0: string) => void; remove: (arg0: string) => void; }; closest: (arg0: string) => any; }, text: any, opts: { isError?: any; kind?: any; }) {
+export function renderToolTextOutput(out: HTMLElement, text: unknown, opts: ToolCardOptions = {}) {
   if (!out) return null;
   opts = opts || {};
   const value = String(text || "");
@@ -560,12 +565,13 @@ export function renderToolTextOutput(out: { replaceChildren: (arg0: HTMLDivEleme
 
   out.replaceChildren(wrap);
   if (opts.isError) out.classList.add("error"); else out.classList.remove("error");
-  syncToolCopyActions(out.closest(".agent-tool-card"));
+  const card = out.closest(".agent-tool-card");
+  if (card instanceof HTMLElement) syncToolCopyActions(card);
   return wrap;
 }
 
 /* Compatibility hook for older history/share callers. File changes now use
    their existing summary row, so a second nested card is intentionally absent. */
-export function appendFileChangeSummaryCards(root: any) {
+export function appendFileChangeSummaryCards(root: ParentNode | null) {
   void root;
 }

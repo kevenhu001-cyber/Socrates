@@ -64,7 +64,7 @@ export function editUserMessage(messageId: string){
     restoreMessageBody(entry,(body as HTMLElement));
   }
 
-  function commit(text: any){
+  function commit(text: string){
     const next=String(text||"").trim();
     if(!next||next===entry.rawText){
       /* No change — restore. */
@@ -81,11 +81,12 @@ export function editUserMessage(messageId: string){
     const branchInfo = branchRes ? branchRes.branchInfo : null;
     /* React renders user messages from html; commit it with the text so its
        next render preserves the edited body. */
-    entry=stateStore.dispatch({
+    const updatedEntry=stateStore.dispatch({
       type:"session/update-message",index:idx,clientId:entry.clientId,
       patch:{rawText:editedText,html:formatMsg(editedText),branchInfo:branchInfo},
     });
-    if(!entry)return;
+    if(!updatedEntry)return;
+    entry=updatedEntry;
     disposeEditForm?.();
     restoreMessageBody(entry,(body as HTMLElement));
     const dropped=rollbackMessagesAfter(messageId);
@@ -195,7 +196,7 @@ export function regenerateAssistantMessage(messageId: string){
      also generate a reply. Requires the user message to have a server
      UUID; a client-only id 400s and is caught (same limitation as edit,
      where the local rewind still holds until the next successful sync). */
-  let patchPromise=Promise.resolve();
+  let patchPromise: Promise<unknown> = Promise.resolve();
   if(userMessageId){
     patchPromise=apiFetch(messageApiPath(userMessageId),{
       method:"PATCH",
@@ -235,7 +236,7 @@ export function regenerateAssistantMessage(messageId: string){
    whose history only includes messages up to and including the
    branched message. The user can then continue in a different
    direction without affecting the original thread. */
-export function branchFromMessage(messageId: string, opts: { reExplain?: any; }){
+export function branchFromMessage(messageId: string, opts: { reExplain?: boolean }){
   opts = opts || {};
   /* P1.1 — educational reExplain: when the branch is triggered by the
      re-explain button, inject a pedagogical directive into the system
@@ -248,7 +249,7 @@ export function branchFromMessage(messageId: string, opts: { reExplain?: any; })
   _saveCurrentSession();
   /* Build the new session state from messages up to this point.
      We copy the relevant fields from the current state. */
-  const branchMessages=stateStore.read("messages").slice(0,branchIdx+1).map(function(m: { clientId: any; role: any; rawText: any; html: any; type: any; attachments: string|any[]; }){
+  const branchMessages=stateStore.read("messages").slice(0,branchIdx+1).map(function(m){
     return {clientId:m.clientId,role:m.role,rawText:m.rawText,html:m.html,type:m.type,attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[]};
   });
   const branchTopic=stateStore.read("topic")||stateStore.read("topic")||"";

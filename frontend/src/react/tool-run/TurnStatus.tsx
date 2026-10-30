@@ -2,6 +2,7 @@ import { Button } from '../ui/Button';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import type { LiveTurnStatus } from '../types/domain';
 import { normalizeChineseProse } from '../../util/chineseTypography.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface TurnStatusProps {
   status: LiveTurnStatus;
@@ -18,7 +19,10 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
        main.js rather than re-implementing a send. */
     try {
       getLegacyActions().liveTurn?.retry(messageId);
-    } catch (_) { /* bridge unavailable — the button is inert */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-run/TurnStatus.tsx:21', 'expected');
+      /* bridge unavailable — the button is inert */
+    }
   };
   return (
     <div className="turn-surface-status msg-error" data-turn-surface-part="terminal">
@@ -43,7 +47,10 @@ function StoppedLine({ status, messageId, readOnly }: TurnStatusProps) {
   const resend = () => {
     try {
       getLegacyActions().liveTurn?.retry(messageId);
-    } catch (_) { /* bridge unavailable — the button is inert */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-run/TurnStatus.tsx:46', 'expected');
+      /* bridge unavailable — the button is inert */
+    }
   };
   return (
     <div className="turn-surface-status msg-error msg-resend" data-turn-surface-part="terminal" style={{ marginTop: '8px' }}>

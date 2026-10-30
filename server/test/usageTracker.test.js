@@ -25,13 +25,13 @@ import {
   estimateContextMessageTokens,
 } from '../src/services/core/usageTracker.js';
 
-test('context planning counts Unicode conservatively without changing billing estimates', () => {
+test('context planning and estimated usage count Unicode conservatively', () => {
   assert.equal(estimateContextTokens(''), 0);
   assert.equal(estimateContextTokens('abcde'), 2);
   assert.equal(estimateContextTokens('中文对话'), 6);
   assert.equal(estimateContextTokens('🙂'), 2);
   assert.equal(estimateContextTokens('abcd中文'), 4);
-  assert.equal(estimateTokens('中文对话'), 1, 'historical billing fallback stays independent');
+  assert.equal(estimateTokens('中文对话'), 6, 'estimated usage must not count Chinese as English prose');
   const input = [{ role: 'assistant', content: '答案', reasoning_content: '推理'.repeat(100), tool_calls: [{ function: { name: 'lookup', arguments: '{"query":"中文"}' } }] }];
   assert.ok(estimateContextMessageTokens(input) > 300, 'reasoning and tool arguments consume context too');
   assert.equal(estimateContextMessageTokens([{ content: [{ type: 'text', text: '中文' }, { type: 'image_url' }] }]), 3 + IMAGE_TOKEN_ESTIMATE + 4);
@@ -47,9 +47,10 @@ describe('estimateTokens', () => {
     assert.equal(estimateTokens(0), 0);
   });
 
-  test('uses a chars/4 approximation rounded to the nearest integer', () => {
-    /* 4 chars → 1 token. 5 chars → 1.25 → rounds to 1. */
+  test('uses ceil(chars/4) for ASCII text', () => {
+    /* 4 chars → 1 token. 5 chars → 1.25 → rounds up to 2. */
     assert.equal(estimateTokens('abcd'), 1);
+    assert.equal(estimateTokens('abcde'), 2);
     /* 8 chars → 2 tokens exactly. */
     assert.equal(estimateTokens('abcdefgh'), 2);
   });
@@ -64,13 +65,13 @@ describe('estimateTokens', () => {
 
   test('coerces non-string input to a string before measuring', () => {
     /* Numbers, booleans, etc. should not throw. */
-    assert.equal(estimateTokens(42), Math.max(1, Math.round(String(42).length / 4)));
+    assert.equal(estimateTokens(42), Math.ceil(String(42).length / 4));
     assert.equal(estimateTokens(true), 1); /* 'true' = 4 chars → 1 token */
   });
 
   test('handles long strings without overflow', () => {
     const big = 'x'.repeat(100_000);
-    const expected = Math.round(100_000 / 4);
+    const expected = Math.ceil(100_000 / 4);
     assert.equal(estimateTokens(big), expected);
   });
 });

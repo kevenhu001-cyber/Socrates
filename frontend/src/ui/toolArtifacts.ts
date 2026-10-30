@@ -4,6 +4,7 @@ import { trTool } from "./toolCardHelpers.ts";
 import { openArtifactPreview } from "./artifactPreview.ts";
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { ArtifactControlProps } from "@/react/toolArtifacts/ArtifactControl.tsx";
+import type { MouseEvent } from 'react';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
@@ -170,7 +171,7 @@ function appendInlineImage(fileId: string | number, mimeType: string, url: strin
     wrap.appendChild(meta);
     if (typeof apiFetch === "function") {
       try {
-        apiFetch("/api/files/" + encodeURIComponent(fileId))
+        apiFetch<{ name?: string; size?: number }>("/api/files/" + encodeURIComponent(fileId))
           .then(function (metaRow) {
             if (metaRow && metaRow.name) name.textContent = metaRow.name;
             if (metaRow && typeof metaRow.size === "number") {
@@ -191,7 +192,7 @@ function appendInlineImage(fileId: string | number, mimeType: string, url: strin
   });
   img.style.display = "none";
   /* Image and expand affordances open the shared Artifacts drawer. */
-  function openLightbox(ev: MouseEvent) {
+  function openLightbox(ev: { preventDefault(): void }) {
     if (ev) ev.preventDefault();
     const fullSrc = url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
     openArtifactPreview({
@@ -207,7 +208,7 @@ function appendInlineImage(fileId: string | number, mimeType: string, url: strin
     i18nTitle: 'chrome.fullscreen',
     i18nAria: 'chrome.fullscreen',
     label: fsLabel,
-    onClick: function (event: any) { openLightbox(event); },
+    onClick: function (event: MouseEvent<HTMLButtonElement>) { openLightbox(event); },
   });
   wrap.addEventListener("click", function (ev) {
     const t = ev && ev.target;
@@ -226,7 +227,7 @@ function appendInlineImage(fileId: string | number, mimeType: string, url: strin
 }
 
 function appendInlineHtml(fileId: string | number, mimeType: string, url: string, out: HTMLElement, artifactName?: string) {
-  const t = browserWindow.t || function (key: any) { return key; };
+  const t = browserWindow.t || function (key: string) { return key; };
   const wrap = document.createElement('figure');
   wrap.className = 'exec-artifact exec-artifact-html';
   wrap.dataset.artifactId = String(fileId);
@@ -261,7 +262,7 @@ function appendInlineHtml(fileId: string | number, mimeType: string, url: string
 /* Best-effort display name for an artifact. fileId is opaque so we
    fall back to a short id-derived label; the real name arrives via
    the lazy /api/files/:id fetch above. */
-function displayName(fileId: any, mimeType: string) {
+function displayName(fileId: string | number, mimeType: string) {
   if (!fileId) return '';
   const short = String(fileId).split('-')[0] || String(fileId);
   if (mimeType && /^image\//.test(mimeType)) return short + (mimeType === 'image/png' ? '.png' : mimeType === 'image/jpeg' ? '.jpg' : '.img');

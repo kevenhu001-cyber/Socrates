@@ -5,7 +5,7 @@ import { mountKnowledgeNodeDetail } from '../react/tutor/knowledgeNodeDetailHost
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
-function tr(key: string, vars?: { [x: string]: any; n?: any; }|undefined) {
+function tr(key: string, vars?: Record<string, unknown>) {
   const v = (typeof browserWindow.t === 'function') ? browserWindow.t(key) : key;
   if (!vars) return v;
   return String(v).replace(/\{(\w+)\}/g, function (whole, name) {
@@ -22,7 +22,7 @@ function statusLabel(status: string) {
 
 function saveCurrentSessionSafe() { if (typeof browserWindow.saveCurrentSession === 'function') browserWindow.saveCurrentSession(); }
 
-export function kbNodeHtml(n: { idx: string; name: unknown; questions: any; },cls: string){
+export function kbNodeHtml(n: { idx: number; name: unknown; questions?: number },cls: string){
   return '<div class="kb-node" data-node-idx="'+n.idx+'"><div class="kb-dot '+cls+'"></div><span class="kb-name">'+esc(n.name)+'</span>'+(n.questions?'<span class="kb-count">'+esc(tr('kb.questions',{n:n.questions}))+'</span>':'')+'</div>';
 }
 
@@ -51,7 +51,7 @@ export function toggleKBDetail(idx: number){
     const current=nodes[idx];
     if(!current)return null;
     const next=Object.assign({},current,patch);
-    stateStore.dispatch({type:'state/set',key:'kbNodes',value:nodes.map(function(item: any,index: any){return index===idx?next:item})});
+    stateStore.dispatch({type:'state/set',key:'kbNodes',value:nodes.map(function(item,index){return index===idx?next:item})});
     node=next;
     return next;
   }
@@ -73,7 +73,7 @@ export function toggleKBDetail(idx: number){
     userNote:node.user_note||'',
     userNotePlaceholder:tr('kb.placeholderNote'),
     historyLabel:tr('kb.history'),
-    history:history.slice(-8).reverse().map(function(item: { date: any; at: any; summary: any; }){
+    history:history.slice(-8).reverse().map(function(item: { date?: string | number; at?: string | number; summary?: string }){
       let date=item&&(item.date||item.at);
       if(typeof date==='number'){
         try{date=new Date(date).toISOString().slice(0,10)}catch(error){reportSwallow(error,'ui/knowledgeDetail.impl.ts:historyDate')}
@@ -90,7 +90,7 @@ export function toggleKBDetail(idx: number){
   });
 }
 
-async function jumpToNode(idx: any){
+async function jumpToNode(idx: number){
   stateStore.dispatch({type:'state/batch',patch:{currentNode:idx,stuckCount:0,substantiveCount:0}});
   if (typeof browserWindow.askNextQuestion === "function") await browserWindow.askNextQuestion();
   saveCurrentSessionSafe();

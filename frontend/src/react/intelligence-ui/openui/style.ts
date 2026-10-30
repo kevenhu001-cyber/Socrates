@@ -21,7 +21,7 @@ export function webUrl(value: unknown): string | null {
 
 // Shared prop schemas
 /** Children slot: any component, or a list of them (from @Each). Printed as `Node[]`. */
-const node = z.any();
+const node = z.unknown();
 tagSchemaId(node, "Node");
 export const children = z.array(node);
 

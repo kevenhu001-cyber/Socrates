@@ -21,6 +21,7 @@ import { suppressScrollPositionIntent, hideNewReplyPill } from '../ui/scrollPill
 import { planSendGlide } from '../ui/motion.ts';
 import { getKeyboardLift } from '../ui/keyboard/index.ts';
 import type { MessageEntry } from '../ui/messageActions.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export interface TurnAnchorDeps {
   /** Live reader for React ownership of #msgList, owned by main.js. */
@@ -223,13 +224,22 @@ export function releaseTurnViewportHold(): void {
   if (!hold) return;
   viewportHold = null;
   if (hold.observer) {
-    try { hold.observer.disconnect(); } catch (_) { /* detached list */ }
+    try { hold.observer.disconnect(); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:226');
+      /* detached list */
+    }
   }
   if (hold.onViewportResize) {
-    try { window.removeEventListener('resize', hold.onViewportResize); } catch (_) { /* no window */ }
+    try { window.removeEventListener('resize', hold.onViewportResize); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:229');
+      /* no window */
+    }
   }
   if (hold.unsubInset) {
-    try { hold.unsubInset(); } catch (_) { /* released controller */ }
+    try { hold.unsubInset(); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:232');
+      /* released controller */
+    }
   }
   /* ui/keyboard reads this flag to leave the transcript alone while the
      send anchor owns it; clearing it hands the position back. */
@@ -342,7 +352,10 @@ function holdTurnViewport(): void {
 function observeTurnViewportRow(el: HTMLElement): void {
   const hold = viewportHold;
   if (!hold || !hold.observer) return;
-  try { hold.observer.observe(el); } catch (_) { /* detached row */ }
+  try { hold.observer.observe(el); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:345');
+    /* detached row */
+  }
 }
 
 function startTurnViewportHold(
@@ -372,17 +385,26 @@ function startTurnViewportHold(
   hold.observer = observer;
   viewportHold = hold;
   try { observer.observe(list, { box: 'border-box' }); }
-  catch (_) { try { observer.observe(list); } catch (_) { /* detached list */ } }
+  catch (_) { try { observer.observe(list); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:375');
+    /* detached list */
+  } }
   /* Watching the answer's own row is what retires the hold the moment the
      answer outgrows its reserve and sticky-bottom resumes. */
-  try { observer.observe(anchorRow); } catch (_) { /* detached row */ }
+  try { observer.observe(anchorRow); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:378');
+    /* detached row */
+  }
   /* Resize-observer deliveries for a viewport change land one frame after the
      layout that revealed it, so the frame in between can paint the stale
      reserve and clamp scrollTop. A discrete viewport resize (window, mobile
      rotation, resize-content keyboard) is announced by `resize` before that
      frame's paint, so correcting here keeps the change off screen. */
   hold.onViewportResize = function () { holdTurnViewport(); };
-  try { window.addEventListener('resize', hold.onViewportResize); } catch (_) { /* no window */ }
+  try { window.addEventListener('resize', hold.onViewportResize); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:385');
+    /* no window */
+  }
   /* The virtual keyboard is tweened into `--keyboard-inset` frame by frame
      by the lift controller. Its onInset subscription fires synchronously
      inside the same write that will be laid out — so the reserve can be
@@ -767,7 +789,10 @@ export function scheduleActiveTurnToTop(
   if (list && !retryViewport) {
     if (list.dataset) list.dataset.turnAnchorSettling = 'true';
     cancelScrollAnimation(list);
-    try { hideNewReplyPill(); } catch (_) { /* pill not mounted */ }
+    try { hideNewReplyPill(); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:770');
+      /* pill not mounted */
+    }
   }
   const messages = stateStore.read('messages') as MessageEntry[];
   let message: MessageEntry | null =

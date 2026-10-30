@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+
 /**
  * chat/thinkExtract.ts — inline thinking text helpers for streaming turns.
  *
@@ -58,7 +60,8 @@ export function combineThinkingText(
         const d = (w.t as (key: string) => unknown)('think.inlineThinkDivider');
         if (d && d !== 'think.inlineThinkDivider') divider = String(d);
       }
-    } catch {
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/thinkExtract.ts:61', 'expected');
       /* i18n lookup is best effort; keep the default divider. */
     }
   }

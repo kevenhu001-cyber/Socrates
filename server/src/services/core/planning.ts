@@ -51,25 +51,29 @@ const specSchema = z.object({
  * or send steps as bare strings. Unwrap a single recognizable envelope and
  * coerce string steps into {title} so the strict schema does not reject an
  * otherwise-usable call. */
-function unwrapEnvelope(input: any, keys: string[]) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function unwrapEnvelope(input: unknown, keys: string[]): unknown {
+  if (!isRecord(input)) return input;
   const inputKeys = Object.keys(input);
   if (inputKeys.length === 1 && keys.includes(inputKeys[0])
-      && input[inputKeys[0]] && typeof input[inputKeys[0]] === 'object') {
+      && isRecord(input[inputKeys[0]])) {
     return input[inputKeys[0]];
   }
   return input;
 }
 
-function normalizePlan(input: any) {
+function normalizePlan(input: unknown) {
   const source = unwrapEnvelope(input, ['plan', 'input', 'arguments']);
-  if (!source || typeof source !== 'object' || Array.isArray(source)) return source;
-  const normalized: Record<string, any> = { ...source };
+  if (!isRecord(source)) return source;
+  const normalized: Record<string, unknown> = { ...source };
   const rawSteps = normalized.steps ?? normalized.items ?? normalized.tasks;
   if (Array.isArray(rawSteps)) {
-    normalized.steps = rawSteps.map((step: any) => {
+    normalized.steps = rawSteps.map((step: unknown) => {
       if (typeof step === 'string') return { title: step };
-      if (!step || typeof step !== 'object') return step;
+      if (!isRecord(step)) return step;
       const next = { ...step };
       if (!next.title) next.title = next.name ?? next.label ?? next.step ?? next.text;
       delete next.name; delete next.label; delete next.step; delete next.text;
@@ -80,10 +84,10 @@ function normalizePlan(input: any) {
   return normalized;
 }
 
-function normalizeSpec(input: any) {
+function normalizeSpec(input: unknown) {
   const source = unwrapEnvelope(input, ['spec', 'input', 'arguments']);
-  if (!source || typeof source !== 'object' || Array.isArray(source)) return source;
-  const normalized: Record<string, any> = { ...source };
+  if (!isRecord(source)) return source;
+  const normalized: Record<string, unknown> = { ...source };
   if (!normalized.summary && typeof normalized.overview === 'string') normalized.summary = normalized.overview;
   delete normalized.overview;
   if (!normalized.requirements && Array.isArray(normalized.features)) normalized.requirements = normalized.features;

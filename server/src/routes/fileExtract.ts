@@ -84,11 +84,11 @@ function normalizeMime(raw: string, originalName: string) {
 
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (_req: any, _file: any, cb: any) => cb(null, TMP_DIR),
-    filename: (_req: any, _file: any, cb: any) => cb(null, `${crypto.randomUUID()}.bin`),
+    destination: (_req, _file, cb) => cb(null, TMP_DIR),
+    filename: (_req, _file, cb) => cb(null, `${crypto.randomUUID()}.bin`),
   }),
   limits: { fileSize: MAX_UPLOAD },
-  fileFilter: (_req: any, file: any, cb: any) => {
+  fileFilter: (_req, file, cb) => {
     const mime = normalizeMime(file.mimetype, file.originalname);
     /* Application/pdf + the new office formats pass. text/html and
        text/xhtml stay blocked (XSS surface at the raw endpoint). */
@@ -124,7 +124,7 @@ router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
     let uploadPath: string | null = null;
     const cleanup = () => (uploadPath ? fs.unlink(uploadPath).catch(() => {}) : Promise.resolve());
     try {
-      if ((req as any).file?.path) uploadPath = resolveInsideRoot(TMP_DIR, String((req as any).file.path));
+      if (req.file?.path) uploadPath = resolveInsideRoot(TMP_DIR, req.file.path);
       if (multerErr) {
         if (multerErr.code === 'LIMIT_FILE_SIZE') {
           await cleanup();
@@ -133,11 +133,12 @@ router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
         await cleanup();
         return next(multerErr);
       }
-      if (!(req as any).file) {
+      if (!req.file) {
         return next(new BadRequest('No file provided in field "file"'));
       }
 
-      const mime = normalizeMime((req as any).file.mimetype, (req as any).file.originalname);
+      const uploadedFile = req.file;
+      const mime = normalizeMime(uploadedFile.mimetype, uploadedFile.originalname);
       const kind = kindFromMime(mime);
 
       let extractResult: { text: string; meta: Record<string, unknown> };
@@ -164,7 +165,7 @@ router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
           text: '',
           truncated: false,
           meta: {},
-          name: (req as any).file.originalname,
+          name: uploadedFile.originalname,
           kind,
           error: `Could not parse ${kind || 'file'}: ${msg}`,
           errorCode: code,
@@ -184,7 +185,7 @@ router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
         text,
         truncated,
         meta,
-        name: (req as any).file.originalname,
+        name: uploadedFile.originalname,
         kind,
       });
     } catch (err) {

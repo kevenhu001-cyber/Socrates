@@ -42,11 +42,11 @@ export const researchClient = createResearchController({
       await consumeResearchStream(response, onEvent, stream.signal);
     } finally { stream.abort(); signal.removeEventListener('abort', abort); }
   },
-  hasReport: (job) => (stateStore.read('messages') as Message[]).some((message) => message.clientId === `research-${job.id}`),
+  hasReport: (job) => stateStore.read('messages').some((message) => message.clientId === `research-${job.id}`),
   report: async (job, signal) => (await apiFetch<{ message: Message | null }>(`/api/research-jobs/${encodeURIComponent(job.id)}/result`, { signal })).message,
   deliver: (job, message) => {
     if (stateStore.read('currentSessionId') !== job.sessionId) return;
-    const messages = stateStore.read('messages') as Message[];
+    const messages = stateStore.read('messages');
     if (messages.some((entry) => entry.clientId === message.clientId || entry.id === message.id)) return;
     const restored = restoreSessionMessage({
       id: message.id, clientId: message.clientId, role: message.role, rawText: message.rawText,

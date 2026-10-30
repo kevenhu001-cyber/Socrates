@@ -50,7 +50,7 @@ function _notify(msg: unknown) {
 
 /* Pick a voice roughly matching the current UI language so zh replies
    are read with a Chinese voice when the platform provides one. */
-function _pickVoice(lang: any) {
+function _pickVoice(lang: string) {
   try {
     const voices = browserWindow.speechSynthesis.getVoices() || [];
     if (!voices.length) return null;

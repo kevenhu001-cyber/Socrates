@@ -6,7 +6,7 @@ import { executions, files } from '../db/schema/index.js';
 import { isUuid } from '../lib/validate.js';
 import { NotFound } from '../lib/errors.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
-import { subscribeExecution, subscribeExecutionResult, unsubscribeExecution, unsubscribeExecutionResult } from '../services/codeInterpreter.js';
+import { subscribeExecution, subscribeExecutionResult, unsubscribeExecution, unsubscribeExecutionResult, type ProgressEvent } from '../services/codeInterpreter.js';
 
 const router = Router();
 
@@ -81,7 +81,7 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
       return;
     }
 
-    const onProgress = (event: any) => {
+    const onProgress = (event: ProgressEvent) => {
       try {
         res.write(`event: progress\ndata: ${JSON.stringify({
           phase: event.phase, stream: event.stream,
@@ -91,7 +91,7 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
         (res as { flush?: () => void }).flush?.();
       } catch {}
     };
-    const onResult = (event: any) => {
+    const onResult = (event: ProgressEvent) => {
       try {
         res.write(`event: result\ndata: ${JSON.stringify(event)}\n\n`);
         (res as { flush?: () => void }).flush?.();

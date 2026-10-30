@@ -1,8 +1,10 @@
+import type { ExamQuestion } from '../exam/types.ts';
+
 export function createInitialExamState() {
   return {
     examCancel: false,
-    examQuestions: [],
-    examAnswers: {},
+    examQuestions: [] as ExamQuestion[],
+    examAnswers: {} as Record<string, string | number | undefined>,
     examSubmitted: false,
     examTopic: '',
     examCount: 0,
@@ -11,7 +13,7 @@ export function createInitialExamState() {
     examLang: '',
     examDifficulty: 'intermediate',
     examInstructions: '',
-    examTypes: [],
+    examTypes: [] as string[],
     _examPrevActiveId: null,
   };
 }

@@ -10,6 +10,7 @@
     "typecheck:app": "npm --prefix apps/socrates run typecheck",
     "lint": "npm --prefix frontend run lint && npm run lint:server-boundaries && npm run lint:docs && npm run lint:shims",
     "lint:docs": "node scripts/check-doc-paths.mjs",
+    "lint:explicit-any": "node scripts/check-explicit-any.mjs",
     "lint:shims": "node scripts/check-forwarding-shims.mjs",
     "lint:dom": "node scripts/check-packages-dom.mjs",
     "lint:drizzle": "node scripts/check-drizzle-drift.mjs",

@@ -82,7 +82,7 @@ function _syncComposerEffortVisibility() {
 }
 
 /* Toggle the anchored configuration popover for the clicked trigger. */
-export function toggleEffortPicker(el: any) {
+export function toggleEffortPicker(el: HTMLElement | null) {
   openChatConfiguration(el || null);
 }
 

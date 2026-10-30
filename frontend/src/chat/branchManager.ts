@@ -103,7 +103,7 @@ function replaceBranchSubtree(
 export function findMessageIndex(messageId: string): number {
   const messages = stateStore.read('messages');
   if (!Array.isArray(messages)) return -1;
-  return messages.findIndex((m: LegacyChatMessage) => (m.clientId === messageId || m.id === messageId));
+  return messages.findIndex((m) => (m.clientId === messageId || m.id === messageId));
 }
 
 /** Prepare branch info when starting a new user edit branch */

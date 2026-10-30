@@ -135,8 +135,8 @@ function remountVisualization(spec: VizSpec, host: HTMLElement, options: Visuali
      attempt can leave partial siblings, and disposing through the one
      guarded teardown keeps extension listeners from leaking. */
   if (currentCard && currentCard.parentNode) {
-    const siblings = currentCard.parentNode.querySelectorAll('.visualization-card');
-    siblings.forEach(function (el: any) { disposeCard(el); });
+    const siblings = currentCard.parentNode.querySelectorAll<VisualizationCard>('.visualization-card');
+    siblings.forEach(function (el) { disposeCard(el); });
   }
   return mountVisualization(spec, host, opts);
 }
@@ -145,7 +145,7 @@ function downloadDataUrl(name: string, dataUrl: string) {
   const link = document.createElement('a'); link.href = dataUrl; link.download = name; document.body.appendChild(link); link.click(); link.remove();
 }
 
-function dataUrlExtension(dataUrl: any) {
+function dataUrlExtension(dataUrl: string) {
   const mime = /^data:([^;,]+)/.exec(String(dataUrl || ''));
   return mime && mime[1] === 'image/svg+xml' ? '.svg' : '.png';
 }
@@ -288,7 +288,10 @@ function watchChartResize(card: VisualizationCard, stage: HTMLElement, chart: Ch
     if (!pendingResize) return;
     pendingResize = false;
     if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
-    try { chart.resize(); } catch (_) { /* chart was disposed mid-animation */ }
+    try { chart.resize(); } catch (_) {
+      reportSwallow(_, 'empty catch: render/visualization.ts:291', 'expected');
+      /* chart was disposed mid-animation */
+    }
   });
   const resize = new ResizeObserver(function () {
     if (resizeRaf) return;
@@ -296,7 +299,10 @@ function watchChartResize(card: VisualizationCard, stage: HTMLElement, chart: Ch
       resizeRaf = 0;
       if (!chart || chart.isDisposed() || !stage.clientWidth || !stage.clientHeight) return;
       pendingResize = true;
-      try { chart.resize(); pendingResize = false; } catch (_) { /* deferred to 'finished' */ }
+      try { chart.resize(); pendingResize = false; } catch (_) {
+        reportSwallow(_, 'empty catch: render/visualization.ts:299');
+        /* deferred to 'finished' */
+      }
     });
   });
   resize.observe(stage);
@@ -321,7 +327,7 @@ async function mountChartRenderer(spec: VizSpec, host: HTMLElement, options: Vis
   await whenFontsReady('Noto Sans SC');
   const echarts = await loadEcharts();
   if (isCancelled()) { disposeCard(card); return true; }
-  const useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series: { data: string|any[]; }) {
+  const useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series: { data: unknown[] }) {
     return series.data && series.data.length > 1200;
   });
   const chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });
@@ -486,7 +492,10 @@ function handleVisualizationMountFailure(error: unknown, spec: VizSpec, host: HT
   const cleanup = card._visualizationCleanup;
   card._visualizationCleanup = null;
   if (typeof cleanup === 'function') {
-    try { cleanup(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
+    try { cleanup(); } catch (_) {
+      reportSwallow(_, 'empty catch: render/visualization.ts:489', 'expected');
+      /* empty-catch: visualization cleanup must not hide the original render failure */
+    }
   }
   if (renderState.liveEntry) {
     const failedChartIndex = _liveCharts.indexOf(renderState.liveEntry);
@@ -494,7 +503,10 @@ function handleVisualizationMountFailure(error: unknown, spec: VizSpec, host: HT
   }
   const chart = renderState.chart;
   if (chart && typeof chart.dispose === 'function') {
-    try { if (!chart.isDisposed || !chart.isDisposed()) chart.dispose(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
+    try { if (!chart.isDisposed || !chart.isDisposed()) chart.dispose(); } catch (_) {
+      reportSwallow(_, 'empty catch: render/visualization.ts:497', 'expected');
+      /* empty-catch: visualization cleanup must not hide the original render failure */
+    }
   }
   reportSwallow(error, 'visualization/' + spec.template + '/render_failure', 'recoverable');
   stage!.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><div data-viz-fallback-root></div></div>';
@@ -537,7 +549,7 @@ export async function mountVisualization(rawSpec: unknown, host: HTMLElement | n
 }
 export function disposeVisualizations(host: ParentNode) {
   if (!host) return;
-  host.querySelectorAll<VisualizationCard>('.visualization-card').forEach(function (card: any) { cleanupCard(card); });
+  host.querySelectorAll<VisualizationCard>('.visualization-card').forEach(function (card) { cleanupCard(card); });
 }
 
 /* Full dispose for one card React tracked from the mount return value.
@@ -581,7 +593,10 @@ function _refreshCharts() {
        * pipeline — crashing with "Cannot read properties of undefined
        * (reading 'childAt')". setOption alone is sufficient for theme
        * colour changes; the ResizeObserver covers layout changes. */
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      reportSwallow(_, 'empty catch: render/visualization.ts:584', 'expected');
+      /* ignore */
+    }
   }
   /* Re-run KaTeX on every live card so LaTeX renders pick up any token
    * change tied to the theme. We re-discover the cards via the data
@@ -598,5 +613,8 @@ function _ensureThemeWatcher() {
   try {
     _themeObserver = new MutationObserver(function () { _refreshCharts(); });
     _themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode', 'data-theme'] });
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: render/visualization.ts:601', 'expected');
+    /* ignore */
+  }
 }

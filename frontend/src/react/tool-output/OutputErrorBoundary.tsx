@@ -9,6 +9,7 @@ import { Button } from '../ui/Button';
  * renderer only — it never re-executes the tool or asks the model again.
  */
 import { Component, Fragment, type ErrorInfo, type ReactNode } from 'react';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface OutputErrorBoundaryProps {
   outputId: string;
@@ -37,7 +38,10 @@ export class OutputErrorBoundary extends Component<
   componentDidCatch(error: Error, info: ErrorInfo): void {
     try {
       console.warn('[tool-output] renderer failed', this.props.outputId, error.message, info.componentStack);
-    } catch (_) { /* logging must never rethrow */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-output/OutputErrorBoundary.tsx:40');
+      /* logging must never rethrow */
+    }
   }
 
   private retry = (): void => {

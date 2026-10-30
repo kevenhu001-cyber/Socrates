@@ -6,6 +6,7 @@
    in the 600-line formatMsg function). */
 
 import { stripHtmlTags } from '../util/stripHtml.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export function esc(s: unknown): string {
   if (s == null) return '';
@@ -102,7 +103,10 @@ export function safeHljsLang(lang: string): string {
     if (hljs && typeof hljs.getLanguage === 'function') {
       if (!hljs.getLanguage(l)) return '';
     }
-  } catch (_) { /* hljs missing or threw — fall through and keep the lang */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: render/helpers.ts:105');
+    /* hljs missing or threw — fall through and keep the lang */
+  }
   return l;
 }
 
@@ -121,7 +125,10 @@ export function whenFontsReady(family?: string): Promise<void> {
     try {
       const force: Promise<unknown> = fonts.load(`12px "${family}"`);
       ready = Promise.all([ready, force]).then(() => undefined);
-    } catch (_) { /* family unknown to the platform — fall through */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: render/helpers.ts:124');
+      /* family unknown to the platform — fall through */
+    }
   }
   return ready.then(() => undefined, () => undefined);
 }

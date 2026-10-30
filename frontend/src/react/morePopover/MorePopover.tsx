@@ -4,10 +4,9 @@ import type { Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway.ts';
 import {
-  installMorePopoverBridge,
   useMorePopoverDispatch,
   useMorePopoverSnapshot,
-} from './morePopover.bridge';
+} from './morePopover.store';
 import type { MorePopoverAction } from './types';
 
 const POPOVER_ID = 'moreNavPopover';
@@ -69,7 +68,7 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: MoreP
 }
 
 function MorePopover() {
-  // Subscribe so re-renders fire when the legacy module publishes open/close.
+  // Refresh translated rows whenever the sidebar module opens or closes the menu.
   useMorePopoverSnapshot();
   const { pick } = useMorePopoverDispatch();
 
@@ -96,10 +95,10 @@ export interface MorePopoverHandle {
  *
  * The legacy `toggleMorePopover()` / `closeMorePopover()` still manage
  * the popover's position and open/close state via the `.hidden` class.
- * React subscribes to the bridge to stay in sync.
+ * React subscribes to the module-owned state to refresh translated rows.
  */
 export function hydrateMorePopover(): MorePopoverHandle | null {
   const popover = document.getElementById(POPOVER_ID);
   if (!popover) return null;
-  return { popover, ...mountOwnedRoot(popover, 'more-popover', <MorePopover />, installMorePopoverBridge) };
+  return { popover, ...mountOwnedRoot(popover, 'more-popover', <MorePopover />) };
 }

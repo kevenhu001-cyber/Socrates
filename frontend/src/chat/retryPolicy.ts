@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+
 /** Shared retry policy for all provider-backed model calls. */
 
 /* Keep automatic replay deliberately small. The server already owns provider
@@ -190,7 +192,10 @@ export async function waitForAIRetry(
     source: options.source ?? 'chat',
     reason: reasonFor(error),
   };
-  try { options.onRetry?.(notice); } catch (_) { /* UI callbacks are non-critical. */ }
+  try { options.onRetry?.(notice); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/retryPolicy.ts:193');
+    /* UI callbacks are non-critical. */
+  }
   const sleep = options.sleep ?? sleepForAIRetry;
   await sleep(notice.delayMs, options.signal);
   return true;

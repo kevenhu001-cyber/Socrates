@@ -10,7 +10,19 @@ const MIN_REQUEST_INTERVAL_MS = 3_000;
  * 20 s gives legitimate slow responses room while making sure a
  * stuck request fails fast and unblocks the global pacing queue. */
 const ARXIV_FETCH_TIMEOUT_MS = 20_000;
-const cache = new Map();
+export interface ArxivPaper {
+  id: string;
+  title: string;
+  summary: string;
+  authors: string[];
+  categories: string[];
+  publishedAt: string | null;
+  updatedAt: string | null;
+  abstractUrl: string | null;
+  pdfUrl: string | null;
+}
+
+const cache = new Map<string, { papers: ArxivPaper[]; expiresAt: number }>();
 let requestQueue = Promise.resolve();
 let nextRequestAt = 0;
 
@@ -53,6 +65,9 @@ async function pacedFetch(url: string) {
 
 function asArray<T = unknown>(value: T | T[] | null | undefined): T[] { return value == null ? [] : (Array.isArray(value) ? value : [value]); }
 function text(value: unknown) { return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''; }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
 
 function paperId(idUrl: unknown) {
   try {
@@ -62,10 +77,14 @@ function paperId(idUrl: unknown) {
   } catch (_) { return ''; }
 }
 
-function toPaper(entry: any) {
+function toPaper(value: unknown): ArxivPaper {
+  const entry = isRecord(value) ? value : {};
   const id = paperId(entry.id);
-  const authors = asArray(entry.author).map((author) => text(author?.name)).filter(Boolean).slice(0, 12);
-  const categories = asArray(entry.category).map((category) => text(category?.$?.term)).filter(Boolean).slice(0, 10);
+  const authors = asArray(entry.author).map((author) => text(isRecord(author) ? author.name : undefined)).filter(Boolean).slice(0, 12);
+  const categories = asArray(entry.category).map((category) => {
+    const attributes = isRecord(category) && isRecord(category.$) ? category.$ : null;
+    return text(attributes?.term);
+  }).filter(Boolean).slice(0, 10);
   return {
     id,
     title: text(entry.title).slice(0, 500) || 'Untitled paper',
@@ -102,13 +121,14 @@ export async function searchArxivPapers(value: unknown) {
     throw new ArxivConnectorError(`arXiv network error (${reason}): ${(e as Error).message}`);
   }
   if (!response.ok) throw new ArxivConnectorError(`arXiv HTTP ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`);
-  let feed;
+  let parsed: unknown;
   try {
-    feed = await parseStringPromise(await response.text(), { explicitArray: false, trim: true, normalize: true });
+    parsed = await parseStringPromise(await response.text(), { explicitArray: false, trim: true, normalize: true });
   } catch (e) {
     throw new ArxivConnectorError(`arXiv returned an unreadable response: ${(e as Error).message}`);
   }
-  const papers = asArray(feed?.feed?.entry).map(toPaper).filter((paper) => paper.id);
+  const feed = isRecord(parsed) && isRecord(parsed.feed) ? parsed.feed : {};
+  const papers = asArray(feed.entry).map(toPaper).filter((paper) => paper.id);
   cache.set(query.toLowerCase(), { papers, expiresAt: Date.now() + CACHE_TTL_MS });
   return papers;
 }

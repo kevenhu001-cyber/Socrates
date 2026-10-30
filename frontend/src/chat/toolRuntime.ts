@@ -45,6 +45,7 @@ import { createToolUseRuntime } from './toolRuntime/toolUse.ts';
 import { createToolResultRuntime } from './toolRuntime/resultRuntime.ts';
 import type { ToolResultInput } from './toolRuntime/resultProjection.ts';
 import { createProgressRuntime } from './toolRuntime/progress.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 export type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.ts';
 
 /* ------------------------------------------------------------------ */
@@ -219,7 +220,10 @@ function translate(key: string, fallback: string): string {
       // strings. Treat that as a miss so new runtime copy stays human.
       return translated && translated !== key ? translated : fallback;
     }
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:222', 'expected');
+    /* ignore */
+  }
   return fallback;
 }
 
@@ -339,7 +343,10 @@ function createToolRuntimePublisher(
         ? (window as unknown as Record<string, unknown>).__socratesReactChatBridge
         : null) as { publish?: (event: ChatRuntimeEvent) => void } | null;
       if (bridge && typeof bridge.publish === 'function') bridge.publish(event);
-    } catch (_) { /* Listener errors must not break the stream. */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:342');
+      /* Listener errors must not break the stream. */
+    }
   }
 
   function flushPendingToolPublish(): void {
@@ -468,7 +475,10 @@ function closeExecutionConnection(
 ): void {
   if (!connection) return;
   clearTimeout(connection.timer);
-  try { connection.source.close(); } catch (_) { /* A closed source is already settled. */ }
+  try { connection.source.close(); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:471');
+    /* A closed source is already settled. */
+  }
   connections.delete(connection.key);
 }
 
@@ -506,7 +516,10 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
           const data = JSON.parse(event.data) as ToolProgress;
           data.id = toolCallId;
           context.renderProgress(data);
-        } catch (_) { /* Ignore malformed execution progress. */ }
+        } catch (_) {
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:509', 'expected');
+          /* Ignore malformed execution progress. */
+        }
       });
       source.addEventListener('result', (event: MessageEvent) => {
         try {
@@ -524,7 +537,10 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
             executionId,
             name: 'code_interpreter',
           });
-        } catch (_) { /* Ignore malformed execution results. */ }
+        } catch (_) {
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:527', 'expected');
+          /* Ignore malformed execution results. */
+        }
         context.closeConnection(connection);
       });
       source.addEventListener('error', (event: MessageEvent) => {
@@ -535,7 +551,10 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
               id: toolCallId, ok: false, status: 'failed', output: '', error: data.error, artifacts: [],
             });
           }
-        } catch (_) { /* Ignore malformed execution errors. */ }
+        } catch (_) {
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:538', 'expected');
+          /* Ignore malformed execution errors. */
+        }
         context.closeConnection(connection);
       });
     } catch (_) {
@@ -687,7 +706,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
    */
   function recordRowOffset(entry: ToolCallEntry): number | null {
     let offset: number | null = null;
-    try { offset = onInlineTool({ id: entry.id, name: entry.name }, null); } catch (_) { /* no host */ }
+    try { offset = onInlineTool({ id: entry.id, name: entry.name }, null); } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:690');
+      /* no host */
+    }
     if (typeof offset === 'number') entry.textOffset = offset;
     notifyToolRun(getMessage());
     return offset;

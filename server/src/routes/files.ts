@@ -48,8 +48,8 @@ const PLAIN_TEXT_MIMES = new Set([
 fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(() => {});
 
 const storage = multer.diskStorage({
-  destination: (_req: any, _file: any, cb: any) => cb(null, UPLOAD_DIR),
-  filename: (_req: any, file: any, cb: any) => {
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+  filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname) || '';
     cb(null, `${crypto.randomUUID()}${ext}`);
   },
@@ -85,7 +85,7 @@ const ALLOWED_EXACT_MIMES = new Set([
 const upload = multer({
   storage,
   limits: { fileSize: MAX_SIZE },
-  fileFilter: (_req: any, file: any, cb: any) => {
+  fileFilter: (_req, file, cb) => {
     const mime = String(file.mimetype || '').toLowerCase();
     // text/html, application/xhtml+xml and image/svg+xml are explicitly
     // blocked: a malicious upload labelled as HTML/SVG would render in
@@ -279,16 +279,16 @@ router.post('/', uploadLimiter, (req, res, next) => {
     if (multerErr) {
       // Multer may leave a truncated file on disk when the client aborts
       // or exceeds LIMIT_FILE_SIZE — remove it so partial bytes never linger.
-      const partial = (req as any).file?.path as string | undefined;
+      const partial = req.file?.path;
       if (partial) await fs.unlink(resolveInsideRoot(UPLOAD_DIR, partial)).catch(() => {});
       if ((multerErr as { code?: string }).code === 'LIMIT_FILE_SIZE') {
         return next(new PayloadTooLarge(`File exceeds the ${MAX_SIZE / 1024 / 1024} MB limit`));
       }
       return next(multerErr);
     }
-    if (!(req as any).file) throw new BadRequest('No file provided');
+    if (!req.file) throw new BadRequest('No file provided');
 
-    const file = (req as any).file;
+    const file = req.file;
     // Client-supplied MIME is never trusted blindly: reject active
     // content masquerading as an allowed type (e.g. `<svg` bytes labelled
     // image/png). Text/code formats have no magic, so only binary kinds

@@ -473,6 +473,16 @@ export interface ChatRequest {
   extra_body?: JsonObject;
 }
 
+/** Curated machine-readable details carried by a named SSE `error` frame. */
+export interface ChatStreamError {
+  message: string;
+  status?: number;
+  code?: string;
+  retryable?: boolean;
+  upstreamStatus?: number;
+  retryAfterMs?: number;
+}
+
 export interface ChatSseHandlers {
   onDelta?: (text: string) => void;
   onReasoning?: (text: string) => void;
@@ -486,7 +496,8 @@ export interface ChatSseHandlers {
   onExecutionStart?: (payload: JsonValue) => void;
   /** Dormant — see the note above. Never populated by the current server. */
   onToolApproval?: (payload: ToolApproval) => void;
-  onError?: (message: string) => void;
+  /** The message remains the first argument for existing consumers. */
+  onError?: (message: string, details?: ChatStreamError) => void;
   onDone?: () => void;
 }
 

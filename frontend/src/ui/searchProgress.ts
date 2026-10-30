@@ -231,7 +231,7 @@ export function startSearchProgress(topic: string, opts: SearchProgressOptions =
     if (elapsedEl) elapsedEl.textContent = Math.max(0, Math.floor((Date.now() - startedAt) / 1000)) + 's';
   }, 1000);
 
-  let pendingSteps: { text: any; kind: any; autoscroll: boolean; }[] = [];
+  let pendingSteps: { text: string; kind: SearchStepKind; autoscroll: boolean }[] = [];
   let rafScheduled = false;
   function scheduleFlush() {
     if (rafScheduled) return;

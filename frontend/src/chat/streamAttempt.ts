@@ -378,7 +378,7 @@ export async function runStreamAttempt(context: StreamAttemptContext): Promise<S
   const attemptController = new AbortController();
   const unbindAttempt = context.bindAttemptSignal(attemptController);
   context.attemptSignal = attemptController.signal;
-  const activeAbortHandle = (reason: any) => {
+  const activeAbortHandle = (reason?: unknown) => {
     try { context.turnController.abort(reason); }
     catch (error) { reportSwallow(error, 'chat/streamAttempt.abortTurn'); }
     try { attemptController.abort(reason); }

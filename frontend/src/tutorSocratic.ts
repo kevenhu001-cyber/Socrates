@@ -52,7 +52,7 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
  * globals are visible.
  * ===================================================================== */
 
-(function () {
+const tutorSocraticRuntime = (function () {
   'use strict';
 
   /* A-R1 perf — coalesce KB re-renders inside one rAF. */
@@ -150,7 +150,7 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
    *     repeated the same token as last time (low signal).
    * Returns a small object {stuck, reason, hedge}.
    * ---------------------------------------------------------------- */
-  function detectStuck(userText: any, history: string|any[]) {
+  function detectStuck(userText: unknown, history: string | Array<{ role?: unknown }>) {
     if (!userText) return { stuck: false, reason: 'empty' };
     const text = String(userText).trim();
     if (text.length < 4) return { stuck: true, reason: 'too-short' };
@@ -275,7 +275,7 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
     /* sub-linear (sqrt) so one very busy node doesn't dwarf the rest */
     return Math.max(7, Math.min(22, 7 + Math.sqrt(q) * 4));
   }
-  function kbLayout(nodes: string|any[]) {
+  function kbLayout(nodes: unknown[]) {
     const N = nodes.length;
     const cx = KB_GRAPH_W / 2, cy = KB_GRAPH_H / 2;
     const R = Math.min(KB_GRAPH_W, KB_GRAPH_H) / 2 - KB_PAD - 6;
@@ -417,12 +417,12 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
     return html;
   }
 
-  function renderBoundaryHistory(history: any[]) {
+  function renderBoundaryHistory(history: Array<{ date?: unknown; summary?: unknown }>) {
     if (!history.length) return '';
     let html = '<div class="kb-section-title kb-section-title-secondary">'
       + ti('tutor.kbHistory', currentLang() === 'zh' ? '存档历史' : 'Snapshot history')
       + '</div><ul class="kb-history-list">';
-    history.slice(-8).reverse().forEach(function (entry: { date: unknown; summary: any; }) {
+    history.slice(-8).reverse().forEach(function (entry) {
       html += '<li class="kb-history-item">'
            + '<span class="kb-history-date">' + esc(entry.date) + '</span>'
            + '<span class="kb-history-summary">' + esc(entry.summary || '') + '</span></li>';
@@ -430,7 +430,7 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
     return html + '</ul>';
   }
 
-  function renderKnowledgeBoundaryFile(opts?: { immediate?: any; }|undefined) {
+  function renderKnowledgeBoundaryFile(opts?: { immediate?: boolean }) {
     opts = opts || {};
     const cont = document.getElementById('kbContent');
     if (!cont) return;
@@ -566,7 +566,7 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
            + '<div class="teaching-plan-progress-bar"><div class="teaching-plan-progress-fill" style="width:' + pct + '%"></div></div>'
            + '<div class="teaching-plan-progress-text">' + doneCount + ' / ' + totalCount + ' (' + pct + '%)</div>'
            + '</div>';
-      plan.subtopics.forEach(function (s: { status: string; name: unknown; }, i: any) {
+      plan.subtopics.forEach(function (s: { status: string; name: unknown; }, i: number) {
         const isCurrent = (i === curIdx && s.status !== 'internalized');
         const isDone = s.status === 'internalized';
         let cls = 'teaching-plan-subtopic';
@@ -663,7 +663,7 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
    * with placeholder content. The filter lets the user pick
    * "all" / "unresolved" / "by node" so the view stops being noise.
    * ---------------------------------------------------------------- */
-  function setMistakeFilter(value: any) {
+  function setMistakeFilter(value: string) {
     try { stateStore.dispatch({ type: 'state/set', key: 'mistakeFilter', value: value }); } catch (error) { reportSwallow(error, 'tutorSocratic.js:634'); }
     if (typeof browserWindow.renderMistakes === 'function') {
       try { browserWindow.renderMistakes(); } catch (error) { reportSwallow(error, 'tutorSocratic.js:636'); }
@@ -698,9 +698,17 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
    * existing renderer (state.mistakes[] entry) and the sidebar
    * picks it up automatically.
    * ---------------------------------------------------------------- */
-  function recordMistakeNotice(opts: { type?: any; topic?: any; q?: any; options?: any; correct?: any; userAnswer?: any; source?: any; }) {
+  function recordMistakeNotice(opts: {
+    type?: string;
+    topic?: string;
+    q?: string;
+    options?: string[];
+    correct?: string | null;
+    userAnswer?: string | null;
+    source?: string;
+  }) {
     opts = opts || {};
-    const entry = {
+    const entry: import('./state/kb.ts').MistakeStateEntry = {
       id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       type: opts.type || 'practice',
       topic: opts.topic || (browserWindow.stateStore.read("topic") || ''),
@@ -728,7 +736,7 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
    * Public hooks. Expose everything the rest of the app needs.
    * ---------------------------------------------------------------- */
 
-  browserWindow.tutorSocratic = {
+  return {
     stageLabel: stageLabel,
     detectStuck: detectStuck,
     showExplainPrompt: showExplainPrompt,
@@ -742,3 +750,6 @@ function renderTutorSnapshotAction(host: HTMLElement, label: string, onClick: ()
     recordMistakeNotice: recordMistakeNotice
   };
 })();
+
+browserWindow.tutorSocratic = tutorSocraticRuntime;
+export type TutorSocraticRuntime = typeof tutorSocraticRuntime;

@@ -1,6 +1,7 @@
 import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
 import { restingRect } from './pressFeedback.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /* Compact, ChatGPT-style action menu for both composers.  Keeping the menu
  * in a body portal prevents the rounded input surface from clipping it. */
@@ -41,7 +42,10 @@ function _publishComposerTools() {
         triggerId: activeTrigger && activeTrigger.id ? activeTrigger.id : null,
       });
     }
-  } catch (_) { /* swallow — bridge is best-effort */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/composerTools.ts:44', 'expected');
+    /* swallow — bridge is best-effort */
+  }
 }
 
 /* React owns the composer-tools menu's children unconditionally under
@@ -118,7 +122,7 @@ function chooseDesktopMenuPosition(el: HTMLElement, anchorTop: number, anchorBot
   return { top, side };
 }
 
-function clampDesktopMenuTop(top: number, viewportTop: number, viewportBottom: number, menuHeight: any, fallbackHeight: any) {
+function clampDesktopMenuTop(top: number, viewportTop: number, viewportBottom: number, menuHeight: number, fallbackHeight: number) {
   return Math.max(viewportTop + 8, Math.min(viewportBottom - (menuHeight || fallbackHeight) - 8, top));
 }
 

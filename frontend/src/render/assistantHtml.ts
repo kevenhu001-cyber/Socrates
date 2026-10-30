@@ -32,6 +32,7 @@ import {
   type ParsedPractice,
   type ParsedQuiz,
 } from './widgetParsers.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /** Mistake-book entry written for <mistake> practice blocks. */
 export interface PracticeMistakeRecord {
@@ -242,7 +243,8 @@ export function buildAssistantHtml(rawText: unknown): string {
     try {
       const seed = (stateStore.read('_canvasPendingId') as string | null) || null;
       if (seed) cid = seed;
-    } catch {
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: render/assistantHtml.ts:245', 'expected');
       /* Canvas seed is best effort; fall back to the fresh id. */
     }
     html = wrapForCanvas(html, 'canvas', extKey, cid);

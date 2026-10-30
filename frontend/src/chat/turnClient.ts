@@ -39,12 +39,19 @@ export interface TurnEventFrame {
   data: Record<string, unknown>;
 }
 
+interface ChatTurnCreateResponse { turn: ChatTurn; created?: boolean }
+interface ChatTurnReadResponse { turn: ChatTurn; events?: TurnEventFrame[] }
+interface ChatTurnInterruptResponse { turn: ChatTurn; idempotent?: boolean }
+
 export function newClientTurnId(): string {
   try {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID();
     }
-  } catch { /* fall through */ }
+  } catch (error) {
+    reportSwallow(error, 'empty catch: chat/turnClient.ts:47');
+    /* fall through */
+  }
   return `turn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
@@ -54,7 +61,7 @@ export async function createChatTurn(input: {
   model?: string | null;
   input?: unknown;
 }): Promise<{ turn: ChatTurn; created: boolean }> {
-  const res = await apiFetch('/api/chat-turns', {
+  const res = await apiFetch<ChatTurnCreateResponse>('/api/chat-turns', {
     method: 'POST',
     body: {
       clientTurnId: input.clientTurnId,
@@ -67,12 +74,12 @@ export async function createChatTurn(input: {
 }
 
 export async function getChatTurn(turnId: string, signal?: AbortSignal | null): Promise<{ turn: ChatTurn; events: TurnEventFrame[] }> {
-  const res = await apiFetch(`/api/chat-turns/${encodeURIComponent(turnId)}`, { signal });
+  const res = await apiFetch<ChatTurnReadResponse>(`/api/chat-turns/${encodeURIComponent(turnId)}`, { signal });
   return { turn: res.turn as ChatTurn, events: (res.events || []) as TurnEventFrame[] };
 }
 
 export async function interruptChatTurn(turnId: string): Promise<{ turn: ChatTurn; idempotent: boolean }> {
-  const res = await apiFetch(`/api/chat-turns/${encodeURIComponent(turnId)}/interrupt`, {
+  const res = await apiFetch<ChatTurnInterruptResponse>(`/api/chat-turns/${encodeURIComponent(turnId)}/interrupt`, {
     method: 'POST',
     body: {},
   });
@@ -123,7 +130,10 @@ function parseTurnEventFrame(frame: string): TurnEventFrame | null {
   try {
     const parsed = JSON.parse(dataParts.join('\n')) as TurnEventFrame;
     return parsed && typeof parsed.sequence === 'number' ? parsed : null;
-  } catch { /* malformed frame — skip */ }
+  } catch (error) {
+    reportSwallow(error, 'empty catch: chat/turnClient.ts:126');
+    /* malformed frame — skip */
+  }
   return null;
 }
 
@@ -172,7 +182,10 @@ async function consumeTurnEventStream(
     throw err;
   } finally {
     try { reader.releaseLock(); }
-    catch { /* ignore */ }
+    catch (error) {
+      reportSwallow(error, 'empty catch: chat/turnClient.ts:175', 'expected');
+      /* ignore */
+    }
   }
 }
 
@@ -229,7 +242,10 @@ export function savePendingTurn(sessionId: string, pointer: Omit<PendingTurn, 's
        into a single setItem loop; the resume pointer is read on
        next load so the slight delay is invisible. */
     batchSetItem(pendingKey(sessionId), JSON.stringify(record));
-  } catch { /* storage full/blocked — resume just won't survive reload */ }
+  } catch (error) {
+    reportSwallow(error, 'empty catch: chat/turnClient.ts:232');
+    /* storage full/blocked — resume just won't survive reload */
+  }
 }
 
 export function loadPendingTurn(sessionId: string): PendingTurn | null {
@@ -250,7 +266,10 @@ export function bumpPendingSeq(sessionId: string, lastSeq: number): void {
     const cur = loadPendingTurn(sessionId);
     if (!cur) return;
     savePendingTurn(sessionId, { turnId: cur.turnId, clientTurnId: cur.clientTurnId, lastSeq });
-  } catch { /* ignore */ }
+  } catch (error) {
+    reportSwallow(error, 'empty catch: chat/turnClient.ts:253', 'expected');
+    /* ignore */
+  }
 }
 
 /**
@@ -267,5 +286,8 @@ export function clearPendingTurn(sessionId: string, clientTurnId?: string): void
       if (current && current.clientTurnId !== clientTurnId) return;
     }
     batchRemoveItem(pendingKey(sessionId));
-  } catch { /* ignore */ }
+  } catch (error) {
+    reportSwallow(error, 'empty catch: chat/turnClient.ts:270', 'expected');
+    /* ignore */
+  }
 }

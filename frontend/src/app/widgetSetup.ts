@@ -18,7 +18,8 @@ import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
-let _installedBook: { recordMistake: any; updateMistakesBadge: any; renderMistakes: any; removeMistakeForQuizSlot?: (slotId: any) => void; }|null = null;
+type MistakeBook = ReturnType<typeof createMistakeBook>;
+let _installedBook: MistakeBook | null = null;
 
 export function getMistakeBookUI() {
   if (_installedBook) {

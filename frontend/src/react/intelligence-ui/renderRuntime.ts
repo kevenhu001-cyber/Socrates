@@ -9,6 +9,7 @@ import type { MouseEvent } from 'react';
 
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { normalizeChineseProse } from '../../util/chineseTypography.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 /** Shared state and callbacks consumed by every node renderer. */
 export interface RenderContext {
@@ -98,7 +99,8 @@ function openSafeUrl(rawUrl: string): void {
     const url = new URL(rawUrl, window.location.href);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
     window.open(url.href, '_blank', 'noopener,noreferrer');
-  } catch {
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/intelligence-ui/renderRuntime.ts:101');
     /* Invalid model-provided URLs are inert by design. */
   }
 }

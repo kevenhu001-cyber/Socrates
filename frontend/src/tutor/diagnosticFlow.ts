@@ -40,7 +40,7 @@ export function stateView() {
 }
 
 export function renderDiagQuestion() {
-  const tFn = (typeof window !== 'undefined' && typeof browserWindow.t === 'function') ? browserWindow.t : function (k: any) { return _t(k, k); };
+  const tFn = (typeof window !== 'undefined' && typeof browserWindow.t === 'function') ? browserWindow.t : function (k: string) { return _t(k, k); };
   renderDiagQuestionUI(stateView(), tFn, formatMsg);
 }
 
@@ -122,7 +122,7 @@ export function proceedToTeaching() {
   }, 400);
 }
 
-export function handleDiagnosticCommand(command: string, button: { getAttribute: (arg0: string) => any; }) {
+export function handleDiagnosticCommand(command: string, button: Element) {
   if (command === 'cancel') {
     if (typeof browserWindow.cancelDiagnostic === 'function') browserWindow.cancelDiagnostic();
   } else if (command === 'retry') {

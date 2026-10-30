@@ -266,10 +266,11 @@ describe('streamChatCompletion: stream_options compatibility fallback', () => {
 });
 
 describe('estimate fallback still behaves', () => {
-  test('chars/4 with a floor of 1', () => {
+  test('conservative ASCII and Unicode fallback with a floor of 1', () => {
     assert.equal(estimateTokens(''), 0);
     assert.equal(estimateTokens('a'), 1);
     assert.equal(estimateTokens('a'.repeat(400)), 100);
+    assert.equal(estimateTokens('中文对话'), 6);
   });
 
   test('image parts are counted, not silently free', () => {

@@ -1,4 +1,5 @@
 import type { ExamQuestion } from "./types.ts";
+import type { ExamResultQuestion } from '../react/exam/ExamResults.tsx';
 import { formatMsg } from '../render/markdown.ts';
 import { clearExamSetup, renderExamActions, renderExamResultsView } from '../react/exam/examUiHost.tsx';
 import { clearExamQuestionCards } from '../react/exam/examQuestionHost.tsx';
@@ -16,6 +17,12 @@ function resultTypeLabel(type: string, translate: (en: string, zh: string) => st
   return labels[type] || type;
 }
 
+type ScorableExamQuestion = ExamQuestion & { type: Exclude<ExamQuestion['type'], 'error'> };
+
+function isScorableExamQuestion(question: ExamQuestion): question is ScorableExamQuestion {
+  return question.type !== 'error';
+}
+
 function gradeExamQuestion(question: ExamQuestion, answer: string | number | undefined) {
   if (question.type === 'multiple-choice') {
     const selected = answer;
@@ -23,7 +30,7 @@ function gradeExamQuestion(question: ExamQuestion, answer: string | number | und
   }
   if (question.type === 'fill-blank') {
     const submitted = String(answer || '').trim().toLowerCase();
-    return (question.answers || []).some((candidate: any) => submitted === String(candidate).trim().toLowerCase());
+    return (question.answers || []).some((candidate) => submitted === candidate.trim().toLowerCase());
   }
   if (question.type === 'short-answer') {
     const submitted = String(answer || '').trim().toLowerCase();
@@ -34,11 +41,11 @@ function gradeExamQuestion(question: ExamQuestion, answer: string | number | und
   return false;
 }
 
-function resultQuestion(question: ExamQuestion, answer: string | number | undefined, isCorrect: boolean) {
+function resultQuestion(question: ScorableExamQuestion, answer: string | number | undefined, isCorrect: boolean): ExamResultQuestion {
   const translate = _examUiL;
   const options = question.type === 'multiple-choice'
     ? (question.opts || []).map((option, index) => ({
-      letter: option.letter,
+      letter: option.letter || '',
       html: formatMsg(option.text || ''),
       isCorrect: option.letter === question.answer,
       isSelected: answer === index,
@@ -75,9 +82,9 @@ export function renderExamResults() {
 
   _setExamTitle(_examUiL('Exam Results', '考试结果') + ': ' + browserWindow.stateStore.read('examTopic'));
   let correct = 0;
-  const details: { type: any; typeLabel: any; questionLabel: string; questionHtml: string; answer: string; options: any; isCorrect: any; statusLabel: string; expectedLabel: string; expectedAnswer: any; explanationLabel: string; explanationHtml: string; }[] = [];
+  const details: ReturnType<typeof resultQuestion>[] = [];
   questions.forEach((question, index) => {
-    if (question.type === 'error') return;
+    if (!isScorableExamQuestion(question)) return;
     const answer = answers[index];
     const isCorrect = gradeExamQuestion(question, answer);
     if (isCorrect) correct++;

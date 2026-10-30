@@ -84,8 +84,16 @@ function dispatchVizRepair(card: Element | null, errMsg: unknown) {
    timeout handle + a list of callbacks. When the iframe posts
    viz-ready (or the max-wait timeout fires), we resolve the entry
    and remove it from the map. */
-const _pendingReady = Object.create(null);
-const _vizCards = Object.create(null);
+interface PendingVizHandshake {
+  iframe: HTMLIFrameElement;
+  card: HTMLElement;
+  pingTimer: number;
+  maxTimer: number;
+  ready: boolean;
+  lastHeight?: number;
+}
+const _pendingReady: Record<string, PendingVizHandshake> = Object.create(null);
+const _vizCards: Record<string, PendingVizHandshake> = Object.create(null);
 const _vizReactRoots = new WeakMap<HTMLElement, ReturnType<typeof mountOwnedRoot>>();
 
 function isHTMLElement(element: Element | null | undefined): element is HTMLElement {
@@ -181,7 +189,7 @@ export function processPendingViz(root?: ParentNode) {
     const queued = root.querySelectorAll('.viz[id][data-viz-state="loading"]');
     for (let qi = 0; qi < queued.length; qi++) {
       const queuedId = queued[qi].id;
-      if (queuedId && !_pendingViz.some(function (item: { id: any; }) { return item.id === queuedId; })) {
+      if (queuedId && !_pendingViz.some(function (item) { return item.id === queuedId; })) {
         _pendingViz.push({ id: queuedId });
       }
     }
@@ -212,7 +220,7 @@ export function processPendingViz(root?: ParentNode) {
     // Stash the iframe + a ready resolver on the card so the global
     // postMessage listener (installed once on first use) can find
     // the right iframe to update.
-    const entry = {
+    const entry: PendingVizHandshake = {
       iframe: iframe,
       card: el,
       pingTimer: 0,
@@ -307,14 +315,14 @@ function _markReady(id: string) {
   delete _vizCards[id];
 }
 
-function _errorBannerSource(entry: { iframe: { getAttribute: (arg0: string) => any; }; }, card: { querySelector: (arg0: string) => any; }) {
-  const entrySource = entry && entry.iframe && entry.iframe.getAttribute('data-srcdoc');
-  const iframe = card.querySelector('iframe');
+function _errorBannerSource(entry: PendingVizHandshake | undefined, card: HTMLElement) {
+  const entrySource = entry?.iframe.getAttribute('data-srcdoc');
+  const iframe = card.querySelector<HTMLIFrameElement>('iframe');
   const cardSource = iframe && iframe.getAttribute('data-srcdoc');
   return (entrySource || cardSource || '').slice(0, 2000);
 }
 
-function _insertErrorBanner(card: HTMLElement, entry: { iframe: any; card?: HTMLElement; pingTimer?: number; maxTimer?: number; ready?: boolean; }, message: string) {
+function _insertErrorBanner(card: HTMLElement, entry: PendingVizHandshake | undefined, message: unknown) {
   const body = card.querySelector('.viz-body');
   if (!body) return;
   const banner = document.createElement('div');
@@ -324,7 +332,7 @@ function _insertErrorBanner(card: HTMLElement, entry: { iframe: any; card?: HTML
   icon.textContent = '!';
   const messageNode = document.createElement('span');
   messageNode.className = 'viz-error-msg';
-  messageNode.textContent = message || 'Canvas failed to render';
+  messageNode.textContent = String(message || 'Canvas failed to render');
   const actionHost = document.createElement('div');
   actionHost.className = 'viz-error-action-host';
   actionHost.setAttribute('data-viz-error-actions-root', '');
@@ -333,13 +341,13 @@ function _insertErrorBanner(card: HTMLElement, entry: { iframe: any; card?: HTML
   source.hidden = true;
   source.textContent = _errorBannerSource(entry, card);
   banner.append(icon, messageNode, actionHost, source);
-  let iframe = entry && entry.iframe;
-  if (!iframe) iframe = card.querySelector('iframe');
+  let iframe = entry?.iframe;
+  if (!iframe) iframe = card.querySelector<HTMLIFrameElement>('iframe') || undefined;
   if (iframe && iframe.parentNode === body) body.insertBefore(banner, iframe);
   mountVizErrorActions(actionHost);
 }
 
-function _clearErrorRegistry(id: any, entry: { maxTimer: number|undefined; pingTimer: number|undefined; }) {
+function _clearErrorRegistry(id: string, entry: PendingVizHandshake | undefined) {
   if (entry && entry.maxTimer) clearTimeout(entry.maxTimer);
   if (entry && entry.pingTimer) clearTimeout(entry.pingTimer);
   _dropErrorRegistry(id);
@@ -350,14 +358,14 @@ function _dropErrorRegistry(id: string|number) {
   delete _vizCards[id];
 }
 
-function _markError(id: string, message: any) {
+function _markError(id: string, message: unknown) {
   /* P_viz-cleanup — the iframe may report a viz-error after the
      registry entry has already been removed (e.g. timeout fired
      first). Resolve the live card via the DOM in that case so the
      error still surfaces without resurrecting a strong reference to
      a card that should be GC-able. */
   const entry = _pendingReady[id] || _vizCards[id];
-  let card = entry && entry.card;
+  let card: HTMLElement | null | undefined = entry && entry.card;
   if (!card) card = document.getElementById(id);
   if (!card) { _dropErrorRegistry(id); return; }
   if (card.getAttribute('data-viz-state') === 'error') return;
@@ -394,7 +402,7 @@ let _msgListenerInstalled = false;
 function _handleVizReady(id: string, data: { h?: unknown }) {
   const entry = _pendingReady[id];
   if (!entry) return;
-  entry.lastHeight = data.h || 0;
+  entry.lastHeight = typeof data.h === 'number' ? data.h : 0;
   if (!entry.ready) {
     entry.ready = true;
     _markReady(id);
@@ -430,9 +438,9 @@ function _ensureMessageListener() {
   browserWindow.addEventListener('message', _handleVizMessage);
 }
 
-export function renderVizError(htmlStr: any, errorMsg: any) {
+export function renderVizError(htmlStr: unknown, errorMsg: unknown) {
   const id = "viz-card-" + (nextVizId());
-  const msg = esc((errorMsg || 'Could not load canvas').slice(0, 240));
+  const msg = esc(String(errorMsg || 'Could not load canvas').slice(0, 240));
   const source = esc(htmlStr || '');
   queueVizActions(id);
   return '<div class="viz" id="' + id + '" data-viz-state="error">' +
@@ -470,7 +478,7 @@ export function processPendingVizActions(root?: ParentNode) {
     if (root instanceof Element && root.matches('.viz-error [data-viz-error-actions-root]')) mountVizErrorActions(root);
   }
   const pending = takePendingActions();
-  pending.forEach(function (item: { id: any; }) {
+  pending.forEach(function (item) {
     const card = document.getElementById(item && item.id);
     if (!card) return;
     mountVizCardControls(card.querySelector('[data-viz-actions-root]'));

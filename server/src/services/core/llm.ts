@@ -30,6 +30,17 @@ let _llmDispatcher: Dispatcher | null = null;
 const _dnsCache = new Map<string, { addresses: Array<{ address: string; family: number }>; expires: number }>();
 const DNS_CACHE_TTL_MS = 60_000;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function reasoningText(delta: unknown): string {
+  if (!isRecord(delta)) return '';
+  const raw = delta.reasoning_content ?? delta.reasoning ?? delta.thinking;
+  if (typeof raw === 'string') return raw;
+  return isRecord(raw) && typeof raw.text === 'string' ? raw.text : '';
+}
+
 function cachedDnsLookup(
   hostname: string,
   _opts: unknown,
@@ -42,9 +53,7 @@ function cachedDnsLookup(
   }
   dns.lookup(hostname, { all: true }, (err, addresses) => {
     if (err) return cb(err, []);
-    const list = Array.isArray(addresses)
-      ? addresses.map((a) => ({ address: a.address, family: a.family }))
-      : [{ address: (addresses as any).address, family: (addresses as any).family }];
+    const list = addresses.map((a) => ({ address: a.address, family: a.family }));
     _dnsCache.set(hostname, { addresses: list, expires: now + DNS_CACHE_TTL_MS });
     cb(null, list);
   });
@@ -821,12 +830,7 @@ export async function streamChatCompletion(
              thinking pill and persist it on the assistant message
              for the next turn. */
           if (typeof onReasoning === 'function') {
-            const rawReasoning = delta.reasoning_content ?? (delta as any).reasoning ?? (delta as any).thinking;
-            const reasoning = typeof rawReasoning === 'string'
-              ? rawReasoning
-              : (rawReasoning && typeof rawReasoning === 'object' && typeof (rawReasoning as any).text === 'string')
-                ? (rawReasoning as any).text
-                : '';
+            const reasoning = reasoningText(delta);
             if (reasoning.length > 0) {
               try { onReasoning(reasoning); } catch { /* ignore */ }
             }
@@ -886,12 +890,7 @@ export async function streamChatCompletion(
         const delta = json.choices?.[0]?.delta;
         if (delta) {
           if (typeof onReasoning === 'function') {
-            const rawReasoning = delta.reasoning_content ?? (delta as any).reasoning ?? (delta as any).thinking;
-            const reasoning = typeof rawReasoning === 'string'
-              ? rawReasoning
-              : (rawReasoning && typeof rawReasoning === 'object' && typeof (rawReasoning as any).text === 'string')
-                ? (rawReasoning as any).text
-                : '';
+            const reasoning = reasoningText(delta);
             if (reasoning.length > 0) {
               try { onReasoning(reasoning); } catch { /* ignore */ }
             }

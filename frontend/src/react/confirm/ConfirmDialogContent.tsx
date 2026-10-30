@@ -3,7 +3,7 @@ import { useCallback, useRef } from 'react';
 import { FoundationDialog, FoundationDialogClose, FoundationDialogDescription, FoundationDialogTitle } from '../dialog/FoundationDialog';
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import type { ConfirmSnapshot } from './types';
-import { getConfirmReturnFocus } from './confirm.bridge';
+import { getConfirmReturnFocus } from './confirm.hooks';
 import { setModalOpen } from '../../ui/modalA11y.ts';
 
 function restoreConfirmFocus(): HTMLElement | null {

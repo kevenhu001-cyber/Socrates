@@ -4,6 +4,7 @@
 
 import { stateStore } from '../state/store.ts';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 type ChatResultWindow = Window & {
   askChatTurn(text: string): Promise<unknown>;
@@ -29,7 +30,10 @@ function normalizeJsonToolCall(value: unknown): ParsedToolCall | null {
 function parseJsonToolCall(value: string): ParsedToolCall | null {
   try {
     return normalizeJsonToolCall(JSON.parse(value));
-  } catch (_) { /* not JSON */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/format.ts:32');
+    /* not JSON */
+  }
   return null;
 }
 
@@ -144,7 +148,10 @@ function handleChatApiResult(
               if (typeof quiet === 'function' ? !quiet(e) : true) console.error('[chat] retry turn failed:', e);
             });
           }
-        } catch { /* retry dispatch failed — bubble already shows the error */ }
+        } catch (error) {
+          reportEmptyCatch(error, 'empty catch: chat/format.ts:147');
+          /* retry dispatch failed — bubble already shows the error */
+        }
       });
     } else {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });

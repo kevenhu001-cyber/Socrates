@@ -5,6 +5,7 @@ import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
 import { filterRecentsByChip } from '../ui/recentsHelpers.ts';
 import type { SessionItem } from '../react/session-list/types.ts';
 import { sameSessionRow, sessionRowFields } from './sessionRowModel.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export { sameSessionRow, sessionRowFields };
 
@@ -60,7 +61,8 @@ export function publishSessionList(): void {
       filter,
       fetchFailed: !!window.SERVER_SESSIONS_FETCH_FAILED,
     });
-  } catch {
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: session/sessionListPublisher.ts:63', 'expected');
     /* The React bridge is best-effort during boot/teardown. */
   }
 }

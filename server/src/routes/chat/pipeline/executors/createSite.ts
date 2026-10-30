@@ -42,8 +42,8 @@ export const executeCreateSite: ToolExecutor = async (
 
   try {
     const site = await createAndPublishSite(req.userId, {
-      title: args.title,
-      source: args.source,
+      title: typeof args.title === 'string' ? args.title : '',
+      source: typeof args.source === 'string' ? args.source : '',
       visibility: typeof args.visibility === 'string' ? args.visibility : undefined,
       sessionId: ctx.sessionIdFromQuery,
       projectId: ctx.projectIdFromBody,

@@ -7,6 +7,24 @@ interface ScrollOptions {
 interface ScrollMetrics { scrollHeight: number; scrollTop: number; clientHeight: number }
 interface ContentMetrics extends ScrollMetrics { msg?: HTMLElement | null; msgHeight?: number | null }
 interface PinState { lastMetrics: ContentMetrics | null; lastPinned: boolean; observedViewportHeight: number | null }
+interface MessageObserverHooks {
+ getLastMessage(): HTMLElement | null;
+ setLastMessage(message: HTMLElement | null): void;
+ readMetrics(): ContentMetrics | null;
+ setContentMetrics(metrics: ContentMetrics | null): void;
+ getContentBaseline(): ContentMetrics | null;
+ getContentFrame(): number;
+ setContentFrame(frame: number): void;
+ scheduleContentFollow(baseline?: ContentMetrics | null): void;
+ rememberMetrics(): void;
+}
+interface ComposerResizeHooks {
+ readMetrics(): ContentMetrics | null;
+ keyboardTransitionActive(): boolean;
+ userScrolledAway(): boolean;
+ rememberMetrics(): void;
+ armComposerFollow(): void;
+}
 interface ScrollSetup {
  owner: ScrollOwner; ownerToken: number; startTop: number; targetTop: number; distance: number;
  liveTarget: (() => number) | null; resolveTarget: () => number; options: ScrollOptions; plan: ScrollPlan | null;
@@ -22,6 +40,7 @@ import { beginScrollOwner, endScrollOwner, writeScrollTop } from './scrollCoordi
 import { stateStore } from '../state/store.ts';
 import { TurnAnchorList } from '@/chat/turnAnchor.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 
 /* Re-export the pure auto-scroll decision predicates through scroll.js so
@@ -108,7 +127,10 @@ const activeScrollAnims = typeof WeakMap === 'function' ? new WeakMap() : null;
    bottom. */
 function cancelScrollAnimationFor(list: object | null | undefined){
   if(!list||!activeScrollAnims||!activeScrollAnims.has(list))return;
-  try{activeScrollAnims.get(list).cancel();}catch(_){/* detached node */}
+  try{activeScrollAnims.get(list).cancel();}catch(_){
+    reportEmptyCatch(_, 'empty catch: ui/scroll.ts:111');
+    /* detached node */
+  }
   activeScrollAnims.delete(list);
 }
 
@@ -215,7 +237,10 @@ function beginAutoScrollState(list: HTMLElement){
     try{
       if(previous===undefined)delete list.dataset.autoScrolling;
       else list.dataset.autoScrolling=previous;
-    }catch(_){ /* detached node */ }
+    }catch(_){
+      reportEmptyCatch(_, 'empty catch: ui/scroll.ts:218');
+      /* detached node */
+    }
   };
 }
 
@@ -331,7 +356,7 @@ function contentFollowIsBlocked(list: HTMLElement, lastMessage: HTMLElement | nu
   return retryOwnsViewport||turnAnchorSettling||turnAnchorHold;
 }
 
-function createMessageObservers(list: Node,hooks: { getLastMessage: any; setLastMessage: any; readMetrics: any; setContentMetrics: any; getContentBaseline: any; getContentFrame: any; setContentFrame: any; scheduleContentFollow: any; rememberMetrics: any; }){
+function createMessageObservers(list: HTMLElement, hooks: MessageObserverHooks){
   const resizeObserver=typeof ResizeObserver==="function"
     ?new ResizeObserver(function(){hooks.scheduleContentFollow();})
     :null;
@@ -350,7 +375,7 @@ function createMessageObservers(list: Node,hooks: { getLastMessage: any; setLast
 
   function observeLastMessage(){
     if(!list||!resizeObserver)return;
-    const messages=(list as Element).querySelectorAll(":scope > .msg");
+    const messages=list.querySelectorAll<HTMLElement>(":scope > .msg");
     const next=messages.length?messages[messages.length-1]:null;
     if(next===hooks.getLastMessage())return;
     resizeObserver.disconnect();
@@ -408,7 +433,7 @@ export function smoothScrollToBottom(list: HTMLElement | null, opts: ScrollOptio
   }:o);
 }
 
-function createComposerResizeHandler(list: (HTMLElement & { __socratesTurnViewportOwner?: boolean }) | null,pinState: { lastMetrics: any; lastPinned: any; observedViewportHeight: any; },hooks: { readMetrics: any; keyboardTransitionActive: any; userScrolledAway: any; rememberMetrics: any; armComposerFollow: any; },pinSlack: number){
+function createComposerResizeHandler(list: (HTMLElement & { __socratesTurnViewportOwner?: boolean }) | null,pinState: PinState,hooks: ComposerResizeHooks,pinSlack: number){
   return function(){
     const current=hooks.readMetrics();
     const heightBeforeResize=pinState.observedViewportHeight;
@@ -631,7 +656,7 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
      deliberately moved upward keeps the exact same scrollTop. The
      smooth path is delegated to smoothScrollToBottom() so the same
      motion language (and reduced-motion handling) applies. */
-  function scheduleContentFollow(baselineOverride: any){
+  function scheduleContentFollow(baselineOverride?: ContentMetrics | null){
     if(contentFrame||!list)return;
     /* The mutation fallback passes the baseline captured BEFORE the DOM
        change; neither path uses a baseline advanced by scroll events. */
@@ -664,9 +689,9 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
 
   const messageObservers=createMessageObservers(list,{
     getLastMessage:function(){return lastMessage},
-    setLastMessage:function(next: any){lastMessage=next},
+    setLastMessage:function(next: HTMLElement | null){lastMessage=next},
     readMetrics:readMetrics,
-    setContentMetrics:function(metrics: any){contentMetrics=metrics},
+    setContentMetrics:function(metrics: ContentMetrics | null){contentMetrics=metrics},
     getContentBaseline:function(){return contentMetrics||pinState.lastMetrics},
     getContentFrame:function(){return contentFrame},
     setContentFrame:function(frame: number){contentFrame=frame},
@@ -717,7 +742,7 @@ export function scrollToBottomIfPinned(){
    Moved from main.js so all scroll ownership lives in this module.
    A forced scroll bypasses the pin check; otherwise the scroll only
    happens when the reader is pinned and has not scrolled away. */
-export function scrollMainToBottom(opts: { force?: any; smooth?: any; }){
+export function scrollMainToBottom(opts: { force?: boolean; smooth?: boolean } = {}){
   opts=opts||{};
   if(!opts.force&&stateStore.read("_userScrolledAway"))return;
   const sc=scrollContainer();
@@ -744,7 +769,7 @@ export function scrollMainToBottom(opts: { force?: any; smooth?: any; }){
    early: the DOM write has not yet completed layout and scrollHeight
    reflects the pre-bubble height, so the smooth scroll targets a stale
    bottom. */
-export function scheduleScrollMainToBottom(opts: any){
+export function scheduleScrollMainToBottom(opts: { force?: boolean; smooth?: boolean } = {}){
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
       scrollMainToBottom(opts);

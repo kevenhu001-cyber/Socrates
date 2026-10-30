@@ -77,7 +77,7 @@ export const Between = defineFunction({
   name: "Between",
   description:
     'Rows whose field is from min to max, both included; compares numbers, or text such as "YYYY-MM-DD" dates. Leave min or max null for an open end',
-  params: z.object({ rows: list(), field: z.string(), min: z.any().optional(), max: z.any().optional() }),
+  params: z.object({ rows: list(), field: z.string(), min: z.unknown().optional(), max: z.unknown().optional() }),
   returns: list(),
   fn: ({ rows, field, min, max }) =>
     rows.filter((row) => {

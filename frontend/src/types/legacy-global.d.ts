@@ -84,10 +84,8 @@ declare global {
     __socratesProfileBridge?: unknown;
     __socratesUsageBridge?: unknown;
     __socratesShareBridge?: unknown;
-    __socratesMorePopoverBridge?: unknown;
     __socratesComposerToolsBridge?: unknown;
     __socratesAttachmentsBridge?: unknown;
-    __socratesPromptTemplatesBridge?: unknown;
     __socratesSidebarChromeBridge?: unknown;
     __socratesSessionListBridge?: unknown;
 

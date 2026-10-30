@@ -16,7 +16,7 @@ export interface SpeechRecognitionRuntime {
   abort(): void;
 }
 export interface VoiceSession {
-  surface: string;
+  surface: 'chat' | 'topic';
   bar: HTMLElement | null;
   stream: MediaStream | null;
   audioContext: AudioContext | null;

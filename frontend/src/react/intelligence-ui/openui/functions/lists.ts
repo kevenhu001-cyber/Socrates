@@ -8,7 +8,7 @@ const index = (i: number, length: number) => (i < 0 ? length + i : i);
 export const Append = defineFunction({
   name: "Append",
   description: "Copy of the list with item added at the end",
-  params: z.object({ list: list(), item: z.any() }),
+  params: z.object({ list: list(), item: z.unknown() }),
   returns: list(),
   fn: ({ list, item }) => [...list, item],
 });
@@ -16,7 +16,7 @@ export const Append = defineFunction({
 export const Prepend = defineFunction({
   name: "Prepend",
   description: "Copy of the list with item added at the start",
-  params: z.object({ list: list(), item: z.any() }),
+  params: z.object({ list: list(), item: z.unknown() }),
   returns: list(),
   fn: ({ list, item }) => [item, ...list],
 });
@@ -35,7 +35,7 @@ export const Concat = defineFunction({
 export const Remove = defineFunction({
   name: "Remove",
   description: 'Copy without the items whose field equals value; field "" compares the items themselves',
-  params: z.object({ list: list(), field: z.string(), value: z.any() }),
+  params: z.object({ list: list(), field: z.string(), value: z.unknown() }),
   returns: list(),
   fn: ({ list, field, value }) => list.filter((item) => !same(read(item, field), value)),
 });
@@ -54,7 +54,7 @@ export const RemoveAt = defineFunction({
 export const Update = defineFunction({
   name: "Update",
   description: "Copy where items whose field equals value get setField set to setValue",
-  params: z.object({ list: list(), field: z.string(), value: z.any(), setField: z.string(), setValue: z.any() }),
+  params: z.object({ list: list(), field: z.string(), value: z.unknown(), setField: z.string(), setValue: z.unknown() }),
   returns: list(),
   fn: ({ list, field, value, setField, setValue }) =>
     list.map((item) =>
@@ -67,7 +67,7 @@ export const Update = defineFunction({
 export const Toggle = defineFunction({
   name: "Toggle",
   description: "Adds item if missing, removes it if present (a set of strings or numbers)",
-  params: z.object({ list: list(), item: z.any() }),
+  params: z.object({ list: list(), item: z.unknown() }),
   returns: list(),
   fn: ({ list, item }) => (list.some((x) => same(x, item)) ? list.filter((x) => !same(x, item)) : [...list, item]),
 });
@@ -75,7 +75,7 @@ export const Toggle = defineFunction({
 export const Includes = defineFunction({
   name: "Includes",
   description: "True if the list has item, or the text contains it",
-  params: z.object({ list: z.union([list(), z.string()]), item: z.any() }),
+  params: z.object({ list: z.union([list(), z.string()]), item: z.unknown() }),
   returns: z.boolean(),
   fn: ({ list, item }) =>
     typeof list === "string" ? item != null && list.includes(String(item)) : list.some((x) => same(x, item)),
@@ -84,15 +84,15 @@ export const Includes = defineFunction({
 export const Find = defineFunction({
   name: "Find",
   description: "First item whose field equals value, or null",
-  params: z.object({ list: list(), field: z.string(), value: z.any() }),
-  returns: z.any(),
+  params: z.object({ list: list(), field: z.string(), value: z.unknown() }),
+  returns: z.unknown(),
   fn: ({ list, field, value }) => list.find((item) => same(read(item, field), value)) ?? null,
 });
 
 export const IndexOf = defineFunction({
   name: "IndexOf",
   description: "Index of item in the list, or -1",
-  params: z.object({ list: list(), item: z.any() }),
+  params: z.object({ list: list(), item: z.unknown() }),
   returns: z.number(),
   fn: ({ list, item }) => list.findIndex((x) => same(x, item)),
 });
@@ -162,7 +162,7 @@ export const Pick = defineFunction({
   name: "Pick",
   description: "A random item, or null for an empty list; draws anew each time, so call it inside @Set",
   params: z.object({ list: list() }),
-  returns: z.any(),
+  returns: z.unknown(),
   fn: ({ list }) => (list.length ? list[Math.floor(Math.random() * list.length)] : null),
 });
 

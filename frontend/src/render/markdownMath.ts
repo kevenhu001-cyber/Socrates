@@ -1,6 +1,7 @@
 /* KaTeX heuristics and tolerant render helpers shared by Markdown passes. */
 import { KATEX_MACROS, _looksLikeLatex } from './helpers.ts';
 import { ensureKatex } from '../vendor/lazy.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 interface KatexLike {
   renderToString: (
@@ -394,7 +395,10 @@ function _renderStreamMath(math: string, displayMode: boolean, unclosed: boolean
   /* Complete, valid math — the common case — renders in one pass. */
   try {
     return render(source, false);
-  } catch (_) { /* incomplete or malformed — tolerant passes below */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: render/markdownMath.ts:397');
+    /* incomplete or malformed — tolerant passes below */
+  }
 
   /* Auto-close environments even when the surrounding display delimiter is
      already complete: models often emit `$$...$$` but forget `\end{...}`. */
@@ -402,7 +406,10 @@ function _renderStreamMath(math: string, displayMode: boolean, unclosed: boolean
   if (closed !== source) {
     try {
       return render(closed, false);
-    } catch (_) { /* still structurally incomplete */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: render/markdownMath.ts:405');
+      /* still structurally incomplete */
+    }
     source = closed;
   } else if (unclosed) {
     source = closed;

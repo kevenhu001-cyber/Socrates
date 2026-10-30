@@ -121,7 +121,7 @@ export const executeCodeInterpreter: ToolExecutor = async (
   const execResult: ToolResult = await codeInterpreter.execute({
     userId,
     sessionId: sessionIdFromQuery,
-    language: args.language || 'python',
+    language: typeof args.language === 'string' ? args.language : 'python',
     code: typeof rawCode === 'string' ? rawCode : '',
     signal: abortSignal,
     onProgress,

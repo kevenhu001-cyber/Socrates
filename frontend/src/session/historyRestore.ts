@@ -258,7 +258,7 @@ export function restoreInterruptedResponse(session: RestorableSession, msgList: 
       '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>' +
     '</div>';
   const partialClientId = 'stream-recovered-' + Date.now();
-  const partialIdx: number = stateStore.dispatch({ type: 'session/append-message', payload: {
+  const partialIdx = stateStore.dispatch({ type: 'session/append-message', payload: {
     role: 'assistant',
     clientId: partialClientId,
     rawText: partialText,

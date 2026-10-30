@@ -61,7 +61,10 @@ export function updateKB() {
     try {
       _ts.renderKnowledgeBoundaryFile({});
       return;
-    } catch (_) { /* delegate failed — fall through to the legacy list */ }
+    } catch (_) {
+      reportSwallow(_, 'empty catch: ui/knowledgePanel.ts:64');
+      /* delegate failed — fall through to the legacy list */
+    }
   }
 
   if (!stateStore.read('kbNodes').length) {
@@ -70,7 +73,7 @@ export function updateKB() {
   }
 
   const sections: Record<string, { idx: number; name: string; questions: number }[]> = { internalized: [], fuzzy: [], blank: [] };
-  stateStore.read('kbNodes').forEach(function (n: { status: string; name: any; questions: any; }, i: any) {
+  stateStore.read('kbNodes').forEach(function (n, i) {
     const cls = n.status === 'internalized' ? 'internalized' : n.status === 'fuzzy' ? 'fuzzy' : 'blank';
     sections[cls].push({ name: n.name, questions: n.questions || 0, idx: i });
   });

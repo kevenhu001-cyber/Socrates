@@ -55,7 +55,7 @@ export const Flashcard = defineComponent({
 });
 export const Table = defineComponent({
   name: 'Table',
-  props: z.object({ columns: z.array(z.object({ key: z.string(), label: z.string() })), rows: z.array(z.record(z.string(), z.any())), caption: z.string().optional() }),
+  props: z.object({ columns: z.array(z.object({ key: z.string(), label: z.string() })), rows: z.array(z.record(z.string(), z.unknown())), caption: z.string().optional() }),
   description: 'Data table. columns are {key,label}; rows use those keys.',
   component: ({ props }) => <div className="iui-table-wrap"><table className="iui-table">{props.caption ? <caption>{props.caption}</caption> : null}<thead><tr>{props.columns.slice(0, 12).map((col) => <th scope="col" key={col.key}>{col.label}</th>)}</tr></thead><tbody>{props.rows.slice(0, 100).map((row, i) => <tr key={i}>{props.columns.slice(0, 12).map((col) => <td key={col.key}>{['string', 'number', 'boolean'].includes(typeof row[col.key]) ? String(row[col.key]) : ''}</td>)}</tr>)}</tbody></table></div>,
 });

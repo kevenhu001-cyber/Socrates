@@ -162,12 +162,18 @@ export function permitsCompatibilityFallback(body: string, reason: string): bool
 }
 
 export function providerPayloadFailure(payload: unknown): { status: number; body: string } | null {
-  if (!payload || typeof payload !== 'object') return null;
-  const p = payload as Record<string, any>;
-  const code = Number(p.base_resp?.status_code ?? p.error?.code ?? p.code ?? 0);
-  if (!p.error && !(p.base_resp && Number.isFinite(code) && code !== 0) && !(code && !p.choices)) return null;
-  const message = String(p.error?.message || p.error || p.base_resp?.status_msg || p.message || 'Upstream error');
-  const type = String(p.error?.type || p.error?.code || '');
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  const p = payload as Record<string, unknown>;
+  const baseResp = p.base_resp && typeof p.base_resp === 'object' && !Array.isArray(p.base_resp)
+    ? p.base_resp as Record<string, unknown>
+    : null;
+  const error = p.error && typeof p.error === 'object' && !Array.isArray(p.error)
+    ? p.error as Record<string, unknown>
+    : null;
+  const code = Number(baseResp?.status_code ?? error?.code ?? p.code ?? 0);
+  if (!p.error && !(baseResp && Number.isFinite(code) && code !== 0) && !(code && !p.choices)) return null;
+  const message = String(error?.message || p.error || baseResp?.status_msg || p.message || 'Upstream error');
+  const type = String(error?.type || error?.code || '');
   const status = [1002, 1039, 1045, 2045, 2046, 2062].includes(code) || /rate.limit|quota/i.test(type) ? 429
     : code === 1004 || /auth|invalid.api.key/i.test(type) ? 401
       : code === 1008 ? 402

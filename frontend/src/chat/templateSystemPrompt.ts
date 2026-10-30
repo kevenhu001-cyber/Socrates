@@ -15,7 +15,17 @@ import type { PromptMessage } from './promptSuffixes.ts';
 /** Active prompt template as shaped by main.js setActiveTemplate. */
 export interface ActiveTemplate {
   id?: string;
+  title?: string;
+  shortcut?: string;
   systemPrompt?: string;
+  body?: string;
+  icon?: string;
+  hint?: string;
+  description?: string;
+  extensionKey?: string;
+  runId?: string;
+  workflow?: unknown;
+  outputMode?: string;
   [key: string]: unknown;
 }
 

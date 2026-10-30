@@ -1,6 +1,7 @@
 import { getApiFetch, getLegacyActions } from '../../legacy/gateway.ts';
 import { patchScheduledState, replaceScheduledTasks, useScheduledStore } from './scheduled.store';
 import type { ScheduledTask } from './types';
+import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
 
 type Api = NonNullable<ReturnType<typeof getApiFetch>>;
 
@@ -58,7 +59,10 @@ export async function runScheduledTask(id: string): Promise<void> {
   try {
     await api()('/api/scheduled-tasks/' + encodeURIComponent(id) + '/run', { method: 'POST' });
     await loadScheduledTasks();
-    try { void getLegacyActions().sessions.flushRecentsReconcile(); } catch { /* recents refresh is best-effort */ }
+    try { void getLegacyActions().sessions.flushRecentsReconcile(); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/pages/scheduled/scheduled.service.ts:61', 'expected');
+      /* recents refresh is best-effort */
+    }
     toast('Task ran — see Recents for the result');
   } catch {
     await loadScheduledTasks();

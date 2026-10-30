@@ -79,7 +79,7 @@ test('explicit expected sites stay quiet in dev but remain countable', async () 
 });
 
 test('the default severity is recoverable, so best-effort sites never log as invariants', async () => {
-  /* ~480 sites call reportSwallow(err, ctx) with no severity. If the default
+  /* ~680 sites call reportSwallow(err, ctx) with no severity. If the default
      were `invariant`, every one of them would file a server console.error and
      bury the real uncaught-error signal. Pin the default in the source. */
   const { readFileSync } = await import('node:fs');

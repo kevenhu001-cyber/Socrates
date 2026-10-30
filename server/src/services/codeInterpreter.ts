@@ -54,11 +54,64 @@ import { MAX_TOOL_STRING_FIELD_CHARS } from './tools/toolCallSafety.js';
  *   exec_progress:{executionId}  — { phase, stream, chunk, elapsedMs, executionId }
  *   exec_result:{executionId}    — final { status, executionId, stdout, stderr, ... }
  */
-type ProgressListener = (event: any) => void;
-type ProgressEvent = Record<string, unknown>;
+export type ProgressEvent = Record<string, unknown>;
+type ProgressListener = (event: ProgressEvent) => void;
+
+interface WorkerArtifact {
+  name: string;
+  absPath: string;
+  size: number;
+  [key: string]: unknown;
+}
+
+interface WorkerExecutionResult {
+  status: string;
+  stdout?: string;
+  stderr?: string;
+  exitCode?: number;
+  durationMs?: number;
+  errorCode?: string;
+  errorMessage?: string;
+  artifacts?: WorkerArtifact[];
+  [key: string]: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function parseWorkerExecutionResult(value: unknown): WorkerExecutionResult | null {
+  if (!isRecord(value) || typeof value.status !== 'string') return null;
+  const artifacts = Array.isArray(value.artifacts)
+    ? value.artifacts.flatMap((artifact): WorkerArtifact[] => (
+      isRecord(artifact)
+      && typeof artifact.name === 'string'
+      && typeof artifact.absPath === 'string'
+      && typeof artifact.size === 'number'
+        ? [{ name: artifact.name, absPath: artifact.absPath, size: artifact.size }]
+        : []
+    ))
+    : undefined;
+  return {
+    status: value.status,
+    stdout: typeof value.stdout === 'string' ? value.stdout : undefined,
+    stderr: typeof value.stderr === 'string' ? value.stderr : undefined,
+    exitCode: typeof value.exitCode === 'number' ? value.exitCode : undefined,
+    durationMs: typeof value.durationMs === 'number' ? value.durationMs : undefined,
+    errorCode: typeof value.errorCode === 'string' ? value.errorCode : undefined,
+    errorMessage: typeof value.errorMessage === 'string' ? value.errorMessage : undefined,
+    artifacts,
+  };
+}
+
+function asProgressEvent(value: unknown): ProgressEvent {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as ProgressEvent
+    : { value };
+}
 
 export async function subscribeExecution(executionId: string, listener: ProgressListener) {
-  return pubsubSubscribe(`exec_progress:${executionId}`, listener);
+  return pubsubSubscribe(`exec_progress:${executionId}`, (payload) => listener(asProgressEvent(payload)));
 }
 
 export function unsubscribeExecution(executionId: string, listener: ProgressListener) {
@@ -72,7 +125,7 @@ export function unsubscribeExecution(executionId: string, listener: ProgressList
 }
 
 export async function subscribeExecutionResult(executionId: string, listener: ProgressListener) {
-  return pubsubSubscribe(`exec_result:${executionId}`, listener);
+  return pubsubSubscribe(`exec_result:${executionId}`, (payload) => listener(asProgressEvent(payload)));
 }
 
 export async function unsubscribeExecutionResult(executionId: string, listener: ProgressListener) {
@@ -249,7 +302,7 @@ class WorkerSlot {
   terminated: boolean;
   _readyResolved: boolean;
   _readyReject: ((reason?: unknown) => void) | null;
-  _inflightReject: ((reason?: any) => void) | null;
+  _inflightReject: ((reason?: unknown) => void) | null;
   _claimChain: Promise<void>;
   _releaseCurrent: (() => void) | null;
   constructor({ index, pool }: { index: number; pool: PyodidePool }) {
@@ -295,8 +348,8 @@ class WorkerSlot {
     };
     this.ready = new Promise<void>((resolve, reject) => {
       this._readyReject = (reason?: unknown) => reject(bootFailure(reason));
-      const onMessage = (msg: any) => {
-        if (msg && msg.id === 'boot') {
+      const onMessage = (msg: unknown) => {
+        if (isRecord(msg) && msg.id === 'boot') {
           w.off('message', onMessage);
           if (msg.type === 'ready') {
             this._readyResolved = true;
@@ -369,7 +422,7 @@ class WorkerSlot {
     // Update the chain link so any concurrent claim() (which captured
     // the old resolved _claimChain) now queues behind us instead of
     // racing past busy=true.
-    let resolveNextRelease: any;
+    let resolveNextRelease!: () => void;
     this._claimChain = new Promise<void>((resolve) => { resolveNextRelease = resolve; });
     this._installReleaseTrap(resolveNextRelease);
     return true;
@@ -422,7 +475,7 @@ class WorkerSlot {
    * queued claim can proceed.
    */
   _installReleaseTrap(resolveNextRelease: (() => void) | null) {
-    let resolveRelease: any;
+    let resolveRelease!: () => void;
     const myRelease = new Promise<void>((resolve) => { resolveRelease = resolve; });
     this._releaseCurrent = resolveRelease;
     myRelease.then(() => {
@@ -631,7 +684,7 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
   }, timeout + 1000);
 
   try {
-    const result = await new Promise<any>((resolve, reject) => {
+    const result = await new Promise<WorkerExecutionResult>((resolve, reject) => {
       slot._inflightReject = reject; // per-slot, not pool._inflightReject
       const onAbort = () => {
         cancelledByCaller = true;
@@ -641,19 +694,19 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
         if (signal.aborted) onAbort();
         else signal.addEventListener('abort', onAbort, { once: true });
       }
-      const onMessage = (msg: any) => {
-        if (!msg || msg.id !== id) return;
+      const onMessage = (msg: unknown) => {
+        if (!isRecord(msg) || msg.id !== id) return;
         if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'phase') {
           emitProgress(executionId, {
             phase: msg.type,
             stream: msg.type,
-            chunk: msg.chunk || '',
+            chunk: typeof msg.chunk === 'string' ? msg.chunk : String(msg.chunk ?? ''),
             executionId,
-            elapsedMs: msg.elapsedMs,
+            elapsedMs: typeof msg.elapsedMs === 'number' ? msg.elapsedMs : undefined,
           }, onProgress);
           return;
         }
-        if (msg.type === 'result' || msg.status) {
+        if (msg.type === 'result' || typeof msg.status === 'string') {
           worker.off('message', onMessage);
           if (signal) signal.removeEventListener('abort', onAbort);
           slot._inflightReject = null;
@@ -663,7 +716,9 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
           clearTimeout(sigintTimer);
           clearTimeout(terminateTimer);
           for (const t of timeoutWarnings) clearTimeout(t);
-          resolve(msg);
+          const result = parseWorkerExecutionResult(msg);
+          if (result) resolve(result);
+          else reject(new Error('pyodide_worker_invalid_result'));
         }
       };
       worker.on('message', onMessage);

@@ -37,15 +37,17 @@ let _cookieConsentInitialized = false;
 let _cookieConsentPrivacyUrl = '/privacy';
 let _cookieConsentAuthPlacement = false;
 
-function normalizePreference(raw: { v: number; nonEssential: any; updatedAt: any; }) {
-  if (!raw || typeof raw !== 'object') return null;
-  if (raw.v !== CONSENT_VERSION) return null;
-  if (typeof raw.nonEssential !== 'boolean') return null;
+function normalizePreference(raw: unknown) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const value = raw as Record<string, unknown>;
+  if (typeof value.v !== 'number') return null;
+  if (value.v !== CONSENT_VERSION) return null;
+  if (typeof value.nonEssential !== 'boolean') return null;
   return {
     v: CONSENT_VERSION,
-    choice: raw.nonEssential ? CONSENT_ACCEPT : CONSENT_ESSENTIAL,
-    nonEssential: raw.nonEssential,
-    updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date().toISOString(),
+    choice: value.nonEssential ? CONSENT_ACCEPT : CONSENT_ESSENTIAL,
+    nonEssential: value.nonEssential,
+    updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : new Date().toISOString(),
   };
 }
 
@@ -67,15 +69,24 @@ export function getConsentPreference() {
     if (raw) {
       try {
         pref = normalizePreference(JSON.parse(raw));
-      } catch (_) { /* malformed local entry — fall through to cookie */ }
+      } catch (_) {
+        reportSwallow(_, 'empty catch: cookieConsent.ts:70');
+        /* malformed local entry — fall through to cookie */
+      }
     }
-  } catch (_) { /* storage blocked */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: cookieConsent.ts:72');
+    /* storage blocked */
+  }
   if (!pref) {
     const cookieRaw = readCookieValue(CONSENT_COOKIE);
     if (cookieRaw) {
       try {
         pref = normalizePreference(JSON.parse(cookieRaw));
-      } catch (_) { /* malformed cookie — treat as no choice */ }
+      } catch (_) {
+        reportSwallow(_, 'empty catch: cookieConsent.ts:78');
+        /* malformed cookie — treat as no choice */
+      }
     }
   }
   if (pref) {
@@ -137,8 +148,8 @@ export function setConsentPreference(choice: string) {
   return pref;
 }
 
-function parseCookieAssignment(raw: any) {
-  const s = String(raw || '');
+function parseCookieAssignment(raw: unknown) {
+  const s = typeof raw === 'string' ? raw : String(raw ?? '');
   const first = s.split(';')[0] || '';
   const eq = first.indexOf('=');
   if (eq <= 0) return null;
@@ -152,7 +163,7 @@ function parseCookieAssignment(raw: any) {
   return { name: name, value: value, isDeletion: isDeletion };
 }
 
-function isCookieWriteAllowed(raw: any) {
+function isCookieWriteAllowed(raw: unknown) {
   const parsed = parseCookieAssignment(raw);
   if (!parsed) return true;
   if (isEssentialCookieName(parsed.name)) return true;
@@ -184,7 +195,10 @@ export function installCookieGuard() {
     });
     _cookieGuardInstalled = true;
     _cookieGuardDocument = document;
-  } catch (_) { /* unsupported host — skip the client-side guard */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: cookieConsent.ts:187');
+    /* unsupported host — skip the client-side guard */
+  }
 }
 
 /* Keep the first-visit banner visible without covering the auth form.  The
@@ -220,7 +234,7 @@ export function getCookieConsentAuthPlacement() {
   return _cookieConsentAuthPlacement;
 }
 
-export function initCookieConsent(options: { _queued?: any; privacyUrl?: any; }) {
+export function initCookieConsent(options: { _queued?: boolean; privacyUrl?: string } = {}) {
   options = options || {};
   if (typeof document === 'undefined') return { shown: false };
   if (!document.body) {

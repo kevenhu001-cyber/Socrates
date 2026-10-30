@@ -8,6 +8,12 @@ const TILE_ORIGIN = 'https://tiles.openfreemap.org';
 const text = (value: unknown, length = 300): string => typeof value === 'string'
   ? htmlToPlainText(value).replace(/\s+/g, ' ').trim().slice(0, length)
   : '';
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+);
+const records = (value: unknown): Record<string, unknown>[] => (
+  Array.isArray(value) ? value.filter(isRecord) : []
+);
 export function queryText(value: unknown): string {
   if (typeof value !== 'string') throw new BadRequest('q must be 2–200 characters');
   const query = value.replace(/\s+/g, ' ').trim();
@@ -54,10 +60,14 @@ export async function searchUiImages(query: string): Promise<UiSearchImage[]> {
       const params = new URLSearchParams({ action: 'query', format: 'json', formatversion: '2', generator: 'search', gsrsearch: `${query} filetype:bitmap`, gsrnamespace: '6', gsrlimit: '6', prop: 'imageinfo', iiprop: 'url|mime|extmetadata', iiurlwidth: '960' });
       const data = await remoteJson(`https://commons.wikimedia.org/w/api.php?${params}`, 3500);
       if (data.error) throw remoteUnavailable();
-      for (const page of Array.isArray(data.query?.pages) ? data.query.pages : []) {
-        const info = page.imageinfo?.[0];
-        if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(info?.mime || '')) continue;
-        add(info.thumburl || info.url, page.title?.replace(/^File:/, ''), info.descriptionurl, text(info.extmetadata?.Artist?.value), text(info.extmetadata?.LicenseShortName?.value));
+      const queryData = isRecord(data.query) ? data.query : {};
+      for (const page of records(queryData.pages)) {
+        const info = records(page.imageinfo)[0];
+        if (!info || typeof info.mime !== 'string' || !/^image\/(jpeg|png|webp|gif|avif)$/.test(info.mime)) continue;
+        const metadata = isRecord(info.extmetadata) ? info.extmetadata : {};
+        const artist = isRecord(metadata.Artist) ? metadata.Artist.value : undefined;
+        const license = isRecord(metadata.LicenseShortName) ? metadata.LicenseShortName.value : undefined;
+        add(info.thumburl || info.url, typeof page.title === 'string' ? page.title.replace(/^File:/, '') : '', info.descriptionurl, text(artist), text(license));
       }
     } catch { /* Provider fallback below also covers temporary Wikimedia failures. */ }
     if (!results.length) {
@@ -69,8 +79,9 @@ export async function searchUiImages(query: string): Promise<UiSearchImage[]> {
           // This fixed endpoint serves JSON with a JavaScript content type; parse
           // its bounded bytes as JSON only, never evaluate a script.
           const response = await remoteBytes(`https://duckduckgo.com/i.js?${new URLSearchParams({ q: query, vqd: token, l: 'us-en', o: 'json', p: '1' })}`, 2_000_000, 6000);
-          const found = JSON.parse(response.bytes.toString('utf8'));
-          for (const item of Array.isArray(found.results) ? found.results.slice(0, 12) : []) add(item.thumbnail, item.title, item.url);
+          const found: unknown = JSON.parse(response.bytes.toString('utf8'));
+          const foundRecord = isRecord(found) ? found : {};
+          for (const item of records(foundRecord.results).slice(0, 12)) add(item.thumbnail, item.title, item.url);
         }
       } catch { /* Bing remains a fallback if this public search endpoint changes. */ }
     }
@@ -102,11 +113,14 @@ export async function lookupUiPlaces(query: string) {
   return placesCache(query, async () => {
     const data = await remoteJson(`https://photon.komoot.io/api/?${new URLSearchParams({ q: query, limit: '5' })}`);
     const places: UiPlace[] = [];
-    for (const feature of Array.isArray(data.features) ? data.features.slice(0, 5) : []) {
-      const [lng, lat] = feature.geometry?.coordinates || [];
-      const props = feature.properties || {};
-      if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
-      const kind = { N: 'node', W: 'way', R: 'relation' }[props.osm_type as 'N' | 'W' | 'R'];
+    for (const feature of records(data.features).slice(0, 5)) {
+      const geometry = isRecord(feature.geometry) ? feature.geometry : {};
+      const coordinates = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
+      const [lng, lat] = coordinates;
+      const props = isRecord(feature.properties) ? feature.properties : {};
+      if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) continue;
+      const osmType = props.osm_type;
+      const kind = osmType === 'N' ? 'node' : osmType === 'W' ? 'way' : osmType === 'R' ? 'relation' : null;
       if (!kind || !/^\d+$/.test(String(props.osm_id))) continue;
       places.push({ label: [...new Set([props.name, props.city, props.state, props.country].map((value) => text(value, 100)).filter(Boolean))].join(', '), lat, lng, sourceUrl: `https://www.openstreetmap.org/${kind}/${props.osm_id}` });
     }
@@ -130,10 +144,19 @@ export async function lookupUiRoute(coords: [number, number][]) {
   const key = coords.map((pair) => pair.join(',')).join(';');
   return routeCache(key, async () => {
     const data = await remoteJson(`https://router.project-osrm.org/route/v1/driving/${key}?overview=full&geometries=geojson&steps=false`);
-    const route = data.routes?.[0];
-    if (data.code !== 'Ok' || !Array.isArray(route?.geometry?.coordinates)) throw remoteUnavailable();
-    const points = route.geometry.coordinates.filter((pair: unknown) => Array.isArray(pair) && pair.length === 2 && Number.isFinite(pair[0]) && Number.isFinite(pair[1]) && Math.abs(pair[0]) <= 180 && Math.abs(pair[1]) <= 90);
-    if (points.length < 2 || points.length > 30000 || !Number.isFinite(route.distance) || !Number.isFinite(route.duration)) throw remoteUnavailable();
+    const route = records(data.routes)[0];
+    const geometry = route && isRecord(route.geometry) ? route.geometry : {};
+    const coordinates = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
+    if (data.code !== 'Ok' || !route) throw remoteUnavailable();
+    const points: [number, number][] = coordinates.flatMap((pair): [number, number][] => {
+      if (!Array.isArray(pair) || pair.length !== 2) return [];
+      const [lng, lat] = pair;
+      return typeof lng === 'number' && typeof lat === 'number'
+        && Number.isFinite(lng) && Number.isFinite(lat) && Math.abs(lng) <= 180 && Math.abs(lat) <= 90
+        ? [[lng, lat]]
+        : [];
+    });
+    if (points.length < 2 || points.length > 30000 || typeof route.distance !== 'number' || typeof route.duration !== 'number' || !Number.isFinite(route.distance) || !Number.isFinite(route.duration)) throw remoteUnavailable();
     return { points, distance: route.distance, duration: route.duration, profile: 'driving' };
   });
 }

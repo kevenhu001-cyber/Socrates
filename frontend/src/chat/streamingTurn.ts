@@ -187,7 +187,7 @@ function createStreamingTurnApi(context: StreamingContext): import("./turnState.
     }
     finalizeStreamThinking('streamingTurn._preRev1.finalizeOnFirstDelta');
   }
-  function appendStreamDelta(delta: any){
+  function appendStreamDelta(delta: string){
     if(!context.stillOwnsSlot())return;
     const wasFirst=state.firstDelta;
     if(wasFirst){
@@ -242,7 +242,7 @@ function createStreamingTurnApi(context: StreamingContext): import("./turnState.
       publishReactChatRuntime({type:"tool-run-updated",messageId:context.clientId});
     },
     append:appendStreamDelta,
-    appendThinking:function(delta: string|any[]){
+    appendThinking:function(delta: string){
       if(!context.stillOwnsSlot())return;
       if(typeof delta!=="string"||!delta.length)return;
       if(!state.fullReasoning)state.thinkStarted=Date.now();

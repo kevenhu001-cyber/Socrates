@@ -43,6 +43,22 @@ interface RankedSearchResult extends SearchResult { _relevance: number }
 interface SearchResponse { ok: boolean; query: string; results: SearchResult[]; status?: number; reason?: string }
 type SearchStepEmitter = (kind: string, data: Record<string, unknown>) => void;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isSearchResult(value: unknown): value is SearchResult {
+  return isRecord(value) && typeof value.url === 'string'
+    && (value.title === undefined || typeof value.title === 'string')
+    && (value.snippet === undefined || typeof value.snippet === 'string')
+    && (value.source === undefined || typeof value.source === 'string');
+}
+
+function searchResultsFrom(value: unknown): SearchResult[] {
+  if (!isRecord(value) || !Array.isArray(value.results)) return [];
+  return value.results.filter(isSearchResult);
+}
+
 function emitSearchStep(opts: { onStep?: (event: SearchStepEvent) => void },kind: string,data: Record<string, unknown>){
   try{
     if(typeof opts.onStep==="function")opts.onStep({kind:kind,data:data||{}});
@@ -59,7 +75,7 @@ function setSearchPillSafely(kind: string,count: number,label: string,source: st
   }
 }
 
-function searchContextForBackground(background: any){
+function searchContextForBackground(background: boolean | undefined){
   return background?browserWindow.stateStore.read("searchContext")||"":"";
 }
 
@@ -79,12 +95,18 @@ function searchOneQuery(query: string): Promise<SearchResponse>{
   return apiFetchRaw("/api/web-search",{
     method:"POST",
     body:{query:query,count:8}
-  }).then(function(response){
-    return response.json().then(function(data){
-      return{ok:true,query,results:Array.isArray(data?.results) ? data.results as SearchResult[] : []};
-    });
-  }).catch(function(error){
-    return{ok:false,query,status:error&&error.status,reason:error&&error.message,results:[]};
+  }).then(async function(response){
+    const data: unknown = await response.json();
+    return { ok: true, query, results: searchResultsFrom(data) };
+  }).catch(function(error: unknown){
+    const details = isRecord(error) ? error : {};
+    return {
+      ok: false,
+      query,
+      status: typeof details.status === 'number' ? details.status : undefined,
+      reason: typeof details.message === 'string' ? details.message : undefined,
+      results: [],
+    };
   });
 }
 
@@ -108,7 +130,7 @@ function mergeQueryResults(searchResponses: SearchResponse[],emit: SearchStepEmi
 }
 
 async function searchForQueries(topic: string,queries: string[],emit: SearchStepEmitter){
-  const searchResponses=await Promise.all(queries.map(function(query: any,index: any){
+  const searchResponses=await Promise.all(queries.map(function(query, index){
     emit("querying",{query:query,idx:index,total:queries.length});
     return searchOneQuery(query);
   }));
@@ -121,8 +143,8 @@ async function searchForQueries(topic: string,queries: string[],emit: SearchStep
         method:"POST",
         body:{query:topic,count:8}
       });
-      const data=await response.json();
-      results=(Array.isArray(data?.results) ? data.results : []).map(function(item: SearchResult){
+      const data: unknown = await response.json();
+      results=searchResultsFrom(data).map(function(item){
         return Object.assign({matchedQuery:topic},item);
       });
       emit("got_results",{query:topic,count:results.length});
@@ -140,7 +162,7 @@ function scoreSearchResult(result: SearchResult,topicWords: string[],topicBigram
   for(let wordIndex=0;wordIndex<topicWords.length;wordIndex++){
     if(title.indexOf(topicWords[wordIndex])!==-1)titleMatch++;
   }
-  const phraseMatch=topicBigrams.some(function(bigram: any){return title.indexOf(bigram)!==-1;});
+  const phraseMatch=topicBigrams.some(function(bigram){return title.indexOf(bigram)!==-1;});
   let snippetMatch=0;
   for(let snippetIndex=0;snippetIndex<topicWords.length;snippetIndex++){
     if(snippet.indexOf(topicWords[snippetIndex])!==-1)snippetMatch++;
@@ -221,8 +243,8 @@ function searchEngineCounts(results: SearchResult[]): Record<string, number>{
   return counts;
 }
 
-function searchFailureReason(searchResponses: any[]){
-  const firstError=searchResponses.find(function(response: { ok: any; status: any; reason: any; }){
+function searchFailureReason(searchResponses: SearchResponse[]){
+  const firstError=searchResponses.find(function(response){
     return response&&!response.ok&&(response.status||response.reason);
   });
   return firstError
@@ -307,7 +329,7 @@ export async function fetchWebContext(topic: string,opts: { signal?: AbortSignal
 /* Build a compact results digest (first 5 sources, snippet only) for
  * the judge prompt. The judge doesn't need fullContent — only the
  * title + snippet + source, so we keep the prompt small. */
-function _buildJudgeDigest(sources: string|any[]){
+function _buildJudgeDigest(sources: SearchResult[]){
   if(!Array.isArray(sources))return"[]";
   const top=(sources.slice(0,5)).map(function(s){
     return{
@@ -320,16 +342,17 @@ function _buildJudgeDigest(sources: string|any[]){
   try{return JSON.stringify(top)}catch(_){return"[]"}
 }
 
-function judgeTextFromResponse(raw: { content?: any; text?: any; choices?: any; }){
+function judgeTextFromResponse(raw: unknown){
   if(typeof raw==="string")return raw;
-  if(!raw||typeof raw!=="object")return"";
+  if(!isRecord(raw))return"";
   if(typeof raw.content==="string")return raw.content;
   if(typeof raw.text==="string")return raw.text;
   const choice=Array.isArray(raw.choices)?raw.choices[0]:null;
-  return choice&&choice.message?String(choice.message.content||""):"";
+  if(!isRecord(choice) || !isRecord(choice.message))return"";
+  return typeof choice.message.content === 'string' ? choice.message.content : "";
 }
 
-function parseJudgeResponse(text: any){
+function parseJudgeResponse(text: string): unknown {
   const cleaned=(text||"").trim()
     .replace(/^```(?:json)?\s*/i,"")
     .replace(/```\s*$/i,"")
@@ -343,9 +366,9 @@ function parseJudgeResponse(text: any){
   }
 }
 
-function normalizeJudgeVerdict(parsed: { score: string; rewrite: any; }){
-  if(!parsed||typeof parsed!=="object")return{score:3,rewrite:""};
-  const parsedScore=parseInt(parsed.score,10);
+function normalizeJudgeVerdict(parsed: unknown){
+  if(!isRecord(parsed))return{score:3,rewrite:""};
+  const parsedScore=parseInt(String(parsed.score ?? ''),10);
   const score=Number.isNaN(parsedScore)?3:Math.max(0,Math.min(5,parsedScore));
   return{score:score,rewrite:typeof parsed.rewrite==="string"?parsed.rewrite:""};
 }
@@ -353,7 +376,7 @@ function normalizeJudgeVerdict(parsed: { score: string; rewrite: any; }){
 /* Judge the result set via a small non-streaming LLM call. Returns
  * {score: 0..5, rewrite: string}. Failure of the call is treated as
  * score=3 (don't retry). 4 s ceiling via AbortController. */
-async function judgeSearchQuality(sources: string|any[], topic: any){
+async function judgeSearchQuality(sources: SearchResult[], topic: string){
   if(!Array.isArray(sources)||!sources.length)return{score:0,rewrite:""};
   if(!hasUsableActive||!hasUsableActive())return{score:3,rewrite:""};
   const digest=_buildJudgeDigest(sources);
@@ -460,9 +483,9 @@ export function extractChatQuery(){
         search it (and dedupe results).
    Falls back to the raw text if the model is unavailable or doesn't
    return valid JSON. Cached per user text via a Map. */
-const _rewriterCache=new Map();
+const _rewriterCache = new Map<string, string[]>();
 
-function rewriteMessages(rawText: string|any[]){
+function rewriteMessages(rawText: string){
   const prompt="You are a precise search query generator. Given the user's message, generate "+
     "search queries that will return EXACTLY the information the user is looking for. "+
     "Accuracy is critical — prefer EXACT PHRASE matches and UNIQUE technical terms over generic keywords. "+
@@ -485,30 +508,34 @@ function rewriteMessages(rawText: string|any[]){
   ];
 }
 
-function rewriteResponseText(response: { content: any; choices: { message: { content: any; }; }[]; }){
-  if(response&&typeof response.content==="string")return response.content;
-  return response&&response.choices&&response.choices[0]&&response.choices[0].message&&response.choices[0].message.content||"";
+function rewriteResponseText(response: unknown){
+  if(!isRecord(response))return "";
+  if(typeof response.content === 'string') return response.content;
+  const choice=Array.isArray(response.choices)?response.choices[0]:null;
+  return isRecord(choice) && isRecord(choice.message) && typeof choice.message.content === 'string'
+    ? choice.message.content
+    : "";
 }
 
 function parseRewrittenQueries(text: string){
   if(!text)return null;
   const match=text.match(/\[[\s\S]*?\]/);
   if(!match)return null;
-  let parsed;
+  let parsed: unknown;
   try{parsed=JSON.parse(match[0]);}catch(_){return null;}
   if(!Array.isArray(parsed)||!parsed.length)return null;
-  const cleaned=parsed
-    .filter(function(query){return typeof query==="string"&&query.trim();})
-    .map(function(query){return query.trim();});
+  const cleaned=parsed.flatMap(function(query): string[] {
+    return typeof query === 'string' && query.trim() ? [query.trim()] : [];
+  });
   return cleaned.length?cleaned:null;
 }
 
-function cacheRewrittenQueries(rawText: any,queries: any[]){
+function cacheRewrittenQueries(rawText: string,queries: string[]){
   if(_rewriterCache.size>64)_rewriterCache.clear();
   _rewriterCache.set(rawText,queries);
 }
 
-export async function rewriteQueryForSearch(rawText: any){
+export async function rewriteQueryForSearch(rawText: string){
   if(!rawText||!hasUsableActive())return null;
   const cached=_rewriterCache.get(rawText);
   if(cached)return cached;
@@ -528,7 +555,7 @@ export async function rewriteQueryForSearch(rawText: any){
 }
 
 /* Update the small pill in the chat header. `count=0` for loading/err. */
-export function setSearchPill(kind: string,count: number,label: any){
+export function setSearchPill(kind: string,count: number,label: string){
   const p=document.getElementById("searchPill");
   if(!p)return;
   if(!webSearchOn){p.classList.add("hidden");return}

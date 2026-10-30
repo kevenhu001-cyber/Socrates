@@ -19,7 +19,7 @@ export function useSettingsPreferences() {
     try {
       const api = getApiFetch();
       if (!api) throw new Error('apiFetch unavailable');
-      const result = await api('/api/users/me/preferences', { method: 'PATCH', body: patch });
+      const result = await api<{ preferences?: unknown }>('/api/users/me/preferences', { method: 'PATCH', body: patch });
       const user = getCurrentUser<{ preferences?: unknown }>();
       if (user) user.preferences = result.preferences;
       setSaveError('');

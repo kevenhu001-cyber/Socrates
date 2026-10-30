@@ -20,6 +20,7 @@ import {
   visualizationSpecKey,
   type VisualizationOutput as VisualizationOutputData,
 } from '../tool-run/toolRunModel';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface VisualizationOutputProps {
   output: VisualizationOutputData;
@@ -52,7 +53,10 @@ export function VisualizationOutput({ output, host }: VisualizationOutputProps) 
           (mounted as Promise<unknown>).then((card) => {
             if (!card) return;
             if (cancelled) {
-              try { pr.disposeVisualization?.(card); } catch (_) { /* already gone */ }
+              try { pr.disposeVisualization?.(card); } catch (_) {
+                reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx:55', 'expected');
+                /* already gone */
+              }
             } else {
               mountedCard = card;
             }
@@ -60,17 +64,26 @@ export function VisualizationOutput({ output, host }: VisualizationOutputProps) 
         } else if (mounted) {
           mountedCard = mounted;
         }
-      } catch (_) { /* malformed spec — the boundary owns the fallback */ }
+      } catch (_) {
+        reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx:63', 'expected');
+        /* malformed spec — the boundary owns the fallback */
+      }
     });
     return () => {
       cancelled = true;
       controller.abort();
       if (mountedCard) {
-        try { pr.disposeVisualization?.(mountedCard); } catch (_) { /* best effort */ }
+        try { pr.disposeVisualization?.(mountedCard); } catch (_) {
+          reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx:69', 'expected');
+          /* best effort */
+        }
       }
       /* Abort covers a mount still in flight; the host pass covers a card the
          tracked reference missed (e.g. a history-recovery mount). */
-      try { pr.disposeVisualizations?.(host); } catch (_) { /* best effort */ }
+      try { pr.disposeVisualizations?.(host); } catch (_) {
+        reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx:73', 'expected');
+        /* best effort */
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [output.id, output.toolCallId, specKey, host]);

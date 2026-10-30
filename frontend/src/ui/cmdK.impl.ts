@@ -7,14 +7,50 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
 /* Deferred Cmd-K search runtime. */
-let _cmdKIndex: import('fuse.js').default<Record<string, any>> | null = null;
+interface CmdKDocument {
+  kind: 'session' | 'message' | 'remote';
+  id: string;
+  sessionId?: string;
+  title: string;
+  topic?: string;
+  mode?: string;
+  updatedAt?: string | number;
+  snippet: string;
+}
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+function parseRemoteHit(value: unknown): CmdKDocument | null {
+  if (!isRecord(value) || (typeof value.id !== 'string' && typeof value.id !== 'number')) return null;
+  if (typeof value.title !== 'string') return null;
+  return {
+    kind: 'remote',
+    id: String(value.id),
+    sessionId: typeof value.sessionId === 'string' ? value.sessionId : undefined,
+    title: value.title,
+    snippet: typeof value.snippet === 'string' ? value.snippet : '',
+  };
+}
+let _cmdKIndex: import('fuse.js').default<CmdKDocument> | null = null;
+interface CmdKResult {
+  item: CmdKDocument;
+  refIndex?: number;
+  matches?: ReadonlyArray<unknown>;
+  score?: number;
+  _remote?: true;
+}
+type RemoteCmdKResult = CmdKResult & { _remote: true };
 let _cmdKIndexDirty = false;
-let _cmdKIndexDocs = [];
-let _cmdKResults: any[] = [];
+let _cmdKIndexDocs: CmdKDocument[] = [];
+let _cmdKResults: CmdKResult[] = [];
 let _cmdKSelected = 0;
-let _cmdKRecent: any[] = [];
+let _cmdKRecent: string[] = [];
+function replaceCmdKResults(results: CmdKResult[]) {
+  _cmdKResults = results;
+}
 try {
-  _cmdKRecent = JSON.parse(localStorage.getItem("socrates-search-recent") || "[]") || [];
+  const recent: unknown = JSON.parse(localStorage.getItem("socrates-search-recent") || "[]");
+  _cmdKRecent = Array.isArray(recent) ? recent.filter((query): query is string => typeof query === 'string') : [];
 } catch (_) { _cmdKRecent = []; }
 
 function markCmdKIndexDirty() { _cmdKIndexDirty = true; }
@@ -26,7 +62,10 @@ export function resetCmdKSearchState() {
   _cmdKResults = [];
   _cmdKSelected = 0;
   _cmdKRecent = [];
-  try { localStorage.removeItem("socrates-search-recent"); } catch (_) { /* private mode */ }
+  try { localStorage.removeItem("socrates-search-recent"); } catch (_) {
+    reportSwallow(_, 'empty catch: ui/cmdK.impl.ts:29');
+    /* private mode */
+  }
 }
 
 function _publishCmdKState() {
@@ -41,7 +80,10 @@ function _publishCmdKState() {
         recent: _cmdKRecent,
       });
     }
-  } catch (_) { /* best-effort bridge */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: ui/cmdK.impl.ts:44', 'expected');
+    /* best-effort bridge */
+  }
 }
 
 function rebuildCmdKIndex() {
@@ -54,22 +96,27 @@ function rebuildCmdKIndex() {
         const input = document.getElementById("cmdKInput");
         if (overlay && !overlay.classList.contains("hidden") && input && (input as HTMLInputElement).value.trim()) {
           const hits = _cmdKIndex!.search((input as HTMLInputElement).value.trim(), { limit: 20 });
-          _cmdKResults = hits.concat(_cmdKResults.filter(function (hit) {
-            return hit.kind === 'remote' && !hits.some(function (local) { return local.item.id === hit.id; });
-          }));
+          const remoteResults = _cmdKResults.filter((hit): hit is RemoteCmdKResult => hit._remote === true);
+          const mergedResults: CmdKResult[] = [...hits, ...remoteResults.filter(function (hit) {
+            return !hits.some(function (local) { return local.item.id === hit.item.id; });
+          })];
+          replaceCmdKResults(mergedResults);
           _cmdKSelected = 0;
           _publishCmdKState();
         }
       }).catch(function () { /* keep server search as fallback */ });
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      reportSwallow(_, 'empty catch: ui/cmdK.impl.ts:64', 'expected');
+      /* ignore */
+    }
     return;
   }
-  const docs: any[] = [];
+  const docs: CmdKDocument[] = [];
   const sessions = browserWindow.SERVER_SESSIONS || [];
   sessions.forEach(function (s) {
     docs.push({
       kind: "session",
-      id: s.id,
+      id: String(s.id),
       title: s.title || s.topic || "(untitled)",
       topic: s.topic || "",
       mode: s.mode || "tutor",
@@ -77,17 +124,18 @@ function rebuildCmdKIndex() {
       snippet: s.preview || (s.title || s.topic || "").slice(0, 140),
     });
   });
-  const messages = stateStore.read('messages') || [];
-  messages.forEach(function (m: { rawText: any; role: string; clientId: any; id: any; }) {
-    if (!m.rawText) return;
-    const role = m.role === "user" ? "You" : "Assistant";
+  const rawMessages: unknown = stateStore.read('messages') || [];
+  const messages = Array.isArray(rawMessages) ? rawMessages : [];
+  messages.forEach(function (message: unknown) {
+    if (!isRecord(message) || typeof message.rawText !== 'string' || !message.rawText) return;
+    const role = message.role === "user" ? "You" : "Assistant";
     docs.push({
       kind: "message",
-      id: m.clientId || m.id,
-      sessionId: stateStore.read('currentSessionId'),
-      title: role + ": " + (m.rawText || "").slice(0, 80),
+      id: String(message.clientId || message.id || ''),
+      sessionId: String(stateStore.read('currentSessionId') || ''),
+      title: role + ": " + message.rawText.slice(0, 80),
       topic: stateStore.read('topic') || "",
-      snippet: (m.rawText || "").slice(0, 200),
+      snippet: message.rawText.slice(0, 200),
     });
   });
   _cmdKIndexDocs = docs;
@@ -121,7 +169,7 @@ function closeCmdK() {
   _publishCmdKState();
 }
 
-function onCmdKInput(q: any) {
+function onCmdKInput(q: string) {
   q = (q || "").trim();
   if (!q) {
     _cmdKResults = [];
@@ -134,27 +182,32 @@ function onCmdKInput(q: any) {
     browserWindow.apiFetch("/api/search", {
       method: "POST",
       body: { q: q, scope: "all", limit: 20 },
-    }).then(function (r: { hits: any[]; }) {
-      if (r && Array.isArray(r.hits) && r.hits.length) {
+    }).then(function (payload: unknown) {
+      const r = isRecord(payload) && Array.isArray(payload.hits)
+        ? { hits: payload.hits.flatMap((hit) => { const parsed = parseRemoteHit(hit); return parsed ? [parsed] : []; }) }
+        : null;
+      if (r && r.hits.length) {
         const cur = (((document.getElementById("cmdKInput") || {}) as HTMLInputElement).value || "").trim();
         if (cur !== q) return;
         const seen: Record<string, boolean> = {};
         _cmdKResults.forEach(function (h) {
-          const it = h.item || h;
+          const it = h.item;
           if (it && it.id) seen[it.id] = true;
         });
-        const serverHits = r.hits.filter(function (h: { id: string|number; }) {
-          return h && h.id && !seen[h.id];
-        }).map(function (h: { id: any; sessionId: any; title: any; snippet: any; }) {
-          return { kind: "remote", id: h.id, sessionId: h.sessionId, title: h.title, snippet: h.snippet || "" };
-        });
+        const serverHits: RemoteCmdKResult[] = r.hits
+          .filter(function (hit) { return hit.id && !seen[hit.id]; })
+          .map((item) => ({ item, _remote: true }));
         if (!serverHits.length) return;
-        _cmdKResults = _cmdKResults.concat(serverHits);
+        const mergedResults: CmdKResult[] = [..._cmdKResults, ...serverHits];
+        replaceCmdKResults(mergedResults);
         _publishCmdKState();
       }
     }).catch(function () { /* offline or 404 — ignore */ });
-  } catch (_) { /* swallow */ }
-  _cmdKResults = hits;
+  } catch (_) {
+    reportSwallow(_, 'empty catch: ui/cmdK.impl.ts:156');
+    /* swallow */
+  }
+  replaceCmdKResults([...hits]);
   _cmdKSelected = 0;
   _publishCmdKState();
 }
@@ -170,7 +223,7 @@ function updateCmdKSelected() {
 function openCmdKResult(idx: number) {
   const hit = _cmdKResults[idx];
   if (!hit) return;
-  const item = hit.item || hit;
+  const item = hit.item;
   const q = (document.getElementById("cmdKInput") as HTMLInputElement)!.value.trim();
   if (q) {
     _cmdKRecent = _cmdKRecent.filter(function (x) { return x !== q; });
@@ -211,11 +264,12 @@ function onCmdKKey(ev: KeyboardEvent) {
         browserWindow.apiFetch("/api/search", {
           method: "POST",
           body: { q: q, scope: "all", limit: 20 },
-        }).then(function (r: { hits: any[]; }) {
-          if (r && Array.isArray(r.hits) && r.hits.length) {
-            _cmdKResults = r.hits.map(function (h: { id: any; sessionId: any; title: any; snippet: any; }) {
-              return { item: { kind: "remote", id: h.id, sessionId: h.sessionId, title: h.title, snippet: h.snippet || "" } };
-            });
+        }).then(function (payload: unknown) {
+          const hits = isRecord(payload) && Array.isArray(payload.hits)
+            ? payload.hits.flatMap((hit) => { const parsed = parseRemoteHit(hit); return parsed ? [parsed] : []; })
+            : [];
+          if (hits.length) {
+            _cmdKResults = hits.map((item) => ({ item, _remote: true as const }));
             _cmdKSelected = 0;
             _publishCmdKState();
           } else showToast("No matches");

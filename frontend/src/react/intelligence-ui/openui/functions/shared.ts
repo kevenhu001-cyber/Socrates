@@ -1,7 +1,7 @@
 // Adapted from thesysdev/open-intelligent-ui (MIT); see ../LICENSE.
 import { z } from "zod/v4";
 
-export const list = () => z.array(z.any());
+export const list = () => z.array(z.unknown());
 export const numbers = () => z.array(z.number());
 export const date = () => z.union([z.string(), z.number()]);
 export const agg = () => z.enum(["sum", "avg", "count", "min", "max"]);

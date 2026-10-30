@@ -4,6 +4,7 @@ import { ensureMermaid, ensurePlotly } from '../vendor/lazy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import type { VizSpec } from './visualizationSpec.ts';
+import type { GeoGebraApi } from '../types/vendorRuntime.ts';
 
 export interface SpecializedVisualizationResult {
   handled: boolean;
@@ -12,10 +13,11 @@ export interface SpecializedVisualizationResult {
 }
 
 
-let plotlyPromise;
-let mermaidPromise;
-let threePromise;
-let geogebraPromise;
+let plotlyPromise: ReturnType<typeof ensurePlotly> | null = null;
+let mermaidPromise: ReturnType<typeof ensureMermaid> | null = null;
+let threePromise: Promise<[typeof import('three'), typeof import('three/addons/controls/OrbitControls.js')]> | null = null;
+type GeoGebraAppletConstructor = NonNullable<typeof browserWindow.GGBApplet>;
+let geogebraPromise: Promise<GeoGebraAppletConstructor> | undefined;
 
 const STRUCTURE_TEMPLATES = new Set(['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map']);
 
@@ -66,7 +68,7 @@ function plotlyColors() {
    left to its default, Plotly derives it from paper_bgcolor 'transparent'
    and paints a 50% black bar with 30% white icons — a dark strip on every
    light chart (always visible on touch devices). */
-function plotlyThemeUpdate(colors: { text: any; muted: any; grid: any; primary?: any; }) {
+function plotlyThemeUpdate(colors: { text: string; muted: string; grid: string; primary?: string }) {
   return {
     'font.color': colors.text,
     'xaxis.gridcolor': colors.grid,
@@ -80,13 +82,9 @@ function plotlyThemeUpdate(colors: { text: any; muted: any; grid: any; primary?:
 }
 
 type ThreeGeometryObject = { type: string; size?: number[]; position?: number[] };
-type ThreeGeometryRuntime = {
-  SphereGeometry: new (...args: any[]) => unknown;
-  CylinderGeometry: new (...args: any[]) => unknown;
-  ConeGeometry: new (...args: any[]) => unknown;
-  BoxGeometry: new (...args: any[]) => unknown;
-};
-function geometryForThreeObject(THREE: ThreeGeometryRuntime, object: ThreeGeometryObject) {
+type ThreeRuntime = typeof import('three');
+type ThreeGeometry = InstanceType<ThreeRuntime['SphereGeometry']>;
+function geometryForThreeObject(THREE: ThreeRuntime, object: ThreeGeometryObject): ThreeGeometry {
   const size = object.size || [1, 1, 1];
   if (object.type === 'sphere') return new THREE.SphereGeometry(size[0] || 1, 40, 24);
   if (object.type === 'cylinder') return new THREE.CylinderGeometry(size[0] || 1, size[0] || 1, size[1] || 2, 36);
@@ -94,7 +92,7 @@ function geometryForThreeObject(THREE: ThreeGeometryRuntime, object: ThreeGeomet
   return new THREE.BoxGeometry(size[0] || 1, size[1] || 1, size[2] || 1);
 }
 
-function addThreeObjects(THREE: ThreeGeometryRuntime & { Mesh: new (...args: any[]) => any }, scene: { add: (arg0: any) => void; }, material: { clone: () => any; }, objects: ThreeGeometryObject[]) {
+function addThreeObjects(THREE: ThreeRuntime, scene: InstanceType<ThreeRuntime['Scene']>, material: InstanceType<ThreeRuntime['MeshStandardMaterial']>, objects: ThreeGeometryObject[]) {
   objects.forEach((object) => {
     const mesh = new THREE.Mesh(geometryForThreeObject(THREE, object), material.clone());
     const position = object.position || [0, 0.5, 0];
@@ -108,7 +106,7 @@ export function plotlyTracesForVisualization(spec: VizSpec, colors: { text?: str
     return (spec.payload.functions || []).map((fn, index) => {
       const sampled = sampleFunctionImpl(fn.expression, fn.domain, 900);
       return {
-        x: sampled.points.map((point: any[]) => point[0]),
+        x: sampled.points.map((point) => point[0]),
         y: sampled.points.map((point) => point[1]),
         type: 'scatter',
         mode: 'lines',
@@ -129,7 +127,7 @@ export function plotlyTracesForVisualization(spec: VizSpec, colors: { text?: str
   }));
 }
 
-function downloadSvgAdapter(stage: { querySelector: (arg0: string) => any; }) {
+function downloadSvgAdapter(stage: HTMLElement) {
   return {
     getDataURL() {
       const svg = stage.querySelector('svg');
@@ -180,7 +178,7 @@ async function mountPlotly(spec: VizSpec, stage: HTMLElement, helpers: { sampleF
   };
 }
 
-function compactMermaidLabel(value: any, max = 48) {
+function compactMermaidLabel(value: unknown, max = 48) {
   const chars = Array.from(String(value || '').replace(/\s+/g, ' ').trim());
   return chars.length > max ? `${chars.slice(0, max - 1).join('')}…` : chars.join('');
 }
@@ -189,8 +187,8 @@ export function mermaidText(spec: VizSpec) {
   const payload = spec.payload || {};
   const nodes = payload.nodes || [];
   const edges = payload.edges || [];
-  const safeId = (value: any) => `n_${String(value).replace(/[^a-zA-Z0-9_]/g, '_')}`;
-  const safeLabel = (value: any) => compactMermaidLabel(value).replace(/[\r\n"|]/g, ' ');
+  const safeId = (value: unknown) => `n_${String(value).replace(/[^a-zA-Z0-9_]/g, '_')}`;
+  const safeLabel = (value: unknown) => compactMermaidLabel(value).replace(/[\r\n"|]/g, ' ');
   if (spec.template === 'sequence') {
     const participants = nodes.map((node) => `participant ${safeId(node.id)} as ${safeLabel(node.label)}`);
     const messages = edges.map((edge) => `${safeId(edge.from)}->>${safeId(edge.to)}: ${safeLabel(edge.label || '')}`);
@@ -211,8 +209,11 @@ export function mermaidText(spec: VizSpec) {
   ].join('\n');
 }
 
-export function applyGeoGebraCommands(api: { evalCommand: (arg0: any) => any; }, commands: any) {
-  for (const command of commands || []) {
+export function applyGeoGebraCommands(api: Pick<GeoGebraApi, 'evalCommand'>, commands: unknown) {
+  if (commands === undefined || commands === null) return;
+  if (!Array.isArray(commands)) throw new Error('Construction commands must be an array.');
+  for (const command of commands) {
+    if (typeof command !== 'string') throw new Error('Construction commands must be text.');
     const accepted = api.evalCommand(command);
     if (accepted === false) throw new Error(`Construction app rejected a command: ${String(command).slice(0, 120)}`);
   }
@@ -274,7 +275,7 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   const key = new THREE.DirectionalLight(0xffffff, 2.5); key.position.set(5, 8, 4); scene.add(key);
   scene.add(new THREE.GridHelper(12, 12, 0x8893a5, 0xdbe2ea));
   const material = new THREE.MeshStandardMaterial({ color: 0x4f78dd, roughness: 0.42, metalness: 0.05, transparent: true, opacity: 0.9 });
-  addThreeObjects(THREE as unknown as ThreeGeometryRuntime & { Mesh: new (...args: any[]) => any }, scene, material, (spec.payload.objects as ThreeGeometryObject[] | undefined) || []);
+  addThreeObjects(THREE, scene, material, (spec.payload.objects as ThreeGeometryObject[] | undefined) || []);
   const controls = new controlsModule.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   let frame = 0;
@@ -314,9 +315,9 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   };
 }
 
-function loadGeoGebra() {
+function loadGeoGebra(): Promise<GeoGebraAppletConstructor> {
   if (browserWindow.GGBApplet) return Promise.resolve(browserWindow.GGBApplet);
-  geogebraPromise ||= new Promise((resolve, reject) => {
+  geogebraPromise ||= new Promise<GeoGebraAppletConstructor>((resolve, reject) => {
     const script = document.createElement('script');
     /* A stalled CDN connection never fires onerror — the card would
        sit in "mounting" forever. Treat silence past the deadline as a
@@ -325,18 +326,22 @@ function loadGeoGebra() {
       script.remove();
       reject(new Error('GeoGebra CDN unreachable (deployggb.js load timed out)'));
     }, 15000);
-    const settle = (fn: { (): void; (): void; (arg0: any): void; }) => (value: any) => { clearTimeout(timer); fn(value); };
     script.src = 'https://www.geogebra.org/apps/deployggb.js';
     script.async = true;
-    script.onload = settle(() => {
+    script.onload = () => {
+      clearTimeout(timer);
       if (browserWindow.GGBApplet) {
         resolve(browserWindow.GGBApplet);
       } else {
         script.remove();
         reject(new Error('GeoGebra loaded without GGBApplet'));
       }
-    });
-    script.onerror = settle(() => { script.remove(); reject(new Error('GeoGebra CDN unreachable (deployggb.js failed to load)')); });
+    };
+    script.onerror = () => {
+      clearTimeout(timer);
+      script.remove();
+      reject(new Error('GeoGebra CDN unreachable (deployggb.js failed to load)'));
+    };
     document.head.appendChild(script);
   }).catch((error) => {
     /* P_viz-geogebra-retry — a failed CDN load used to poison this cache
@@ -346,12 +351,12 @@ function loadGeoGebra() {
     geogebraPromise = undefined;
     throw error;
   });
-  return geogebraPromise;
+  return geogebraPromise!;
 }
 
 async function mountGeoGebra(spec: VizSpec, stage: HTMLElement): Promise<SpecializedVisualizationResult> {
   const GGBApplet = await loadGeoGebra();
-  let api: { setCoordSystem: (arg0: number,arg1: number,arg2: number,arg3: number) => void; getPNGBase64: (arg0: number,arg1: boolean,arg2: number) => any; };
+  let api: GeoGebraApi | undefined;
   await new Promise<void>((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(() => finish(new Error('GeoGebra applet did not finish loading.')), 20000);
@@ -369,7 +374,7 @@ async function mountGeoGebra(spec: VizSpec, stage: HTMLElement): Promise<Special
       showToolBar: true,
       showAlgebraInput: true,
       showMenuBar: false,
-      appletOnLoad(ggbApi: any) {
+      appletOnLoad(ggbApi) {
         api = ggbApi;
         try {
           applyGeoGebraCommands(ggbApi, spec.payload.commands);

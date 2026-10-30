@@ -1,4 +1,5 @@
 import type { EmbeddingProviderConfig, SystemModelConfig } from './types';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 const ADMIN_AUTH_API = '/api/admin-auth';
 const ADMIN_API = '/api/system-models';
@@ -32,7 +33,8 @@ export function hasAdminToken(): boolean {
 function storeToken(token: string): void {
   try {
     sessionStorage.setItem(TOKEN_KEY, token);
-  } catch {
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts:35', 'expected');
     // Session storage can be unavailable in restricted browser contexts.
   }
 }
@@ -40,7 +42,8 @@ function storeToken(token: string): void {
 export function clearAdminToken(): void {
   try {
     sessionStorage.removeItem(TOKEN_KEY);
-  } catch {
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts:43', 'expected');
     // Session storage can be unavailable in restricted browser contexts.
   }
 }
@@ -186,7 +189,8 @@ export async function logoutAdmin(): Promise<void> {
       headers: csrfHeaders(),
       credentials: 'same-origin',
     });
-  } catch {
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts:189');
     // Clear the local session even if the server cannot be reached.
   }
   clearAdminToken();

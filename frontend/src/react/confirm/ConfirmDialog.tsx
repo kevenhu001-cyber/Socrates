@@ -2,7 +2,7 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useCallback, useEffect, useState } from 'react';
 import { getLegacyActions } from '../legacy/gateway';
 import { reportSwallow } from '../../util/reportSwallow';
-import { installConfirmBridge, useConfirmSnapshot } from './confirm.bridge';
+import { useConfirmSnapshot } from './confirm.hooks';
 
 type ConfirmRuntime = typeof import('./ConfirmDialogContent');
 let runtimePromise: Promise<ConfirmRuntime> | null = null;
@@ -57,7 +57,7 @@ function ConfirmDialog() {
  * Mount the React confirm dialog. Creates a dedicated body-level
  * container so `createRoot` owns the overlay shell. Legacy
  * `showConfirm()` / `closeConfirm()` keep the Promise resolver and
- * publish visibility/copy through the bridge (M4 step 4.5c).
+ * share visibility/copy through the confirm state module.
  */
 export function mountConfirmDialog(): void {
   let container = document.getElementById('confirmDialogReactRoot');
@@ -67,5 +67,5 @@ export function mountConfirmDialog(): void {
     document.body.appendChild(container);
   }
 
-  mountOwnedRoot(container, 'confirm-dialog', <ConfirmDialog />, installConfirmBridge);
+  mountOwnedRoot(container, 'confirm-dialog', <ConfirmDialog />);
 }

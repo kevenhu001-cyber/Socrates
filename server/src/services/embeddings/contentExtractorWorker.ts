@@ -26,6 +26,43 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 
 const HARD_MIN_CHARS = 250;
 const HARD_MAX_CHARS = 8000;
+type ReadabilityArticle = NonNullable<ReturnType<Readability['parse']>>;
+
+interface DomElement {
+  textContent: string | null;
+  tagName: string;
+  remove(): void;
+  getAttribute(name: string): string | null;
+  querySelectorAll(selector: string): DomElementList;
+}
+
+interface DomElementList extends Iterable<DomElement> {
+  length: number;
+  forEach(callback: (element: DomElement) => void): void;
+}
+
+interface DomDocument {
+  querySelector(selector: string): DomElement | null;
+  querySelectorAll(selector: string): DomElementList;
+}
+
+interface ExtractRequest {
+  id: string;
+  type: 'extract';
+  html: string;
+  url: string;
+  maxChars?: number;
+}
+
+function isExtractRequest(value: unknown): value is ExtractRequest {
+  return value !== null
+    && typeof value === 'object'
+    && !Array.isArray(value)
+    && 'id' in value && typeof value.id === 'string'
+    && 'type' in value && value.type === 'extract'
+    && 'html' in value && typeof value.html === 'string'
+    && 'url' in value && typeof value.url === 'string';
+}
 
 const NOISE_SELECTORS = [
   'script', 'style', 'noscript', 'svg', 'iframe',
@@ -45,17 +82,17 @@ function cleanText(s: string) {
     .trim();
 }
 
-function stripJunk(doc: any) {
+function stripJunk(doc: DomDocument) {
   for (const sel of NOISE_SELECTORS) {
     try {
-      doc.querySelectorAll(sel).forEach((el: any) => el.remove());
+      doc.querySelectorAll(sel).forEach((el) => el.remove());
     } catch { /* selector may be unsupported in some jsdom versions — skip */ }
   }
   doc.querySelectorAll('[id*="ad-" i], [class*="ad-" i], [class*="advert" i], [id*="-banner" i]')
-    .forEach((el: any) => el.remove());
+    .forEach((el) => el.remove());
 }
 
-function shape(article: any, doc: any, method: string, maxChars: number) {
+function shape(article: ReadabilityArticle, doc: DomDocument, method: string, maxChars: number) {
   const cleaned = cleanText(article.textContent || '');
   const truncated = cleaned.length > maxChars;
   const content = truncated ? cleaned.slice(0, maxChars) : cleaned;
@@ -68,8 +105,9 @@ function shape(article: any, doc: any, method: string, maxChars: number) {
       'meta[name="pubdate"], meta[name="publishdate"], meta[name="date"], ' +
       'meta[itemprop="datePublished"]'
     );
-    if (meta && meta.content) {
-      const d = new Date(meta.content);
+    const publishedAt = meta?.getAttribute('content');
+    if (publishedAt) {
+      const d = new Date(publishedAt);
       if (!isNaN(d as unknown as number)) {
         const yr = d.getUTCFullYear();
         if (yr >= 1990 && yr <= new Date().getUTCFullYear() + 1) {
@@ -80,7 +118,8 @@ function shape(article: any, doc: any, method: string, maxChars: number) {
     if (!date) {
       const t = doc.querySelector('time[datetime]');
       if (t) {
-        const d = new Date(t.getAttribute('datetime'));
+        const datetime = t.getAttribute('datetime');
+        const d = new Date(datetime || '');
         if (!isNaN(d as unknown as number)) {
           const yr = d.getUTCFullYear();
           if (yr >= 1990 && yr <= new Date().getUTCFullYear() + 1) {
@@ -104,9 +143,9 @@ function shape(article: any, doc: any, method: string, maxChars: number) {
   };
 }
 
-function extractByTextDensity(doc: any, url: string, maxChars: number) {
+function extractByTextDensity(doc: DomDocument, url: string, maxChars: number) {
   const candidates = doc.querySelectorAll('article, main, div, section');
-  let best: any = null;
+  let best: DomElement | null = null;
   let bestScore = 0;
   for (const el of candidates) {
     const text = (el.textContent || '').trim();
@@ -119,7 +158,7 @@ function extractByTextDensity(doc: any, url: string, maxChars: number) {
   if (!best) return null;
 
   const parts: string[] = [];
-  best.querySelectorAll('p, li, h2, h3, blockquote, pre').forEach((el: any) => {
+  best.querySelectorAll('p, li, h2, h3, blockquote, pre').forEach((el) => {
     const t = (el.textContent || '').trim();
     if (!t) return;
     if (el.tagName === 'P' || el.tagName === 'BLOCKQUOTE' || el.tagName === 'PRE') {
@@ -132,7 +171,7 @@ function extractByTextDensity(doc: any, url: string, maxChars: number) {
   });
   const joined = parts.join('\n\n');
   if (joined.length < HARD_MIN_CHARS) return null;
-  const title = (doc.querySelector('title') || {}).textContent || '';
+  const title = doc.querySelector('title')?.textContent || '';
   const cleaned = cleanText(joined);
   const truncated = cleaned.length > maxChars;
   const content = truncated ? cleaned.slice(0, maxChars) : cleaned;
@@ -155,19 +194,18 @@ function extractByTextDensity(doc: any, url: string, maxChars: number) {
 
 function extract(html: string, url: string, maxChars: number) {
   if (!html || !url) return null;
-  let dom: any;
+  let doc: DomDocument;
   try {
-    dom = new JSDOM(html, {
+    doc = new JSDOM(html, {
       url,
       virtualConsole: new VirtualConsole(),
       runScripts: 'outside-only',
-    });
+    }).window.document as DomDocument;
   } catch { return null; }
-  const doc = dom.window.document;
   stripJunk(doc);
-  let article: any = null;
+  let article: ReadabilityArticle | null = null;
   try {
-    article = new Readability(doc, { debug: false, charThreshold: HARD_MIN_CHARS }).parse();
+    article = new Readability(doc as never, { debug: false, charThreshold: HARD_MIN_CHARS }).parse();
   } catch { article = null; }
   if (article && article.textContent && article.textContent.trim().length >= HARD_MIN_CHARS) {
     return shape(article, doc, 'readability', maxChars);
@@ -175,10 +213,13 @@ function extract(html: string, url: string, maxChars: number) {
   return extractByTextDensity(doc, url, maxChars);
 }
 
-parentPort!.on('message', (msg) => {
-  if (!msg || msg.type !== 'extract') return;
+parentPort!.on('message', (value: unknown) => {
+  if (!isExtractRequest(value)) return;
+  const msg = value;
   try {
-    const maxChars = Number.isSafeInteger(msg.maxChars) ? Math.min(1_000_000, Math.max(HARD_MAX_CHARS, msg.maxChars)) : HARD_MAX_CHARS;
+    const maxChars = typeof msg.maxChars === 'number' && Number.isSafeInteger(msg.maxChars)
+      ? Math.min(1_000_000, Math.max(HARD_MAX_CHARS, msg.maxChars))
+      : HARD_MAX_CHARS;
     const payload = extract(msg.html, msg.url, maxChars);
     parentPort!.postMessage({ id: msg.id, type: 'result', payload });
   } catch (e) {

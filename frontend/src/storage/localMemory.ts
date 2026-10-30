@@ -13,6 +13,7 @@
 //   dropped — never throws.
 import { batchSetItem } from '../batchStorage.ts';
 import { stateStore } from '../state/store.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export interface LocalMemoryMessage {
   role: string;
@@ -68,7 +69,8 @@ export function appendLocalMemory(role: string, content: string | null | undefin
     const currentSid = stateStore.read('currentSessionId') as string | null;
     if (!currentSid || currentSid !== sid) return;
     batchSetItem(_memKey(currentSid), JSON.stringify(rec));
-  } catch {
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: storage/localMemory.ts:71');
     /* QuotaExceeded or private-mode: drop silently. */
   }
 }

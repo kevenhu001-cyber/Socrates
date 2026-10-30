@@ -61,6 +61,25 @@ import {SseEmitter} from './sseEmitter.js';
 import {createToolRunner} from './toolExecutors.js';
 import {createStreamToolContext} from './toolContext.js';
 import type {ChatStreamPipelineContext, PreparedCall, ToolCall, ToolCallDelta,} from './types.js';
+import type { StreamMessage } from './types.js';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function requestMessages(body: unknown): Record<string, unknown>[] {
+  const rawMessages = isRecord(body) ? body.messages : undefined;
+  return Array.isArray(rawMessages) ? rawMessages.filter(isRecord) : [];
+}
+
+function contentText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.flatMap((part): string[] => {
+    if (!isRecord(part) || part.type !== 'text' || typeof part.text !== 'string') return [];
+    return [part.text];
+  }).join('\n');
+}
 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   if (ctx.turnId && !ctx.executionClaimed) {
@@ -164,23 +183,27 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     void (async () => {
       try {
         const db = getDb();
-        const rawUserMsgs = Array.isArray(req.body?.messages) ? req.body.messages : [];
-        let lastUserMsg: any = null;
+        const requestBody = isRecord(req.body as unknown)
+          ? req.body as unknown as Record<string, unknown>
+          : {};
+        const rawUserMsgs = requestMessages(requestBody);
+        let lastUserMsg: Record<string, unknown> | null = null;
         for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
-          if (rawUserMsgs[i] && rawUserMsgs[i].role === 'user') {
+          if (rawUserMsgs[i].role === 'user') {
             lastUserMsg = rawUserMsgs[i];
             break;
           }
         }
         if (lastUserMsg) {
-          const userContentStr = typeof lastUserMsg.content === 'string'
-            ? lastUserMsg.content
-            : (Array.isArray(lastUserMsg.content)
-              ? lastUserMsg.content.filter((p: any) => p && p.type === 'text').map((p: any) => p.text).join('\n')
-              : '');
-          const userRaw = lastUserMsg.rawText || userContentStr;
-          const userClientId = lastUserMsg.clientId
-            || req.body?.clientTurn?.userClientId
+          const userContentStr = contentText(lastUserMsg.content);
+          const userRaw = typeof lastUserMsg.rawText === 'string' && lastUserMsg.rawText
+            ? lastUserMsg.rawText
+            : userContentStr;
+          const clientTurn = isRecord(requestBody.clientTurn)
+            ? requestBody.clientTurn
+            : {};
+          const userClientId = (typeof lastUserMsg.clientId === 'string' ? lastUserMsg.clientId : null)
+            || (typeof clientTurn.userClientId === 'string' ? clientTurn.userClientId : null)
             || (turnId ? `user-${turnId}` : null);
           const userAttachments = Array.isArray(lastUserMsg.attachments) ? lastUserMsg.attachments : [];
 
@@ -410,13 +433,14 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
   }
 
   /* Read the question only to choose the completed activity summary language. */
-  const rawUserMsgs = Array.isArray(req.body?.messages) ? req.body.messages : [];
+  const rawUserMsgs = requestMessages(req.body as unknown);
   let userPrompt = '';
   for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
-    if (rawUserMsgs[i] && rawUserMsgs[i].role === 'user') {
-      const c = rawUserMsgs[i].content;
-      userPrompt = rawUserMsgs[i].rawText
-        || (typeof c === 'string' ? c : (Array.isArray(c) ? c.filter((p: any) => p && p.type === 'text').map((p: any) => p.text).join('\n') : ''));
+    if (rawUserMsgs[i].role === 'user') {
+      const rawText = rawUserMsgs[i].rawText;
+      userPrompt = typeof rawText === 'string' && rawText
+        ? rawText
+        : contentText(rawUserMsgs[i].content);
       break;
     }
   }
@@ -490,7 +514,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
 
   /* Kept structurally loose to match the legacy `finalMessages` shape that
      appendNativeToolContract / prependCodeInterpreterPrompt accept. */
-  let workingMessages: any[] = finalMessages as any[];
+  let workingMessages: StreamMessage[] = [...finalMessages];
   const executedToolCalls: Array<{ id: string; name: string; input: unknown; output?: unknown; isError?: boolean; status?: string; errorCode?: string | null }> = [];
   /* Calls that exceeded the per-iteration cap on the previous hop and were
    * dropped without executing — surfaced in the contract so the model
@@ -699,7 +723,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
         && !abortController.signal.aborted
       ) {
         lengthContinues += 1;
-        const continueAssistant: Record<string, unknown> = { role: 'assistant', content: iterContent };
+        const continueAssistant: StreamMessage = { role: 'assistant', content: iterContent };
         if (iterReasoning) {
           continueAssistant.reasoning_content = iterReasoning;
           // Official MiniMax/DeepSeek chat contracts replay reasoning_content,
@@ -784,7 +808,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           name: toolName, repairs: repaired.repairs.slice(0, 12),
         }));
       }
-      const args = (repaired.ok ? repaired.value : {}) as Record<string, any>;
+      const args = (repaired.ok ? repaired.value : {}) as Record<string, unknown>;
       /* Persist the repaired arguments back onto the call so the
          assistant-message echo below replays the same canonical JSON the
          executor consumed rather than the raw (possibly malformed)
@@ -857,7 +881,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     // so any remnant the repair pass could not fix still reaches the
     // provider as syntactically valid JSON.
     const protocolToolCalls = prepared.map((entry) => sanitizeToolCallForProtocol(entry.call));
-    const assistantToolMessage: Record<string, unknown> = {
+    const assistantToolMessage: StreamMessage = {
       role: 'assistant',
       /* Empty string is valid OpenAI content and is accepted by
        * compatibility gateways that reject `content: null`. The
@@ -903,7 +927,9 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     activity.synthesizing();
     for (let i = 0; i < prepared.length; i++) {
       const prepCall = prepared[i];
-      const toolMsg = (toolMessages as any[]).find((m: any) => m && m.tool_call_id === prepCall.call.id);
+      const toolMsg = toolMessages.find((message) => (
+        'tool_call_id' in message && message.tool_call_id === prepCall.call.id
+      ));
       const execution = executionResults.get(prepCall.call.id);
       executedToolCalls.push({
         id: prepCall.call.id,

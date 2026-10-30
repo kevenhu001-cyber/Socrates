@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+
 /* config/tonePresets.ts — AI tone/voice presets.
  *
  * Lets the user choose how the AI speaks. Each preset modifies the
@@ -96,7 +98,10 @@ function loadTonePreset(): string {
       _currentTone = saved;
       return _currentTone;
     }
-  } catch { /* ignore */ }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: config/tonePresets.ts:99', 'expected');
+    /* ignore */
+  }
   _currentTone = "default";
   return _currentTone;
 }
@@ -105,7 +110,10 @@ function loadTonePreset(): string {
 function setTonePreset(tone: string): void {
   if (!TONE_PRESETS[tone]) return;
   _currentTone = tone;
-  try { localStorage.setItem(TONE_KEY, tone); } catch { /* ignore */ }
+  try { localStorage.setItem(TONE_KEY, tone); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: config/tonePresets.ts:108', 'expected');
+    /* ignore */
+  }
 }
 
 /* Get the current tone preset id. */

@@ -63,7 +63,10 @@ function postToNative(message: { type: string; }) {
     if (bridge && typeof bridge.postMessage === 'function') {
       bridge.postMessage(JSON.stringify(message));
     }
-  } catch (_) { /* The page also runs as a normal browser SPA. */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: native/mobileWebSessionBridge.ts:66');
+    /* The page also runs as a normal browser SPA. */
+  }
 }
 
 export function notifyEmbeddedReady() {

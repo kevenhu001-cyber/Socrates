@@ -18,6 +18,7 @@ import type {
   ToolRunState,
   ToolRunView,
 } from './toolRunModel.types.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 type ApprovalRecord = NonNullable<ToolCallRecord['approval']>;
 
@@ -189,7 +190,10 @@ function sourceCandidateOf(value: unknown): SourceCandidate | null {
 function sourceHost(url: string): string {
   try {
     if (/^https?:\/\//i.test(url)) return new URL(url).hostname.replace(/^www\./i, '');
-  } catch (_) { /* unparseable url keeps an empty host */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts:192');
+    /* unparseable url keeps an empty host */
+  }
   return '';
 }
 
@@ -414,7 +418,10 @@ function extractFieldFromJson(argsJson: string, ...keys: string[]): string {
           if (typeof v === 'string' && v.trim()) return v.trim();
         }
       }
-    } catch (_) { /* keep trying */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts:417');
+      /* keep trying */
+    }
   }
   return '';
 }
@@ -434,7 +441,10 @@ function visualizationInputOf(argsJson: string, input?: unknown): Record<string,
     try {
       const candidateObj = JSON.parse(candidate);
       if (candidateObj && typeof candidateObj === 'object') return candidateObj as Record<string, unknown>;
-    } catch (_) { /* keep trying */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts:437');
+      /* keep trying */
+    }
   }
   return null;
 }
@@ -505,7 +515,10 @@ export function extractCodePreview(argsJson: string): string {
       const parsed = JSON.parse(candidate) as Record<string, unknown>;
       const code = parsed && (parsed.code ?? parsed.script ?? parsed.source);
       if (typeof code === 'string' && code.trim()) return code;
-    } catch (_) { /* keep trying */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts:508');
+      /* keep trying */
+    }
   }
   const stripped = raw.replace(/^\s*\{?\s*"[a-z_]+?"\s*:\s*"?/i, '');
   return stripped.length >= 3 ? stripped : '';

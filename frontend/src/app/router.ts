@@ -10,6 +10,7 @@
    typed sidebar/navigation.service.ts owner. */
 
 import { isPageDestination, DESTINATIONS } from '../sidebar/navigation.destinations.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export const WORKSPACE_ROUTES = /* @__PURE__ */ (() => Object.fromEntries(
   Object.entries(DESTINATIONS).map(([name, { path }]) => [name, path]),
@@ -29,7 +30,10 @@ export function pushWorkspaceRoute(name: string) {
    history-back is unreliable there because the previous entry may be a
    bare "/" no workspace route owns. */
 export function pushHomeRoute() {
-  try { history.pushState({}, "", "/"); } catch (_) { /* non-critical */ }
+  try { history.pushState({}, "", "/"); } catch (_) {
+    reportEmptyCatch(_, 'empty catch: app/router.ts:32');
+    /* non-critical */
+  }
 }
 
 export function replaceRoute(url: string | URL) {

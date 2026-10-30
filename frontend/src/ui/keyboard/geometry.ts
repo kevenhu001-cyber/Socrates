@@ -1,3 +1,5 @@
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
+
 /**
  * ui/keyboard/geometry.ts — pure keyboard-occlusion geometry.
  *
@@ -150,7 +152,10 @@ export function isTrackedInputFocused(
     try {
       if (active && typeof node.contains === 'function' && node.contains(active as Node)) return true;
       if (typeof node.matches === 'function' && node.matches(':focus-within')) return true;
-    } catch { /* detached/custom elements can throw */ }
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: ui/keyboard/geometry.ts:153');
+      /* detached/custom elements can throw */
+    }
   }
   return false;
 }

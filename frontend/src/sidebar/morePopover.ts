@@ -20,14 +20,13 @@
    onclick attributes that resolve via window.* (bridged through
    windowExports.js) — that's what inline-handlers.spec.mjs verifies.
 
-   React migration bridge — fires whenever the popover opens/closes so
-   the React compatibility root can subscribe via useSyncExternalStore.
-   Installed by frontend/src/react/morePopover/morePopoverStore.ts under
-   `?react=1`; legacy mode never sees a subscriber so the helper is a
-   cheap no-op. */
+   Open/close changes publish to a module-owned state store so the React
+   menu can refresh translated rows without a window bridge. */
 
 import { restingRect } from "../ui/pressFeedback.ts";
+import { publishMorePopoverState } from "../ui/morePopoverState.ts";
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 
 const POPOVER_ID = "moreNavPopover";
@@ -42,18 +41,15 @@ function _button() { return document.getElementById(BTN_ID); }
 
 function _isOpen(p: HTMLElement) { return p && !p.classList.contains("hidden"); }
 
-/* React migration bridge — fires whenever the popover opens/closes so
-   the React compatibility root can mirror the menu via useSyncExternalStore.
-   Installed by frontend/src/react/morePopover/morePopoverStore.ts under
-   `?react=1`; legacy mode never sees a subscriber so the helper is a
-   cheap no-op. */
+/* The DOM class remains the visibility owner; React subscribes to this
+   module-owned state to refresh translated menu labels on open/close. */
 function _publishMorePopover(isOpen: boolean) {
   try {
-    const bridge = browserWindow.__socratesMorePopoverBridge;
-    if (bridge && typeof bridge.publish === "function") {
-      bridge.publish({ isOpen: !!isOpen });
-    }
-  } catch (_) { /* swallow — bridge is best-effort */ }
+    publishMorePopoverState(!!isOpen);
+  } catch (error) {
+    reportEmptyCatch(error, 'sidebar/morePopover.publish', 'expected');
+    /* State notification is best-effort; the DOM visibility change stands. */
+  }
 }
 
 /* Compute the popover's position from the More button. The popover is
@@ -78,7 +74,10 @@ function _popoverWidth(p: Element) {
       const n = parseInt(cs.minWidth, 10);
       if (!isNaN(n) && n > 0) popW = n;
     }
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: sidebar/morePopover.ts:81', 'expected');
+    /* ignore */
+  }
   return popW;
 }
 

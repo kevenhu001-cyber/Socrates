@@ -196,7 +196,7 @@ function toggleExamOnlyTopBar(show: boolean|undefined) {
    an intro line, a required Topic field, a Settings card with the model
    dropdown + segmented Difficulty control + a stepper for the question
    count, question-type pills, and an optional instructions box. */
-function examFormCopy(L: { (en: any,zh: any): any; (arg0: string,arg1: string): any; }) {
+function examFormCopy(L: (en: string, zh: string) => string) {
   return {
     eyebrow: L("Assessment studio", "测评工作室"),
     heroTitle: L("Build a focused practice exam", "创建一份专注的练习考卷"),
@@ -247,7 +247,7 @@ function examProviderOptions() {
 }
 
 function buildExamSetupSnapshot(draft: ExamDraft | null, key: number): ExamSetupSnapshot {
-  const L = (en: any, zh: any) => browserWindow._currentLang === "zh" ? zh : en;
+  const L = (en: string, zh: string) => browserWindow._currentLang === "zh" ? zh : en;
   const defaults = { mc: true, fb: true, sa: false };
   _examSelectedTypes = Object.assign({}, defaults, draft?.types ?? {});
   _examDifficulty = draft?.difficulty ?? "intermediate";
@@ -320,7 +320,7 @@ export function toggleExamModelMenu() {
   }
 }
 
-export function selectExamModel(id: any) {
+export function selectExamModel(id: string) {
   const input = document.getElementById("examModel");
   const label = document.getElementById("examModelLabel");
   const opts = document.querySelectorAll(".exam-model-opt");

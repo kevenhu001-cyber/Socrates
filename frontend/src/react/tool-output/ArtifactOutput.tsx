@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ArtifactOutput as ArtifactOutputData } from '../tool-run/toolRunModel';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface ArtifactOutputProps {
   output: ArtifactOutputData;
@@ -26,7 +27,10 @@ export function ArtifactOutput({ output, host }: ArtifactOutputProps) {
         host,
         output.name ?? undefined,
       );
-    } catch (_) { /* artifact gone server-side */ }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: react/tool-output/ArtifactOutput.tsx:29');
+      /* artifact gone server-side */
+    }
 
   }, [output.id, output.fileId, output.mimeType, output.name, host]);
 

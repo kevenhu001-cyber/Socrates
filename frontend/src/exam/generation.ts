@@ -75,7 +75,7 @@ function selectedQuestionTypes(selection: QuestionSelection) {
 }
 
 function activateSelectedProvider(chosenModel: string, providerConfig: ProviderConfigSnapshot) {
-  const provider = providerConfig.providers.find((item: { id: any; }) => item && item.id === chosenModel);
+  const provider = providerConfig.providers.find((item) => item.id === chosenModel);
   if (!provider) return;
   setActiveProviderLocal(chosenModel);
   try { browserWindow.syncModelPills?.(); } catch (error) { reportSwallow(error, 'exam.startExamGeneration.syncModelPills'); }
@@ -97,8 +97,8 @@ function renderGenerationStart(topic: string, count: number, difficulty: string,
   _examBody()?.replaceChildren();
   _setExamTitle(topic);
   const meta = document.getElementById("examViewMeta");
-  const provider = providerConfig.providers.find((item: { id: any; }) => item && item.id === providerConfig.activeId) || {};
-  if (meta) meta.textContent = count + " " + _examUiL("questions · ", "题 · ") + (('label' in provider ? provider.label : '') || ('model' in provider ? provider.model : '') || "") + " · " + difficulty;
+  const provider = providerConfig.providers.find((item) => item.id === providerConfig.activeId);
+  if (meta) meta.textContent = count + " " + _examUiL("questions · ", "题 · ") + (provider?.label || provider?.model || "") + " · " + difficulty;
   generationProgress = { index: 0, total: count, step: _examUiL('Preparing…', '准备出题…') };
   renderGenerationProgress();
   renderExamActionView([examAction('cancel', _examUiL('Cancel', '取消'), 'outline')]);
@@ -173,7 +173,7 @@ export function cancelExamGeneration() {
   _setExamTitle(_examUiL("Cancelled", "已取消"));
 }
 
-function updateExamProgress(index: any, total: any, message: string) {
+function updateExamProgress(index: number, total: number, message: string) {
   generationProgress = { index, total, step: message };
   renderGenerationProgress();
 }
@@ -228,7 +228,7 @@ async function requestExamQuestion(prompt: string, index: number) {
   }
 }
 
-async function skipFailedQuestion(index: number, total: any, label: string, firstFailure: string, detail: string) {
+async function skipFailedQuestion(index: number, total: number, label: string, firstFailure: string, detail: string) {
   if (index === 0) {
     failExamGeneration(firstFailure, detail);
     return true;
@@ -238,7 +238,11 @@ async function skipFailedQuestion(index: number, total: any, label: string, firs
   return false;
 }
 
-async function generateExamQuestion(context: QuestionContext, index: number, previousTexts: string[]) {
+type GeneratedExamQuestion =
+  | { status: 'cancelled' | 'stopped' | 'skipped' }
+  | { status: 'ready'; question: ExamQuestion };
+
+async function generateExamQuestion(context: QuestionContext, index: number, previousTexts: string[]): Promise<GeneratedExamQuestion> {
   if (browserWindow.stateStore.read("examCancel")) {
     restoreExamActiveProvider();
     return { status: "cancelled" };
@@ -253,7 +257,7 @@ async function generateExamQuestion(context: QuestionContext, index: number, pre
 
   if (!response.text || !response.text.trim()) {
     const reason = (response.error && (response.error as Error).message) || browserWindow.stateStore.read("lastCallError") || _examUiL("no response", "模型无响应");
-    const stopped = await skipFailedQuestion(index, context.total, _examUiL("Failed", "生成失败"), _examUiL("Generation failed — no response", "生成失败：模型无响应"), reason);
+    const stopped = await skipFailedQuestion(index, context.total, _examUiL("Failed", "生成失败"), _examUiL("Generation failed — no response", "生成失败：模型无响应"), String(reason));
     return { status: stopped ? "stopped" : "skipped" };
   }
 
@@ -265,18 +269,19 @@ async function generateExamQuestion(context: QuestionContext, index: number, pre
   return { status: "ready", question };
 }
 
-async function generateAllQuestions(topic: any, count: number, difficulty: any, typeStr: string, instructions: any, lang: any) {
-  const context = { topic, total: count, difficulty, instructions, lang, allowedTypes: typeStr.split(", ") };
-  const questions = [];
-  const previousTexts = [];
+async function generateAllQuestions(topic: string, count: number, difficulty: string, typeStr: string, instructions: string, lang: string) {
+  const context: QuestionContext = { topic, total: count, difficulty, instructions, lang, allowedTypes: typeStr.split(", ") };
+  const questions: ExamQuestion[] = [];
+  const previousTexts: string[] = [];
 
   for (let index = 0; index < count; index++) {
     const generated = await generateExamQuestion(context, index, previousTexts);
     if (generated.status === "cancelled" || generated.status === "stopped") return;
     if (generated.status === "skipped") continue;
-    generated.question!._idx = questions.length;
+    if (generated.status !== 'ready') continue;
+    generated.question._idx = questions.length;
     questions.push(generated.question);
-    previousTexts.push(generated.question!.q);
+    previousTexts.push(generated.question.q);
   }
   restoreExamActiveProvider();
   if (browserWindow.stateStore.read("examCancel")) return;

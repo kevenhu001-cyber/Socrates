@@ -1,4 +1,8 @@
 interface UsageEntry { day: string; tokens: number | string; messages: number | string }
+interface UsageCalendarDay { date: string; tokens: number; msgs: number; day: number }
+interface UsageMonthLabel { col: number; label: string }
+interface UsageLimits { beagleLimit: number | string; beagleUsed: number | string }
+interface UsageDailyResponse { entries: UsageEntry[] }
 // src/ui/usage.ts — Phase C-3.5 extraction
 // Usage modal: opens a heatmap of the last 365 days of
 // token consumption. Supports month view (last 31 days) and
@@ -7,6 +11,7 @@ interface UsageEntry { day: string; tokens: number | string; messages: number | 
 
 import { apiFetch } from '../util/api.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 let _usagePeriod='year';
 let _usageListenersMounted=false;
@@ -51,7 +56,10 @@ function _publishUsageState(bodyHtml?: string) {
         period: _usagePeriod,
       });
     }
-  } catch (_) { /* swallow */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/usage.ts:54');
+    /* swallow */
+  }
 }
 
 export function openUsageModal(){
@@ -69,8 +77,8 @@ export function loadUsageData(){
   body!.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
   _publishUsageState();
   Promise.all([
-    apiFetch("/api/usage/daily?days=365"),
-    apiFetch("/api/usage/limits"),
+    apiFetch<UsageDailyResponse>("/api/usage/daily?days=365"),
+    apiFetch<UsageLimits>("/api/usage/limits"),
   ]).then(function(results){
     renderUsageHeatmap(results[0],body,results[1],'year');
   }).catch(function(){
@@ -99,8 +107,8 @@ function usageCalendarWeeks(lookup: Record<string, UsageEntry>, period: string) 
   start.setDate(start.getDate() - (period === 'month' ? 30 : 364));
   start.setDate(start.getDate() - start.getDay());
 
-  const weeks = [];
-  let week = [];
+  const weeks: UsageCalendarDay[][] = [];
+  let week: UsageCalendarDay[] = [];
   const cursor = new Date(start);
   while (cursor <= end) {
     const date = new Date(cursor);
@@ -122,10 +130,10 @@ function usageCalendarWeeks(lookup: Record<string, UsageEntry>, period: string) 
   return weeks;
 }
 
-function usageMonthLabels(weeks: any[]) {
-  const labels: { col: any; label: string; }[] = [];
+function usageMonthLabels(weeks: UsageCalendarDay[][]): UsageMonthLabel[] {
+  const labels: UsageMonthLabel[] = [];
   let lastMonth = '';
-  weeks.forEach(function (week: string|any[], index: any) {
+  weeks.forEach(function (week, index) {
     if (!week.length) return;
     const month = new Date(week[0].date).toLocaleDateString('en-US', { month: 'short' });
     if (month !== lastMonth) {
@@ -163,7 +171,7 @@ function beagleUsageMarkup(limits: { beagleLimit: number | string; beagleUsed: n
   return html + '</div>';
 }
 
-function usageSummaryMarkup(entries: string|any[], totalTokens: number, totalMsgs: number) {
+function usageSummaryMarkup(entries: UsageEntry[], totalTokens: number, totalMsgs: number) {
   const dayCount = entries.length;
   let html = '<div class="usage-summary">';
   html += '<div class="usage-stat"><div class="usage-stat-val">' + totalTokens.toLocaleString() + '</div><div class="usage-stat-lbl">Total tokens</div></div>';
@@ -174,7 +182,7 @@ function usageSummaryMarkup(entries: string|any[], totalTokens: number, totalMsg
   return html;
 }
 
-function usageCalendarMarkup(weeks: any[], monthLabels: string|any[], maxDay: number) {
+function usageCalendarMarkup(weeks: UsageCalendarDay[][], monthLabels: UsageMonthLabel[], maxDay: number) {
   let html = '<div class="usage-calendar-wrap"><div class="usage-calendar"><div class="usage-cal-day-lbl"></div>';
   let monthIndex = 0;
   for (let column = 0; column < weeks.length; column++) {
@@ -188,7 +196,7 @@ function usageCalendarMarkup(weeks: any[], monthLabels: string|any[], maxDay: nu
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   for (let row = 0; row < 7; row++) {
     html += '<div class="usage-cal-day-lbl">' + dayLabels[row] + '</div>';
-    weeks.forEach(function (week: string|any[]) {
+    weeks.forEach(function (week) {
       if (row < week.length) {
         const day = week[row];
         const level = day.tokens > 0 ? usageLevel(day.tokens, maxDay) : 0;
@@ -222,7 +230,7 @@ function monthlyBreakdownMarkup(entries: UsageEntry[]) {
   return html + '</tbody></table></div>';
 }
 
-export function renderUsageHeatmap(data: { entries: never[]; }, body: HTMLElement|null, limits: any, period: string) {
+export function renderUsageHeatmap(data: { entries: UsageEntry[] }, body: HTMLElement|null, limits: UsageLimits, period: string) {
   period = period || 'year';
   _usagePeriod=period;
   const entries = data.entries || [];
@@ -256,8 +264,8 @@ export function loadUsageMonth(){
   body!.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
   _publishUsageState();
   Promise.all([
-    apiFetch("/api/usage/daily?days=31"),
-    apiFetch("/api/usage/limits"),
+    apiFetch<UsageDailyResponse>("/api/usage/daily?days=31"),
+    apiFetch<UsageLimits>("/api/usage/limits"),
   ]).then(function(results){
     renderUsageHeatmap(results[0],body,results[1],'month');
   }).catch(function(){

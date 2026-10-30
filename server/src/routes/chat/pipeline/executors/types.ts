@@ -12,6 +12,10 @@ import type { ToolTurnPolicy } from '../../../../services/tools/toolTurnPolicy.j
 import type { JsonSchemaNode } from '../../../../services/tools/toolCallSafety.js';
 import type { SseEmitter } from '../sseEmitter.js';
 import type { ToolCall, ToolResult } from '../types.js';
+import type { connectorConnections, projectConnectorConnections } from '../../../../db/schema/index.js';
+
+type PersonalConnectorSnapshot = typeof connectorConnections.$inferSelect;
+type ProjectConnectorSnapshot = typeof projectConnectorConnections.$inferSelect;
 
 export interface ToolExecutorContext {
   publicRuntime?: Pick<ReturnType<typeof import('../../../../services/turnEvents.js').createTurnEventController>, 'registerSources' | 'patchUi'> & { citeSources: (args: Record<string, unknown>) => { ok: boolean; error?: string; output?: string } };
@@ -23,8 +27,8 @@ export interface ToolExecutorContext {
   abortSignal: AbortSignal;
   toolPolicy: ToolTurnPolicy;
   schemaForTool: (name: string) => JsonSchemaNode | null;
-  connectorConnectionsByProvider: Record<string, any>;
-  projectConnectorConnectionsByProvider: Record<string, any>;
+  connectorConnectionsByProvider: Record<string, PersonalConnectorSnapshot>;
+  projectConnectorConnectionsByProvider: Record<string, ProjectConnectorSnapshot>;
 }
 
 /** Per-iteration info executors may need (e.g. the available tool list in feedback). */
@@ -41,7 +45,7 @@ export interface ToolExecutionResult {
 }
 
 export type ToolExecutor = (
-  args: Record<string, any>,
+  args: Record<string, unknown>,
   call: ToolCall,
   ctx: ToolExecutorContext,
   iteration: ToolIterationInfo,

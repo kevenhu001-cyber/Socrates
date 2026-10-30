@@ -55,7 +55,7 @@ function toggleShareBtn() {
   }
 }
 
-function openShareModal(sessionId?: any) {
+function openShareModal(sessionId?: string) {
   runShareAction(function (module: FeatureRuntime) { module.openShareModal(sessionId); });
 }
 
@@ -67,7 +67,7 @@ function closeShareModal() {
   }
 }
 
-function selectShareVis(vis: any) {
+function selectShareVis(vis: 'public' | 'private') {
   runShareAction(function (module: FeatureRuntime) { module.selectShareVis(vis); });
 }
 
@@ -105,11 +105,14 @@ function loadSharedSession(token: string) {
   return loadShareImpl().then(function (module: FeatureRuntime) { return module.loadSharedSession(token); });
 }
 
-function loadSharedExamSession(session: any) {
+function loadSharedExamSession(session: Parameters<FeatureRuntime['loadSharedExamSession']>[0]) {
   return loadShareImpl().then(function (module: FeatureRuntime) { return module.loadSharedExamSession(session); });
 }
 
-function renderSharedQuestionCard(idx: any, question: any) {
+function renderSharedQuestionCard(
+  idx: Parameters<FeatureRuntime['renderSharedQuestionCard']>[0],
+  question: Parameters<FeatureRuntime['renderSharedQuestionCard']>[1],
+) {
   runShareAction(function (module: FeatureRuntime) { module.renderSharedQuestionCard(idx, question); });
 }
 

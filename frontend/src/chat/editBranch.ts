@@ -23,7 +23,7 @@ function loadEditBranchImpl() {
   return _implPromise;
 }
 
-function runEditBranchAction(action: { (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; (arg0: any): void; }) {
+function runEditBranchAction(action: (module: FeatureRuntime) => void) {
   if (_impl) {
     action(_impl);
     return;
@@ -31,18 +31,18 @@ function runEditBranchAction(action: { (module: FeatureRuntime): void; (module: 
   void loadEditBranchImpl().then(action).catch(function () { /* loader logs */ });
 }
 
-export function editUserMessage(messageId: any) {
+export function editUserMessage(messageId: string) {
   runEditBranchAction(function (module: FeatureRuntime) { module.editUserMessage(messageId); });
 }
 
-export function regenerateAssistantMessage(messageId: any) {
+export function regenerateAssistantMessage(messageId: string) {
   runEditBranchAction(function (module: FeatureRuntime) { module.regenerateAssistantMessage(messageId); });
 }
 
-export function branchFromMessage(messageId: any, options: any) {
+export function branchFromMessage(messageId: string, options: Parameters<FeatureRuntime['branchFromMessage']>[1]) {
   runEditBranchAction(function (module: FeatureRuntime) { module.branchFromMessage(messageId, options); });
 }
 
-export function switchMessageBranch(messageId: any, targetIndex: any) {
+export function switchMessageBranch(messageId: string, targetIndex: number) {
   runEditBranchAction(function (module: FeatureRuntime) { module.switchMessageBranch(messageId, targetIndex); });
 }

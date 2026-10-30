@@ -12,7 +12,7 @@ let _examAnswerSaveTimer: number|null|undefined = null;
 let _examSaveInFlight: Promise<void> | null = null;
 let _examSaveDirty = false;
 
-export function setExamAnswer(index: number, value: any) {
+export function setExamAnswer(index: number, value: string | number | undefined) {
   const answers = Object.assign({}, stateStore.read('examAnswers') || {});
   answers[index] = value;
   stateStore.dispatch({ type: 'state/set', key: 'examAnswers', value: answers });
@@ -34,11 +34,11 @@ export function scheduleExamAnswerSave() {
 }
 
 export function submitExam() {
-  const qs = browserWindow.stateStore.read("examQuestions");
-  const ans = browserWindow.stateStore.read("examAnswers");
+  const qs = browserWindow.stateStore.read("examQuestions") as ExamQuestion[];
+  const ans = browserWindow.stateStore.read("examAnswers") as Record<number, string | number | undefined>;
   const validQs = qs.filter(function (q: { type: string; }) { return q.type !== "error"; });
   if (!validQs.length) return;
-  const missing: any[] = [];
+  const missing: number[] = [];
   validQs.forEach(function (q: { type: string; }, i: number) {
     if (q.type === "multiple-choice" && ans[i] === undefined) missing.push(i + 1);
     if ((q.type === "fill-blank" || q.type === "short-answer") && (!ans[i] || String(ans[i]).trim() === "")) missing.push(i + 1);
@@ -86,7 +86,7 @@ export function doSaveExamSession() {
       count: browserWindow.stateStore.read("examCount"),
       lang: browserWindow.stateStore.read("examLang") || "English",
       types: Array.isArray(browserWindow.stateStore.read("examTypes")) ? browserWindow.stateStore.read("examTypes") : [],
-      questions: browserWindow.stateStore.read("examQuestions").map(function (q: { q: any; type: any; explanation: any; opts: any; answer: undefined; answers: any; }) {
+      questions: (browserWindow.stateStore.read("examQuestions") as ExamQuestion[]).map(function (q) {
         const c: ExamQuestion = { q: q.q, type: q.type, explanation: q.explanation || "" };
         if (q.opts) c.opts = q.opts;
         if (q.answer !== undefined) c.answer = q.answer;
@@ -98,14 +98,15 @@ export function doSaveExamSession() {
       generatedAt: Date.now(),
     },
   };
-  if (browserWindow.stateStore.read("currentSessionId")) {
-    body.id = browserWindow.stateStore.read("currentSessionId");
-  }
+  const currentSessionId = browserWindow.stateStore.read("currentSessionId");
+  if (currentSessionId) body.id = currentSessionId;
   _examSaveInFlight = browserWindow.apiFetch("/api/sessions", { method: "POST", body: body })
-    .then(function (r: { id: string|null; }) {
-      if (r && r.id) {
-        stateStore.dispatch({type:'state/set',key:'currentSessionId',value:r.id});
-        try { pushExamIdToURL(r.id) } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.pushExamId'); }
+    .then(function (response: unknown) {
+      const id = response !== null && typeof response === 'object' && 'id' in response
+        && typeof response.id === 'string' ? response.id : null;
+      if (id) {
+        stateStore.dispatch({type:'state/set',key:'currentSessionId',value:id});
+        try { pushExamIdToURL(id) } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.pushExamId'); }
       }
       /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
          to be in the sidebar the moment the save returns. */
@@ -114,8 +115,8 @@ export function doSaveExamSession() {
         try { toggleShareBtn() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.toggleShareBtn'); }
       });
     })
-    .catch(function (e: { message: any; }) {
-      console.warn("[exam] save failed:", e && e.message);
+    .catch(function (error: unknown) {
+      console.warn("[exam] save failed:", error instanceof Error ? error.message : String(error));
     })
     .then(function () {
       _examSaveInFlight = null;

@@ -49,8 +49,11 @@ async function requireOwnedSessionAfterSave(sessionId: string, userId: string) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       return await requireOwnedSession(getDb(), sessionId, userId);
-    } catch (err: any) {
-      if (err?.status !== 404 || attempt === attempts - 1) throw err;
+    } catch (err: unknown) {
+      const status = err && typeof err === 'object'
+        ? (err as { status?: unknown }).status
+        : undefined;
+      if (status !== 404 || attempt === attempts - 1) throw err;
       await new Promise<void>((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
     }
   }

@@ -18,7 +18,7 @@ function resolveDocument(doc?: Document | null) {
 }
 
 function setHidden(doc: Document, ids: readonly string[], hidden: boolean) {
-  ids.forEach((id: any) => {
+  ids.forEach((id) => {
     const element = doc.getElementById(id);
     if (element) element.classList.toggle('hidden', hidden);
   });
@@ -28,7 +28,7 @@ function resetShellState(doc: Document) {
   doc.body.classList.remove('workspace-active', 'plugins-active', 'library-active', 'projects-active', 'scheduled-active', 'admin-active', 'exam-active');
   const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
   if (pluginTabs) pluginTabs.hidden = true;
-  doc.querySelectorAll("[data-exam-only='true']").forEach((element: { classList: { add: (arg0: string) => any; }; }) => element.classList.add('hidden'));
+  doc.querySelectorAll<HTMLElement>("[data-exam-only='true']").forEach((element) => element.classList.add('hidden'));
 }
 
 function syncChatPageGate(doc: Document) {
@@ -98,5 +98,5 @@ export function activateMainView(viewId: string, doc?: Document | null) {
 
 /* Test hook — e2e drives the production view and composer transition. */
 if (typeof window !== 'undefined') {
-  browserWindow.__testActivateMainView = (viewId: any) => activateMainView(viewId, document);
+  browserWindow.__testActivateMainView = (viewId: string) => activateMainView(viewId, document);
 }

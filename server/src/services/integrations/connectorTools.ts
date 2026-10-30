@@ -18,6 +18,17 @@ import { searchNotionPages } from './notionConnector.js';
 import { listGithubInstallationRepositories } from './githubConnector.js';
 import { listGiteeRepositories } from './giteeConnector.js';
 
+interface ConnectorConnection {
+  accessTokenCiphertext: string;
+  externalAccountId: string | null;
+  refreshTokenCiphertext: string | null;
+  installationIds: unknown;
+}
+
+function numericIds(value: unknown): number[] {
+  return Array.isArray(value) ? value.filter((item): item is number => typeof item === 'number' && Number.isSafeInteger(item)) : [];
+}
+
 /* ─── Tool definitions ───────────────────────────────────── */
 
 export const ARXIV_TOOL = {
@@ -219,7 +230,7 @@ export const CONNECTOR_TOOL_NAMES = {
  *   Public connectors (arxiv) accept null.
  * @returns {Promise<{status:string, output:string, error?:string, errorCode?:string}>}
  */
-export async function executeConnectorTool(toolName: string, args: Record<string, any>, connection: any) {
+export async function executeConnectorTool(toolName: string, args: Record<string, unknown>, connection: ConnectorConnection | null) {
   switch (toolName) {
     /* ── arXiv (public, no auth) ──────────────────────────────── */
     case CONNECTOR_TOOL_NAMES.ARXIV: {
@@ -234,7 +245,7 @@ export async function executeConnectorTool(toolName: string, args: Record<string
         if (sliced.length === 0) {
           return { status: 'completed', output: 'No arXiv papers found matching your query. Try different keywords or check the spelling.' };
         }
-        const blocks = sliced.map((p: any, i: number) => {
+        const blocks = sliced.map((p, i) => {
           const authors = (p.authors || []).slice(0, 5).join(', ') + ((p.authors || []).length > 5 ? ' et al.' : '');
           const cats = (p.categories || []).slice(0, 3).join(', ');
           const date = p.publishedAt ? new Date(p.publishedAt).getFullYear() : '';
@@ -301,7 +312,9 @@ export async function executeConnectorTool(toolName: string, args: Record<string
       }
       const filterQuery = String(args.query || '').trim().toLowerCase();
       try {
-        const repos = await listGithubInstallationRepositories(connection);
+        const repos = await listGithubInstallationRepositories({
+          installationIds: numericIds(connection.installationIds),
+        });
         if (repos.length === 0) {
           return { status: 'completed', output: 'No GitHub repositories are accessible. Make sure the GitHub App is installed on the repositories you want to use.' };
         }

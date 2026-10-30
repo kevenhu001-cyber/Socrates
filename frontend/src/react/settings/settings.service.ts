@@ -2,6 +2,7 @@ import { showToast } from '../../ui/toast.js';
 import { publishProfileSnapshot } from '../../ui/profile.ts';
 import { i18n } from '../legacy/gateway';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 let settingsReturnFocus: HTMLElement | null = null;
 
@@ -48,7 +49,10 @@ export function closeSettings(): void {
 export function toggleExternalApi(): void {
   const externalApiOn = !getSettingsSnapshot().externalApiOn;
   try { localStorage.setItem('socrates-external-api', JSON.stringify(externalApiOn)); }
-  catch { /* Preference is still updated for this page session. */ }
+  catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/settings/settings.service.ts:51');
+    /* Preference is still updated for this page session. */
+  }
   installSettingsBridge().publish({ externalApiOn });
 }
 

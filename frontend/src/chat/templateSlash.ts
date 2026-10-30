@@ -8,6 +8,7 @@ import { ActiveTemplate, configureTemplateSystemPrompt } from './templateSystemP
 import { toggleWebSearch } from '../pickers.ts';
 import { focusComposer, getComposerMarkdown, getVisibleComposerSurface, setComposerExtensionToken, setComposerMarkdown, subscribeComposer } from '../composer/controller.ts';
 import { loadPromptTemplates } from './promptTemplates.ts';
+import type { PromptTemplate } from './promptTemplates.ts';
 import { esc } from '../render/helpers.ts';
 import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -16,21 +17,45 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
 export let _slashSelected=0;
-let _slashList: any[]=[];
+interface SlashAppEntry { _kind: 'app'; id: string; title: string; shortcut: string; description: string; icon: string; insert: string }
+interface SlashTemplateEntry { _kind: 'template'; id: string; title: string; shortcut: string; description: string; icon: string; body?: string; systemPrompt?: string }
+type SlashEntry = SlashAppEntry | SlashTemplateEntry;
+type RuntimeActiveTemplate = ActiveTemplate & Pick<PromptTemplate, 'title' | 'body'>;
+type TemplateInput = Record<string, unknown>;
+
+function readTemplateString(input: TemplateInput, key: string): string | undefined {
+  const value = input[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function normalizeActiveTemplate(input: object | null): RuntimeActiveTemplate | null {
+  if (!input) return null;
+  const values = input as TemplateInput;
+  const description = readTemplateString(values, 'description');
+  return {
+    id: readTemplateString(values, 'id'),
+    title: readTemplateString(values, 'title') || '',
+    shortcut: readTemplateString(values, 'shortcut'),
+    systemPrompt: readTemplateString(values, 'systemPrompt') || '',
+    body: readTemplateString(values, 'body') || '',
+    icon: readTemplateString(values, 'icon'),
+    hint: readTemplateString(values, 'hint') || description || '',
+    description,
+    extensionKey: readTemplateString(values, 'extensionKey') || undefined,
+    runId: readTemplateString(values, 'runId'),
+    workflow: values.workflow,
+    outputMode: readTemplateString(values, 'outputMode') || 'chat',
+  };
+}
+
+let _slashList: SlashEntry[]=[];
 let _slashQuery="";
 /* P5.8 — Active template state. When the user picks a template
    from the palette we stash it here so the chat pipeline can
    inject the template's `systemPrompt` as a fresh system message
    on every turn while the template is active. The chip in the
    input bar shows the current mode; clicking × clears it. */
-let _activeTemplate: ActiveTemplate|{
-  id: any; title: any; shortcut: any; systemPrompt: any; body: any; icon: any; hint: any; extensionKey: any; runId: any; workflow: any;
-  /* P_canvas-mode — declared on ExtensionDefinition.outputMode, carried
-     over so renderAssistantHTML can branch on _activeTemplate.outputMode
-     at the streaming→finalized boundary. Default 'chat' preserves the
-     legacy behaviour for every extension that doesn't opt in. */
-  outputMode: any;
-}|null|undefined=null;
+let _activeTemplate: RuntimeActiveTemplate | null | undefined = null;
 configureTemplateSystemPrompt({ getActiveTemplate: function(){ return _activeTemplate; } });
 /* P_extension-chip — an "extension" template is just a template that
    also flips a piece of global mode state (e.g. window.deepResearchOn,
@@ -42,8 +67,8 @@ configureTemplateSystemPrompt({ getActiveTemplate: function(){ return _activeTem
    means every "×" on the chip and every menu click stay in sync. */
 const EXTENSION_SIDE_EFFECTS: Record<string, (on: boolean) => void> = {
   webSearch:function(on: boolean){ if(on!==!!browserWindow.webSearchOn && typeof toggleWebSearch==="function") toggleWebSearch(); },
-  deepResearch:function(on: any){ browserWindow.deepResearchOn=!!on; if(typeof browserWindow.syncQuickChips==="function") browserWindow.syncQuickChips(); },
-  extensiveThinking:function(on: any){
+  deepResearch:function(on: boolean){ browserWindow.deepResearchOn=on; if(typeof browserWindow.syncQuickChips==="function") browserWindow.syncQuickChips(); },
+  extensiveThinking:function(on: boolean){
     browserWindow.extensiveThinkingOn=!!on;
     /* P_batch-storage — the toggle is a user click that lands in
        the middle of a render frame. Coalesce the persist into the
@@ -85,25 +110,12 @@ export function stripTemplateBodyPrefix(text: string){
   if(i===0)return text; // user has wiped the placeholder
   return text.slice(i).replace(/^\s+/,"");
 }
-export function setActiveTemplate(t: Record<string,unknown>|null){
+export function setActiveTemplate(input: object | null){
   const previousExtension = _activeTemplate?.extensionKey;
-  const nextExtension = t?.extensionKey;
+  const nextExtension = input ? readTemplateString(input as TemplateInput, 'extensionKey') : undefined;
+  _activeTemplate = normalizeActiveTemplate(input);
   const prevExt = typeof previousExtension === 'string' ? previousExtension : null;
   const nextExt = typeof nextExtension === 'string' ? nextExtension : null;
-  _activeTemplate=t?{
-    id:t.id,title:t.title,shortcut:t.shortcut,
-    systemPrompt:t.systemPrompt||"",body:t.body||"",
-    icon:t.icon,
-    hint:t.hint||t.description||"",
-    extensionKey:nextExt,
-    runId:t.runId||null,
-    workflow:t.workflow||null,
-    /* P_canvas-mode — declared on ExtensionDefinition.outputMode, carried
-       over so renderAssistantHTML can branch on _activeTemplate.outputMode
-       at the streaming→finalized boundary. Default 'chat' preserves the
-       legacy behaviour for every extension that doesn't opt in. */
-    outputMode:t.outputMode||'chat'
-  }:null;
   if(prevExt!==nextExt) _applyExtensionSideEffects(prevExt,nextExt);
   try { browserWindow._activeTemplate = _activeTemplate; } catch (e) { reportSwallow(e, 'templateSlash.setActiveTemplate.mirrorGlobal'); }
   renderTemplateModeChip();
@@ -165,18 +177,18 @@ export function _currentSlashQuery(){
    shortcut, title, and description. */
 export function _slashAppEntries(){
   const apps=(typeof browserWindow.getSlashApps==="function")?browserWindow.getSlashApps():[];
-  return (apps||[]).map(function(a: { id: string; title: string; shortcut: string; description: string; icon: string; insert: string; }){
-    return { _kind:"app" as const, id:a.id, title:a.title, shortcut:a.shortcut, description:a.description, icon:a.icon, insert:a.insert };
+  return (apps||[]).map(function(a): SlashAppEntry {
+    return { _kind:"app", id:a.id, title:a.title, shortcut:a.shortcut, description:a.description, icon:a.icon, insert:a.insert };
   });
 }
-export function _filterSlashList(query: string){
+export function _filterSlashList(query: string): SlashEntry[] {
   const apps=_slashAppEntries();
-  const templates=loadPromptTemplates().map(function(t){
+  const templates: SlashTemplateEntry[]=loadPromptTemplates().map(function(t){
     return { _kind:"template" as const, id:t.id, title:t.title, shortcut:t.shortcut, description:t.description || '', icon:t.icon || '', body:t.body, systemPrompt:t.systemPrompt };
   });
   const list=[...apps, ...templates];
   if(!query) return list;
-  return list.filter(function(t: { shortcut: any; title: any; description: any; }){
+  return list.filter(function(t){
     const s=(t.shortcut||"").toLowerCase();
     const title=(t.title||"").toLowerCase();
     const desc=(t.description||"").toLowerCase();

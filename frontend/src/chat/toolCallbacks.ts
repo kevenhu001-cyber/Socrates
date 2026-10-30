@@ -5,6 +5,7 @@
 import { stateStore } from '../state/store.ts';
 import type { AgentRunEvent } from '../extensions/types.ts';
 import type { StreamingTurnController } from './turnState.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /** Bridges read from the legacy shell. */
 interface ToolCallbacksWindow extends Window {
@@ -24,7 +25,10 @@ function publishEvent(event: AgentRunEvent, extra?: Partial<AgentRunEvent> | nul
   const merged: AgentRunEvent = extra ? Object.assign({}, event, extra) : event;
   // empty-catch: intentional — the agent-run bridge is optional and a publish
   // failure must never break the stream it reports on.
-  try { bridge.publish(merged); } catch { /* optional bridge */ }
+  try { bridge.publish(merged); } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/toolCallbacks.ts:27', 'expected');
+    /* optional bridge */
+  }
 }
 
 /* P_extension-runs — the chat pipeline publishes workflow-stage events

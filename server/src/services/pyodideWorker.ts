@@ -43,8 +43,20 @@ interface RunCodeRequest {
 /** Dynamic error object shapes surfaced across the Pyodide/JS bridge. */
 interface PyRunError extends Error {
   type?: string;
-  code?: any;
-  args?: any;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isRunCodeRequest(value: unknown): value is RunCodeRequest {
+  return isRecord(value)
+    && value.type === 'run'
+    && typeof value.id === 'string'
+    && typeof value.code === 'string'
+    && typeof value.scratchDir === 'string'
+    && typeof value.maxOutputBytes === 'number'
+    && (value.interruptBuffer === undefined || value.interruptBuffer instanceof SharedArrayBuffer);
 }
 
 /**
@@ -441,8 +453,8 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       });
     } catch (_) { /* parent closed */ }
   };
-  (pyodide.globals as any).set('_socrates_out_hook_js', makeHook('stdout'));
-  (pyodide.globals as any).set('_socrates_err_hook_js', makeHook('stderr'));
+  pyodide.globals.set('_socrates_out_hook_js', makeHook('stdout'));
+  pyodide.globals.set('_socrates_err_hook_js', makeHook('stderr'));
   pyodide.runPython(`_socrates_install_hooks(_socrates_out_hook_js, _socrates_err_hook_js)`);
 
   // Wire the interrupt buffer (SharedArrayBuffer) — parent writes 0x02 on timeout.
@@ -520,7 +532,7 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
      purpose so the exec below can report the real error through the
      normal marker path. */
   try {
-    const loadResult: any = await pyodide.loadPackagesFromImports(code, {
+    const loadedPackages = await pyodide.loadPackagesFromImports(code, {
       messageCallback: (msg: string) => {
         try {
           parentPort!.postMessage({
@@ -531,24 +543,9 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
         } catch (_) { /* parent closed */ }
       },
     });
-    const namesOf = (collection: any): string[] => {
-      try {
-        if (!collection) return [];
-        if (typeof collection.toJs === 'function') collection = collection.toJs();
-        if (collection instanceof Map) return Array.from(collection.keys()).map(String);
-        if (collection instanceof Set) return Array.from(collection).map(String);
-        if (Array.isArray(collection)) return collection.map(String);
-        if (typeof collection === 'object') return Object.keys(collection).map(String);
-      } catch (_) { /* fall through to [] */ }
-      return [];
-    };
-    const loadedNames = namesOf(loadResult && loadResult.loaded);
-    const failedNames = namesOf(loadResult && loadResult.failed);
-    if (loadedNames.length || failedNames.length) {
-      const note = (loadedNames.length ? `[pyodide] auto-installed: ${loadedNames.join(', ')}` : '')
-        + (failedNames.length
-          ? `${loadedNames.length ? '\n' : ''}[pyodide] not in the Pyodide distribution: ${failedNames.join(', ')} — pure-Python PyPI wheels install via asyncio.run(micropip.install("pkg"))`
-          : '');
+    const loadedNames = loadedPackages.map((pkg) => pkg.name);
+    if (loadedNames.length) {
+      const note = `[pyodide] auto-installed: ${loadedNames.join(', ')}`;
       pyodide.runPython(`print(${JSON.stringify(note)}, flush=True)`);
     }
   } catch (_) { /* offline fetch / unparseable source — exec reports the real error */ }
@@ -821,10 +818,10 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   };
 }
 
-parentPort!.on('message', async (msg) => {
-  if (!msg || typeof msg !== 'object') return;
-  if (msg.type === 'run') {
-    try {
+parentPort!.on('message', async (value: unknown) => {
+  if (!isRunCodeRequest(value)) return;
+  const msg = value;
+  try {
       const result = await runCode(msg);
       parentPort!.postMessage(result);
     } catch (err) {
@@ -840,7 +837,6 @@ parentPort!.on('message', async (msg) => {
         errorMessage: 'worker_error: ' + String(err && (err as PyRunError).message || err),
         artifacts: [],
       });
-    }
   }
 });
 

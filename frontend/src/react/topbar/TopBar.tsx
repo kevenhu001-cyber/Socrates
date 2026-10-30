@@ -1,6 +1,7 @@
 import { Button } from '../ui/shadcn/button';
 import { i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 /**
  * TopBar — the React-owned header chrome.
@@ -252,9 +253,18 @@ export function mountTopBar(): boolean {
       syncEffortUI?: () => void;
       syncMobileModeSwitch?: () => void;
     };
-    try { win.syncChatModel?.(); } catch { /* the picker owns its own logging */ }
-    try { win.syncEffortUI?.(); } catch { /* idem */ }
-    try { win.syncMobileModeSwitch?.(); } catch { /* the mode switch owns its own logging */ }
+    try { win.syncChatModel?.(); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/topbar/TopBar.tsx:255');
+      /* the picker owns its own logging */
+    }
+    try { win.syncEffortUI?.(); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/topbar/TopBar.tsx:256');
+      /* idem */
+    }
+    try { win.syncMobileModeSwitch?.(); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/topbar/TopBar.tsx:257');
+      /* the mode switch owns its own logging */
+    }
   });
   return true;
 }

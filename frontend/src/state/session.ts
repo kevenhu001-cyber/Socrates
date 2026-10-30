@@ -1,4 +1,18 @@
-export type ChatMessageShape = Record<string, unknown> & { clientId?: string };
+export type ChatMessageShape = Record<string, unknown> & {
+  clientId?: string;
+  role?: string;
+  type?: string;
+  actions?: ReadonlyArray<{
+    text?: string;
+    primary?: boolean;
+    action?: string;
+  }> | null;
+  id?: string;
+  rawText?: string;
+  content?: unknown;
+  turnRuntime?: import('@socrates/contracts').TurnRuntime | null;
+  _toolRunRev?: number;
+};
 
 export function createInitialSessionState(): {
   topic: string;
@@ -21,7 +35,7 @@ export function createInitialSessionState(): {
   currentExampleIdx: number;
   practiceAttempts: number;
   practicePhase: string;
-  teachingPlan: unknown;
+  teachingPlan: import('../chat/teachingPlan.ts').TeachingPlan | null;
   stuckCheckOffered: boolean;
   stuckCheckRejected: number;
   fourOptionDialog: unknown;

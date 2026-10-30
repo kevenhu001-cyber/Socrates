@@ -41,7 +41,7 @@ export function syncSocraticMasteryUI(): void {
   pill.classList.remove('hidden');
 
   const messages = stateStore.read('messages');
-  const count = Array.isArray(messages) ? messages.filter((m: { role?: string }) => m.role === 'user').length : 0;
+  const count = messages.filter((message) => message.role === 'user').length;
   const activeStage = getActiveSocraticStage(count);
 
   const labelEl = document.getElementById('tutorMasteryStageLabel');

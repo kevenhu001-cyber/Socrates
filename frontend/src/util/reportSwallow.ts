@@ -18,7 +18,7 @@ const IS_DEV = (() => {
     }).env;
     if (env && typeof env.DEV === "boolean") return env.DEV;
     if (env && typeof env.MODE === "string") return env.MODE !== "production";
-  } catch (_) { /* fall through */ }
+  } catch (_) { /* empty-catch: intentional — Vite metadata is optional outside a production build */ }
   return true;
 })();
 
@@ -38,7 +38,7 @@ export function expectedSwallowCount(): number {
 /**
  * Report a caught failure without changing caller control flow or opening a banner.
  *
- * Three severities, and the choice matters because there are ~480 call sites:
+ * Three severities, and the choice matters because there are ~680 call sites:
  *
  *  - `expected` — the failure is part of normal operation (feature absent
  *    locally, storage blocked, a user-initiated abort, an optional cache).

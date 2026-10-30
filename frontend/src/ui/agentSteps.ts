@@ -22,6 +22,7 @@
  */
 
 import { agentStepIcon } from './icons/toolIcons.ts';
+import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export interface AgentStepData {
   stepId: string;
@@ -65,7 +66,10 @@ function translate(entry: { key: string; text: string }): string {
       const value = (w.t as (key: string) => string)(entry.key);
       if (value && value !== entry.key) return value;
     }
-  } catch (_) { /* fall through to the Chinese baseline */ }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/agentSteps.ts:68');
+    /* fall through to the Chinese baseline */
+  }
   return entry.text;
 }
 

@@ -1,5 +1,6 @@
-
 import { reportSwallow } from '../util/reportSwallow.ts';
+
+
 
 /* ui/composerShape.ts — JS-owned composer shape flags (replaces :has hot path).
  *
@@ -44,7 +45,10 @@ function readComposerShape(shell: Element) {
     hasPlugins = !!shell.querySelector('.composer-plugin-chips');
     hasFiles = visibleAttachmentChips(shell);
     hasQueue = !!shell.querySelector('.composer-queue-banner');
-  } catch (_) { /* detached node */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: ui/composerShape.ts:47');
+    /* detached node */
+  }
   return { hasPlugins: hasPlugins, hasFiles: hasFiles, hasQueue: hasQueue };
 }
 
@@ -113,7 +117,10 @@ export function installComposerShapeMirror() {
       attributes: true,
       attributeFilter: ['class'],
     });
-  } catch (_) { /* observe failed */ }
+  } catch (_) {
+    reportSwallow(_, 'empty catch: ui/composerShape.ts:116');
+    /* observe failed */
+  }
   // Initial paint: stamp flags before first frame so no :has fallback flash.
   syncComposerShellFlags(document);
   return function () {

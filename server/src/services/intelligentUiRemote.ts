@@ -53,10 +53,16 @@ export async function remoteBytes(url: string, maxBytes = 2_000_000, timeout = 1
   return { bytes: Buffer.concat(chunks), type: (response.headers.get('content-type') || '').split(';')[0].toLowerCase() };
 }
 
-export async function remoteJson(url: string, timeout = 8000): Promise<Record<string, any>> {
+export async function remoteJson(url: string, timeout = 8000): Promise<Record<string, unknown>> {
   const { bytes, type } = await remoteBytes(url, 2_000_000, timeout);
   if (!type.includes('json')) throw remoteUnavailable();
-  try { return JSON.parse(bytes.toString('utf8')); } catch { throw remoteUnavailable(); }
+  try {
+    const value: unknown = JSON.parse(bytes.toString('utf8'));
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+  } catch { throw remoteUnavailable(); }
+  throw remoteUnavailable();
 }
 
 /** Bounded cross-user cache for public data; failed requests are never cached. */

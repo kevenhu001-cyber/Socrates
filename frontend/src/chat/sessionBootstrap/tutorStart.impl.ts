@@ -16,7 +16,7 @@ import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { syncChatModel, getActiveProvider } from '../../pickers.ts';
 import { loadWebSearch } from '../webSearchLoader.ts';
 import { generateTopicKBNodes } from '../topicKbNodes.ts';
-import { generateDiagnosticQuestions } from '../diagnosticGenerator.ts';
+import { generateDiagnosticQuestions, type DiagQuestion } from '../diagnosticGenerator.ts';
 import { aiGenerate } from '../mockDiagnostic.ts';
 import { updateKB } from '../../ui/knowledgePanel.ts';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.ts';
@@ -95,13 +95,13 @@ function cancelDiagnostic() {
   focusComposer('topic');
 }
 
-function renderDiagnosticFailure(fallbackError: any) {
+function renderDiagnosticFailure(fallbackError: unknown) {
   if (!document.getElementById('diagnosticView')) return;
   const reason = stateStore.read('lastCallError') || fallbackError || '';
-  showDiagnosticError(reason);
+  showDiagnosticError(String(reason));
 }
 
-function completeDiagnosticQuestions(questions: string|any[]|null) {
+function completeDiagnosticQuestions(questions: DiagQuestion[] | null) {
   if (!questions || !questions.length) return false;
   stateStore.dispatch({ type: 'state/set', key: 'diagQuestions', value: questions });
   stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'real' });
@@ -187,7 +187,7 @@ async function prepareKnowledgeNodes(context: TutorStartContext) {
       while (topicNodes.length < stateStore.read('kbNodes').length) {
         topicNodes.push(stateStore.read('kbNodes')[topicNodes.length].name);
       }
-      const namedNodes = stateStore.read('kbNodes').map((node: any, index: number) => (
+      const namedNodes = stateStore.read('kbNodes').map((node, index) => (
         topicNodes[index] ? Object.assign({}, node, { name: topicNodes[index] }) : node
       ));
       stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: namedNodes });

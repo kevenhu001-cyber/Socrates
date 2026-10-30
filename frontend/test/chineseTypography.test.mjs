@@ -13,6 +13,7 @@ globalThis.marked = marked;
 const { formatMsg, formatMsgProgressive } = await import('../src/render/markdown.ts');
 const { showToast } = await import('../src/ui/toast.js');
 const { showConfirm, closeConfirm } = await import('../src/ui/confirm.js');
+const { confirmState } = await import('../src/ui/confirmState.js');
 const asDom = (html) => { const root = document.createElement('div'); root.innerHTML = html; return root; };
 
 test('Chinese prose uses full-width punctuation and matched, nested quotes', () => {
@@ -101,11 +102,12 @@ test('Chinese system hints, confirmations and toast copy use the same punctuatio
   assert.equal(zh['sidebar.scheduled.custom'], '自定义（cron）');
   showToast('已保存: "中文提示",请继续.', { duration: 0 });
   assert.equal(document.querySelector('.msg-toast').textContent, '已保存： “中文提示”，请继续。');
-  let snapshot;
-  window.__socratesConfirmBridge = { publish: (value) => { snapshot = value; } };
   const confirmation = showConfirm('系统提示: "确认"', '是否继续(本次操作)?');
+  confirmState.flush();
+  const snapshot = confirmState.getSnapshot();
   assert.equal(snapshot.title, '系统提示： “确认”');
   assert.equal(snapshot.msg, '是否继续（本次操作）？');
   closeConfirm(false);
+  confirmState.flush();
   assert.equal(await confirmation, false);
 });

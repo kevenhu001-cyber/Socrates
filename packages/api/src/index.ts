@@ -1,4 +1,4 @@
-import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, FileExtractResult, Mistake, MobileTokenPair, Project, ProviderKey, SearchHit, Session, SessionShare, ShareVisibility, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
+import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, ChatStreamError, FileExtractResult, Mistake, MobileTokenPair, Project, ProviderKey, SearchHit, Session, SessionShare, ShareVisibility, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
 import type { ResearchJob, ResearchJobRefineRequest, ResearchJobRefineResult, ResearchJobRequest } from '@socrates/contracts';
@@ -9,10 +9,23 @@ export type TokenState = Partial<MobileTokenPair>;
 export class ApiError extends Error {
   status: number;
   body?: unknown;
-  constructor(status: number, message: string, body?: unknown) {
+  code?: string;
+  retryable?: boolean;
+  upstreamStatus?: number;
+  retryAfterMs?: number;
+  constructor(
+    status: number,
+    message: string,
+    body?: unknown,
+    details: Pick<ChatStreamError, 'code' | 'retryable' | 'upstreamStatus' | 'retryAfterMs'> = {},
+  ) {
     super(message);
     this.status = status;
     this.body = body;
+    this.code = details.code;
+    this.retryable = details.retryable;
+    this.upstreamStatus = details.upstreamStatus;
+    this.retryAfterMs = details.retryAfterMs;
   }
 }
 
@@ -390,24 +403,37 @@ export async function readChatStream(response: Response, handlers: ChatSseHandle
   const decoder = new TextDecoder();
   let buffer = '';
   let complete = false;
-  let streamError: string | null = null;
+  const streamErrors: ChatStreamError[] = [];
   const tracked: ChatSseHandlers = {
     ...handlers,
     onDone: () => { complete = true; },
-    onError: (message) => { streamError = message; },
+    onError: (message, details) => { streamErrors.push({ ...details, message }); },
   };
   try {
-    while (!complete && !streamError) {
+    while (!complete && streamErrors.length === 0) {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       buffer = consumeSseBuffer(buffer, (frame) => {
-        if (!complete && !streamError) dispatchChatSseFrame(frame, tracked);
+        if (!complete && streamErrors.length === 0) dispatchChatSseFrame(frame, tracked);
       });
     }
     buffer += decoder.decode();
-    if (!complete && !streamError && buffer.trim()) dispatchChatSseFrame(buffer, tracked);
-    if (streamError) throw new ApiError(502, streamError);
+    if (!complete && streamErrors.length === 0 && buffer.trim()) dispatchChatSseFrame(buffer, tracked);
+    const streamError = streamErrors[0];
+    if (streamError) {
+      throw new ApiError(
+        streamError.status ?? 502,
+        streamError.message,
+        undefined,
+        {
+          code: streamError.code,
+          retryable: streamError.retryable,
+          upstreamStatus: streamError.upstreamStatus,
+          retryAfterMs: streamError.retryAfterMs,
+        },
+      );
+    }
     if (!complete) throw new ApiError(502, 'Connection closed before the response finished. Please retry.');
     handlers.onDone?.();
   } finally {

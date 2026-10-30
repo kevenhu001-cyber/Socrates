@@ -75,7 +75,7 @@ export async function generateSocraticQuestionStream(node: TutorNode, domain: st
 export async function getExplanation(status: string) {
   if (hasUsableActive()) {
     const node = stateStore.read('kbNodes')[stateStore.read('currentNode')] as TutorNode;
-    const domain = stateStore.read('domain');
+    const domain = stateStore.read('domain') || '';
     /* Depth hint — modulates how detailed the re-explain is, but still
        mandates starting from the core definition per Principle 2. */
     const depthHint = (status === 'internalized' || status === 'fuzzy')
@@ -148,9 +148,9 @@ export async function askNextQuestion(){
     const ctl=await _addStreamingMessage({onRetry:function(){askNextQuestion()}});
     const result=await generateSocraticQuestionStream(
       node,
-      stateStore.read("domain"),
-      function(delta: any){ctl.append(delta)},
-      function(t: any){ctl.appendThinking(t)},
+      stateStore.read("domain") || '',
+      function(delta: string){ctl.append(delta)},
+      function(t: string){ctl.appendThinking(t)},
       _toolCallbacksForStream(ctl)
     );
     /* User explicitly clicked Stop on the bubble — clean it up
@@ -177,7 +177,7 @@ export async function askNextQuestion(){
     ctl.abort();
   }
   /* fallback: mock or pre-stream API path */
-  const q=await generateSocraticQuestion(node,stateStore.read("domain"));
+  const q=await generateSocraticQuestion(node,stateStore.read("domain") || '');
   _addAnchoredAssistant(q.text);
   stateStore.dispatch({type:"state/batch",patch:{stuckCount:0,totalQ:stateStore.read("totalQ")+1}});
 }
