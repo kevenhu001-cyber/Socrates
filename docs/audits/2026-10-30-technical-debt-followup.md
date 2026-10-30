@@ -53,6 +53,7 @@
 | React 附件 chip renderer 的重复 `window.renderAttachmentChips` 别名 | **本轮已收敛** | 应用调用方直接导入模块，React/E2E 使用 typed composer action；删除独立 window 发布与类型字段，并更新过期的旧全局注释。 |
 | connector icon hydration 的 `ensureConnectorIcons` / `hydrateConnectorIcons` window aliases | **本轮已移除** | navigation adapter 直接导入初始化器，hydrator 仅在该模块内使用；删除两个未读 window 发布、类型字段和 hydrator 的冗余导出。 |
 | React find bar 导航的 `window.findNext` / `window.findPrev` 测试 aliases | **本轮已移除** | E2E 改点击实际前进/后退控件覆盖循环导航；React 与键盘仍直接调用动作模块，生产代码无 window 读取方，删除全局发布与类型字段。 |
+| `Ctrl+Shift+P` 项目轮换的 `window.cycleActiveProject` alias | **本轮已移除** | 键盘快捷键直接调用 `session/organizeRuntime.ts` 惰性 facade；删除 bridge 发布和类型字段，避免键盘 action 穿过 window。 |
 
 ## 仍开放或尚无法确认
 
@@ -125,3 +126,4 @@
 - 附件 chip renderer alias 收敛到 typed composer action：E2E 改经 `__socratesLegacy.composer.renderAttachmentChips` 更新共享状态，并检查旧 window 字段缺失；SPA 生产构建、lint 通过，`attachments-compat.spec.mjs` 10/10 通过。
 - Connector icon window alias 移除：初始化器继续由 navigation adapter 直接导入，hydrator 收为模块私有；SPA 生产构建和 lint 通过，`sidebar-nav` / `sidebar-compat` / `sidebar-resize` 共 24/24 通过并断言旧字段缺失。
 - Find bar navigation test aliases 移除：E2E 改点前进/后退控件，保留生产 open/close bridge；SPA 生产构建和 lint 通过，`find-in-session.spec.mjs` 3/3 验证查找、循环导航及收起行为。
+- Project cycling window alias 移除：键盘快捷键改直接调用惰性 organize runtime；SPA 生产构建、lint 通过，`session-tags` / `session-row-menu` Playwright 10/10 通过并检查旧字段缺失。

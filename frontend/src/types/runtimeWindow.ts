@@ -46,7 +46,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "closeTagEditor": typeof import("../session/organizeRuntime")["closeTagEditor"];
   "closeUsageModal": () => Promise<void> | undefined;
   "createShareLink": typeof import("../ui/share")["createShareLink"];
-  "cycleActiveProject": typeof import("../session/organizeRuntime")["cycleActiveProject"];
   "deepResearchOn": boolean;
   "deleteUserMessage": typeof import("../ui/messageActions")["deleteUserMessage"];
   "editUserMessage": typeof import("../chat/editBranch")["editUserMessage"];

@@ -19,6 +19,7 @@ import { closePromptTemplatesModal } from './promptTemplates.ts';
 import { closeProfile, openProfile, toggleProfileWebSearch } from './profile.ts';
 import { isFindOpen } from '../react/find-in-session/findInSession.actions.ts';
 import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../composer/controller.ts';
+import { cycleActiveProject } from '../session/organizeRuntime.ts';
 import { findLastUserMessage } from '../render/markdown.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
@@ -176,7 +177,7 @@ function handleProjects(event: KeyboardEvent) {
 function handleCycleProject(event: KeyboardEvent) {
   if (!isCommandShortcut(event, 'p', true)) return false;
   event.preventDefault();
-  browserWindow.cycleActiveProject();
+  cycleActiveProject();
   return true;
 }
 

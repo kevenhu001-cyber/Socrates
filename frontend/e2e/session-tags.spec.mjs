@@ -74,6 +74,7 @@ test('tag editor adds, removes and closes', async ({ page }) => {
   await page.goto('/');
   await gotoAndSettle(page);
   await waitForAppShell(page);
+  expect(await page.evaluate(() => 'cycleActiveProject' in window)).toBe(false);
 
   const row = page.locator(`.recent-item[data-recent-actual="${SESSION_ID}"]`);
   await expect(row).toBeVisible();
