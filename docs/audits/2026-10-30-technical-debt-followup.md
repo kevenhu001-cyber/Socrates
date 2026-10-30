@@ -71,6 +71,7 @@
 | 移动模式菜单的重复 window 处理器别名 | **本轮已移除** | 启动时将模块函数直接注入 delegated shell listeners；移除无消费者的 `window.toggleMobileModeMenu` / `window.selectAppMode` 发布与类型。仍被 provider、重置流程和顶栏使用的两个同步回调保留。 |
 | 顶栏会话显隐的重复 window wrapper | **本轮已移除** | 移除没有消费者的 `window.toggleChatTopBarEls` 包装和类型；主视图生命周期继续直接调用 `setConversationChrome()`。 |
 | Cmd-K 输入与按键的重复 window handlers | **本轮已移除** | React 通过 typed `__socratesLegacy.cmdK` 调用模块动作；移除无读取方的 `window.onCmdKInput` / `window.onCmdKKey` 发布与类型，保留实际 `openCmdK` / `closeCmdK` 入口。 |
+| 语音停止按钮的重复 window forwarder | **本轮已移除** | 录音停止按钮直接调用语音模块的 `stopSpeechInput()`；移除无读取方的根级转发与类型，保留麦克风启动的懒加载入口。 |
 
 ## 仍开放或尚无法确认
 
@@ -160,3 +161,4 @@
 - Mobile mode handler aliases removed: the shell keeps its directly injected actions; full frontend lint and production build pass, `app-mode-lifecycle.spec.mjs` passes 1/1, and `mobile-ui-alignment.spec.mjs` passes 2/2 while asserting both globals are absent and switching to Tutor through the actual phone control.
 - Top-bar visibility wrapper removed: `mainViewController` remains the direct owner of `setConversationChrome()`; frontend lint and production build pass, and `mobile-ui-alignment.spec.mjs` passes 2/2 with the obsolete global absent.
 - Cmd-K input/key aliases removed: React continues through the typed cmdK gateway; frontend lint and production build pass, and `cmd-k-compat.spec.mjs` passes 3/3, covering open, type, results and Escape while asserting both aliases are absent.
+- Voice stop forwarder removed: voice controls continue to use the loaded module directly; frontend lint and production build pass, and `voice-input.spec.mjs` passes 3/3, verifying microphone start/stop and transcription with the root alias absent.

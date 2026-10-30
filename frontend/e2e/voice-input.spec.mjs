@@ -147,6 +147,7 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   expect(await page.title()).not.toBe('');
   await expect(page.locator('#appShell')).toBeVisible();
   await expect(page.locator('vite-error-overlay, nextjs-portal, #webpack-dev-server-client-overlay')).toHaveCount(0);
+  expect(await page.evaluate(() => typeof window.stopSpeechInput)).toBe('undefined');
 
   const wrap = page.locator('#composerInputWrap');
   const primary = page.locator('#composerPrimaryBtn');

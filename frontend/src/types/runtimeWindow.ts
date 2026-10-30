@@ -89,7 +89,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "startDeepResearch": typeof import("../agent/researchAgent")["startDeepResearch"];
   "startNewChat": typeof import("../app/lifecycle")["startNewChat"];
   "startSession": typeof import("../chat/sessionBootstrap")["startSession"];
-  "stopSpeechInput": () => Promise<ReturnType<typeof import("../ui/voiceInput")["stopSpeechInput"]>> | undefined;
   "submitChatMessage": typeof import("../chat/sendPipeline")["submitChatMessage"];
   "syncAppModeUI": typeof import("../config/providers")["syncAppModeUI"];
   "syncChatModel": typeof import("../pickers")["syncChatModel"];

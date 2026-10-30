@@ -130,8 +130,7 @@ browserWindow.toggleComposerTools = toggleComposerTools;
 
 /* ─── ui/voiceInput.ts ───
    Lazy (~16KB): the mic button only loads the speech module when
-   pressed. stopSpeechInput skips the import when speech was never
-   started (module can't be mid-session if it never loaded). */
+   pressed. */
 let _voiceImport: Promise<typeof import('./ui/voiceInput.ts')>|null = null;
 function _loadVoiceInput() {
   if (!_voiceImport) {
@@ -144,7 +143,6 @@ function _loadVoiceInput() {
   return _voiceImport;
 }
 browserWindow.toggleSpeechInput = function (surface: string) { return _loadVoiceInput().then(function (m) { return m.toggleSpeechInput(surface); }); };
-browserWindow.stopSpeechInput = function () { if (_voiceImport) return _voiceImport.then(function (m) { return m.stopSpeechInput(); }); };
 /* ─── Settings React surface ───
    Lazy: Settings and its provider domain load only when opened. */
 let _settingsImport: Promise<typeof import('./react/settings/settings.service.ts')>|null = null;
