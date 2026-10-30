@@ -22,6 +22,5 @@ declare global {
     closeStorageModal?: () => void;
     restoreSession?: (id: string) => void;
     confirmPurgeSession?: (id: string) => void;
-    getArchivedSessions?: () => Array<{ id: string; title?: string; topic?: string; archivedAt?: number }>;
   }
 }

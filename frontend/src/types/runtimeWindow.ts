@@ -3,12 +3,11 @@ import type { SpeechRecognitionRuntime } from "./speechRuntime.ts";
 import type { GeoGebraApi } from "./vendorRuntime.ts";
 /** Existing imperative shell hooks. This local contract adds no browser globals.
  * Publishers remain the owners; consumers share their exported signatures. */
-export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER_SESSIONS' | 'getArchivedSessions'> & VendorGlobals & {
+export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER_SESSIONS'> & VendorGlobals & {
   CURRENT_USER: (Partial<import('@socrates/contracts').User> & { subscriptionEnd?: string | null; verifiedAt?: string | null; createdAt?: string | null; customInstructions?: unknown }) | null | undefined;
   scrollToBottomIfPinned?: typeof import('../ui/scroll')['scrollToBottomIfPinned'];
   stateStore: typeof import('../state/store')['stateStore'];
   SERVER_SESSIONS: import('../session/store').SessionRow[];
-  getArchivedSessions: typeof import('../session/recents')['getArchivedSessions'];
 
   renderMathInElement?: (root: Element, options?: Record<string, unknown>) => void;
   "GGBApplet": new (options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void }, useBrowser: boolean) => { inject(target: HTMLElement | string): void };

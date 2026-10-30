@@ -61,6 +61,7 @@ export interface LegacyKnowledge {
 
 export interface LegacySessions {
   flushRecentsReconcile(): Promise<unknown> | void;
+  getArchivedSessions: typeof import('../../session/recents.ts')['getArchivedSessions'];
   updateSessionMetadata(id: string, patch: { title?: string; pinned?: boolean; projectId?: string }): Promise<void>;
   loadSession(sessionId: string): Promise<void> | void;
   setRecentsSearch(query: string): void;

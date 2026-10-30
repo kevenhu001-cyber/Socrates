@@ -94,13 +94,17 @@ test('archive from Recents row soft-hides the session and surfaces it in Storage
   await expect.poll(() => archiveCalls.length).toBeGreaterThan(0);
   await expect(row).toHaveCount(0);
 
-  // Archived row is listable via getArchivedSessions → Storage bridge.
+  // Archived row is listable via the typed session action used by Storage.
   const archived = await page.evaluate(() => {
-    const list = window.getArchivedSessions ? window.getArchivedSessions() : [];
-    return list.map((s) => ({ id: s.id, archivedAt: s.archivedAt }));
+    const list = window.__socratesLegacy.sessions.getArchivedSessions();
+    return {
+      legacyFieldPresent: 'getArchivedSessions' in window,
+      rows: list.map((s) => ({ id: s.id, archivedAt: s.archivedAt })),
+    };
   });
-  expect(archived.map((s) => s.id)).toContain(SESSION_ID);
-  expect(archived[0]?.archivedAt).toBeTruthy();
+  expect(archived.legacyFieldPresent).toBe(false);
+  expect(archived.rows.map((s) => s.id)).toContain(SESSION_ID);
+  expect(archived.rows[0]?.archivedAt).toBeTruthy();
 
   // Open the Storage modal and confirm the row is restorable.
   await page.evaluate(() => window.__socratesLegacy.navigation.openStorageModal());

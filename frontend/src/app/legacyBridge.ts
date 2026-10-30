@@ -132,7 +132,6 @@ browserWindow.fetchWebContext = function (
 };
 browserWindow.openAttachmentPicker = openAttachmentPicker;
 browserWindow.openMediaPicker = openMediaPicker;
-browserWindow.getArchivedSessions = getArchivedSessions;
 browserWindow.getCustomInstructionsString = getCustomInstructionsString;
 browserWindow.editUserMessage = editUserMessage;
 browserWindow.deleteUserMessage = deleteUserMessage;
@@ -204,6 +203,7 @@ browserWindow.__socratesLegacy = {
   },
   sessions: {
     flushRecentsReconcile,
+    getArchivedSessions,
     updateSessionMetadata,
     loadSession,
     setRecentsSearch,
