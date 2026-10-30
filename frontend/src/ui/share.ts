@@ -10,9 +10,8 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
  * The full share/read-only-session renderer pulls tool cards and
  * visualization helpers. Keep those bytes out of the application entry graph:
  * only the tiny chrome synchronizer stays eager, while every feature action
- * loads share.impl.mjs on first use. Existing import paths and window bridges
- * keep the same names, so callers do not need a migration wave just to gain
- * the loading boundary.
+ * loads share.impl.ts on first use. Existing action exports keep their names,
+ * so callers do not need to change to use the loading boundary.
  */
 
 let _shareImplPromise: Promise<FeatureRuntime> | null = null;

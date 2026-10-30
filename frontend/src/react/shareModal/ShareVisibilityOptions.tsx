@@ -1,6 +1,6 @@
 import { RadioGroup, RadioGroupItem } from '../ui/shadcn/radio-group';
 import { Field, FieldContent, FieldDescription, FieldLabel, FieldLegend, FieldSet, FieldTitle } from '../ui/shadcn/field';
-import type { ShareVisibility } from './types';
+import type { ShareVisibility } from '../../ui/shareState.ts';
 import { shareText } from './shareText';
 
 export function ShareVisibilityOptions({ visibility, onSelect }: {

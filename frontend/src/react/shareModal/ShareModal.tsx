@@ -3,10 +3,9 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
 import {
-  installShareBridge,
   useShareDispatch,
   useShareSnapshot,
-} from './shareModal.bridge';
+} from './shareModal.store';
 import { Icon } from '../../ui/Icon';
 import { ShareLinkPanel } from './ShareLinkPanel';
 import { ShareVisibilityOptions } from './ShareVisibilityOptions';
@@ -60,5 +59,5 @@ export interface ShareModalHandle {
 export function hydrateShareModal(): ShareModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  return { overlay, ...mountOwnedRoot(overlay, 'share-modal', <ShareModal />, installShareBridge) };
+  return { overlay, ...mountOwnedRoot(overlay, 'share-modal', <ShareModal />) };
 }

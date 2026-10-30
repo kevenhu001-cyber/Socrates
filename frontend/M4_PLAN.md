@@ -183,6 +183,10 @@ New files: `src/react/confirm/{ConfirmDialog.tsx, confirm.bridge.ts, types.ts, i
 
 **Follow-up (2026-10-30):** `window.__socratesConfirmBridge` and `window.__socratesMorePopoverBridge` were retired. Legacy `showConfirm()` publishes through `src/ui/confirmState.ts`; sidebar More open/close publishes through `src/ui/morePopoverState.ts`. React subscribes to those shared module stores through hook adapters. `chineseTypography.test.mjs` verifies confirmation state and promise resolution; `morePopoverState.test.mjs` verifies More menu updates.
 
+**Follow-up (2026-10-30):** `window.__socratesUsageBridge` was retired. `ui/usage.ts` publishes generated HTML and the selected period to `ui/usageState.ts`; React subscribes to the same module instance and exclusively renders `#usageBody`. The legacy module retains API loading and overlay visibility without mutating the React-owned content node. `usageState.test.mjs` covers store notifications, and `usage-modal.spec.mjs` covers rendered API data and period refresh.
+
+**Follow-up (2026-10-30):** `window.__socratesShareBridge` was retired. The lazy share feature publishes its link state through `ui/shareState.ts`; React subscribes to that module store, while the legacy facade keeps action names and lazy loading. `shareState.test.mjs` covers the store contract; the existing share create/revoke browser flow covers the UI integration.
+
 ### Step 4.3 rebaseline (2026-09-01)
 
 The original Step 4.3 estimate assumed that Step 4.2 would leave `ui/delegate.js` unused. The audit after 4.2 found that the static shell in `index.html` still contained 143 `data-action` attributes across roughly 40 actions, while `windowExports.js` still exposed about 100 `window.X = X` bindings. Step 4.3 is therefore split into independently reviewable substeps: Auth, display preferences, sidebar/navigation, composer/mode, workspace controls, modal backdrops, and finally delegate deletion.

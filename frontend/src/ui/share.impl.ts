@@ -7,10 +7,8 @@
  * Touches via window.*:
  *   state, CURRENT_USER, apiFetch, esc, formatMsg, t, showToast
  *
- * React migration bridge — publishes state so the React compatibility root
- * renders the modal content. Installed by
- * frontend/src/react/shareModal/shareModalStore.ts under `?react=1`;
- * legacy mode never sees a subscriber so the helpers are cheap no-ops.
+ * React subscribes to the typed state in `ui/shareState.ts`; this module
+ * remains the owner of share actions and API requests.
  */
 
 import { esc } from '../render/helpers.ts';
@@ -25,6 +23,7 @@ import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } 
 
 import { mountVisualization, disposeVisualizations } from '../render/vizStubs.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { publishShareState, type ShareVisibility } from './shareState.ts';
 import { renderSharedExamFooter as renderSharedExamFooterAction } from '../react/exam/sharedExamFooterHost.tsx';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import type { MessageEntry } from './messageActions.ts';
@@ -88,36 +87,27 @@ function parseSharedSession(value: unknown): SharedSession | null {
 
 
 let _shareSessionId: string | null = null;
-let _shareVisibility = "public";
+let _shareVisibility: ShareVisibility = "public";
 let _shareToken: string | null = null;
 let _shareUrl = "";
 let _shareStatus = "";
 let _shareError = "";
 
-/* React migration bridge — publishes current state so the React
-   compatibility root can render the modal content via useSyncExternalStore. */
+/* React reads share data from the same typed module store. Overlay
+   visibility remains owned by the legacy shell class. */
 function _publishShareState() {
-  try {
-    const bridge = browserWindow.__socratesShareBridge;
-    if (bridge && typeof bridge.publish === "function") {
-      bridge.publish({
-        isOpen: !!document.getElementById("shareOverlay") && !document.getElementById("shareOverlay")!.classList.contains("hidden"),
-        visibility: _shareVisibility,
-        shareToken: _shareToken,
-        shareUrl: _shareUrl,
-        status: _shareStatus,
-        error: _shareError,
-      });
-    }
-  } catch (_) {
-    reportSwallow(_, 'empty catch: ui/share.impl.ts:64', 'expected');
-    /* swallow — bridge is best-effort */
-  }
+  publishShareState({
+    visibility: _shareVisibility,
+    shareToken: _shareToken,
+    shareUrl: _shareUrl,
+    status: _shareStatus,
+    error: _shareError,
+  });
 }
 
 /* React owns the share modal unconditionally under the always-on
    runtime. `renderShareModal` is kept as a no-op for legacy callers;
-   state mutations still feed the React bridge via `_publishShareState`. */
+   state mutations still update the React subscriber via `_publishShareState`. */
 
 function toggleShareBtn() {
   const btn = document.getElementById("shareBtn");
@@ -150,18 +140,16 @@ function openShareModal(sessionId?: string) {
   _shareStatus = "";
   _shareError = "";
   overlay.classList.remove("hidden");
-  selectShareVis("public");
+  _shareVisibility = "public";
   _publishShareState();
 }
 
 function closeShareModal() {
   document.getElementById("shareOverlay")!.classList.add("hidden");
-  _publishShareState();
 }
 
 function selectShareVis(vis: string) {
-  if (vis !== "public" && vis !== "private") vis = "public";
-  _shareVisibility = vis;
+  _shareVisibility = vis === "private" ? "private" : "public";
   _publishShareState();
 }
 

@@ -300,9 +300,8 @@ browserWindow.sleepBackoff = sleepBackoff;
    Lazy (~11KB): the usage overlay only loads on first open. The module's
    own listeners mount inside the lazy loader (previously done eagerly
    by app/bootstrap.ts).
-   Period tab inline onclick handlers (usage.js:138-139) and heatmap cell
-   inline onmouseenter/onmouseleave (usage.js:168) resolve through the
-   window bridges below — they only exist once the module rendered them. */
+   Period tab and heatmap interactions are delegated listeners installed
+   by the lazy module after the first open. */
 let _usageImport: Promise<typeof import('./ui/usage.ts')>|null = null;
 function _loadUsageModule() {
   if (!_usageImport) {

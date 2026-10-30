@@ -5,10 +5,9 @@ import type { Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway.ts';
 import {
-  installUsageBridge,
   useUsageDispatch,
   useUsageSnapshot,
-} from './usageModal.bridge';
+} from './usageModal.store';
 
 const OVERLAY_ID = 'usageOverlay';
 
@@ -61,7 +60,7 @@ function UsageModal() {
       </div>
       <div className="usage-body" id="usageBody">
         {(() => {
-          const parts = snap.bodyHtml.split('<div data-usage-period-placeholder></div>');
+          const parts = snap.bodyHtml.split(/<div data-usage-period-placeholder(?:="")?><\/div>/);
           if (parts.length === 1) return <div className="contents" dangerouslySetInnerHTML={{ __html: snap.bodyHtml }} />;
           return <>
             <div className="contents" dangerouslySetInnerHTML={{ __html: parts[0] }} />
@@ -83,5 +82,5 @@ export interface UsageModalHandle {
 export function hydrateUsageModal(): UsageModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  return { overlay, ...mountOwnedRoot(overlay, 'usage-modal', <UsageModal />, installUsageBridge) };
+  return { overlay, ...mountOwnedRoot(overlay, 'usage-modal', <UsageModal />) };
 }

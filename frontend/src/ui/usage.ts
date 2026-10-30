@@ -11,9 +11,8 @@ interface UsageDailyResponse { entries: UsageEntry[] }
 
 import { apiFetch } from '../util/api.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
-import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+import { publishUsageState, type UsagePeriod } from './usageState.ts';
 
-let _usagePeriod='year';
 let _usageListenersMounted=false;
 
 export function mountUsageListeners(){
@@ -43,47 +42,22 @@ function t(key: string) {
   return typeof window !== "undefined" && typeof browserWindow.t === "function" ? browserWindow.t(key) : key;
 }
 
-/* React migration bridge — publishes state so the React compatibility
-   root renders the modal content. Installed by
-   frontend/src/react/usageModal/usageModalStore.ts under `?react=1`. */
-function _publishUsageState(bodyHtml?: string) {
-  try {
-    const bridge = browserWindow.__socratesUsageBridge;
-    if (bridge && typeof bridge.publish === "function") {
-      bridge.publish({
-        isOpen: !document.getElementById("usageOverlay")!.classList.contains("hidden"),
-        bodyHtml: bodyHtml || document.getElementById("usageBody")!.innerHTML || "",
-        period: _usagePeriod,
-      });
-    }
-  } catch (_) {
-    reportEmptyCatch(_, 'empty catch: ui/usage.ts:54');
-    /* swallow */
-  }
-}
-
 export function openUsageModal(){
   document.getElementById("usageOverlay")!.classList.remove("hidden");
-  _publishUsageState();
   loadUsageData();
 }
 export function closeUsageModal(){
   document.getElementById("usageOverlay")!.classList.add("hidden");
-  _publishUsageState();
 }
 export function loadUsageData(){
-  _usagePeriod='year';
-  const body=document.getElementById("usageBody");
-  body!.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
-  _publishUsageState();
+  publishUsageState('<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>', 'year');
   Promise.all([
     apiFetch<UsageDailyResponse>("/api/usage/daily?days=365"),
     apiFetch<UsageLimits>("/api/usage/limits"),
   ]).then(function(results){
-    renderUsageHeatmap(results[0],body,results[1],'year');
+    renderUsageHeatmap(results[0],results[1],'year');
   }).catch(function(){
-    body!.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failed")+'</div>';
-    _publishUsageState();
+    publishUsageState('<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failed")+'</div>', 'year');
   });
 }
 function collectUsageEntries(entries: UsageEntry[]) {
@@ -100,7 +74,7 @@ function collectUsageEntries(entries: UsageEntry[]) {
   return { lookup: lookup, totalTokens: totalTokens, totalMsgs: totalMsgs, maxDay: maxDay };
 }
 
-function usageCalendarWeeks(lookup: Record<string, UsageEntry>, period: string) {
+function usageCalendarWeeks(lookup: Record<string, UsageEntry>, period: UsagePeriod) {
   const now = new Date();
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const start = new Date(end);
@@ -230,9 +204,7 @@ function monthlyBreakdownMarkup(entries: UsageEntry[]) {
   return html + '</tbody></table></div>';
 }
 
-export function renderUsageHeatmap(data: { entries: UsageEntry[] }, body: HTMLElement|null, limits: UsageLimits, period: string) {
-  period = period || 'year';
-  _usagePeriod=period;
+export function renderUsageHeatmap(data: { entries: UsageEntry[] }, limits: UsageLimits, period: UsagePeriod = 'year') {
   const entries = data.entries || [];
   const totals = collectUsageEntries(entries);
   const weeks = usageCalendarWeeks(totals.lookup, period);
@@ -240,8 +212,8 @@ export function renderUsageHeatmap(data: { entries: UsageEntry[] }, body: HTMLEl
   html += usageSummaryMarkup(entries, totals.totalTokens, totals.totalMsgs);
   html += usageCalendarMarkup(weeks, usageMonthLabels(weeks), totals.maxDay);
   html += monthlyBreakdownMarkup(entries);
-  body!.innerHTML = html;
-  _publishUsageState();
+  publishUsageState(html, period);
+  return html;
 }
 export function showUsageTip(ev: Pick<Event, 'currentTarget'>){
   const el=ev.currentTarget;
@@ -259,17 +231,13 @@ export function showUsageTip(ev: Pick<Event, 'currentTarget'>){
 }
 export function hideUsageTip(){const tip=document.getElementById("usageTooltip");if(tip)tip.style.display="none";}
 export function loadUsageMonth(){
-  _usagePeriod='month';
-  const body=document.getElementById("usageBody");
-  body!.innerHTML='<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>';
-  _publishUsageState();
+  publishUsageState('<div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> '+t("usage.loading")+'</div>', 'month');
   Promise.all([
     apiFetch<UsageDailyResponse>("/api/usage/daily?days=31"),
     apiFetch<UsageLimits>("/api/usage/limits"),
   ]).then(function(results){
-    renderUsageHeatmap(results[0],body,results[1],'month');
+    renderUsageHeatmap(results[0],results[1],'month');
   }).catch(function(){
-    body!.innerHTML='<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failedGeneric")+'</div>';
-    _publishUsageState();
+    publishUsageState('<div class="usage-loading" style="color:hsl(0 60% 55%)">'+t("usage.failedGeneric")+'</div>', 'month');
   });
 }
