@@ -252,13 +252,13 @@ export function branchFromMessage(messageId: string, opts: { reExplain?: boolean
   const branchMessages=stateStore.read("messages").slice(0,branchIdx+1).map(function(m){
     return {clientId:m.clientId,role:m.role,rawText:m.rawText,html:m.html,type:m.type,attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[]};
   });
-  const branchTopic=stateStore.read("topic")||stateStore.read("topic")||"";
+  const branchTopic=stateStore.read("topic")||"";
   const branchTitle=(stateStore.read("sessionTitle")||branchTopic)+" (branch)";
   /* P1.1 — branchedFrom metadata: record the source session id and
      the message id where the branch was taken, so the sidebar can
      display "Branched from ..." and the user can navigate back. */
   const branchedFrom = {
-    sessionId: stateStore.read("currentSessionId") || stateStore.read("currentSessionId") || null,
+    sessionId: stateStore.read("currentSessionId") || null,
     messageId: messageId,
     reExplain: reExplain,
   };

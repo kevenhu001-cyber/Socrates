@@ -26,6 +26,7 @@
 | 当前流与链接页准备取消回调的 `window._activeChatAbort` | **本轮已移除** | 流 attempt、页面上下文准备、Stop、编辑/重试、会话切换、登出统一读写 `turnState.activeChatAbort`；清理仍使用 callback identity，避免旧流覆盖新句柄。 |
 | Recents 重试函数的重复 `window.retryRecentsFetch` 发布 | **本轮已移除** | 仓库无 window 读取方；React 空列表重试继续通过 `__socratesLegacy.sessions.retryRecentsFetch` 调用同一模块函数。 |
 | 会话删除残留的重复 active-session 判断与双镜像说明 | **本轮已清理** | 删除与 current `stateStore.currentSessionId` 完全相同的第二次比较；注释同步为当前单一 session id 与 tombstone 机制。 |
+| 新分支元数据的重复 topic / session id 回退读取 | **本轮已清理** | `branchFromMessage()` 只读取唯一状态字段，仍将空 session id 归一化为 `null`。 |
 
 ## 仍开放或尚无法确认
 
@@ -71,3 +72,4 @@
 - Active chat abort window 交接移除：取消句柄归属 `turnState`，并保留身份检查以防旧流清理新句柄；`streamColdLoad` 与 turn-state 单测 5/5、聊天准备 / tutor Stop / 停止重发 E2E 8/8、前端 lint 与生产构建通过。
 - Recents 重试重复全局移除：React 入口继续经 typed legacy session action 调用；`recents-archive.spec.mjs` 1/1 验证归档行为及 `window.retryRecentsFetch` 不存在；前端 lint 与生产构建通过。
 - Session delete/purge active-session 判断清理：保留唯一 `currentSessionId` 判定并修正文档化注释；前端 lint、生产构建与 Recents 归档 E2E 1/1 通过。
+- `branchFromMessage()` 的重复状态回退清理：分支 topic 与来源 session id 各读取一次；前端 lint、生产构建通过，SPA `chat-stop-resend` 编辑回归与 `message-overflow` 分支入口共 2/2 通过。Universal App 专用的 `universal-edit.spec.mjs` 不属于本次 SPA 验证范围。
