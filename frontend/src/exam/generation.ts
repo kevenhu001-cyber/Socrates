@@ -218,7 +218,7 @@ async function requestExamQuestion(prompt: string, index: number) {
   /* Use streaming so long reasoning responses keep the server connection
      warm; the model/system token default remains authoritative. */
   try {
-    const result = await callAPIStream(messages, browserWindow.MAX_TOKENS_CHAT, null);
+    const result = await callAPIStream(messages, undefined, null);
     return {
       text: typeof result === "string" ? result : (result && (result.text || result.content)) || "",
       error: null,

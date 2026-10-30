@@ -69,10 +69,6 @@ browserWindow.cancelDiagnostic = function () { /* noop */ };
 browserWindow.retryDiagnostic = function () { /* noop */ };
 browserWindow.useBuiltinDiagnostic = function () { /* noop */ };
 
-/* No max_tokens cap — backend defaults to its model max when omitted. */
-const MAX_TOKENS_CHAT = undefined;
-browserWindow.MAX_TOKENS_CHAT = MAX_TOKENS_CHAT;
-
 browserWindow.getExplanation = getExplanation;
 browserWindow.setActiveTemplate = setActiveTemplate;
 browserWindow.clearActiveTemplate = clearActiveTemplate;
