@@ -29,7 +29,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "__loadExamModule": () => Promise<typeof import("../exam")>;
   "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;
   "__sidebarResizeWired": boolean;
-  "__socratesConsent": { getPreference: () => { v: number; choice: string; nonEssential: boolean; updatedAt: string; } | null; hasConsent: () => boolean; allowsNonEssential: () => boolean; setPreference: (choice: string) => { v: number; choice: string; nonEssential: boolean; updatedAt: string; }; isEssentialCookieName: (name: string) => boolean; };
   "__socratesExtensionDispatch": (key: string, ...args: unknown[]) => unknown;
   "__socratesKeyboard": ReturnType<typeof import("../ui/keyboard/index")["initKeyboardLift"]>;
   "__socratesSmoothStream": unknown;

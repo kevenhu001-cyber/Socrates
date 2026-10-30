@@ -259,13 +259,3 @@ export function initCookieConsent(options: { _queued?: boolean; privacyUrl?: str
 /* Install the guard as soon as the module loads so any client-side
    non-essential cookie write is blocked before the banner can be shown. */
 installCookieGuard();
-
-if (typeof window !== 'undefined') {
-  browserWindow.__socratesConsent = {
-    getPreference: getConsentPreference,
-    hasConsent: hasConsent,
-    allowsNonEssential: allowsNonEssential,
-    setPreference: setConsentPreference,
-    isEssentialCookieName: isEssentialCookieName,
-  };
-}

@@ -9,6 +9,7 @@ test('first visit shows the consent banner and accepts persist on reload', async
   await page.goto('/', { waitUntil: 'commit' });
   const banner = page.locator('#socratesCookieConsent');
   await expect(banner).toBeVisible({ timeout: 15_000 });
+  expect(await page.evaluate(() => '__socratesConsent' in window)).toBe(false);
 
   await page.locator('[data-consent-choice="accept"]').click();
   await expect(banner).toBeHidden();

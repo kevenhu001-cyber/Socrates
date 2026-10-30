@@ -17,6 +17,7 @@
 | `state/` 六个命名空间的 `window.__socrates*Bridge` 别名 | **已移除** | 全仓没有消费者；模块内的 `sessionBridge`、`kbBridge`、`searchBridge`、`callBridge`、`uiBridge`、`examBridge` 和 `window.stateStore` facade 继续工作。 |
 | 聊天运行时的 `window.__socratesReactChatBridge` | **本轮已移除** | 快照、订阅与双 RAF 队列移入 `ui/chatRuntimeStore.ts`；React 和 legacy publisher 导入同一实例，`ToolRuntime` 通过依赖注入发布更新。移除 React 专用 adapter 文件与 `createImmutableBridge.windowKey`。E2E 使用构建可用的 `socrates:chat-runtime-publish` 事件或真实 `addMessage()`，生命周期用例观察 `socrates:chat-runtime-changed` 和最终 UI。 |
 | KaTeX 数学 revision 的 `window.__socratesMathRenderRev` | **本轮已移除** | `render/mathRevision.ts` 是唯一版本计数器；懒加载成功后递增同一模块状态，React 通过正常 runtime 发布失效缓存并重新绘制。测试改为校验渲染结果和旧 window 字段不存在。 |
+| Cookie consent 私有函数的 `window.__socratesConsent` | **本轮已移除** | 全仓没有读取方；同源逻辑从 `cookieConsent.ts` 静态导入所需函数。用户选项仍经 consent cookie、localStorage 与 `socrates:cookie-consent` 事件同步，cookie guard 与 UI 行为不变。 |
 
 ## 仍开放或尚无法确认
 
@@ -53,3 +54,4 @@
 - `git diff --check`、文档链接检查通过。本次没有运行生产迁移或访问生产数据库。
 - 聊天运行时 window bridge 退役：SPA production build、最终 `npm run lint` 通过；`reactBridge` 与 `chatRuntimeStore` 聚焦单测 14/14、`toolRuntime` 24/24 通过。受影响的 15 个 Playwright spec 共 60 条用例最终全部通过，覆盖模块 store 发布、真实流生命周期、消息列表、工具活动、长流性能及桌面/手机布局。E2E 通过 `socrates:chat-runtime-publish` 浏览器事件驱动生产 bundle，避免依赖开发态 `/src` 路径。
 - KaTeX revision window 字段退役：前端 lint 与生产构建通过；`proseRenderer.test.mjs` 1/1 覆盖 revision 变化使缓存失效、相同 revision 跨 renderer 复用结果；`demand-loading.spec.mjs` 5/5 通过，含 KaTeX 瞬时失败恢复与旧 window 字段不存在断言。
+- Cookie consent 死全局移除：`cookieConsent.test.mjs` 3/3 通过；production build 与 lint 通过；`cookie-consent`、`mobile-first-visit` Playwright 共 6/6，通过首访、选择持久化、手机 banner 和响应式导航。
