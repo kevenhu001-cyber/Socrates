@@ -20,6 +20,7 @@
 | Cookie consent 私有函数的 `window.__socratesConsent` | **本轮已移除** | 全仓没有读取方；同源逻辑从 `cookieConsent.ts` 静态导入所需函数。用户选项仍经 consent cookie、localStorage 与 `socrates:cookie-consent` 事件同步，cookie guard 与 UI 行为不变。 |
 | 扩展 picker 的 `window.__socratesExtensionDispatch` | **本轮已移除** | picker、composer tools、首页写作和 creation surface 直接调用 `extensions/index.ts` 的 `dispatchExtension()`；对 inline handler 的 `composeAction`、`toggleExtensionByKey` 等兼容动作保留。 |
 | 搜索重试回调的 `window.__socratesToolRetry` 兜底 | **本轮已移除** | 仓库无生产写入方；`tool-retry` 事件统一使用 `claimLiveSearchRetry()` 发布到 `turnState` 的当前处理器，避免读取无人维护的 window 字段。 |
+| 首轮预建 streaming controller 的 `window.__socratesSyncCtl` 交接 | **本轮已移除** | 首轮占位 controller 存入 `turnState.pendingFirstTurnController`，由 `askChatTurn()` 消费一次，并在新会话或 turn reset 时清理。 |
 
 ## 仍开放或尚无法确认
 
@@ -27,7 +28,7 @@
 |---|---|---|
 | 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
 | 中 | Expo / Universal App 依赖告警 | 审计仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；来源是 Expo CLI 使用的 `zod@3.25.76`（[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)）。2026-10-30 核验 npm 最新 `@expo/cli@58.1.17` 仍声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 超出其范围。Expo SDK 58 同时将 React Native 目标升级到 0.88，而本项目 SDK 57 使用 RN 0.86；不能把跨 SDK/RN 升级当作安全依赖小修，也不通过不兼容的 major override 掩盖它。待 Expo 发布兼容依赖范围后处理；参考 [Expo SDK 58 发行说明](https://expo.dev/changelog/sdk-58) 与 [SDK 对应版本表](https://docs.expo.dev/versions/latest/)。 |
-| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、cookie consent、extension dispatch 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、cookie consent、extension dispatch、搜索重试、首轮 turn controller 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -59,3 +60,4 @@
 - Cookie consent 死全局移除：`cookieConsent.test.mjs` 3/3 通过；production build 与 lint 通过；`cookie-consent`、`mobile-first-visit` Playwright 共 6/6，通过首访、选择持久化、手机 banner 和响应式导航。
 - Extension dispatch 私有全局移除：`dispatchExtension()` 成为模块入口；首页写作也从误传未注册的 `composeAction` key 改为调用 `composeAction()`。前端 lint 与生产 build 通过；4 个相关 Playwright spec 的 9 条选中用例通过（其中移动端检查更正为与当前快捷入口 CSS 契约一致）。
 - Search retry window fallback 移除：`tool-retry` 只读取 `turnState.liveSearchRetry`；聚焦单测 3/3、失败搜索行 E2E 1/1、前端 lint 与生产构建通过。单测覆盖事件详情透传及忽略遗留 window 字段。
+- 首轮 controller window 交接移除：placeholder controller 改存于 `turnState.pendingFirstTurnController` 并被 `askChatTurn()` 一次性消费；`sendPipelinePreparation.test.mjs` 2/2、`topic-chat-transition.spec.mjs` 1/1、前端 lint 与生产构建通过。

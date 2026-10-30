@@ -29,7 +29,6 @@ interface StreamingMessageOptions {
 interface TurnControllerWindow extends Window {
   addStreamingMessage?: (options: StreamingMessageOptions) =>
     StreamingTurnController | Promise<StreamingTurnController>;
-  __socratesSyncCtl?: StreamingTurnController | null;
   _activeChatAbort?: ((reason?: unknown) => void) | null;
 }
 
@@ -61,18 +60,9 @@ function addAnchoredAssistant(text: string): string {
 
 function claimPrecreatedController(explicit?: StreamingTurnController | null): StreamingTurnController | null {
   if (explicit) return explicit;
-  try {
-    const win = window as TurnControllerWindow;
-    const controller = win.__socratesSyncCtl || null;
-    if (controller) {
-      try { delete win.__socratesSyncCtl; }
-      catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn'); }
-    }
-    return controller;
-  } catch {
-    /* empty-catch: intentional — the first-turn controller bridge is optional. */
-    return null;
-  }
+  const controller = turnState.pendingFirstTurnController;
+  turnState.pendingFirstTurnController = null;
+  return controller;
 }
 
 function abortSupersededTurn(precreated: StreamingTurnController | null): void {

@@ -63,13 +63,13 @@ test('topic submit opens a stable chat with one user turn and one live assistant
 
   await page.waitForTimeout(250);
   const settled = await page.evaluate(() => ({
-    handoffPresent: Boolean(window.__socratesSyncCtl),
+    retiredHandoffPresent: '__socratesSyncCtl' in window,
     messages: window.stateStore.read('messages').map((message) => ({
       clientId: message.clientId,
       role: message.role,
       type: message.type,
     })),
   }));
-  expect(settled.handoffPresent).toBe(false);
+  expect(settled.retiredHandoffPresent).toBe(false);
   expect(settled.messages).toEqual(first);
 });

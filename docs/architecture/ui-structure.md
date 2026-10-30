@@ -42,6 +42,8 @@ index.html                         静态 shell / 挂载宿主 / CSP
   旧 DOM 的 `window.stateStore` facade 仍保留，供现有兼容调用使用。
 - `chat/` 不依赖 React 实现；共享类型可来自 `react/types/`，宿主状态与展示模型留在 ui。
   不通过新增 re-export shim 延长旧路径寿命。
+- 首轮发送时预先创建的 streaming placeholder controller 暂存于 `chat/turnState.ts`，由 `askChatTurn()`
+  一次性领取，新会话与全量 turn reset 时清空；不再用 `window.__socratesSyncCtl` 跨模块转交。
 - 插件目录和选中状态由 `frontend/src/composer/` 持有；聊天、OAuth 返回恢复和 React
   读取同一模块实例，React 订阅只留在 `useComposerPluginSelection.ts`。聊天层对 React
   实现的直接依赖已归零，插件选择不再依赖 window bridge。

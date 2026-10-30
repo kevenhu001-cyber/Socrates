@@ -12,7 +12,6 @@ import type { SessionStartContext } from './input.ts';
 interface InitializeWindow extends Window {
   _activeChatAbort?: ((reason: string) => void) | null;
   _nextProjectId?: string | null;
-  __socratesSyncCtl?: unknown;
 }
 
 export function initializeNewSession({ topic, deepResearchOn }: Pick<SessionStartContext, 'topic' | 'deepResearchOn'>): void {
@@ -26,11 +25,10 @@ export function initializeNewSession({ topic, deepResearchOn }: Pick<SessionStar
     catch (error) { reportSwallow(error, 'chat/sessionBootstrap.abortPreviousController'); }
   }
   turnState.activeChatCtl = null;
+  turnState.pendingFirstTurnController = null;
   win._activeChatAbort = null;
   turnState.chatStreaming = false;
   turnState.chatStopMode = false;
-  try { delete win.__socratesSyncCtl; }
-  catch (error) { reportSwallow(error, 'chat/sessionBootstrap.clearSyncController'); }
 
   const sessionId = generateId();
   stateStore.dispatch({

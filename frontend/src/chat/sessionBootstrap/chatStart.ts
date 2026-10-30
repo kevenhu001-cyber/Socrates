@@ -23,7 +23,6 @@ interface ChatStartWindow extends Window {
   startDeepResearch?: (topic: string) => Promise<unknown> | unknown;
   __loadStreamingTurn?: () => void;
   addStreamingMessage?: (options: { onRetry?: () => void }) => StreamingTurnController;
-  __socratesSyncCtl?: StreamingTurnController | null;
 }
 
 /** Resolved value of the first-turn content build. */
@@ -141,8 +140,7 @@ export async function startChatSession(context: SessionStartContext): Promise<vo
     } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.createFirstPlaceholder'); }
   }
   if (syncController) {
-    try { win.__socratesSyncCtl = syncController; }
-    catch (error) { reportSwallow(error, 'chat/sessionBootstrap.publishSyncController'); }
+    turnState.pendingFirstTurnController = syncController;
   }
 
   setTimeout(() => assembleAndSendFirstTurn(context, userClientId, initialSave, contentPromise), 0);

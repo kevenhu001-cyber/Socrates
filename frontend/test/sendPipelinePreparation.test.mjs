@@ -26,3 +26,10 @@ test('linked-page preparation can be preempted, while normal streaming stays que
   assert.equal(shouldQueueChatSend(), true, 'streaming remains queueable after preparation ends');
   resetTurnState();
 });
+
+test('resetting turn state clears the pending first-turn controller', () => {
+  const controller = { abort() {} };
+  turnState.pendingFirstTurnController = controller;
+  resetTurnState();
+  assert.equal(turnState.pendingFirstTurnController, null);
+});
