@@ -78,7 +78,7 @@ export interface ExtensionContext {
   toggleWebSearch?(): void;
   /** Legacy deep-research auto-launch (reads composer, clears it, runs). */
   launchDeepResearch?(): void;
-  /** Legacy quick-chip sync (reflects webSearchOn / deepResearchOn). */
+  /** Legacy quick-chip sync (reflects webSearchOn and the module-owned Deep Research mode). */
   syncQuickChips?(): void;
 }
 

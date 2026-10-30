@@ -14,6 +14,7 @@
 import type { LegacyActions } from './types';
 import type { apiFetch } from '../../util/api';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
+import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 
 type ApiFetchFn = typeof apiFetch;
 
@@ -23,7 +24,6 @@ interface StandaloneGlobals {
   getConnectorIconMarkup?: (id: string) => string;
   webSearchOn?: boolean;
   _activeTemplate?: { extensionKey?: unknown } | null;
-  deepResearchOn?: boolean;
   extensiveThinkingOn?: boolean;
   apiFetch?: ApiFetchFn;
   CURRENT_USER?: unknown;
@@ -161,7 +161,7 @@ export function getActiveTemplateExtensionKey(): string | null {
 
 /** Legacy deep-research toggle used by the composer tools menu. */
 export function isDeepResearchOn(): boolean {
-  return Boolean(standaloneWindow().deepResearchOn);
+  return isDeepResearchEnabled();
 }
 
 /** Legacy extensive-thinking toggle used by the composer tools menu. */

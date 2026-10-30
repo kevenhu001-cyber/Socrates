@@ -309,16 +309,19 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
+  const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
+  await topicInput.fill('history of the printing press');
+
   // Stub the research agent so the test asserts routing, not the full
   // plan/search/synthesize pipeline.
   await page.evaluate(() => {
     window.__researchCalls = [];
     window.startDeepResearch = (q) => { window.__researchCalls.push(q); return Promise.resolve('report'); };
-    window.deepResearchOn = true;
+    window.__socratesLegacy.composer.deepResearchAction();
   });
+  await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('deepResearch');
+  expect(await page.evaluate(() => typeof window.deepResearchOn)).toBe('undefined');
 
-  const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
-  await topicInput.fill('history of the printing press');
   await page.waitForTimeout(150);
   await page.locator('button.composer-primary-btn, .composer-primary-btn').first().click();
 

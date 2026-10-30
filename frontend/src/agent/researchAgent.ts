@@ -2,6 +2,7 @@
 import { submitResearch } from './researchJobsClient.ts';
 import { showToast } from '../ui/toast.js';
 import { clearComposer, getComposerMarkdown, getVisibleComposerSurface } from '../composer/controller.ts';
+import { setDeepResearchEnabled } from '../config/deepResearchMode.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
@@ -23,10 +24,10 @@ function launchDeepResearch() {
      swap to #chatView, user bubble, Recents save). Posting agent
      messages while topicSetup is still visible put everything into the
      hidden #msgList and looked like a dead button. startSession reads
-     window.deepResearchOn and dispatches back to startDeepResearch
+     the selected research mode and dispatches back to startDeepResearch
      after committing the user bubble, so no duplicate work happens. */
   if (surface === "topic" && typeof browserWindow.startSession === "function") {
-    try { browserWindow.deepResearchOn = true; } catch (_) { /* empty-catch: intentional — window assignment in headless environments */ }
+    setDeepResearchEnabled(true);
     browserWindow.startSession();
     return;
   }

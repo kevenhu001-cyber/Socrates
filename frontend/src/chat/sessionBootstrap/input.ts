@@ -8,6 +8,7 @@ import { isSlashCommandPaletteOpen } from '../templateSlash.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getAppMode } from './runtime.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
+import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 
 /** Everything a new session needs, captured before the composer is cleared. */
 export interface SessionStartContext {
@@ -24,7 +25,6 @@ export interface SessionStartContext {
 /** Legacy bridges read during capture. */
 interface SessionStartWindow extends Window {
   _activeTemplate?: Record<string, unknown> | null;
-  deepResearchOn?: boolean;
 }
 
 function resolveSessionTopic(): string | null {
@@ -68,9 +68,7 @@ export async function captureSessionStart(): Promise<SessionStartContext | null>
   const immediateAttachments = startAttachments.slice(0, 20)
     .map((attachment) => Object.assign({}, attachment));
 
-  let deepResearchOn = false;
-  try { deepResearchOn = Boolean((window as SessionStartWindow).deepResearchOn); }
-  catch (error) { reportSwallow(error, 'chat/sessionBootstrap.captureDeepResearch'); }
+  const deepResearchOn = isDeepResearchEnabled();
 
   const language = detectLanguage(topic);
   const tutorExploration = await captureTutorExploration(language, deepResearchOn);

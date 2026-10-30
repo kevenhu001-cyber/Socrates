@@ -50,7 +50,6 @@ test('Composer tools menu highlights the active template ahead of mode flags', a
 
   await page.evaluate(() => {
     window._activeTemplate = { extensionKey: 'write' };
-    window.deepResearchOn = true;
   });
   await page.locator('#composerToolsBtn').click();
 

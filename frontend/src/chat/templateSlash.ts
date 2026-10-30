@@ -12,6 +12,7 @@ import type { PromptTemplate } from './promptTemplates.ts';
 import { esc } from '../render/helpers.ts';
 import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { setDeepResearchEnabled } from '../config/deepResearchMode.ts';
 import { batchSetItem } from '../batchStorage.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
@@ -58,16 +59,14 @@ let _slashQuery="";
 let _activeTemplate: RuntimeActiveTemplate | null | undefined = null;
 configureTemplateSystemPrompt({ getActiveTemplate: function(){ return _activeTemplate; } });
 /* P_extension-chip — an "extension" template is just a template that
-   also flips a piece of global mode state (e.g. window.deepResearchOn,
-   window.webSearchOn) when it becomes active, and flips it back when
-   it is cleared. The keys here are the canonical extension ids used by
-   the + menu and the chip badge; they are also recognised by the
-   send-paths (submitChatMessage / startSession) which read the same
-   globals. Keeping the side-effects inside setActiveTemplate/clearActiveTemplate
-   means every "×" on the chip and every menu click stay in sync. */
+   also updates a piece of mode state (e.g. webSearchOn) when it becomes
+   active, and flips it back when it is cleared. The keys here are the
+   canonical extension ids used by the + menu and chip badge; send paths
+   read the same state. Keeping side-effects inside setActiveTemplate /
+   clearActiveTemplate means every "×" and menu click stay in sync. */
 const EXTENSION_SIDE_EFFECTS: Record<string, (on: boolean) => void> = {
   webSearch:function(on: boolean){ if(on!==!!browserWindow.webSearchOn && typeof toggleWebSearch==="function") toggleWebSearch(); },
-  deepResearch:function(on: boolean){ browserWindow.deepResearchOn=on; if(typeof browserWindow.syncQuickChips==="function") browserWindow.syncQuickChips(); },
+  deepResearch:function(on: boolean){ setDeepResearchEnabled(on); if(typeof browserWindow.syncQuickChips==="function") browserWindow.syncQuickChips(); },
   extensiveThinking:function(on: boolean){
     browserWindow.extensiveThinkingOn=!!on;
     /* P_batch-storage — the toggle is a user click that lands in

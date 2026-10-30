@@ -1,4 +1,5 @@
 import { interfaceIcon } from '../../ui/icons/interfaceIcons';
+import { setDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 // frontend/src/extensions/modules/deepResearch.ts
 
 import type { ExtensionDefinition } from '../types';
@@ -6,7 +7,6 @@ import type { ExtensionDefinition } from '../types';
 export const DEEP_RESEARCH_ICON = interfaceIcon('research', 18);
 
 interface DeepResearchWindow {
-  deepResearchOn?: boolean;
   _activeTemplate?: { extensionKey?: string } | null;
 }
 
@@ -18,8 +18,7 @@ function dw(): DeepResearchWindow {
  * next send routes through agent/researchAgent.ts (plan → search → read →
  * report) instead of a normal chat turn. The template chip carries
  * extensionKey 'deepResearch', and chat/templateSlash.ts's
- * EXTENSION_SIDE_EFFECTS flips window.deepResearchOn on set/clear — the
- * same contract webSearch and extensiveThinking already use. */
+ * EXTENSION_SIDE_EFFECTS updates the shared research-mode state on set/clear. */
 export const deepResearchExtension: ExtensionDefinition = {
   key: 'deepResearch',
   kind: 'toggle',
@@ -44,7 +43,7 @@ export const deepResearchExtension: ExtensionDefinition = {
     ctx.focusComposer();
   },
   onDeactivate(ctx) {
-    dw().deepResearchOn = false;
+    setDeepResearchEnabled(false);
     const active = dw()._activeTemplate;
     if (active && active.extensionKey === 'deepResearch') {
       ctx.clearTemplate();

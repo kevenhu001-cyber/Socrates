@@ -40,7 +40,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "closeShareModal": typeof import("../ui/share")["closeShareModal"];
   "closeTagEditor": typeof import("../session/organizeRuntime")["closeTagEditor"];
   "closeUsageModal": () => Promise<void> | undefined;
-  "deepResearchOn": boolean;
   "extensiveThinkingOn": typeof import("../config/providers")["extensiveThinkingOn"];
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
   "formatMsg": typeof import("../render/markdown")["formatMsg"];

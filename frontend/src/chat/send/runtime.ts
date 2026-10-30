@@ -1,4 +1,5 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { addMessage } from '../messages.ts';
 import { scheduleTurnToTopForMessage } from '../turnAnchor.ts';
 import type { StreamingTurnController } from '../turnState.ts';
@@ -8,7 +9,6 @@ interface SendRuntimeWindow extends Window {
   appMode?: string;
   webSearchOn?: boolean;
   tutorSocratic?: unknown;
-  deepResearchOn?: boolean;
   askChatTurn?: (text: string, pending: unknown, precreated?: unknown) => unknown;
   addStreamingMessage?: (options: { onRetry?: () => void }) => StreamingTurnController;
   __loadStreamingTurn?: () => void;
@@ -65,8 +65,7 @@ export function addStreamingMessage(options: { onRetry?: () => void }): Streamin
 }
 
 export function isDeepResearchOn(): boolean {
-  try { return !!(window as SendRuntimeWindow).deepResearchOn; }
-  catch { return false; }
+  return isDeepResearchEnabled();
 }
 
 export function addAnchoredAssistant(text: string, type?: string | null, actions?: unknown): string {
