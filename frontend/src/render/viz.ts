@@ -450,13 +450,8 @@ export function renderVizError(htmlStr: unknown, errorMsg: unknown) {
   '</div>';
 }
 
-/* P_viz-testability — expose the live card registry on window so
-   E2E tests can assert iframe GC-eligibility. We only expose a
-   read-only view (a frozen snapshot) rather than the live
-   mutable map, to keep the module's GC assumptions intact while
-   letting the test harness verify that the registry entry was
-   released after `viz-ready` fires. The internal `_pendingReady`
-   is still mutated directly by `_markReady` / `_markError`. */
+/* Module-level test seam for the handshake unit tests. Keep registry
+   inspection out of the production window surface. */
 export function getLiveVizCardIds() {
   const ids = [];
   for (const id in _vizCards) {

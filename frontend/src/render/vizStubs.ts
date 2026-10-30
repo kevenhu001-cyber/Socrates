@@ -594,10 +594,6 @@ export function reclaimVizCards(root: Element) {
   }
 }
 
-export function getLiveVizCardIds() {
-  return _vizRuntime ? _vizRuntime.getLiveVizCardIds() : [];
-}
-
 type VizRuntimeModule = typeof import('./viz.ts');
 export function parkVizCardForTest(card: Parameters<VizRuntimeModule['parkVizCardForTest']>[0]) {
   const m = _vizRuntime;

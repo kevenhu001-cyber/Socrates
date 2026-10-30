@@ -258,7 +258,7 @@ test('plot card draws the function and posts viz-ready', async ({ page }) => {
   expect(srcdoc).toContain('sin(x)');
 });
 
-test('ready viz cards release the iframe registry; late viz-error still surfaces', async ({ page }) => {
+test('ready viz cards keep accepting late viz-error without a global registry hook', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const htmlBody = [
@@ -284,15 +284,9 @@ test('ready viz cards release the iframe registry; late viz-error still surfaces
   });
   const card = page.locator('.viz').last();
   await expect(card).toHaveAttribute('data-viz-state', 'ready', { timeout: 6000 });
-  // After ready, the module-level registry should drop the card so
-  // the iframe is GC-eligible. We probe by exporting _vizCards and
-  // asserting the id is no longer present.
-  const released = await page.evaluate(() => {
-    const id = document.querySelector('.viz[data-viz-state="ready"]').id;
-    const live = typeof window.getLiveVizCardIds === 'function' ? window.getLiveVizCardIds() : [];
-    return id && !live.includes(id);
-  });
-  expect(released).toBe(true);
+  // The internal registry is covered by a module-level test. Production
+  // pages must not expose that snapshot helper on window.
+  await expect.poll(() => page.evaluate(() => typeof window.getLiveVizCardIds)).toBe('undefined');
   // Inject a viz-error postMessage from inside the real iframe — the
   // parent only accepts viz messages whose event.source is the card's
   // iframe contentWindow, so a top-level window.postMessage would be

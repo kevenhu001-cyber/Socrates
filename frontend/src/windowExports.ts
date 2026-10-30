@@ -42,17 +42,11 @@ browserWindow.apiFetch = apiFetch;
 browserWindow.getCsrfToken = getCsrfToken;
 
 /* ─── render/viz.ts ─── */
-import { processPendingVizActions, getLiveVizCardIds } from './render/vizStubs.ts';
+import { processPendingVizActions } from './render/vizStubs.ts';
 /* mountVisualization / disposeVisualizations are imported directly by
    their consumers (main.js, share.js); no window surface is needed. */
 import './render/vizStubs.ts';
 browserWindow.processPendingVizActions = processPendingVizActions;
-/* E2E test surface: viz-canvas.spec.mjs asserts the iframe registry
-   releases the entry after `viz-ready` fires. Expose a snapshot
-   helper so the test can do `getLiveVizCardIds()` instead of
-   poking the live map directly. */
-browserWindow.getLiveVizCardIds = getLiveVizCardIds;
-
 /* ─── render/markdown.js ─── */
 import { formatMsg } from './render/markdown.ts';
 browserWindow.formatMsg = formatMsg;

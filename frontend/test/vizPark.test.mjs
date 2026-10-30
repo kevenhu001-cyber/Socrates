@@ -10,7 +10,7 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http:
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 
-const { parkVizCardForTest, unparkVizCardForTest } = await import('../src/render/viz.ts');
+const { getLiveVizCardIds, parkVizCardForTest, processPendingViz, unparkVizCardForTest } = await import('../src/render/viz.ts');
 
 function makeCard(state = 'ready') {
   const card = document.createElement('div');
@@ -27,6 +27,19 @@ function makeCard(state = 'ready') {
   document.body.appendChild(card);
   return card;
 }
+
+test('viz-ready releases its iframe from the internal handshake registry', () => {
+  const card = makeCard('loading');
+  const iframe = card.querySelector('iframe');
+  processPendingViz(document.body);
+  assert.deepEqual(getLiveVizCardIds(), [card.id]);
+  window.dispatchEvent(new dom.window.MessageEvent('message', {
+    data: { type: 'viz-ready', vizId: card.id, h: 80 },
+    source: iframe.contentWindow,
+  }));
+  assert.equal(card.getAttribute('data-viz-state'), 'ready');
+  assert.deepEqual(getLiveVizCardIds(), []);
+});
 
 test('a ready offscreen card is parked: srcdoc dropped, data kept', () => {
   const card = makeCard('ready');
