@@ -18,6 +18,7 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { publishProfileState } from './profileState.ts';
 import { publishSidebarUser } from './sidebarUserState.ts';
+import { setUserMemories } from '../app/lifecycle/userMemory.ts';
 
 
 function userInitials(name: string) {
@@ -233,24 +234,24 @@ function syncProfileLangToggle() {
 /* ─── Cross-session memory loader ─── */
 
 function loadUserMemories() {
-  browserWindow._userMemories = [];
+  setUserMemories([]);
   if (!browserWindow.CURRENT_USER) return Promise.resolve();
   try {
     return browserWindow.apiFetch<unknown>("/api/memory", { _authEndpoint: true }).then(function (value) {
       if (Array.isArray(value)) {
-        browserWindow._userMemories = value.flatMap(function (memory): string[] {
+        setUserMemories(value.flatMap(function (memory): string[] {
           if (!memory || typeof memory !== 'object' || Array.isArray(memory)) return [];
           const record = memory as Record<string, unknown>;
           return record.enabled !== false && typeof record.text === 'string' ? [record.text] : [];
-        });
+        }));
       }
     }).catch(function () {
       console.log("[memories] load failed");
-      browserWindow._userMemories = [];
+      setUserMemories([]);
     });
   } catch {
     console.log("[memories] load threw");
-    browserWindow._userMemories = [];
+    setUserMemories([]);
     return Promise.resolve();
   }
 }

@@ -26,7 +26,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "__testActivateMainView": (viewId: string) => boolean;
   "_activeTemplate": import("../chat/templateSystemPrompt").ActiveTemplate | null;
   "_nextProjectId": string | null;
-  "_userMemories": string[];
   "addMessage": typeof import("../chat/messages")["addMessage"];
   "addStreamingMessage": (...args: Parameters<typeof import("../chat/streamingTurn")["addStreamingMessage"]>) => ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]> | Promise<ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]>>;
   "apiFetch": typeof import("../util/api")["apiFetch"];

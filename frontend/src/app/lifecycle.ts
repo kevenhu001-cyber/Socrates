@@ -93,7 +93,7 @@ export function handleAuthExpired(cause: unknown){
   try{
     /* P_bleed-auth-expired — same per-user cache wipe as signOut().
        A 401 may fire mid-session while the user is still on the
-       screen; without clearing _userMemories / geo info, the
+       screen; without clearing cached user memories / geo info, the
        signin-gate UI would briefly show the previous user's
        memories in any subsequent system-context preview, and
        turnState.pendingChatContent could replay a draft image after the
@@ -181,7 +181,7 @@ export async function signOut(){
     try{await saveState.saveInFlight}catch(e){reportSwallow(e,'app/lifecycle.signOut.drainInFlight2');}
   }
   /* P_bleed-signout — wipe every per-user cache so the next user on
-      this browser starts from a clean slate. Clears _userMemories /
+      this browser starts from a clean slate. Clears cached user memories /
       geo info / turnState.pendingChatContent (in-memory) AND the full module-
       level set (serverCache.sessions, providerConfig, _cmdKIndex, …)
       plus localStorage entries that survive sign-out. */

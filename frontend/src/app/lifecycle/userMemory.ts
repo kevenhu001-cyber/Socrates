@@ -1,13 +1,14 @@
-import { reportSwallow } from '../../util/reportSwallow.ts';
-
 /* Cached user memories are shared by auth cleanup and prompt construction. */
-let userMemories: never[] = [];
+let userMemories: string[] = [];
 
-export function getUserMemories() {
+export function getUserMemories(): string[] {
   return userMemories;
 }
 
-export function clearUserMemories() {
-  try { userMemories = []; }
-  catch (error) { reportSwallow(error, 'app/lifecycle.clearUserMemories'); }
+export function setUserMemories(memories: string[]): void {
+  userMemories = memories;
+}
+
+export function clearUserMemories(): void {
+  userMemories = [];
 }

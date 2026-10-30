@@ -25,6 +25,7 @@ const { setTonePreset } = await import('../src/config/tonePresets.ts');
 const { setAppMode } = await import('../src/config/providers.ts');
 const { stateStore } = await import('../src/state/store.ts');
 const { getProjectCacheSnapshot, setCachedProjects } = await import('../src/projects/projectCache.ts');
+const { clearUserMemories, getUserMemories, setUserMemories } = await import('../src/app/lifecycle/userMemory.ts');
 
 test('toneVoiceSuffix is empty for the default preset', () => {
   setTonePreset('default');
@@ -73,6 +74,24 @@ test('memoriesSuffix lists cached server memories', () => {
   } finally {
     configurePromptSuffixes({ getUserMemories: () => [] });
     stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: previousProjectId ?? null });
+  }
+});
+
+test('the profile memory cache is the source used by prompt suffixes and sign-out clears it', () => {
+  const previousMemories = getUserMemories();
+  const previousProjectId = stateStore.read('currentProjectId');
+  stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: null });
+  setUserMemories(['likes tea']);
+  configurePromptSuffixes({ getUserMemories });
+  try {
+    assert.match(memoriesSuffix(), /- likes tea/);
+    clearUserMemories();
+    assert.deepEqual(getUserMemories(), []);
+    assert.equal(memoriesSuffix(), '');
+  } finally {
+    setUserMemories(previousMemories);
+    stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: previousProjectId ?? null });
+    configurePromptSuffixes({ getUserMemories: () => [] });
   }
 });
 

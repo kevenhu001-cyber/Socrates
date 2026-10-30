@@ -6,6 +6,7 @@ test('profile modal renders account, subscription, preferences, and data section
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  expect(await page.evaluate(() => '_userMemories' in window)).toBe(false);
   await page.evaluate(() => window.openProfile());
 
   const profile = page.locator('.profile-modal');
