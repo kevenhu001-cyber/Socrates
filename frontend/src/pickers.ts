@@ -9,6 +9,7 @@ import { getProviderConfigSnapshot, getActiveProvider as getActiveProviderConfig
 import { subscribeToProviderConfig } from './config/providerConfig.store.ts';
 import { stateStore } from './state/store.ts';
 import { openNav } from './sidebar/navigation.service.ts';
+import { dispatchExtension } from './extensions/index.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 
@@ -494,11 +495,9 @@ function toggleExtensionByKey(key: string){
      it handles onActivate/onDeactivate (side effects, persistence,
      auto-launch). Falls back to the inline EXTENSIONS entry for keys
      not yet migrated so behavior is unchanged. */
-  if (typeof browserWindow.__socratesExtensionDispatch === "function") {
-    if (browserWindow.__socratesExtensionDispatch(key)) {
-      syncExtensionsUI();
-      return;
-    }
+  if (dispatchExtension(key)) {
+    syncExtensionsUI();
+    return;
   }
   const ext=EXTENSIONS.find(function(e){return e.key===key});
   if(!ext)return;

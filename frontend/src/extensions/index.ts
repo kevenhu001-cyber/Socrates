@@ -60,6 +60,7 @@ export function installExtensions(): void {
  * registered module handled the key.
  */
 export function dispatchExtension(key: string): boolean {
+  installExtensions();
   const def = registry.get(key);
   if (!def || typeof def.onActivate !== 'function') return false;
   const ctx = createContextForKey();
@@ -89,7 +90,6 @@ export function installWindowExtensionDelegates(): void {
     deepResearchAction?: () => void;
     analyzeAction?: () => void;
     toggleExtensionByKey?: (key: string) => void;
-    __socratesExtensionDispatch?: (key: string) => boolean;
   };
 
   if (!w.composeAction) w.composeAction = composeAction;
@@ -102,7 +102,6 @@ export function installWindowExtensionDelegates(): void {
       dispatchExtension(key);
     };
   }
-  w.__socratesExtensionDispatch = dispatchExtension;
 }
 
 function createContextForKey() {

@@ -17,6 +17,7 @@ type CreationForm = HTMLFormElement & { elements: HTMLFormControlsCollection & {
 interface CreationAction { button?: HTMLButtonElement; id?: string; view?: string }
 function isSurfaceName(value: unknown): value is SurfaceName { return value === 'images' || value === 'assistants' || value === 'sites'; }
 import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
+import { dispatchExtension } from '../extensions/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
@@ -121,7 +122,7 @@ async function startNewCreation(name: SurfaceName) {
   if (name === 'sites') {
     const didReset = await (browserWindow.resetApp as (() => boolean | void | Promise<boolean | void>) | undefined)?.();
     if (didReset === false) return;
-    browserWindow.__socratesExtensionDispatch?.('createSite');
+    dispatchExtension('createSite');
     return;
   }
   state.editor = { type: name, item: null };

@@ -1,5 +1,6 @@
 import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
 import { restingRect } from './pressFeedback.ts';
+import { dispatchExtension } from '../extensions/index.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { publishComposerToolsState, type ComposerMode } from './composerToolsState.ts';
 
@@ -217,15 +218,15 @@ if (typeof document !== "undefined") {
          opens the prompt-templates modal. Both are not regular
          ExtensionDefinitions — they don't run through dispatchExtension.
          Everything else routes through the single dispatcher installed
-         by installWindowExtensionDelegates() (extensions/index.ts:99). */
+         by the shared extension registry. */
       if (kind === "upload") {
         if (typeof browserWindow.openAttachmentPicker === "function") {
           browserWindow.openAttachmentPicker("composerAttachInput");
         }
       } else if (kind === "skills") {
         if (typeof openPromptTemplatesModal === "function") openPromptTemplatesModal();
-      } else if (typeof browserWindow.__socratesExtensionDispatch === "function") {
-        browserWindow.__socratesExtensionDispatch(kind!);
+      } else {
+        dispatchExtension(kind!);
       }
       return;
     }

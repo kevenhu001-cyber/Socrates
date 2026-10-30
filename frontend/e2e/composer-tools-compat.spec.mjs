@@ -2,7 +2,7 @@
 // Spec: when the app boots with ?react=1, the Composer "+" tools menu is
 // owned by React. The legacy entry point (toggleComposerTools) still drives
 // open/close/positioning; React renders the capability workflows via a shared
-// module store. Item clicks dispatch through the legacy window.* actions.
+// module store. Item clicks dispatch through the shared extension module.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -13,6 +13,7 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
+  expect(await page.evaluate(() => '__socratesExtensionDispatch' in window)).toBe(false);
 
   // Eager creation: the menu element exists at boot without a DOM sentinel.
   const menu = page.locator('#composerToolsMenu');

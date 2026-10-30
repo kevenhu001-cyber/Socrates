@@ -79,7 +79,7 @@ test('first-turn placeholder retry sends the original text and attachment', asyn
   expect(JSON.stringify(user.content)).toContain('submitted.txt');
 });
 
-test('home upload opens a file chooser, writing activates its template, and dismissal hides the row', async ({ page }) => {
+test('home upload opens a file chooser, writing activates its template, and dismissal keeps the mobile rail usable', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await openApp(page);
   await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) => route.fulfill({
@@ -100,7 +100,9 @@ test('home upload opens a file chooser, writing activates its template, and dism
   await expect(row).toBeHidden();
   await page.screenshot({ path: 'test-results/performance-home-shortcuts-desktop.png' });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.home-quick-actions')).toBeHidden();
+  await expect(page.locator('.home-quick-actions')).toBeVisible();
+  await expect(page.locator('[data-home-action="upload"]')).toBeVisible();
+  await expect(page.locator('[data-home-action="research"]')).toBeVisible();
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.screenshot({ path: 'test-results/performance-home-shortcuts-mobile.png' });
 });

@@ -77,6 +77,9 @@ index.html                         静态 shell / 挂载宿主 / CSP
   `windowKey` 发布。
 - `auth` 的 `__socratesMountReactCompatibility` 仍是兼容启动通知，保留认证后才加载
   editor / modal 的时序。消息挂载和分享接管的四个 window 字段已由中立模块替代。
+- 扩展定义由 `extensions/index.ts` 注册并导出 `dispatchExtension()`；picker、composer tools、首页写作入口
+  与 creation surface 直接调用同一模块 dispatcher，不再经 `window.__socratesExtensionDispatch` 转发。
+  `composeAction`、`toggleExtensionByKey` 等既有 inline 兼容动作仍保留。
 
 ## React root 生命周期
 

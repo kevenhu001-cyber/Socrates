@@ -3,6 +3,7 @@
  * composer and web-search actions from the stable #topicSetup host. */
 
 import { focusComposer, getComposerMarkdown, setComposerMarkdown } from '../composer/controller.ts';
+import { composeAction } from '../extensions/index.ts';
 import { toggleWebSearch } from '../pickers.ts';
 import { openAttachmentPicker } from '../attachments/render.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
@@ -46,7 +47,7 @@ function handleHomeAction(actionTarget: HTMLElement, syncSearch: () => void) {
     focusComposer('topic');
     return;
   }
-  if (action === 'write' && typeof browserWindow.__socratesExtensionDispatch === 'function') browserWindow.__socratesExtensionDispatch('composeAction');
+  if (action === 'write') composeAction();
 }
 
 export function installHomeSurface() {
