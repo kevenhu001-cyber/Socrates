@@ -73,7 +73,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "hideGate": typeof import("../auth/index")["hideGate"];
   "hideUsageTip": () => Promise<void> | undefined;
   "hydrateConnectorIcons": typeof import("../sidebar/nav")["hydrateConnectorIcons"];
-  "incognitoOn": boolean;
   "isInAuthGraceWindow": typeof import("../app/lifecycle")["isInAuthGraceWindow"];
   "launchDeepResearch": () => Promise<void>;
   "loadUsageData": () => Promise<void> | undefined;

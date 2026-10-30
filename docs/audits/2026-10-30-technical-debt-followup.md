@@ -38,6 +38,7 @@
 | 无生产消费者的 Search Progress Log 组件 | **本轮已移除** | 搜索进度卡片已不在聊天流程中挂载；删掉仅为旧视觉测试保留的 window hook、无调用方的 `ExtensionContext.startProgress/fetchWebContext` 适配器、组件样式及旧测试。实时 web search 的查询与来源排序覆盖保留并移至 `e2e/web-search-context.spec.mjs`；运行状态点改用通用动画名。 |
 | 无调用方的搜索质量 LLM judge/retry 路径 | **本轮已移除** | 全仓只有定义，没有 `webSearchWithRetry` 消费者；删掉结果评分请求、重试包装器和仅供搜索进度卡使用的 `onStep` 事件传递。实际 `fetchWebContext`、查询改写、来源排序和失败回退流程保留；原签名中的 `signal` 也从未接入搜索请求，随死接口一起移除。 |
 | sidebar 用户状态发布器仍叫 `renderUserFooter`，并由一层空转函数转发 | **本轮已清理** | React 一直拥有 sidebar footer；`publishSidebarChrome()` 直接发布规范化用户状态并同步 tier 属性。认证启动、登录后刷新、登出和账号删除都改为调用该模块 API，旧 DOM 渲染命名和对应包装函数删除。同步移除了 `windowExports.ts` 中已失效的 `refreshApiConfig / handleRefreshProductInfo` 迁移注释。 |
+| Incognito 状态重复镜像到 `window.incognitoOn` | **本轮已移除** | `app/lifecycle/incognitoState.ts` 成为单一布尔状态源；session save 两处保护和后台研究范围检查直接读取同一 getter。删除 `main.ts` 初始化写入、lifecycle 镜像和 `RuntimeWindow` 字段，避免窗口镜像与真实状态分叉。 |
 
 ## 仍开放或尚无法确认
 
@@ -45,7 +46,7 @@
 |---|---|---|
 | 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
 | 中 | Expo / Universal App 依赖告警 | 审计仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；来源是 Expo CLI 使用的 `zod@3.25.76`（[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)）。2026-10-30 核验 npm 最新 `@expo/cli@58.1.17` 仍声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 超出其范围。Expo SDK 58 同时将 React Native 目标升级到 0.88，而本项目 SDK 57 使用 RN 0.86；不能把跨 SDK/RN 升级当作安全依赖小修，也不通过不兼容的 major override 掩盖它。待 Expo 发布兼容依赖范围后处理；参考 [Expo SDK 58 发行说明](https://expo.dev/changelog/sdk-58) 与 [SDK 对应版本表](https://docs.expo.dev/versions/latest/)。 |
-| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、KaTeX 重绘回调、cookie consent、extension dispatch、搜索重试、未调用的搜索质量 judge/retry、首轮 turn controller、composer controller、active-chat abort、Search Progress Log 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、KaTeX 重绘回调、cookie consent、extension dispatch、搜索重试、未调用的搜索质量 judge/retry、Incognito 状态镜像、首轮 turn controller、composer controller、active-chat abort、Search Progress Log 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -95,3 +96,4 @@
 - Search Progress Log 退役：删除未使用的卡片组件、扩展上下文适配器、旧 CSS 和测试专用 window hook；`extensions.test.mjs` 11/11、生产构建与 lint 通过，`agent-steps` / `tool-run-group` / `native-visualization` / `web-search-context` Playwright 15/15 通过。网页搜索排序覆盖保留在新命名的 `web-search-context.spec.mjs`。
 - 无调用方的搜索质量 judge/retry 移除：保留真实的预搜索、查询改写、结果排序与 fallback 查询；`web-search-context.spec.mjs` 1/1、前端 lint 与生产构建通过。
 - sidebar footer 状态发布 API 命名清理：删掉 `renderUserFooter()` 空包装并让调用方直达 `publishSidebarChrome()`；旧迁移注释删除。`profileState` 与 `sidebarUserState` 单测 2/2，`profile-modal` / `sidebar-nav` Playwright 17/17，前端 lint 和生产构建通过。
+- Incognito 状态镜像移除：状态由 `app/lifecycle/incognitoState.ts` 独占，session save 与 research visibility 直接共享 getter；`incognitoState.test.mjs` 1/1、前端 lint、生产构建通过，Incognito / research jobs / incremental save Playwright 13/13 通过。

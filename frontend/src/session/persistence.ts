@@ -8,6 +8,7 @@
  */
 import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.ts';
+import { isIncognitoOn } from '../app/lifecycle/incognitoState.ts';
 import { saveState, deletedSessionGuard } from './saveState.ts';
 import { generateId } from '../util/ids.ts';
 import { pushChatIdToURL } from './store.ts';
@@ -98,7 +99,6 @@ interface SaveResponse {
 
 /** Window surfaces the save pipeline reads at call time. */
 interface PersistenceWindow extends Window {
-  incognitoOn?: boolean;
   appMode?: string;
   renderRecents?: () => void;
 }
@@ -208,7 +208,7 @@ export function saveCurrentSession(): Promise<unknown> | null {
      persisted. Entering incognito first saves any prior real session
      (toggleIncognito calls resetApp before flipping this flag), so
      bailing here only blocks the temporary conversation itself. */
-  if (typeof window !== 'undefined' && (window as PersistenceWindow).incognitoOn) return null;
+  if (isIncognitoOn()) return null;
   if (!stateStore.read('topic')) return null;
   if (!(typeof window !== 'undefined' && window.CURRENT_USER)) return null; /* not signed in; do nothing */
   /* P_context-race — discard saves during session loading. The
@@ -259,7 +259,7 @@ export function saveCurrentSession(): Promise<unknown> | null {
    the signature and the network call move to the next macrotask, after
    the reset has been painted. */
 export function saveSessionBeforeReset(): Promise<unknown> | null {
-  if (typeof window !== 'undefined' && (window as PersistenceWindow).incognitoOn) return null;
+  if (isIncognitoOn()) return null;
   if (!stateStore.read('topic')) return null;
   if (!(typeof window !== 'undefined' && window.CURRENT_USER)) return null;
   if (saveState.loadingSession) return null;

@@ -134,9 +134,6 @@ installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindo
 
 configurePromptSuffixes({ getUserMemories: getUserMemories });
 
-/* Legacy session persistence reads this flag before a user toggles it. */
-browserWindow.incognitoOn = false;
-
 /* Wire the extracted feature modules into the auth-aware app bootstrap. */
 bootstrapApp({
   syncModelPills: syncModelPills,

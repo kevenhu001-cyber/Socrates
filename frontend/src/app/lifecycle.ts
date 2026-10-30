@@ -15,6 +15,7 @@ import { resetShareToken } from '../ui/share.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { publishSidebarChrome } from '../ui/profile.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { isIncognitoOn, setIncognitoOn } from './lifecycle/incognitoState.ts';
 import { resetApp } from './lifecycle/reset.ts';
 import { clearPerUserClientState } from './lifecycle/clientState.ts';
 import { clearUserMemories, getUserMemories } from './lifecycle/userMemory.ts';
@@ -26,9 +27,7 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 export { resetApp, clearPerUserClientState, clearUserMemories, getUserMemories, toggleAppMode };
 
 
-/* P_mobile-topbar — incognito flag. Mirrored to window for the save guard. */
-let incognitoOn = false;
-try { browserWindow.incognitoOn = false; } catch (e) { reportSwallow(e, 'app/lifecycle.incognitoMirror'); }
+/* Incognito state is shared with the session-save and research guards. */
 
 /* Cross-module CURRENT_USER — single source is window.CURRENT_USER (mirrored
    below); no module-local copy so readers never drift. */
@@ -48,7 +47,7 @@ export function startNewChat(){
 }
 
 export function syncIncognitoBtn(){
-  const on=!!incognitoOn;
+  const on=isIncognitoOn();
   try{document.body.setAttribute("data-incognito",on?"true":"false")}catch(e){reportSwallow(e,'app/lifecycle.syncIncognitoBtn');}
   const btn=document.getElementById("mobileIncognitoBtn");
   if(btn){
@@ -60,13 +59,12 @@ export function syncIncognitoBtn(){
 }
 
 export async function toggleIncognito(){
-  if(incognitoOn){
+  if(isIncognitoOn()){
     /* Leaving incognito — reset the view while the flag is STILL on so
        saveCurrentSession() bails and the temporary chat is discarded,
        then turn incognito off for future (saved) sessions. */
     await resetApp();
-    incognitoOn=false;
-    try{browserWindow.incognitoOn=false;}catch(e){reportSwallow(e,'app/lifecycle.toggleIncognitoOff');}
+    setIncognitoOn(false);
     syncIncognitoBtn();
     if(typeof showToast==="function")showToast(_t("incognito.off"));
     return;
@@ -75,8 +73,7 @@ export async function toggleIncognito(){
      wipes the view, THEN we flip the flag so the fresh conversation is
      never persisted. */
   await resetApp();
-  incognitoOn=true;
-  try{browserWindow.incognitoOn=true;}catch(e){reportSwallow(e,'app/lifecycle.toggleIncognitoOn');}
+  setIncognitoOn(true);
   syncIncognitoBtn();
   if(typeof showToast==="function")showToast(_t("incognito.on"));
 }
