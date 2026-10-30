@@ -297,12 +297,12 @@ browserWindow.updateKB = updateKB;
    The exam view stays lazy and loads only when opened (sidebar exam nav,
    openExamModal or exam-session restore). Its domain flows live under
    src/exam/. window.__loadExamModule dedupes the import, mounts delegated
-   listeners once, and exposes it for account-change resets. */
+   listeners once, and registers only its save-reset callback with lifecycle. */
 let _examImport: Promise<typeof import('./exam.ts')>|null = null;
 function _loadExamModule() {
   if (!_examImport) {
     _examImport = import('./exam.ts').then(function (m) {
-      browserWindow.__examModule = m;
+      registerExamSaveReset(m.resetExamSaveState);
       try { m.mountExamListeners(); } catch (_) { /* empty-catch: intentional — mounting listeners is idempotent and non-fatal */ }
       return m;
     });
@@ -368,3 +368,4 @@ import './ui/readAloud.ts';
    bare import keeps evaluation order. ─── */
 import './chat/promptTemplates.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
+import { registerExamSaveReset } from './app/lifecycle/examSaveReset.ts';

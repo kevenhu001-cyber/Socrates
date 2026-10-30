@@ -9,6 +9,7 @@ import { resetCmdKSearchState } from '../../ui/cmdK.ts';
 import { syncModelPills } from '../../pickers.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { clearUserMemories } from './userMemory.ts';
+import { resetExamSaveStateIfLoaded } from './examSaveReset.ts';
 import { runtimeWindow as browserWindow } from "../../types/runtimeWindow.ts";
 
 
@@ -22,10 +23,7 @@ function clearStorageKey(key: string, context: string) {
 }
 
 function clearExamSaveState() {
-  const examModule = typeof window !== 'undefined' && browserWindow.__examModule;
-  if (examModule && typeof examModule.resetExamSaveState === 'function') {
-    examModule.resetExamSaveState();
-  }
+  resetExamSaveStateIfLoaded();
 }
 
 function callWindowHook(name: 'renderRecents' | 'renderMistakes' | 'updateMistakesBadge') {
