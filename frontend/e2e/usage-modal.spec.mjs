@@ -27,6 +27,12 @@ test('usage modal renders API data and refreshes when the period changes', async
 
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  expect(await page.evaluate(() => ({
+    loadUsageData: 'loadUsageData' in window,
+    loadUsageMonth: 'loadUsageMonth' in window,
+    showUsageTip: 'showUsageTip' in window,
+    hideUsageTip: 'hideUsageTip' in window,
+  }))).toEqual({ loadUsageData: false, loadUsageMonth: false, showUsageTip: false, hideUsageTip: false });
   calendarDay = await page.evaluate(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);

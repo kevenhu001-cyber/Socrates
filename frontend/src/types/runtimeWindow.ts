@@ -60,11 +60,8 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "getSlashApps": typeof import("../sidebar/nav")["getSlashApps"];
   "handleSendClick": typeof import("../chat/composerTurn")["handleSendClick"];
   "hideGate": typeof import("../auth/index")["hideGate"];
-  "hideUsageTip": () => Promise<void> | undefined;
   "isInAuthGraceWindow": typeof import("../app/lifecycle")["isInAuthGraceWindow"];
   "launchDeepResearch": () => Promise<void>;
-  "loadUsageData": () => Promise<void> | undefined;
-  "loadUsageMonth": () => Promise<void> | undefined;
   "markAuthSuccess": typeof import("../app/lifecycle")["markAuthSuccess"];
   "onCmdKInput": typeof import("../ui/cmdK")["onCmdKInput"];
   "onCmdKKey": typeof import("../ui/cmdK")["onCmdKKey"];
@@ -106,7 +103,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "showConfirm": typeof import("../ui/confirm")["showConfirm"];
   "showGate": typeof import("../auth/index")["showGate"];
   "showToast": typeof import("../ui/toast")["showToast"];
-  "showUsageTip": (ev: Pick<Event, "currentTarget">) => Promise<void> | undefined;
   "sidebarOpen": typeof import("../ui/sidebarChrome")["sidebarOpen"];
   "startDeepResearch": typeof import("../agent/researchAgent")["startDeepResearch"];
   "startNewChat": typeof import("../app/lifecycle")["startNewChat"];

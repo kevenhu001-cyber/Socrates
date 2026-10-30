@@ -266,10 +266,6 @@ function _loadUsageModule() {
 }
 browserWindow.openUsageModal = function () { return _loadUsageModule().then(function (m) { return m.openUsageModal(); }); };
 browserWindow.closeUsageModal = function () { if (_usageImport) return _usageImport.then(function (m) { return m.closeUsageModal(); }); };
-browserWindow.loadUsageData = function () { if (_usageImport) return _usageImport.then(function (m) { return m.loadUsageData(); }); };
-browserWindow.loadUsageMonth = function () { if (_usageImport) return _usageImport.then(function (m) { return m.loadUsageMonth(); }); };
-browserWindow.showUsageTip = function (ev: Pick<Event, 'currentTarget'>) { if (_usageImport) return _usageImport.then(function (m) { return m.showUsageTip(ev); }); };
-browserWindow.hideUsageTip = function () { if (_usageImport) return _usageImport.then(function (m) { return m.hideUsageTip(); }); };
 
 
 /* ─── exam.js — Generate Exam extension ───

@@ -56,6 +56,7 @@
 | `Ctrl+Shift+P` 项目轮换的 `window.cycleActiveProject` alias | **本轮已移除** | 键盘快捷键直接调用 `session/organizeRuntime.ts` 惰性 facade；删除 bridge 发布和类型字段，避免键盘 action 穿过 window。 |
 | 用户记忆同时写 window、prompt 却读取空模块数组 | **本轮已修复** | Profile 加载器、账号切换清理与 prompt suffix 现在共用 `app/lifecycle/userMemory.ts`；删除 `_userMemories` window 镜像，真实缓存记忆能进入个人上下文，登出清理同一状态。 |
 | Knowledge panel E2E 专用 `window.updateKB` 发布 | **本轮已收敛** | 生产调用方继续直接导入 `ui/knowledgePanel.ts`；测试入口改走 typed `__socratesLegacy.knowledge.update`，移除独立 window 发布与 `RuntimeWindow` 字段，并在 E2E 断言旧字段缺失。 |
+| Usage lazy module 暴露的四个无消费者 window helper | **本轮已移除** | 数据、月份与 tooltip 行为均由 `ui/usage.ts` 内部委托监听器直接调用；仓库源码和页面标记没有 window 外部消费者。删除四个 wrapper 及 `RuntimeWindow` 类型，保留 lazy load/open/close 生命周期。 |
 
 ## 仍开放或尚无法确认
 
@@ -131,3 +132,4 @@
 - Project cycling window alias 移除：键盘快捷键改直接调用惰性 organize runtime；SPA 生产构建、lint 通过，`session-tags` / `session-row-menu` Playwright 10/10 通过并检查旧字段缺失。
 - User memory cache split 修复：Profile loader 改写 canonical module cache，prompt suffix 读取同一 getter，sign-out 清理该 cache；SPA 生产构建、lint 通过，`promptSuffixes.test.mjs` 10/10、`profile-modal.spec.mjs` 1/1 通过。
 - Knowledge panel 测试入口收敛到 typed legacy gateway：业务模块继续直接调用 `updateKB`，移除 E2E 专用 window alias；SPA 生产构建、完整 lint 通过，`knowledge-panel.spec.mjs` 5/5 通过并验证旧全局不存在。
+- Usage helper window wrapper 清理：删除无人调用的 `loadUsageData`、`loadUsageMonth`、`showUsageTip`、`hideUsageTip` 发布及类型；保留 Usage 模块内部请求与 tooltip 逻辑。前端完整 lint 与生产构建通过，`usage-modal.spec.mjs` 1/1 验证 API 数据、周期切换和四个旧全局不存在。
