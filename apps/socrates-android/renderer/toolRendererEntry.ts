@@ -45,7 +45,10 @@ async function render(): Promise<void> {
       if (!spec) throw new Error('此可视化结果格式无法识别。');
       // GeoGebra is the one frontend renderer that downloads executable code
       // from a third-party CDN. Keep Android's artifact WebView fully local.
-      if (spec.template === 'math_construction') {
+      // The tldraw whiteboard needs Vite `?url` font and icon assets that the
+      // esbuild renderer bundle cannot load, so its module stays external
+      // (see app/build.gradle) and Android shows the seed notes as text.
+      if (spec.template === 'math_construction' || spec.template === 'whiteboard') {
         const fallback = document.createElement('pre');
         fallback.className = 'artifact-text';
         fallback.textContent = JSON.stringify(spec, null, 2);

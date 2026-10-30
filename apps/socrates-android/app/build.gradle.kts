@@ -15,7 +15,10 @@ val bundleToolRenderer by tasks.registering(Exec::class) {
     commandLine(repositoryRoot.resolve("frontend/node_modules/.bin/esbuild").absolutePath,
         "apps/socrates-android/renderer/toolRendererEntry.ts",
         "--bundle", "--minify", "--format=esm", "--platform=browser", "--target=es2020",
-        "--define:process.env.NODE_ENV=\"production\"", "--outfile=${output.absolutePath}")
+        "--define:process.env.NODE_ENV=\"production\"",
+        // tldraw ships Vite-only `?url` asset imports; the whiteboard adapter is
+        // never mounted on Android, so leave its module out of the bundle.
+        "--external:./visualizationWhiteboard.ts", "--outfile=${output.absolutePath}")
     inputs.file(rootProject.file("renderer/toolRendererEntry.ts"))
     inputs.dir(repositoryRoot.resolve("frontend/src"))
     inputs.dir(repositoryRoot.resolve("frontend/node_modules/@socrates/core"))
