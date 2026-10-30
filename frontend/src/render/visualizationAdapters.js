@@ -6,7 +6,6 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 let plotlyPromise;
 let mermaidPromise;
 let threePromise;
-let tldrawPromise;
 let geogebraPromise;
 
 const STRUCTURE_TEMPLATES = new Set(['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map']);
@@ -376,38 +375,6 @@ async function mountGeoGebra(spec, stage) {
   };
 }
 
-async function mountWhiteboard(spec, stage) {
-  tldrawPromise ||= Promise.all([
-    import('react'),
-    import('../react/lib/boot/ownedRoot.ts'),
-    import('tldraw'),
-    import('@tldraw/assets/imports.vite'),
-    import('tldraw/tldraw.css'),
-  ]).catch((error) => { tldrawPromise = null; throw error; });
-  const [React, rootRuntime, tldraw, assets] = await tldrawPromise;
-  const seeds = spec.payload.nodes || spec.payload.items || [];
-  const onMount = (editor) => {
-    const shapes = seeds.slice(0, 30).map((item, index) => ({
-      id: tldraw.createShapeId(`seed-${index}`),
-      type: 'note',
-      x: 40 + (index % 3) * 230,
-      y: 40 + Math.floor(index / 3) * 150,
-      props: { richText: tldraw.toRichText(item.label || item.detail || `Idea ${index + 1}`), color: ['yellow', 'blue', 'green', 'violet'][index % 4] },
-    }));
-    if (shapes.length) {
-      editor.createShapes(shapes);
-      editor.zoomToFit({ animation: { duration: 240 } });
-    }
-  };
-  const root = rootRuntime.mountOwnedRoot(stage, 'whiteboard', React.createElement(tldraw.Tldraw, {
-    persistenceKey: `socrates-${String(spec.title || 'whiteboard').replace(/\W+/g, '-').toLowerCase()}`,
-    inferDarkMode: true,
-    assetUrls: assets.getAssetUrlsByImport(),
-    onMount,
-  }));
-  return { handled: true, chart: null, cleanup() { root.destroy(); } };
-}
-
 /**
  * Unified adapter contract — every branch returns
  *   { handled: boolean, chart: { dispatchAction?, getDataURL } | null, cleanup(): void }
@@ -421,6 +388,12 @@ export async function mountSpecializedVisualization(spec, stage, helpers) {
   if (STRUCTURE_TEMPLATES.has(spec.template)) return mountMermaid(spec, stage);
   if (spec.template === 'geometry_3d') return mountThree(spec, stage);
   if (spec.template === 'math_construction') return mountGeoGebra(spec, stage);
-  if (spec.template === 'whiteboard') return mountWhiteboard(spec, stage);
+  if (spec.template === 'whiteboard') {
+    // tldraw (and its Vite-only `?url` asset imports) lives in its own module so
+    // bundles that never draw whiteboards, such as the Android tool renderer,
+    // can leave it external instead of resolving the whole editor.
+    const { mountWhiteboard } = await import('./visualizationWhiteboard.ts');
+    return mountWhiteboard(spec, stage);
+  }
   return { handled: false };
 }

@@ -12,3 +12,7 @@ declare module '*.png' {
   const src: string;
   export default src;
 }
+
+// Stylesheet loaded on demand by the whiteboard adapter
+// (render/visualizationWhiteboard.ts); Vite injects it as a side effect.
+declare module 'tldraw/tldraw.css';
