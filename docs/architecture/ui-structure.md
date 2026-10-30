@@ -44,6 +44,8 @@ index.html                         静态 shell / 挂载宿主 / CSP
   不通过新增 re-export shim 延长旧路径寿命。
 - 首轮发送时预先创建的 streaming placeholder controller 暂存于 `chat/turnState.ts`，由 `askChatTurn()`
   一次性领取，新会话与全量 turn reset 时清空；不再用 `window.__socratesSyncCtl` 跨模块转交。
+- Composer 的 draft、token、focus 操作由 `composer/controller.ts` 命名导出；侧栏 OAuth 恢复与创建助手入口
+  直接导入这些函数，不再发布 `window.__socratesComposerController` 对象。
 - 插件目录和选中状态由 `frontend/src/composer/` 持有；聊天、OAuth 返回恢复和 React
   读取同一模块实例，React 订阅只留在 `useComposerPluginSelection.ts`。聊天层对 React
   实现的直接依赖已归零，插件选择不再依赖 window bridge。

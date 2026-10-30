@@ -218,24 +218,3 @@ export function getComposerSelection(surface: ComposerSurface): ComposerSelectio
   }
   return { from: 0, to: 0 };
 }
-
-export const composerController = {
-  getMarkdown: getComposerMarkdown,
-  setMarkdown: setComposerMarkdown,
-  insertText: insertComposerText,
-  setExtensionToken: setComposerExtensionToken,
-  getExtensionToken: getComposerExtensionToken,
-  clear: clearComposer,
-  focus: focusComposer,
-  getSelection: getComposerSelection,
-  getVisibleSurface: getVisibleComposerSurface,
-  subscribe: subscribeComposer,
-};
-
-declare global {
-  interface Window {
-    __socratesComposerController?: typeof composerController;
-  }
-}
-
-if (typeof window !== 'undefined') window.__socratesComposerController = composerController;

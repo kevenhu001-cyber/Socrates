@@ -311,7 +311,6 @@ test('OAuth return restores the original composer surface and plugin context', a
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#pluginsPanel')).toBeHidden();
   await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
-  await expect.poll(() => page.evaluate(() => window.__socratesComposerController?.getMarkdown('topic')))
-    .toBe('Restored OAuth draft');
+  await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText('Restored OAuth draft');
   await expect(page).toHaveURL(url => url.pathname === '/' && url.search === '');
 });

@@ -1,4 +1,5 @@
 import { ComposerPluginSelection, installComposerPluginSelectionBridge } from '../composer/pluginSelection.ts';
+import { getComposerMarkdown, setComposerMarkdown } from '../composer/controller.ts';
 import { openPromptTemplatesModal } from "../ui/promptTemplates.ts";
 import { activateMainView } from "../ui/mainViewController.ts";
 import { loadSession } from "../session/loader.ts";
@@ -222,10 +223,9 @@ function safeConnectorReturnPath(value: unknown) {
 function composerReturnSnapshot() {
   const bridge = installComposerPluginSelectionBridge();
   const snapshot = bridge && typeof bridge.getSnapshot === "function" ? bridge.getSnapshot() : { topic: [], chat: [] };
-  const controller = browserWindow.__socratesComposerController;
   const draft = function (surface: string) {
     try {
-      return controller && typeof controller.getMarkdown === "function" ? controller.getMarkdown((surface as 'topic' | 'chat')) : "";
+      return getComposerMarkdown(surface as ComposerSurface);
     } catch (_) { return ""; }
   };
   const serialisePlugins = function (plugins: readonly ComposerPluginSelection[]) {
@@ -312,11 +312,10 @@ function readConnectorReturnContext(): ConnectorReturnContext | null {
 
 function restoreComposerReturnState(composer: ComposerReturnSnapshot | null) {
   if (!composer) return;
-  const controller = browserWindow.__socratesComposerController;
-  if (controller && typeof controller.setMarkdown === "function" && composer.drafts) {
-  (["topic", "chat"] as ComposerSurface[]).forEach(function (surface) {
+  if (composer.drafts) {
+    (["topic", "chat"] as ComposerSurface[]).forEach(function (surface) {
       if (typeof composer.drafts[surface] === "string") {
-        try { controller.setMarkdown((surface as 'topic' | 'chat'), composer.drafts[surface]); } catch (e) { reportSwallow(e, 'sidebar/nav.restoreComposerReturnState.setMarkdown'); }
+        try { setComposerMarkdown(surface, composer.drafts[surface]); } catch (e) { reportSwallow(e, 'sidebar/nav.restoreComposerReturnState.setMarkdown'); }
       }
     });
   }

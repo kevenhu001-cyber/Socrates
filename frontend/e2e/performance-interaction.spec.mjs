@@ -236,13 +236,14 @@ test('windowed history reaches the last row and retains rename, menu and drag st
   expect(errors).toEqual([]);
 });
 
-test('immediate draft reads, Chinese composition, undo and surface switching retain the latest input', async ({ page }) => {
+test('immediate editor updates, Chinese composition, undo and surface switching retain the latest input', async ({ page }) => {
   const { errors } = await boot(page, sessionsFor(2));
   const editor = page.locator('.tiptap:visible');
-  // Read in the input task, before deferred draft notifications can execute.
+  // Read the editor in the input task, before the browser's next render turn.
   await page.evaluate(() => {
-    document.querySelector('.tiptap').addEventListener('input', () => {
-      window.__immediateDraft = window.__socratesComposerController.getMarkdown('topic');
+    const input = document.querySelector('.tiptap');
+    input.addEventListener('input', () => {
+      window.__immediateDraft = input.textContent;
     });
   });
   await editor.fill('Latest text');
@@ -251,15 +252,15 @@ test('immediate draft reads, Chinese composition, undo and surface switching ret
   await page.keyboard.insertText('中文输入');
   await editor.dispatchEvent('compositionend', { data: '中文输入' });
   await expect(editor).toContainText('中文输入');
-  const draft = await page.evaluate(() => window.__socratesComposerController.getMarkdown('topic'));
+  const draft = await editor.textContent();
   await editor.press('ControlOrMeta+z');
   await editor.press('ControlOrMeta+Shift+z');
   await expect(editor).toContainText('中文输入');
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    window.__socratesComposerController.setMarkdown('chat', 'Other draft');
-    window.__testActivateMainView('topicSetup');
   });
-  expect(await page.evaluate(() => window.__socratesComposerController.getMarkdown('topic'))).toBe(draft);
+  await editor.fill('Other draft');
+  await page.evaluate(() => window.__testActivateMainView('topicSetup'));
+  await expect(editor).toHaveText(draft);
   expect(errors).toEqual([]);
 });

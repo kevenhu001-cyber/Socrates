@@ -251,11 +251,10 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await expect(token.locator('.composer-extension-token-label')).toHaveCSS('color', /rgb/);
   // The workflow token is an inline node inside the editable content.
   expect(await token.evaluate((element) => element.closest('.rich-composer-editor')?.getAttribute('contenteditable'))).toBe('true');
-  await expect.poll(() => page.evaluate(() => window.__socratesComposerController?.getMarkdown('topic') ?? null)).toBe('');
-
   // Dismissing the token clears the workflow itself, not just its styling.
   await token.locator('.composer-extension-token-remove').click();
   await expect(editor.locator('.composer-extension-token')).toHaveCount(0);
+  await expect(editor).toHaveText('');
   await plus.click();
   await menu.locator('.composer-tools-desktop-items [data-composer-action="write"]').click();
 

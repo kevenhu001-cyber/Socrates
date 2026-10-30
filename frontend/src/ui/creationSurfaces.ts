@@ -18,6 +18,7 @@ interface CreationAction { button?: HTMLButtonElement; id?: string; view?: strin
 function isSurfaceName(value: unknown): value is SurfaceName { return value === 'images' || value === 'assistants' || value === 'sites'; }
 import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
 import { dispatchExtension } from '../extensions/index.ts';
+import { focusComposer, setComposerMarkdown } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
@@ -148,9 +149,8 @@ async function useAssistant(item: CreationItem) {
     reportSwallow(error, 'empty catch: ui/creationSurfaces.ts:140');
     /* assistants can have an empty draft */
   }
-  const composer = browserWindow.__socratesComposerController;
-  if (starter) composer?.setMarkdown('topic', starter);
-  composer?.focus('topic');
+  if (starter) setComposerMarkdown('topic', starter);
+  focusComposer('topic');
 }
 
 async function generateSite(button: HTMLButtonElement, name: SurfaceName) {
