@@ -41,6 +41,7 @@
 | Incognito 状态重复镜像到 `window.incognitoOn` | **本轮已移除** | `app/lifecycle/incognitoState.ts` 成为单一布尔状态源；session save 两处保护和后台研究范围检查直接读取同一 getter。删除 `main.ts` 初始化写入、lifecycle 镜像和 `RuntimeWindow` 字段，避免窗口镜像与真实状态分叉。 |
 | i18n 的 `setLang` window 绑定重复发布并带空函数 fallback | **本轮已清理** | `i18n.ts` 导出真实 `setLang`，`windowExports.ts` 作为兼容入口唯一发布者；删除 i18n 内重复 window 写入、main 的冗余 side-effect import 与会静默吞掉错误的空函数 fallback。 |
 | Tutor 诊断操作在会话外发布三条 no-op 全局回调 | **本轮已移除** | `diagnosticFlow` 在调用时已检查回调存在；`startTutorSession()` 才安装带当前会话 identity guard 的真实闭包。删除 bridge 中的 no-op 初始值，类型改为可选，避免向 UI 暴露一个会吞掉操作的假回调。 |
+| Tutor mode banner 遗留空 renderer 和已失效 DOM 清理 | **本轮已移除** | 全仓无 `#modeChip` 标记或样式；`renderModeBanner()` 只查找并删除不存在的节点。模式切换继续执行 `setAppMode`、持久化、`syncAppModeUI` 与 sidebar 同步。 |
 
 ## 仍开放或尚无法确认
 
@@ -101,3 +102,4 @@
 - Incognito 状态镜像移除：状态由 `app/lifecycle/incognitoState.ts` 独占，session save 与 research visibility 直接共享 getter；`incognitoState.test.mjs` 1/1、前端 lint、生产构建通过，Incognito / research jobs / incremental save Playwright 13/13 通过。
 - i18n `setLang` 兼容绑定收敛：`i18n.ts` 的真实函数经 `windowExports.ts` 唯一发布，移除重复赋值和 no-op fallback；SPA lint、生产构建通过，`chrome-i18n.spec.mjs` 与 `storage-bootstrap.spec.mjs` 5/5 通过。
 - Tutor 诊断回调去掉启动期 no-op：仅在 `startTutorSession()` 后发布真实 cancel/retry/builtin handlers，之前由 `diagnosticFlow` 的存在性检查安全跳过；lint、生产构建通过，诊断视图 / 答题 / 内置题 / 取消隔离 E2E 6/6 通过。
+- Tutor mode banner 空 renderer 与失效清理路径移除：保留模式持久化、顶栏和 sidebar 同步；前端 lint、生产构建及 `app-mode-lifecycle.spec.mjs` 1/1 通过。

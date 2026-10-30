@@ -95,11 +95,6 @@
   text-align:right;
 }
 
-/* Mode chip — disabled. The Chat / Tutor switcher was removed from
- * the UI (renderModeBanner in tutorSocratic.js is now a no-op).
- * If any stale element still lives in the DOM we hide it. */
-
-
 /* Mistake book filter bar. */
 .mistake-filter-bar{
   display:flex;gap:6px;padding:8px 12px;

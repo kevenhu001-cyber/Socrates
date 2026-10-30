@@ -6,7 +6,6 @@ import { resetApp } from './reset.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { translateLifecycleText } from './helpers.ts';
 import { hasActiveModeSession, resolveNextAppMode } from './modeDecision.ts';
-import { runtimeWindow as browserWindow } from '../../types/runtimeWindow.ts';
 import type { AppMode } from '../../config/providers.ts';
 
 function activeConversationIsInView() {
@@ -50,14 +49,6 @@ function persistAndSyncMode(nextMode: AppMode) {
   catch (error) { reportSwallow(error, 'app/lifecycle.toggleAppMode'); }
   syncAppModeUI();
   syncSidebarForMode();
-  const banner = typeof browserWindow.tutorSocratic === 'object' && browserWindow.tutorSocratic
-    && typeof browserWindow.tutorSocratic.renderModeBanner === 'function'
-    ? browserWindow.tutorSocratic.renderModeBanner
-    : null;
-  if (banner) {
-    try { banner.call(browserWindow.tutorSocratic); }
-    catch (error) { reportSwallow(error, 'app/lifecycle.toggleAppMode.renderModeBanner'); }
-  }
 }
 
 /** Confirm, save and reset an active session before changing Chat/Tutor mode. */

@@ -627,27 +627,6 @@ const tutorSocraticRuntime = (function () {
   }
 
   /* ----------------------------------------------------------------
-   * Mode banner
-   *
-   * The audit noted that tutor mode is invisible from the main
-   * chat. Show a subtle banner above the chat list that names the
-   * current mode and lets the user switch with a single click.
-   *
-   * NOTE: The Chat / Tutor switcher is no longer rendered. The
-   * single-row top-bar (see top-bar layout in index.html) already
-   * shows everything the user needs. Adding a "Tutor · Chat" chip
-   * on top of that just clutters the header. If we ever want to
-   * re-introduce it, we should put it in the top-bar (not above the
-   * message list). For now, this is a no-op and any stale chip left
-   * over from earlier sessions is removed. */
-  function renderModeBanner() {
-    const existing = document.getElementById('modeChip');
-    if (existing && existing.parentNode) {
-      existing.parentNode.removeChild(existing);
-    }
-  }
-
-  /* ----------------------------------------------------------------
    * Mistake book filter (§9.4)
    *
    * The audit noted the mistake book shows "未消化的练习题" cards
@@ -735,7 +714,6 @@ const tutorSocraticRuntime = (function () {
     renderKnowledgeBoundaryFile: renderKnowledgeBoundaryFile,
     saveBoundarySnapshot: saveBoundarySnapshot,
     renderTeachingPlan: renderTeachingPlan,
-    renderModeBanner: renderModeBanner,
     renderPracticeProgress: renderPracticeProgress,
     renderMistakeFilterBar: renderMistakeFilterBar,
     recordMistakeNotice: recordMistakeNotice
