@@ -51,6 +51,7 @@
 | 懒加载考试模块的 `window.__examModule` 对象镜像 | **本轮已移除** | 考试仍按需加载；加载成功后只向 `app/lifecycle/examSaveReset.ts` 注册窄化的计时器重置回调，账号切换清理由模块直接调用，避免全量模块对象挂到 window。 |
 | React 附件重试的重复 `window.retryComposerAttachment` 别名 | **本轮已移除** | React 唯一入口为 typed `__socratesLegacy.composer.retryAttachment`；删除冗余发布与 `RuntimeWindow` 字段，附件 E2E 覆盖独立别名不存在和 typed 动作可用。 |
 | React 附件 chip renderer 的重复 `window.renderAttachmentChips` 别名 | **本轮已收敛** | 应用调用方直接导入模块，React/E2E 使用 typed composer action；删除独立 window 发布与类型字段，并更新过期的旧全局注释。 |
+| connector icon hydration 的 `ensureConnectorIcons` / `hydrateConnectorIcons` window aliases | **本轮已移除** | navigation adapter 直接导入初始化器，hydrator 仅在该模块内使用；删除两个未读 window 发布、类型字段和 hydrator 的冗余导出。 |
 
 ## 仍开放或尚无法确认
 
@@ -121,3 +122,4 @@
 - 考试模块对象镜像改为按需 reset callback：考试依旧懒加载，只在加载后注册保存计时器清理闭包；`examSaveResetState.test.mjs` 2/2、`exam-regressions.spec.mjs` 2/2、SPA 生产构建、lint 与文档路径检查通过。
 - 附件重试重复 window 别名移除：React 继续经 typed composer action 重试；前端生产构建和 lint 通过，`attachments-compat.spec.mjs` 10/10 检查旧别名缺失并覆盖失败上传重试。
 - 附件 chip renderer alias 收敛到 typed composer action：E2E 改经 `__socratesLegacy.composer.renderAttachmentChips` 更新共享状态，并检查旧 window 字段缺失；SPA 生产构建、lint 通过，`attachments-compat.spec.mjs` 10/10 通过。
+- Connector icon window alias 移除：初始化器继续由 navigation adapter 直接导入，hydrator 收为模块私有；SPA 生产构建和 lint 通过，`sidebar-nav` / `sidebar-compat` / `sidebar-resize` 共 24/24 通过并断言旧字段缺失。

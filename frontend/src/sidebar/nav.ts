@@ -79,7 +79,6 @@ export function ensureConnectorIcons() {
   }
   return _ciReady;
 }
-browserWindow.ensureConnectorIcons = ensureConnectorIcons;
 
 function _connectorMonogram(provider: unknown) {
   return '<span class="connector-logo-fallback" data-cicon="'
@@ -98,7 +97,7 @@ export function connectorIconWithFallback(provider: unknown): string {
 /* Swap pending monogram placeholders for real SVG marks once the icon
    pack resolves. Fallback spans carry data-cicon so the pass is
    idempotent and safe to re-run (also covers React-committed chips). */
-export function hydrateConnectorIcons(root?: ParentNode) {
+function hydrateConnectorIcons(root?: ParentNode) {
   if (!_ciMod) return;
   const scope = root && typeof root.querySelectorAll === "function" ? root : document;
   scope.querySelectorAll<HTMLElement>(".connector-logo-fallback[data-cicon]").forEach(function (el) {
@@ -106,7 +105,6 @@ export function hydrateConnectorIcons(root?: ParentNode) {
     if (markup) el.outerHTML = markup;
   });
 }
-browserWindow.hydrateConnectorIcons = hydrateConnectorIcons;
 
 /* React composer/plugin surfaces reuse the same local brand marks as the
    legacy connector panel. Keep the adapter on window so the React module

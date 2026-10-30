@@ -50,7 +50,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "deepResearchOn": boolean;
   "deleteUserMessage": typeof import("../ui/messageActions")["deleteUserMessage"];
   "editUserMessage": typeof import("../chat/editBranch")["editUserMessage"];
-  "ensureConnectorIcons": typeof import("../sidebar/nav")["ensureConnectorIcons"];
   "extensiveThinkingOn": typeof import("../config/providers")["extensiveThinkingOn"];
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
   "findNext": typeof import("../react/find-in-session/findInSession.actions")["findNext"];
@@ -66,7 +65,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "handleSendClick": typeof import("../chat/composerTurn")["handleSendClick"];
   "hideGate": typeof import("../auth/index")["hideGate"];
   "hideUsageTip": () => Promise<void> | undefined;
-  "hydrateConnectorIcons": typeof import("../sidebar/nav")["hydrateConnectorIcons"];
   "isInAuthGraceWindow": typeof import("../app/lifecycle")["isInAuthGraceWindow"];
   "launchDeepResearch": () => Promise<void>;
   "loadUsageData": () => Promise<void> | undefined;
