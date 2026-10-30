@@ -91,7 +91,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "rememberConnectorReturnContext": typeof import("../sidebar/nav")["rememberConnectorReturnContext"];
   "removeAttachment": typeof import("../attachments")["removeAttachment"];
   "renderAssistantHTML": typeof import("../render/assistantHtml")["buildAssistantHtml"];
-  "renderAttachmentChips": typeof import("../attachments/render")["renderAttachmentChips"];
   "renderMistakes": () => void;
   "renderRecents": typeof import("../ui/recentsView")["renderRecents"];
   "resendLastUserMessage": typeof import("../chat/turnUi")["resendLastUserMessage"];

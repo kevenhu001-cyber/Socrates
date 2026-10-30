@@ -237,13 +237,6 @@ import { attachments, removeAttachment } from './attachments.ts';
 browserWindow.attachments = attachments;
 browserWindow.removeAttachment = removeAttachment;
 
-/* ─── attachments/render.ts — renderAttachmentChips is consumed by
-   React's legacyAdapter and by main.js for the attachment chip strip.
-   It was exported but never bridged to window, causing
-   window.__socratesLegacy.composer.renderAttachmentChips to be undefined. */
-import { renderAttachmentChips } from './attachments/render.ts';
-browserWindow.renderAttachmentChips = renderAttachmentChips;
-
 /* ─── ui/topicSetup.ts — send/start button refreshers. attachments/
    render.js calls them by name (window[w.updateBtnName]) after every
    file add/remove so an attachment-only draft still lights up Send, and

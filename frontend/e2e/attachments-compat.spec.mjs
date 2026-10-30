@@ -27,10 +27,12 @@ test('Attachment chip rows React mode hydrates both containers', async ({ page }
     bridge: '__socratesAttachmentsBridge' in window,
     retryAlias: 'retryComposerAttachment' in window,
     typedRetry: typeof window.__socratesLegacy?.composer?.retryAttachment === 'function',
+    renderAlias: 'renderAttachmentChips' in window,
+    typedRenderer: typeof window.__socratesLegacy?.composer?.renderAttachmentChips === 'function',
     sharedArray: Array.isArray(window.attachments),
     empty: Array.isArray(window.attachments) && window.attachments.length === 0,
   }));
-  expect(ownership).toEqual({ bridge: false, retryAlias: false, typedRetry: true, sharedArray: true, empty: true });
+  expect(ownership).toEqual({ bridge: false, retryAlias: false, typedRetry: true, renderAlias: false, typedRenderer: true, sharedArray: true, empty: true });
 });
 
 test('Attachment chips React mode mirrors the legacy attachments array', async ({ page }) => {
@@ -61,7 +63,7 @@ test('Attachment chips React mode mirrors the legacy attachments array', async (
         truncated: false,
       },
     );
-    window.renderAttachmentChips();
+    window.__socratesLegacy.composer.renderAttachmentChips();
   });
 
   // The shared module store batches publishes on requestAnimationFrame.
@@ -104,7 +106,7 @@ test('Attachment chips remove button dispatches through window.removeAttachment'
       { id: 'att-r-1', kind: 'image', name: 'one.png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=' },
       { id: 'att-r-2', kind: 'image', name: 'two.png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=' },
     );
-    window.renderAttachmentChips();
+    window.__socratesLegacy.composer.renderAttachmentChips();
   });
 
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(2);

@@ -6,8 +6,8 @@
 // The composer shell moves between the landing slot and the chat slot
 // (P_composer-single) but stays one node, so one wiring covers both.
 //
-// All inline handler references (window.renderAttachmentChips /
-// window.setupAttachmentInput) are re-bound in src/windowExports.ts.
+// Application callers use direct module imports; React attachment actions
+// use the typed legacy composer gateway.
 import { attachments, addFiles, retryAttachment } from '../attachments.ts';
 import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
