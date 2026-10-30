@@ -27,7 +27,6 @@ type LoaderImpl = typeof import('./loader.impl.ts');
 
 type SessionLoaderWindow = Window & {
   clearActiveTemplate?: () => void;
-  _currentSessionId?: string | null;
 };
 
 let _loaderImport: Promise<LoaderImpl> | null = null;
@@ -83,13 +82,11 @@ export function resetSessionTransients(): void {
   catch (error) { reportSwallow(error, 'session/loader.resetSessionTransients~5'); }
 }
 
-/* F2d — synchronous session-id mirror used while creating a fresh session.
- * The full restore runtime has the same invariant internally; keeping this
- * helper here prevents chat/sessionBootstrap from retaining that whole graph. */
+/* F2d — synchronous session-id update used while creating a fresh session.
+ * Keeping this helper here prevents chat/sessionBootstrap from retaining the
+ * full restore runtime dependency graph. */
 export function setCurrentSessionId(id: string | null, silent?: boolean): void {
   stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: id });
-  try { (window as SessionLoaderWindow)._currentSessionId = id; }
-  catch (error) { reportSwallow(error, 'session/loader.setCurrentSessionId'); }
   if (!silent) publishReactChatRuntime({ type: 'state-synced', reason: 'session-id-changed' });
 }
 

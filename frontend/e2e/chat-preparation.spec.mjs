@@ -88,6 +88,7 @@ test('starting a new conversation cancels pending page reading without sending t
   await page.evaluate(() => window.__preparePromise);
   expect(await page.evaluate(() => window.__pageReadAborted)).toBe(true);
   expect(bodies).toHaveLength(0);
+  expect(await page.evaluate(() => '_currentSessionId' in window)).toBe(false);
   await expect(page.locator('#topicSetup')).toBeVisible();
 });
 

@@ -28,6 +28,7 @@
 | 会话删除残留的重复 active-session 判断与双镜像说明 | **本轮已清理** | 删除与 current `stateStore.currentSessionId` 完全相同的第二次比较；注释同步为当前单一 session id 与 tombstone 机制。 |
 | 新分支元数据的重复 topic / session id 回退读取 | **本轮已清理** | `branchFromMessage()` 只读取唯一状态字段，仍将空 session id 归一化为 `null`。 |
 | Recents 搜索查询的 `window.RECENTS_SEARCH_QUERY` 镜像 | **本轮已移除** | 输入和 frame-throttled publisher 改读 `ui/sessionListState.ts` 的模块状态；React 仍消费同一 session-list 快照。 |
+| Loader 的 `window._currentSessionId` 写入镜像 | **本轮已移除** | 全仓只有两个 publisher、没有读者；session id 由 `stateStore` 单一写入，保留其既有 namespace 同步。 |
 
 ## 仍开放或尚无法确认
 
@@ -75,3 +76,4 @@
 - Session delete/purge active-session 判断清理：保留唯一 `currentSessionId` 判定并修正文档化注释；前端 lint、生产构建与 Recents 归档 E2E 1/1 通过。
 - `branchFromMessage()` 的重复状态回退清理：分支 topic 与来源 session id 各读取一次；前端 lint、生产构建通过，SPA `chat-stop-resend` 编辑回归与 `message-overflow` 分支入口共 2/2 通过。Universal App 专用的 `universal-edit.spec.mjs` 不属于本次 SPA 验证范围。
 - Recents 搜索源归并：移除 window query mirror，`sessionListState.test.mjs` 2/2 覆盖模块查询状态，窗口化 2,000 条会话 E2E 1/1 验证搜索结果及旧 window 字段不存在；前端 lint 与生产构建通过。
+- Loader session-id window mirror 移除：session id 只写入 canonical `stateStore`；`chat-preparation` 新会话取消回归 1/1、前端 lint 与生产构建通过。

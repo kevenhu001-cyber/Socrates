@@ -103,7 +103,6 @@ interface ExamModule {
 /** Window surfaces the loader reads at call time. */
 interface LoaderWindow extends Window {
   appMode?: string;
-  _currentSessionId?: string | null;
   __activeProject?: { id: string; name: string } | null;
   __loadExamModule?: () => Promise<ExamModule>;
   renderRecents?: () => void;
@@ -337,15 +336,10 @@ export function resetSessionTransients(): void {
   try { _clearActiveTemplate(); } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients~5'); }
 }
 
-/* F2d — write the active session id to every place it's mirrored
-   (stateStore.read("currentSessionId"), stateStore.read("currentSessionId"), window
-   mirror). The Proxy state/store.ts already syncs the top-level ↔ namespace
-   via the lookup table, but the explicit triple-write keeps window
-   readers in lock-step and removes the four manual duplications
-   scattered through loadSession / startSession / resetState. */
+/* F2d — update the canonical session id in stateStore. Its lookup table
+   keeps the legacy and namespaced state views synchronized. */
 export function setCurrentSessionId(id: string | null, silent?: boolean): void {
   stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: id });
-  try { (window as LoaderWindow)._currentSessionId = id; } catch (e) { reportSwallow(e, 'session/loader.setCurrentSessionId'); }
   if (!silent) publishReactChatRuntime({ type: 'state-synced', reason: 'session-id-changed' });
 }
 
