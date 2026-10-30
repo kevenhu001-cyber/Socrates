@@ -66,7 +66,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "openExamModal": () => void;
   "openExamPanel": () => void;
   "openFindInSession": typeof import("../react/find-in-session/findInSession.actions")["openFindInSession"];
-  "openMediaPicker": typeof import("../attachments/render")["openMediaPicker"];
   "openNav": typeof import("../sidebar/navigation.service")["openNav"];
   "openShareModal": typeof import("../ui/share")["openShareModal"];
   "openUsageModal": () => Promise<void>;

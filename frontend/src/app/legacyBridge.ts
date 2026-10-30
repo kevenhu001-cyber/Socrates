@@ -131,7 +131,6 @@ browserWindow.fetchWebContext = function (
   return loadWebSearch().then(function (m) { return m.fetchWebContext(query, opts); });
 };
 browserWindow.openAttachmentPicker = openAttachmentPicker;
-browserWindow.openMediaPicker = openMediaPicker;
 browserWindow.getCustomInstructionsString = getCustomInstructionsString;
 browserWindow.renderAssistantHTML = renderAssistantHTML;
 browserWindow.showToast = showToast;

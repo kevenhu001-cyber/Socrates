@@ -13,6 +13,7 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
+  expect(await page.evaluate(() => 'openMediaPicker' in window)).toBe(false);
   expect(await page.evaluate(() => '__socratesExtensionDispatch' in window)).toBe(false);
 
   // Eager creation: the menu element exists at boot without a DOM sentinel.
@@ -223,6 +224,26 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
     path: 'test-results/visual-qa/composer-workflows-menu-mobile.png',
     fullPage: true,
   });
+});
+
+test('mobile photo action uses the typed composer media picker', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__testActivateMainView('chatView');
+    window.__mediaPickerCalls = [];
+    window.__socratesLegacy.composer.openMediaPicker = (kind) => window.__mediaPickerCalls.push(kind);
+  });
+  await page.locator('#composerToolsBtn').click();
+  const photos = page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action="photos"]');
+  await expect(photos).toBeVisible();
+  await photos.click();
+  await expect.poll(() => page.evaluate(() => window.__mediaPickerCalls)).toEqual(['photos']);
 });
 
 test('desktop workflow selection embeds a themed token in the editable content', async ({ page }) => {

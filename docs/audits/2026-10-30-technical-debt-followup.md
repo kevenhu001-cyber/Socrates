@@ -1,6 +1,6 @@
 # 技术债状态复核
 
-日期：2026-10-30。复核起点为已提交 HEAD `13f6e590`；当前工作树继续清理中。生产数据库、真实供应商账户和设备未连接。本文件更新 2026-10-23 稳定性加固交接的状态，不把历史审计快照改写成当前结论。
+日期：2026-10-30，持续更新至 2026-10-31。复核起点为已提交 HEAD `13f6e590`；当前工作树继续清理中。生产数据库、真实供应商账户和设备未连接。本文件更新 2026-10-23 稳定性加固交接的状态，不把历史审计快照改写成当前结论。
 
 ## 本次关闭或收窄
 
@@ -61,6 +61,7 @@
 | React 消息操作的重复 window aliases | **本轮已收敛** | edit/delete/regenerate/branch/switch/feedback actions 统一走 typed `__socratesLegacy.messages`；仓库无 inline handler 消费者。移除六个根级 window 发布和 `RuntimeWindow` 字段，E2E 仅注入 typed actions。 |
 | Share renderer 对 `window.restorePersistedMessageExtras` 的依赖 | **本轮已移除** | Share 懒加载模块直接导入 `ui/messageActions.ts` 的规范实现，删除重复 fallback renderer 与根级 window 发布/类型；React postRender 仍使用 typed action。 |
 | Share create/revoke E2E 专用 window aliases | **本轮已收敛** | Create/revoke 流程改用 typed `__socratesLegacy.share` actions；modal open/close shell entry 保留。删除两个根级 window 发布及类型，E2E 检查旧字段缺失。 |
+| 无读取方的 `window.openMediaPicker` alias | **本轮已移除** | React Composer 通过 `__socratesLegacy.composer.openMediaPicker` 调用媒体选择器；全仓无根级读取方。移除重复发布及 `RuntimeWindow` 字段，E2E 检查旧字段缺失并覆盖手机 Photos action。 |
 
 ## 仍开放或尚无法确认
 
@@ -140,3 +141,4 @@
 - Storage 归档列表测试入口收敛到 typed session action：生产 Storage 继续直接读 recents 模块；E2E 改走 `__socratesLegacy.sessions.getArchivedSessions` 并检查旧全局不存在。前端完整 lint、生产构建与 `recents-archive.spec.mjs` 1/1 通过，覆盖归档仍可在 Storage 恢复。
 - React message action 重复 window alias 清理：E2E 用 typed message actions 注入 mocks，并断言 edit/delete/regenerate/branch/switch/feedback 六个旧全局均缺失。前端完整 lint、生产构建通过，`message-list-compat.spec.mjs` 7/7 覆盖 React 消息渲染、事件更新、工具栏操作、流结束和 transcript remount。
 - Share renderer/action bridge cleanup：Share lazy module 直接导入 `restorePersistedMessageExtras`，删除重复 tool/artifact fallback；create/revoke E2E 改走 typed share actions 并检查旧别名缺失。前端完整 lint、生产构建通过，`share-view.spec.mjs` 4/4 覆盖只读共享聊天、工具行、创建/撤销与兼容挂载。
+- `openMediaPicker` window alias removal: mobile Composer photo selection continues through typed `__socratesLegacy.composer.openMediaPicker`; old root alias absence is asserted. Frontend lint and production build pass, and `composer-tools-compat.spec.mjs` passes 11/11.
