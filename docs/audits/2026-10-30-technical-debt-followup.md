@@ -49,6 +49,7 @@
 | tool card renderer 的独立 `window.appendToolModule` 别名 | **本轮已收敛** | 业务恢复流程继续直接导入 `appendToolModule`；E2E 改走 typed `__socratesLegacy.postRender` 入口，并检查独立 window 字段不存在，移除其 `RuntimeWindow` 定义和 `windowExports` 发布。 |
 | sidebar resize listener 使用的 `window.__sidebarResizeWired` 单模块哨兵 | **本轮已移除** | ESM 模块仅由 `main.ts` 导入一次，listener 改在模块内注册，不再依赖 window 状态防重复；`sidebar-resize.spec.mjs` 同时检查旧字段不存在并验证拖动、尺寸限制和宽度持久化。 |
 | 懒加载考试模块的 `window.__examModule` 对象镜像 | **本轮已移除** | 考试仍按需加载；加载成功后只向 `app/lifecycle/examSaveReset.ts` 注册窄化的计时器重置回调，账号切换清理由模块直接调用，避免全量模块对象挂到 window。 |
+| React 附件重试的重复 `window.retryComposerAttachment` 别名 | **本轮已移除** | React 唯一入口为 typed `__socratesLegacy.composer.retryAttachment`；删除冗余发布与 `RuntimeWindow` 字段，附件 E2E 覆盖独立别名不存在和 typed 动作可用。 |
 
 ## 仍开放或尚无法确认
 
@@ -117,3 +118,4 @@
 - Tool card renderer 测试入口收敛到 typed legacy gateway：业务模块仍直接导入 `appendToolModule`，移除专用 `window.appendToolModule` 发布及类型；前端生产构建、lint 与文档路径检查通过，`tool-card-lifecycle.spec.mjs` 4/4 验证生命周期并检查旧字段缺失。
 - Sidebar resize 初始化哨兵改为 ESM 模块单次初始化：删除 `window.__sidebarResizeWired` 与对应类型；SPA 生产构建和 lint 通过，sidebar resize / compat / nav Playwright 24/24 通过，并断言旧字段不存在。
 - 考试模块对象镜像改为按需 reset callback：考试依旧懒加载，只在加载后注册保存计时器清理闭包；`examSaveResetState.test.mjs` 2/2、`exam-regressions.spec.mjs` 2/2、SPA 生产构建、lint 与文档路径检查通过。
+- 附件重试重复 window 别名移除：React 继续经 typed composer action 重试；前端生产构建和 lint 通过，`attachments-compat.spec.mjs` 10/10 检查旧别名缺失并覆盖失败上传重试。

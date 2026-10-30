@@ -25,10 +25,12 @@ test('Attachment chip rows React mode hydrates both containers', async ({ page }
 
   const ownership = await page.evaluate(() => ({
     bridge: '__socratesAttachmentsBridge' in window,
+    retryAlias: 'retryComposerAttachment' in window,
+    typedRetry: typeof window.__socratesLegacy?.composer?.retryAttachment === 'function',
     sharedArray: Array.isArray(window.attachments),
     empty: Array.isArray(window.attachments) && window.attachments.length === 0,
   }));
-  expect(ownership).toEqual({ bridge: false, sharedArray: true, empty: true });
+  expect(ownership).toEqual({ bridge: false, retryAlias: false, typedRetry: true, sharedArray: true, empty: true });
 });
 
 test('Attachment chips React mode mirrors the legacy attachments array', async ({ page }) => {
