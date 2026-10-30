@@ -272,15 +272,6 @@ browserWindow.showUsageTip = function (ev: Pick<Event, 'currentTarget'>) { if (_
 browserWindow.hideUsageTip = function () { if (_usageImport) return _usageImport.then(function (m) { return m.hideUsageTip(); }); };
 
 
-/* ─── ui/knowledgePanel.ts ───
-   updateKB is already a cross-module app entry point (session/loader.js,
-   chat/sessionBootstrap.js and chat/sendPipeline.js all call it). Exposed
-   here so the knowledge-map surface can be driven directly from e2e —
-   the panel previously clobbered its own delegated renderer, which no
-   existing spec could see because nothing called updateKB from a test. */
-import { updateKB } from './ui/knowledgePanel.ts';
-browserWindow.updateKB = updateKB;
-
 /* ─── exam.js — Generate Exam extension ───
    The exam view stays lazy and loads only when opened (sidebar exam nav,
    openExamModal or exam-session restore). Its domain flows live under

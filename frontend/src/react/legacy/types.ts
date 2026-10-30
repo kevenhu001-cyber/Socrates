@@ -55,6 +55,10 @@ export interface LegacyConfirm {
   showConfirm(title: string, message: string, danger?: boolean): Promise<boolean>;
 }
 
+export interface LegacyKnowledge {
+  update(): void;
+}
+
 export interface LegacySessions {
   flushRecentsReconcile(): Promise<unknown> | void;
   updateSessionMetadata(id: string, patch: { title?: string; pinned?: boolean; projectId?: string }): Promise<void>;
@@ -213,6 +217,7 @@ export interface LegacyActions {
   messages: LegacyMessages;
   navigation: LegacyNavigation;
   confirm: LegacyConfirm;
+  knowledge: LegacyKnowledge;
   sessions: LegacySessions;
   composer: LegacyComposer;
   cmdK: LegacyCmdK;

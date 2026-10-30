@@ -10,8 +10,8 @@
 // and a history section reading fields the writer never produced — all
 // invisible to a spec that only looked at the SVG.
 //
-// These specs drive updateKB() in tutor mode with the Knowledge tab
-// open, which is the path the product actually renders.
+// These specs drive the typed knowledge action in tutor mode with the
+// Knowledge tab open, which is the path the product actually renders.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -32,6 +32,7 @@ async function openPanel(page) {
   await page.setViewportSize({ width: 1280, height: 1400 });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  expect(await page.evaluate(() => 'updateKB' in window)).toBe(false);
   /* After the top-bar Chat/Tutor pill was removed (see frontend/index.html),
      enter tutor mode programmatically via the same entry point the deleted
      pill used to drive. */
@@ -49,7 +50,7 @@ async function openPanel(page) {
       key: 'boundariesHistory',
       value: [{ date: '2026-09-20', at: 1789000000000, summary: 'I 1 · F 2 · B 2', counts: { internalized: 1, fuzzy: 2, blank: 2 } }],
     });
-    window.updateKB();
+    window.__socratesLegacy.knowledge.update();
   }, NODES);
   /* updateKB coalesces bursts into one rAF. */
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));

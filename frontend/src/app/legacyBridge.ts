@@ -18,6 +18,7 @@ import { askChatTurn } from '../chat/turnController.js';
 import { syncSidebarBtns, toggleSidebarView } from '../ui/sidebarChrome.ts';
 import { loadSession } from '../session/loader.ts';
 import { toggleKBDetail } from '../ui/knowledgeDetail.ts';
+import { updateKB } from '../ui/knowledgePanel.ts';
 import { refreshApiConfig } from '../config/providers.ts';
 import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions, flushRecentsReconcile } from '../session/recents.ts';
 import { renderRecents } from '../ui/recentsView.ts';
@@ -197,6 +198,9 @@ browserWindow.__socratesLegacy = {
   confirm: {
     closeConfirm,
     showConfirm,
+  },
+  knowledge: {
+    update: updateKB,
   },
   sessions: {
     flushRecentsReconcile,

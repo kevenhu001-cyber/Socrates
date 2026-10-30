@@ -130,7 +130,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "toggleSidebarView": typeof import("../ui/sidebarChrome")["toggleSidebarView"];
   "tutorSocratic": import("../tutorSocratic").TutorSocraticRuntime;
   "updateComposerBtn": typeof import("../ui/topicSetup")["updateComposerBtn"];
-  "updateKB": typeof import("../ui/knowledgePanel")["updateKB"];
   "updateMistakesBadge": () => void;
   "useBuiltinDiagnostic"?: () => void;
   "webSearchOn": typeof import("../config/providers")["webSearchOn"];
