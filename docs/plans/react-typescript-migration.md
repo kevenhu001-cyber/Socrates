@@ -83,8 +83,10 @@ below.
 - [x] Send/stop button content hydrated from derived stream status
 - [x] Cmd+K palette ported to React/TS
       (`frontend/src/react/cmdk/` + `frontend/e2e/cmd-k-compat.spec.mjs`).
-      Legacy `src/ui/cmdK.ts` retains state ownership and still drives
-      `window.openCmdK` / `onCmdKInput` / `onCmdKKey` / `openCmdKResult`;
+      Legacy `src/ui/cmdK.ts` retains state ownership; `window.openCmdK` and
+      `window.closeCmdK` remain shell entry points, while React input, key, and
+      result actions use the typed `__socratesLegacy.cmdK` gateway. Redundant
+      root-level `onCmdKInput` / `onCmdKKey` aliases have been removed;
       `src/ui/cmdK.impl.ts` publishes state to `src/ui/cmdKState.ts`, which
       React subscribes to directly. The legacy renderer is suppressed by a
       data-attribute guard so the two never collide.
