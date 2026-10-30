@@ -19,6 +19,7 @@
 | KaTeX 数学 revision 的 `window.__socratesMathRenderRev` | **本轮已移除** | `render/mathRevision.ts` 是唯一版本计数器；懒加载成功后递增同一模块状态，React 通过正常 runtime 发布失效缓存并重新绘制。测试改为校验渲染结果和旧 window 字段不存在。 |
 | Cookie consent 私有函数的 `window.__socratesConsent` | **本轮已移除** | 全仓没有读取方；同源逻辑从 `cookieConsent.ts` 静态导入所需函数。用户选项仍经 consent cookie、localStorage 与 `socrates:cookie-consent` 事件同步，cookie guard 与 UI 行为不变。 |
 | 扩展 picker 的 `window.__socratesExtensionDispatch` | **本轮已移除** | picker、composer tools、首页写作和 creation surface 直接调用 `extensions/index.ts` 的 `dispatchExtension()`；对 inline handler 的 `composeAction`、`toggleExtensionByKey` 等兼容动作保留。 |
+| 搜索重试回调的 `window.__socratesToolRetry` 兜底 | **本轮已移除** | 仓库无生产写入方；`tool-retry` 事件统一使用 `claimLiveSearchRetry()` 发布到 `turnState` 的当前处理器，避免读取无人维护的 window 字段。 |
 
 ## 仍开放或尚无法确认
 
@@ -57,3 +58,4 @@
 - KaTeX revision window 字段退役：前端 lint 与生产构建通过；`proseRenderer.test.mjs` 1/1 覆盖 revision 变化使缓存失效、相同 revision 跨 renderer 复用结果；`demand-loading.spec.mjs` 5/5 通过，含 KaTeX 瞬时失败恢复与旧 window 字段不存在断言。
 - Cookie consent 死全局移除：`cookieConsent.test.mjs` 3/3 通过；production build 与 lint 通过；`cookie-consent`、`mobile-first-visit` Playwright 共 6/6，通过首访、选择持久化、手机 banner 和响应式导航。
 - Extension dispatch 私有全局移除：`dispatchExtension()` 成为模块入口；首页写作也从误传未注册的 `composeAction` key 改为调用 `composeAction()`。前端 lint 与生产 build 通过；4 个相关 Playwright spec 的 9 条选中用例通过（其中移动端检查更正为与当前快捷入口 CSS 契约一致）。
+- Search retry window fallback 移除：`tool-retry` 只读取 `turnState.liveSearchRetry`；聚焦单测 3/3、失败搜索行 E2E 1/1、前端 lint 与生产构建通过。单测覆盖事件详情透传及忽略遗留 window 字段。

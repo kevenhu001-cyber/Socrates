@@ -22,11 +22,6 @@ export interface ToolRetryDetail {
   [key: string]: unknown;
 }
 
-/** Legacy bridge for surfaces that install their own tool-retry handler. */
-interface LiveTurnWindow extends Window {
-  __socratesToolRetry?: ((query: string, detail: ToolRetryDetail) => void) | null;
-}
-
 /* P_react-live-turn — one live turn may be retried, and only its own
    streaming closure knows how (it holds the prompt, the retry budget, and the
    viewport to re-anchor). React's status line and the legacy timeout block
@@ -118,9 +113,7 @@ export function installLiveTurnRetryListener(): void {
     document.addEventListener('tool-retry', (ev: Event) => {
       const detail = ((ev as CustomEvent<ToolRetryDetail>).detail || {}) as ToolRetryDetail;
       /* share.js / history replay install their own handler for the same event. */
-      const win = window as LiveTurnWindow;
-      const handler = (typeof win.__socratesToolRetry === 'function')
-        ? win.__socratesToolRetry : turnState.liveSearchRetry;
+      const handler = turnState.liveSearchRetry;
       if (typeof handler !== 'function') return;
       /* P_tool_retry_prompt — pass the whole detail so repair prompts
          (viz-failure "Fix with AI") reach the handler alongside the
