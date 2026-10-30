@@ -6,13 +6,9 @@ import { filterRecentsByChip } from '../ui/recentsHelpers.ts';
 import type { SessionItem } from '../ui/sessionListState.ts';
 import { sameSessionRow, sessionRowFields } from './sessionRowModel.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
-import { publishSessionListState } from '../ui/sessionListState.ts';
+import { getSessionListSearchQuery, publishSessionListState } from '../ui/sessionListState.ts';
 
 export { sameSessionRow, sessionRowFields };
-
-interface SessionListWindow extends Window {
-  RECENTS_SEARCH_QUERY?: string;
-}
 
 /* Hot-path session-list publisher.
  * Keep this module deliberately narrow: recents rendering needs a small
@@ -34,7 +30,7 @@ export function publishSessionList(): void {
     const allSessions = getRecents();
     const filter = getRecentsFilter();
     let sessions = filterRecentsByChip(allSessions, filter) as SessionRow[];
-    const searchQ = (((window as SessionListWindow).RECENTS_SEARCH_QUERY || '')).trim().toLowerCase();
+    const searchQ = getSessionListSearchQuery().trim().toLowerCase();
     if (searchQ) {
       sessions = sessions.filter(function (s) {
         const hay = (((s.title as string) || '') + ' ' + ((s.topic as string) || '')).toLowerCase();

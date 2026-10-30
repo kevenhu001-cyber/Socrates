@@ -55,6 +55,7 @@ async function boot(page, sessions) {
   await waitForAppShell(page);
   await expect(page.locator('.recent-item').first()).toBeVisible();
   expect(await page.evaluate(() => !('__socratesSessionListBridge' in window))).toBe(true);
+  expect(await page.evaluate(() => !('RECENTS_SEARCH_QUERY' in window))).toBe(true);
   return { errors, requests };
 }
 

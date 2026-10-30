@@ -7,8 +7,7 @@ import { publishSessionList } from '../session/sessionListPublisher.ts';
 import { hasCachedProjects, loadCachedProjects } from '../projects/projectCache.ts';
 import { refreshRecentsFilterChipData } from '../sidebar/sidebar.service.ts';
 import { apiFetch } from '../util/api.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { setSessionListSearchQuery } from './sessionListState.ts';
 
 
 let _renderRecentsPending = false;
@@ -51,20 +50,13 @@ export function refreshRecentsFilterData() {
   refreshRecentsFilterChipData();
 }
 
-/* Unified sidebar search state. Read by doRenderRecents() as a
-   client-side title/topic filter. The setter keeps the input box in
-   sync (so the empty-state "Clear search" link can reset it) and
-   re-renders. */
-let RECENTS_SEARCH_QUERY = "";
-
+/* Unified sidebar search state. The frame-throttled publisher applies it
+   as a client-side title/topic filter. The setter keeps the input box in
+   sync (so the empty-state "Clear search" link can reset it) and re-renders. */
 export function setRecentsSearch(q: string) {
-  RECENTS_SEARCH_QUERY = q || "";
-  try { browserWindow.RECENTS_SEARCH_QUERY = RECENTS_SEARCH_QUERY; } catch (error) { reportSwallow(error, 'ui/recentsView.ts:59'); }
+  const query = q || '';
+  setSessionListSearchQuery(query);
   const input = document.getElementById("sidebarSearch");
-  if (input && (input as HTMLInputElement).value !== RECENTS_SEARCH_QUERY) (input as HTMLInputElement).value = RECENTS_SEARCH_QUERY;
+  if (input && (input as HTMLInputElement).value !== query) (input as HTMLInputElement).value = query;
   renderRecents();
-}
-
-export function getRecentsSearchQuery() {
-  return RECENTS_SEARCH_QUERY;
 }

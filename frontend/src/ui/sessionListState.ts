@@ -29,6 +29,19 @@ export interface SessionListSnapshot {
 
 type SessionListUpdate = Omit<SessionListSnapshot, 'revision'>;
 
+/* The input can change several times before the frame-throttled publisher
+   runs. Keep that pending value in the shared session-list module so the
+   input and publisher use one source without a window mirror. */
+let requestedSearchQuery = '';
+
+export function getSessionListSearchQuery(): string {
+  return requestedSearchQuery;
+}
+
+export function setSessionListSearchQuery(query: string): void {
+  requestedSearchQuery = query || '';
+}
+
 export const sessionListState = createImmutableBridge<SessionListSnapshot, SessionListUpdate>({
   initial: {
     sessions: Object.freeze([]),

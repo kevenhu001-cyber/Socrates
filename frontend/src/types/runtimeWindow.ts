@@ -14,7 +14,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   renderMathInElement?: (root: Element, options?: Record<string, unknown>) => void;
   "GGBApplet": new (options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void }, useBrowser: boolean) => { inject(target: HTMLElement | string): void };
   "MAX_TOKENS_CHAT": number | undefined;
-  "RECENTS_SEARCH_QUERY": string;
   "ReactNativeWebView": { postMessage(message: string): void } | undefined;
   "SOCRATES_STORAGE_BLOCKED": boolean;
   "STREAM_MAX_ATTEMPTS": typeof import("../chat/offline")["STREAM_MAX_ATTEMPTS"];

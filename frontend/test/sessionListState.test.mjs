@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { sessionListState, publishSessionListState, setCurrentSessionId } = await import('../src/ui/sessionListState.ts');
+const {
+  sessionListState,
+  publishSessionListState,
+  setCurrentSessionId,
+  getSessionListSearchQuery,
+  setSessionListSearchQuery,
+} = await import('../src/ui/sessionListState.ts');
 
 test('session-list publisher snapshots rows and optimistic selection preserves list filters', () => {
   sessionListState.__resetForTests();
+  setSessionListSearchQuery('');
   let notifications = 0;
   const unsubscribe = sessionListState.subscribe(() => { notifications += 1; });
   const rows = [
@@ -52,4 +59,11 @@ test('session-list publisher snapshots rows and optimistic selection preserves l
 
   unsubscribe();
   sessionListState.__resetForTests();
+});
+
+test('session-list search query is shared by the input and frame publisher without a window mirror', () => {
+  setSessionListSearchQuery('  Algebra  ');
+  assert.equal(getSessionListSearchQuery(), '  Algebra  ');
+  setSessionListSearchQuery('');
+  assert.equal(getSessionListSearchQuery(), '');
 });
