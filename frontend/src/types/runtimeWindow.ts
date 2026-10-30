@@ -15,7 +15,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "ReactNativeWebView": { postMessage(message: string): void } | undefined;
   "SOCRATES_STORAGE_BLOCKED": boolean;
   "STREAM_MAX_ATTEMPTS": typeof import("../chat/offline")["STREAM_MAX_ATTEMPTS"];
-  "STREAM_RETRYABLE_STATUS": typeof import("../chat/offline")["STREAM_RETRYABLE_STATUS"];
   "SpeechRecognition": (new () => SpeechRecognitionRuntime) | undefined;
   "SpeechSynthesisUtterance": typeof SpeechSynthesisUtterance;
   "Audio": typeof Audio;
@@ -123,7 +122,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "showToast": typeof import("../ui/toast")["showToast"];
   "showUsageTip": (ev: Pick<Event, "currentTarget">) => Promise<void> | undefined;
   "sidebarOpen": typeof import("../ui/sidebarChrome")["sidebarOpen"];
-  "sleepBackoff": typeof import("../chat/offline")["sleepBackoff"];
   "startDeepResearch": typeof import("../agent/researchAgent")["startDeepResearch"];
   "startNewChat": typeof import("../app/lifecycle")["startNewChat"];
   "startSession": typeof import("../chat/sessionBootstrap")["startSession"];

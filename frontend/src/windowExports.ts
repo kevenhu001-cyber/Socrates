@@ -265,11 +265,9 @@ import { setLang } from './i18n.ts';
 browserWindow.setLang = setLang;
 
 /* ─── chat/offline.js ─── */
-import { STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS, offlineGuard, sleepBackoff } from './chat/offline.ts';
+import { STREAM_MAX_ATTEMPTS, offlineGuard } from './chat/offline.ts';
 browserWindow.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
-browserWindow.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
 browserWindow.offlineGuard = offlineGuard;
-browserWindow.sleepBackoff = sleepBackoff;
 
 /* ─── ui/usage.ts ───
    Lazy (~11KB): the usage overlay only loads on first open. The module's

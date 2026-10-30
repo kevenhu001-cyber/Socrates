@@ -43,6 +43,7 @@
 | Tutor 诊断操作在会话外发布三条 no-op 全局回调 | **本轮已移除** | `diagnosticFlow` 在调用时已检查回调存在；`startTutorSession()` 才安装带当前会话 identity guard 的真实闭包。删除 bridge 中的 no-op 初始值，类型改为可选，避免向 UI 暴露一个会吞掉操作的假回调。 |
 | Tutor mode banner 遗留空 renderer 和已失效 DOM 清理 | **本轮已移除** | 全仓无 `#modeChip` 标记或样式；`renderModeBanner()` 只查找并删除不存在的节点。模式切换继续执行 `setAppMode`、持久化、`syncAppModeUI` 与 sidebar 同步。 |
 | 可视化 iframe registry 的 E2E window 探针 | **本轮已移除** | 页面不再发布 `window.getLiveVizCardIds`；registry 释放由 `vizPark.test.mjs` 直接覆盖模块内握手，E2E 验证无生产探针且 ready 后仍能接收合法迟到错误。 |
+| 离线模块过期 retry compatibility shim 与 window aliases | **本轮已移除** | `sleepBackoff`、重复的 `STREAM_RETRYABLE_STATUS`、未使用的 `STREAM_RETRY_DELAYS` 均无生产消费者；删除函数、常量、window 类型/发布和两处无效测试 mock，重试语义不变。 |
 
 ## 仍开放或尚无法确认
 
@@ -105,3 +106,4 @@
 - Tutor 诊断回调去掉启动期 no-op：仅在 `startTutorSession()` 后发布真实 cancel/retry/builtin handlers，之前由 `diagnosticFlow` 的存在性检查安全跳过；lint、生产构建通过，诊断视图 / 答题 / 内置题 / 取消隔离 E2E 6/6 通过。
 - Tutor mode banner 空 renderer 与失效清理路径移除：保留模式持久化、顶栏和 sidebar 同步；前端 lint、生产构建及 `app-mode-lifecycle.spec.mjs` 1/1 通过。
 - 可视化 registry 测试探针从生产 window 撤下：内部握手改由 `vizPark.test.mjs` 直接检查 registry 在 `viz-ready` 后释放（4/4），E2E 保留 late-error 用户行为并检查探针缺失；前端 lint、生产构建及 `viz-canvas.spec.mjs` 7/7 通过。
+- 离线模块的 dead retry shim 清理：移除无调用方 `sleepBackoff`、重复 retry-status 常量与 legacy delay 数组及对应 window 暴露/mock；流式重试继续读活动的 max-attempts 与 offline guard，lint、生产构建通过，流解析聚焦单测 8/8、`chat-send` / `chat-stop-resend` Playwright 15/15 通过。两个流测试 mock 同步补上 event listener 接口，确保可独立运行。

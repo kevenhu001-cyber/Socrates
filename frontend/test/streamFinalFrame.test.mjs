@@ -43,10 +43,9 @@ function installEnvironment(chunks) {
     state,
     getActiveProvider: () => ({ isBuiltIn: false, name: 'test' }),
     getCsrfToken: () => null,
-    sleepBackoff: async () => {},
+    addEventListener() {},
     offlineGuard: () => false,
     isReasoningProvider: () => false,
-    STREAM_RETRYABLE_STATUS: {},
     STREAM_MAX_ATTEMPTS: 1,
     appMode: 'chat',
   };
