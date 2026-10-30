@@ -23,6 +23,11 @@ for (const variant of [
     await waitForAppShell(page);
     await expect(page).toHaveTitle(/Socrates/);
     await expect(page.locator('html')).toHaveAttribute('data-mode', variant.mode);
+    const namespaceBridgeAliases = await page.evaluate(() => [
+      '__socratesSessionBridge', '__socratesKbBridge', '__socratesSearchBridge',
+      '__socratesCallBridge', '__socratesUiBridge', '__socratesExamBridge',
+    ].filter((key) => key in window));
+    expect(namespaceBridgeAliases).toEqual([]);
     await page.evaluate(() => {
       window.stateStore.dispatch({ type: 'state/batch', patch: {
         phase: 'chat', topic: 'Terminal state', currentSessionId: '22222222-2222-4222-8222-222222222222',

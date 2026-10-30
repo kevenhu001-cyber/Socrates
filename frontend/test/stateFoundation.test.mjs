@@ -41,6 +41,19 @@ test('stateStore supports named reads and explicit actions', () => {
   dispose();
 });
 
+test('namespace stores stay module-local while the legacy stateStore facade remains available', () => {
+  const retiredAliases = [
+    '__socratesSessionBridge',
+    '__socratesKbBridge',
+    '__socratesSearchBridge',
+    '__socratesCallBridge',
+    '__socratesUiBridge',
+    '__socratesExamBridge',
+  ];
+  for (const key of retiredAliases) assert.equal(Object.hasOwn(window, key), false, key);
+  assert.strictEqual(window.stateStore, stateStore);
+});
+
 test('state batch replaces touched namespaces with one notification', () => {
   const beforeSession = stateStore.getSnapshot().session;
   const beforeUi = stateStore.getSnapshot().ui;

@@ -135,3 +135,7 @@ The M3 facade preserves every contract the legacy `state.js` exposed:
 - 4 direct `data-action` queries in `main.js` (thumbs-up/down)
 
 Estimated M4 scope: ~250 LOC of refactoring across these files, plus a 82 KB → ~8 KB split of `index.html`. The full plan is in `M4_PLAN.md` (to be drafted).
+
+## Current implementation follow-up (2026-10-30)
+
+The six `window.__socrates{Session,Kb,Search,Call,Ui,Exam}Bridge` aliases described above were removed after a repository-wide consumer check found no remaining readers. The namespace bridge modules remain the canonical stores, and `window.stateStore` remains the legacy facade for existing DOM and E2E callers. New React code should import the typed store or selector hooks rather than look up a namespace store on `window`.

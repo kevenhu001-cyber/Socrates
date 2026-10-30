@@ -29,16 +29,10 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "__loadExamModule": () => Promise<typeof import("../exam")>;
   "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;
   "__sidebarResizeWired": boolean;
-  "__socratesCallBridge": typeof import("../state/bridges")["callBridge"];
   "__socratesConsent": { getPreference: () => { v: number; choice: string; nonEssential: boolean; updatedAt: string; } | null; hasConsent: () => boolean; allowsNonEssential: () => boolean; setPreference: (choice: string) => { v: number; choice: string; nonEssential: boolean; updatedAt: string; }; isEssentialCookieName: (name: string) => boolean; };
-  "__socratesExamBridge": typeof import("../state/bridges")["examBridge"];
   "__socratesExtensionDispatch": (key: string, ...args: unknown[]) => unknown;
-  "__socratesKbBridge": typeof import("../state/bridges")["kbBridge"];
   "__socratesKeyboard": ReturnType<typeof import("../ui/keyboard/index")["initKeyboardLift"]>;
-  "__socratesSearchBridge": typeof import("../state/bridges")["searchBridge"];
-  "__socratesSessionBridge": typeof import("../state/bridges")["sessionBridge"];
   "__socratesSmoothStream": unknown;
-  "__socratesUiBridge": typeof import("../state/bridges")["uiBridge"];
   "__startSearchProgress": typeof import("../ui/searchProgress")["startSearchProgress"];
   "__testActivateMainView": (viewId: string) => boolean;
   "_activeChatAbort": ((reason?: unknown) => void) | null;

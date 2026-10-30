@@ -324,12 +324,6 @@ function resetState() {
 if (typeof window !== 'undefined') {
   browserWindow.stateStore = stateStore;
   browserWindow.resetState = resetState;
-  browserWindow.__socratesSessionBridge = sessionBridge;
-  browserWindow.__socratesKbBridge = kbBridge;
-  browserWindow.__socratesSearchBridge = searchBridge;
-  browserWindow.__socratesCallBridge = callBridge;
-  browserWindow.__socratesUiBridge = uiBridge;
-  browserWindow.__socratesExamBridge = examBridge;
 }
 
 export { stateStore, resetState };

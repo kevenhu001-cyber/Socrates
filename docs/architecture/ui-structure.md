@@ -38,6 +38,8 @@ index.html                         静态 shell / 挂载宿主 / CSP
 
 - React 从 `store/`、功能 store 或类型化 bridge 读取状态；旧全局动作经
   `react/legacy/gateway.ts` 访问，不在组件里扩散任意 `window.*`。
+- 六个 `state/` 命名空间 store 仅保留模块导出；已删除无消费者的 `window.__socrates{Session,Kb,Search,Call,Ui,Exam}Bridge` 别名。
+  旧 DOM 的 `window.stateStore` facade 仍保留，供现有兼容调用使用。
 - `chat/` 不依赖 React 实现；共享类型可来自 `react/types/`，宿主状态与展示模型留在 ui。
   不通过新增 re-export shim 延长旧路径寿命。
 - 插件目录和选中状态由 `frontend/src/composer/` 持有；聊天、OAuth 返回恢复和 React

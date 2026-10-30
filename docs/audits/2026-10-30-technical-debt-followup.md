@@ -1,6 +1,6 @@
 # 技术债状态复核
 
-日期：2026-10-30。复核基于已提交 HEAD `5210908b` 与当前工作树；生产数据库、真实供应商账户和设备未连接。本文件更新 2026-10-23 稳定性加固交接的状态，不把历史审计快照改写成当前结论。
+日期：2026-10-30。复核基于已提交 HEAD `73ab19e5` 与当前工作树；生产数据库、真实供应商账户和设备未连接。本文件更新 2026-10-23 稳定性加固交接的状态，不把历史审计快照改写成当前结论。
 
 ## 本次关闭或收窄
 
@@ -14,6 +14,7 @@
 | 中文上下文预算与 usage 回退估算 | **本次已关闭** | usage 的估算回退复用 `estimateContextTokens`：ASCII 按每 4 字符向上取整，非 ASCII 按 UTF-8 字节数每 2 字节向上取整。供应商 usage 仍是首选计量；估算只在供应商未返回 usage 时启用。 |
 | 显式 `any` 与由此积压的 ESLint 告警 | **本次已关闭** | SPA 默认 API 响应类型改为 `unknown` 并为调用方补窄契约；语音、worker、SSE、连接器、规划和可视化输入均以 `unknown` 加运行时校验处理。服务端同类边界也已收窄。`no-explicit-any` 已提升为 ESLint error；AST 守卫扫描 SPA、服务端、共享 packages 和 Universal App，当前为 0/0。生成的 OpenUI prompt 中的 `any` 示例文本属于提示词内容，不是 TypeScript 类型。 |
 | React 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile、sidebar 用户摘要、Composer Tools、附件、session-list 与 Cmd-K 状态的 window 状态桥 | **累计已移除十一项** | 十一个状态域分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts`、`ui/composerToolsState.ts`、`ui/attachmentsState.ts`、`ui/sessionListState.ts`、`ui/cmdKState.ts` 与 React 共享模块实例；不再创建对应的 window bridge。附件上传队列与稳定的 `window.attachments`、session cache 的 `window.SERVER_SESSIONS` 旧接口仍留在对应业务模块。 |
+| `state/` 六个命名空间的 `window.__socrates*Bridge` 别名 | **已移除** | 全仓没有消费者；模块内的 `sessionBridge`、`kbBridge`、`searchBridge`、`callBridge`、`uiBridge`、`examBridge` 和 `window.stateStore` facade 继续工作。 |
 
 ## 仍开放或尚无法确认
 
@@ -42,6 +43,7 @@
 - session-list store 单测 1/1 通过，覆盖列表快照、不可变数组、行引用稳定、筛选状态保留和即时选中去重；SPA 构建、前端 lint、文档路径检查通过。定向 Playwright 19/19 通过：性能交互 CPU x1 1/1（20/500/2000 行）、`session-tags`、`recents-archive` 与 `sidebar-nav` 18/18。
 - Cmd-K 状态桥迁移单测 1/1 通过；SPA 构建、前端 lint、文档路径检查通过；Cmd-K 兼容、键盘、语言、焦点陷阱与 Fuse 延迟加载回归共 12/12 通过。
 - agent-run store / extension 单测 11/11 通过；SPA 构建、前端 lint、文档路径检查通过；`workflow-layer.spec.mjs` 3/3 通过，覆盖真实 Explore 激活、工具流阶段推进与 analyze 隔离。
+- `stateFoundation.test.mjs` 7/7 通过，含六个命名空间别名不存在及 `window.stateStore` 兼容校验；SPA 构建、前端 lint、文档路径检查通过；`chat-terminal-state.spec.mjs` 2/2 通过（桌面浅色、手机深色）。
 - 本轮最终 SPA `npm run build`、`npm run lint`、`npm run lint:docs` 均通过；构建产物未纳入版本控制。
 - 前端生产构建与 Universal App `export:web` 成功；最终构建后运行确认弹窗、会话列表和 tutor Playwright：29/29 通过。
 - `node scripts/audit-ratchet.mjs apps/socrates` 通过（3 条已审阅 high 节点，0 条新增）；`apps/socrates` 的 `npm run export:web` 成功。
