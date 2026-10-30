@@ -223,14 +223,15 @@ test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  expect(await page.evaluate(() => ['createShareLink', 'revokeShareLink'].filter((name) => name in window))).toEqual([]);
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
     window.openShareModal();
   });
-  await page.evaluate(async () => { await window.createShareLink(); });
+  await page.evaluate(() => window.__socratesLegacy.share.createShareLink());
   await expect(page.locator('#shareLinkInput')).toBeVisible();
   await expect(page.locator('#shareLinkInput')).toHaveValue(/tok-abc/);
-  await page.evaluate(async () => { await window.revokeShareLink(); });
+  await page.evaluate(() => window.__socratesLegacy.share.revokeShareLink());
   const shareCalls = calls.filter((c) => /\/api\/(?:v2\/)?sessions\//.test(c) && c.includes('/share'));
   expect(shareCalls.some((c) => c.startsWith('POST'))).toBe(true);
   expect(shareCalls.some((c) => c.startsWith('DELETE'))).toBe(true);

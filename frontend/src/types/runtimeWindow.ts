@@ -42,7 +42,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "closeShareModal": typeof import("../ui/share")["closeShareModal"];
   "closeTagEditor": typeof import("../session/organizeRuntime")["closeTagEditor"];
   "closeUsageModal": () => Promise<void> | undefined;
-  "createShareLink": typeof import("../ui/share")["createShareLink"];
   "deepResearchOn": boolean;
   "extensiveThinkingOn": typeof import("../config/providers")["extensiveThinkingOn"];
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
@@ -81,7 +80,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "renderRecents": typeof import("../ui/recentsView")["renderRecents"];
   "resendLastUserMessage": typeof import("../chat/turnUi")["resendLastUserMessage"];
   "retryDiagnostic"?: () => void;
-  "revokeShareLink": typeof import("../ui/share")["revokeShareLink"];
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];
   "scrollMainToBottom": (() => void) | undefined;
   "selectAppMode": typeof import("../ui/mobileModeSwitch")["selectAppMode"];

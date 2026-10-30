@@ -167,16 +167,13 @@ browserWindow.openSettings = function () { return _loadSettingsModule().then(fun
 browserWindow.closeSettings = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.closeSettings(); }); };
 
 /* ─── ui/share.ts ─── */
-/* Copy/load handlers are wired module-locally inside ui/share.ts and by
-   main.js's direct imports; only the topbar/entry points below stay on
-   window. */
-import { openShareModal, closeShareModal, revokeShareLink, createShareLink } from './ui/share.ts';
+/* Share actions are wired through the typed legacy gateway; only the modal
+   open/close entry points used by the shell stay on window. */
+import { openShareModal, closeShareModal } from './ui/share.ts';
 import { toggleChatTopBarEls } from './ui/topBarState.ts';
 browserWindow.toggleChatTopBarEls = toggleChatTopBarEls;
 browserWindow.openShareModal = openShareModal;
 browserWindow.closeShareModal = closeShareModal;
-browserWindow.revokeShareLink = revokeShareLink;
-browserWindow.createShareLink = createShareLink;
 
 /* ─── ui/dangerConfirms.js ─── */
 /* The three confirm actions are reached only through
