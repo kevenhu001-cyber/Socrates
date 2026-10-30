@@ -169,7 +169,6 @@ export async function retryRecentsFetch(): Promise<void> {
   try { await flushRecentsReconcile(); } catch (e) { reportSwallow(e, 'session/recents.fetch.flushReconcile'); }
   try { _renderRecents(); } catch (e) { reportSwallow(e, 'session/recents.fetch.renderRecents'); }
 }
-try { window.retryRecentsFetch = retryRecentsFetch; } catch (e) { reportSwallow(e, 'session/recents.exports.retryRecentsFetch'); }
 try { (window as RecentsWindow).scheduleRecentsReconcile = scheduleRecentsReconcile; } catch (e) { reportSwallow(e, 'session/recents.exports.scheduleReconcile'); }
 try { (window as RecentsWindow).flushRecentsReconcile = flushRecentsReconcile; } catch (e) { reportSwallow(e, 'session/recents.exports.flushReconcile'); }
 

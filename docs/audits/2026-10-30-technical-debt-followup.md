@@ -24,6 +24,7 @@
 | Composer controller 的 `window.__socratesComposerController` | **本轮已移除** | 侧栏 OAuth 返回恢复与创建助手入口直接导入 draft / focus API；E2E 改为检查编辑器和工具菜单的真实行为。 |
 | KaTeX 重绘函数的 `window.__socratesRerenderMath` 发布 | **本轮已移除** | 仓库内无读取方；保留 `onKatexReady(rerenderMathAfterKatex)` 作为唯一重绘注册路径。 |
 | 当前流与链接页准备取消回调的 `window._activeChatAbort` | **本轮已移除** | 流 attempt、页面上下文准备、Stop、编辑/重试、会话切换、登出统一读写 `turnState.activeChatAbort`；清理仍使用 callback identity，避免旧流覆盖新句柄。 |
+| Recents 重试函数的重复 `window.retryRecentsFetch` 发布 | **本轮已移除** | 仓库无 window 读取方；React 空列表重试继续通过 `__socratesLegacy.sessions.retryRecentsFetch` 调用同一模块函数。 |
 
 ## 仍开放或尚无法确认
 
@@ -67,3 +68,4 @@
 - Composer controller window 对象移除：侧栏和创建助手改为直接导入 composer API，旧 `composerController` window facade 与无消费者的 React re-export 删除；composer 单测 5/5、4 个相关 Playwright 用例通过，前端 lint 与生产构建通过。生命周期回归断言确认 workflow token 按现有规则同步到两个 composer surface。
 - KaTeX 重绘 window 发布移除：重绘仍通过 vendor loader 的模块订阅执行；`proseRenderer.test.mjs` 1/1 与数学懒加载恢复 E2E 1/1 通过，前端 lint 和生产构建通过；E2E 同时确认旧 revision 与重绘字段均不存在。
 - Active chat abort window 交接移除：取消句柄归属 `turnState`，并保留身份检查以防旧流清理新句柄；`streamColdLoad` 与 turn-state 单测 5/5、聊天准备 / tutor Stop / 停止重发 E2E 8/8、前端 lint 与生产构建通过。
+- Recents 重试重复全局移除：React 入口继续经 typed legacy session action 调用；`recents-archive.spec.mjs` 1/1 验证归档行为及 `window.retryRecentsFetch` 不存在；前端 lint 与生产构建通过。

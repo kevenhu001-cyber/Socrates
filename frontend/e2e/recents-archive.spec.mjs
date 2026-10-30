@@ -74,6 +74,7 @@ test('archive from Recents row soft-hides the session and surfaces it in Storage
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.waitForTimeout(500);
+  expect(await page.evaluate(() => 'retryRecentsFetch' in window)).toBe(false);
 
   const row = page.locator('#recentsList .recent-item', { hasText: 'Archive me please' });
   await expect(row).toBeVisible();
