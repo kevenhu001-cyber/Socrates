@@ -30,6 +30,7 @@
 | Recents 搜索查询的 `window.RECENTS_SEARCH_QUERY` 镜像 | **本轮已移除** | 输入和 frame-throttled publisher 改读 `ui/sessionListState.ts` 的模块状态；React 仍消费同一 session-list 快照。 |
 | Loader 的 `window._currentSessionId` 写入镜像 | **本轮已移除** | 全仓只有两个 publisher、没有读者；session id 由 `stateStore` 单一写入，保留其既有 namespace 同步。 |
 | 只发布 `undefined` 的 `window.MAX_TOKENS_CHAT` | **本轮已移除** | SPA 考卷生成在调用处传 `undefined`，保留后端使用模型默认 token 上限的行为，不再经 window 桥转交。 |
+| 无读取方且过期的 `window.__SOCRATES_RELEASE_TAG__` | **本轮已移除** | 启动不再发布固定的 `20261008-speed-opt` 标记；无源码或测试消费者。 |
 
 ## 仍开放或尚无法确认
 
@@ -79,3 +80,4 @@
 - Recents 搜索源归并：移除 window query mirror，`sessionListState.test.mjs` 2/2 覆盖模块查询状态，窗口化 2,000 条会话 E2E 1/1 验证搜索结果及旧 window 字段不存在；前端 lint 与生产构建通过。
 - Loader session-id window mirror 移除：session id 只写入 canonical `stateStore`；`chat-preparation` 新会话取消回归 1/1、前端 lint 与生产构建通过。
 - 考卷 max-token window alias 移除：生成器直接传 `undefined` 保持后端默认值；`exam-regressions.spec.mjs` 2/2、前端 lint 与生产构建通过。
+- 过期 release-tag window 字段移除：无代码消费者；`chat-preparation` 新会话取消用例 1/1 同时校验 session-id 与 release-tag 字段不存在，前端 lint 与生产构建通过。

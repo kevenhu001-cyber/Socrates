@@ -22,7 +22,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "Audio": typeof Audio;
   "URL": typeof URL;
   "AudioContext": typeof AudioContext | undefined;
-  "__SOCRATES_RELEASE_TAG__": string;
   "__examModule": typeof import("../exam");
   "__loadExamModule": () => Promise<typeof import("../exam")>;
   "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;

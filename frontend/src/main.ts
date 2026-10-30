@@ -62,8 +62,6 @@ import { syncAppModeUI, syncSidebarForMode } from './config/providers.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 
 
-browserWindow.__SOCRATES_RELEASE_TAG__ = '20261008-speed-opt';
-
 initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
 installHomeSurface();
 initArtifactPreview();
