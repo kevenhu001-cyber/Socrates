@@ -1,7 +1,7 @@
 /* Auth boot coordinator. URL-only routes, preflight requests, and /me retry
    policy live in ./boot/ so this module only sequences the startup flow. */
 
-import { setBuiltInProviderModel } from '../config/providerConfig.service.ts';
+import { setBuiltInProviderModel, setServerBuiltInKeyAvailable } from '../config/providerConfig.service.ts';
 import { showToast } from '../ui/toast.js';
 import { i18n } from '../react/legacy/gateway.ts';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.ts';
@@ -43,10 +43,6 @@ function i18nSettled(): Promise<unknown> {
   } catch { return Promise.resolve(); }
 }
 
-/* This live binding is consumed by providerConfig.service.ts and mirrored to
-   window after config resolves, since windowExports captures it at import. */
-export let SERVER_HAS_BEAGLE_KEY = false;
-
 async function publishServerConfig(configRequest: Promise<unknown>): Promise<void> {
   let hasBuiltInKey = false;
   try {
@@ -64,9 +60,7 @@ async function publishServerConfig(configRequest: Promise<unknown>): Promise<voi
     reportSwallow(error, 'auth/boot.config.fetch');
   }
 
-  SERVER_HAS_BEAGLE_KEY = hasBuiltInKey;
-  try { window.SERVER_HAS_BEAGLE_KEY = hasBuiltInKey; }
-  catch (error) { reportSwallow(error, 'auth/boot.config.rebridgeServerHasKey'); }
+  setServerBuiltInKeyAvailable(hasBuiltInKey);
 }
 
 async function showSigninGate(): Promise<void> {

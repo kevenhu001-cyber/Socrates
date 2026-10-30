@@ -1,5 +1,5 @@
 import { apiFetch } from '../../util/api.ts';
-import { setBuiltInProviderModel } from '../../config/providerConfig.service.ts';
+import { setBuiltInProviderModel, setServerBuiltInKeyAvailable } from '../../config/providerConfig.service.ts';
 import { showToast } from '../../ui/toast.js';
 import { loadSharedSession } from '../../ui/share.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
@@ -46,7 +46,7 @@ async function handleLocalDevRoute(params: URLSearchParams, csrfReady: PromiseLi
   history.replaceState(null, '', location.pathname + search);
   try {
     setBuiltInProviderModel('local');
-    window.SERVER_HAS_BEAGLE_KEY = true;
+    setServerBuiltInKeyAvailable(true);
   } catch (error) { reportSwallow(error, 'auth/boot.localDev.config'); }
   const user = { id: 'local-dev', name: 'Local Dev', email: 'dev@local', plan: 'local', isLocal: true };
   const win = window as BootRoutesWindow;

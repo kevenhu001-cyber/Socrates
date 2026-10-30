@@ -17,6 +17,9 @@
    contract, not this comment. */
 import './batchStorage.ts';
 import './vendor/init.ts';
+/* Auth boot owns the preflight → reveal sequence; do not hide this startup
+   side effect behind a compatibility binding in windowExports.ts. */
+import './auth/boot.ts';
 /* Static import keeps legacy window bridges in the application bundle. */
 import './windowExports.ts';
 import './tutorSocratic.ts';

@@ -22,12 +22,16 @@ import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 declare global {
   interface Window {
     CURRENT_USER?: { tier?: string } | null;
-    SERVER_HAS_BEAGLE_KEY?: boolean;
     TIER_KEY_LIMITS?: Record<string, number>;
   }
 }
 
 export const LAST_ACTIVE_ID_KEY = 'socrates-last-active-id';
+let serverBuiltInKeyAvailable = false;
+
+export function setServerBuiltInKeyAvailable(available: boolean): void {
+  serverBuiltInKeyAvailable = available;
+}
 
 /* Save and activation failures surface as toasts in the middle of an action,
    so they follow the UI language like every other string. `i18n` is the
@@ -151,7 +155,7 @@ export async function refreshProviderConfig(): Promise<ProviderConfigSnapshot> {
     const serverBuiltIn = rows.find((provider) => provider.id === BUILT_IN_ID);
     if (serverBuiltIn?.model) builtInModel = serverBuiltIn.model;
     const customProviders = rows.filter((provider) => provider.id !== BUILT_IN_ID);
-    const hasBuiltIn = Boolean(window.SERVER_HAS_BEAGLE_KEY);
+    const hasBuiltIn = serverBuiltInKeyAvailable;
     const builtIn: ProviderConfig = {
       ...BUILT_IN_BASE,
       model: builtInModel,
@@ -403,7 +407,7 @@ export async function clearProviderConfig(): Promise<void> {
     /* legacy preference may not exist */
   }
   saveLastActiveId(null);
-  const hasBuiltIn = Boolean(window.SERVER_HAS_BEAGLE_KEY);
+  const hasBuiltIn = serverBuiltInKeyAvailable;
   publishSelectionAndProviders(hasBuiltIn ? [{ ...BUILT_IN_BASE, model: builtInModel }] : [], null);
 }
 

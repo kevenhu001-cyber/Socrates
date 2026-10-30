@@ -13,7 +13,7 @@ globalThis.sessionStorage = {
   setItem: (key, value) => sessionStorage.set(key, String(value)),
   removeItem: (key) => sessionStorage.delete(key),
 };
-globalThis.window = { CURRENT_USER: null, SERVER_HAS_BEAGLE_KEY: false, TIER_KEY_LIMITS: {} };
+globalThis.window = { CURRENT_USER: null, TIER_KEY_LIMITS: {} };
 globalThis.document = { cookie: '' };
 
 const store = await import('../src/config/providerConfig.store.ts');
@@ -33,12 +33,12 @@ function reset() {
   service.resetProviderConfigForUser();
   storage.clear();
   window.CURRENT_USER = { id: 'user-one' };
-  window.SERVER_HAS_BEAGLE_KEY = false;
+  service.setServerBuiltInKeyAvailable(false);
 }
 
 test('provider refresh honors saved selection before server active and omits credentials from snapshots', async () => {
   reset();
-  window.SERVER_HAS_BEAGLE_KEY = true;
+  service.setServerBuiltInKeyAvailable(true);
   storage.set(LAST_ACTIVE_ID_KEY, 'provider-local');
   const key = 'never-publish-this-secret';
   globalThis.fetch = async () => jsonResponse({ providers: [
@@ -68,7 +68,7 @@ test('provider active fallback uses server, built-in, then first custom row', as
 
   service.resetProviderConfigForUser();
   storage.clear();
-  window.SERVER_HAS_BEAGLE_KEY = true;
+  service.setServerBuiltInKeyAvailable(true);
   rows = [
     { id: 'provider-first', label: 'First', model: 'first' },
     { id: 'provider-second', label: 'Second', model: 'second' },
@@ -76,7 +76,7 @@ test('provider active fallback uses server, built-in, then first custom row', as
   assert.equal((await service.refreshProviderConfig()).activeId, 'beagle-built-in');
 
   service.resetProviderConfigForUser();
-  window.SERVER_HAS_BEAGLE_KEY = false;
+  service.setServerBuiltInKeyAvailable(false);
   assert.equal((await service.refreshProviderConfig()).activeId, 'provider-first');
 });
 

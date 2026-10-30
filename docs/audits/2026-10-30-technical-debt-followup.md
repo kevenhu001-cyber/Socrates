@@ -72,6 +72,7 @@
 | 顶栏会话显隐的重复 window wrapper | **本轮已移除** | 移除没有消费者的 `window.toggleChatTopBarEls` 包装和类型；主视图生命周期继续直接调用 `setConversationChrome()`。 |
 | Cmd-K 输入与按键的重复 window handlers | **本轮已移除** | React 通过 typed `__socratesLegacy.cmdK` 调用模块动作；移除无读取方的 `window.onCmdKInput` / `window.onCmdKKey` 发布与类型，保留实际 `openCmdK` / `closeCmdK` 入口。 |
 | 语音停止按钮的重复 window forwarder | **本轮已移除** | 录音停止按钮直接调用语音模块的 `stopSpeechInput()`；移除无读取方的根级转发与类型，保留麦克风启动的懒加载入口。 |
+| 内置模型 key 可用性的 window 状态镜像 | **本轮已移除** | 认证启动与本地开发路由直接更新 `providerConfig.service` 的模块状态，provider refresh / clear 读取同一状态；移除 `window.SERVER_HAS_BEAGLE_KEY` 发布、读取和类型字段。 |
 
 ## 仍开放或尚无法确认
 
@@ -162,3 +163,4 @@
 - Top-bar visibility wrapper removed: `mainViewController` remains the direct owner of `setConversationChrome()`; frontend lint and production build pass, and `mobile-ui-alignment.spec.mjs` passes 2/2 with the obsolete global absent.
 - Cmd-K input/key aliases removed: React continues through the typed cmdK gateway; frontend lint and production build pass, and `cmd-k-compat.spec.mjs` passes 3/3, covering open, type, results and Escape while asserting both aliases are absent.
 - Voice stop forwarder removed: voice controls continue to use the loaded module directly; frontend lint and production build pass, and `voice-input.spec.mjs` passes 3/3, verifying microphone start/stop and transcription with the root alias absent.
+- Built-in provider key state no longer mirrors through `window`; `providerConfig.test.mjs` passes 7/7, `settings-modal.spec.mjs` passes 1/1 with the global absent and the built-in row present, and `storage-bootstrap.spec.mjs` passes 1/1 after auth boot became an explicit `main.ts` startup import.

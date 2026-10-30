@@ -17,10 +17,6 @@
 //   aliases for inline markup and callers that have not migrated yet.
 //   Prefer direct module imports or typed bridges for new callers.
 
-/* ─── auth/boot.js — boot-time flags ─── */
-import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.ts';
-browserWindow.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
-
 /* ─── config/providers.js ─── */
 import { appMode, webSearchOn, extensiveThinkingOn, syncAppModeUI, setAppMode, thinkingOn } from './config/providers.ts';
 browserWindow.appMode = appMode;

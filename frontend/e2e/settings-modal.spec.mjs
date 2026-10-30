@@ -60,6 +60,7 @@ test('tone choices have separate readable labels and expose the selected state',
 test('settings modal opens with React-owned providers and tones, and closes', async ({ page }) => {
   // Open via the legacy window binding (the model-picker "add" path).
   const overlay = await openModelsPane(page);
+  expect(await page.evaluate(() => typeof window.SERVER_HAS_BEAGLE_KEY)).toBe('undefined');
 
   // React-owned settings controls and provider list.
   await expect(overlay.locator('#stgToggleTrack')).toBeVisible();
