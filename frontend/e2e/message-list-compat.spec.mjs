@@ -133,11 +133,15 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
   }).toMatch(/Copied|Copy/);
 });
 
-test('message list toolbar action buttons dispatch to legacy window globals', async ({ page }) => {
+test('message list toolbar actions dispatch through the typed legacy bridge', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
+  expect(await page.evaluate(() => [
+    'editUserMessage', 'deleteUserMessage', 'regenerateAssistantMessage',
+    'branchFromMessage', 'switchMessageBranch', 'sendFeedback',
+  ].filter((name) => name in window))).toEqual([]);
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
@@ -148,11 +152,6 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
     const regenMock = (id) => { window.__msgSpecEditCalls.push('regen:'+id); };
     const branchMock = (id) => { window.__msgSpecEditCalls.push('branch:'+id); };
     const feedbackMock = (id, rating) => { window.__msgSpecFeedbackCalls.push([id, rating]); };
-    window.editUserMessage = editMock;
-    window.deleteUserMessage = deleteMock;
-    window.regenerateAssistantMessage = regenMock;
-    window.branchFromMessage = branchMock;
-    window.sendFeedback = feedbackMock;
     if (window.__socratesLegacy?.messages) {
       window.__socratesLegacy.messages.editUserMessage = editMock;
       window.__socratesLegacy.messages.deleteUserMessage = deleteMock;

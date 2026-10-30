@@ -32,7 +32,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "askChatTurn": typeof import("../chat/turnController")["askChatTurn"];
   "askNextQuestion": typeof import("../tutor/socraticTurn")["askNextQuestion"];
   "attachments": typeof import("../attachments")["attachments"];
-  "branchFromMessage": typeof import("../chat/editBranch")["branchFromMessage"];
   "cancelDiagnostic"?: () => void;
   "clearActiveTemplate": typeof import("../chat/templateSlash")["clearActiveTemplate"];
   "clearPerUserClientState": typeof import("../app/lifecycle/clientState")["clearPerUserClientState"];
@@ -45,8 +44,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "closeUsageModal": () => Promise<void> | undefined;
   "createShareLink": typeof import("../ui/share")["createShareLink"];
   "deepResearchOn": boolean;
-  "deleteUserMessage": typeof import("../ui/messageActions")["deleteUserMessage"];
-  "editUserMessage": typeof import("../chat/editBranch")["editUserMessage"];
   "extensiveThinkingOn": typeof import("../config/providers")["extensiveThinkingOn"];
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
   "formatMsg": typeof import("../render/markdown")["formatMsg"];
@@ -77,7 +74,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "refreshApiConfig": typeof import("../config/providers")["refreshApiConfig"];
   "refreshExamI18n": () => void;
   "refreshServerSessions": typeof import("../session/recents")["refreshServerSessions"];
-  "regenerateAssistantMessage": typeof import("../chat/editBranch")["regenerateAssistantMessage"];
   "rememberConnectorReturnContext": typeof import("../sidebar/nav")["rememberConnectorReturnContext"];
   "removeAttachment": typeof import("../attachments")["removeAttachment"];
   "renderAssistantHTML": typeof import("../render/assistantHtml")["buildAssistantHtml"];
@@ -90,7 +86,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];
   "scrollMainToBottom": (() => void) | undefined;
   "selectAppMode": typeof import("../ui/mobileModeSwitch")["selectAppMode"];
-  "sendFeedback": typeof import("../ui/messageActions")["sendFeedback"];
   "setActiveNav": typeof import("../sidebar/navigation.service")["setActiveNav"];
   "setActiveTemplate": typeof import("../chat/templateSlash")["setActiveTemplate"];
   "setAppMode": typeof import("../config/providers")["setAppMode"];
@@ -109,7 +104,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "stopChatResponse": typeof import("../chat/composerTurn")["stopChatResponse"];
   "stopSpeechInput": () => Promise<ReturnType<typeof import("../ui/voiceInput")["stopSpeechInput"]>> | undefined;
   "submitChatMessage": typeof import("../chat/sendPipeline")["submitChatMessage"];
-  "switchMessageBranch": typeof import("../chat/editBranch")["switchMessageBranch"];
   "syncAppModeUI": typeof import("../config/providers")["syncAppModeUI"];
   "syncChatModel": typeof import("../pickers")["syncChatModel"];
   "syncConversationActive": typeof import("../ui/mobileModeSwitch")["syncConversationActive"];

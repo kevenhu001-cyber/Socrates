@@ -133,11 +133,6 @@ browserWindow.fetchWebContext = function (
 browserWindow.openAttachmentPicker = openAttachmentPicker;
 browserWindow.openMediaPicker = openMediaPicker;
 browserWindow.getCustomInstructionsString = getCustomInstructionsString;
-browserWindow.editUserMessage = editUserMessage;
-browserWindow.deleteUserMessage = deleteUserMessage;
-browserWindow.regenerateAssistantMessage = regenerateAssistantMessage;
-browserWindow.branchFromMessage = branchFromMessage;
-browserWindow.sendFeedback = sendFeedback;
 browserWindow.restorePersistedMessageExtras = restorePersistedMessageExtras;
 browserWindow.renderAssistantHTML = renderAssistantHTML;
 browserWindow.showToast = showToast;
@@ -146,7 +141,6 @@ browserWindow.startNewChat = startNewChat;
 browserWindow.startSession = startSession;
 browserWindow.submitChatMessage = submitChatMessage;
 browserWindow.stopChatResponse = stopChatResponse;
-browserWindow.switchMessageBranch = switchMessageBranch;
 
 browserWindow.__socratesLegacy = {
   messages: {
