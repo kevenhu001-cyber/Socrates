@@ -1,7 +1,6 @@
-/* Sidebar chrome mount — the header and the user footer share one bridge
-   snapshot, so they render under a single React root: the footer is
-   portaled into its own static host element. One reconciliation tree,
-   one bridge install, two DOM hosts. */
+/* Sidebar chrome mount — the header and user footer share module state, so
+   they render under a single React root: the footer is portaled into its
+   own static host element. One reconciliation tree, two DOM hosts. */
 
 import { createPortal } from 'react-dom';
 
@@ -10,7 +9,6 @@ import { createRootSlot } from '../lib/boot/ownedRoot';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarFooter } from './SidebarFooter';
 import { RecentsHeader } from './RecentsHeader';
-import { installSidebarChromeBridge } from './sidebarChrome.bridge';
 
 const rootSlot = createRootSlot('sidebar-chrome');
 let portalHosts: { footer: HTMLElement; recents: HTMLElement | null } | null = null;
@@ -29,7 +27,6 @@ export function mountSidebarChrome(): void {
       {recentsHost ? createPortal(<RecentsHeader />, recentsHost) : null}
     </>,
     () => {
-      installSidebarChromeBridge();
       // Portals append, so remove fallback markup only on the first mount.
       footHost.replaceChildren();
       recentsHost?.replaceChildren();

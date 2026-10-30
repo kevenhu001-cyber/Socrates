@@ -1,11 +1,5 @@
 export { SidebarHeader } from './SidebarHeader';
 export { SidebarFooter } from './SidebarFooter';
 export { mountSidebarChrome } from './mount';
-export {
-  installSidebarChromeBridge,
-  getSidebarChromeSnapshot,
-  subscribeToSidebarChrome,
-  useSidebarChromeSnapshot,
-  useUserInfo,
-} from './sidebarChrome.bridge';
-export type { SidebarChromeSnapshot, SidebarChromeBridge, UserInfo } from './types';
+export { useUserInfo } from './sidebarChrome.store';
+export type { SidebarChromeSnapshot, UserInfo } from './types';

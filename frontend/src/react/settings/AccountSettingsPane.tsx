@@ -1,7 +1,7 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
-import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
+import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.store';
 import type { SettingsPaneProps } from './settings.types';
 
 export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {

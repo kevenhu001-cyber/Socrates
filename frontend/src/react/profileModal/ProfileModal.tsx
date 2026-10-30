@@ -3,7 +3,7 @@ import { Separator } from '../ui/shadcn/separator';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
-import { installProfileBridge, useProfileDispatch, useProfileSnapshot } from './profileModal.bridge';
+import { useProfileDispatch, useProfileSnapshot } from './profileModal.store';
 import { ProfileAccountSection, ProfileSubscriptionSection } from './ProfileAccountSections';
 import { ProfileDangerSection } from './ProfileDangerSection';
 import { ProfileDataSection } from './ProfileDataSection';
@@ -51,5 +51,5 @@ export interface ProfileModalHandle {
 export function hydrateProfileModal(): ProfileModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  return { overlay, ...mountOwnedRoot(overlay, 'profile-modal', <ProfileModal />, installProfileBridge) };
+  return { overlay, ...mountOwnedRoot(overlay, 'profile-modal', <ProfileModal />) };
 }

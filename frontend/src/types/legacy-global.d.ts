@@ -81,10 +81,8 @@ declare global {
 
     __socratesReactChatBridge?: unknown;
     __socratesCmdK?: unknown;
-    __socratesProfileBridge?: unknown;
     __socratesComposerToolsBridge?: unknown;
     __socratesAttachmentsBridge?: unknown;
-    __socratesSidebarChromeBridge?: unknown;
     __socratesSessionListBridge?: unknown;
 
     // ── Legacy inline handler functions (windowExports.js) ──────────

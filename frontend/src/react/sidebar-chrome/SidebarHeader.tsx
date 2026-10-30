@@ -2,7 +2,7 @@ import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { getLegacyActions, t } from '../legacy/gateway.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
-import { useUserInfo } from './sidebarChrome.bridge';
+import { useUserInfo } from './sidebarChrome.store';
 
 const NEW_CHAT_ICON = sidebarIcons.newChat;
 

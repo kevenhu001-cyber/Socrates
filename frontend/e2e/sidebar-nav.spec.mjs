@@ -152,7 +152,7 @@ test('account row exposes profile and settings through its menu', async ({ page 
   /* Reference drawer identity — avatar + name over plan tier: all three are
      painted, and the full "name · tier" label stays in the tooltip and the
      accessible name. */
-  const name = await page.evaluate(() => window.__socratesSidebarChromeBridge?.getSnapshot().user.displayName || '');
+  const name = (await row.locator('.user-name').innerText()).trim();
   expect(name.length).toBeGreaterThan(0);
   await expect(row.locator('.user-name')).toHaveText(name);
   await expect(row.locator('.user-avatar')).toBeVisible();

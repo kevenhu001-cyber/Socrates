@@ -187,6 +187,8 @@ New files: `src/react/confirm/{ConfirmDialog.tsx, confirm.bridge.ts, types.ts, i
 
 **Follow-up (2026-10-30):** `window.__socratesShareBridge` was retired. The lazy share feature publishes its link state through `ui/shareState.ts`; React subscribes to that module store, while the legacy facade keeps action names and lazy loading. `shareState.test.mjs` covers the store contract; the existing share create/revoke browser flow covers the UI integration.
 
+**Follow-up (2026-10-30):** `window.__socratesProfileBridge` and `window.__socratesSidebarChromeBridge` were retired. `ui/profile.ts` publishes profile fields and the normalized sidebar account summary to `ui/profileState.ts` and `ui/sidebarUserState.ts`. Profile and sidebar React components subscribe directly; overlay visibility and the document tier attribute remain shell responsibilities. `profileState.test.mjs` and `sidebarUserState.test.mjs` cover both store contracts.
+
 ### Step 4.3 rebaseline (2026-09-01)
 
 The original Step 4.3 estimate assumed that Step 4.2 would leave `ui/delegate.js` unused. The audit after 4.2 found that the static shell in `index.html` still contained 143 `data-action` attributes across roughly 40 actions, while `windowExports.js` still exposed about 100 `window.X = X` bindings. Step 4.3 is therefore split into independently reviewable substeps: Auth, display preferences, sidebar/navigation, composer/mode, workspace controls, modal backdrops, and finally delegate deletion.

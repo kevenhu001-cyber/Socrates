@@ -2,7 +2,7 @@ import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { useCallback, useState } from 'react';
-import { useUserInfo } from './sidebarChrome.bridge';
+import { useUserInfo } from './sidebarChrome.store';
 import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
 

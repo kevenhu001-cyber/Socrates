@@ -8,19 +8,17 @@
  *   CURRENT_USER, state, escapeHtml, esc, t, loadCustomInstructions,
  *   saveCustomInstructions, apiFetch, syncModelPills, closeProfile (self)
  *
- * React migration bridge — publishes state so the React compatibility
- * root renders the modal content. Installed by
- * frontend/src/react/profileModal/profileModalStore.ts under `?react=1`;
- * legacy mode never sees a subscriber so the helpers are cheap no-ops.
+ * React subscribes to profile and sidebar-user module stores; this module
+ * remains the owner of profile actions and imperative shell visibility.
  */
 
 import { webSearchOn, setWebSearchOn } from '../config/providers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { publishProfileState } from './profileState.ts';
+import { publishSidebarUser } from './sidebarUserState.ts';
 
 
-/* React migration bridge — publishes current profile state so the React
-   compatibility root can render the modal content via useSyncExternalStore. */
 function userInitials(name: string) {
   const parts = name.trim().split(/\s+/);
   return parts.length > 1
@@ -31,7 +29,7 @@ function userInitials(name: string) {
 function joinedDate(createdAt: string|number|Date|null|undefined) {
   if (!createdAt) return "—";
   try { return new Date(createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }); }
-  catch { return createdAt; }
+  catch { return String(createdAt); }
 }
 
 function profileUserSnapshot(user: NonNullable<import("../types/runtimeWindow.ts").RuntimeWindow["CURRENT_USER"]>) {
@@ -48,34 +46,23 @@ function profileUserSnapshot(user: NonNullable<import("../types/runtimeWindow.ts
 }
 
 function _publishProfileState() {
-  try {
-    const bridge = browserWindow.__socratesProfileBridge;
-    if (!bridge || typeof bridge.publish !== "function") return;
-    const cu = browserWindow.CURRENT_USER || {};
-    const inst = loadCustomInstructions();
-    bridge.publish({
-      isOpen: !document.getElementById("profileOverlay")!.classList.contains("hidden"),
-      user: profileUserSnapshot(cu),
-      webSearchOn: !!webSearchOn,
-      currentLang: (typeof browserWindow._currentLang === "string") ? browserWindow._currentLang : "en",
-      instResponse: (inst && inst.response) || "",
-      instAbout: (inst && inst.about) || "",
-      instSaveState: null,
-    });
-  } catch (_) {
-    reportSwallow(_, 'empty catch: ui/profile.ts:65', 'expected');
-    /* swallow — bridge is best-effort */
-  }
+  const cu = browserWindow.CURRENT_USER || {};
+  const inst = loadCustomInstructions();
+  publishProfileState({
+    user: profileUserSnapshot(cu),
+    webSearchOn: !!webSearchOn,
+    currentLang: (typeof browserWindow._currentLang === "string") ? browserWindow._currentLang : "en",
+    instResponse: inst.response || "",
+    instAbout: inst.about || "",
+    instSaveState: null,
+  });
 }
 
 /* React owns the profile modal and sidebar user row unconditionally
    under the always-on runtime. The publish path is the only thing
    the React side reads; the legacy DOM mutations are dropped. */
 
-/* React migration bridge — publishes current user state so the sidebar
-   footer React component can render the avatar, name, and tier badge.
-   Installed by frontend/src/react/sidebar-chrome/sidebarChromeStore.ts
-   under `?react=1`; legacy mode never sees a subscriber. */
+/* The sidebar footer React component reads this normalized account view. */
 function sidebarUserSnapshot(user: import("../types/runtimeWindow.ts").RuntimeWindow["CURRENT_USER"]) {
   if (!user) return { initials: "?", displayName: "Guest", email: "", tier: "diophantus", tierLabel: "Free", isSignedIn: false };
   /* P_cowork-landing — the footer row is ~150px wide once the avatar and
@@ -104,18 +91,11 @@ function syncDocumentTier(user: import("../types/runtimeWindow.ts").RuntimeWindo
 }
 
 function _publishSidebarChrome() {
-  try {
-    const cu = browserWindow.CURRENT_USER || null;
-    /* Mirror the tier onto <html> so CSS can gate free-tier affordances
-       (the mobile "升级" pill in the top bar) without a JS listener. */
-    syncDocumentTier(cu);
-    const bridge = browserWindow.__socratesSidebarChromeBridge;
-    if (!bridge || typeof bridge.publish !== "function") return;
-    bridge.publish({ user: sidebarUserSnapshot(cu) });
-  } catch (_) {
-    reportSwallow(_, 'empty catch: ui/profile.ts:109');
-    /* swallow */
-  }
+  const cu = browserWindow.CURRENT_USER || null;
+  /* Mirror the tier onto <html> so CSS can gate free-tier affordances
+     (the mobile "升级" pill in the top bar) without a JS listener. */
+  syncDocumentTier(cu);
+  publishSidebarUser(sidebarUserSnapshot(cu));
 }
 
 /* (legacy sidebar-footer renderer is dead code — see the always-on
@@ -124,8 +104,8 @@ function _publishSidebarChrome() {
 /* ─── User footer + profile modal shell ─── */
 
 function renderUserFooter() {
-  const row = document.querySelector(".sidebar-footer .user-row");
-  if (!row) return;
+  // The React footer owns the row, so publish from account state without
+  // requiring a legacy DOM node to exist.
   _publishSidebarChrome();
 }
 
@@ -140,7 +120,6 @@ function openProfile() {
 
 function closeProfile() {
   document.getElementById("profileOverlay")!.classList.add("hidden");
-  _publishProfileState();
 }
 
 /* ─── Rename user ─── */
