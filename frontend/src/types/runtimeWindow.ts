@@ -33,7 +33,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "addStreamingMessage": (...args: Parameters<typeof import("../chat/streamingTurn")["addStreamingMessage"]>) => ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]> | Promise<ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]>>;
   "apiFetch": typeof import("../util/api")["apiFetch"];
   "appMode": typeof import("../config/providers")["appMode"];
-  "appendToolModule": typeof import("../ui/toolCards")["appendToolModule"];
   "askChatTurn": typeof import("../chat/turnController")["askChatTurn"];
   "askNextQuestion": typeof import("../tutor/socraticTurn")["askNextQuestion"];
   "attachments": typeof import("../attachments")["attachments"];

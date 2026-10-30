@@ -10,17 +10,15 @@
 //     `.open` class and the header's `aria-expanded`.
 //
 // The detailed `.agent-tool-card` chrome is what history/share replay and
-// the streaming controller mount via `window.appendToolModule(name, input,
-// container, opts)`. Rather than reproduce a full live tool run through the
-// mock stream, this spec drives a card directly through that global and then
-// simulates completion by flipping `card.dataset.toolState` — the same
+// the streaming controller mount via `appendToolModule(name, input, container,
+// opts)`. Rather than reproduce a full live tool run through the mock stream,
+// this spec drives a card through the typed legacy post-render gateway and
+// then simulates completion by flipping `card.dataset.toolState` — the same
 // attribute `chat/toolRuntime.ts` writes on a real terminal event. A shared
 // ~250ms interval in ui/toolCards.ts recomputes `toolCardView(run, Date.now())`
 // for running cards and writes `.agent-tool-status`; on the terminal
 // transition it latches the final total-duration label.
 //
-// Validation-only: creates a new spec file, no source changes.
-
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -28,6 +26,12 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 test.beforeEach(async ({ page }) => {
   await mockAuthedApp(page);
 });
+
+async function waitForToolModuleBridge(page) {
+  await expect.poll(() => page.evaluate(() => typeof window.__socratesLegacy?.postRender?.appendToolModule))
+    .toBe('function');
+  expect(await page.evaluate(() => 'appendToolModule' in window)).toBe(false);
+}
 
 /* Mount a fresh, running detailed tool card inside a dedicated assistant
    bubble and return a stable selector for it. We tag the card with a unique
@@ -48,7 +52,7 @@ async function mountRunningCard(page, { tool = 'code_interpreter', input = { cod
     bodyHost.className = 'msg-body';
     wrap.appendChild(bodyHost);
     list.appendChild(wrap);
-    window.appendToolModule(toolName, toolInput, bodyHost);
+    window.__socratesLegacy.postRender.appendToolModule(toolName, toolInput, bodyHost);
     const card = bodyHost.querySelector('.agent-tool-card');
     card.setAttribute('data-testid', id);
   }, { tool, input, testid });
@@ -60,8 +64,7 @@ test('running tool card shows a live elapsed timer that advances', async ({ page
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // The global must be wired by windowExports.js for the mount below.
-  await expect.poll(() => page.evaluate(() => typeof window.appendToolModule)).toBe('function');
+  await waitForToolModuleBridge(page);
 
   const card = await mountRunningCard(page);
 
@@ -102,7 +105,7 @@ test('completed tool card shows the terminal state and a final total-duration la
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
-  await expect.poll(() => page.evaluate(() => typeof window.appendToolModule)).toBe('function');
+  await waitForToolModuleBridge(page);
 
   const card = await mountRunningCard(page);
   await expect(card).toHaveAttribute('data-tool-state', 'running');
@@ -140,7 +143,7 @@ test('error terminal state is reflected on the card', async ({ page }) => {
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
-  await expect.poll(() => page.evaluate(() => typeof window.appendToolModule)).toBe('function');
+  await waitForToolModuleBridge(page);
 
   const card = await mountRunningCard(page, { tool: 'web_search', input: { query: 'kittens' } });
   await expect(card).toHaveAttribute('data-tool-state', 'running');
@@ -161,7 +164,7 @@ test('header click toggles collapse (.open / aria-expanded)', async ({ page }) =
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
-  await expect.poll(() => page.evaluate(() => typeof window.appendToolModule)).toBe('function');
+  await waitForToolModuleBridge(page);
 
   // Use a code tool so the disclosure body carries content (a code block),
   // matching the collapse default the renderer applies to running cards.

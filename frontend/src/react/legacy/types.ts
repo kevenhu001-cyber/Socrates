@@ -121,6 +121,7 @@ export interface LegacyProfile {
 }
 
 export interface LegacyPostRender {
+  appendToolModule: typeof import('../../ui/toolCards.ts')['appendToolModule'];
   processPendingMermaid(root?: HTMLElement): void;
   /**
    * Frame-coalesced variant of processPendingMermaid for per-row callers:

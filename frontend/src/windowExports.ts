@@ -323,12 +323,6 @@ browserWindow.refreshExamI18n = function () {
   if (_examImport) _examImport.then(function (m: { refreshExamI18n: () => void; }) { m.refreshExamI18n(); });
 };
 
-/* ─── ui/toolCards.ts — needed by share.js to restore tool cards ─── */
-import { appendToolModule } from './ui/toolCards.ts';
-/* appendToolModule must stay on window: e2e/tool-card-lifecycle.spec.mjs
-   mounts cards through it and polls for its presence. */
-browserWindow.appendToolModule = appendToolModule;
-
 /* ─── ui/greeting.js — ChatGPT-style personalized greeting (P_chatgpt-landing) ─── */
 /* main.js imports renderGreeting directly; bare import keeps evaluation
    order. */

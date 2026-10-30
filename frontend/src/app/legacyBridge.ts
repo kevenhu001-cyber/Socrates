@@ -52,7 +52,7 @@ import { loadWebSearch } from '../chat/webSearchLoader.ts';
 import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid, processPendingVizActions } from '../render/vizStubs.ts';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.ts';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.ts';
-import { appendInlineArtifact } from '../ui/toolCards.ts';
+import { appendInlineArtifact, appendToolModule } from '../ui/toolCards.ts';
 import { formatMsgProgressive } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
@@ -260,6 +260,7 @@ browserWindow.__socratesLegacy = {
     setLang: browserWindow.setLang,
   },
   postRender: {
+    appendToolModule,
     processPendingMermaid,
     schedulePendingMermaid: () => schedulePendingMermaid(),
     processPendingViz,
