@@ -2,15 +2,13 @@
 // Extension subsystem entry point.
 //
 // installExtensions() imports every module (which registers its
-// ExtensionDefinition) and installs the agent-run bridge. It also
-// installs thin window.* delegators so legacy inline handlers and the
-// existing windowExports.js keep working with identical signatures.
+// ExtensionDefinition) and installs thin window.* delegators so legacy inline
+// handlers and the existing windowExports.js keep working with identical signatures.
 //
 // IMPORTANT: this module must be imported for side effects from
 // windowExports.js (or main.js) so Vite keeps it in the bundle.
 
 import { registry } from './registry';
-import { installAgentRunBridge } from './agentRunStore';
 import { buildExtensionContext } from './context';
 import { getVisibleComposerSurface } from '../composer/controller.ts';
 
@@ -29,14 +27,12 @@ import { createSiteExtension } from './modules/createSite';
 let installed = false;
 
 /**
- * Register all extension modules + install the agent-run bridge.
+ * Register all extension modules.
  * Idempotent — safe to call from multiple import sites.
  */
 export function installExtensions(): void {
   if (installed) return;
   installed = true;
-
-  installAgentRunBridge();
 
   registry
     .register(writeExtension)

@@ -3,6 +3,7 @@
  * window._activeTemplate (mirrored by setActiveTemplate in main.js).
  */
 import { stateStore } from '../state/store.ts';
+import { publishAgentRun } from '../extensions/agentRunStore.ts';
 import type { AgentRunEvent } from '../extensions/types.ts';
 import type { StreamingTurnController } from './turnState.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
@@ -20,14 +21,12 @@ function activeTemplate(): { runId?: string; workflow?: string } | null {
 }
 
 function publishEvent(event: AgentRunEvent, extra?: Partial<AgentRunEvent> | null): void {
-  const bridge = (window as ToolCallbacksWindow).__socratesAgentRunBridge;
-  if (!bridge || typeof bridge.publish !== 'function') return;
   const merged: AgentRunEvent = extra ? Object.assign({}, event, extra) : event;
-  // empty-catch: intentional — the agent-run bridge is optional and a publish
-  // failure must never break the stream it reports on.
-  try { bridge.publish(merged); } catch (error) {
+  // empty-catch: intentional — a progress-reporting failure must never break
+  // the stream it reports on.
+  try { publishAgentRun(merged); } catch (error) {
     reportEmptyCatch(error, 'empty catch: chat/toolCallbacks.ts:27', 'expected');
-    /* optional bridge */
+    /* progress is best-effort */
   }
 }
 

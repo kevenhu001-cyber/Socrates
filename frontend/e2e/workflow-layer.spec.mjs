@@ -3,22 +3,16 @@
 // part of the normal chat layout.
 
 import { test, expect } from '@playwright/test';
+import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-async function waitForBridge(page) {
-  await page.waitForFunction(
-    () => Boolean(window.__socratesAgentRunBridge && typeof window.__socratesAgentRunBridge.publish === 'function'),
-    null,
-    { timeout: 10_000 },
-  );
-}
-
-async function publish(page, event) {
-  await waitForBridge(page);
-  await page.evaluate((ev) => {
-    window.__socratesAgentRunBridge.publish(ev);
-  }, event);
+async function activateExtension(page, actionName) {
+  await page.evaluate((name) => {
+    const action = window[name];
+    if (typeof action !== 'function') throw new Error(`${name} is not installed`);
+    action();
+  }, actionName);
 }
 
 async function enterChat(page) {
@@ -36,52 +30,50 @@ test('workflow layer mounts empty and shows stepper on research planning', async
 
   const layer = page.locator('#workflowLayerReactRoot .workflow-layer');
   await expect(layer).toHaveCount(0);
+  expect(await page.evaluate(() => !('__socratesAgentRunBridge' in window))).toBe(true);
 
-  await publish(page, {
-    runId: 'research-smoke',
-    workflow: 'research',
-    stage: 'planning',
-    status: 'running',
-    message: 'Preparing the search strategy…',
-  });
+  await activateExtension(page, 'exploreAction');
 
   await expect(page.locator('#workflowLayerReactRoot .workflow-layer')).toHaveCount(1);
   await expect(page.locator('#chatView #workflowLayerReactRoot')).toHaveCount(1);
   await expect(page.locator('.agent-stepper')).toBeVisible();
-  await expect(page.locator('.agent-stepper-workflow')).toHaveText('Find sources');
+  await expect(page.locator('.agent-stepper-workflow')).toHaveText('Explore');
   await expect(page.locator('.agent-stepper-stages .agent-stepper-stage')).toHaveCount(4);
   await expect(page.locator('.agent-stepper-stage-active')).toHaveText(/Plan/);
 });
 
 test('stepper advances through searching and hides after completed', async ({ page }) => {
-  await mockAuthedApp(page);
-  await gotoAndSettle(page, '/');
-  await waitForAppShell(page);
-  await enterChat(page);
-
-  await publish(page, {
-    runId: 'research-smoke-2',
-    workflow: 'research',
-    stage: 'planning',
-    status: 'running',
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    const encoder = new TextEncoder();
+    let controller;
+    window.fetch = (input, init) => {
+      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      if (!url.includes('/chat/stream')) return nativeFetch(input, init);
+      const stream = new ReadableStream({
+        start(nextController) {
+          controller = nextController;
+          nextController.enqueue(encoder.encode(
+            `event: tool_use\ndata: ${JSON.stringify([{ id: 'research-web', name: 'web_search', input: { query: 'test' } }])}\n\n`,
+          ));
+        },
+      });
+      window.__finishResearchStream = () => {
+        controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"Research is complete."}}]}\n\ndata: [DONE]\n\n'));
+        controller.close();
+      };
+      return Promise.resolve(new Response(stream, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      }));
+    };
   });
-  await publish(page, {
-    runId: 'research-smoke-2',
-    workflow: 'research',
-    stage: 'searching',
-    status: 'running',
-    message: 'Searching sources…',
-    toolCallIds: ['tc-1'],
-  });
+  await prepareChatWorkbench(page);
+  await activateExtension(page, 'exploreAction');
+  await page.evaluate(() => { window.askChatTurn('Research the sample topic.'); });
 
   await expect(page.locator('.agent-stepper-stage-active')).toHaveText(/Search/);
-
-  await publish(page, {
-    runId: 'research-smoke-2',
-    workflow: 'research',
-    stage: 'completed',
-    status: 'succeeded',
-  });
+  await page.evaluate(() => window.__finishResearchStream());
   await expect(page.locator('.workflow-layer')).toHaveClass(/workflow-layer-done/);
   await expect(page.locator('#workflowLayerReactRoot .workflow-layer')).toHaveCount(0, { timeout: 5000 });
 });
@@ -92,12 +84,7 @@ test('analyze planning does not render a separate analysis workbench', async ({ 
   await waitForAppShell(page);
   await enterChat(page);
 
-  await publish(page, {
-    runId: 'analyze-smoke',
-    workflow: 'analyze',
-    stage: 'planning',
-    status: 'running',
-  });
+  await activateExtension(page, 'analyzeAction');
 
   await expect(page.locator('.analyze-workbench')).toHaveCount(0);
   await expect(page.getByText('Analysis tools', { exact: true })).toHaveCount(0);

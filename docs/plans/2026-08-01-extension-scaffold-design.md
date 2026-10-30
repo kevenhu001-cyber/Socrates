@@ -326,6 +326,8 @@ export function publishAgentRun(event: AgentRunEvent): void {
 
 `installAgentRunBridge()` 在 `extensions/index.ts` 中调用,把 `publishAgentRun` 暴露到 `window.__socratesAgentRunBridge`,供测试与 legacy 代码调用。
 
+**实现后续（2026-10-30）：** window bridge 已退役。扩展 context 与 `chat/toolCallbacks.ts` 直接调用模块内的 `publishAgentRun`，React 继续通过 `getAgentRunSnapshot` / `subscribeToAgentRuns` 订阅；工作流 E2E 通过真实 Explore 激活和模拟 `web_search` SSE 帧覆盖，不再依赖全局注入。
+
 React 组件订阅模式:
 
 ```ts

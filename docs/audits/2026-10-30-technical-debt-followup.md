@@ -21,7 +21,7 @@
 |---|---|---|
 | 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
 | 中 | Expo / Universal App 依赖告警 | 审计当前仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；其共同来源是 Expo CLI 使用的 `zod@3.25.76`（GHSA-mrhx-c7xc-m3w5）。CLI 声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 不满足该范围；节点只在开发/构建工具链中。升级到 Expo 发布兼容版本后再移除例外，不通过不兼容的 major override 掩盖它。 |
-| 中 | SPA 旧 DOM 与 React、window bridge、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list 与 Cmd-K 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、聊天运行时、agent-run 及其他仍有消费者的 typed window bridge 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | SPA 旧 DOM 与 React、window bridge、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K 与 agent-run window 状态 / 事件桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、聊天运行时及其他仍有消费者的 typed window bridge 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -41,6 +41,7 @@
 - 附件 store 单测 1/1 通过；迁移后 SPA `npm run build`、`npm run lint`、`npm run lint:docs` 均通过，`attachments-compat.spec.mjs` 10/10 覆盖共享数组发布、React chip、上传、重试及移除；旧全局快照断言已改为检查稳定的 `window.attachments` 与用户界面行为。
 - session-list store 单测 1/1 通过，覆盖列表快照、不可变数组、行引用稳定、筛选状态保留和即时选中去重；SPA 构建、前端 lint、文档路径检查通过。定向 Playwright 19/19 通过：性能交互 CPU x1 1/1（20/500/2000 行）、`session-tags`、`recents-archive` 与 `sidebar-nav` 18/18。
 - Cmd-K 状态桥迁移单测 1/1 通过；SPA 构建、前端 lint、文档路径检查通过；Cmd-K 兼容、键盘、语言、焦点陷阱与 Fuse 延迟加载回归共 12/12 通过。
+- agent-run store / extension 单测 11/11 通过；SPA 构建、前端 lint、文档路径检查通过；`workflow-layer.spec.mjs` 3/3 通过，覆盖真实 Explore 激活、工具流阶段推进与 analyze 隔离。
 - 本轮最终 SPA `npm run build`、`npm run lint`、`npm run lint:docs` 均通过；构建产物未纳入版本控制。
 - 前端生产构建与 Universal App `export:web` 成功；最终构建后运行确认弹窗、会话列表和 tutor Playwright：29/29 通过。
 - `node scripts/audit-ratchet.mjs apps/socrates` 通过（3 条已审阅 high 节点，0 条新增）；`apps/socrates` 的 `npm run export:web` 成功。

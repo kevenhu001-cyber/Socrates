@@ -66,6 +66,8 @@ index.html                         静态 shell / 挂载宿主 / CSP
 - Cmd-K 搜索状态由 `ui/cmdKState.ts` 持有；懒加载的 `ui/cmdK.impl.ts` 发布搜索结果，React 菜单订阅
   同一模块 store。命令动作仍通过 `window.openCmdK` 等兼容入口触发，不再经 `window.__socratesCmdK`
   发布状态。
+- Explore / analyze 的工作流阶段事件由 `extensions/agentRunStore.ts` 在模块内发布；扩展 context、聊天工具回调和
+  React 阶段卡片共享同一 store，不再安装 `window.__socratesAgentRunBridge`。
 - 消息列表直接订阅聊天运行时；没有消费者的独立消息列表 bridge 已删除。
 - `auth` 的 `__socratesMountReactCompatibility` 仍是兼容启动通知，保留认证后才加载
   editor / modal 的时序。消息挂载和分享接管的四个 window 字段已由中立模块替代。
