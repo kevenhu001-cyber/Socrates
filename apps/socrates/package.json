@@ -36,7 +36,7 @@
     "expo-system-ui": "~57.0.4",
     "marked": "13.0.3",
     "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react-dom": "19.3.1",
     "react-native": "0.86.3",
     "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
