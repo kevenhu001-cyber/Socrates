@@ -4,11 +4,12 @@
    this module owns provider validation, retry policy, and turn cleanup.
    Bubble rendering and turn-controller setup live in the lazy
    streamingTurn.js module; message submission stays in sendPipeline.js.
-   Reads main.js globals via window.* (state, getActiveProvider,
-   offlineGuard, etc.). */
+   Reads the active provider from the typed window bridge. Retry budget and
+   offline status are imported from their module owner. */
 
 import { stateStore } from '../state/store.ts';
 import { turnState } from './turnState.ts';
+import { offlineGuard, STREAM_MAX_ATTEMPTS } from './offline.ts';
 import {
   AI_MAX_ATTEMPTS,
   isUserAbort,
@@ -22,8 +23,6 @@ import { reportSwallow } from '../util/reportSwallow.ts';
  * because a stream without them is a boot-order bug the original would throw on. */
 interface StreamWindow extends Window {
   getActiveProvider: () => unknown;
-  offlineGuard: () => boolean;
-  STREAM_MAX_ATTEMPTS?: number;
 }
 
 /** Resolved value of a completed stream call. */
@@ -81,7 +80,7 @@ function bindAbortSignal(
 function maxStreamAttempts(opts?: StreamCallOptions | null): number {
   const configured = opts && typeof opts.maxAttempts === 'number'
     ? opts.maxAttempts
-    : (window as unknown as StreamWindow).STREAM_MAX_ATTEMPTS;
+    : STREAM_MAX_ATTEMPTS;
   return typeof configured === 'number' && configured > 0
     ? configured
     : AI_MAX_ATTEMPTS;
@@ -200,7 +199,6 @@ export async function callAPIStream(
 ): Promise<StreamResult | null> {
   const win = window as unknown as StreamWindow;
   const getActiveProvider = win.getActiveProvider;
-  const offlineGuard = win.offlineGuard;
   const maxAttempts = maxStreamAttempts(opts);
   const retryOptions: AIRequestOptions = Object.assign({}, opts || {}, {
     source: 'chat',

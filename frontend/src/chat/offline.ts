@@ -10,9 +10,6 @@
 // never aborts a response on its own. Only a user stop, a session switch, or
 // a transport error ends a request.
 //
-// Window exposures (window.offlineGuard / STREAM_MAX_ATTEMPTS) live in
-// src/windowExports.ts for the remaining legacy stream consumer.
-
 /* Six attempts = the initial request plus five fixed-delay retries. */
 export const STREAM_MAX_ATTEMPTS  = 6;
 

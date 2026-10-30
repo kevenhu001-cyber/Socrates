@@ -9,8 +9,7 @@ function environment() {
   globalThis.document = { cookie: '' };
   globalThis.window = {
     getActiveProvider: () => ({ isBuiltIn: false, name: 'test' }),
-    offlineGuard: () => false,
-    STREAM_MAX_ATTEMPTS: 1,
+    addEventListener() {},
   };
   globalThis.fetch = async () => {
     requests += 1;

@@ -264,11 +264,6 @@ browserWindow.updateComposerBtn = updateComposerBtn;
 import { setLang } from './i18n.ts';
 browserWindow.setLang = setLang;
 
-/* ─── chat/offline.js ─── */
-import { STREAM_MAX_ATTEMPTS, offlineGuard } from './chat/offline.ts';
-browserWindow.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
-browserWindow.offlineGuard = offlineGuard;
-
 /* ─── ui/usage.ts ───
    Lazy (~11KB): the usage overlay only loads on first open. The module's
    own listeners mount inside the lazy loader (previously done eagerly

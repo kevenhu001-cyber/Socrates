@@ -44,9 +44,7 @@ function installEnvironment(chunks) {
     getActiveProvider: () => ({ isBuiltIn: false, name: 'test' }),
     getCsrfToken: () => null,
     addEventListener() {},
-    offlineGuard: () => false,
     isReasoningProvider: () => false,
-    STREAM_MAX_ATTEMPTS: 1,
     appMode: 'chat',
   };
   return state;
@@ -66,7 +64,7 @@ test('final SSE frame without trailing newline is still parsed', async () => {
     256,
     (_delta, acc) => { full = acc; },
     null,
-    {},
+    { maxAttempts: 1 },
   );
 
   assert.ok(result, 'stream should resolve to a result');

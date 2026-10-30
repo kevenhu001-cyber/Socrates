@@ -50,9 +50,7 @@ function installEnvironment(chunks) {
     getActiveProvider: () => ({ isBuiltIn: false, name: 'test' }),
     getCsrfToken: () => null,
     addEventListener() {},
-    offlineGuard: () => false,
     isReasoningProvider: () => false,
-    STREAM_MAX_ATTEMPTS: 1,
     appMode: 'chat',
   };
 }
@@ -79,6 +77,7 @@ async function runStream(options = {}) {
     },
     (t) => { thinking.push(t); },
     {
+      maxAttempts: 1,
       onToolUse: (calls) => {
         events.push({ type: 'tool_use', full });
         if (options.onToolUse) options.onToolUse(calls, full);

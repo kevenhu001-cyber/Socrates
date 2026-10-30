@@ -29,8 +29,7 @@ function installStreamEnvironment(responses) {
   globalThis.window = {
     state,
     getActiveProvider: () => ({ isBuiltIn: false, name: 'test' }),
-    offlineGuard: () => false,
-    STREAM_MAX_ATTEMPTS: 6,
+    addEventListener() {},
     appMode: 'chat',
   };
   globalThis.fetch = async (url, opts) => {

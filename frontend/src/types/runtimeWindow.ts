@@ -14,7 +14,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "GGBApplet": new (options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void }, useBrowser: boolean) => { inject(target: HTMLElement | string): void };
   "ReactNativeWebView": { postMessage(message: string): void } | undefined;
   "SOCRATES_STORAGE_BLOCKED": boolean;
-  "STREAM_MAX_ATTEMPTS": typeof import("../chat/offline")["STREAM_MAX_ATTEMPTS"];
   "SpeechRecognition": (new () => SpeechRecognitionRuntime) | undefined;
   "SpeechSynthesisUtterance": typeof SpeechSynthesisUtterance;
   "Audio": typeof Audio;
@@ -76,7 +75,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "loadUsageData": () => Promise<void> | undefined;
   "loadUsageMonth": () => Promise<void> | undefined;
   "markAuthSuccess": typeof import("../app/lifecycle")["markAuthSuccess"];
-  "offlineGuard": typeof import("../chat/offline")["offlineGuard"];
   "onCmdKInput": typeof import("../ui/cmdK")["onCmdKInput"];
   "onCmdKKey": typeof import("../ui/cmdK")["onCmdKKey"];
   "openAttachmentPicker": typeof import("../attachments/render")["openAttachmentPicker"];
