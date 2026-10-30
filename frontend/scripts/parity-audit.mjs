@@ -220,17 +220,13 @@ const SCENARIOS = {
   },
   async chat(page) {
     await page.evaluate((raw) => {
-      const messages = raw.map((m, i) => ({
-        clientId: `audit-${i}`, role: m.role, type: m.role, rawText: m.content,
-        html: typeof window.formatMsg === 'function' ? window.formatMsg(m.content) : `<p>${m.content}</p>`,
-      }));
       const s = window.stateStore;
       s.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
       s.dispatch({ type: 'state/set', key: 'topic', value: '贝叶斯定理' });
       s.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
-      s.dispatch({ type: 'state/set', key: 'messages', value: messages });
+      s.dispatch({ type: 'state/set', key: 'messages', value: [] });
+      raw.forEach((message) => window.addMessage(message.role, message.content));
       window.__testActivateMainView('chatView');
-      window.__socratesReactChatBridge?.publish({ type: 'state-synced', reason: 'parity-audit' });
     }, FIXTURE_MESSAGES);
     await page.waitForTimeout(800);
   },

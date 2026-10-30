@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SOURCE = [
@@ -27,8 +27,8 @@ for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light'
       }
       window.__testActivateMainView('chatView');
       document.body.dataset.conversationActive = 'true';
-      window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'tutor-widget-regression' });
     }, SOURCE);
+    await publishChatRuntime(page, { type: 'state-synced', reason: 'tutor-widget-regression' });
 
     const body = page.locator('.msg.assistant .msg-body');
     const example = body.locator('.inline-example');

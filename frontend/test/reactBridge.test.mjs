@@ -1,12 +1,5 @@
-// @ts-check
-/**
- * Unit tests for ui/reactBridge.ts — the cross-tree notification
- * channel between the legacy JS pipeline (main.js) and the React
- * tree. C5 island 1.
- *
- * Runs under the frontend `test:unit` runner which uses jsdom for
- * the window/document globals.
- */
+/* The publisher feeds the module-owned chat runtime store and keeps its DOM
+   event observation hook for browser integrations. */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
@@ -19,50 +12,49 @@ globalThis.document = dom.window.document;
 globalThis.CustomEvent = dom.window.CustomEvent;
 
 const { publishReactChatRuntime } = await import('../src/ui/reactBridge.ts');
+const { chatRuntimeStore } = await import('../src/ui/chatRuntimeStore.ts');
 
-test('calls bridge.publish when the React bridge is mounted', () => {
-  let received = null;
-  window.__socratesReactChatBridge = { publish(ev) { received = ev; } };
+test('publishes into the in-process chat runtime store', () => {
+  chatRuntimeStore.__resetForTests();
   publishReactChatRuntime({ type: 'state-synced', reason: 'unit-test' });
-  assert.deepEqual(received, { type: 'state-synced', reason: 'unit-test' });
-  delete window.__socratesReactChatBridge;
+  assert.equal(chatRuntimeStore.getSnapshot().lastEvent, 'state-synced');
 });
 
-test('fires the socrates:chat-runtime-changed CustomEvent on the window', () => {
+test('fires the chat runtime CustomEvent for browser integrations', () => {
   let captured = null;
-  const handler = (ev) => { captured = ev.detail; };
+  const handler = (event) => { captured = event.detail; };
   window.addEventListener('socrates:chat-runtime-changed', handler);
   publishReactChatRuntime({ type: 'state-synced', reason: 'event-test' });
   assert.deepEqual(captured, { type: 'state-synced', reason: 'event-test' });
   window.removeEventListener('socrates:chat-runtime-changed', handler);
 });
 
-test('survives a missing bridge — the CustomEvent leg still fires', () => {
-  delete window.__socratesReactChatBridge;
-  let captured = null;
-  const handler = (ev) => { captured = ev.detail; };
-  window.addEventListener('socrates:chat-runtime-changed', handler);
-  publishReactChatRuntime({ type: 'state-synced', reason: 'no-bridge' });
-  assert.deepEqual(captured, { type: 'state-synced', reason: 'no-bridge' });
-  window.removeEventListener('socrates:chat-runtime-changed', handler);
+test('subscriber failures do not break publishing or other subscribers', () => {
+  let received = null;
+  const removeThrowing = chatRuntimeStore.subscribe(() => { throw new Error('subscriber exploded'); });
+  const removeObserver = chatRuntimeStore.subscribe(() => {
+    received = chatRuntimeStore.getSnapshot().lastEvent;
+  });
+  assert.doesNotThrow(() => publishReactChatRuntime({ type: 'state-synced', reason: 'failure-test' }));
+  assert.equal(received, 'state-synced');
+  removeThrowing();
+  removeObserver();
 });
 
-test('swallows a throwing bridge subscriber without breaking the producer', () => {
-  window.__socratesReactChatBridge = { publish() { throw new Error('subscriber exploded'); } };
-  let captured = null;
-  const handler = (ev) => { captured = ev.detail; };
-  window.addEventListener('socrates:chat-runtime-changed', handler);
-  // Must not throw — the producer's try/catch around the bridge
-  // call is the contract the rest of main.js relies on.
-  assert.doesNotThrow(() => publishReactChatRuntime({ type: 'x' }));
-  assert.deepEqual(captured, { type: 'x' });
-  window.removeEventListener('socrates:chat-runtime-changed', handler);
-  delete window.__socratesReactChatBridge;
+test('the publisher works without a browser global', () => {
+  const previousWindow = globalThis.window;
+  try {
+    globalThis.window = undefined;
+    assert.doesNotThrow(() => publishReactChatRuntime({ type: 'state-synced', reason: 'ssr-test' }));
+    assert.equal(chatRuntimeStore.getSnapshot().lastEvent, 'state-synced');
+  } finally {
+    globalThis.window = previousWindow;
+  }
 });
 
-test('null / undefined event becomes an empty object on the CustomEvent', () => {
+test('a missing event is ignored by the store and normalized for CustomEvent listeners', () => {
   let captured = 'not-an-object';
-  const handler = (ev) => { captured = ev.detail; };
+  const handler = (event) => { captured = event.detail; };
   window.addEventListener('socrates:chat-runtime-changed', handler);
   publishReactChatRuntime(null);
   assert.deepEqual(captured, {});

@@ -10,10 +10,6 @@
 // src/react/legacy/types.ts and publish it via window.__socratesLegacy in
 // windowExports.js.
 //
-// The __socratesXxxBridge properties are typed bridge stores used by
-// individual React domains for state sharing — they are intentionally not
-// aggregated here to keep each bridge's isolation explicit.
-
 import type { LegacyActions } from '../react/legacy/types';
 
 type StateStoreAction =
@@ -73,13 +69,6 @@ declare global {
      * entries and re-typeset math that streamed as fallback text.
      */
     __socratesMathRenderRev?: number;
-
-    // ── Bridge stores (typed, per-domain) ────────────────────────────
-    // Each __socratesXxxBridge is defined together with its store module and
-    // should not grow beyond the store's scope. New stores must declare their
-    // exact type here.
-
-    __socratesReactChatBridge?: unknown;
 
     // ── Legacy inline handler functions (windowExports.js) ──────────
 

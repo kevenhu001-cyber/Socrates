@@ -389,6 +389,7 @@ function createStreamingToolRuntime(context: Pick<StreamingContext, 'state' | 's
       return state.ownsMessageSlot()?(stateStore.read('messages')[state.msgIdx]||null):null;
     },
     updateMessage:function(patch){state.patchOwnedMessage(patch)},
+    publishRuntimeEvent:publishReactChatRuntime,
     onInlineTool:function(entry){
       let offset=state.full.length;
       if(offset<segmentBase)offset=segmentBase;

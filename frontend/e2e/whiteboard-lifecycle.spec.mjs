@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
+import { publishChatRuntime } from './_lib.mjs';
 
 test('whiteboard roots render and dispose with their message output', async ({ page }) => {
   const errors = [];
@@ -26,8 +27,8 @@ test('whiteboard roots render and dispose with their message output', async ({ p
   await card.screenshot({ path: 'test-results/whiteboard-palette-owner.png' });
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
-    window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'whiteboard-release' });
   });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'whiteboard-release' });
   await expect(page.locator('.tl-container')).toHaveCount(0);
   await expect(page.locator('.visualization-card')).toHaveCount(0);
   expect(errors).toEqual([]);

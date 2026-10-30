@@ -1,6 +1,6 @@
 # 技术债状态复核
 
-日期：2026-10-30。复核基于已提交 HEAD `73ab19e5` 与当前工作树；生产数据库、真实供应商账户和设备未连接。本文件更新 2026-10-23 稳定性加固交接的状态，不把历史审计快照改写成当前结论。
+日期：2026-10-30。复核起点为已提交 HEAD `a64d4ba6`；当前工作树继续清理中。生产数据库、真实供应商账户和设备未连接。本文件更新 2026-10-23 稳定性加固交接的状态，不把历史审计快照改写成当前结论。
 
 ## 本次关闭或收窄
 
@@ -15,6 +15,7 @@
 | 显式 `any` 与由此积压的 ESLint 告警 | **本次已关闭** | SPA 默认 API 响应类型改为 `unknown` 并为调用方补窄契约；语音、worker、SSE、连接器、规划和可视化输入均以 `unknown` 加运行时校验处理。服务端同类边界也已收窄。`no-explicit-any` 已提升为 ESLint error；AST 守卫扫描 SPA、服务端、共享 packages 和 Universal App，当前为 0/0。生成的 OpenUI prompt 中的 `any` 示例文本属于提示词内容，不是 TypeScript 类型。 |
 | React 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile、sidebar 用户摘要、Composer Tools、附件、session-list 与 Cmd-K 状态的 window 状态桥 | **累计已移除十一项** | 十一个状态域分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts`、`ui/composerToolsState.ts`、`ui/attachmentsState.ts`、`ui/sessionListState.ts`、`ui/cmdKState.ts` 与 React 共享模块实例；不再创建对应的 window bridge。附件上传队列与稳定的 `window.attachments`、session cache 的 `window.SERVER_SESSIONS` 旧接口仍留在对应业务模块。 |
 | `state/` 六个命名空间的 `window.__socrates*Bridge` 别名 | **已移除** | 全仓没有消费者；模块内的 `sessionBridge`、`kbBridge`、`searchBridge`、`callBridge`、`uiBridge`、`examBridge` 和 `window.stateStore` facade 继续工作。 |
+| 聊天运行时的 `window.__socratesReactChatBridge` | **本轮已移除** | 快照、订阅与双 RAF 队列移入 `ui/chatRuntimeStore.ts`；React 和 legacy publisher 导入同一实例，`ToolRuntime` 通过依赖注入发布更新。移除 React 专用 adapter 文件与 `createImmutableBridge.windowKey`。E2E 使用构建可用的 `socrates:chat-runtime-publish` 事件或真实 `addMessage()`，生命周期用例观察 `socrates:chat-runtime-changed` 和最终 UI。 |
 
 ## 仍开放或尚无法确认
 
@@ -22,7 +23,7 @@
 |---|---|---|
 | 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
 | 中 | Expo / Universal App 依赖告警 | 审计当前仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；其共同来源是 Expo CLI 使用的 `zod@3.25.76`（GHSA-mrhx-c7xc-m3w5）。CLI 声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 不满足该范围；节点只在开发/构建工具链中。升级到 Expo 发布兼容版本后再移除例外，不通过不兼容的 major override 掩盖它。 |
-| 中 | SPA 旧 DOM 与 React、window bridge、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K 与 agent-run window 状态 / 事件桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、聊天运行时及其他仍有消费者的 typed window bridge 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -49,3 +50,4 @@
 - `node scripts/audit-ratchet.mjs apps/socrates` 通过（3 条已审阅 high 节点，0 条新增）；`apps/socrates` 的 `npm run export:web` 成功。
 - 服务器文件上传路由集成测试需要专用 `*_test` / `*_qa` 数据库，本轮环境没有可安全使用的测试库，因此未运行该数据库套件；生产 `.env` 被安全守卫拒绝，未访问生产数据库。
 - `git diff --check`、文档链接检查通过。本次没有运行生产迁移或访问生产数据库。
+- 聊天运行时 window bridge 退役：SPA production build、最终 `npm run lint` 通过；`reactBridge` 与 `chatRuntimeStore` 聚焦单测 14/14、`toolRuntime` 24/24 通过。受影响的 15 个 Playwright spec 共 60 条用例最终全部通过，覆盖模块 store 发布、真实流生命周期、消息列表、工具活动、长流性能及桌面/手机布局。E2E 通过 `socrates:chat-runtime-publish` 浏览器事件驱动生产 bundle，避免依赖开发态 `/src` 路径。

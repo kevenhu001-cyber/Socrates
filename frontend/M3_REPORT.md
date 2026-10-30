@@ -139,3 +139,5 @@ Estimated M4 scope: ~250 LOC of refactoring across these files, plus a 82 KB →
 ## Current implementation follow-up (2026-10-30)
 
 The six `window.__socrates{Session,Kb,Search,Call,Ui,Exam}Bridge` aliases described above were removed after a repository-wide consumer check found no remaining readers. The namespace bridge modules remain the canonical stores, and `window.stateStore` remains the legacy facade for existing DOM and E2E callers. New React code should import the typed store or selector hooks rather than look up a namespace store on `window`.
+
+The chat runtime was then moved to `src/ui/chatRuntimeStore.ts`, shared directly by React hooks and the legacy publisher. `window.__socratesReactChatBridge` and the generic factory's `windowKey` option are removed; `ToolRuntime` receives its publisher through `StreamingTurn` options. E2E fixtures use the app's module publisher or `addMessage()` rather than reading a store from `window`.

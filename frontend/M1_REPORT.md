@@ -216,3 +216,5 @@ The plan's "tokens + icon + bridge ≤ 10 KB gz" budget is met by a wide margin:
 - The Icon registry is the only consumer of the JSX-side `IconName` union. M2's `M2 store → bridge` migration does not need to touch it.
 - `useBridgeSelector` is the right hook for components that today call `useSyncExternalStore(subscribe, getSnapshot)` with a selector — `legacyAdapter.ts` files can keep their public hook signatures and re-export via `useBridgeSelector` internally.
 - The CSS modular tree is ready for `src/styles.css` → `src/styles/{layout,components,vendor}/*.css` extraction. The stub files in those directories already document the planned class membership.
+
+**Follow-up (2026-10-30):** `createImmutableBridge` no longer has the `windowKey` option. All live stores now share state through module imports; the last typed chat runtime global and the six namespace aliases were retired.

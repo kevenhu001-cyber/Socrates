@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
-import { setLang } from './_lib.mjs';
+import { publishChatRuntime, setLang } from './_lib.mjs';
 
 test('thinking disclosure supports keyboard control and preserves intent through completion', async ({ page }) => {
   await prepareChatWorkbench(page, { messages: [{
@@ -22,8 +22,8 @@ test('thinking disclosure supports keyboard control and preserves intent through
       ...message, rawText: '<think>internal draft with additional private detail</think>', _activity: { type: 'public_reasoning_summary', text: 'Checked the relevant sources.' },
     }));
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
-    window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'disclosure-update' });
   });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-update' });
   await expect(accordion.locator('.thinking-accordion-text')).toHaveText('Checked the relevant sources.');
   await expect(accordion).not.toContainText('internal draft');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -31,8 +31,8 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await page.evaluate(() => {
     const messages = window.stateStore.read('messages').map((message) => ({ ...message, type: 'assistant', _streamSettled: true }));
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
-    window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'disclosure-complete' });
   });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-complete' });
   await expect(accordion).not.toHaveAttribute('data-live', 'true');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await setLang(page, 'zh');

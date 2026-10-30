@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
+import { publishChatRuntime } from './_lib.mjs';
 
 test('new Chinese prose fades in while completed paragraphs and final text stay stable', async ({ page }) => {
   const errors = [];
@@ -10,16 +11,16 @@ test('new Chinese prose fades in while completed paragraphs and final text stay 
     window.stateStore.dispatch({ type: 'session/append-message', payload: {
       clientId: 'reveal-answer', role: 'assistant', type: 'streaming', rawText: text, html: '',
     } });
-    window.__socratesReactChatBridge.publish({ type: 'stream-delta', messageId: 'reveal-answer', textLength: text.length });
   }, text);
+  await publishChatRuntime(page, { type: 'stream-delta', messageId: 'reveal-answer', textLength: text.length });
   const bubble = page.locator('[data-client-id="reveal-answer"]');
   await expect(bubble.locator('.is-settled').first()).toContainText('已完成的段落保持稳定');
   await page.evaluate(() => { window.__revealPrefix = document.querySelector('[data-client-id="reveal-answer"] .is-settled'); });
   const finalText = text + '，通过 **柔和渐显** 呈现，中文与 emoji 😀 都保持完整。';
   await page.evaluate((rawText) => {
     window.stateStore.dispatch({ type: 'session/update-message', index: 1, clientId: 'reveal-answer', patch: { rawText } });
-    window.__socratesReactChatBridge.publish({ type: 'stream-delta', messageId: 'reveal-answer', textLength: rawText.length });
   }, finalText);
+  await publishChatRuntime(page, { type: 'stream-delta', messageId: 'reveal-answer', textLength: finalText.length });
   await expect(bubble.locator('strong')).toHaveText('柔和渐显');
   const evidence = await bubble.evaluate((el) => {
     const tail = el.querySelector('.is-tail');
@@ -62,8 +63,8 @@ test('new Chinese prose fades in while completed paragraphs and final text stay 
   await page.screenshot({ path: 'test-results/stream-reveal-mobile.png' });
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'session/update-message', index: 1, clientId: 'reveal-answer', patch: { type: 'assistant' } });
-    window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'stream-reveal-finished' });
   });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'stream-reveal-finished' });
   await expect(bubble.locator('.tool-run-prose.is-live')).toHaveCount(0);
   await expect(bubble).toContainText('中文与 emoji 😀 都保持完整');
   expect(await bubble.locator('.tool-run-prose').evaluateAll((els) => els.every((el) => el.getAnimations({ subtree: true }).length === 0))).toBe(true);

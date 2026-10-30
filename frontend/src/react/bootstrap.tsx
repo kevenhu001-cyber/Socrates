@@ -1,12 +1,12 @@
-import { installChatRuntimeBridge } from './chatRuntime.bridge';
 import { configureMountRegistry, runMountRegistry } from './lib/boot/registry';
 import { mountRegistryList } from './lib/boot/specs';
 import { mountAssistantTurn, releaseAssistantTurns } from './tool-run/mountTurn';
 import { registerAssistantTurnRenderer } from '../ui/assistantTurnRenderer';
+import { publishReactChatRuntime } from '../ui/reactBridge';
 
 export function bootstrapReactCompatibilityRuntime(): void {
   registerAssistantTurnRenderer({ mount: mountAssistantTurn, releaseAll: releaseAssistantTurns });
-  installChatRuntimeBridge();
+  publishReactChatRuntime({ type: 'state-synced', reason: 'react-bootstrap' });
   for (const id of ['newReplyPill', 'composerInputWrap']) {
     if (!document.getElementById(id)) throw new Error(`React mount target "#${id}" was not found.`);
   }

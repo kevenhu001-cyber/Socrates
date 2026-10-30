@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 
 async function controller(page) {
   await page.evaluate(async () => {
@@ -147,8 +147,8 @@ test('detail-free rows are static and native UI output is outside disclosure', a
       clientId: 'static-row', role: 'assistant', rawText: 'Done.', type: null,
       toolCalls: [{ id: 'empty', name: 'unknown_tool', status: 'completed', textOffset: 0, output: '' }],
     }] });
-    window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'static-row-fixture' });
   });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'static-row-fixture' });
   await expect(page.locator('div.tool-inline[data-tcid="empty"]')).toHaveCount(1);
   await expect(page.locator('.tool-inline summary, details.tool-inline')).toHaveCount(0);
 });

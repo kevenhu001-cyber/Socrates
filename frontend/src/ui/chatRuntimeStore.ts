@@ -1,12 +1,12 @@
 /**
- * Chat runtime bridge — M2 single-bridge migration.
+ * Chat runtime snapshot store.
  *
  * Carries the runtime snapshot that the React message list, the chat
  * composer, and the send-button indicator all subscribe to. The session
- * domain now publishes recursively frozen message rows; this bridge adds the
+ * domain now publishes recursively frozen message rows; this store adds the
  * stream lifecycle snapshot and keeps a defensive path for compatibility data.
  *
- * Why this bridge does not use `createImmutableBridge` directly
+ * Why this store does not use `createImmutableBridge` directly
  *  - The factory coalesces dispatches per animation frame, but only
  *    keeps the LAST pending action. The chat runtime needs two parallel
  *    coalescing queues (stream deltas and tool-run updates), both of
@@ -15,51 +15,29 @@
  *    any pending delta/tool-run updates BEFORE they commit, otherwise
  *    a fast final frame would lose the last visible character or tool
  *    row.
- *  - The legacy chatRuntimeStore contract — and the existing
+ *  - The chatRuntimeStore contract — and the existing
  *    `chatRuntimeStore.test.mjs` — assert exactly this two-queue
  *    behaviour. We preserve the custom RAF loop here and still expose
- *    the factory-shaped bridge interface (`getSnapshot`, `dispatch`,
- *    `subscribe`) so React hooks can use `useBridge(bridge)`.
+ *    the small store interface (`getSnapshot`, `dispatch`, `subscribe`) so
+ *    React hooks can use `useBridge(store)`.
  *
- * M2 conventions
- *  - `dispatch` and `publish` both route through the same RAF loop;
- *    `publish` is the legacy alias `main.js` and friends still call.
- *  - React subscribers use `useBridge(bridge)` directly.
- *  - The window-published bridge exposes `publish` for legacy callers
- *    (`window.__socratesReactChatBridge.publish(event)`).
+ * Producers and React consumers share this module singleton directly. The
+ * React adapter lives under `react/`; no store instance is published on the
+ * window object.
  */
 
-import type { ImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
-import { useBridge } from '../lib/bridge/useBridge.ts';
 import { getStreamRenderInterval } from '../render/streaming.ts';
 import { stateStore } from '../state/store.ts';
 import { reconcileMessageSnapshots } from './chatRuntimeSnapshot.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 import type {
   ChatRuntimeEvent,
   ChatRuntimeSnapshot,
   ChatStreamSnapshot,
   LegacyChatMessage,
-} from './types/domain';
+} from '../react/types/domain';
 
 type Listener = () => void;
-
-declare global {
-  interface Window {
-    __socratesReactChatBridge?: ChatRuntimeBridge;
-  }
-}
-
-/**
- * Legacy bridge interface — `main.js` and `chatRuntimeStore.test.mjs`
- * both call `.publish(event)` on `window.__socratesReactChatBridge`.
- * The shape mirrors the pre-M2 contract so legacy code stays
- * untouched.
- */
-export interface ChatRuntimeBridge {
-  getSnapshot: () => ChatRuntimeSnapshot;
-  publish: (event: ChatRuntimeEvent) => void;
-  subscribe: (listener: Listener) => () => void;
-}
 
 const IDLE_STREAM: ChatStreamSnapshot = Object.freeze({
   messageId: null,
@@ -253,7 +231,14 @@ function commit(
     lastEvent: event.type,
   });
 
-  listeners.forEach((listener) => listener());
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (error) {
+      /* A detached React subscriber must not break the legacy producer. */
+      reportSwallow(error, 'ui/chatRuntimeStore.notifySubscriber');
+    }
+  });
 }
 
 function cancelFrame(handle: number): void {
@@ -445,14 +430,11 @@ function subscribe(listener: Listener): () => void {
   };
 }
 
-/* The bridge conforms to the M1 `ImmutableBridge` shape (getSnapshot /
-   dispatch / subscribe / flush / __resetForTests) plus the legacy
-   `publish` alias so window-published bridges still expose the original
-   contract. */
-const chatRuntimeBridge: ImmutableBridge<ChatRuntimeSnapshot, ChatRuntimeEvent> & {
-  publish: (event: ChatRuntimeEvent) => void;
-  __resetForTests: () => void;
-} = {
+/* This store has two RAF queues and a terminal flush contract that do not fit
+   createImmutableBridge's generic single action queue. Keep the same read /
+   dispatch / subscribe interface for the React adapter without exposing it on
+   the browser global. */
+export const chatRuntimeStore = {
   getSnapshot: () => snapshot,
   dispatch: publish,
   publish,
@@ -482,45 +464,23 @@ const chatRuntimeBridge: ImmutableBridge<ChatRuntimeSnapshot, ChatRuntimeEvent> 
     clearDeltaTimer();
     lastDeltaCommitAt = 0;
     if (pendingDeltaFrame) {
-      window.cancelAnimationFrame(pendingDeltaFrame);
+      cancelFrame(pendingDeltaFrame);
       pendingDeltaFrame = 0;
     }
-    listeners.forEach((listener) => listener());
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        reportSwallow(error, 'ui/chatRuntimeStore.resetSubscriber');
+      }
+    });
   },
 };
 
-export function installChatRuntimeBridge(): ChatRuntimeBridge {
-  const existing = window.__socratesReactChatBridge;
-  if (existing) return existing;
-
-  const bridge: ChatRuntimeBridge = {
-    getSnapshot: chatRuntimeBridge.getSnapshot,
-    publish: chatRuntimeBridge.publish,
-    subscribe: chatRuntimeBridge.subscribe,
-  };
-  window.__socratesReactChatBridge = bridge;
-  bridge.publish({ type: 'state-synced', reason: 'react-bootstrap' });
-  return bridge;
-}
-
 export function getChatRuntimeSnapshot(): ChatRuntimeSnapshot {
-  return installChatRuntimeBridge().getSnapshot();
+  return chatRuntimeStore.getSnapshot();
 }
 
 export function subscribeToChatRuntime(listener: Listener): () => void {
-  return installChatRuntimeBridge().subscribe(listener);
-}
-
-/**
- * Direct access to the bridge for React subscribers via `useBridge`.
- * The factory's `useBridge` expects an `ImmutableBridge`, which the
- * custom bridge above already conforms to.
- */
-export const chatRuntimeImmutableBridge: ImmutableBridge<
-  ChatRuntimeSnapshot,
-  ChatRuntimeEvent
-> = chatRuntimeBridge;
-
-export function useChatRuntimeSnapshot(): ChatRuntimeSnapshot {
-  return useBridge(chatRuntimeBridge);
+  return chatRuntimeStore.subscribe(listener);
 }

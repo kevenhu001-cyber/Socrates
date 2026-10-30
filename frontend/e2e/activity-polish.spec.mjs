@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
+import { publishChatRuntime } from './_lib.mjs';
 
 const message = {
   clientId: 'activity-polish', role: 'assistant', rawText: 'The comparison is ready.',
@@ -95,8 +96,8 @@ for (const mobile of [false, true]) {
         toolCalls: entry.toolCalls.map((call) => ({ ...call, status: 'completed', output: '已完成资料核对。' })),
       } : entry);
       window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
-      window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'reference-complete' });
     });
+    await publishChatRuntime(page, { type: 'state-synced', reason: 'reference-complete' });
     await expect(surface).not.toHaveAttribute('data-live', 'true');
     await expect(caption).toHaveCSS('animation-name', 'none');
     await expect(surface.locator('.thinking-accordion-toggle')).toHaveAttribute('aria-expanded', 'true');

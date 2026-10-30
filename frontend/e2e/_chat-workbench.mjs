@@ -1,4 +1,4 @@
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 export const WORKBENCH_VIEWPORTS = Object.freeze({
@@ -30,11 +30,11 @@ export async function prepareChatWorkbench(page, options = {}) {
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: Array.isArray(messages) ? messages : [] });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
-    window.__socratesReactChatBridge?.publish({ type: 'state-synced', reason: 'workbench-fixture' });
   }, {
     sessionId: options.sessionId || 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     messages: options.messages || [],
   });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'workbench-fixture' });
 }
 
 export function textFrame(text) {

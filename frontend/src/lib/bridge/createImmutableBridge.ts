@@ -65,12 +65,6 @@ export interface CreateImmutableBridgeOptions<Snapshot extends RevisionedSnapsho
     state: Snapshot,
     action: Action,
   ) => Snapshot | Omit<Snapshot, 'revision'>;
-  /**
-   * Optional window-name the bridge should expose itself on. M1
-   * preserves the existing `window.__socratesXxxBridge` slots so
-   * legacy readers keep working; M2 will centralize the slot.
-   */
-  windowKey?: string;
 }
 
 type Listener = () => void;
@@ -96,7 +90,7 @@ function shallowFreeze<T>(value: T): T {
 export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Action>(
   options: CreateImmutableBridgeOptions<Snapshot, Action>,
 ): ImmutableBridge<Snapshot, Action> {
-  const { initial, reducer, windowKey } = options;
+  const { initial, reducer } = options;
 
   let snapshot: Snapshot = shallowFreeze(initial);
   const listeners = new Set<Listener>();
@@ -176,14 +170,6 @@ export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Actio
       listeners.forEach((listener) => listener());
     },
   };
-
-  if (windowKey && typeof window !== 'undefined') {
-    /* Avoid clobbering an existing bridge — that would silently drop
-       subscribers registered against the previous instance. */
-    if (!(windowKey in window)) {
-      (window as unknown as Record<string, unknown>)[windowKey] = bridge;
-    }
-  }
 
   return bridge;
 }

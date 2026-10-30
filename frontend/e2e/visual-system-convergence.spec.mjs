@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const VIEWPORTS = [{ width: 1440, height: 900 }, { width: 1280, height: 800 }, { width: 390, height: 844 }];
@@ -15,8 +15,8 @@ async function publish(page, rawText, { live = false, clientId = 'visual-answer'
     }
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
-    window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'visual-system-fixture' });
   }, { rawText, live, clientId, activity, restored });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'visual-system-fixture' });
   await expect(page.locator('.msg.assistant')).toHaveAttribute('data-client-id', clientId);
   if (!live) await expect(page.locator('.msg.assistant')).toHaveAttribute('data-stream-settled', 'true');
   await expect(page.locator('.tool-run-prose')).toContainText([rawText.startsWith('##') ? '清晰的阅读节奏' : 'First paragraph.']);

@@ -1,7 +1,7 @@
 import type { MessageItemProps } from './types';
 
 /**
- * chatRuntime.bridge publishes immutable per-message render snapshots and
+ * the chat runtime store publishes immutable per-message render snapshots and
  * preserves object identity for untouched rows. That makes reference equality
  * the source of truth for message invalidation instead of a growing set of
  * mutable revision counters.

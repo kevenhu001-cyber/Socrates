@@ -1,4 +1,4 @@
-import type { LegacyChatMessage, ToolCall } from './types/domain';
+import type { LegacyChatMessage, ToolCall } from '../react/types/domain';
 
 function messageIdentityKeys(message: LegacyChatMessage): ReadonlyArray<string> {
   const keys: string[] = [];

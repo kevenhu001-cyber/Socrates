@@ -199,6 +199,8 @@ New files: `src/react/confirm/{ConfirmDialog.tsx, confirm.bridge.ts, types.ts, i
 
 **Follow-up (2026-10-30):** `window.__socratesAgentRunBridge` was retired. Extension actions and `chat/toolCallbacks.ts` publish directly to the shared `extensions/agentRunStore.ts`, which React subscribes to. Workflow-layer browser coverage now activates Explore and streams a mocked `web_search` tool event through the chat path instead of injecting store events through a global.
 
+**Follow-up (2026-10-30):** `window.__socratesReactChatBridge` was retired. `ui/chatRuntimeStore.ts` owns the snapshot and coalescing queues; React subscribes through typed hooks, legacy publishers import the same module, and `ToolRuntime` receives the event publisher through its options. The React-only adapter file and `createImmutableBridge`'s `windowKey` capability were removed. The existing `socrates:chat-runtime-changed` CustomEvent remains an observation hook for browser integrations.
+
 ### Step 4.3 rebaseline (2026-09-01)
 
 The original Step 4.3 estimate assumed that Step 4.2 would leave `ui/delegate.js` unused. The audit after 4.2 found that the static shell in `index.html` still contained 143 `data-action` attributes across roughly 40 actions, while `windowExports.js` still exposed about 100 `window.X = X` bindings. Step 4.3 is therefore split into independently reviewable substeps: Auth, display preferences, sidebar/navigation, composer/mode, workspace controls, modal backdrops, and finally delegate deletion.

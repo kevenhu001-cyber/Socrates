@@ -85,8 +85,8 @@ below.
       (`frontend/src/react/cmdk/` + `frontend/e2e/cmd-k-compat.spec.mjs`).
       Legacy `src/ui/cmdK.ts` retains state ownership and still drives
       `window.openCmdK` / `onCmdKInput` / `onCmdKKey` / `openCmdKResult`;
-      React renders the modal contents via a typed `useSyncExternalStore`
-      bridge (`window.__socratesCmdK`). Legacy renderer is suppressed by a
+      `src/ui/cmdK.impl.ts` publishes state to `src/ui/cmdKState.ts`, which
+      React subscribes to directly. The legacy renderer is suppressed by a
       data-attribute guard so the two never collide.
 - [x] Sidebar nav buttons + recents filter chips ported to React/TS
       (`frontend/src/react/sidebar/` + `frontend/e2e/sidebar-compat.spec.mjs`).
@@ -103,7 +103,7 @@ below.
       `frontend/e2e/composer-tools-compat.spec.mjs`). Legacy
       `src/ui/composerTools.ts` still owns open/close/positioning and the
       document-level click/Escape/resize listeners; React renders the 6
-      menu items via a typed bridge (`window.__socratesComposerToolsBridge`).
+      menu items from `src/ui/composerToolsState.ts`.
       The menu element is pre-created on module load so React can hydrate
       eagerly; item clicks dispatch through legacy `window.composeAction` /
       `researchAction` / `toggleExtensionByKey` / `openPromptTemplatesModal`
@@ -115,8 +115,8 @@ below.
       `frontend/e2e/attachments-compat.spec.mjs`). Both `#attachmentChips`
       (chat composer) and `#topicAttachmentChips` (tutor topic setup) are
       hydrated; the pending-attachment store in `src/attachments.ts`
-      remains the source of truth, and React renders via a typed bridge
-      (`window.__socratesAttachmentsBridge`). Remove button dispatches
+      remains the source of truth, and React renders snapshots from
+      `src/ui/attachmentsState.ts`. Remove button dispatches
       through `window.removeAttachment`. Scope pivot from message list
       (Batch 4 original) to attachment chips: the message list is too
       tightly coupled to streaming + tool cards + thinking pills to port
@@ -133,8 +133,8 @@ below.
       ported to React/TS (`frontend/src/react/session-list/`). The
       `#recentsList` element is rendered via `createRoot` + `render`
       under the always-on runtime; `doRenderRecents()` in `main.js`
-      publishes the session list data to the
-      `window.__socratesSessionListBridge`. Empty states, tag pills, pin
+      publishes the session list data to
+      `ui/sessionListState.ts`. Empty states, tag pills, pin
       icon, mode badges, meta line, and delete/tag buttons are all
       handled by React.
 - [x] Composer input, send, and stop actions — send button content
@@ -475,6 +475,16 @@ bridge path, the CustomEvent path, the missing-bridge fallback,
 a throwing subscriber (must not break the producer), and the
 null-event → empty-detail contract. Test pass: frontend 328/328
 unit tests (was 323, +5 for reactBridge).
+
+Follow-up (2026-10-30): the runtime store now lives in
+`frontend/src/ui/chatRuntimeStore.ts`; React hooks and legacy modules import
+the same singleton. `window.__socratesReactChatBridge`, the React-only
+`chatRuntime.bridge.ts` adapter file, and `createImmutableBridge`'s
+`windowKey` publishing option were removed. `publishReactChatRuntime` remains
+the typed application publisher and keeps the CustomEvent observation hook;
+tool execution gets the publisher by dependency injection. The old e2e
+fixtures and visual scripts now use module imports or the actual `addMessage`
+entry point.
 
 Vector layer (2026-09-05): pgvector embedding enrichment + hybrid
 BM25+vector retrieval. Completes the vector half of the

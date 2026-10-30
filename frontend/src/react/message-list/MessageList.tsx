@@ -2,7 +2,7 @@ import type { Root } from 'react-dom/client';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { useEffect, useSyncExternalStore } from 'react';
 
-import { subscribeToChatRuntime } from '../chatRuntime.bridge';
+import { subscribeToChatRuntime } from '../../ui/chatRuntimeStore';
 import { ErrorBoundary } from '../ErrorBoundary';
 import type { LegacyChatMessage } from '../types/domain';
 import { reportSwallow } from '../../util/reportSwallow.ts';

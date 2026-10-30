@@ -1,10 +1,12 @@
 import { useBridge, useBridgeSelector } from '../lib/bridge/useBridge';
 import {
-  chatRuntimeImmutableBridge,
+  chatRuntimeStore,
   getChatRuntimeSnapshot,
   subscribeToChatRuntime,
-} from './chatRuntime.bridge';
+} from '../ui/chatRuntimeStore';
 import type { ChatRuntimeSnapshot, ChatStreamStatus } from './types/domain';
+
+const chatRuntimeImmutableBridge = chatRuntimeStore;
 
 export function useChatRuntimeSnapshot(): ChatRuntimeSnapshot {
   return useBridge(chatRuntimeImmutableBridge);

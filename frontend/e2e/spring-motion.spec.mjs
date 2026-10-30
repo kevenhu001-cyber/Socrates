@@ -31,12 +31,9 @@ async function bootWithAssistantReply(page) {
     window.__testActivateMainView('chatView');
   });
   await page.evaluate(() => {
-    const bridge = window.__socratesReactChatBridge;
-    if (!bridge) throw new Error('bridge missing');
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
-    bridge.publish({ type: 'state-synced', reason: 'spring-motion-spec' });
     window.addMessage('assistant', 'A reply worth reacting to.');
   });
 

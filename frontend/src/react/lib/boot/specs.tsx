@@ -58,7 +58,7 @@ function ensureWorkflowHost(doc: Document): HTMLElement | null {
 export function mountRegistryList(): MountSpec[] {
   const legacyComposer = getLegacyActions().composer;
   return [
-    /* 1. Bootstrap installs the chat runtime bridge before this registry
+    /* 1. Bootstrap seeds the chat runtime store before this registry
        runs, so every root can subscribe during mount. */
     { hostId: 'msgList', label: 'msg-list', mount: () => mountMessageList().root !== null },
     { hostId: 'newReplyPill', label: 'new-reply-pill', mount: (host) => {

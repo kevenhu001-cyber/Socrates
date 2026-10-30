@@ -9,7 +9,7 @@
 // doesn't depend on browser find-shortcut interception.
 
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('Ctrl-F find highlights matches, navigates, and clears on close', async ({ page }) => {
@@ -121,9 +121,9 @@ test('find flushes deferred history rows before searching the transcript', async
       value: () => {},
     });
     window.stateStore.dispatch({ type: 'session/replace-messages', payload: history });
-    window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'find-deferred-test' });
     window.__testActivateMainView('chatView');
   }, messages);
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'find-deferred-test' });
 
   await expect(page.locator('#msgList .msg')).toHaveCount(12);
   await page.evaluate(() => window.openFindInSession());

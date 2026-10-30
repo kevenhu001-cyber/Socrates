@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { reconcileMessageSnapshots } = await import('../src/react/chatRuntimeSnapshot.ts');
+const { reconcileMessageSnapshots } = await import('../src/ui/chatRuntimeSnapshot.ts');
 
 test('a frozen domain transcript crosses reconciliation zero-copy', () => {
   const row = Object.freeze({

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -31,21 +31,16 @@ test('React compatibility mode preserves the legacy application shell', async ({
 
   await page.evaluate(() => {
     window.setChatStopState(true);
-    window.__socratesReactChatBridge.publish({
-      type: 'stream-started',
-      messageId: 'compat-send-button',
-    });
   });
+  await publishChatRuntime(page, { type: 'stream-started', messageId: 'compat-send-button' });
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '1');
   await expect(page.locator('#composerPrimaryBtnContent rect')).toHaveCount(1);
 
   await page.evaluate(() => {
     window.setChatStopState(false);
-    window.__socratesReactChatBridge.publish({
-      type: 'stream-finished',
-      messageId: 'compat-send-button',
-      textLength: 0,
-    });
+  });
+  await publishChatRuntime(page, {
+    type: 'stream-finished', messageId: 'compat-send-button', textLength: 0,
   });
   await expect(page.locator('#composerPrimaryBtnContent path')).toHaveCount(1);
 });
@@ -68,18 +63,18 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    const bridge = window.__socratesReactChatBridge;
-    if (!bridge) throw new Error('React chat runtime bridge was not installed');
-
-    window.__reactChatSnapshots = [bridge.getSnapshot()];
-    window.__stopReactChatSnapshotCapture = bridge.subscribe(() => {
-      window.__reactChatSnapshots.push(bridge.getSnapshot());
-    });
-
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+  });
+
+  await page.evaluate(() => {
+    window.__reactChatEvents = [];
+    window.__reactChatRuntimeListener = (event) => {
+      window.__reactChatEvents.push(event.detail);
+    };
+    window.addEventListener('socrates:chat-runtime-changed', window.__reactChatRuntimeListener);
+
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '88888888-8888-4888-8888-888888888888' });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
-    bridge.publish({ type: 'state-synced', reason: 'e2e-setup' });
     window.addMessage('user', 'Observe the compatibility bridge.');
 
     const originalFetch = window.fetch.bind(window);
@@ -112,11 +107,11 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
   await expect(page.locator('#composerPrimaryBtnContent rect')).toHaveCount(0);
 
   const result = await page.evaluate(() => {
-    window.__stopReactChatSnapshotCapture?.();
-    const snapshots = window.__reactChatSnapshots;
+    window.removeEventListener('socrates:chat-runtime-changed', window.__reactChatRuntimeListener);
     return {
-      events: snapshots.map((item) => item.lastEvent),
-      final: window.__socratesReactChatBridge.getSnapshot(),
+      events: window.__reactChatEvents.map((event) => event.type),
+      visibleText: document.querySelector('#msgList')?.textContent || '',
+      messageCount: document.querySelectorAll('#msgList .msg').length,
     };
   });
 
@@ -135,14 +130,6 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
       .slice(result.events.indexOf('stream-finished') + 1)
       .filter((event) => event.startsWith('stream-')),
   ).toEqual([]);
-  expect(['stream-finished', 'tool-run-updated']).toContain(result.final.lastEvent);
-  expect(result.final).toMatchObject({
-    currentSessionId: '88888888-8888-4888-8888-888888888888',
-    messageCount: 2,
-    isStreaming: false,
-    stream: {
-      status: 'completed',
-      textLength: 'Bridge response.'.length,
-    },
-  });
+  expect(result.visibleText).toContain('Bridge response.');
+  expect(result.messageCount).toBe(2);
 });

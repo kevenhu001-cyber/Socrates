@@ -3,11 +3,9 @@
  * scripts/check-react-globals.mjs — React→legacy global coupling ratchet.
  *
  * src/react/legacy/gateway.ts states the contract: React code MUST NOT read
- * window.* directly; the typed gateway is the only allowed boundary. In
- * practice React also reads the per-domain `window.__socrates*Bridge` objects
- * (the bridge infrastructure itself) and ordinary browser APIs (window.location,
- * window.addEventListener, …). Those are legitimate; everything else is a
- * hidden legacy-global coupling that this check counts and freezes.
+ * window.* directly; the typed gateway is the only allowed legacy boundary.
+ * Ordinary browser APIs (window.location, window.addEventListener, …) are
+ * legitimate; app-owned globals do not get a blanket exemption.
  *
  * Counts may only go DOWN. If the count grows past the baseline the check
  * fails, so a new `window.<legacyFn>` read in React cannot land unnoticed.
@@ -76,7 +74,6 @@ function collect() {
     for (const m of text.matchAll(/window\.([A-Za-z_$][\w$]*)/g)) {
       const id = m[1];
       if (BROWSER.has(id)) continue;
-      if (id.startsWith('__socrates')) continue; /* bridge infrastructure */
       offenders.push({ file: `src/react/${rel}`, id });
     }
   }

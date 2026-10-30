@@ -1099,7 +1099,8 @@ async function shotBaseline(browser, viewport) {
     s.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     s.dispatch({ type: 'state/set', key: 'topic', value: topic });
     s.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
-    s.dispatch({ type: 'state/set', key: 'messages', value: messages });
+    s.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    messages.forEach((message) => window.addMessage(message.role, message.rawText));
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
     document.documentElement.dataset.userTier = tier;
@@ -1107,7 +1108,6 @@ async function shotBaseline(browser, viewport) {
     // Match the authenticated active-conversation controls used by Universal.
     document.querySelector('#findBtn')?.classList.remove('hidden');
     document.querySelector('#shareBtn')?.classList.remove('hidden');
-    window.__socratesReactChatBridge?.publish({ type: 'state-synced', reason: 'parity-fixture' });
     window.renderRecents?.();
   }, { ...FIXTURE, sessionId: 's1', tier: USER.tier });
   await settle(page);

@@ -13,12 +13,9 @@ async function seedTranscript(page) {
     window.__testActivateMainView('chatView');
   });
   await page.evaluate(() => {
-    const bridge = window.__socratesReactChatBridge;
-    if (!bridge) throw new Error('React chat runtime bridge was not installed');
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
-    bridge.publish({ type: 'state-synced', reason: 'toolbar-touch-spec' });
     window.addMessage('assistant', 'First answer.');
     window.addMessage('assistant', 'Second answer.');
   });

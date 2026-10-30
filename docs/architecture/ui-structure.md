@@ -46,7 +46,7 @@ index.html                         静态 shell / 挂载宿主 / CSP
   读取同一模块实例，React 订阅只留在 `useComposerPluginSelection.ts`。聊天层对 React
   实现的直接依赖已归零，插件选择不再依赖 window bridge。
 - Admin、聊天配置、快捷键、会话内查找、设置和存档 UI 的调用者直接使用各自模块状态；不再把这些
-  状态发布到 window。其他仍有遗留调用者的 bridge 继续保留，按领域迁移。
+  状态发布到 window。状态共享由模块 store 承担，旧全局仅保留明确的动作和兼容入口。
 - 确认弹窗、prompt templates 与 More 菜单状态由 `ui/confirmState.ts`、
   `ui/promptTemplatesState.ts`、`ui/morePopoverState.ts` 持有；React 通过 hook adapter
   订阅同一模块实例，不再读写对应的 window bridge。More 菜单显隐仍由 sidebar DOM class 管理。
@@ -70,7 +70,11 @@ index.html                         静态 shell / 挂载宿主 / CSP
   发布状态。
 - Explore / analyze 的工作流阶段事件由 `extensions/agentRunStore.ts` 在模块内发布；扩展 context、聊天工具回调和
   React 阶段卡片共享同一 store，不再安装 `window.__socratesAgentRunBridge`。
-- 消息列表直接订阅聊天运行时；没有消费者的独立消息列表 bridge 已删除。
+- 聊天运行时快照由 `ui/chatRuntimeStore.ts` 持有；React 消息列表与 composer 直接订阅模块实例，旧聊天调用者
+  通过 `ui/reactBridge.ts` 发布到同一 store。工具运行时通过注入的事件发布器更新状态，不再查找
+  `window.__socratesReactChatBridge`。构建后浏览器集成可用 `socrates:chat-runtime-publish` 事件发布，
+  观察方通过 `socrates:chat-runtime-changed` 接收生命周期通知。泛型 `createImmutableBridge` 也不再支持
+  `windowKey` 发布。
 - `auth` 的 `__socratesMountReactCompatibility` 仍是兼容启动通知，保留认证后才加载
   editor / modal 的时序。消息挂载和分享接管的四个 window 字段已由中立模块替代。
 
@@ -167,7 +171,7 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
 ## 状态更新（2026-10-30）
 
 - `frontend/src` 的 JavaScript → TypeScript 迁移已签收；不要再把 10 月 26 日记录的 109 个遗留 JS 当作当前数量。
-- 类型化兼容入口仍然存在：`app/legacyBridge.ts`、`ui/legacyShellListeners.ts` 和多项 `window.__socrates*Bridge` 仍由旧 DOM 与 React 边界消费。迁移到 TypeScript 消除了类型债，不代表这些运行时边界已退役。
+- 类型化兼容入口仍然存在：`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和认证后的 `__socratesMountReactCompatibility` 仍服务旧 DOM 与 React 边界。应用状态 store 已不再发布为 `window.__socrates*Bridge`；迁移到 TypeScript 也不代表 SPA 兼容层整体已退役。
 - 命名 SSE `error` 帧现在把状态码、错误码、是否可重试及限流等待提示一路保留到共享 API 的 `ApiError`。旧式只带消息的帧仍按 `502` 处理。
 - 未埋点空 catch 已清零：170 个调用点接入内容不外发、全局限流的 `reportSwallow`；76 个明确的可选能力、清理或最佳努力场景仅计入开发期预期吞错计数，其余异常按可恢复故障报告。剩下一处遥测初始化的 Vite 元数据回退有理由豁免。
 - 生产数据库迁移、Expo CLI 上游依赖修复、仍在使用的 SPA 兼容边界与跨端功能签收继续单独跟踪；

@@ -2,7 +2,7 @@
  * Shared contracts for the message list React migration boundary.
  *
  * The legacy `main.js` owns the message state (addMessage, addStreamingMessage,
- * editMessage, etc.) and pushes events through the chat runtime bridge.
+ * editMessage, etc.) and publishes events through the chat runtime store.
  * React reads immutable published snapshots and renders the message list
  * declaratively.
  */
@@ -29,7 +29,7 @@ export interface MessageToolbarCallbacks {
 }
 
 export interface MessageItemProps {
-  /** Immutable render snapshot published by chatRuntime.bridge. */
+  /** Immutable render snapshot published by the chat runtime store. */
   message: LegacyChatMessage;
   /** Global math-render revision from the remaining legacy KaTeX renderer. */
   mathRevision?: number;

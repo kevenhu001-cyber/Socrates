@@ -43,8 +43,8 @@
 
 | Guard | Enforces |
 |---|---|
-| `check-react-globals.mjs` | React does not read legacy `window.*` functions directly; the typed gateway (`react/legacy/gateway.ts`) is the only boundary. The `window.__socrates*Bridge` objects are exempt as bridge infrastructure — that exemption is why `check-state-ownership.mjs` exists |
-| `check-state-ownership.mjs` | React state access converges on `store/index.ts` typed hooks: no new `window.__socrates*Bridge` reads and no new string-keyed `stateStore.dispatch` writes. Shrink-only baseline (also `lint:state-ownership`) |
+| `check-react-globals.mjs` | React does not read legacy `window.*` globals directly; `react/legacy/gateway.ts` is the only legacy boundary. No blanket `__socrates*` bridge exemption remains |
+| `check-state-ownership.mjs` | React state access converges on `store/index.ts` typed hooks: no new string-keyed `stateStore.dispatch` writes. Shrink-only baseline (also `lint:state-ownership`) |
 | `check-button-primitive.mjs` | Raw JSX `<button>` elements under `src/react/**` (outside `src/react/ui/`) stay at or below their frozen count — counted from the TypeScript AST, so an HTML template string is not mistaken for an element. Use the shared primitives in `src/react/ui/` instead. Shrink-only baseline (also `lint:button-primitive`) |
 | `check-react-roots.mjs` | React root creation and hydration stay in `react/lib/boot/ownedRoot.ts`; retired transcript mount globals cannot return. Includes `lint:react-roots` and a shrink-only `--update` baseline |
 | `check-css-debt.mjs` | `!important` / hex colors / literal radii / stacked IDs stay at or below their frozen counts; the cascade order in `index.html` is proved against `styles/index.css` (nested `@import`s included), and no `@import` may sit after a style rule — the browser drops those silently |

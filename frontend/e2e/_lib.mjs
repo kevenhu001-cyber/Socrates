@@ -113,3 +113,12 @@ export async function setLang(page, lang) {
   }, lang);
   await page.waitForTimeout(300);
 }
+
+/** Publish through the browser event entry point shared by built app bundles. */
+export async function publishChatRuntime(page, event) {
+  await page.evaluate((runtimeEvent) => {
+    window.dispatchEvent(new CustomEvent('socrates:chat-runtime-publish', {
+      detail: runtimeEvent,
+    }));
+  }, event);
+}

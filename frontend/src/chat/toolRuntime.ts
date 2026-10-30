@@ -22,10 +22,8 @@
  *   approval and agent event lifecycles — chat/toolRuntime/approvals.ts, agentFrames.ts
  *   terminal result projection and write-back — chat/toolRuntime/resultProjection.ts, resultRuntime.ts
  */
-/* Type-only: the event shape is owned by the React store, but this module is
-   loaded straight from Node by test/toolRuntime.test.mjs, so the runtime
-   linkage stays the `window.__socratesReactChatBridge` global (same hand-off
-   `publishReactChatRuntime` in main.js uses). */
+/* Type-only: the stream controller injects the runtime event publisher so
+   this data orchestrator does not depend on a browser global or React tree. */
 import type { ChatRuntimeEvent } from '../react/types/domain';
 
 import type { AgentPlanData, AgentStepData } from '../ui/agentSteps.ts';
@@ -146,6 +144,8 @@ interface ToolRuntimeOptions {
   getMessage?: () => ToolMessage | null;
   /** Commit detached tool data through the owning session action. */
   updateMessage: (patch: Pick<ToolMessage, 'toolCalls' | '_toolRunRev'>) => void;
+  /** Notify the chat snapshot owner after the message data is committed. */
+  publishRuntimeEvent?: (event: ChatRuntimeEvent) => void;
   /** Accepted for compatibility; ignored — nothing is mounted. */
   ensureToolContainer?: () => HTMLElement;
   onToolActivity?: (toolName?: string) => void;
@@ -339,13 +339,10 @@ function createToolRuntimePublisher(
     if (!messageId) return;
     const event: ChatRuntimeEvent = { type: 'tool-run-updated', messageId };
     try {
-      const bridge = (typeof window !== 'undefined'
-        ? (window as unknown as Record<string, unknown>).__socratesReactChatBridge
-        : null) as { publish?: (event: ChatRuntimeEvent) => void } | null;
-      if (bridge && typeof bridge.publish === 'function') bridge.publish(event);
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:342');
-      /* Listener errors must not break the stream. */
+      options.publishRuntimeEvent?.(event);
+    } catch (error) {
+      reportEmptyCatch(error, 'chat/toolRuntime.publishRuntimeEvent');
+      /* A notification error must not break the stream. */
     }
   }
 

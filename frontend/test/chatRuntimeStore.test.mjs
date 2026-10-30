@@ -25,8 +25,8 @@ globalThis.window = fakeWindow();
 const { stateStore } = await import('../src/state/store.ts');
 stateStore.dispatch({ type: 'state/batch', patch: { currentSessionId: 's-1', phase: 'chat' } });
 
-const { installChatRuntimeBridge, getChatRuntimeSnapshot } = await import(
-  '../src/react/chatRuntime.bridge.ts'
+const { chatRuntimeStore, getChatRuntimeSnapshot } = await import(
+  '../src/ui/chatRuntimeStore.ts'
 );
 
 function runFrames() {
@@ -38,7 +38,8 @@ function runFrames() {
 /** Drain whatever a previous test left scheduled, then hand back the bridge. */
 function freshBridge() {
   runFrames();
-  return installChatRuntimeBridge();
+  chatRuntimeStore.__resetForTests();
+  return chatRuntimeStore;
 }
 
 function message(clientId, rawText) {
@@ -240,8 +241,8 @@ test('retry replacement removes the failed row and clears its terminal stream st
   assert.equal(after.lastEvent, 'stream-retry-replaced');
 });
 
-test('the bridge is a singleton, so legacy and React share one commit queue', () => {
-  const again = installChatRuntimeBridge();
-  assert.equal(again, globalThis.window.__socratesReactChatBridge);
+test('the module store is a singleton shared by publishers and React adapters', async () => {
+  const again = (await import('../src/ui/chatRuntimeStore.ts')).chatRuntimeStore;
+  assert.equal(again, chatRuntimeStore);
   assert.equal(getChatRuntimeSnapshot(), again.getSnapshot());
 });

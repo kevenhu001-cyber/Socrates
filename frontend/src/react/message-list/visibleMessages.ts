@@ -1,4 +1,4 @@
-import { getChatRuntimeSnapshot } from '../chatRuntime.bridge';
+import { getChatRuntimeSnapshot } from '../../ui/chatRuntimeStore';
 import type { LegacyChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity';
 

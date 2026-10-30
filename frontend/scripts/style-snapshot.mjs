@@ -99,17 +99,15 @@ try {
     if (collapsed) { await page.evaluate(() => window.toggleSidebar()); await page.waitForTimeout(600); }
     if (opts.scene === 'chat') {
       await page.evaluate((raw) => {
-        const messages = raw.map((m, i) => ({ clientId: `snap-${i}`, role: m.role, type: m.role, rawText: m.content,
-          html: window.formatMsg ? window.formatMsg(m.content) : `<p>${m.content}</p>` }));
         const s = window.stateStore;
         s.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
         s.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
-        s.dispatch({ type: 'state/set', key: 'messages', value: messages });
+        s.dispatch({ type: 'state/set', key: 'messages', value: [] });
+        raw.forEach((message) => window.addMessage(message.role, message.content));
         document.getElementById('topicSetup')?.classList.add('hidden');
         document.getElementById('mainInner')?.classList.add('hidden');
         document.getElementById('chatView')?.classList.remove('hidden');
         document.body.dataset.conversationActive = 'true';
-        window.__socratesReactChatBridge?.publish({ type: 'state-synced', reason: 'style-snapshot' });
       }, CHAT);
       await page.waitForTimeout(1200);
       await page.evaluate(() => { const l = document.getElementById('msgList'); if (l) l.scrollTop = 0; });

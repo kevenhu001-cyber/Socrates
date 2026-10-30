@@ -108,7 +108,7 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
 
 function MessageItemBase({ message, isLatest }: MessageItemProps) {
   const role = messageRole(message);
-  /* chatRuntime.bridge gives React an immutable snapshot for this row. */
+  /* The chat runtime store gives React an immutable snapshot for this row. */
   const presentation = deriveTurnPresentationState(message);
   const isLive = role === 'assistant' && !presentation.isSettled;
   const clientId = messageClientId(message);

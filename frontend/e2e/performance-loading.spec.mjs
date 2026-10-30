@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { resolve } from 'node:path';
-import { ACTIVE_CLASS, gotoAndSettle, login } from './_lib.mjs';
+import { ACTIVE_CLASS, gotoAndSettle, login, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
@@ -58,16 +58,18 @@ test('ordinary prose defers rich UI; slow renderer loading preserves prose and l
     await expect(page.locator('#composerInputWrap .tiptap')).toBeVisible();
     expect(requested).toBe(false);
 
-    const updateUi = (value) => page.evaluate((value) => {
-      const prose = window.stateStore.read('messages')[0];
-      window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [prose, {
-        clientId: 'lazy-ui-tool', role: 'assistant', type: 'assistant', rawText: '', html: '',
-        toolCalls: [{ id: 'lazy-ui-call', name: 'render_intelligent_ui', status: 'completed', textOffset: 0, output: '',
-          input: { version: 1, nodes: [{ id: 'lazy-metric', type: 'metric', label: 'Latest estimate', value }] },
-        }],
-      }] });
-      window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'lazy-ui-fixture' });
-    }, value);
+    const updateUi = async (value) => {
+      await page.evaluate((nextValue) => {
+        const prose = window.stateStore.read('messages')[0];
+        window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [prose, {
+          clientId: 'lazy-ui-tool', role: 'assistant', type: 'assistant', rawText: '', html: '',
+          toolCalls: [{ id: 'lazy-ui-call', name: 'render_intelligent_ui', status: 'completed', textOffset: 0, output: '',
+            input: { version: 1, nodes: [{ id: 'lazy-metric', type: 'metric', label: 'Latest estimate', value: nextValue }] },
+          }],
+        }] });
+      }, value);
+      await publishChatRuntime(page, { type: 'state-synced', reason: 'lazy-ui-fixture' });
+    };
     await updateUi(42);
     await expect.poll(() => requested).toBe(true);
     await expect(page.locator('.intui[role="status"]')).toBeVisible();

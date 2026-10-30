@@ -502,9 +502,6 @@ test('a failed agent run marks the entry failed on the data', () => {
 
 function publishHarness(offset) {
   const events = [];
-  globalThis.window.__socratesReactChatBridge = {
-    publish: (event) => events.push(event),
-  };
   const message = {
     clientId: 'msg-live-1',
     type: 'streaming',
@@ -515,6 +512,7 @@ function publishHarness(offset) {
     body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
+    publishRuntimeEvent: (event) => events.push(event),
     onInlineTool: () => offset,
     requestAnimationFrame(callback) { scheduled = callback; return 3; },
     cancelAnimationFrame() {},
@@ -532,9 +530,8 @@ test('a live tool call carries its split point on the data, before finish()', ()
     assert.ok(h.events.some((e) => e.type === 'tool-run-updated' && e.messageId === 'msg-live-1'),
       'the mount is published — a row has to appear without waiting for the next text delta');
     assert.ok((h.message._toolRunRev || 0) >= 1, 'revision bumped');
-    h.runtime.dispose();
   } finally {
-    delete globalThis.window.__socratesReactChatBridge;
+    h.runtime.dispose();
   }
 });
 
@@ -545,9 +542,8 @@ test('streamed arguments land on the entry so a running row can preview them', (
     h.runtime.recordToolCallDelta({ id: 'tc-code', index: 0, arguments: 'import antigravity' });
     h.flush();
     assert.equal(h.message.toolCalls[0].argumentsText, 'import antigravity');
-    h.runtime.dispose();
   } finally {
-    delete globalThis.window.__socratesReactChatBridge;
+    h.runtime.dispose();
   }
 });
 
@@ -563,9 +559,8 @@ test('a terminal result publishes, so the row stops spinning', () => {
     const entry = h.message.toolCalls[0];
     assert.equal(entry._toolResultApplied, true);
     assert.ok(h.events.some((e) => e.type === 'tool-run-updated'), 'the settle is published');
-    h.runtime.dispose();
   } finally {
-    delete globalThis.window.__socratesReactChatBridge;
+    h.runtime.dispose();
   }
 });
 
@@ -576,9 +571,8 @@ test('cancelling a turn publishes the stopped state', () => {
     h.events.length = 0;
     h.runtime.cancel();
     assert.ok(h.events.some((e) => e.type === 'tool-run-updated'), 'cancel repaints the rows');
-    h.runtime.dispose();
   } finally {
-    delete globalThis.window.__socratesReactChatBridge;
+    h.runtime.dispose();
   }
 });
 

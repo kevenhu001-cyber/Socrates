@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 const { reconcileMessageSnapshots, snapshotMessage } = await import(
-  '../src/react/chatRuntimeSnapshot.ts'
+  '../src/ui/chatRuntimeSnapshot.ts'
 );
 
 test('a published message snapshot is isolated from later legacy mutations', () => {

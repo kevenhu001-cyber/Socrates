@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
+import { publishChatRuntime } from './_lib.mjs';
 
 const PROGRAM = `root = Col([Title("A day in Paris", "lg"), map, Text("Selected: " + $place), image])
 $place = ""
@@ -39,8 +40,8 @@ for (const mode of ['desktop', 'mobile']) {
     const requested = await mediaRoutes(page);
     await page.evaluate((message) => {
       window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [message] });
-      window.__socratesReactChatBridge?.publish({ type: 'state-synced', reason: 'media-fixture' });
     }, message);
+    await publishChatRuntime(page, { type: 'state-synced', reason: 'media-fixture' });
     const map = page.locator('.iui-map');
     await expect(map).toHaveAttribute('data-map-ready', 'true');
     await expect(map).toHaveAttribute('data-route-state', 'ready');
@@ -73,8 +74,8 @@ test('image requests retry, failed maps keep usable place controls, and no false
   await mediaRoutes(page, { failImages: true, failRoute: true, failTiles: true });
   await page.evaluate((message) => {
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [message] });
-    window.__socratesReactChatBridge?.publish({ type: 'state-synced', reason: 'media-failure-fixture' });
   }, message);
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'media-failure-fixture' });
   const map = page.locator('.iui-map');
   await expect(map).toHaveAttribute('data-route-state', 'error');
   await expect(map).toContainText('Street routing is unavailable');

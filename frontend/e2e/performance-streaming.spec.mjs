@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
+import { publishChatRuntime } from './_lib.mjs';
 
 test.use({ trace: 'on' });
 for (const rate of [1, 4]) {
@@ -31,8 +32,8 @@ for (const rate of [1, 4]) {
       window.stateStore.dispatch({ type: 'session/append-message', payload: {
         clientId: 'long-live', role: 'assistant', type: 'streaming', rawText: window.__longStreamText, html: '',
       } });
-      window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'long-stream-fixture' });
     });
+    await publishChatRuntime(page, { type: 'state-synced', reason: 'long-stream-fixture' });
     const bubble = page.locator('[data-client-id="long-live"]');
     await expect(bubble.locator('.tool-run-prose.is-settled')).toHaveCount(260);
     await page.evaluate(() => {
@@ -47,7 +48,9 @@ for (const rate of [1, 4]) {
         await new Promise(requestAnimationFrame);
         window.__longStreamText += ` word-${i}`;
         window.stateStore.dispatch({ type: 'session/update-message', index: 500, clientId: 'long-live', patch: { rawText: window.__longStreamText } });
-        window.__socratesReactChatBridge.publish({ type: 'stream-delta', messageId: 'long-live', textLength: window.__longStreamText.length });
+        window.dispatchEvent(new CustomEvent('socrates:chat-runtime-publish', {
+          detail: { type: 'stream-delta', messageId: 'long-live', textLength: window.__longStreamText.length },
+        }));
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
     });
