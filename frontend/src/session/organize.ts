@@ -1,27 +1,19 @@
 /* session/organize.ts — extracted from main.js (B6 batch).
- * Session tags, context menu, drag-to-project, row diff/publish helpers.
+ * Session tags, context menu and drag-to-project actions.
  * Zero-behavior-change lift. Render surfaces resolve via window.*.
  */
 import { stateStore } from '../state/store.ts';
 import { serverCache } from './serverCache.ts';
-import { findServerSessionIndex, getKnownTags, getRecents, flushRecentsReconcile } from './recents.ts';
-import type { SessionRow } from './store.ts';
-import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
-import { filterRecentsByChip } from '../ui/recentsHelpers.ts';
+import { findServerSessionIndex, getKnownTags, flushRecentsReconcile } from './recents.ts';
 import { getCachedProjects } from '../projects/projectCache.ts';
 import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
 import { renderTagEditor } from '../react/session-tags/tagEditorHost.tsx';
 import type { TagEditorLabels, TagEditorPopoverProps } from '../react/session-tags/TagEditorPopover.tsx';
-import type { SessionItem } from '../react/session-list/types.ts';
-import { sameSessionRow as _sameRow, sessionRowFields as _sessionRowFields } from './sessionRowModel.ts';
-
-export { _sameRow, _sessionRowFields };
 
 /** Window surfaces this module reads or writes. */
 interface OrganizeWindow extends Window {
   renderRecents?: () => void;
-  RECENTS_SEARCH_QUERY?: string;
   __activeProject?: { id: string; name: string } | null;
 }
 
@@ -282,63 +274,6 @@ export function moveSessionToProject(sessionId: string, projectId: string): void
    single animation frame. Without this, saveCurrentSession (called
    3-5x per chat turn) triggers 3-5 full list rebuilds, causing
    visible stutter with 20+ sessions. */
-/* React migration bridge — publishes the session list data so the React
-   session list component can render declaratively. Works under `?react=1`;
-   legacy mode never installs the bridge, so this is a cheap no-op. */
-/* PERF: returns the PREVIOUS row object when every field is equal, so an
-   unchanged row is referentially identical across publishes. Without this
-   the mapper minted fresh objects each time and React.memo on SessionRow
-   could never hit. */
-const _rowCache: Record<string, SessionItem> = Object.create(null);
-export function _stableSessionRow(s: SessionRow): SessionItem {
-  const next = _sessionRowFields(s);
-  const prev = _rowCache[next.id];
-  if (_sameRow(prev, next)) return prev;
-  _rowCache[next.id] = next;
-  return next;
-}
-export function _publishSessionList(): void {
-  try {
-    const bridge = window.__socratesSessionListBridge;
-    if (!bridge || typeof bridge.publish !== 'function') return;
-    const allSessions = getRecents();
-    let sessions = allSessions;
-    const filter = getRecentsFilter();
-    /* Apply the persistent tag filter, same as doRenderRecents. */
-    sessions = filterRecentsByChip(sessions, filter) as SessionRow[];
-    /* Apply search filter. */
-    const searchQ = (((typeof window !== 'undefined' && (window as OrganizeWindow).RECENTS_SEARCH_QUERY) || '')).trim().toLowerCase();
-    if (searchQ) {
-      sessions = sessions.filter(function (s) {
-        const hay = (((s.title as string) || '') + ' ' + ((s.topic as string) || '')).toLowerCase();
-        return hay.indexOf(searchQ) !== -1;
-      });
-    }
-    /* Drop cache entries for sessions that no longer exist, so deleting
-       sessions in a long-lived tab cannot grow _rowCache without bound.
-       Keyed off the UNFILTERED list — a row hidden by the current tag or
-       search filter is still live and must keep its identity. */
-    const _live: Record<string, boolean> = Object.create(null);
-    for (let _i = 0; _i < allSessions.length; _i++) {
-      if (allSessions[_i] && allSessions[_i].id) _live[allSessions[_i].id] = true;
-    }
-    const _keys = Object.keys(_rowCache);
-    for (let _k = 0; _k < _keys.length; _k++) {
-      if (!_live[_keys[_k]]) delete _rowCache[_keys[_k]];
-    }
-    bridge.publish({
-      sessions: sessions.map(_stableSessionRow),
-      currentSessionId: stateStore.read('currentSessionId') as string | null,
-      searchQuery: searchQ,
-      filter: filter,
-      fetchFailed: !!window.SERVER_SESSIONS_FETCH_FAILED,
-    });
-  } catch {
-    /* empty-catch: intentional — the React bridge is best-effort */
-  }
-}
-
-
 export function cycleActiveProject(): void {
   const projects = getCachedProjects();
   if (!projects.length) return;

@@ -3,7 +3,7 @@ import { Button as UiButton } from '../ui/Button';
 import React from 'react';
 import { t } from '../legacy/gateway.ts';
 import { setRecentsFilter } from '../../sidebar/sidebar.service';
-import type { SessionItem } from './types';
+import type { SessionItem } from '../../ui/sessionListState.ts';
 import { buildMeta, modeLabel } from './sessionListModel';
 
 const PIN_ICON =

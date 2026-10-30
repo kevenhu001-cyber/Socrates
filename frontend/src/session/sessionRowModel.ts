@@ -1,4 +1,4 @@
-import type { SessionItem } from '../react/session-list/types.ts';
+import type { SessionItem } from '../ui/sessionListState.ts';
 import type { SessionRow } from './store.ts';
 
 function projectIdOf(row: SessionRow): string | null {

@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { SessionItem } from './types';
+import type { SessionItem } from '../../ui/sessionListState.ts';
 
 export type TimelineEntry = { key: string; session?: SessionItem; heading?: string; project?: boolean };
 const OVERSCAN = 8;

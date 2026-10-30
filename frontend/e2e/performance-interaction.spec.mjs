@@ -54,6 +54,7 @@ async function boot(page, sessions) {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await waitForAppShell(page);
   await expect(page.locator('.recent-item').first()).toBeVisible();
+  expect(await page.evaluate(() => !('__socratesSessionListBridge' in window))).toBe(true);
   return { errors, requests };
 }
 
@@ -83,7 +84,11 @@ for (const rate of [1, 4]) {
       for (let attempt = 0; attempt < 6; attempt++) {
         samples.push(await page.evaluate(async (sessions) => {
           const start = performance.now();
-          window.__socratesSessionListBridge.publish({ sessions, currentSessionId: null, searchQuery: '', filter: null, fetchFailed: false });
+          // Mutate the stable cache reference to benchmark synthetic sizes above its setter cap,
+          // then exercise the real recents publisher and React subscriber path.
+          const source = window.SERVER_SESSIONS;
+          source.splice(0, source.length, ...sessions);
+          window.renderRecents();
           await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
           return performance.now() - start;
         }, sessionsFor(count)));

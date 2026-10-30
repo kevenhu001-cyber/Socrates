@@ -64,7 +64,7 @@ export interface SessionSavePayload {
 /* Fields the save response is authoritative for, and the row keys each one
    lands on. The list endpoint returns snake_case (`total_q`, `updated_at`)
    while the save response returns Drizzle's camelCase (`totalQ`, `updatedAt`)
-   — and `getVisibleSessions()` sorts on `updated_at` while `_sessionRowFields`
+   — and `getVisibleSessions()` sorts on `updated_at` while `sessionRowFields`
    reads `total_q || totalQ`. Writing both keys keeps the patched row correct
    whichever shape it already had.
 
@@ -115,7 +115,7 @@ function resolveArchivedAt(value: number | string | null | undefined): number | 
 /* Build a list row for a session the server just created. There is nothing to
    patch yet, so this is a row the next reconcile would have created anyway —
    built from the save response plus the payload we just sent, which together
-   cover every field `_sessionRowFields` (organize.js) reads. */
+   cover every field `sessionRowFields` (`session/sessionRowModel.ts`) reads. */
 function buildFreshRow(saved: SavedSession, payload: SessionSavePayload): SessionRow {
   return {
     id: saved.id,

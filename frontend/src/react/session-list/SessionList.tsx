@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { installSessionListBridge, setCurrentSessionId, useSessionListSnapshot } from './sessionList.bridge';
+import { setCurrentSessionId, useSessionListSnapshot } from './sessionList.store';
 import { detailCache } from '../../session/detailCache.ts';
 import { SessionListEmptyState } from './SessionListEmptyState';
 import { SessionTimeline } from './SessionTimeline';
@@ -83,10 +83,11 @@ const LIST_ID = 'recentsList';
 export function mountSessionList(): void {
   const container = document.getElementById(LIST_ID);
   if (!container) return;
-  mountOwnedRoot(container, 'session-list',
+  mountOwnedRoot(
+    container,
+    'session-list',
     <ErrorBoundary>
       <SessionListInner />
     </ErrorBoundary>,
-    installSessionListBridge,
   );
 }

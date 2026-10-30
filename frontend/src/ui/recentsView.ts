@@ -1,5 +1,5 @@
 /* ui/recentsView.ts — extracted from main.js (B6 batch).
- * Recents list rendering (rAF throttle + React bridge publish + filter chips).
+ * Recents list rendering (rAF throttle + module-state publish + filter chips).
  * Zero-behavior-change lift. Session list data comes from session modules;
  * the window.renderRecents bridge in main.js stays as the public entry.
  */
@@ -25,8 +25,8 @@ export function renderRecents() {
 export function doRenderRecents() {
   const cont = document.getElementById('recentsList');
   if (!cont) return;
-  /* React owns the session list. Publish the snapshot via the bridge
-     so React re-renders from state. The legacy innerHTML rendering
+  /* React owns the session list. Publish the snapshot through shared state
+     so React re-renders from the module store. The legacy innerHTML rendering
      was reachable only when session-list was not migrated, which is
      no longer possible after the always-on React runtime landed. */
   publishSessionList();

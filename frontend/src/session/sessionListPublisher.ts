@@ -3,9 +3,10 @@ import { getRecents } from './recents.ts';
 import type { SessionRow } from './store.ts';
 import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
 import { filterRecentsByChip } from '../ui/recentsHelpers.ts';
-import type { SessionItem } from '../react/session-list/types.ts';
+import type { SessionItem } from '../ui/sessionListState.ts';
 import { sameSessionRow, sessionRowFields } from './sessionRowModel.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+import { publishSessionListState } from '../ui/sessionListState.ts';
 
 export { sameSessionRow, sessionRowFields };
 
@@ -14,8 +15,8 @@ interface SessionListWindow extends Window {
 }
 
 /* Hot-path session-list publisher.
- * Keep this module deliberately narrow: recents rendering needs a synchronous
- * snapshot publisher during normal app startup, but it does not need tag
+ * Keep this module deliberately narrow: recents rendering needs a small
+ * state publisher during normal app startup, but it does not need tag
  * editing, drag/drop project moves, or other organize interactions. */
 let previousRows: SessionItem[] = [];
 const rowCache: Record<string, SessionItem> = Object.create(null);
@@ -30,9 +31,6 @@ export function stableSessionRow(s: SessionRow): SessionItem {
 
 export function publishSessionList(): void {
   try {
-    const bridge = window.__socratesSessionListBridge;
-    if (!bridge || typeof bridge.publish !== 'function') return;
-
     const allSessions = getRecents();
     const filter = getRecentsFilter();
     let sessions = filterRecentsByChip(allSessions, filter) as SessionRow[];
@@ -54,7 +52,7 @@ export function publishSessionList(): void {
 
     const nextRows = sessions.map(stableSessionRow);
     if (previousRows.length !== nextRows.length || nextRows.some((row, index) => row !== previousRows[index])) previousRows = nextRows;
-    bridge.publish({
+    publishSessionListState({
       sessions: previousRows,
       currentSessionId: stateStore.read('currentSessionId') as string | null,
       searchQuery: searchQ,
@@ -63,6 +61,6 @@ export function publishSessionList(): void {
     });
   } catch (error) {
     reportEmptyCatch(error, 'empty catch: session/sessionListPublisher.ts:63', 'expected');
-    /* The React bridge is best-effort during boot/teardown. */
+    /* State publication is best-effort during boot/teardown. */
   }
 }

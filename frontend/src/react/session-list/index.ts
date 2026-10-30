@@ -1,13 +1,11 @@
 export { mountSessionList } from './SessionList';
 export {
-  installSessionListBridge,
   getSessionListSnapshot,
   subscribeToSessionList,
-  publishSessionList,
   setCurrentSessionId,
   useSessionListSnapshot,
   useSessions,
   useCurrentSessionId,
   formatRelativeTime,
-} from './sessionList.bridge';
-export type { SessionListSnapshot, SessionListBridge, SessionItem } from './types';
+} from './sessionList.store';
+export type { SessionListSnapshot, SessionItem } from '../../ui/sessionListState.ts';

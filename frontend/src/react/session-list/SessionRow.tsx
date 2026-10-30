@@ -2,7 +2,7 @@ import { Button as UiButton } from '../ui/Button';
 import React, { memo, useCallback, useState, useEffect } from 'react';
 import { t } from '../legacy/gateway.ts';
 import { detailCache } from '../../session/detailCache.ts';
-import type { SessionItem } from './types';
+import type { SessionItem } from '../../ui/sessionListState.ts';
 import { safeId } from './sessionListModel';
 import { SessionRowDetails } from './SessionRowDetails';
 import { SessionRowMenu } from './SessionRowMenu';

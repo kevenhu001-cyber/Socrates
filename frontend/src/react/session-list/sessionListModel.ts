@@ -1,5 +1,5 @@
-import type { SessionItem } from './types';
-import { formatRelativeTime } from './sessionList.bridge';
+import type { SessionItem } from '../../ui/sessionListState.ts';
+import { formatRelativeTime } from './sessionList.store';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
