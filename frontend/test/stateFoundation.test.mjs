@@ -4,7 +4,7 @@ import test from 'node:test';
 globalThis.window = {};
 
 const { createInitialAppState } = await import('../src/state/index.ts');
-const { stateStore } = await import('../src/state/store.ts');
+const { resetState, stateStore } = await import('../src/state/store.ts');
 
 test('named state reads resolve fields without a flat compatibility table', () => {
   stateStore.dispatch({ type: 'state/batch', patch: {
@@ -52,6 +52,7 @@ test('namespace stores stay module-local while the legacy stateStore facade rema
   ];
   for (const key of retiredAliases) assert.equal(Object.hasOwn(window, key), false, key);
   assert.strictEqual(window.stateStore, stateStore);
+  assert.equal(Object.hasOwn(window, 'resetState'), false);
 });
 
 test('state batch replaces touched namespaces with one notification', () => {
@@ -145,7 +146,7 @@ test('state reset replaces every namespace from the shared initial factories', (
     tutorAttachments: [{ id: 'attachment-old' }],
   } });
 
-  window.stateStore.dispatch({ type: 'state/reset' });
+  resetState();
 
   const initial = createInitialAppState();
   for (const namespace of ['session', 'kb', 'search', 'call', 'ui', 'exam']) {

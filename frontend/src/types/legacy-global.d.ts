@@ -55,8 +55,6 @@ declare global {
       getSnapshot(): Readonly<Record<string, unknown>>;
       subscribe(listener: () => void): () => void;
     };
-    resetState?: () => void;
-
     /** Array of active session summaries read by SessionList. */
     SERVER_SESSIONS?: unknown[];
 

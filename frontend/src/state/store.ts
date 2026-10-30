@@ -323,7 +323,6 @@ function resetState() {
 
 if (typeof window !== 'undefined') {
   browserWindow.stateStore = stateStore;
-  browserWindow.resetState = resetState;
 }
 
 export { stateStore, resetState };

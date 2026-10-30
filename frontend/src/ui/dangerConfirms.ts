@@ -5,7 +5,7 @@
  * - confirmDeleteAccount: full account deletion via /api/auth/account
  */
 
-import { stateStore } from '../state/store.ts';
+import { resetState, stateStore } from '../state/store.ts';
 import { showConfirm } from './confirm.ts';
 import { clearProviderConfig } from '../config/providerConfig.service.ts';
 import { publishSidebarChrome } from './profile.ts';
@@ -17,7 +17,6 @@ interface DangerWindow {
   closeProfile?: () => void;
   apiFetch?: (path: string, options?: RequestInit) => Promise<unknown>;
   CURRENT_USER?: unknown;
-  resetState?: () => void;
   showGate?: () => void;
   showAuthSignin?: () => void;
 }
@@ -71,7 +70,7 @@ async function deleteAccountOnServer(w: DangerWindow | undefined): Promise<void>
 function resetAfterAccountDeletion(w: DangerWindow | undefined): void {
   if (w) w.CURRENT_USER = null;
   clearDeletedAccountStorage();
-  w?.resetState?.();
+  resetState();
   w?.resetApp?.();
   w?.showGate?.();
   publishSidebarChrome();
