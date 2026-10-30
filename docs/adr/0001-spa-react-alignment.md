@@ -30,7 +30,7 @@
    与 Web 共享逻辑。
 3. 前端状态层引入 **Zustand 5**，按域组织 store（chat/session/kb/
    exam/ui/search），对齐 LobeHub 的 `src/store/` slice 模式，逐步
-   替换 `state/store.js` + `window.*` 桥接。
+   替换 `state/store.ts` + `window.*` 桥接。
 4. 渲染层迁移到 **react-markdown + remark/rehype 插件管道 + shiki +
    virtua 虚拟化列表**，替换 marked + 命令式 DOM 后处理。
 5. 服务端**保留 Express + REST + openapi.yaml 契约**，做分层重构

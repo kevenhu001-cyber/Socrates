@@ -33,9 +33,9 @@ export interface PromptSuffixDeps {
 import { appMode } from '../config/providers.ts';
 import { HIGH_EFFORT_OUTPUT_GUIDANCE } from './systemPrompts.ts';
 import { getTonePreset, getToneVoice } from '../config/tonePresets.ts';
-import { getReasoningEffort } from '../ui/effortPicker.js';
+import { getReasoningEffort } from '../ui/effortPicker.ts';
 import { injectMemoryContext } from '../storage/memoryStore.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 
 let userMemoriesReader: () => unknown = () => [];
 

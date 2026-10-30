@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { createMistakeBook } from '../src/ui/mistakeBook.js';
+import { createMistakeBook } from '../src/ui/mistakeBook.ts';
 import { disposeActionButtonRoots } from '../src/react/legacy-controls/actionButtonHost.tsx';
 
 function createHarness() {

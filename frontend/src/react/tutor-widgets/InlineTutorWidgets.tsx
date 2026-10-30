@@ -5,6 +5,7 @@ import { Card } from '../ui/shadcn/card';
 import { Field, FieldGroup } from '../ui/shadcn/field';
 import { Textarea } from '../ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
+import type { ParsedQuiz } from '../../render/widgetParsers';
 
 type Translatable = (key: string) => string;
 type HtmlContent = { html: string; className: string };
@@ -103,7 +104,7 @@ function PracticeWidget({ problem, hint, correct, t, formatMsg, submitChatMessag
   t: Translatable;
   formatMsg: (value: string) => string;
   submitChatMessage?: (text: string, options: { origin: string }) => void;
-  stateStore: { dispatch?: (action: unknown) => void };
+  stateStore: typeof import('../../state/store').stateStore;
   recordMistake?: (entry: Record<string, unknown>) => void;
   slotId?: string | null;
 }) {
@@ -194,8 +195,8 @@ function QuizWidget({ question, options, correct, handleQuizPick, parsed, questi
   question: string;
   options: Array<{ letter: string; text: string; html: string }>;
   correct: string;
-  handleQuizPick?: (card: HTMLDivElement, options: HTMLDivElement, feedback: HTMLDivElement, buttons: HTMLButtonElement[], picked: { letter: string; text: string; html: string }, parsed: Record<string, unknown>) => void;
-  parsed: Record<string, unknown>;
+  handleQuizPick?: (card: HTMLDivElement, options: HTMLDivElement, feedback: HTMLDivElement, buttons: HTMLButtonElement[], picked: { letter: string; text: string; html: string }, parsed: ParsedQuiz) => void;
+  parsed: ParsedQuiz;
   questionLabel: string;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);

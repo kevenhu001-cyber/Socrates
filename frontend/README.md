@@ -9,20 +9,20 @@ explicit migration boundaries; React does not own every user-facing flow yet.
 
 | Area | Main entry points | Responsibility |
 |---|---|---|
-| App startup | `src/main.js`, `src/app/` | Boot wiring, compatibility exports, and application lifecycle |
+| App startup | `src/main.ts`, `src/app/` | Boot wiring, compatibility exports, and application lifecycle |
 | React surfaces | `src/react/` | Composer, sidebar, messages, dialogs, and workspace views |
 | Chat runtime | `src/chat/`, `src/session/` | Sending, streaming turns, session loading, and persistence |
 | Rendering | `src/render/` | Markdown, code blocks, diagrams, visualizations, and artifacts |
 | Legacy UI modules | `src/ui/`, `src/sidebar/` | Existing DOM behaviors and adapters used during migration |
 | Extensions | `src/extensions/` | Shared declarations and dispatch for composer workflows |
-| Localization | `src/i18n.js`, `src/i18n/` | English dictionary in `i18n.js`; Chinese split into `i18n/zh.js`; language switching |
+| Localization | `src/i18n.ts`, `src/i18n/` | English dictionary in `i18n.ts`; Chinese split into `i18n/zh.ts`; language switching |
 | Styles | `src/styles/index.css` | The only CSS entry point and the cascade manifest |
 | Browser checks | `e2e/`, `playwright*.config.mjs` | Focused Playwright flows and responsive checks |
 
 ## Runtime and state boundaries
 
-`src/main.js` is the browser entry. It loads `src/windowExports.js` and
-`src/app/legacyBridge.js` to keep older JavaScript callers working and to
+`src/main.ts` is the browser entry. It loads `src/windowExports.ts` and
+`src/app/legacyBridge.ts` to keep older JavaScript callers working and to
 publish the typed `window.__socratesLegacy` action gateway. React code should
 call `getLegacyActions()` from `src/react/legacy/gateway.ts`; use the temporary
 global-value reader there only for legacy state that has not moved to a typed

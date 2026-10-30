@@ -16,7 +16,7 @@ test('audit follows emitted chunk imports, including accidentally eager lazy cod
      path.resolve(), so on Windows a '/fixture/…' id never matches the
      resolved root and every static path came back null. */
   const root = resolve('fixture');
-  const mainId = join(root, 'src/main.js');
+  const mainId = join(root, 'src/main.ts');
   const helperId = join(root, 'helper.js');
   const lazyId = join(root, 'lazy.js');
   const unusedId = join(root, 'unused.js');
@@ -53,7 +53,7 @@ test('audit follows emitted chunk imports, including accidentally eager lazy cod
   }, {}, bundle);
   assert.equal(report.chunks.find((item) => item.file === 'assets/vendor.js').eager, true);
   assert.equal(report.modules.find((item) => item.id === 'lazy.js').staticPath, null);
-  assert.deepEqual(report.modules.find((item) => item.id === 'helper.js').staticPath, ['src/main.js', 'helper.js']);
+  assert.deepEqual(report.modules.find((item) => item.id === 'helper.js').staticPath, ['src/main.ts', 'helper.js']);
   assert.equal(report.modules.some((item) => item.id === 'unused.js'), false);
   assert.equal(report.graph.length, 4);
   assert.equal(report.metrics.staticJsGzipBytes,

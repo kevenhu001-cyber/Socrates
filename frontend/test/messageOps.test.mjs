@@ -20,7 +20,7 @@ const {
   restorePersistedMessageExtras,
   rollbackMessagesAfter,
 } = await import('../src/ui/messageActions.ts');
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 
 function appendMessage(clientId, role, rawText) {
   stateStore.dispatch({

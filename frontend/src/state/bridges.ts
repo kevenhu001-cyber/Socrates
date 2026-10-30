@@ -2,7 +2,7 @@
  * Per-namespace immutable bridges for the M3 state refactor.
  *
  * Each namespace (session / kb / search / call / ui / exam) owns its
- * own `createImmutableBridge` instance. `state/store.js` exposes a thin
+ * own `createImmutableBridge` instance. `state/store.ts` exposes a thin
  * facade (`stateStore`) that forwards actions to the correct bridge,
  * aggregates snapshots into the legacy `state` shape, and forwards
  * subscriptions to all bridges.
@@ -338,7 +338,7 @@ export const examStore = examDomain.store;
 /* ────────────────────────── Aggregate ──────────────────────── */
 
 /**
- * All namespace bridges — used by `state/store.js` to forward actions to
+ * All namespace bridges — used by `state/store.ts` to forward actions to
  * the correct bridge and to aggregate snapshots/subscriptions.
  */
 export const namespaceBridges = {

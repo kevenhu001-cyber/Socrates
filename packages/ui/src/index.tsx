@@ -186,7 +186,7 @@ const MISTAKE_RGB = {
 } as const;
 
 /** Tutor-only mistake book (baseline `#mistakesPanel`: tutorSocratic
- * `renderMistakeFilterBar` + `ui/mistakeBook.js renderMistakes`): filter
+ * `renderMistakeFilterBar` + `ui/mistakeBook.ts renderMistakes`): filter
  * bar, title row, then the empty line or one card per row (meta, question,
  * tagged options, redo count, Redo). */
 function MistakesPanel({ mistakes, filter, onFilter, onRedo, mode, language, compact }: { mistakes: BookMistake[]; filter: MistakeFilter; onFilter(filter: MistakeFilter): void; onRedo?(id: string): void; mode: UiMode; language: UiLanguage; compact: boolean }) {

@@ -37,7 +37,7 @@ export interface StreamProcessorContext {
 
 interface ProcessorState {
   full: string;
-  formattedHtml: Record<string, unknown> | null;
+  formattedHtml: { html: string; widgets?: unknown[] } | null;
   semanticActivity: boolean;
   streamError: ChatApiError | null;
   hasWarnedMissingThinking: boolean;

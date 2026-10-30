@@ -9,7 +9,7 @@ import {
 } from '../../chat/promptQueue.ts';
 import { setComposerMarkdown, focusComposer } from '../../composer/controller.ts';
 import { useCurrentSessionId } from '../session-list/sessionList.bridge.ts';
-import { syncComposerShellFlags } from '../../ui/composerShape.js';
+import { syncComposerShellFlags } from '../../ui/composerShape.ts';
 import { i18n } from '../legacy/gateway.ts';
 import type { ComposerSurface } from '../../composer/types.ts';
 

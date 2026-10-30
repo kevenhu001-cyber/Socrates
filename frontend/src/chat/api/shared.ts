@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import { isUserAbort, waitForAIRetry } from '../retryPolicy.ts';
 import type { AIRequestOptions } from '../retryPolicy.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
@@ -6,6 +6,7 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 /** Error envelope the provider modules attach status/body details to. */
 export interface ChatApiError extends Error {
   status?: number;
+  error?: unknown;
   body?: Record<string, unknown>;
   code?: string | null;
   /** Why the child controller aborted, carried through for retry policy. */

@@ -22,7 +22,7 @@ function fakeWindow() {
 
 globalThis.window = fakeWindow();
 
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 stateStore.dispatch({ type: 'state/batch', patch: { currentSessionId: 's-1', phase: 'chat' } });
 
 const { installChatRuntimeBridge, getChatRuntimeSnapshot } = await import(

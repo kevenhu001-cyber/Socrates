@@ -18,7 +18,7 @@
  */
 
 import { appMode } from '../config/providers.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { wrapForCanvas } from './canvasWrap.ts';
 import { decodeEntities, esc, stripCitationMarkers, stripTags } from './helpers.ts';
 import { formatMsg } from './markdown.ts';

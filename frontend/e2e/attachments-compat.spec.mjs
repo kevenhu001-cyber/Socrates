@@ -236,7 +236,7 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
   expect(entry).toEqual({ fileId: 'file-uuid-1', hasDataUrl: true });
 });
 
-/* Regression: attachments/render.js refreshes the primary button through
+/* Regression: attachments/render.ts refreshes the primary button through
    window[updateBtnName]; when window.updateComposerBtn lost
    its binding an attachment-only draft left the button in voice mode,
    and startSession() then early-returned on the empty topic anyway. */

@@ -1,6 +1,6 @@
 /* Bounded cache and viewport parking for rendered visualization cards. */
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { _pendingViz, dropPendingVizId } from './vizStubs.js';
+import { _pendingViz, dropPendingVizId } from './vizStubs.ts';
 
 /** Card elements carry two ad-hoc properties the park observer owns. */
 interface ParkableVizCard extends HTMLElement {

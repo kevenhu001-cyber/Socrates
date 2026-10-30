@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { compressImageFile, scaledImageDimensions } from '../src/attachments/imageCompression.js';
+import { compressImageFile, scaledImageDimensions } from '../src/attachments/imageCompression.ts';
 
 async function withGlobalOverrides(overrides, fn) {
   const descriptors = new Map(Object.keys(overrides).map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));

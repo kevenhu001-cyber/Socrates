@@ -3,7 +3,7 @@
  * message lookup, approval checks, search-retry wiring.
  * Zero-behavior-change lift; state lives in turnState.ts.
  */
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { turnState } from './turnState.ts';
 import type { ActiveChatController, LiveTurnRuntime } from './turnState.ts';
 

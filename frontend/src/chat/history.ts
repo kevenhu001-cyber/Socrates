@@ -1,5 +1,5 @@
 import { loadLocalMemory } from '../storage/localMemory.ts';
-import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments.js';
+import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments.ts';
 
 type HistoryRole = 'system' | 'user' | 'assistant';
 type ContentPart =

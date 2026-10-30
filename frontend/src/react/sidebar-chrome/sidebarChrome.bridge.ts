@@ -2,7 +2,7 @@
  * Sidebar chrome bridge — M2 single-bridge migration.
  *
  * Holds the user-info snapshot consumed by `SidebarHeader` and
- * `SidebarFooter`. Legacy `ui/profile.js` publishes via
+ * `SidebarFooter`. Legacy `ui/profile.ts` publishes via
  * `window.__socratesSidebarChromeBridge.publish(...)`; React components
  * read through `useBridge`.
  */

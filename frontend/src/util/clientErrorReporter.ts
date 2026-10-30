@@ -8,7 +8,7 @@ export type FailureSeverity = 'expected' | 'recoverable' | 'invariant';
  * `/api/*` by nginx in production and by the Express `apiV2Rewrite`
  * middleware locally — same shape as `util/api.ts`'s `API_PREFIX`. It is
  * registered before `csrfProtection`, so no token is needed. Keep this a
- * single constant: `app/errorGuard.js` and this module must never drift onto
+ * single constant: `app/errorGuard.ts` and this module must never drift onto
  * different spellings of the same route.
  */
 export const CLIENT_ERROR_PATH = '/api/v2/client-error';

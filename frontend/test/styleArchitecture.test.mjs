@@ -53,10 +53,10 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
     read('index.html'),
     read('src/react/pages/workspace/WorkspacePage.tsx'),
     read('src/react/lib/boot/pageMounts.ts'),
-    read('src/sidebar/nav.js'),
+    read('src/sidebar/nav.ts'),
     read('src/sidebar/navigation.service.ts'),
     read('src/sidebar/navigation.adapters.ts'),
-    read('src/main.js'),
+    read('src/main.ts'),
     read('src/sidebar/navigation.destinations.ts'),
     read('src/react/pages/workspace/LibraryUploadInput.tsx'),
   ]);

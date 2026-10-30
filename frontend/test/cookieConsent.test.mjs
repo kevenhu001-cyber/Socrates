@@ -7,7 +7,7 @@ import {
   getConsentPreference,
   installCookieGuard,
   setConsentPreference,
-} from '../src/cookieConsent.js';
+} from '../src/cookieConsent.ts';
 
 let mockCookies = '';
 let mockStorage;

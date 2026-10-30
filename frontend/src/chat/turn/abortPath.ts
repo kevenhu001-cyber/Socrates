@@ -8,7 +8,7 @@
  * button on top of the streamed HTML so the user can re-run the send
  * path with one click.
  *
- * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
+ * Extracted from chat/streamingTurn.ts during the 2026-10 addStreamingMessage
  * split. The split is structural only: the slot-ownership guard, the
  * partial-text finalize, the superseded-stub retirement, and the
  * legacy-shell eviction all keep their original sequencing.
@@ -24,7 +24,7 @@ import { turnState } from '../turnState.ts';
 import { removeSupersededStub } from '../turnAnchor.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.js';
+import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnMessage, TurnRuntimeState } from './runtimeState.ts';
 

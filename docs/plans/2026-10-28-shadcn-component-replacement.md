@@ -47,7 +47,7 @@ All four implementation steps are implemented on 2026-10-28 (`f0806fb8`, then
   and `initialFocus` on `#settingsCloseBtn`; Base UI restores focus to the
   element that opened the overlay.
 - **Nested overlays.** The backdrop keeps the legacy overlay id
-  (`backdropProps={{ id: 'settingsOverlay' }}`) because `src/ui/modalA11y.js`
+  (`backdropProps={{ id: 'settingsOverlay' }}`) because `src/ui/modalA11y.ts`
   coordinates shell inertness through that id. Base UI owns Escape, focus
   trapping and restoration.
 - **Provider persistence.** The active provider radio writes

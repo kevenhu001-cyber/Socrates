@@ -10,11 +10,11 @@
  * facade keeps public import paths stable while moving its heavy dependency
  * graph to first session restore/switch.
  */
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { turnState } from '../chat/turnState.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { updateComposerBtn } from '../ui/topicSetup.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import type {
   LoadedSession,

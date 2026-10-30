@@ -46,7 +46,7 @@ Conventions in this repo:
 - [ ] Security policy (`server/src/app.ts`, `server/src/generated/`, `ops/nginx/csp-spa.conf`)
 - [ ] SSRF / sandbox / tool safety (`server/src/services/fetchBatch.ts`, `server/src/services/codeInterpreter.ts`, `server/src/services/pyodideWorker.ts`, `server/src/services/toolCallSafety.ts`)
 - [ ] Brand assets (`frontend/public/favicon.png`, `site/favicon.png`) — must stay byte-identical to the sibling `logo.png`
-- [ ] Frontend main backbone (`frontend/src/main.js`, `frontend/src/styles/legacy/`, `frontend/src/i18n.js`, `frontend/src/chat/streamingTurn.js`, `frontend/src/sidebar/nav.js`, `frontend/src/render/{markdown.ts,viz.js}`)
+- [ ] Frontend main backbone (`frontend/src/main.ts`, `frontend/src/styles/legacy/`, `frontend/src/i18n.js`, `frontend/src/chat/streamingTurn.ts`, `frontend/src/sidebar/nav.ts`, `frontend/src/render/{markdown.ts,viz.js}`)
 - [ ] `server/src/index.runtime.ts`, `server/src/index.js` shim — keep the `index.js` compatibility shim alive while systemd units still reference it
 - [ ] None of the above (default code paths)
 

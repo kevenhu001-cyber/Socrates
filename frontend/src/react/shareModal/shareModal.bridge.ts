@@ -1,7 +1,7 @@
 /**
  * Share modal bridge — M2 single-bridge migration.
  *
- * Legacy `ui/share.js` publishes share-link state through
+ * Legacy `ui/share.ts` publishes share-link state through
  * `window.__socratesShareBridge.publish(...)`. The factory owns the
  * snapshot/reducer/listener loop; this module adds the legacy alias
  * and the React hooks consumed by `ShareModal.tsx`.

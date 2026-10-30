@@ -3,25 +3,25 @@
  * Zero-behavior-change lift. Render surfaces (renderRecents,
  * renderArchivedList) and app reset resolve via window.* at call time.
  */
-import { stateStore, resetState } from '../state/store.js';
+import { stateStore, resetState } from '../state/store.ts';
 import { serverCache } from './serverCache.ts';
 import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveState.ts';
 import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL, type SessionRow } from './store.ts';
 import { createReconciler } from './recentsReconcile.ts';
-import { getKnownTagsFromSessions } from '../ui/recentsHelpers.js';
+import { getKnownTagsFromSessions } from '../ui/recentsHelpers.ts';
 import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.ts';
 import { clearLocalMemory } from '../storage/localMemory.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { resetShareToken, toggleShareBtn } from '../ui/share.js';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { resetShareToken, toggleShareBtn } from '../ui/share.ts';
 import { showConfirm } from '../ui/confirm.js';
 import { showToast } from '../ui/toast.js';
 import { clearComposer } from '../composer/controller.ts';
 import { clearComposerPlugins } from '../composer/pluginSelection.ts';
-import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
+import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
 import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { turnState } from '../chat/turnState.ts';
-import { activateMainView } from '../ui/mainViewController.js';
+import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /** Render/reset surfaces published by the legacy shell. */

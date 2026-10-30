@@ -2,10 +2,10 @@
  * KaTeX-lazy re-render.
  * Zero-behavior-change lift.
  */
-import { onKatexReady } from '../vendor/lazy.js';
-import { stateStore } from '../state/store.js';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from './vizStubs.js';
+import { onKatexReady } from '../vendor/lazy.ts';
+import { stateStore } from '../state/store.ts';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from './vizStubs.ts';
 import { wireCodeBlockHeaders } from './postRender.ts';
 import { bumpMathRenderRevision } from './mathRevision.ts';
 

@@ -1,8 +1,8 @@
 /**
  * Shared contracts for the attachment-chip row React migration boundary.
  *
- * The legacy module (`src/attachments.js`) owns the pending-attachment
- * store; the renderer in `src/attachments/render.js` mirrors it into
+ * The legacy module (`src/attachments.ts`) owns the pending-attachment
+ * store; the renderer in `src/attachments/render.ts` mirrors it into
  * `#composerAttachmentChips`. This module describes
  * what the React compatibility root needs to know to render the same
  * rows.
@@ -23,7 +23,7 @@ export interface AttachmentEntry {
   pending?: boolean;
   progress?: number;
   /** Upload lifecycle for the chip: queued (waiting for a concurrency
-      slot) → uploading → done / error. Set by src/attachments.js. */
+      slot) → uploading → done / error. Set by src/attachments.ts. */
   stage?: 'queued' | 'uploading' | 'processing' | 'done' | 'error';
   /** Byte counts from XHR upload progress events (length-computable only). */
   loaded?: number;

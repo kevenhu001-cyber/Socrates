@@ -7,7 +7,7 @@ algorithms move to Rust.
 
 The on-disk `codex/` source is **read-only reference material**; nothing in this
 workspace imports from it. Wire formats, SSE protocol, and persistence layout are
-unchanged. `server/` and `frontend/src/main.js`'s top-level stream wiring are
+unchanged. `server/` and `frontend/src/main.ts`'s top-level stream wiring are
 out of scope (see [v2 roadmap](#v2-roadmap)).
 
 ## Why Rust + WASM
@@ -53,7 +53,7 @@ fallback) in `frontend/src/`.
 | Line-aware head/tail truncation (`… +N lines` ellipsis) | `codex-rs/tui/src/exec_cell/render.rs` (TOOL_CALL_MAX_LINES=5) | `socrates_format::truncate::truncate_lines` | `truncate_tool_output` | `frontend/src/ui/toolInline.ts` (`detailText`) |
 | Bounded incremental output buffer (head ring + tail ring + `omittedBytes`); caps 50 lines / 1 MiB | `codex-rs/tui/src/exec_cell/live_output.rs` | `socrates_format::live_buffer::LiveBuffer` | `LiveOutputBuffer` class | `frontend/src/chat/toolRuntime.ts` (LiveBuffer-backed bounded output for the card path) |
 | Consecutive same-category tool grouping ("Searching the web (2)…") | `codex-rs/tui/src/exec_cell/render.rs` (Exploring / Explored) | `socrates_format::grouping::{group_tool_calls, categorize_tool}` | `group_tool_entries`, `categorize_tool_js` | `frontend/src/ui/toolInline.ts` (`toolCategory`, `updateInlineToolGroupLabel`) + `frontend/src/chat/toolRuntime.ts` (`sameToolCategory`, `mountLiveSingleCardRow`) |
-| Newline-gated two-region streaming (`push_delta`, `finalize`, `drain_n`, `step`, `pending`, `oldest_queued_age_ms`) | `codex-rs/tui/src/streaming/controller.rs` | `socrates_stream::controller::StreamController` | `StreamController` class | **v2** — not yet wired into `frontend/src/main.js` (see [v2 roadmap](#v2-roadmap)). Currently only exercised by `frontend/test/wasmParity.test.mjs`. |
+| Newline-gated two-region streaming (`push_delta`, `finalize`, `drain_n`, `step`, `pending`, `oldest_queued_age_ms`) | `codex-rs/tui/src/streaming/controller.rs` | `socrates_stream::controller::StreamController` | `StreamController` class | **v2** — not yet wired into `frontend/src/main.ts` (see [v2 roadmap](#v2-roadmap)). Currently only exercised by `frontend/test/wasmParity.test.mjs`. |
 | Adaptive chunking policy (Smooth / CatchUp hysteresis; drain plan = `single` or `{batch: n}`) | `codex-rs/tui/src/streaming/chunking.rs` | `socrates_stream::chunking::AdaptiveChunkingPolicy` | `ChunkingPolicy` class | **v2** — same as above |
 
 > **DOM stays in JS.** The Codex TUI cell layouts, ANSI rendering, and history-store
@@ -173,7 +173,7 @@ The regular `npm run lint`, `npm run typecheck`, `npm run test:unit`, and
 
 ## What v1 explicitly does **not** do
 
-- `frontend/src/main.js` message-flow rewire onto `StreamController` /
+- `frontend/src/main.ts` message-flow rewire onto `StreamController` /
   `ChunkingPolicy`. The top-level stream path is tightly coupled with the
   `textOffset` inline-insert mechanism across the ~925-line entry file;
   v1 only delivers the WASM API plus its tests. See [v2 roadmap](#v2-roadmap).
@@ -196,7 +196,7 @@ The regular `npm run lint`, `npm run typecheck`, `npm run test:unit`, and
 
 | Item | Why deferred | What needs to happen first |
 |---|---|---|
-| Wire `StreamController` into `frontend/src/main.js`'s assistant-message render path | `textOffset` insertion is interleaved with the per-chunk DOM mutation in a high-churn entry file; v1 should prove the API stable first. | Land `ChunkingPolicy` drain-plan binding helpers (`single` vs `{batch: n}`) and add a focused unit test for `finalize` semantics across tool_progress + tool_result interleavings. |
+| Wire `StreamController` into `frontend/src/main.ts`'s assistant-message render path | `textOffset` insertion is interleaved with the per-chunk DOM mutation in a high-churn entry file; v1 should prove the API stable first. | Land `ChunkingPolicy` drain-plan binding helpers (`single` vs `{batch: n}`) and add a focused unit test for `finalize` semantics across tool_progress + tool_result interleavings. |
 | Add `.github/workflows/ci.yml` Rust job (`cargo fmt`, `cargo clippy`, `cargo test --workspace`, `wasm32-unknown-unknown` build) | Repo policy keeps the merge gate green-and-minimal; CI grows when v2 surface lands. | A `tools-rust/clippy.toml` baseline so the job starts clean. |
 | Optional: server-side Rust dispatch (re-implement `server/src/routes/chat/stream.ts` on the protocol model) | The `parse_tool_result` WASM helper already validates one frame; lifting dispatch requires a strategy for sharing `serde` models across the node→wasm boundary (N-API vs. shared `.dll`/`.so`). | Decide on the host-side FFI strategy (likely napi-rs). |
 | Move the TS fallbacks out | Once v2 lands and WASM is bundled into the production build path, the fallback branches in `toolRunState.ts` / `toolInline.ts` / `toolRuntime.ts` / `liveOutput.ts` can be removed. | Audit `frontend/wasm/` presence in production CI artifact and the Vite `optimizeDeps` config. |

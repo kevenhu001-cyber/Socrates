@@ -1,0 +1,298 @@
+import { esc } from "../render/helpers.ts";
+import { apiFetch } from "../util/api.ts";
+import { trTool } from "./toolCardHelpers.ts";
+import { openArtifactPreview } from "./artifactPreview.ts";
+import { reportSwallow } from '../util/reportSwallow.ts';
+import { ArtifactControlProps } from "@/react/toolArtifacts/ArtifactControl.tsx";
+import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+
+
+function renderArtifactControl(host: HTMLElement, props: ArtifactControlProps) {
+  void import('../react/toolArtifacts/artifactControlHost.tsx').then(({ renderArtifactControl: render }) => {
+    render(host, props);
+  }).catch((error) => reportSwallow(error, 'ui/toolArtifacts.ts:renderArtifactControl'));
+}
+
+/* Build the diagnostic placeholder shown when an inline artifact
+   fails to load. */
+export function makeArtifactError(fileId: unknown, mimeType: string, url: string, reason: string) {
+  const box = document.createElement("div");
+  box.className = "artifact-error";
+  box.innerHTML =
+    '<svg class="artifact-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
+      '<circle cx="9" cy="9" r="2"/>' +
+      '<path d="m21 15-5-5L5 21"/>' +
+    '</svg>' +
+    `<span class="artifact-error-text">图片产物暂时无法加载</span>` +
+    '<a class="artifact-error-open" target="_blank" rel="noopener" download>打开原文件</a>' +
+    '<span class="artifact-error-retry-host"></span>' +
+    `<details class="artifact-error-detail"><summary>查看详情</summary><code>${esc(reason || 'load failed')} · ${esc(fileId)}</code></details>`;
+  (box.querySelector('.artifact-error-open') as HTMLAnchorElement)!.href = url;
+  renderArtifactControl(box.querySelector<HTMLElement>('.artifact-error-retry-host')!, {
+    kind: 'retry',
+    className: 'artifact-error-retry',
+    label: trTool('tool.retry', 'Retry'),
+    onClick: function () {
+    const fresh = document.createElement("img");
+    fresh.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "_=" + Date.now();
+    fresh.alt = "execution artifact";
+    fresh.className = "exec-artifact-image";
+    fresh.addEventListener("load", function () { fresh.classList.add("loaded"); });
+    fresh.addEventListener("error", function () { fresh.replaceWith(makeArtifactError(fileId, mimeType, url, "load failed")); });
+    if (box.parentNode) box.parentNode.replaceChild(fresh, box);
+    },
+  });
+  return box;
+}
+
+/* Append an inline artifact (matplotlib PNG, CSV download link, etc.)
+   produced by the code interpreter to the last tool card's output.
+   The rendering path is:
+     1. Show a sized skeleton (matched to the artifact's natural
+        ratio when we can read it) so the card height doesn't jump
+        when the image arrives.
+     2. Lazy-preload via Image() so we know load/error state before
+        touching the DOM, and so we can fall back gracefully when
+        the network is down.
+     3. On error, show a structured makeArtifactError with a Retry
+        button instead of a broken-icon.
+     4. Apply a fade-in transition so the image appearing doesn't
+        visually "pop" — this matters for chat streams where the
+        user is reading and a sudden large image is jarring. */
+export function appendInlineArtifact(fileId: string | number, mimeType: string, outEl?: HTMLElement | null, displayName?: string) {
+  const t: (key: string) => string = browserWindow.t || ((key) => key);
+  const out = outEl || document.querySelector<HTMLElement>(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
+  if (!out || !fileId) return;
+  /* P_artifact-image-defer — generated images are no longer rendered
+     automatically. The assistant must explicitly reference them in
+     prose (e.g. `![description](/api/files/<id>/raw)`) so the user only
+     sees images the model chooses to show. */
+  if (/^image\//i.test(mimeType || "")) return;
+  const url = "/api/files/" + encodeURIComponent(String(fileId)) + "/raw";
+  const selectorId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(String(fileId)) : String(fileId).replace(/[^a-zA-Z0-9_-]/g, '');
+  /* P_artifact-doc-wide-dedup — a single artifact fileId should
+     render exactly once per message, regardless of how many
+     mount points call us (tool card output + message body, on
+     every recordToolResult reentry, on SSE retries). The previous
+     per-out check let the same image appear twice (tool card +
+     inline) and re-trigger requestImage() in parallel, producing
+     the retry-storm flicker pattern. */
+  if (document.querySelector(`[data-artifact-id="${selectorId}"]`)) return;
+  if ((mimeType || "").indexOf("image/") === 0) {
+    appendInlineImage(fileId, mimeType, url, out, displayName);
+  } else if ((mimeType || "").indexOf("text/html") === 0) {
+    appendInlineHtml(fileId, mimeType, url, out, displayName);
+  } else {
+    appendInlineFileLink(fileId, mimeType, url, out, t, displayName);
+  }
+}
+
+function appendInlineImage(fileId: string | number, mimeType: string, url: string, out: HTMLElement, artifactName?: string) {
+  const wrap = document.createElement("figure");
+  wrap.className = "exec-artifact";
+  wrap.dataset.artifactId = String(fileId);
+  const skeleton = document.createElement("div");
+  skeleton.className = "exec-artifact-skeleton";
+  skeleton.innerHTML = '<span class="exec-artifact-skeleton-pulse"></span>';
+  wrap.appendChild(skeleton);
+
+  /* P_artifact-scaffold — actions overlay (fullscreen + download) sits
+     in the top-right of the figure so it visually parallels the viz
+     buttons. Always visible at low opacity, brightens on hover. */
+  const actions = document.createElement("div");
+  actions.className = "exec-artifact-actions";
+  const fsLabel = trTool('chrome.fullscreen', 'Fullscreen');
+  const dlLabel = trTool('chrome.download', 'Download');
+  const fullscreenHost = document.createElement('span');
+  fullscreenHost.className = 'exec-artifact-fullscreen-host';
+  actions.appendChild(fullscreenHost);
+  const download = document.createElement('a');
+  download.className = 'exec-artifact-download';
+  download.href = url;
+  download.download = '';
+  download.target = '_blank';
+  download.rel = 'noopener';
+  download.title = dlLabel;
+  download.setAttribute('aria-label', dlLabel);
+  download.dataset.i18nTitle = 'chrome.download';
+  download.dataset.i18nAria = 'chrome.download';
+  download.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>' +
+    '';
+  actions.appendChild(download);
+  wrap.appendChild(actions);
+
+  const img = new Image();
+  img.alt = "execution artifact";
+  img.className = "exec-artifact-image";
+  img.loading = "eager";
+  img.decoding = "async";
+  // Cache-bust so the browser doesn't reuse a stale 404 after a
+  // previous failed load (e.g. worker regenerated the artifact
+  // and re-uploaded it under the same id).
+  let loadTimer: number|null|undefined = null;
+  let attempts = 0;
+  function requestImage() {
+    clearTimeout((loadTimer ?? undefined));
+    img.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
+    loadTimer = setTimeout(function () {
+      if (!wrap.parentNode || img.complete) return;
+      if (attempts++ === 0) return requestImage();
+      try { wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load timeout after retry"), wrap); } catch (error) { reportSwallow(error, 'ui/toolArtifacts.ts:117'); }
+    }, 10000);
+  }
+
+  img.addEventListener("load", function () {
+    clearTimeout((loadTimer ?? undefined));
+    if (!wrap.parentNode) return;
+    if (skeleton.parentNode) skeleton.parentNode.removeChild(skeleton);
+    img.style.display = "";
+    img.classList.add("loaded");
+    wrap.appendChild(img);
+    /* P_artifact-meta — once the image is on the page we can read
+       its natural size to render a tight metadata strip under the
+       figure. We don't have the byte count client-side, so size
+       is a string from naturalWidth × naturalHeight. The filename
+       comes from the URL's last path segment (fileId is opaque,
+       but the original name survives in the `files` table — fetch
+       metadata lazily so we don't block the render). */
+    const meta = document.createElement("figcaption");
+    meta.className = "exec-artifact-meta";
+    const name = document.createElement("span");
+    name.className = "exec-artifact-meta-name";
+    name.textContent = (artifactName || displayName(fileId, mimeType) || 'artifact');
+    const size = document.createElement("span");
+    size.className = "exec-artifact-meta-size";
+    size.textContent = (img.naturalWidth ? img.naturalWidth + '×' + img.naturalHeight + ' px' : 'image');
+    meta.appendChild(name);
+    meta.appendChild(size);
+    wrap.appendChild(meta);
+    if (typeof apiFetch === "function") {
+      try {
+        apiFetch("/api/files/" + encodeURIComponent(fileId))
+          .then(function (metaRow) {
+            if (metaRow && metaRow.name) name.textContent = metaRow.name;
+            if (metaRow && typeof metaRow.size === "number") {
+              const cur = size.textContent;
+              size.textContent = cur + ' · ' + formatBytes(metaRow.size);
+            }
+          })
+          .catch(function (error) { reportSwallow(error, 'ui/toolArtifacts.lookupAttachmentMetadata', 'expected'); });
+      } catch (error) { reportSwallow(error, 'ui/toolArtifacts.ts:157'); }
+    }
+  });
+  img.addEventListener("error", function () {
+    clearTimeout((loadTimer ?? undefined));
+    if (attempts++ === 0) return requestImage();
+    try {
+      if (wrap.parentNode) wrap.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "load failed after retry"), wrap);
+    } catch (error) { reportSwallow(error, 'ui/toolArtifacts.ts:165'); }
+  });
+  img.style.display = "none";
+  /* Image and expand affordances open the shared Artifacts drawer. */
+  function openLightbox(ev: MouseEvent) {
+    if (ev) ev.preventDefault();
+    const fullSrc = url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
+    openArtifactPreview({
+      url: fullSrc,
+      mimeType: mimeType,
+      name: artifactName || displayName(fileId, mimeType) || 'Artifact'
+    });
+  }
+  renderArtifactControl(fullscreenHost, {
+    kind: 'fullscreen',
+    className: 'exec-artifact-fullscreen',
+    title: fsLabel,
+    i18nTitle: 'chrome.fullscreen',
+    i18nAria: 'chrome.fullscreen',
+    label: fsLabel,
+    onClick: function (event: any) { openLightbox(event); },
+  });
+  wrap.addEventListener("click", function (ev) {
+    const t = ev && ev.target;
+    if (!t) return;
+    /* Download anchors keep their browser behavior. */
+    if ((t as Element).closest && (t as Element).closest('a.exec-artifact-download')) return;
+    if ((t as Element).closest && (t as Element).closest('button.exec-artifact-fullscreen')) {
+      openLightbox(ev);
+      return;
+    }
+    /* Image click → fullscreen. */
+    if (t === img) openLightbox(ev);
+  });
+  out.appendChild(wrap);
+  requestImage();
+}
+
+function appendInlineHtml(fileId: string | number, mimeType: string, url: string, out: HTMLElement, artifactName?: string) {
+  const t = browserWindow.t || function (key: any) { return key; };
+  const wrap = document.createElement('figure');
+  wrap.className = 'exec-artifact exec-artifact-html';
+  wrap.dataset.artifactId = String(fileId);
+
+  const frame = document.createElement('iframe');
+  frame.className = 'exec-artifact-html-frame';
+  frame.src = url;
+  frame.title = artifactName || t('artifact.htmlAlt');
+  frame.loading = 'lazy';
+  frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+  wrap.appendChild(frame);
+
+  const caption = document.createElement('figcaption');
+  caption.className = 'exec-artifact-meta';
+  const name = document.createElement('span');
+  name.className = 'exec-artifact-meta-name';
+  name.textContent = artifactName || displayName(fileId, mimeType) || 'HTML';
+  const openHost = document.createElement('span');
+  openHost.className = 'exec-artifact-open-host';
+  renderArtifactControl(openHost, {
+    kind: 'open',
+    className: 'exec-artifact-open',
+    label: t('artifact.openPreview'),
+    onClick: function () { openArtifactPreview({ url: url, mimeType: mimeType, name: name.textContent || undefined }); },
+  });
+  caption.appendChild(name);
+  caption.appendChild(openHost);
+  wrap.appendChild(caption);
+  out.appendChild(wrap);
+}
+
+/* Best-effort display name for an artifact. fileId is opaque so we
+   fall back to a short id-derived label; the real name arrives via
+   the lazy /api/files/:id fetch above. */
+function displayName(fileId: any, mimeType: string) {
+  if (!fileId) return '';
+  const short = String(fileId).split('-')[0] || String(fileId);
+  if (mimeType && /^image\//.test(mimeType)) return short + (mimeType === 'image/png' ? '.png' : mimeType === 'image/jpeg' ? '.jpg' : '.img');
+  return short;
+}
+
+/* Format a byte count as a short human string (1.4 KB / 12.3 MB). */
+function formatBytes(n: unknown) {
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return '';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  return (n / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
+
+function appendInlineFileLink(fileId: string | number, mimeType: string, url: string, out: HTMLElement, t: (key: string) => string, displayName?: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.textContent = displayName || t("common.downloadFile").replace("{type}", mimeType || "file");
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.className = "exec-artifact-link";
+  a.download = "";
+  if (typeof fetch === "function") {
+    try {
+      fetch(url, { method: "HEAD", credentials: "same-origin" }).then(function (r) {
+        if (!r.ok && a.parentNode) {
+          a.parentNode.replaceChild(makeArtifactError(fileId, mimeType, url, "HTTP " + r.status), a);
+        }
+      }).catch(function (error) { reportSwallow(error, 'ui/toolArtifacts.probeArtifactDownload', 'expected'); });
+    } catch (error) { reportSwallow(error, 'ui/toolArtifacts.ts:261'); }
+  }
+  out.appendChild(a);
+}

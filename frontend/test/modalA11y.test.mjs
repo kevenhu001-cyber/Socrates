@@ -7,7 +7,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 // The helper only needs to know which controls participate in layout.
 dom.window.HTMLElement.prototype.getClientRects = () => [{}];
-const { setModalOpen } = await import('../src/ui/modalA11y.js');
+const { setModalOpen } = await import('../src/ui/modalA11y.ts');
 
 test.afterEach(() => {
   setModalOpen('legacyModal', false);

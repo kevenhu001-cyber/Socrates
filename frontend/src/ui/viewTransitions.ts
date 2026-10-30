@@ -17,7 +17,7 @@
  * feature-detect branch.
  */
 
-import { prefersReducedMotion } from './motion.js';
+import { prefersReducedMotion } from './motion.ts';
 
 let activeTransition: ViewTransition | null = null;
 let featureChecked = false;

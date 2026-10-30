@@ -1,5 +1,5 @@
 import { showToast } from '../../ui/toast.js';
-import { publishProfileSnapshot } from '../../ui/profile.js';
+import { publishProfileSnapshot } from '../../ui/profile.ts';
 import { i18n } from '../legacy/gateway';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
 

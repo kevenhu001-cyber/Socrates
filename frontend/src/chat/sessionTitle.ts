@@ -1,6 +1,6 @@
 import { apiFetch } from '../util/api.ts';
 import { hasUsableActive } from '../config/providers.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { stripHtmlTags } from '../util/stripHtml.ts';
 
 /* Generate a declarative session title based on the user's first input.

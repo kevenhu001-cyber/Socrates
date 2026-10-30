@@ -79,7 +79,7 @@ test('smoothScrollToBottom sets and clears data-auto-scrolling on the snap path'
   const stub = makeStub();
   stub.list.scrollHeight = 60;  /* target just below the snap threshold */
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     /* smooth:false forces the snap path even if the planner would
        otherwise choose an animation, so the assertion is synchronous
        and the test does not leak async activity. */
@@ -95,7 +95,7 @@ test('smoothScrollToBottom sets and clears data-auto-scrolling on the snap path'
 test('smoothScrollToBottom is a no-op when the list is missing', async () => {
   const stub = makeStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const ret = mod.smoothScrollToBottom(null, { smooth: true });
     await assert.doesNotReject(ret);
     assert.equal(stub.calls.length, 0);
@@ -108,7 +108,7 @@ test('smoothScrollToBottom handles zero-height list gracefully', async () => {
   const stub = makeStub();
   stub.list.scrollHeight = 0;
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const ret = mod.smoothScrollToBottom(stub.list, { smooth: true });
     await assert.doesNotReject(ret);
   } finally {
@@ -124,7 +124,7 @@ test('smoothScrollToBottom handles zero-height list gracefully', async () => {
 test('velocityScrollTo snaps short distances (no animation, immediate scrollTop)', async () => {
   const stub = makeStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const ret = mod.velocityScrollTo(stub.list, 10, { smooth: true });
     /* distance = 10 < SNAP_DISTANCE → snap path */
     await ret;
@@ -139,7 +139,7 @@ test('velocityScrollTo snaps short distances (no animation, immediate scrollTop)
 test('velocityScrollTo honours prefers-reduced-motion by snapping', async () => {
   const stub = makeStub({ reducedMotion: true });
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const ret = mod.velocityScrollTo(stub.list, 2000, { smooth: true });
     await ret;
     assert.equal(stub.list.scrollTop, 2000);
@@ -153,7 +153,7 @@ test('velocityScrollTo no-ops when target equals current scrollTop', async () =>
   const stub = makeStub();
   stub.list.scrollTop = 800;
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const ret = mod.velocityScrollTo(stub.list, 800, { smooth: true });
     await ret;
     assert.equal(stub.calls.length, 0);
@@ -165,7 +165,7 @@ test('velocityScrollTo no-ops when target equals current scrollTop', async () =>
 test('velocityScrollTo respects opts.smooth === false (instant snap)', async () => {
   const stub = makeStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const ret = mod.velocityScrollTo(stub.list, 3000, { smooth: false });
     await ret;
     assert.equal(stub.list.scrollTop, 3000);
@@ -178,7 +178,7 @@ test('velocityScrollTo respects opts.smooth === false (instant snap)', async () 
 test('velocityScrollTo handles null list gracefully', async () => {
   const stub = makeStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const ret = mod.velocityScrollTo(null, 1000, { smooth: true });
     await assert.doesNotReject(ret);
   } finally {
@@ -191,7 +191,7 @@ test('velocityScrollTo starts with scrollHeight target via smoothScrollToBottom 
   stub.list.scrollTop = 0;
   stub.list.scrollHeight = 2000;
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     /* smooth:false → snap → no async activity to leak past the test. */
     const ret = mod.smoothScrollToBottom(stub.list, { smooth: false });
     await ret;
@@ -245,8 +245,8 @@ function makeFrameStub({ scrollHeight = 50000, clientHeight = 800, scrollTop = 0
 test('velocityScrollTo with a live target follows a retarget without moving backwards', async () => {
   const stub = makeFrameStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
-    const motion = await import('../src/ui/motion.js');
+    const mod = await import('../src/ui/scroll.ts');
+    const motion = await import('../src/ui/motion.ts');
     let target = 20000;
     const plan = motion.planSendGlide(20000, 800);
     const done = mod.velocityScrollTo(stub.list, target, { target: () => target, plan });
@@ -269,7 +269,7 @@ test('velocityScrollTo with a live target follows a retarget without moving back
 test('velocityScrollTo clamps a live target to the reachable range', async () => {
   const stub = makeFrameStub({ scrollHeight: 3000, clientHeight: 800 });
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const done = mod.velocityScrollTo(stub.list, null, { target: () => 99999, plan: { duration: 200 } });
     stub.run();
     await done;
@@ -282,7 +282,7 @@ test('velocityScrollTo clamps a live target to the reachable range', async () =>
 test('velocityScrollTo honours an injected plan duration and easing', async () => {
   const stub = makeFrameStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const linear = (t) => t;
     const done = mod.velocityScrollTo(stub.list, 1600, { plan: { duration: 160, ease: linear } });
     const tops = stub.run();
@@ -300,7 +300,7 @@ test('velocityScrollTo honours an injected plan duration and easing', async () =
 test('velocityScrollTo snaps when an injected plan says snap', async () => {
   const stub = makeFrameStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     await mod.velocityScrollTo(stub.list, null, { target: () => 5000, plan: { snap: true, duration: 0 } });
     assert.equal(stub.list.scrollTop, 5000);
   } finally {
@@ -311,7 +311,7 @@ test('velocityScrollTo snaps when an injected plan says snap', async () => {
 test('velocityScrollTo stops on a foreign scroll write mid-glide', async () => {
   const stub = makeFrameStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const done = mod.velocityScrollTo(stub.list, null, { target: () => 20000, plan: { duration: 800 } });
     for (let i = 0; i < 5; i += 1) stub.frame();
     stub.list.scrollTop = 100; /* user drag */
@@ -327,7 +327,7 @@ test('velocityScrollTo stops on a foreign scroll write mid-glide', async () => {
 test('cancelScrollAnimation stops an in-flight glide', async () => {
   const stub = makeFrameStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const done = mod.velocityScrollTo(stub.list, 10000, { plan: { duration: 800 } });
     for (let i = 0; i < 3; i += 1) stub.frame();
     const at = stub.list.scrollTop;
@@ -344,7 +344,7 @@ test('cancelScrollAnimation stops an in-flight glide', async () => {
 test('smoothScrollToBottom retargets one active follow without restarting its glide', async () => {
   const stub = makeFrameStub({ scrollHeight: 10000, clientHeight: 800 });
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const first = mod.smoothScrollToBottom(stub.list, { smooth: true, retarget: true });
     for (let i = 0; i < 5; i += 1) stub.frame();
     const beforeRetarget = stub.list.scrollTop;
@@ -366,7 +366,7 @@ test('smoothScrollToBottom retargets one active follow without restarting its gl
 test('a superseding scroll preserves the auto-scrolling marker after cancelling the previous glide', async () => {
   const stub = makeFrameStub();
   try {
-    const mod = await import('../src/ui/scroll.js');
+    const mod = await import('../src/ui/scroll.ts');
     const first = mod.velocityScrollTo(stub.list, 20000, { plan: { duration: 800 } });
     stub.frame();
     const second = mod.velocityScrollTo(stub.list, 30000, { plan: { duration: 800 } });

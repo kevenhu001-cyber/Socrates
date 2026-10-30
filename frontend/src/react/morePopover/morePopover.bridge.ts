@@ -1,7 +1,7 @@
 /**
  * More popover bridge — M2 single-bridge migration.
  *
- * Legacy `ui/sidebar/morePopover.js` publishes open/close through
+ * Legacy `ui/sidebar/morePopover.ts` publishes open/close through
  * `window.__socratesMorePopoverBridge.publish(...)`.
  */
 

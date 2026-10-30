@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createToolRuntime } from '../src/chat/toolRuntime.ts';
 globalThis.window = {};
 globalThis.document = {cookie: ''};
-const {stateStore} = await import('../src/state/store.js');
+const {stateStore} = await import('../src/state/store.ts');
 const {sessionBridge, kbBridge, examBridge} = await import('../src/state/bridges.ts');
 
 function harness() {

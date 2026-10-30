@@ -4,7 +4,7 @@ import test from 'node:test';
 globalThis.window = {};
 
 const { createInitialAppState } = await import('../src/state/index.ts');
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 
 test('named state reads resolve fields without a flat compatibility table', () => {
   stateStore.dispatch({ type: 'state/batch', patch: {

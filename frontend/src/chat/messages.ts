@@ -4,16 +4,16 @@
  * updateKB) resolve via window.* at call time to
  * avoid circular imports.
  */
-import { stateStore } from '../state/store.js';
-import { hideNewReplyPill } from '../ui/scrollPill.js';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { stateStore } from '../state/store.ts';
+import { hideNewReplyPill } from '../ui/scrollPill.ts';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { appendLocalMemory } from '../storage/localMemory.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
-import { getActiveProvider } from '../pickers.js';
+import { getActiveProvider } from '../pickers.ts';
 import { generateId } from '../util/ids.ts';
 import { streamRetryViewport } from './turnState.ts';
-import { updateKB } from '../ui/knowledgePanel.js';
+import { updateKB } from '../ui/knowledgePanel.ts';
 
 function _renderAssistantHtml(text: string): string {
   const shell = window as { renderAssistantHTML?: (t: string) => string };

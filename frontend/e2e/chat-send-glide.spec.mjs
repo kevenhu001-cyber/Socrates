@@ -20,7 +20,7 @@
 //     to the slot in one step;
 //   - settled: the prompt ends 12±2px below the transcript top.
 //
-// The animation is time-based (ui/motion.js planSendGlide), so how many
+// The animation is time-based (ui/motion.ts planSendGlide), so how many
 // frames a glide produces depends on the host's refresh rate: a 205ms glide
 // yields about a dozen samples on a 60Hz display and about half of that on a
 // software-rendered CI host. The contract is therefore the MOTION — several

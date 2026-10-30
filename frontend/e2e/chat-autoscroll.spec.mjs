@@ -2,7 +2,7 @@
 //
 // Playwright spec for smooth auto-scroll and scroll-off (Requirements
 // 2.3, 2.4, 5.3). It exercises the pinned-reader / scroll-away contract
-// wired through ui/scroll.js + ui/scrollPill.js (shouldAutoScroll,
+// wired through ui/scroll.ts + ui/scrollPill.ts (shouldAutoScroll,
 // showNewReplyPill/hideNewReplyPill, state._userScrolledAway):
 //
 //   1. While content streams and the reader is pinned to the bottom,

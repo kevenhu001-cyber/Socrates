@@ -1,7 +1,7 @@
 // e2e/button-press.spec.mjs — one press language for every control.
 //
 // styles/polish/press.css owns paint-only press feedback without changing
-// control or icon geometry, and ui/pressFeedback.js keeps `.is-pressed`
+// control or icon geometry, and ui/pressFeedback.ts keeps `.is-pressed`
 // long enough for a fast tap to paint. These cases check the computed result
 // in a real browser:
 //   - buttons and icon buttons stay at scale 1 while held and released;

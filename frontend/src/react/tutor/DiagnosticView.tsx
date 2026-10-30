@@ -47,7 +47,7 @@ export type DiagnosticScreen =
 
 const CARD = 'mx-auto flex w-full max-w-[720px] flex-col gap-5 rounded-xl border border-border bg-card p-6 text-card-foreground md:p-8';
 
-/* Every control carries `data-diag-command`; `tutor/diagnosticFlow.js` keeps
+/* Every control carries `data-diag-command`; `tutor/diagnosticFlow.ts` keeps
    one delegated listener on `#diagnosticView` and dispatches from it. */
 export function DiagnosticView({ screen }: { screen: DiagnosticScreen }) {
   if (screen.kind === 'loading') return <DiagnosticLoading screen={screen} />;

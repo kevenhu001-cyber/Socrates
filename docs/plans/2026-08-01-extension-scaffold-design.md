@@ -10,9 +10,9 @@
 
 | 位置 | 内容 | 问题 |
 |---|---|---|
-| `frontend/src/windowExports.js` | `composeAction` / `researchAction` / `exploreAction` / `deepResearchAction` / `analyzeAction` 五个硬编码函数,内嵌 SVG 图标与 system prompt | 提示词与 UI 耦合在 window 全局函数里;无类型;无法测试 |
-| `frontend/src/pickers.js` | `EXTENSIONS` 数组(extensiveThinking / deepResearch / exam)+ `toggleExtensionByKey` | 数组元素结构未统一(onChange 内联副作用);与工具菜单定义重复 |
-| `frontend/src/main.js` | `EXTENSION_SIDE_EFFECTS` 映射(webSearch / deepResearch / extensiveThinking)+ `_activeTemplate` 状态 + `renderTemplateModeChip` | 副作用表与扩展定义分离,新增扩展容易漏改 |
+| `frontend/src/windowExports.ts` | `composeAction` / `researchAction` / `exploreAction` / `deepResearchAction` / `analyzeAction` 五个硬编码函数,内嵌 SVG 图标与 system prompt | 提示词与 UI 耦合在 window 全局函数里;无类型;无法测试 |
+| `frontend/src/pickers.ts` | `EXTENSIONS` 数组(extensiveThinking / deepResearch / exam)+ `toggleExtensionByKey` | 数组元素结构未统一(onChange 内联副作用);与工具菜单定义重复 |
+| `frontend/src/main.ts` | `EXTENSION_SIDE_EFFECTS` 映射(webSearch / deepResearch / extensiveThinking)+ `_activeTemplate` 状态 + `renderTemplateModeChip` | 副作用表与扩展定义分离,新增扩展容易漏改 |
 
 三个 UI 表面(工具菜单 8 项、扩展选择器 3 项、编辑器内 token chip)各自维护一份定义,同一扩展在菜单与选择器中重复出现(deepResearch、exam)时逻辑分叉。
 
@@ -244,11 +244,11 @@ frontend/src/extensions/
 
 ## 9. 参考文件
 
-- `frontend/src/windowExports.js`(435–577 行,五个 Action 与提示词)
-- `frontend/src/pickers.js`(248–430 行,EXTENSIONS 与扩展选择器)
-- `frontend/src/main.js`(3512–3591 行,`_activeTemplate` 与 `EXTENSION_SIDE_EFFECTS`)
+- `frontend/src/windowExports.ts`(435–577 行,五个 Action 与提示词)
+- `frontend/src/pickers.ts`(248–430 行,EXTENSIONS 与扩展选择器)
+- `frontend/src/main.ts`(3512–3591 行,`_activeTemplate` 与 `EXTENSION_SIDE_EFFECTS`)
 - `frontend/src/react/composer/ComposerToolsMenu.tsx`(工具菜单 React 渲染器)
-- `frontend/src/ui/composerTools.js`(工具菜单 legacy 兜底)
+- `frontend/src/ui/composerTools.ts`(工具菜单 legacy 兜底)
 - `frontend/src/react/composer-input/extensionToken.ts`(编辑器内 token 节点)
 
 ---

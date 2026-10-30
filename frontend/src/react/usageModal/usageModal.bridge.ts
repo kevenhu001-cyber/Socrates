@@ -1,7 +1,7 @@
 /**
  * Usage modal bridge — M2 single-bridge migration.
  *
- * `ui/usage.js` calls `window.__socratesUsageBridge.publish(...)`; the
+ * `ui/usage.ts` calls `window.__socratesUsageBridge.publish(...)`; the
  * factory owns the snapshot/reducer loop and `useBridge` powers React
  * subscribers.
  */

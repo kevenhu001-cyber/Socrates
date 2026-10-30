@@ -1,9 +1,9 @@
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import { hasUsableActive } from '../../config/providers.ts';
-import { _origGenerateFollowUp } from '../mocks.js';
+import { _origGenerateFollowUp } from '../mocks.ts';
 import { notifyMockFallbackOnce } from '../mockFallbackNotice.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { generateFollowUpStream } from '../../tutor/socraticTurn.js';
+import { generateFollowUpStream } from '../../tutor/socraticTurn.ts';
 import { toolCallbacksForStream } from '../toolCallbacks.ts';
 import { isExpectedTurnAbort } from '../turnUi.ts';
 import { getTutorSocratic, addAnchoredAssistant, addStreamingMessage, askChatTurn, translate, reportTurnFailure } from './runtime.ts';

@@ -8,7 +8,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-/* Seed before the module graph loads: ui/effortPicker.js runs
+/* Seed before the module graph loads: ui/effortPicker.ts runs
    syncEffortUI() at import time when document.readyState is not
    "loading" (always true under JSDOM), which caches the effort. */
 globalThis.localStorage.setItem('socrates-reasoning-effort', 'high');
@@ -23,7 +23,7 @@ const {
 } = await import('../src/chat/promptSuffixes.ts');
 const { setTonePreset } = await import('../src/config/tonePresets.ts');
 const { setAppMode } = await import('../src/config/providers.ts');
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 
 test('toneVoiceSuffix is empty for the default preset', () => {
   setTonePreset('default');

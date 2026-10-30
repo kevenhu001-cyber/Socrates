@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 import { DESTINATIONS, isPageDestination, isWorkspacePage } from '../src/sidebar/navigation.destinations.ts';
-import { WORKSPACE_ROUTES, workspaceForPath } from '../src/app/router.js';
+import { WORKSPACE_ROUTES, workspaceForPath } from '../src/app/router.ts';
 import { openNav, exitPluginsView, registerNavigationAdapters, syncWorkspaceRoute } from '../src/sidebar/navigation.service.ts';
 import { getActiveDestination } from '../src/sidebar/navigation.store.ts';
 

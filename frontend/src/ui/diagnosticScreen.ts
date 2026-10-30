@@ -2,8 +2,8 @@
  *
  * `#diagnosticView` used to be written by four different modules with
  * `innerHTML`. It now has one React owner (`react/tutor/diagnosticHost`), and
- * the question and results screens live in `ui/diagnosticQuestion.js` /
- * `ui/diagnosticResults.js`. This module keeps the two transient screens plus
+ * the question and results screens live in `ui/diagnosticQuestion.ts` /
+ * `ui/diagnosticResults.ts`. This module keeps the two transient screens plus
  * the clear path, and owns the progress state the generator reports into. */
 import { clearDiagnostic, renderDiagnostic } from '../react/tutor/diagnosticHost.tsx';
 

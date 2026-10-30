@@ -1,4 +1,4 @@
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 
 interface ParsedDiagnosticOption {
   letter?: unknown;

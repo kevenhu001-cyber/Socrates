@@ -34,7 +34,7 @@ on:
       - 'frontend/src/ui/agentMode.js'
       - 'frontend/src/ui/icons/**'
       - 'frontend/src/ui/toolInline.ts'
-      - 'frontend/src/ui/toolCards.js'
+      - 'frontend/src/ui/toolCards.ts'
       - 'frontend/test/**'
       - 'frontend/e2e/agent-steps.spec.mjs'
       - '.github/workflows/agent-tooling-ci.yml'

@@ -33,7 +33,7 @@ test('switcher toggles the configuration menu below it and closes on outside cli
   await expect(sw).toHaveAttribute('aria-expanded', 'true');
   /* The click lands mid-press (styles/polish/press.css scales the switcher
      for ~270ms) while the popover is anchored to the switcher's resting box
-     (ui/pressFeedback.js restingRect). Compare against that resting box. */
+     (ui/pressFeedback.ts restingRect). Compare against that resting box. */
   await expect(sw).not.toHaveClass(/\bis-press/);
   const [a, b] = await Promise.all([sw.boundingBox(), pop.boundingBox()]);
   expect(Math.abs(b.x - a.x)).toBeLessThanOrEqual(1);

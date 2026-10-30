@@ -29,8 +29,8 @@ import {
   formatCategoryLabel,
   parseFunctionExpression,
   sampleFunction,
-} from '../src/render/visualization.js';
-import { usesSpecializedRenderer } from '../src/render/visualizationAdapters.js';
+} from '../src/render/visualization.ts';
+import { usesSpecializedRenderer } from '../src/render/visualizationAdapters.ts';
 import {
   parseDefinitionInner,
   parseExampleInner,

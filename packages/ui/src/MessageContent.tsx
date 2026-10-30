@@ -280,7 +280,7 @@ function TutorPracticeCard({ practice, p, t, mode, onPracticeSubmit }: { practic
     setFeedback({ bad: false, text: practice.correct });
   };
   return <View style={[styles.scaffold, { borderColor: p.border.default, backgroundColor: p.bg.sunken }]}>
-    {/* No title row: the baseline (render/widgets.js mountPracticeWidget and
+    {/* No title row: the baseline (render/widgets.ts mountPracticeWidget and
         the streaming card in render/markdown.ts) parses <title> but never
         renders it, so the default "Practice" heading never appears there. */}
     <View style={{ gap: 4 }}><RichText text={practice.problem} mode={mode} p={p} t={t} /></View>

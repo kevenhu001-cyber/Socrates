@@ -267,7 +267,7 @@ export function createApiClient(input: {
       revokeShare: (id: string) => request<void>(`/sessions/${encodeURIComponent(id)}/share`, { method: 'DELETE' }),
     },
     mistakes: {
-      /* Baseline `ui/mistakeBook.js persistMistake`: every recorded mistake
+      /* Baseline `ui/mistakeBook.ts persistMistake`: every recorded mistake
        * is also mirrored to the mistakes table (POST /api/mistakes) for the
        * classroom hotspot views; the session `mistakes` array stays the
        * book's source of truth. `sessionId` must be a server UUID or null. */

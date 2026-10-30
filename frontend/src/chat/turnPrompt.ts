@@ -1,4 +1,4 @@
-import { getReasoningEffort } from '../ui/effortPicker.js';
+import { getReasoningEffort } from '../ui/effortPicker.ts';
 import { appendClientContextMessages, thinkingSuffix, toneVoiceSuffix, type PromptMessage } from './promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from './templateSystemPrompt.ts';
 import { languageDirectiveFor } from './lang.ts';

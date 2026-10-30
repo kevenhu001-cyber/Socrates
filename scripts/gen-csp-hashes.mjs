@@ -103,7 +103,7 @@ const update = process.argv.includes('--update');
  * a deliberately permissive sandboxed policy while the SPA keeps a hash-only
  * one. server/src/app.ts already does exactly this for published sites at
  * `/s/:token` ("default-src 'none'; …; sandbox"), so the pattern exists in the
- * codebase — the change is in frontend/src/render/viz.js, not here.
+ * codebase — the change is in frontend/src/render/viz.ts, not here.
  */
 const SCRIPT_SRC_INLINE = "'unsafe-inline'";
 

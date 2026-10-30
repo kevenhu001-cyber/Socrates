@@ -12,9 +12,9 @@ export function shouldRetryInterruptedStream(decision: StreamRetryDecision): boo
     && decision.attempt < decision.maxAttempts;
 }
 
-import { stateStore } from '../state/store.js';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { smoothScrollToBottom } from '../ui/scroll.js';
+import { stateStore } from '../state/store.ts';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { smoothScrollToBottom } from '../ui/scroll.ts';
 
 /** A captured viewport offset for one message row. */
 export interface RetryViewportSnapshot {

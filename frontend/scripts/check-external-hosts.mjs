@@ -8,7 +8,7 @@
  * our own origin. That is what makes the app load at all on a network that
  * cannot reach the open internet — and it was undone twice by accident:
  *
- *   1. ui/linkFavicons.js fell back to www.google.com/s2/favicons when a
+ *   1. ui/linkFavicons.ts fell back to www.google.com/s2/favicons when a
  *      link's own /favicon.ico failed. That host is unreachable from mainland
  *      China, so the fallback hung until the browser's own timeout and kept
  *      the page's loading indicator spinning.
@@ -215,7 +215,7 @@ function main() {
     console.error(`external-hosts: ${newHits.length} non-allowlisted host(s) in the SPA (baseline has ${baseKeys.size}).`);
     for (const v of newHits) console.error(`  ${v.file}:${v.line}  ${v.host}\n      ${v.snippet}`);
     console.error('\nEvery runtime byte the app needs must come from our own origin — a third-party host is unreachable for users behind the GFW and shows up as a hung request.');
-    console.error('Vendor the asset (see src/vendor-files/ and src/vendor/lazy.js), or, if the URL is genuinely never fetched, add the host to ALLOWED_HOSTS in scripts/check-external-hosts.mjs with a reason.');
+    console.error('Vendor the asset (see src/vendor-files/ and src/vendor/lazy.ts), or, if the URL is genuinely never fetched, add the host to ALLOWED_HOSTS in scripts/check-external-hosts.mjs with a reason.');
     process.exit(1);
   }
   console.log(`external-hosts: ok (${hits.length} baseline entr(ies), no new hosts; GeoGebra is the only third-party host left).`);

@@ -94,7 +94,7 @@ export interface ExtensionContext {
   ): Promise<unknown>;
 }
 
-/** Handle returned by ctx.startProgress() — mirrors ui/searchProgress.js. */
+/** Handle returned by ctx.startProgress() — mirrors ui/searchProgress.ts. */
 export interface SearchProgressHandle {
   onStep(ev: { kind: string; data?: Record<string, unknown> }): void;
   appendStep(text: string, kind?: 'running' | 'ok' | 'warn' | 'err'): void;

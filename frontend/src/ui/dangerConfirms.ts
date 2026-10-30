@@ -5,10 +5,10 @@
  * - confirmDeleteAccount: full account deletion via /api/auth/account
  */
 
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { showConfirm } from './confirm.ts';
 import { clearProviderConfig } from '../config/providerConfig.service.ts';
-import { renderUserFooter } from './profile.js';
+import { renderUserFooter } from './profile.ts';
 
 interface DangerWindow {
   t?: (key: string) => string;

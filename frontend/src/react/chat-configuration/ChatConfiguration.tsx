@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { saveChatPreferences, type ReasoningEffort, type ResponseSpeed } from '../../config/chatPreferences';
 import { resolveEffectiveEffort } from '../../config/effectiveEffort';
-import { pickActiveProviderById } from '../../pickers.js';
+import { pickActiveProviderById } from '../../pickers.ts';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import {

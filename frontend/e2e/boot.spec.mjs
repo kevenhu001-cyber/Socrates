@@ -74,7 +74,7 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
   // dist/index.html layout invariants (ES-module build): no external
   // script/CSS/font dependency remains, and the app bundle is emitted as a
   // type="module" script. Marked/DOMPurify/KaTeX/hljs/Fuse are bundled into
-  // the module graph by src/vendor/init.js; mermaid/echarts/plotly are
+  // the module graph by src/vendor/init.ts; mermaid/echarts/plotly are
   // self-hosted static assets injected only on demand.
   const html = fs.readFileSync(distHtml, 'utf8');
   expect(html, 'dist/index.html must not load external JS/CSS').not.toMatch(/https:\/\/cdn\.jsdelivr\.net[^"']*\.(?:js|css)/);

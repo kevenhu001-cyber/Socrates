@@ -18,9 +18,9 @@
 
 - 知识图谱（知识边界可视化）
 - 苏格拉底教学法（引导式提问，见 `chat/socraticDirectives.js`、`prompts/teacher-mode.md`）
-- 错题本（`ui/mistakeBook.js`）
+- 错题本（`ui/mistakeBook.ts`）
 - 诊断评估（`chat/diagnosticGenerator.js`、`chat/diagnosticParser.js`）
-- 扎实的工程底座：视觉理解（多模态附件）、文档解析（PDF/文本）、可视化渲染（`render/viz.js`）
+- 扎实的工程底座：视觉理解（多模态附件）、文档解析（PDF/文本）、可视化渲染（`render/viz.ts`）
 
 产品定位一句话：**一个把"教得会"作为第一目标的 AI 学习伙伴**，而非又一个通用问答机器人。
 
@@ -28,7 +28,7 @@
 
 ## 基线核对（当前代码现状）
 
-> 最后复核：2026-09-29。下表行号取自拆分**前**的 `main.js`；自 `chat/editBranch.js`、`react/message-list/*` 抽离后这些行号已失效，现按模块给出归属。
+> 最后复核：2026-09-29。下表行号取自拆分**前**的 `main.js`；自 `chat/editBranch.ts`、`react/message-list/*` 抽离后这些行号已失效，现按模块给出归属。
 
 在动工前必须认清哪些能力**已经存在**，防止把已完成的功能当成待开发项。
 
@@ -36,10 +36,10 @@
 
 | 能力 | 函数 | 位置 | 说明 |
 | --- | --- | --- | --- |
-| 编辑用户消息 | `editUserMessage` | `chat/editBranch.js` | textarea 替换消息体，Cmd/Ctrl+Enter 或失焦提交，Esc 取消 |
-| 回滚后续消息 | `rollbackMessagesAfter` | `chat/editBranch.js` | 编辑后 splice 掉该轮之后的 state + DOM |
-| 会话分支 / 多角度重讲 | `branchFromMessage` | `chat/editBranch.js` L240+ | `opts.reExplain` 走教育化分支：注入"换一种解释角度"追问并自动续讲 |
-| 重生成回答 | `regenerateAssistantMessage` | `chat/editBranch.js` | 定位上一条 user 消息，splice 掉 assistant 气泡后重新 `askChatTurn` |
+| 编辑用户消息 | `editUserMessage` | `chat/editBranch.ts` | textarea 替换消息体，Cmd/Ctrl+Enter 或失焦提交，Esc 取消 |
+| 回滚后续消息 | `rollbackMessagesAfter` | `chat/editBranch.ts` | 编辑后 splice 掉该轮之后的 state + DOM |
+| 会话分支 / 多角度重讲 | `branchFromMessage` | `chat/editBranch.ts` L240+ | `opts.reExplain` 走教育化分支：注入"换一种解释角度"追问并自动续讲 |
+| 重生成回答 | `regenerateAssistantMessage` | `chat/editBranch.ts` | 定位上一条 user 消息，splice 掉 assistant 气泡后重新 `askChatTurn` |
 | 消息工具栏 | `buildMessageToolbar` | `react/message-list/useMessageActions.ts` | user 角色：copy/edit/delete；assistant 角色：copy/share/regenerate/thumbs/branch/re-explain |
 | 会话内查找（Ctrl-F） | `openFindInSession` | `react/find-in-session/*` | 顶栏 `#findBtn` + `Ctrl-F`，`<mark>` 高亮、导航、延迟挂载行自动 flush |
 
@@ -53,7 +53,7 @@
 
 | 能力 | 现状 | 目标 |
 | --- | --- | --- |
-| Agent 分屏视图 | Agent/Deep Research 共用 React transcript 与 tool-run surfaces（`chat/streamingTurn.js`、`react/tool-run/`、`ui/agentSteps.ts`），暂无独立分屏 | 左右分屏：对话 + 工具 Tab（建议降级） |
+| Agent 分屏视图 | Agent/Deep Research 共用 React transcript 与 tool-run surfaces（`chat/streamingTurn.ts`、`react/tool-run/`、`ui/agentSteps.ts`），暂无独立分屏 | 左右分屏：对话 + 工具 Tab（建议降级） |
 | 国际化收尾 | `t()`/`tr()` 基建已在 `i18n.js`（约 1100 行字典） | 替换残余硬编码英文 |
 
 ---
@@ -85,7 +85,7 @@
 
 落地情况：
 
-1. **入口接通** ✅ — 顶栏 `#findBtn`（在有会话显示时可见，与 Share 按钮联动）+ 全局快捷键 `Ctrl-F` / `Cmd-F`（`ui/keyboardShortcuts.js` 拦截）。
+1. **入口接通** ✅ — 顶栏 `#findBtn`（在有会话显示时可见，与 Share 按钮联动）+ 全局快捷键 `Ctrl-F` / `Cmd-F`（`ui/keyboardShortcuts.ts` 拦截）。
 2. **高亮与无损清理** ✅ — `findHighlight.ts` 遍历当前会话 `#msgList .msg-body` 纯文本节点包裹 `<mark class="find-hl">`，关闭时完全还原原始 DOM。
 3. **导航与计数** ✅ — 支持 Enter（下一个）、Shift+Enter（上一个）、Escape（退出）与按钮导航，循环计数实时显示为 `N/M`。
 4. **长会话渐进式加载支持** ✅ — 查找前自动通过 `flushDeferredMessageRows()` 刷新未挂载历史行，确保搜索全量历史。
@@ -105,13 +105,13 @@
 
 1. **`branchedFrom` 元数据** ✅ — `{ sessionId, messageId, reExplain }`，在 `state/session.ts` 定型，持久化 / 恢复 / 排序比较 / 侧栏展示四处均已接通。
 2. **"换个思路再讲一遍"入口** ✅ — assistant 工具栏的 re-explain 动作走 `useMessageActions.ts:121` → `branchFromMessage(id, { reExplain: true })`。
-3. **教学化注入** ✅ — `chat/editBranch.js` L301+ 追加一条 "Please re-explain that from a different angle…" 追问并自动续讲，同时打 toast。
+3. **教学化注入** ✅ — `chat/editBranch.ts` L301+ 追加一条 "Please re-explain that from a different angle…" 追问并自动续讲，同时打 toast。
 
 **未覆盖**：第 3 点"多角度解释"的沉淀（把同一知识点的不同讲法归组成可复用资产）尚未做，属后续增强，非本项缺口。
 
 ### P1.2 知识图谱可视化升级 —— ✅ 已落地（2026-09-29 复核）
 
-**原现状**：线性 5 节点列表（`ui/knowledgeDetail.js` `kbNodeHtml`）。**已升级为力导向图**（`tutorSocratic.js` L240+）。
+**原现状**：线性 5 节点列表（`ui/knowledgeDetail.ts` `kbNodeHtml`）。**已升级为力导向图**（`tutorSocratic.js` L240+）。
 
 落地情况：
 
@@ -136,7 +136,7 @@
 
 ### P1.3 Agent 分屏视图 —— ❌ 未开始（2026-09-30 重估：建议降级）
 
-**现状**：Agent/Deep Research 复用普通 React transcript（`chat/streamingTurn.js`）与 tool-run surfaces（`react/tool-run/`、`ui/agentSteps.ts`），工具状态和报告都在统一消息流中展示，**无独立分屏**。
+**现状**：Agent/Deep Research 复用普通 React transcript（`chat/streamingTurn.ts`）与 tool-run surfaces（`react/tool-run/`、`ui/agentSteps.ts`），工具状态和报告都在统一消息流中展示，**无独立分屏**。
 
 **重估结论：建议降级，不作为下一项。** 理由：
 
@@ -173,7 +173,7 @@
 
 **现状**：`t()`/`tr()` 基建已在 `frontend/src/i18n.js`（`en`/`zh` 字典），部分模块仍硬编码英文。
 
-- 替换 **U-M6** 硬编码英文为 `t()`，典型示例（`ui/knowledgeDetail.js`）：
+- 替换 **U-M6** 硬编码英文为 `t()`，典型示例（`ui/knowledgeDetail.ts`）：
   - "Confidence"（L43）、"System note"（L49）、"Your note"（L52）、"→ go"（L39）、"No status changes yet." 等。
 - 同步补齐 `en` / `zh` 两侧字典条目，确保切换语言无残留英文。
 
@@ -191,7 +191,7 @@
 
 **采纳**：轻量 SVG + 简易力导向布局，直接渲染于知识面板 DOM。实现在 `tutorSocratic.js` L240+（`kbLayout` / `buildKBGraphHtml` / `wireKBGraph`），确定性 Fruchterman-Reingold，无 RNG。
 
-**不采用** `render/viz.js` 沙箱 iframe 方案，原因：
+**不采用** `render/viz.ts` 沙箱 iframe 方案，原因：
 
 - `viz.js` 通过 `sandbox="allow-scripts"` 的 iframe 隔离**用户代码**，适合渲染 LLM 生成的 HTML/SVG/Mermaid/Canvas。
 - 但知识图谱是**原生应用 UI**，需要与主应用双向交互（点击节点跳转 `jumpToNode`、读取 `state.kbNodes`、共享主题 token），iframe 的跨源隔离反而成为障碍。

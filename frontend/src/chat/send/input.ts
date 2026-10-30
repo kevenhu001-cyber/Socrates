@@ -1,14 +1,14 @@
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import { turnState } from '../turnState.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showToast } from '../../ui/toast.js';
-import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.js';
+import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.ts';
 import { clearComposer, focusComposer, getComposerMarkdown } from '../../composer/controller.ts';
 import type { ComposerSurface } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
-import { buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.js';
-import { renderAttachmentChips } from '../../attachments/render.js';
+import { buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.ts';
+import { renderAttachmentChips } from '../../attachments/render.ts';
 import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { addMessage } from '../messages.ts';
 import { playSendGlyph } from '../../ui/sendGlyph.js';
@@ -26,7 +26,7 @@ export interface SendInput {
   text: string;
   textForModel: string;
   isComposerSubmit: boolean;
-  turnAttachments: unknown[];
+  turnAttachments: import('../../attachments/types.ts').PendingAttachment[];
   immediateAttachments: unknown[];
 }
 
@@ -77,7 +77,7 @@ export function captureSendInput(textOverride?: string | null): SendInput | null
 
   const textForModel = serializeSelectedPluginContext(selectedComposerPlugins('chat').slice(), text);
   const isComposerSubmit = textOverride == null;
-  const turnAttachments: unknown[] = isComposerSubmit ? snapshotAttachments() : [];
+  const turnAttachments: import('../../attachments/types.ts').PendingAttachment[] = isComposerSubmit ? snapshotAttachments() : [];
   const immediateAttachments = turnAttachments.slice(0, 20)
     .map((attachment) => Object.assign({}, attachment));
   return { text, textForModel, isComposerSubmit, turnAttachments, immediateAttachments };

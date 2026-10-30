@@ -1,6 +1,6 @@
 /* assistantPicker — DOM-free list model for the chat-header assistant
  * switcher. Mirrors the row semantics of the web baseline's Assistants
- * creation surface (`frontend/src/ui/creationSurfaces.js`): a row shows the
+ * creation surface (`frontend/src/ui/creationSurfaces.ts`): a row shows the
  * title plus the config's description, and the bound assistant carries the
  * check. Binding itself stays in the host app (session-level PATCH with the
  * epoch-guarded mirror update); this module only shapes the list. */

@@ -14,9 +14,9 @@
  *   - creates a directory-level cycle, since `react/` reads state that
  *     `chat/` writes, and
  *   - makes the legacy path untestable in isolation: a test that wants
- *     `chat/streamingTurn.js` must now boot a React component module.
+ *     `chat/streamingTurn.ts` must now boot a React component module.
  *
- * A concrete instance this check is guarding: `chat/streamingTurn.js` used to
+ * A concrete instance this check is guarding: `chat/streamingTurn.ts` used to
  * import `isMsgListMounted()` from `react/message-list/MessageList.tsx` just
  * to read one boolean. The flag now lives in the neutral `src/ui/` layer.
  *

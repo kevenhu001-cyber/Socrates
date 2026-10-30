@@ -23,7 +23,7 @@ import {
   attachments,
   attachmentPointerLine,
   buildMessageContent,
-} from '../src/attachments.js';
+} from '../src/attachments.ts';
 import { buildUserContentParts } from '../src/chat/history.ts';
 
 async function withProvider(provider, fn) {

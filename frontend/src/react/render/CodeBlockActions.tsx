@@ -3,7 +3,7 @@ import { Check, ClipboardX, Copy, Expand, PanelsTopLeft } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
 import { Textarea } from '../ui/shadcn/textarea';
 import { openWorkbench } from '../workbench/workbenchStore';
-import { openVizModalRaw } from '../../render/vizStubs.js';
+import { openVizModalRaw } from '../../render/vizStubs.ts';
 import { esc } from '../../render/helpers.ts';
 import { i18n } from '../legacy/gateway.ts';
 

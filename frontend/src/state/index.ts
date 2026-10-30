@@ -19,7 +19,7 @@ import { createInitialUiState } from './ui.ts';
  * Compose the root state from the current bridge snapshots.
  *
  * Kept for callers that want a one-shot, frozen view; the live
- * facade in `state/store.js` re-evaluates the bridges on every read so
+ * facade in `state/store.ts` re-evaluates the bridges on every read so
  * its Proxy stays in sync with concurrent commits.
  */
 export function composeRootState() {

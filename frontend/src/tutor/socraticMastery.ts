@@ -1,4 +1,4 @@
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { setComposerMarkdown } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

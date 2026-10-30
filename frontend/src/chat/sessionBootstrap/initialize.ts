@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import { turnState } from '../turnState.ts';
 import { generateId } from '../../util/ids.ts';
 import { setCurrentSessionId } from '../../session/loader.ts';

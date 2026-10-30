@@ -2,7 +2,7 @@
  * Three chat-formatting helpers extracted from main.js region 13.
  */
 
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 
 type ChatResultWindow = Window & {

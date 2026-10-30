@@ -21,7 +21,7 @@
  * endpoint is a pure upsert by contract; the client already handles
  * removal out-of-band — `deleteUserMessage` fires
  * `DELETE /api/messages/<id>` and edit/regenerate fires
- * `PATCH /api/messages/<id>?discardFollowing=true` (chat/editBranch.js).
+ * `PATCH /api/messages/<id>?discardFollowing=true` (chat/editBranch.ts).
  * A delta therefore cannot strand an orphan that the full payload would
  * have cleaned up, because the full payload never did.
  *

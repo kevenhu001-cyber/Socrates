@@ -168,7 +168,7 @@ async function detectDefects(page) {
 
     // 5. Home dead zone — the landing composer with no shortcut row under it.
     // The three landing shortcuts (upload / write / research) are real
-    // entry points with live markup, i18n and ui/homeSurface.js handlers.
+    // entry points with live markup, i18n and ui/homeSurface.ts handlers.
     // When their container is display:none the landing page keeps a ~410px
     // empty band under the composer with nothing to do, which is how the
     // row got hidden in the first place and stayed hidden.

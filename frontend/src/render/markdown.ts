@@ -7,7 +7,7 @@
    All three exported for use by main.js / doRender / streaming. */
 
 import { esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang } from './helpers.ts';
-import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './vizStubs.js';
+import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './vizStubs.ts';
 import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPreprocessOptions } from './preprocess.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { sanitizeUrls } from '../util/safe.ts';

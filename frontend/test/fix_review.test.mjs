@@ -15,7 +15,7 @@ import test from 'node:test';
  * suite.
  */
 
-import { planMotionForUser, easeOutQuint, MOTION_EASING } from '../src/ui/motion.js';
+import { planMotionForUser, easeOutQuint, MOTION_EASING } from '../src/ui/motion.ts';
 
 test('A8: easeOutQuint is the easing the scroll/inset rAF loops consume', () => {
   /* The closed form 1-(1-t)^5 must match what scroll.js and
@@ -78,7 +78,7 @@ test('scrollToBottomIfPinned is preserved (regression)', async () => {
      font-size and content-width changes — these run after the
      velocity-based rAF path, so the snap path must NOT have been
      removed. */
-  const mod = await import('../src/ui/scroll.js');
+  const mod = await import('../src/ui/scroll.ts');
   assert.equal(typeof mod.scrollToBottomIfPinned, 'function');
 });
 
@@ -87,7 +87,7 @@ test('velocityScrollTo cancels an in-flight chain when called twice in a row (mo
      verify that the function returns a Promise and that the
      dataset auto-scrolling flag is set immediately, which is the
      contract callers depend on for cancel timing. */
-  const mod = await import('../src/ui/scroll.js');
+  const mod = await import('../src/ui/scroll.ts');
   const stub = {
     scrollHeight: 5000,
     scrollTop: 0,

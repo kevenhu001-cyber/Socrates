@@ -1,7 +1,7 @@
 /**
  * Prompt templates bridge — M2 single-bridge migration.
  *
- * `ui/promptTemplates.js` publishes through
+ * `ui/promptTemplates.ts` publishes through
  * `window.__socratesPromptTemplatesBridge.publish(...)`.
  */
 

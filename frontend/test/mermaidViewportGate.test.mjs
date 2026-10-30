@@ -33,7 +33,7 @@ globalThis.IntersectionObserver = function (cb, opts) {
 const {
   mermaidCardIsNearViewportForTest,
   resetMermaidGateForTest,
-} = await import('../src/render/viz.js');
+} = await import('../src/render/viz.ts');
 
 const MARGIN = 600;
 

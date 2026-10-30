@@ -13,8 +13,12 @@ export const ARCHIVE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 export interface SessionRow {
   id: string;
   title?: string | null;
+  mode?: string;
+  preview?: string;
   topic?: string | null;
   pinned?: boolean;
+  projectId?: string | null;
+  tags?: string[];
   pinnedAt?: number | string | null;
   archivedAt?: number | string | null;
   updated_at?: number | string | null;

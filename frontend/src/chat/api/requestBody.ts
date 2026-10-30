@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import { getStoredResponseSpeed, getStoredReasoningEffort, type ReasoningEffort } from '../../config/chatPreferences.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
 import { resolveEffortRequest } from '../../config/effectiveEffort.ts';
@@ -15,7 +15,7 @@ export interface ChatRequestMessage {
 export interface ChatRequestBody {
   messages: ChatRequestMessage[];
   temperature: number;
-  max_tokens: number;
+  max_tokens?: number;
   mode: 'tutor' | 'chat';
   response_speed: string;
   sessionId?: string;
@@ -107,7 +107,7 @@ function attachReasoningOptions(body: ChatRequestBody): void {
 /* Shared by probe, streaming, built-in, and custom-provider requests. */
 export function buildChatRequestBody(
   messages: ChatRequestMessage[],
-  maxTokens: number,
+  maxTokens: number | undefined,
   temperature: number,
 ): ChatRequestBody {
   const body: ChatRequestBody = {

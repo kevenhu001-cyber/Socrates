@@ -1,7 +1,7 @@
 /**
  * Cmd+K palette bridge — M2 single-bridge migration.
  *
- * Legacy `ui/cmdK.js` publishes palette state through
+ * Legacy `ui/cmdK.ts` publishes palette state through
  * `window.__socratesCmdK.publish(...)`. The factory owns the
  * snapshot/reducer/listener loop; this module adds the legacy alias
  * and the React hooks consumed by `CommandPalette.tsx`.

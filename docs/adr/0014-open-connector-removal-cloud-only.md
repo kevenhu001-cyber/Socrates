@@ -46,7 +46,7 @@
 
 ## 影响
 
-- 代码：`server/src/{services,routes}` 6 文件、`server/test/openConnectorCatalog.test.js`（去 `existsSync` 耦合，19 用例全绿）、`frontend/src/{sidebar/nav.js,react/pages/workspace/WorkspacePage.tsx}`、`frontend/e2e/plugin-directory.spec.mjs`（仅措辞）。
+- 代码：`server/src/{services,routes}` 6 文件、`server/test/openConnectorCatalog.test.js`（去 `existsSync` 耦合，19 用例全绿）、`frontend/src/{sidebar/nav.ts,react/pages/workspace/WorkspacePage.tsx}`、`frontend/e2e/plugin-directory.spec.mjs`（仅措辞）。
 - 数据：无 schema 变更；`projectConnectorConnections` 行格式不变。
 - 部署：不再需要 sidecar 进程 / `OC_SIDECAR_*` 环境变量；唯一依赖是 `OOMOL_PROJECT_API_KEY`。回滚一次连接器故障即可，无需服务编排变更。
 - 文档：`AGENTS.md`（open-connector 条目改为已移除）、`scripts/README.md`（删 `gen-oc-cloud-auth.mjs` 行）、`docs/adr/0010`（PR-0010.5 作废标注）、本 ADR 入索引。

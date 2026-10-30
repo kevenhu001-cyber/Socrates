@@ -21,7 +21,7 @@ function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} stro
 /* The pill's visibility is part of the sticky-bottom contract: while an
    answer streams, a reader who scrolls away gets the "↓ New reply"
    affordance and clicking it re-pins. `_userScrolledAway` is owned by the
-   legacy scroll listener (ui/scrollPill.js), so read it from the ui domain
+   legacy scroll listener (ui/scrollPill.ts), so read it from the ui domain
    store — the typed view of the same flag the legacy listener writes, and
    a subscription to that one namespace rather than to every state change. */
 function useScrolledAway(): boolean {

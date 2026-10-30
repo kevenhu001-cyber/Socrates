@@ -17,7 +17,7 @@ import {
   getVisibleComposerSurface,
   setComposerExtensionToken,
 } from '../composer/controller.ts';
-import { startSearchProgress } from '../ui/searchProgress.js';
+import { startSearchProgress } from '../ui/searchProgress.ts';
 import type {
   AgentRunEvent,
   ComposerSurface,

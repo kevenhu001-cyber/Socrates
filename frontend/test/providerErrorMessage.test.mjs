@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { providerErrorMessage } from '../src/chat/providerErrorMessage.ts';
-import { en } from '../src/i18n/en.js';
-import { zh } from '../src/i18n/zh.js';
+import { en } from '../src/i18n/en.ts';
+import { zh } from '../src/i18n/zh.ts';
 
 test('provider cooldown is localized and rounded up without claiming availability', () => {
   const error = { status: 429, code: 'LLM_UPSTREAM_ERROR', body: { retryAfterMs: 30_001 } };

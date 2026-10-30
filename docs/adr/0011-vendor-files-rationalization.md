@@ -11,17 +11,17 @@
 
 | 文件 | 大小 | 注入入口 | 实际消费者 |
 | --- | --- | --- | --- |
-| `plotly.min.js` | 4.7 MB | `vendor/lazy.js:loadScriptOnce('plotly', …, 'Plotly')` | `src/react/tool-output/VisualizationOutput.tsx`、viz iframe |
-| `mermaid.min.js` | 3.5 MB | lazy.js 同上 | `src/render/visualization.js`、`src/render/visualizationAdapters.js`、可视化卡片 |
+| `plotly.min.js` | 4.7 MB | `vendor/lazy.ts:loadScriptOnce('plotly', …, 'Plotly')` | `src/react/tool-output/VisualizationOutput.tsx`、viz iframe |
+| `mermaid.min.js` | 3.5 MB | lazy.js 同上 | `src/render/visualization.ts`、`src/render/visualizationAdapters.ts`、可视化卡片 |
 | `echarts.min.js` | 1.1 MB | lazy.js 同上 | 同上 + `displayPrefs.js` |
-| `katex/katex.min.js` + `katex.min.css` | 270 KB / 数十 KB | lazy.js 同上 | `src/render/markdown.ts`、`src/render/viz.js`、所有公式 |
+| `katex/katex.min.js` + `katex.min.css` | 270 KB / 数十 KB | lazy.js 同上 | `src/render/markdown.ts`、`src/render/viz.ts`、所有公式 |
 | `highlight.min.js` | 120 KB | lazy.js 同上 | `src/render/markdown.ts`、代码块 |
 
 **目前所有 5 个文件均被实际加载**。`deploy.sh:40-46` 也明确记录了"mermaid's 38 lazy diagram imports + 4 echarts sub-modules + 4.85 MB plotly bundle"的取舍记录。
 
 所以审查记录中"三选一精减 plotly/mermaid/echarts"的提法是**不准确**的：删除任何一项都会破坏现有 viz 卡片。实际问题另有三个：
 
-1. **README.md 与现状矛盾**：README "Tech stack / CDN deps" 一段说"`cdn.jsdelivr.net` (KaTeX, marked) — all SRI-pinned"，但仓库 `frontend/src/vendor-files/katex/` 也自带同名文件，且 `marked` 也不是 CDN 而是通过 npm bundled (`src/vendor/init.js`)。两份来源并存 = CDN 失效 fallback 行为不确定，SRI 真假无法验证。
+1. **README.md 与现状矛盾**：README "Tech stack / CDN deps" 一段说"`cdn.jsdelivr.net` (KaTeX, marked) — all SRI-pinned"，但仓库 `frontend/src/vendor-files/katex/` 也自带同名文件，且 `marked` 也不是 CDN 而是通过 npm bundled (`src/vendor/init.ts`)。两份来源并存 = CDN 失效 fallback 行为不确定，SRI 真假无法验证。
 2. **markdown.ts / viz.js 同时引用 vendor 与 npm 路径**：存在双源风险时一处 bundle 升，另一处失效。
 3. **没有"新增 heavy 库"标准**：今天某个 PR 想加一张图表，到底落 vendor-files、npm、还是 CDN？需有 ADR 边界。
 
@@ -55,7 +55,7 @@
 1. **PR-0011.1 — 文档对齐（必须）**
    - `README.md` "Tech stack / CDN deps" 段改写为"vendored at `frontend/src/vendor-files/`，无 CDN 兜底"。
    - 新建 `frontend/src/vendor-files/README.md`，列出每个文件的 upstream + SRI + 最后同步日期。
-   - 在 `frontend/src/vendor/init.js` 与 `src/render/markdown.ts` 顶部注释加 vendored 标注。
+   - 在 `frontend/src/vendor/init.ts` 与 `src/render/markdown.ts` 顶部注释加 vendored 标注。
 
 2. **PR-0011.2 — SRI 验证脚本（推荐）**
    - 写 `scripts/verify-vendor-sri.mjs`，对 `vendor-files/` 内每个文件计算 sha384，与 README 里登记的 hash 比对。CI 不强制阻断，仅 `npm run verify:vendor-sri`。
@@ -66,7 +66,7 @@
 
 ## 影响
 
-- **代码**：1 PR 改 README + 1 PR 加 verify 脚本 + 同源码注释更新；不修改 `vendor/lazy.js` 或实际 viz 渲染路径。
+- **代码**：1 PR 改 README + 1 PR 加 verify 脚本 + 同源码注释更新；不修改 `vendor/lazy.ts` 或实际 viz 渲染路径。
 - **Bundle**：不变（保留 vendor-files/）。
 - **CI**：PR-0011.2 引入新 verify 脚本；为不影响主 gate，**仅作为手动可触发**（不绑 ci.yml 的必跑 job），未来如需绑再单独 ADR。
 - **文档**：README "Tech stack"段重写；新增 `frontend/src/vendor-files/README.md`；更新 `docs/audits/2026-09-20-structural-review.md` F-011 状态。
@@ -76,10 +76,10 @@
 
 - 回滚成本：极低。回退文档与 verify 脚本；不动 vendor-files 物理内容。
 - 回滚步骤：`git revert <PR-sha>`。
-- 边界保护：PR-0011.x 不修改 `vendor/lazy.js`、不修改任何 viz 渲染路径。
+- 边界保护：PR-0011.x 不修改 `vendor/lazy.ts`、不修改任何 viz 渲染路径。
 
 ## 相关链接
 
 - `docs/audits/2026-09-20-structural-review.md` F-011
-- `frontend/src/vendor/lazy.js`（5 个 vendor 的注入入口）
+- `frontend/src/vendor/lazy.ts`（5 个 vendor 的注入入口）
 - `deploy.sh:40-46`（build 决策来源）

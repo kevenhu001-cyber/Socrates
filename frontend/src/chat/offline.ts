@@ -12,7 +12,7 @@
 // a transport error ends a request.
 //
 // Window exposures (window.offlineGuard / sleepBackoff /
-// STREAM_MAX_ATTEMPTS / STREAM_RETRYABLE_STATUS) live in src/windowExports.js.
+// STREAM_MAX_ATTEMPTS / STREAM_RETRYABLE_STATUS) live in src/windowExports.ts.
 
 /* Six attempts = the initial request plus five fixed-delay retries. */
 export const STREAM_MAX_ATTEMPTS  = 6;

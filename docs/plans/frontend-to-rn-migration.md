@@ -75,7 +75,7 @@ node scripts/generate-behavior-baseline.mjs > ../frontend-rn/tests/baseline.json
 
 **当前问题：**
 ```javascript
-// frontend/src/main.js - 10,051 行单一文件
+// frontend/src/main.ts - 10,051 行单一文件
 // - 事件总线
 // - 状态管理
 // - DOM 操作
@@ -168,7 +168,7 @@ export const useChatStore = create<ChatState>((set) => ({
 
 **当前实现 (Web):**
 ```javascript
-// frontend/src/main.js
+// frontend/src/main.ts
 function formatMsgProgressive(text) {
   let html = '';
   // 直接生成 HTML 字符串

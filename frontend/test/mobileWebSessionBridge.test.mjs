@@ -34,7 +34,7 @@ globalThis.localStorage = dom.window.localStorage;
 window.apiFetch = async () => ({ projects: [] });
 window.t = (key, fallback) => (fallback !== undefined ? fallback : key);
 
-const { openMobileTargetFromUrl } = await import('../src/native/mobileWebSessionBridge.js');
+const { openMobileTargetFromUrl } = await import('../src/native/mobileWebSessionBridge.ts');
 
 function recordReplaceState() {
   const calls = [];

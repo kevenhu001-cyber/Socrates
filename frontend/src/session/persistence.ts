@@ -7,7 +7,7 @@
  * session/recentsReconcile.ts.
  */
 import { normalizeTurnRuntime } from '@socrates/core';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { saveState, deletedSessionGuard } from './saveState.ts';
 import { generateId } from '../util/ids.ts';
 import { pushChatIdToURL } from './store.ts';
@@ -16,8 +16,8 @@ import { patchSessionRow, type SavedSession } from './recentsReconcile.ts';
 import { buildBeaconPayload, type BeaconPayload } from './beacon.ts';
 import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint, type MessageLike } from './saveDelta.ts';
 import { generateSessionTitle } from '../chat/sessionTitle.ts';
-import { markCmdKIndexDirty } from '../ui/cmdK.js';
-import { toggleShareBtn } from '../ui/share.js';
+import { markCmdKIndexDirty } from '../ui/cmdK.ts';
+import { toggleShareBtn } from '../ui/share.ts';
 import { showToast } from '../ui/toast.js';
 import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.ts';

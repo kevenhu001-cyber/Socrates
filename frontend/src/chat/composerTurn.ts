@@ -1,5 +1,5 @@
 import { turnState } from './turnState.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './turnClient.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

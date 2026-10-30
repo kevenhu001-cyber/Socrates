@@ -8,7 +8,7 @@
  * already-rendered markdown/KaTeX/code DOM without re-rendering.
  */
 
-import { prefersReducedMotion } from '../../ui/motion.js';
+import { prefersReducedMotion } from '../../ui/motion.ts';
 import {
   flushDeferredMessageRows,
   restoreDeferredMessageRows,

@@ -5,7 +5,7 @@
  * a retry control in the React turn status. The status keeps the viewport
  * capture sequence delegated through the message list.
  *
- * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
+ * Extracted from chat/streamingTurn.ts during the 2026-10 addStreamingMessage
  * split. The split is structural only: every callback, capture, and read
  * order is preserved exactly so a transient failure still ends with the
  * same retry affordance, send-button restore, legacy-shell eviction, and
@@ -18,7 +18,7 @@ import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
 import { setChatStopState, markTurnEnded } from '../turnUi.ts';
 import { claimLiveRetry } from '../liveTurn.ts';
 import { turnState, streamRetryViewport } from '../turnState.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.js';
+import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';
 

@@ -9,7 +9,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 globalThis.t = (key) => key;
-/* formatMsg reads the eagerly-bundled marked global (vendor/init.js in
+/* formatMsg reads the eagerly-bundled marked global (vendor/init.ts in
    the browser); provide the npm copy the same way streaming.test.mjs does. */
 globalThis.marked = marked;
 

@@ -32,7 +32,7 @@
 import type { ImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
 import { useBridge } from '../lib/bridge/useBridge.ts';
 import { getStreamRenderInterval } from '../render/streaming.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { reconcileMessageSnapshots } from './chatRuntimeSnapshot.ts';
 import type {
   ChatRuntimeEvent,
@@ -86,7 +86,7 @@ let pendingDelta: Extract<ChatRuntimeEvent, { type: 'stream-delta' }> | null = n
    new turn streams), so the coalesced set is keyed by message id. */
 let pendingToolRuns: Set<string> | null = null;
 /* P_bridge-coalesce-lifecycle — `message-added` and `stream-started` arrive
-   back-to-back on the click frame from chat/messages.js + chat/streamingTurn.js.
+   back-to-back on the click frame from chat/messages.js + chat/streamingTurn.ts.
    The synchronous `commit()` pair used to fire two `Object.freeze` walks over
    the message list and two listener notifications back-to-back. Queue them
    until the next animation frame and commit them there, so the click frame

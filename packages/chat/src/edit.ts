@@ -1,5 +1,5 @@
 /* edit — DOM-free edit / regenerate / branch transforms for the chat
- * transcript. Ports the semantics of `frontend/src/chat/editBranch.js`
+ * transcript. Ports the semantics of `frontend/src/chat/editBranch.ts`
  * without any DOM:
  *
  * - editing a user turn means "roll back to here and replay": the anchor

@@ -1,3 +1,4 @@
+import type { TurnMessage } from './runtimeState.ts';
 /* Own the session and message slot reserved by one streaming turn. */
 
 /** The per-turn fields the ownership guard reads. */
@@ -17,12 +18,12 @@ export interface OwnershipStore {
 export interface MessageOwnership {
   ownsMessageSlot(): boolean;
   stillOwnsSlot(): boolean;
-  patchOwnedMessage(patch: unknown, deferNotify?: boolean): unknown;
+  patchOwnedMessage(patch: Record<string, unknown>, deferNotify?: boolean): TurnMessage | null;
 }
 
 export function createMessageOwnership(
   state: TurnSlotState,
-  ownerSessionId: string,
+  ownerSessionId: string | null,
   store: OwnershipStore,
 ): MessageOwnership {
   function ownsMessageSlot(): boolean {
@@ -37,7 +38,7 @@ export function createMessageOwnership(
     return ownsMessageSlot();
   }
 
-  function patchOwnedMessage(patch: unknown, deferNotify?: boolean): unknown {
+  function patchOwnedMessage(patch: Record<string, unknown>, deferNotify?: boolean): TurnMessage | null {
     if (!ownsMessageSlot()) return null;
     return store.dispatch({
       type: 'session/update-message',
@@ -45,7 +46,7 @@ export function createMessageOwnership(
       clientId: state.clientId,
       patch,
       deferNotify: deferNotify === true,
-    });
+    }) as TurnMessage | null;
   }
 
   return { ownsMessageSlot, stillOwnsSlot, patchOwnedMessage };

@@ -57,7 +57,7 @@ async function openPanel(page) {
 
 test('updateKB leaves the delegated graph on screen', async ({ page }) => {
   await openPanel(page);
-  /* Guards the delegation contract in ui/knowledgePanel.js: once the
+  /* Guards the delegation contract in ui/knowledgePanel.ts: once the
      renderer is called, this function must not go on to rebuild #kbContent
      itself. Encoding details are kb-graph.spec.mjs's job. */
   await expect(page.locator('#kbContent svg.kb-graph')).toBeVisible();
@@ -92,7 +92,7 @@ test('confidence dot tooltips interpolate their ordinal', async ({ page }) => {
   await page.locator('#kbContent .kb-graph-node').first().click();
   const dots = page.locator('#kbContent .kb-node-detail .kb-conf-dot');
   await expect(dots).toHaveCount(5);
-  /* kb.confidenceSet carries a {n} placeholder and i18n.js's t() does not
+  /* kb.confidenceSet carries a {n} placeholder and i18n.ts's t() does not
      substitute, so an unimplemented interpolator would show a literal
      "{n}" in every tooltip. */
   await expect(dots.nth(2)).toHaveAttribute('title', '将置信度设为 3');

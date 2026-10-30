@@ -1,4 +1,4 @@
-import { mountVisualization } from '../../../frontend/src/render/visualization.js';
+import { mountVisualization } from '../../../frontend/src/render/visualization.ts';
 import { asVisualizationSpec } from '../../../frontend/src/render/visualizationSpec.ts';
 
 type RenderPayload =

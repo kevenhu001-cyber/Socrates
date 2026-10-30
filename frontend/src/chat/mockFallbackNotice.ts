@@ -1,6 +1,6 @@
 import { showToast } from '../ui/toast.js';
 
-/* Tutor/Socratic turns fall back to canned strings from `chat/mocks.js`
+/* Tutor/Socratic turns fall back to canned strings from `chat/mocks.ts`
    when no usable model is configured (or a turn returns nothing). Those
    strings read like real AI replies, so the user has no way to tell that
    no model answered. This notifies once per session, mirroring

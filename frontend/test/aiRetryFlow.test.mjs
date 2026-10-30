@@ -85,7 +85,7 @@ test('HTTP and SSE cooldowns reach the error UI without a second request', async
     const env = installStreamEnvironment([response]);
     await runStream();
     assert.equal(env.calls(), 1);
-    const { stateStore } = await import('../src/state/store.js');
+    const { stateStore } = await import('../src/state/store.ts');
     assert.match(stateStore.read('lastCallError'), /31s/);
   }
 });
@@ -268,7 +268,7 @@ test('turn execution conflict sanitizes lastCallError when detached recovery fai
   });
 
   const { callAPIStream } = await import('../src/chat/stream.ts');
-  const { stateStore } = await import('../src/state/store.js');
+  const { stateStore } = await import('../src/state/store.ts');
   const result = await callAPIStream(
     [{ role: 'user', content: 'test claim fail' }],
     256,

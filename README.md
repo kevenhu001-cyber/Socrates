@@ -116,16 +116,12 @@ F-006).
 </div>
 
 The SPA is a Vite-bundled **React/TypeScript** application with the Socratic
-dialogue happening in the center, viz iframes inline as the model
-emits them, a knowledge map sidebar on the left, and a status /
-stats footer at the bottom. All user-facing surfaces are React-driven;
-the legacy JS modules (`main.js` etc.) act as a state/event backbone
-that React reads from through typed bridge objects
-(`window.__socrates*Bridge`, `window.__socratesLegacy`). A small
-`window.*` compatibility shim (`windowExports.js`) and an explicit
-element-map listener module (`src/ui/legacyShellListeners.js`) cover
-the few static shell controls that sit outside React roots; the former
-document-wide delegation layer (`src/ui/delegate.js`) has been removed.
+dialogue happening in the center, viz iframes inline as the model emits them,
+a knowledge map sidebar on the left, and a status/stats footer at the bottom.
+All first-party frontend source is TypeScript (`allowJs` is disabled); typed
+bridge objects (`window.__socrates*Bridge`, `window.__socratesLegacy`) preserve
+the compatibility boundary between React surfaces and the app runtime.
+Vendored UMD libraries remain under `frontend/src/vendor-files/`.
 Production is reachable at
 <https://app.topodrive.top/>; the project-local [`deploy.sh`](deploy.sh)
 builds and copies the bundle into the nginx web root.
@@ -226,7 +222,7 @@ shares protocol/session logic across Android and Web.
 ```mermaid
 flowchart LR
   subgraph Client["Client"]
-    SPA["Web SPA<br/>(React/TS + legacy JS)"]
+    SPA["Web SPA<br/>(React + TypeScript)"]
     APK["Android / Web<br/>(React Native + Expo)"]
   end
 
@@ -299,7 +295,7 @@ sequenceDiagram
 
 | Layer | Technology | Notes |
 | --- | --- | --- |
-| Web SPA | React/TypeScript + legacy JS compatibility layer, Vite build | [`frontend/`](frontend/) — ~99% migrated, all surfaces React-driven |
+| Web SPA | React + TypeScript, Vite build | [`frontend/`](frontend/) — first-party source is TypeScript; vendored UMD files are isolated under `src/vendor-files/` |
 | Markdown | `marked` 13 + custom progressive renderer | see [Custom rendering pipeline](#custom-rendering-pipeline) |
 | Math | `katex` 0.16.9 (vendored, see [`frontend/src/vendor-files/katex/`](frontend/src/vendor-files/katex/)) | display + inline modes |
 | Code highlight | `highlight.js` (vendored + loaded lazily at finish time) | see [`frontend/src/vendor-files/highlight.min.js`](frontend/src/vendor-files/highlight.min.js) |
@@ -325,17 +321,17 @@ sequenceDiagram
 
 ```
 Socrates/
-├── frontend/               # Vite SPA (React/TS + legacy JS)
+├── frontend/               # Vite SPA (React + TypeScript)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # Entrypoint (~166 lines; composes extracted modules)
+│   │   ├── main.ts         # Entrypoint; composes extracted modules
 │   │   ├── styles/         # All CSS — index.css entry, themes.css,
 │   │   │                   #  legacy/ slices, parity/ surface owners
 │   │   ├── state/          # Domain state bridges (session, kb, ui, ...)
 │   │   ├── store/          # createDomainStore factory + index hooks
-│   │   ├── i18n.js         # I18N dictionary (en) + language switching
-│   │   ├── i18n/zh.js      # zh dictionary (split out of i18n.js)
-│   │   ├── windowExports.js# Legacy window.* compat shim
+│   │   ├── i18n.ts         # I18N dictionary (en) + language switching
+│   │   ├── i18n/zh.ts      # zh dictionary (split out of i18n.ts)
+│   │   ├── windowExports.ts# Typed window.* compatibility bridge
 │   │   ├── types/          # TypeScript type definitions
 │   │   ├── react/          # React/TS UI layers (~34 modules)
 │   │   │   ├── bootstrap.tsx
@@ -349,9 +345,9 @@ Socrates/
 │   │   │   ├── pages/
 │   │   │   ├── legacy/     # Typed bridge (gateway.ts)
 │   │   │   └── ...
-│   │   ├── app/            # Boot wiring + legacyBridge.js
-│   │   ├── ui/             # Legacy UI modules
-│   │   │   ├── legacyShellListeners.js # Explicit shell element map
+│   │   ├── app/            # Boot wiring + legacyBridge.ts
+│   │   ├── ui/             # Typed UI runtime modules
+│   │   │   ├── legacyShellListeners.ts # Explicit shell element map
 │   │   │   └── ...
 │   │   ├── render/         # Markdown renderers (markdown.ts hosts
 │   │   │                   #  formatMsg / formatMsgProgressive)

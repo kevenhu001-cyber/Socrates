@@ -1,7 +1,7 @@
 /**
  * Profile modal bridge — M2 single-bridge migration.
  *
- * Legacy `ui/profile.js` publishes user info and instructions through
+ * Legacy `ui/profile.ts` publishes user info and instructions through
  * `window.__socratesProfileBridge.publish(...)`. The factory owns the
  * snapshot/reducer loop; this module adds the legacy alias and React
  * hooks.

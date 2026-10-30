@@ -7,7 +7,7 @@ import {
   useAttachmentsSnapshot,
 } from './attachments.bridge';
 import { AttachmentChip } from './AttachmentChip';
-import { syncComposerShellFlags } from '../../ui/composerShape.js';
+import { syncComposerShellFlags } from '../../ui/composerShape.ts';
 
 const CHIPS_ID = 'composerAttachmentChips';
 

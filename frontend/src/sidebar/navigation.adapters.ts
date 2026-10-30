@@ -1,13 +1,13 @@
-import { toggleMorePopover } from './morePopover.js';
-import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
+import { toggleMorePopover } from './morePopover.ts';
+import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
 import { mountAdminPage, mountScheduledPage, mountWorkspacePage } from '../react/lib/boot/pageMounts.ts';
 import { registerNavigationAdapters, installNavigationRouteListeners } from './navigation.service';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { loadLibraryData, loadPluginsData, loadProjectsData } from '../react/pages/workspace/workspace.service';
 import { loadScheduledTasks } from '../react/pages/scheduled/scheduled.service';
-import { ensureConnectorIcons, restoreConnectorReturnContext } from './nav.js';
+import { ensureConnectorIcons, restoreConnectorReturnContext } from './nav.ts';
 import { getActiveDestination } from './navigation.store';
-import { activateMainView } from '../ui/mainViewController.js';
+import { activateMainView } from '../ui/mainViewController.ts';
 import { DESTINATIONS } from './navigation.destinations';
 
 function closeAllPanels(): void {
@@ -16,7 +16,7 @@ function closeAllPanels(): void {
 }
 
 function openCreation(name: 'images' | 'assistants' | 'sites'): void {
-  void import('../ui/creationSurfaces.js').then((module) => {
+  void import('../ui/creationSurfaces.ts').then((module) => {
     if (getActiveDestination() !== name) return;
     module.renderCreationSurface(name);
     // Creation hosts are inserted by the lazy module, unlike static panels.

@@ -112,7 +112,7 @@ and tag chips when asynchronous data arrives.
 ## Ninth increment
 
 The unused string-based recents chip renderer and its no-op compatibility
-wrapper are removed. `ui/recentsView.js` now loads project filter data and
+wrapper are removed. `ui/recentsView.ts` now loads project filter data and
 notifies the React owner; it no longer imports or passes render-only chip data
 to a retired legacy surface. An in-flight guard prevents repeated recents
 renders from starting duplicate `/api/projects` requests.

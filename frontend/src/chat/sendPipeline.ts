@@ -2,8 +2,8 @@
 import { turnState, shouldQueueChatSend } from './turnState.ts';
 import { loadWebSearch } from './webSearchLoader.ts';
 import { shouldRefreshSearch } from './webSearchPolicy.ts';
-import { shouldAutoSearchTutor } from '../tutor/policy.js';
-import { stateStore } from '../state/store.js';
+import { shouldAutoSearchTutor } from '../tutor/policy.ts';
+import { stateStore } from '../state/store.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import {
   assembleSendPayload,
@@ -22,8 +22,8 @@ import {
 } from './send/runtime.ts';
 import { enqueuePrompt } from './promptQueue.ts';
 import { clearComposer } from '../composer/controller.ts';
-import { resetAttachments } from '../attachments.js';
-import { renderAttachmentChips } from '../attachments/render.js';
+import { resetAttachments } from '../attachments.ts';
+import { renderAttachmentChips } from '../attachments/render.ts';
 import { updateComposerBtn } from '../ui/topicSetup.ts';
 
 function refreshTutorWebContext(text: string): void {

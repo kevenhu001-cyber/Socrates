@@ -510,7 +510,7 @@ export function enforceServerSystemBoundary(messages: ChatMessage[]): ChatMessag
  * data, which the SERVER_SYSTEM_POLICY already labels untrusted.
  *
  * `PROJECT_INSTRUCTION_PREFIX` deliberately matches a literal substring
- * produced by `projectContextSuffix()` in frontend/src/main.js. If
+ * produced by `projectContextSuffix()` in frontend/src/main.ts. If
  * either side changes the prefix, change it here too. */
 const PROJECT_INSTRUCTION_PREFIX = 'Project instructions:';
 const CUSTOM_INSTRUCTION_PREFIX = '[User custom instructions]';

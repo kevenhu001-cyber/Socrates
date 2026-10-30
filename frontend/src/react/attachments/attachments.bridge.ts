@@ -1,7 +1,7 @@
 /**
  * Attachments bridge — M2 single-bridge migration.
  *
- * Legacy `src/attachments.js` publishes the in-flight attachment list
+ * Legacy `src/attachments.ts` publishes the in-flight attachment list
  * through `window.__socratesAttachmentsBridge.publish(...)`. The factory
  * coalesces dispatch calls per animation frame, so the dedicated RAF
  * throttle from `attachmentsStore.ts` is gone — `createImmutableBridge`

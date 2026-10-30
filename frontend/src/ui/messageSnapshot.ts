@@ -1,5 +1,5 @@
-import { stateStore } from '../state/store.js';
-import { publishReactChatRuntime } from './reactBridge.js';
+import { stateStore } from '../state/store.ts';
+import { publishReactChatRuntime } from './reactBridge.ts';
 
 interface LiveStatusSnapshot {
   phase?: unknown;

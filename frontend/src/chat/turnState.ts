@@ -55,12 +55,19 @@ export interface TurnUiState {
   lastUserMessageId: string | null;
 }
 
+export interface PendingBranchContext {
+  messages: unknown[];
+  topic: string;
+  title: string;
+  branchedFrom: { sessionId: string | null; messageId: string; reExplain: boolean };
+}
+
 export interface TurnState {
   activeChatCtl: ActiveChatController | null;
   /** Abort callback for the active linked-page preparation phase only. */
   activePagePreparationAbort: (() => void) | null;
   pendingAttachments: unknown[] | null;
-  pendingBranchContext: unknown;
+  pendingBranchContext: PendingBranchContext | null;
   /** Either a plain string or the multimodal parts array built by
    *  `buildUserContentParts`; both flow into `askChatTurn` unchanged. */
   pendingChatContent: unknown;

@@ -13,7 +13,7 @@
  */
 
 import { apiFetch, apiFetchRaw } from '../util/api.ts';
-import { batchPeek, batchRemoveItem, batchSetItem } from '../batchStorage.js';
+import { batchPeek, batchRemoveItem, batchSetItem } from '../batchStorage.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

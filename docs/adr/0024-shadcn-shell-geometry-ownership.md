@@ -113,9 +113,9 @@ line-height 28；折叠 36×36 / padding 0 / 居中；移动 260×48 / grid / li
   `#mobileNewChatBtn` / `#findBtn` / `#shareBtn` / `#apiSettingsBtn` / `#mobileModeTrigger` /
   `#mobileConfigBtn` / `#mobileModeMenu .mobile-mode-item[data-mode]` 由一个 document
   click 监听按 selector 派发；
-- `src/sidebar/nav.js`：`#pluginWorkspacePluginsTab` / `#pluginWorkspaceSkillsTab` 同理，
+- `src/sidebar/nav.ts`：`#pluginWorkspacePluginsTab` / `#pluginWorkspaceSkillsTab` 同理，
   且 `syncSelection` 每次按 id 取值（原实现闭包持有启动时的静态节点）；
-- `src/ui/mobileModeSwitch.js`：`#topModeSwitch` 的 click / 方向键原绑定在 group 上，
+- `src/ui/mobileModeSwitch.ts`：`#topModeSwitch` 的 click / 方向键原绑定在 group 上，
   改为 document 委托（该模块在 React 挂载之前求值，`getElementById` 返回 null）。
 
 `mountTopBar` 在首帧后补跑 `syncChatModel` / `syncEffortUI` / `syncMobileModeSwitch`：

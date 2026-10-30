@@ -81,3 +81,23 @@ test('legacy JS baseline can shrink but cannot absorb new paths', (t) => {
   const afterUpdate = runCheck(fixture.script);
   assert.equal(afterUpdate.status, 0, afterUpdate.output);
 });
+
+for (const extension of ['mjs', 'cjs', 'jsx']) {
+  test(`legacy guard rejects untyped ${extension} modules and baseline laundering`, (t) => {
+    const fixture = createFixture([`src/new.${extension}`], []);
+    t.after(fixture.cleanup);
+    for (const args of [[], ['--update']]) {
+      const result = runCheck(fixture.script, ...args);
+      assert.equal(result.status, 1, result.output);
+      assert.ok(result.output.includes(`src/new.${extension}`), result.output);
+    }
+    assert.equal(JSON.parse(readFileSync(fixture.baseline, 'utf8')).count, 0);
+  });
+}
+
+test('third-party bundles are excluded while a zero baseline prevents regressions', (t) => {
+  const fixture = createFixture(['src/vendor-files/library.js'], []);
+  t.after(fixture.cleanup);
+  const result = runCheck(fixture.script);
+  assert.equal(result.status, 0, result.output);
+});

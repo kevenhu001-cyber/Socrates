@@ -9,7 +9,7 @@ import {
   getCookieConsentPrivacyUrl,
   setConsentPreference,
   syncCookieConsentPlacement,
-} from '../../cookieConsent.js';
+} from '../../cookieConsent.ts';
 
 function t(key: string, fallback: string): string {
   return i18n(key, fallback);

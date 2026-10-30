@@ -1,5 +1,5 @@
 /**
- * Unit tests for tool-card collapse (ui/toolCards.js) and the live-output
+ * Unit tests for tool-card collapse (ui/toolCards.ts) and the live-output
  * omission markers (chat/liveOutput.ts renderLivePreview).  Task 6.4.
  *
  * Collapse (Req 3.1): the real implementation drives the disclosure with an
@@ -33,7 +33,7 @@ globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.MutationObserver = dom.window.MutationObserver;
 globalThis.Node = dom.window.Node;
 
-const { appendToolModule, extractCodeFromArgs, toolFormatInput } = await import('../src/ui/toolCards.js');
+const { appendToolModule, extractCodeFromArgs, toolFormatInput } = await import('../src/ui/toolCards.ts');
 const { createLiveOutputBuffer, renderLivePreview } = await import('../src/chat/liveOutput.ts');
 
 /* Mount a live (running) tool card and hand back the card + its header

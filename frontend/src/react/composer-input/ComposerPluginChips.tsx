@@ -3,7 +3,7 @@ import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import type { ComposerSurface } from '../../composer/types.ts';
-import { syncComposerShellFlags } from '../../ui/composerShape.js';
+import { syncComposerShellFlags } from '../../ui/composerShape.ts';
 import { getLegacyActions, i18n, isWebSearchOn } from '../legacy/gateway.ts';
 import { removeComposerPlugin } from '../../composer/pluginSelection.ts';
 import { useComposerPluginSelectionSnapshot } from '../composer/useComposerPluginSelection';

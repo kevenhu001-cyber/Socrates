@@ -13,7 +13,7 @@
 ### Task 1: Completion-time viewport stability
 
 **Files:**
-- Modify: `frontend/src/main.js`
+- Modify: `frontend/src/main.ts`
 - Test: `frontend/e2e/streaming-render.spec.mjs`
 
 1. Capture the visible message identity and its offset immediately before publishing the finalized React snapshot.

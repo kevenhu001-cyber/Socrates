@@ -72,7 +72,7 @@ const TUTOR_FIXTURE = {
   boundariesHistory: [
     { date: '2026-10-01', at: 1790812800000, summary: 'I 1 · F 1 · B 1', counts: { internalized: 1, fuzzy: 1, blank: 1 } },
   ],
-  /* Mistake book rows in the baseline `ui/mistakeBook.js` record shape.
+  /* Mistake book rows in the baseline `ui/mistakeBook.ts` record shape.
    * Timestamps are relative to the run so the relative-time meta reads the
    * same ("3h ago" / "Yesterday") on both shells. */
   mistakes: [

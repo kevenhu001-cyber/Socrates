@@ -26,7 +26,7 @@ export function createEntryGraphPlugin() {
     // Measure after normal hooks, once those final bytes are present.
     generateBundle: { order: 'post', handler(_, bundle) {
       const displayId = (id) => relative(root, id).replaceAll('\\', '/');
-      const sourcePaths = staticPaths([resolve(root, 'src/main.js')],
+      const sourcePaths = staticPaths([resolve(root, 'src/main.ts')],
         (id) => this.getModuleInfo(id)?.importedIds || []);
       const chunks = Object.values(bundle).filter((item) => item.type === 'chunk');
       const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
@@ -111,7 +111,7 @@ function printReport() {
   const retained = report.modules.filter((module) => eager.has(module.chunk));
   console.log(`Retained modules in static chunk closure: ${retained.length}`);
   const graph = new Map(report.graph.map((module) => [module.id, module]));
-  for (const id of graph.get('src/main.js').imports) {
+  for (const id of graph.get('src/main.ts').imports) {
     const branch = staticPaths([id], (next) => graph.get(next)?.imports || []);
     const leaves = retained.filter((module) => branch.has(module.id));
     console.log(`${id}: ${leaves.length} retained modules, ${leaves.reduce((sum, module) => sum + module.renderedBytes, 0)} rendered bytes (shared; not additive)`);

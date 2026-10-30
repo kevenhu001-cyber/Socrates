@@ -116,11 +116,11 @@ test('production entry keeps the static closure gzip transfer under budget', () 
     'src/react/intelligence-ui/IntelligenceUiNodes.tsx',
     'src/react/extensions/WorkflowLayer.tsx',
     'src/react/find-in-session/FindInSession.tsx',
-    'src/chat/streamAttempt.js',
-    'src/ui/share.impl.mjs',
+    'src/chat/streamAttempt.ts',
+    'src/ui/share.impl.ts',
     'src/react/cheatsheet/Cheatsheet.tsx',
     'src/react/storageModal/StorageModal.tsx',
-    'src/ui/promptTemplates.impl.mjs',
+    'src/ui/promptTemplates.impl.ts',
     'src/react/settings/GeneralSettingsPane.tsx',
     'src/react/settings/ModelsSettingsPane.tsx',
     'src/react/settings/DisplaySettingsPane.tsx',
@@ -217,7 +217,7 @@ test('late workspace imports cannot reveal an inactive page', async ({ page }) =
 
 test('late creation imports cannot replace a newer navigation destination', async ({ page }) => {
   const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
-  const creation = report.modules.find((module) => module.id === 'src/ui/creationSurfaces.js');
+  const creation = report.modules.find((module) => module.id === 'src/ui/creationSurfaces.ts');
   let release;
   const gate = new Promise((resolve) => { release = resolve; });
   let requested = false;

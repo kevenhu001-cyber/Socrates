@@ -5,7 +5,7 @@ import {
   clampTutorQuestionCount,
   shouldRequestTutorAfterQuiz,
   shouldAutoSearchTutor,
-} from '../src/tutor/policy.js';
+} from '../src/tutor/policy.ts';
 
 test('tutor question count is clamped to 1..10', () => {
   assert.equal(clampTutorQuestionCount(0), 1);

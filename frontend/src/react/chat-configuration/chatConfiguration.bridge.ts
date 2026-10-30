@@ -1,7 +1,7 @@
 import { createImmutableBridge, useBridge } from '../../lib/bridge/index.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
-import { restingRect } from '../../ui/pressFeedback.js';
+import { restingRect } from '../../ui/pressFeedback.ts';
 import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOption } from './types';
 
 declare global {

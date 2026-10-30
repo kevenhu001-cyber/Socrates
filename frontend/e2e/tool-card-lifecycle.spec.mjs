@@ -15,7 +15,7 @@
 // mock stream, this spec drives a card directly through that global and then
 // simulates completion by flipping `card.dataset.toolState` — the same
 // attribute `chat/toolRuntime.ts` writes on a real terminal event. A shared
-// ~250ms interval in ui/toolCards.js recomputes `toolCardView(run, Date.now())`
+// ~250ms interval in ui/toolCards.ts recomputes `toolCardView(run, Date.now())`
 // for running cards and writes `.agent-tool-status`; on the terminal
 // transition it latches the final total-duration label.
 //

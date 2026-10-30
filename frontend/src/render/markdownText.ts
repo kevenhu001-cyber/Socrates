@@ -1,6 +1,6 @@
 /* Plain-text helpers used by message-editing flows. */
 import { _looksLikeInlineMath } from './markdownMath.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { stripHtmlTags } from '../util/stripHtml.ts';
 
 /* ── Plain-text helpers (used by message-editing flows) ──────────── */

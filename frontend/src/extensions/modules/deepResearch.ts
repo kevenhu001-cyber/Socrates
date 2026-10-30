@@ -15,9 +15,9 @@ function dw(): DeepResearchWindow {
 }
 
 /* Deep Research is a mode toggle, not a prompt template: when armed, the
- * next send routes through agent/researchAgent.js (plan → search → read →
+ * next send routes through agent/researchAgent.ts (plan → search → read →
  * report) instead of a normal chat turn. The template chip carries
- * extensionKey 'deepResearch', and chat/templateSlash.js's
+ * extensionKey 'deepResearch', and chat/templateSlash.ts's
  * EXTENSION_SIDE_EFFECTS flips window.deepResearchOn on set/clear — the
  * same contract webSearch and extensiveThinking already use. */
 export const deepResearchExtension: ExtensionDefinition = {

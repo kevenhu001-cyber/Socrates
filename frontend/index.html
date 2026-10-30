@@ -21,10 +21,10 @@
      the round trip the parser would otherwise spend discovering it.
      No cross-origin host is touched at boot: fonts, KaTeX, mermaid,
      plotly, echarts and highlight.js are all bundled (see
-     src/vendor/lazy.js). The one third-party script host left in the app
+     src/vendor/lazy.ts). The one third-party script host left in the app
      is GeoGebra's CDN, and it is resolved lazily — only when a
      math_construction card actually mounts
-     (src/render/visualizationAdapters.js). An eager dns-prefetch used to
+     (src/render/visualizationAdapters.ts). An eager dns-prefetch used to
      sit here and burned a lookup on every page load for a host the vast
      majority of sessions never use; behind a network that drops the
      packets that lookup is not free either. -->
@@ -116,7 +116,7 @@
 <!-- P_perf-self-host — fonts (Inter/Newsreader/Noto Sans SC),
      KaTeX CSS, marked,
      DOMPurify, KaTeX, highlight.js, and fuse.js are bundled by Vite from
-     npm (see src/vendor/init.js); mermaid / echarts / plotly are dynamic
+     npm (see src/vendor/init.ts); mermaid / echarts / plotly are dynamic
      imports loaded only when a visualization actually mounts. Nothing on
      this page depends on fonts.googleapis.com or cdn.jsdelivr.net. -->
 <!-- P0.6 — pre-boot marker. -->
@@ -391,7 +391,7 @@
 </main>
 </div>
 
-<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/main.ts"></script>
 
 <!-- Settings Modal -->
 <!-- P1.2 — global search modal. Toggled by `Cmd/Ctrl+K` (and

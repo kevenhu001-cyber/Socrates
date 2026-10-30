@@ -4,8 +4,8 @@ import { JSDOM } from 'jsdom';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { TurnActivitySurface } from '../src/react/tool-run/TurnActivitySurface.tsx';
-import { en } from '../src/i18n/en.js';
-import { zh } from '../src/i18n/zh.js';
+import { en } from '../src/i18n/en.ts';
+import { zh } from '../src/i18n/zh.ts';
 
 let dom;
 let root;

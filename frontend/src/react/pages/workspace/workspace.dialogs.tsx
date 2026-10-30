@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { getApiFetch, getConnectorIconMarkupFn, getLegacyActions, i18n, setActiveProject, setNextProjectId } from '../../legacy/gateway.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
-import { openLibraryDetail } from '../../../ui/libraryDetail.js';
+import { openLibraryDetail } from '../../../ui/libraryDetail.ts';
 import { mountDialogCard, unmountDialogCard } from './workspace.dialogHost';
 import { renderActionButton } from '../../../ui/actionButton.ts';
 import {

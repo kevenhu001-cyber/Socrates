@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { wirePressFeedback, restingRect, MIN_PRESS_MS, RELEASE_MS } from '../src/ui/pressFeedback.js';
+import { wirePressFeedback, restingRect, MIN_PRESS_MS, RELEASE_MS } from '../src/ui/pressFeedback.ts';
 
 /* Hand-rolled stubs: a fake document that records listeners, elements with
    a classList, and a manual clock + timer queue so the minimum-press window

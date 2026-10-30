@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { disposeVisualization, disposeVisualizations, mountVisualization } from '../src/render/visualization.js';
+import { disposeVisualization, disposeVisualizations, mountVisualization } from '../src/render/visualization.ts';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;

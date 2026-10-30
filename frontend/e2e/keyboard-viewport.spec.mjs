@@ -452,7 +452,7 @@ test('a growing composer keeps the latest message visible and the transcript pin
     document.getElementById('composerInputWrap').style.minHeight = '240px';
   });
   /* The composer→transcript re-pin runs through a ResizeObserver + rAF
-     follow sequence in ui/scroll.js — poll for the settled state instead
+     follow sequence in ui/scroll.ts — poll for the settled state instead
      of racing a fixed delay on slower runners. */
   await expect.poll(() => page.evaluate(() => {
     const list = document.getElementById('msgList');

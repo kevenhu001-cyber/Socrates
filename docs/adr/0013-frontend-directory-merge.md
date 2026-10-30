@@ -17,7 +17,7 @@
 具体影响：
 
 1. **Onboarding 心智成本**：新人"找消息流相关代码"必须在 3 个目录间跳转，"找状态代码"在 2-3 个目录间跳转。
-2. **跨目录 import 堆积**：`frontend/src/app/legacyBridge.js` import 自 state/store/chat/render/util，每个 PR 改动相关面都要扫多个目录。
+2. **跨目录 import 堆积**：`frontend/src/app/legacyBridge.ts` import 自 state/store/chat/render/util，每个 PR 改动相关面都要扫多个目录。
 3. **CI 影响面噪音**：`eslint` 与 `dependency-cruiser` 边界规则按目录粒度生效；目录越多，"触发"对读 PR diff 的人来说越难读。
 
 ## 实施现状（截至 2026-09-23）

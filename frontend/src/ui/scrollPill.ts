@@ -1,0 +1,187 @@
+// src/ui/scrollPill.ts — Phase C-2.2 extraction
+// "↓ new response" pill shown when the user has scrolled away from
+// the bottom of the chat and a new assistant delta arrives. Clicking
+// the pill snaps the scroller back to the bottom.
+//
+// The module registers a single global `scroll` listener (capture
+// phase) that toggles `state._userScrolledAway` based on whether the
+// user is currently within `SCROLL_SLACK` of the bottom. This flag is
+// read by addStreamingMessage (in main.js) to decide whether to auto
+// snap-to-bottom.
+import { scrollContainer, smoothScrollToBottom } from './scroll.ts';
+import { stateStore } from '../state/store.ts';
+
+const SCROLL_SLACK = 64;   /* pixels from bottom considered "pinned" */
+
+/* Timestamp of the most recent user scroll gesture (wheel, touch drag,
+   keyboard scroll key, or a pill click). ui/keyboard/index.ts snapshots
+   this when a keyboard transition begins and abandons its transcript
+   compensation as soon as a newer gesture lands — a live gesture always
+   owns the scroll. */
+let lastUserScrollIntentAt = 0;
+
+export function getLastScrollIntentAt(){
+  return lastUserScrollIntentAt;
+}
+
+function markUserScrollIntent(){
+  lastUserScrollIntentAt = Date.now();
+}
+
+/* A layout compensation (chat/turnAnchor.ts retiring a spent answer
+   reserve) writes scrollTop upward while the visible content does not
+   move at all. Ignore the position listener for a beat so that
+   programmatic write is not misread as the reader scrolling away.
+   Wheel/touch/key handlers above still register real gestures. */
+let positionIntentSuppressedUntil = 0;
+
+export function suppressScrollPositionIntent(ms: number){
+  const duration = Number(ms);
+  positionIntentSuppressedUntil = Date.now() + (Number.isFinite(duration) && duration > 0 ? duration : 120);
+}
+
+export function showNewReplyPill(){
+  const pill = document.getElementById("newReplyPill");
+  if(pill) pill.classList.add("visible");
+}
+
+export function hideNewReplyPill(){
+  const pill = document.getElementById("newReplyPill");
+  if(pill) pill.classList.remove("visible");
+}
+
+/* Idempotent: window flag prevents re-registering on hot-reload. */
+let wired = false;
+export function wireScrollPill(){
+  if(wired) return;
+  wired = true;
+
+  let debounceTmo: number|null = null;
+  let lastScrollTop: number | null = null;
+  let lastScroller = scrollContainer();
+  if(lastScroller) lastScrollTop = lastScroller.scrollTop;
+
+  /* P_stream-scroll-intent — the scroll-position listener below cannot
+     tell an upward wheel flick from the layout growing underneath the
+     reader: while an answer streams, doRender() snaps scrollTop to the
+     bottom every ~50-120ms, so a wheel/touch scroll that begins inside
+     the pin slack is undone before it can escape — the transcript feels
+     locked during streaming. Listen for the INPUT (wheel up / touch
+     drag / keyboard) instead of the resulting position: any upward
+     intent releases the pin immediately, and a short guard stops the
+     programmatic snap's own scroll event from re-pinning the reader
+     against their will. Scrolling back down (or clicking the pill)
+     clears the guard so the bottom re-pins naturally. */
+  let upIntentAt = 0;
+  const UP_INTENT_GUARD_MS = 600;
+
+  function releasePin(){
+    upIntentAt = Date.now();
+    markUserScrollIntent();
+    if(!stateStore.read('_userScrolledAway')){
+      stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:true});
+    }
+  }
+
+  document.addEventListener("wheel", function(ev){
+    markUserScrollIntent();
+    if(ev.deltaY < 0) releasePin();
+    else if(ev.deltaY > 0) upIntentAt = 0;
+  }, {passive:true, capture:true});
+
+  let touchY: number|null = null;
+  document.addEventListener("touchstart", function(ev){
+    touchY = ev.touches && ev.touches.length ? ev.touches[0].clientY : null;
+  }, {passive:true, capture:true});
+  document.addEventListener("touchmove", function(ev){
+    if(touchY == null || !ev.touches || !ev.touches.length) return;
+    const y = ev.touches[0].clientY;
+    if(Math.abs(y - touchY) > 4) markUserScrollIntent();
+    if(y - touchY > 4) releasePin();      /* finger down = scrolling up */
+    else if(touchY - y > 4) upIntentAt = 0;
+    touchY = y;
+  }, {passive:true, capture:true});
+
+  document.addEventListener("keydown", function(ev){
+    const el = ev.target;
+    const tag = el && (el as Element).tagName;
+    if(tag === "INPUT" || tag === "TEXTAREA" || (el && (el as HTMLElement).isContentEditable)) return;
+    if(ev.key === "ArrowUp" || ev.key === "PageUp" || ev.key === "Home"){ markUserScrollIntent(); releasePin(); }
+    else if(ev.key === "End"){ markUserScrollIntent(); upIntentAt = 0; }
+  }, true);
+
+  document.addEventListener("scroll", function(ev){
+    const sc = scrollContainer();
+    if(!sc) return;
+    /* Ignore scroll events from child elements (code blocks with
+       overflow-y, inline iframes, etc.) — only the main chat
+       scroller's position determines user intent. Without this
+       guard, scrolling inside a <pre> code block or a viz iframe
+       could set _userScrolledAway=true and break auto-scroll. */
+    if(ev.target !== sc) return;
+    /* P_auto-scroll-respect — velocityScrollTo() tags the list with
+       `data-auto-scrolling="true"` while it programmatically
+       scrolls. Any scroll event fired during that window is from
+       our own interpolation, not the user; flipping
+       _userScrolledAway here would break the keyboard/scroll
+       lockstep guarantee (the keyboard lift would stop being
+       followed by the scroll because wasPinned would already be
+       false by the time the inset animation reached its target). */
+    if(sc.dataset.autoScrolling === 'true') return;
+    if(Date.now() < positionIntentSuppressedUntil){
+      /* Programmatic layout compensation — keep the sampler in sync and
+         do not interpret the write as reader intent. */
+      lastScroller = sc;
+      lastScrollTop = sc.scrollTop;
+      return;
+    }
+    const previousTop = sc===lastScroller ? lastScrollTop : null;
+    lastScroller = sc;
+    lastScrollTop = sc.scrollTop;
+    const atBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight <= SCROLL_SLACK;
+    if(atBottom){
+      /* Ignore "back at bottom" while an upward intent is fresh — it is
+         the streaming snap fighting the user, not the user returning. */
+      if(Date.now() - upIntentAt < UP_INTENT_GUARD_MS) return;
+      stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:false});
+      hideNewReplyPill();
+    } else if(!stateStore.read('_userScrolledAway')){
+      /* Only an upward position change means the reader left the latest
+         answer. Composer growth, keyboard avoidance, and late rich-content
+         layout all reduce the visible viewport without changing scrollTop;
+         treating those geometry-only events as user intent strands the
+         reader above the bottom. Downward programmatic snaps followed by
+         same-task content growth must not release the pin either. */
+      /* Layout settling (font metrics, image decode, appended content) can
+         nudge scrollTop a few pixels upward without any user intent, and
+         those tiny movements used to flip _userScrolledAway, killing the
+         content-follow for a reader who was still pinned. Real scroll-aways
+         (scrollbar drag, wheel/touch/keyboard) move by tens+ of pixels, and
+         the input-based listeners above already catch those gestures, so a
+         12px position threshold is safe. */
+      const movedUp = previousTop != null && sc.scrollTop < previousTop - 12;
+      if(movedUp&&!debounceTmo){
+        stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:true});
+        debounceTmo = setTimeout(function(){ debounceTmo = null; }, 300);
+      }
+    }
+  }, true);   /* useCapture so we catch scroll on any child element */
+
+  /* Pill click handler — wire once, attached to the static element
+     rendered by index.html. */
+  document.addEventListener("click", function(ev){
+    let t: Element | null = ev.target instanceof Element ? ev.target : null;
+    while(t && t !== document.body){
+      if(t.id === "newReplyPill"){
+        const sc = scrollContainer();
+        if(sc) smoothScrollToBottom(sc, { smooth: false, owner: 'user' });
+        upIntentAt = 0;
+        markUserScrollIntent();
+        stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:false});
+        hideNewReplyPill();
+        return;
+      }
+      t = t.parentElement;
+    }
+  });
+}

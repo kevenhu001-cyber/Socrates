@@ -6,12 +6,17 @@ import {
   parseKeyPointInner,
   parseProofInner,
   parseTheoremInner,
+  type ParsedDefinition,
+  type ParsedDerivation,
+  type ParsedFlashcard,
+  type ParsedKeyPoint,
+  type ParsedProof,
   type ParsedTheorem,
 } from './widgetParsers.ts';
 
-export interface ScaffoldPlaceholder {
+export interface ScaffoldPlaceholder<Parsed = unknown> {
   id: string;
-  parsed: unknown;
+  parsed: Parsed;
 }
 
 export interface ScaffoldDeps {
@@ -39,12 +44,12 @@ function fallback(inner: string, t: ScaffoldDeps['t'], esc: ScaffoldDeps['esc'])
     + '</pre></div>';
 }
 
-function replaceBlocks(
+function replaceBlocks<Parsed>(
   text: string,
   expression: RegExp,
-  parse: (inner: string) => unknown,
+  parse: (inner: string) => Parsed | null,
   makeSlot: SlotFactory,
-  placeholders: ScaffoldPlaceholder[],
+  placeholders: ScaffoldPlaceholder<Parsed>[],
   t: ScaffoldDeps['t'],
   esc: ScaffoldDeps['esc'],
 ): string {
@@ -73,22 +78,22 @@ export function extractScaffoldWidgets(
   { t, esc }: ScaffoldDeps,
 ): {
   text: string;
-  definitionPH: ScaffoldPlaceholder[];
-  stepPH: ScaffoldPlaceholder[];
-  flashcardPH: ScaffoldPlaceholder[];
-  derivationPH: ScaffoldPlaceholder[];
-  proofPH: ScaffoldPlaceholder[];
-  theoremPH: ScaffoldPlaceholder[];
-  keyPointPH: ScaffoldPlaceholder[];
+  definitionPH: ScaffoldPlaceholder<ParsedDefinition>[];
+  stepPH: ScaffoldPlaceholder<{ n: number; body: string }>[];
+  flashcardPH: ScaffoldPlaceholder<ParsedFlashcard>[];
+  derivationPH: ScaffoldPlaceholder<ParsedDerivation>[];
+  proofPH: ScaffoldPlaceholder<ParsedProof>[];
+  theoremPH: ScaffoldPlaceholder<ParsedTheoremWithProof>[];
+  keyPointPH: ScaffoldPlaceholder<ParsedKeyPoint>[];
 } {
   let text = source;
-  const definitionPH: ScaffoldPlaceholder[] = [];
-  const stepPH: ScaffoldPlaceholder[] = [];
-  const flashcardPH: ScaffoldPlaceholder[] = [];
-  const derivationPH: ScaffoldPlaceholder[] = [];
-  const proofPH: ScaffoldPlaceholder[] = [];
-  const theoremPH: ScaffoldPlaceholder[] = [];
-  const keyPointPH: ScaffoldPlaceholder[] = [];
+  const definitionPH: ScaffoldPlaceholder<ParsedDefinition>[] = [];
+  const stepPH: ScaffoldPlaceholder<{ n: number; body: string }>[] = [];
+  const flashcardPH: ScaffoldPlaceholder<ParsedFlashcard>[] = [];
+  const derivationPH: ScaffoldPlaceholder<ParsedDerivation>[] = [];
+  const proofPH: ScaffoldPlaceholder<ParsedProof>[] = [];
+  const theoremPH: ScaffoldPlaceholder<ParsedTheoremWithProof>[] = [];
+  const keyPointPH: ScaffoldPlaceholder<ParsedKeyPoint>[] = [];
 
   text = replaceBlocks(
     text,

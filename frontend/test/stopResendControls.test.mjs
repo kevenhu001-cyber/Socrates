@@ -8,7 +8,7 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 const { setChatStopState, resendLastUserMessage } = await import('../src/chat/turnUi.ts');
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 
 function setMessages(messages) {
   stateStore.dispatch({ type: 'session/replace-messages', payload: messages });

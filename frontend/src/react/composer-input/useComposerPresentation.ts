@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect } from 'react';
 import type { Editor } from '@tiptap/react';
 import type { ComposerSurface } from '../../composer/types.ts';
-import { syncComposerShellFlags } from '../../ui/composerShape.js';
+import { syncComposerShellFlags } from '../../ui/composerShape.ts';
 import { useAutoHeight } from './useAutoHeight';
 
 export function useComposerPresentation(

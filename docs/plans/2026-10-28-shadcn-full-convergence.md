@@ -79,7 +79,7 @@ shadcn 语义变体**（secondary / ghost / outline、`rounded-md`、`border-bor
 
 ### B4 — 遗留 DOM 控件迁移
 
-`src/render/**`、`src/ui/**`、`src/native/**`、`src/tutor*`、`src/cookieConsent.js`
+`src/render/**`、`src/ui/**`、`src/native/**`、`src/tutor*`、`src/cookieConsent.ts`
 和 `pages/workspace/workspace.dialogs.ts` 中生成交互控件的 DOM / HTML 字符串改为
 React + shadcn 组件；保留 DOM id、事件和 FormData 契约。遗留模板计数逐批收缩至零后，
 再清理对应的控件 CSS 与 surface owner。
@@ -288,7 +288,7 @@ tutor 卡片的新观感；build 与 lint 通过。
 
 ### B4 · creation 表面（Images / Assistants / Sites）（2026-10-29）
 
-`src/ui/creationSurfaces.js` 的三个目录页与两个编辑器仍是 HTML 模板，皮肤全部由
+`src/ui/creationSurfaces.ts` 的三个目录页与两个编辑器仍是 HTML 模板，皮肤全部由
 `restore/creation-surfaces.css` 承担。这一批把该文件的调色板整体换成语义 token，
 不留一处 `--chatgpt-*`：
 
@@ -418,7 +418,7 @@ PUT `/tags` 载荷、移除、Esc 关闭。遗留模板控件 140 → 135；css-
   `renderDiagnostic()` / `clearDiagnostic()` 是唯一入口。
 - `ui/diagnosticScreen.ts` 接管加载页与失败卡的进度状态；`ui/diagnosticQuestion.js`
   与 `ui/diagnosticResults.js` 退化成"把状态翻译成 props"的薄壳。
-- 点击仍由 `tutor/diagnosticFlow.js` 的委托监听处理：所有按钮保留
+- 点击仍由 `tutor/diagnosticFlow.ts` 的委托监听处理：所有按钮保留
   `data-diag-command` / `data-diag-index`，该文件一行未改。
 
 **顺带修了一个真实缺陷**：`.diag-card` / `.diag-opt` / `.diag-btn` / `.diag-loading`

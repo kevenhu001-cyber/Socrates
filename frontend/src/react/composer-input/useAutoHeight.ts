@@ -7,7 +7,7 @@
  */
 
 import { useEffect } from 'react';
-import { planMotionForUser } from '../../ui/motion.js';
+import { planMotionForUser } from '../../ui/motion.ts';
 
 interface AutoHeightMotion {
   velocity?: number;

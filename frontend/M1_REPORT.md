@@ -60,7 +60,7 @@ or behaviour was modified, and every validation gate passes.
 | Path | Change |
 |---|---|
 | `index.html` | Boot script now structured so the pre-paint color step is decoupled from the try/catch wrapper (the wrapper previously swallowed the whole block when Capacitor was absent); comment notes the values mirror `resolveBackground()` from `tokens.ts` and the JS adapter `tokens.js`. `<link rel="stylesheet" href="/src/styles/index.css">` replaces the single-file link |
-| `src/displayPrefs.js` | `DEFAULT_DARK_PICKER` / `DEFAULT_LIGHT_PICKER` come from `./ui/tokens.js` instead of the literal hex fallbacks (`#212121`, `#ffffff`) |
+| `src/displayPrefs.ts` | `DEFAULT_DARK_PICKER` / `DEFAULT_LIGHT_PICKER` come from `./ui/tokens.js` instead of the literal hex fallbacks (`#212121`, `#ffffff`) |
 | `src/react/session-list/SessionList.tsx` | `TAG_ICON`, `DELETE_ICON`, `PIN_ICON` string literals removed; tag/delete buttons render `<Icon name="tag" />` / `<Icon name="delete" />`; the pin indicator wraps `<Icon name="pin" size={10} strokeWidth={1.5} fill="currentColor" />`. Replaces three `dangerouslySetInnerHTML={{__html: ...}}` call sites |
 | `src/react/attachments/AttachmentChipsRow.tsx` | `SPINNER_HTML` literal removed (now `<span class="thinking-ring thinking-ring-sm" />`); `REMOVE_ICON` literal replaced with `<Icon name="remove" size={14} strokeWidth={2.5} />`. Two `dangerouslySetInnerHTML` sites eliminated |
 | `src/react/shareModal/ShareModal.tsx` | Inline `<svg>` close button replaced with `<Icon name="close" size={16} strokeWidth={2.5} />` |

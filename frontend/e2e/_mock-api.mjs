@@ -57,7 +57,7 @@ export async function mockAuthedApp(page, options = {}) {
     });
   }
 
-  /* Pin the UI language. Most specs assert English copy, and i18n.js reads
+  /* Pin the UI language. Most specs assert English copy, and i18n.ts reads
      `socrates-lang-app` synchronously at module load — so without a recorded
      preference the assertion is really about whatever the app's shipped
      default happens to be. Specs that test the other locale say so explicitly

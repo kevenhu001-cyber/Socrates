@@ -396,7 +396,7 @@ export function createSpring(cfg: SpringConfig, initial?: number): Spring
 
 **落地**
 
-1. `frontend/src/ui/sidebarResize.js`：松手时把宽度交给弹簧，用 `transform` 表达位移（**不要**每帧写 `--app-sidebar-width`，那会触发全壳重排 —— 文件里第 68–70 行已有此告警注释）
+1. `frontend/src/ui/sidebarResize.ts`：松手时把宽度交给弹簧，用 `transform` 表达位移（**不要**每帧写 `--app-sidebar-width`，那会触发全壳重排 —— 文件里第 68–70 行已有此告警注释）
 2. `frontend/src/react/message-list/MessageToolbar.tsx`：点赞按钮接入弹簧缩放。注意 `IconButton` **已经支持 `active` prop**（复制按钮在用），点赞只是没用上；需要新增点击后的 active 态
 3. reduced-motion：弹簧实例在 `prefers-reduced-motion: reduce` 下直接跳到目标值（沿用 `sidebar.service.ts:16` 的既有模式）
 
@@ -424,7 +424,7 @@ export function createSpring(cfg: SpringConfig, initial?: number): Spring
 | 共享求解器 | `packages/core/src/motion/spring.ts`（**DOM-free**，`packages/` 守卫通过）。解析解而非逐帧积分：给定时间戳直接求值，丢帧不漂移；分欠阻尼 / 临界 / 过阻尼三支 |
 | 预设 | `SPRING_PRESETS.dragRelease = {stiffness:1200, damping:80}`（ζ=1.155 过阻尼）、`SPRING_PRESETS.like = {stiffness:380, damping:18}`（ζ=0.462 欠阻尼，步进过冲 19.5%） |
 | Web 适配器 | `frontend/src/ui/motion/spring.ts`：`animateSpring()` 把解析曲线采样成密集关键帧交给 WAAPI（线性插值）；reduced-motion 下**整段跳过而不是缩短**（被截短的弹簧仍在动）；`readScale()` 读当前渲染缩放，供重复点击时从当前位置续接 |
-| 拖拽 | `frontend/src/ui/sidebarResize.js`：指针位置 → 弹簧目标，每帧按时间戳求值写入宽度；松手后弹簧继续收敛，静止时提交**整数**目标宽度（同时也是持久化的值）。键盘方向键仍是**立即生效**——离散步进是命令，弹簧属于指针 |
+| 拖拽 | `frontend/src/ui/sidebarResize.ts`：指针位置 → 弹簧目标，每帧按时间戳求值写入宽度；松手后弹簧继续收敛，静止时提交**整数**目标宽度（同时也是持久化的值）。键盘方向键仍是**立即生效**——离散步进是命令，弹簧属于指针 |
 | 点赞 | `frontend/src/react/message-list/MessageToolbar.tsx`：点赞图标接弹簧缩放 + 新增 `active` 态。缩放落在**图标**而不是按钮上（按钮承载 active 药丸，缩放药丸 19% 会读成整行在动）。连续点击时按"距离峰值还差多少"缩放 kick，不会叠出第二个过冲 |
 | 接线 | `packages/core/package.json` 新增 `./motion/spring` 子路径；`frontend/vite.config.js` 补同名 alias（**Vite 的字符串 alias 按前缀匹配**，`@socrates/core` 会把子路径吞掉并去找 `index.ts/motion/spring`） |
 
@@ -513,7 +513,7 @@ export function createSpring(cfg: SpringConfig, initial?: number): Spring
 | 位置 | 改法 |
 |---|---|
 | `legacy/07-composer-settings.css`（provider 列表） | `display:none` → `.ui-collapse`；`ProviderList.tsx` 加一层 `.ui-collapse-inner` |
-| `legacy/10-tutor-scaffolds.css`（定理证明） | `display:none` → `.ui-collapse`；`render/widgets.js` 把 title/body 包进 `.ui-collapse-inner`。**视觉盒（padding / 背景 / 左边框 / `margin-top`）整体搬到 inner** —— 留在外层的话，关闭态会剩下一条 8px 高的空壳 |
+| `legacy/10-tutor-scaffolds.css`（定理证明） | `display:none` → `.ui-collapse`；`render/widgets.ts` 把 title/body 包进 `.ui-collapse-inner`。**视觉盒（padding / 背景 / 左边框 / `margin-top`）整体搬到 inner** —— 留在外层的话，关闭态会剩下一条 8px 高的空壳 |
 | `components/sidebar.css`（移动端搜索行） | `max-height: 0 → 54px` → `grid-template-rows: 0fr → 1fr`；`index.html` 加 `.sidebar-search-row-inner` |
 | `legacy/11-agent-tools.css` | **不改** |
 

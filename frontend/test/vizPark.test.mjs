@@ -10,7 +10,7 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http:
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 
-const { parkVizCardForTest, unparkVizCardForTest } = await import('../src/render/viz.js');
+const { parkVizCardForTest, unparkVizCardForTest } = await import('../src/render/viz.ts');
 
 function makeCard(state = 'ready') {
   const card = document.createElement('div');

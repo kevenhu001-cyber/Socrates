@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 
 const ROOT = dirname(fileURLToPath(import.meta.url)) + "/..";
-const ASSEMBLY_FILE = "frontend/src/main.js";
+const ASSEMBLY_FILE = "frontend/src/main.ts";
 const REACT_ROOT = "frontend/src/react";
 
 const accessed = new Map();

@@ -583,7 +583,7 @@ test('final formatMsg neutralizes broken math instead of showing red errors', ()
   const previousKatex = globalThis.katex;
   const previousMarked = globalThis.marked;
   globalThis.katex = loadRealKatex();
-  globalThis.marked = marked; /* vendor/init.js bundles marked eagerly in the browser */
+  globalThis.marked = marked; /* vendor/init.ts bundles marked eagerly in the browser */
   try {
     const html = formatMsg('$$\\frac{1}{');
     assert.doesNotMatch(html, /katex-error/);

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { setModalOpen } from '../../ui/modalA11y.js';
+import { setModalOpen } from '../../ui/modalA11y.ts';
 
 /** shadcn Dialog owns keyboard focus, Escape and restoration. The registry
  * only coordinates shell inertness with remaining legacy/nested dialogs. */

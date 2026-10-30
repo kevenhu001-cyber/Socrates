@@ -4,10 +4,10 @@
 import { setBuiltInProviderModel } from '../config/providerConfig.service.ts';
 import { showToast } from '../ui/toast.js';
 import { i18n } from '../react/legacy/gateway.ts';
-import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
+import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.ts';
 import { captureBrowserLoginRequest } from '../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { renderUserFooter } from '../ui/profile.js';
+import { renderUserFooter } from '../ui/profile.ts';
 import { revealAppAndHydrate } from './index.ts';
 import { handleAuthUrlRoutes } from './boot/routes.ts';
 import {

@@ -20,7 +20,7 @@
 - [ ] **Step 1.1** 分析 frontend 的渲染器差异
   ```bash
   # 对比两个渲染实现
-  diff frontend/src/main.js mobile/src/render/
+  diff frontend/src/main.ts mobile/src/render/
   ```
 
 - [ ] **Step 1.2** 创建跨平台渲染适配器

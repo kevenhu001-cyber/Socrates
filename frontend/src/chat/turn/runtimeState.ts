@@ -1,6 +1,6 @@
 /* chat/turn/runtimeState.ts — the shared turn-runtime contract.
  *
- * `chat/streamingTurn.js` owns one mutable `state` object per streaming turn
+ * `chat/streamingTurn.ts` owns one mutable `state` object per streaming turn
  * and hands it to the helpers under `chat/turn/`. Before this file each
  * helper took an untyped `state` and re-derived every field it touched, so a
  * rename in the owner silently produced `undefined` in a helper. This
@@ -10,7 +10,7 @@
  * The type is declared here rather than in `streamingTurn.js` so the helpers
  * can be typed before the owner is converted.
  */
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import type { ActiveChatController } from '../turnState.ts';
 import type { ToolRuntime } from '../toolRuntime.ts';
 import type { StreamPlayer } from '../../render/streamPlayer.ts';

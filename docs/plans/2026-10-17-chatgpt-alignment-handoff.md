@@ -82,7 +82,7 @@ npx vite build
 
 **现状**
 
-- Deep Research 完全由前端编排：`frontend/src/agent/researchAgent.js` 的 `startDeepResearch` 串行执行 plan → search → read → synthesize，关闭页面即中断；产物只在结束时写入 `/api/artifacts`。
+- Deep Research 完全由前端编排：`frontend/src/agent/researchAgent.ts` 的 `startDeepResearch` 串行执行 plan → search → read → synthesize，关闭页面即中断；产物只在结束时写入 `/api/artifacts`。
 - 请求 schema 接受 `agentMode`，但没有任何执行逻辑读取它（`server/src/routes/chat/helpers.ts`）。
 - `workspace_agent` 依赖 Pi 可执行文件（`server/src/services/tools/piAgent.ts`），且不接 Web/MCP。
 - 已有 `agentRuns` 路由与 schema，可作为持久任务的起点（`server/src/routes/agentRuns.ts`）。
@@ -181,7 +181,7 @@ npx vite build
 **现状**
 
 - 图片输入、PDF/Office 解析、TTS 输出可用。
-- 语音输入仅浏览器 Web Speech（`frontend/src/ui/voiceInput.js`），无服务端 STT。
+- 语音输入仅浏览器 Web Speech（`frontend/src/ui/voiceInput.ts`），无服务端 STT。
 - 图像生成在独立创作面板（`server/src/routes/creations.ts`），不是聊天工具；无视频理解/生成。
 
 **建议顺序**
@@ -197,7 +197,7 @@ npx vite build
 
 ### P2-1 分支变体与会话导出
 
-- 现在是克隆新会话（`frontend/src/chat/editBranch.js`），没有同一位置切换回答变体的 UI。
+- 现在是克隆新会话（`frontend/src/chat/editBranch.ts`），没有同一位置切换回答变体的 UI。
 - 没有会话/账户数据导出。
 - 目标：消息级 `← 1/3 →` 变体切换；导出 Markdown/JSON；保留分享链接与隐私控制。
 
@@ -209,7 +209,7 @@ npx vite build
 
 ### P2-3 国际化与新手引导
 
-- 仍存在硬编码英文：`frontend/src/react/pages/scheduled/scheduled.service.ts`、`workspace.service.ts`、`ExploreStepper.tsx`、`ui/usage.js`。
+- 仍存在硬编码英文：`frontend/src/react/pages/scheduled/scheduled.service.ts`、`workspace.service.ts`、`ExploreStepper.tsx`、`ui/usage.ts`。
 - 首页建议入口是 no-op shim；新用户缺少可点击的起步路径。
 - 目标：en/zh 键集一致；首页建议按真实模板配置，不再是空实现。
 
@@ -329,7 +329,7 @@ NODE_OPTIONS= TEST_DATABASE_URL=<isolated-test-db-url> \
 ### 后续可验收小项与剩余风险
 
 - [x] 服务端任务/API/租约/检查点/事件/artifact 基础。
-- [x] 将 `frontend/src/agent/researchAgent.js` 接入新 API（第二轮完成，见第 9 节）。
+- [x] 将 `frontend/src/agent/researchAgent.ts` 接入新 API（第二轮完成，见第 9 节）。
 - [x] ExploreStepper 展示持久任务快照、取消/重试，重进会话订阅未完成任务，并避免重复发布报告（第二轮完成）。
 - [ ] 完成/失败通知的真实送达、失败 artifact、暂停/继续接口。
 - [ ] 浏览器关闭五分钟、真实 API 进程重启的端到端验收；目前验证的是断开 HTTP 订阅后完成和数据库租约过期接管，模型/搜索使用确定性替身，尚未测试真实 provider 的报告质量和费用。

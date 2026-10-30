@@ -2,7 +2,7 @@
  * server accepts the change; never mutate immutable React bridge snapshots. */
 import { apiFetch } from '../util/api.ts';
 import { serverCache } from './serverCache.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { detailCache } from './detailCache.ts';
 
 /** Fields the row menu can PATCH; anything else is passed through. */

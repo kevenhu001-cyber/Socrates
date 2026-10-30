@@ -7,7 +7,7 @@
    Reads main.js globals via window.* (state, getActiveProvider,
    offlineGuard, etc.). */
 
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import {
   AI_MAX_ATTEMPTS,
   isUserAbort,
@@ -29,6 +29,8 @@ interface StreamWindow extends Window {
 /** Resolved value of a completed stream call. */
 export interface StreamResult {
   text: string;
+  content?: string;
+  semanticActivity?: boolean;
   html?: string | null;
   widgets?: unknown[];
   cancelled?: boolean;
@@ -45,6 +47,8 @@ export type StreamAttemptOutcome =
  * along as extra keys because the frame processor invokes them by name. */
 export interface StreamCallOptions extends AIRequestOptions {
   maxAttempts?: number;
+  clientTurn?: { id: string };
+  onTurnBound?: (turnId: string) => void;
   turnId?: string;
   [key: string]: unknown;
 }
@@ -145,14 +149,14 @@ async function executeStreamAttempts(args: {
   const activeAbortHandle = (reason?: unknown): void => args.turnController.abort(reason || 'user-stop');
   args.win._activeChatAbort = activeAbortHandle;
   args.onAbortHandle(activeAbortHandle);
-  const { runStreamAttempt } = await import('./streamAttempt.js');
+  const { runStreamAttempt } = await import('./streamAttempt.ts');
   if (args.turnController.signal.aborted) return { text: '', cancelled: true };
 
   for (let attempt = 1; attempt <= args.maxAttempts; attempt += 1) {
     /* streamAttempt.js is still untyped; the outcome union is declared here
        and the module can adopt it wholesale when it converts. */
     const outcome = (await runStreamAttempt({
-      messages: args.messages,
+      messages: args.messages as import('./api/requestBody.ts').ChatRequestMessage[],
       maxTokens: args.maxTokens,
       onDelta: args.onDelta,
       onThinking: args.onThinking,
@@ -191,8 +195,8 @@ async function executeStreamAttempts(args: {
 export async function callAPIStream(
   messages: unknown,
   maxTokens: number | undefined,
-  onDelta: StreamDeltaHandler,
-  onThinking: StreamThinkingHandler,
+  onDelta: StreamDeltaHandler = null,
+  onThinking: StreamThinkingHandler = null,
   opts?: StreamCallOptions | null,
 ): Promise<StreamResult | null> {
   const win = window as unknown as StreamWindow;

@@ -372,7 +372,7 @@ frontend/          # 基准，逐模块签收后缩减
   在岛中打开、其余文件进文件预览。
   - `turn.ts` 保留实时 `artifacts`/`durationMs`/`executionId`/`retryable`，
   与持久化行同形渲染。
-- 考试面（Exam，`frontend/src/exam.js` 1130 行的移植）：
+- 考试面（Exam，`frontend/src/exam.ts` 1130 行的移植）：
   - `packages/ui/src/examModel.ts`（247 行，DOM-free）：题型解析
   （选择/填空/简答）、本地判分、答案归一、出题 prompt 与响应解析
   （fence/thinking/prose 兼容）。
@@ -400,7 +400,7 @@ frontend/          # 基准，逐模块签收后缩减
   新增 tools/files/exam/exam-generation）双端（desktop + Pixel 7）为准，
   以 CI `universal-app` job 结果为签收依据。
 - 下轮建议（第十六轮候选，按 §6 剩余 + 基线差距排序）：
-  1. 消息级 parity：编辑/重发/分支（对 `frontend/src/chat/editBranch.js`）
+  1. 消息级 parity：编辑/重发/分支（对 `frontend/src/chat/editBranch.ts`）
   + 停止后重试 + 离线 outbox（对 `session/mutationOutbox.js`/`offline.js`/
   `beacon.js`，当前失败只进 error、无队列、无断网续发）。
   2. 渲染 parity：公式（KaTeX，`render/katexRefresh.js`，当前 HTML 只当字面
@@ -416,7 +416,7 @@ frontend/          # 基准，逐模块签收后缩减
 
 ## 19. 进展（第十二轮，2026-10-07，round 16-1：编辑/重发/分支/离线 outbox）
 
-> 对齐 `frontend/src/chat/editBranch.js` + `session/mutationOutbox.js` +
+> 对齐 `frontend/src/chat/editBranch.ts` + `session/mutationOutbox.js` +
 > `chat/offline.ts` 的纯语义；DOM 专属一律不移植（行内 textarea 编辑器、
 > `createStreamRetryViewport` 视口锚点——Universal 用 FlatList 锚点重播代替、
 > `beacon.js` keepalive——Universal 用 turn 后保存 + outbox 代替）。
@@ -551,11 +551,11 @@ frontend/          # 基准，逐模块签收后缩减
 
 ## 22. 进展（第十五轮，2026-10-07，round 16-4：assistantId 绑定 + Tutor 教学 UI）
 
-> A 切片对齐 `ui/creationSurfaces.js`（Assistants 创建面）、`chat/api.js` 的
+> A 切片对齐 `ui/creationSurfaces.ts`（Assistants 创建面）、`chat/api.js` 的
 > assistantId 透传、`session/persistence.js` + `session/loader.js` 的
 > sessionStorage 镜像语义；B 切片对齐 `render/widgetParsers.ts` +
 > `render/assistantHtml.ts`（首块成控件、余块退化为正文）+
-> `render/widgets.js`（quiz/practice 行为）+
+> `render/widgets.ts`（quiz/practice 行为）+
 > `tutor/policy.js shouldRequestTutorAfterQuiz` + `sendPipeline` 的
 > exercise 计数与阶段推进。
 
@@ -736,7 +736,7 @@ frontend/          # 基准，逐模块签收后缩减
   行 gap 4→2；搜索框 radius 12→10（透明底，workbench 无影响）。
 - **错题本切片**（真实功能，非占位）：
   - `packages/ui/src/mistakes.ts`（DOM-free）：`buildQuizMistake`/
-    `buildPracticeMistake`（收录条件与基线 `render/widgets.js` 一致：declared
+    `buildPracticeMistake`（收录条件与基线 `render/widgets.ts` 一致：declared
     correct + 答错才落袋）+ `prependMistake`（newest-first）+
     `unresolvedMistakeCount`（badge 口径）；`mistakes.test.ts` 4 用例。
   - `Sidebar` 新增 `mistakes` 视图：toolbar 加 bookmark 按钮（与基线同形），
@@ -820,10 +820,10 @@ frontend/          # 基准，逐模块签收后缩减
 
 ## 31. 进展（第二十四轮，2026-10-08，round 16-13：错题本重做/攻克 + 手机抽屉对齐）
 
-> 错题本从“只收录”补到基线 `ui/mistakeBook.js` 的完整闭环（筛选、重做、攻克），
+> 错题本从“只收录”补到基线 `ui/mistakeBook.ts` 的完整闭环（筛选、重做、攻克），
 > 并清掉两项实测的手机抽屉色差。严格像素门禁仍未全过，parity 保持“进行中”。
 
-- **错题本移植**（对照 `frontend/src/ui/mistakeBook.js`）：`packages/ui/src/mistakes.ts`
+- **错题本移植**（对照 `frontend/src/ui/mistakeBook.ts`）：`packages/ui/src/mistakes.ts`
   改为基线记录形状（`id/type/topic/node/nodeIdx/q/options/correct/userAnswer/
   judgedAnswer/timestamp/redoCount/quizSlotId`），提供 `normalizeMistakes`、
   `quizMistakeFor`/`practiceMistakeFor`、`bumpMistakeRedo`、`mistakeRedoPlan`、

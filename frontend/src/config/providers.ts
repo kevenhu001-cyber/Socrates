@@ -24,7 +24,7 @@ let webSearchOn = false;
  * CHAT_SYSTEM_PROMPT (verbose "careful scholar" voice + thinking suffix)
  * is injected; when off, CHAT_CONCISE_PROMPT replaces both. This is no
  * longer a standalone toggle — it is derived from the reasoning-effort
- * picker (High = deep thinking on). See ui/effortPicker.js. */
+ * picker (High = deep thinking on). See ui/effortPicker.ts. */
 let extensiveThinkingOn = false;
 let appMode: AppMode = "chat";
 const thinkingOn = true;
@@ -44,7 +44,7 @@ try {
 /* Deep thinking now follows the reasoning-effort picker: High effort
  * enables the verbose prompt, Medium/Low use the concise one. Derive the
  * initial value from the persisted effort so the first turn matches the
- * picker before ui/effortPicker.js finishes loading. */
+ * picker before ui/effortPicker.ts finishes loading. */
 try {
   const savedEffort = localStorage.getItem("socrates-reasoning-effort");
   extensiveThinkingOn = (savedEffort === "high");

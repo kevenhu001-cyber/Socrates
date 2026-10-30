@@ -1,5 +1,5 @@
 import { esc } from './helpers.ts';
-import { openVizModalRaw } from './vizStubs.js';
+import { openVizModalRaw } from './vizStubs.ts';
 import { highlightCodeElement } from './highlight.ts';
 
 function inferCodeLanguage(code: HTMLElement): string {

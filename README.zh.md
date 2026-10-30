@@ -149,7 +149,7 @@
 ```mermaid
 flowchart LR
   subgraph Client["客户端"]
-    SPA["Web SPA<br/>(React/TS + 遗留 JS)"]
+    SPA["Web SPA<br/>(React + TypeScript)"]
     APK["Android / Web<br/>(React Native + Expo)"]
   end
 
@@ -222,7 +222,7 @@ sequenceDiagram
 
 | 层 | 技术 | 说明 |
 | --- | --- | --- |
-| Web SPA | React/TypeScript + 遗留 JS 兼容层，Vite 构建 | [`frontend/`](frontend/) — ~99% 迁移完成，所有 UI 层由 React 驱动 |
+| Web SPA | React + TypeScript，Vite 构建 | [`frontend/`](frontend/) — 项目自有源码均为 TypeScript；第三方 UMD 文件隔离在 `src/vendor-files/` |
 | Markdown | `marked` 13 + 自定义渐进渲染器 | 见[自定义渲染管线](#自定义渲染管线) |
 | 数学公式 | `katex` 0.16.9（vendored，见 [`frontend/src/vendor-files/katex/`](frontend/src/vendor-files/katex/)） | 显示模式 + 行内模式 |
 | 代码高亮 | `highlight.js`（vendored，完成时延迟加载） | [`frontend/src/vendor-files/highlight.min.js`](frontend/src/vendor-files/highlight.min.js) |
@@ -248,17 +248,17 @@ sequenceDiagram
 
 ```
 Socrates/
-├── frontend/               # Vite SPA (React/TS + 遗留 JS)
+├── frontend/               # Vite SPA (React + TypeScript)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # 入口（约 166 行，负责组合已拆分的模块）
+│   │   ├── main.ts         # 入口，负责组合已拆分的模块
 │   │   ├── styles/         # 全部 CSS —— index.css 入口、themes.css、
 │   │   │                   #  legacy/ 切片、parity/ 各面所有者
 │   │   ├── state/          # 分领域状态桥（session、kb、ui……）
 │   │   ├── store/          # createDomainStore 工厂 + index hooks
-│   │   ├── i18n.js         # I18N 字典（en）+ 语言切换
-│   │   ├── i18n/zh.js      # zh 字典（从 i18n.js 拆出）
-│   │   ├── windowExports.js# 遗留 window.* 兼容垫片
+│   │   ├── i18n.ts         # I18N 字典（en）+ 语言切换
+│   │   ├── i18n/zh.ts      # zh 字典（从 i18n.ts 拆出）
+│   │   ├── windowExports.ts# 类型化的 window.* 兼容桥接
 │   │   ├── types/          # TypeScript 类型定义
 │   │   ├── react/          # React/TS UI 层 (~34 个模块)
 │   │   │   ├── bootstrap.tsx
@@ -272,9 +272,9 @@ Socrates/
 │   │   │   ├── pages/
 │   │   │   ├── legacy/     # 类型化桥接 (gateway.ts)
 │   │   │   └── ...
-│   │   ├── app/            # 启动装配 + legacyBridge.js
-│   │   ├── ui/             # 遗留 UI 模块
-│   │   │   ├── legacyShellListeners.js # 显式 shell 元素映射
+│   │   ├── app/            # 启动装配 + legacyBridge.ts
+│   │   ├── ui/             # 类型化 UI 运行时模块
+│   │   │   ├── legacyShellListeners.ts # 显式 shell 元素映射
 │   │   │   └── ...
 │   │   ├── render/         # Markdown 渲染器（markdown.ts 承载
 │   │   │                   #  formatMsg / formatMsgProgressive）

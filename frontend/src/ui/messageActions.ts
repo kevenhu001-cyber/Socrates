@@ -6,7 +6,7 @@
  * own actions via react/message-list/useMessageActions.ts.
  */
 
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { apiFetch } from '../util/api.ts';
 import { i18n } from '../react/legacy/gateway.ts';
 import { showToast } from './toast.js';
@@ -14,15 +14,15 @@ import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { visualizationSpecOf } from '../render/visualizationSpec.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.ts';
-import { publishReactChatRuntime } from './reactBridge.js';
+import { publishReactChatRuntime } from './reactBridge.ts';
 import {
   appendFileChangeSummaryCards,
   appendInlineArtifact,
   appendToolModule,
   renderToolTextOutput,
-} from './toolCards.js';
-import { mountVisualization } from '../render/vizStubs.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/vizStubs.js';
+} from './toolCards.ts';
+import { mountVisualization } from '../render/vizStubs.ts';
+import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/vizStubs.ts';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -243,16 +243,16 @@ function inlineToolRow(body: HTMLElement, selector: string): Element | null {
   }
 }
 
-function inlineArtifactHost(body: HTMLElement, row: Element, selector: string, callId?: string): Element {
-  let host: Element | null = null;
+function inlineArtifactHost(body: HTMLElement, row: Element, selector: string, callId?: string): HTMLElement {
+  let host: HTMLElement | null = null;
   try {
-    host = body.querySelector('.tool-inline-attachments[data-tool-anchor="' + selector + '"]');
+    host = body.querySelector<HTMLElement>('.tool-inline-attachments[data-tool-anchor="' + selector + '"]');
   } catch (error) {
     reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#2');
   }
   if (host) return host;
   const next = row.nextElementSibling;
-  if (next?.classList.contains('tool-inline-attachments')) return next;
+  if (next instanceof HTMLElement && next.classList.contains('tool-inline-attachments')) return next;
   host = document.createElement('div');
   host.className = 'tool-inline-attachments';
   host.setAttribute('data-tool-anchor', String(callId || ''));
@@ -262,7 +262,7 @@ function inlineArtifactHost(body: HTMLElement, row: Element, selector: string, c
 
 function mountRestoredVisualization(
   spec: NonNullable<ReturnType<typeof visualizationSpecOf>>,
-  host: Element,
+  host: HTMLElement,
   toolCallId: string,
   reportContext: string,
 ): void {
@@ -273,12 +273,12 @@ function mountRestoredVisualization(
   }
 }
 
-function appendInlineArtifacts(artifacts: ToolCallEntry['artifacts'], host: Element): void {
+function appendInlineArtifacts(artifacts: ToolCallEntry['artifacts'], host: HTMLElement): void {
   if (!Array.isArray(artifacts)) return;
   for (const artifact of artifacts) {
     if (!artifact?.id) continue;
     try {
-      appendInlineArtifact(artifact.id, artifact.mimeType, host, artifact.name);
+      appendInlineArtifact(artifact.id, artifact.mimeType || 'application/octet-stream', host, artifact.name);
     } catch (error) {
       reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#4');
     }
@@ -306,12 +306,12 @@ function restoreStandaloneToolCall(
   spec: NonNullable<ReturnType<typeof visualizationSpecOf>> | null,
   toolCallId: string,
 ): void {
-  let card: Element | null = null;
+  let card: HTMLElement | null = null;
   try {
-    card = appendToolModule(call.name!, call.input || {}, body, {
+    card = appendToolModule(call.name!, (call.input || {}) as Parameters<typeof appendToolModule>[1], body, {
       restored: true,
       isError: call.isError === true,
-    }) as Element | null;
+    });
     if (card && call.output != null) {
       renderToolTextOutput(card, String(call.output), {
         isError: call.isError === true,
@@ -327,7 +327,7 @@ function restoreStandaloneToolCall(
 
 function appendStandaloneArtifacts(
   body: HTMLElement,
-  card: Element | null,
+  card: HTMLElement | null,
   artifacts: ToolCallEntry['artifacts'],
 ): void {
   if (!card || !Array.isArray(artifacts)) return;

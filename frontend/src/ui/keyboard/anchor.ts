@@ -18,10 +18,10 @@
  */
 
 import { decideKeyboardAnchorAction, KEYBOARD_PIN_SLACK } from '../scrollDecision.ts';
-import { smoothScrollToBottom } from '../scroll.js';
+import { smoothScrollToBottom } from '../scroll.ts';
 import { writeScrollTop } from '../scrollCoordinator.ts';
-import { getLastScrollIntentAt, suppressScrollPositionIntent } from '../scrollPill.js';
-import { stateStore } from '../../state/store.js';
+import { getLastScrollIntentAt, suppressScrollPositionIntent } from '../scrollPill.ts';
+import { stateStore } from '../../state/store.ts';
 
 /* Sub-4px offsetTop deltas are DPR rounding noise, not a real pan — feeding
  * them into scrollTop jitters the transcript ±2px every frame for the whole

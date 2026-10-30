@@ -5,7 +5,7 @@ import {
   detectExamLang,
   parseExamArrayJSON,
   parseSingleExamQuestion,
-} from '../src/exam/parsing.js';
+} from '../src/exam/parsing.ts';
 
 test('exam prompt language follows the topic script', () => {
   assert.equal(detectExamLang('线性代数'), 'Chinese');

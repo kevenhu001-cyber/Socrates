@@ -16,7 +16,7 @@ import {
   getThemeStyle,
   setBackgroundDark,
   setBackgroundLight,
-} from '../../displayPrefs.js';
+} from '../../displayPrefs.ts';
 
 function t(key: string, fallback: string): string {
   return i18n(key, fallback);

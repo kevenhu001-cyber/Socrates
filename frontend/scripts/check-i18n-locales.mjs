@@ -2,13 +2,13 @@
 /* scripts/check-i18n-locales.mjs — locale key conservation gate.
  *
  * The locale dictionaries live outside the runtime boot module:
- * English in src/i18n/en.js, Chinese in src/i18n/zh.js (its own async chunk).
+ * English in src/i18n/en.ts, Chinese in src/i18n/zh.ts (its own async chunk).
  * Nothing enforced that both carry the same key set, so a key added to one
  * locale silently falls back — `t()` returns the raw key or the other
  * language, and the mismatch only shows up in the UI nobody screenshots.
  *
  * P_composer-primary-split hit this live: `chat.stop` had to be added by
- * hand to src/i18n.js and src/i18n/zh.js, with no check that would have
+ * hand to src/i18n.ts and src/i18n/zh.ts, with no check that would have
  * caught a half-done edit.
  *
  * Parsing is deliberately static. Importing the runtime module would execute its
@@ -23,8 +23,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const EN_PATH = fileURLToPath(new URL('../src/i18n/en.js', import.meta.url));
-const ZH_PATH = fileURLToPath(new URL('../src/i18n/zh.js', import.meta.url));
+const EN_PATH = fileURLToPath(new URL('../src/i18n/en.ts', import.meta.url));
+const ZH_PATH = fileURLToPath(new URL('../src/i18n/zh.ts', import.meta.url));
 
 /* A locale key is a dotted identifier in quotes followed by a colon.
  * Requiring the dot keeps this from matching unrelated quoted object keys. */
@@ -58,7 +58,7 @@ if (missingInZh.length || missingInEn.length) {
     console.error(`  ${missingInEn.length} key(s) in zh but not en:`);
     for (const k of missingInEn) console.error(`    - ${k}`);
   }
-  console.error('  Both src/i18n/en.js and src/i18n/zh.js must carry the same key set.');
+  console.error('  Both src/i18n/en.ts and src/i18n/zh.ts must carry the same key set.');
   process.exit(1);
 }
 

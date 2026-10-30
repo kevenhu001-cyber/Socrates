@@ -5,7 +5,7 @@ import {
   formatCategoryLabel,
   parseFunctionExpression,
   sampleFunction,
-} from '../src/render/visualization.js';
+} from '../src/render/visualization.ts';
 
 test('safe expression parser handles elementary functions and rejects code', () => {
   assert.equal(parseFunctionExpression('ln(x)')(Math.E), 1);

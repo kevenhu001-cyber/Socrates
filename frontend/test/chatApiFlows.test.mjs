@@ -19,7 +19,7 @@ globalThis.window = {
 };
 
 const { callAPI, callAPIChat, buildChatRequestBody } = await import('../src/chat/api.ts');
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 const encoder = new TextEncoder();
 
 function setProvider(provider) {

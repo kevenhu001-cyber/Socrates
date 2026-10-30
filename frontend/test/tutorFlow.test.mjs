@@ -14,7 +14,7 @@ const { buildSocraticPrompt, buildSocraticMessages, buildFollowUpMessages } = aw
 const { configureTemplateSystemPrompt, injectTemplateSystemPrompt } = await import(
   '../src/chat/templateSystemPrompt.ts'
 );
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 
 test('socratic prompt embeds topic, level, and context', () => {
   const previousSearch = stateStore.read('searchContext');

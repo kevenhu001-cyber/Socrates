@@ -6,7 +6,7 @@ globalThis.window = {
   __socratesReactChatBridge: { publish: (event) => published.push(event) },
 };
 
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 const { persistCanvasEdit } = await import('../src/react/canvas/canvasState.ts');
 
 test('canvas edits replace the matching message through the session action', () => {

@@ -7,7 +7,7 @@
  * lines. This module owns that field's mutations and the lifecycle
  * updates that keep the inline activity summary aligned with the live turn.
  *
- * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
+ * Extracted from chat/streamingTurn.ts during the 2026-10 addStreamingMessage
  * split. The helpers here are tight callbacks over the shared message
  * state (`state.full`, `state.fullReasoning`, `state.clientId`,
  * `state.msgIdx`); keeping them as a single factory avoids each method

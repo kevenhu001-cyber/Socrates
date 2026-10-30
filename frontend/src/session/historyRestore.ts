@@ -3,17 +3,17 @@
  * store, and browser-local history. */
 import { whenSessionIdle } from './afterSessionPaint.ts';
 import { normalizeTurnRuntime } from '@socrates/core';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { buildUserContentParts } from '../chat/history.ts';
 import { quietTurn } from '../chat/turnUi.ts';
 import { apiFetch } from '../util/api.ts';
 import { loadLocalMemory, LOCAL_MEMORY_MAX, _memKey } from '../storage/localMemory.ts';
-import { batchSetItem } from '../batchStorage.js';
+import { batchSetItem } from '../batchStorage.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { esc } from '../render/helpers.ts';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { generateId } from '../util/ids.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

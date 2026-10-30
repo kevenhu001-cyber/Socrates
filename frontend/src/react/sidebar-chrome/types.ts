@@ -1,7 +1,7 @@
 /**
  * Shared contracts for the sidebar chrome (header + footer) React migration boundary.
  *
- * The legacy `ui/profile.js` owns the user info and `renderUserFooter()`.
+ * The legacy `ui/profile.ts` owns the user info and `renderUserFooter()`.
  * In React mode, the bridge publishes the user snapshot so the footer
  * React tree can render the avatar, name, and tier badge.
  */

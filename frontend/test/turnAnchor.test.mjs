@@ -2,7 +2,7 @@ import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { JSDOM } from 'jsdom';
-import { stateStore } from '../src/state/store.js';
+import { stateStore } from '../src/state/store.ts';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;

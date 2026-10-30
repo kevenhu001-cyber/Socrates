@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { renderUsageHeatmap } from '../src/ui/usage.js';
+import { renderUsageHeatmap } from '../src/ui/usage.ts';
 
 test('usage heatmap keeps totals, period controls, limits, and monthly breakdown', () => {
   const body = { innerHTML: '' };

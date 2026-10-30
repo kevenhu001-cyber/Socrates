@@ -1,0 +1,675 @@
+import type { PendingAttachment, UploadOutcome, AddFilesResult, UploadProgress } from "./attachments/types.ts";
+/**
+ * attachments.js — pending-attachment store for the chat composer.
+ *
+ * P_file-attachments — every accepted file is uploaded to
+ * POST /api/v2/files (a durable `files` row) and the outgoing turn only
+ * persists a reference: {id, kind, name, mime, size, fileId}. The model
+ * then reads the file on demand through the server-side
+ * `read_attachment` tool — paged text for documents, a vision
+ * description for images, metadata for media — instead of receiving a
+ * pre-parsed text dump in the prompt.
+ *
+ * Images additionally keep a compressed base64 dataUrl when the active
+ * provider is multimodal, so vision-capable models still receive a
+ * native image_url part (highest fidelity). For text-only providers the
+ * image stays a file reference and the model reads it via the tool.
+ *
+ * Limits:
+ *   - Up to 6 attachments per turn.
+ *   - Any file ≤25 MB (the /api/files per-file cap).
+ *   - Inline image dataUrls: ≤4 MB source, re-encoded under 1.9 M chars.
+ *
+ * The exposed API:
+ *   attachments                      — module-level array (current turn)
+ *   resetAttachments()               — clear the array (call on submit / cancel)
+ *   snapshotAttachments()            — per-turn copy; marks entries sent
+ *   addFiles(FileList|File[])        — async; uploads files, builds entries
+ *   removeAttachment(id)             — abort + drop one chip, delete orphans
+ *   retryAttachment(id, onUpdate)    — re-run a failed upload
+ *   waitForAttachmentsReady(list)    — settle pending upload/encode jobs
+ *   buildMessageContent(text, list)  — assemble { rawText, parts, attachmentList }
+ *   attachmentPointerLine(att)       — the [Attached file: …] model pointer
+ *   activeProviderSupportsImages()   — vision capability of the active model
+ */
+
+import { apiFetch } from './util/api.ts';
+import { reportSwallow } from './util/reportSwallow.ts';
+import { AttachmentClassification, classifyAttachmentFile, docKindFromFile } from './attachments/fileTypes.ts';
+import { compressImageFile, readFileAsDataUrl } from './attachments/imageCompression.ts';
+import { createBuildMessageContent } from './attachments/messageContent.ts';
+import { ATTACHMENT_READY_TIMEOUT_MS, MAX_CONCURRENT_UPLOADS, MAX_FILE_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_DATAURL_CHARS, MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL, MAX_TOTAL_ATTACHMENTS, XHR_TIMEOUT_MS, UPLOAD_IDLE_TIMEOUT_MS } from './attachments/limits.ts';
+import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
+
+
+export {
+  ATTACHMENT_READY_TIMEOUT_MS,
+  MAX_CONCURRENT_UPLOADS,
+  MAX_FILE_BYTES,
+  MAX_IMAGE_BYTES,
+  MAX_IMAGE_DATAURL_CHARS,
+  MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL,
+  MAX_TOTAL_ATTACHMENTS,
+  XHR_TIMEOUT_MS,
+  UPLOAD_IDLE_TIMEOUT_MS,
+} from './attachments/limits.ts';
+export { attachmentPointerLine, formatAttachmentSize } from './attachments/messageContent.ts';
+
+/* Pending attachments for the current turn. The store is
+ * deliberately not React-ish / observable — main.js calls
+ * `renderAttachmentChips()` after each mutation. */
+export const attachments: PendingAttachment[] = [];
+
+/* Per-entry readiness jobs: attachment id → Promise that settles when
+   the entry's upload (+ optional image encode) finished, successfully
+   or not. Entries may be snapshotted and reset before their job ends —
+   the map (not the array membership) is what waitForAttachmentsReady
+   tracks, so a cleared composer still resolves the outgoing turn. */
+const READY_PROMISES = new Map<string, Promise<unknown>>();
+
+/* Upload concurrency queue — at most MAX_CONCURRENT_UPLOADS
+ * prepareAttachment jobs (XHR upload + optional image encode) run at
+ * once. Before this, every file added in one gesture started its XHR
+ * and its canvas re-encode loop immediately, so a 6-file drop opened
+ * 6 transfers and 6 encoder loops in parallel and froze the composer.
+ * Extra files now wait as visible `stage:'queued'` stubs; removing a
+ * queued chip dequeues it without ever opening a request. */
+let activeUploadJobs = 0;
+const queuedUploadJobs: Array<() => Promise<void>> = [];
+
+function pumpUploadQueue() {
+  while (activeUploadJobs < MAX_CONCURRENT_UPLOADS && queuedUploadJobs.length > 0) {
+    const task = queuedUploadJobs.shift();
+    if (!task) break;
+    activeUploadJobs += 1;
+    task().finally(() => {
+      activeUploadJobs -= 1;
+      pumpUploadQueue();
+    });
+  }
+}
+
+/* Run `job` in a queue slot. Resolves with the job outcome — never
+ * rejects. A chip removed while still queued settles immediately as
+ * cancelled so addFiles()' Promise.all can never hang on a dropped
+ * entry. Once the slot starts, prepareAttachment replaces entry._abort
+ * with the live XHR abort handle. */
+function enqueueUploadJob(entry: PendingAttachment, job: () => Promise<UploadOutcome>): Promise<UploadOutcome> {
+  return new Promise<UploadOutcome>((resolve) => {
+    let started = false;
+    entry._cancelled = false;
+    entry._abort = () => {
+      entry._cancelled = true;
+      if (started) return;
+      const index = queuedUploadJobs.indexOf(task);
+      if (index !== -1) queuedUploadJobs.splice(index, 1);
+      resolve({ ok: false, error: _t('chat.attach.cancelled', 'Upload cancelled'), cancelled: true });
+    };
+    const task = async () => {
+      started = true;
+      try {
+        resolve(await job());
+      } catch (error) {
+        resolve({ ok: false, error: error instanceof Error ? error.message : 'read failed' });
+      }
+    };
+    queuedUploadJobs.push(task);
+    pumpUploadQueue();
+  });
+}
+
+/** Test-only hook: drop queued (not yet started) jobs and reset the slot counter. */
+export function __resetUploadQueueForTests() {
+  queuedUploadJobs.length = 0;
+  activeUploadJobs = 0;
+}
+
+function _t(key: string, fallback?: string | null) {
+  try {
+    if (typeof window !== 'undefined' && typeof browserWindow.t === 'function') {
+      const v = browserWindow.t(key);
+      if (v && v !== key) return v;
+    }
+  } catch (e) { reportSwallow(e, 'attachments._t.prefLookup'); /* fall through */ }
+  return fallback != null ? fallback : key;
+}
+
+function getActiveProvider() {
+  if (typeof window === 'undefined' || typeof browserWindow.getActiveProvider !== 'function') return null;
+  try { return browserWindow.getActiveProvider() || null; } catch (_) { return null; }
+}
+
+function providerSupportsImages(provider: { vision?: boolean; isMultimodal?: boolean } | null | undefined) {
+  return !!(provider && (provider.vision === true || provider.isMultimodal === true));
+}
+
+/** True when the currently selected provider can consume image_url parts. */
+export function activeProviderSupportsImages() {
+  return providerSupportsImages(getActiveProvider());
+}
+
+function currentSessionId() {
+  try {
+    const store = (typeof window !== 'undefined') ? browserWindow.stateStore : null;
+    if (store && typeof store.read === 'function') {
+      const sid = store.read('currentSessionId');
+      if (typeof sid === 'string' && sid) return sid;
+    }
+  } catch (e) { reportSwallow(e, 'attachments.store.sessionIdLookup'); /* fall through */ }
+  return '';
+}
+
+/** Clear the pending attachments list. Called after submit + on cancel. */
+export function resetAttachments() {
+  /* Revoke blob URLs before clearing so the browser can GC the
+     underlying Blob data immediately instead of holding it until
+     the next garbage-collection cycle. READY_PROMISES entries are
+     left alone: a snapshot taken before the reset must still resolve. */
+  _revokeBlobUrls(attachments);
+  attachments.length = 0;
+  /* React migration bridge — publish the empty list so the React
+     compatibility root drops the chip row. Legacy callers that follow
+     up with renderAttachmentChips() also publish; this covers the
+     reset-only path. */
+  try {
+    const bridge = (typeof window !== "undefined") ? browserWindow.__socratesAttachmentsBridge : null;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({ attachments: attachments.slice() });
+    }
+  } catch (e) { reportSwallow(e, 'attachments.bridge.publish'); /* swallow — bridge is best-effort */ }
+}
+
+/**
+ * Wait until every attachment in `list` finished its upload/encode job.
+ * Resolves (never rejects) once all jobs settle OR `timeoutMs` elapses —
+ * a still-pending entry after the timeout is surfaced by
+ * buildMessageContent as an "upload incomplete" note rather than
+ * silently dropped.
+ */
+export function waitForAttachmentsReady(list?: PendingAttachment[] | null, timeoutMs?: number) {
+  const items = Array.isArray(list) ? list : attachments;
+  const waits = [];
+  for (let i = 0; i < items.length; i++) {
+    const a = items[i];
+    const p = a && READY_PROMISES.get(a.id);
+    if (p) waits.push(p);
+  }
+  if (!waits.length) return Promise.resolve();
+  const ms = Number(timeoutMs) > 0 ? Number(timeoutMs) : ATTACHMENT_READY_TIMEOUT_MS;
+  let timer: number|null|undefined = null;
+  return Promise.race([
+    Promise.allSettled(waits).then(() => undefined),
+    new Promise((resolve) => { timer = setTimeout(resolve, ms); }),
+  ]).finally(() => { if (timer) clearTimeout(timer); });
+}
+
+/** Generate a short id for chip keying. */
+function shortId() {
+  // crypto.randomUUID exists in evergreen browsers + Node 19+;
+  // fall back to Math.random for the unlikely no-crypto case.
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return 'att-' + crypto.randomUUID().slice(0, 8);
+    }
+  } catch (e) { reportSwallow(e, 'attachments.shortId.cryptoRandomUUID'); /* fall through */ }
+  return 'att-' + Math.random().toString(36).slice(2, 10);
+}
+
+/**
+ * Upload one File to POST /api/v2/files — the durable store the
+ * read_attachment tool and /api/files/:id/raw resolve against.
+ * Calls onProgress(percent, loaded, total) during the upload. Resolves with
+ * { fileId, kind, mimeType, size } or { error } — never rejects.
+ * XHR (not fetch) because fetch does not expose upload progress.
+ *
+ * onXhr(xhr) receives the live request so the caller can keep an
+ * abort handle on the entry — removing a chip (or a send-time
+ * timeout) must actually cancel the transfer, not just orphan it.
+ */
+function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (xhr: XMLHttpRequest) => void, onProcessing?: () => void): Promise<UploadOutcome> {
+  return new Promise<UploadOutcome>((resolve) => {
+    const fd = new FormData();
+    fd.append('file', file, file.name || 'file');
+    /* Best-effort session link — the server re-validates ownership and
+       adopts orphans at session save (P_file-session-link), so a null
+       or draft id here is fine. */
+    const sid = currentSessionId();
+    if (sid) fd.append('sessionId', sid);
+    const csrf = (typeof window !== 'undefined' && browserWindow.getCsrfToken)
+      ? browserWindow.getCsrfToken() : '';
+    const xhr = new XMLHttpRequest();
+    let idleTimer: number|undefined;
+    const finish = (outcome: UploadOutcome) => {
+      clearTimeout(idleTimer);
+      resolve(outcome);
+    };
+    const touch = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        finish({ error: _t('chat.attach.uploadTimeout', 'Upload timed out') });
+        xhr.abort();
+      }, UPLOAD_IDLE_TIMEOUT_MS);
+    };
+    if (typeof onXhr === 'function') onXhr(xhr);
+    if (typeof onProgress === 'function' && xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        touch();
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100), e.loaded, e.total);
+        }
+      };
+    }
+    if (xhr.upload) xhr.upload.onload = () => {
+      touch();
+      if (onProcessing) onProcessing();
+    };
+    xhr.onprogress = touch;
+    xhr.onload = function () {
+      let data = null;
+      try { data = JSON.parse(xhr.responseText || '{}'); } catch (e) { reportSwallow(e, 'attachments.csrf.parseResponse'); /* non-JSON error page */ }
+      if (xhr.status >= 200 && xhr.status < 300 && data && data.id) {
+        finish({
+          fileId: String(data.id),
+          kind: data.kind || undefined,
+          mimeType: data.mimeType || undefined,
+          size: typeof data.size === 'number' ? data.size : undefined,
+        });
+      } else {
+        const msg = (data && (data.message || data.error || data.detail)) || ('Upload failed (' + xhr.status + ')');
+        finish({ error: String(msg) });
+      }
+    };
+    xhr.onerror = () => finish({ error: _t('chat.attach.networkError', 'Network error during upload') });
+    xhr.ontimeout = () => finish({ error: _t('chat.attach.uploadTimeout', 'Upload timed out') });
+    /* Aborted by removeAttachment / the send-time straggler cutoff —
+       settle quietly; the entry is already gone or flagged. */
+    xhr.onabort = () => finish({ error: _t('chat.attach.cancelled', 'Upload cancelled') });
+    /* /api/v2 — same CDN-bypass prefix apiFetch uses; the server and
+       dev stub both strip it back to /api/files. */
+    xhr.open('POST', '/api/v2/files');
+    if (csrf) xhr.setRequestHeader('X-CSRF-Token', csrf);
+    xhr.timeout = XHR_TIMEOUT_MS;
+    touch();
+    xhr.send(fd);
+  });
+}
+
+/**
+ * The per-file async job: upload for a durable fileId, plus an inline
+ * compressed dataUrl for images when the active provider is multimodal.
+ * Mutates the entry in place; resolves { ok:true } when the attachment
+ * is usable (fileId OR a readable inline image) or { error } when the
+ * model would get nothing from it.
+ */
+function waitForAttachmentPaint() {
+  return new Promise((resolve) => {
+    // A hidden tab can suspend animation frames indefinitely.
+    setTimeout(resolve, 0);
+  });
+}
+
+function abortHandleForXhr(entry: PendingAttachment, xhr: XMLHttpRequest) {
+  entry._abort = () => {
+    entry._cancelled = true;
+    try { xhr.abort(); }
+    catch (error) { reportSwallow(error, 'attachments.prepareAttachment.xhrAbort'); }
+  };
+}
+
+async function loadInlineImageData(file: File) {
+  const progress = () => { /* noop: network progress owns the displayed percentage */ };
+  try {
+    if (file.size > MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL) {
+      return await compressImageFile(file, progress);
+    }
+    const read = await readFileAsDataUrl(file, progress);
+    return read.dataUrl;
+  } catch (_) { /* empty-catch: intentional — inline image data fallback */
+    return '';
+  }
+}
+
+async function prepareInlineImage(entry: PendingAttachment, file: File) {
+  const dataUrl = await loadInlineImageData(file);
+  if (entry._cancelled || !entry.pending || !dataUrl || dataUrl.length > MAX_IMAGE_DATAURL_CHARS) return;
+  entry.dataUrl = dataUrl;
+
+}
+
+async function boundedInlineImage(entry: PendingAttachment, file: File) {
+  let timer;
+  try {
+    await Promise.race([
+      prepareInlineImage(entry, file),
+      new Promise((resolve) => { timer = setTimeout(resolve, 10_000); }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function finalizeAttachment(entry: PendingAttachment, uploadOutcome: UploadOutcome | null) {
+  if (entry._cancelled) {
+    entry.dataUrl = undefined;
+    entry.pending = false;
+    return { error: _t('chat.attach.cancelled', 'Upload cancelled'), cancelled: true };
+  }
+  entry.pending = false;
+  entry.progress = 100;
+  entry.loaded = entry.total || entry.size;
+  const usable = !!(uploadOutcome && uploadOutcome.fileId) || !!entry.dataUrl;
+  entry.stage = usable ? 'done' : 'error';
+  /* Keep failed-upload thumbnails so the error chip still shows the file. */
+  if (usable && entry.thumbnailUrl) {
+    try { URL.revokeObjectURL(entry.thumbnailUrl); }
+    catch (error) { reportSwallow(error, 'attachments.prepareAttachment.revokeThumbnail'); }
+    entry.thumbnailUrl = undefined;
+  }
+  if (uploadOutcome && uploadOutcome.fileId) {
+    entry.fileId = uploadOutcome.fileId;
+    if (uploadOutcome.mimeType) entry.mime = uploadOutcome.mimeType;
+    return { ok: true };
+  }
+  if (entry.dataUrl) return { ok: true };
+  return { ok: false, error: (uploadOutcome && uploadOutcome.error) || 'Upload failed' };
+}
+
+async function prepareAttachment(entry: PendingAttachment, file: File, reportProgress: UploadProgress = () => {}): Promise<UploadOutcome> {
+  const wantsInlineImage = entry.kind === 'image'
+    && activeProviderSupportsImages()
+    && file.size <= MAX_IMAGE_BYTES;
+  /* Queued by the concurrency gate — this assignment is the visible
+     "uploading" transition for a stub that may have waited. */
+  entry.stage = 'uploading';
+  try {
+    await waitForAttachmentPaint();
+    if (entry._cancelled) return { error: _t('chat.attach.cancelled', 'Upload cancelled'), cancelled: true };
+    let uploadOutcome = null;
+    const uploadJob = uploadAttachmentFile(
+      file,
+      (percent: number, loaded: any, total: any) => reportProgress(
+        Math.min(99, percent),
+        loaded,
+        total,
+      ),
+      (xhr: any) => abortHandleForXhr(entry, xhr),
+      () => {
+        entry.stage = 'processing';
+        reportProgress(99);
+      },
+    ).then((outcome) => { uploadOutcome = outcome; });
+    const jobs = [uploadJob];
+    if (entry.kind === 'image' && wantsInlineImage) {
+      // Optional vision encoding must not hold a durable upload indefinitely.
+      jobs.push(boundedInlineImage(entry, file));
+    }
+    await Promise.all(jobs);
+    return finalizeAttachment(entry, uploadOutcome);
+  } catch (error) {
+    entry.pending = false;
+    entry.progress = 100;
+    return { ok: false, error: error instanceof Error ? error.message : 'read failed' };
+  }
+}
+
+/**
+ * Process a FileList / array of File objects, appending each accepted
+ * one to the pending list. Returns a { added, rejected } summary so the
+ * UI can toast a status.
+ *
+ * P_pending-feedback — each file pushes a pending stub into the
+ * attachments[] array BEFORE any async work so the UI chip appears
+ * immediately. The stub's `pending:true` and `progress:0-100` fields
+ * drive a spinner + progress bar in renderAttachmentChips(). Once the
+ * upload (+ optional image encode) finishes the stub is updated
+ * in-place and onUpdate fires so the renderer swaps the spinner for
+ * the final chip.
+ *
+ * P_upload-concurrency — at most MAX_CONCURRENT_UPLOADS jobs run at
+ * once; the rest wait as `stage:'queued'` stubs. This bounds parallel
+ * XHRs and main-thread image encodes so a multi-file drop cannot
+ * freeze the composer, and a removed queued chip is dequeued without
+ * ever opening a request.
+ *
+ * P_attachments-ready — every file's async job is also tracked in
+ * READY_PROMISES so a send that happens while an upload is still in
+ * flight can wait for it (waitForAttachmentsReady) instead of losing
+ * the fileId the model needs.
+ *
+ * @param {FileList|File[]} fileList
+ * @param {function} [onUpdate] — called after each stub mutation so
+ *   the caller can re-render chips (typically renderAttachmentChips).
+ * @param {function} [onProgress] — forwarded to the per-file read /
+ *   compression step; receives an integer percent (0-100).
+ * @param {function} [onRejected] — invoked synchronously per rejection
+ *   so a bad file's toast is not held hostage by a slow in-flight
+ *   upload (the promise only resolves after every job settles).
+ * @returns {Promise<{added:number, rejected:string[]}>}
+ */
+function createRejectReporter(result: AddFilesResult, onRejected?: (message: string) => void) {
+  return (message: any) => {
+    result.rejected.push(message);
+    if (!onRejected) return;
+    try { onRejected(message); }
+    catch (error) { reportSwallow(error, 'attachments.reject.onRejected'); }
+  };
+}
+
+function createProgressNotifier(onUpdate?: () => void, onProgress?: () => void) {
+  /* Coalesce frequent upload progress events into at most one render per frame. */
+  let pendingFrame = 0;
+  const scheduleFrame = typeof requestAnimationFrame === 'function'
+    ? requestAnimationFrame
+    : (callback: TimerHandler) => setTimeout(callback, 16);
+  return () => {
+    if (pendingFrame) return;
+    pendingFrame = scheduleFrame(() => {
+      pendingFrame = 0;
+      if (onProgress) onProgress();
+      else if (onUpdate) onUpdate();
+    });
+  };
+}
+
+function inspectFile(file: File, reject: (message: string) => void) {
+  if (attachments.length >= MAX_TOTAL_ATTACHMENTS) {
+    reject(`${file.name || 'file'}: ${_t('chat.attach.maxReached', `max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`)}`);
+    return null;
+  }
+  const signature = `${file.name || ''}|${file.size}`;
+  if (attachments.some((attachment) => attachment && attachment._sig === signature)) {
+    reject(`${file.name || 'file'}: ${_t('chat.attach.duplicate', 'already attached')}`);
+    return null;
+  }
+  const kind = classifyAttachmentFile(file);
+  if (!kind) {
+    reject(`${file.name || 'file'}: ${_t('chat.attach.unsupported', 'unsupported file type')}`);
+    return null;
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    reject(`${file.name}: ${_t('chat.attach.fileTooLarge', `file exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB limit`)}`);
+    return null;
+  }
+  return { kind, signature };
+}
+
+function createPendingEntry(file: File, { kind, signature }: { kind: AttachmentClassification; signature: string }): PendingAttachment {
+  const entry: PendingAttachment = {
+    id: shortId(), kind, pending: true, progress: 0,
+    /* Visible upload state for the chip: 'queued' (waiting for a
+       concurrency slot) → 'uploading' → 'done' / 'error'. loaded/total
+       carry byte counts when the XHR reports length-computable progress. */
+    stage: 'queued', loaded: 0, total: file.size,
+    name: file.name || 'file',
+    mime: file.type || 'application/octet-stream',
+    size: file.size,
+    /* Private fields support dedupe, retry, abort, and send-time ownership. */
+    _sig: signature,
+    _file: file,
+  };
+  if (kind === 'document') entry.docKind = docKindFromFile(file);
+  if (kind === 'image'
+      && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    try { entry.thumbnailUrl = URL.createObjectURL(file); }
+    catch (error) { reportSwallow(error, 'attachments.addFiles.createThumbnail'); }
+  }
+  return entry;
+}
+
+function trackAttachmentJob(entry: PendingAttachment, file: File, result: AddFilesResult, notifyProgress: () => void, onUpdate: (() => void) | undefined, reject: (message: string) => void) {
+  const onFileProgress = (percent: number, loaded: any, total: any) => {
+    entry.progress = Math.max(entry.progress || 0, percent);
+    if (typeof loaded === 'number') entry.loaded = loaded;
+    if (typeof total === 'number') entry.total = total;
+    if (entry.pending && entry.stage !== 'processing') entry.stage = 'uploading';
+    notifyProgress();
+  };
+  /* Concurrency-gated: beyond MAX_CONCURRENT_UPLOADS the job waits as a
+     visible queued stub instead of opening another XHR + encoder loop. */
+  const job = enqueueUploadJob(
+    entry,
+    () => prepareAttachment(entry, file, onFileProgress),
+  ).then((outcome) => {
+    if (outcome && outcome.error) {
+      /* A job cancelled while still queued never ran finalizeAttachment,
+         so settle its stub here (usually already detached by removal). */
+      if (entry.pending) {
+        entry.pending = false;
+        entry.progress = 100;
+        entry.stage = 'error';
+      }
+      entry.error = outcome.error;
+      /* A removed chip is deliberate cancellation, not a user rejection. */
+      if (attachments.includes(entry) && !outcome.cancelled) reject(`${file.name}: ${outcome.error}`);
+    } else {
+      result.added += 1;
+    }
+    if (onUpdate) onUpdate();
+  });
+  READY_PROMISES.set(entry.id, job.finally(() => { READY_PROMISES.delete(entry.id); }));
+  return job;
+}
+
+export async function addFiles(fileList: FileList | File[] | null | undefined, onUpdate?: () => void, onProgress?: () => void, onRejected?: (message: string) => void) {
+  const result: AddFilesResult = { added: 0, rejected: [] };
+  const reject = createRejectReporter(result, onRejected);
+  const notifyProgress = createProgressNotifier(onUpdate, onProgress);
+  const jobs = [];
+  for (const file of Array.from(fileList || [])) {
+    const fileInfo = inspectFile(file, reject);
+    if (!fileInfo) continue;
+    const entry = createPendingEntry(file, fileInfo);
+    attachments.push(entry);
+    if (onUpdate) onUpdate();
+    jobs.push(trackAttachmentJob(entry, file, result, notifyProgress, onUpdate, reject));
+  }
+  await Promise.all(jobs);
+  return result;
+}
+
+/** Revoke blob URLs for a list of attachment entries. */
+function _revokeBlobUrls(list: PendingAttachment[]) {
+  for (let i = 0; i < list.length; i++) {
+    const url = list[i].thumbnailUrl;
+    if (url) {
+      try { URL.revokeObjectURL(url); } catch (e) { reportSwallow(e, 'attachments._revokeBlobUrls.one'); /* noop */ }
+    }
+  }
+}
+
+/**
+ * Immutable per-turn snapshot for the send paths. Returns a shallow
+ * copy of the pending list AND marks the shared entries as claimed:
+ * an entry referenced by an outgoing message must not be deleted by
+ * a later chip removal, and its File handle is dropped (sent entries
+ * can never be retried, so holding the Blob would just pin memory).
+ */
+export function snapshotAttachments() {
+  const snap = attachments.slice();
+  for (let i = 0; i < snap.length; i++) {
+    const a = snap[i];
+    if (!a) continue;
+    a.sent = true;
+    a._file = null;
+  }
+  return snap;
+}
+
+/**
+ * Remove one attachment by id. Returns true if found.
+ * A still-running upload is aborted so the transfer does not keep
+ * burning bandwidth for a chip the user already discarded; when the
+ * upload already finished, its files row is deleted best-effort —
+ * an un-referenced upload would otherwise occupy the user quota
+ * forever. Entries already claimed by a turn (sent) are never
+ * deleted: the persisted message points at their fileId.
+ */
+export function removeAttachment(id: string) {
+  const idx = attachments.findIndex((a) => a.id === id);
+  if (idx === -1) return false;
+  const entry = attachments[idx];
+  if (entry && entry.pending && typeof entry._abort === 'function') {
+    try { entry._abort(); } catch (e) { reportSwallow(e, 'attachments.removeAttachment.abort'); /* noop */ }
+  }
+  if (entry && entry.fileId && !entry.sent) {
+    /* Fire-and-forget — the chip is already gone; a failed delete just
+       leaves the row for the usual orphan-adoption path. apiFetch adds
+       the /api/v2 prefix, credentials, and CSRF header itself. */
+    apiFetch(`/api/files/${encodeURIComponent(entry.fileId)}`, { method: 'DELETE' })
+      .catch((error) => reportSwallow(error, 'attachments.removeAttachment.deleteOrphan'));
+  }
+  _revokeBlobUrls([entry]);
+  attachments.splice(idx, 1);
+  return true;
+}
+
+/**
+ * Re-run the upload for an entry whose job failed. The chip stays in
+ * place (same id) and flips back to pending — the File handle kept on
+ * the entry means the user does not have to re-pick the file.
+ */
+export function retryAttachment(id: string, onUpdate?: () => void) {
+  const entry = attachments.find((a) => a && a.id === id);
+  if (!entry || entry.pending || !entry.error || !entry._file) return false;
+  entry.pending = true;
+  entry.error = undefined;
+  entry.progress = 0;
+  entry.stage = 'queued';
+  entry.loaded = 0;
+  if (entry.kind === 'image' && !entry.thumbnailUrl
+      && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    try { entry.thumbnailUrl = URL.createObjectURL(entry._file); } catch (e) { reportSwallow(e, 'attachments.retryAttachment.createThumbUrl'); /* noop */ }
+  }
+  if (onUpdate) onUpdate();
+  const notifyProgress = createProgressNotifier(onUpdate);
+  const job = enqueueUploadJob(
+    entry,
+    () => prepareAttachment(entry, entry._file!, function (pct: number, loaded: any, total: any) {
+      entry.progress = Math.max(entry.progress || 0, pct);
+      if (typeof loaded === 'number') entry.loaded = loaded;
+      if (typeof total === 'number') entry.total = total;
+      if (entry.pending && entry.stage !== 'processing') entry.stage = 'uploading';
+      notifyProgress();
+    }),
+  ).then(function (outcome) {
+    if (outcome && outcome.error) {
+      if (entry.pending) {
+        entry.pending = false;
+        entry.progress = 100;
+        entry.stage = 'error';
+      }
+      entry.error = outcome.error;
+    }
+    if (onUpdate) onUpdate();
+  });
+  READY_PROMISES.set(entry.id, job.finally(function () { READY_PROMISES.delete(entry.id); }));
+  return true;
+}
+
+const buildMessageContent = createBuildMessageContent({
+  getAttachments: () => attachments,
+  waitForReady: waitForAttachmentsReady,
+  supportsImages: activeProviderSupportsImages,
+});
+
+export { buildMessageContent };

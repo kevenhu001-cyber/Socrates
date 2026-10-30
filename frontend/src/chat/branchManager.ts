@@ -5,9 +5,9 @@
  * across alternative branches using the < 1 / 2 > branch switcher in the message toolbar.
  */
 
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import type { LegacyChatMessage } from '../react/types/domain.ts';
 

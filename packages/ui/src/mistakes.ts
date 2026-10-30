@@ -1,4 +1,4 @@
-/** Mistake book (DOM-free). Ports the baseline `frontend/src/ui/mistakeBook.js`
+/** Mistake book (DOM-free). Ports the baseline `frontend/src/ui/mistakeBook.ts`
  * workflow: the record shape stored in the session `mistakes` array, the
  * newest-first prepend, the redo counter, the quiz-slot conquer path and the
  * filter/badge reads. Hosts own storage (session save) and rendering.

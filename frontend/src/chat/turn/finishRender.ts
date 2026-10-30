@@ -8,15 +8,15 @@
  * template's `outputMode` and `canvasId` are copied onto the entry, and
  * `_streamSettled` + `_toolRunRev` publish completion without replacing prose.
  *
- * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
+ * Extracted from chat/streamingTurn.ts during the 2026-10 addStreamingMessage
  * split. The tool-call offset writeback, the canvas-mode branch, and the
  * fallback path all keep their original sequencing; the wrap-up that calls
- * this module's result runs in chat/streamingTurn.js so the post-render
+ * this module's result runs in chat/streamingTurn.ts so the post-render
  * wiring (memory / a11y / save / stats / stop-button restore) stays
  * adjacent to the rest of the finish path.
  */
 import { settleTurnRuntime } from '@socrates/core';
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 import { readTurnMessage } from './runtimeState.ts';

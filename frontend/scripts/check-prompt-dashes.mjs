@@ -11,10 +11,10 @@
  *
  * Scope: every file that contributes to the LLM-facing prompt surface.
  *   - prompts/*.md                                 (server-loaded)
- *   - frontend/src/prompts/socratic.js             (client-loaded)
- *   - frontend/src/chat/{socraticDirectives,systemPrompts,promptTemplates,promptSuffixes,lang,turnController}.{js,ts}
- *   - frontend/src/tutor/{flow.ts,policy.js}
- *   - frontend/src/config/tonePresets.js
+ *   - frontend/src/prompts/socratic.ts             (client-loaded)
+ *   - frontend/src/chat/{socraticDirectives,systemPrompts,promptTemplates,promptSuffixes,lang,turnController}.ts
+ *   - frontend/src/tutor/{flow,policy}.ts
+ *   - frontend/src/config/tonePresets.ts
  *   - packages/ui/src/tutor.ts                     (DOM-free copy for Universal App)
  *   - server/src/routes/chat/helpers.ts            (SERVER_SYSTEM_POLICY + tool hints)
  *
@@ -45,16 +45,16 @@ const PROMPT_FILES = [
   'prompts/beagle.md',
   'prompts/code-interpreter.md',
   /* client-loaded prompts and the modules that compose them */
-  'frontend/src/prompts/socratic.js',
-  'frontend/src/chat/socraticDirectives.js',
-  'frontend/src/chat/systemPrompts.js',
-  'frontend/src/chat/promptTemplates.js',
+  'frontend/src/prompts/socratic.ts',
+  'frontend/src/chat/socraticDirectives.ts',
+  'frontend/src/chat/systemPrompts.ts',
+  'frontend/src/chat/promptTemplates.ts',
   'frontend/src/chat/promptSuffixes.ts',
   'frontend/src/chat/lang.ts',
-  'frontend/src/chat/turnController.js',
+  'frontend/src/chat/turnController.ts',
   'frontend/src/tutor/flow.ts',
-  'frontend/src/tutor/policy.js',
-  'frontend/src/config/tonePresets.js',
+  'frontend/src/tutor/policy.ts',
+  'frontend/src/config/tonePresets.ts',
   /* DOM-free copy for the Universal App */
   'packages/ui/src/tutor.ts',
   /* server-side prompt assembly */

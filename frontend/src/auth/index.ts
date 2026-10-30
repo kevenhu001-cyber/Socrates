@@ -10,9 +10,9 @@
    callback stays with the application lifecycle because it coordinates
    session teardown before returning the user to this gate. */
 
-import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
+import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.ts';
 import { offerBrowserLoginHandoff } from '../native/browserLoginHandoff.ts';
-import { syncCookieConsentPlacement } from '../cookieConsent.js';
+import { syncCookieConsentPlacement } from '../cookieConsent.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { afterAuthEnter } from './postAuth.ts';
 import { createAuthFormHandlers } from './forms.ts';

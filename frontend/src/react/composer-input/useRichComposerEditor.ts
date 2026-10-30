@@ -15,7 +15,7 @@ import {
   notifyComposerChange,
 } from '../../composer/controller.ts';
 import type { ComposerSurface } from '../../composer/types.ts';
-import { addComposerFiles } from '../../attachments/render.js';
+import { addComposerFiles } from '../../attachments/render.ts';
 import { ExtensionToken } from './extensionToken';
 import type { ComposerShapeHandlers } from './useComposerShape';
 

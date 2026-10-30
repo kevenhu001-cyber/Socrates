@@ -2,7 +2,7 @@ import { beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { act } from 'react';
-import { configureWidgetRuntime, handleQuizPick, mountPracticeWidget, mountQuizWidget } from '../src/render/widgets.js';
+import { configureWidgetRuntime, handleQuizPick, mountPracticeWidget, mountQuizWidget } from '../src/render/widgets.ts';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.document = dom.window.document;

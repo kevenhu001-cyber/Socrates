@@ -1,8 +1,8 @@
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { getRecents } from './recents.ts';
 import type { SessionRow } from './store.ts';
 import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
-import { filterRecentsByChip } from '../ui/recentsHelpers.js';
+import { filterRecentsByChip } from '../ui/recentsHelpers.ts';
 import type { SessionItem } from '../react/session-list/types.ts';
 import { sameSessionRow, sessionRowFields } from './sessionRowModel.ts';
 

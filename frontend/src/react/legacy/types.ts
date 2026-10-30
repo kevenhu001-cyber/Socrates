@@ -56,7 +56,7 @@ export interface LegacyConfirm {
 }
 
 export interface LegacySessions {
-  flushRecentsReconcile(): Promise<void> | void;
+  flushRecentsReconcile(): Promise<unknown> | void;
   updateSessionMetadata(id: string, patch: { title?: string; pinned?: boolean; projectId?: string }): Promise<void>;
   loadSession(sessionId: string): Promise<void> | void;
   setRecentsSearch(query: string): void;

@@ -1,6 +1,6 @@
 /**
  * attachmentUploadQueue.test.mjs — concurrency + progress contract for
- * src/attachments.js (P_upload-concurrency).
+ * src/attachments.ts (P_upload-concurrency).
  *
  * Before the queue, every file added in one gesture started its XHR and
  * (for images) its canvas re-encode loop immediately, so a multi-file
@@ -22,7 +22,7 @@ import {
   MAX_CONCURRENT_UPLOADS,
   removeAttachment,
   retryAttachment,
-} from '../src/attachments.js';
+} from '../src/attachments.ts';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

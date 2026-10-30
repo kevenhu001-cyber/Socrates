@@ -5,7 +5,7 @@ globalThis.window = {};
 
 const { createDomainStore } = await import('../src/store/createDomainStore.ts');
 const { sessionBridge, sessionStore } = await import('../src/state/bridges.ts');
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 
 test('createDomainStore reproduces the bridge contract: revision, batching, reset', async () => {
   const initial = { value: 0, tags: [], revision: 0 };

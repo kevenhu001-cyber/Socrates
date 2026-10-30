@@ -9,6 +9,7 @@ export interface ParsedQuiz {
   q: string;
   options: QuizOption[];
   correct: string | null;
+  slotId?: string | null;
 }
 
 /* Parse the inner XML of a <quiz> block into {q, options:[{letter,text}], correct}. */
@@ -32,6 +33,7 @@ export interface ParsedExample {
   title: string;
   problem: string;
   solution: string;
+  _revealed?: boolean;
 }
 
 /* Parse <example>…</example> inner into {title, problem, solution}.

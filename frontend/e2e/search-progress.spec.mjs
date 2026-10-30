@@ -1,7 +1,7 @@
 // Legacy coverage for the search-progress component. The live chat
 // path no longer mounts a search-progress card (the model announces
 // what it is doing via the inline thinking-status label), but the
-// module is still exported by ui/searchProgress.js for any future
+// module is still exported by ui/searchProgress.ts for any future
 // consumer and the `window.__startSearchProgress` test hook is kept
 // stable so this regression suite still exercises the component's
 // step / finalize / elapsed-time behaviour.

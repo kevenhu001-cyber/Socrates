@@ -1,20 +1,20 @@
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import { turnState, type StreamingTurnController } from '../turnState.ts';
 import { saveState } from '../../session/saveState.ts';
 import { resetSessionTransients } from '../../session/loader.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { askChatTurn } from '../turnController.js';
 import { isExpectedTurnAbort } from '../turnUi.ts';
-import { setActiveTemplate } from '../templateSlash.js';
+import { setActiveTemplate } from '../templateSlash.ts';
 import { addMessage } from '../messages.ts';
-import { updateKB } from '../../ui/knowledgePanel.js';
-import { activateMainView } from '../../ui/mainViewController.js';
+import { updateKB } from '../../ui/knowledgePanel.ts';
+import { activateMainView } from '../../ui/mainViewController.ts';
 import { clearComposer } from '../../composer/controller.ts';
 import { updateComposerBtn } from '../../ui/topicSetup.ts';
-import { clearLegacyMsgListChildren } from '../../ui/messageListDom.js';
-import { buildMessageContent, resetAttachments } from '../../attachments.js';
-import { renderAttachmentChips } from '../../attachments/render.js';
-import { publishReactChatRuntime } from '../../ui/reactBridge.js';
+import { clearLegacyMsgListChildren } from '../../ui/messageListDom.ts';
+import { buildMessageContent, resetAttachments } from '../../attachments.ts';
+import { renderAttachmentChips } from '../../attachments/render.ts';
+import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import type { SessionStartContext } from './input.ts';
 

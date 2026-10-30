@@ -34,7 +34,7 @@ async function freshLoader() {
   globalThis.window = win;
   globalThis.document = dom;
   // Cache-bust so each case gets its own `inflight` / attempt counters.
-  const mod = await import(`../src/vendor/lazy.js?t=${Math.random()}`);
+  const mod = await import(`../src/vendor/lazy.ts?t=${Math.random()}`);
   return { ...mod, win, dom };
 }
 
@@ -83,7 +83,7 @@ test('a script that loads without publishing its global rejects', async () => {
 test('a missing browser rejects rather than hanging forever', async () => {
   delete globalThis.window;
   delete globalThis.document;
-  const mod = await import(`../src/vendor/lazy.js?nobrowser=${Math.random()}`);
+  const mod = await import(`../src/vendor/lazy.ts?nobrowser=${Math.random()}`);
   await assert.rejects(mod.ensureMermaid(), /requires a browser/);
 });
 

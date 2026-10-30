@@ -1,7 +1,7 @@
 /**
  * Composer tools menu bridge — M2 single-bridge migration.
  *
- * Legacy `ui/composerTools.js` publishes the menu open/close state
+ * Legacy `ui/composerTools.ts` publishes the menu open/close state
  * through `window.__socratesComposerToolsBridge.publish(...)`. The
  * factory owns the snapshot/reducer/listener loop; this module adds
  * the legacy alias and the React hooks consumed by

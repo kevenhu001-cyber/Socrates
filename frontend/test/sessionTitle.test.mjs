@@ -6,7 +6,7 @@ globalThis.localStorage = {
   setItem() {},
 };
 
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 const { fallbackTitle, generateSessionTitle, normalizeSessionTitle } = await import('../src/chat/sessionTitle.ts');
 
 test('session titles strip prefixes and stay short in both languages', () => {

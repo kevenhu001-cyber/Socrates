@@ -53,7 +53,7 @@ function SidebarToggle() {
 /**
  * The top-left model switcher opens the shared chat-configuration popover
  * (model · reasoning effort · speed). Its accessible name is owned by
- * ui/effortPicker.js (WCAG 2.5.3: the name must contain the visible text), so
+ * ui/effortPicker.ts (WCAG 2.5.3: the name must contain the visible text), so
  * the label nodes stay childless here.
  */
 function ModelSwitcher() {
@@ -82,7 +82,7 @@ function TopBarLeft() {
       <SidebarToggle />
       <ModelSwitcher />
       {/* Tutor-mode progress indicator; visibility is a `tutor-only` class
-          toggle owned by app/lifecycle/mode.js. */}
+          toggle owned by app/lifecycle/mode.ts. */}
       <div className="tutor-mastery-pill tutor-only hidden" id="tutorMasteryPill" role="status" aria-label="Socratic learning stage" data-i18n-aria="tutor.mastery.title" data-i18n-title="tutor.mastery.title" title="Socratic Stage">
         <span className="tutor-mastery-stage-dot" aria-hidden="true" />
         <span className="tutor-mastery-stage-label" id="tutorMasteryStageLabel" data-i18n-key="tutor.mastery.step1">{t('tutor.mastery.step1', '探索提问')}</span>
@@ -108,7 +108,7 @@ function TopBarLeft() {
  * the selection here, not a per-option background.
  *
  * Selecting a mode mid-conversation asks for confirmation first
- * (app/lifecycle/mode.js), which is why each option stays a button.
+ * (app/lifecycle/mode.ts), which is why each option stays a button.
  */
 function ModeSwitch() {
   return (

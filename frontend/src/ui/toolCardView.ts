@@ -7,7 +7,7 @@
  * human-readable time label. Terminal runs report `endedAt - startedAt`;
  * running runs report `now - startedAt`. Both are clamped to `>= 0`.
  *
- * This module holds no DOM logic — the wiring in ui/toolCards.js consumes it.
+ * This module holds no DOM logic — the wiring in ui/toolCards.ts consumes it.
  */
 
 import { isTerminalToolPhase, type ToolRun } from '../chat/toolRunState.ts';

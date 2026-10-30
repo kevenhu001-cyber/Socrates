@@ -5,7 +5,7 @@ import { prepareChatWorkbench, textFrame, completeFrame } from './_chat-workbenc
 
 test('Stop during a cold transport download prevents the request and a later send still works', async ({ page }) => {
   const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
-  const transport = report.modules.find((item) => item.id === 'src/chat/streamAttempt.js');
+  const transport = report.modules.find((item) => item.id === 'src/chat/streamAttempt.ts');
   let release;
   let requested = false;
   let streamRequests = 0;

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for ui/reactBridge.js — the cross-tree notification
+ * Unit tests for ui/reactBridge.ts — the cross-tree notification
  * channel between the legacy JS pipeline (main.js) and the React
  * tree. C5 island 1.
  *
@@ -18,7 +18,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.CustomEvent = dom.window.CustomEvent;
 
-const { publishReactChatRuntime } = await import('../src/ui/reactBridge.js');
+const { publishReactChatRuntime } = await import('../src/ui/reactBridge.ts');
 
 test('calls bridge.publish when the React bridge is mounted', () => {
   let received = null;

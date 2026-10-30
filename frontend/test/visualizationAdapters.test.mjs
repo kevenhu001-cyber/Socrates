@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyGeoGebraCommands, mermaidText, plotlyTracesForVisualization } from '../src/render/visualizationAdapters.js';
+import { applyGeoGebraCommands, mermaidText, plotlyTracesForVisualization } from '../src/render/visualizationAdapters.ts';
 
 test('paper charts preserve line, bar and scatter intent in Plotly traces', () => {
   const spec = {

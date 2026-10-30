@@ -4,7 +4,7 @@ import { cn } from 'cn';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { useSettingsSnapshot, installSettingsBridge } from './settings.bridge';
 import { closeSettings, getSettingsReturnFocus } from './settings.service';
-import { setModalOpen } from '../../ui/modalA11y.js';
+import { setModalOpen } from '../../ui/modalA11y.ts';
 import { SettingsHeader, SettingsNavigation } from './SettingsModalChrome';
 import { SettingsPanes } from './SettingsPanes';
 import { useSettingsDialogA11y } from './useSettingsDialogA11y';

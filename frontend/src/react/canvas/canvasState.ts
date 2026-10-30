@@ -1,5 +1,5 @@
 import { dispatchSession, sessionStore } from '../../store/index.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.js';
+import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import type { LegacyChatMessage } from '../types/domain';
 
 /** Persist a canvas edit through the session reducer and refresh React's chat snapshot. */

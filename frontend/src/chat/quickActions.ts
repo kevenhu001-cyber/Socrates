@@ -5,15 +5,15 @@
  * getExplanation).
  */
 
-import { stateStore } from '../state/store.js';
-import { getMistakeBookUI } from '../app/widgetSetup.js';
+import { stateStore } from '../state/store.ts';
+import { getMistakeBookUI } from '../app/widgetSetup.ts';
 import { submitChatMessage } from './sendPipeline.ts';
 import { parsePracticeInner } from '../render/widgetParsers.ts';
-import { getExplanation, askNextQuestion } from '../tutor/socraticTurn.js';
+import { getExplanation, askNextQuestion } from '../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { addMessage } from './messages.ts';
 import { translate } from './send/runtime.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 
 type QuickActionWindow = Window & {
   _currentLang?: string;
@@ -57,7 +57,7 @@ async function handleQuickAction(action: string, messageId: string): Promise<voi
       type: 'state/batch', patch: { explaining: true, substantiveCount: 0 },
     });
     try {
-      const expText = await getExplanation(node.status);
+      const expText = await getExplanation(node.status ?? '');
       if (stateStore.read('currentSessionId') !== sessionId) return;
       addMessage('assistant', expText);
     } finally {

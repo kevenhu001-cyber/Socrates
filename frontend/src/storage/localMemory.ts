@@ -11,8 +11,8 @@
 // - cap:    LOCAL_MEMORY_MAX messages / 1MB; older entries are dropped.
 // - If localStorage is full or unavailable, every write is silently
 //   dropped — never throws.
-import { batchSetItem } from '../batchStorage.js';
-import { stateStore } from '../state/store.js';
+import { batchSetItem } from '../batchStorage.ts';
+import { stateStore } from '../state/store.ts';
 
 export interface LocalMemoryMessage {
   role: string;

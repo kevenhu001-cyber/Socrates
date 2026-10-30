@@ -1,6 +1,6 @@
 /* KaTeX heuristics and tolerant render helpers shared by Markdown passes. */
 import { KATEX_MACROS, _looksLikeLatex } from './helpers.ts';
-import { ensureKatex } from '../vendor/lazy.js';
+import { ensureKatex } from '../vendor/lazy.ts';
 
 interface KatexLike {
   renderToString: (

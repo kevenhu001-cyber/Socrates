@@ -1,4 +1,4 @@
-import { ensureHighlight } from '../vendor/lazy.js';
+import { ensureHighlight } from '../vendor/lazy.ts';
 
 interface Highlighter {
   getLanguage(name: string): unknown;

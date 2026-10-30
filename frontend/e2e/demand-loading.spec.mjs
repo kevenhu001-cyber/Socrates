@@ -35,7 +35,7 @@ for (const signedIn of [true, false]) {
     await page.waitForLoadState('networkidle');
     const paths = await page.evaluate(() => [...new Set(performance.getEntriesByType('resource')
       .map((entry) => new URL(entry.name).pathname).filter((path) => /^\/assets\/.+\.(?:js|css)$/.test(path)))]);
-    for (const id of ['src/exam.js', 'src/chat/streamingTurn.js', 'node_modules/fuse.js/dist/fuse.mjs']) {
+    for (const id of ['src/exam.ts', 'src/chat/streamingTurn.ts', 'node_modules/fuse.js/dist/fuse.mjs']) {
       expect(paths).not.toContain('/' + chunkOf(id));
     }
     expect(paths.some((path) => /\/(?:katex|highlight)[^/]*\.(?:js|css)$/.test(path))).toBe(false);

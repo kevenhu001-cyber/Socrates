@@ -4,7 +4,7 @@ import { FoundationDialog, FoundationDialogClose, FoundationDialogDescription, F
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import type { ConfirmSnapshot } from './types';
 import { getConfirmReturnFocus } from './confirm.bridge';
-import { setModalOpen } from '../../ui/modalA11y.js';
+import { setModalOpen } from '../../ui/modalA11y.ts';
 
 function restoreConfirmFocus(): HTMLElement | null {
   // Base UI resolves finalFocus as the confirm popup closes. Release its modal

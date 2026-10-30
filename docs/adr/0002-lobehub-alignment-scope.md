@@ -16,7 +16,7 @@ pipeline 化、协议与共享层、体验能力（云 TTS/模型选择/性能�
    call/ui/exam）的快照持有者，逐位复刻 `createImmutableBridge` 契约
    （RAF 合批、单调 revision、浅冻结、reducer 异常保底、
    `__resetForTests`）。`state/bridges.ts` 改由该工厂构建，导出
-   `xStore`（zustand store）；`state/store.js` 门面、`window.stateStore`、
+   `xStore`（zustand store）；`state/store.ts` 门面、`window.stateStore`、
    e2e mock、既有单测全部零改动。
 2. **类型化域 hooks**：`frontend/src/store/index.ts` 暴露
    `useSessionStore/useKbStore/...`（LobeHub slice 模式），供新/迁移中的
@@ -72,7 +72,7 @@ pipeline 化、协议与共享层、体验能力（云 TTS/模型选择/性能�
 1. **云端 TTS 朗读**：新增 `POST /api/tts`（`routes/tts.ts`，requireAuth
    + chatLimiter，20 KB 输入上限，OpenAI 兼容 `/audio/speech` 转发，
    音频流直通、不落盘；失败契约 501/429/502）。客户端
-   `ui/readAloud.js` 云优先、平台 `speechSynthesis` 自动回退，连续失败
+   `ui/readAloud.ts` 云优先、平台 `speechSynthesis` 自动回退，连续失败
    两次后本会话停用云端路径。
 2. **模型选择器**：既有 effort/model picker UX 保持；移动端
    composer 参考布局的两处既有 spec 失效已在 M1 基线修复（标签

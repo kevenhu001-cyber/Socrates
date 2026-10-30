@@ -38,7 +38,7 @@
  * Themes are discovered from themes.css itself, not from a list kept
  * alongside it: every `html[data-theme="X"]` in the file is a theme, and a
  * theme that is added without a baseline entry fails this check. The runtime
- * list in src/displayPrefs.js is cross-checked against the discovered set,
+ * list in src/displayPrefs.ts is cross-checked against the discovered set,
  * so a theme registered in one place but not the other cannot slip through.
  *
  * A theme's palette is the CSS cascade of the generic `[data-mode="X"]`
@@ -82,7 +82,7 @@ import { fileURLToPath } from 'node:url';
 const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
 const REPO = fileURLToPath(new URL('../../', import.meta.url));
 const THEMES_CSS = join(FRONTEND, 'src', 'styles', 'themes.css');
-const DISPLAY_PREFS = join(FRONTEND, 'src', 'displayPrefs.js');
+const DISPLAY_PREFS = join(FRONTEND, 'src', 'displayPrefs.ts');
 const SHARED_TOKENS = join(REPO, 'packages', 'theme', 'src', 'tokens.ts');
 const SHARED_RN = join(REPO, 'packages', 'theme', 'src', 'rn.ts');
 const BASELINE = join(FRONTEND, 'scripts', 'surface-ladder.baseline.json');
@@ -398,15 +398,15 @@ function main() {
 
   const runtime = runtimeThemes(readFileSync(DISPLAY_PREFS, 'utf8'));
   if (!runtime) {
-    failures.push('src/displayPrefs.js: THEME_STYLES not found — cannot cross-check the theme registry');
+    failures.push('src/displayPrefs.ts: THEME_STYLES not found — cannot cross-check the theme registry');
   } else {
     const missing = themes.filter((theme) => !runtime.includes(theme));
     const extra = runtime.filter((theme) => !themes.includes(theme));
     for (const theme of missing) {
-      failures.push(`themes.css: theme "${theme}" has no runtime registration in src/displayPrefs.js THEME_STYLES`);
+      failures.push(`themes.css: theme "${theme}" has no runtime registration in src/displayPrefs.ts THEME_STYLES`);
     }
     for (const theme of extra) {
-      failures.push(`src/displayPrefs.js: THEME_STYLES registers "${theme}" but themes.css has no html[data-theme="${theme}"] rule`);
+      failures.push(`src/displayPrefs.ts: THEME_STYLES registers "${theme}" but themes.css has no html[data-theme="${theme}"] rule`);
     }
   }
 

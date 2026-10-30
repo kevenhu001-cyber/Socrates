@@ -1,10 +1,10 @@
-import { requestTutorExploration } from '../../tutor/policy.js';
+import { requestTutorExploration } from '../../tutor/policy.ts';
 import { getComposerMarkdown } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
-import { attachments, snapshotAttachments } from '../../attachments.js';
+import { attachments, snapshotAttachments } from '../../attachments.ts';
 import { detectLanguage } from '../lang.ts';
-import { isSlashCommandPaletteOpen } from '../templateSlash.js';
+import { isSlashCommandPaletteOpen } from '../templateSlash.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getAppMode } from './runtime.ts';
 
@@ -13,11 +13,11 @@ export interface SessionStartContext {
   topic: string;
   topicForModel: string;
   activeTemplate: Record<string, unknown> | null;
-  startAttachments: unknown[];
-  immediateAttachments: unknown[];
+  startAttachments: import('../../attachments/types.ts').PendingAttachment[];
+  immediateAttachments: import('../../attachments/types.ts').PendingAttachment[];
   deepResearchOn: boolean;
   language: string;
-  tutorExploration: unknown;
+  tutorExploration: { enabled: boolean; count: number };
 }
 
 /** Legacy bridges read during capture. */
@@ -49,7 +49,7 @@ function captureActiveTemplate(): Record<string, unknown> | null {
   return activeTemplate;
 }
 
-async function captureTutorExploration(language: string, deepResearchOn: boolean): Promise<unknown> {
+async function captureTutorExploration(language: string, deepResearchOn: boolean): Promise<{ enabled: boolean; count: number } | null> {
   if (getAppMode() !== 'tutor' || deepResearchOn) return { enabled: false, count: 0 };
   return requestTutorExploration({
     isZh: (window as SessionStartWindow)._currentLang === 'zh' || language === 'zh',
@@ -64,7 +64,7 @@ export async function captureSessionStart(): Promise<SessionStartContext | null>
   const activeTemplate = captureActiveTemplate();
   const plugins = selectedComposerPlugins('topic').slice();
   const topicForModel = serializeSelectedPluginContext(plugins, topic);
-  const startAttachments: unknown[] = snapshotAttachments();
+  const startAttachments = snapshotAttachments();
   const immediateAttachments = startAttachments.slice(0, 20)
     .map((attachment) => Object.assign({}, attachment));
 

@@ -5,7 +5,7 @@
  * Many `try { ... } catch (_) {}` blocks intentionally swallow errors
  * (feature absent in a local-only build, callback side-effect that
  * must not abort the parent flow, best-effort cleanup). The cost is
- * that nothing reaches `src/app/errorGuard.js`'s banner / beacon path
+ * that nothing reaches `src/app/errorGuard.ts`'s banner / beacon path
  * and nothing surfaces in devtools either, so a regression that turns
  * a previously-fine catch into a real failure is invisible until a
  * user reports it.

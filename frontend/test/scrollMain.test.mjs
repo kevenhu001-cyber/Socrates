@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { scrollMainToBottom, scheduleScrollMainToBottom } from '../src/ui/scroll.js';
-import { stateStore } from '../src/state/store.js';
+import { scrollMainToBottom, scheduleScrollMainToBottom } from '../src/ui/scroll.ts';
+import { stateStore } from '../src/state/store.ts';
 
 function makeList() {
   return {

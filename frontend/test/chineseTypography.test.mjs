@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { marked } from 'marked';
 import { normalizeChineseProse } from '../src/util/chineseTypography.ts';
-import { zh } from '../src/i18n/zh.js';
+import { zh } from '../src/i18n/zh.ts';
 import { asProse, asText } from '../src/react/intelligence-ui/renderRuntime.ts';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });

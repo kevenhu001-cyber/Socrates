@@ -9,14 +9,18 @@ replaces JavaScript module by module.
 
 ## Current status
 
-The React runtime is always on and owns the surfaces listed as migrated below.
-Legacy JavaScript still owns parts of navigation orchestration, composer
-lifecycle, session persistence, chat submission and streaming, and exam
-rendering. React migration describes surface ownership; it does not mean the
-legacy runtime has been removed. The compatibility layer has been progressively
-reduced: every `_reactOwnsXxx()` guard is gone, and most of the legacy renderers
-that lived behind those guards have been deleted or collapsed into React-only
-paths.
+As of 2026-10-30, all 88 remaining first-party JavaScript modules under
+`frontend/src/` have been migrated to TypeScript. `frontend/tsconfig.json` has
+`allowJs: false`, and `scripts/check-legacy-js.mjs` has an empty baseline;
+third-party UMD bundles under `src/vendor-files/` are excluded. The React
+runtime is always on and owns the surfaces listed as migrated below. Some
+compatibility, navigation, session, chat, and rendering runtime code remains,
+but it now lives in typed modules and is bridged through typed interfaces.
+React migration describes surface ownership; it does not mean every runtime
+compatibility path has been removed. The compatibility layer has also been
+progressively reduced: every `_reactOwnsXxx()` guard is gone, and most legacy
+renderers that lived behind those guards have been deleted or collapsed into
+React-only paths.
 
 Concrete progress since the runtime landed:
 
@@ -56,10 +60,11 @@ Concrete progress since the runtime landed:
   (`export * from './foo.ts'`) in the `.js` siblings; everything
   else was stale code drifting away from its live `.js` twin
   (commits `77394bc`, `734e5f3`).
+- At that stage, the tracked untyped-JS inventory shrank from 109 to 107 paths.
 - Pure lifecycle decision helpers `modeDecision` and `resetDecision` migrated
   to typed `.ts` modules; their JS callers and focused test imports now point
-  directly to the typed sources. The tracked untyped-JS inventory shrank from
-  109 to 107 paths.
+  directly to the typed sources. The remaining callers were migrated in the
+  2026-10-30 TypeScript conversion.
 
 Remaining work is described in the [legacy DOM/window
 compatibility layer removal section](#legacy-domwindow-compatibility-layer-removal)
@@ -78,7 +83,7 @@ below.
 - [x] Send/stop button content hydrated from derived stream status
 - [x] Cmd+K palette ported to React/TS
       (`frontend/src/react/cmdk/` + `frontend/e2e/cmd-k-compat.spec.mjs`).
-      Legacy `src/ui/cmdK.js` retains state ownership and still drives
+      Legacy `src/ui/cmdK.ts` retains state ownership and still drives
       `window.openCmdK` / `onCmdKInput` / `onCmdKKey` / `openCmdKResult`;
       React renders the modal contents via a typed `useSyncExternalStore`
       bridge (`window.__socratesCmdK`). Legacy renderer is suppressed by a
@@ -90,13 +95,13 @@ below.
       actions. `src/sidebar/index.js` and the old nav/recents bridges are
       removed. Workspace and scheduled page data/actions and their dialogs
       are typed; destination page adapters live in
-      `src/sidebar/navigation.adapters.ts`. `src/sidebar/nav.js` retains the
+      `src/sidebar/navigation.adapters.ts`. `src/sidebar/nav.ts` retains the
       connector OAuth return context and local icon/slash-command adapters.
       The "More" popover remains legacy.
 - [x] Composer "+" tools menu ported to React/TS
       (`frontend/src/react/composer/` +
       `frontend/e2e/composer-tools-compat.spec.mjs`). Legacy
-      `src/ui/composerTools.js` still owns open/close/positioning and the
+      `src/ui/composerTools.ts` still owns open/close/positioning and the
       document-level click/Escape/resize listeners; React renders the 6
       menu items via a typed bridge (`window.__socratesComposerToolsBridge`).
       The menu element is pre-created on module load so React can hydrate
@@ -109,7 +114,7 @@ below.
       (`frontend/src/react/attachments/` +
       `frontend/e2e/attachments-compat.spec.mjs`). Both `#attachmentChips`
       (chat composer) and `#topicAttachmentChips` (tutor topic setup) are
-      hydrated; the pending-attachment store in `src/attachments.js`
+      hydrated; the pending-attachment store in `src/attachments.ts`
       remains the source of truth, and React renders via a typed bridge
       (`window.__socratesAttachmentsBridge`). Remove button dispatches
       through `window.removeAttachment`. Scope pivot from message list
@@ -341,8 +346,8 @@ M1 is done when the counters below reach zero.
 
 | Metric | Baseline |
 |---|---|
-| `src/main.js` lines | 9,902 |
-| Unique `window.X` bindings in `src/windowExports.js` | 200 |
+| `src/main.ts` lines | 9,902 |
+| Unique `window.X` bindings in `src/windowExports.ts` | 200 |
 | `window.X =` self-definitions inside `main.js` | ~138 |
 | Unique `window.X` references across `frontend/src` | 1,070 |
 | Files using `window.__socrates*` bridges (`src/react/**`) | 37 |
@@ -360,12 +365,12 @@ getExamIdFromURL / setExamIdInURL / pushExamIdToURL`) deleted from
 consumed via direct import from `main.js`, `auth/index.js`, and
 `exam.js`. `showToast` extracted to `src/ui/toast.js` so 14 consumer
 modules (`auth/boot.js`, `batchStorage.js`, `pickers.js`,
-`sidebar/nav.js`, `ui/cmdK.js`, `ui/promptTemplates.js`,
-`ui/readAloud.js`, `ui/settings.js`, `ui/share.js`, `ui/voiceInput.js`,
-`agent/researchAgent.js`, `attachments/render.js`, plus `main.js`
+`sidebar/nav.ts`, `ui/cmdK.ts`, `ui/promptTemplates.ts`,
+`ui/readAloud.ts`, `ui/settings.js`, `ui/share.ts`, `ui/voiceInput.ts`,
+`agent/researchAgent.ts`, `attachments/render.ts`, plus `main.js`
 itself) take a real ES import instead of the `window.showToast`
 indirection. The misleading `function toast(msg, ms)` wrapper in
-`attachments/render.js` (which never propagated `ms` even in the
+`attachments/render.ts` (which never propagated `ms` even in the
 `window.showToast` era) is gone; inlined into the new module.
 `window.showToast` stays as a backward-compat alias for the React
 legacy gateway and e2e mocks. Two stray debug files from the previous
@@ -385,7 +390,7 @@ from the `react/legacy/types.ts` declarations. Underlying functions
 and window bindings stay: `renderProviderList` and `syncSettingsUI`
 are still imported directly by `ui/dangerConfirms.js` and called
 within `ui/settings.js`; `window.showConfirm` is still called by
-`ui/dangerConfirms.js`, `ui/promptTemplates.js`, `sidebar/nav.js`,
+`ui/dangerConfirms.js`, `ui/promptTemplates.ts`, `sidebar/nav.ts`,
 and `ui/confirm.js`; `window.renderProviderList` is still called by
 `config/providers.js`. The gateway now types-correctly reports only
 the entries the React tree actually consumes. Two audit scripts
@@ -458,7 +463,7 @@ Test pass: server 50/50 suites (was 49), frontend 323/323 unit
 tests.
 
 C5 island 1 (2026-09-05): `publishReactChatRuntime` extracted from
-`frontend/src/main.js` (10,162-line closure-bound legacy file) into
+`frontend/src/main.ts` (10,162-line closure-bound legacy file) into
 `frontend/src/ui/reactBridge.js`. This is the cross-tree
 notification channel between the legacy JS pipeline and the
 React tree, with 18+ callsites in main.js and zero closure

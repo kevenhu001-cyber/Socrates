@@ -1,7 +1,7 @@
 /**
  * Shared contracts for the Cmd+K palette React migration boundary.
  *
- * Mirrors the legacy wire shape in src/ui/cmdK.js — Fuse result docs plus
+ * Mirrors the legacy wire shape in src/ui/cmdK.ts — Fuse result docs plus
  * the recent-query list. The runtime representation stays exactly the same;
  * only the access path changes (typed bridge over `window.__socratesCmdK`
  * instead of direct module-private reads).

@@ -1,6 +1,6 @@
 /* Single-turn chat orchestration. Prompt assembly, linked-page preparation,
    and shared stream callbacks live in focused modules beside this entry. */
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { turnState, type StreamingTurnController } from './turnState.ts';
 import { interruptPendingTurn, quietTurn } from './turnUi.ts';
 import { hasUsableActive } from '../config/providers.ts';

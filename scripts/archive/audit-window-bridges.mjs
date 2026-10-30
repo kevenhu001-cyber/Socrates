@@ -17,8 +17,8 @@ import { dirname } from "node:path";
 const ROOT = dirname(fileURLToPath(import.meta.url)) + "/..";
 
 const BINDING_FILES = [
-  "frontend/src/windowExports.js",
-  "frontend/src/main.js",
+  "frontend/src/windowExports.ts",
+  "frontend/src/main.ts",
 ];
 
 const EXCLUDE_DIRS = new Set([
@@ -27,7 +27,7 @@ const EXCLUDE_DIRS = new Set([
   "playwright-report",
   "test-results",
   ".git",
-  "frontend/src/windowExports.js.bak",
+  "frontend/src/windowExports.ts.bak",
 ]);
 
 const EXCLUDE_FILES = new Set([

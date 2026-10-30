@@ -112,7 +112,7 @@ test('an incremental save still reconstructs the whole transcript after reload',
   }
 
   /* Re-open the session from the server copy. loadSession is exposed on
-     window (app/legacyBridge.js) and is the same entry point auth
+     window (app/legacyBridge.ts) and is the same entry point auth
      bootstrap and the sidebar use; driving it directly keeps the test
      independent of the ?chat= auto-restore ordering. */
   await page.evaluate((sid) => window.loadSession(sid), S1);

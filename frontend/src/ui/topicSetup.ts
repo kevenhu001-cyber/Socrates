@@ -10,7 +10,7 @@ import type { ComposerSurface } from '../composer/controller.ts';
 //
 // Called from RichComposer change notifications and the flows that
 // mutate attachments, so it is also exposed on `window` via
-// src/windowExports.js (see C-2.3 mirror block).
+// src/windowExports.ts (see C-2.3 mirror block).
 
 /* autoResize — the chat composer is capped at 120px (≈6 lines),
    the topic setup textarea at 160px (≈8 lines). Reset height to

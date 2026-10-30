@@ -1,6 +1,6 @@
 import { callAPI } from './api.ts';
 import { parseOneDiagResponse } from './diagnosticParser.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 
 /** One generated diagnostic question, as produced by parseOneDiagResponse. */
 export interface DiagQuestion {

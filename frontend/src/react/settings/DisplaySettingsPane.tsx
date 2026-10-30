@@ -17,7 +17,7 @@ import {
   DISPLAY_WIDTH_STEPS,
   FONT_LABELS,
   WIDTH_LABELS,
-} from '../../displayPrefs.js';
+} from '../../displayPrefs.ts';
 import type { SettingsPaneProps } from './settings.types';
 
 export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {

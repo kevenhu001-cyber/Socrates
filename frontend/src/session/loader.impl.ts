@@ -6,19 +6,19 @@
  * save queue posts a self-contained snapshot (see session/saveState.ts).
  */
 import { afterSessionPaint } from './afterSessionPaint.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { saveState } from './saveState.ts';
 import { serverCache } from './serverCache.ts';
 import { turnState } from '../chat/turnState.ts';
 import { apiFetch } from '../util/api.ts';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
 import { ensureSessionShape, setAppMode, syncAppModeUI, syncSidebarForMode, type AppMode } from '../config/providers.ts';
-import { syncChatModel } from '../pickers.js';
+import { syncChatModel } from '../pickers.ts';
 import { pushChatIdToURL, pushExamIdToURL } from './store.ts';
-import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
+import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
-import { stateView } from '../tutor/diagnosticFlow.js';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { stateView } from '../tutor/diagnosticFlow.ts';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { showToast } from '../ui/toast.js';
 import { detailCache, type CacheEntry } from './detailCache.ts';
 import {
@@ -30,11 +30,11 @@ import {
 } from './historyRestore.ts';
 import { reattachPendingTurn } from './pendingTurnRestore.ts';
 import { seedSyncedMessages } from './persistence.ts';
-import { toggleShareBtn } from '../ui/share.js';
-import { activateMainView } from '../ui/mainViewController.js';
+import { toggleShareBtn } from '../ui/share.ts';
+import { activateMainView } from '../ui/mainViewController.ts';
 import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { clearComposer } from '../composer/controller.ts';
-import { updateKB } from '../ui/knowledgePanel.js';
+import { updateKB } from '../ui/knowledgePanel.ts';
 import { closeSidebarOnMobile } from '../sidebar/sidebar.service.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -177,7 +177,7 @@ async function _ensureExamModule(): Promise<ExamModule> {
   if (typeof window !== 'undefined' && typeof win.__loadExamModule === 'function') {
     _examMod = await win.__loadExamModule();
   } else {
-    _examMod = await import('../exam.js') as unknown as ExamModule;
+    _examMod = await import('../exam.ts') as unknown as ExamModule;
     try { _examMod.mountExamListeners?.(); } catch (e) { reportSwallow(e, 'session/loader._ensureExamModule'); }
   }
   return _examMod;
@@ -340,7 +340,7 @@ export function resetSessionTransients(): void {
 
 /* F2d — write the active session id to every place it's mirrored
    (stateStore.read("currentSessionId"), stateStore.read("currentSessionId"), window
-   mirror). The Proxy state/store.js already syncs the top-level ↔ namespace
+   mirror). The Proxy state/store.ts already syncs the top-level ↔ namespace
    via the lookup table, but the explicit triple-write keeps window
    readers in lock-step and removes the four manual duplications
    scattered through loadSession / startSession / resetState. */

@@ -10,7 +10,7 @@
 `capacitor/` 是一个 WebView 壳（Capacitor 运行时 + `expo prebuild` 之前手写的 Android 工程），最初被当作 `mobile/`（React Native + Expo）之前的过渡客户端。到 2026-09-20 的结构审计（F-007）时，它已经处于"半死半活"状态：
 
 - `server/` 不 import 它；
-- 但 `frontend/src/main.js`、`frontend/index.html`、`frontend/src/native/capacitorBridge.js` 三处仍引用它；
+- 但 `frontend/src/main.ts`、`frontend/index.html`、`frontend/src/native/capacitorBridge.js` 三处仍引用它；
 - 且由 `.github/workflows/build-capacitor-apk.yml` 构建 debug APK 产物（`socrates-capacitor-debug-*`）—— 该 workflow 是 `workflow_dispatch`-only，从不进入 merge gate，也从不发布 release 或上传商店。
 
 README 的仓库布局把它标为 "Legacy Capacitor WebView shell (frozen)"。产品路线图的 F-007 条目要求"定生死：决定删除还是正式支持，避免它继续被 CI 构建却无人使用"。2026-10-15 项目所有者确认删除。
@@ -40,7 +40,7 @@ README 的仓库布局把它标为 "Legacy Capacitor WebView shell (frozen)"。�
 - 清理引用：`.dockerignore`（`capacitor`、`capacitor/android`）、`scripts/clean-local-artifacts.sh`（`capacitor/node_modules`）、`AGENTS.md`、`README.md` / `README.zh.md` 仓库布局、`docs/adr/0009-ci-workflow-paths.md`、`docs/plans/product-roadmap.md`（F-007 标记完成）、`server/src/app.ts` 的 CORP 注释。
 - `docs/audits/2026-09-20-structural-review.md` 是带日期的审计快照，**不改**（同 `AGENTS.md` 对 F-003 的处理方式）。
 
-**有意保留（惰性）**：`frontend/src/native/capacitorBridge.js`（被 `frontend/src/main.js` import）与 `frontend/index.html` 的 `window.Capacitor` 启动探测。删除 `capacitor/` 后已没有任何东西再注入 `window.Capacitor`，`isNativeApp()` 恒为 `false`，整段桥接 no-op。移除这段死代码需要改 `main.js` 入口与 `index.html` 的内联脚本（其哈希受 `ops/nginx/csp-spa.conf` 与 `npm run lint:csp-hashes` 门禁约束），属于独立的、可单独验证的改动，故不在本 ADR 内进行。
+**有意保留（惰性）**：`frontend/src/native/capacitorBridge.js`（被 `frontend/src/main.ts` import）与 `frontend/index.html` 的 `window.Capacitor` 启动探测。删除 `capacitor/` 后已没有任何东西再注入 `window.Capacitor`，`isNativeApp()` 恒为 `false`，整段桥接 no-op。移除这段死代码需要改 `main.js` 入口与 `index.html` 的内联脚本（其哈希受 `ops/nginx/csp-spa.conf` 与 `npm run lint:csp-hashes` 门禁约束），属于独立的、可单独验证的改动，故不在本 ADR 内进行。
 
 ## 影响
 

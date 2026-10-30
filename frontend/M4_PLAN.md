@@ -39,11 +39,11 @@ This module runs event delegation on `document.body`, dispatching `data-action` 
 | React message toolbar | `react/message-list/MessageToolbar.tsx:19` | (dynamic, per-row) |
 | React canvas toolbar | `react/canvas/CanvasToolbar.tsx:49,60,69,77,85` | `canvas-original` `canvas-edit` `canvas-copy` `canvas-iterate` `canvas-fullscreen` |
 | React settings modal | `react/settings/SettingsModal.tsx:34` | `close-settings-overlay` |
-| Viz cards | `render/viz.js:109,111,113,124,587,678` | `viz-source` `viz-reload` `viz-expand` `viz-toggle-source` |
-| Tool cards | `ui/toolCards.js:921,924,1010,1011` | `exec-expand` `exec-download` |
+| Viz cards | `render/viz.ts:109,111,113,124,587,678` | `viz-source` `viz-reload` `viz-expand` `viz-toggle-source` |
+| Tool cards | `ui/toolCards.ts:921,924,1010,1011` | `exec-expand` `exec-download` |
 | Settings | `ui/settings.js:149,176,189` | `set-active` `remove-provider` |
-| Effort picker | `ui/effortPicker.js:113,241` | `manage-models` |
-| Voice input | `ui/voiceInput.js:24` | `toggleSpeechInput` |
+| Effort picker | `ui/effortPicker.ts:113,241` | `manage-models` |
+| Voice input | `ui/voiceInput.ts:24` | `toggleSpeechInput` |
 | Display prefs | `displayPrefs.js:400` | `toggleDisplayPrefs` |
 | Confirm dialog | `ui/confirm.js:19` | `closeConfirm` (comment only) |
 | Thumbs feedback | `main.js:4392,4393` | `thumbs-up` `thumbs-down` |
@@ -70,9 +70,9 @@ Convert the four React components that still use `data-action`:
 
 For each non-React file with `data-action` literals:
 
-- **Viz cards (`render/viz.js`)** — the source already builds an HTML string; convert the buttons to attach `addEventListener` to each button in a single `forEach` after the HTML is injected. The `data-action="viz-source"` strings go away.
-- **Tool cards (`ui/toolCards.js`)** — same pattern: build the HTML, then attach listeners in a loop. The `closest('[data-action=…]')` lookups in the existing click handler disappear.
-- **Settings (`ui/settings.js`)**, **Effort picker (`ui/effortPicker.js`)**, **Voice input (`ui/voiceInput.js`)**, **Display prefs (`displayPrefs.js`)** — each owns a single host element; mount a listener once the host is in the DOM.
+- **Viz cards (`render/viz.ts`)** — the source already builds an HTML string; convert the buttons to attach `addEventListener` to each button in a single `forEach` after the HTML is injected. The `data-action="viz-source"` strings go away.
+- **Tool cards (`ui/toolCards.ts`)** — same pattern: build the HTML, then attach listeners in a loop. The `closest('[data-action=…]')` lookups in the existing click handler disappear.
+- **Settings (`ui/settings.js`)**, **Effort picker (`ui/effortPicker.ts`)**, **Voice input (`ui/voiceInput.ts`)**, **Display prefs (`displayPrefs.js`)** — each owns a single host element; mount a listener once the host is in the DOM.
 
 **Acceptance**: `ui/delegate.js` is no longer imported by `main.js`. The data-action attribute string disappears from `src/ui/**` and `src/render/**`.
 
@@ -101,7 +101,7 @@ Move the static shell out of `index.html`:
   <body>
     <div id="authGate"></div>
     <div id="appShell"></div>
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
 ```
@@ -118,7 +118,7 @@ After steps 4.1–4.5, `bootstrap.tsx` is a ~30-line module that:
 2. Creates the `authGate` and `appShell` React roots
 3. Triggers the first workspace-route sync (the workaround for nav.js's early DOMContentLoaded)
 
-**Acceptance**: `bootstrap.tsx` ≤ 30 lines. `data-react-migration-runtime` / `dataset.XReactHydrated` strings are gone from `src/main.js`.
+**Acceptance**: `bootstrap.tsx` ≤ 30 lines. `data-react-migration-runtime` / `dataset.XReactHydrated` strings are gone from `src/main.ts`.
 
 ## 3. Risks and contingencies
 
@@ -154,8 +154,8 @@ First increment of the `index.html` split: stripped the dead static inner markup
 
 | Overlay | Change |
 |---|---|
-| `#cmdKOverlay` | Inner `#cmdKModal` structure removed; `ui/cmdK.js` renderers are already no-ops that publish through the bridge (React owns `#cmdKInput` / `#cmdKResults`) |
-| `#shareOverlay` | Inner `.share-modal` removed; `ui/share.js` `renderShareModal()` is already a no-op, bridge-driven |
+| `#cmdKOverlay` | Inner `#cmdKModal` structure removed; `ui/cmdK.ts` renderers are already no-ops that publish through the bridge (React owns `#cmdKInput` / `#cmdKResults`) |
+| `#shareOverlay` | Inner `.share-modal` removed; `ui/share.ts` `renderShareModal()` is already a no-op, bridge-driven |
 | `#profileOverlay` | Inner 148-line profile card removed; `ProfileModal.tsx` renders the same element ids (`profileName`, `profileBody`, `profileTier`, `profileInstResponse`, …) |
 | `#usageOverlay` | Inner `.usage-modal` removed; `UsageModal.tsx` renders `#usageBody` and the close button |
 
@@ -214,14 +214,14 @@ All `data-action` emitters/readers in `src/ui/**` and `src/render/**` migrated t
 
 | File | Change |
 |---|---|
-| `ui/effortPicker.js` | "Manage models…" button no longer emits `data-action="manage-models"`; the delegated menu click handler matches `.model-picker-add` instead |
+| `ui/effortPicker.ts` | "Manage models…" button no longer emits `data-action="manage-models"`; the delegated menu click handler matches `.model-picker-add` instead |
 | `ui/settings.js` | `data-action="set-active"` / `data-action="remove-provider"` removed from the provider rows — `_onProviderListClick` already dispatched those by class (`provider-active-btn` / `provider-del`) |
-| `ui/toolCards.js` | `exec-artifact-btn` buttons no longer emit `data-action="exec-expand|exec-download"`; the wrap click handler discriminates by element (`a.exec-artifact-btn` = download, `button.exec-artifact-btn` = expand) |
-| `render/viz.js` | `vizActions()` / error banners no longer emit `data-action="viz-*"` / `viz-toggle-source`; `_bindAction` now dispatches by class (`viz-btn-source|viz-btn-reload|viz-btn-expand|viz-error-btn`) with a `data-action` fallback for legacy markup; `processPendingVizActions(root)` and `_bindActionsInCard` scan `.viz .viz-btn, .viz .viz-error-btn` instead of `[data-action]` |
+| `ui/toolCards.ts` | `exec-artifact-btn` buttons no longer emit `data-action="exec-expand|exec-download"`; the wrap click handler discriminates by element (`a.exec-artifact-btn` = download, `button.exec-artifact-btn` = expand) |
+| `render/viz.ts` | `vizActions()` / error banners no longer emit `data-action="viz-*"` / `viz-toggle-source`; `_bindAction` now dispatches by class (`viz-btn-source|viz-btn-reload|viz-btn-expand|viz-error-btn`) with a `data-action` fallback for legacy markup; `processPendingVizActions(root)` and `_bindActionsInCard` scan `.viz .viz-btn, .viz .viz-error-btn` instead of `[data-action]` |
 | `displayPrefs.js` | `toggleDisplayPrefs()` looks up the toggle by `#displayPrefsBtn` (id added to the `index.html` button) instead of `[data-action="toggleDisplayPrefs"]` |
-| `ui/voiceInput.js` | `setListening()` dropped the dead `[data-action="toggleSpeechInput"]` loop (no such buttons exist); only `#startBtn` / `#sendBtn` are toggled |
+| `ui/voiceInput.ts` | `setListening()` dropped the dead `[data-action="toggleSpeechInput"]` loop (no such buttons exist); only `#startBtn` / `#sendBtn` are toggled |
 
-Deferred (documented, not in the 4.2 target list): `main.js:4392-4393` (`[data-action="thumbs-up|down"]` dead optimistic-UI block, no caller passes `bar`), `ui/composerTools.js:119` (`[data-action],[data-composer-action]` defensive fallback for legacy menu items — items now emit `data-composer-action`), `ui/delegate.js` itself, and all static `index.html` `data-action` attributes (Step 4.5).
+Deferred (documented, not in the 4.2 target list): `main.js:4392-4393` (`[data-action="thumbs-up|down"]` dead optimistic-UI block, no caller passes `bar`), `ui/composerTools.ts:119` (`[data-action],[data-composer-action]` defensive fallback for legacy menu items — items now emit `data-composer-action`), `ui/delegate.js` itself, and all static `index.html` `data-action` attributes (Step 4.5).
 
 **Verification**: `npm run lint` (tsc) pass · `lint:eslint` 0 errors (only pre-existing warnings) · `test:unit` 309/309 · `npm run build` pass · Playwright: full suite 159 passed / 2 failed, where the 2 were pre-existing (see Bug fixes below); after the fixes, **full suite is green: 161/161 passed (5.4m, `full-suite-run2.txt`)**.
 

@@ -1,7 +1,7 @@
 /**
  * Shared contracts for the composer-tools menu React migration boundary.
  *
- * The legacy module (`src/ui/composerTools.js`) owns the open/close
+ * The legacy module (`src/ui/composerTools.ts`) owns the open/close
  * state machine and the lazy-created `#composerToolsMenu` element. This
  * module only describes what the React compatibility root needs to know
  * to render the menu items.

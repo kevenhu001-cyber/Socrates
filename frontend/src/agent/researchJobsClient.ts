@@ -1,10 +1,10 @@
 import { consumeResearchStream } from './researchStream.ts';
 import type { Message, ResearchJob, ResearchJobRefineResult, ResearchJobRequest } from '@socrates/contracts';
 import { apiFetch, apiFetchRaw } from '../util/api.ts';
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { restoreSessionMessage } from '../session/historyRestore.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { createResearchController, type ResearchScope } from './researchController.ts';
 
 function pending(scope: ResearchScope, value: ResearchJobRequest | null | undefined) {
@@ -48,11 +48,12 @@ export const researchClient = createResearchController({
     if (stateStore.read('currentSessionId') !== job.sessionId) return;
     const messages = stateStore.read('messages') as Message[];
     if (messages.some((entry) => entry.clientId === message.clientId || entry.id === message.id)) return;
-    stateStore.dispatch({ type: 'session/append-message', payload: restoreSessionMessage({
+    const restored = restoreSessionMessage({
       id: message.id, clientId: message.clientId, role: message.role, rawText: message.rawText,
       content: message.content, type: message.type, createdAt: message.createdAt,
-    }) });
-    publishReactChatRuntime({ type: 'message-added', messageId: message.clientId });
+    });
+    stateStore.dispatch({ type: 'session/append-message', payload: restored });
+    publishReactChatRuntime({ type: 'message-added', messageId: restored.clientId });
   },
   pending,
   key: () => crypto.randomUUID(),

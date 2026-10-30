@@ -195,7 +195,7 @@ export interface LegacyChatMessage {
   _streamSettled?: boolean;
   /**
    * P_smooth-stream — the playback clock's current state, mirrored onto the
-   * message by chat/streamingTurn.js so the cursor can animate:
+   * message by chat/streamingTurn.ts so the cursor can animate:
    * 'playing' (breathing dot), 'starved' (upstream stalled, buffer empty —
    * pulse / three dots), 'draining' (finish flushing the buffer — breathing),
    * 'done'/'idle' otherwise. Not persisted.

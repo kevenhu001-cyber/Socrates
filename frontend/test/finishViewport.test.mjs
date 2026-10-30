@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { stateStore, resetState } from '../src/state/store.js';
+import { stateStore, resetState } from '../src/state/store.ts';
 
 function box(top = 0) { return { top, bottom: top + 500, height: 500 }; }
 async function withViewport(run) {

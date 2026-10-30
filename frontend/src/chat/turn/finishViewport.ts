@@ -5,7 +5,7 @@
  * Preserve that row or paragraph while the layout settles; proximity to the
  * bottom is never a reason to move the reader to a different paragraph.
  */
-import { stateStore } from '../../state/store.js';
+import { stateStore } from '../../state/store.ts';
 import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
 import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
 import { readTurnMessage } from './runtimeState.ts';

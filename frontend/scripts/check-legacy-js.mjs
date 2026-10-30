@@ -1,17 +1,13 @@
 #!/usr/bin/env node
 /*
- * scripts/check-legacy-js.mjs — freeze the untyped half of the SPA.
+ * scripts/check-legacy-js.mjs — keep first-party SPA source in TypeScript.
  *
- * `frontend/tsconfig.json` runs with `allowJs: true, checkJs: false`: the
- * `.js` modules are bundled, imported by typed code, and never type-checked.
- * The committed path list below is the inventory of that untyped source.
- * Without this guard, a new helper could be written in `.js` and quietly
- * widen the hole even while the aggregate file count stays the same.
+ * `frontend/tsconfig.json` has `allowJs: false`. This guard additionally
+ * freezes the exact first-party `.js` / `.mjs` / `.cjs` / `.jsx` path set so
+ * a new JavaScript module cannot evade the TypeScript include set.
  *
- * This ratchet freezes the exact current path set instead of demanding a
- * big-bang conversion. New frontend source is `.ts`/`.tsx`; converting a file
- * to TS lowers the baseline with `--update`. A removed path must be recorded
- * before the check passes, and `--update` refuses to absorb new JS paths.
+ * The baseline is now empty. Future frontend source belongs in `.ts`/`.tsx`;
+ * `--update` remains shrink-only and refuses to absorb new JavaScript paths.
  *
  * Vendored UMD bundles (`src/vendor-files/**`) are third-party bytes and are
  * not counted.
@@ -27,7 +23,7 @@ const SRC = join(FRONTEND, 'src');
 const BASELINE = join(FRONTEND, 'scripts', 'legacy-js.baseline.json');
 const UPDATE = process.argv.includes('--update');
 const SKIP_DIRS = new Set(['vendor-files', 'node_modules']);
-const LEGACY_EXT = /\.jsx?$/;
+const LEGACY_EXT = /\.(?:[cm]?js|jsx)$/;
 
 function walk(dir, out) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

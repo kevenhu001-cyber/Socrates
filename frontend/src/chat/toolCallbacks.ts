@@ -2,7 +2,7 @@
  * Extracted from main.js. Zero-behavior-change lift. Template state reads via
  * window._activeTemplate (mirrored by setActiveTemplate in main.js).
  */
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import type { AgentRunEvent } from '../extensions/types.ts';
 import type { StreamingTurnController } from './turnState.ts';
 

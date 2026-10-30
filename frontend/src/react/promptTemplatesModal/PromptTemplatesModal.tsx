@@ -14,7 +14,7 @@ import {
   onPromptTemplateEditorSave,
   openPromptTemplateEditor,
   renderPromptTemplatesModal,
-} from '../../ui/promptTemplates.js';
+} from '../../ui/promptTemplates.ts';
 import {
   installPromptTemplatesBridge,
   usePromptTemplatesDispatch,

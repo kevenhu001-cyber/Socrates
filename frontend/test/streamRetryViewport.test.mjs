@@ -111,7 +111,7 @@ test('captureViewport ignores an expired stable snapshot', () => {
 });
 
 test('prepareViewport removes the failed row and message slot', async () => {
-  const { stateStore } = await import('../src/state/store.js');
+  const { stateStore } = await import('../src/state/store.ts');
   const store = createStreamRetryViewport();
   const { list, row } = makeList();
   stateStore.dispatch({
@@ -131,7 +131,7 @@ test('prepareViewport removes the failed row and message slot', async () => {
 });
 
 test('prepareViewport leaves React-owned DOM removal to the message-list commit', async () => {
-  const { stateStore } = await import('../src/state/store.js');
+  const { stateStore } = await import('../src/state/store.ts');
   const store = createStreamRetryViewport();
   const { list, row } = makeList();
   row.setAttribute('data-react-owned', '1');

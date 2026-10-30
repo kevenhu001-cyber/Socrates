@@ -20,7 +20,7 @@
 
 ```text
 index.html                         静态 shell / 挂载宿主 / CSP
-  └─ src/main.js                   启动组合，batchStorage.js 必须最先导入
+  └─ src/main.ts                   启动组合，batchStorage.js 必须最先导入
       ├─ app/ + auth/              启动、认证、旧行为组合
       ├─ sidebar/                  导航目的地、服务和状态
       ├─ chat/ + session/          会话、持久化和流式业务

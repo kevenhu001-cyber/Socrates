@@ -22,7 +22,7 @@
 
 import { sampleSpring, springInitialVelocity } from '@socrates/core/motion/spring';
 import type { SpringConfig } from '@socrates/core/motion/spring';
-import { prefersReducedMotion } from '../motion.js';
+import { prefersReducedMotion } from '../motion.ts';
 
 export interface SpringAnimationOptions {
   /** The two numbers the designer picks. */

@@ -5,7 +5,7 @@ import { JSDOM } from 'jsdom';
 import {
   activateMainView,
   getVisibleCoreView,
-} from '../src/ui/mainViewController.js';
+} from '../src/ui/mainViewController.ts';
 
 function createDocument() {
   return new JSDOM(`<!doctype html><html><body class="workspace-active plugins-active admin-active exam-active">

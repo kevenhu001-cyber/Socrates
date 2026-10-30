@@ -4,7 +4,7 @@
  * Cross-cluster turn entry points (askChatTurn, submitChatMessage)
  * resolve via window.* at call time to avoid circular imports.
  */
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { showToast } from '../ui/toast.js';
 import { turnState } from './turnState.ts';
 import { buildUserContentParts } from './history.js';

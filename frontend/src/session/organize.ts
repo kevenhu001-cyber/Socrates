@@ -2,12 +2,12 @@
  * Session tags, context menu, drag-to-project, row diff/publish helpers.
  * Zero-behavior-change lift. Render surfaces resolve via window.*.
  */
-import { stateStore } from '../state/store.js';
+import { stateStore } from '../state/store.ts';
 import { serverCache } from './serverCache.ts';
 import { findServerSessionIndex, getKnownTags, getRecents, flushRecentsReconcile } from './recents.ts';
 import type { SessionRow } from './store.ts';
 import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
-import { filterRecentsByChip } from '../ui/recentsHelpers.js';
+import { filterRecentsByChip } from '../ui/recentsHelpers.ts';
 import { getCachedProjects } from '../projects/projectCache.ts';
 import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';

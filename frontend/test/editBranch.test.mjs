@@ -8,11 +8,11 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 /* The public editBranch.js path is now a lazy command facade. This unit test
    targets the implementation's synchronous DOM/state semantics directly;
    production loading behavior is covered by the entry-graph regression. */
-const { editUserMessage } = await import('../src/chat/editBranch.impl.mjs');
+const { editUserMessage } = await import('../src/chat/editBranch.impl.ts');
 const { turnState } = await import('../src/chat/turnState.ts');
 
 test('editing a frozen message replaces it and replays only after the server patch settles', async () => {

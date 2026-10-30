@@ -52,7 +52,7 @@ import {
   type UiAction,
   type UiSnapshot,
 } from '../state/bridges.ts';
-import { notifyLegacyListeners } from '../state/store.js';
+import { notifyLegacyListeners } from '../state/store.ts';
 import type { RevisionedSnapshot } from '../lib/bridge/createImmutableBridge.ts';
 
 type DomainSnapshot =

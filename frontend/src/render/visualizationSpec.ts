@@ -68,6 +68,7 @@ export interface VizShape {
 }
 
 export interface VizPayload {
+  source?: string;
   functions?: VizFunction[];
   series?: VizSeries[];
   categories?: Array<string | number>;

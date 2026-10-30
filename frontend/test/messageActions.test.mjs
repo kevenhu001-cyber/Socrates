@@ -11,7 +11,7 @@ globalThis.localStorage = dom.window.localStorage;
 const { fireFeedback, messageApiPath, sendFeedback } = await import(
   '../src/ui/messageActions.ts'
 );
-const { stateStore } = await import('../src/state/store.js');
+const { stateStore } = await import('../src/state/store.ts');
 
 test('messageApiPath leaves client ids unscoped without a uuid session', () => {
   const previousSession = stateStore.read('currentSessionId');

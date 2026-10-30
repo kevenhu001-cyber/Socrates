@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 import { openDetailSurface, closeDetailSurface } from '../src/ui/detailSurface.ts';
-import { activateMainView } from '../src/ui/mainViewController.js';
+import { activateMainView } from '../src/ui/mainViewController.ts';
 
 function fixture(width = 1440) {
   const dom = new JSDOM('<html><body><div id="appShell"><button id="trigger">Open</button><aside id="sidebar"></aside><div id="topicSetup"></div><div id="sitesPanel" class="hidden"></div></div></body></html>');

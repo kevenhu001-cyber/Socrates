@@ -1,24 +1,33 @@
-import { processPendingMermaid, processPendingViz, processPendingVizActions } from './vizStubs.js';
+import { processPendingMermaid, processPendingViz, processPendingVizActions } from './vizStubs.ts';
+import type { WidgetRuntime, QuizMountData, PracticeMountData, ParsedStep, TheoremMountData } from './widgets.ts';
+import type {
+  ParsedDefinition,
+  ParsedDerivation,
+  ParsedExample,
+  ParsedFlashcard,
+  ParsedKeyPoint,
+  ParsedProof,
+} from './widgetParsers.ts';
 
-export interface WidgetPlaceholder {
+export interface WidgetPlaceholder<Parsed = unknown> {
   id: string;
-  parsed: unknown;
+  parsed: Parsed;
 }
 
 export interface WidgetMountLists {
-  quizPH?: WidgetPlaceholder[];
-  examplePH?: WidgetPlaceholder[];
-  practicePH?: WidgetPlaceholder[];
-  definitionPH?: WidgetPlaceholder[];
-  stepPH?: WidgetPlaceholder[];
-  flashcardPH?: WidgetPlaceholder[];
-  derivationPH?: WidgetPlaceholder[];
-  proofPH?: WidgetPlaceholder[];
-  theoremPH?: WidgetPlaceholder[];
-  keyPointPH?: WidgetPlaceholder[];
+  quizPH?: WidgetPlaceholder<QuizMountData>[];
+  examplePH?: WidgetPlaceholder<ParsedExample>[];
+  practicePH?: WidgetPlaceholder<PracticeMountData>[];
+  definitionPH?: WidgetPlaceholder<ParsedDefinition>[];
+  stepPH?: WidgetPlaceholder<ParsedStep>[];
+  flashcardPH?: WidgetPlaceholder<ParsedFlashcard>[];
+  derivationPH?: WidgetPlaceholder<ParsedDerivation>[];
+  proofPH?: WidgetPlaceholder<ParsedProof>[];
+  theoremPH?: WidgetPlaceholder<TheoremMountData>[];
+  keyPointPH?: WidgetPlaceholder<ParsedKeyPoint>[];
 }
 
-type WidgetsModule = typeof import('./widgets.js');
+type WidgetsModule = typeof import('./widgets.ts');
 
 /* widgets.js (quiz/practice/example/… card mounts) stays out of the entry
  * chunk: the mount functions are only needed when a session actually
@@ -28,11 +37,11 @@ type WidgetsModule = typeof import('./widgets.js');
  * accumulated while it was in flight. */
 let _widgetsModule: WidgetsModule | null = null;
 let _widgetsImport: Promise<WidgetsModule> | null = null;
-let _widgetRuntimeConfig: unknown = null;
+let _widgetRuntimeConfig: Partial<WidgetRuntime> | null = null;
 
 export function loadWidgets(): Promise<WidgetsModule> {
   if (!_widgetsImport) {
-    _widgetsImport = import('./widgets.js').then(function (m) {
+    _widgetsImport = import('./widgets.ts').then(function (m) {
       _widgetsModule = m;
       if (_widgetRuntimeConfig) m.configureWidgetRuntime(_widgetRuntimeConfig);
       return m;
@@ -48,39 +57,32 @@ export function loadWidgets(): Promise<WidgetsModule> {
 /* widgetSetup hands over the dependency bag at boot; widgets.js reads it
  * lazily, so the config is stashed here and applied once the chunk lands
  * (or immediately when it is already warm). */
-export function configureWidgetRuntimeEarly(cfg: unknown): void {
+export function configureWidgetRuntimeEarly(cfg: Partial<WidgetRuntime>): void {
   _widgetRuntimeConfig = cfg;
   if (_widgetsModule) _widgetsModule.configureWidgetRuntime(cfg);
 }
 
-export function mountQuizWidget(slot: Element, parsed: unknown): unknown {
+export function mountQuizWidget(slot: Element, parsed: QuizMountData): unknown {
   if (_widgetsModule) return _widgetsModule.mountQuizWidget(slot, parsed);
   return loadWidgets().then(function (m) { return m.mountQuizWidget(slot, parsed); });
 }
 
-export function mountPracticeWidget(slot: Element, parsed: unknown): unknown {
+export function mountPracticeWidget(slot: Element, parsed: PracticeMountData): unknown {
   if (_widgetsModule) return _widgetsModule.mountPracticeWidget(slot, parsed);
   return loadWidgets().then(function (m) { return m.mountPracticeWidget(slot, parsed); });
 }
 
-export function handleQuizPick(
-  card: unknown,
-  options: unknown,
-  feedback: unknown,
-  buttons: unknown,
-  picked: unknown,
-  parsed: unknown,
-): unknown {
-  if (_widgetsModule) return _widgetsModule.handleQuizPick(card, options, feedback, buttons, picked, parsed);
+export function handleQuizPick(...args: Parameters<WidgetsModule['handleQuizPick']>): void | Promise<void> {
+  if (_widgetsModule) return _widgetsModule.handleQuizPick(...args);
   return loadWidgets().then(function (m) {
-    return m.handleQuizPick(card, options, feedback, buttons, picked, parsed);
+    return m.handleQuizPick(...args);
   });
 }
 
-function mountSlots(
-  items: WidgetPlaceholder[],
+function mountSlots<Parsed>(
+  items: WidgetPlaceholder<Parsed>[],
   selector: string,
-  mount: (slot: Element, parsed: unknown) => unknown,
+  mount: (slot: Element, parsed: Parsed) => unknown,
 ): number {
   let mounted = 0;
   items.forEach((item) => {
