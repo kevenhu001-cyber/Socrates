@@ -22,7 +22,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "__examModule": typeof import("../exam");
   "__loadExamModule": () => Promise<typeof import("../exam")>;
   "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;
-  "__sidebarResizeWired": boolean;
   "__socratesKeyboard": ReturnType<typeof import("../ui/keyboard/index")["initKeyboardLift"]>;
   "__socratesSmoothStream": unknown;
   "__testActivateMainView": (viewId: string) => boolean;

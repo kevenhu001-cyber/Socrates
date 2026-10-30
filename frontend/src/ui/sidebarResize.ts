@@ -216,9 +216,9 @@ export function onViewportResize(){
   if(typeof browserWindow.syncSidebarBtns === "function") browserWindow.syncSidebarBtns();
 }
 
-// Side-effect: register the viewport-resize listener exactly once.
+// Side-effect: this ESM module has one canonical importer in main.ts, so its
+// viewport listener is registered once without a window-level sentinel.
 // (Other listeners on `window` resize live in main.js for now.)
-if(typeof window !== "undefined" && !browserWindow.__sidebarResizeWired){
-  browserWindow.__sidebarResizeWired = true;
+if(typeof window !== "undefined"){
   browserWindow.addEventListener("resize", onViewportResize);
 }

@@ -47,6 +47,7 @@
 | stream 从 window 读取模块自有的 offline guard 与 max-attempts | **本轮已移除** | `chat/stream.ts` 直接导入 `offlineGuard` 与 `STREAM_MAX_ATTEMPTS`；删除两个 window 发布和类型字段，测试通过 `maxAttempts` 选项注入预算。 |
 | 可视化 post-render action drain 的重复 window 别名 | **本轮已移除** | `app/legacyBridge.ts` 已通过 typed `postRender` action 提供相同实现；删除 `window.processPendingVizActions` 重复发布和 `windowExports` 中冗余的 `vizStubs` side-effect import，E2E 改走实际 legacy gateway。 |
 | tool card renderer 的独立 `window.appendToolModule` 别名 | **本轮已收敛** | 业务恢复流程继续直接导入 `appendToolModule`；E2E 改走 typed `__socratesLegacy.postRender` 入口，并检查独立 window 字段不存在，移除其 `RuntimeWindow` 定义和 `windowExports` 发布。 |
+| sidebar resize listener 使用的 `window.__sidebarResizeWired` 单模块哨兵 | **本轮已移除** | ESM 模块仅由 `main.ts` 导入一次，listener 改在模块内注册，不再依赖 window 状态防重复；`sidebar-resize.spec.mjs` 同时检查旧字段不存在并验证拖动、尺寸限制和宽度持久化。 |
 
 ## 仍开放或尚无法确认
 
@@ -113,3 +114,4 @@
 - stream 模块改为直接读取 offline guard 与 attempt budget：删除 `window.offlineGuard` / `window.STREAM_MAX_ATTEMPTS`，保留实际 `getActiveProvider` bridge；前端 lint、生产构建通过，4 个流单测文件 22/22、`chat-send` / `chat-stop-resend` Playwright 15/15 通过。
 - 可视化 action drain 重复 window 别名移除：E2E 改调用 `window.__socratesLegacy.postRender.processPendingVizActions`，并断言旧别名不存在；前端 lint、生产构建与 `viz-canvas.spec.mjs` 7/7 通过。
 - Tool card renderer 测试入口收敛到 typed legacy gateway：业务模块仍直接导入 `appendToolModule`，移除专用 `window.appendToolModule` 发布及类型；前端生产构建、lint 与文档路径检查通过，`tool-card-lifecycle.spec.mjs` 4/4 验证生命周期并检查旧字段缺失。
+- Sidebar resize 初始化哨兵改为 ESM 模块单次初始化：删除 `window.__sidebarResizeWired` 与对应类型；SPA 生产构建和 lint 通过，sidebar resize / compat / nav Playwright 24/24 通过，并断言旧字段不存在。

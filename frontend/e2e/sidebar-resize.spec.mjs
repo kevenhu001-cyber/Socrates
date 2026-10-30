@@ -41,6 +41,7 @@ test('sidebar resize handle drags the rail and persists the width', async ({ pag
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
+  expect(await page.evaluate(() => '__sidebarResizeWired' in window)).toBe(false);
 
   const before = await railMetrics(page);
   expect(before.collapsed).toBe(false);
