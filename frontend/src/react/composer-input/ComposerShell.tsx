@@ -4,7 +4,6 @@ import { NativeControl } from '../ui/NativeControl';
 import { PrimaryButton } from '../lib/boot/indicatorComponents';
 import { applyLegacyI18n } from '../legacy/gateway';
 import { ComposerAttachmentChips } from '../attachments/AttachmentChipsRow';
-import { installAttachmentsBridge } from '../attachments/attachments.bridge';
 import { RichComposer } from './RichComposer';
 
 interface ComposerShellProps {
@@ -25,7 +24,6 @@ const FILE_ACCEPT = [
  */
 export function ComposerShell({ placeholder, onSubmit, onEscape }: ComposerShellProps) {
   useEffect(() => {
-    installAttachmentsBridge();
     applyLegacyI18n();
     /* Attachment wiring runs at DOMContentLoaded. The file input is created
        here, after the authenticated shell becomes visible, so ask that module

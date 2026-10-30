@@ -248,8 +248,8 @@ browserWindow.launchDeepResearch = function () { return _loadResearchAgent().the
 /* ─── attachments.js ─── */
 // attachments is a mutable array reference shared across modules
 // (chat/stream.js / render helpers / submitChatMessage all read it
-// via window.attachments). The bridge must preserve identity — never
-// replace it with a copy.
+// via window.attachments). Keep this shared mutable source reference stable;
+// React receives immutable array snapshots through ui/attachmentsState.ts.
 import { attachments, removeAttachment } from './attachments.ts';
 browserWindow.attachments = attachments;
 browserWindow.removeAttachment = removeAttachment;

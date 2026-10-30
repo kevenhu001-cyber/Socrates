@@ -40,6 +40,7 @@ import { compressImageFile, readFileAsDataUrl } from './attachments/imageCompres
 import { createBuildMessageContent } from './attachments/messageContent.ts';
 import { ATTACHMENT_READY_TIMEOUT_MS, MAX_CONCURRENT_UPLOADS, MAX_FILE_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_DATAURL_CHARS, MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL, MAX_TOTAL_ATTACHMENTS, XHR_TIMEOUT_MS, UPLOAD_IDLE_TIMEOUT_MS } from './attachments/limits.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
+import { publishAttachmentsState } from './ui/attachmentsState.ts';
 
 
 export {
@@ -55,9 +56,9 @@ export {
 } from './attachments/limits.ts';
 export { attachmentPointerLine, formatAttachmentSize } from './attachments/messageContent.ts';
 
-/* Pending attachments for the current turn. The store is
- * deliberately not React-ish / observable — main.js calls
- * `renderAttachmentChips()` after each mutation. */
+/* Pending attachments for the current turn. This remains the mutable upload
+ * source for legacy callers; UI snapshots are published separately through
+ * ui/attachmentsState.ts when the renderer runs. */
 export const attachments: PendingAttachment[] = [];
 
 /* Per-entry readiness jobs: attachment id → Promise that settles when
@@ -167,16 +168,7 @@ export function resetAttachments() {
      left alone: a snapshot taken before the reset must still resolve. */
   _revokeBlobUrls(attachments);
   attachments.length = 0;
-  /* React migration bridge — publish the empty list so the React
-     compatibility root drops the chip row. Legacy callers that follow
-     up with renderAttachmentChips() also publish; this covers the
-     reset-only path. */
-  try {
-    const bridge = (typeof window !== "undefined") ? browserWindow.__socratesAttachmentsBridge : null;
-    if (bridge && typeof bridge.publish === "function") {
-      bridge.publish({ attachments: attachments.slice() });
-    }
-  } catch (e) { reportSwallow(e, 'attachments.bridge.publish'); /* swallow — bridge is best-effort */ }
+  publishAttachmentsState(attachments);
 }
 
 /**

@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { getAttachmentIcon } from './fileIcons';
 import { t as translate } from '../legacy/gateway.ts';
-import type { AttachmentEntry } from './types';
+import type { AttachmentEntry } from '../../ui/attachmentsState.ts';
 
 interface AttachmentChipProps {
   entry: AttachmentEntry;

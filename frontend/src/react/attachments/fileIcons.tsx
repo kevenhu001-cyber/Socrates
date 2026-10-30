@@ -1,7 +1,7 @@
 /** Attachment glyphs use the shared rounded document shell. Office badges keep
  * their familiar semantic colors; neutral files inherit the current theme. */
 import { interfaceIcon, interfaceIconInnerHtml } from '../../ui/icons/interfaceIcons';
-import type { AttachmentEntry } from './types';
+import type { AttachmentEntry } from '../../ui/attachmentsState.ts';
 
 /* Structural subset the icon picker actually reads — widened so both
    the composer AttachmentEntry and the persisted domain attachment

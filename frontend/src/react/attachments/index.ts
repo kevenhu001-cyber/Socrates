@@ -1,15 +1,14 @@
 export { ComposerAttachmentChips } from './AttachmentChipsRow';
 export {
-  installAttachmentsBridge,
   getAttachmentsSnapshot,
   subscribeToAttachments,
   useAttachmentsSnapshot,
   useAttachments,
   useAttachmentsRemove,
-} from './attachments.bridge';
+  useAttachmentsRetry,
+} from './attachments.store';
 export type {
-  AttachmentsBridge,
   AttachmentsSnapshot,
   AttachmentEntry,
   AttachmentKind,
-} from './types';
+} from '../../ui/attachmentsState.ts';

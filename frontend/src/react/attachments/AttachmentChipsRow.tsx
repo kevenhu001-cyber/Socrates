@@ -5,7 +5,7 @@ import {
   useAttachmentsRemove,
   useAttachmentsRetry,
   useAttachmentsSnapshot,
-} from './attachments.bridge';
+} from './attachments.store';
 import { AttachmentChip } from './AttachmentChip';
 import { syncComposerShellFlags } from '../../ui/composerShape.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';

@@ -13,6 +13,7 @@ import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { createAttachmentMediaInput } from '../react/attachments/mediaPickerInputHost.tsx';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { publishAttachmentsState } from '../ui/attachmentsState.ts';
 
 type WiredInput = {
   btnId?: string;
@@ -24,27 +25,6 @@ type WiredInput = {
   updateBtnName: 'updateComposerBtn';
 };
 
-
-/* React migration bridge — fires whenever the pending attachments array
-   changes so the React compatibility root can mirror the chip row via
-   useSyncExternalStore. Installed by
-   frontend/src/react/attachments/attachmentsStore.ts under `?react=1`;
-   legacy mode never sees a subscriber so the helper is a cheap no-op.
-   The publish always runs (before the React-owns guard) so subscribers
-   observe mutations even when React renders the chips. */
-function _publishAttachments(){
-  try{
-    const bridge = browserWindow.__socratesAttachmentsBridge;
-    if(bridge && typeof bridge.publish === "function"){
-      bridge.publish({
-        attachments: attachments.slice(),
-      });
-    }
-  }catch(_){
-    reportSwallow(_, 'empty catch: attachments/render.ts:43', 'expected');
-    /* swallow — bridge is best-effort */
-  }
-}
 
 /* Rejections surface per-file through addFiles' onRejected callback
    (showToast) so a slow in-flight upload never delays them. Identical
@@ -77,7 +57,7 @@ const WIRED_INPUTS: WiredInput[] = [];
    container. Called after addFiles / removeAttachment /
    resetAttachments. */
 export function renderAttachmentChips(){
-  _publishAttachments();
+  publishAttachmentsState(attachments);
 }
 
 /* RAF-throttled full rebuild — called on structural changes (add /
@@ -113,7 +93,7 @@ export async function addComposerFiles(files: File[], source: string){
   return res;
 }
 
-/* Lightweight progress-only update — rAF-coalesced bridge publish so the
+/* Lightweight progress-only update — rAF-coalesced module-store publish so the
    React chip row re-renders the "Uploading… n%" meta at most once per
    frame instead of rebuilding DOM per progress event. */
 let _progressRAF: number|null = null;
@@ -121,7 +101,7 @@ function updateProgressOnly(){
   if (_progressRAF) return;
   _progressRAF = requestAnimationFrame(function(){
     _progressRAF = null;
-    _publishAttachments();
+    publishAttachmentsState(attachments);
   });
 }
 

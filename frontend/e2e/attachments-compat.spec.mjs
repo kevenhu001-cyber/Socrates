@@ -1,8 +1,8 @@
 // e2e/attachments-compat.spec.mjs — Batch 4 of the React + TypeScript migration
 // Spec: when the app boots with ?react=1, the attachment chip row above
 // the composer is owned by React. The legacy store (`attachments` array)
-// is the source of truth; React renders via a typed bridge. Removing a
-// chip dispatches through `window.removeAttachment` which re-fires the
+// is the source of truth; React subscribes through the shared module store.
+// Removing a chip dispatches through `window.removeAttachment` which re-fires the
 // legacy renderer (a no-op in React mode).
 
 import { test, expect } from '@playwright/test';
@@ -23,13 +23,12 @@ test('Attachment chip rows React mode hydrates both containers', async ({ page }
   await expect(topicChips).toBeAttached();
   await expect(topicChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  // Bridge installed.
-  const installed = await page.evaluate(() => ({
-    bridge: typeof window.__socratesAttachmentsBridge === 'object' && window.__socratesAttachmentsBridge !== null,
-    empty: Array.isArray(window.__socratesAttachmentsBridge?.getSnapshot().attachments)
-      && window.__socratesAttachmentsBridge.getSnapshot().attachments.length === 0,
+  const ownership = await page.evaluate(() => ({
+    bridge: '__socratesAttachmentsBridge' in window,
+    sharedArray: Array.isArray(window.attachments),
+    empty: Array.isArray(window.attachments) && window.attachments.length === 0,
   }));
-  expect(installed).toEqual({ bridge: true, empty: true });
+  expect(ownership).toEqual({ bridge: false, sharedArray: true, empty: true });
 });
 
 test('Attachment chips React mode mirrors the legacy attachments array', async ({ page }) => {
@@ -38,42 +37,37 @@ test('Attachment chips React mode mirrors the legacy attachments array', async (
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Drive the bridge directly with a synthetic snapshot. This is what
-  // the legacy `renderAttachmentChips` would publish after a real
-  // `addFiles()` mutation — testing the React side of the contract.
+  // Seed the same shared source array used by addFiles(), then invoke its
+  // renderer so React observes the module-store publication.
   await page.evaluate(() => {
-    window.__socratesAttachmentsBridge.publish({
-      attachments: [
-        {
-          id: 'att-test-1',
-          kind: 'image',
-          name: 'cat.png',
-          mime: 'image/png',
-          size: 1234,
-          dataUrl: 'data:image/png;base64,iVBORw0KGgo=',
-        },
-        {
-          id: 'att-test-2',
-          kind: 'text',
-          name: 'notes.txt',
-          mime: 'text/plain',
-          size: 4321,
-          text: 'hello world',
-          truncated: false,
-        },
-      ],
-    });
+    window.attachments.push(
+      {
+        id: 'att-test-1',
+        kind: 'image',
+        name: 'cat.png',
+        mime: 'image/png',
+        size: 1234,
+        dataUrl: 'data:image/png;base64,iVBORw0KGgo=',
+      },
+      {
+        id: 'att-test-2',
+        kind: 'text',
+        name: 'notes.txt',
+        mime: 'text/plain',
+        size: 4321,
+        text: 'hello world',
+        truncated: false,
+      },
+    );
+    window.renderAttachmentChips();
   });
 
-  // The bridge batches publishes on requestAnimationFrame, so wait for the
-  // committed external-store snapshot before asserting its contents.
+  // The shared module store batches publishes on requestAnimationFrame.
   await page.waitForFunction(() => {
-    const s = window.__socratesAttachmentsBridge?.getSnapshot();
-    return s?.attachments?.length === 2;
+    return window.attachments?.length === 2;
   });
   const snap = await page.evaluate(() => {
-    const s = window.__socratesAttachmentsBridge?.getSnapshot();
-    return s ? s.attachments.map((a) => ({ id: a.id, kind: a.kind, name: a.name })) : null;
+    return window.attachments.map((a) => ({ id: a.id, kind: a.kind, name: a.name }));
   });
   expect(snap).toEqual([
     { id: 'att-test-1', kind: 'image', name: 'cat.png' },
@@ -96,20 +90,19 @@ test('Attachment chips remove button dispatches through window.removeAttachment'
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Seed two attachments via the bridge and stub the legacy
-  // removeAttachment on the bridge so we can capture the call.
+  // Seed two attachments in the shared source array and stub the legacy
+  // remove action so the React chip's dispatch can be captured.
   await page.evaluate(() => {
     window.__removedIds = [];
     window.__socratesLegacy.composer.removeAttachment = function (id) {
       window.__removedIds.push(id);
       return true;
     };
-    window.__socratesAttachmentsBridge.publish({
-      attachments: [
-        { id: 'att-r-1', kind: 'image', name: 'one.png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=' },
-        { id: 'att-r-2', kind: 'image', name: 'two.png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=' },
-      ],
-    });
+    window.attachments.push(
+      { id: 'att-r-1', kind: 'image', name: 'one.png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=' },
+      { id: 'att-r-2', kind: 'image', name: 'two.png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=' },
+    );
+    window.renderAttachmentChips();
   });
 
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(2);
@@ -135,10 +128,8 @@ test('Attachment chips React mode always loads (no ?react=1 flag needed)', async
   const topicChips = page.locator('#composerAttachmentChips');
   await expect(topicChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  const installed = await page.evaluate(
-    () => typeof window.__socratesAttachmentsBridge === 'object' && window.__socratesAttachmentsBridge !== null,
-  );
-  expect(installed).toBe(true);
+  const retired = await page.evaluate(() => !('__socratesAttachmentsBridge' in window));
+  expect(retired).toBe(true);
 });
 
 async function chatChipsAttrVisible(page, selector) {
@@ -200,8 +191,7 @@ test('Image upload is admitted for a text-only model and stored as a durable fil
   /* The pending stub uploads to /api/files and resolves into the durable
      fileId — no "model can't view images" rejection anymore. */
   await page.waitForFunction(() => {
-    const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
-    return snapshot?.attachments?.[0]?.fileId === 'file-uuid-1';
+    return window.attachments?.[0]?.fileId === 'file-uuid-1';
   });
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
 });
@@ -222,15 +212,13 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
     buffer: Buffer.from('synthetic image bytes'),
   });
   await page.waitForFunction(() => {
-    const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
-    return snapshot?.attachments?.[0]?.pending === false;
+    return window.attachments?.[0]?.pending === false;
   });
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
   /* Multimodal images additionally carry an inline dataUrl for the
      native image_url part, alongside the durable fileId. */
   const entry = await page.evaluate(() => {
-    const s = window.__socratesAttachmentsBridge?.getSnapshot();
-    const a = s?.attachments?.[0];
+    const a = window.attachments?.[0];
     return a ? { fileId: a.fileId, hasDataUrl: !!a.dataUrl } : null;
   });
   expect(entry).toEqual({ fileId: 'file-uuid-1', hasDataUrl: true });
@@ -256,8 +244,7 @@ test('Attachment-only landing draft activates Send and enters chat', async ({ pa
     buffer: Buffer.from('%PDF-1.4 fake'),
   });
   await page.waitForFunction(() => {
-    const s = window.__socratesAttachmentsBridge?.getSnapshot();
-    return s?.attachments?.length === 1;
+    return window.attachments?.length === 1;
   });
 
   const startBtn = page.locator('#composerPrimaryBtn');
@@ -317,8 +304,7 @@ test('Failed upload shows a retry affordance that re-runs the job', async ({ pag
      same chip resolves into a durable fileId. */
   await retryBtn.click();
   await page.waitForFunction(() => {
-    const s = window.__socratesAttachmentsBridge?.getSnapshot();
-    return s?.attachments?.[0]?.fileId === 'file-uuid-1';
+    return window.attachments?.[0]?.fileId === 'file-uuid-1';
   });
   await expect(chip).not.toHaveClass(/error/);
   expect(attempts).toBe(2);
@@ -339,8 +325,7 @@ test('Re-picking an identical file is deduplicated', async ({ page }) => {
   await page.locator('#composerAttachInput').setInputFiles(file);
 
   await page.waitForFunction(() => {
-    const s = window.__socratesAttachmentsBridge?.getSnapshot();
-    return s?.attachments?.length === 1;
+    return window.attachments?.length === 1;
   });
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
 });
@@ -361,13 +346,11 @@ test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) =>
     buffer: Buffer.from('%PDF-1.4 fake'),
   });
   await page.waitForFunction(() => {
-    const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
-    return snapshot?.attachments?.[0]?.fileId === 'file-uuid-1';
+    return window.attachments?.[0]?.fileId === 'file-uuid-1';
   });
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
   const kind = await page.evaluate(() => {
-    const s = window.__socratesAttachmentsBridge?.getSnapshot();
-    return s?.attachments?.[0]?.kind;
+    return window.attachments?.[0]?.kind;
   });
   /* PDFs classify as 'document' with docKind pdf — the model reads them
      via read_attachment, not as inline text. */
