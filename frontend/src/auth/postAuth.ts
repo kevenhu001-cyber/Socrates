@@ -2,7 +2,7 @@ import { stateStore } from '../state/store.ts';
 import { drainMessageOutbox } from '../session/mutationOutbox.ts';
 import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.ts';
 import { loadSession } from '../session/loader.ts';
-import { loadUserMemories, renderUserFooter } from '../ui/profile.ts';
+import { loadUserMemories, publishSidebarChrome } from '../ui/profile.ts';
 import { syncExtensionsUI } from '../pickers.ts';
 import { syncSidebarForMode } from '../config/providers.ts';
 import { syncWorkspaceRoute } from '../sidebar/navigation.service.ts';
@@ -60,7 +60,7 @@ async function fetchBootstrapData(): Promise<void> {
 
 function refreshAuthenticatedUi(): void {
   const win = window as PostAuthLegacyWindow;
-  renderUserFooter();
+  publishSidebarChrome();
   try { renderGreeting(); }
   catch (error) { reportSwallow(error, 'auth/postAuth.greeting'); }
   if (typeof win.renderRecents === 'function') win.renderRecents();

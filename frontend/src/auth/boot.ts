@@ -7,7 +7,7 @@ import { i18n } from '../react/legacy/gateway.ts';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.ts';
 import { captureBrowserLoginRequest } from '../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { renderUserFooter } from '../ui/profile.ts';
+import { publishSidebarChrome } from '../ui/profile.ts';
 import { revealAppAndHydrate } from './index.ts';
 import { handleAuthUrlRoutes } from './boot/routes.ts';
 import {
@@ -95,7 +95,7 @@ async function finishUnavailableBoot(): Promise<void> {
   if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
   try { showToast(i18n('toast.authOffline', "Couldn't reach the server. Check your connection and retry."), 5000); }
   catch (error) { reportSwallow(error, 'auth/boot.offlineToast'); }
-  if (typeof renderUserFooter === 'function') renderUserFooter();
+  publishSidebarChrome();
 }
 
 export async function authBoot(): Promise<void> {

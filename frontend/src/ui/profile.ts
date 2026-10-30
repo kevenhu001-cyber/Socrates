@@ -1,7 +1,7 @@
 /* ui/profile.ts — Wave 2b of main-js-split plan.
  * Profile modal: user info, custom instructions, web search toggle.
- * Extracted from main.js: two non-contiguous blocks — renderUserFooter
- * / openProfile / closeProfile (L8992-L9057) and custom-instructions
+ * Extracted from main.js: two non-contiguous blocks — sidebar user-state
+ * publishing plus openProfile / closeProfile (L8992-L9057) and custom-instructions
  * / web-search helpers (L9895-L9979).
  *
  * Touches via window.*:
@@ -91,7 +91,7 @@ function syncDocumentTier(user: import("../types/runtimeWindow.ts").RuntimeWindo
   }
 }
 
-function _publishSidebarChrome() {
+export function publishSidebarChrome() {
   const cu = browserWindow.CURRENT_USER || null;
   /* Mirror the tier onto <html> so CSS can gate free-tier affordances
      (the mobile "升级" pill in the top bar) without a JS listener. */
@@ -99,16 +99,7 @@ function _publishSidebarChrome() {
   publishSidebarUser(sidebarUserSnapshot(cu));
 }
 
-/* (legacy sidebar-footer renderer is dead code — see the always-on
-   React sidebar chrome above) */
-
-/* ─── User footer + profile modal shell ─── */
-
-function renderUserFooter() {
-  // The React footer owns the row, so publish from account state without
-  // requiring a legacy DOM node to exist.
-  _publishSidebarChrome();
-}
+/* ─── Profile modal shell ─── */
 
 function openProfile() {
   if (!browserWindow.CURRENT_USER) return;
@@ -134,7 +125,7 @@ function saveProfileName(newName: string) {
     body: { displayName: name },
   }).then(function () {
     browserWindow.CURRENT_USER!.displayName = name;
-    renderUserFooter();
+    publishSidebarChrome();
     const el = document.getElementById("profileName");
     if (el) (el as HTMLInputElement).value = name;
   }).catch(function () {
@@ -265,7 +256,7 @@ function loadUserMemories() {
 }
 
 export {
-  renderUserFooter, openProfile, closeProfile, saveProfileName,
+  openProfile, closeProfile, saveProfileName,
   loadCustomInstructions, saveCustomInstructions, loadCustomInstructionsIntoUI,
   onCustomInstructionsChange, buildCustomInstructionsString, updateInstSaveState,
   getCustomInstructionsString, toggleProfileWebSearch, syncProfileWebSearchUI,

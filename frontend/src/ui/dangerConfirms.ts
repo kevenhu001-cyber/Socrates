@@ -8,7 +8,7 @@
 import { stateStore } from '../state/store.ts';
 import { showConfirm } from './confirm.ts';
 import { clearProviderConfig } from '../config/providerConfig.service.ts';
-import { renderUserFooter } from './profile.ts';
+import { publishSidebarChrome } from './profile.ts';
 
 interface DangerWindow {
   t?: (key: string) => string;
@@ -74,7 +74,7 @@ function resetAfterAccountDeletion(w: DangerWindow | undefined): void {
   w?.resetState?.();
   w?.resetApp?.();
   w?.showGate?.();
-  renderUserFooter();
+  publishSidebarChrome();
   w?.closeProfile?.();
   w?.showAuthSignin?.();
 }

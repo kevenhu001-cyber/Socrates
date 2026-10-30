@@ -280,10 +280,6 @@ if (typeof browserWindow.setLang === 'function') {
   browserWindow.setLang = function () { /* noop */ };
 }
 
-// Note: refreshApiConfig / handleRefreshProductInfo are still defined
-// inside main.js. They will be migrated to a dedicated module in a
-// later Phase C sub-step. For now main.js keeps them on window itself.
-
 /* ─── chat/offline.js ─── */
 import { STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS, offlineGuard, sleepBackoff } from './chat/offline.ts';
 browserWindow.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;

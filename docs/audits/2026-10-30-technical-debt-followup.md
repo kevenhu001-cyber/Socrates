@@ -37,6 +37,7 @@
 | 当前界面语言的 `window._currentLang` 镜像 | **本轮已移除** | `i18n/languageState.ts` 提供唯一同步值；i18n 入口仍保留 saved-locale 初始化、持久化、DOM 翻译和 `socrates:langchange`，语言消费者直接读取模块状态。无读者的 `APP_LANG/getAppLang` 类型随之删除。 |
 | 无生产消费者的 Search Progress Log 组件 | **本轮已移除** | 搜索进度卡片已不在聊天流程中挂载；删掉仅为旧视觉测试保留的 window hook、无调用方的 `ExtensionContext.startProgress/fetchWebContext` 适配器、组件样式及旧测试。实时 web search 的查询与来源排序覆盖保留并移至 `e2e/web-search-context.spec.mjs`；运行状态点改用通用动画名。 |
 | 无调用方的搜索质量 LLM judge/retry 路径 | **本轮已移除** | 全仓只有定义，没有 `webSearchWithRetry` 消费者；删掉结果评分请求、重试包装器和仅供搜索进度卡使用的 `onStep` 事件传递。实际 `fetchWebContext`、查询改写、来源排序和失败回退流程保留；原签名中的 `signal` 也从未接入搜索请求，随死接口一起移除。 |
+| sidebar 用户状态发布器仍叫 `renderUserFooter`，并由一层空转函数转发 | **本轮已清理** | React 一直拥有 sidebar footer；`publishSidebarChrome()` 直接发布规范化用户状态并同步 tier 属性。认证启动、登录后刷新、登出和账号删除都改为调用该模块 API，旧 DOM 渲染命名和对应包装函数删除。同步移除了 `windowExports.ts` 中已失效的 `refreshApiConfig / handleRefreshProductInfo` 迁移注释。 |
 
 ## 仍开放或尚无法确认
 
@@ -93,3 +94,4 @@
 - 语言状态 window 镜像移除：`i18n/languageState.ts` 成为唯一共享来源，十余个 chat / tutor / exam / UI / React 消费者改为直接读取；`sessionTitle` 与 `tutorFlow` 单测 10/10、`chrome-i18n` / exam / share / session-start Playwright 18/18、前端 lint 与生产构建通过；lint 过程中顺手抽出 locale 加载 helper，将 `setLang` 圈复杂度压回阈值以内。
 - Search Progress Log 退役：删除未使用的卡片组件、扩展上下文适配器、旧 CSS 和测试专用 window hook；`extensions.test.mjs` 11/11、生产构建与 lint 通过，`agent-steps` / `tool-run-group` / `native-visualization` / `web-search-context` Playwright 15/15 通过。网页搜索排序覆盖保留在新命名的 `web-search-context.spec.mjs`。
 - 无调用方的搜索质量 judge/retry 移除：保留真实的预搜索、查询改写、结果排序与 fallback 查询；`web-search-context.spec.mjs` 1/1、前端 lint 与生产构建通过。
+- sidebar footer 状态发布 API 命名清理：删掉 `renderUserFooter()` 空包装并让调用方直达 `publishSidebarChrome()`；旧迁移注释删除。`profileState` 与 `sidebarUserState` 单测 2/2，`profile-modal` / `sidebar-nav` Playwright 17/17，前端 lint 和生产构建通过。

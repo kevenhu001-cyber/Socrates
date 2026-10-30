@@ -13,7 +13,7 @@ import { startNewComposerSession } from '../react/composer-input/lifecycle.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { resetShareToken } from '../ui/share.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
-import { renderUserFooter } from '../ui/profile.ts';
+import { publishSidebarChrome } from '../ui/profile.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { resetApp } from './lifecycle/reset.ts';
 import { clearPerUserClientState } from './lifecycle/clientState.ts';
@@ -206,5 +206,5 @@ export async function signOut(){
   try{turnState.pendingAttachments=null}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearPendingAttachments');}
   try{localStorage.removeItem('socrates-recents-filter')}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearRecentsFilter','expected');}
   showGate();
-  renderUserFooter();
+  publishSidebarChrome();
 }
