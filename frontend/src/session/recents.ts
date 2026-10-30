@@ -201,18 +201,9 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
   if (saveState.saveInFlight) {
     try { await saveState.saveInFlight; } catch (e) { reportSwallow(e, 'session/recents.deleteSession.drainInFlight'); }
   }
-  /* P_delete-stale — bounce the user out of the chat view if the
-     deleted session is EITHER (a) the one currently on screen
-     (stateStore.read("currentSessionId")) OR (b) referenced by the
-     top-level stateStore.read("currentSessionId") mirror. Without checking
-     both, a session whose currentSessionId drifted onto the
-     top-level mirror (the duplicate-session bug we fixed) would
-     get deleted but the chat view would keep rendering its
-     messages because the bounce never fired. Also cancel any
-     in-flight chat stream so a half-written reply doesn't
-     resurface after the delete. */
-
-  const wasActive = stateStore.read('currentSessionId') === id || stateStore.read('currentSessionId') === id;
+  /* If the deleted session is active, leave its view and cancel any
+     in-flight stream so a partial reply cannot reappear after deletion. */
+  const wasActive = stateStore.read('currentSessionId') === id;
   if (wasActive) {
     if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.deleteSession.abortTurn'); } }
     const abortActive = turnState.activeChatAbort;
@@ -227,15 +218,10 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
   /* P2 SWR — a deleted/archived session must not survive in the detail cache. */
   detailCache.invalidate(id);
   _renderRecents();
-  /* P_delete-resurrect — register this id with the doSave()
-     tombstone set BEFORE the network round-trip. Any POST that
-     arrives during the flight window, or any post-flight
-     `saveState.saveDirty` cascade triggered by a streaming callback, will
-     see the tombstone and bail instead of re-inserting the row.
-     We register both the canonical id and any alias we may have
-     had for it (defence against the duplicate-session drift that
-     made stateStore.read("currentSessionId") / stateStore.read("currentSessionId")
-     disagree in past incidents). */
+  /* P_delete-resurrect — register this id with the doSave() tombstone
+     set BEFORE the network round-trip. Any POST that arrives during the
+     request, or a later save cascade, sees the tombstone and cannot
+     re-insert the deleted session. */
   rememberDeletedSession(id);
   /* Single-step: server's DELETE /api/sessions/:id now deletes
      directly without requiring archive first. */
@@ -393,7 +379,7 @@ export function confirmPurgeSession(id: string): void {
          shown. without this, the chat view continues displaying the
          deleted session's messages, topic badge, and knowledge
          graph until the user manually navigates away. */
-      const wasActive = stateStore.read('currentSessionId') === id || stateStore.read('currentSessionId') === id;
+      const wasActive = stateStore.read('currentSessionId') === id;
       if (wasActive) {
         if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.purge.abortTurn'); } }
         const abortActive = turnState.activeChatAbort;
