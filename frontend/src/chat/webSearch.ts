@@ -319,8 +319,7 @@ export async function fetchWebContext(topic: string,opts: { signal?: AbortSignal
    `webSearchWithRetry` is a thin wrapper around fetchWebContext that
    runs round 1, judges it, and (if needed) runs round 2 with the
    rewrite. Round cap = 2. Events from both rounds are forwarded to
-   `opts.onStep` so the search-progress log can render the full
-   activity timeline.
+   `opts.onStep` so optional observers can follow the retry activity.
 
    Latency budget: round 1 (≤10 s) + judge (≤4 s) + round 2 (≤8 s)
    = 22 s worst case. The caller is expected to race this against

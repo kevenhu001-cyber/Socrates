@@ -614,7 +614,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   color:hsl(var(--text-400));
 }
 .tool-run-summary-icon svg{width:100%;height:100%;display:block}
-.tool-run-group[data-state="running"] .tool-run-summary-icon{color:hsl(var(--text-300));animation:search-progress-dot var(--ui-duration-pulse) ease-in-out infinite}
+.tool-run-group[data-state="running"] .tool-run-summary-icon{color:hsl(var(--text-300));animation:ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite}
 .tool-run-group[data-state="complete"] .tool-run-summary-icon{color:hsl(var(--text-400))}
 .tool-run-group[data-state="error"] .tool-run-summary-icon{color:hsl(0 55% 50%)}
 .tool-run-group[data-state="cancelled"] .tool-run-summary-icon{color:hsl(var(--text-500))}

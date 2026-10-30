@@ -50,7 +50,7 @@
   line-height:1;
 }
 .viz-status-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex:0 0 auto}
-.viz[data-viz-state="loading"] .viz-status-dot{animation:search-progress-dot var(--ui-duration-pulse) ease-in-out infinite}
+.viz[data-viz-state="loading"] .viz-status-dot{animation:ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite}
 .viz[data-viz-state="loading"] .viz-status-label::before{content:"Rendering"}
 .viz[data-viz-state="ready"] .viz-status-label::before{content:"Interactive"}
 .viz[data-viz-state="ready"] .viz-status-dot{background:hsl(145 45% 45%)}

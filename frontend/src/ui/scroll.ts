@@ -748,7 +748,7 @@ export function scrollMainToBottom(opts: { force?: boolean; smooth?: boolean } =
   const sc=scrollContainer();
   if(!sc)return;
   /* A send glide (chat/turnAnchor.ts) owns the transcript while it runs.
-     Thinking pills, tool cards, and search progress call this on every
+     Thinking pills and tool cards call this on every
      update; starting a bottom glide here would cancel the send glide
      mid-flight and yank the viewport. */
   if(!opts.force&&sc.dataset&&sc.dataset.turnAnchorSettling==="true")return;

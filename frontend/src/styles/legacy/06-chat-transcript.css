@@ -123,10 +123,6 @@
 :where(:root[data-routed-session="true"]:not([data-main-view="examView"])) #chatPage{display:contents!important}
 :where(:root[data-routed-session="true"]:not([data-main-view="examView"])) #chatView{display:flex!important}
 :where(:root[data-routed-session="true"][data-main-view="examView"]) #examView{display:flex!important}
-/* Search progress is inserted immediately after #msgList. Keep it in the
-   same flow slot so it sits between the transcript and composer instead of
-   becoming an unrelated flex item above the transcript. */
-.chat-page > .search-progress-floating{order:1;flex:0 0 auto}
 @supports (scrollbar-width:thin){.msg-list{scrollbar-width:thin}}
 @supports (scrollbar-color:transparent transparent){.msg-list{scrollbar-color:transparent transparent}}
 @supports (scrollbar-color:hsl(var(--text-500)/0.25) transparent){

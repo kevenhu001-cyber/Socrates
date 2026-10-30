@@ -1,6 +1,6 @@
 # 技术债状态复核
 
-日期：2026-10-30。复核起点为已提交 HEAD `a64d4ba6`；当前工作树继续清理中。生产数据库、真实供应商账户和设备未连接。本文件更新 2026-10-23 稳定性加固交接的状态，不把历史审计快照改写成当前结论。
+日期：2026-10-30。复核起点为已提交 HEAD `13f6e590`；当前工作树继续清理中。生产数据库、真实供应商账户和设备未连接。本文件更新 2026-10-23 稳定性加固交接的状态，不把历史审计快照改写成当前结论。
 
 ## 本次关闭或收窄
 
@@ -35,6 +35,7 @@
 | 活动项目元数据的 `window.__activeProject` 镜像 | **本轮已移除** | 项目目录缓存是元数据唯一来源；prompt suffixes 按 `stateStore.currentProjectId` 从 `projectCache` 读取，loader 保留缓存刷新，React workspace / organize 不再复制项目对象。 |
 | session organize 中重复的拖拽实现、无读者的项目 drop 入口 | **本轮已移除** | 生产拖拽由 `session/dragSession.ts` 同步处理，项目移动由 React session-list 操作；删除 organize 中重复 handler、无读者的 `moveSessionToProject` / `_onProjectDrop`，以及不再使用的 E2E binding 清单。 |
 | 当前界面语言的 `window._currentLang` 镜像 | **本轮已移除** | `i18n/languageState.ts` 提供唯一同步值；i18n 入口仍保留 saved-locale 初始化、持久化、DOM 翻译和 `socrates:langchange`，语言消费者直接读取模块状态。无读者的 `APP_LANG/getAppLang` 类型随之删除。 |
+| 无生产消费者的 Search Progress Log 组件 | **本轮已移除** | 搜索进度卡片已不在聊天流程中挂载；删掉仅为旧视觉测试保留的 window hook、无调用方的 `ExtensionContext.startProgress/fetchWebContext` 适配器、组件样式及旧测试。实时 web search 的查询与来源排序覆盖保留并移至 `e2e/web-search-context.spec.mjs`；运行状态点改用通用动画名。 |
 
 ## 仍开放或尚无法确认
 
@@ -42,7 +43,7 @@
 |---|---|---|
 | 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
 | 中 | Expo / Universal App 依赖告警 | 审计仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；来源是 Expo CLI 使用的 `zod@3.25.76`（[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)）。2026-10-30 核验 npm 最新 `@expo/cli@58.1.17` 仍声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 超出其范围。Expo SDK 58 同时将 React Native 目标升级到 0.88，而本项目 SDK 57 使用 RN 0.86；不能把跨 SDK/RN 升级当作安全依赖小修，也不通过不兼容的 major override 掩盖它。待 Expo 发布兼容依赖范围后处理；参考 [Expo SDK 58 发行说明](https://expo.dev/changelog/sdk-58) 与 [SDK 对应版本表](https://docs.expo.dev/versions/latest/)。 |
-| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、KaTeX 重绘回调、cookie consent、extension dispatch、搜索重试、首轮 turn controller、composer controller、active-chat abort 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、KaTeX 重绘回调、cookie consent、extension dispatch、搜索重试、首轮 turn controller、composer controller、active-chat abort、Search Progress Log 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -89,3 +90,4 @@
 - 活动项目 window 镜像移除：prompt suffixes 以 canonical project id 查 `projectCache`，loader 只刷新缓存，React workspace / organize 只更新 project id；`promptSuffixes` 与 tutor flow 单测 17/17、`history-rich-content` E2E 4/4、前端 lint 与生产构建通过。
 - organizer 死代码清理：移除被 `organizeRuntime` 旁路的重复 drag handlers、未引用的项目 drop/move helpers，以及无人消费的 `REQUIRED_BINDINGS` 常量；`session-row-menu` 9/9、`session-tags` 1/1、前端 lint 与生产构建通过。
 - 语言状态 window 镜像移除：`i18n/languageState.ts` 成为唯一共享来源，十余个 chat / tutor / exam / UI / React 消费者改为直接读取；`sessionTitle` 与 `tutorFlow` 单测 10/10、`chrome-i18n` / exam / share / session-start Playwright 18/18、前端 lint 与生产构建通过；lint 过程中顺手抽出 locale 加载 helper，将 `setLang` 圈复杂度压回阈值以内。
+- Search Progress Log 退役：删除未使用的卡片组件、扩展上下文适配器、旧 CSS 和测试专用 window hook；`extensions.test.mjs` 11/11、生产构建与 lint 通过，`agent-steps` / `tool-run-group` / `native-visualization` / `web-search-context` Playwright 15/15 通过。网页搜索排序覆盖保留在新命名的 `web-search-context.spec.mjs`。

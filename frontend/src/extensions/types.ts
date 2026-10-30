@@ -66,13 +66,6 @@ export interface ExtensionContext {
   t(key: string, fallback: string): string;
   /** Transient toast message. */
   toast(message: string): void;
-  /** Show a structured search/agent progress log (reuses the
-   *  .search-progress visual shell + step vocabulary). */
-  startProgress(opts?: {
-    title?: string;
-    mount?: HTMLElement | null;
-    collapsed?: boolean;
-  }): SearchProgressHandle;
   /** Publish a workflow-stage event to the agent-run store so any
    *  subscribed UI (explore stepper / analyze workbench) can render it. */
   publishAgentRun(event: AgentRunEvent): void;
@@ -87,19 +80,6 @@ export interface ExtensionContext {
   launchDeepResearch?(): void;
   /** Legacy quick-chip sync (reflects webSearchOn / deepResearchOn). */
   syncQuickChips?(): void;
-  /** Client-side web pre-fetch; onStep feeds the search progress log. */
-  fetchWebContext?(
-    query: string,
-    opts?: { background?: boolean; onStep?: (ev: { kind: string; data?: Record<string, unknown> }) => void },
-  ): Promise<unknown>;
-}
-
-/** Handle returned by ctx.startProgress() — mirrors ui/searchProgress.ts. */
-export interface SearchProgressHandle {
-  onStep(ev: { kind: string; data?: Record<string, unknown> }): void;
-  appendStep(text: string, kind?: 'running' | 'ok' | 'warn' | 'err'): void;
-  finalize(summary?: { state?: string; message?: string }): void;
-  remove(): void;
 }
 
 /** Workflow-stage event published to the agent-run store. */

@@ -5,11 +5,6 @@
 // total, message} events as they progress; new UIs (the explore stage
 // stepper, the analyze workbench) subscribe to this shared module store.
 //
-// Exploration note: DeepResearch today mutates .search-progress DOM
-// directly with string labels. This store is the structured event
-// layer we add so new UIs get a stable {stage,status} contract
-// instead of scraping presentation text.
-
 import type { AgentRunEvent } from './types';
 
 export interface AgentRunSnapshot {

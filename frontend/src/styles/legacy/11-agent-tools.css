@@ -1,6 +1,6 @@
 /* ==========================================================================
    11-agent-tools.css — slice of the pre-modular base stylesheet (src/styles.css).
-   Covers: agent tool cards, live execution, artifacts, websearch results, disclosures, link previews, thinking pill, search progress log.
+   Covers: agent tool cards, live execution, artifacts, websearch results, disclosures, link previews, thinking pill.
    Order-sensitive: rules here may be overridden by later slices and by
    the modular layer (foundations/layout/components/features) and the
    restore layer. Keep this file's position in legacy/index.css stable.
@@ -309,7 +309,7 @@
   margin-right:5px;
   border-radius:50%;
   background:hsl(var(--text-400));
-  animation:search-progress-dot var(--ui-duration-pulse) ease-in-out infinite;
+  animation:ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite;
 }
 .agent-tool-chev{margin-left:2px}
 .agent-tool-toolbar{
@@ -517,134 +517,5 @@
 [data-theme=socrates][data-mode=dark] .agent-run-footer.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
 [data-theme=socrates][data-mode=dark] .agent-run-footer.stopped{background:hsl(45 30% 18%);color:hsl(45 70% 70%)}
 
-/* ──────────────────────────────────────────────────────────────────────
-   Phase 3 — Search Progress Log
-   ──────────────────────────────────────────────────────────────────────
-   A collapsible activity feed that surfaces the steps of a web search
-   inside the AI bubble that will answer the user. Default state:
-   collapsed (just the header line, click to expand). When the search
-   is in flight, `.running` adds a pulsing dot. On completion the
-   header collapses to a one-line summary. */
-.search-progress{
-  font-size:calc(11.5px * var(--app-font-scale, 1));
-  color:hsl(var(--text-400));
-  line-height:1.5;
-  margin:6px 0 10px;
-  padding:0;
-  overflow:hidden;
-  border-radius:7px;
-  background:hsl(var(--bg-100)/.82);
-  border:1px solid hsl(var(--border-300)/.34);
-  list-style:none;
-  cursor:pointer;
-  -webkit-user-select:none;
-  user-select:none;
-}
-.search-progress.running,
-.search-progress.ok,
-[data-theme=socrates][data-mode=dark] .search-progress.running,
-[data-theme=socrates][data-mode=dark] .search-progress.ok{background:hsl(var(--bg-100)/.82);border-color:hsl(var(--border-300)/.38)}
-.search-progress.warn,
-[data-theme=socrates][data-mode=dark] .search-progress.warn{background:hsl(var(--bg-100)/.82);border-color:hsl(38 70% 50%/.38)}
-.search-progress.err,
-[data-theme=socrates][data-mode=dark] .search-progress.err{background:hsl(var(--bg-100)/.82);border-color:hsl(0 58% 52%/.42)}
-
-.search-progress-head{
-  display:flex;align-items:center;gap:8px;
-  min-height:34px;
-  padding:7px 10px;
-  font-weight:var(--ui-font-weight-medium);letter-spacing:0;
-  color:hsl(var(--text-300));
-}
-.search-progress-head:focus-visible{outline:2px solid transparent;outline-offset:-2px;border-radius:7px}
-.search-progress-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
-/* UI-align: open-webui shimmer sweep across the status text while a
-   search is in flight — gradient-clipped text, opacity only. */
-.search-progress.running .search-progress-title,
-.search-progress.running .search-progress-label{background:linear-gradient(90deg,hsl(var(--text-400)) 35%,hsl(var(--text-000)) 50%,hsl(var(--text-400)) 65%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:textShimmer 2.4s linear infinite}
 @keyframes textShimmer{from{background-position:100% 0}to{background-position:0% 0}}
-.search-progress-elapsed{
-  flex:0 0 auto;
-  color:hsl(var(--text-500));
-  font-family:var(--font-mono);
-  font-size:calc(10px * var(--app-font-scale, 1));
-  font-variant-numeric:tabular-nums;
-}
-.search-progress-chev{
-  margin-left:auto;
-  font-size:calc(10px * var(--app-font-scale, 1));
-  color:hsl(var(--text-400));
-  transition:transform .15s;
-}
-.search-progress.open .search-progress-chev{transform:rotate(180deg)}
-
-.search-progress-pulse{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:9px;height:9px;border-radius:50%;position:relative;vertical-align:middle;flex-shrink:0;
-  background:hsl(var(--accent-000)/.82);
-}
-.search-progress-pulse::before,.search-progress-pulse::after{display:none}
-.search-progress.running .search-progress-pulse{animation:search-progress-dot var(--ui-duration-pulse) ease-in-out infinite}
-@keyframes search-progress-dot{50%{opacity:.35;transform:scale(.82)}}
-.search-progress.ok .search-progress-pulse,
-.search-progress.warn .search-progress-pulse,
-.search-progress.err .search-progress-pulse{display:none}
-.search-progress.ok .search-progress-head::before,
-.search-progress.warn .search-progress-head::before,
-.search-progress.err .search-progress-head::before{
-  content:"";
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  flex:0 0 auto;
-  background:hsl(145 45% 45%);
-}
-.search-progress.warn .search-progress-head::before{background:hsl(38 70% 48%)}
-.search-progress.err .search-progress-head::before{background:hsl(0 58% 52%)}
-
-.search-progress-steps{
-  margin:0;
-  padding:7px 10px 8px;
-  list-style:none;
-  display:none;
-  border-top:1px solid hsl(var(--border-300)/.22);
-  background:hsl(var(--bg-000)/.22);
-  /* The list itself shouldn't be clickable; clicks bubble to root which
-   * toggles .open. We stop propagation on .search-progress-step to
-   * avoid that. */
-}
-.search-progress.open .search-progress-steps{display:block}
-
-.search-progress-step{
-  display:flex;align-items:baseline;gap:7px;
-  padding:2px 0;
-  font-variant-numeric:tabular-nums;
-  color:hsl(var(--text-300));
-}
-.search-progress-step .icon{
-  flex-shrink:0;
-  width:12px;
-  text-align:center;
-  color:hsl(var(--text-500));
-  font-weight:var(--ui-font-weight-medium);
-}
-.search-progress-step.running .icon,
-.search-progress-step.ok .icon,
-.search-progress-step.warn .icon,
-.search-progress-step.err .icon{color:hsl(var(--text-500))}
-.search-progress-step .text{flex:1;min-width:0;word-break:break-word;letter-spacing:0}
-
-/* Last-resort floating panel when neither bubble nor diagnostic card
- * is available. Pinned to the bottom of the chat. */
-.search-progress-floating{
-  position:sticky;
-  bottom:8px;
-  margin:8px 12px;
-  z-index:5;
-  box-shadow:0 4px 16px hsl(var(--shadow-color, 0 0% 0%) / 0.08);
-}
-
-/* In the diagnostic loading card, disable click-to-toggle so the
- * header is a static status line. The steps follow the normal
- * collapsed/open state set by startSearchProgress. */
-.diag-loading .search-progress{cursor:default}
+@keyframes ui-status-dot-pulse{50%{opacity:.35;transform:scale(.82)}}

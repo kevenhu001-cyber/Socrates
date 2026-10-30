@@ -53,11 +53,6 @@ browserWindow.processPendingVizActions = processPendingVizActions;
    poking the live map directly. */
 browserWindow.getLiveVizCardIds = getLiveVizCardIds;
 
-/* ─── ui/searchProgress.ts — E2E test surface: search-progress.spec.mjs
-   exercises the search-activity UI via window.__startSearchProgress. ─── */
-import { startSearchProgress } from './ui/searchProgress.ts';
-browserWindow.__startSearchProgress = startSearchProgress;
-
 /* ─── render/markdown.js ─── */
 import { formatMsg } from './render/markdown.ts';
 browserWindow.formatMsg = formatMsg;

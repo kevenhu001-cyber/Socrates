@@ -17,13 +17,11 @@ import {
   getVisibleComposerSurface,
   setComposerExtensionToken,
 } from '../composer/controller.ts';
-import { startSearchProgress } from '../ui/searchProgress.ts';
 import type {
   AgentRunEvent,
   ComposerSurface,
   ExtensionContext,
   ExtensionOutputMode,
-  SearchProgressHandle,
   TemplateChipSpec,
 } from './types';
 import { publishAgentRun } from './agentRunStore';
@@ -64,10 +62,6 @@ interface LegacyWindow {
   toggleWebSearch?: () => void;
   launchDeepResearch?: () => void;
   syncQuickChips?: () => void;
-  fetchWebContext?: (
-    query: string,
-    opts?: { background?: boolean; onStep?: (ev: { kind: string; data?: Record<string, unknown> }) => void },
-  ) => Promise<unknown>;
 }
 
 function w(): LegacyWindow {
@@ -129,13 +123,6 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
       if (typeof legacy.showToast === 'function') legacy.showToast(message);
     },
 
-    startProgress(opts): SearchProgressHandle {
-      return startSearchProgress(opts?.title ?? '', {
-        mount: opts?.mount ?? null,
-        collapsed: opts?.collapsed ?? true,
-      });
-    },
-
     publishAgentRun(event: AgentRunEvent) {
       publishAgentRun(event);
     },
@@ -150,11 +137,6 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
     toggleWebSearch: () => w().toggleWebSearch?.(),
     launchDeepResearch: () => w().launchDeepResearch?.(),
     syncQuickChips: () => w().syncQuickChips?.(),
-    fetchWebContext: (query, opts) => {
-      const fn = w().fetchWebContext;
-      if (typeof fn !== 'function') return Promise.resolve(undefined);
-      return fn(query, opts);
-    },
   };
 }
 
