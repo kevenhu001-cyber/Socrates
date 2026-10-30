@@ -16,14 +16,15 @@
 | React 确认弹窗、prompt templates、More 菜单、Usage、Share、Profile、sidebar 用户摘要、Composer Tools、附件、session-list 与 Cmd-K 状态的 window 状态桥 | **累计已移除十一项** | 十一个状态域分别由 `ui/confirmState.ts`、`ui/promptTemplatesState.ts`、`ui/morePopoverState.ts`、`ui/usageState.ts`、`ui/shareState.ts`、`ui/profileState.ts`、`ui/sidebarUserState.ts`、`ui/composerToolsState.ts`、`ui/attachmentsState.ts`、`ui/sessionListState.ts`、`ui/cmdKState.ts` 与 React 共享模块实例；不再创建对应的 window bridge。附件上传队列与稳定的 `window.attachments`、session cache 的 `window.SERVER_SESSIONS` 旧接口仍留在对应业务模块。 |
 | `state/` 六个命名空间的 `window.__socrates*Bridge` 别名 | **已移除** | 全仓没有消费者；模块内的 `sessionBridge`、`kbBridge`、`searchBridge`、`callBridge`、`uiBridge`、`examBridge` 和 `window.stateStore` facade 继续工作。 |
 | 聊天运行时的 `window.__socratesReactChatBridge` | **本轮已移除** | 快照、订阅与双 RAF 队列移入 `ui/chatRuntimeStore.ts`；React 和 legacy publisher 导入同一实例，`ToolRuntime` 通过依赖注入发布更新。移除 React 专用 adapter 文件与 `createImmutableBridge.windowKey`。E2E 使用构建可用的 `socrates:chat-runtime-publish` 事件或真实 `addMessage()`，生命周期用例观察 `socrates:chat-runtime-changed` 和最终 UI。 |
+| KaTeX 数学 revision 的 `window.__socratesMathRenderRev` | **本轮已移除** | `render/mathRevision.ts` 是唯一版本计数器；懒加载成功后递增同一模块状态，React 通过正常 runtime 发布失效缓存并重新绘制。测试改为校验渲染结果和旧 window 字段不存在。 |
 
 ## 仍开放或尚无法确认
 
 | 优先级 | 条目 | 状态与边界 |
 |---|---|---|
 | 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
-| 中 | Expo / Universal App 依赖告警 | 审计当前仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；其共同来源是 Expo CLI 使用的 `zod@3.25.76`（GHSA-mrhx-c7xc-m3w5）。CLI 声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 不满足该范围；节点只在开发/构建工具链中。升级到 Expo 发布兼容版本后再移除例外，不通过不兼容的 major override 掩盖它。 |
-| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | Expo / Universal App 依赖告警 | 审计仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；来源是 Expo CLI 使用的 `zod@3.25.76`（[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)）。2026-10-30 核验 npm 最新 `@expo/cli@58.1.17` 仍声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 超出其范围。Expo SDK 58 同时将 React Native 目标升级到 0.88，而本项目 SDK 57 使用 RN 0.86；不能把跨 SDK/RN 升级当作安全依赖小修，也不通过不兼容的 major override 掩盖它。待 Expo 发布兼容依赖范围后处理；参考 [Expo SDK 58 发行说明](https://expo.dev/changelog/sdk-58) 与 [SDK 对应版本表](https://docs.expo.dev/versions/latest/)。 |
+| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -51,3 +52,4 @@
 - 服务器文件上传路由集成测试需要专用 `*_test` / `*_qa` 数据库，本轮环境没有可安全使用的测试库，因此未运行该数据库套件；生产 `.env` 被安全守卫拒绝，未访问生产数据库。
 - `git diff --check`、文档链接检查通过。本次没有运行生产迁移或访问生产数据库。
 - 聊天运行时 window bridge 退役：SPA production build、最终 `npm run lint` 通过；`reactBridge` 与 `chatRuntimeStore` 聚焦单测 14/14、`toolRuntime` 24/24 通过。受影响的 15 个 Playwright spec 共 60 条用例最终全部通过，覆盖模块 store 发布、真实流生命周期、消息列表、工具活动、长流性能及桌面/手机布局。E2E 通过 `socrates:chat-runtime-publish` 浏览器事件驱动生产 bundle，避免依赖开发态 `/src` 路径。
+- KaTeX revision window 字段退役：前端 lint 与生产构建通过；`proseRenderer.test.mjs` 1/1 覆盖 revision 变化使缓存失效、相同 revision 跨 renderer 复用结果；`demand-loading.spec.mjs` 5/5 通过，含 KaTeX 瞬时失败恢复与旧 window 字段不存在断言。

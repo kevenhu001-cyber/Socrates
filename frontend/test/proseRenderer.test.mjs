@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { JSDOM } from 'jsdom';
 import { useProseRenderer, __resetSharedProseCache } from '../src/react/tool-run/proseRenderer.ts';
 import { resetBridgeCache } from '../src/react/legacy/gateway.ts';
+import { bumpMathRenderRevision, getMathRenderRevision } from '../src/render/mathRevision.ts';
 
 test('math revisions invalidate prose caches while matching revisions share finalized HTML', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
@@ -13,35 +14,37 @@ test('math revisions invalidate prose caches while matching revisions share fina
   globalThis.document = dom.window.document;
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   let paints = 0;
-  window.__socratesMathRenderRev = 0;
   window.__socratesLegacy = { render: { renderAssistantHTML: text => {
     paints += 1;
-    return `<p data-math-revision="${window.__socratesMathRenderRev}">${text}</p>`;
+    return `<p data-math-revision="${getMathRenderRevision()}">${text}</p>`;
   } } };
   resetBridgeCache();
   __resetSharedProseCache();
+  const initialRevision = getMathRenderRevision();
   let prose;
   function Harness() { prose = useProseRenderer(false); return null; }
-  const root = createRoot(document.getElementById('root'));
+  let root = createRoot(document.getElementById('root'));
   const render = revision => act(() => root.render(createElement(Harness, { revision })));
   try {
     await render(0);
     const initialRenderer = prose;
     const initial = prose.settled('Formula $x$.');
     assert.equal(prose.settled('Formula $x$.'), initial);
+    assert.match(initial.__html, new RegExp(`data-math-revision="${initialRevision}"`));
     assert.equal(paints, 1);
 
-    window.__socratesMathRenderRev = 1;
+    const nextRevision = bumpMathRenderRevision();
     await render(1);
     assert.notEqual(prose, initialRenderer);
     const updated = prose.settled('Formula $x$.');
     assert.notEqual(updated, initial);
-    assert.match(updated.__html, /data-math-revision="1"/);
+    assert.match(updated.__html, new RegExp(`data-math-revision="${nextRevision}"`));
     assert.equal(paints, 2);
 
-    window.__socratesMathRenderRev = 0;
+    await act(() => root.unmount());
+    root = createRoot(document.getElementById('root'));
     await render(2);
-    assert.equal(prose.settled('Formula $x$.'), initial);
+    assert.equal(prose.settled('Formula $x$.'), updated);
     assert.equal(paints, 2);
   } finally {
     await act(() => root.unmount());

@@ -8,16 +8,10 @@
 let currentMathRevision = 0;
 
 export function getMathRenderRevision(): number {
-  if (typeof window !== 'undefined' && typeof window.__socratesMathRenderRev === 'number') {
-    return Math.max(currentMathRevision, window.__socratesMathRenderRev);
-  }
   return currentMathRevision;
 }
 
 export function bumpMathRenderRevision(): number {
   currentMathRevision += 1;
-  if (typeof window !== 'undefined') {
-    window.__socratesMathRenderRev = currentMathRevision;
-  }
   return currentMathRevision;
 }

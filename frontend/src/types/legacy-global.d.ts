@@ -62,14 +62,6 @@ declare global {
 
     // ── Mount / render entry points (set by React, called by legacy JS) ──
 
-    /**
-     * Bumped by main.js when lazily-loaded KaTeX finally arrives. The
-     * declarative turn renderer caches settled prose HTML per turn, so this
-     * counter — not a new string — is what tells the cache to drop its
-     * entries and re-typeset math that streamed as fallback text.
-     */
-    __socratesMathRenderRev?: number;
-
     // ── Legacy inline handler functions (windowExports.js) ──────────
 
     exploreAction?: () => void;
