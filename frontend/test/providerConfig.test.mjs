@@ -7,6 +7,12 @@ globalThis.localStorage = {
   setItem: (key, value) => storage.set(key, String(value)),
   removeItem: (key) => storage.delete(key),
 };
+const sessionStorage = new Map();
+globalThis.sessionStorage = {
+  getItem: (key) => sessionStorage.get(key) ?? null,
+  setItem: (key, value) => sessionStorage.set(key, String(value)),
+  removeItem: (key) => sessionStorage.delete(key),
+};
 globalThis.window = { CURRENT_USER: null, SERVER_HAS_BEAGLE_KEY: false, TIER_KEY_LIMITS: {} };
 globalThis.document = { cookie: '' };
 
@@ -114,7 +120,7 @@ test('the browser expresses the selected effort and leaves vendor encoding to th
   reset();
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
   store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3.1-Flash-Preview', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
-  window.getReasoningEffort = () => 'low';
+  storage.set('socrates-reasoning-effort', 'low');
   try {
     const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
     assert.equal(body.reasoning_effort, 'low');
@@ -124,7 +130,6 @@ test('the browser expresses the selected effort and leaves vendor encoding to th
        a name-based guess in the SPA cannot be right for it. */
     assert.equal('extra_body' in body, false);
   } finally {
-    delete window.getReasoningEffort;
     reset();
   }
 });
@@ -134,7 +139,7 @@ test('the effort intent is sent for models whose family ignores effort levels', 
   reset();
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
   store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
-  window.getReasoningEffort = () => 'low';
+  storage.set('socrates-reasoning-effort', 'low');
   try {
     const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
     /* MiniMax-M3 accepts the field but ignores it. The server knows that and
@@ -142,7 +147,6 @@ test('the effort intent is sent for models whose family ignores effort levels', 
     assert.equal(body.reasoning_effort, 'low');
     assert.equal('extra_body' in body, false);
   } finally {
-    delete window.getReasoningEffort;
     reset();
   }
 });

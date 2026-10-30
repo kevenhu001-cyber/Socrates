@@ -20,6 +20,7 @@ globalThis.window = {
 
 const { callAPI, callAPIChat, buildChatRequestBody } = await import('../src/chat/api.ts');
 const { stateStore } = await import('../src/state/store.ts');
+const { setAppMode } = await import('../src/config/providers.ts');
 const encoder = new TextEncoder();
 
 function setProvider(provider) {
@@ -42,9 +43,9 @@ function clearContext() {
   stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: null });
   storage.delete('session:socrates-active-assistant');
   storage.delete('socrates-response-speed');
-  window.appMode = 'chat';
-  delete window.getCustomInstructionsString;
-  delete window.getReasoningEffort;
+  setAppMode('chat');
+  storage.delete('socrates-custom-instructions');
+  storage.delete('socrates-reasoning-effort');
 }
 
 test('request body copies messages and includes session, project, assistant, and preference context', () => {
@@ -53,9 +54,11 @@ test('request body copies messages and includes session, project, assistant, and
   stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: 'project-3' });
   sessionStorage.setItem('socrates-active-assistant', 'assistant-2');
   localStorage.setItem('socrates-response-speed', 'fast');
-  window.appMode = 'tutor';
-  window.getCustomInstructionsString = () => 'Prefer concise explanations.';
-  window.getReasoningEffort = () => 'high';
+  setAppMode('tutor');
+  localStorage.setItem('socrates-custom-instructions', JSON.stringify({
+    response: 'Prefer concise explanations.', about: '', savedAt: '',
+  }));
+  localStorage.setItem('socrates-reasoning-effort', 'high');
   const messages = [{ role: 'user', content: 'Explain recursion.' }];
 
   const body = buildChatRequestBody(messages, 600, 0.7);
@@ -67,8 +70,10 @@ test('request body copies messages and includes session, project, assistant, and
   assert.equal(body.projectId, 'project-3');
   assert.equal(body.assistantId, 'assistant-2');
   assert.equal(body.reasoning_effort, 'high');
+  assert.equal('getCustomInstructionsString' in window, false);
+  assert.equal('getReasoningEffort' in window, false);
   assert.deepEqual(body.messages[0], {
-    role: 'system', content: '[User custom instructions]\nPrefer concise explanations.',
+    role: 'system', content: '[User custom instructions]\n[How to respond]\nPrefer concise explanations.',
   });
   assert.deepEqual(messages, [{ role: 'user', content: 'Explain recursion.' }]);
   clearContext();

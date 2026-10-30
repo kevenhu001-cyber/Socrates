@@ -19,6 +19,11 @@ import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { publishProfileState } from './profileState.ts';
 import { publishSidebarUser } from './sidebarUserState.ts';
 import { setUserMemories } from '../app/lifecycle/userMemory.ts';
+import {
+  buildCustomInstructionsString,
+  loadCustomInstructions,
+  saveCustomInstructions,
+} from '../config/customInstructions.ts';
 
 
 function userInitials(name: string) {
@@ -140,30 +145,6 @@ function saveProfileName(newName: string) {
 
 let _customInstructionsSaveTimer: number|null|undefined = null;
 
-interface CustomInstructions { response: string; about: string; savedAt: string }
-
-function loadCustomInstructions(): CustomInstructions {
-  try {
-    const raw = localStorage.getItem("socrates-custom-instructions");
-    if (raw) {
-      const parsed: unknown = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        const value = parsed as Record<string, unknown>;
-        return {
-          response: typeof value.response === 'string' ? value.response : '',
-          about: typeof value.about === 'string' ? value.about : '',
-          savedAt: typeof value.savedAt === 'string' ? value.savedAt : '',
-        };
-      }
-    }
-  } catch (error) { reportSwallow(error, 'ui/profile.ts:148', 'expected'); }
-  return { response: '', about: '', savedAt: '' };
-}
-
-function saveCustomInstructions(value: CustomInstructions) {
-  try { localStorage.setItem("socrates-custom-instructions", JSON.stringify(value)); } catch (error) { reportSwallow(error, 'ui/profile.ts:153', 'expected'); }
-}
-
 function loadCustomInstructionsIntoUI() {
   const data = loadCustomInstructions();
   if (!data.response && typeof browserWindow.CURRENT_USER?.customInstructions === 'string') {
@@ -195,13 +176,6 @@ function onCustomInstructionsChange() {
   }, 600);
 }
 
-function buildCustomInstructionsString(value: Pick<CustomInstructions, 'response' | 'about'>) {
-  const parts = [];
-  if (value && value.response) parts.push("[How to respond]\n" + value.response);
-  if (value && value.about) parts.push("[About the user]\n" + value.about);
-  return parts.join("\n\n");
-}
-
 function updateInstSaveState(savedAt: string|null) {
   _publishProfileState();
   /* savedAt is preserved in the bridge publish below via instSaveState;
@@ -209,11 +183,6 @@ function updateInstSaveState(savedAt: string|null) {
      "hh:mm" label) are no longer needed because React's ProfileModal
      component reads savedAt from the snapshot. */
   void savedAt;
-}
-
-function getCustomInstructionsString() {
-  const v = loadCustomInstructions();
-  return buildCustomInstructionsString(v);
 }
 
 /* ─── Web search toggle ─── */
@@ -260,7 +229,7 @@ export {
   openProfile, closeProfile, saveProfileName,
   loadCustomInstructions, saveCustomInstructions, loadCustomInstructionsIntoUI,
   onCustomInstructionsChange, buildCustomInstructionsString, updateInstSaveState,
-  getCustomInstructionsString, toggleProfileWebSearch, syncProfileWebSearchUI,
+  toggleProfileWebSearch, syncProfileWebSearchUI,
   loadUserMemories,
   _publishProfileState as publishProfileSnapshot,
 };

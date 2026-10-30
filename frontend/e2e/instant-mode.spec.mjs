@@ -42,7 +42,9 @@ for (const [label, model, viewport, lang] of [
     await page.screenshot({ path: `test-results/instant-${encodeURIComponent(label)}.png` });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForAppShell(page);
-    await expect.poll(() => page.evaluate(() => window.getReasoningEffort())).toBe('instant');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('instant');
+    await expect.poll(() => page.evaluate(() => typeof window.getReasoningEffort)).toBe('undefined');
+    await expect.poll(() => page.evaluate(() => typeof window.getCustomInstructionsString)).toBe('undefined');
     await page.evaluate(() => {
       window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
       window.__testActivateMainView('chatView');

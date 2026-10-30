@@ -63,6 +63,7 @@
 | Share create/revoke E2E 专用 window aliases | **本轮已收敛** | Create/revoke 流程改用 typed `__socratesLegacy.share` actions；modal open/close shell entry 保留。删除两个根级 window 发布及类型，E2E 检查旧字段缺失。 |
 | 无读取方的 `window.openMediaPicker` alias | **本轮已移除** | React Composer 通过 `__socratesLegacy.composer.openMediaPicker` 调用媒体选择器；全仓无根级读取方。移除重复发布及 `RuntimeWindow` 字段，E2E 检查旧字段缺失并覆盖手机 Photos action。 |
 | post-auth 的 `window.refreshApiConfig` 依赖 | **本轮已移除** | `auth/postAuth.ts` 与 `config/providers.ts` 已共享同一模块实例；post-auth 的 provider 拉取直接调用 `refreshApiConfig`，删除 bridge 发布和类型字段，避免认证流程默默跳过刷新。 |
+| 聊天请求体对全局模式、推理强度和自定义指令 getter 的依赖 | **本轮已移除** | `requestBody.ts` 改为读取 `config/providers.ts` 的 live `appMode`、偏好存储和配置层的自定义指令函数。持久化与格式化逻辑抽到 `config/customInstructions.ts`；删除两个 getter 的 window 发布和类型，不再依赖 UI 模块完成请求组装。 |
 
 ## 仍开放或尚无法确认
 
@@ -144,3 +145,4 @@
 - Share renderer/action bridge cleanup：Share lazy module 直接导入 `restorePersistedMessageExtras`，删除重复 tool/artifact fallback；create/revoke E2E 改走 typed share actions 并检查旧别名缺失。前端完整 lint、生产构建通过，`share-view.spec.mjs` 4/4 覆盖只读共享聊天、工具行、创建/撤销与兼容挂载。
 - `openMediaPicker` window alias removal: mobile Composer photo selection continues through typed `__socratesLegacy.composer.openMediaPicker`; old root alias absence is asserted. Frontend lint and production build pass, and `composer-tools-compat.spec.mjs` passes 11/11.
 - Post-auth provider refresh now imports `refreshApiConfig` directly from the already-used provider module; `auth-direct-handlers.spec.mjs` asserts the global is absent and observes an `/api/api-key` request after sign-in. Frontend full lint, production build and the focused auth spec (1/1) pass.
+- Chat request context now comes directly from config modules: a focused custom-instructions unit test covers stored-field validation and formatting, the chat API flow covers app mode / instructions / reasoning values without window getters, provider-capability tests read persisted effort, and `instant-mode.spec.mjs` checks both old getter globals stay unpublished while real requests still honor the saved level.

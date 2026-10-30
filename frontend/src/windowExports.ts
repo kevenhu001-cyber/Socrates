@@ -319,14 +319,8 @@ browserWindow.syncQuickChips = function () { syncQuickChips(); };
 mountChipSyncListeners();
 
 
-/* ─── ui/effortPicker.ts — reasoning-effort (高/中/低) selector
-   (P_chatgpt-landing). Exposes getReasoningEffort() consumed by
-   chat/stream.js and the picker toggles used by inline handlers. ─── */
-import { getReasoningEffort, syncEffortUI } from './ui/effortPicker.ts';
-/* getReasoningEffort stays on window: chat/api.js (light import chain used
-   by pure-Node unit tests) must not import ui/effortPicker.ts → pickers.js
-   (top-level document wiring). */
-browserWindow.getReasoningEffort = getReasoningEffort;
+/* ─── ui/effortPicker.ts — reasoning-effort picker UI. ─── */
+import { syncEffortUI } from './ui/effortPicker.ts';
 browserWindow.syncEffortUI = syncEffortUI;
 
 /* ─── ui/readAloud.ts — browser TTS read-aloud for assistant messages

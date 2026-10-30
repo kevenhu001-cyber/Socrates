@@ -33,7 +33,7 @@ import { saveCurrentSession } from '../session/persistence.ts';
    below returns a promise, which every caller already awaits. */
 import { openAttachmentPicker, openMediaPicker, renderAttachmentChips, retryComposerAttachment } from '../attachments/render.ts';
 import { removeAttachment } from '../attachments.ts';
-import { getCustomInstructionsString, saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch, openProfile, closeProfile } from '../ui/profile.ts';
+import { saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch, openProfile, closeProfile } from '../ui/profile.ts';
 import { editUserMessage, regenerateAssistantMessage, branchFromMessage, switchMessageBranch } from '../chat/editBranch.ts';
 import { toggleReadAloud } from '../ui/readAloud.ts';
 import { selectShareVis, copyShareLink, openShareModal, closeShareModal, createShareLink, revokeShareLink } from '../ui/share.ts';
@@ -129,7 +129,6 @@ browserWindow.fetchWebContext = function (
   return loadWebSearch().then(function (m) { return m.fetchWebContext(query, opts); });
 };
 browserWindow.openAttachmentPicker = openAttachmentPicker;
-browserWindow.getCustomInstructionsString = getCustomInstructionsString;
 browserWindow.renderAssistantHTML = renderAssistantHTML;
 browserWindow.showToast = showToast;
 browserWindow.resetApp = resetApp;

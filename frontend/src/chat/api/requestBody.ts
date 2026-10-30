@@ -1,5 +1,7 @@
 import { stateStore } from '../../state/store.ts';
-import { getStoredResponseSpeed, getStoredReasoningEffort, type ReasoningEffort } from '../../config/chatPreferences.ts';
+import { getStoredResponseSpeed, getStoredReasoningEffort } from '../../config/chatPreferences.ts';
+import { getCustomInstructionsString } from '../../config/customInstructions.ts';
+import { appMode } from '../../config/providers.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
 import { resolveEffortRequest } from '../../config/effectiveEffort.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
@@ -27,13 +29,6 @@ export interface ChatRequestBody {
   [key: string]: unknown;
 }
 
-/** Legacy bridges the request builder reads; all optional on non-SPA hosts. */
-interface RequestBodyWindow extends Window {
-  appMode?: string;
-  getCustomInstructionsString?: () => string;
-  getReasoningEffort?: () => string;
-}
-
 function attachSessionContext(body: ChatRequestBody): void {
   try {
     const sessionId = stateStore.read('currentSessionId') || null;
@@ -49,10 +44,7 @@ function attachSessionContext(body: ChatRequestBody): void {
 }
 
 function prependCustomInstructions(body: ChatRequestBody): void {
-  const win = window as RequestBodyWindow;
-  const instructions = typeof win.getCustomInstructionsString === 'function'
-    ? win.getCustomInstructionsString()
-    : '';
+  const instructions = getCustomInstructionsString();
   if (!instructions) return;
   body.messages.unshift({
     role: 'system',
@@ -91,15 +83,7 @@ function attachReasoningOptions(body: ChatRequestBody): void {
      The server also publishes what the active model supports, so a stored
      preference the model cannot satisfy (Instant on a model that always
      reasons) never reaches the wire as a request that is bound to fail. */
-  const win = window as RequestBodyWindow;
-  const raw = (typeof win.getReasoningEffort === 'function' && win.getReasoningEffort())
-    || getStoredReasoningEffort();
-  /* The legacy bridge is untyped; an unexpected value falls back to the
-     stored preference rather than reaching the wire. */
-  const effort: ReasoningEffort = raw === 'instant' || raw === 'low' || raw === 'medium' || raw === 'high'
-    ? raw
-    : getStoredReasoningEffort();
-  const request = resolveEffortRequest(effort, activeProviderCapabilities());
+  const request = resolveEffortRequest(getStoredReasoningEffort(), activeProviderCapabilities());
   if (request === undefined) return;
   body.reasoning_effort = request;
 }
@@ -114,7 +98,7 @@ export function buildChatRequestBody(
     messages: messages.slice(),
     temperature,
     max_tokens: maxTokens,
-    mode: (window as RequestBodyWindow).appMode === 'tutor' ? 'tutor' : 'chat',
+    mode: appMode === 'tutor' ? 'tutor' : 'chat',
     response_speed: getStoredResponseSpeed(),
   };
   attachSessionContext(body);

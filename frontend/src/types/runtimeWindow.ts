@@ -49,9 +49,7 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "getActiveProvider": typeof import("../pickers")["getActiveProvider"];
   "getConnectorIconMarkup": typeof import("../sidebar/nav")["connectorIconWithFallback"];
   "getCsrfToken": typeof import("../util/api/request")["getCsrfToken"];
-  "getCustomInstructionsString": typeof import("../ui/profile")["getCustomInstructionsString"];
   "getExplanation": typeof import("../tutor/socraticTurn")["getExplanation"];
-  "getReasoningEffort": typeof import("../ui/effortPicker")["getReasoningEffort"];
   "getSlashApps": typeof import("../sidebar/nav")["getSlashApps"];
   "handleSendClick": typeof import("../chat/composerTurn")["handleSendClick"];
   "hideGate": typeof import("../auth/index")["hideGate"];
