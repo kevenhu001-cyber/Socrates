@@ -330,6 +330,13 @@
       "when": 1792738559702,
       "tag": "0046_session_prompt_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793344541160,
+      "tag": "0047_project_memory_mode",
+      "breakpoints": true
     }
   ]
 }

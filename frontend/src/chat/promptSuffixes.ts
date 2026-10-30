@@ -50,16 +50,21 @@ export function configurePromptSuffixes(deps: PromptSuffixDeps): void {
  */
 export function memoriesSuffix(): string {
   let s = '';
-  const cached = userMemoriesReader() as ArrayLike<unknown> | null | undefined;
-  if (cached && cached.length) {
-    s +=
-      "\n\n## User's saved memories (long-term context)\n" +
-      Array.prototype.map.call(cached, (t: unknown) => '- ' + String(t)).join('\n');
-  }
-  /* Also include the client-side memory store. */
-  if (typeof injectMemoryContext === 'function') {
-    const local = injectMemoryContext();
-    if (local) s += local;
+  /* Project chats rely on the server's project-aware memory selection.
+     The browser cache contains personal and memories from every project, so
+     forwarding it here would bypass the project's memory scope. */
+  if (!stateStore.read('currentProjectId')) {
+    const cached = userMemoriesReader() as ArrayLike<unknown> | null | undefined;
+    if (cached && cached.length) {
+      s +=
+        "\n\n## User's saved memories (long-term context)\n" +
+        Array.prototype.map.call(cached, (t: unknown) => '- ' + String(t)).join('\n');
+    }
+    /* Also include the client-side memory store for non-project chats. */
+    if (typeof injectMemoryContext === 'function') {
+      const local = injectMemoryContext();
+      if (local) s += local;
+    }
   }
   /* Also include user's custom instructions */
   try {

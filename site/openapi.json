@@ -2183,6 +2183,15 @@
                     "maxLength": 32000,
                     "description": "Project-scoped system prompt additions"
                   },
+                  "memoryMode": {
+                    "type": "string",
+                    "enum": [
+                      "default",
+                      "project-only"
+                    ],
+                    "default": "default",
+                    "description": "Whether new conversations include personal memories or only this project's memories"
+                  },
                   "workspaceId": {
                     "type": "string",
                     "format": "uuid",
@@ -2248,6 +2257,13 @@
                   },
                   "systemPrompt": {
                     "type": "string"
+                  },
+                  "memoryMode": {
+                    "type": "string",
+                    "enum": [
+                      "default",
+                      "project-only"
+                    ]
                   }
                 }
               }
@@ -9486,6 +9502,14 @@
           "systemPrompt": {
             "type": "string",
             "nullable": true
+          },
+          "memoryMode": {
+            "type": "string",
+            "enum": [
+              "default",
+              "project-only"
+            ],
+            "default": "default"
           },
           "workspaceId": {
             "type": "string",

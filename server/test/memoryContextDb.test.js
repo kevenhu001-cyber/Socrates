@@ -26,7 +26,7 @@ describe('appendMemoryContext: PostgreSQL recall', { skip: !databaseUrl }, () =>
         ]);
         await db.insert(projects).values([
           { id: projectId, userId, name: 'Current' },
-          { id: otherProjectId, userId, name: 'Other' },
+          { id: otherProjectId, userId, name: 'Other', memoryMode: 'project-only' },
         ]);
         await db.insert(memories).values([
           { userId, text: 'older global fact', scope: 'global', createdAt: new Date(base) },
@@ -45,6 +45,9 @@ describe('appendMemoryContext: PostgreSQL recall', { skip: !databaseUrl }, () =>
         const globalOnly = await appendMemoryContext(messages, userId, undefined, db);
         assert.match(globalOnly[0].content, /older global fact/);
         assert.doesNotMatch(globalOnly[0].content, /newer project fact/);
+        const projectOnly = await appendMemoryContext(messages, userId, otherProjectId, db);
+        assert.match(projectOnly[0].content, /other project secret/);
+        assert.doesNotMatch(projectOnly[0].content, /older global fact|newer project fact/);
         throw rollback;
       });
     } catch (error) {

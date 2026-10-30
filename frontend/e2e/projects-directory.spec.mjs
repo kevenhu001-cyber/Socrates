@@ -11,7 +11,7 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const PROJECTS = {
   projects: [
-    { id: 'p1', name: 'Thesis research', description: 'Sources and drafts', updatedAt: '2026-09-20T10:00:00.000Z' },
+    { id: 'p1', name: 'Thesis research', description: 'Sources and drafts', memoryMode: 'default', updatedAt: '2026-09-20T10:00:00.000Z' },
     { id: 'p2', name: 'Exam prep', description: 'Practice questions', updatedAt: '2026-09-18T08:30:00.000Z' },
   ],
 };
@@ -118,12 +118,14 @@ test('typed project actions create, edit, and open a workspace from API data', a
 
   await page.locator('.projects-directory .workspace-create-button').click();
   const form = page.locator('#projectForm');
+  await page.screenshot({ path: 'test-results/project-memory-mode-dialog.png', fullPage: true, animations: 'disabled' });
   await form.locator('[name="name"]').fill('Reading project');
   await form.locator('[name="description"]').fill('Texts and notes');
+  await form.locator('[name="memoryMode"]').selectOption('project-only');
   const createRequest = page.waitForRequest((request) => request.method() === 'POST' && /\/api\/(v2\/)?projects(?:\?|$)/.test(request.url()));
   const createResponse = page.waitForResponse((response) => response.request().method() === 'POST' && /\/api\/(v2\/)?projects(?:\?|$)/.test(response.url()));
   await form.locator('button[type="submit"]').click();
-  expect((await createRequest).postDataJSON()).toMatchObject({ name: 'Reading project', description: 'Texts and notes' });
+  expect((await createRequest).postDataJSON()).toMatchObject({ name: 'Reading project', description: 'Texts and notes', memoryMode: 'project-only' });
   expect(await (await createResponse).json()).toMatchObject({ project: { id: 'project-new', name: 'Reading project' } });
   await expect(page.locator('.msg-toast').filter({ hasText: 'Project created' })).toBeVisible();
 
@@ -131,8 +133,11 @@ test('typed project actions create, edit, and open a workspace from API data', a
   await expect(project).toBeVisible();
   await project.locator('.workspace-icon-action').click();
   await expect(page.locator('#projectForm [name="name"]')).toHaveValue('Reading project');
+  await expect(page.locator('#projectForm [name="memoryMode"]')).toHaveValue('project-only');
   await page.locator('#projectForm [name="name"]').fill('Reading and writing');
+  const updateRequest = page.waitForRequest((request) => request.method() === 'PATCH' && /\/api\/(v2\/)?projects(?:\/|\?)/.test(request.url()));
   await page.locator('#projectForm button[type="submit"]').click();
+  expect((await updateRequest).postDataJSON()).toMatchObject({ name: 'Reading and writing', memoryMode: 'project-only' });
   await expect(page.locator('.project-row', { hasText: 'Reading and writing' })).toBeVisible();
 
   await page.locator('.project-main', { hasText: 'Reading and writing' }).click();

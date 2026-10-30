@@ -1349,6 +1349,7 @@ paths:
                 color: { type: string, pattern: "^#[0-9A-Fa-f]{6}$" }
                 icon: { type: string, maxLength: 16, description: Emoji or short label }
                 systemPrompt: { type: string, maxLength: 32000, description: Project-scoped system prompt additions }
+                memoryMode: { type: string, enum: [default, project-only], default: default, description: Whether new conversations include personal memories or only this project's memories }
                 workspaceId: { type: string, format: uuid, nullable: true }
       responses:
         '409': { $ref: '#/components/responses/IdempotencyConflict' }
@@ -1378,6 +1379,7 @@ paths:
                 color: { type: string }
                 icon: { type: string }
                 systemPrompt: { type: string }
+                memoryMode: { type: string, enum: [default, project-only] }
       responses:
         '200':
           description: Updated
@@ -4761,6 +4763,7 @@ components:
         color: { type: string, nullable: true }
         icon: { type: string, nullable: true }
         systemPrompt: { type: string, nullable: true }
+        memoryMode: { type: string, enum: [default, project-only], default: default }
         workspaceId: { type: string, format: uuid, nullable: true }
         createdAt: { type: string, format: date-time }
         sessionCount: { type: integer }

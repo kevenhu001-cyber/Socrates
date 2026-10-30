@@ -256,6 +256,7 @@ export interface Project {
   color?: string | null;
   icon?: string | null;
   systemPrompt?: string | null;
+  memoryMode?: 'default' | 'project-only';
   createdAt?: string | null;
   updatedAt?: string | null;
 }

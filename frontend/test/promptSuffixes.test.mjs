@@ -61,6 +61,8 @@ test('thinkingSuffix prepends high-effort guidance for tutor mode', () => {
 });
 
 test('memoriesSuffix lists cached server memories', () => {
+  const previousProjectId = stateStore.read('currentProjectId');
+  stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: null });
   configurePromptSuffixes({ getUserMemories: () => ['likes tea', 5] });
   try {
     const suffix = memoriesSuffix();
@@ -69,6 +71,21 @@ test('memoriesSuffix lists cached server memories', () => {
     assert.match(suffix, /- 5/);
   } finally {
     configurePromptSuffixes({ getUserMemories: () => [] });
+    stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: previousProjectId ?? null });
+  }
+});
+
+test('project chats leave memory selection to the server', () => {
+  const previousProjectId = stateStore.read('currentProjectId');
+  stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: 'project-1' });
+  configurePromptSuffixes({ getUserMemories: () => ['personal secret'] });
+  try {
+    const suffix = memoriesSuffix();
+    assert.equal(suffix, '');
+    assert.doesNotMatch(suffix, /personal secret|MEMORY/);
+  } finally {
+    configurePromptSuffixes({ getUserMemories: () => [] });
+    stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: previousProjectId ?? null });
   }
 });
 
@@ -98,7 +115,7 @@ test('projectContextSuffix renders the active project block', () => {
   }
 });
 
-test('appendClientContextMessages composes memories, project, and research', () => {
+test('appendClientContextMessages composes project context and research without client memories', () => {
   const previousProjectId = stateStore.read('currentProjectId');
   const previousSearch = stateStore.read('searchContext');
   configurePromptSuffixes({ getUserMemories: () => ['likes tea'] });
@@ -108,15 +125,14 @@ test('appendClientContextMessages composes memories, project, and research', () 
   try {
     const base = [{ role: 'user', content: 'hi' }];
     const withResearch = appendClientContextMessages(base, true);
-    assert.equal(withResearch.length, 4);
+    assert.equal(withResearch.length, 3);
     assert.equal(withResearch[0].content, 'hi');
-    assert.match(withResearch[1].content, /saved memories/);
-    assert.match(withResearch[2].content, /Active project/);
-    assert.match(withResearch[3].content, /Web research handling/);
-    assert.match(withResearch[3].content, /Markdown link/);
+    assert.match(withResearch[1].content, /Active project/);
+    assert.match(withResearch[2].content, /Web research handling/);
+    assert.match(withResearch[2].content, /Markdown link/);
 
     const withoutResearch = appendClientContextMessages(base);
-    assert.equal(withoutResearch.length, 3);
+    assert.equal(withoutResearch.length, 2);
   } finally {
     configurePromptSuffixes({ getUserMemories: () => [] });
     delete globalThis.window.__activeProject;

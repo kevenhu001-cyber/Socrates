@@ -31,7 +31,7 @@ function Field({ label, hint, wide = false, children }: { label: ReactNode; hint
     <Label
       className={`workspace-field flex flex-col items-stretch gap-1.5 text-sm font-medium${wide ? ' [&_[data-slot=native-select-wrapper]]:w-full' : ''}`}
     >
-      <span>{label}{hint ? <em>{hint}</em> : null}</span>
+      <span>{label}{hint ? <em> {hint}</em> : null}</span>
       {children}
     </Label>
   );
@@ -55,6 +55,12 @@ export function ProjectFormView({ project, title }: { project: CachedProject | n
         </Field>
         <Field label={i18n('dialog.field.instructions', 'Instructions')} hint={i18n('dialog.optional', 'Optional')}>
           <Textarea name="systemPrompt" rows={3} defaultValue={String(project?.systemPrompt ?? '')} placeholder={i18n('dialog.project.instrPh', 'How should Socrates approach work in this project?')} />
+        </Field>
+        <Field label={i18n('dialog.project.memoryMode', 'Memory scope')} hint={i18n('dialog.project.memoryModeHint', 'Applies to new conversations.')} wide>
+          <NativeSelect name="memoryMode" defaultValue={String(project?.memoryMode || 'default')}>
+            <NativeSelectOption value="default">{i18n('dialog.project.memoryModeDefault', 'Personal and project memories')}</NativeSelectOption>
+            <NativeSelectOption value="project-only">{i18n('dialog.project.memoryModeProjectOnly', 'Only this project’s memories')}</NativeSelectOption>
+          </NativeSelect>
         </Field>
         <Field label={i18n('dialog.field.color', 'Color')}>
           <Input name="color" type="color" defaultValue={String(project?.color || '#c69a2d')} />

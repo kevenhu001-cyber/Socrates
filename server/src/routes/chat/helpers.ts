@@ -229,13 +229,33 @@ async function resolveMemoryContext(
 ): Promise<PolicyBlock | null> {
   if (!userId) return null;
   try {
-    const { memories } = await import('../../db/schema/index.js');
-    /* Global rows plus rows tagged to THIS project only — a memory
-       scoped to a different project must not leak across projects. */
-    const scopeCond = projectId
-      ? (or(eq(memories.scope, 'global'), and(eq(memories.scope, 'project'), eq(memories.projectId, projectId))) ?? eq(memories.scope, 'global'))
-      : eq(memories.scope, 'global');
-    const rows = await (db ?? getDb())
+    const { memories, projects } = await import('../../db/schema/index.js');
+    const database = db ?? getDb();
+    let scopeCond = eq(memories.scope, 'global');
+    if (projectId) {
+      const [project] = await database.select({ memoryMode: projects.memoryMode })
+        .from(projects)
+        .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
+        .limit(1);
+      /* Treat an unknown project as global-only. This also prevents a
+         caller-supplied project id from selecting project memories unless
+         the project belongs to the authenticated user. */
+      if (!project) {
+        scopeCond = eq(memories.scope, 'global');
+      } else if (project.memoryMode === 'project-only') {
+        scopeCond = and(eq(memories.scope, 'project'), eq(memories.projectId, projectId))
+          ?? sql`false`;
+      } else {
+        /* Default: global rows plus rows tagged to THIS project only. */
+        scopeCond = or(
+          eq(memories.scope, 'global'),
+          and(eq(memories.scope, 'project'), eq(memories.projectId, projectId)),
+        ) ?? eq(memories.scope, 'global');
+      }
+    } else {
+      scopeCond = eq(memories.scope, 'global');
+    }
+    const rows = await database
       .select({ text: memories.text })
       .from(memories)
       .where(and(eq(memories.userId, userId), eq(memories.enabled, true), scopeCond))

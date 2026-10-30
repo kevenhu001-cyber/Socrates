@@ -16,6 +16,7 @@ export const projects = pgTable('projects', {
   color: text('color'),
   icon: text('icon'),
   systemPrompt: text('system_prompt'),
+  memoryMode: text('memory_mode').notNull().default('default'),
   workspaceId: uuid('workspace_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

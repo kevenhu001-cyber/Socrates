@@ -27,6 +27,15 @@ Sessionless auxiliary completions stay stateless. Retrieval, current teaching
 state and actual tool availability remain turn-scoped; they must not rewrite
 the fixed base prefix. See [design and rollback notes](../docs/plans/2026-10-23-session-prompt-cache.md).
 
+Project memory scope uses `projects.memory_mode` (migration 0047): `default`
+includes personal plus active-project memories, while `project-only` excludes
+personal and other-project memories. Project chats leave memory selection to
+the server so browser-cached memories cannot bypass that scope. The choice is
+read when a session prompt snapshot is first created; an existing snapshot is
+unchanged. Migration 0047 defaults existing projects to `default`, preserving
+their previous behavior. Keep the column when rolling back application code;
+dropping it discards explicit `project-only` preferences.
+
 ## Internal process metrics
 
 `GET /api/_internal/metrics` (also available as `/api/v2/_internal/metrics`)

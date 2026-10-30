@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ADD COLUMN "memory_mode" text DEFAULT 'default' NOT NULL;

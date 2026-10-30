@@ -16,6 +16,14 @@ import { removeProjectWorkspace } from '../services/util/workspacePaths.js';
 const router = Router();
 router.use(requireAuth, resourceScope('projects'));
 
+type ProjectMemoryMode = 'default' | 'project-only';
+
+function parseProjectMemoryMode(value: unknown, fallback: ProjectMemoryMode = 'default'): ProjectMemoryMode {
+  if (value === undefined) return fallback;
+  if (value === 'default' || value === 'project-only') return value;
+  throw new BadRequest('memoryMode must be "default" or "project-only"');
+}
+
 /* GET /api/projects — list projects */
 router.get('/', async (req, res, next) => {
   try {
@@ -32,10 +40,11 @@ router.post('/', async (req, res, next) => {
   try {
     const { name, description, color, icon, systemPrompt } = req.body;
     if (!name) throw new BadRequest('name is required');
+    const memoryMode = parseProjectMemoryMode(req.body.memoryMode);
     return await durableJsonWrite(req, res, 'projects.create.v1', async (tx) => {
       const [project] = await tx.insert(projects).values({
         userId: req.userId!,
-        name, description, color, icon, systemPrompt,
+        name, description, color, icon, systemPrompt, memoryMode,
       }).returning();
       return { status: 201, body: project };
     });
@@ -54,6 +63,7 @@ router.patch('/:id', async (req, res, next) => {
     for (const key of ['name', 'description', 'color', 'icon', 'systemPrompt']) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];
     }
+    if (req.body.memoryMode !== undefined) patch.memoryMode = parseProjectMemoryMode(req.body.memoryMode);
     if (Object.keys(patch).length) {
       await db.update(projects).set(patch).where(eq(projects.id, req.params.id));
     }

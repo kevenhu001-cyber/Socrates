@@ -48,21 +48,42 @@ describe('appendMemoryContext: scoped recall', () => {
     const queries = [];
     const db = drizzle(async (sql, params) => {
       queries.push({ sql, params });
+      if (sql.includes('"projects"')) return { rows: [['default']] };
       return { rows: [['recent project fact'], ['older global fact']] };
     });
     const result = await appendMemoryContext(messages, userId, projectId, db);
-    assert.equal(queries.length, 1);
-    assert.match(queries[0].sql, /"user_id" = \$1/);
-    assert.match(queries[0].sql, /"enabled" = \$2/);
-    assert.match(queries[0].sql, /"scope" = \$3/);
-    assert.match(queries[0].sql, /"scope" = \$4/);
-    assert.match(queries[0].sql, /"project_id" = \$5/);
-    assert.match(queries[0].sql, /order by "memories"\."created_at" desc limit \$6/);
-    assert.deepEqual(queries[0].params, [userId, true, 'global', 'project', projectId, 50]);
+    assert.equal(queries.length, 2);
+    assert.match(queries[0].sql, /"projects"\."id" = \$1/);
+    assert.match(queries[0].sql, /"projects"\."user_id" = \$2/);
+    assert.deepEqual(queries[0].params, [projectId, userId, 1]);
+    assert.match(queries[1].sql, /"user_id" = \$1/);
+    assert.match(queries[1].sql, /"enabled" = \$2/);
+    assert.match(queries[1].sql, /"scope" = \$3/);
+    assert.match(queries[1].sql, /"scope" = \$4/);
+    assert.match(queries[1].sql, /"project_id" = \$5/);
+    assert.match(queries[1].sql, /order by "memories"\."created_at" desc limit \$6/);
+    assert.deepEqual(queries[1].params, [userId, true, 'global', 'project', projectId, 50]);
     assert.match(result[0].content, /\[Server context: saved-memories\]/);
     assert.ok(result[0].content.indexOf('recent project fact') < result[0].content.indexOf('older global fact'));
     assert.equal(messages[0].content, 'Base policy');
     assert.equal((await appendMemoryContext(result, userId, projectId, db))[0].content, result[0].content);
+  });
+
+  test('project-only mode selects current-project memories and excludes personal memories', async () => {
+    const queries = [];
+    const db = drizzle(async (sql, params) => {
+      queries.push({ sql, params });
+      if (sql.includes('"projects"')) return { rows: [['project-only']] };
+      return { rows: [['current project fact']] };
+    });
+    const result = await appendMemoryContext(messages, userId, projectId, db);
+    assert.equal(queries.length, 2);
+    assert.match(queries[1].sql, /"scope" = \$3/);
+    assert.match(queries[1].sql, /"project_id" = \$4/);
+    assert.doesNotMatch(queries[1].sql, /"scope" = \$5/);
+    assert.deepEqual(queries[1].params, [userId, true, 'project', projectId, 50]);
+    assert.match(result[0].content, /current project fact/);
+    assert.doesNotMatch(result[0].content, /personal memory/);
   });
 
   test('without an active project queries only global memories', async () => {
@@ -74,6 +95,20 @@ describe('appendMemoryContext: scoped recall', () => {
     assert.equal(await appendMemoryContext(messages, userId, undefined, db), messages);
     assert.deepEqual(queries[0].params, [userId, true, 'global', 50]);
     assert.doesNotMatch(queries[0].sql, /"project_id"/);
+  });
+
+  test('an unknown project id cannot select project memories', async () => {
+    const queries = [];
+    const db = drizzle(async (sql, params) => {
+      queries.push({ sql, params });
+      if (sql.includes('"projects"')) return { rows: [] };
+      return { rows: [['personal memory']] };
+    });
+    const result = await appendMemoryContext(messages, userId, projectId, db);
+    assert.equal(queries.length, 2);
+    assert.deepEqual(queries[1].params, [userId, true, 'global', 50]);
+    assert.doesNotMatch(queries[1].sql, /"project_id"/);
+    assert.match(result[0].content, /personal memory/);
   });
 
   test('caps each entry at 500 characters and total memory text at 6000', async () => {
