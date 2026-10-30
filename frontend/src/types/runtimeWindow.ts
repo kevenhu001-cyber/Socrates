@@ -116,7 +116,7 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "setAppMode": typeof import("../config/providers")["setAppMode"];
   "setChatStopState": typeof import("../chat/composerTurn")["setChatStopState"];
   "setCurrentUser": typeof import("../app/lifecycle")["setCurrentUser"];
-  "setLang": () => void;
+  "setLang": typeof import("../i18n")['setLang'];
   "setSearchPill"?: typeof import("../chat/webSearch")['setSearchPill'];
   "showAuthSignin": typeof import("../auth/index")["showAuthSignin"];
   "showConfirm": typeof import("../ui/confirm")["showConfirm"];

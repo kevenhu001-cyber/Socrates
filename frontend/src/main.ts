@@ -23,7 +23,6 @@ import './tutorSocratic.ts';
 import './app/legacyBridge.ts';
 import './app/errorGuard.ts';
 import './render/katexRefresh.js';
-import './i18n.ts';
 import { initCookieConsent } from './cookieConsent.ts';
 import { installHomeSurface } from './ui/homeSurface.ts';
 import { toggleComposerTools } from './ui/composerTools.ts';

@@ -266,19 +266,9 @@ browserWindow.retryComposerAttachment = retryComposerAttachment;
 import { updateComposerBtn } from './ui/topicSetup.ts';
 browserWindow.updateComposerBtn = updateComposerBtn;
 
-/* ─── i18n.ts (setLang) ─── */
-// i18n.ts does not have ESM named exports — setLang is bound on
-// `window.setLang` directly inside i18n.ts (line 931) after the
-// function is declared at module scope. We do a side-effect import
-// to make sure i18n.ts is evaluated first, then re-bind from window
-// so this file remains the single bridge audit point.
-import './i18n.ts';
-if (typeof browserWindow.setLang === 'function') {
-  // Re-affirm in this bridge file (no-op if already set).
-} else {
-  // Defensive fallback if i18n.ts refactor changes the binding point.
-  browserWindow.setLang = function () { /* noop */ };
-}
+/* ─── i18n.ts — legacy language-switch entry point ─── */
+import { setLang } from './i18n.ts';
+browserWindow.setLang = setLang;
 
 /* ─── chat/offline.js ─── */
 import { STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS, offlineGuard, sleepBackoff } from './chat/offline.ts';

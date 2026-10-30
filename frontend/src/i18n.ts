@@ -5,7 +5,6 @@ import { getCurrentLanguage, setCurrentLanguage } from './i18n/languageState.ts'
 
 // These hooks are published by the existing shell; keep their contract local.
 interface I18nWindow extends Window {
-  setLang?: (lang: string) => void;
   __i18nReady?: Promise<void>;
   appMode?: string;
   syncAppModeUI?: () => void;
@@ -52,7 +51,7 @@ function requestLocale(lang: string): void {
   const ready = lang === "zh" ? ensureZh() : ensureEn();
   ready.then(function () { if (I18N[lang]) setLang(lang); });
 }
-function setLang(lang: string){
+export function setLang(lang: string){
   if(!I18N[lang]){
     requestLocale(lang);
     return;
@@ -221,9 +220,8 @@ try{
   if(I18N[getCurrentLanguage()])applyI18n();
 }catch(e){reportSwallow(e, 'i18n.bootstrap.initialApply'); }
 
-/* Expose i18n functions as globals for main.js and other modules. */
+/* Expose translation helpers used by legacy markup and modules. */
 browser.t = t;
-browser.setLang = setLang;
 browser.applyI18n = applyI18n;
 /* auth/boot.js awaits this (bounded) before revealing UI. Always a Promise. */
 browser.__i18nReady = _initialLocaleReady;
