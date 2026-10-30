@@ -41,12 +41,6 @@ import { apiFetch, getCsrfToken } from './util/api.ts';
 browserWindow.apiFetch = apiFetch;
 browserWindow.getCsrfToken = getCsrfToken;
 
-/* ─── render/viz.ts ─── */
-import { processPendingVizActions } from './render/vizStubs.ts';
-/* mountVisualization / disposeVisualizations are imported directly by
-   their consumers (main.js, share.js); no window surface is needed. */
-import './render/vizStubs.ts';
-browserWindow.processPendingVizActions = processPendingVizActions;
 /* ─── render/markdown.js ─── */
 import { formatMsg } from './render/markdown.ts';
 browserWindow.formatMsg = formatMsg;

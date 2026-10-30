@@ -87,7 +87,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "openNav": typeof import("../sidebar/navigation.service")["openNav"];
   "openShareModal": typeof import("../ui/share")["openShareModal"];
   "openUsageModal": () => Promise<void>;
-  "processPendingVizActions": typeof import("../render/vizStubs")["processPendingVizActions"];
   "refreshApiConfig": typeof import("../config/providers")["refreshApiConfig"];
   "refreshExamI18n": () => void;
   "refreshServerSessions": typeof import("../session/recents")["refreshServerSessions"];

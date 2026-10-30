@@ -362,11 +362,12 @@ test('processPendingVizActions does not trigger a document-wide [data-action] sc
     return window.__vizActionScanCount;
   });
   expect(before).toBe(0);
+  await expect.poll(() => page.evaluate(() => typeof window.processPendingVizActions)).toBe('undefined');
   // Call processPendingVizActions many times — under the old code
   // every call did a full document-wide querySelectorAll. The new
-  // path only walks the explicit _pendingActions queue.
+  // typed legacy entry only walks the explicit _pendingActions queue.
   await page.evaluate(() => {
-    for (var i = 0; i < 50; i++) window.processPendingVizActions();
+    for (var i = 0; i < 50; i++) window.__socratesLegacy.postRender.processPendingVizActions();
   });
   const after = await page.evaluate(() => window.__vizActionScanCount);
   expect(after).toBe(0);
