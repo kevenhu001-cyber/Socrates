@@ -63,7 +63,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
   "findNext": typeof import("../react/find-in-session/findInSession.actions")["findNext"];
   "findPrev": typeof import("../react/find-in-session/findInSession.actions")["findPrev"];
-  "flushRecentsReconcile": (() => Promise<unknown>) | undefined;
   "formatMsg": typeof import("../render/markdown")["formatMsg"];
   "getActiveProvider": typeof import("../pickers")["getActiveProvider"];
   "getAppLang": (() => string) | undefined;

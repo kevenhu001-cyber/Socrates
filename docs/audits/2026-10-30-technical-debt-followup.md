@@ -31,6 +31,7 @@
 | Loader 的 `window._currentSessionId` 写入镜像 | **本轮已移除** | 全仓只有两个 publisher、没有读者；session id 由 `stateStore` 单一写入，保留其既有 namespace 同步。 |
 | 只发布 `undefined` 的 `window.MAX_TOKENS_CHAT` | **本轮已移除** | SPA 考卷生成在调用处传 `undefined`，保留后端使用模型默认 token 上限的行为，不再经 window 桥转交。 |
 | 无读取方且过期的 `window.__SOCRATES_RELEASE_TAG__` | **本轮已移除** | 启动不再发布固定的 `20261008-speed-opt` 标记；无源码或测试消费者。 |
+| Recents reconciler 的 `window.scheduleRecentsReconcile` / `window.flushRecentsReconcile` | **本轮已移除** | Import 图确认 `recents.ts` 与 session save / exam persistence 没有运行时循环；save 与 exam persistence 改为直接导入，loader 中未调用的 window helper 一并删除。 |
 
 ## 仍开放或尚无法确认
 
@@ -81,3 +82,4 @@
 - Loader session-id window mirror 移除：session id 只写入 canonical `stateStore`；`chat-preparation` 新会话取消回归 1/1、前端 lint 与生产构建通过。
 - 考卷 max-token window alias 移除：生成器直接传 `undefined` 保持后端默认值；`exam-regressions.spec.mjs` 2/2、前端 lint 与生产构建通过。
 - 过期 release-tag window 字段移除：无代码消费者；`chat-preparation` 新会话取消用例 1/1 同时校验 session-id 与 release-tag 字段不存在，前端 lint 与生产构建通过。
+- Recents reconciler 改为模块导入：移除两个全局发布与 persistence / exam 全局读取，并删除 loader 未调用的 helper；`recentsReconcile.test.mjs` 16/16、`recents-archive` 1/1、`exam-regressions` 2/2、前端 lint 与生产构建通过。

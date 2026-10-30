@@ -109,7 +109,6 @@ interface LoaderWindow extends Window {
   renderMistakes?: () => void;
   updateMistakesBadge?: () => void;
   clearActiveTemplate?: () => void;
-  scheduleRecentsReconcile?: () => void;
   syncAppModeUI?: () => void;
 }
 
@@ -127,17 +126,6 @@ function _appMode(): string {
     if (typeof window !== 'undefined' && (window as LoaderWindow).appMode) return (window as LoaderWindow).appMode as string;
   } catch (e) { reportSwallow(e, 'session/loader._appMode'); }
   return 'chat';
-}
-/* P_recents-amplify — see loadSession()'s tail. Goes through window.* for the
-   same reason the old _refreshServerSessions helper did: recents.ts owns the
-   reconciler and must not be hard-imported from here. */
-function _scheduleRecentsReconcile(): void {
-  try {
-    const win = window as LoaderWindow;
-    if (typeof window !== 'undefined' && typeof win.scheduleRecentsReconcile === 'function') {
-      win.scheduleRecentsReconcile();
-    }
-  } catch (e) { reportSwallow(e, 'session/loader._scheduleRecentsReconcile'); }
 }
 function _renderRecents(): void {
   try {

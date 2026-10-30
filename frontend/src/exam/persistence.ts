@@ -6,6 +6,7 @@ import { toggleShareBtn } from '../ui/share.ts';
 import { prefersReducedMotion } from '../ui/motion.ts';
 import { renderExamResults } from './results.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { flushRecentsReconcile } from '../session/recents.ts';
 
 
 let _examAnswerSaveTimer: number|null|undefined = null;
@@ -110,7 +111,7 @@ export function doSaveExamSession() {
       }
       /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
          to be in the sidebar the moment the save returns. */
-      return Promise.resolve(browserWindow.flushRecentsReconcile?.()).then(function () {
+      return flushRecentsReconcile().then(function () {
         try { browserWindow.renderRecents() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.renderRecents'); }
         try { toggleShareBtn() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.toggleShareBtn'); }
       });

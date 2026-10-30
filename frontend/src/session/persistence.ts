@@ -12,6 +12,7 @@ import { saveState, deletedSessionGuard } from './saveState.ts';
 import { generateId } from '../util/ids.ts';
 import { pushChatIdToURL } from './store.ts';
 import { serverCache } from './serverCache.ts';
+import { flushRecentsReconcile, scheduleRecentsReconcile } from './recents.ts';
 import { patchSessionRow, type SavedSession } from './recentsReconcile.ts';
 import { buildBeaconPayload, type BeaconPayload } from './beacon.ts';
 import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint, type MessageLike } from './saveDelta.ts';
@@ -100,8 +101,6 @@ interface PersistenceWindow extends Window {
   incognitoOn?: boolean;
   appMode?: string;
   renderRecents?: () => void;
-  scheduleRecentsReconcile?: () => void;
-  flushRecentsReconcile?: () => Promise<unknown>;
 }
 
 function _t(key: string, fallback?: string): string {
@@ -114,31 +113,6 @@ function _t(key: string, fallback?: string): string {
     /* empty-catch: intentional — translation is best-effort */
   }
   return fallback != null ? fallback : key;
-}
-/* P_recents-amplify — the Recents list after a save. These go through window.*
-   for the same reason the old _refreshServerSessions helper did: recents.ts and
-   persistence.ts must not take a hard import cycle. The reconciler singleton
-   lives in recents.ts and wraps refreshServerSessions. */
-function _scheduleRecentsReconcile(): void {
-  try {
-    const win = window as PersistenceWindow;
-    if (typeof window !== 'undefined' && typeof win.scheduleRecentsReconcile === 'function') {
-      win.scheduleRecentsReconcile();
-    }
-  } catch {
-    /* empty-catch: intentional — reconcile scheduling is best-effort */
-  }
-}
-function _flushRecentsReconcile(): Promise<unknown> {
-  try {
-    const win = window as PersistenceWindow;
-    if (typeof window !== 'undefined' && typeof win.flushRecentsReconcile === 'function') {
-      return win.flushRecentsReconcile();
-    }
-  } catch {
-    /* empty-catch: intentional — reconcile flushing is best-effort */
-  }
-  return Promise.resolve([]);
 }
 /* P_recents-amplify — keep the Recents list in step with the server after a
    save without re-reading all 200 rows. */
@@ -198,8 +172,8 @@ function publishAcknowledgedSave(
   originalSessionId: string,
 ): void {
   _applySavedRow(response as SavedSession, payload, originalSessionId);
-  if (deletedSessionGuard.has(capturedSessionId)) _flushRecentsReconcile();
-  else _scheduleRecentsReconcile();
+  if (deletedSessionGuard.has(capturedSessionId)) flushRecentsReconcile();
+  else scheduleRecentsReconcile();
 
   /* A late response belongs to the captured session, so it may only adopt
      the server id while that session is still active. */

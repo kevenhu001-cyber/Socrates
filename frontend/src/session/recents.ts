@@ -29,8 +29,6 @@ interface RecentsWindow extends Window {
   renderRecents?: () => void;
   renderArchivedList?: () => void;
   saveCurrentSession?: () => unknown;
-  scheduleRecentsReconcile?: () => void;
-  flushRecentsReconcile?: () => Promise<unknown>;
 }
 
 /** The status a rejected request carries, or undefined for a thrown value. */
@@ -169,9 +167,6 @@ export async function retryRecentsFetch(): Promise<void> {
   try { await flushRecentsReconcile(); } catch (e) { reportSwallow(e, 'session/recents.fetch.flushReconcile'); }
   try { _renderRecents(); } catch (e) { reportSwallow(e, 'session/recents.fetch.renderRecents'); }
 }
-try { (window as RecentsWindow).scheduleRecentsReconcile = scheduleRecentsReconcile; } catch (e) { reportSwallow(e, 'session/recents.exports.scheduleReconcile'); }
-try { (window as RecentsWindow).flushRecentsReconcile = flushRecentsReconcile; } catch (e) { reportSwallow(e, 'session/recents.exports.flushReconcile'); }
-
 export function findServerSessionIndex(id: string): number {
   for (let i = 0; i < serverCache.sessions.length; i++) {
     if (serverCache.sessions[i].id === id) return i;
