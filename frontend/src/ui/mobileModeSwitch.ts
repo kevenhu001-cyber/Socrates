@@ -11,9 +11,9 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
  * pill was removed. This module keeps the dropdown synchronized:
  *
  *   - toggleMobileModeMenu()  opens/closes the popover (#mobileModeMenu)
- *   - selectAppMode(mode)     switches mode via window.toggleAppMode()
+ *   - selectAppMode(mode)     switches mode via toggleAppMode()
  *   - syncMobileModeSwitch()  refreshes the trigger label + active item;
- *                             called from providers.js syncAppModeUI().
+ *                             called from providers.ts syncAppModeUI().
  *
  * The popover animation is CSS-driven off [data-open] on #mobileMode; we
  * only flip that attribute + aria-expanded here. `_applyModeSwitchVisibility`
@@ -204,11 +204,9 @@ function _watchMsgList() {
   } catch (error) { reportSwallow(error, 'ui/mobileModeSwitch.ts:201'); }
 }
 
-/* Register window globals used by the inline onclick handlers in
-   index.html, and wire outside-click / Escape to close the popover. */
+/* Publish sync callbacks consumed by compatibility adapters, and wire
+   outside-click / Escape to close the popover. */
 if (typeof document !== "undefined") {
-  browserWindow.toggleMobileModeMenu = toggleMobileModeMenu;
-  browserWindow.selectAppMode = selectAppMode;
   browserWindow.syncMobileModeSwitch = syncMobileModeSwitch;
   browserWindow.syncConversationActive = syncConversationActive;
 

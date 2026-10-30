@@ -77,7 +77,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "retryDiagnostic"?: () => void;
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];
   "scrollMainToBottom": (() => void) | undefined;
-  "selectAppMode": typeof import("../ui/mobileModeSwitch")["selectAppMode"];
   "setActiveTemplate": typeof import("../chat/templateSlash")["setActiveTemplate"];
   "setAppMode": typeof import("../config/providers")["setAppMode"];
   "setChatStopState": typeof import("../chat/composerTurn")["setChatStopState"];
@@ -105,7 +104,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "toggleAppMode": typeof import("../app/lifecycle/mode")["toggleAppMode"];
   "toggleChatTopBarEls": typeof import("../ui/topBarState")["toggleChatTopBarEls"];
   "toggleKBDetail": typeof import("../ui/knowledgeDetail")["toggleKBDetail"];
-  "toggleMobileModeMenu": typeof import("../ui/mobileModeSwitch")["toggleMobileModeMenu"];
   "toggleSidebarView": typeof import("../ui/sidebarChrome")["toggleSidebarView"];
   "tutorSocratic": import("../tutorSocratic").TutorSocraticRuntime;
   "updateComposerBtn": typeof import("../ui/topicSetup")["updateComposerBtn"];

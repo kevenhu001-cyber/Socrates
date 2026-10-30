@@ -68,6 +68,7 @@
 | Chat Stop 的根级重复 window alias | **本轮已移除** | Stop 按钮和 React Composer 已通过 `handleSendClick` / typed legacy composer action 调用实现；仓库无 `window.stopChatResponse` 消费者。保留 `__socratesLegacy.composer.stopChatResponse` 内部动作，删除根级发布和类型。 |
 | `resetState` 的单消费者 window alias | **本轮已移除** | 账号删除收尾改为直接导入 `state/store.ts` 的 `resetState()`；移除 `window.resetState` 发布和旧全局类型，保留并回归 `window.stateStore` 兼容 facade。 |
 | 导航 active-state setter 的无消费者 window 发布 | **本轮已移除** | `navigation.service.ts` 与生命周期清理直接调用模块函数，More 菜单使用自己的模块 store；移除无读取方的 `window.setActiveNav` 发布/类型，并保留 `openNav` 路由入口。 |
+| 移动模式菜单的重复 window 处理器别名 | **本轮已移除** | 启动时将模块函数直接注入 delegated shell listeners；移除无消费者的 `window.toggleMobileModeMenu` / `window.selectAppMode` 发布与类型。仍被 provider、重置流程和顶栏使用的两个同步回调保留。 |
 
 ## 仍开放或尚无法确认
 
@@ -154,3 +155,4 @@
 - Chat Stop duplicate root alias removed: React continues to stop streams through the typed composer action and the send control through `handleSendClick`; full frontend lint and production build pass, and `chat-stop-resend.spec.mjs` passes 6/6 with Stop/Resend behavior and the alias absence check.
 - `resetState` global setter removed: account-deletion cleanup imports the canonical reset function; full frontend lint and production build pass, and `stateFoundation.test.mjs` passes 7/7 while covering reset through that export, checking the global alias is absent, and verifying `window.stateStore` remains available.
 - `window.setActiveNav` dead bridge removed: navigation state stays module-owned while `openNav` remains the routed entry. Full lint and production build pass; `sidebar-nav.spec.mjs` passes 16/16 and asserts the old setter global is absent.
+- Mobile mode handler aliases removed: the shell keeps its directly injected actions; full frontend lint and production build pass, `app-mode-lifecycle.spec.mjs` passes 1/1, and `mobile-ui-alignment.spec.mjs` passes 2/2 while asserting both globals are absent and switching to Tutor through the actual phone control.

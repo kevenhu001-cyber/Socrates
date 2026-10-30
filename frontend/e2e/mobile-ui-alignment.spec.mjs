@@ -25,6 +25,10 @@ for (const theme of ['light', 'dark']) {
     ] });
     const tabs = page.locator('#topModeSwitch');
     await expect(tabs).toBeVisible();
+    expect(await page.evaluate(() => ({
+      selectAppMode: typeof window.selectAppMode,
+      toggleMobileModeMenu: typeof window.toggleMobileModeMenu,
+    }))).toEqual({ selectAppMode: 'undefined', toggleMobileModeMenu: 'undefined' });
     const rect = await tabs.boundingBox();
     expect(Math.abs(rect.x + rect.width / 2 - 195)).toBeLessThanOrEqual(1);
     await expect(page.locator('#mobileMode')).toBeHidden();
