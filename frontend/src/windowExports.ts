@@ -113,11 +113,9 @@ browserWindow.onCmdKKey = onCmdKKey;
 browserWindow.openCmdK = openCmdK;
 
 /* ─── ui/findInSession.js — P0.2 in-session find (Ctrl-F) ─── */
-import { openFindInSession, closeFindInSession, findNext, findPrev } from './react/find-in-session/findInSession.actions.ts';
+import { openFindInSession, closeFindInSession } from './react/find-in-session/findInSession.actions.ts';
 browserWindow.openFindInSession = openFindInSession;
 browserWindow.closeFindInSession = closeFindInSession;
-browserWindow.findNext = findNext;
-browserWindow.findPrev = findPrev;
 
 /* ─── ui/storage.js ─── */
 /* Consumers (React panels) import the storage modal

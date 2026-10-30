@@ -52,8 +52,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "editUserMessage": typeof import("../chat/editBranch")["editUserMessage"];
   "extensiveThinkingOn": typeof import("../config/providers")["extensiveThinkingOn"];
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
-  "findNext": typeof import("../react/find-in-session/findInSession.actions")["findNext"];
-  "findPrev": typeof import("../react/find-in-session/findInSession.actions")["findPrev"];
   "formatMsg": typeof import("../render/markdown")["formatMsg"];
   "getActiveProvider": typeof import("../pickers")["getActiveProvider"];
   "getConnectorIconMarkup": typeof import("../sidebar/nav")["connectorIconWithFallback"];

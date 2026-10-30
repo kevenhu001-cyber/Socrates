@@ -18,6 +18,7 @@ test('Ctrl-F find highlights matches, navigates, and clears on close', async ({ 
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
   await page.waitForTimeout(400);
+  expect(await page.evaluate(() => 'findNext' in window || 'findPrev' in window)).toBe(false);
 
   // Reveal the chat view and inject two messages containing the word
   // "photon" three times total so we have deterministic match counts.
@@ -52,18 +53,22 @@ test('Ctrl-F find highlights matches, navigates, and clears on close', async ({ 
   await expect(page.locator('#msgList mark.find-hl.find-hl-active')).toHaveCount(1);
   await expect(page.locator('#findCount')).toHaveText('1/3');
 
-  // findNext advances the active highlight to 2/3.
-  await page.evaluate(() => window.findNext());
+  const previous = page.locator('#findBar .find-nav-btn').nth(0);
+  const next = page.locator('#findBar .find-nav-btn').nth(1);
+
+  // The next control advances the active highlight to 2/3.
+  await next.click();
   await expect(page.locator('#findCount')).toHaveText('2/3');
   const activeText = await page.locator('#msgList mark.find-hl.find-hl-active').textContent();
   expect((activeText || '').toLowerCase()).toBe('photon');
 
-  // Wrap-around: from 3/3 → next → back to 1/3.
-  await page.evaluate(() => { window.findNext(); window.findNext(); });
+  // Wrap-around: from 2/3 → next twice → back to 1/3.
+  await next.click();
+  await next.click();
   await expect(page.locator('#findCount')).toHaveText('1/3');
 
-  // findPrev wraps to the last match.
-  await page.evaluate(() => window.findPrev());
+  // The previous control wraps to the last match.
+  await previous.click();
   await expect(page.locator('#findCount')).toHaveText('3/3');
 
   // Closing removes the bar and every highlight, restoring the text.
