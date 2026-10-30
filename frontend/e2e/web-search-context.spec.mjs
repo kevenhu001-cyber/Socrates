@@ -37,5 +37,3 @@ test('pre-search ranks Chinese snippets without fetching every result page', asy
   expect(snippetMatch.context).not.toContain('x'.repeat(600));
   expect(batchCalls).toBe(0);
 });
-
-// Durable Deep Research submission and recovery are covered in research-jobs.spec.mjs.
