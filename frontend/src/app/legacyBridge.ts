@@ -133,7 +133,6 @@ browserWindow.resetApp = resetApp;
 browserWindow.startNewChat = startNewChat;
 browserWindow.startSession = startSession;
 browserWindow.submitChatMessage = submitChatMessage;
-browserWindow.stopChatResponse = stopChatResponse;
 
 browserWindow.__socratesLegacy = {
   messages: {

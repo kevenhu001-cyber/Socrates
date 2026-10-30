@@ -65,6 +65,7 @@
 | post-auth 的 `window.refreshApiConfig` 依赖 | **本轮已移除** | `auth/postAuth.ts` 与 `config/providers.ts` 已共享同一模块实例；post-auth 的 provider 拉取直接调用 `refreshApiConfig`，删除 bridge 发布和类型字段，避免认证流程默默跳过刷新。 |
 | 聊天请求体对全局模式、推理强度和自定义指令 getter 的依赖 | **本轮已移除** | `requestBody.ts` 改为读取 `config/providers.ts` 的 live `appMode`、偏好存储和配置层的自定义指令函数。持久化与格式化逻辑抽到 `config/customInstructions.ts`；删除两个 getter 的 window 发布和类型，不再依赖 UI 模块完成请求组装。 |
 | Tutor explanation helper 的重复 window 发布 | **本轮已移除** | `chat/quickActions.ts` 直接导入 `getExplanation()`；仓库无 window 调用方。删除 `legacyBridge` 发布和 `RuntimeWindow` 字段，Tutor E2E 检查旧字段缺失并覆盖解释动作。 |
+| Chat Stop 的根级重复 window alias | **本轮已移除** | Stop 按钮和 React Composer 已通过 `handleSendClick` / typed legacy composer action 调用实现；仓库无 `window.stopChatResponse` 消费者。保留 `__socratesLegacy.composer.stopChatResponse` 内部动作，删除根级发布和类型。 |
 
 ## 仍开放或尚无法确认
 
@@ -148,3 +149,4 @@
 - Post-auth provider refresh now imports `refreshApiConfig` directly from the already-used provider module; `auth-direct-handlers.spec.mjs` asserts the global is absent and observes an `/api/api-key` request after sign-in. Frontend full lint, production build and the focused auth spec (1/1) pass.
 - Chat request context now comes directly from config modules: a focused custom-instructions unit test covers stored-field validation and formatting, the chat API flow covers app mode / instructions / reasoning values without window getters, provider-capability tests read persisted effort, and `instant-mode.spec.mjs` checks both old getter globals stay unpublished while real requests still honor the saved level.
 - Tutor explanation helper alias removed: the quick-action dispatcher keeps its direct `getExplanation()` import; the SPA production build and full lint pass, and `tutor-session.spec.mjs` passes 9/9 while asserting the window field is absent and verifying a student can still request an explanation.
+- Chat Stop duplicate root alias removed: React continues to stop streams through the typed composer action and the send control through `handleSendClick`; full frontend lint and production build pass, and `chat-stop-resend.spec.mjs` passes 6/6 with Stop/Resend behavior and the alias absence check.

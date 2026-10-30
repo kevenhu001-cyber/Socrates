@@ -79,6 +79,7 @@ async function bootChatTurn(page) {
 test('clicking Stop mid-stream halts the turn and surfaces Resend', async ({ page }) => {
   await installOpenStream(page);
   await bootChatTurn(page);
+  expect(await page.evaluate(() => typeof window.stopChatResponse)).toBe('undefined');
 
   const sendBtn = page.locator('#composerPrimaryBtn');
 
