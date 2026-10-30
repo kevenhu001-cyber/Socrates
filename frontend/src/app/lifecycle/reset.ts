@@ -52,8 +52,8 @@ function clearActivePromptTemplate() {
 }
 
 function abortActiveChat() {
-  if (browserWindow._activeChatAbort) {
-    try { browserWindow._activeChatAbort('session-reset'); }
+  if (turnState.activeChatAbort) {
+    try { turnState.activeChatAbort('session-reset'); }
     catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.abortActive'); }
   }
   if (turnState.activeChatCtl) {
@@ -61,7 +61,7 @@ function abortActiveChat() {
     catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.abortTurnState'); }
   }
   turnState.activeChatCtl = null;
-  browserWindow._activeChatAbort = null;
+  turnState.activeChatAbort = null;
   turnState.chatStreaming = false;
   turnState.chatStopMode = false;
 }

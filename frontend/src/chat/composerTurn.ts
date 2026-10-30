@@ -9,7 +9,6 @@ export interface ComposerSendOptions {
 
 interface ComposerTurnWindow extends Window {
   submitChatMessage?: (textOverride?: string | null, options?: ComposerSendOptions) => void | Promise<unknown>;
-  _activeChatAbort?: (reason?: string) => void;
 }
 
 function legacyTurnActions(): ComposerTurnWindow {
@@ -49,7 +48,7 @@ export function stopChatResponse(): void {
   catch (error) { reportSwallow(error, 'chat/composerTurn.stop.interruptPendingTurn'); }
   const activeChatCtl = turnState.activeChatCtl;
   if (activeChatCtl) activeChatCtl.abort();
-  try { legacyTurnActions()._activeChatAbort?.('user-stop'); }
+  try { turnState.activeChatAbort?.('user-stop'); }
   catch (error) { reportSwallow(error, 'chat/composerTurn.stop.abortActive'); }
 }
 

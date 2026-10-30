@@ -16,10 +16,6 @@ export interface TurnPageContext {
   mentionedSite: boolean;
 }
 
-interface TurnPageWindow extends Window {
-  _activeChatAbort?: ((reason?: unknown) => void) | null;
-}
-
 function renderFetchedLinks(urls: string[], results: FetchedPage[]): void {
   try {
     const list = document.getElementById('msgList');
@@ -49,8 +45,7 @@ export async function prepareTurnPageContext(
     const preparation = new AbortController();
     const abortPreparation = () => preparation.abort();
     turnState.activePagePreparationAbort = abortPreparation;
-    const win = window as TurnPageWindow;
-    win._activeChatAbort = abortPreparation;
+    turnState.activeChatAbort = abortPreparation;
     try {
       const fetched = await fetchPagesForContext(urls, {
         signal: preparation.signal,
@@ -65,7 +60,7 @@ export async function prepareTurnPageContext(
       if (turnState.activePagePreparationAbort === abortPreparation) {
         turnState.activePagePreparationAbort = null;
       }
-      if (win._activeChatAbort === abortPreparation) win._activeChatAbort = null;
+      if (turnState.activeChatAbort === abortPreparation) turnState.activeChatAbort = null;
     }
     if (preparation.signal.aborted || turnWasCancelled()) return null;
     renderFetchedLinks(urls, results);

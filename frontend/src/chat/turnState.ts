@@ -64,6 +64,8 @@ export interface PendingBranchContext {
 
 export interface TurnState {
   activeChatCtl: ActiveChatController | null;
+  /** Current stream or linked-page preparation cancellation entry point. */
+  activeChatAbort: ((reason?: unknown) => void) | null;
   /** Streaming placeholder created before the first turn enters askChatTurn. */
   pendingFirstTurnController: StreamingTurnController | null;
   /** Abort callback for the active linked-page preparation phase only. */
@@ -87,6 +89,7 @@ export interface TurnState {
    vars in main.js with a comment noting window mirrors were removed. */
 export const turnState: TurnState = {
   activeChatCtl: null,
+  activeChatAbort: null,
   pendingFirstTurnController: null,
   activePagePreparationAbort: null,
   pendingAttachments: null,
@@ -114,6 +117,7 @@ export function shouldQueueChatSend(): boolean {
 
 export function resetTurnState(): void {
   turnState.activeChatCtl = null;
+  turnState.activeChatAbort = null;
   turnState.pendingFirstTurnController = null;
   turnState.activePagePreparationAbort = null;
   turnState.pendingAttachments = null;

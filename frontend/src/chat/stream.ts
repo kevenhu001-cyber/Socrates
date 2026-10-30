@@ -8,6 +8,7 @@
    offlineGuard, etc.). */
 
 import { stateStore } from '../state/store.ts';
+import { turnState } from './turnState.ts';
 import {
   AI_MAX_ATTEMPTS,
   isUserAbort,
@@ -23,7 +24,6 @@ interface StreamWindow extends Window {
   getActiveProvider: () => unknown;
   offlineGuard: () => boolean;
   STREAM_MAX_ATTEMPTS?: number;
-  _activeChatAbort?: ((reason?: unknown) => void) | null;
 }
 
 /** Resolved value of a completed stream call. */
@@ -91,8 +91,7 @@ function maxStreamAttempts(opts?: StreamCallOptions | null): number {
    installed. A superseded stream unwinds after the next turn has put its
    own handle in place; an older cleanup must not erase the live handle. */
 function clearActiveChatAbort(handle: unknown): void {
-  const win = window as unknown as StreamWindow;
-  if (handle && win._activeChatAbort === handle) win._activeChatAbort = null;
+  if (handle && turnState.activeChatAbort === handle) turnState.activeChatAbort = null;
 }
 
 function createRetryHooks(
@@ -147,7 +146,7 @@ async function executeStreamAttempts(args: {
   };
   let lastError: Error | null = null;
   const activeAbortHandle = (reason?: unknown): void => args.turnController.abort(reason || 'user-stop');
-  args.win._activeChatAbort = activeAbortHandle;
+  turnState.activeChatAbort = activeAbortHandle;
   args.onAbortHandle(activeAbortHandle);
   const { runStreamAttempt } = await import('./streamAttempt.ts');
   if (args.turnController.signal.aborted) return { text: '', cancelled: true };

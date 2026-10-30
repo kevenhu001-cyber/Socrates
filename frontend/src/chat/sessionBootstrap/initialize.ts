@@ -10,14 +10,13 @@ import type { SessionStartContext } from './input.ts';
 
 /** Session-scoped bridges reset when a new session replaces the current one. */
 interface InitializeWindow extends Window {
-  _activeChatAbort?: ((reason: string) => void) | null;
   _nextProjectId?: string | null;
 }
 
 export function initializeNewSession({ topic, deepResearchOn }: Pick<SessionStartContext, 'topic' | 'deepResearchOn'>): void {
   const win = window as InitializeWindow;
-  if (win._activeChatAbort) {
-    try { win._activeChatAbort('new-session'); }
+  if (turnState.activeChatAbort) {
+    try { turnState.activeChatAbort('new-session'); }
     catch (error) { reportSwallow(error, 'chat/sessionBootstrap.abortPreviousStream'); }
   }
   if (turnState.activeChatCtl) {
@@ -25,8 +24,8 @@ export function initializeNewSession({ topic, deepResearchOn }: Pick<SessionStar
     catch (error) { reportSwallow(error, 'chat/sessionBootstrap.abortPreviousController'); }
   }
   turnState.activeChatCtl = null;
+  turnState.activeChatAbort = null;
   turnState.pendingFirstTurnController = null;
-  win._activeChatAbort = null;
   turnState.chatStreaming = false;
   turnState.chatStopMode = false;
 

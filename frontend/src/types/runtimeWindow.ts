@@ -33,7 +33,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "__socratesSmoothStream": unknown;
   "__startSearchProgress": typeof import("../ui/searchProgress")["startSearchProgress"];
   "__testActivateMainView": (viewId: string) => boolean;
-  "_activeChatAbort": ((reason?: unknown) => void) | null;
   "_activeTemplate": import("../chat/templateSystemPrompt").ActiveTemplate | null;
   "_currentLang": string;
   "_nextProjectId": string | null;

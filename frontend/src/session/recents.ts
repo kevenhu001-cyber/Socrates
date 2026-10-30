@@ -29,7 +29,6 @@ interface RecentsWindow extends Window {
   renderRecents?: () => void;
   renderArchivedList?: () => void;
   saveCurrentSession?: () => unknown;
-  _activeChatAbort?: ((reason: string) => void) | null;
   scheduleRecentsReconcile?: () => void;
   flushRecentsReconcile?: () => Promise<unknown>;
 }
@@ -217,7 +216,7 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
   const wasActive = stateStore.read('currentSessionId') === id || stateStore.read('currentSessionId') === id;
   if (wasActive) {
     if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.deleteSession.abortTurn'); } }
-    const abortActive = (window as RecentsWindow)._activeChatAbort;
+    const abortActive = turnState.activeChatAbort;
     if (abortActive) { try { abortActive('session-deleted'); } catch (e) { reportSwallow(e, 'session/recents.deleteSession.abortActive'); } }
     bounceOutOfArchivedSession();
   }
@@ -290,7 +289,7 @@ function stopActiveSessionForArchive(id: string): boolean {
   if (turnState.activeChatCtl) {
     try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.abortTurn'); }
   }
-  const abortActive = (window as RecentsWindow)._activeChatAbort;
+  const abortActive = turnState.activeChatAbort;
   if (abortActive) {
     try { abortActive('session-archived'); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.abortActive'); }
   }
@@ -398,7 +397,7 @@ export function confirmPurgeSession(id: string): void {
       const wasActive = stateStore.read('currentSessionId') === id || stateStore.read('currentSessionId') === id;
       if (wasActive) {
         if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.purge.abortTurn'); } }
-        const abortActive = (window as RecentsWindow)._activeChatAbort;
+        const abortActive = turnState.activeChatAbort;
         if (abortActive) { try { abortActive('session-purged'); } catch (e) { reportSwallow(e, 'session/recents.purge.abortActive'); } }
         bounceOutOfArchivedSession();
       }
@@ -438,11 +437,10 @@ export function bounceOutOfArchivedSession(): void {
   resetShareToken();
   /* Abort any active chat stream so callbacks don't write to
      state after resetState() has cleared it. */
-  const win = window as RecentsWindow;
-  if (win._activeChatAbort) { try { win._activeChatAbort('archived-session'); } catch (e) { reportSwallow(e, 'session/recents.bounceOutOfArchivedSession.abortActive'); } }
+  if (turnState.activeChatAbort) { try { turnState.activeChatAbort('archived-session'); } catch (e) { reportSwallow(e, 'session/recents.bounceOutOfArchivedSession.abortActive'); } }
   if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.bounceOutOfArchivedSession.abortTurn'); } }
   turnState.activeChatCtl = null;
-  win._activeChatAbort = null;
+  turnState.activeChatAbort = null;
   turnState.chatStreaming = false;
   turnState.chatStopMode = false;
   try { turnState.pendingChatContent = null; } catch (e) { reportSwallow(e, 'session/recents.bounceOutOfArchivedSession.clearPendingChat'); }

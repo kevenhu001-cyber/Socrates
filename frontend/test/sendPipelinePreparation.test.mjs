@@ -27,9 +27,11 @@ test('linked-page preparation can be preempted, while normal streaming stays que
   resetTurnState();
 });
 
-test('resetting turn state clears the pending first-turn controller', () => {
+test('resetting turn state clears active cancellation and first-turn controller handoffs', () => {
   const controller = { abort() {} };
+  turnState.activeChatAbort = () => {};
   turnState.pendingFirstTurnController = controller;
   resetTurnState();
+  assert.equal(turnState.activeChatAbort, null);
   assert.equal(turnState.pendingFirstTurnController, null);
 });

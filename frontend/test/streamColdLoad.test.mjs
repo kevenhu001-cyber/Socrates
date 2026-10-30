@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { callAPIStream } from '../src/chat/stream.ts';
+import { turnState } from '../src/chat/turnState.ts';
 
 function environment() {
   let requests = 0;
+  turnState.activeChatAbort = null;
   globalThis.document = { cookie: '' };
   globalThis.window = {
     getActiveProvider: () => ({ isBuiltIn: false, name: 'test' }),
@@ -20,11 +22,11 @@ function environment() {
 test('Stop during transport import cancels before any request and releases its abort handle', async () => {
   const requests = environment();
   const stream = callAPIStream([], 256, null, null, {});
-  assert.equal(typeof window._activeChatAbort, 'function');
-  window._activeChatAbort('user-stop');
+  assert.equal(typeof turnState.activeChatAbort, 'function');
+  turnState.activeChatAbort('user-stop');
   assert.deepEqual(await stream, { text: '', cancelled: true });
   assert.equal(requests(), 0);
-  assert.equal(window._activeChatAbort, null);
+  assert.equal(turnState.activeChatAbort, null);
 });
 
 test('session AbortSignal during transport import cannot send a stale request', async () => {
@@ -39,10 +41,10 @@ test('session AbortSignal during transport import cannot send a stale request', 
 test('cancelled import cleanup preserves a newer turn abort handle', async () => {
   const requests = environment();
   const stream = callAPIStream([], 256, null, null, {});
-  window._activeChatAbort('superseded');
+  turnState.activeChatAbort('superseded');
   const newer = () => {};
-  window._activeChatAbort = newer;
+  turnState.activeChatAbort = newer;
   assert.equal((await stream).cancelled, true);
   assert.equal(requests(), 0);
-  assert.equal(window._activeChatAbort, newer);
+  assert.equal(turnState.activeChatAbort, newer);
 });

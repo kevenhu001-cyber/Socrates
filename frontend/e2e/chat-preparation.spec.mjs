@@ -120,7 +120,7 @@ test('a follow-up during a normal stream queues until the current answer finishe
     window.submitChatMessage('Start a normal answer');
   });
   await expect(page.locator('#msgList .msg.assistant').last()).toContainText('The current answer');
-  expect(await page.evaluate(() => typeof window._activeChatAbort)).toBe('function');
+  expect(await page.evaluate(() => '_activeChatAbort' in window)).toBe(false);
   await page.evaluate(() => window.submitChatMessage('Follow-up after this answer'));
   await expect(page.locator('.composer-queue-banner')).toContainText('Follow-up after this answer');
   expect(await page.evaluate(() => window.__normalStreamRequests)).toBe(1);

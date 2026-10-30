@@ -104,7 +104,6 @@ interface ExamModule {
 interface LoaderWindow extends Window {
   appMode?: string;
   _currentSessionId?: string | null;
-  _activeChatAbort?: ((reason: string) => void) | null;
   __activeProject?: { id: string; name: string } | null;
   __loadExamModule?: () => Promise<ExamModule>;
   renderRecents?: () => void;
@@ -472,13 +471,13 @@ interface SessionLoadRecovery {
   historyRebuildStarted: boolean;
 }
 
-function beginSessionLoad(id: string, win: LoaderWindow): AbortController {
+function beginSessionLoad(id: string): AbortController {
   saveState.loadingSession = true;
   saveState.saveDirty = false;
   saveState.pendingSnapshot = null;
 
-  if (win._activeChatAbort) {
-    try { win._activeChatAbort('session-switch'); }
+  if (turnState.activeChatAbort) {
+    try { turnState.activeChatAbort('session-switch'); }
     catch (error) { reportSwallow(error, 'session/loader.loadSession'); }
   }
   if (turnState.activeChatCtl) {
@@ -486,7 +485,7 @@ function beginSessionLoad(id: string, win: LoaderWindow): AbortController {
     catch (error) { reportSwallow(error, 'session/loader.loadSession~2'); }
   }
   turnState.activeChatCtl = null;
-  win._activeChatAbort = null;
+  turnState.activeChatAbort = null;
   turnState.chatStreaming = false;
   turnState.chatStopMode = false;
 
@@ -645,7 +644,7 @@ export async function loadSession(id: string): Promise<void> {
   try { closeSidebarOnMobile(); } catch (error) { reportSwallow(error, 'session/loader.closeSidebarOnMobile'); }
 
   const win = window as LoaderWindow;
-  const controller = beginSessionLoad(id, win);
+  const controller = beginSessionLoad(id);
   const cachedDetail = detailCache.lookup(id);
   const recovery: SessionLoadRecovery = { previousMessages: null, historyRebuildStarted: false };
   try {

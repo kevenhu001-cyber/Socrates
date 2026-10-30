@@ -126,7 +126,7 @@ export function handleAuthExpired(cause: unknown){
         trigger further state mutations. */
     try{
       if(turnState.activeChatCtl){turnState.activeChatCtl.abort();turnState.activeChatCtl=null}
-      if(browserWindow._activeChatAbort){browserWindow._activeChatAbort("session-expired");browserWindow._activeChatAbort=null}
+      if(turnState.activeChatAbort){turnState.activeChatAbort("session-expired");turnState.activeChatAbort=null}
     }catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.abortActive');}
     /* Show the gate; the existing showGate() handles UI swap. */
     if(typeof showGate==="function"){showGate()}
@@ -195,10 +195,10 @@ export async function signOut(){
   /* Abort any active chat stream — resetApp() isn't called from
      signOut (to avoid its "Start a new session?" confirm dialog), so
      we inline the essential stream teardown here. */
-  if(browserWindow._activeChatAbort){try{browserWindow._activeChatAbort("signout")}catch(e){reportSwallow(e,'app/lifecycle.signOut.abortActive');}}
+  if(turnState.activeChatAbort){try{turnState.activeChatAbort("signout")}catch(e){reportSwallow(e,'app/lifecycle.signOut.abortActive');}}
   if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'app/lifecycle.signOut.abortTurnState');}}
   turnState.activeChatCtl=null;
-  browserWindow._activeChatAbort=null;
+  turnState.activeChatAbort=null;
   turnState.chatStreaming=false;
   turnState.chatStopMode=false;
   resetShareToken();

@@ -34,6 +34,7 @@ import { isUserAbort } from './retryPolicy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { providerErrorMessage } from './providerErrorMessage.ts';
 import { ChatApiError } from './api/shared.ts';
+import { turnState } from './turnState.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
@@ -384,7 +385,7 @@ export async function runStreamAttempt(context: StreamAttemptContext): Promise<S
     try { attemptController.abort(reason); }
     catch (error) { reportSwallow(error, 'chat/streamAttempt.abortAttempt'); }
   };
-  browserWindow._activeChatAbort = activeAbortHandle;
+  turnState.activeChatAbort = activeAbortHandle;
   context.onAbortHandle(activeAbortHandle);
 
   try {

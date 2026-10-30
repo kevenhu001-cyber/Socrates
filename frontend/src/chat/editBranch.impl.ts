@@ -144,7 +144,7 @@ export function editUserMessage(messageId: string){
       if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e, 'editBranch.commit.abortActive'); }}
       /* Stop the replaced answer server-side as well (see interruptPendingTurn). */
       try{interruptPendingTurn()}catch(e){reportSwallow(e, 'editBranch.commit.interruptPending'); }
-      if(browserWindow._activeChatAbort){try{browserWindow._activeChatAbort("msg-edit")}catch(e){reportSwallow(e, 'editBranch.commit.globalAbort'); }}
+      if(turnState.activeChatAbort){try{turnState.activeChatAbort("msg-edit")}catch(e){reportSwallow(e, 'editBranch.commit.globalAbort'); }}
       patchPromise.then(function(){
         try{ quietTurn(browserWindow.askChatTurn(editedText)); }catch(e){ reportSwallow(e, 'editBranch.commit.replay'); /* msg-edit replay failed */ }
       });
@@ -221,7 +221,7 @@ export function regenerateAssistantMessage(messageId: string){
        a previous reply that's still arriving. */
     if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.abortActive'); }}
     try{interruptPendingTurn()}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.interruptPending'); }
-    if(browserWindow._activeChatAbort){try{browserWindow._activeChatAbort("msg-regen")}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.globalAbort'); }}
+    if(turnState.activeChatAbort){try{turnState.activeChatAbort("msg-regen")}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.globalAbort'); }}
     /* P0.1 NOTE-P01-06 — re-ask only AFTER the server discardFollowing
        settles, so the delete (assistant rows createdAt >= user turn)
        can't land after the fresh reply is saved and wipe it. Mirrors

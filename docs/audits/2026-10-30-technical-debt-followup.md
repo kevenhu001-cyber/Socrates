@@ -23,6 +23,7 @@
 | 首轮预建 streaming controller 的 `window.__socratesSyncCtl` 交接 | **本轮已移除** | 首轮占位 controller 存入 `turnState.pendingFirstTurnController`，由 `askChatTurn()` 消费一次，并在新会话或 turn reset 时清理。 |
 | Composer controller 的 `window.__socratesComposerController` | **本轮已移除** | 侧栏 OAuth 返回恢复与创建助手入口直接导入 draft / focus API；E2E 改为检查编辑器和工具菜单的真实行为。 |
 | KaTeX 重绘函数的 `window.__socratesRerenderMath` 发布 | **本轮已移除** | 仓库内无读取方；保留 `onKatexReady(rerenderMathAfterKatex)` 作为唯一重绘注册路径。 |
+| 当前流与链接页准备取消回调的 `window._activeChatAbort` | **本轮已移除** | 流 attempt、页面上下文准备、Stop、编辑/重试、会话切换、登出统一读写 `turnState.activeChatAbort`；清理仍使用 callback identity，避免旧流覆盖新句柄。 |
 
 ## 仍开放或尚无法确认
 
@@ -30,7 +31,7 @@
 |---|---|---|
 | 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
 | 中 | Expo / Universal App 依赖告警 | 审计仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；来源是 Expo CLI 使用的 `zod@3.25.76`（[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)）。2026-10-30 核验 npm 最新 `@expo/cli@58.1.17` 仍声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 超出其范围。Expo SDK 58 同时将 React Native 目标升级到 0.88，而本项目 SDK 57 使用 RN 0.86；不能把跨 SDK/RN 升级当作安全依赖小修，也不通过不兼容的 major override 掩盖它。待 Expo 发布兼容依赖范围后处理；参考 [Expo SDK 58 发行说明](https://expo.dev/changelog/sdk-58) 与 [SDK 对应版本表](https://docs.expo.dev/versions/latest/)。 |
-| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、KaTeX 重绘回调、cookie consent、extension dispatch、搜索重试、首轮 turn controller、composer controller 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 2026-10-30 后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、KaTeX 重绘回调、cookie consent、extension dispatch、搜索重试、首轮 turn controller、composer controller、active-chat abort 与六个 namespace window 状态桥。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -65,3 +66,4 @@
 - 首轮 controller window 交接移除：placeholder controller 改存于 `turnState.pendingFirstTurnController` 并被 `askChatTurn()` 一次性消费；`sendPipelinePreparation.test.mjs` 2/2、`topic-chat-transition.spec.mjs` 1/1、前端 lint 与生产构建通过。
 - Composer controller window 对象移除：侧栏和创建助手改为直接导入 composer API，旧 `composerController` window facade 与无消费者的 React re-export 删除；composer 单测 5/5、4 个相关 Playwright 用例通过，前端 lint 与生产构建通过。生命周期回归断言确认 workflow token 按现有规则同步到两个 composer surface。
 - KaTeX 重绘 window 发布移除：重绘仍通过 vendor loader 的模块订阅执行；`proseRenderer.test.mjs` 1/1 与数学懒加载恢复 E2E 1/1 通过，前端 lint 和生产构建通过；E2E 同时确认旧 revision 与重绘字段均不存在。
+- Active chat abort window 交接移除：取消句柄归属 `turnState`，并保留身份检查以防旧流清理新句柄；`streamColdLoad` 与 turn-state 单测 5/5、聊天准备 / tutor Stop / 停止重发 E2E 8/8、前端 lint 与生产构建通过。

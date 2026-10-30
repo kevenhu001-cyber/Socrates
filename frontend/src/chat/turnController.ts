@@ -29,7 +29,6 @@ interface StreamingMessageOptions {
 interface TurnControllerWindow extends Window {
   addStreamingMessage?: (options: StreamingMessageOptions) =>
     StreamingTurnController | Promise<StreamingTurnController>;
-  _activeChatAbort?: ((reason?: unknown) => void) | null;
 }
 
 interface ClientTurnPayload {
@@ -73,7 +72,7 @@ function abortSupersededTurn(precreated: StreamingTurnController | null): void {
   }
   try { interruptPendingTurn(); }
   catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#3'); }
-  const abort = (window as TurnControllerWindow)._activeChatAbort;
+  const abort = turnState.activeChatAbort;
   if (abort) {
     try { abort('superseded'); }
     catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#4'); }

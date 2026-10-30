@@ -162,7 +162,10 @@ test('stopping a tutor follow-up before content arrives does not create an error
       if (!String(input).includes('/chat/stream')) return original(input, options);
       return Promise.resolve(new Response(new ReadableStream({
         start(controller) {
-          options.signal.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')), { once: true });
+          options.signal.addEventListener('abort', () => {
+            window.__tutorStreamAborts = (window.__tutorStreamAborts || 0) + 1;
+            controller.error(new DOMException('Aborted', 'AbortError'));
+          }, { once: true });
         },
       }), { headers: { 'Content-Type': 'text/event-stream' } }));
     };
@@ -171,7 +174,7 @@ test('stopping a tutor follow-up before content arrives does not create an error
   await page.locator('#composerPrimaryBtn').click();
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '1');
   await page.locator('#composerPrimaryBtn').click();
-  await expect.poll(() => page.evaluate(() => window._activeChatAbort == null)).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__tutorStreamAborts || 0)).toBe(1);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
   expect(await page.evaluate(() => ({ error: window.stateStore.read('lastCallError'), total: window.stateStore.read('totalQ') })))
     .toEqual({ error: null, total: 1 });
