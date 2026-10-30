@@ -39,18 +39,6 @@ export function sameRgb(left, right) {
    token. */
 export const ACTIVE_CLASS = /(?:^|\s)active(?:\s|$)/;
 
-export const REQUIRED_BINDINGS = [
-  'setLang', 't', 'setRecentsSearch', 'setRecentsFilter', 'clearRecentsFilter',
-  'openSettings', 'closeSettings', 'openUsageModal', 'closeUsageModal',
-  'openCmdK', 'closeCmdK', 'openCheatsheet', 'showConfirm', 'showToast',
-  'toggleAppMode', 'toggleSidebar', 'signOut', 'openProfile', 'closeProfile',
-  'openShareModal', 'closeShareModal', 'resetApp', 'toggleIncognito',
-  'showUsageTip', 'hideUsageTip', 'updateModeBadge', 'syncEffortUI',
-  'closeTagEditor', 'clearActiveTemplate', 'onSlashRowClick',
-  'selectDiag', 'prevDiagQuestion', 'nextDiagQuestion', 'skipDiagQuestion',
-  'finishDiagnostic', 'proceedToTeaching', 'moveSessionToProject',
-];
-
 export async function gotoAndSettle(page, url = '/', opts = {}) {
   // Default to an already-made consent choice so the banner never
   // intercepts existing smoke tests. Pass { consent: false } for a spec

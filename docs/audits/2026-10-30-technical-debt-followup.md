@@ -33,6 +33,7 @@
 | 无读取方且过期的 `window.__SOCRATES_RELEASE_TAG__` | **本轮已移除** | 启动不再发布固定的 `20261008-speed-opt` 标记；无源码或测试消费者。 |
 | Recents reconciler 的 `window.scheduleRecentsReconcile` / `window.flushRecentsReconcile` | **本轮已移除** | Import 图确认 `recents.ts` 与 session save / exam persistence 没有运行时循环；save 与 exam persistence 改为直接导入，loader 中未调用的 window helper 一并删除。 |
 | 活动项目元数据的 `window.__activeProject` 镜像 | **本轮已移除** | 项目目录缓存是元数据唯一来源；prompt suffixes 按 `stateStore.currentProjectId` 从 `projectCache` 读取，loader 保留缓存刷新，React workspace / organize 不再复制项目对象。 |
+| session organize 中重复的拖拽实现、无读者的项目 drop 入口 | **本轮已移除** | 生产拖拽由 `session/dragSession.ts` 同步处理，项目移动由 React session-list 操作；删除 organize 中重复 handler、无读者的 `moveSessionToProject` / `_onProjectDrop`，以及不再使用的 E2E binding 清单。 |
 
 ## 仍开放或尚无法确认
 
@@ -85,3 +86,4 @@
 - 过期 release-tag window 字段移除：无代码消费者；`chat-preparation` 新会话取消用例 1/1 同时校验 session-id 与 release-tag 字段不存在，前端 lint 与生产构建通过。
 - Recents reconciler 改为模块导入：移除两个全局发布与 persistence / exam 全局读取，并删除 loader 未调用的 helper；`recentsReconcile.test.mjs` 16/16、`recents-archive` 1/1、`exam-regressions` 2/2、前端 lint 与生产构建通过。
 - 活动项目 window 镜像移除：prompt suffixes 以 canonical project id 查 `projectCache`，loader 只刷新缓存，React workspace / organize 只更新 project id；`promptSuffixes` 与 tutor flow 单测 17/17、`history-rich-content` E2E 4/4、前端 lint 与生产构建通过。
+- organizer 死代码清理：移除被 `organizeRuntime` 旁路的重复 drag handlers、未引用的项目 drop/move helpers，以及无人消费的 `REQUIRED_BINDINGS` 常量；`session-row-menu` 9/9、`session-tags` 1/1、前端 lint 与生产构建通过。

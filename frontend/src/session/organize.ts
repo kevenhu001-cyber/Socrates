@@ -1,5 +1,5 @@
 /* session/organize.ts — extracted from main.js (B6 batch).
- * Session tags, context menu and drag-to-project actions.
+ * Session tags, project cycling and context-menu actions.
  * Zero-behavior-change lift. Render surfaces resolve via window.*.
  */
 import { stateStore } from '../state/store.ts';
@@ -179,7 +179,7 @@ export function removeTagFromSession(id: string, tag: string | null): void {
   _renderRecents();
   refreshTagEditor(id);
 }
-export function closeSessionContextMenu(): void {
+function closeSessionContextMenu(): void {
   serverCache.ctxMenuSessionId = null;
   const sb = document.getElementById('sidebar');
   if (sb) sb.classList.remove('ctx-menu-block');
@@ -192,62 +192,6 @@ export function closeSessionContextMenu(): void {
   }
 }
 
-/* Drag-and-drop session onto a project. */
-let _dragSessionId: string | null = null;
-export function onSessionDragStart(event: DragEvent, sessionId: string): void {
-  _dragSessionId = sessionId;
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', sessionId);
-  }
-  /* Add a class to the dragged element. */
-  const target = event.target as Element | null;
-  if (target) target.classList.add('dragging');
-}
-export function onSessionDragEnd(event: DragEvent): void {
-  const target = event.target as Element | null;
-  if (target) target.classList.remove('dragging');
-  _dragSessionId = null;
-}
-/* Drop handler for project rows. Legacy spaces-panel entry point —
-   currently unreferenced (drag move goes through the React session list);
-   kept with _ prefix so the intent is explicit and lint stays green. */
-export function _onProjectDrop(event: DragEvent, projectId: string): void {
-  event.preventDefault();
-  event.stopPropagation();
-  const sessionId = _dragSessionId || (event.dataTransfer ? event.dataTransfer.getData('text/plain') : '');
-  if (!sessionId || !projectId) return;
-  moveSessionToProject(sessionId, projectId);
-}
-/* Expose drag functions globally so inline ondragstart/ondragend work. */
-
-/* Move a session to a project. */
-export function moveSessionToProject(sessionId: string, projectId: string): void {
-  const projects = getCachedProjects();
-  const project = projects.filter(function (p) { return p.id === projectId; })[0];
-  if (!project) return;
-  /* Update the session on the server. */
-  if (typeof apiFetch === 'function') {
-    apiFetch('/api/sessions/' + encodeURIComponent(sessionId), { method: 'PATCH', body: { projectId: projectId } })
-      .then(function () {
-        /* Update local state. */
-        if (stateStore.read('currentSessionId') === sessionId) {
-          stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: projectId });
-        }
-        closeSessionContextMenu();
-        /* P_recents-amplify — a project move changes a row field the local
-           patch never sees, so this one needs a real fetch. flush() runs it
-           now instead of on the next window, and still coalesces with any
-           save that asked for a reconcile in the meantime. */
-        flushRecentsReconcile();
-        if (typeof (window as OrganizeWindow).renderRecents === 'function') _renderRecents();
-        if (typeof showToast === 'function') showToast(_t('toast.movedToProject').replace('{name}', project.name));
-      })
-      .catch(function () {
-        if (typeof showToast === 'function') showToast(_t('toast.moveSessionFailed'));
-      });
-  }
-}
 /* Click-outside dismiss for context menu.
    When ctx-menu-block is active (synthetic click from long-press),
    clicks inside #sidebar are ignored — they passed through the
@@ -268,10 +212,7 @@ export function moveSessionToProject(sessionId: string, projectId: string): void
   });
 })();
 
-/* P_render-throttle — coalesce rapid _renderRecents() calls into a
-   single animation frame. Without this, saveCurrentSession (called
-   3-5x per chat turn) triggers 3-5 full list rebuilds, causing
-   visible stutter with 20+ sessions. */
+/** Cycle the current conversation through the cached projects. */
 export function cycleActiveProject(): void {
   const projects = getCachedProjects();
   if (!projects.length) return;
