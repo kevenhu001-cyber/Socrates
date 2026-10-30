@@ -80,7 +80,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "renderMistakes": () => void;
   "renderRecents": typeof import("../ui/recentsView")["renderRecents"];
   "resendLastUserMessage": typeof import("../chat/turnUi")["resendLastUserMessage"];
-  "restorePersistedMessageExtras": typeof import("../ui/messageActions")["restorePersistedMessageExtras"];
   "retryDiagnostic"?: () => void;
   "revokeShareLink": typeof import("../ui/share")["revokeShareLink"];
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];

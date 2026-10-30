@@ -59,6 +59,7 @@
 | Usage lazy module 暴露的四个无消费者 window helper | **本轮已移除** | 数据、月份与 tooltip 行为均由 `ui/usage.ts` 内部委托监听器直接调用；仓库源码和页面标记没有 window 外部消费者。删除四个 wrapper 及 `RuntimeWindow` 类型，保留 lazy load/open/close 生命周期。 |
 | Storage E2E 专用 `window.getArchivedSessions` alias | **本轮已收敛** | Storage UI 本身直接导入 recents 模块；E2E 改走 typed `__socratesLegacy.sessions.getArchivedSessions`，移除独立 window 发布、`RuntimeWindow` 字段和 React storage modal 的旧 window 声明。 |
 | React 消息操作的重复 window aliases | **本轮已收敛** | edit/delete/regenerate/branch/switch/feedback actions 统一走 typed `__socratesLegacy.messages`；仓库无 inline handler 消费者。移除六个根级 window 发布和 `RuntimeWindow` 字段，E2E 仅注入 typed actions。 |
+| Share renderer 对 `window.restorePersistedMessageExtras` 的依赖 | **本轮已移除** | Share 懒加载模块直接导入 `ui/messageActions.ts` 的规范实现，删除重复 fallback renderer 与根级 window 发布/类型；React postRender 仍使用 typed action。 |
 
 ## 仍开放或尚无法确认
 
@@ -137,3 +138,4 @@
 - Usage helper window wrapper 清理：删除无人调用的 `loadUsageData`、`loadUsageMonth`、`showUsageTip`、`hideUsageTip` 发布及类型；保留 Usage 模块内部请求与 tooltip 逻辑。前端完整 lint 与生产构建通过，`usage-modal.spec.mjs` 1/1 验证 API 数据、周期切换和四个旧全局不存在。
 - Storage 归档列表测试入口收敛到 typed session action：生产 Storage 继续直接读 recents 模块；E2E 改走 `__socratesLegacy.sessions.getArchivedSessions` 并检查旧全局不存在。前端完整 lint、生产构建与 `recents-archive.spec.mjs` 1/1 通过，覆盖归档仍可在 Storage 恢复。
 - React message action 重复 window alias 清理：E2E 用 typed message actions 注入 mocks，并断言 edit/delete/regenerate/branch/switch/feedback 六个旧全局均缺失。前端完整 lint、生产构建通过，`message-list-compat.spec.mjs` 7/7 覆盖 React 消息渲染、事件更新、工具栏操作、流结束和 transcript remount。
+- Share renderer `restorePersistedMessageExtras` window dependency removal：Share lazy module 直接导入规范恢复函数，去掉只在全局缺失时才执行的重复 tool/artifact fallback。前端完整 lint、生产构建通过，`share-view.spec.mjs` 4/4 覆盖只读共享聊天、工具行、创建/撤销分享与兼容挂载。

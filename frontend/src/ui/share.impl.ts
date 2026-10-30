@@ -19,15 +19,13 @@ import { activateMainView } from './mainViewController.ts';
 import { takeOverSharedMessageList } from './msgListMount.ts';
 import { renderSharedAssistantTurn, releaseSharedAssistantTurns } from './assistantTurnRenderer.ts';
 
-import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './toolCards.ts';
-
-import { mountVisualization, disposeVisualizations } from '../render/vizStubs.ts';
+import { disposeVisualizations } from '../render/vizStubs.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishShareState, type ShareVisibility } from './shareState.ts';
 import { renderSharedExamFooter as renderSharedExamFooterAction } from '../react/exam/sharedExamFooterHost.tsx';
+import { restorePersistedMessageExtras, type MessageEntry } from './messageActions.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { getCurrentLanguage } from '../i18n/languageState.ts';
-import type { MessageEntry } from './messageActions.ts';
 import type { ToolCall } from '../react/types/domain.ts';
 
 interface SharedMessage extends MessageEntry {
@@ -278,47 +276,9 @@ function renderSharedMessageFallback(body: HTMLDivElement, message: SharedMessag
   body.innerHTML = html;
 }
 
-function appendSharedToolArtifacts(body: HTMLDivElement, message: SharedMessage) {
-  const calls = message.toolCalls;
-  if (!Array.isArray(calls)) return;
-  for (let callIndex = 0; callIndex < calls.length; callIndex++) {
-    const call = calls[callIndex];
-    if (!call || !call.name) continue;
-    const card = typeof appendToolModule === "function"
-      ? appendToolModule(call.name, (call.input || {}) as Parameters<typeof appendToolModule>[1], body, { restored: true, isError: !!call.isError })
-      : null;
-    const input = call.input && typeof call.input === 'object' ? call.input as Record<string, unknown> : null;
-    if (call.name === "render_visualization" && input?.version === 1
-        && typeof mountVisualization === "function") {
-      mountVisualization(input, body, { toolCallId: call.id || ("share-viz-" + callIndex) })
-        .catch(function () { /* card paints its own error state */ });
-    }
-    appendSharedArtifacts(body, card, call.artifacts);
-  }
-}
-
-function appendSharedArtifacts(body: HTMLElement, card: HTMLElement | null, artifacts: unknown) {
-  if (!card || !Array.isArray(artifacts) || !artifacts.length
-      || typeof appendInlineArtifact !== "function") return;
-  for (let index = 0; index < artifacts.length; index++) {
-    const artifact = artifacts[index];
-    if (!artifact || !artifact.id) continue;
-    const mimeType = artifact.mimeType || "application/octet-stream";
-    const previewable = mimeType.indexOf("image/") === 0 || mimeType.indexOf("text/html") === 0;
-    appendInlineArtifact(artifact.id, mimeType, previewable ? body : card, artifact.name);
-  }
-}
-
 function restoreSharedMessageExtras(body: HTMLDivElement, message: SharedMessage) {
   if (message.role !== "assistant") return;
-  if (typeof browserWindow.restorePersistedMessageExtras === "function") {
-    browserWindow.restorePersistedMessageExtras(body, message, "share-" + (message.id || "message"));
-  } else if (Array.isArray(message.toolCalls) && message.toolCalls.length > 0) {
-    appendSharedToolArtifacts(body, message);
-  }
-  if (typeof appendFileChangeSummaryCards === "function") {
-    try { appendFileChangeSummaryCards(body); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:290'); }
-  }
+  restorePersistedMessageExtras(body, message, "share-" + (message.id || "message"));
 }
 
 function renderSharedMessage(message: SharedMessage) {

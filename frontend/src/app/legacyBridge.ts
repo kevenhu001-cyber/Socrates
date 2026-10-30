@@ -133,7 +133,6 @@ browserWindow.fetchWebContext = function (
 browserWindow.openAttachmentPicker = openAttachmentPicker;
 browserWindow.openMediaPicker = openMediaPicker;
 browserWindow.getCustomInstructionsString = getCustomInstructionsString;
-browserWindow.restorePersistedMessageExtras = restorePersistedMessageExtras;
 browserWindow.renderAssistantHTML = renderAssistantHTML;
 browserWindow.showToast = showToast;
 browserWindow.resetApp = resetApp;
