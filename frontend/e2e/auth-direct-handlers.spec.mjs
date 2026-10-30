@@ -4,11 +4,16 @@ import { mockAuthedApp } from './_mock-api.mjs';
 
 test('auth gate interactions are owned by the auth module', async ({ page }) => {
   await mockAuthedApp(page);
+  const apiKeyRefreshes = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.endsWith('/api-key')) apiKeyRefreshes.push(request.url());
+  });
   await gotoAndSettle(page, '/');
 
   /* authBoot() hydrates asynchronously and finishes with hideGate(); wait
      for it to settle so its hideGate can never race our showGate below. */
   await expect(page.locator('#authGate')).toBeHidden();
+  expect(await page.evaluate(() => 'refreshApiConfig' in window)).toBe(false);
 
   await page.evaluate(() => {
     window.showGate();
@@ -62,8 +67,10 @@ test('auth gate interactions are owned by the auth module', async ({ page }) => 
   await page.locator('#authSigninTab').click();
   await page.fill('#authSigninEmail', 'login@example.test');
   await page.fill('#authSigninPassword', 'correct-horse-battery');
+  const refreshesBeforeSignIn = apiKeyRefreshes.length;
   await page.locator('#authSigninView').evaluate((form) => {
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   });
   await expect(page.locator('#authGate')).toBeHidden();
+  await expect.poll(() => apiKeyRefreshes.length).toBeGreaterThan(refreshesBeforeSignIn);
 });

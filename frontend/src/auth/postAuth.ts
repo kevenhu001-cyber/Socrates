@@ -4,7 +4,7 @@ import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } fr
 import { loadSession } from '../session/loader.ts';
 import { loadUserMemories, publishSidebarChrome } from '../ui/profile.ts';
 import { syncExtensionsUI } from '../pickers.ts';
-import { syncSidebarForMode } from '../config/providers.ts';
+import { refreshApiConfig, syncSidebarForMode } from '../config/providers.ts';
 import { syncWorkspaceRoute } from '../sidebar/navigation.service.ts';
 import { toggleShareBtn } from '../ui/share.ts';
 import { renderGreeting } from '../ui/greeting.js';
@@ -19,7 +19,6 @@ interface PostAuthLegacyWindow extends Window {
   saveCurrentSession?: () => void;
   isInAuthGraceWindow?: () => boolean;
   refreshServerSessions?: () => Promise<unknown>;
-  refreshApiConfig?: () => Promise<unknown>;
   renderRecents?: () => void;
   renderMistakes?: () => void;
   updateMistakesBadge?: () => void;
@@ -53,7 +52,7 @@ async function fetchBootstrapData(): Promise<void> {
     && win.isInAuthGraceWindow();
   await Promise.all([
     fetchWithAuthGraceRetry(win.refreshServerSessions, { isInGraceWindow }),
-    fetchWithAuthGraceRetry(win.refreshApiConfig, { isInGraceWindow }),
+    fetchWithAuthGraceRetry(refreshApiConfig, { isInGraceWindow }),
     loadUserMemories().catch(() => null),
   ]);
 }

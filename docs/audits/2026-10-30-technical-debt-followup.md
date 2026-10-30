@@ -62,6 +62,7 @@
 | Share renderer 对 `window.restorePersistedMessageExtras` 的依赖 | **本轮已移除** | Share 懒加载模块直接导入 `ui/messageActions.ts` 的规范实现，删除重复 fallback renderer 与根级 window 发布/类型；React postRender 仍使用 typed action。 |
 | Share create/revoke E2E 专用 window aliases | **本轮已收敛** | Create/revoke 流程改用 typed `__socratesLegacy.share` actions；modal open/close shell entry 保留。删除两个根级 window 发布及类型，E2E 检查旧字段缺失。 |
 | 无读取方的 `window.openMediaPicker` alias | **本轮已移除** | React Composer 通过 `__socratesLegacy.composer.openMediaPicker` 调用媒体选择器；全仓无根级读取方。移除重复发布及 `RuntimeWindow` 字段，E2E 检查旧字段缺失并覆盖手机 Photos action。 |
+| post-auth 的 `window.refreshApiConfig` 依赖 | **本轮已移除** | `auth/postAuth.ts` 与 `config/providers.ts` 已共享同一模块实例；post-auth 的 provider 拉取直接调用 `refreshApiConfig`，删除 bridge 发布和类型字段，避免认证流程默默跳过刷新。 |
 
 ## 仍开放或尚无法确认
 
@@ -142,3 +143,4 @@
 - React message action 重复 window alias 清理：E2E 用 typed message actions 注入 mocks，并断言 edit/delete/regenerate/branch/switch/feedback 六个旧全局均缺失。前端完整 lint、生产构建通过，`message-list-compat.spec.mjs` 7/7 覆盖 React 消息渲染、事件更新、工具栏操作、流结束和 transcript remount。
 - Share renderer/action bridge cleanup：Share lazy module 直接导入 `restorePersistedMessageExtras`，删除重复 tool/artifact fallback；create/revoke E2E 改走 typed share actions 并检查旧别名缺失。前端完整 lint、生产构建通过，`share-view.spec.mjs` 4/4 覆盖只读共享聊天、工具行、创建/撤销与兼容挂载。
 - `openMediaPicker` window alias removal: mobile Composer photo selection continues through typed `__socratesLegacy.composer.openMediaPicker`; old root alias absence is asserted. Frontend lint and production build pass, and `composer-tools-compat.spec.mjs` passes 11/11.
+- Post-auth provider refresh now imports `refreshApiConfig` directly from the already-used provider module; `auth-direct-handlers.spec.mjs` asserts the global is absent and observes an `/api/api-key` request after sign-in. Frontend full lint, production build and the focused auth spec (1/1) pass.
