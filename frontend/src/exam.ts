@@ -23,6 +23,7 @@ import { doSaveExamSession, resetExamSaveState, saveExamSession, setExamAnswer, 
 import { examBody as _examBody, examFooter as _examFooter, examUiL as _examUiL, setExamTitle as _setExamTitle } from './exam/ui.ts';
 import { ExamAction } from './react/exam/ExamActionFooter.tsx';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
+import { getCurrentLanguage } from './i18n/languageState.ts';
 
 
 export { parseExamArrayJSON, parseSingleExamQuestion };
@@ -120,7 +121,7 @@ export function prepareExamView() {
      the shared view controller already applied the conversation chrome. */
   toggleExamOnlyTopBar(true);
   /* The top bar is the single visible exam title. */
-  _setExamTitle(browserWindow.stateStore.read("examTopic") || (browserWindow._currentLang === "zh" ? "生成考卷" : "Generate Exam"));
+  _setExamTitle(browserWindow.stateStore.read("examTopic") || (getCurrentLanguage() === "zh" ? "生成考卷" : "Generate Exam"));
   /* Hide chat-specific top-bar elements that are meaningless in exam mode. */
   ["chatModelWrap"].forEach(function (id) {
     const el = document.getElementById(id);
@@ -247,14 +248,14 @@ function examProviderOptions() {
 }
 
 function buildExamSetupSnapshot(draft: ExamDraft | null, key: number): ExamSetupSnapshot {
-  const L = (en: string, zh: string) => browserWindow._currentLang === "zh" ? zh : en;
+  const L = (en: string, zh: string) => getCurrentLanguage() === "zh" ? zh : en;
   const defaults = { mc: true, fb: true, sa: false };
   _examSelectedTypes = Object.assign({}, defaults, draft?.types ?? {});
   _examDifficulty = draft?.difficulty ?? "intermediate";
   const { providers, activeId } = examProviderOptions();
   return {
     key,
-    locale: browserWindow._currentLang === "en" ? "en" : "zh",
+    locale: getCurrentLanguage() === "en" ? "en" : "zh",
     topic: String(draft?.topic ?? ""),
     instructions: String(draft?.instructions ?? ""),
     count: String(draft?.count ?? "5"),
@@ -278,7 +279,7 @@ export function renderExamForm(draft: ExamDraft | null = null) {
   const legacyFooter = _examFooter();
   if (legacyBody) legacyBody.replaceChildren();
   if (legacyFooter) legacyFooter.replaceChildren();
-  _setExamTitle(browserWindow._currentLang === "zh" ? "生成考卷" : "Generate Exam");
+  _setExamTitle(getCurrentLanguage() === "zh" ? "生成考卷" : "Generate Exam");
   const meta = document.getElementById("examViewMeta");
   if (meta) meta.textContent = "";
   stateStore.dispatch({type:'state/batch',patch:{

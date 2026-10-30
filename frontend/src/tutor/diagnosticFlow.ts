@@ -15,6 +15,7 @@ import { updateKB } from '../ui/knowledgePanel.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentLanguage } from '../i18n/languageState.ts';
 
 
 function _t(key: string, fallback?: string | null) {
@@ -28,10 +29,7 @@ function _t(key: string, fallback?: string | null) {
 }
 
 function _isZh() {
-  try {
-    if (typeof window !== 'undefined' && browserWindow._currentLang === 'zh') return true;
-  } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.ts:30'); }
-  return false;
+  return getCurrentLanguage() === 'zh';
 }
 
 export function stateView() {

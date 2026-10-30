@@ -26,6 +26,7 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishShareState, type ShareVisibility } from './shareState.ts';
 import { renderSharedExamFooter as renderSharedExamFooterAction } from '../react/exam/sharedExamFooterHost.tsx';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentLanguage } from '../i18n/languageState.ts';
 import type { MessageEntry } from './messageActions.ts';
 import type { ToolCall } from '../react/types/domain.ts';
 
@@ -501,7 +502,7 @@ function renderSharedExamQuestions(questions: SharedExamQuestion[]) {
 function renderSharedExamFooter() {
   const footer = document.getElementById("examViewLegacyFooter") || document.getElementById("examViewFooter");
   if (!footer) return;
-  const closeLabel = (browserWindow._currentLang === "zh") ? "关闭" : "Close";
+  const closeLabel = (getCurrentLanguage() === "zh") ? "关闭" : "Close";
   renderSharedExamFooterAction(footer, closeLabel);
 }
 
@@ -536,7 +537,7 @@ function renderSharedQuestionCard(idx: number, q: SharedExamQuestion) {
   const ph = document.getElementById("examQ" + idx);
   if (!ph) return;
   const saved = (browserWindow.stateStore.read("examAnswers") && browserWindow.stateStore.read("examAnswers")[idx]);
-  const zh = browserWindow._currentLang === "zh";
+  const zh = getCurrentLanguage() === "zh";
   let html = '<div class="exam-q-num">' + (zh ? "题目" : "Question") + ' ' + (idx + 1) + ' / ' + Number(browserWindow.stateStore.read("examCount") || 0) + ' <span class="exam-q-type">' + esc(q.type || "") + '</span></div>';
   html += '<div class="exam-q-text">' + (typeof browserWindow.formatMsg === "function" ? browserWindow.formatMsg(String(q.q || "")) : esc(q.q || "")) + '</div>';
   if (q.type === "multiple-choice" && Array.isArray(q.opts)) {

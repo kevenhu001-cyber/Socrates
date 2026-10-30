@@ -2,6 +2,7 @@ import { apiFetch } from '../util/api.ts';
 import { hasUsableActive } from '../config/providers.ts';
 import { stateStore } from '../state/store.ts';
 import { stripHtmlTags } from '../util/stripHtml.ts';
+import { getCurrentLanguage } from '../i18n/languageState.ts';
 
 /* Generate a declarative session title based on the user's first input.
    Called fire-and-forget on first save. A short cooldown prevents repeated
@@ -85,7 +86,7 @@ function seedFallbackTitle(context: TitleGenerationContext): void {
 function titleUsesChinese(topic: string): boolean {
   if (/[\u4e00-\u9fff]/.test(topic)) return true;
   if (/[A-Za-z]/.test(topic)) return false;
-  return (window as { _currentLang?: string })._currentLang === "zh";
+  return getCurrentLanguage() === "zh";
 }
 
 function createTitlePrompt(topic: string): { prompt: string; sysContent: string } {

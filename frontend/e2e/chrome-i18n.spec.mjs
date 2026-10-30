@@ -26,6 +26,7 @@ const attr = (page, sel, name) => page.locator(sel).first().getAttribute(name);
 
 test('static shell chrome localizes to Chinese', async ({ page }) => {
   await setLang(page, 'zh');
+  expect(await page.evaluate(() => '_currentLang' in window)).toBe(false);
 
   expect(await attr(page, '#sidebarSearchBtn', 'title')).toBe('搜索对话');
   expect(await attr(page, '#sidebarSearchBtn', 'aria-label')).toBe('搜索对话');

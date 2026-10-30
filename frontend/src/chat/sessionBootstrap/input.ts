@@ -7,6 +7,7 @@ import { detectLanguage } from '../lang.ts';
 import { isSlashCommandPaletteOpen } from '../templateSlash.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getAppMode } from './runtime.ts';
+import { getCurrentLanguage } from '../../i18n/languageState.ts';
 
 /** Everything a new session needs, captured before the composer is cleared. */
 export interface SessionStartContext {
@@ -23,7 +24,6 @@ export interface SessionStartContext {
 /** Legacy bridges read during capture. */
 interface SessionStartWindow extends Window {
   _activeTemplate?: Record<string, unknown> | null;
-  _currentLang?: string;
   deepResearchOn?: boolean;
 }
 
@@ -52,7 +52,7 @@ function captureActiveTemplate(): Record<string, unknown> | null {
 async function captureTutorExploration(language: string, deepResearchOn: boolean): Promise<{ enabled: boolean; count: number } | null> {
   if (getAppMode() !== 'tutor' || deepResearchOn) return { enabled: false, count: 0 };
   return requestTutorExploration({
-    isZh: (window as SessionStartWindow)._currentLang === 'zh' || language === 'zh',
+    isZh: getCurrentLanguage() === 'zh' || language === 'zh',
   });
 }
 

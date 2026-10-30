@@ -3,16 +3,16 @@ import { useMemo } from 'react';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { stripLegacyToolHtml } from './toolRunModel.js';
 import { getMathRenderRevision } from '../../render/mathRevision.ts';
+import { getCurrentLang } from '../legacy/gateway.ts';
 
 const IMPURE_OUTPUT = /class="viz"|-slot"|canvas-block/;
 function renderEnvKey(mathRevision: number): string {
   if (typeof window === 'undefined') return '0';
   const runtime = window as unknown as {
-    _currentLang?: string;
     hljs?: unknown;
   };
   return String(mathRevision)
-    + '|' + (runtime._currentLang || '')
+    + '|' + getCurrentLang()
     + '|' + (runtime.hljs ? 1 : 0)
     + '|';
 }

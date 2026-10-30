@@ -10,7 +10,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   SERVER_SESSIONS: import('../session/store').SessionRow[];
   getArchivedSessions: typeof import('../session/recents')['getArchivedSessions'];
 
-  "APP_LANG": string;
   renderMathInElement?: (root: Element, options?: Record<string, unknown>) => void;
   "GGBApplet": new (options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void }, useBrowser: boolean) => { inject(target: HTMLElement | string): void };
   "ReactNativeWebView": { postMessage(message: string): void } | undefined;
@@ -31,7 +30,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "__startSearchProgress": typeof import("../ui/searchProgress")["startSearchProgress"];
   "__testActivateMainView": (viewId: string) => boolean;
   "_activeTemplate": import("../chat/templateSystemPrompt").ActiveTemplate | null;
-  "_currentLang": string;
   "_nextProjectId": string | null;
   "_userMemories": string[];
   "addMessage": typeof import("../chat/messages")["addMessage"];
@@ -65,7 +63,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "findPrev": typeof import("../react/find-in-session/findInSession.actions")["findPrev"];
   "formatMsg": typeof import("../render/markdown")["formatMsg"];
   "getActiveProvider": typeof import("../pickers")["getActiveProvider"];
-  "getAppLang": (() => string) | undefined;
   "getConnectorIconMarkup": typeof import("../sidebar/nav")["connectorIconWithFallback"];
   "getCsrfToken": typeof import("../util/api/request")["getCsrfToken"];
   "getCustomInstructionsString": typeof import("../ui/profile")["getCustomInstructionsString"];

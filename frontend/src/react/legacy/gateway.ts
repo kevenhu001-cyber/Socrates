@@ -13,6 +13,7 @@
 
 import type { LegacyActions } from './types';
 import type { apiFetch } from '../../util/api';
+import { getCurrentLanguage } from '../../i18n/languageState.ts';
 
 type ApiFetchFn = typeof apiFetch;
 
@@ -24,7 +25,6 @@ interface StandaloneGlobals {
   _activeTemplate?: { extensionKey?: unknown } | null;
   deepResearchOn?: boolean;
   extensiveThinkingOn?: boolean;
-  _currentLang?: string;
   apiFetch?: ApiFetchFn;
   _nextProjectId?: string | null;
   CURRENT_USER?: unknown;
@@ -172,7 +172,7 @@ export function isExtensiveThinkingOn(): boolean {
 
 /** Active UI language code tracked by the legacy i18n layer (defaults to zh). */
 export function getCurrentLang(): 'zh' | 'en' {
-  return standaloneWindow()._currentLang === 'en' ? 'en' : 'zh';
+  return getCurrentLanguage();
 }
 
 /**

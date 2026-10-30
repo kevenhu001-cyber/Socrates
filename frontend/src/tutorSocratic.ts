@@ -3,6 +3,7 @@ import { esc } from './render/helpers.ts';
 import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
+import { getCurrentLanguage } from './i18n/languageState.ts';
 import type { TutorMistakeFilterProps } from './react/tutor/TutorMistakeFilter.tsx';
 
 interface KnowledgeNode {
@@ -79,17 +80,7 @@ const tutorSocraticRuntime = (function () {
   };
 
   function currentLang() {
-    try {
-      /* AUDIT-fix — the real language source of truth is
-         window._currentLang (set by i18n.ts setLang). getAppLang /
-         APP_LANG were never assigned anywhere, and index.html hard-
-         codes lang="en", so Chinese users always got English stage
-         labels. Check _currentLang first, keep the old chain as
-         fallbacks. */
-      if (browserWindow._currentLang === 'zh' || browserWindow._currentLang === 'en') return browserWindow._currentLang;
-      return (typeof browserWindow.getAppLang === 'function') ? browserWindow.getAppLang()
-           : (browserWindow.APP_LANG || (document.documentElement.lang === 'zh' ? 'zh' : 'en'));
-    } catch (_) { return 'en'; }
+    return getCurrentLanguage();
   }
   /* i18n lookup that prefers t() (i18n.ts) but falls back to
      inline bilingual copy if the key is missing — keeps the

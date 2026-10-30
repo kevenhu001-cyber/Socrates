@@ -1,3 +1,5 @@
+import { getCurrentLanguage } from '../i18n/languageState.ts';
+
 export function examBody() {
   return document.getElementById('examViewLegacyBody') || document.getElementById('examViewBody');
 }
@@ -11,7 +13,7 @@ export function examTitle() {
 }
 
 export function examUiIsZh() {
-  return (window as Window & { _currentLang?: string })._currentLang === 'zh';
+  return getCurrentLanguage() === 'zh';
 }
 
 export function examUiL(en: string, zh: string) {

@@ -4,6 +4,8 @@
  * No mutation, no DOM, no state/store.ts reads. Only consumer is askChatTurn.
  */
 
+import { getCurrentLanguage } from '../i18n/languageState.ts';
+
 /* Detect user language from input text. Returns one of: zh, ja, ko, ru, ar, en.
  * Strategy: Japanese kana or Korean hangul are unambiguous signals. For CJK
  * we look at the longest consecutive CJK run (a 2+ char Chinese phrase
@@ -38,7 +40,7 @@ function detectLanguage(text: string): string {
  * language so the model reads it as instructions in the language it
  * is about to use.
  * Source of truth: the language detected from the user's own input.
- * The UI language (window._currentLang) is only a fallback when the
+ * The UI language is only a fallback when the
  * input carries no detectable language signal — the reply must follow
  * the language the user writes in, never the UI locale (an English
  * question in a Chinese UI gets an English reply, and vice versa).
@@ -50,7 +52,7 @@ function languageDirectiveFor(text: string): string {
     if (/^(function\s|class\s|def\s|import\s|const\s|let\s|var\s|#include|<\?xml|<!DOCTYPE)/i.test(t)) return '';
   }
   const hasLangSignal = /[A-Za-z\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0400-\u04ff\u0600-\u06ff]/.test(t);
-  const uiLang = (typeof window !== 'undefined' && (window as Window & { _currentLang?: string })._currentLang) || '';
+  const uiLang = getCurrentLanguage();
   const lang = hasLangSignal ? detectLanguage(t) : (uiLang || detectLanguage(t));
   if (lang === 'zh') {
     return '\n\n## \u8bed\u8a00\u6307\u4ee4\uff08\u6700\u9ad8\u4f18\u5148\u7ea7\uff09\uff1a\u4e25\u683c\u4f7f\u7528\u4e2d\u6587\uff0c\u7981\u6b62\u4e2d\u82f1\u6df7\u7528\n\n' +

@@ -1,10 +1,10 @@
 import {renderGreeting} from './ui/greeting.js';
 import {syncThemeUI} from './displayPrefs.js';
 import { reportSwallow } from './util/reportSwallow.ts';
+import { getCurrentLanguage, setCurrentLanguage } from './i18n/languageState.ts';
 
 // These hooks are published by the existing shell; keep their contract local.
 interface I18nWindow extends Window {
-  _currentLang?: string;
   setLang?: (lang: string) => void;
   __i18nReady?: Promise<void>;
   appMode?: string;
@@ -15,7 +15,6 @@ interface I18nWindow extends Window {
 const browser = window as I18nWindow;
 
 const I18N: Partial<Record<string, Record<string, string>>> = {};
-let _currentLang="zh";
 /* Keep both locale tables out of the entry chunk. The saved locale loads in
    parallel with auth preflight; boot waits for that request before revealing
    either the app or auth gate. */
@@ -36,7 +35,7 @@ function ensureEn(){
   }
   return _enReady;
 }
-function t(key: string){const table=I18N[_currentLang];let v=table&&table[key];if(typeof v!=="undefined")return v;v=I18N.en&&I18N.en[key];if(typeof v!=="undefined")return v;return key;}
+function t(key: string){const table=I18N[getCurrentLanguage()];let v=table&&table[key];if(typeof v!=="undefined")return v;v=I18N.en&&I18N.en[key];if(typeof v!=="undefined")return v;return key;}
 function syncLanguageToggleOptions(lang: string){
   for(let i=0;i<LANG_OPTION_IDS.length;i++){
     const el=document.getElementById(LANG_OPTION_IDS[i]);
@@ -47,17 +46,18 @@ function syncLanguageToggleOptions(lang: string){
     el.setAttribute("aria-pressed",active?"true":"false");
   }
 }
+function requestLocale(lang: string): void {
+  if (lang !== "zh" && lang !== "en") return;
+  /* A locale may still be in flight — apply as soon as it lands. */
+  const ready = lang === "zh" ? ensureZh() : ensureEn();
+  ready.then(function () { if (I18N[lang]) setLang(lang); });
+}
 function setLang(lang: string){
   if(!I18N[lang]){
-    /* A locale may still be in flight — apply as soon as it lands. */
-    if(lang==="zh"||lang==="en"){
-      const ready=lang==="zh"?ensureZh():ensureEn();
-      ready.then(function(){if(I18N[lang])setLang(lang)});
-    }
+    requestLocale(lang);
     return;
   }
-  _currentLang=lang;
-  browser._currentLang=lang;
+  setCurrentLanguage(lang === "en" ? "en" : "zh");
   try{document.documentElement.lang=lang==="zh"?"zh":"en";}catch(e){reportSwallow(e, 'i18n.setLang.documentLang'); }
   try{localStorage.setItem("socrates-lang-app",lang)}catch(e){reportSwallow(e, 'i18n.setLang.persist'); }
   applyI18n();
@@ -169,7 +169,7 @@ function refreshDynamicSurfaces(){
 function applyI18n(){
   translateTextNodes();
   /* Keep the profile modal toggle aligned with the active locale. */
-  try{syncLanguageToggleOptions(_currentLang)}catch(e){reportSwallow(e, 'i18n.applyI18n.profileLangChips'); }
+  try{syncLanguageToggleOptions(getCurrentLanguage())}catch(e){reportSwallow(e, 'i18n.applyI18n.profileLangChips'); }
   translateAttribute("[data-i18n-placeholder]","data-i18n-placeholder","placeholder");
   translateAttribute("[data-i18n-title]","data-i18n-title","title");
   translateAttribute("[data-i18n-aria]","data-i18n-aria","aria-label");
@@ -180,7 +180,7 @@ function applyI18n(){
   updateExtensionsLabel();
   refreshDynamicSurfaces();
 }
-/* Load saved language preference. _currentLang is the single source
+/* Load saved language preference. languageState.ts is the single source
    of truth at runtime; setLang() persists changes and applyI18n()
    pushes them onto the DOM.
    P_lang-persist — defensive dual-write on read: when the saved
@@ -195,34 +195,33 @@ try{
   /* Validate saved language against supported names, not the async-loaded
      locale table, or a valid preference would be wiped before it lands. */
   if(s==="en"||s==="zh"){
-    _currentLang=s;
+    setCurrentLanguage(s);
   }else if(!s){
     /* No preference recorded yet — persist the default so the
        next load picks up the same value instead of leaving the
        slot empty. */
-    try{localStorage.setItem("socrates-lang-app",_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.persistDefault'); }
+    try{localStorage.setItem("socrates-lang-app",getCurrentLanguage())}catch(e){reportSwallow(e, 'i18n.bootstrap.persistDefault'); }
   }else{
     /* Stale value (e.g. user downgraded and we removed a locale) —
      * overwrite with the default so the entry stays canonical. */
-    try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.resetStale', 'expected'); }
+    try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",getCurrentLanguage())}catch(e){reportSwallow(e, 'i18n.bootstrap.resetStale', 'expected'); }
   }
 }catch(e){reportSwallow(e, 'i18n.bootstrap.readPref', 'expected'); }
 /* Fetch only the saved locale in parallel with boot. When it lands, run the
    full setLang path so DOM-owned strings and React language listeners repaint. */
-const _initialLocaleReady=_currentLang==="zh"?ensureZh():ensureEn();
-_initialLocaleReady.then(function(){if(I18N[_currentLang]){try{setLang(_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.localeRetry'); /* applyI18n retry covers stragglers */ }}});
+const _initialLocaleReady=getCurrentLanguage()==="zh"?ensureZh():ensureEn();
+_initialLocaleReady.then(function(){if(I18N[getCurrentLanguage()]){try{setLang(getCurrentLanguage())}catch(e){reportSwallow(e, 'i18n.bootstrap.localeRetry'); /* applyI18n retry covers stragglers */ }}});
 /* Set the document's language before boot. The selected async locale calls
    setLang() on arrival and applies every data-i18n string before auth boot
    reveals the app or gate. */
 try{
   const lbl=document.getElementById("langToggleLabel");
-  if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
-  document.documentElement.lang=_currentLang==="zh"?"zh":"en";
-  if(I18N[_currentLang])applyI18n();
+  if(lbl)lbl.textContent=getCurrentLanguage()==="en"?"EN":"中";
+  document.documentElement.lang=getCurrentLanguage()==="zh"?"zh":"en";
+  if(I18N[getCurrentLanguage()])applyI18n();
 }catch(e){reportSwallow(e, 'i18n.bootstrap.initialApply'); }
 
 /* Expose i18n functions as globals for main.js and other modules. */
-browser._currentLang = _currentLang;
 browser.t = t;
 browser.setLang = setLang;
 browser.applyI18n = applyI18n;

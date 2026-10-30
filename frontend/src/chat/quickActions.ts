@@ -15,10 +15,7 @@ import { addMessage } from './messages.ts';
 import { translate } from './send/runtime.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import type { ChatMessageShape } from '../state/session.ts';
-
-type QuickActionWindow = Window & {
-  _currentLang?: string;
-};
+import { getCurrentLanguage } from '../i18n/languageState.ts';
 
 type TutorMessage = ChatMessageShape;
 
@@ -64,7 +61,7 @@ async function handleQuickAction(action: string, messageId: string): Promise<voi
   const kbNodes = stateStore.read('kbNodes') as Array<{ name?: string; status?: string }>;
   const currentNode = stateStore.read('currentNode') as number;
   const sessionId = stateStore.read('currentSessionId');
-  const isZh = (window as QuickActionWindow)._currentLang === 'zh';
+  const isZh = getCurrentLanguage() === 'zh';
   switch (action) {
     case 'explain': {
       if (!(await explainCurrentNode(kbNodes, currentNode, sessionId))) return;

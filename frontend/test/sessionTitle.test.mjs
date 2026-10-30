@@ -7,6 +7,7 @@ globalThis.localStorage = {
 };
 
 const { stateStore } = await import('../src/state/store.ts');
+const { getCurrentLanguage, setCurrentLanguage } = await import('../src/i18n/languageState.ts');
 const { fallbackTitle, generateSessionTitle, normalizeSessionTitle } = await import('../src/chat/sessionTitle.ts');
 
 test('session titles strip prefixes and stay short in both languages', () => {
@@ -17,9 +18,9 @@ test('session titles strip prefixes and stay short in both languages', () => {
 });
 
 test('a first prompt gets a compact fallback before provider availability is checked', () => {
-  const previousWindow = globalThis.window;
   const previousFetch = globalThis.fetch;
-  globalThis.window = { stateStore, _currentLang: 'zh' };
+  const previousLanguage = getCurrentLanguage();
+  setCurrentLanguage('zh');
   globalThis.fetch = () => Promise.reject(new Error('offline'));
   stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'title-session' });
   stateStore.dispatch({ type: 'state/set', key: 'topic', value: '理解机器学习基本概念以及应用' });
@@ -29,9 +30,8 @@ test('a first prompt gets a compact fallback before provider availability is che
     generateSessionTitle();
     assert.equal(stateStore.read('sessionTitle'), '理解机器学习基本');
   } finally {
-    if (previousWindow === undefined) delete globalThis.window;
-    else globalThis.window = previousWindow;
     if (previousFetch === undefined) delete globalThis.fetch;
     else globalThis.fetch = previousFetch;
+    setCurrentLanguage(previousLanguage);
   }
 });

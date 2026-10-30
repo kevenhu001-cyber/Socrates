@@ -25,6 +25,7 @@ import { clearDiagnosticScreen, showDiagnosticError, showDiagnosticLoading, upda
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isWebSearchOn, renderRecents, translate } from './runtime.ts';
 import { runtimeWindow as browserWindow } from "../../types/runtimeWindow.ts";
+import { getCurrentLanguage } from '../../i18n/languageState.ts';
 
 
 function isCurrentTutorSession(context: TutorStartContext) {
@@ -166,7 +167,7 @@ function installDiagnosticActions(context: TutorStartContext) {
       value: buildFallbackDiagnosticQuestions(
         context.topic,
         context.tutorExploration.count,
-        browserWindow._currentLang === 'zh' || context.language === 'zh',
+        getCurrentLanguage() === 'zh' || context.language === 'zh',
       ),
     });
     stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' });
@@ -192,7 +193,7 @@ async function prepareKnowledgeNodes(context: TutorStartContext) {
       ));
       stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: namedNodes });
       const count = stateStore.read('kbNodes').length;
-      updateDiagnosticProgress(15, browserWindow._currentLang === 'zh'
+      updateDiagnosticProgress(15, getCurrentLanguage() === 'zh'
         ? '已识别 ' + count + ' 个知识点'
         : 'Identified ' + count + ' knowledge points');
       return;

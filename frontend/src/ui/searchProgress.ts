@@ -5,11 +5,12 @@
  * Exports: SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown,
  *          startSearchProgress
  *
- * Reads from window.*: _currentLang, scrollMainToBottom
+ * Reads scrollMainToBottom from the legacy window surface.
  */
 
 import { esc } from '../render/helpers.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentLanguage } from '../i18n/languageState.ts';
 
 
 type SearchProgressLanguage = 'en' | 'zh';
@@ -61,7 +62,7 @@ export const SEARCH_PROGRESS_LABELS: Record<SearchProgressLanguage, Record<strin
 };
 
 export function trSearchLabel(key: string, vars?: Record<string, unknown>) {
-  const lang: SearchProgressLanguage = (typeof window !== 'undefined' && browserWindow._currentLang === 'zh') ? 'zh' : 'en';
+  const lang: SearchProgressLanguage = getCurrentLanguage() === 'zh' ? 'zh' : 'en';
   const labels = SEARCH_PROGRESS_LABELS[lang] || SEARCH_PROGRESS_LABELS.en;
   const tpl = labels[key] || SEARCH_PROGRESS_LABELS.en[key] || key;
   if (!vars) return tpl;

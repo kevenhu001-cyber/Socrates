@@ -21,6 +21,7 @@ import { dispatchExtension } from '../extensions/index.ts';
 import { focusComposer, setComposerMarkdown } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentLanguage } from '../i18n/languageState.ts';
 
 
 const copy: Record<'en' | 'zh', Record<string, string>> = {
@@ -29,7 +30,7 @@ const copy: Record<'en' | 'zh', Record<string, string>> = {
 };
 
 const state: CreationState = { images: [], assistants: [], sites: [], page: null, loading: false, error: '', editor: null, busy: false, query: '', siteView: 'list', siteMenu: null };
-const lang = () => browserWindow._currentLang === 'en' ? 'en' : 'zh';
+const lang = () => getCurrentLanguage() === 'en' ? 'en' : 'zh';
 const t = (key: string) => copy[lang()][key] || key;
 const panel = (name: SurfaceName) => document.getElementById(`${name}Panel`);
 const api = <T = unknown>(url: string, options?: Parameters<typeof browserWindow.apiFetch>[1]): Promise<T> => browserWindow.apiFetch<T>(url, options);

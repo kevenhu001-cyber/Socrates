@@ -14,7 +14,7 @@ import unusedImports from 'eslint-plugin-unused-imports';
    order. Listing them keeps no-undef at error strength without
    hundreds of false positives. */
 const READONLY_GLOBALS = [
-  'state', 't', 'tutorSocratic', 'mermaid', 'hljs', '_currentLang',
+  'state', 't', 'tutorSocratic', 'mermaid', 'hljs',
   'resetState', '_activeChatCtl', '_activeChatAbort',
   'renderMathInElement', 'scrollToBottomIfPinned', 'syncAppModeUI',
   'setLang', 'openNav', 'openProjects', 'LAST_ACTIVE_ID_KEY',

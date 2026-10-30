@@ -15,6 +15,7 @@
 import { webSearchOn, setWebSearchOn } from '../config/providers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { publishProfileState } from './profileState.ts';
 import { publishSidebarUser } from './sidebarUserState.ts';
 
@@ -51,7 +52,7 @@ function _publishProfileState() {
   publishProfileState({
     user: profileUserSnapshot(cu),
     webSearchOn: !!webSearchOn,
-    currentLang: (typeof browserWindow._currentLang === "string") ? browserWindow._currentLang : "en",
+    currentLang: getCurrentLanguage(),
     instResponse: inst.response || "",
     instAbout: inst.about || "",
     instSaveState: null,
