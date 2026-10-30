@@ -40,6 +40,7 @@
 | sidebar 用户状态发布器仍叫 `renderUserFooter`，并由一层空转函数转发 | **本轮已清理** | React 一直拥有 sidebar footer；`publishSidebarChrome()` 直接发布规范化用户状态并同步 tier 属性。认证启动、登录后刷新、登出和账号删除都改为调用该模块 API，旧 DOM 渲染命名和对应包装函数删除。同步移除了 `windowExports.ts` 中已失效的 `refreshApiConfig / handleRefreshProductInfo` 迁移注释。 |
 | Incognito 状态重复镜像到 `window.incognitoOn` | **本轮已移除** | `app/lifecycle/incognitoState.ts` 成为单一布尔状态源；session save 两处保护和后台研究范围检查直接读取同一 getter。删除 `main.ts` 初始化写入、lifecycle 镜像和 `RuntimeWindow` 字段，避免窗口镜像与真实状态分叉。 |
 | i18n 的 `setLang` window 绑定重复发布并带空函数 fallback | **本轮已清理** | `i18n.ts` 导出真实 `setLang`，`windowExports.ts` 作为兼容入口唯一发布者；删除 i18n 内重复 window 写入、main 的冗余 side-effect import 与会静默吞掉错误的空函数 fallback。 |
+| Tutor 诊断操作在会话外发布三条 no-op 全局回调 | **本轮已移除** | `diagnosticFlow` 在调用时已检查回调存在；`startTutorSession()` 才安装带当前会话 identity guard 的真实闭包。删除 bridge 中的 no-op 初始值，类型改为可选，避免向 UI 暴露一个会吞掉操作的假回调。 |
 
 ## 仍开放或尚无法确认
 
@@ -99,3 +100,4 @@
 - sidebar footer 状态发布 API 命名清理：删掉 `renderUserFooter()` 空包装并让调用方直达 `publishSidebarChrome()`；旧迁移注释删除。`profileState` 与 `sidebarUserState` 单测 2/2，`profile-modal` / `sidebar-nav` Playwright 17/17，前端 lint 和生产构建通过。
 - Incognito 状态镜像移除：状态由 `app/lifecycle/incognitoState.ts` 独占，session save 与 research visibility 直接共享 getter；`incognitoState.test.mjs` 1/1、前端 lint、生产构建通过，Incognito / research jobs / incremental save Playwright 13/13 通过。
 - i18n `setLang` 兼容绑定收敛：`i18n.ts` 的真实函数经 `windowExports.ts` 唯一发布，移除重复赋值和 no-op fallback；SPA lint、生产构建通过，`chrome-i18n.spec.mjs` 与 `storage-bootstrap.spec.mjs` 5/5 通过。
+- Tutor 诊断回调去掉启动期 no-op：仅在 `startTutorSession()` 后发布真实 cancel/retry/builtin handlers，之前由 `diagnosticFlow` 的存在性检查安全跳过；lint、生产构建通过，诊断视图 / 答题 / 内置题 / 取消隔离 E2E 6/6 通过。

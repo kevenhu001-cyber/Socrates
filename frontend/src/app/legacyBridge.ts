@@ -64,11 +64,6 @@ import { syncEffortUI } from '../ui/effortPicker.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
-/* Diagnostic entry points (noop until startSession installs per-session closures). */
-browserWindow.cancelDiagnostic = function () { /* noop */ };
-browserWindow.retryDiagnostic = function () { /* noop */ };
-browserWindow.useBuiltinDiagnostic = function () { /* noop */ };
-
 browserWindow.getExplanation = getExplanation;
 browserWindow.setActiveTemplate = setActiveTemplate;
 browserWindow.clearActiveTemplate = clearActiveTemplate;

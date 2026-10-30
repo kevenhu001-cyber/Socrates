@@ -40,7 +40,7 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "askNextQuestion": typeof import("../tutor/socraticTurn")["askNextQuestion"];
   "attachments": typeof import("../attachments")["attachments"];
   "branchFromMessage": typeof import("../chat/editBranch")["branchFromMessage"];
-  "cancelDiagnostic": () => void;
+  "cancelDiagnostic"?: () => void;
   "clearActiveTemplate": typeof import("../chat/templateSlash")["clearActiveTemplate"];
   "clearPerUserClientState": typeof import("../app/lifecycle/clientState")["clearPerUserClientState"];
   "closeCmdK": typeof import("../ui/cmdK")["closeCmdK"];
@@ -105,7 +105,7 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "resendLastUserMessage": typeof import("../chat/turnUi")["resendLastUserMessage"];
   "restorePersistedMessageExtras": typeof import("../ui/messageActions")["restorePersistedMessageExtras"];
   "retryComposerAttachment": typeof import("../attachments/render")["retryComposerAttachment"];
-  "retryDiagnostic": () => void;
+  "retryDiagnostic"?: () => void;
   "revokeShareLink": typeof import("../ui/share")["revokeShareLink"];
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];
   "scrollMainToBottom": (() => void) | undefined;
@@ -149,7 +149,7 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "updateComposerBtn": typeof import("../ui/topicSetup")["updateComposerBtn"];
   "updateKB": typeof import("../ui/knowledgePanel")["updateKB"];
   "updateMistakesBadge": () => void;
-  "useBuiltinDiagnostic": () => void;
+  "useBuiltinDiagnostic"?: () => void;
   "webSearchOn": typeof import("../config/providers")["webSearchOn"];
   "webkitAudioContext": typeof AudioContext | undefined;
   "webkitSpeechRecognition": (new () => SpeechRecognitionRuntime) | undefined;
