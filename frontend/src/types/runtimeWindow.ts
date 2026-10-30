@@ -78,7 +78,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];
   "scrollMainToBottom": (() => void) | undefined;
   "selectAppMode": typeof import("../ui/mobileModeSwitch")["selectAppMode"];
-  "setActiveNav": typeof import("../sidebar/navigation.service")["setActiveNav"];
   "setActiveTemplate": typeof import("../chat/templateSlash")["setActiveTemplate"];
   "setAppMode": typeof import("../config/providers")["setAppMode"];
   "setChatStopState": typeof import("../chat/composerTurn")["setChatStopState"];

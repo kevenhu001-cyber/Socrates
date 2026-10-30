@@ -17,7 +17,8 @@ test('sidebar exposes the primary destinations', async ({ page }) => {
   expect(await page.evaluate(() => ({
     ensure: 'ensureConnectorIcons' in window,
     hydrate: 'hydrateConnectorIcons' in window,
-  }))).toEqual({ ensure: false, hydrate: false });
+    setActiveNav: 'setActiveNav' in window,
+  }))).toEqual({ ensure: false, hydrate: false, setActiveNav: false });
 
   const visibleIds = await page.locator('#sidebarNav .sidebar-nav-btn').evaluateAll((buttons) =>
     buttons.filter((button) => getComputedStyle(button).display !== 'none').map((button) => button.id),

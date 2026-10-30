@@ -81,17 +81,14 @@ browserWindow.openCheatsheet = openCheatsheet;
 browserWindow.closeCheatsheet = closeCheatsheet;
 
 /* ─── sidebar/nav.ts (PR-A of the sidebar overhaul) ─── */
-import { openNav, setActiveNav } from './sidebar/navigation.service.ts';
+import { openNav } from './sidebar/navigation.service.ts';
 /* `openNav` drives navigation from the imperative callers below — the
    React sidebar (react/sidebar/SidebarNav.tsx), the more-popover, the
    keyboard shortcuts, the home surface and the native bridge. index.html
    renders the nav rows as a pre-hydration placeholder with no inline
    handlers, so nothing here is required by the static markup.
-   `setActiveNav` is exposed for the morePopover module to clear the More
-   button's active state on close (avoids a nav.js ↔ morePopover.js import
-   cycle). */
+   the active navigation state stays inside navigation.service.ts. */
 browserWindow.openNav = openNav;
-browserWindow.setActiveNav = setActiveNav;
 /* Destination adapters load the existing pages and register them with the
    typed navigation service. The React sidebar talks to that service directly. */
 import './sidebar/navigation.adapters.ts';
