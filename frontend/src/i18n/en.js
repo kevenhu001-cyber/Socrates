@@ -188,6 +188,20 @@ export const en = {
     "chrome.attachments":"Attachments",
     "chrome.cmdkSearch":"Search sessions and messages…",
     "chrome.cmdkSearchAria":"Search sessions and messages",
+    /* Command palette result area. The palette mounts after boot's translate
+       sweep, so these resolve at render time instead of via data-i18n-*. */
+    "chrome.cmdkRecent":"Recent",
+    "chrome.cmdkEmpty":"Type to search across all your sessions.",
+    "chrome.cmdkNoResultsPre":"No results. Press",
+    "chrome.cmdkNoResultsPost":"to search on the server.",
+    "chrome.cmdkResultsOne":"1 result for {query}",
+    "chrome.cmdkResultsMany":"{count} results for {query}",
+    "chrome.cmdkKindMessage":"Message",
+    "chrome.cmdkKindChat":"Chat",
+    "chrome.cmdkKindTutor":"Tutor",
+    "chrome.cmdkFootNavigate":"Navigate",
+    "chrome.cmdkFootOpen":"Open",
+    "chrome.cmdkFootClose":"Close",
     /* auth.* — static auth-gate copy (sign-in / register default views).
        Runtime button states already route through auth.* in src/auth/index.js;
        these cover the hard-coded static labels so the first screen a zh user
@@ -196,7 +210,6 @@ export const en = {
     "auth.email":"Email",
     "auth.password":"Password",
     "auth.forgotPassword":"Forgot password?",
-    "auth.guestMode":"Guest mode",
     "auth.or":"or",
     "auth.continueGithub":"Continue with GitHub",
     "auth.codeLoginLink":"Login with verification code",
@@ -1289,6 +1302,22 @@ export const en = {
     "toast.messageNotFound":"Message not found",
     "toast.savedOffline":"Saved locally — will sync when back online",
     "toast.projectSwitched":"Project: {name}",
+    /* Provider settings, settings load, offline boot and message feedback.
+       These were hard-coded English inside services, so a Chinese UI showed
+       English exactly when something went wrong. */
+    "toast.providerLimit":"API provider limit reached ({limit}) for your plan.",
+    "toast.providerRemoveFailed":"Failed to remove provider: {message}. Try again.",
+    "toast.providerActivateFailed":"Failed to activate provider on server. Changes reverted.",
+    "toast.providerBuiltInActive":"Built-in AI is already active.",
+    "toast.providerAddOne":"Add at least one provider",
+    "toast.providerFixErrors":"Please fix the highlighted errors before saving.",
+    "toast.providerPartialSave":"Saved {saved} provider(s), but {failed} failed: {message}. Try saving again.",
+    "toast.providerSaveFailed":"Save failed: {message}",
+    "toast.providerSaved":"Saved — {label}",
+    "toast.settingsLoadFailed":"Could not load settings. Please try again.",
+    "toast.authOffline":"Couldn't reach the server. Check your connection and retry.",
+    "message.feedbackThanks":"Thanks for the feedback",
+    "message.feedbackNoted":"Got it — we'll improve",
     "session.loadFailed":"Failed to load session: {msg}. Please try again.",
     "session.notFound":"Session not found or could not be loaded.",
     "session.deleteFailedRefresh":"Delete failed: {msg} - refreshing.",

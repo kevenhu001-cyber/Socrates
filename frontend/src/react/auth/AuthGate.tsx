@@ -1,7 +1,6 @@
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { Label } from '../ui/shadcn/label';
-import { NativeControl } from '../ui/NativeControl';
 
 /**
  * The auth gate markup.
@@ -89,16 +88,6 @@ function FieldLabel({ htmlFor, labelKey, text }: { htmlFor: string; labelKey?: s
   );
 }
 
-function GuestToggle({ id, name }: { id: string; name: string }) {
-  return (
-    <Label className="auth-guest-label" htmlFor={id}>
-      <NativeControl type="checkbox" id={id} name={name} />
-      {' '}
-      <span data-i18n-key="auth.guestMode">Guest mode</span>
-    </Label>
-  );
-}
-
 function SigninView() {
   return (
     <form className="auth-view" id="authSigninView">
@@ -126,7 +115,6 @@ function SigninView() {
         Forgot password?
       </a>
       <div className="auth-error" id="authSigninError" />
-      <GuestToggle id="authGuestCheckbox" name="authGuestCheckbox" />
       <Button className="auth-btn primary" id="authSigninBtn" type="submit" data-i18n-key="auth.signIn">
         Sign in
       </Button>
@@ -466,7 +454,6 @@ function CodeLoginView() {
         </p>
       </div>
       <div className="auth-error" id="authCodeError" />
-      <GuestToggle id="authCodeGuestCheckbox" name="authCodeGuestCheckbox" />
       <Button className="auth-btn primary" id="authCodeSendBtn" type="button" data-i18n-key="auth.sendCode">
         Send code
       </Button>

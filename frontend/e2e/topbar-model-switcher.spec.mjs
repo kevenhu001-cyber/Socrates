@@ -49,12 +49,30 @@ test('switcher toggles the configuration menu below it and closes on outside cli
   await expect(pop).toHaveCount(0);
 });
 
-test('phones expose compact model settings alongside the mode tabs', async ({ page }) => {
+test('phones name the model in a chip instead of an unlabelled settings glyph', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#topModelSwitcher')).toBeVisible();
-  await expect(page.locator('#topModelSwitcher .top-model-switcher-settings')).toBeVisible();
+  /* The chip carries the resolved model name; the brand lockup and the
+     settings glyph are desktop/empty-state fallbacks. */
+  await expect(page.locator('#topModelSwitcher .top-model-switcher-model')).toBeVisible();
+  await expect(page.locator('#topModelSwitcher .top-model-switcher-model')).toHaveText(/\S/);
   await expect(page.locator('#topModelSwitcher .top-model-switcher-name')).toBeHidden();
+  await expect(page.locator('#topModelSwitcher .top-model-switcher-settings')).toBeHidden();
   await expect(page.locator('#topModeSwitch')).toBeVisible();
+  /* The chip must clear the centred mode switch rather than run under it. */
+  const gap = await page.evaluate(() => {
+    const tabs = document.getElementById('topModeSwitch').getBoundingClientRect();
+    const model = document.getElementById('topModelSwitcher').getBoundingClientRect();
+    return Math.round(model.left - tabs.right);
+  });
+  expect(gap).toBeGreaterThan(0);
   await page.locator('#topModelSwitcher').click();
   await expect(page.locator('.chat-config-pop')).toBeInViewport();
+});
+
+test('an unresolved model falls back to the settings glyph', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => { document.getElementById('topModelSwitcherModel').textContent = ''; });
+  await expect(page.locator('#topModelSwitcher .top-model-switcher-model')).toBeHidden();
+  await expect(page.locator('#topModelSwitcher .top-model-switcher-settings')).toBeVisible();
 });

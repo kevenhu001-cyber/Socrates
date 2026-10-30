@@ -63,6 +63,11 @@ test('reduced motion stops the mode slider and tutor entrance', async ({ page })
   expect(await page.locator('.home-tutor-starters').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   await page.screenshot({ path: 'test-results/home-tutor-empty-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.home-tutor-starters')).toBeHidden();
+  /* Phones keep the starters as a horizontally scrolled row above the
+     capsule (they used to be hidden below 769px, leaving the landing surface
+     with nothing but the greeting). */
+  await expect(page.locator('.home-tutor-starters')).toBeVisible();
+  await expect(page.locator('.home-quick-actions')).toBeHidden();
   await expect(page.locator('#composerInputWrap')).toBeVisible();
+  expect(await page.locator('.home-tutor-starters').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
 });

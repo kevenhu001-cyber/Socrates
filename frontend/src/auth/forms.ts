@@ -1,6 +1,6 @@
 import { apiFetch, type ApiError } from '../util/api.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { getValue, isChecked, setValue, setText, setVisible, focusId, setButton, type AuthRoot } from './shell.ts';
+import { getValue, setValue, setText, setVisible, focusId, setButton, type AuthRoot } from './shell.ts';
 import { adoptAuthenticatedUser } from './forms/sessionAdoption.ts';
 
 /** The user record these flows carry between login, /me, and the window. */
@@ -58,12 +58,6 @@ function markAuthSuccess(): void {
   if (typeof win.markAuthSuccess === 'function') win.markAuthSuccess();
 }
 
-function setGuestPreference(enabled: boolean, context: string): void {
-  if (!enabled) return;
-  try { localStorage.setItem('socrates-guest', '1'); }
-  catch (error) { reportSwallow(error, context); }
-}
-
 function signedIn(root: AuthRoot | undefined, error: AuthFailure, email: string, dependencies: AuthFormUi): void {
   const { showGate, showAuthView, setAuthError, translate } = dependencies;
   showGate(root);
@@ -114,7 +108,6 @@ function createCredentialHandlers(ui: AuthFormUi) {
     const form = root || document;
     const email = getValue(form, 'authSigninEmail').trim();
     const password = getValue(form, 'authSigninPassword');
-    const isGuest = isChecked(form, 'authGuestCheckbox');
     setAuthError('authSigninError', '', form);
     if (!email || !password) {
       setAuthError('authSigninError', 'Please enter your email and password.', form);
@@ -125,7 +118,6 @@ function createCredentialHandlers(ui: AuthFormUi) {
       const response = await apiFetch<{ user?: AuthUser | null } | null>('/api/auth/login', {
         method: 'POST', _authEndpoint: true, body: { email, password },
       });
-      setGuestPreference(isGuest, 'auth/forms.signin.markGuest');
       markAuthSuccess();
       await adoptAuthenticatedUser<AuthUser>(response && response.user ? response.user : null, {
         fetchMe: fetchCurrentUser,
@@ -278,7 +270,6 @@ function createCodeHandlers(ui: AuthFormUi) {
     const form = root || document;
     const email = getValue(form, 'authCodeEmail').trim();
     const code = getValue(form, 'authCodeInput').trim().toUpperCase();
-    const isGuest = isChecked(form, 'authCodeGuestCheckbox');
     setAuthError('authCodeError', '', form);
     /* Keep the client validator aligned with the server's unambiguous code alphabet. */
     if (!/^[A-HJ-KM-NP-Z2-9]{8}$/.test(code)) {
@@ -296,7 +287,6 @@ function createCodeHandlers(ui: AuthFormUi) {
         report: reportSwallow,
         context: 'auth/forms.codeLogin.recheckMe',
       });
-      setGuestPreference(isGuest, 'auth/forms.codeLogin.markGuest');
       revealAppAndHydrate();
     } catch (error) {
       setAuthError('authCodeError', asAuthFailure(error).message, form);

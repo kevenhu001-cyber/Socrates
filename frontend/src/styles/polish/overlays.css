@@ -123,6 +123,19 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   -webkit-backdrop-filter: none;
 }
 
+/* The composer "+" sheet and its scrim were authored as a pair at 1299/1300
+   in the legacy layer. The menu has since moved to --ui-z-popover (200) so it
+   sits on the same rung as every other popover, which left the scrim painting
+   above the sheet and swallowing every tap on a phone. Re-pin the scrim one
+   rung below the menu so the pair keeps its relationship.
+   The class is doubled on purpose: this file is a deferred link that lands
+   *before* the bundled stylesheet in production (index.html), so a plain
+   `body.composer-tools-open::after` would tie with restore/chatgpt-ui.css and
+   lose on order. Same convention as the `#appShell#appShell` shims. */
+body.composer-tools-open.composer-tools-open::after {
+  z-index: calc(var(--ui-z-popover) - 1);
+}
+
 /* ── Motion: one entrance for dialogs, menus and popovers ──
    Menus and dialogs share a short fade + scale
    ease-out (tokens.css --ui-duration-overlay / --ui-overlay-enter-scale).
@@ -244,6 +257,18 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   font-size: var(--ui-font-size-md);
 }
 .cmd-k-input-row input::placeholder { color: var(--ui-text-placeholder); }
+/* The row owns the focus treatment, the way `.sidebar-search` does.
+   The field is auto-focused on open and is the dialog's only focusable
+   control, so the shared 2px ring fired on every Cmd-K — a blue capsule
+   floating mid-row over a field that has no fill or border of its own,
+   reading as an error state rather than as focus. OpenAI's, Linear's and
+   Raycast's palettes carry no ring here either: the caret is the cue.
+   The row's hairline strengthens instead, which is the same signal the
+   sidebar search uses (border colour + fill, no ring). The input keeps the
+   contract's transparent outline, so forced-colours users still get the
+   system Highlight ring, where the cue actually matters. */
+.cmd-k-input-row:focus-within { border-bottom-color: var(--ui-border-strong); }
+.cmd-k-input-row input:focus-visible { box-shadow: none; }
 /* Geist kbd chip: the control fill with a hairline edge, in Geist Mono at
    the small step. The legacy chip was a bare outline on the card colour,
    which vanished against the raised surface. The edge takes the *strong*
@@ -357,9 +382,27 @@ body :is(.cmd-k-overlay, .share-overlay, .profile-overlay, .usage-overlay, .sett
   .settings-modal--full .settings-search { display: none; }
   .provider-fields { grid-template-columns: minmax(0, 1fr); }
   .settings-modal.settings-modal--full { width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
+  /* A full-bleed sheet sits under the notch and the home indicator, so both
+     edges take the safe-area inset the mobile shell already uses. */
+  .settings-modal--full .settings-header {
+    padding-top: env(safe-area-inset-top, 0px);
+    min-height: calc(54px + env(safe-area-inset-top, 0px));
+  }
   .settings-modal--full .settings-shell { display:flex; flex-direction:column; }
-  .settings-modal--full .settings-nav { flex:none; flex-direction:row; gap:4px; padding:10px; border-right:0; border-bottom:1px solid var(--border); overflow-x:auto; }
-  .settings-modal--full .settings-body { padding:20px 18px; }
+  /* The rail becomes a scroll strip. Eight categories are wider than a phone,
+     so the strip snaps tab-to-tab and keeps the end padding scrollable —
+     without `scroll-padding-inline` the last tab can never come fully clear
+     of the right edge. The scrollbar is hidden because the strip is one row
+     and the cut-off tab is the affordance. */
+  .settings-modal--full .settings-nav {
+    flex:none; flex-direction:row; gap:4px; padding:10px;
+    border-right:0; border-bottom:1px solid var(--border);
+    overflow-x:auto; scroll-snap-type:x proximity; scroll-padding-inline:10px;
+    scrollbar-width:none;
+  }
+  .settings-modal--full .settings-nav::-webkit-scrollbar { display:none; }
+  .settings-modal--full .settings-nav > button { flex:none; scroll-snap-align:center; }
+  .settings-modal--full .settings-body { padding:20px 18px calc(20px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ── Profile modal ── */

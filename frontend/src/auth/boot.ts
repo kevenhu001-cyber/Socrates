@@ -3,6 +3,7 @@
 
 import { setBuiltInProviderModel } from '../config/providerConfig.service.ts';
 import { showToast } from '../ui/toast.js';
+import { i18n } from '../react/legacy/gateway.ts';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 import { captureBrowserLoginRequest } from '../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -92,7 +93,7 @@ async function finishUnavailableBoot(): Promise<void> {
   const win = window as BootLegacyWindow;
   if (typeof win.showGate === 'function') win.showGate();
   if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
-  try { showToast("Couldn't reach the server. Check your connection and retry.", 5000); }
+  try { showToast(i18n('toast.authOffline', "Couldn't reach the server. Check your connection and retry."), 5000); }
   catch (error) { reportSwallow(error, 'auth/boot.offlineToast'); }
   if (typeof renderUserFooter === 'function') renderUserFooter();
 }

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { fill, t } from './text';
 import type { CmdKDoc, CmdKHit } from './types';
 
 interface CommandPaletteResultsProps {
@@ -27,8 +28,10 @@ function docFromHit(hit: CmdKHit): CmdKDoc | null {
 }
 
 function metaFor(doc: CmdKDoc): string {
-  if (doc.kind === 'message') return 'Message';
-  return (doc as { mode?: string }).mode === 'chat' ? 'Chat' : 'Tutor';
+  if (doc.kind === 'message') return t('chrome.cmdkKindMessage', 'Message');
+  return (doc as { mode?: string }).mode === 'chat'
+    ? t('chrome.cmdkKindChat', 'Chat')
+    : t('chrome.cmdkKindTutor', 'Tutor');
 }
 
 function escapeAttribute(value: string): string {
@@ -40,13 +43,14 @@ function escapeAttribute(value: string): string {
 }
 
 function RecentSection({ recent, onPickRecent }: Pick<CommandPaletteResultsProps, 'recent' | 'onPickRecent'>) {
+  const label = t('chrome.cmdkRecent', 'Recent');
   return (
     <div className="cmd-k-section">
-      <div className="cmd-k-section-label">Recent</div>
+      <div className="cmd-k-section-label">{label}</div>
       {recent.slice(0, 5).map((item) => (
         <div key={item} className="cmd-k-row" data-recent={escapeAttribute(item)} onClick={() => onPickRecent(item)}>
           <div className="cmd-k-row-title">{item}</div>
-          <div className="cmd-k-row-meta">Recent</div>
+          <div className="cmd-k-row-meta">{label}</div>
         </div>
       ))}
     </div>
@@ -78,15 +82,25 @@ export function CommandPaletteResults({
   }), [results]);
 
   if (!hasQuery && recent.length > 0) return <RecentSection recent={recent} onPickRecent={onPickRecent} />;
-  if (!hasQuery) return <div className="cmd-k-empty">Type to search across all your sessions.</div>;
+  if (!hasQuery) return <div className="cmd-k-empty">{t('chrome.cmdkEmpty', 'Type to search across all your sessions.')}</div>;
   if (hitViews.length === 0) {
-    return <div className="cmd-k-empty">No results. Press <kbd>↵</kbd> to search on the server.</div>;
+    return (
+      <div className="cmd-k-empty">
+        {t('chrome.cmdkNoResultsPre', 'No results. Press')} <kbd>↵</kbd>{' '}
+        {t('chrome.cmdkNoResultsPost', 'to search on the server.')}
+      </div>
+    );
   }
 
   return (
     <div className="cmd-k-section">
       <div className="cmd-k-section-label">
-        {hitViews.length} result{hitViews.length === 1 ? '' : 's'} for &ldquo;{query}&rdquo;
+        {hitViews.length === 1
+          ? fill(t('chrome.cmdkResultsOne', '1 result for {query}'), { query: `“${query}”` })
+          : fill(t('chrome.cmdkResultsMany', '{count} results for {query}'), {
+              count: hitViews.length,
+              query: `“${query}”`,
+            })}
       </div>
       {hitViews.map(({ view, idx }) => view === null ? null : (
         <div

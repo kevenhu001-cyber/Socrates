@@ -3,7 +3,7 @@ import { Icon } from '../../ui/Icon';
 import { getIconDescriptor, type IconName } from '../../ui/iconRegistry';
 import { animateSpring, readScale } from '../../ui/motion/spring';
 import { SPRING_PRESETS } from '@socrates/core/motion/spring';
-import { MessageOverflow } from './MessageOverflow';
+import { MessageOverflow, type OverflowAction } from './MessageOverflow';
 import type { LegacyChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
 import { useMessageToolbarCallbacks } from './useMessageActions';
@@ -18,6 +18,21 @@ const ThumbsDownIcon = getIconDescriptor('thumbsDown').children;
 const BranchIcon = getIconDescriptor('branch').children;
 const ReExplainIcon = getIconDescriptor('bulb').children;
 const ReadAloudIcon = getIconDescriptor('speaker').children;
+const CopyIcon = getIconDescriptor('copy').children;
+const CheckIcon = getIconDescriptor('check').children;
+const EditIcon = getIconDescriptor('edit').children;
+const TrashIcon = getIconDescriptor('trash').children;
+const RegenerateIcon = getIconDescriptor('regenerate').children;
+
+/* `hover: none` is the same signal the toolbar's own CSS uses, so the compact
+   layout and the stylesheet agree on what counts as a touch device. */
+const TOUCH_QUERY = '(hover: none)';
+const touchMedia = typeof window === 'undefined' ? null : window.matchMedia(TOUCH_QUERY);
+const readTouch = () => touchMedia?.matches ?? false;
+function subscribeTouch(onChange: () => void) {
+  touchMedia?.addEventListener('change', onChange);
+  return () => touchMedia?.removeEventListener('change', onChange);
+}
 
 /* The reaction pop: one visible overshoot of roughly 19% that settles back.
  * The number is the spring's own — stiffness 380 / damping 18 give ζ = 0.46
@@ -77,6 +92,9 @@ interface MessageToolbarProps {
   message: LegacyChatMessage;
   role: 'user' | 'assistant';
   pending?: boolean;
+  /** True for the newest row in the transcript — the one that keeps its
+   *  full action row on touch, where there is no hover to reveal the rest. */
+  isLatest?: boolean;
 }
 
 interface MessageToolbarActionsProps {
@@ -88,6 +106,8 @@ interface MessageToolbarActionsProps {
   onCopy: () => void;
   onThumbsUp: () => void;
   likeButtonRef: React.RefObject<HTMLButtonElement | null>;
+  /** Touch layouts collapse an older row to a single "…" trigger. */
+  compact: boolean;
 }
 
 function MessageToolbarActions({
@@ -99,6 +119,7 @@ function MessageToolbarActions({
   onCopy,
   onThumbsUp,
   likeButtonRef,
+  compact,
 }: MessageToolbarActionsProps): React.ReactElement {
   const openMessageWorkbench = () => openWorkbench({
     id: String(message.clientId || message.id || Date.now()),
@@ -109,10 +130,43 @@ function MessageToolbarActions({
     previewHtml: message.html || undefined,
   }, 'preview');
 
+  const copyLabel = copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy');
+
+  /* One action list, two shapes. Pointer devices (and the newest row on
+     touch) render the strip; an older row on touch collapses to a single
+     "…" trigger, because five always-on buttons under every answer is the
+     loudest thing on a phone screen and there is no hover to defer them. */
+  const primaryActions: OverflowAction[] = role === 'user'
+    ? [
+        { label: copyLabel, icon: copied ? CheckIcon : CopyIcon, onClick: onCopy },
+        { label: i18n('message.edit', 'Edit message'), icon: EditIcon, onClick: () => callbacks.onEdit?.() },
+        { label: i18n('message.delete', 'Delete message'), icon: TrashIcon, onClick: () => callbacks.onDelete?.() },
+      ]
+    : [
+        { label: copyLabel, icon: copied ? CheckIcon : CopyIcon, onClick: onCopy },
+        { label: i18n('message.regenerate', 'Regenerate response'), icon: RegenerateIcon, onClick: () => callbacks.onRegenerate?.() },
+        { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, onClick: onThumbsUp },
+        { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, onClick: () => callbacks.onThumbsDown?.() },
+      ];
+
+  const secondaryActions: OverflowAction[] = [
+    {
+      label: i18n('workbench.open', '在工作台打开'),
+      icon: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /></>,
+      onClick: openMessageWorkbench,
+    },
+    { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => callbacks.onShare?.() },
+    { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => callbacks.onBranch?.() },
+    { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event: React.MouseEvent<HTMLButtonElement>) => callbacks.onReadAloud?.(event) },
+    { label: i18n('message.reExplain', 'Re-explain from a different angle'), icon: ReExplainIcon, onClick: () => callbacks.onReExplain?.() },
+  ];
+
+  if (compact) return <MessageOverflow actions={[...primaryActions, ...secondaryActions]} />;
+
   return (
     <>
       <ToolButton
-        label={copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy')}
+        label={copyLabel}
         onClick={onCopy}
         className={`${copied ? 'active ' : ''}${copied ? 'is-copied' : ''}`}
       >
@@ -148,15 +202,7 @@ function MessageToolbarActions({
             </ToolButton>
           </span>
           <MessageOverflow actions={[
-            {
-              label: i18n('workbench.open', '在工作台打开'),
-              icon: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /></>,
-              onClick: openMessageWorkbench,
-            },
-            { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => callbacks.onShare?.() },
-            { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => callbacks.onBranch?.() },
-            { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event) => callbacks.onReadAloud?.(event) },
-            { label: i18n('message.reExplain', 'Re-explain from a different angle'), icon: ReExplainIcon, onClick: () => callbacks.onReExplain?.() },
+            ...secondaryActions,
             { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, mobileOnly: true, onClick: () => callbacks.onThumbsUp?.() },
             { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, mobileOnly: true, onClick: () => callbacks.onThumbsDown?.() },
           ]} />
@@ -166,8 +212,9 @@ function MessageToolbarActions({
   );
 }
 
-function MessageToolbar({ message, role, pending = false }: MessageToolbarProps): React.ReactElement | null {
+function MessageToolbar({ message, role, pending = false, isLatest = false }: MessageToolbarProps): React.ReactElement | null {
   const callbacks = useMessageToolbarCallbacks(message);
+  const touchLayout = React.useSyncExternalStore(subscribeTouch, readTouch);
   const [copied, setCopied] = React.useState(false);
   const [liked, setLiked] = React.useState(false);
   const likeButtonRef = React.useRef<HTMLButtonElement | null>(null);
@@ -229,9 +276,10 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
 
   const branchInfo = message.branchInfo;
   const hasBranches = !!(branchInfo && Array.isArray(branchInfo.variants) && branchInfo.variants.length > 1);
+  const compact = touchLayout && !isLatest;
 
   return (
-    <div className="msg-toolbar" data-role={role} data-message-id={id}>
+    <div className="msg-toolbar" data-role={role} data-message-id={id} data-compact={compact ? 'true' : undefined}>
       {hasBranches && callbacks.onSwitchBranch && (
         <MessageBranchSwitcher
           currentIndex={branchInfo.currentIndex}
@@ -249,6 +297,7 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
         onCopy={handleCopy}
         onThumbsUp={handleThumbsUp}
         likeButtonRef={likeButtonRef}
+        compact={compact}
       />
     </div>
   );

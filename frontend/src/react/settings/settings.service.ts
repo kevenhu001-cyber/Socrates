@@ -1,5 +1,6 @@
 import { showToast } from '../../ui/toast.js';
 import { publishProfileSnapshot } from '../../ui/profile.js';
+import { i18n } from '../legacy/gateway';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
 
 let settingsReturnFocus: HTMLElement | null = null;
@@ -33,7 +34,7 @@ export async function openSettings(): Promise<void> {
     const { mountSettingsModal } = await import('./SettingsModal');
     mountSettingsModal();
   } catch {
-    showToast('Could not load settings. Please try again.');
+    showToast(i18n('toast.settingsLoadFailed', 'Could not load settings. Please try again.'));
     return;
   }
   installSettingsBridge().publish({ open: true });

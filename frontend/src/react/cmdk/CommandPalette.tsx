@@ -11,10 +11,34 @@ import {
 } from './cmdk.bridge';
 import { CmdKSearchInput } from './CmdKSearchInput';
 import { CommandPaletteResults } from './CommandPaletteResults';
+import { t } from './text';
 
 const OVERLAY_ID = 'cmdKOverlay';
 const MODAL_ID = 'cmdKModal';
 const RESULTS_ID = 'cmdKResults';
+
+/* The foot carried a border-top and 8px padding but no content, so the
+   palette ended in a blank strip. The three hints are the shortcuts the
+   input actually handles. */
+function PaletteFooter() {
+  return (
+    <div className="cmd-k-foot">
+      <span>
+        <kbd>↑</kbd>
+        <kbd>↓</kbd>
+        {t('chrome.cmdkFootNavigate', 'Navigate')}
+      </span>
+      <span>
+        <kbd>↵</kbd>
+        {t('chrome.cmdkFootOpen', 'Open')}
+      </span>
+      <span>
+        <kbd>Esc</kbd>
+        {t('chrome.cmdkFootClose', 'Close')}
+      </span>
+    </div>
+  );
+}
 
 /**
  * Results come from the typed command palette snapshot; the established row
@@ -49,7 +73,7 @@ function CommandPalette() {
       >
         <div className="cmd-k-input-row" />
         <div className="cmd-k-results" id={RESULTS_ID} />
-        <div className="cmd-k-foot" />
+        <PaletteFooter />
       </div>
     );
   }
@@ -72,11 +96,10 @@ function CommandPalette() {
           onActivate={commands.activate}
         />
       </div>
-      <div className="cmd-k-foot" />
+      <PaletteFooter />
     </div>
   );
 }
-
 export interface CmdKReactRootHandle {
   overlay: HTMLElement;
   root: Root;

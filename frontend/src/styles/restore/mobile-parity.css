@@ -159,31 +159,16 @@
      reference drawer's footer avatar is ~26px — so it stays a true circle. */
 
   /* ─────────────────────────────────────────────────────────────
-   * 6. Attachment menu — floating card above the composer.
+   * 6. Attachment menu — phone bottom sheet.
    *    (#composerToolsMenu lives on <body>, outside #appShell.)
+   *
+   *    The card geometry that used to live here (a 280px panel floated
+   *    96px above the composer edge) was retired with the sheet: it
+   *    covered the composer's own `+` trigger and cut its last visible
+   *    row in half. Placement now belongs to ui/composerTools.js and the
+   *    shape to components/menu.css. Only the row metrics stay, because
+   *    they are what the reference measurements pin.
    * ───────────────────────────────────────────────────────────── */
-  body #composerToolsMenu {
-    left: 8px !important;
-    right: auto !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px) !important;
-    width: min(280px, calc(100vw - 16px)) !important;
-    max-width: none !important;
-    max-height: min(50vh, 520px) !important;
-    padding: 6px !important;
-    border: 1px solid var(--cg-border) !important;
-    border-radius: 16px !important;
-    background: var(--cg-surface) !important;
-    box-shadow: var(--ui-shadow-popover) !important;
-  }
-
-  body #composerToolsMenu::before {
-    display: none !important;
-  }
-
-  body.composer-tools-open::after {
-    display: none !important;
-  }
-
   body #composerToolsMenu .composer-tools-mobile-item {
     min-height: 56px !important;
     border-radius: 12px !important;
@@ -270,22 +255,10 @@
     stroke-linejoin: round !important;
   }
 
-  /* The tools menu anchors to the capsule's 12px page inset (the reference
-     keeps the sheet flush with the composer's leading edge). */
-  body #composerToolsMenu {
-    left: 12px !important;
-    right: auto !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
-    width: min(252px, calc(100vw - 24px)) !important;
-    max-width: none !important;
-    max-height: min(50vh, 520px) !important;
-    padding: 8px !important;
-    border: 1px solid rgb(255 255 255 / 10%) !important;
-    border-radius: 20px !important;
-    background: var(--ui-bg-surface) !important;
-    box-shadow: var(--ui-shadow-popover) !important;
-  }
-
+  /* The tools menu is a bottom sheet now: placement lives in
+     ui/composerTools.js and the shape in components/menu.css. Only the row
+     metrics stay here, because the reference measurements pin the 56px row
+     and the 40px glyph chip. */
   body #composerToolsMenu .composer-tools-item {
     min-height: 56px !important;
   }

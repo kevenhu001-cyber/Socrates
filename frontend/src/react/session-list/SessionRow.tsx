@@ -68,6 +68,23 @@ function SessionRowBase({
         + (actionsOpen ? ' actions-open' : '')}
       data-recent-id={safeId(session.id)}
       data-recent-actual={session.id}
+      /* The row opens a session, so it has to be reachable without a mouse.
+         It cannot be a real button element: the overflow trigger inside it
+         is one, and nesting them is invalid. `role="button"` plus the
+         Enter/Space contract gives the same behaviour; the guard on
+         `event.target` keeps the inner trigger's own keys from opening the
+         session too. While renaming, the row drops the role so the inline
+         input is not a focusable child of a button. */
+      role={renaming ? undefined : 'button'}
+      tabIndex={renaming ? -1 : 0}
+      aria-current={isActive ? 'true' : undefined}
+      onKeyDown={(event) => {
+        if (renaming) return;
+        if (event.target !== event.currentTarget) return;
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onPick(session.id);
+      }}
       draggable
       onDragStart={(event) => { setDragging(true); onDragStart(event, session.id); }}
       onDragEnd={(event) => { setDragging(false); onDragEnd(event); }}

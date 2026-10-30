@@ -71,6 +71,10 @@ const SHADOW_EXEMPTIONS = [
     match: /workspace-search-field input|plugin-directory-search input|sidebar-search input|rich-composer-editor/,
     why: 'the container carries the focus treatment',
   },
+  {
+    match: /cmd-k-input-row/,
+    why: 'the search row owns the focus treatment (its hairline), like the sidebar search',
+  },
   { match: /intui-slider input/, why: 'the range thumb carries the focus ring' },
 ];
 

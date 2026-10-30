@@ -110,7 +110,12 @@ export function toggleSidebarView(view) {
 export function initSidebarChrome() {
   try {
     var sbPref = localStorage.getItem('socrates-sb');
-    if (sbPref === '0' || (sbPref === null && window.innerWidth < 768)) {
+    /* Tablets and landscape phones sit between the phone drawer and a
+       desktop rail: 769–1024px used to open with a 278px sidebar, leaving a
+       509px conversation column. Default them to the 52px rail so the
+       content keeps the width, and keep honouring an explicit preference. */
+    var wantsCollapsed = sbPref === '0' || (sbPref === null && window.innerWidth < 1025);
+    if (wantsCollapsed) {
       sidebarOpen = false; document.getElementById('sidebar').classList.add('collapsed');
     }
   } catch (error) { reportSwallow(error, 'ui/sidebarChrome.js:111', 'expected'); }

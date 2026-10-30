@@ -213,33 +213,29 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
       bottomRadius: style.borderBottomLeftRadius,
     };
   });
-  // Mobile presents the menu as a floating card over the composer's left
-  // half, with a solid surface and a full outline. The corner radius is the
-  // shared popover token used on both desktop and mobile.
+  // Phones present the menu as a bottom sheet: full width, pinned to the
+  // viewport edge, rounded on the top corners. (The bottom corners sit below
+  // the viewport edge, so only the top radius is visible.)
   expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(mobileMenuStyle.border).toBe('1px');
   expect(mobileMenuStyle.shadow).not.toBe('none');
-  expect(mobileMenuStyle.radius).toBe('16px');
-  expect(mobileMenuStyle.bottomRadius).toBe('16px');
+  expect(mobileMenuStyle.radius).toBe('20px');
   // Wait for the entrance animation to settle before measuring geometry.
   await menu.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)));
   const sheetBox = await menu.boundingBox();
   expect(sheetBox).not.toBeNull();
-  // Floating-card geometry at the 390px reference width: inset from the
-  // left edge and stacked over the composer's left side instead of becoming
-  // a full-width bottom sheet.
-  expect(sheetBox.x).toBeGreaterThanOrEqual(12);
-  expect(sheetBox.x).toBeLessThanOrEqual(20);
-  expect(sheetBox.width).toBeGreaterThanOrEqual(244);
-  expect(sheetBox.width).toBeLessThanOrEqual(260);
-  expect(sheetBox.y + sheetBox.height).toBeLessThanOrEqual(830);
-  expect(Math.abs((sheetBox.y + sheetBox.height) - (before.y + before.height))).toBeLessThanOrEqual(2);
-  // The expanded card never grows past the viewport's vertical midline.
-  expect(sheetBox.height).toBeLessThanOrEqual(844 / 2);
-  // The open-state class still owns dismissal state, but the card paints
-  // no full-screen scrim behind itself.
+  // Sheet geometry at the 390px reference width: flush with both edges and
+  // the bottom of the viewport, tall enough to show most of the list.
+  expect(sheetBox.x).toBeGreaterThanOrEqual(-1);
+  expect(sheetBox.x).toBeLessThanOrEqual(1);
+  expect(sheetBox.width).toBeGreaterThanOrEqual(389);
+  expect(sheetBox.width).toBeLessThanOrEqual(390);
+  expect(Math.abs(sheetBox.y + sheetBox.height - 844)).toBeLessThanOrEqual(1);
+  expect(sheetBox.height).toBeLessThanOrEqual(844 * 0.78 + 1);
+  // The open-state class still owns dismissal state, and the sheet dims the
+  // page behind itself so the tap-outside target is visible.
   await expect(page.locator('body')).toHaveClass(/composer-tools-open/);
-  expect(await page.locator('body').evaluate((element) => getComputedStyle(element, '::after').display)).toBe('none');
+  expect(await page.locator('body').evaluate((element) => getComputedStyle(element, '::after').display)).toBe('block');
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu-mobile.png',
     fullPage: true,

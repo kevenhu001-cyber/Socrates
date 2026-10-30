@@ -238,6 +238,21 @@
 
 }
 
+/* Phones clip horizontal overflow on the transcript (#msgList is
+   `overflow-x: hidden`), so a table wider than the column used to lose its
+   right-hand columns with no way to reach them. The table becomes its own
+   scroll surface: `max-content` lets it grow to the data, `max-width: 100%`
+   caps the box at the column, and the overflow scrolls inside it. */
+@media (max-width: 768px) {
+  #appShell #msgList .msg-body table:not(.intui-table) {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+}
+
 /* Newly published prose on desktop and mobile; settled paragraphs stay still. */
 .tool-run-prose.is-live .stream-append-reveal {
   animation: stream-append-reveal 120ms ease-out backwards;

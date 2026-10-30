@@ -271,7 +271,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 @media (hover:none) {.msg-toolbar{opacity:.7}
 }
 .msg-list>.msg.assistant:last-child .msg-toolbar{opacity:1}
-.msg.assistant[data-stream-settled] .msg-toolbar{opacity:1;transition:opacity var(--ui-duration-fast) var(--ui-ease-out)}
+/* Older answers keep their actions on hover only. Forcing every settled row
+   visible put five buttons under every answer in a long transcript — the row
+   belongs to the message you are reading, and `.msg:focus-within` below
+   already covers keyboard users who tab into it. */
 /* The button box itself is the shadcn primitive's (src/react/message-list/
  * ToolButton.tsx): 32px square, --ui-radius-md, ghost hover — all from
  * --ui-* tokens. What stays here is the affordance layer: the ::after
@@ -309,9 +312,6 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 #appShell .msg-toolbar-btn.is-copied {
   color: var(--ui-success);
-}
-#appShell .msg.assistant[data-stream-settled] .msg-toolbar {
-  transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
 }
 @keyframes checkmarkPop {
   0% { transform: scale(0.65); opacity: 0; }

@@ -2,6 +2,7 @@ import { InputGroup, InputGroupInput, InputGroupAddon } from '../ui/shadcn/input
 import { Button } from '../ui/shadcn/button';
 import { DialogHeader, DialogTitle, DialogClose } from '../ui/shadcn/dialog';
 import { SearchIcon, XIcon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { cn } from 'cn';
 import type { SettingsLabel, SettingsSection } from './settings.types';
 
@@ -33,6 +34,7 @@ export function SettingsNavigation({
   label,
   query,
   section,
+  open,
   onQueryChange,
   onSectionChange,
 }: {
@@ -40,11 +42,27 @@ export function SettingsNavigation({
   label: SettingsLabel;
   query: string;
   section: SettingsSection;
+  open: boolean;
   onQueryChange: (query: string) => void;
   onSectionChange: (section: SettingsSection) => void;
 }) {
+  const navRef = useRef<HTMLElement | null>(null);
+
+  /* On a phone the rail is a horizontal strip eight categories wide, so the
+     restored section can open off-screen — the modal remembers the last tab
+     but the strip does not remember the scroll offset. Centre the active tab
+     when the sheet opens (the pane stays mounted while closed, so the section
+     alone would not re-run the effect). Desktop never overflows horizontally
+     and bails out, because there `scrollIntoView` would nudge the pane. */
+  useEffect(() => {
+    if (!open) return;
+    const nav = navRef.current;
+    if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+    nav.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [open, section, query]);
+
   return (
-    <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
+    <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')} ref={navRef}>
       <InputGroup className="settings-search mb-3 shrink-0">
         <InputGroupInput
           type="search"

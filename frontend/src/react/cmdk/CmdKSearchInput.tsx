@@ -1,4 +1,5 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
+import { t } from './text';
 import type { KeyboardEvent, Ref } from 'react';
 
 interface CmdKSearchInputProps {
@@ -27,9 +28,9 @@ export function CmdKSearchInput({ inputRef, onInput, onKey }: CmdKSearchInputPro
         type="text"
         id="cmdKInput"
         name="cmdKInput"
-        aria-label="Search sessions and messages"
+        aria-label={t('chrome.cmdkSearchAria', 'Search sessions and messages')}
         data-i18n-aria="chrome.cmdkSearchAria"
-        placeholder="Search sessions and messages…"
+        placeholder={t('chrome.cmdkSearch', 'Search sessions and messages…')}
         data-i18n-placeholder="chrome.cmdkSearch"
         autoComplete="off"
         spellCheck={false}

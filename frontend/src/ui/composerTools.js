@@ -72,13 +72,19 @@ function positionTopicMenu(el, trigger, rect, viewportWidth, viewportBottom, men
   return true;
 }
 
-function positionMobileMenu(el, left, wrapRect, viewportTop, height) {
-  var mobileTop = Math.max(viewportTop + 8, wrapRect.bottom - height);
-  el.style.setProperty('left', left + "px", 'important');
-  el.style.setProperty('right', 'auto', 'important');
-  el.style.setProperty('top', mobileTop + "px", 'important');
-  el.style.setProperty('bottom', 'auto', 'important');
-  el.dataset.menuSide = "above";
+/* Phones get a bottom sheet pinned to the viewport edge. The floating card it
+   replaced covered the composer's own `+` trigger and cut a row in half at
+   its bottom edge — thirteen actions behind an invisible internal scroll in
+   a 360px window. The sheet keeps the whole list in one thumb-reachable
+   surface. Placement stays inline `!important` because the restore layer
+   still pins the old card geometry for the attachment menu. */
+function positionMobileMenu(el) {
+  el.style.setProperty('left', '0px', 'important');
+  el.style.setProperty('right', '0px', 'important');
+  el.style.setProperty('top', 'auto', 'important');
+  el.style.setProperty('bottom', '0px', 'important');
+  el.style.removeProperty('max-height');
+  el.dataset.menuSide = "sheet";
 }
 
 function chooseDesktopMenuPosition(el, anchorTop, anchorBottom, viewportTop, viewportBottom, height, cap) {
@@ -141,40 +147,29 @@ function position(el, trigger) {
      instead of making the card jump above the prompt. */
   if (positionTopicMenu(el, trigger, r, viewportWidth, viewportBottom, menuHeightCap)) return;
 
-  el.style.width = viewportWidth > 768 ? "220px" : "";
+  /* Phones pin the menu to the bottom edge; CSS owns its size and shape, so
+     the measurement pass below is desktop-only. */
+  if (viewportWidth <= 768) {
+    el.style.removeProperty('width');
+    positionMobileMenu(el);
+    return;
+  }
+
+  el.style.width = "220px";
   el.style.maxHeight = menuHeightCap + "px";
   el.style.left = "0px";
   el.style.top = "0px";
   var width = el.offsetWidth || 260;
   var height = el.offsetHeight || 300;
-  /* The mobile reference card sits a few pixels to the left of the circular
-     plus control, so the card edge aligns with the composer instead of
-     looking like it is attached to the icon's center. Desktop keeps the
-     trigger edge alignment. */
   /* The menu floats above the whole composer capsule, not the trigger
      button — the plus control lives on the capsule's second row, so
      anchoring to the trigger would overlap the editor row. */
   var wrap = trigger.closest ? trigger.closest('#composerInputWrap') : null;
   var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
-  var anchorLeft = viewportWidth <= 768 ? wrapRect.left : r.left;
-  /* Phones keep a 12px gutter so the card never sits flush against the
-     viewport edge even when the composer itself is only 8–16px inset. */
-  var minLeft = viewportWidth <= 768 ? 12 : 8;
-  var left = Math.max(minLeft, Math.min(anchorLeft, viewportWidth - width - 8));
-  /* On phones the reference card shares the composer's bottom edge and
-     covers its left half; the mic and primary control remain visible on the
-     right. This is a deliberate stacked state, not an above-composer gap. */
-  if (viewportWidth <= 768) {
-    /* Restore sheets include `top:auto` and `bottom` overrides from an older
-       bottom-sheet layout. Inline important placement keeps the current
-       floating card anchored to the composer's measured bottom edge. */
-    positionMobileMenu(el, left, wrapRect, viewportTop, height);
-    return;
-  }
+  var left = Math.max(8, Math.min(r.left, viewportWidth - width - 8));
   /* ChatGPT places the add-content menu below the composer whenever the
      viewport has room. Falling back above is only necessary near the bottom
-     edge (most often on a phone), which keeps the desktop landing state from
-     covering the greeting. */
+     edge, which keeps the desktop landing state from covering the greeting. */
   /* A short desktop viewport keeps the menu scrollable above or below. */
   const placement = chooseDesktopMenuPosition(
     el, wrapRect.top, wrapRect.bottom, viewportTop, viewportBottom, height, menuHeightCap,

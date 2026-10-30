@@ -214,6 +214,145 @@
   }
 }
 
+/* Phones: the landing surface otherwise ends at the greeting + composer, so
+   the same entry points the desktop row offers (upload · write · search) come
+   back as one scrollable chip rail directly above the capsule. Tutor mode
+   swaps the rail for its three prompt cards, scrolled horizontally instead of
+   stacking (three stacked cards would bury the composer on a 568px screen). */
+@media (max-width: 768px) {
+  #appShell .home-quick-actions {
+    display: flex;
+    order: -1;
+    flex-wrap: nowrap;
+    justify-content: center;
+    /* `safe center` keeps a single centred row when the chips fit, but falls
+       back to start-alignment when they overflow — plain centring clips the
+       first chip past the scroll container's left edge, where it can never be
+       scrolled back into view. */
+    justify-content: safe center;
+    gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 10px;
+    padding: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #appShell .home-quick-actions::-webkit-scrollbar { display: none; }
+
+  #appShell .home-quick-action {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 10px;
+    gap: 6px;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    color: var(--muted-foreground);
+    font-size: var(--ui-font-size-xs);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  #appShell .home-quick-action:active {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  #appShell .home-quick-action-primary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: 1;
+  }
+  #appShell .home-quick-action-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+  }
+  #appShell .home-quick-action-icon svg { display: block; width: 16px; height: 16px; }
+  /* No hover on touch, so the per-chip dismiss would only be reachable by a
+     long-press that also opens the context menu. */
+  #appShell .home-quick-action-dismiss { display: none; }
+
+  body[data-app-mode="tutor"] #appShell .home-quick-actions { display: none; }
+  body[data-app-mode="tutor"] #appShell .home-tutor-starters {
+    display: block;
+    order: -1;
+    width: 100%;
+    margin: 0 0 10px;
+  }
+  #appShell .home-tutor-starters h2 {
+    margin: 0 0 8px 2px;
+    color: var(--muted-foreground);
+    font-size: var(--ui-font-size-sm);
+    font-weight: var(--ui-font-weight-regular);
+    line-height: 1.4;
+  }
+  #appShell .home-tutor-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 74%;
+    gap: 8px;
+    padding-bottom: 2px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  #appShell .home-tutor-grid::-webkit-scrollbar { display: none; }
+  #appShell .home-tutor-card {
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-composer);
+    background: var(--ui-bg-composer);
+    color: var(--muted-foreground);
+    text-align: start;
+    font: inherit;
+    font-size: var(--ui-font-size-xs);
+    line-height: 1.45;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  #appShell .home-tutor-card strong {
+    color: var(--foreground);
+    font-size: var(--ui-font-size-sm);
+    font-weight: var(--ui-font-weight-medium);
+  }
+  #appShell .home-tutor-card-icon {
+    font-size: var(--ui-font-size-lg);
+    line-height: 1;
+    color: var(--foreground);
+  }
+}
+
+/* 568px-tall phones leave ~40px between the greeting and the capsule, so the
+   rail gives back its margins rather than crowding the greeting. */
+@media (max-width: 768px) and (max-height: 700px) {
+  #appShell .home-quick-actions,
+  body[data-app-mode="tutor"] #appShell .home-tutor-starters { margin-bottom: 6px; }
+  #appShell .home-quick-action { min-height: 32px; padding: 0 10px; }
+}
+
+/* 320px cannot hold three labelled chips; fade the trailing edge so the row
+   reads as scrollable instead of looking clipped. */
+@media (max-width: 359px) {
+  #appShell .home-quick-actions {
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 20px), transparent 100%);
+    mask-image: linear-gradient(to right, black calc(100% - 20px), transparent 100%);
+  }
+}
+
 @keyframes homeStartersIn {
   from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }

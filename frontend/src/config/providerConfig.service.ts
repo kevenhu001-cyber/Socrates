@@ -1,5 +1,6 @@
 import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
+import { i18n } from '../react/legacy/gateway.ts';
 import type { ProviderCapabilities } from '@socrates/contracts';
 import {
   getProviderConfigSnapshot,
@@ -26,6 +27,18 @@ declare global {
 }
 
 export const LAST_ACTIVE_ID_KEY = 'socrates-last-active-id';
+
+/* Save and activation failures surface as toasts in the middle of an action,
+   so they follow the UI language like every other string. `i18n` is the
+   shared window.t + fallback helper; the `{name}` fill keeps the sentence
+   whole per locale instead of concatenating fragments. */
+function toast(key: string, fallback: string, vars?: Record<string, string | number>): string {
+  const text = i18n(key, fallback);
+  if (!vars) return text;
+  return text.replace(/\{(\w+)\}/g, (match, name: string) =>
+    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match);
+}
+
 const BUILT_IN_ID = 'beagle-built-in';
 const BUILT_IN_BASE: ProviderConfig = Object.freeze({
   id: BUILT_IN_ID,
@@ -201,7 +214,7 @@ export function addProvider(): string | null {
   const current = getProviderConfigSnapshot();
   const custom = current.providers.filter((provider) => !provider.isBuiltIn);
   if (custom.length >= limit) {
-    showToast(`API provider limit reached (${limit}) for your plan.`);
+    showToast(toast('toast.providerLimit', 'API provider limit reached ({limit}) for your plan.', { limit }));
     return null;
   }
   const id = `new-${Date.now().toString(36)}`;
@@ -219,7 +232,7 @@ export async function removeProvider(id: string): Promise<boolean> {
       await apiFetch(`/api/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'server error';
-      showToast(`Failed to remove provider: ${message}. Try again.`);
+      showToast(toast('toast.providerRemoveFailed', 'Failed to remove provider: {message}. Try again.', { message }));
       return false;
     }
   }
@@ -251,7 +264,7 @@ export async function setActiveProvider(id: string): Promise<void> {
   } catch {
     publishProviderConfig({ activeId: previous });
     saveLastActiveId(previous);
-    showToast('Failed to activate provider on server. Changes reverted.');
+    showToast(toast('toast.providerActivateFailed', 'Failed to activate provider on server. Changes reverted.'));
   }
 }
 
@@ -307,8 +320,8 @@ export async function saveProviderConfig(): Promise<ProviderSaveResult> {
   const rows = state.providers.filter((provider) => !provider.isBuiltIn);
   if (!rows.length) {
     showToast(state.providers.some((provider) => provider.isBuiltIn)
-      ? 'Built-in AI is already active.'
-      : 'Add at least one provider');
+      ? toast('toast.providerBuiltInActive', 'Built-in AI is already active.')
+      : toast('toast.providerAddOne', 'Add at least one provider'));
     return { savedIds: [], failedIds: [] };
   }
 
@@ -316,7 +329,7 @@ export async function saveProviderConfig(): Promise<ProviderSaveResult> {
   const invalidIds = Object.keys(validationErrors);
   if (invalidIds.length) {
     publishProviderConfig({ errors: validationErrors });
-    showToast('Please fix the highlighted errors before saving.');
+    showToast(toast('toast.providerFixErrors', 'Please fix the highlighted errors before saving.'));
     return { savedIds: [], failedIds: invalidIds };
   }
 
@@ -358,12 +371,18 @@ export async function saveProviderConfig(): Promise<ProviderSaveResult> {
   const result = { savedIds, failedIds };
   if (failedIds.length && saved.length) {
     const message = lastError instanceof Error ? lastError.message : 'unknown error';
-    showToast(`Saved ${saved.length} provider(s), but ${failedIds.length} failed: ${message}. Try saving again.`);
+    showToast(toast('toast.providerPartialSave', 'Saved {saved} provider(s), but {failed} failed: {message}. Try saving again.', {
+      saved: saved.length,
+      failed: failedIds.length,
+      message,
+    }));
   } else if (failedIds.length) {
-    showToast(`Save failed: ${lastError instanceof Error ? lastError.message : 'unknown error'}`);
+    showToast(toast('toast.providerSaveFailed', 'Save failed: {message}', {
+      message: lastError instanceof Error ? lastError.message : 'unknown error',
+    }));
   } else if (nextActiveId) {
     const activeLabel = lastSuccessful.value?.label || nextActiveId;
-    showToast(`Saved — ${activeLabel}`);
+    showToast(toast('toast.providerSaved', 'Saved — {label}', { label: activeLabel }));
   }
   return result;
 }

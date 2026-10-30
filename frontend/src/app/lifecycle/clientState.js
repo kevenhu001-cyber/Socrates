@@ -58,7 +58,6 @@ export function clearPerUserClientState() {
 
   clearStorageKey('socrates-sessions-v2', 'app/lifecycle.clearPerUser.sessionsCache');
   clearStorageKey('socrates-api', 'app/lifecycle.clearPerUser.apiCache');
-  clearStorageKey('socrates-guest', 'app/lifecycle.clearPerUser.guestCache');
   clearStorageKey('socrates-projects', 'app/lifecycle.clearPerUser.projectsCache');
   clearStorageKey('socrates-provider-keys', 'app/lifecycle.clearPerUser.providerKeysCache');
   clearStorageKey('socrates-websearch', 'app/lifecycle.clearPerUser.websearchCache');

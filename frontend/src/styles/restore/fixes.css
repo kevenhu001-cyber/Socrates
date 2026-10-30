@@ -116,23 +116,11 @@
 }
 
 @media (max-width: 768px) {
-  /* Keep the plus menu attached to the composer as a floating card sized
-     like the reference sheet: wide enough for icon + label rows and tall
-     enough that the first screenful is not a cramped four-item strip.
-     Height is content-driven up to ~52dvh so short phones still scroll. */
-  body #composerToolsMenu:not(.hidden).composer-tools-menu {
-    left: 16px !important;
-    right: auto !important;
-    width: min(252px, calc(100vw - 32px)) !important;
-    min-width: min(252px, calc(100vw - 32px)) !important;
-    max-width: none !important;
-    height: auto !important;
-    max-height: min(52dvh, 360px) !important;
-    /* The shared tools-card step — the same corner the desktop card uses.
-       A literal 20px here is what kept the phone card rounder than the
-       desktop one and than the model-config popover it opens beside. */
-    border-radius: var(--ui-radius-tools-card) !important;
-  }
+  /* The plus menu is a bottom sheet: placement lives in ui/composerTools.js
+     and the shape in components/menu.css. The floating-card geometry that
+     used to sit here (252px wide, 16px from the composer's edge, 52dvh cap)
+     is retired — it covered the composer's own trigger and cut its last
+     visible row in half. What stays is the row rhythm below. */
 
   /* Reference rows are full-height touch targets with a 44px chip, not the
      denser 44px/36px desktop leftovers from menu.css. */

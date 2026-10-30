@@ -144,8 +144,11 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(headerVisual.sidebar?.width).toBe(40);
   expect(headerVisual.find?.width).toBe(44);
   expect(headerVisual.share?.width).toBe(44);
-  expect(headerVisual.modelSwitcher?.width).toBeGreaterThan(0);
-  expect(headerVisual.modelSwitcher?.right).toBeLessThanOrEqual(headerVisual.newChat?.x ?? 0);
+  /* In-conversation the phone header has no room for the model chip: the
+     centred mode switch (152px) plus new-chat, find and share (128px) already
+     fill a 390px bar, and the chip used to paint under the switch. Model
+     configuration stays one tap away in the composer's effort pill, which
+     opens the same popover. */
   for (const width of [390, 360, 320]) {
     await page.setViewportSize({ width, height: 844 });
     const boxes = await page.evaluate(() => {
@@ -154,8 +157,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       const newChat = rect('#mobileNewChatBtn');
       return { switcherRight: switcher.right, newChatLeft: newChat.left, switcherWidth: switcher.width };
     });
-    expect(boxes.switcherWidth).toBeGreaterThan(0);
-    expect(boxes.switcherRight).toBeLessThanOrEqual(boxes.newChatLeft);
+    expect(boxes.switcherWidth).toBe(0);
   }
   expect(headerVisual.find?.borderWidth).toBe('0px');
   expect(headerVisual.share?.borderWidth).toBe('0px');
@@ -220,10 +222,11 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(menu).toContainText('Web search');
   await expect(menu.locator('.composer-tools-disclosure')).toHaveCount(0);
   const menuBox = await menu.boundingBox();
-  /* On phones the add-content menu is a floating card anchored above the
-     composer, matching the mobile reference (~65% of the phone width). */
-  expect(menuBox?.width).toBeLessThanOrEqual(260);
-  expect(menuBox?.width).toBeGreaterThanOrEqual(244);
+  /* On phones the add-content menu is a bottom sheet: full width and flush
+     with the viewport edge, with the row list scrolling inside it. */
+  expect(menuBox?.width).toBeGreaterThanOrEqual(389);
+  expect(menuBox?.width).toBeLessThanOrEqual(390);
+  expect((menuBox?.y ?? 0) + (menuBox?.height ?? 0)).toBeGreaterThanOrEqual(843);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 

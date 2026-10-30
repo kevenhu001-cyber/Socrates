@@ -31,6 +31,7 @@ function SettingsModal() {
             label={preferences.label}
             query={navigation.query}
             section={navigation.section}
+            open={snapshot.open}
             onQueryChange={navigation.setQuery}
             onSectionChange={navigation.setSection}
           />

@@ -134,21 +134,54 @@ body.composer-tools-open::after{
 .socrates-cookie-consent-link:hover{
   color:hsl(var(--accent-100));
 }
-@media (max-width:520px){
-.socrates-cookie-consent{
+/* Phone treatment: the banner is a fixed strip at the bottom edge, so the
+   shell reserves exactly its measured height (--cookie-consent-space, set by
+   CookieConsent.tsx) and the composer can never end up underneath it. The
+   copy is clamped so a long translation cannot turn the strip into a sheet. */
+@media (max-width:768px){
+  html.has-cookie-consent .app{
+    padding-bottom:var(--cookie-consent-space,0px);
+  }
+  .socrates-cookie-consent{
     bottom:calc(10px + env(safe-area-inset-bottom,0px));
     width:calc(100vw - 16px);
-    padding:14px 16px;
+    gap:8px;
+    padding:12px 14px;
+    border-radius:var(--radius-lg);
   }
-.socrates-cookie-consent-actions{
+  .socrates-cookie-consent-title{
+    padding-right:80px;
+    font-size:13px;
+  }
+  .socrates-cookie-consent-message{
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:3;
+    overflow:hidden;
+    font-size:13px;
+    line-height:1.45;
+  }
+  .socrates-cookie-consent-actions{
     display:grid;
     grid-template-columns:1fr 1fr;
+    gap:8px;
   }
-.socrates-cookie-consent-btn{
+  .socrates-cookie-consent-btn{
     width:100%;
+    height:42px;
+    padding:0 12px;
     text-align:center;
   }
-
+  /* The policy link moves up beside the title so the two buttons keep the
+     thumb-reachable bottom row and the message can use a third line. Only the
+     fixed (post-auth) banner anchors it: the auth copy is in flow, where an
+     absolute link would resolve against the gate instead. */
+  .socrates-cookie-consent:not(.socrates-cookie-consent--auth) .socrates-cookie-consent-link{
+    position:absolute;
+    top:14px;
+    right:14px;
+    font-size:12px;
+  }
 }
 /* Detailed/history rows use the same anatomy as live rows. The body still
    contains the existing Input/Output sections, but those sections now feel

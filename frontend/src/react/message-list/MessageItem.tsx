@@ -154,7 +154,7 @@ function MessageItemBase({ message, isLatest }: MessageItemProps) {
         bodyRef={bodyRef}
       />
       <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} />
-      {role === 'user' || presentation.showToolbar || isLive ? <MessageToolbar message={message} role={toolbarRole(role)} pending={isLive} /> : null}
+      {role === 'user' || presentation.showToolbar || isLive ? <MessageToolbar message={message} role={toolbarRole(role)} pending={isLive} isLatest={isLatest} /> : null}
     </div>
   );
 }

@@ -149,3 +149,18 @@ export function toggleSidebar(): void {
   legacyWindow.syncSidebarBtns?.();
   try { localStorage.setItem('socrates-sb', open ? '1' : '0'); } catch { /* storage is optional */ }
 }
+
+/**
+ * Phone-only dismiss. The drawer overlays the conversation, so any action
+ * that changes the main surface (opening a session, starting a new one) has
+ * to reveal that surface. Desktop keeps its persistent rail, and the
+ * long-press context menu is a drawer-internal interaction, so both are left
+ * alone. Returns whether the drawer was actually open.
+ */
+export function closeSidebarOnMobile(): boolean {
+  if (window.innerWidth >= DESKTOP_SIDEBAR_BREAKPOINT) return false;
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar || sidebar.classList.contains('collapsed')) return false;
+  toggleSidebar();
+  return true;
+}

@@ -45,7 +45,6 @@ body #composerToolsMenu.composer-tools-menu {
 [data-mode="light"] body #composerToolsMenu.composer-tools-menu {
   box-shadow: 0 10px 32px -8px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 4%);
 }
-body #composerToolsMenu.composer-tools-menu::before { display: none; }
 
 #composerToolsMenu .composer-tools-desktop-items,
 #composerToolsMenu .composer-tools-mobile-items { gap: 0; }
@@ -144,13 +143,20 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
 @media (max-width: 768px) {
   .composer-tools-desktop-items { display: none; }
   .composer-tools-mobile-items { display: block; }
-  body.composer-tools-open::after { display: none; }
+  /* Phone sheet. `ui/composerTools.js` pins it to the bottom edge; this owns
+     its shape. It replaces the 236px floating card, which covered the
+     composer's own `+` trigger and cut a row in half at its bottom edge while
+     leaving ten of thirteen actions behind an invisible internal scroll. */
   body #composerToolsMenu.composer-tools-menu {
-    width: 236px;
-    min-width: 236px;
-    height: min(48dvh, 234px);
-    max-height: min(48dvh, 234px);
-    border-radius: var(--ui-radius-tools-card);
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: min(78dvh, calc(100dvh - 56px));
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--ui-radius-xl) var(--ui-radius-xl) 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: composer-tools-sheet-in var(--ui-duration-overlay) var(--ui-ease-out);
   }
   [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: var(--ui-bg-surface); }
   #composerToolsMenu .composer-tools-item,

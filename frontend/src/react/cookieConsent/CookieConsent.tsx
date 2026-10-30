@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { i18n } from '../legacy/gateway.ts';
 import {
@@ -19,10 +19,39 @@ export function CookieConsent() {
   const [hasChoice, setHasChoice] = useState(() => getConsentPreference() !== null);
   const privacyUrl = getCookieConsentPrivacyUrl();
   const authPlacement = getCookieConsentAuthPlacement();
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     if (!hasChoice) syncCookieConsentPlacement(authPlacement);
   }, [authPlacement, hasChoice]);
+
+  /* The phone banner is a fixed strip at the bottom edge, so the shell has to
+     give that strip its own space instead of letting it cover the composer.
+     Measuring the rendered banner keeps the reservation exact when the copy
+     wraps to a different number of lines per locale. */
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (hasChoice) {
+      root.classList.remove('has-cookie-consent');
+      root.style.removeProperty('--cookie-consent-space');
+      return;
+    }
+    root.classList.add('has-cookie-consent');
+    const banner = bannerRef.current;
+    if (!banner) return;
+    const measure = () => {
+      const height = banner.getBoundingClientRect().height;
+      if (height > 0) root.style.setProperty('--cookie-consent-space', `${Math.ceil(height + 12)}px`);
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    observer?.observe(banner);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [hasChoice, authPlacement]);
 
   if (hasChoice) return null;
 
@@ -32,7 +61,7 @@ export function CookieConsent() {
   };
 
   return (
-    <div id="socratesCookieConsent" className={`socrates-cookie-consent${authPlacement ? ' socrates-cookie-consent--auth' : ''}`}
+    <div ref={bannerRef} id="socratesCookieConsent" className={`socrates-cookie-consent${authPlacement ? ' socrates-cookie-consent--auth' : ''}`}
       role="region" aria-label={t('consent.title', 'We respect your privacy')} data-testid="cookie-consent-banner">
       <strong className="socrates-cookie-consent-title" data-i18n-key="consent.title">
         {t('consent.title', 'We respect your privacy')}

@@ -35,6 +35,7 @@ import { activateMainView } from '../ui/mainViewController.js';
 import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { updateKB } from '../ui/knowledgePanel.js';
+import { closeSidebarOnMobile } from '../sidebar/sidebar.service.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 export { reattachPendingTurn };
@@ -638,6 +639,10 @@ function restoreLoadedChat(
 export async function loadSession(id: string): Promise<void> {
   /* A context-menu click during long-press is synthetic; keep the current view. */
   if (serverCache.ctxMenuSessionId === id) return;
+
+  /* Phone recents live in the overlay drawer: picking one has to reveal the
+     conversation it just loaded. No-op on desktop and when already closed. */
+  try { closeSidebarOnMobile(); } catch (error) { reportSwallow(error, 'session/loader.closeSidebarOnMobile'); }
 
   const win = window as LoaderWindow;
   const controller = beginSessionLoad(id, win);

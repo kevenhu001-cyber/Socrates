@@ -107,12 +107,26 @@ export function syncThemeUI() {
   }
 }
 
+function syncBrowserChromeColor(mode) {
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  var color = "";
+  try {
+    color = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+  } catch (_) { /* computed style unavailable during boot — use the fallback */ }
+  if (!color || color.indexOf("var(") !== -1) {
+    color = mode === "dark" ? "#121110" : "#f7f4ee";
+  }
+  meta.setAttribute("content", color);
+}
+
 function setEffectiveThemeMode(mode) {
   var html = document.documentElement;
   html.setAttribute("data-mode", mode);
   html.style.colorScheme = mode;
   syncMermaidTheme(mode);
   syncThemeUI();
+  syncBrowserChromeColor(mode);
 }
 
 function watchSystemTheme() {

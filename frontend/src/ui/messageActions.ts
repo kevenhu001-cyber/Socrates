@@ -8,6 +8,7 @@
 
 import { stateStore } from '../state/store.js';
 import { apiFetch } from '../util/api.ts';
+import { i18n } from '../react/legacy/gateway.ts';
 import { showToast } from './toast.js';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { visualizationSpecOf } from '../render/visualizationSpec.ts';
@@ -73,7 +74,9 @@ export function sendFeedback(
   rating: string,
 ): void {
   fireFeedback(messageId, rating, null);
-  showToast(rating === 'up' ? 'Thanks for the feedback' : "Got it — we'll improve");
+  showToast(rating === 'up'
+    ? i18n('message.feedbackThanks', 'Thanks for the feedback')
+    : i18n('message.feedbackNoted', "Got it — we'll improve"));
 }
 
 /** Message entry as stored in stateStore.read("messages"). */

@@ -9,6 +9,11 @@
      ignores this flag and stays in overlay mode; there the controller below
      (ui/keyboard) mirrors the visual viewport 1:1 into --keyboard-inset. -->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<!-- Mobile browser chrome (iOS status bar tint, Android address bar) should
+     follow the active theme instead of staying default white. displayPrefs.js
+     rewrites this tag whenever data-mode changes; the value here is the dark
+     shell default that the document starts with. -->
+<meta name="theme-color" content="#121110">
 <title>Socrates</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <!-- P_perf-resource-hints — the boot shell paints /logo.png in its very

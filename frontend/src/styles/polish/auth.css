@@ -110,6 +110,35 @@
 
 .auth-error { border-radius: var(--ui-radius-control); }
 
+/* Phones: iOS Safari zooms the whole page when a focused field is under 16px,
+   which leaves the card half off-screen on a 390px viewport. Match the text
+   size to the platform floor and give every control a 44px touch target. */
+@media (max-width: 768px) {
+  .auth-gate { padding: 20px 16px; }
+  .auth-gate .auth-card { padding: 24px 20px; }
+  .auth-gate .auth-tab { height: 40px; }
+  .auth-gate .auth-input {
+    height: 44px;
+    font-size: var(--ui-font-size-md);
+  }
+  .auth-gate .auth-btn {
+    height: 44px;
+    font-size: var(--ui-font-size-md);
+  }
+}
+
+/* Short phones (320×568 and landscape keyboards) lose the last row of the
+   sign-in form to the fold; tighten the vertical rhythm instead of clipping. */
+@media (max-width: 768px) and (max-height: 700px) {
+  .auth-gate { padding: 12px 12px 20px; }
+  .auth-gate .auth-card { padding: 18px 16px; }
+  .auth-gate .auth-tabs { margin-bottom: 12px; }
+  .auth-gate .auth-input { margin-bottom: 0; }
+  .auth-gate .auth-btn { margin-top: 6px; }
+  .auth-gate .auth-foot { margin-top: 8px; }
+  .auth-footnote { margin-top: 10px; font-size: var(--ui-font-size-xxs); }
+}
+
 /* Scoped top-layer browser-to-Android account confirmation. */
 .browser-login-handoff {
   margin: auto;
