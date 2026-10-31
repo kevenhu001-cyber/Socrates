@@ -457,3 +457,18 @@ a.m-card:active { transform: translateY(0) scale(.99); }
   .js .m-graph-stage.is-drawable:not(.is-in) .kg-halo, .js .m-story-scene[data-scene='1'] .m-story-edge--new { opacity: 1; }
   .ui.is-live .ui-composer > span:first-child::before { animation: none; display: none; }
 }
+
+/* Question-chain echo: an open answer hangs from its question on the same
+   hairline-and-dot thread as the home page chain. The line draws once as
+   the answer opens; reduced motion shows it already drawn. */
+@keyframes qc-thread { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes qc-thread-dot { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+.m-faq details > div { position: relative; padding-left: calc(var(--space-300) + 22px); }
+.m-faq details > div::before { content: ''; position: absolute; left: calc(var(--space-300) + 3px); top: 2px; bottom: calc(var(--space-300) + 12px); width: 1px; background: var(--site-color-line-strong, rgb(0 0 0 / .12)); transform-origin: top; animation: qc-thread 500ms cubic-bezier(.22,1,.36,1) both; }
+.m-faq details > div::after { content: ''; position: absolute; left: var(--space-300); bottom: calc(var(--space-300) + 8px); width: 7px; height: 7px; border-radius: 50%; background: var(--site-color-ink, #0d0d0d); animation: qc-thread-dot 400ms cubic-bezier(.22,1,.36,1) 380ms both; }
+@media (prefers-reduced-motion: reduce) { .m-faq details > div::before, .m-faq details > div::after { animation: none; } }
+@media (max-width: 760px) {
+  .m-faq details > div { padding-left: calc(var(--space-200) + 22px); }
+  .m-faq details > div::before { left: calc(var(--space-200) + 3px); }
+  .m-faq details > div::after { left: var(--space-200); }
+}

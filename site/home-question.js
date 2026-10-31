@@ -31,12 +31,17 @@
       });
     });
 
-    /* Example questions type themselves into the empty box, one character
-       at a time, hold, fade and make way for the next. Focus, typing, a
-       hidden page or reduced motion stop it with the hint left complete. */
+    /* Example questions type themselves into the empty box. An entry may be
+       a pair: the first question is typed, held, trimmed back to the words
+       it shares with the second, and the follow-up question is typed on top
+       of it, so the hint itself shows one question leading to the next.
+       Focus, typing, a hidden page or reduced motion stop it with the hint
+       left complete. */
     var placeholder = form.querySelector('[data-ask-prompts]');
     if (placeholder && placeholder.animate) {
-      var prompts = JSON.parse(placeholder.getAttribute('data-ask-prompts'));
+      var prompts = JSON.parse(placeholder.getAttribute('data-ask-prompts')).map(function (entry) {
+        return Array.isArray(entry) ? entry : [entry];
+      });
       var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
       var timer = null;
       var animation = null;
@@ -57,17 +62,37 @@
         window.clearTimeout(timer);
         timer = eligible() ? window.setTimeout(next, typeof delay === 'number' ? delay : 2600) : null;
       }
-      function type(chars, count) {
-        if (!eligible()) { pause(); return; }
+      function wait(fn, delay) {
+        timer = window.setTimeout(function () { if (eligible()) fn(); else pause(); }, delay);
+      }
+      // Han characters carry more per glyph, so they arrive a little slower.
+      function pace(char) { return /[\u3400-\u9fff]/.test(char) ? 72 : 32; }
+      function type(chars, count, done) {
         placeholder.textContent = chars.slice(0, count).join('');
-        if (count >= chars.length) {
-          target = null;
-          schedule(2600);
-          return;
-        }
-        // Han characters carry more per glyph, so they arrive a little slower.
-        var wide = /[\u3400-\u9fff]/.test(chars[count]);
-        timer = window.setTimeout(function () { type(chars, count + 1); }, wide ? 72 : 32);
+        if (count >= chars.length) { done(); return; }
+        wait(function () { type(chars, count + 1, done); }, pace(chars[count]));
+      }
+      function trim(chars, keep, done) {
+        placeholder.textContent = chars.join('');
+        if (chars.length <= keep) { done(); return; }
+        wait(function () { trim(chars.slice(0, -1), keep, done); }, 22);
+      }
+      function shared(a, b) {
+        var length = 0;
+        while (length < a.length && length < b.length && a[length] === b[length]) length += 1;
+        return length;
+      }
+      function step(chain, link, current) {
+        var chars = Array.from(chain[link]);
+        target = chain[chain.length - 1];
+        type(chars, current, function () {
+          if (link + 1 >= chain.length) { target = null; schedule(2600); return; }
+          var following = Array.from(chain[link + 1]);
+          var keep = shared(chars, following);
+          wait(function () {
+            trim(chars, keep, function () { wait(function () { step(chain, link + 1, keep + 1); }, 180); });
+          }, 1500);
+        });
       }
       function next() {
         if (!eligible()) { pause(); return; }
@@ -76,9 +101,8 @@
           animation = null;
           if (!eligible()) { pause(); return; }
           index = (index + 1) % prompts.length;
-          target = prompts[index];
           placeholder.classList.add('is-typing');
-          type(Array.from(target), 1);
+          step(prompts[index], 0, 1);
         };
       }
       input.addEventListener('focus', pause);

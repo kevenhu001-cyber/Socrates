@@ -13,8 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261101m1">
-  <link rel="stylesheet" href="/modules.css?cb=20261101m1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261101a1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101a1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — 理解，始于一个问题。">
@@ -27,10 +27,10 @@
   <meta name="twitter:title" content="Socrates — 理解，始于一个问题。">
   <meta name="twitter:description" content="为真正想理解的人打造的 AI 导师。">
   <meta name="twitter:image" content="https://topodrive.top/media/socrates-home-dialogue-photo-v1.webp">
-  <script src="/locale.js?cb=20261101m1"></script>
-  <link rel="stylesheet" href="/fonts.css?cb=20261101m1">
-  <link rel="stylesheet" href="/public.css?cb=20261101m1">
-  <link rel="stylesheet" href="/chrome.css?cb=20261101m1">
+  <script src="/locale.js?cb=20261101a1"></script>
+  <link rel="stylesheet" href="/fonts.css?cb=20261101a1">
+  <link rel="stylesheet" href="/public.css?cb=20261101a1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261101a1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -76,7 +76,7 @@
             <div class="ask-box">
               <label class="home-sr-only" for="askInputHero">你想问 Socrates 的问题</label>
               <textarea class="ask-input" id="askInputHero" name="q" rows="2" placeholder=" " aria-describedby="ask-handoff-hero" autocomplete="off" spellcheck="false"></textarea>
-              <span class="ask-placeholder" data-ask-prompts="[&quot;帮我一步步理解贝叶斯定理……&quot;, &quot;把两个学过的概念联系起来……&quot;, &quot;考考我今天学到的知识……&quot;]" aria-hidden="true">帮我理解一个新概念……</span>
+              <span class="ask-placeholder" data-ask-prompts="[[&quot;为什么夏天热？&quot;, &quot;为什么七月的澳大利亚是冬天？&quot;], [&quot;导数到底在描述什么？&quot;, &quot;导数到底在描述什么样的变化？&quot;], [&quot;阳性结果为什么不一定可靠？&quot;, &quot;阳性结果为什么和患病率有关？&quot;]]" aria-hidden="true">帮我理解一个新概念……</span>
               <button class="ask-send" type="submit" aria-label="打开 Socrates 并开始对话"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg></button>
             </div>
             <p class="ask-handoff home-sr-only" id="ask-handoff-hero">带着这个问题，在 Socrates 应用中继续。</p>
@@ -89,6 +89,68 @@
             <a class="ask-chip ask-chip--link" href="/zh/product">更多</a>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="home-chain" id="question-chain" aria-labelledby="chain-title" data-qc>
+      <div class="home-shell qc-layout">
+        <div class="qc-intro">
+          <h2 id="chain-title">顺着问题，往下想。</h2>
+          <p class="qc-lede">Socrates 不急着给你答案，而是问出下一个问题，直到你能用自己的话讲清楚。</p>
+          <p class="qc-lines"><span class="qc-line" data-qc-line="0">从你现在的想法开始，</span><span class="qc-line" data-qc-line="1">再沿着问题走远一点。</span><span class="qc-line" data-qc-line="2">把让你想通的那条连接，留在自己的理解里。</span></p>
+          <div class="qc-controls">
+            <button class="home-button qc-next" type="button" data-qc-next data-qc-again="重新开始" aria-controls="qc-list"><span data-qc-next-label>问下一个问题</span> <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+            <span class="qc-count" data-qc-count aria-hidden="true">1 / 4</span>
+          </div>
+          <p class="home-sr-only" data-qc-live aria-live="polite"></p>
+        </div>
+        <figure class="qc-stage">
+          <div class="qc-stage-head"><span>学习 / 地球科学</span><span class="qc-badge">示意会话</span></div>
+          <ol class="qc-list" id="qc-list">
+            <li class="qc-step" data-qc-step="0">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">你的问题</p>
+              <p class="qc-question">为什么夏天热？</p>
+              <p class="qc-answer" data-qc-wrong><span class="qc-who">你</span><span class="home-sr-only" data-qc-revised hidden>后来改正：</span><span class="qc-answer-text">因为夏天地球离太阳更近。</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="1">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates 问</p>
+              <p class="qc-question">如果是这样，七月的澳大利亚应该是什么季节？</p>
+              <p class="qc-answer"><span class="qc-who">你</span><span class="qc-answer-text">也该是夏天……可那边是冬天。所以不是距离的原因。</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="2">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates 问</p>
+              <p class="qc-question">那么七月里，南北半球到底有什么不同？</p>
+              <p class="qc-answer"><span class="qc-who">你</span><span class="qc-answer-text">地轴是倾斜的。北半球朝向太阳，阳光照得更直。</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="3">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates 问</p>
+              <p class="qc-question">能用一句话讲给朋友听吗？</p>
+              <p class="qc-answer"><span class="qc-who">你</span><span class="qc-answer-text">季节来自地轴倾斜：它改变了阳光照到每个半球的角度和时长。</span></p>
+            </li>
+          </ol>
+          <div class="qc-map" data-qc-map>
+            <p class="qc-label">留下的连接</p>
+            <svg class="qc-map-svg" viewBox="44 10 466 112" role="img" aria-labelledby="qc-map-title">
+              <title id="qc-map-title">这次会话留下的连接：季节连到地轴倾斜，地轴倾斜连到太阳高度角和白昼长短。“距离”被划掉。</title>
+              <g class="qc-edges" fill="none">
+                <path class="qc-edge" pathLength="1" d="M80 60H220"/>
+                <path class="qc-edge" pathLength="1" d="M220 60L360 28"/>
+                <path class="qc-edge" pathLength="1" d="M220 60L360 92"/>
+                <path class="qc-edge qc-edge-cut" pathLength="1" d="M80 60L80 104"/>
+              </g>
+              <g class="qc-node qc-node-root"><circle cx="80" cy="60" r="6"/><text x="80" y="40" text-anchor="middle">季节</text></g>
+              <g class="qc-node"><circle cx="220" cy="60" r="5"/><text x="220" y="40" text-anchor="middle">地轴倾斜</text></g>
+              <g class="qc-node"><circle cx="360" cy="28" r="5"/><text x="374" y="32">太阳高度角</text></g>
+              <g class="qc-node"><circle cx="360" cy="92" r="5"/><text x="374" y="96">白昼长短</text></g>
+              <g class="qc-node qc-node-cut"><circle cx="80" cy="108" r="4"/><text x="94" y="112">距离</text></g>
+            </svg>
+          </div>
+          <figcaption class="home-sr-only">示意会话，并非真实学习者的记录。</figcaption>
+        </figure>
       </div>
     </section>
 
@@ -153,12 +215,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="home-tagline" aria-label="我们的方法">
-      <div class="home-shell">
-        <p class="home-tagline-text">从你现在的想法开始，<br>再沿着问题走远一点。<br>把让你想通的那条连接，<br>留在自己的理解里。</p>
       </div>
     </section>
 
@@ -688,9 +744,9 @@
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261101m1"></script>
-  <script src="/modules.js?cb=20261101m1"></script>
-  <script src="/chrome.js?cb=20261101m1"></script>
-  <script src="/motion.js?cb=20261101m1"></script>
+  <script src="/home-question.js?cb=20261101a1"></script>
+  <script src="/modules.js?cb=20261101a1"></script>
+  <script src="/chrome.js?cb=20261101a1"></script>
+  <script src="/motion.js?cb=20261101a1"></script>
 </body>
 </html>

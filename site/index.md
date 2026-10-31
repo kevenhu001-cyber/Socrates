@@ -21,6 +21,23 @@ Question starters: start a dialogue, recall, knowledge map, exam mode.
 
 For the questions worth thinking through.
 
+## Follow the question
+
+Socrates doesn’t hand you the answer. It asks the next question, until the explanation is yours.
+
+Start with what you think. Follow the question a little further. Keep the connection that makes it click.
+
+### Illustrative session: Earth science
+
+This is an illustrative session, not a real learner’s transcript.
+
+1. **Your question:** Why is it hot in summer? **You:** ~~Because Earth is closer to the Sun.~~ (later revised)
+2. **Socrates asks:** If that were true, what season would Australia have in July? **You:** Summer too… but it’s winter there. So distance can’t be it.
+3. **Socrates asks:** Then what is different between the two halves of Earth in July? **You:** The tilt. The north leans toward the Sun, so its light arrives more directly.
+4. **Socrates asks:** Can you say it to a friend in one sentence? **You:** Seasons come from Earth’s tilt: it changes how directly, and how long, sunlight reaches each half.
+
+What you keep: seasons → axial tilt → sun angle and day length. Distance is crossed out.
+
 ## A change of perspective
 
 [Original probability illustration](https://topodrive.top/media/socrates-probability-grid-v1.svg): a light gray grid of 100 points with a single black point ringed and labelled one in 100.

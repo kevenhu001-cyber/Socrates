@@ -13,8 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261101m1">
-  <link rel="stylesheet" href="/modules.css?cb=20261101m1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261101a1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101a1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -158,9 +158,9 @@
     ]
   }
   </script>
-  <script src="/locale.js?cb=20261101m1"></script>
-  <link rel="stylesheet" href="/public.css?cb=20261101m1">
-  <link rel="stylesheet" href="/chrome.css?cb=20261101m1">
+  <script src="/locale.js?cb=20261101a1"></script>
+  <link rel="stylesheet" href="/public.css?cb=20261101a1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261101a1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -206,7 +206,7 @@
             <div class="ask-box">
               <label class="home-sr-only" for="askInputHero">Your question for Socrates</label>
               <textarea class="ask-input" id="askInputHero" name="q" rows="2" placeholder=" " aria-describedby="ask-handoff-hero" autocomplete="off" spellcheck="false"></textarea>
-              <span class="ask-placeholder" data-ask-prompts="[&quot;Explain Bayes’ theorem, one step at a time…&quot;, &quot;Help me connect two ideas…&quot;, &quot;Quiz me on something I learned…&quot;]" aria-hidden="true">Help me understand a new idea…</span>
+              <span class="ask-placeholder" data-ask-prompts="[[&quot;Why is it hot in summer?&quot;, &quot;Why is it winter in Australia in July?&quot;], [&quot;What does a derivative tell me?&quot;, &quot;What does a derivative tell me about speed?&quot;], [&quot;Why does a positive test mislead?&quot;, &quot;Why does a rare condition change the odds?&quot;]]" aria-hidden="true">Help me understand a new idea…</span>
               <button class="ask-send" type="submit" aria-label="Open Socrates and start a conversation"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg></button>
             </div>
             <p class="ask-handoff home-sr-only" id="ask-handoff-hero">Continue with your question in the Socrates app.</p>
@@ -219,6 +219,68 @@
             <a class="ask-chip ask-chip--link" href="/product">More</a>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="home-chain" id="question-chain" aria-labelledby="chain-title" data-qc>
+      <div class="home-shell qc-layout">
+        <div class="qc-intro">
+          <h2 id="chain-title">Follow the question.</h2>
+          <p class="qc-lede">Socrates doesn’t hand you the answer. It asks the next question, until the explanation is yours.</p>
+          <p class="qc-lines"><span class="qc-line" data-qc-line="0">Start with what you think.</span><span class="qc-line" data-qc-line="1">Follow the question a little further.</span><span class="qc-line" data-qc-line="2">Keep the connection that makes it click.</span></p>
+          <div class="qc-controls">
+            <button class="home-button qc-next" type="button" data-qc-next data-qc-again="Start over" aria-controls="qc-list"><span data-qc-next-label>Ask the next question</span> <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+            <span class="qc-count" data-qc-count aria-hidden="true">1 / 4</span>
+          </div>
+          <p class="home-sr-only" data-qc-live aria-live="polite"></p>
+        </div>
+        <figure class="qc-stage">
+          <div class="qc-stage-head"><span>Learning / Earth science</span><span class="qc-badge">Illustrative session</span></div>
+          <ol class="qc-list" id="qc-list">
+            <li class="qc-step" data-qc-step="0">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Your question</p>
+              <p class="qc-question">Why is it hot in summer?</p>
+              <p class="qc-answer" data-qc-wrong><span class="qc-who">You</span><span class="home-sr-only" data-qc-revised hidden>Later revised:</span><span class="qc-answer-text">Because Earth is closer to the Sun.</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="1">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates asks</p>
+              <p class="qc-question">If that were true, what season would Australia have in July?</p>
+              <p class="qc-answer"><span class="qc-who">You</span><span class="qc-answer-text">Summer too… but it’s winter there. So distance can’t be it.</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="2">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates asks</p>
+              <p class="qc-question">Then what is different between the two halves of Earth in July?</p>
+              <p class="qc-answer"><span class="qc-who">You</span><span class="qc-answer-text">The tilt. The north leans toward the Sun, so its light arrives more directly.</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="3">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates asks</p>
+              <p class="qc-question">Can you say it to a friend in one sentence?</p>
+              <p class="qc-answer"><span class="qc-who">You</span><span class="qc-answer-text">Seasons come from Earth’s tilt: it changes how directly, and how long, sunlight reaches each half.</span></p>
+            </li>
+          </ol>
+          <div class="qc-map" data-qc-map>
+            <p class="qc-label">What you keep</p>
+            <svg class="qc-map-svg" viewBox="44 10 466 112" role="img" aria-labelledby="qc-map-title">
+              <title id="qc-map-title">The connections kept from this session: seasons link to axial tilt, which links to sun angle and day length. Distance is crossed out.</title>
+              <g class="qc-edges" fill="none">
+                <path class="qc-edge" pathLength="1" d="M80 60H220"/>
+                <path class="qc-edge" pathLength="1" d="M220 60L360 28"/>
+                <path class="qc-edge" pathLength="1" d="M220 60L360 92"/>
+                <path class="qc-edge qc-edge-cut" pathLength="1" d="M80 60L80 104"/>
+              </g>
+              <g class="qc-node qc-node-root"><circle cx="80" cy="60" r="6"/><text x="80" y="40" text-anchor="middle">Seasons</text></g>
+              <g class="qc-node"><circle cx="220" cy="60" r="5"/><text x="220" y="40" text-anchor="middle">Axial tilt</text></g>
+              <g class="qc-node"><circle cx="360" cy="28" r="5"/><text x="374" y="32">Sun angle</text></g>
+              <g class="qc-node"><circle cx="360" cy="92" r="5"/><text x="374" y="96">Day length</text></g>
+              <g class="qc-node qc-node-cut"><circle cx="80" cy="108" r="4"/><text x="94" y="112">Distance</text></g>
+            </svg>
+          </div>
+          <figcaption class="home-sr-only">An illustrative session, not a real learner’s transcript.</figcaption>
+        </figure>
       </div>
     </section>
 
@@ -283,12 +345,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="home-tagline" aria-label="Our approach">
-      <div class="home-shell">
-        <p class="home-tagline-text">Start with what you think.<br> Follow the question a little further.<br> Keep the connection that makes it click.</p>
       </div>
     </section>
 
@@ -818,9 +874,9 @@
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261101m1"></script>
-  <script src="/modules.js?cb=20261101m1"></script>
-  <script src="/chrome.js?cb=20261101m1"></script>
-  <script src="/motion.js?cb=20261101m1"></script>
+  <script src="/home-question.js?cb=20261101a1"></script>
+  <script src="/modules.js?cb=20261101a1"></script>
+  <script src="/chrome.js?cb=20261101a1"></script>
+  <script src="/motion.js?cb=20261101a1"></script>
 </body>
 </html>

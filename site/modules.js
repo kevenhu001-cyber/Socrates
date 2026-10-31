@@ -306,4 +306,79 @@
     }, { rootMargin: window.matchMedia('(max-width: 760px)').matches ? '-60% 0px -32% 0px' : '-45% 0px -45% 0px', threshold: 0 });
     steps.forEach(function (step) { observer.observe(step); });
   });
+
+  /* Question chain: one question at a time, each leading to the next. Every
+     step is already in the page; this only reveals them in order, strikes
+     the first answer once a question has shown it wrong, and lights the map
+     at the end. A single unprompted step plays the first time the section
+     is well in view, then the learner drives. */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-qc]'), function (root) {
+    var steps = Array.prototype.slice.call(root.querySelectorAll('[data-qc-step]'));
+    var lines = Array.prototype.slice.call(root.querySelectorAll('[data-qc-line]'));
+    var wrongs = Array.prototype.slice.call(root.querySelectorAll('[data-qc-wrong]'));
+    var list = root.querySelector('.qc-list');
+    var map = root.querySelector('[data-qc-map]');
+    var button = root.querySelector('[data-qc-next]');
+    var label = root.querySelector('[data-qc-next-label]');
+    var count = root.querySelector('[data-qc-count]');
+    var live = root.querySelector('[data-qc-live]');
+    if (!steps.length || !button || !label) return;
+    var last = steps.length - 1;
+    var nextText = label.textContent;
+    var againText = button.getAttribute('data-qc-again') || nextText;
+    var current = 0;
+    var touched = false;
+    function lineFor(index) { return index === 0 ? 0 : (index === last ? lines.length - 1 : Math.min(1, lines.length - 1)); }
+    function text(node, selector) { var el = node.querySelector(selector); return el ? el.textContent : ''; }
+    function render(index, announce) {
+      current = index;
+      steps.forEach(function (step, i) {
+        step.classList.toggle('is-future', i > index);
+        step.classList.toggle('is-current', i === index);
+        step.classList.toggle('is-past', i < index);
+      });
+      wrongs.forEach(function (answer) {
+        var at = Number(answer.closest('[data-qc-step]').getAttribute('data-qc-step'));
+        var struck = index > at;
+        answer.classList.toggle('is-struck', struck);
+        var note = answer.querySelector('[data-qc-revised]');
+        if (note) note.hidden = !struck;
+      });
+      var on = lineFor(index);
+      lines.forEach(function (line, i) {
+        line.classList.toggle('is-on', i === on);
+        line.classList.toggle('is-past', i < on);
+      });
+      if (list) list.style.setProperty('--qc-progress', String(last ? index / last : 1));
+      if (map) map.classList.toggle('is-on', index === last);
+      if (count) count.textContent = (index + 1) + ' / ' + steps.length;
+      label.textContent = index === last ? againText : nextText;
+      button.classList.toggle('is-again', index === last);
+      if (announce && live) {
+        var step = steps[index];
+        live.textContent = text(step, '.qc-label') + ': ' + text(step, '.qc-question') + ' ' + text(step, '.qc-who') + ': ' + text(step, '.qc-answer-text');
+      }
+    }
+    root.setAttribute('data-qc-ready', '');
+    // Reduced motion starts on the finished chain: every step, the struck
+    // first answer and the map, with the button offering to step through.
+    render(reduced.matches ? last : 0, false);
+    button.addEventListener('click', function () {
+      touched = true;
+      render(current === last ? 0 : current + 1, true);
+    });
+    if (reduced.matches || !('IntersectionObserver' in window)) return;
+    var timer = null;
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        window.clearTimeout(timer);
+        if (!entry.isIntersecting) return;
+        timer = window.setTimeout(function () {
+          observer.disconnect();
+          if (!touched && current === 0 && !document.hidden) render(1, false);
+        }, 1400);
+      });
+    }, { threshold: 0.55 });
+    observer.observe(list || root);
+  });
 })();

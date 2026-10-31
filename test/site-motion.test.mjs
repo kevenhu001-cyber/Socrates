@@ -81,3 +81,37 @@ test('article reading progress follows scrolling and public content survives mis
   assert.equal(await page.locator('[data-ask-form]').count(), 1);
   assert.equal(await page.locator('.site-footer-grid a').count(), 36);
 });
+
+test('the question chain advances one question at a time without moving the page', async (t) => {
+  const page = await animatedPage(t);
+  const chain = page.locator('#question-chain');
+  const before = await page.locator('.home-feature').evaluate((node) => node.getBoundingClientRect().top + scrollY);
+  await page.locator('.qc-list').scrollIntoViewIfNeeded();
+  // One unprompted step plays once the chain is well in view.
+  await page.waitForFunction(() => document.querySelector('[data-qc-count]').textContent.trim() === '2 / 4');
+  assert.ok(await chain.locator('[data-qc-wrong]').evaluate((node) => node.classList.contains('is-struck')), 'the first answer is struck once a question shows it wrong');
+  assert.ok(await chain.locator('[data-qc-revised]').evaluate((node) => !node.hidden));
+  assert.ok(!(await chain.locator('[data-qc-step="2"] .qc-question').isVisible()), 'later questions wait');
+  const next = chain.locator('[data-qc-next]');
+  await next.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Space');
+  assert.equal((await chain.locator('[data-qc-count]').innerText()).trim(), '4 / 4');
+  assert.match(await chain.locator('[data-qc-live]').innerText(), /one sentence/);
+  assert.ok(await chain.locator('[data-qc-map]').evaluate((node) => node.classList.contains('is-on')));
+  assert.equal((await next.innerText()).trim(), 'Start over');
+  const after = await page.locator('.home-feature').evaluate((node) => node.getBoundingClientRect().top + scrollY);
+  assert.equal(after, before, 'every step is laid out from the start');
+  await next.click();
+  assert.equal((await chain.locator('[data-qc-count]').innerText()).trim(), '1 / 4');
+  assert.ok(!(await chain.locator('[data-qc-wrong]').evaluate((node) => node.classList.contains('is-struck'))));
+});
+
+test('reduced motion opens the question chain on its finished state', async (t) => {
+  const page = await sitePage(site, t, '/zh/', 390);
+  const chain = page.locator('#question-chain');
+  assert.equal((await chain.locator('[data-qc-count]').innerText()).trim(), '4 / 4');
+  assert.ok(await chain.locator('[data-qc-step="3"] .qc-question').isVisible());
+  assert.ok(await chain.locator('[data-qc-map]').isVisible());
+  assert.equal((await chain.locator('[data-qc-next]').innerText()).trim(), '重新开始');
+});

@@ -93,7 +93,10 @@ body.home-refresh {
 .home-refresh .ask-chip { display: inline-flex; height: 40px; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: var(--radius-full); padding-inline: 14px; background: var(--raised); color: var(--muted); font: var(--type-button-sm); text-align: center; transition: background-color var(--site-motion-color), color var(--site-motion-color), border-color var(--site-motion-color), transform var(--site-motion-move); }
 .home-refresh .ask-chip:hover { background: var(--fill); color: var(--ink); }
 .home-refresh .ask-chip:active { transform: scale(.98); }
-:root:not(.js) [data-ask-chip] { display: none; }
+/* Starters need the script. locale.js marks the root in <head>, so they are
+   there from the first paint instead of appearing when site.js runs at the
+   end of the body and pushing the page down. */
+:root:not([data-site-js]) [data-ask-chip] { display: none; }
 
 /* Featured cards: a wide product preview and a square plate, each a soft
    gray card with its caption set underneath. */
@@ -145,9 +148,6 @@ body.home-refresh {
 .hero-actions { margin-top: var(--space-300); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-75); }
 
 /* A short statement between sections: plain medium text, no ornament. */
-.home-tagline { margin-top: var(--section-gap); }
-.home-tagline-text { max-width: 760px; margin-inline: auto; color: var(--ink); font: var(--type-heading-3); letter-spacing: -.015em; text-align: center; text-wrap: balance; }
-:lang(zh) .home-tagline-text { letter-spacing: 0; line-height: 1.5; }
 
 /* Section rhythm: a small heading with a pill link beside it, no rules. */
 .home-stories, .home-research, .home-teams, .home-news, .home-faq { margin-top: var(--section-gap); }
@@ -273,8 +273,6 @@ body.home-refresh {
   .plate-caption { padding: 0; font: var(--type-heading-6); }
   .feature-intro { display: block; margin-top: var(--space-500); }
   .feature-intro-copy { margin-top: var(--space-200); padding-top: 0; }
-  .home-tagline-text { font: var(--type-heading-4); }
-  .home-tagline-text br { display: none; }
   .section-head { gap: var(--space-200); margin-bottom: var(--space-200); }
   .section-head h2 { flex: 1; min-width: 0; font: var(--type-heading-5); }
   .section-head .section-link { height: 32px; padding-inline: 12px 10px; font: var(--type-button-xsm); }
@@ -343,3 +341,106 @@ body.home-refresh {
   .news-item, .news-item::after, .ask-box { transition: none; }
   .news-item:hover { transform: none; }
 }
+
+/* The question chain: the page's one idea made operable. A learner's first
+   answer, then one question at a time, each leading to the next; the wrong
+   first answer is struck through in place and what stays is a small map.
+   Every step is laid out from the start (future steps are only hidden), so
+   advancing never moves the page. Without the script all steps and the map
+   show, and the controls stay hidden. */
+.home-chain { margin-top: var(--section-gap); }
+.qc-layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-700); align-items: start; }
+.qc-intro { position: sticky; top: calc(var(--site-header-height) + var(--space-600)); padding-top: var(--space-300); }
+.qc-intro h2 { font: var(--type-heading-2); letter-spacing: -.02em; }
+:lang(zh) .qc-intro h2 { letter-spacing: 0; }
+.qc-lede { max-width: 440px; margin-top: var(--space-200); color: var(--muted); font: var(--type-body-3); }
+.qc-lines { display: grid; gap: var(--space-50); margin-top: var(--space-600); font: var(--type-heading-4); letter-spacing: -.01em; }
+:lang(zh) .qc-lines { letter-spacing: 0; line-height: 1.5; }
+.qc-line { color: var(--ink); text-wrap: balance; transition: color 300ms cubic-bezier(.22,1,.36,1); }
+[data-qc-ready] .qc-line { color: var(--line-strong); }
+[data-qc-ready] .qc-line.is-past { color: var(--quiet); }
+[data-qc-ready] .qc-line.is-on { color: var(--ink); }
+.qc-controls { display: none; align-items: center; gap: var(--space-200); margin-top: var(--space-500); }
+[data-qc-ready] .qc-controls { display: flex; }
+.qc-next .home-icon { transition: transform 300ms cubic-bezier(.22,1,.36,1); }
+.qc-next:hover .home-icon { transform: translateX(2px); }
+.qc-next.is-again .home-icon { transform: rotate(180deg); }
+.qc-count { color: var(--quiet); font: 500 .8125rem/1 var(--site-font-mono); font-variant-numeric: tabular-nums; }
+
+.qc-stage { position: relative; margin: 0; padding: var(--space-400) var(--space-500) var(--space-400); border-radius: 28px; background: var(--subtle) var(--site-noise); box-shadow: inset 0 0 0 1px var(--site-hairline); }
+.qc-stage-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-200); color: var(--copy); font: 500 .8125rem/1.4 var(--site-font); }
+.qc-badge { padding: var(--space-50) var(--space-100); border-radius: var(--radius-full); background: var(--fill); color: var(--muted); font-weight: 400; }
+.qc-list { --qc-progress: 1; position: relative; margin: var(--space-500) 0 0; padding: 0 0 0 var(--space-500); list-style: none; }
+.qc-list::before, .qc-list::after { content: ''; position: absolute; left: 7px; top: 10px; bottom: 34px; width: 1px; background: var(--line-strong); }
+.qc-list::after { background: var(--ink); transform: scaleY(var(--qc-progress)); transform-origin: top; transition: transform 700ms cubic-bezier(.22,1,.36,1); }
+.qc-step { position: relative; padding-bottom: var(--space-400); }
+.qc-dot { position: absolute; left: calc(-1 * var(--space-500) + 3px); top: 5px; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 4px var(--subtle); transition: transform 400ms cubic-bezier(.22,1,.36,1), box-shadow 400ms cubic-bezier(.22,1,.36,1); z-index: 1; }
+.qc-step.is-current .qc-dot { transform: scale(1.25); box-shadow: 0 0 0 4px var(--subtle), 0 0 0 7px var(--line-strong); }
+.qc-label { color: var(--quiet); font: 500 .8125rem/1.4 var(--site-font); }
+.qc-question { margin-top: var(--space-50); color: var(--ink); font: var(--type-heading-5); letter-spacing: -.01em; text-wrap: pretty; transition: color 300ms cubic-bezier(.22,1,.36,1); }
+:lang(zh) .qc-question { letter-spacing: 0; }
+.qc-step.is-past .qc-question { color: var(--muted); }
+.qc-answer { display: inline-block; max-width: 100%; margin-top: var(--space-100); padding: 10px var(--space-200); border-radius: 18px; background: var(--raised); box-shadow: var(--site-shadow-1); color: var(--copy); font: 400 .9375rem/1.5 var(--site-font); }
+.qc-who { margin-right: var(--space-75); color: var(--quiet); font-weight: 500; }
+.qc-answer-text { background: linear-gradient(currentColor, currentColor) 0 58% / 0 1.5px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-size 600ms cubic-bezier(.22,1,.36,1), color 300ms cubic-bezier(.22,1,.36,1); }
+.qc-answer.is-struck .qc-answer-text { background-size: 100% 1.5px; color: var(--quiet); }
+.qc-step :is(.qc-label, .qc-question, .qc-answer, .qc-dot) { transition-property: opacity, transform, color, box-shadow; transition-duration: 500ms; transition-timing-function: cubic-bezier(.22,1,.36,1); }
+.qc-step.is-current .qc-label, .qc-step.is-current .qc-question { transition-delay: 220ms; }
+.qc-step.is-current .qc-answer { transition-delay: 620ms; }
+.qc-step.is-current .qc-dot { transition-delay: 120ms; }
+.qc-step.is-future { visibility: hidden; transition: visibility 0s 500ms; }
+.qc-step.is-future :is(.qc-label, .qc-question, .qc-answer) { opacity: 0; transform: translateY(8px); transition-delay: 0s; }
+.qc-step.is-future .qc-dot { opacity: 0; transform: scale(.4); transition-delay: 0s; }
+
+.qc-map { padding-top: var(--space-200); border-top: 1px solid var(--site-hairline); transition: opacity 500ms cubic-bezier(.22,1,.36,1) 300ms; }
+.qc-map-svg { width: 100%; max-width: 560px; height: auto; margin-top: var(--space-100); overflow: visible; }
+.qc-edge { stroke: var(--line-strong); stroke-width: 1.25; stroke-dasharray: 1; stroke-dashoffset: 0; transition: stroke-dashoffset 800ms cubic-bezier(.22,1,.36,1); }
+.qc-edge-cut { stroke: var(--line-strong); }
+.qc-node { transition: opacity 400ms cubic-bezier(.22,1,.36,1); }
+.qc-node circle { fill: var(--raised); stroke: var(--ink); stroke-width: 1.5; }
+.qc-node-root circle { fill: var(--ink); }
+.qc-node-cut circle { stroke: var(--quiet); stroke-width: 1; }
+.qc-node text { fill: var(--copy); font: 500 13px var(--site-font); }
+.qc-node-cut text { fill: var(--quiet); text-decoration: line-through; }
+[data-qc-ready] .qc-map:not(.is-on) { opacity: 0; visibility: hidden; transition: opacity 300ms cubic-bezier(.22,1,.36,1), visibility 0s 300ms; }
+[data-qc-ready] .qc-map:not(.is-on) .qc-edge { stroke-dashoffset: 1; transition: none; }
+[data-qc-ready] .qc-map:not(.is-on) .qc-node { opacity: 0; transition: none; }
+.qc-map.is-on .qc-edge:nth-child(1) { transition-delay: 500ms; }
+.qc-map.is-on .qc-edge:nth-child(2) { transition-delay: 700ms; }
+.qc-map.is-on .qc-edge:nth-child(3) { transition-delay: 800ms; }
+.qc-map.is-on .qc-edge:nth-child(4) { transition-delay: 900ms; }
+.qc-map.is-on .qc-node:nth-of-type(1) { transition-delay: 400ms; }
+.qc-map.is-on .qc-node:nth-of-type(2) { transition-delay: 800ms; }
+.qc-map.is-on .qc-node:nth-of-type(3), .qc-map.is-on .qc-node:nth-of-type(4) { transition-delay: 1100ms; }
+.qc-map.is-on .qc-node:nth-of-type(5) { transition-delay: 1200ms; }
+
+@media (max-width: 1080px) {
+  /* One column: the controls follow the stage, so each new step appears
+     just above the button that asked for it. */
+  .qc-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .qc-intro { display: contents; }
+  .qc-lines { margin-top: var(--space-400); }
+  .qc-stage { order: 1; margin-top: var(--space-500); }
+  .qc-controls { order: 2; margin-top: var(--space-300); }
+}
+@media (max-width: 760px) {
+  .qc-intro h2 { font: var(--type-heading-3); }
+  .qc-lines { font: var(--type-heading-5); }
+  .qc-stage { padding: var(--space-300) var(--space-200); border-radius: var(--radius-3xl); }
+  .qc-list { margin-top: var(--space-300); padding-left: var(--space-400); }
+  .qc-dot { left: calc(-1 * var(--space-400) + 3px); }
+  .qc-question { font-size: 1.0625rem; }
+  .qc-node text { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qc-line, .qc-list::after, .qc-step, .qc-step *, .qc-answer-text, .qc-map, .qc-edge, .qc-node, .qc-next .home-icon { transition: none !important; }
+}
+/* Steps still to come keep a hollow dot on the thread, so the reserved
+   space reads as questions waiting, not as an empty card. */
+.qc-step.is-future .qc-dot { opacity: 1; transform: scale(.78); background: var(--subtle); box-shadow: 0 0 0 4px var(--subtle), inset 0 0 0 1.5px var(--line-strong); }
+.qc-step.is-future { visibility: visible; }
+.qc-step.is-future :is(.qc-label, .qc-question, .qc-answer) { visibility: hidden; transition: opacity 300ms cubic-bezier(.22,1,.36,1), transform 300ms cubic-bezier(.22,1,.36,1), visibility 0s 300ms; }
+[data-qc-ready] .qc-line { color: rgb(0 0 0 / .2); }
+.qc-next.is-again { background: var(--fill); color: var(--ink); box-shadow: none; }
+.qc-next.is-again:hover { background: var(--fill-hover); }
+.home-chain + .home-feature { margin-top: var(--section-gap); }
