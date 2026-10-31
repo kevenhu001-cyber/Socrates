@@ -84,7 +84,8 @@ for (const path of ['/', '/zh/']) {
     assert.ok(geometry.previewRatio >= 2.3 && geometry.previewRatio <= 2.4 && geometry.previewWidth >= 650);
     assert.equal(geometry.groundColour, 'rgba(0, 0, 0, 0)', 'the feature section continues the white page');
     assert.ok(geometry.tutorSize >= 16);
-    assert.equal(await page.locator('canvas, [data-art], .feature-rail').count(), 0);
+    assert.equal(await page.locator('[data-art], .feature-rail').count(), 0);
+    assert.equal(await page.locator('canvas').count(), 1, 'only the decorative hero ink field draws on a canvas');
     assert.equal(await page.locator('.site-footer-grid').evaluate((grid) => getComputedStyle(grid).gridTemplateColumns.split(' ').length), 5);
     assert.equal(await page.locator('details.site-footer-col[open]').count(), 5);
     assert.ok(!(await page.locator('.site-footer-summary').first().isVisible()));

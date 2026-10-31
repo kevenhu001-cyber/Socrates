@@ -2,12 +2,14 @@
 title: Socrates — Understanding begins with a question.
 description: An AI tutor for people who want to understand — built around Socratic dialogue, durable recall, and a knowledge map.
 canonical: https://topodrive.top/
-last-updated: 2026-10-23
+last-updated: 2026-10-31
 ---
 
 # What can I help you understand?
 
 Socrates · An AI tutor
+
+An AI tutor that helps you think it through, one good question at a time.
 
 Stay with a difficult idea. A tutor that asks, listens, and helps you find your own way through.
 

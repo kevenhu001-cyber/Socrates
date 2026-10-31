@@ -53,6 +53,32 @@
     elements.forEach(function (element) { observer.observe(element); });
   }
 
+  // Scroll narrative: children of [data-sequence] arrive one after another
+  // (a conversation turn by turn, a map node by node, steps in order). The
+  // content is in the DOM and readable before, during and without this.
+  var sequences = Array.from(main.querySelectorAll('[data-sequence]'));
+  function play(container) {
+    var items = Array.from(container.children);
+    var step = container.matches('.demo-thread, .product-chat') ? 380 : 140;
+    var base = container.classList.contains('demo-map-canvas') ? 1400 : 200;
+    items.forEach(function (item, index) {
+      animate(item, [
+        { opacity: 0, transform: 'translateY(16px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], { duration: 700, delay: base + index * step, easing: ease, fill: 'backwards' });
+    });
+  }
+  if (sequences.length && 'IntersectionObserver' in window) {
+    var sequenceObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        play(entry.target);
+        sequenceObserver.unobserve(entry.target);
+      });
+    }, { threshold: .25 });
+    sequences.forEach(function (container) { sequenceObserver.observe(container); });
+  }
+
   var menu = header.querySelector('.site-mobile-menu');
   if (menu && 'MutationObserver' in window) {
     new MutationObserver(function () {

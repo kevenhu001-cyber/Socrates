@@ -50,7 +50,8 @@ for (const prefix of ['', '/zh']) {
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
       assert.ok(geometry.artTop >= geometry.featureTop, 'artwork belongs to the cards below the question');
       assert.ok(Math.abs(geometry.artRatio - 1) < .01, 'the diagram keeps its square composition');
-      assert.equal(geometry.background, 'rgb(255, 255, 255)');
+      // Ink-on-paper redesign: the page ground is the flat warm paper token.
+      assert.equal(geometry.background, 'rgb(248, 247, 243)');
       assert.ok(geometry.radius >= 18, 'the composer retains the rounded reference silhouette');
       assert.equal(await page.locator('[data-ask-form]').count(), 1, 'the homepage has one question entry at the top');
       assert.ok(geometry.tutorSize >= 16 && geometry.questionSize >= 15, 'preview copy uses actual reading sizes, not container-scaled pixels');
@@ -66,7 +67,16 @@ for (const prefix of ['', '/zh']) {
       assert.match(await page.locator('.feature-meta').innerText(), /not a live conversation|并非实时对话/);
       assert.equal(await page.locator('.feature-main').getAttribute('aria-labelledby'), 'feature-title');
       assert.equal(await page.locator('.demo-msg').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 4, 'phones keep the learner’s correction, not just an unanswered tutor question');
-      assert.equal(await page.locator('canvas, [data-art], .feature-rail').count(), 0, 'no particles, generated gradient fields or competing story rail');
+      assert.equal(await page.locator('[data-art], .feature-rail').count(), 0, 'no generated gradient fields or competing story rail');
+      // The one canvas is the hero's decorative ink field: hidden from assistive
+      // technology, never interactive, and painted under the question entry.
+      assert.equal(await page.locator('canvas').count(), 1);
+      assert.equal(await page.locator('.home-hero [data-hero-field][aria-hidden="true"] canvas').count(), 1);
+      assert.equal(await page.locator('.hero-field').evaluate((node) => getComputedStyle(node).pointerEvents), 'none');
+      assert.ok(await page.locator('.hero-ask .ask-box').evaluate((box) => {
+        const rect = box.getBoundingClientRect();
+        return box.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
+      }), 'the artwork never covers the question entry');
       assert.equal(await page.locator('.hero-plate img').getAttribute('loading'), null, 'the main artwork is not lazy-loaded');
       assert.equal(await page.locator('.hero-plate img').getAttribute('fetchpriority'), 'high');
       assert.match(await page.locator('#askInputHero').getAttribute('aria-describedby'), /ask-handoff/);

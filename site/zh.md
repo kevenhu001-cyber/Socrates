@@ -2,12 +2,14 @@
 title: Socrates — 理解，始于一个问题。
 description: 为真正想理解的人打造的 AI 导师——以苏格拉底式对话、持久回忆与知识地图为核心。
 canonical: https://topodrive.top/zh/
-last-updated: 2026-10-23
+last-updated: 2026-10-31
 ---
 
 # 有什么可以帮忙的？
 
 Socrates · AI 导师
+
+一位 AI 导师，用一个个好问题，陪你把道理想透。
 
 和一个难题多待一会儿。让导师通过倾听与追问，陪你找到自己的理解方式。
 

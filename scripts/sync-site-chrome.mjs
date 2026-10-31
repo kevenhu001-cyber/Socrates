@@ -10,10 +10,11 @@ const root = fileURLToPath(new URL('../site/', import.meta.url));
 // locale.js change: the site serves them with `cache-control: immutable,
 // max-age=604800`, so a returning browser keeps the old bytes for a week
 // unless the query string changes.
-const version = '20261031d1';
+const version = '20261031e1';
 const appPages = new Set(['account', 'profile', 'api-keys', 'checkout']);
 const appURL = 'https://app.topodrive.top';
 const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const globe = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M3.2 10h13.6M10 3c2.2 2.3 3.2 4.6 3.2 7s-1 4.7-3.2 7c-2.2-2.3-3.2-4.6-3.2-7S7.8 5.3 10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
 const socialIcons = {
   x: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>',
   github: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>',
@@ -41,6 +42,7 @@ const copy = {
         ['Get started', [[appURL, 'Try Socrates'], [appURL, 'Log in'], ['/pricing', 'Plans']]]],
     ],
     social: 'Social links', legal: 'Built for people who want to understand.',
+    policies: 'Legal', policyLinks: [['/privacy', 'Privacy policy'], ['/terms', 'Terms of service']],
   },
   zh: {
     nav: ['产品', '研究', '原则', '学习', '开发者', '定价', '公司'],
@@ -61,6 +63,7 @@ const copy = {
         ['开始使用', [[appURL, '试用 Socrates'], [appURL, '登录'], ['/pricing', '套餐']]]],
     ],
     social: '社交链接', legal: '为真正想理解的人打造。',
+    policies: '法律信息', policyLinks: [['/privacy', '隐私政策'], ['/terms', '服务条款']],
   },
 };
 
@@ -104,16 +107,22 @@ ${groups.map(([title, links]) => `          <div class="site-footer-group">
 ${links.map(([href, label]) => `            <a href="${localHref(href, locale)}"${/\.(?:json|txt)$/.test(href) ? ' data-site-static' : ''}>${label}</a>`).join('\n')}
           </div>`).join('\n')}
         </details>`).join('\n        ');
+  const policies = text.policyLinks.map(([href, label]) => `<a href="${localHref(href, locale)}">${label}</a>`).join('');
+  const footerLanguage = `<a class="site-locale site-footer-locale" href="${otherPath}" data-locale-switcher hreflang="${text.languageTag}" lang="${text.languageTag}">${globe}<span class="locale-label">${text.language}</span></a>`;
   const footer = `<footer class="site-footer">
-    <div class="site-chrome-shell">
+    <div class="site-chrome-shell site-footer-inner">
+      <div class="site-footer-lead">
+        ${brand(locale)}
+        <p class="site-footer-tagline">${text.legal}</p>
+      </div>
       <div class="site-footer-grid">
         ${columns}
       </div>
       <div class="site-footer-bottom">
-        ${brand(locale)}
+        <p class="site-footer-legal">© 2026 Socrates</p>
+        <nav class="site-footer-policies" aria-label="${text.policies}">${policies}</nav>
         <nav class="site-footer-social" aria-label="${text.social}"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X">${socialIcons.x}</a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub">${socialIcons.github}</a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube">${socialIcons.youtube}</a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn">${socialIcons.linkedin}</a></nav>
-        <p class="site-footer-legal">© 2026 Socrates · ${text.legal}</p>
-        ${language}
+        ${footerLanguage}
       </div>
     </div>
   </footer>`;
