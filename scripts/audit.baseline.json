@@ -21,13 +21,6 @@
           "reason": "GHSA-mrhx-c7xc-m3w5 is inherited from Zod 3.25.76 in Expo CLI tooling; the CLI currently requires Zod ^3.25.76, so patched Zod >=4.6.6 is outside its supported range. This copy is build/developer tooling, not the shipped SPA; unblocks on an upstream Expo-compatible Zod update."
         },
         {
-          "name": "expo",
-          "severity": "high",
-          "direct": true,
-          "range": ">=52.0.0-canary-20240625-2333e70",
-          "reason": "The high finding is inherited from Zod 3.25.76 in Expo CLI tooling; Expo CLI currently requires Zod ^3.25.76, so patched Zod >=4.6.6 is outside its supported range. This path is developer/build tooling and is not shipped in the SPA; unblocks on an upstream Expo-compatible Zod update."
-        },
-        {
           "name": "zod",
           "severity": "high",
           "direct": false,

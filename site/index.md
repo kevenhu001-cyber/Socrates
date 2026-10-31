@@ -89,6 +89,21 @@ The accompanying independent study scene is an editorial illustration.
 
 [Find a way to begin](https://topodrive.top/guide)
 
+## Common questions
+
+The practical details.
+
+- **Is Socrates free?** Yes. The Free tier is permanently free, with no card and no trial clock. Paid tiers unlock more capacity and tools.
+- **Does Socrates train on my conversations?** No. We do not train on user conversations. Every session can be exported or deleted from the account page.
+- **Can I bring my own API key?** Yes. The Free tier and every paid tier support bringing your own key for any supported provider.
+- **Can I cancel any time?** Yes. Cancel any time from your account page. No retention calls.
+- **What if I change my mind?** Cancel within fourteen days of a first paid plan and write to us for a refund.
+- **Does Socrates support invoices and VAT?** Yes. Add billing details from the account page and EU customers are billed with VAT applied where required.
+
+## Start free. Add structure when you need it.
+
+The Free tier is permanently free. No card, no trial clock.
+
 [Try Socrates](https://app.topodrive.top) · [Product](https://topodrive.top/product) · [Pricing](https://topodrive.top/pricing) · [中文](https://topodrive.top/zh/)
 
 © 2026 Socrates · Built for people who want to understand.
