@@ -50,15 +50,17 @@ for (const prefix of ['', '/zh']) {
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
       assert.ok(geometry.artTop >= geometry.featureTop, 'artwork belongs to the cards below the question');
       assert.ok(Math.abs(geometry.artRatio - 1) < .01, 'the diagram keeps its square composition');
-      // Ink-on-paper redesign: the page ground is the flat warm paper token.
-      assert.equal(geometry.background, 'rgb(248, 247, 243)');
+      // OpenAI-style redesign: the page ground is pure white.
+      assert.equal(geometry.background, 'rgb(255, 255, 255)');
       assert.ok(geometry.radius >= 18, 'the composer retains the rounded reference silhouette');
       assert.equal(await page.locator('[data-ask-form]').count(), 1, 'the homepage has one question entry at the top');
       assert.ok(geometry.tutorSize >= 16 && geometry.questionSize >= 15, 'preview copy uses actual reading sizes, not container-scaled pixels');
       assert.deepEqual(geometry.clippedText, []);
       assert.equal(geometry.clippedNodes, false, 'both connected ideas fit in the preview');
       assert.equal(new Set(geometry.images).size, geometry.images.length, 'do not reuse a cover in multiple sections');
-      assert.equal(geometry.images.length, 6, 'one original diagram, two learning scenes and three source-backed research covers');
+      // The session story is now a drawn, scroll-driven product view, so one
+      // learning photograph remains beside the original diagram and covers.
+      assert.equal(geometry.images.length, 5, 'one original diagram, one learning scene and three source-backed research covers');
       assert.ok(geometry.editorialRatios.every((ratio) => ratio >= 1.3 && ratio <= 1.8), 'editorial images stay landscape, not an intrinsic 941px-tall poster');
       assert.equal(await page.locator('.home-hero .hero-art, .home-hero .hero-actions, .home-hero em').count(), 0, 'the first screen stays focused on the question');
       assert.equal(await page.locator('.hero-ask .ask-chip').count(), 5);
@@ -68,15 +70,12 @@ for (const prefix of ['', '/zh']) {
       assert.equal(await page.locator('.feature-main').getAttribute('aria-labelledby'), 'feature-title');
       assert.equal(await page.locator('.demo-msg').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 4, 'phones keep the learner’s correction, not just an unanswered tutor question');
       assert.equal(await page.locator('[data-art], .feature-rail').count(), 0, 'no generated gradient fields or competing story rail');
-      // The one canvas is the hero's decorative ink field: hidden from assistive
-      // technology, never interactive, and painted under the question entry.
-      assert.equal(await page.locator('canvas').count(), 1);
-      assert.equal(await page.locator('.home-hero [data-hero-field][aria-hidden="true"] canvas').count(), 1);
-      assert.equal(await page.locator('.hero-field').evaluate((node) => getComputedStyle(node).pointerEvents), 'none');
+      // The hero is plain: no decorative canvas or artwork behind the question.
+      assert.equal(await page.locator('canvas, [data-hero-field]').count(), 0);
       assert.ok(await page.locator('.hero-ask .ask-box').evaluate((box) => {
         const rect = box.getBoundingClientRect();
         return box.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
-      }), 'the artwork never covers the question entry');
+      }), 'nothing covers the question entry');
       assert.equal(await page.locator('.hero-plate img').getAttribute('loading'), null, 'the main artwork is not lazy-loaded');
       assert.equal(await page.locator('.hero-plate img').getAttribute('fetchpriority'), 'high');
       assert.match(await page.locator('#askInputHero').getAttribute('aria-describedby'), /ask-handoff/);
@@ -208,7 +207,7 @@ test('home translations share structure, useful deep links and published researc
     const twin = await readFile(new URL(`../site/${twinPath}`, import.meta.url), 'utf8');
     assert.ok(source.includes(`href="https://topodrive.top/${twinPath}"`), 'each locale advertises its actual Markdown twin');
     assert.match(twin, i === 0 ? /# What can I help you understand\?/ : /# 有什么可以帮忙的？/);
-    assert.ok(!source.includes('/home-aurora.js'), 'retired particle and gradient code is not loaded');
+    assert.ok(!source.includes('/home-aurora.js') && !source.includes('/home-field.js'), 'retired particle, gradient and canvas code is not loaded');
     assert.ok(!source.includes('href="/site.css'), 'homepage content has one canonical stylesheet');
     const index = await readFile(new URL(`../site/${prefix}research.html`, import.meta.url), 'utf8');
     const homeNotes = [...source.matchAll(/class="home-research-note" href="([^"]+)"[\s\S]*?<time datetime="([^"]+)"[\s\S]*?<h3>([^<]+)<\/h3>/g)];

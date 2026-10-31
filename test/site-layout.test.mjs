@@ -75,17 +75,17 @@ for (const path of ['/', '/zh/']) {
       };
     });
     assert.ok(geometry.centered);
-    assert.ok(geometry.composerWidth >= 880 && geometry.composerWidth <= 1056);
+    // OpenAI-style hero: a 768px composer under a medium 40px question.
+    assert.ok(geometry.composerWidth >= 720 && geometry.composerWidth <= 800);
     assert.ok(geometry.composerBottom < 600);
-    // landing-page-design B1/B5: the hero title is Heading 1 (text-6xl, 60px).
-    assert.ok(geometry.titleSize >= 56 && geometry.titleSize <= 64);
+    assert.ok(geometry.titleSize >= 36 && geometry.titleSize <= 44);
     assert.ok(geometry.artBelowQuestion && geometry.artBesidePreview);
     assert.ok(geometry.previewBeforeIntro, 'cards enter the page before the longer product copy');
     assert.ok(geometry.previewRatio >= 2.3 && geometry.previewRatio <= 2.4 && geometry.previewWidth >= 650);
     assert.equal(geometry.groundColour, 'rgba(0, 0, 0, 0)', 'the feature section continues the white page');
     assert.ok(geometry.tutorSize >= 16);
     assert.equal(await page.locator('[data-art], .feature-rail').count(), 0);
-    assert.equal(await page.locator('canvas').count(), 1, 'only the decorative hero ink field draws on a canvas');
+    assert.equal(await page.locator('canvas').count(), 0, 'no decorative canvas on the homepage');
     assert.equal(await page.locator('.site-footer-grid').evaluate((grid) => getComputedStyle(grid).gridTemplateColumns.split(' ').length), 5);
     assert.equal(await page.locator('details.site-footer-col[open]').count(), 5);
     assert.ok(!(await page.locator('.site-footer-summary').first().isVisible()));

@@ -21,9 +21,26 @@ Socrates · AI 导师
 
 为那些值得认真想一想的问题。
 
+## 顺着问题，往下想
+
+Socrates 不急着给你答案，而是问出下一个问题，直到你能用自己的话讲清楚。
+
+从你现在的想法开始，再沿着问题走远一点。把让你想通的那条连接，留在自己的理解里。
+
+### 示意会话：地球科学
+
+示意会话，并非真实学习者的记录。
+
+1. **你的问题：** 为什么夏天热？**你：** ~~因为夏天地球离太阳更近。~~（后来改正）
+2. **Socrates 问：** 如果是这样，七月的澳大利亚应该是什么季节？**你：** 也该是夏天……可那边是冬天。所以不是距离的原因。
+3. **Socrates 问：** 那么七月里，南北半球到底有什么不同？**你：** 地轴是倾斜的。北半球朝向太阳，阳光照得更直。
+4. **Socrates 问：** 能用一句话讲给朋友听吗？**你：** 季节来自地轴倾斜：它改变了阳光照到每个半球的角度和时长。
+
+留下的连接：季节 → 地轴倾斜 → 太阳高度角、白昼长短。“距离”被划掉。
+
 ## 换个角度
 
-[原创概率图版](https://topodrive.top/media/socrates-probability-plate.svg)：一张墨蓝色图版上排列着 100 个点，其中一个以橙色标出；前方纸片上写着一百分之一。
+[原创概率图版](https://topodrive.top/media/socrates-probability-grid-v1.svg)：浅灰色图版上排列着 100 个点，其中一个黑点被圈出，标注为 1 in 100。
 
 一百分之一。
 
@@ -55,17 +72,39 @@ Socrates · AI 导师
 - [从一个更好的问题开始](https://topodrive.top/zh/guide) — 指南 · 开始使用
 - [为什么我们要做 Socrates](https://topodrive.top/zh/about) — 公司 · 我们的工作方式
 
+## 一位导师，五种学习方式
+
+随着想法逐渐成形，在不同模式间切换：先聊透，再检验，然后连起来，过几天再回来。下方的产品界面均为示意。
+
+- **[对话](https://topodrive.top/zh/product#dialogue)：**把想法说出来，再往前多走一步。Socrates 会先问你已经知道什么，给出下一个问题，而不是直接端出全部答案。
+- **[回忆](https://topodrive.top/zh/product#recall)：**把对话里有价值的一刻变成卡片，几天后再用自己的话把它回忆出来。
+- **[知识地图](https://topodrive.top/zh/product#knowledge-map)：**你钻研过的概念会成为地图上的点，由把它们联系起来的问题连成线。
+- **[考试模式](https://topodrive.top/zh/product#exam)：**围绕任意主题生成一份练习考卷，自选难度和题目数量，然后提交批改。
+- **[错题本](https://topodrive.top/zh/product#mistake-book)：**测验和练习中答错的题会集中收在一处，随时重做，直到真正掌握。
+
+## 为真正的学习而做
+
+- **公式，就该像公式一样好读。**数学公式在对话中清晰渲染。
+- **选择你的模型。**从内置的 Beagle 模型开始，或为想做的思考挑选合适的模型。
+- **从一份文档开始。**把笔记或论文带进对话，而不是面对一张白纸。
+- **自带 API 密钥。**想自己管理模型访问时，可以使用服务商的 API 密钥。
+- **你的数据，始终属于你。**我们不使用你的对话训练模型。任何会话都可以在账户页导出或删除。
+
 ## 一次学习，怎样继续
 
 ### 让一个好问题，继续下去
 
 答案可以是起点。先弄清楚还解释不明白的那一处，再给自己一个值得回来的理由。
 
-1. [先用自己的话说一遍](https://topodrive.top/zh/product#dialogue)。
-2. [找到那条连接](https://topodrive.top/zh/product#knowledge-map)。
-3. [隔一段时间，再回来](https://topodrive.top/zh/product#recall)。
+1. [先用自己的话说一遍](https://topodrive.top/zh/product#dialogue)。Socrates 从你已有的理解出发，只问下一个问题，而不是直接给出全部答案。
+2. [找到那条连接](https://topodrive.top/zh/product#knowledge-map)。你想通的概念会成为知识地图上的点，由连接它们的问题串在一起。
+3. [隔一段时间，再回来](https://topodrive.top/zh/product#recall)。把一个好的瞬间变成回忆卡片，过几天再用自己的话回答一遍。
 
-配图是学习场景示意，并非真实客户案例。
+配图是界面示意，并非真实客户案例。
+
+## 每个问题，都会留下痕迹
+
+学习的过程中，Socrates 会保留你钻研过的想法，以及它们之间的联系。几周后再回来，线索依然在那里。[为什么地图要保留路径](https://topodrive.top/zh/research/maps-preserve-path/)
 
 ## 产品背后的研究
 
@@ -76,6 +115,15 @@ Socrates · AI 导师
 - [诚实停顿的价值](https://topodrive.top/zh/research/honest-pause/) — 练习 · 2026 年 7 月 11 日。把不确定说清楚，会怎样改变导师接下来能够提出的问题。
 
 [全部研究](https://topodrive.top/zh/research)
+
+## 继续阅读
+
+- [保留路径的地图](https://topodrive.top/zh/research/maps-preserve-path/)：知识地图 · 2026 年 6 月 24 日
+- [学习者在会话后留下什么](https://topodrive.top/zh/research/what-learners-keep/)：练习 · 2026 年 4 月 30 日
+- [导师何时应该说自己不确定](https://topodrive.top/zh/research/tutor-curiosity/)：辅导 · 2026 年 2 月 18 日
+- [学习资源与引导练习](https://topodrive.top/zh/learn)：学习
+- [指导 Socrates 的学习原则](https://topodrive.top/zh/principles)：原则
+- [为下一个问题准备的一座小图书馆](https://topodrive.top/zh/documents)：文档
 
 ## 把它带进你的学习
 

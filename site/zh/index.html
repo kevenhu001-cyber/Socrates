@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8f7f3">
+  <meta name="theme-color" content="#ffffff">
   <title>Socrates — 理解，始于一个问题。</title>
   <meta name="description" content="为真正想理解的人打造的 AI 导师——以苏格拉底式对话、持久回忆与知识地图为核心。">
   <link rel="icon" href="/favicon.png">
@@ -13,7 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261031e1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261101a1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101a1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — 理解，始于一个问题。">
@@ -26,10 +27,10 @@
   <meta name="twitter:title" content="Socrates — 理解，始于一个问题。">
   <meta name="twitter:description" content="为真正想理解的人打造的 AI 导师。">
   <meta name="twitter:image" content="https://topodrive.top/media/socrates-home-dialogue-photo-v1.webp">
-  <script src="/locale.js?cb=20261031e1"></script>
-  <link rel="stylesheet" href="/fonts.css?cb=20261031e1">
-  <link rel="stylesheet" href="/public.css?cb=20261031e1">
-  <link rel="stylesheet" href="/chrome.css?cb=20261031e1">
+  <script src="/locale.js?cb=20261101a1"></script>
+  <link rel="stylesheet" href="/fonts.css?cb=20261101a1">
+  <link rel="stylesheet" href="/public.css?cb=20261101a1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261101a1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -67,7 +68,6 @@
 
   <main id="main">
     <section class="home-hero home-shell" aria-labelledby="hero-title">
-      <div class="hero-field" data-hero-field aria-hidden="true"><canvas></canvas></div>
       <div class="home-hero-inner">
         <h1 id="hero-title">有什么可以帮忙的？</h1>
         <p class="home-hero-lede">一位 AI 导师，用一个个好问题，陪你把道理想透。</p>
@@ -76,7 +76,7 @@
             <div class="ask-box">
               <label class="home-sr-only" for="askInputHero">你想问 Socrates 的问题</label>
               <textarea class="ask-input" id="askInputHero" name="q" rows="2" placeholder=" " aria-describedby="ask-handoff-hero" autocomplete="off" spellcheck="false"></textarea>
-              <span class="ask-placeholder" data-ask-prompts="[&quot;帮我一步步理解贝叶斯定理……&quot;, &quot;把两个学过的概念联系起来……&quot;, &quot;考考我今天学到的知识……&quot;]" aria-hidden="true">帮我理解一个新概念……</span>
+              <span class="ask-placeholder" data-ask-prompts="[[&quot;为什么夏天热？&quot;, &quot;为什么七月的澳大利亚是冬天？&quot;], [&quot;导数到底在描述什么？&quot;, &quot;导数到底在描述什么样的变化？&quot;], [&quot;阳性结果为什么不一定可靠？&quot;, &quot;阳性结果为什么和患病率有关？&quot;]]" aria-hidden="true">帮我理解一个新概念……</span>
               <button class="ask-send" type="submit" aria-label="打开 Socrates 并开始对话"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg></button>
             </div>
             <p class="ask-handoff home-sr-only" id="ask-handoff-hero">带着这个问题，在 Socrates 应用中继续。</p>
@@ -89,6 +89,68 @@
             <a class="ask-chip ask-chip--link" href="/zh/product">更多</a>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="home-chain" id="question-chain" aria-labelledby="chain-title" data-qc>
+      <div class="home-shell qc-layout">
+        <div class="qc-intro">
+          <h2 id="chain-title">顺着问题，往下想。</h2>
+          <p class="qc-lede">Socrates 不急着给你答案，而是问出下一个问题，直到你能用自己的话讲清楚。</p>
+          <p class="qc-lines"><span class="qc-line" data-qc-line="0">从你现在的想法开始，</span><span class="qc-line" data-qc-line="1">再沿着问题走远一点。</span><span class="qc-line" data-qc-line="2">把让你想通的那条连接，留在自己的理解里。</span></p>
+          <div class="qc-controls">
+            <button class="home-button qc-next" type="button" data-qc-next data-qc-again="重新开始" aria-controls="qc-list"><span data-qc-next-label>问下一个问题</span> <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+            <span class="qc-count" data-qc-count aria-hidden="true">1 / 4</span>
+          </div>
+          <p class="home-sr-only" data-qc-live aria-live="polite"></p>
+        </div>
+        <figure class="qc-stage">
+          <div class="qc-stage-head"><span>学习 / 地球科学</span><span class="qc-badge">示意会话</span></div>
+          <ol class="qc-list" id="qc-list">
+            <li class="qc-step" data-qc-step="0">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">你的问题</p>
+              <p class="qc-question">为什么夏天热？</p>
+              <p class="qc-answer" data-qc-wrong><span class="qc-who">你</span><span class="home-sr-only" data-qc-revised hidden>后来改正：</span><span class="qc-answer-text">因为夏天地球离太阳更近。</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="1">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates 问</p>
+              <p class="qc-question">如果是这样，七月的澳大利亚应该是什么季节？</p>
+              <p class="qc-answer"><span class="qc-who">你</span><span class="qc-answer-text">也该是夏天……可那边是冬天。所以不是距离的原因。</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="2">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates 问</p>
+              <p class="qc-question">那么七月里，南北半球到底有什么不同？</p>
+              <p class="qc-answer"><span class="qc-who">你</span><span class="qc-answer-text">地轴是倾斜的。北半球朝向太阳，阳光照得更直。</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="3">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates 问</p>
+              <p class="qc-question">能用一句话讲给朋友听吗？</p>
+              <p class="qc-answer"><span class="qc-who">你</span><span class="qc-answer-text">季节来自地轴倾斜：它改变了阳光照到每个半球的角度和时长。</span></p>
+            </li>
+          </ol>
+          <div class="qc-map" data-qc-map>
+            <p class="qc-label">留下的连接</p>
+            <svg class="qc-map-svg" viewBox="44 10 466 112" role="img" aria-labelledby="qc-map-title">
+              <title id="qc-map-title">这次会话留下的连接：季节连到地轴倾斜，地轴倾斜连到太阳高度角和白昼长短。“距离”被划掉。</title>
+              <g class="qc-edges" fill="none">
+                <path class="qc-edge" pathLength="1" d="M80 60H220"/>
+                <path class="qc-edge" pathLength="1" d="M220 60L360 28"/>
+                <path class="qc-edge" pathLength="1" d="M220 60L360 92"/>
+                <path class="qc-edge qc-edge-cut" pathLength="1" d="M80 60L80 104"/>
+              </g>
+              <g class="qc-node qc-node-root"><circle cx="80" cy="60" r="6"/><text x="80" y="40" text-anchor="middle">季节</text></g>
+              <g class="qc-node"><circle cx="220" cy="60" r="5"/><text x="220" y="40" text-anchor="middle">地轴倾斜</text></g>
+              <g class="qc-node"><circle cx="360" cy="28" r="5"/><text x="374" y="32">太阳高度角</text></g>
+              <g class="qc-node"><circle cx="360" cy="92" r="5"/><text x="374" y="96">白昼长短</text></g>
+              <g class="qc-node qc-node-cut"><circle cx="80" cy="108" r="4"/><text x="94" y="112">距离</text></g>
+            </svg>
+          </div>
+          <figcaption class="home-sr-only">示意会话，并非真实学习者的记录。</figcaption>
+        </figure>
       </div>
     </section>
 
@@ -140,7 +202,7 @@
         </a>
 
         <a class="hero-plate" href="/zh/product#knowledge-map">
-          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-plate.svg" width="760" height="760" fetchpriority="high" alt="一张墨蓝色图版上排列着 100 个点，其中一个以橙色标出；前方纸片上写着一百分之一。"></span>
+          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-grid-v1.svg" width="760" height="760" fetchpriority="high" alt="浅灰色图版上排列着 100 个点，其中一个黑点被圈出，标注为 1 in 100。"></span>
           <div class="plate-caption"><span class="plate-index">换个角度</span><span>一百分之一。</span></div>
         </a>
         <div class="feature-intro">
@@ -156,9 +218,179 @@
       </div>
     </section>
 
-    <section class="home-tagline" aria-label="我们的方法">
+    <section class="home-modes m-section" id="modes" aria-labelledby="modes-title">
       <div class="home-shell">
-        <p class="home-tagline-text" data-word-reveal>从你现在的想法开始，<br>再沿着问题走远一点。<br>把让你想通的那条连接，<br>留在自己的理解里。</p>
+        <div class="m-intro">
+          <h2 id="modes-title">一位导师，五种学习方式。</h2>
+          <p>随着想法逐渐成形，在不同模式间切换：先聊透，再检验，然后连起来，过几天再回来。</p>
+        </div>
+        <div class="m-tabs" data-tabs>
+          <div class="m-tablist" role="tablist" aria-label="学习模式">
+            <button class="m-tab" type="button" role="tab" id="mode-tab-dialogue" aria-controls="mode-dialogue" aria-selected="true">对话</button>
+            <button class="m-tab" type="button" role="tab" id="mode-tab-recall" aria-controls="mode-recall" aria-selected="false" tabindex="-1">回忆</button>
+            <button class="m-tab" type="button" role="tab" id="mode-tab-map" aria-controls="mode-map" aria-selected="false" tabindex="-1">知识地图</button>
+            <button class="m-tab" type="button" role="tab" id="mode-tab-exam" aria-controls="mode-exam" aria-selected="false" tabindex="-1">考试模式</button>
+            <button class="m-tab" type="button" role="tab" id="mode-tab-mistakes" aria-controls="mode-mistakes" aria-selected="false" tabindex="-1">错题本</button>
+          </div>
+
+          <div class="m-panel is-active" role="tabpanel" id="mode-dialogue" aria-labelledby="mode-tab-dialogue" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>把想法说出来，再往前多走一步。</h3>
+              <p>Socrates 会先问你已经知道什么，顺着你的思路，给出下一个问题，而不是直接端出全部答案。</p>
+              <ul class="m-points"><li>从你自己的话开始</li><li>公式在对话里直接渲染</li><li>一步一步跟上你的思路</li></ul>
+              <a class="m-link" href="/zh/product#dialogue">了解对话模式</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">物理 · 熵</span><span class="ui-tag">示意</span></div>
+                <div class="ui-body">
+                  <span class="ui-bubble">能直接告诉我熵是什么吗？</span>
+                  <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">我们先从你知道的说起。一个整洁的房间放着不管，它更可能一直整洁，还是慢慢变乱？</span></span></span>
+                  <span class="ui-bubble">变乱。乱的方式比整齐的多。</span>
+                  <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">这正是关键。你会怎样去数这些“方式”？</span></span></span>
+                  <span class="ui-composer"><span>用你自己的话回答…</span><span class="ui-send"></span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-panel" role="tabpanel" id="mode-recall" aria-labelledby="mode-tab-recall" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>在遗忘之前，把想法找回来。</h3>
+              <p>把对话里有价值的一刻变成卡片，几天后再用自己的话把它回忆出来。</p>
+              <ul class="m-points"><li>卡片来自你自己的会话</li><li>先作答，再对照</li><li>一键回到原来的对话</li></ul>
+              <a class="m-link" href="/zh/product#recall">了解回忆练习</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">回忆 · 概率</span><span class="ui-tag">示意</span></div>
+                <div class="ui-body">
+                  <span class="ui-row"><span class="ui-small ui-muted ui-grow">第 3 张，共 8 张</span><span class="ui-meter ui-grow"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span></span>
+                  <span class="ui-stack"><span class="ui-flash"><span class="ui-small ui-muted">用你自己的话</span><span class="ui-q">为什么一个可靠的检测，仍可能带来很多误报？</span><span class="ui-small ui-muted">先回答，再翻看。</span></span></span>
+                  <span class="ui-row"><span class="ui-btn">显示答案</span><span class="ui-btn ui-btn--soft">打开对话</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-panel" role="tabpanel" id="mode-map" aria-labelledby="mode-tab-map" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>看见一个想法如何通向下一个。</h3>
+              <p>你钻研过的概念会成为地图上的点，由把它们联系起来的问题连成线。</p>
+              <ul class="m-points"><li>连接跨会话保留</li><li>从任意一点接着往下学</li><li>发现知识之间的空白</li></ul>
+              <a class="m-link" href="/zh/product#knowledge-map">了解知识地图</a>
+            </div>
+            <div class="ui ui-map" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">知识地图</span><span class="ui-tag">示意</span></div>
+                <svg viewBox="0 0 560 320" fill="none">
+                  <g stroke="#cdcdcd"><path d="M280 160 150 92M280 160l146-64M280 160l-118 92M280 160l132 88M150 92 64 168M426 96l70 82M412 248l84-70"/></g>
+                  <circle cx="280" cy="160" r="36" stroke="rgb(0 0 0 / .06)"/>
+                  <circle cx="280" cy="160" r="8" fill="#0d0d0d"/>
+                  <g fill="#fff" stroke="#8f8f8f" stroke-width="1.25"><circle cx="150" cy="92" r="5"/><circle cx="426" cy="96" r="5"/><circle cx="162" cy="252" r="5"/><circle cx="412" cy="248" r="5"/><circle cx="64" cy="168" r="4"/><circle cx="496" cy="178" r="4"/></g>
+                  <g font-size="13" font-weight="500" fill="#5d5d5d"><text x="280" y="212" text-anchor="middle" fill="#0d0d0d" font-size="14">贝叶斯定理</text><text x="150" y="74" text-anchor="middle">先验</text><text x="426" y="78" text-anchor="middle">似然</text><text x="162" y="280" text-anchor="middle">基础比率</text><text x="412" y="276" text-anchor="middle">证据</text></g>
+                  <g font-size="12" fill="#8f8f8f"><text x="64" y="194" text-anchor="middle">分数</text><text x="496" y="204" text-anchor="middle">灵敏度</text></g>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-panel" role="tabpanel" id="mode-exam" aria-labelledby="mode-tab-exam" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>在考试之前，先找到漏洞。</h3>
+              <p>围绕任意主题生成一份练习考卷，自选难度和题目数量，然后提交批改。</p>
+              <ul class="m-points"><li>主题、难度、题量由你决定</li><li>每道题都有反馈</li><li>答错的题自动进入错题本</li></ul>
+              <a class="m-link" href="/zh/product#exam">了解考试模式</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">考试 · 线性代数</span><span class="ui-tag">示意</span></div>
+                <div class="ui-body">
+                  <span class="ui-row"><span class="ui-tag ui-tag--line">8 题</span><span class="ui-tag ui-tag--line">中级</span><span class="ui-grow"></span><span class="ui-small ui-muted">已答 3 题</span></span>
+                  <span class="ui-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span>
+                  <span class="ui-strong">4. 哪一组向量可以张成整个平面？</span>
+                  <span class="ui-options"><span class="ui-option">(1, 2) 和 (2, 4)</span><span class="ui-option on">(1, 0) 和 (1, 1)</span><span class="ui-option">(0, 0) 和 (0, 3)</span></span>
+                  <span class="ui-row"><span class="ui-grow"></span><span class="ui-btn">提交批改</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-panel" role="tabpanel" id="mode-mistakes" aria-labelledby="mode-tab-mistakes" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>把一次答错，变成下一个问题。</h3>
+              <p>测验和练习中答错的题会集中收在一处，随时重做，直到真正掌握。</p>
+              <ul class="m-points"><li>自动收集</li><li>重做时导师就在身边</li><li>答对后标记为已攻克</li></ul>
+              <a class="m-link" href="/zh/product#mistake-book">了解错题本</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">错题本</span><span class="ui-tag">示意</span></div>
+                <div class="ui-body">
+                  <span class="ui-seg"><span class="on">全部</span><span>测验</span><span>练习</span><span>已攻克</span></span>
+                  <span class="ui-list">
+                    <span><span class="ui-ring"></span><span class="ui-grow">sin(x) · cos(x) 的导数</span><span class="ui-tag">测验</span><span class="ui-btn ui-btn--soft">重做</span></span>
+                    <span><span class="ui-ring"></span><span class="ui-grow">筛查检测中的基础比率</span><span class="ui-tag">练习</span><span class="ui-btn ui-btn--soft">重做</span></span>
+                    <span><span class="ui-check"></span><span class="ui-grow ui-muted">2×2 矩阵的特征值</span><span class="ui-tag">已重做 2 次</span></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-bento m-section" aria-labelledby="bento-title">
+      <div class="home-shell">
+        <div class="m-intro">
+          <h2 id="bento-title">为真正的学习而做。</h2>
+          <p>那些让一次艰难学习得以继续下去的小细节。</p>
+        </div>
+        <div class="m-cards">
+          <a class="m-card m-card--wide" href="/zh/product#dialogue">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">把基础比率放进分母里写一遍：</span></span></span>
+              <span class="ui-row ui-row--center"><span class="ui-math"><i>P</i>(<i>A</i> | <i>B</i>) = <span class="ui-frac"><span><i>P</i>(<i>B</i> | <i>A</i>) <i>P</i>(<i>A</i>)</span><span><i>P</i>(<i>B</i>)</span></span></span></span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>公式，就该像公式一样好读。</h3><p>数学公式在对话中清晰渲染，你可以专心推敲符号，而不是语法。</p></div>
+          </a>
+          <a class="m-card" href="/zh/pricing">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">模型</span>
+              <span class="ui-list">
+                <span><span class="ui-check"></span><span class="ui-grow ui-strong">Beagle</span><span class="ui-tag">内置</span></span>
+                <span><span class="ui-ring"></span><span class="ui-grow">你自己的服务商</span><span class="ui-tag">自带密钥</span></span>
+              </span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>选择你的模型。</h3><p>从内置的 Beagle 模型开始，或为想做的思考挑选合适的模型。</p></div>
+          </a>
+          <a class="m-card" href="/zh/documents">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-file"><span class="ui-file-icon"></span><span class="ui-grow"><span class="ui-strong">课堂笔记.pdf</span><br><span class="ui-small ui-muted">已附加到本次对话</span></span></span>
+              <span class="ui-lines"><i></i><i class="mark"></i><i></i><i></i></span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>从一份文档开始。</h3><p>把笔记或论文带进对话，而不是面对一张白纸。</p></div>
+          </a>
+          <a class="m-card" href="/zh/developers">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">API 密钥</span>
+              <span class="ui-composer ui-composer--flat"><span>sk-••••••••••••</span><span class="ui-tag ui-tag--ink">已保存</span></span>
+              <span class="ui-small ui-muted">免费版和所有付费版均可使用。</span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>自带 API 密钥。</h3><p>想自己管理模型访问时，可以使用服务商的 API 密钥。</p></div>
+          </a>
+          <a class="m-card" href="/zh/privacy">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">你的数据</span>
+              <span class="ui-list">
+                <span><span class="ui-grow">导出对话</span><span class="ui-btn ui-btn--soft">导出</span></span>
+                <span><span class="ui-grow">删除一次会话</span><span class="ui-btn ui-btn--soft">删除</span></span>
+              </span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>你的数据，始终属于你。</h3><p>我们不使用你的对话训练模型。任何会话都可以在账户页导出或删除。</p></div>
+          </a>
+        </div>
       </div>
     </section>
 
@@ -168,21 +400,94 @@
           <h2 id="stories-title">一次学习，怎样继续</h2>
           <a class="section-link" href="/zh/product">了解产品</a>
         </div>
-        <div class="story-layout">
-          <figure class="story-visual">
-            <div class="story-media"><img src="/media/socrates-home-dialogue-photo-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="两个人对着摊开的笔记本，一起梳理概念之间的连接。"></div>
-            <figcaption>学习场景示意，并非真实客户案例。</figcaption>
-          </figure>
-          <div>
+        <div class="story-layout m-story" data-story>
+          <div class="m-story-intro">
             <h3 class="home-editorial-title">让一个好问题，继续下去。</h3>
             <p class="home-editorial-copy">答案可以是起点。先弄清楚还解释不明白的那一处，再给自己一个值得回来的理由。</p>
-            <div class="story-steps" data-sequence>
-              <a class="story-step" href="/zh/product#dialogue"><span>01</span><div><h3>先用自己的话说一遍。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-              <a class="story-step" href="/zh/product#knowledge-map"><span>02</span><div><h3>找到那条连接。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-              <a class="story-step" href="/zh/product#recall"><span>03</span><div><h3>隔一段时间，再回来。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-            </div>
           </div>
+          <figure class="story-visual m-story-stage">
+            <div class="ui m-story-ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">概率 · 基础比率</span><span class="ui-tag">示意</span></div>
+                <div class="m-story-scenes">
+                  <div class="ui-body m-story-scene is-active" data-scene="0">
+                    <span class="ui-bubble">检测阳性，就说明我大概率得病了吧？</span>
+                    <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">先别急着下结论：1000 个人里，真正患病的有多少？</span></span></span>
+                    <span class="ui-bubble">如果是百分之一，那就是 10 个。所以很多阳性可能是误报。</span>
+                    <span class="ui-composer"><span>用自己的话回答……</span><span class="ui-send"></span></span>
+                  </div>
+                  <div class="ui-body m-story-scene" data-scene="1">
+                    <span class="ui-row"><span class="ui-small ui-muted ui-grow">知识地图</span><span class="ui-tag ui-tag--ink">新的连接</span></span>
+                    <svg class="m-story-map" viewBox="0 0 440 220" fill="none">
+                      <path class="m-story-edge" d="M220 112 96 56"/><path class="m-story-edge" d="M220 112 344 56"/><path class="m-story-edge m-story-edge--new" d="M96 56 C140 176 300 176 344 56"/><path class="m-story-edge" d="M220 112 220 186"/>
+                      <circle cx="220" cy="112" r="7" fill="#0d0d0d"/>
+                      <g class="m-story-dots" fill="#fff" stroke="#8f8f8f" stroke-width="1.25"><circle cx="96" cy="56" r="5"/><circle cx="344" cy="56" r="5"/><circle cx="220" cy="186" r="4"/></g>
+                      <g font-size="13" font-weight="500" fill="#5d5d5d"><text x="236" y="108" fill="#0d0d0d">贝叶斯定理</text><text x="96" y="34" text-anchor="middle">基础比率</text><text x="344" y="34" text-anchor="middle">假阳性</text><text x="220" y="210" text-anchor="middle" fill="#8f8f8f" font-weight="400">筛查</text></g>
+                    </svg>
+                    <span class="ui-small ui-muted">由连接它们的那个问题串在一起。</span>
+                  </div>
+                  <div class="ui-body m-story-scene" data-scene="2">
+                    <span class="ui-row"><span class="ui-small ui-muted ui-grow">第 1 张，共 5 张</span><span class="ui-meter ui-grow"><i class="on"></i><i></i><i></i><i></i><i></i></span></span>
+                    <span class="ui-stack"><span class="ui-flash"><span class="ui-small ui-muted">用你自己的话</span><span class="ui-q">为什么检测阳性，结果仍可能不太可信？</span><span class="ui-small ui-muted">先作答，再查看答案。</span></span></span>
+                    <span class="ui-row"><span class="ui-btn">查看答案</span><span class="ui-btn ui-btn--soft">打开对话</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption>界面示意，并非真实客户案例。</figcaption>
+          </figure>
+          <ol class="story-steps m-story-steps">
+            <li class="m-story-step" data-story-step="0"><a class="story-step" href="/zh/product#dialogue"><span>01</span><div><h3>先用自己的话说一遍。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">Socrates 从你已有的理解出发，只问下一个问题，而不是直接给出全部答案。</p></li>
+            <li class="m-story-step" data-story-step="1"><a class="story-step" href="/zh/product#knowledge-map"><span>02</span><div><h3>找到那条连接。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">你想通的概念会成为知识地图上的点，由连接它们的问题串在一起。</p></li>
+            <li class="m-story-step" data-story-step="2"><a class="story-step" href="/zh/product#recall"><span>03</span><div><h3>隔一段时间，再回来。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">把一个好的瞬间变成回忆卡片，过几天再用自己的话回答一遍。</p></li>
+          </ol>
         </div>
+      </div>
+    </section>
+
+    <section class="home-graph m-section" aria-labelledby="graph-title">
+      <div class="home-shell m-graph">
+        <div class="m-graph-copy">
+          <h2 id="graph-title">每个问题，都会留下痕迹。</h2>
+          <p>学习的过程中，Socrates 会保留你钻研过的想法，以及它们之间的联系。几周后再回来，线索依然在那里。</p>
+          <ul class="m-points"><li>你自己抵达的概念</li><li>由问题建立起来的联系</li><li>下一次对话的起点</li></ul>
+          <a class="m-link" href="/zh/research/maps-preserve-path/">为什么地图要保留路径</a>
+        </div>
+        <figure class="m-graph-stage" data-graph>
+          <svg viewBox="0 0 720 480" role="img" aria-labelledby="graph-svg-title">
+            <title id="graph-svg-title">一张示意性的知识地图：贝叶斯定理位于中心，连接先验、似然、证据、条件概率、基础比率和假阳性。</title>
+            <g>
+              <line class="kg-edge" data-a="core" data-b="cond" x1="360" y1="250" x2="360" y2="120"/>
+              <line class="kg-edge" data-a="core" data-b="prior" x1="360" y1="250" x2="196" y2="176"/>
+              <line class="kg-edge" data-a="core" data-b="like" x1="360" y1="250" x2="540" y2="170"/>
+              <line class="kg-edge" data-a="core" data-b="evid" x1="360" y1="250" x2="560" y2="336"/>
+              <line class="kg-edge" data-a="core" data-b="fp" x1="360" y1="250" x2="340" y2="392"/>
+              <line class="kg-edge" data-a="prior" data-b="base" x1="196" y1="176" x2="150" y2="320"/>
+              <line class="kg-edge" data-a="base" data-b="fp" x1="150" y1="320" x2="340" y2="392"/>
+              <line class="kg-edge" data-a="base" data-b="test" x1="150" y1="320" x2="96" y2="420"/>
+              <line class="kg-edge" data-a="fp" data-b="sens" x1="340" y1="392" x2="500" y2="430"/>
+              <line class="kg-edge" data-a="evid" data-b="sens" x1="560" y1="336" x2="500" y2="430"/>
+              <line class="kg-edge" data-a="cond" data-b="indep" x1="360" y1="120" x2="560" y2="64"/>
+              <line class="kg-edge" data-a="cond" data-b="frac" x1="360" y1="120" x2="160" y2="64"/>
+              <line class="kg-edge" data-a="like" data-b="ratio" x1="540" y1="170" x2="640" y2="250"/>
+            </g>
+            <circle class="kg-halo" cx="360" cy="250" r="44"/>
+            <circle class="kg-halo" cx="360" cy="250" r="76"/>
+            <g class="kg-node kg-node--core" data-node="core"><circle cx="360" cy="250" r="9"/><text x="378" y="245">贝叶斯定理</text></g>
+            <g class="kg-node" data-node="cond"><circle cx="360" cy="120" r="5.5"/><text x="360" y="102" text-anchor="middle">条件概率</text></g>
+            <g class="kg-node" data-node="prior"><circle cx="196" cy="176" r="5.5"/><text x="182" y="172" text-anchor="end">先验</text></g>
+            <g class="kg-node" data-node="like"><circle cx="540" cy="170" r="5.5"/><text x="554" y="166">似然</text></g>
+            <g class="kg-node" data-node="evid"><circle cx="560" cy="336" r="5.5"/><text x="574" y="340">证据</text></g>
+            <g class="kg-node" data-node="base"><circle cx="150" cy="320" r="5.5"/><text x="136" y="316" text-anchor="end">基础比率</text></g>
+            <g class="kg-node" data-node="fp"><circle cx="340" cy="392" r="5.5"/><text x="340" y="420" text-anchor="middle">假阳性</text></g>
+            <g class="kg-node kg-node--soft" data-node="sens"><circle cx="500" cy="430" r="4"/><text x="512" y="446">灵敏度</text></g>
+            <g class="kg-node kg-node--soft" data-node="ratio"><circle cx="640" cy="250" r="4"/><text x="640" y="274" text-anchor="middle">比值</text></g>
+            <g class="kg-node kg-node--soft" data-node="test"><circle cx="96" cy="420" r="4"/><text x="96" y="446" text-anchor="middle">筛查</text></g>
+            <g class="kg-node kg-node--soft" data-node="indep"><circle cx="560" cy="64" r="4"/><text x="574" y="68">独立性</text></g>
+            <g class="kg-node kg-node--soft" data-node="frac"><circle cx="160" cy="64" r="4"/><text x="146" y="68" text-anchor="end">分数</text></g>
+          </svg>
+          <figcaption class="m-graph-legend"><span class="ui-tag ui-tag--line">示意地图</span></figcaption>
+        </figure>
       </div>
     </section>
 
@@ -199,6 +504,29 @@
             <li><a class="home-research-note" href="/zh/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>练习</span><time datetime="2026-07-11">2026 年 7 月 11 日</time></p><h3>诚实停顿的价值</h3></div></a></li>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <section class="home-rail m-section" aria-labelledby="rail-title" data-rail>
+      <div class="home-shell">
+        <div class="m-rail-head">
+          <div>
+            <h2 id="rail-title">继续阅读</h2>
+            <p>更多研究笔记、指南，以及产品背后的想法。</p>
+          </div>
+          <div class="m-rail-controls">
+            <button class="m-rail-btn" type="button" data-rail-prev aria-controls="rail-track" aria-label="上一组卡片"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 8H3M7 4.1 3.1 8 7 11.9"/></svg></button>
+            <button class="m-rail-btn" type="button" data-rail-next aria-controls="rail-track" aria-label="下一组卡片"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></svg></button>
+          </div>
+        </div>
+        <ul class="m-rail" id="rail-track" tabindex="0" aria-label="延伸阅读">
+          <li><a class="m-rail-card" href="/zh/research/maps-preserve-path/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M14 70c18-4 22-30 40-30s20 22 36 18 16-30 18-40"/><circle class="dot" cx="14" cy="70" r="3"/><circle class="dot" cx="54" cy="40" r="3"/><circle class="dot" cx="90" cy="58" r="3"/><circle class="ink" cx="108" cy="18" r="4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>知识地图</span><time datetime="2026-06-24">2026 年 6 月 24 日</time></p><h3>保留路径的地图</h3></div></a></li>
+          <li><a class="m-rail-card" href="/zh/research/what-learners-keep/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><rect x="30" y="18" width="60" height="40" rx="6"/><rect x="24" y="28" width="72" height="44" rx="7"/><rect class="inkline" x="18" y="40" width="84" height="38" rx="8"/><path d="M30 54h40M30 64h26"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>练习</span><time datetime="2026-04-30">2026 年 4 月 30 日</time></p><h3>学习者在会话后留下什么</h3></div></a></li>
+          <li><a class="m-rail-card" href="/zh/research/tutor-curiosity/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M24 20h72a8 8 0 0 1 8 8v28a8 8 0 0 1-8 8H52l-14 12V64H24a8 8 0 0 1-8-8V28a8 8 0 0 1 8-8Z"/><path d="M53 36a7 7 0 1 1 10 6c-2 1-3 3-3 5"/><circle class="ink" cx="60" cy="54" r="2.4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>辅导</span><time datetime="2026-02-18">2026 年 2 月 18 日</time></p><h3>导师何时应该说自己不确定</h3></div></a></li>
+          <li><a class="m-rail-card" href="/zh/learn"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M60 26c-10-8-26-9-40-6v48c14-3 30-2 40 6 10-8 26-9 40-6V20c-14-3-30-2-40 6Z"/><path d="M60 26v48"/><path class="ink" d="M68 34h22v3H68zM68 44h18v3H68z"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>学习</span><span>资源</span></p><h3>学习资源与引导练习</h3></div></a></li>
+          <li><a class="m-rail-card" href="/zh/principles"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><circle cx="60" cy="45" r="30"/><circle cx="60" cy="45" r="18"/><path d="M60 9v8M60 73v8M24 45h8M88 45h8"/><circle class="ink" cx="60" cy="45" r="4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>原则</span><span>我们如何构建</span></p><h3>指导 Socrates 的学习原则</h3></div></a></li>
+          <li><a class="m-rail-card" href="/zh/documents"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M38 12h32l16 16v50H38z"/><path d="M70 12v16h16"/><path d="M46 40h30M46 48h30M46 64h22"/><path class="ink" d="M44 54h34v5H44z"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>文档</span><span>参考</span></p><h3>为下一个问题准备的一座小图书馆</h3></div></a></li>
+        </ul>
       </div>
     </section>
 
@@ -323,10 +651,6 @@
 
   <footer class="site-footer">
     <div class="site-chrome-shell site-footer-inner">
-      <div class="site-footer-lead">
-        <a class="site-brand" href="/zh/" aria-label="Socrates 首页"><img src="/logo.png" width="24" height="24" alt=""><span class="site-brand-label">Socrates</span></a>
-        <p class="site-footer-tagline">为真正想理解的人打造。</p>
-      </div>
       <div class="site-footer-grid">
         <details class="site-footer-col" open>
           <summary class="site-footer-summary">学习与练习</summary>
@@ -411,18 +735,18 @@
         </details>
       </div>
       <div class="site-footer-bottom">
+        <nav class="site-footer-social" aria-label="社交链接"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a></nav>
         <p class="site-footer-legal">© 2026 Socrates</p>
         <nav class="site-footer-policies" aria-label="法律信息"><a href="/zh/privacy">隐私政策</a><a href="/zh/terms">服务条款</a></nav>
-        <nav class="site-footer-social" aria-label="社交链接"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a></nav>
         <a class="site-locale site-footer-locale" href="/" data-locale-switcher hreflang="en" lang="en"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M3.2 10h13.6M10 3c2.2 2.3 3.2 4.6 3.2 7s-1 4.7-3.2 7c-2.2-2.3-3.2-4.6-3.2-7S7.8 5.3 10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="locale-label">English</span></a>
       </div>
     </div>
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261023u4"></script>
-  <script src="/home-field.js?cb=20261031e1"></script>
-  <script src="/chrome.js?cb=20261031e1"></script>
-  <script src="/motion.js?cb=20261031e1"></script>
+  <script src="/home-question.js?cb=20261101a1"></script>
+  <script src="/modules.js?cb=20261101a1"></script>
+  <script src="/chrome.js?cb=20261101a1"></script>
+  <script src="/motion.js?cb=20261101a1"></script>
 </body>
 </html>

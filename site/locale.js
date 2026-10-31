@@ -1,6 +1,11 @@
 (function () {
   "use strict";
 
+  // Runs in <head>: lets CSS tell "scripts are coming" from "no scripts" at
+  // first paint, so script-dependent chrome does not appear or collapse late
+  // and shift the page.
+  document.documentElement.setAttribute("data-site-js", "");
+
   /*
    * Socrates marketing-site locale layer.
    *
@@ -500,7 +505,7 @@
     var link = document.createElement("link");
     link.id = "socrates-consent-css";
     link.rel = "stylesheet";
-    link.href = "/consent.css?cb=20260922d-v3";
+    link.href = "/consent.css?cb=20261031r2";
     document.head.appendChild(link);
   }
 

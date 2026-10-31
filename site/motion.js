@@ -9,6 +9,7 @@
   var running = new Set();
   var observer;
 
+  // Quiet motion in the reference style: short fades with a small rise.
   var ease = 'cubic-bezier(.22,1,.36,1)';
 
   function animate(element, frames, options, allowReduced) {
@@ -19,13 +20,55 @@
     animation.finished.then(settled, settled);
   }
 
+  // The bar is clear at the top and frosts once the page moves under it.
+  header.setAttribute('data-scroll-aware', '');
+
+  // Home hero: the title rises line by line out of a mask (the words stay
+  // fully opaque, so the largest paint is not delayed), then the lede, the
+  // question box and the starters follow. Runs once, about a second.
+  var hero = main.querySelector('.home-hero-inner');
+  if (hero && !reduced.matches && document.body.animate) {
+    var title = hero.querySelector('h1');
+    if (title && !title.querySelector('.hero-line')) {
+      var lines = [[]];
+      Array.from(title.childNodes).forEach(function (node) {
+        if (node.nodeName === 'BR') lines.push([]);
+        else lines[lines.length - 1].push(node);
+      });
+      title.textContent = '';
+      lines.forEach(function (nodes, index) {
+        // Each line is its own block, so the <br> between them is dropped.
+        var line = document.createElement('span');
+        line.className = 'hero-line';
+        var inner = document.createElement('span');
+        nodes.forEach(function (node) {
+          // Leading spaces after a <br> would indent the centred line.
+          if (node.nodeType === 3) node.nodeValue = node.nodeValue.replace(/^\s+/, '');
+          inner.appendChild(node);
+        });
+        line.appendChild(inner);
+        title.appendChild(line);
+        animate(inner, [{ transform: 'translateY(105%)' }, { transform: 'translateY(0)' }],
+          { duration: 800, delay: 60 + index * 90, easing: ease, fill: 'backwards' });
+      });
+    }
+    var follow = [hero.querySelector('.home-hero-lede'), hero.querySelector('.ask-box')]
+      .concat(Array.from(hero.querySelectorAll('.ask-suggestions > *')));
+    follow.forEach(function (element, index) {
+      if (!element) return;
+      animate(element, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'translateY(0)' }],
+        { duration: 600, delay: 260 + Math.min(index, 2) * 90 + Math.max(0, index - 2) * 40, easing: ease, fill: 'backwards' });
+    });
+  }
+
   var selectors = [
-    '.home-hero-inner', '.feature-main', '.hero-plate', '.feature-intro',
+    '.feature-main', '.hero-plate', '.feature-intro',
     '.news-item', '.story-visual', '.story-layout > div', '.home-research-note', '.learning-layout > div',
     '.product-hero', '.product-preview', '.product-section-intro', '.product-feature-copy', '.product-sample', '.product-tool-grid > div',
     '.content-hero', '.research-note', '.company-visual', '.company-story', '.company-team', '.company-practices li', '.company-work-list li',
     '.page-head .shell', '.pricing-card', '.page-media-inline', '.ed-report-hero > .ed-shell', '.ed-article-hero-grid',
     '.home-faq-head', '.home-faq-item', '.home-cta-inner',
+    '.m-intro', '.m-tablist', '.m-card', '.m-graph-copy', '.m-graph-stage', '.m-rail-head', '.m-step', '.m-table-wrap', '.m-faq',
     'article > h2', 'article > blockquote'
   ];
   var elements = Array.from(main.querySelectorAll(selectors.join(',')));
@@ -34,12 +77,14 @@
   function reveal(element) {
     if (element.hasAttribute('data-site-seen')) return;
     element.setAttribute('data-site-seen', '');
-    var index = Array.prototype.indexOf.call(element.parentElement.children, element);
-    // B7: rise 32px and fade in over 700ms on the base curve, once.
+    var host = element.parentElement.tagName === 'LI' ? element.parentElement : element;
+    var index = Array.prototype.indexOf.call(host.parentElement.children, host);
+    // A light fade with a 12px rise over 500ms, once; siblings in a grid
+    // arrive 60ms apart (at most four steps, so nothing waits long).
     animate(element, [
-      { opacity: 0, transform: 'translateY(32px)' },
+      { opacity: 0, transform: 'translateY(12px)' },
       { opacity: 1, transform: 'translateY(0)' }
-    ], { duration: 700, delay: (index % 3) * 60, easing: ease, fill: 'backwards' });
+    ], { duration: 500, delay: (index % 4) * 60, easing: ease, fill: 'backwards' });
   }
 
   if ('IntersectionObserver' in window) {
@@ -59,13 +104,13 @@
   var sequences = Array.from(main.querySelectorAll('[data-sequence]'));
   function play(container) {
     var items = Array.from(container.children);
-    var step = container.matches('.demo-thread, .product-chat') ? 380 : 140;
-    var base = container.classList.contains('demo-map-canvas') ? 1400 : 200;
+    var step = container.matches('.demo-thread, .product-chat') ? 260 : 100;
+    var base = container.classList.contains('demo-map-canvas') ? 1000 : 150;
     items.forEach(function (item, index) {
       animate(item, [
-        { opacity: 0, transform: 'translateY(16px)' },
+        { opacity: 0, transform: 'translateY(8px)' },
         { opacity: 1, transform: 'translateY(0)' }
-      ], { duration: 700, delay: base + index * step, easing: ease, fill: 'backwards' });
+      ], { duration: 400, delay: base + index * step, easing: ease, fill: 'backwards' });
     });
   }
   if (sequences.length && 'IntersectionObserver' in window) {
@@ -84,12 +129,12 @@
     new MutationObserver(function () {
       if (menu.hidden) return;
       // The panel fades; reduced motion keeps the fade and drops all movement.
-      animate(menu, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: ease }, true);
+      animate(menu, [{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: ease }, true);
       if (reduced.matches) return;
-      // Links arrive in reading order: 24px rise, 60ms apart, sequence capped at 400ms.
+      // Links arrive in reading order: 6px rise, 30ms apart, capped at 240ms.
       menu.querySelectorAll('nav a, .site-mobile-utilities a').forEach(function (link, index) {
-        animate(link, [{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'translateY(0)' }],
-          { duration: 500, delay: Math.min(index * 60, 400), fill: 'backwards', easing: ease });
+        animate(link, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }],
+          { duration: 250, delay: Math.min(index * 30, 240), fill: 'backwards', easing: ease });
       });
     }).observe(menu, { attributes: true, attributeFilter: ['hidden'] });
   }

@@ -1,121 +1,194 @@
 /* Pricing (en + zh). The two locales still ship different legacy markup
    (site.css .plans / editorial.css .ed-price-card); this sheet gives both
-   the same ink-on-paper composition without touching a word or a price.
+   the same OpenAI-style composition without touching a word or a price:
+   a centred title, four rounded plan cards (white with a hairline; the
+   recommended tier on soft gray), pill buttons and quiet gray sections.
    Values resolve to public.css tokens. Loaded after the legacy sheets. */
 body.pricing-page { background: var(--site-color-paper); color: var(--site-color-ink); }
 body.pricing-page main { overflow: clip; }
-/* Content shells sit inside the gutter so hairlines and sheets align with the chrome. */
+/* Content shells use the shared 1440px container so cards align with the bar. */
 body.pricing-page main .shell { width: min(100% - var(--site-gutter) * 2, calc(var(--site-width) - var(--site-gutter) * 2)); max-width: none; margin-inline: auto; padding-inline: 0; }
+body.pricing-page.ed-site main .ed-shell { width: min(100% - var(--site-gutter) * 2, calc(var(--site-width) - var(--site-gutter) * 2)); max-width: none; margin-inline: auto; padding-inline: 0; }
 
-/* Kickers: a vermilion seal dot instead of a dash. */
-body.pricing-page :is(.eyebrow, .ed-kicker) { display: inline-flex; align-items: center; gap: var(--space-75); color: var(--site-color-muted); font: var(--type-caption-4); letter-spacing: .02em; text-transform: none; }
-body.pricing-page :is(.eyebrow, .ed-kicker)::before { content: ''; flex: none; width: 6px; height: 6px; border: 0; border-radius: var(--radius-full); background: var(--site-color-accent); opacity: 1; }
+/* Kickers: small muted labels, no ornament. */
+body.pricing-page :is(.eyebrow, .ed-kicker) { display: inline-flex; align-items: center; gap: var(--space-75); color: var(--site-color-muted) !important; font: var(--type-caption-1); font-family: var(--site-font); letter-spacing: 0; text-transform: none; }
+body.pricing-page :is(.eyebrow, .ed-kicker)::before { display: none; }
 
-/* Title page. */
-body.pricing-page :is(.page-head, .ed-page-hero) { padding: var(--space-900) 0 var(--space-700); background: none; }
+/* Title: centred, medium weight. */
+body.pricing-page :is(.page-head, .ed-page-hero) { padding: clamp(72px, 11vh, 128px) 0 var(--space-600); background: none; text-align: center; }
 body.pricing-page .ed-page-hero::before, body.pricing-page .ed-page-hero::after { display: none; }
-body.pricing-page :is(.page-title, .ed-page-title) { max-width: 14ch; margin-top: var(--space-200); font: var(--type-heading-1); letter-spacing: -.025em; color: var(--site-color-ink); text-wrap: balance; }
-body.pricing-page:lang(zh) .ed-page-title { max-width: 12em; letter-spacing: .02em; line-height: 1.25; }
-body.pricing-page :is(.page-lede, .ed-page-hero .ed-copy-serif) { max-width: 600px; margin-top: var(--space-300); color: var(--site-color-copy); font: var(--type-body-7); font-family: var(--site-font); text-wrap: pretty; }
-body.pricing-page .page-meta { display: flex; flex-wrap: wrap; gap: var(--space-300) var(--space-600); margin-top: var(--space-500); padding-top: var(--space-300); border-top: 1px solid var(--site-color-line); color: var(--site-color-muted); font: var(--type-caption-2); }
-body.pricing-page .page-meta b { display: block; margin-bottom: var(--space-25); color: var(--site-color-ink); font: var(--type-title-4); }
+body.pricing-page .ed-page-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 0; }
+body.pricing-page :is(.page-title, .ed-page-title) { max-width: 16ch; margin: var(--space-200) auto 0; font: var(--type-heading-1); letter-spacing: -.03em; color: var(--site-color-ink); text-wrap: balance; }
+body.pricing-page:lang(zh) .ed-page-title { max-width: 12em; letter-spacing: 0; line-height: 1.25; }
+body.pricing-page :is(.page-lede, .ed-page-hero .ed-copy-serif) { max-width: 600px; margin: var(--space-200) auto 0; color: var(--site-color-muted); font: var(--type-body-7); font-family: var(--site-font); text-wrap: pretty; }
+body.pricing-page .page-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-75); margin-top: var(--space-400); padding: 0; border: 0; color: var(--site-color-muted); font: var(--type-caption-2); }
+body.pricing-page .page-meta > div { display: inline-flex; align-items: center; gap: var(--space-75); height: 36px; padding-inline: var(--space-200); border-radius: var(--radius-full); background: var(--site-color-fill); }
+body.pricing-page .page-meta b { display: inline; margin: 0; color: var(--site-color-ink); font: var(--type-title-4); }
 
-/* Plans: flat surface sheets; the recommended tier is the one dark sheet. */
-body.pricing-page :is(.plans, .ed-pricing-grid) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-300); }
-body.pricing-page :is(.plan, .ed-price-card) { display: flex; min-height: 0; flex-direction: column; padding: var(--space-400) var(--space-300) var(--space-300); border: 0; border-radius: var(--radius-2xl); background: var(--site-color-surface); color: var(--site-color-ink); box-shadow: none; }
-body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) { background: var(--site-color-night); color: var(--site-color-night-copy); }
-body.pricing-page .plan-tag { order: -1; width: fit-content; margin: 0 0 var(--space-200); padding: 0; border: 0; background: none; color: var(--site-color-muted); font: var(--type-caption-4); font-family: var(--site-font); letter-spacing: .02em; text-transform: none; }
-body.pricing-page :is(.plan-name, .ed-price-card h2) { margin: 0; color: inherit; font: var(--type-heading-5); letter-spacing: -.01em; }
-body.pricing-page :is(.plan-price, .ed-price) { order: 0; margin: var(--space-300) 0 var(--space-75); color: inherit; font: var(--type-heading-2); letter-spacing: -.022em; font-variant-numeric: tabular-nums; }
-body.pricing-page :is(.plan-price, .ed-price) span { color: var(--site-color-muted); font: var(--type-caption-2) !important; letter-spacing: 0 !important; }
-body.pricing-page :is(.plan-desc, .ed-price-card > p:not(.ed-kicker)) { margin: var(--space-75) 0 0; color: var(--site-color-copy); font: var(--type-body-6); }
-body.pricing-page :is(.plan ul, .ed-price-card ul) { display: grid; gap: var(--space-75); margin: var(--space-300) 0 var(--space-400); padding: var(--space-300) 0 0; border-top: 1px solid var(--site-color-line-strong); list-style: none; color: var(--site-color-copy); font: var(--type-body-6); }
-body.pricing-page :is(.plan li, .ed-price-card li) { display: flex; align-items: center; gap: var(--space-75); padding: 0; border: 0; color: inherit; }
-body.pricing-page .ed-price-card li::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--site-color-accent); }
-body.pricing-page .plan li svg { width: 16px; height: 16px; color: var(--site-color-accent); }
-body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) :is(.plan-tag, .ed-kicker) { color: var(--site-color-night-muted) !important; }
-body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) :is(.plan-desc, p:not(.ed-kicker, .plan-price), ul, li, .plan-price span, .ed-price span) { color: var(--site-color-night-muted); }
-body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) :is(ul) { border-top-color: var(--site-color-night-line); }
-body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) li { color: rgb(248 247 243 / .86); }
-/* Plan buttons: B2 main button (8 / 12, Button-md), pinned to the card's foot. */
-body.pricing-page :is(.plan .btn, .ed-price-card .ed-button) { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-75); min-height: 40px; width: 100%; margin-top: auto; padding: var(--space-75) var(--space-100); border: 0; border-radius: var(--radius-lg); background: var(--site-color-ink); color: var(--site-color-paper); font: var(--type-button-md); box-shadow: none; transition: background-color var(--site-motion-color), transform var(--site-motion-move); }
-body.pricing-page :is(.plan .btn--ghost, .ed-price-card:not(.is-featured) .ed-button) { background: var(--site-color-raised); color: var(--site-color-ink); box-shadow: var(--site-shadow-ring); }
-body.pricing-page :is(.plan .btn--light, .ed-price-card.is-featured .ed-button) { background: var(--site-color-paper); color: var(--site-color-ink); }
-body.pricing-page :is(.plan .btn, .ed-price-card .ed-button):hover { background: var(--site-color-ink-hover); color: var(--site-color-paper); }
-body.pricing-page :is(.plan .btn--ghost, .ed-price-card:not(.is-featured) .ed-button):hover { background: var(--site-color-surface-strong); color: var(--site-color-ink); }
-body.pricing-page :is(.plan .btn--light, .ed-price-card.is-featured .ed-button):hover { background: var(--site-color-surface); color: var(--site-color-ink); }
-body.pricing-page :is(.plan .btn, .ed-price-card .ed-button):active { transform: scale(.98); }
+/* Plans: four rounded cards. The recommended tier sits on soft gray. */
+body.pricing-page :is(.plans, .ed-pricing-grid) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-200); }
+body.pricing-page :is(.plan, .ed-price-card) { display: flex; min-height: 0; flex-direction: column; padding: var(--space-300); border: 0; border-radius: var(--radius-3xl); background: var(--site-color-raised); color: var(--site-color-ink); box-shadow: inset 0 0 0 1px var(--site-color-line-strong); }
+body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) { background: var(--site-color-surface); color: var(--site-color-ink); box-shadow: none; }
+body.pricing-page .plan-tag { order: -1; width: fit-content; margin: 0 0 var(--space-100); padding: 0; border: 0; background: none; color: var(--site-color-muted); font: var(--type-caption-1); font-family: var(--site-font); letter-spacing: 0; text-transform: none; }
+body.pricing-page :is(.plan-name, .ed-price-card h2) { margin: 0; color: inherit; font: var(--type-heading-4); letter-spacing: -.01em; }
+body.pricing-page :is(.plan-price, .ed-price) { order: 0; margin: var(--space-200) 0 var(--space-50); color: inherit; font: 500 2.5rem/1.1 var(--site-font); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+body.pricing-page :is(.plan-price, .ed-price) span { color: var(--site-color-muted) !important; font: var(--type-caption-2) !important; letter-spacing: 0 !important; }
+body.pricing-page :is(.plan-desc, .ed-price-card > p:not(.ed-kicker)) { margin: var(--space-75) 0 0; color: var(--site-color-muted); font: var(--type-body-6); }
+body.pricing-page :is(.plan ul, .ed-price-card ul) { display: grid; gap: var(--space-100); margin: var(--space-300) 0 var(--space-400); padding: 0; border: 0; list-style: none; color: var(--site-color-copy); font: var(--type-body-6); }
+body.pricing-page :is(.plan li, .ed-price-card li) { display: flex; align-items: center; gap: var(--space-100); padding: 0; border: 0; color: inherit; }
+body.pricing-page .ed-price-card li::before { content: ''; flex: none; width: 16px; height: 16px; background: var(--site-color-ink); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E") center / contain no-repeat; }
+body.pricing-page .plan li svg { flex: none; width: 16px; height: 16px; color: var(--site-color-ink); }
+/* Plan buttons: full-width pills pinned to the card's foot. */
+body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet) { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-50); height: 40px; min-height: 0; width: 100%; margin-top: auto; padding: 0 var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-ink); font: var(--type-button-sm); font-family: var(--site-font); box-shadow: none; text-decoration: none; transition: background-color var(--site-motion-color), transform var(--site-motion-move); }
+body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet)::after { display: none; }
+body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet):hover { background: var(--site-color-fill-hover); color: var(--site-color-ink); }
+body.pricing-page :is(.plan--dark .btn, .ed-price-card.is-featured .ed-button) { background: var(--site-color-ink); color: #fff; }
+body.pricing-page :is(.plan--dark .btn, .ed-price-card.is-featured .ed-button):hover { background: var(--site-color-ink-hover); color: #fff; }
+body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet):active { transform: scale(.98); }
+body.pricing-page .plan .btn svg { width: 14px; height: 14px; }
 
-/* Sections: generous air, a hairline opens each one. */
-body.pricing-page :is(.sec, .ed-section) { padding-block: var(--space-900); background: none; border: 0; }
-body.pricing-page .sec.sec--flush, body.pricing-page .ed-section-tight { padding-block: 0 var(--space-900); }
-body.pricing-page .sec:not(.sec--flush) > .shell, body.pricing-page .ed-section > .ed-shell { padding-top: var(--space-300); border-top: 1px solid var(--site-color-line); }
+/* Sections: generous air, no rules; headings are medium and compact. */
+body.pricing-page :is(.sec, .ed-section) { padding-block: var(--space-900) 0; background: none; border: 0; }
+body.pricing-page .sec.sec--flush, body.pricing-page .ed-section-tight { padding-block: 0 0; }
+body.pricing-page .ed-section-tight + .ed-section-tight { padding-top: var(--space-300); }
+body.pricing-page .sec:not(.sec--flush) > .shell, body.pricing-page .ed-section > .ed-shell { padding-top: 0; border: 0; }
 body.pricing-page .ed-section-line { border: 0; }
-body.pricing-page :is(.sec-title, .ed-title, .split-main .h2) { margin-top: var(--space-200); font: var(--type-heading-2); letter-spacing: -.022em; color: var(--site-color-ink); text-wrap: balance; }
-body.pricing-page:lang(zh) .ed-title { letter-spacing: .01em; line-height: 1.25; }
-body.pricing-page :is(.sec-desc, .ed-section .ed-copy) { color: var(--site-color-copy); font: var(--type-body-7); font-family: var(--site-font); }
-body.pricing-page .split-main .h2 { margin-bottom: var(--space-400) !important; }
+body.pricing-page :is(.sec-title, .ed-title, .split-main .h2) { margin-top: var(--space-100); font: var(--type-heading-3); letter-spacing: -.015em; color: var(--site-color-ink); text-wrap: balance; }
+body.pricing-page:lang(zh) .ed-title { letter-spacing: 0; line-height: 1.35; }
+body.pricing-page :is(.sec-desc, .ed-section .ed-copy) { color: var(--site-color-muted); font: var(--type-body-7); font-family: var(--site-font); }
+body.pricing-page .split-main .h2 { margin-bottom: var(--space-300) !important; }
 
-/* Includes / choosing: columns opened by an ink rule, not boxed cards. */
-body.pricing-page .topics { gap: var(--space-400); margin-top: var(--space-600); }
-body.pricing-page .topic { padding: var(--space-300) 0 0; border: 0; border-top: 1px solid var(--site-color-ink); border-radius: 0; background: none; box-shadow: none; transform: none; }
-body.pricing-page .topic h3, body.pricing-page .step3 h3 { margin: 0 0 var(--space-100); font: var(--type-heading-6); letter-spacing: -.005em; color: var(--site-color-ink); }
-body.pricing-page .topic p, body.pricing-page .step3 p { color: var(--site-color-copy); font: var(--type-body-6); }
-body.pricing-page .steps3 { gap: var(--space-400); margin-top: var(--space-600); }
-body.pricing-page .step3 { padding-top: var(--space-300); border-top: 1px solid var(--site-color-line); }
-body.pricing-page .step-num { display: block; margin-bottom: var(--space-300); color: var(--site-color-accent); font: var(--type-caption-4); font-family: var(--site-font-mono); font-variant-numeric: tabular-nums; }
-body.pricing-page .ed-product-grid { border-top: 1px solid var(--site-color-line); }
-body.pricing-page .ed-product-block { padding-block: var(--space-400); border-color: var(--site-color-line); background: none; }
-body.pricing-page .ed-product-block h2 { font: var(--type-heading-5); letter-spacing: .01em; color: var(--site-color-ink); }
-body.pricing-page .ed-product-block > p { color: var(--site-color-copy); font: var(--type-body-6); }
-body.pricing-page .ed-product-block .ed-meta { color: var(--site-color-muted); font: var(--type-caption-5); }
+/* Includes / choosing: small rounded gray cards. */
+body.pricing-page .topics { gap: var(--space-100); margin-top: var(--space-400); }
+body.pricing-page .topic { padding: var(--space-300); border: 0; border-radius: var(--radius-2xl); background: var(--site-color-subtle); box-shadow: none; transform: none; }
+body.pricing-page .topic h3, body.pricing-page .step3 h3 { margin: 0 0 var(--space-75); font: var(--type-title-3); color: var(--site-color-ink); }
+body.pricing-page .topic p, body.pricing-page .step3 p { color: var(--site-color-muted); font: var(--type-body-6); }
+body.pricing-page .steps3 { gap: var(--space-100); margin-top: var(--space-400); }
+body.pricing-page .step3 { padding: var(--space-300); border: 0; border-radius: var(--radius-2xl); background: var(--site-color-subtle); }
+body.pricing-page .step-num { display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: var(--space-200); border-radius: var(--radius-full); background: var(--site-color-raised); box-shadow: 0 0 0 1px var(--site-color-line); color: var(--site-color-muted); font: var(--type-caption-4); font-family: var(--site-font); font-variant-numeric: tabular-nums; }
+body.pricing-page .ed-product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--space-100); border: 0; }
+body.pricing-page .ed-product-block { display: flex; flex-direction: column; gap: var(--space-75); padding: var(--space-300); border: 0; border-radius: var(--radius-2xl); background: var(--site-color-subtle); }
+body.pricing-page .ed-product-block > div { display: flex; align-items: center; justify-content: space-between; gap: var(--space-100); margin-bottom: var(--space-75); }
+body.pricing-page .ed-product-block h2 { margin: 0; font: var(--type-title-3); letter-spacing: 0; color: var(--site-color-ink); }
+body.pricing-page .ed-product-block > p { margin: 0; color: var(--site-color-muted); font: var(--type-body-6); }
+body.pricing-page .ed-product-block .ed-meta { display: inline-flex; align-items: center; height: 24px; padding-inline: 10px; border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-muted); font: var(--type-caption-5); }
 
-/* Teams band (zh): the one dark sheet outside the plans, on the night tone. */
-body.pricing-page .ed-inline-feature { padding: var(--space-600); border-radius: var(--radius-3xl); background: var(--site-color-night); }
+/* Teams band (zh): a gray rounded panel. */
+body.pricing-page .ed-inline-feature { align-items: center; padding: var(--space-300); border-radius: var(--radius-3xl); background: var(--site-color-surface); }
 body.pricing-page .ed-inline-feature img { border-radius: var(--radius-xl); }
-body.pricing-page .ed-inline-feature .ed-link { color: var(--site-color-night-copy); border-color: currentColor; }
-body.pricing-page .ed-inline-feature h2 { font: var(--type-heading-3); letter-spacing: .01em; line-height: 1.3; color: var(--site-color-night-copy); }
+body.pricing-page .ed-inline-feature p:not(.ed-kicker) { color: var(--site-color-muted) !important; }
+body.pricing-page .ed-inline-feature .ed-link { display: inline-flex; align-items: center; height: 36px; margin-top: var(--space-200); padding-inline: var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-ink); color: #fff !important; font: var(--type-button-sm); text-decoration: none; }
+body.pricing-page .ed-inline-feature .ed-link::after { display: none; }
+body.pricing-page .ed-inline-feature h2 { font: var(--type-heading-3); letter-spacing: 0; line-height: 1.35; color: var(--site-color-ink) !important; }
 
-/* FAQ (en): hairline rows with a rotating chevron. */
-body.pricing-page .faq { border-top: 1px solid var(--site-color-line); }
-body.pricing-page .faq details { border-bottom: 1px solid var(--site-color-line); }
-body.pricing-page .faq summary { min-height: 56px; padding: var(--space-200) 0; font: var(--type-heading-6); letter-spacing: -.005em; transition: color var(--site-motion-color); }
+/* FAQ (en): rounded rows that open in place. */
+body.pricing-page .faq { display: grid; gap: var(--space-75); border: 0; }
+body.pricing-page .faq details { border: 0; border-radius: var(--radius-xl); background: var(--site-color-subtle); }
+body.pricing-page .faq summary { min-height: 52px; padding: var(--space-100) var(--space-300); font: var(--type-title-3); transition: color var(--site-motion-color); }
 body.pricing-page .faq summary:hover { color: var(--site-color-copy); }
-body.pricing-page .faq summary::after { content: ''; flex: none; width: 10px; height: 10px; margin-right: var(--space-50); border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform var(--site-motion-move); }
+body.pricing-page .faq summary::after { content: ''; flex: none; width: 8px; height: 8px; margin-right: var(--space-50); border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform var(--site-motion-move); }
 body.pricing-page .faq details[open] summary::after { content: ''; transform: translateY(2px) rotate(-135deg); }
-body.pricing-page .faq .faq-body { padding-bottom: var(--space-300); color: var(--site-color-copy); font: var(--type-body-3); }
-body.pricing-page .faq .faq-body a { text-decoration: underline; text-underline-offset: var(--space-50); }
-body.pricing-page .split-side .card { border: 0; border-radius: var(--radius-2xl); background: var(--site-color-surface); box-shadow: none; }
+body.pricing-page .faq .faq-body { padding: 0 var(--space-300) var(--space-300); color: var(--site-color-muted); font: var(--type-body-6); font-size: .9375rem; }
+body.pricing-page .faq .faq-body a { color: var(--site-color-ink); text-decoration: underline; text-underline-offset: 3px; }
+body.pricing-page .split-side .card { border: 0; border-radius: var(--radius-3xl); background: var(--site-color-surface); box-shadow: none; }
 
-/* Closing call: a centred surface sheet, like the home and product pages. */
-body.pricing-page .cta-slim { padding-block: 0 var(--space-900); border: 0; background: none; }
-body.pricing-page .cta-slim .shell { display: grid; justify-items: center; gap: var(--space-200); padding: var(--space-900) var(--space-300); border-radius: var(--radius-3xl); background: var(--site-color-surface); text-align: center; }
-body.pricing-page .cta-slim .shell::before { content: ''; width: var(--space-100); height: var(--space-100); margin-bottom: var(--space-100); border-radius: var(--radius-full); background: var(--site-color-accent); }
-body.pricing-page .cta-slim .h2 { max-width: 760px; font: var(--type-heading-2); letter-spacing: -.022em; text-wrap: balance; }
-body.pricing-page .cta-slim .body { color: var(--site-color-copy); font: var(--type-body-7); }
-body.pricing-page .cta-slim .btn { margin-top: var(--space-200); min-height: 40px; padding: var(--space-75) var(--space-100); border-radius: var(--radius-lg); background: var(--site-color-ink); color: var(--site-color-paper); font: var(--type-button-md); }
+/* Closing call: a centred gray panel, like the home and product pages. */
+body.pricing-page .cta-slim { padding-block: var(--space-900) 0; border: 0; background: none; }
+body.pricing-page .cta-slim .shell { display: grid; justify-items: center; gap: var(--space-200); padding: var(--space-800) var(--space-300); border-radius: var(--radius-3xl); background: var(--site-color-surface); text-align: center; }
+body.pricing-page .cta-slim .h2 { max-width: 720px; font: var(--type-heading-3); letter-spacing: -.015em; text-wrap: balance; }
+body.pricing-page .cta-slim .body { color: var(--site-color-muted); font: var(--type-body-7); }
+body.pricing-page .cta-slim .btn { margin-top: var(--space-100); height: 40px; min-height: 0; padding: 0 var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-ink); color: #fff; font: var(--type-button-sm); }
+body.pricing-page .cta-slim .btn:hover { background: var(--site-color-ink-hover); }
 
 @media (max-width: 1080px) {
   body.pricing-page :is(.plans, .ed-pricing-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
-  body.pricing-page :is(.page-head, .ed-page-hero) { padding: var(--space-600) 0 var(--space-500); }
+  body.pricing-page :is(.page-head, .ed-page-hero) { padding: var(--space-500) 0 var(--space-400); }
   body.pricing-page :is(.page-lede, .ed-page-hero .ed-copy-serif) { font: var(--type-body-3); }
-  body.pricing-page :is(.plans, .ed-pricing-grid) { grid-template-columns: minmax(0, 1fr); gap: var(--space-200); }
-  body.pricing-page :is(.sec, .ed-section) { padding-block: var(--space-700); }
-  body.pricing-page .sec.sec--flush, body.pricing-page .ed-section-tight { padding-bottom: var(--space-700); }
-  body.pricing-page .ed-inline-feature { padding: var(--space-300); }
-  body.pricing-page .cta-slim .shell { padding: var(--space-700) var(--space-300); }
-  body.pricing-page .cta-slim { padding-bottom: var(--space-700); }
+  body.pricing-page :is(.plans, .ed-pricing-grid) { grid-template-columns: minmax(0, 1fr); gap: var(--space-100); }
+  body.pricing-page :is(.plan, .ed-price-card) { border-radius: var(--radius-2xl); }
+  body.pricing-page :is(.sec, .ed-section) { padding-block: var(--space-700) 0; }
+  body.pricing-page .ed-inline-feature { padding: var(--space-200); border-radius: var(--radius-2xl); }
+  body.pricing-page .cta-slim .shell { padding: var(--space-600) var(--space-300); border-radius: var(--radius-2xl); }
+  body.pricing-page .cta-slim { padding-top: var(--space-700); }
 }
 @media (prefers-reduced-motion: reduce) {
-  body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .faq summary, .faq summary::after) { transition: none; }
+  body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet, .faq summary, .faq summary::after) { transition: none; }
+  body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet):active { transform: none; }
 }
 
-/* brand.css styles editorial titles at (0,3,1); match the display serif there. */
+/* brand.css styles editorial titles at (0,3,1); restate the sans there. */
 body.pricing-page.ed-site .ed-page-hero .ed-page-title,
 body.pricing-page.ed-site .ed-section .ed-title,
 body.pricing-page.ed-site .ed-product-block h2,
 body.pricing-page.ed-site .ed-price-card h2,
-body.pricing-page.ed-site .ed-inline-feature h2 { font-family: var(--site-font-display); font-weight: 500; }
-body.pricing-page.ed-site .ed-page-hero .ed-page-title { font-weight: 400; }
+body.pricing-page.ed-site .ed-inline-feature h2 { font-family: var(--site-font); font-weight: 500; }
+
+/* The zh page also carries editorial.css + brand.css, whose featured-card,
+   price and hero-grid rules reach (0,3,1)-(0,4,1). Restate the design at
+   that weight so the recommended tier stays legible on its gray card. */
+body.pricing-page.ed-site .ed-page-hero .ed-page-hero-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 0; }
+body.pricing-page.ed-site .ed-page-hero-grid .ed-copy-serif { grid-column: auto; max-width: 600px; margin: var(--space-200) auto 0; color: var(--site-color-muted); font: var(--type-body-7); font-family: var(--site-font); }
+body.pricing-page.ed-site .ed-price-card,
+body.pricing-page.ed-site .ed-price-card.is-featured { min-height: 0; transform: none; }
+body.pricing-page.ed-site .ed-price-card.is-featured { color: var(--site-color-ink); border-color: transparent; background: var(--site-color-surface); box-shadow: none; }
+body.pricing-page.ed-site .ed-price-card.is-featured h2,
+body.pricing-page.ed-site .ed-price-card.is-featured .ed-price { color: var(--site-color-ink); }
+body.pricing-page.ed-site .ed-price-card.is-featured ul { color: var(--site-color-copy); }
+body.pricing-page.ed-site .ed-price-card.is-featured > p:not(.ed-kicker) { color: var(--site-color-muted); }
+body.pricing-page.ed-site .ed-price-card .ed-price { margin: var(--space-200) 0 var(--space-50); font: 500 2.5rem/1.1 var(--site-font); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+body.pricing-page.ed-site .ed-price-card h2 { margin: var(--space-100) 0 0; font: var(--type-heading-4); letter-spacing: -.01em; }
+body.pricing-page.ed-site .ed-price-card.is-featured .ed-button { background: var(--site-color-ink); color: #fff; border: 0; }
+body.pricing-page.ed-site .ed-price-card.is-featured .ed-button:hover { background: var(--site-color-ink-hover); color: #fff; }
+@media (hover: hover) and (pointer: fine) {
+  body.pricing-page.ed-site .ed-price-card:hover,
+  body.pricing-page.ed-site .ed-price-card.is-featured:hover { transform: none; box-shadow: inset 0 0 0 1px var(--site-color-line-strong); }
+  body.pricing-page.ed-site .ed-price-card.is-featured:hover { box-shadow: none; }
+}
+
+/* Plan comparison table and the zh FAQ accordion (modules.css). Prices and
+   plan contents repeat the cards above word for word. */
+.pricing-page .pricing-compare { margin-top: var(--space-800); }
+.pricing-page .m-table--plans td { font-size: .875rem; line-height: 1.375rem; }
+.pricing-page .m-table--plans tbody th { width: 26%; }
+.pricing-page .m-table--plans td { text-align: left; }
+.pricing-page .pricing-faq { max-width: none; margin: var(--space-600) 0 0; }
+.pricing-page .m-faq summary { font-family: var(--site-font); }
+@media (max-width: 760px) {
+  .pricing-page .pricing-compare { margin-top: var(--space-700); }
+  .pricing-page .m-table--plans { min-width: 680px; table-layout: auto; }
+  .pricing-page .m-table--plans thead th small { display: block; }
+  .pricing-page .m-table--plans :is(tbody th, thead th:first-child) { position: sticky; left: 0; z-index: 1; width: 132px; background: #fff; }
+  .pricing-page .m-table--plans td, .pricing-page .m-table--plans thead th:not(:first-child) { text-align: left; }
+  .pricing-page .m-table--plans .m-group th { position: static; }
+}
+@media (min-width: 761px) { .pricing-page .m-table--plans { table-layout: fixed; } }
+/* editorial.css (zh) sets table headers in an uppercase mono face without
+   CJK glyphs; the comparison table keeps the public sans. */
+.pricing-page .m-table :is(th, td, caption) { font-family: var(--site-font); text-transform: none; letter-spacing: 0; }
+
+/* Round 4 texture: plan cards are white sheets with a hairline, a contact
+   shadow and a wide faint ambient shadow; on hover they lift 2px and the
+   deeper shadow (on ::after, so only its opacity changes) fades in. */
+body.pricing-page :is(.plan, .ed-price-card) { position: relative; box-shadow: var(--site-shadow-1), var(--site-inner-highlight); transition: transform 500ms var(--site-ease); }
+body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .04); background-image: var(--site-noise); background-size: 160px 160px; }
+body.pricing-page :is(.plan, .ed-price-card)::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--site-shadow-3); opacity: 0; pointer-events: none; transition: opacity 300ms var(--site-ease); }
+@media (hover: hover) and (pointer: fine) {
+  body.pricing-page :is(.plan, .ed-price-card):hover { transform: translateY(-2px); }
+  body.pricing-page :is(.plan, .ed-price-card):hover::after { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.pricing-page :is(.plan, .ed-price-card), body.pricing-page :is(.plan, .ed-price-card)::after { transition: none; }
+  body.pricing-page :is(.plan, .ed-price-card):hover { transform: none; }
+}
+
+/* Question-chain echo: an open answer hangs from its question on the same
+   hairline-and-dot thread as the home page chain. The line draws once as
+   the answer opens; reduced motion shows it already drawn. */
+@keyframes qc-thread { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes qc-thread-dot { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+body.pricing-page .faq .faq-body { position: relative; padding-left: calc(var(--space-300) + 22px); }
+body.pricing-page .faq .faq-body::before { content: ''; position: absolute; left: calc(var(--space-300) + 3px); top: 2px; bottom: calc(var(--space-300) + 12px); width: 1px; background: var(--site-color-line-strong, rgb(0 0 0 / .12)); transform-origin: top; animation: qc-thread 500ms cubic-bezier(.22,1,.36,1) both; }
+body.pricing-page .faq .faq-body::after { content: ''; position: absolute; left: var(--space-300); bottom: calc(var(--space-300) + 8px); width: 7px; height: 7px; border-radius: 50%; background: var(--site-color-ink, #0d0d0d); animation: qc-thread-dot 400ms cubic-bezier(.22,1,.36,1) 380ms both; }
+@media (prefers-reduced-motion: reduce) { body.pricing-page .faq .faq-body::before, body.pricing-page .faq .faq-body::after { animation: none; } }

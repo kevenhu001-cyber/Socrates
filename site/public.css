@@ -1,60 +1,63 @@
 /* Public marketing foundations. Page files own composition; chrome.css owns navigation.
    This sheet bridges older article templates into the same public-site system.
 
-   Visual language "ink on paper": a warm, flat paper ground, near-black ink,
-   one vermilion accent used sparingly (a seal mark, never a fill), hairline
-   rules instead of boxes, and an editorial serif for display headings.
-   Newsreader is a Latin-only face; Chinese headings fall through to
-   Noto Serif SC (fonts.css on /zh pages). The range below keeps the CJK
-   punctuation blocks out of the Latin face (check-cjk-punctuation-fonts). */
-@font-face {
-  font-family: 'Socrates Display';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400;
-  src: url('/media/fonts/newsreader-latin-400-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Socrates Display';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url('/media/fonts/newsreader-latin-500-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
+   Visual language: the OpenAI.com style system, rebuilt with our own type
+   and content. A pure white ground, near-black text, a neutral gray ramp
+   (#f9f9f9 / #f3f3f3 / #e8e8e8 / #cdcdcd / #8f8f8f / #5d5d5d), no accent
+   colour, one geometric sans (Geist) at a medium 500 weight with tight
+   tracking for headings, fully rounded pill controls and soft 16-24px card
+   radii. Nothing here copies OpenAI assets, fonts or copy. */
 :root {
-  /* Colour: one warm gray family, flat surfaces. Contrast on paper:
-     ink 16.6:1, copy 10.4:1, muted 5.5:1, accent 5.7:1. */
-  --site-color-paper: #f8f7f3;
-  --site-color-surface: #f0eee7;
-  --site-color-surface-strong: #e8e5dc;
+  /* Colour: neutral grays only. Contrast on white: ink 19.6:1 (#0d0d0d),
+     copy 12.6:1 (#303030), muted 6.9:1 (#5d5d5d), quiet 4.6:1 (#767676). */
+  --site-color-paper: #fff;
+  --site-color-surface: #f3f3f3;
+  --site-color-surface-strong: #e8e8e8;
+  --site-color-subtle: #f9f9f9;
   --site-color-raised: #fff;
-  --site-color-ink: #191814;
-  --site-color-copy: #3d3b36;
-  --site-color-muted: #67645c;
-  --site-color-quiet: #67645c;
-  --site-color-line: #e2dfd6;
-  --site-color-line-strong: #d3cfc4;
-  --site-color-accent: #a8401f;
-  --site-color-ink-hover: #3d3b36;
-  /* The single dark ground (approved #131209) for the footer band. */
-  --site-color-night: #131209;
-  --site-color-night-copy: #f8f7f3;
-  --site-color-night-muted: #a39f94;
-  --site-color-night-line: rgb(248 247 243 / .14);
-  /* Shadows are tinted toward the warm ink, one light source from above. */
-  --site-shadow-raised: 0 1px 2px rgb(25 24 20 / .05), 0 16px 40px -24px rgb(25 24 20 / .22);
-  --site-shadow-ring: 0 0 0 1px rgb(25 24 20 / .08);
-  --site-font: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --site-font-display: 'Socrates Display', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+  --site-color-ink: #0d0d0d;
+  --site-color-copy: #303030;
+  --site-color-muted: #5d5d5d;
+  --site-color-quiet: #767676;
+  --site-color-line: rgb(0 0 0 / .08);
+  --site-color-line-strong: rgb(0 0 0 / .12);
+  /* No brand accent: the former accent slot now resolves to ink, so legacy
+     selectors that still name it render in the same neutral voice. */
+  --site-color-accent: #0d0d0d;
+  --site-color-ink-hover: #303030;
+  --site-color-fill: rgb(0 0 0 / .04);
+  --site-color-fill-hover: rgb(0 0 0 / .08);
+  /* Inverse tokens kept for older templates that still draw a dark band;
+     the shared footer is white. */
+  --site-color-night: #0d0d0d;
+  --site-color-night-copy: #fff;
+  --site-color-night-muted: #afafaf;
+  --site-color-night-line: rgb(255 255 255 / .14);
+  /* Shadows: neutral and very soft, used only on floating composers. */
+  --site-shadow-raised: 0 0 0 1px rgb(0 0 0 / .05), 0 4px 24px -4px rgb(0 0 0 / .08);
+  --site-shadow-ring: 0 0 0 1px rgb(0 0 0 / .08);
+  /* Texture: layered neutral shadows. Each step is a 1px hairline, a tight
+     contact shadow and a wide, very faint ambient one, so a white card reads
+     as a physical sheet without any colour. */
+  --site-hairline: rgb(0 0 0 / .06);
+  --site-shadow-1: 0 0 0 1px rgb(0 0 0 / .05), 0 1px 2px rgb(0 0 0 / .04), 0 4px 12px -4px rgb(0 0 0 / .05);
+  --site-shadow-2: 0 0 0 1px rgb(0 0 0 / .05), 0 1px 2px rgb(0 0 0 / .04), 0 12px 32px -12px rgb(0 0 0 / .12);
+  --site-shadow-3: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .04), 0 24px 56px -20px rgb(0 0 0 / .18);
+  /* A faint top highlight on raised surfaces and pills. */
+  --site-inner-highlight: inset 0 1px 0 rgb(255 255 255 / .7);
+  --site-inner-highlight-dark: inset 0 1px 0 rgb(255 255 255 / .14);
+  /* Film grain: a 160px fractal-noise tile at about 3% ink, laid over large
+     gray panels only. Static, rasterised once and tiled. */
+  --site-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.32'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
+  --site-font: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  /* Display shares the sans family: one typeface, as on the reference. */
+  --site-font-display: var(--site-font);
   --site-font-mono: 'Geist Mono', ui-monospace, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', monospace;
-  --site-width: 1536px;
-  --site-gutter: 48px;
-  --site-header-height: 80px;
+  /* 1440px of content plus gutters, as the reference container (90rem). */
+  --site-width: 1504px;
+  --site-gutter: 32px;
+  --site-header-height: 64px;
 
-  /* Design tokens (landing-page-design B1–B3, B7). Every value below is a
-     step of the Tailwind scale; components reference tokens, never raw px. */
   --space-25: 2px;
   --space-50: 4px;
   --space-75: 8px;
@@ -67,63 +70,64 @@
   --space-700: 64px;
   --space-800: 80px;
   --space-900: 96px;
-  --radius-sm: 2px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
   --radius-3xl: 24px;
   --radius-full: 9999px;
   --site-radius: var(--radius-xl);
   --site-space-section: var(--space-900);
 
-  /* Named text styles: weight size/line-height family. Sizes and line
-     heights are the B1 table. Headings are set in the editorial serif at a
-     book weight (400/500): the user asked for an Anthropic/OpenAI-grade
-     editorial voice, which overrides B1's single-typeface and semibold
-     heading rules. Titles, body, buttons and captions stay in Geist. */
-  --type-heading-1: 400 3.75rem/1 var(--site-font-display);
-  --type-heading-2: 400 3rem/1 var(--site-font-display);
-  --type-heading-3: 400 2.25rem/2.5rem var(--site-font-display);
-  --type-heading-4: 500 1.875rem/2.25rem var(--site-font-display);
-  --type-heading-5: 500 1.5rem/2rem var(--site-font-display);
-  --type-heading-6: 500 1.25rem/1.75rem var(--site-font-display);
+  /* Named text styles: weight size/line-height family. Headings use the
+     reference scale (h1 64 / h2 48 / h3 30 / h4 22 / h5 18) at weight 500;
+     body copy is 17px (p1) and 14px (p2); controls are 14px/500. */
+  --type-heading-1: 500 3.5rem/1.1 var(--site-font-display);
+  --type-heading-2: 500 2.5rem/1.15 var(--site-font-display);
+  --type-heading-3: 500 1.875rem/1.25 var(--site-font-display);
+  --type-heading-4: 500 1.375rem/1.3 var(--site-font-display);
+  --type-heading-5: 500 1.125rem/1.35 var(--site-font-display);
+  --type-heading-6: 500 1rem/1.4 var(--site-font-display);
   --type-title-1: 500 1.25rem/1.75rem var(--site-font);
-  --type-title-2: 500 1.125rem/1.75rem var(--site-font);
+  --type-title-2: 500 1.125rem/1.5rem var(--site-font);
   --type-title-3: 500 1rem/1.5rem var(--site-font);
   --type-title-4: 500 .875rem/1.25rem var(--site-font);
   --type-title-5: 500 .75rem/1rem var(--site-font);
-  --type-body-1: 600 1rem/1.5rem var(--site-font);
+  --type-body-1: 500 1.0625rem/1.75rem var(--site-font);
   --type-body-2: 500 1rem/1.5rem var(--site-font);
-  --type-body-3: 400 1rem/1.5rem var(--site-font);
-  --type-body-4: 600 .875rem/1.25rem var(--site-font);
+  --type-body-3: 400 1rem/1.625rem var(--site-font);
+  --type-body-4: 500 .875rem/1.25rem var(--site-font);
   --type-body-5: 500 .875rem/1.25rem var(--site-font);
-  --type-body-6: 400 .875rem/1.25rem var(--site-font);
-  /* Body 7: lead paragraphs, built from text-lg as B1 allows. */
-  --type-body-7: 400 1.125rem/1.75rem var(--site-font);
-  --type-button-lg: 600 1.125rem/1.75rem var(--site-font);
-  --type-button-md: 600 1rem/1.5rem var(--site-font);
-  --type-button-sm: 600 .875rem/1.25rem var(--site-font);
-  --type-button-xsm: 600 .75rem/1rem var(--site-font);
+  --type-body-6: 400 .875rem/1.4375rem var(--site-font);
+  /* Body 7: lead paragraphs, the reference p1 (17px / 28px). */
+  --type-body-7: 400 1.0625rem/1.75rem var(--site-font);
+  --type-button-lg: 500 1rem/1.5rem var(--site-font);
+  --type-button-md: 500 .9375rem/1.375rem var(--site-font);
+  --type-button-sm: 500 .875rem/1.25rem var(--site-font);
+  --type-button-xsm: 500 .8125rem/1.125rem var(--site-font);
   --type-caption-1: 500 .875rem/1.25rem var(--site-font);
   --type-caption-2: 400 .875rem/1.25rem var(--site-font);
-  --type-caption-3: 600 .75rem/1rem var(--site-font);
-  --type-caption-4: 500 .75rem/1rem var(--site-font);
-  --type-caption-5: 400 .75rem/1rem var(--site-font);
+  --type-caption-3: 500 .75rem/1rem var(--site-font);
+  --type-caption-4: 500 .8125rem/1.125rem var(--site-font);
+  --type-caption-5: 400 .8125rem/1.125rem var(--site-font);
 
-  /* Motion: one curve, 500ms for movement, 300ms for colour and opacity. */
+  /* Motion: quiet. 150ms colour changes, 200ms small moves. */
   --site-ease: cubic-bezier(.22, 1, .36, 1);
-  --site-motion-fast: 300ms;
-  --site-motion-medium: 500ms;
-  --site-motion-slow: 700ms;
+  --site-motion-fast: 150ms;
+  --site-motion-medium: 200ms;
+  --site-motion-slow: 400ms;
   --site-motion-color: var(--site-motion-fast) var(--site-ease);
   --site-motion-move: var(--site-motion-medium) var(--site-ease);
+  /* Entrances and layout-scale moves: about 500ms; colour and opacity 300ms. */
+  --site-motion-enter: 500ms;
+  --site-motion-fade: 300ms;
 }
 /* Text style classes, kebab-case names from the B1 table. */
-.heading-1 { font: var(--type-heading-1); letter-spacing: -.025em; }
-.heading-2 { font: var(--type-heading-2); letter-spacing: -.022em; }
-.heading-3 { font: var(--type-heading-3); letter-spacing: -.018em; }
-.heading-4 { font: var(--type-heading-4); letter-spacing: -.015em; }
+.heading-1 { font: var(--type-heading-1); letter-spacing: -.03em; }
+.heading-2 { font: var(--type-heading-2); letter-spacing: -.025em; }
+.heading-3 { font: var(--type-heading-3); letter-spacing: -.015em; }
+.heading-4 { font: var(--type-heading-4); letter-spacing: -.01em; }
 .heading-5 { font: var(--type-heading-5); letter-spacing: -.01em; }
 .heading-6 { font: var(--type-heading-6); letter-spacing: -.005em; }
 .title-1 { font: var(--type-title-1); letter-spacing: -.015em; }
@@ -150,7 +154,7 @@
 :is(.heading-1, .heading-2, .heading-3, .heading-4, .heading-5, .heading-6) { text-wrap: balance; }
 :is(.body-3, .body-6, .body-7) { text-wrap: pretty; }
 /* Chinese has no word spaces to tighten and needs air between lines. */
-:lang(zh) :is(.heading-1, .heading-2, .heading-3, .heading-4, .heading-5, .heading-6) { letter-spacing: 0; line-height: 1.25; }
+:lang(zh) :is(.heading-1, .heading-2, .heading-3, .heading-4, .heading-5, .heading-6) { letter-spacing: 0; line-height: 1.3; }
 [data-site-public] {
   --font-sans: var(--site-font);
   --font-serif: var(--site-font);
@@ -182,8 +186,8 @@ html { scroll-padding-top: 0; }
 [data-site-public] main [id] { scroll-margin-top: calc(var(--site-header-height) + 24px); }
 [data-site-public] :is(.home-shell, .shell) { width: 100%; max-width: var(--site-width); margin-inline: auto; padding-inline: var(--site-gutter); }
 [data-site-public] :is(.content-shell, .product-shell), [data-site-public].ed-site .ed-shell { width: min(calc(100% - var(--site-gutter) * 2), calc(var(--site-width) - var(--site-gutter) * 2)); margin-inline: auto; }
-[data-site-public] :is(.content-title, .page-title, .ed-report-title, .ed-page-title) { font-family: var(--site-font); font-weight: 500; letter-spacing: -.045em; }
-[data-site-public] :is(.page-title, .ed-report-title, .ed-page-title) { font-size: clamp(36px, 4.6vw, 64px); line-height: 1.12; }
+[data-site-public] :is(.content-title, .page-title, .ed-report-title, .ed-page-title) { font-family: var(--site-font); font-weight: 500; letter-spacing: -.03em; }
+[data-site-public] :is(.page-title, .ed-report-title, .ed-page-title) { font-size: clamp(32px, 3.6vw, 52px); line-height: 1.12; }
 [data-site-public] .page-head { padding-block: var(--space-700) var(--space-600); }
 [data-site-public] .page-lede { line-height: 1.7; }
 [data-site-public] .content-hero { padding-block: var(--space-700) var(--space-600); }
@@ -194,14 +198,14 @@ html { scroll-padding-top: 0; }
 [data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link) { transition: color var(--site-motion-color); }
 [data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link) > :is(svg, [aria-hidden="true"]):last-child { display: inline-block; transition: transform var(--site-motion-move); }
 [data-site-public] .section-link::after { display: inline-block; transition: transform var(--site-motion-move); }
-:where([data-site-public]) :focus-visible { outline: 2px solid var(--site-color-ink); outline-offset: var(--space-50); border-radius: var(--radius-sm); }
+:where([data-site-public]) :focus-visible { outline: 2px solid var(--site-color-ink); outline-offset: 3px; border-radius: var(--radius-sm); }
 [data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link):hover > :is(svg, [aria-hidden="true"]):last-child,
 [data-site-public] .section-link:hover::after { transform: translateX(var(--space-50)); }
 [data-site-public] :is(.research-filters button, .ask-chip) { transition: background-color var(--site-motion-color), color var(--site-motion-color), border-color var(--site-motion-color), transform var(--site-motion-move); }
 [data-site-public] :is(.research-filters button, .ask-chip):active { transform: scale(.98); }
 [data-site-public] :is(.research-note-arrow, .story-step > span:last-child, .company-work-list a > span:last-child) { transition: transform var(--site-motion-medium) var(--site-ease); }
 [data-site-public] :is(.story-step, .company-work-list a):hover > span:last-child { transform: translateX(4px); }
-[data-site-public] .research-note-media, [data-site-public] .company-visual-frame { border-radius: var(--site-radius); }
+[data-site-public] .research-note-media, [data-site-public] .company-visual-frame { border-radius: var(--site-radius); overflow: hidden; }
 [data-site-public] :is(.research-note-media img, .story-media img, .home-research-media img, .hero-art, .company-visual img) { transition: transform var(--site-motion-slow) var(--site-ease); }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   [data-site-public] .research-note a:hover .research-note-media img,
@@ -217,15 +221,18 @@ html { scroll-padding-top: 0; }
 [data-site-public] [data-site-reveal] { scroll-margin-top: calc(var(--site-header-height) + 24px); }
 
 @view-transition { navigation: auto; }
-::view-transition-old(root) { animation: site-page-out 200ms var(--site-ease) both; }
-::view-transition-new(root) { animation: site-page-in 300ms var(--site-ease) both; }
+::view-transition-old(root) { animation: site-page-out 150ms var(--site-ease) both; }
+::view-transition-new(root) { animation: site-page-in 200ms var(--site-ease) both; }
 @keyframes site-page-out { to { opacity: 0; } }
-@keyframes site-page-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes site-page-in { from { opacity: 0; } }
 
+@media (max-width: 1080px) {
+  :root { --type-heading-1: 500 2.75rem/1.12 var(--site-font-display); --type-heading-2: 500 2.125rem/1.18 var(--site-font-display); }
+}
 @media (max-width: 760px) {
-  :root { --site-gutter: 24px; --site-header-height: 64px; --site-space-section: var(--space-700); }
+  :root { --site-gutter: 24px; --site-header-height: 56px; --site-space-section: var(--space-700); }
   [data-site-public] .page-head, [data-site-public] .content-hero { padding-block: 40px 32px; }
-  :root { --type-heading-1: 400 3rem/1 var(--site-font-display); --type-heading-2: 400 2.25rem/2.5rem var(--site-font-display); --type-heading-3: 400 1.875rem/2.25rem var(--site-font-display); --type-heading-4: 500 1.5rem/2rem var(--site-font-display); }
+  :root { --type-heading-1: 500 2.25rem/1.15 var(--site-font-display); --type-heading-2: 500 1.875rem/1.2 var(--site-font-display); --type-heading-3: 500 1.5rem/1.3 var(--site-font-display); --type-heading-4: 500 1.25rem/1.35 var(--site-font-display); }
 }
 @media (max-width: 380px) {
   :root { --site-gutter: 16px; }
@@ -247,3 +254,45 @@ html { scroll-padding-top: 0; }
 @media (prefers-reduced-motion: reduce) {
   [data-word-ready] .site-word { opacity: 1; transition: none; }
 }
+
+/* Inner pages (learn, guide, documents, about, principles, announcements,
+   contact, developers, legal, research and its articles): one system with
+   the home page. Eyebrows lose their old dot and become small gray pills;
+   media bands align to the page container with 24px radii and no borders;
+   older card radii resolve to the 12 / 16 / 24 scale. */
+[data-site-public] { --r-md: 12px; --r-lg: 16px; --r-xl: 24px; }
+[data-site-public] .eyebrow:not(.sec-eyebrow), [data-site-public].ed-site .ed-page-hero .ed-kicker, [data-site-public].ed-site .ed-article-hero .ed-kicker { display: inline-flex; width: fit-content; height: 28px; align-items: center; gap: 0; padding-inline: 12px; border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-muted); font: var(--type-caption-4); letter-spacing: 0; text-transform: none; }
+[data-site-public] .eyebrow::before, [data-site-public].ed-site .ed-kicker::before { display: none !important; content: none !important; }
+[data-site-public] .sec-eyebrow { color: var(--site-color-muted); font: var(--type-caption-4); letter-spacing: 0; text-transform: none; }
+[data-site-public] .page-head .eyebrow { margin-bottom: var(--space-300); }
+[data-site-public] .page-title { max-width: 20ch; text-wrap: balance; }
+[data-site-public] .page-lede { color: var(--site-color-muted); text-wrap: pretty; }
+[data-site-public] .page-media-shell { width: min(calc(100% - var(--site-gutter) * 2), calc(var(--site-width) - var(--site-gutter) * 2)); }
+[data-site-public] .page-media-grid { gap: var(--space-300); }
+[data-site-public] .page-media-frame { border: 0; border-radius: var(--radius-3xl); background: var(--site-color-surface); }
+[data-site-public] .page-media-inline .page-media-frame, [data-site-public] .page-media-inline img { border-radius: var(--radius-3xl); }
+[data-site-public] .page-media-card figcaption { margin-top: var(--space-100); padding-inline: var(--space-50); color: var(--site-color-muted); font: var(--type-caption-5); }
+[data-site-public] .page-media-card:hover .page-media-frame img { transform: scale(1.025); transition: transform var(--site-motion-slow) var(--site-ease); }
+[data-site-public] :is(.card, .topic, .step3) { border-radius: var(--radius-2xl); }
+[data-site-public] :is(.faq details, .ed-related-card, .ed-author-card, .ed-table-wrap, .ed-figure) { border-radius: var(--radius-2xl); }
+[data-site-public] :is(.btn--ghost, .btn--light) { border-radius: var(--radius-full); }
+@media (max-width: 760px) {
+  [data-site-public] .page-media-grid { gap: var(--space-200); }
+  [data-site-public] .page-media-frame { border-radius: var(--radius-2xl); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-site-public] .page-media-card:hover .page-media-frame img { transform: none; }
+}
+/* Older editorial heroes (zh inner pages) drew a blurred gray glow behind
+   the title; the white ground stays plain, as on the home page. */
+[data-site-public].ed-site :is(.ed-page-hero, .ed-news-hero, .ed-home-hero, .ed-reference-hero, .ed-learning-hero)::before,
+[data-site-public].ed-site :is(.ed-page-hero, .ed-news-hero)::after { display: none !important; }
+[data-site-public].ed-site :is(.ed-page-hero, .ed-learning-hero) :is(.ed-page-title, h1) { font-size: clamp(32px, 3.6vw, 52px); }
+
+/* Texture layer (round 4). Shared by every public page that loads this
+   sheet: tabular figures where numbers line up, a highlight on dark pills,
+   and film grain on the few large gray panels. */
+[data-site-public] :is(time, .pricing-price, .price, .m-table td, .home-research-meta, .m-rail-meta, .news-meta) { font-variant-numeric: tabular-nums; }
+[data-site-public] :is(.home-button, .site-try, .content-button, .product-button, .ui-btn:not(.ui-btn--soft)) { box-shadow: var(--site-inner-highlight-dark), 0 1px 2px rgb(0 0 0 / .12); }
+/* Grain sits over the panel's own fill: background-image only, no layer. */
+[data-site-public] :is(.m-panel, .m-graph-stage, .home-cta-inner, .m-story-stage) { background-image: var(--site-noise); background-size: 160px 160px; }

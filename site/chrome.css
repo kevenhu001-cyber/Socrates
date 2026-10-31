@@ -19,12 +19,33 @@
      foundations/fonts.css — keep the two in sync. */
   unicode-range: U+0000-2E7F, U+3040-FEFF, U+FFF0-FFFF;
 }
+/* English pages do not load fonts.css, so the "中文" language label had no
+   Chinese face of its own and fell back to whatever the platform offers
+   (two empty boxes where none is installed). These two faces point at the
+   existing Noto Sans SC subsets and claim only 中 (U+4E2D) and 文 (U+6587),
+   so a browser downloads them only when that label is on the page. */
+@font-face {
+  font-family: 'Socrates Locale';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/media/fonts/noto-sans-sc-119-var.woff2') format('woff2');
+  unicode-range: U+4E2D;
+}
+@font-face {
+  font-family: 'Socrates Locale';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/media/fonts/noto-sans-sc-118-var.woff2') format('woff2');
+  unicode-range: U+6587;
+}
 
-
-/* Floating capsule navigation (landing-page-design B7): a compact bar that
-   floats off the top edge, centred and sized to its content, on a
-   translucent paper surface over a background blur. Values resolve to
-   public.css tokens. The footer is the one dark band of the site. */
+/* OpenAI-style chrome: a plain white top bar the width of the content
+   container (wordmark, compact 14px links, a gray "Log in" pill and a black
+   "Try" pill), and a white footer of small grouped links. Every control is a
+   full pill; hit areas reach 44px through transparent padding, so the
+   visible controls stay small (36px). */
 .site-header,
 .site-footer {
   --site-chrome-font: var(--site-font);
@@ -32,7 +53,6 @@
   color: var(--site-color-ink);
   font: var(--type-body-6);
   font-family: var(--site-chrome-font);
-  letter-spacing: -.005em;
   text-align: left;
   -webkit-font-smoothing: antialiased;
 }
@@ -40,66 +60,75 @@
 .site-footer * { box-sizing: border-box; }
 .site-header a,
 .site-footer a { color: inherit; text-decoration: none; }
-.site-header :focus-visible { outline: 2px solid var(--site-color-ink); outline-offset: 2px; }
-.site-footer :focus-visible { outline: 2px solid var(--site-color-night-copy); outline-offset: 2px; }
+.site-header :focus-visible,
+.site-footer :focus-visible { outline: 2px solid var(--site-color-ink); outline-offset: 2px; border-radius: var(--radius-full); }
 .site-chrome-shell { width: 100%; max-width: var(--site-width); margin-inline: auto; padding-inline: var(--site-gutter); }
+.site-locale { font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); }
 
-.site-header { position: sticky; top: 0; z-index: 100; padding-block: var(--space-100) var(--space-75); pointer-events: none; }
-.site-header-inner {
-  position: relative;
-  z-index: 1;
-  width: fit-content;
-  max-width: calc(100% - var(--site-gutter) * 2);
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-300);
-  margin-inline: auto;
-  padding: var(--space-75) var(--space-75) var(--space-75) var(--space-300);
-  border-radius: var(--radius-2xl);
-  background: rgb(248 247 243 / .74);
-  /* A 1px ring drawn as a shadow so the capsule keeps its exact height. */
-  box-shadow: 0 0 0 1px rgb(25 24 20 / .08), 0 1px 2px rgb(25 24 20 / .04), 0 16px 40px -24px rgb(25 24 20 / .2);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  backdrop-filter: blur(20px) saturate(160%);
-  pointer-events: auto;
-  transition: background-color var(--site-motion-color), box-shadow var(--site-motion-color);
+.site-header { position: sticky; top: 0; z-index: 100; }
+/* The blur lives on a pseudo-element: a filter on the header itself would
+   become the containing block of the fixed mobile menu. */
+.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: rgb(255 255 255 / .78); box-shadow: 0 1px 0 var(--site-color-line); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); pointer-events: none; transition: opacity 300ms var(--site-ease); }
+/* At the top of the page the bar is clear and borderless; once the page
+   moves under it, the frosted layer fades in with a hairline below. Only
+   the layer's opacity animates; the blur itself stays on the compositor. */
+.site-header[data-scroll-aware]:not(.is-scrolled)::before { opacity: 0; }
+html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header::before { background: rgb(255 255 255 / .97); }
 }
-.site-header.is-scrolled .site-header-inner { background: rgb(248 247 243 / .9); }
+.site-header-inner { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--space-400); height: var(--site-header-height); }
 .site-header .site-brand,
 .site-footer .site-brand { display: inline-flex; align-items: center; flex-shrink: 0; gap: var(--space-75); min-height: 44px; }
-.site-brand img { width: 24px; height: 24px; display: block; object-fit: contain; }
+.site-brand img { width: 22px; height: 22px; display: block; object-fit: contain; }
 .site-header .site-brand img { display: none; }
-.site-brand-label { font: 600 1.5rem/2rem var(--site-chrome-font); letter-spacing: -.04em; }
-.site-nav { display: flex; align-items: center; gap: var(--space-25); }
-/* Inner radius = capsule radius 16 − inset 8 = 8 (B3 nested formula). */
-.site-nav a { position: relative; display: flex; align-items: center; min-height: 44px; padding-inline: var(--space-100); border-radius: var(--radius-lg); color: var(--site-color-copy); font: var(--type-title-4); font-family: var(--site-chrome-font); white-space: nowrap; transition: background-color var(--site-motion-color), color var(--site-motion-color); }
-.site-nav a:hover { background: rgb(25 24 20 / .05); color: var(--site-color-ink); }
-.site-nav a:active { transform: translateY(1px); }
-/* Current page: ink text and a small vermilion seal mark under the label. */
-.site-nav a[aria-current="page"] { color: var(--site-color-ink); }
-.site-nav a[aria-current="page"]::after { content: ''; position: absolute; left: 50%; bottom: 6px; width: 4px; height: 4px; margin-left: -2px; border-radius: var(--radius-full); background: var(--site-color-accent); }
-.site-header-actions { display: flex; align-items: center; gap: var(--space-75); margin-left: auto; }
-.site-header .site-locale { display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--space-75); border-radius: var(--radius-lg); color: var(--site-color-muted); font: var(--type-caption-4); font-family: var(--site-chrome-font); white-space: nowrap; transition: color var(--site-motion-color), background-color var(--site-motion-color); }
-.site-header .site-locale:hover { color: var(--site-color-ink); background: rgb(25 24 20 / .05); }
-.site-header .site-login,
-.site-header .site-try { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-75); padding: var(--space-75) var(--space-200); border-radius: var(--radius-lg); font: var(--type-button-sm); font-family: var(--site-chrome-font); white-space: nowrap; transition: background-color var(--site-motion-color), color var(--site-motion-color), transform var(--site-motion-move); }
-.site-header .site-login { color: var(--site-color-ink); }
-.site-header .site-login:hover { background: rgb(25 24 20 / .05); }
-.site-header .site-try { background: var(--site-color-ink); color: var(--site-color-paper); }
-.site-header .site-try:hover { background: var(--site-color-ink-hover); color: var(--site-color-paper); }
-.site-header :is(.site-login, .site-try, .site-search):active { transform: scale(.98); }
-.site-header-actions > * { flex-shrink: 0; }
-.site-try svg { flex: none; width: 16px; height: 16px; transition: transform var(--site-motion-move); }
-.site-try:hover svg { transform: translate(2px, -2px); }
-.site-search { display: grid; flex: none; width: 44px; height: 44px; place-items: center; color: var(--site-color-muted); border-radius: var(--radius-lg); transition: background-color var(--site-motion-color), color var(--site-motion-color), transform var(--site-motion-move); }
-.site-search:hover { background: rgb(25 24 20 / .05); color: var(--site-color-ink); }
-.site-search svg { width: 20px; height: 20px; }
+.site-brand-label { font: 600 1.1875rem/1.5rem var(--site-chrome-font); letter-spacing: -.03em; }
 
-/* Menu toggle: two strokes that rotate into a cross on the base curve. */
-.site-menu-toggle { position: relative; display: none; flex: none; width: 40px; height: 40px; padding: 0; color: inherit; background: transparent; border: 0; border-radius: var(--radius-lg); cursor: pointer; transition: background-color var(--site-motion-color); }
-.site-menu-toggle:hover { background: rgb(25 24 20 / .05); }
-.site-menu-toggle:active { transform: scale(.98); }
+/* Text links and pills share one recipe: the element is the 44px hit area,
+   ::before paints the 36px pill behind the label. */
+.site-nav { display: flex; align-items: center; gap: var(--space-50); }
+.site-nav a,
+.site-header .site-locale,
+.site-search,
+.site-menu-toggle { position: relative; isolation: isolate; }
+.site-nav a::before,
+.site-header .site-locale::before,
+.site-search::before,
+.site-menu-toggle::before { content: ''; position: absolute; z-index: -1; inset: 4px 0; border-radius: var(--radius-full); background: transparent; transition: background-color var(--site-motion-color), transform var(--site-motion-move); }
+.site-nav a { display: flex; align-items: center; min-height: 44px; padding-inline: var(--space-100); color: var(--site-color-ink); font: 400 .875rem/1.25rem var(--site-chrome-font); white-space: nowrap; }
+.site-nav a:hover::before,
+.site-header .site-locale:hover::before,
+.site-search:hover::before,
+.site-menu-toggle:hover::before { background: var(--site-color-fill); }
+.site-nav a:active::before,
+.site-header .site-locale:active::before,
+.site-search:active::before,
+.site-menu-toggle:active::before { transform: scale(.96); }
+/* Current page: the pill stays filled, the label turns medium. */
+.site-nav a[aria-current="page"] { font-weight: 500; }
+.site-nav a[aria-current="page"]::before { background: var(--site-color-fill); }
+
+.site-header-actions { display: flex; align-items: center; gap: var(--space-75); margin-left: auto; }
+.site-header-actions > * { flex-shrink: 0; }
+.site-header .site-locale { display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--space-100); color: var(--site-color-muted); font-size: .8125rem; font-weight: 500; line-height: 1.125rem; white-space: nowrap; transition: color var(--site-motion-color); }
+.site-header .site-locale:hover { color: var(--site-color-ink); }
+.site-header .site-login,
+.site-header .site-try { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-50); height: 36px; padding-inline: var(--space-200); border-radius: var(--radius-full); font: var(--type-button-sm); font-family: var(--site-chrome-font); white-space: nowrap; transition: background-color var(--site-motion-color), color var(--site-motion-color), transform var(--site-motion-move); }
+.site-header :is(.site-login, .site-try)::after { content: ''; position: absolute; inset: -4px -2px; }
+.site-header .site-login { background: var(--site-color-fill); color: var(--site-color-ink); }
+.site-header .site-login:hover { background: var(--site-color-fill-hover); }
+.site-header .site-try { background: var(--site-color-ink); color: #fff; }
+.site-header .site-try:hover { background: var(--site-color-ink-hover); color: #fff; }
+.site-header :is(.site-login, .site-try):active { transform: scale(.98); }
+.site-try svg { flex: none; width: 14px; height: 14px; transition: transform var(--site-motion-move); }
+.site-try:hover svg { transform: translate(1px, -1px); }
+.site-search { display: none; flex: none; width: 44px; height: 44px; place-items: center; color: var(--site-color-ink); }
+.site-search::before { inset: 4px; }
+.site-search svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+
+/* Menu toggle: two strokes that rotate into a cross. */
+.site-menu-toggle { display: none; flex: none; width: 44px; height: 44px; padding: 0; color: inherit; background: transparent; border: 0; border-radius: var(--radius-full); cursor: pointer; }
+.site-menu-toggle::before { inset: 4px; }
 .site-menu-toggle span { position: absolute; top: 50%; left: 50%; width: 16px; height: 1.5px; margin: -.75px 0 0 -8px; border-radius: var(--radius-full); background: currentColor; transition: transform var(--site-motion-move); }
 .site-menu-toggle span:first-child { transform: translateY(-3px); }
 .site-menu-toggle span:last-child { transform: translateY(3px); }
@@ -107,120 +136,112 @@
 .site-menu-toggle[aria-expanded="true"] span:last-child { transform: rotate(-45deg); }
 .site-header [hidden] { display: none; }
 
-/* Mobile menu: a full-height panel on the paper surface with a strong blur.
-   It floats 8px inside the viewport like the capsule, so its radius is
-   capsule 16 + inset 8 = 24 (B3), and the scrim behind it stays tappable.
-   Links are set in the display serif, like a table of contents. */
+/* Mobile menu: a white sheet that drops from the bar with rounded lower
+   corners and a soft shadow; the dimmed page below stays tappable to close. */
 .site-mobile-menu {
   position: fixed;
   z-index: 0;
-  inset: var(--space-75);
-  border-radius: var(--radius-3xl);
-  box-shadow: 0 0 0 1px rgb(25 24 20 / .07), 0 24px 64px -24px rgb(25 24 20 / .26);
+  top: var(--site-header-height);
+  left: 0;
+  right: 0;
+  max-height: calc(100dvh - var(--site-header-height) - var(--space-600));
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: calc(var(--site-header-height) + var(--space-200)) var(--space-300) var(--space-600);
-  background: rgb(248 247 243 / .94);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
-  pointer-events: auto;
+  padding: var(--space-75) var(--site-gutter) var(--space-300);
+  border-radius: 0 0 var(--radius-3xl) var(--radius-3xl);
+  background: #fff;
+  box-shadow: 0 24px 48px -16px rgb(0 0 0 / .16);
 }
 .site-mobile-menu nav { display: grid; }
-.site-mobile-menu nav a { display: flex; align-items: center; min-height: 56px; padding-block: var(--space-100); border-bottom: 1px solid var(--site-color-line); font: var(--type-heading-4); letter-spacing: -.015em; transition: color var(--site-motion-color); }
+.site-mobile-menu nav a { display: flex; align-items: center; min-height: 48px; font: 500 1.125rem/1.5rem var(--site-chrome-font); letter-spacing: -.01em; transition: color var(--site-motion-color); }
 .site-mobile-menu nav a:hover { color: var(--site-color-muted); }
-.site-mobile-menu nav a[aria-current="page"]::after { content: ''; width: 6px; height: 6px; margin-left: var(--space-100); border-radius: var(--radius-full); background: var(--site-color-accent); }
-.site-mobile-utilities { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-75) var(--space-300); margin-top: var(--space-300); }
-.site-mobile-utilities a { display: flex; align-items: center; min-height: 44px; font: var(--type-body-5); font-family: var(--site-chrome-font); color: var(--site-color-copy); }
-.site-mobile-utilities .site-locale { min-height: 44px; padding-inline: 0; }
-.site-menu-scrim { position: fixed; z-index: 90; inset: 0; background: rgb(19 18 9 / .24); }
+.site-mobile-menu nav a[aria-current="page"] { color: var(--site-color-muted); }
+.site-mobile-utilities { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-75); margin-top: var(--space-300); padding-top: var(--space-300); border-top: 1px solid var(--site-color-line); }
+.site-mobile-utilities a { display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--space-200); border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-ink); font: var(--type-button-sm); font-family: var(--site-chrome-font); }
+.site-mobile-utilities a:first-child { background: var(--site-color-ink); color: #fff; }
+.site-mobile-utilities .site-locale { font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); }
+.site-menu-scrim { position: fixed; z-index: 90; inset: 0; background: rgb(0 0 0 / .16); }
 html.site-menu-open { overflow: hidden; }
 
-/* Footer: the single dark band, on the approved warm black (#131209).
-   A lead column with the wordmark, five grouped link columns, then a
-   bottom row with copyright, legal links, social links and language. */
-.site-footer { padding-block: var(--space-900) var(--space-400); background: var(--site-color-night); color: var(--site-color-night-copy); }
-.site-footer-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: var(--space-600) var(--space-700); }
-.site-footer-lead { display: grid; align-content: start; gap: var(--space-200); }
-.site-footer .site-footer-lead .site-brand { min-height: 32px; }
-.site-footer .site-brand img { display: none; }
-.site-footer .site-footer-tagline { max-width: 240px; margin: 0; color: var(--site-color-night-muted); font: 400 1.25rem/1.75rem var(--site-font-display); letter-spacing: -.005em; text-wrap: balance; }
+/* Footer: white, five columns of small links under muted group labels, then
+   one row with social icons, copyright and legal links, and a gray
+   language pill. */
+.site-footer { padding-block: var(--space-900) var(--space-400); background: #fff; color: var(--site-color-ink); }
+.site-footer-inner { display: grid; gap: var(--space-700); }
 .site-footer-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-400) var(--space-300); }
 .site-footer-col { min-width: 0; }
 .site-footer-summary { display: none; }
-.site-footer-group + .site-footer-group { margin-top: var(--space-400); }
-.site-footer .site-footer-group h2 { margin: 0 0 var(--space-100); color: var(--site-color-night-muted); font: var(--type-caption-4); font-family: var(--site-chrome-font); letter-spacing: .01em; }
-.site-footer-group a { display: block; width: fit-content; max-width: 100%; padding-block: var(--space-50); color: rgb(248 247 243 / .86); font: var(--type-body-6); font-family: var(--site-chrome-font); overflow-wrap: anywhere; transition: color var(--site-motion-color), transform var(--site-motion-move); }
-.site-footer-group a:hover { color: var(--site-color-night-copy); transform: translateX(2px); }
-.site-footer-bottom { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-200) var(--space-300); padding-top: var(--space-300); border-top: 1px solid var(--site-color-night-line); }
-.site-footer .site-footer-legal { margin: 0; color: var(--site-color-night-muted); font: var(--type-caption-5); font-family: var(--site-chrome-font); letter-spacing: .01em; }
-.site-footer-policies { display: flex; flex-wrap: wrap; gap: var(--space-50) var(--space-300); margin-right: auto; }
-.site-footer-policies a { display: inline-flex; align-items: center; min-height: 44px; color: var(--site-color-night-muted); font: var(--type-caption-4); font-family: var(--site-chrome-font); transition: color var(--site-motion-color); }
-.site-footer-policies a:hover { color: var(--site-color-night-copy); }
-.site-footer-social { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-50); }
-.site-footer-social a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--radius-lg); color: var(--site-color-night-muted); transition: color var(--site-motion-color), background-color var(--site-motion-color), transform var(--site-motion-move); }
-.site-footer-social a:hover { color: var(--site-color-night-copy); background: rgb(248 247 243 / .08); }
-.site-footer-social a:active { transform: scale(.98); }
-.site-footer-social a svg { display: block; width: 16px; height: 16px; }
-.site-footer-bottom > .site-locale { display: inline-flex; align-items: center; gap: var(--space-75); min-height: 40px; padding: var(--space-75) var(--space-100); border-radius: var(--radius-lg); box-shadow: inset 0 0 0 1px var(--site-color-night-line); color: var(--site-color-night-copy); font: var(--type-caption-4); font-family: var(--site-chrome-font); transition: background-color var(--site-motion-color), transform var(--site-motion-move); }
-.site-footer-bottom > .site-locale:hover { background: rgb(248 247 243 / .08); }
+.site-footer-group + .site-footer-group { margin-top: var(--space-500); }
+.site-footer .site-footer-group h2 { margin: 0 0 var(--space-100); color: var(--site-color-quiet); font: var(--type-caption-4); font-family: var(--site-chrome-font); }
+.site-footer-group a { display: block; width: fit-content; max-width: 100%; padding-block: 7px; color: var(--site-color-ink); font: 400 .8125rem/1.125rem var(--site-chrome-font); overflow-wrap: anywhere; transition: color var(--site-motion-color); }
+.site-footer-group a:hover { color: var(--site-color-muted); }
+.site-footer-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-100) var(--space-300); }
+.site-footer-social { display: flex; flex-wrap: wrap; align-items: center; gap: 0; margin-left: calc(var(--space-100) * -1); }
+.site-footer-social a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--radius-full); color: var(--site-color-ink); transition: background-color var(--site-motion-color), transform var(--site-motion-move); }
+.site-footer-social a:hover { background: var(--site-color-fill); }
+.site-footer-social a:active { transform: scale(.96); }
+.site-footer-social a svg { display: block; width: 15px; height: 15px; }
+.site-footer .site-footer-legal { margin: 0 0 0 auto; color: var(--site-color-ink); font: var(--type-caption-5); font-family: var(--site-chrome-font); }
+.site-footer-policies { display: flex; flex-wrap: wrap; gap: 0 var(--space-200); margin-right: auto; }
+.site-footer-policies a { display: inline-flex; align-items: center; min-height: 40px; color: var(--site-color-ink); font: var(--type-caption-5); font-family: var(--site-chrome-font); text-decoration: underline; text-decoration-color: var(--site-color-line-strong); text-underline-offset: 3px; transition: text-decoration-color var(--site-motion-color); }
+.site-footer-policies a:hover { text-decoration-color: currentColor; }
+.site-footer-bottom > .site-locale { display: inline-flex; align-items: center; gap: var(--space-75); height: 36px; padding-inline: var(--space-200) var(--space-200); border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-ink); font: var(--type-caption-4); font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); transition: background-color var(--site-motion-color), transform var(--site-motion-move); }
+.site-footer-bottom > .site-locale:hover { background: var(--site-color-fill-hover); }
 .site-footer-bottom > .site-locale:active { transform: scale(.98); }
-.site-footer-locale svg { flex: none; width: 16px; height: 16px; }
+.site-footer-locale svg { flex: none; width: 14px; height: 14px; }
 
 @media (max-width: 1280px) {
   .site-header-inner { gap: var(--space-200); }
-  .site-nav a { padding-inline: var(--space-75); }
-  .site-footer-inner { grid-template-columns: minmax(0, 1fr); }
-  .site-footer .site-footer-tagline { max-width: 400px; }
+  .site-nav { gap: 0; }
+  .site-nav a { padding-inline: 10px; }
 }
 @media (max-width: 1180px) {
   .site-header-actions > .site-locale { display: none; }
-  .site-nav { gap: 0; }
 }
 @media (max-width: 1080px) {
   .site-nav,
   .site-header-actions > .site-login { display: none; }
   .site-menu-toggle { display: block; }
-  .site-header-inner { width: auto; }
-  /* Links remain available in the header when JS is disabled or fails. */
-  .site-header:not([data-chrome-ready]) .site-header-inner { flex-wrap: wrap; }
-  .site-header:not([data-chrome-ready]) .site-nav { display: flex; flex-wrap: wrap; order: 3; width: 100%; gap: 0 var(--space-50); }
-  .site-header:not([data-chrome-ready]) .site-menu-toggle { display: none; }
+}
+/* Links stay in the header when scripts are off. locale.js marks the root
+   in <head>, so with scripts the header is collapsed from the first paint and
+   chrome.js arriving at the end of the body no longer shrinks it and shifts
+   the page (was CLS 0.13 at 390). Every link also stays in the footer. */
+@media (max-width: 1080px) {
+  :root:not([data-site-js]) .site-header:not([data-chrome-ready]) .site-header-inner { flex-wrap: wrap; height: auto; min-height: var(--site-header-height); padding-block: var(--space-75); }
+  :root:not([data-site-js]) .site-header:not([data-chrome-ready]) .site-nav { display: flex; flex-wrap: wrap; order: 3; width: 100%; gap: 0 var(--space-50); }
+  :root:not([data-site-js]) .site-header:not([data-chrome-ready]) .site-menu-toggle { display: none; }
 }
 @media (max-width: 760px) {
-  .site-header { padding-block: var(--space-75) 0; }
-  .site-header-inner { min-height: 56px; max-width: calc(100% - var(--space-200) * 2); padding-left: var(--space-200); gap: var(--space-75); }
+  .site-header-inner { gap: var(--space-50); }
   .site-header .site-try { display: none; }
-  .site-search { width: 40px; height: 40px; margin-left: auto; }
-  .site-header .site-brand { min-height: 40px; }
+  .site-search { display: grid; margin-left: auto; }
+  .site-header .site-brand { min-height: 44px; }
   .site-search + .site-header-actions { margin-left: 0; }
-  .site-footer { padding-block: var(--space-600) var(--space-300); }
+  .site-header-actions { margin-right: calc(var(--space-100) * -1); }
+  .site-footer { padding-block: var(--space-700) var(--space-300); }
   .site-footer-inner { gap: var(--space-300); }
-  .site-footer .site-footer-tagline { font: 400 1.125rem/1.75rem var(--site-font-display); }
   .site-footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-400) var(--space-300); }
   .site-footer-col { border: 0; }
   .site-footer-group a { display: flex; align-items: center; min-height: 44px; padding-block: var(--space-75); }
-  .site-footer-group a:hover { transform: none; }
   .site-footer-group + .site-footer-group { margin-top: var(--space-300); }
-  .site-footer[data-chrome-ready] .site-footer-grid { display: block; border-top: 1px solid var(--site-color-night-line); }
-  .site-footer[data-chrome-ready] .site-footer-col { border-bottom: 1px solid var(--site-color-night-line); }
+  .site-footer[data-chrome-ready] .site-footer-grid { display: block; border-top: 1px solid var(--site-color-line); }
+  .site-footer[data-chrome-ready] .site-footer-col { border-bottom: 1px solid var(--site-color-line); }
   .site-footer[data-chrome-ready] .site-footer-summary { display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding-block: var(--space-100); cursor: pointer; list-style: none; font: var(--type-title-4); font-family: var(--site-chrome-font); }
   .site-footer-summary::-webkit-details-marker { display: none; }
-  .site-footer-summary::after { content: ''; width: 10px; height: 10px; margin-right: var(--space-50); border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform var(--site-motion-move); }
+  .site-footer-summary::after { content: ''; width: 8px; height: 8px; margin-right: var(--space-50); border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform var(--site-motion-move); }
   .site-footer-col[open] > .site-footer-summary::after { transform: translateY(2px) rotate(-135deg); }
   .site-footer[data-chrome-ready] .site-footer-group { padding-left: var(--space-100); }
   .site-footer[data-chrome-ready] .site-footer-group:last-child { padding-bottom: var(--space-200); }
-  .site-footer-bottom { gap: var(--space-75) var(--space-200); padding-top: var(--space-100); border-top: 0; }
-  .site-footer .site-footer-legal { order: 3; width: 100%; }
-  .site-footer-policies { width: 100%; margin-right: 0; }
-  .site-footer-social { margin-right: auto; margin-left: calc(var(--space-100) * -1); }
-}
-@media (max-width: 380px) {
-  .site-header-inner { max-width: calc(100% - var(--space-100) * 2); }
+  .site-footer-bottom { gap: var(--space-75) var(--space-200); }
+  .site-footer .site-footer-legal { order: 4; width: 100%; margin: 0; color: var(--site-color-muted); }
+  .site-footer-policies { order: 3; width: 100%; margin-right: 0; }
+  .site-footer-social { margin-right: auto; }
 }
 
 /* Reading progress is visual, with no extra controls in article text. */
-.site-header[data-reading-progress]::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--site-color-accent); transform: scaleX(var(--reading-progress, 0)); transform-origin: left; }
+.site-header[data-reading-progress]::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--site-color-ink); transform: scaleX(var(--reading-progress, 0)); transform-origin: left; }
 @media (prefers-reduced-motion: reduce) {
-  .site-header-inner, .site-nav a, .site-try svg, .site-menu-toggle span, .site-header :is(.site-login, .site-try, .site-search), .site-footer-group a, .site-footer-summary::after { transition: none; }
-  .site-try:hover svg, .site-footer-group a:hover { transform: none; }
+  .site-header, .site-header::before, .site-nav a::before, .site-try svg, .site-menu-toggle span, .site-header :is(.site-login, .site-try, .site-search), .site-footer-group a, .site-footer-summary::after { transition: none; }
+  .site-try:hover svg { transform: none; }
 }
