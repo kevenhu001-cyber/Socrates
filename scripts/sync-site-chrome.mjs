@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../site/', import.meta.url));
 // locale.js change: the site serves them with `cache-control: immutable,
 // max-age=604800`, so a returning browser keeps the old bytes for a week
 // unless the query string changes.
-const version = '20261031e1';
+const version = '20261031o1';
 const appPages = new Set(['account', 'profile', 'api-keys', 'checkout']);
 const appURL = 'https://app.topodrive.top';
 const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -41,7 +41,7 @@ const copy = {
       [['More', [['/announcements', 'Stories'], ['/research', 'Field notes'], ['/guide', 'Academy'], ['/principles', 'Our principles']]],
         ['Get started', [[appURL, 'Try Socrates'], [appURL, 'Log in'], ['/pricing', 'Plans']]]],
     ],
-    social: 'Social links', legal: 'Built for people who want to understand.',
+    social: 'Social links',
     policies: 'Legal', policyLinks: [['/privacy', 'Privacy policy'], ['/terms', 'Terms of service']],
   },
   zh: {
@@ -62,7 +62,7 @@ const copy = {
       [['更多', [['/announcements', '故事'], ['/research', '现场笔记'], ['/guide', '学院'], ['/principles', '我们的原则']]],
         ['开始使用', [[appURL, '试用 Socrates'], [appURL, '登录'], ['/pricing', '套餐']]]],
     ],
-    social: '社交链接', legal: '为真正想理解的人打造。',
+    social: '社交链接',
     policies: '法律信息', policyLinks: [['/privacy', '隐私政策'], ['/terms', '服务条款']],
   },
 };
@@ -111,17 +111,13 @@ ${links.map(([href, label]) => `            <a href="${localHref(href, locale)}"
   const footerLanguage = `<a class="site-locale site-footer-locale" href="${otherPath}" data-locale-switcher hreflang="${text.languageTag}" lang="${text.languageTag}">${globe}<span class="locale-label">${text.language}</span></a>`;
   const footer = `<footer class="site-footer">
     <div class="site-chrome-shell site-footer-inner">
-      <div class="site-footer-lead">
-        ${brand(locale)}
-        <p class="site-footer-tagline">${text.legal}</p>
-      </div>
       <div class="site-footer-grid">
         ${columns}
       </div>
       <div class="site-footer-bottom">
+        <nav class="site-footer-social" aria-label="${text.social}"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X">${socialIcons.x}</a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub">${socialIcons.github}</a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube">${socialIcons.youtube}</a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn">${socialIcons.linkedin}</a></nav>
         <p class="site-footer-legal">© 2026 Socrates</p>
         <nav class="site-footer-policies" aria-label="${text.policies}">${policies}</nav>
-        <nav class="site-footer-social" aria-label="${text.social}"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X">${socialIcons.x}</a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub">${socialIcons.github}</a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube">${socialIcons.youtube}</a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn">${socialIcons.linkedin}</a></nav>
         ${footerLanguage}
       </div>
     </div>

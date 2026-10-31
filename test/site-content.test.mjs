@@ -33,7 +33,7 @@ for (const prefix of ['', '/zh']) {
           };
         });
         assert.equal(geometry.width, width);
-        assert.equal(geometry.headerHeight, width <= 760 ? 64 : 80);
+        assert.equal(geometry.headerHeight, width <= 760 ? 56 : 64);
         assert.match(geometry.font, /Geist Sans/);
         if (prefix) assert.ok(geometry.localChineseFont, 'Chinese content uses the local sans family instead of platform-dependent serif fallback');
         assert.deepEqual(geometry.clipped, [], 'text must wrap rather than be clipped');

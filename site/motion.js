@@ -9,7 +9,8 @@
   var running = new Set();
   var observer;
 
-  var ease = 'cubic-bezier(.22,1,.36,1)';
+  // Quiet motion in the reference style: short fades with a small rise.
+  var ease = 'cubic-bezier(.4,0,.2,1)';
 
   function animate(element, frames, options, allowReduced) {
     if ((reduced.matches && !allowReduced) || !element.animate) return;
@@ -35,11 +36,11 @@
     if (element.hasAttribute('data-site-seen')) return;
     element.setAttribute('data-site-seen', '');
     var index = Array.prototype.indexOf.call(element.parentElement.children, element);
-    // B7: rise 32px and fade in over 700ms on the base curve, once.
+    // A light fade with a 12px rise over 500ms, once.
     animate(element, [
-      { opacity: 0, transform: 'translateY(32px)' },
+      { opacity: 0, transform: 'translateY(12px)' },
       { opacity: 1, transform: 'translateY(0)' }
-    ], { duration: 700, delay: (index % 3) * 60, easing: ease, fill: 'backwards' });
+    ], { duration: 500, delay: (index % 3) * 50, easing: ease, fill: 'backwards' });
   }
 
   if ('IntersectionObserver' in window) {
@@ -59,13 +60,13 @@
   var sequences = Array.from(main.querySelectorAll('[data-sequence]'));
   function play(container) {
     var items = Array.from(container.children);
-    var step = container.matches('.demo-thread, .product-chat') ? 380 : 140;
-    var base = container.classList.contains('demo-map-canvas') ? 1400 : 200;
+    var step = container.matches('.demo-thread, .product-chat') ? 260 : 100;
+    var base = container.classList.contains('demo-map-canvas') ? 1000 : 150;
     items.forEach(function (item, index) {
       animate(item, [
-        { opacity: 0, transform: 'translateY(16px)' },
+        { opacity: 0, transform: 'translateY(8px)' },
         { opacity: 1, transform: 'translateY(0)' }
-      ], { duration: 700, delay: base + index * step, easing: ease, fill: 'backwards' });
+      ], { duration: 400, delay: base + index * step, easing: ease, fill: 'backwards' });
     });
   }
   if (sequences.length && 'IntersectionObserver' in window) {
@@ -84,12 +85,12 @@
     new MutationObserver(function () {
       if (menu.hidden) return;
       // The panel fades; reduced motion keeps the fade and drops all movement.
-      animate(menu, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: ease }, true);
+      animate(menu, [{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: ease }, true);
       if (reduced.matches) return;
-      // Links arrive in reading order: 24px rise, 60ms apart, sequence capped at 400ms.
+      // Links arrive in reading order: 6px rise, 30ms apart, capped at 240ms.
       menu.querySelectorAll('nav a, .site-mobile-utilities a').forEach(function (link, index) {
-        animate(link, [{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'translateY(0)' }],
-          { duration: 500, delay: Math.min(index * 60, 400), fill: 'backwards', easing: ease });
+        animate(link, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }],
+          { duration: 250, delay: Math.min(index * 30, 240), fill: 'backwards', easing: ease });
       });
     }).observe(menu, { attributes: true, attributeFilter: ['hidden'] });
   }
