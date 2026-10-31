@@ -77,7 +77,8 @@ for (const path of ['/', '/zh/']) {
     assert.ok(geometry.centered);
     assert.ok(geometry.composerWidth >= 880 && geometry.composerWidth <= 1056);
     assert.ok(geometry.composerBottom < 600);
-    assert.ok(geometry.titleSize >= 32 && geometry.titleSize <= 42);
+    // landing-page-design B1/B5: the hero title is Heading 1 (text-6xl, 60px).
+    assert.ok(geometry.titleSize >= 56 && geometry.titleSize <= 64);
     assert.ok(geometry.artBelowQuestion && geometry.artBesidePreview);
     assert.ok(geometry.previewBeforeIntro, 'cards enter the page before the longer product copy');
     assert.ok(geometry.previewRatio >= 2.3 && geometry.previewRatio <= 2.4 && geometry.previewWidth >= 650);

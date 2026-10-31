@@ -112,6 +112,8 @@ for (const path of ['/', '/about', '/research', '/research/memory-recall/', '/pr
         label: getComputedStyle(brand.querySelector('span')).fontSize,
         family: getComputedStyle(brand.querySelector('span')).fontFamily,
         x: brand.getBoundingClientRect().x,
+        capsule: header.querySelector('.site-header-inner').getBoundingClientRect().toJSON(),
+        headerBox: header.getBoundingClientRect().toJSON(),
         nav: [...header.querySelectorAll('.site-nav a')].map((node) => node.getAttribute('href')),
         footerLinks: document.querySelectorAll('.site-footer-grid a').length,
       };
@@ -120,7 +122,11 @@ for (const path of ['/', '/about', '/research', '/research/memory-recall/', '/pr
     assert.equal(chrome.logo, 0, 'the public header consistently uses the Socrates wordmark');
     assert.equal(chrome.label, '24px');
     assert.match(chrome.family, /Geist Sans/);
-    assert.ok(Math.abs(chrome.x - 1280 * .04445) < 1);
+    // landing-page-design B7: the header is a floating capsule centred on the page
+    // and sized to its content; the wordmark keeps a 24px (Spacing-300) inset inside it.
+    assert.ok(Math.abs(chrome.capsule.x + chrome.capsule.width / 2 - (chrome.headerBox.x + chrome.headerBox.width / 2)) < 1, 'the capsule is centred');
+    assert.ok(chrome.capsule.y >= 8, 'the capsule floats off the top edge');
+    assert.ok(Math.abs(chrome.x - chrome.capsule.x - 24) < 1);
     assert.equal(chrome.footerLinks, 36);
     const prefix = path.startsWith('/zh/') ? '/zh' : '';
     assert.deepEqual(chrome.nav, ['product', 'research', 'principles', 'learn', 'developers', 'pricing', 'about'].map((part) => `${prefix}/${part}`));
