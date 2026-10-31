@@ -13,8 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261031r2">
-  <link rel="stylesheet" href="/modules.css?cb=20261031r2">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261101m1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101m1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -158,9 +158,9 @@
     ]
   }
   </script>
-  <script src="/locale.js?cb=20261031r3"></script>
-  <link rel="stylesheet" href="/public.css?cb=20261031r3">
-  <link rel="stylesheet" href="/chrome.css?cb=20261031r3">
+  <script src="/locale.js?cb=20261101m1"></script>
+  <link rel="stylesheet" href="/public.css?cb=20261101m1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261101m1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -474,20 +474,47 @@
           <h2 id="stories-title">Inside a learning session</h2>
           <a class="section-link" href="/product">Explore the product</a>
         </div>
-        <div class="story-layout">
-          <figure class="story-visual">
-            <div class="story-media"><img src="/media/socrates-home-dialogue-photo-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Two people tracing a connection together on an open notebook."></div>
-            <figcaption>Illustrative learning scene, not a customer case study.</figcaption>
-          </figure>
-          <div>
+        <div class="story-layout m-story" data-story>
+          <div class="m-story-intro">
             <h3 class="home-editorial-title">Keep a good question going.</h3>
             <p class="home-editorial-copy">An answer can be a beginning. Work through the part you cannot explain yet, then give yourself a reason to return.</p>
-            <div class="story-steps" data-sequence>
-              <a class="story-step" href="/product#dialogue"><span>01</span><div><h3>Put it in your own words.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-              <a class="story-step" href="/product#knowledge-map"><span>02</span><div><h3>Find the connection.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-              <a class="story-step" href="/product#recall"><span>03</span><div><h3>Come back to it.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-            </div>
           </div>
+          <figure class="story-visual m-story-stage">
+            <div class="ui m-story-ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Probability · Base rates</span><span class="ui-tag">Illustration</span></div>
+                <div class="m-story-scenes">
+                  <div class="ui-body m-story-scene is-active" data-scene="0">
+                    <span class="ui-bubble">A positive test means I probably have it, right?</span>
+                    <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">Before we decide: in a group of 1,000 people, how many actually have the condition?</span></span></span>
+                    <span class="ui-bubble">Ten, if it’s 1 in 100. So most positives could be false alarms.</span>
+                    <span class="ui-composer"><span>Reply in your own words…</span><span class="ui-send"></span></span>
+                  </div>
+                  <div class="ui-body m-story-scene" data-scene="1">
+                    <span class="ui-row"><span class="ui-small ui-muted ui-grow">Knowledge map</span><span class="ui-tag ui-tag--ink">New connection</span></span>
+                    <svg class="m-story-map" viewBox="0 0 440 220" fill="none">
+                      <path class="m-story-edge" d="M220 112 96 56"/><path class="m-story-edge" d="M220 112 344 56"/><path class="m-story-edge m-story-edge--new" d="M96 56 C140 176 300 176 344 56"/><path class="m-story-edge" d="M220 112 220 186"/>
+                      <circle cx="220" cy="112" r="7" fill="#0d0d0d"/>
+                      <g class="m-story-dots" fill="#fff" stroke="#8f8f8f" stroke-width="1.25"><circle cx="96" cy="56" r="5"/><circle cx="344" cy="56" r="5"/><circle cx="220" cy="186" r="4"/></g>
+                      <g font-size="13" font-weight="500" fill="#5d5d5d"><text x="236" y="108" fill="#0d0d0d">Bayes’ theorem</text><text x="96" y="34" text-anchor="middle">Base rate</text><text x="344" y="34" text-anchor="middle">False positives</text><text x="220" y="210" text-anchor="middle" fill="#8f8f8f" font-weight="400">Screening</text></g>
+                    </svg>
+                    <span class="ui-small ui-muted">Linked by the question that joined them.</span>
+                  </div>
+                  <div class="ui-body m-story-scene" data-scene="2">
+                    <span class="ui-row"><span class="ui-small ui-muted ui-grow">Card 1 of 5</span><span class="ui-meter ui-grow"><i class="on"></i><i></i><i></i><i></i><i></i></span></span>
+                    <span class="ui-stack"><span class="ui-flash"><span class="ui-small ui-muted">In your own words</span><span class="ui-q">Why can a positive result still be unlikely to be true?</span><span class="ui-small ui-muted">Answer before you reveal.</span></span></span>
+                    <span class="ui-row"><span class="ui-btn">Reveal answer</span><span class="ui-btn ui-btn--soft">Open conversation</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption>Illustration, not a customer case study.</figcaption>
+          </figure>
+          <ol class="story-steps m-story-steps">
+            <li class="m-story-step" data-story-step="0"><a class="story-step" href="/product#dialogue"><span>01</span><div><h3>Put it in your own words.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">Socrates starts from what you already think and asks the next question, not the whole answer.</p></li>
+            <li class="m-story-step" data-story-step="1"><a class="story-step" href="/product#knowledge-map"><span>02</span><div><h3>Find the connection.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">Ideas you work through become points on your knowledge map, linked by the questions that joined them.</p></li>
+            <li class="m-story-step" data-story-step="2"><a class="story-step" href="/product#recall"><span>03</span><div><h3>Come back to it.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">Turn a good moment into a recall card, then answer it in your own words a few days later.</p></li>
+          </ol>
         </div>
       </div>
     </section>
@@ -791,9 +818,9 @@
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261023u4"></script>
-  <script src="/modules.js?cb=20261031r2"></script>
-  <script src="/chrome.js?cb=20261031r3"></script>
-  <script src="/motion.js?cb=20261031r3"></script>
+  <script src="/home-question.js?cb=20261101m1"></script>
+  <script src="/modules.js?cb=20261101m1"></script>
+  <script src="/chrome.js?cb=20261101m1"></script>
+  <script src="/motion.js?cb=20261101m1"></script>
 </body>
 </html>

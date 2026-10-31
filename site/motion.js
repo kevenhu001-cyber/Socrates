@@ -20,8 +20,49 @@
     animation.finished.then(settled, settled);
   }
 
+  // The bar is clear at the top and frosts once the page moves under it.
+  header.setAttribute('data-scroll-aware', '');
+
+  // Home hero: the title rises line by line out of a mask (the words stay
+  // fully opaque, so the largest paint is not delayed), then the lede, the
+  // question box and the starters follow. Runs once, about a second.
+  var hero = main.querySelector('.home-hero-inner');
+  if (hero && !reduced.matches && document.body.animate) {
+    var title = hero.querySelector('h1');
+    if (title && !title.querySelector('.hero-line')) {
+      var lines = [[]];
+      Array.from(title.childNodes).forEach(function (node) {
+        if (node.nodeName === 'BR') lines.push([]);
+        else lines[lines.length - 1].push(node);
+      });
+      title.textContent = '';
+      lines.forEach(function (nodes, index) {
+        // Each line is its own block, so the <br> between them is dropped.
+        var line = document.createElement('span');
+        line.className = 'hero-line';
+        var inner = document.createElement('span');
+        nodes.forEach(function (node) {
+          // Leading spaces after a <br> would indent the centred line.
+          if (node.nodeType === 3) node.nodeValue = node.nodeValue.replace(/^\s+/, '');
+          inner.appendChild(node);
+        });
+        line.appendChild(inner);
+        title.appendChild(line);
+        animate(inner, [{ transform: 'translateY(105%)' }, { transform: 'translateY(0)' }],
+          { duration: 800, delay: 60 + index * 90, easing: ease, fill: 'backwards' });
+      });
+    }
+    var follow = [hero.querySelector('.home-hero-lede'), hero.querySelector('.ask-box')]
+      .concat(Array.from(hero.querySelectorAll('.ask-suggestions > *')));
+    follow.forEach(function (element, index) {
+      if (!element) return;
+      animate(element, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'translateY(0)' }],
+        { duration: 600, delay: 260 + Math.min(index, 2) * 90 + Math.max(0, index - 2) * 40, easing: ease, fill: 'backwards' });
+    });
+  }
+
   var selectors = [
-    '.home-hero-inner', '.feature-main', '.hero-plate', '.feature-intro',
+    '.feature-main', '.hero-plate', '.feature-intro',
     '.news-item', '.story-visual', '.story-layout > div', '.home-research-note', '.learning-layout > div',
     '.product-hero', '.product-preview', '.product-section-intro', '.product-feature-copy', '.product-sample', '.product-tool-grid > div',
     '.content-hero', '.research-note', '.company-visual', '.company-story', '.company-team', '.company-practices li', '.company-work-list li',
@@ -36,12 +77,14 @@
   function reveal(element) {
     if (element.hasAttribute('data-site-seen')) return;
     element.setAttribute('data-site-seen', '');
-    var index = Array.prototype.indexOf.call(element.parentElement.children, element);
-    // A light fade with a 12px rise over 500ms, once.
+    var host = element.parentElement.tagName === 'LI' ? element.parentElement : element;
+    var index = Array.prototype.indexOf.call(host.parentElement.children, host);
+    // A light fade with a 12px rise over 500ms, once; siblings in a grid
+    // arrive 60ms apart (at most four steps, so nothing waits long).
     animate(element, [
       { opacity: 0, transform: 'translateY(12px)' },
       { opacity: 1, transform: 'translateY(0)' }
-    ], { duration: 500, delay: (index % 3) * 50, easing: ease, fill: 'backwards' });
+    ], { duration: 500, delay: (index % 4) * 60, easing: ease, fill: 'backwards' });
   }
 
   if ('IntersectionObserver' in window) {

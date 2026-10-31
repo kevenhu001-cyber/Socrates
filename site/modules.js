@@ -74,7 +74,7 @@
     nodes.concat(edges).forEach(function (item, i) { item.style.setProperty('--i', String(i)); });
     function show() {
       stage.classList.add('is-in');
-      window.setTimeout(function () { stage.classList.add('is-settled'); }, 1600);
+      window.setTimeout(function () { stage.classList.add('is-settled'); }, 2200);
     }
     if (reduced.matches || !('IntersectionObserver' in window)) show();
     else {
@@ -107,5 +107,203 @@
       node.addEventListener('pointerenter', function () { light(node); });
       node.addEventListener('pointerleave', clear);
     });
+  });
+})();
+
+/* Round 4: motion layer for the shared modules. Every effect starts from
+   content that is already complete in the DOM; reduced motion jumps to the
+   finished state, and looping details stop off screen or in a hidden tab. */
+(function () {
+  'use strict';
+  var reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false, addEventListener: function () {} };
+  var ease = 'cubic-bezier(.22,1,.36,1)';
+  var hasIO = 'IntersectionObserver' in window;
+
+  function stagger(items, step, base) {
+    if (reduced.matches) return;
+    Array.prototype.forEach.call(items, function (item, index) {
+      if (!item.animate) return;
+      item.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 500, delay: (base || 0) + index * step, easing: ease, fill: 'backwards' });
+    });
+  }
+
+  /* Live miniatures: the caret blinks only while the miniature is visible
+     on screen and the page itself is visible. */
+  var liveTargets = new Set();
+  var liveObserver = hasIO ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) liveTargets.add(entry.target); else liveTargets.delete(entry.target);
+      syncLive(entry.target);
+    });
+  }, { threshold: .2 }) : null;
+  function syncLive(ui) {
+    var panel = ui.closest('.m-panel, .m-story-scene');
+    var shown = !panel || panel.classList.contains('is-active');
+    ui.classList.toggle('is-live', !document.hidden && !reduced.matches && shown && liveTargets.has(ui));
+  }
+  function syncAllLive() { document.querySelectorAll('.ui').forEach(syncLive); }
+  document.addEventListener('visibilitychange', syncAllLive);
+  if (reduced.addEventListener) reduced.addEventListener('change', syncAllLive);
+  if (liveObserver) document.querySelectorAll('.ui').forEach(function (ui) { if (ui.querySelector('.ui-composer')) liveObserver.observe(ui); });
+
+  /* Play a miniature: its rows arrive in order, chat turns a little slower. */
+  function playPanel(panel) {
+    if (!panel) return;
+    var body = panel.querySelector('.ui-body');
+    if (body) stagger(body.children, body.querySelector('.ui-bubble') ? 380 : 90, 120);
+    var map = panel.querySelector('.ui-map.is-drawable');
+    if (map) {
+      map.classList.remove('is-drawn');
+      void map.offsetWidth; // restart the draw from an empty path
+      map.classList.add('is-drawn');
+    }
+    var ui = panel.querySelector('.ui');
+    if (ui) syncLive(ui);
+  }
+
+  /* Tabs: a gliding pill on wide screens and a replay of the miniature. */
+  document.querySelectorAll('[data-tabs]').forEach(function (root) {
+    var list = root.querySelector('[role="tablist"]');
+    var tabs = Array.prototype.slice.call(root.querySelectorAll('[role="tab"]'));
+    if (!list || !tabs.length) return;
+    root.querySelectorAll('.ui-map svg > g:first-child path').forEach(function (path) { path.setAttribute('pathLength', '1'); });
+    root.querySelectorAll('.ui-map').forEach(function (map) { map.classList.add('is-drawable'); });
+    var wide = window.matchMedia('(min-width: 761px)');
+    var glider = document.createElement('span');
+    glider.className = 'm-tab-glider';
+    glider.setAttribute('aria-hidden', 'true');
+    glider.appendChild(document.createElement('i'));
+    function current() { return tabs.find(function (tab) { return tab.getAttribute('aria-selected') === 'true'; }) || tabs[0]; }
+    function place(animate) {
+      if (!wide.matches) {
+        if (glider.parentNode) glider.remove();
+        list.classList.remove('has-glider');
+        return;
+      }
+      if (!glider.parentNode) list.insertBefore(glider, list.firstChild);
+      var tab = current();
+      var width = list.scrollWidth;
+      var left = tab.offsetLeft;
+      var right = width - left - tab.offsetWidth;
+      var inner = glider.firstChild;
+      if (!animate) inner.style.transition = 'none';
+      glider.style.width = width + 'px';
+      inner.style.clipPath = 'inset(0 ' + right + 'px 0 ' + left + 'px round 999px)';
+      if (!animate) { void inner.offsetWidth; inner.style.transition = ''; }
+      list.classList.add('has-glider');
+    }
+    var seen = false;
+    tabs.forEach(function (tab) {
+      new MutationObserver(function () {
+        if (tab.getAttribute('aria-selected') !== 'true') return;
+        place(true);
+        if (seen) playPanel(document.getElementById(tab.getAttribute('aria-controls')));
+      }).observe(tab, { attributes: true, attributeFilter: ['aria-selected'] });
+    });
+    place(false);
+    window.addEventListener('resize', function () { place(false); }, { passive: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { place(false); });
+    if (hasIO) {
+      var observer = new IntersectionObserver(function (entries) {
+        if (!entries.some(function (entry) { return entry.isIntersecting; })) return;
+        seen = true;
+        observer.disconnect();
+        playPanel(document.getElementById(current().getAttribute('aria-controls')));
+      }, { threshold: .3 });
+      observer.observe(root);
+    } else { seen = true; }
+  });
+
+  /* Knowledge graph: draw the lines in order, then light the points. */
+  document.querySelectorAll('[data-graph]').forEach(function (stage) {
+    var edges = stage.querySelectorAll('.kg-edge');
+    var nodes = stage.querySelectorAll('.kg-node');
+    edges.forEach(function (edge, i) { edge.setAttribute('pathLength', '1'); edge.style.setProperty('--d', (i * 60) + 'ms'); });
+    nodes.forEach(function (node, i) { node.style.setProperty('--d', (node.classList.contains('kg-node--core') ? 0 : 260 + i * 70) + 'ms'); });
+    stage.classList.add('is-drawable');
+  });
+
+  /* Card rail: mouse drag with momentum; touch keeps native scrolling. */
+  document.querySelectorAll('[data-rail] .m-rail').forEach(function (track) {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    track.setAttribute('data-draggable', '');
+    var startX = 0, startLeft = 0, lastX = 0, lastT = 0, velocity = 0, moved = false, frame = 0, active = false;
+    function stop() { if (frame) window.cancelAnimationFrame(frame); frame = 0; }
+    function settle() {
+      track.classList.remove('is-dragging');
+      // Snapping resumes and the browser settles on the nearest card.
+      var cards = Array.prototype.slice.call(track.children);
+      var origin = track.getBoundingClientRect().left;
+      var target = cards.reduce(function (best, card) {
+        var d = Math.abs(card.getBoundingClientRect().left - origin);
+        return d < best.d ? { d: d, card: card } : best;
+      }, { d: Infinity, card: null });
+      if (target.card) track.scrollTo({ left: track.scrollLeft + target.card.getBoundingClientRect().left - origin, behavior: reduced.matches ? 'auto' : 'smooth' });
+    }
+    function glide() {
+      velocity *= .94;
+      if (Math.abs(velocity) < .05 || reduced.matches) { frame = 0; settle(); return; }
+      track.scrollLeft -= velocity * 16;
+      frame = window.requestAnimationFrame(glide);
+    }
+    track.addEventListener('pointerdown', function (event) {
+      if (event.pointerType !== 'mouse' || event.button !== 0) return;
+      stop();
+      active = true; moved = false;
+      startX = lastX = event.clientX; startLeft = track.scrollLeft; lastT = event.timeStamp; velocity = 0;
+    });
+    window.addEventListener('pointermove', function (event) {
+      if (!active) return;
+      var dx = event.clientX - startX;
+      if (!moved && Math.abs(dx) < 4) return;
+      if (!moved) { moved = true; track.classList.add('is-dragging'); }
+      track.scrollLeft = startLeft - dx;
+      var dt = Math.max(1, event.timeStamp - lastT);
+      velocity = (event.clientX - lastX) / dt;
+      lastX = event.clientX; lastT = event.timeStamp;
+    });
+    window.addEventListener('pointerup', function () {
+      if (!active) return;
+      active = false;
+      if (!moved) return;
+      frame = window.requestAnimationFrame(glide);
+    });
+    // A drag never turns into a click on the card under the pointer.
+    track.addEventListener('click', function (event) { if (moved) { event.preventDefault(); event.stopPropagation(); moved = false; } }, true);
+    track.addEventListener('dragstart', function (event) { event.preventDefault(); });
+  });
+
+  /* Scroll story: whichever step crosses the middle band of the viewport
+     sets the scene. Keyboard focus on a step does the same. */
+  document.querySelectorAll('[data-story]').forEach(function (story) {
+    var steps = Array.prototype.slice.call(story.querySelectorAll('[data-story-step]'));
+    var scenes = Array.prototype.slice.call(story.querySelectorAll('[data-scene]'));
+    story.querySelectorAll('.m-story-edge:not(.m-story-edge--new)').forEach(function (edge) { edge.setAttribute('pathLength', '1'); });
+    var index = -1;
+    function set(next, quiet) {
+      if (next === index || next < 0) return;
+      index = next;
+      steps.forEach(function (step, i) { step.classList.toggle('is-active', i === next); });
+      scenes.forEach(function (scene, i) {
+        var on = i === next;
+        scene.classList.toggle('is-active', on);
+        if (on && !quiet) stagger(scene.children, scene.querySelector('.ui-bubble') ? 260 : 80, 80);
+      });
+      var ui = story.querySelector('.ui');
+      if (ui) syncLive(ui);
+    }
+    set(0, true);
+    if (liveObserver) { var ui = story.querySelector('.ui'); if (ui) liveObserver.observe(ui); }
+    steps.forEach(function (step, i) { step.addEventListener('focusin', function () { set(i); }); });
+    if (!hasIO) return;
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) set(steps.indexOf(entry.target));
+      });
+    // On phones the product view sticks at the top, so the reading line
+    // sits below it instead of at the middle of the screen.
+    }, { rootMargin: window.matchMedia('(max-width: 760px)').matches ? '-60% 0px -32% 0px' : '-45% 0px -45% 0px', threshold: 0 });
+    steps.forEach(function (step) { observer.observe(step); });
   });
 })();

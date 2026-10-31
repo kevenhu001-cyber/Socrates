@@ -58,7 +58,9 @@ for (const prefix of ['', '/zh']) {
       assert.deepEqual(geometry.clippedText, []);
       assert.equal(geometry.clippedNodes, false, 'both connected ideas fit in the preview');
       assert.equal(new Set(geometry.images).size, geometry.images.length, 'do not reuse a cover in multiple sections');
-      assert.equal(geometry.images.length, 6, 'one original diagram, two learning scenes and three source-backed research covers');
+      // The session story is now a drawn, scroll-driven product view, so one
+      // learning photograph remains beside the original diagram and covers.
+      assert.equal(geometry.images.length, 5, 'one original diagram, one learning scene and three source-backed research covers');
       assert.ok(geometry.editorialRatios.every((ratio) => ratio >= 1.3 && ratio <= 1.8), 'editorial images stay landscape, not an intrinsic 941px-tall poster');
       assert.equal(await page.locator('.home-hero .hero-art, .home-hero .hero-actions, .home-hero em').count(), 0, 'the first screen stays focused on the question');
       assert.equal(await page.locator('.hero-ask .ask-chip').count(), 5);

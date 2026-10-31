@@ -306,3 +306,40 @@ body.home-refresh {
   }
   .news-item:active, .story-step:active, .home-refresh .ask-chip:active, .home-refresh .ask-send:active, .home-button:active, .home-text-link:active, .section-link:active, .home-button:hover .home-icon { transform: none; }
 }
+
+/* Round 4: hero texture and motion.
+   A faint dot field sits behind the question, masked to an ellipse so it
+   fades out long before any edge: structure for the white space, no colour.
+   motion.js wraps each title line in .hero-line; the line clips its own
+   inner span while it rises, with a little room kept for descenders. */
+.home-hero { isolation: isolate; }
+.home-hero::before { content: ''; position: absolute; z-index: -1; inset: 0; background-image: radial-gradient(circle at center, rgb(0 0 0 / .09) 1px, transparent 1.25px); background-size: 24px 24px; background-position: center top; -webkit-mask-image: radial-gradient(ellipse 46% 58% at 50% 46%, #000 0%, rgb(0 0 0 / .45) 45%, transparent 78%); mask-image: radial-gradient(ellipse 46% 58% at 50% 46%, #000 0%, rgb(0 0 0 / .45) 45%, transparent 78%); pointer-events: none; }
+.hero-line { display: block; overflow: clip; overflow-clip-margin: 0; padding-bottom: .12em; margin-bottom: -.12em; }
+.hero-line > span { display: block; }
+/* The question box: white sheet, hairline, contact shadow and a wide soft
+   ambient shadow; focus deepens the ring, never a colour. */
+.ask-box { box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 1px 2px rgb(0 0 0 / .04), 0 12px 40px -12px rgb(0 0 0 / .14), var(--site-inner-highlight); transition: box-shadow 300ms var(--site-ease); }
+.ask-box:hover { box-shadow: 0 0 0 1px rgb(0 0 0 / .12), 0 1px 2px rgb(0 0 0 / .05), 0 16px 48px -14px rgb(0 0 0 / .16), var(--site-inner-highlight); }
+.ask-box:focus-within { box-shadow: 0 0 0 1px rgb(0 0 0 / .28), 0 0 0 4px rgb(0 0 0 / .05), 0 16px 48px -14px rgb(0 0 0 / .16); }
+/* Typewriter caret for the rotating example question (home-question.js). */
+.ask-placeholder.is-typing::after { content: ''; display: inline-block; width: 1.5px; height: 1.1em; margin-left: 2px; vertical-align: -.18em; border-radius: 1px; background: var(--muted); animation: home-caret 1s steps(1, end) infinite; }
+@keyframes home-caret { 50% { opacity: 0; } }
+.home-refresh .ask-chip { box-shadow: 0 1px 2px rgb(0 0 0 / .03); }
+/* Feature cards: a hairline and soft depth on the preview sheet. */
+.demo-app { box-shadow: var(--site-shadow-1); }
+.feature-media, .plate-media { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }
+.news-item { position: relative; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); transition: background-color 300ms var(--site-ease), transform 500ms var(--site-ease); }
+.news-item::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--site-shadow-2); opacity: 0; pointer-events: none; transition: opacity 300ms var(--site-ease); }
+@media (hover: hover) and (pointer: fine) {
+  .news-item:hover { transform: translateY(-2px); background: #fff; }
+  .news-item:hover::after { opacity: 1; }
+}
+.home-cta-inner { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }
+@media (max-width: 760px) {
+  .home-hero::before { -webkit-mask-image: radial-gradient(ellipse 70% 52% at 50% 44%, #000 0%, rgb(0 0 0 / .4) 45%, transparent 80%); mask-image: radial-gradient(ellipse 70% 52% at 50% 44%, #000 0%, rgb(0 0 0 / .4) 45%, transparent 80%); background-size: 20px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ask-placeholder.is-typing::after { animation: none; display: none; }
+  .news-item, .news-item::after, .ask-box { transition: none; }
+  .news-item:hover { transform: none; }
+}

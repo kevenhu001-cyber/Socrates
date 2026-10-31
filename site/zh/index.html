@@ -13,8 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261031r2">
-  <link rel="stylesheet" href="/modules.css?cb=20261031r2">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261101m1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101m1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — 理解，始于一个问题。">
@@ -27,10 +27,10 @@
   <meta name="twitter:title" content="Socrates — 理解，始于一个问题。">
   <meta name="twitter:description" content="为真正想理解的人打造的 AI 导师。">
   <meta name="twitter:image" content="https://topodrive.top/media/socrates-home-dialogue-photo-v1.webp">
-  <script src="/locale.js?cb=20261031r3"></script>
-  <link rel="stylesheet" href="/fonts.css?cb=20261031r3">
-  <link rel="stylesheet" href="/public.css?cb=20261031r3">
-  <link rel="stylesheet" href="/chrome.css?cb=20261031r3">
+  <script src="/locale.js?cb=20261101m1"></script>
+  <link rel="stylesheet" href="/fonts.css?cb=20261101m1">
+  <link rel="stylesheet" href="/public.css?cb=20261101m1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261101m1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -344,20 +344,47 @@
           <h2 id="stories-title">一次学习，怎样继续</h2>
           <a class="section-link" href="/zh/product">了解产品</a>
         </div>
-        <div class="story-layout">
-          <figure class="story-visual">
-            <div class="story-media"><img src="/media/socrates-home-dialogue-photo-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="两个人对着摊开的笔记本，一起梳理概念之间的连接。"></div>
-            <figcaption>学习场景示意，并非真实客户案例。</figcaption>
-          </figure>
-          <div>
+        <div class="story-layout m-story" data-story>
+          <div class="m-story-intro">
             <h3 class="home-editorial-title">让一个好问题，继续下去。</h3>
             <p class="home-editorial-copy">答案可以是起点。先弄清楚还解释不明白的那一处，再给自己一个值得回来的理由。</p>
-            <div class="story-steps" data-sequence>
-              <a class="story-step" href="/zh/product#dialogue"><span>01</span><div><h3>先用自己的话说一遍。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-              <a class="story-step" href="/zh/product#knowledge-map"><span>02</span><div><h3>找到那条连接。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-              <a class="story-step" href="/zh/product#recall"><span>03</span><div><h3>隔一段时间，再回来。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-            </div>
           </div>
+          <figure class="story-visual m-story-stage">
+            <div class="ui m-story-ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">概率 · 基础比率</span><span class="ui-tag">示意</span></div>
+                <div class="m-story-scenes">
+                  <div class="ui-body m-story-scene is-active" data-scene="0">
+                    <span class="ui-bubble">检测阳性，就说明我大概率得病了吧？</span>
+                    <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">先别急着下结论：1000 个人里，真正患病的有多少？</span></span></span>
+                    <span class="ui-bubble">如果是百分之一，那就是 10 个。所以很多阳性可能是误报。</span>
+                    <span class="ui-composer"><span>用自己的话回答……</span><span class="ui-send"></span></span>
+                  </div>
+                  <div class="ui-body m-story-scene" data-scene="1">
+                    <span class="ui-row"><span class="ui-small ui-muted ui-grow">知识地图</span><span class="ui-tag ui-tag--ink">新的连接</span></span>
+                    <svg class="m-story-map" viewBox="0 0 440 220" fill="none">
+                      <path class="m-story-edge" d="M220 112 96 56"/><path class="m-story-edge" d="M220 112 344 56"/><path class="m-story-edge m-story-edge--new" d="M96 56 C140 176 300 176 344 56"/><path class="m-story-edge" d="M220 112 220 186"/>
+                      <circle cx="220" cy="112" r="7" fill="#0d0d0d"/>
+                      <g class="m-story-dots" fill="#fff" stroke="#8f8f8f" stroke-width="1.25"><circle cx="96" cy="56" r="5"/><circle cx="344" cy="56" r="5"/><circle cx="220" cy="186" r="4"/></g>
+                      <g font-size="13" font-weight="500" fill="#5d5d5d"><text x="236" y="108" fill="#0d0d0d">贝叶斯定理</text><text x="96" y="34" text-anchor="middle">基础比率</text><text x="344" y="34" text-anchor="middle">假阳性</text><text x="220" y="210" text-anchor="middle" fill="#8f8f8f" font-weight="400">筛查</text></g>
+                    </svg>
+                    <span class="ui-small ui-muted">由连接它们的那个问题串在一起。</span>
+                  </div>
+                  <div class="ui-body m-story-scene" data-scene="2">
+                    <span class="ui-row"><span class="ui-small ui-muted ui-grow">第 1 张，共 5 张</span><span class="ui-meter ui-grow"><i class="on"></i><i></i><i></i><i></i><i></i></span></span>
+                    <span class="ui-stack"><span class="ui-flash"><span class="ui-small ui-muted">用你自己的话</span><span class="ui-q">为什么检测阳性，结果仍可能不太可信？</span><span class="ui-small ui-muted">先作答，再查看答案。</span></span></span>
+                    <span class="ui-row"><span class="ui-btn">查看答案</span><span class="ui-btn ui-btn--soft">打开对话</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <figcaption>界面示意，并非真实客户案例。</figcaption>
+          </figure>
+          <ol class="story-steps m-story-steps">
+            <li class="m-story-step" data-story-step="0"><a class="story-step" href="/zh/product#dialogue"><span>01</span><div><h3>先用自己的话说一遍。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">Socrates 从你已有的理解出发，只问下一个问题，而不是直接给出全部答案。</p></li>
+            <li class="m-story-step" data-story-step="1"><a class="story-step" href="/zh/product#knowledge-map"><span>02</span><div><h3>找到那条连接。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">你想通的概念会成为知识地图上的点，由连接它们的问题串在一起。</p></li>
+            <li class="m-story-step" data-story-step="2"><a class="story-step" href="/zh/product#recall"><span>03</span><div><h3>隔一段时间，再回来。</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a><p class="m-story-text">把一个好的瞬间变成回忆卡片，过几天再用自己的话回答一遍。</p></li>
+          </ol>
         </div>
       </div>
     </section>
@@ -661,9 +688,9 @@
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261023u4"></script>
-  <script src="/modules.js?cb=20261031r2"></script>
-  <script src="/chrome.js?cb=20261031r3"></script>
-  <script src="/motion.js?cb=20261031r3"></script>
+  <script src="/home-question.js?cb=20261101m1"></script>
+  <script src="/modules.js?cb=20261101m1"></script>
+  <script src="/chrome.js?cb=20261101m1"></script>
+  <script src="/motion.js?cb=20261101m1"></script>
 </body>
 </html>

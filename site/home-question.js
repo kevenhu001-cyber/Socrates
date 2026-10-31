@@ -31,6 +31,9 @@
       });
     });
 
+    /* Example questions type themselves into the empty box, one character
+       at a time, hold, fade and make way for the next. Focus, typing, a
+       hidden page or reduced motion stop it with the hint left complete. */
     var placeholder = form.querySelector('[data-ask-prompts]');
     if (placeholder && placeholder.animate) {
       var prompts = JSON.parse(placeholder.getAttribute('data-ask-prompts'));
@@ -38,6 +41,7 @@
       var timer = null;
       var animation = null;
       var index = -1;
+      var target = null;
       function eligible() {
         return prompts.length && !reduced.matches && !document.hidden && !input.value && document.activeElement !== input;
       }
@@ -45,31 +49,46 @@
         window.clearTimeout(timer);
         timer = null;
         if (animation) { animation.cancel(); animation = null; }
+        // Never leave a half-typed hint behind.
+        if (target !== null) { placeholder.textContent = target; target = null; }
+        placeholder.classList.remove('is-typing');
       }
-      function schedule() {
+      function schedule(delay) {
         window.clearTimeout(timer);
-        timer = eligible() ? window.setTimeout(rotate, 4800) : null;
+        timer = eligible() ? window.setTimeout(next, typeof delay === 'number' ? delay : 2600) : null;
       }
-      function rotate() {
+      function type(chars, count) {
         if (!eligible()) { pause(); return; }
-        animation = placeholder.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140 });
+        placeholder.textContent = chars.slice(0, count).join('');
+        if (count >= chars.length) {
+          target = null;
+          schedule(2600);
+          return;
+        }
+        // Han characters carry more per glyph, so they arrive a little slower.
+        var wide = /[\u3400-\u9fff]/.test(chars[count]);
+        timer = window.setTimeout(function () { type(chars, count + 1); }, wide ? 72 : 32);
+      }
+      function next() {
+        if (!eligible()) { pause(); return; }
+        animation = placeholder.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'cubic-bezier(.22,1,.36,1)' });
         animation.onfinish = function () {
+          animation = null;
           if (!eligible()) { pause(); return; }
           index = (index + 1) % prompts.length;
-          placeholder.textContent = prompts[index];
-          animation = placeholder.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
-          animation.onfinish = function () { animation = null; };
-          schedule();
+          target = prompts[index];
+          placeholder.classList.add('is-typing');
+          type(Array.from(target), 1);
         };
       }
       input.addEventListener('focus', pause);
-      input.addEventListener('blur', schedule);
+      input.addEventListener('blur', function () { schedule(); });
       input.addEventListener('input', function () { if (input.value) pause(); else schedule(); });
       document.addEventListener('visibilitychange', function () { if (document.hidden) pause(); else schedule(); });
       reduced.addEventListener('change', function () { if (reduced.matches) pause(); else schedule(); });
       window.addEventListener('pagehide', pause);
-      window.addEventListener('pageshow', schedule);
-      schedule();
+      window.addEventListener('pageshow', function () { schedule(); });
+      schedule(2400);
     }
 
     syncValue();

@@ -79,11 +79,11 @@ Socrates · AI 导师
 
 答案可以是起点。先弄清楚还解释不明白的那一处，再给自己一个值得回来的理由。
 
-1. [先用自己的话说一遍](https://topodrive.top/zh/product#dialogue)。
-2. [找到那条连接](https://topodrive.top/zh/product#knowledge-map)。
-3. [隔一段时间，再回来](https://topodrive.top/zh/product#recall)。
+1. [先用自己的话说一遍](https://topodrive.top/zh/product#dialogue)。Socrates 从你已有的理解出发，只问下一个问题，而不是直接给出全部答案。
+2. [找到那条连接](https://topodrive.top/zh/product#knowledge-map)。你想通的概念会成为知识地图上的点，由连接它们的问题串在一起。
+3. [隔一段时间，再回来](https://topodrive.top/zh/product#recall)。把一个好的瞬间变成回忆卡片，过几天再用自己的话回答一遍。
 
-配图是学习场景示意，并非真实客户案例。
+配图是界面示意，并非真实客户案例。
 
 ## 每个问题，都会留下痕迹
 

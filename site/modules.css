@@ -321,3 +321,139 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
 .ui { font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); }
 .m-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .m-faq a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* ───────── Round 4: motion and texture ─────────
+   Everything below only animates transform / opacity (plus clip-path for
+   the tab glider and stroke-dashoffset for drawn lines), on --m-ease, and
+   falls back to the finished state under reduced motion or without JS. */
+
+/* Raised surfaces: layered shadows and a faint top highlight. */
+.ui-window { box-shadow: var(--site-shadow-2), var(--site-inner-highlight); }
+.m-panel, .m-graph-stage { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }
+.m-step::before { box-shadow: var(--site-shadow-1); }
+
+/* Cards lift 2px and their shadow deepens. The shadow lives on ::after so
+   only its opacity changes; nothing is repainted at a new size. */
+.m-card, .m-step { position: relative; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }
+.m-card { transition: background-color 300ms var(--m-ease), transform 500ms var(--m-ease); }
+.m-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--site-shadow-2); opacity: 0; pointer-events: none; transition: opacity 300ms var(--m-ease); }
+.m-rail-art { position: relative; transition: background-color 300ms var(--m-ease), transform 500ms var(--m-ease); }
+@media (hover: hover) and (pointer: fine) {
+  a.m-card:hover { transform: translateY(-2px); background: #fff; }
+  a.m-card:hover::after { opacity: 1; }
+  .m-rail-card:hover .m-rail-art { transform: translateY(-2px); }
+}
+a.m-card:active { transform: translateY(0) scale(.99); }
+
+/* Tabs: on wide screens a single white pill glides between tabs. The pill
+   is clipped (clip-path, paint only) inside a wrapper whose drop-shadow
+   follows the clipped shape, so the hairline ring travels with it. */
+.m-tablist { position: relative; isolation: isolate; }
+.m-tab { z-index: 1; }
+.m-tab-glider { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; pointer-events: none; filter: drop-shadow(0 0 .5px rgb(0 0 0 / .22)) drop-shadow(0 1px 2px rgb(0 0 0 / .07)); }
+.m-tab-glider i { display: block; height: 100%; background: #fff; transition: clip-path 500ms var(--m-ease); }
+.m-tablist.has-glider .m-tab[aria-selected='true'] { background: transparent; box-shadow: none; }
+.m-tablist.has-glider .m-tab { transition: color 300ms var(--m-ease); }
+
+/* Miniature conversations: a thin caret blinks in the composer while the
+   miniature is on screen (the class is removed off screen and when the
+   page is hidden). */
+.ui-composer > span:first-child { position: relative; }
+.ui.is-live .ui-composer > span:first-child::before { content: ''; position: absolute; left: -5px; top: 50%; width: 1.5px; height: 16px; margin-top: -8px; border-radius: 1px; background: var(--m-ink); animation: m-caret 1.1s steps(1, end) infinite; }
+@keyframes m-caret { 50% { opacity: 0; } }
+
+/* Knowledge graph: lines draw one after another (pathLength = 1 is set by
+   modules.js), then points scale up and light in order. */
+.js .m-graph-stage.is-drawable .kg-edge { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 1; transition: stroke-dashoffset 800ms var(--m-ease) var(--d, 0ms), opacity 300ms var(--m-ease), stroke 150ms var(--m-ease); }
+.js .m-graph-stage.is-drawable.is-in .kg-edge { stroke-dashoffset: 0; }
+.js .m-graph-stage.is-drawable .kg-node { transition: opacity 300ms var(--m-ease) var(--d, 0ms); }
+.js .m-graph-stage.is-drawable .kg-node circle { transition: transform 500ms var(--m-ease) var(--d, 0ms); }
+.js .m-graph-stage.is-drawable:not(.is-in) .kg-node circle { transform: scale(.4); }
+.js .m-graph-stage.is-drawable.is-settled :is(.kg-edge, .kg-node, .kg-node circle) { transition-delay: 0ms; }
+.js .m-graph-stage.is-drawable .kg-halo { transition: opacity 800ms var(--m-ease) 600ms; }
+.js .m-graph-stage.is-drawable:not(.is-in) .kg-halo { opacity: 0; }
+/* The small map inside the tabs draws when its panel is shown. */
+.js .ui-map.is-drawable svg > g:first-child path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.js .ui-map.is-drawable.is-drawn svg > g:first-child path { stroke-dashoffset: 0; transition: stroke-dashoffset 1400ms var(--m-ease) 150ms; }
+
+/* Card rail: drag with a mouse; snapping pauses while dragging and the
+   momentum glide, then settles on a card. */
+@media (hover: hover) and (pointer: fine) {
+  .m-rail[data-draggable] { cursor: grab; }
+  .m-rail.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+  .m-rail.is-dragging a { pointer-events: none; }
+}
+
+/* Scroll story: copy and three steps on the left, a sticky product view
+   on the right that changes scene as each step reaches the middle of the
+   viewport (IntersectionObserver, no scroll handler). Without JS every
+   scene is shown in a column and nothing sticks. */
+.m-story { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; align-items: start; gap: 0 var(--space-700); }
+.m-story-intro { grid-column: 1; grid-row: 1; }
+.m-story-steps { grid-column: 1; grid-row: 2; display: grid; gap: var(--space-75); margin: var(--space-400) 0 0; padding: 0; list-style: none; }
+.m-story-step { min-width: 0; }
+.m-story-step .story-step { position: relative; }
+.m-story-text { max-width: 460px; margin: var(--space-100) var(--space-200) 0 calc(32px + var(--space-100) * 2); color: var(--m-muted); font: var(--type-body-6); font-size: .9375rem; line-height: 1.5rem; text-wrap: pretty; }
+.m-story-stage { grid-column: 2; grid-row: 1 / 3; align-self: start; min-width: 0; padding: var(--space-500); border-radius: var(--radius-3xl); background-color: var(--m-subtle); }
+.m-story-stage figcaption { margin-top: var(--space-200); padding-inline: 0; text-align: center; }
+.m-story-scenes { display: grid; gap: var(--space-200); }
+.m-story-scene { align-content: start; }
+.m-story-scene + .m-story-scene { border-top: 1px solid var(--m-line); }
+.m-story-map { display: block; width: 100%; height: auto; }
+.m-story-edge { stroke: #cdcdcd; stroke-width: 1.25; }
+.m-story-edge--new { stroke: var(--m-ink); stroke-width: 1.5; stroke-dasharray: 4 5; }
+/* With JS: the scenes stack in one cell (the tallest sets the height, so
+   switching never moves the page), only the active one is shown. */
+.js .m-story-stage { position: sticky; top: calc(var(--site-header-height) + 40px); }
+.js .m-story-scenes { gap: 0; }
+.js .m-story-scene { grid-area: 1 / 1; border-top: 0; transition: opacity 300ms var(--m-ease), transform 500ms var(--m-ease), visibility 0s linear 0s; }
+.js .m-story-scene:not(.is-active) { opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity 300ms var(--m-ease), transform 500ms var(--m-ease), visibility 0s linear 300ms; }
+.js .m-story-step { min-height: 30vh; }
+.js .m-story-step:last-child { min-height: 0; padding-bottom: 12vh; }
+.js .m-story-step .story-step { background: transparent; transition: background-color 300ms var(--m-ease), box-shadow 300ms var(--m-ease), transform 200ms var(--m-ease); }
+.js .m-story-step.is-active .story-step { background: #fff; box-shadow: var(--site-shadow-1); }
+.js .m-story-step .story-step h3, .js .m-story-text { transition: color 300ms var(--m-ease); }
+.js .m-story-step:not(.is-active) .story-step h3 { color: var(--m-muted); }
+.js .m-story-step:not(.is-active) .m-story-text { color: var(--m-quiet); }
+.js .m-story-step.is-active .story-step > span:first-child { background: var(--m-ink); color: #fff; box-shadow: none; }
+.m-story-step .story-step > span:first-child { transition: background-color 300ms var(--m-ease), color 300ms var(--m-ease); }
+/* The new link in the map draws itself when its scene arrives. */
+.js .m-story-scene[data-scene='1'] .m-story-edge:not(.m-story-edge--new) { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.js .m-story-scene[data-scene='1'].is-active .m-story-edge:not(.m-story-edge--new) { stroke-dashoffset: 0; transition: stroke-dashoffset 700ms var(--m-ease) 150ms; }
+.js .m-story-scene[data-scene='1'] .m-story-edge--new { opacity: 0; transition: opacity 300ms var(--m-ease); }
+.js .m-story-scene[data-scene='1'].is-active .m-story-edge--new { opacity: 1; transition-delay: 700ms; }
+
+@media (min-width: 1920px) {
+  .js .m-story-step { min-height: 28vh; }
+}
+@media (max-width: 1080px) {
+  .m-story { gap: 0 var(--space-500); }
+  .m-story-stage { padding: var(--space-300); }
+}
+@media (max-width: 760px) {
+  .m-story { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 0; }
+  .m-story-intro, .m-story-steps, .m-story-stage { grid-column: 1; grid-row: auto; }
+  .m-story-stage { margin-top: var(--space-300); padding: var(--space-100); border-radius: var(--radius-2xl); }
+  .m-story-stage figcaption { margin-top: var(--space-100); }
+  .js .m-story-stage { z-index: 2; top: calc(var(--site-header-height) + 8px); }
+  .m-story-ui .ui-bar { display: none; }
+  .m-story-ui .ui-body { gap: var(--space-100); padding: var(--space-200); }
+  .m-story-ui .ui-flash { min-height: 120px; padding: var(--space-200); }
+  .m-story-ui .ui-composer { height: 40px; }
+  .m-story-map text { font-size: 19px; }
+  .m-story-map text:first-child { font-size: 20px; }
+  .m-story-text { margin-left: calc(32px + var(--space-100) * 2); margin-right: var(--space-100); }
+  .js .m-story-step { min-height: 34vh; }
+  .js .m-story-step:last-child { padding-bottom: var(--space-200); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-card, .m-card::after, .m-rail-art, .m-tab-glider i, .m-tablist.has-glider .m-tab,
+  .js .m-story-scene, .js .m-story-scene:not(.is-active), .js .m-story-step .story-step, .js .m-story-step .story-step h3, .js .m-story-text, .m-story-step .story-step > span:first-child,
+  .js .m-graph-stage.is-drawable :is(.kg-edge, .kg-node, .kg-node circle, .kg-halo), .js .m-story-scene .m-story-edge { transition: none !important; }
+  .js .m-story-scene:not(.is-active) { transform: none; }
+  a.m-card:hover, .m-rail-card:hover .m-rail-art, a.m-card:active { transform: none; }
+  .js .m-graph-stage.is-drawable .kg-edge, .js .ui-map.is-drawable svg > g:first-child path, .js .m-story-scene[data-scene='1'] .m-story-edge:not(.m-story-edge--new) { stroke-dashoffset: 0; }
+  .js .m-graph-stage.is-drawable:not(.is-in) .kg-node circle { transform: none; }
+  .js .m-graph-stage.is-drawable:not(.is-in) .kg-halo, .js .m-story-scene[data-scene='1'] .m-story-edge--new { opacity: 1; }
+  .ui.is-live .ui-composer > span:first-child::before { animation: none; display: none; }
+}

@@ -79,11 +79,11 @@ Move between modes as an idea takes shape: talk it through, test it, connect it 
 
 An answer can be a beginning. Work through the part you cannot explain yet, then give yourself a reason to return.
 
-1. [Put it in your own words](https://topodrive.top/product#dialogue).
-2. [Find the connection](https://topodrive.top/product#knowledge-map).
-3. [Come back to it](https://topodrive.top/product#recall).
+1. [Put it in your own words](https://topodrive.top/product#dialogue). Socrates starts from what you already think and asks the next question, not the whole answer.
+2. [Find the connection](https://topodrive.top/product#knowledge-map). Ideas you work through become points on your knowledge map, linked by the questions that joined them.
+3. [Come back to it](https://topodrive.top/product#recall). Turn a good moment into a recall card, then answer it in your own words a few days later.
 
-The accompanying learning scene is illustrative, not a customer case study.
+The accompanying product view is an illustration, not a customer case study.
 
 ## Every question leaves a trace
 
