@@ -56,9 +56,17 @@ export function resetCmdKSearchState() {
   }
 }
 
+function getCmdKOverlay(): HTMLElement | null {
+  return document.getElementById("cmdKOverlay");
+}
+
+function getCmdKInput(): HTMLInputElement | null {
+  return document.getElementById("cmdKInput") as HTMLInputElement | null;
+}
+
 function _publishCmdKState() {
-  const overlay = document.getElementById("cmdKOverlay");
-  const input = document.getElementById("cmdKInput") as HTMLInputElement | null;
+  const overlay = getCmdKOverlay();
+  const input = getCmdKInput();
   publishCmdKState({
     isOpen: !!overlay && !overlay.classList.contains("hidden"),
     query: input?.value || "",
@@ -74,10 +82,10 @@ function rebuildCmdKIndex() {
       ensureFuse().then(function () {
         if (!browserWindow.CURRENT_USER || typeof browserWindow.Fuse === "undefined") return;
         rebuildCmdKIndex();
-        const overlay = document.getElementById("cmdKOverlay");
-        const input = document.getElementById("cmdKInput");
-        if (overlay && !overlay.classList.contains("hidden") && input && (input as HTMLInputElement).value.trim()) {
-          const hits = _cmdKIndex!.search((input as HTMLInputElement).value.trim(), { limit: 20 });
+        const overlay = getCmdKOverlay();
+        const input = getCmdKInput();
+        if (overlay && !overlay.classList.contains("hidden") && input && input.value.trim()) {
+          const hits = _cmdKIndex ? _cmdKIndex.search(input.value.trim(), { limit: 20 }) : [];
           const remoteResults = _cmdKResults.filter((hit): hit is RemoteCmdKResult => hit._remote === true);
           const mergedResults: CmdKResult[] = [...hits, ...remoteResults.filter(function (hit) {
             return !hits.some(function (local) { return local.item.id === hit.item.id; });
@@ -135,17 +143,17 @@ function openCmdK() {
     rebuildCmdKIndex();
     _cmdKIndexDirty = false;
   }
-  const overlay = document.getElementById("cmdKOverlay");
+  const overlay = getCmdKOverlay();
   if (overlay) overlay.classList.remove("hidden");
-  const input = document.getElementById("cmdKInput");
-  if (input) { (input as HTMLInputElement).value = ""; setTimeout(function () { input.focus(); }, 0); }
+  const input = getCmdKInput();
+  if (input) { input.value = ""; setTimeout(function () { input.focus(); }, 0); }
   _cmdKResults = [];
   _cmdKSelected = 0;
   _publishCmdKState();
 }
 
 function closeCmdK() {
-  const overlay = document.getElementById("cmdKOverlay");
+  const overlay = getCmdKOverlay();
   if (overlay) overlay.classList.add("hidden");
   _publishCmdKState();
 }
@@ -168,7 +176,7 @@ function onCmdKInput(q: string) {
         ? { hits: payload.hits.flatMap((hit) => { const parsed = parseRemoteHit(hit); return parsed ? [parsed] : []; }) }
         : null;
       if (r && r.hits.length) {
-        const cur = (((document.getElementById("cmdKInput") || {}) as HTMLInputElement).value || "").trim();
+        const cur = (getCmdKInput()?.value || "").trim();
         if (cur !== q) return;
         const seen: Record<string, boolean> = {};
         _cmdKResults.forEach(function (h) {
@@ -205,7 +213,7 @@ function openCmdKResult(idx: number) {
   const hit = _cmdKResults[idx];
   if (!hit) return;
   const item = hit.item;
-  const q = (document.getElementById("cmdKInput") as HTMLInputElement)!.value.trim();
+  const q = (getCmdKInput()?.value || "").trim();
   if (q) {
     _cmdKRecent = _cmdKRecent.filter(function (x) { return x !== q; });
     _cmdKRecent.unshift(q);
@@ -240,7 +248,7 @@ function onCmdKKey(ev: KeyboardEvent) {
     if (_cmdKResults.length) {
       openCmdKResult(_cmdKSelected);
     } else {
-      const q = (document.getElementById("cmdKInput") as HTMLInputElement)!.value.trim();
+      const q = (getCmdKInput()?.value || "").trim();
       if (q) {
         browserWindow.apiFetch("/api/search", {
           method: "POST",

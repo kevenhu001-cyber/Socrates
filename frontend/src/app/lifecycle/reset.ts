@@ -88,19 +88,21 @@ function renderTopicSetupAfterReset(examWasOpen: boolean) {
   try { renderGreeting(); }
   catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.renderGreeting'); }
   if (examWasOpen) {
-    const examBody = document.getElementById('examViewLegacyBody') || document.getElementById('examViewBody');
-    const examFooter = document.getElementById('examViewLegacyFooter') || document.getElementById('examViewFooter');
+    const examBody = document.getElementById('examViewBody');
+    const examFooter = document.getElementById('examViewFooter');
     if (examBody) examBody.replaceChildren();
     if (examFooter) examFooter.replaceChildren();
   }
   clearLegacyMsgListChildren();
   resetComposerForNewSession();
   const knowledgeContent = document.getElementById('kbContent');
-  knowledgeContent!.innerHTML = '<div class="kb-empty">'
-    + (typeof browserWindow.t === 'function'
-      ? translateLifecycleText('tutor.kbTopicFirst')
-      : 'Set a topic to build your knowledge map.')
-    + '</div>';
+  if (knowledgeContent) {
+    knowledgeContent.innerHTML = '<div class="kb-empty">'
+      + (typeof browserWindow.t === 'function'
+        ? translateLifecycleText('tutor.kbTopicFirst')
+        : 'Set a topic to build your knowledge map.')
+      + '</div>';
+  }
   const teachingPlan = document.getElementById('teachingPlanContent');
   if (teachingPlan) teachingPlan.innerHTML = '';
 }
@@ -109,7 +111,8 @@ function renderListsAfterReset() {
   callWindowHook('renderRecents');
   callWindowHook('renderMistakes');
   callWindowHook('updateMistakesBadge');
-  scrollContainer()!.scrollTop = 0;
+  const sc = scrollContainer();
+  if (sc) sc.scrollTop = 0;
 }
 
 function callWindowHook(name: 'renderRecents' | 'renderMistakes' | 'updateMistakesBadge' | 'syncSidebarBtns') {

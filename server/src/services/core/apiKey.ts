@@ -134,6 +134,10 @@ function decryptProvider(key: ApiKeyRow) {
      * image_url parts. Defaults to false for older rows that
      * pre-date the column. */
     isMultimodal: key.isMultimodal === true,
+    /* P_provider-capability-override — the operator's own statement of
+     * how their endpoint encodes "no thinking". NULL means "use the
+     * capability registry's answer". */
+    instantEncoding: key.instantEncoding ?? null,
   };
 }
 

@@ -1,4 +1,5 @@
 import { reportSwallow } from '../reportSwallow.ts';
+import { getCurrentLanguage } from '../../i18n/languageState.ts';
 
 const API_PREFIX = '/api/v2';
 
@@ -43,6 +44,11 @@ export function prepareApiRequest(
   if (!path.startsWith(API_PREFIX + '/')) path = path.replace(/^\/api\//, API_PREFIX + '/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
+  /* The server renders its error copy in the language the user picked.
+   * `Accept-Language` only carries the OS locale, which does not follow an
+   * in-app language switch, so the app states its own locale explicitly.
+   * The server falls back to `Accept-Language` for every other client. */
+  opts.headers['X-Socrates-Locale'] = getCurrentLanguage();
   if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
     opts.body = JSON.stringify(opts.body);
     opts.headers['Content-Type'] = 'application/json';

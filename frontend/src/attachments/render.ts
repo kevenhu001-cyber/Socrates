@@ -23,6 +23,8 @@ type WiredInput = {
   barId: string | string[] | null;
   chipsId: string | null;
   updateBtnName: 'updateComposerBtn';
+  wrapEl?: HTMLElement | null;
+  barEls?: HTMLElement[];
 };
 
 
@@ -123,13 +125,26 @@ function wiredBarIds(w: Pick<WiredInput, 'barId'>){
   return Array.isArray(w.barId) ? w.barId : [w.barId];
 }
 
+function getWiredWrapEl(w: WiredInput): HTMLElement | null {
+  if (w.wrapEl && w.wrapEl.isConnected) return w.wrapEl;
+  w.wrapEl = document.getElementById(w.wrapId);
+  return w.wrapEl;
+}
+
+function getWiredBarEls(w: WiredInput): HTMLElement[] {
+  if (w.barEls && w.barEls.length && w.barEls.every((b) => b.isConnected)) return w.barEls;
+  const barIds = wiredBarIds(w);
+  w.barEls = barIds.map((barId) => document.getElementById(barId)).filter((el): el is HTMLElement => Boolean(el));
+  return w.barEls;
+}
+
 /* Returns the wired-input whose wrap contains the event target, or
    null if the event happened outside every registered wrap. */
 function findWiredForTarget(target: EventTarget|null){
   if(!target) return null;
   for(let i = 0; i < WIRED_INPUTS.length; i++){
     const w = WIRED_INPUTS[i];
-    const el = document.getElementById(w.wrapId);
+    const el = getWiredWrapEl(w);
     if(el && el.contains((target as Node | null))) return w;
   }
   return null;
@@ -208,6 +223,16 @@ function wirePasteHandler(textarea: HTMLElement | null, wrap: HTMLElement) {
   });
 }
 
+function isWiredAlready(chipsId: string | null | undefined): boolean {
+  return Boolean(chipsId && WIRED_INPUTS.some((w) => w.chipsId === chipsId));
+}
+
+function resolveBarEls(barId: string | string[] | null | undefined): HTMLElement[] {
+  if (!barId) return [];
+  const list = Array.isArray(barId) ? barId : [barId];
+  return list.map((id) => document.getElementById(id)).filter((el): el is HTMLElement => Boolean(el));
+}
+
 /* Wire one composer. opts:
  *   btnId        — paperclip button id (opens the hidden file input)
  *   inputId      — hidden file input id
@@ -223,26 +248,28 @@ function wirePasteHandler(textarea: HTMLElement | null, wrap: HTMLElement) {
  * Called once for the single composer; safe to call multiple times for
  * the same ids (de-duplicated by chipsId). */
 export function setupAttachmentInput(opts: WiredInput){
-  if(!opts || !opts.inputId || !opts.wrapId) return;
-  // De-dup: if a config with the same chipsId is already wired, skip.
-  if(opts.chipsId && WIRED_INPUTS.some(function(w){ return w.chipsId === opts.chipsId; })) return;
+  if (!opts?.inputId || !opts?.wrapId) return;
+  if (isWiredAlready(opts.chipsId)) return;
 
-  const btn = opts.btnId ? document.getElementById(opts.btnId) : null;
   const input = document.getElementById(opts.inputId);
   const wrap = document.getElementById(opts.wrapId);
-  const textarea = opts.textareaId ? document.getElementById(opts.textareaId) : null;
-  if(!input || !wrap) return;
+  if (!input || !wrap) return;
 
-  const cfg = {
+  const btn = opts.btnId ? document.getElementById(opts.btnId) : null;
+  const textarea = opts.textareaId ? document.getElementById(opts.textareaId) : null;
+  const barEls = resolveBarEls(opts.barId);
+
+  WIRED_INPUTS.push({
     btnId: opts.btnId,
     inputId: opts.inputId,
     wrapId: opts.wrapId,
-    textareaId: opts.textareaId || null,
-    barId: opts.barId || null,
-    chipsId: opts.chipsId || null,
-    updateBtnName: opts.updateBtnName || "updateComposerBtn",
-  };
-  WIRED_INPUTS.push(cfg);
+    textareaId: opts.textareaId ?? null,
+    barId: opts.barId ?? null,
+    chipsId: opts.chipsId ?? null,
+    updateBtnName: opts.updateBtnName ?? "updateComposerBtn",
+    wrapEl: wrap,
+    barEls,
+  });
   wirePickerButton(btn, input);
   wireInputFileChange(input, btn);
   wireComposerDrop(wrap);
@@ -310,11 +337,10 @@ function wireDocumentDrag(){
       // Highlight every wired wrap + bar so the user sees feedback
       // anywhere on the page.
       WIRED_INPUTS.forEach(function(w){
-        const el = document.getElementById(w.wrapId);
+        const el = getWiredWrapEl(w);
         if(el) el.classList.add("drag-over");
-        wiredBarIds(w).forEach(function(barId: string){
-          const bar = document.getElementById(barId);
-          if(bar) bar.classList.add("drag-over-doc");
+        getWiredBarEls(w).forEach(function(bar){
+          bar.classList.add("drag-over-doc");
         });
       });
     }
@@ -330,11 +356,10 @@ function wireDocumentDrag(){
     if(docDragCount <= 0){
       docDragCount = 0;
       WIRED_INPUTS.forEach(function(w){
-        const el = document.getElementById(w.wrapId);
+        const el = getWiredWrapEl(w);
         if(el) el.classList.remove("drag-over");
-        wiredBarIds(w).forEach(function(barId: string){
-          const bar = document.getElementById(barId);
-          if(bar) bar.classList.remove("drag-over-doc");
+        getWiredBarEls(w).forEach(function(bar){
+          bar.classList.remove("drag-over-doc");
         });
       });
     }
@@ -348,9 +373,8 @@ function wireDocumentDrag(){
     if(!hasFile) return;
     // Clear doc-level visual hint on every wired bar.
     WIRED_INPUTS.forEach(function(w){
-      wiredBarIds(w).forEach(function(barId: string){
-        const bar = document.getElementById(barId);
-        if(bar) bar.classList.remove("drag-over-doc");
+      getWiredBarEls(w).forEach(function(bar){
+        bar.classList.remove("drag-over-doc");
       });
     });
     // If the drop landed on a specific composer, that composer's

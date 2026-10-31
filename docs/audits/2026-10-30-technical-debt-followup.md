@@ -77,13 +77,32 @@
 | 语音停止按钮的重复 window forwarder | **本轮已移除** | 录音停止按钮直接调用语音模块的 `stopSpeechInput()`；移除无读取方的根级转发与类型，保留麦克风启动的懒加载入口。 |
 | 内置模型 key 可用性的 window 状态镜像 | **本轮已移除** | 认证启动与本地开发路由直接更新 `providerConfig.service` 的模块状态，provider refresh / clear 读取同一状态；移除 `window.SERVER_HAS_BEAGLE_KEY` 发布、读取和类型字段。 |
 
+## 2026-10-31 批次：系统级加固（CI / 错误文案 / 看门狗 / 能力列）
+
+| 条目 | 当前状态 | 依据 |
+|---|---|---|
+| GitHub Action 未固定 SHA | **已修复** | 7 个 workflow 的 52 处 `uses:` 全部改为 40 位 commit SHA，原 tag 以行尾注释保留（`actions/checkout@11d5960a… # v4`）。新增 `scripts/pin-actions.mjs`（`git ls-remote` 解析 + 改写，支持 `--check` / `--dry-run`）与只读守卫 `scripts/check-action-pinning.mjs`（基线 `scripts/action-pinning.baseline.json`，只能缩小），守卫接入根 `npm run lint`。 |
+| `site/` 没有 CI | **已修复** | `ci.yml` 新增 `site` job：`npm run test:site`（chrome 同步漂移检查 + 5 组浏览器几何测试）。`site/**` 已被 `changes` 分类为 code，因此站点改动会触发该 job。 |
+| 没有体积预算 | **已修复** | 新增 `scripts/check-bundle-size.mjs` 与预算 `scripts/bundle-size.baseline.json`：入口 JS（raw + gzip）、JS 总量、最大单块、CSS 总量四条上限，当前基线按 2026-10-31 实测留约 10% 余量。该守卫测量构建产物，因此不进入 `npm run lint`（lint 不构建），改为 `lint:bundle` 并在 `ci.yml` 的 Frontend job 构建后执行。 |
+| 服务端错误文案不 i18n | **已修复** | 新增 `server/src/lib/errorMessages.ts`：错误码 → 中英文案目录、`Accept-Language` / `X-Socrates-Locale` 解析、`localizeErrorCode` 与 `upstreamFailureMessage`。JSON 错误路径（`middleware/error.ts`）与 SSE 错误帧（`lib/sseErrorFrame.ts`）都按请求 locale 渲染；SPA 在 `util/api/request.ts` 统一带上 `X-Socrates-Locale`。规则：**只翻译通用文案**，服务端自己拼装的句子（带套餐名、字段名的）原样保留；机器契约（`code`/status/`retryable`/`upstreamStatus`/`retryAfterMs`）不变。 |
+| 无空闲看门狗 | **已修复** | 新增 `server/src/lib/turnWatchdog.ts` 与 `server/src/routes/chat/pipeline` 接线：SSE 路由豁免请求超时，因此一个「什么都不产出」的 turn 原本没有服务端截止时间。现在有两条预算——**无进展**（默认 10 分钟）和**总时长**（默认 60 分钟），任一超限即以 `TURN_IDLE_TIMEOUT` / `TURN_MAX_DURATION`（HTTP 504、可重试）结束 turn。进展 = 新内容 / 新思考 / 工具事件 / 新的上游跳，因此正在产出的 turn 不会被误杀。可用 `TURN_IDLE_TIMEOUT_MS` / `TURN_MAX_DURATION_MS` 调整或关闭。 |
+| Qwen 的 host 启发式 | **已修复** | 新增 `api_keys.instant_encoding` 列（迁移 `0048_provider_instant_encoding`，可重复执行），承载“该接口如何表达不思考”的四选一覆盖值：`reasoning_effort_none` / `thinking_disabled` / `enable_thinking_false` / `chat_template_kwargs`。服务端 `instantEncodingFor(capability, apiBase, override)` 中 override 优先于 host 猜测；`routes/apiKeys.ts` 校验并读写该字段，设置页提供“自动 / 显式值”下拉。API 契约为附加式（`packages/` 与各端无需改动）。 |
+| 生产迁移账本无法核验 | **已交付工具** | 新增 `server/scripts/check-migration-ledger.mjs`（`npm run db:verify-ledger`，只读）：逐条比对 `drizzle.__drizzle_migrations` 与 `drizzle/meta/_journal.json`（精确到具体哪个迁移未落库），并直接查 `pg_constraint` 校验 `scheduled_tasks` 的两个外键是否存在、是否 `convalidated`、`ON DELETE` 语义是否正确。本地 `socrates` 库试跑输出即定位出 8 条未落库迁移。 |
+| 重试次数“声明 1 次 / 实际多次” | **已决策并加测试** | `services/core/llm.ts` 的 `RATE_LIMIT_ATTEMPTS = 5`、`TRANSIENT_ATTEMPTS = 3`、确定性失败不重试、以及全部尝试共享 8 秒预算，这套契约现在是导出的常量，并由 `server/test/upstreamRetryContract.test.mjs` 钉住；改动数字必须显式改测试。 |
+| `0047_project_memory_mode.sql` 不可重复执行 | **已修复** | 该迁移的 `ADD COLUMN` 缺少 `IF NOT EXISTS`，触发 `scripts/check-drizzle-drift.mjs` 的幂等性规则（此前任何代码类 PR 的 server job 都会红）。已改为 `ADD COLUMN IF NOT EXISTS`，漂移检查恢复全绿。 |
+| `contentExtractor` worker 恢复与排队死锁 | **已修复** | 宽松归一化 worker 返回的部分结果字段（`normalizeExtractedArticle`），避免因缺少非必填属性导致排队请求被静默丢弃并返回 `null`；修复 `contentExtractorLifecycle.test.js` mock 契约，单测恢复 3/3 全通。 |
+| 错题重做提示文案硬编码英文 | **已修复** | `ui/mistakeBook.ts` 中的 `— Redoing a question you got wrong —` 接入双语字典 `mistakes.redoingPrompt`（中文：「— 重做做错的题目 —」），消除硬编码英文。 |
+| 根目录 `yaml` 依赖缺失手动软链接 | **已修复** | 根目录执行 `npm install --ignore-scripts` 规范安装 `devDependencies` 中的 `yaml`，移除向 server 依赖的手动软链接。 |
+| 中断与零正文轮次的 Token 计费遗漏 | **已修复** | 在 `server/src/routes/chat/pipeline/runChatStreamPipeline.ts`（lines 740, 1031, 1050）与 `server/src/routes/minimaxProxy.ts`（line 204）中，修复原判定 `req.userId && fullText.length > 0` 导致首字产出前中断、推理阶段看门狗超时或上游报错时提示词 Token 未入账的缺陷；统一收敛为 `(fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)` 并经 `resolveUsage` 规范计费，单测补充覆盖。 |
+| 前端高频事件路径 DOM 重复查询优化与安全收敛 | **已收敛** | 在 `layoutStateMirror.ts`（聚焦监听）、`detailSurface.ts`（Surface 句柄缓存）、`mobileModeSwitch.ts`（消息列表变更侦听）与 `sidebarChrome.ts` 中针对频繁触发路径收敛重复 `getElementById` 查询，`share.impl.ts` 与 `loader.impl.ts` 补齐 null 防卫。 |
+
 ## 仍开放或尚无法确认
 
 | 优先级 | 条目 | 状态与边界 |
 |---|---|---|
-| 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。关闭条件是只读核验生产迁移账本及外键语义，并按正式迁移流程完成尚缺步骤。 |
+| 高 | 生产 `0045_repair_scheduled_task_integrity.sql` 迁移及 scheduled_tasks 外键 | 仓库包含可重复运行的修复迁移；最后一份明确的生产审计记录为“尚未执行”。本次未访问生产库，因此不能宣称线上已修复。**已交付只读核验工具**：`cd server && DATABASE_URL=… npm run db:verify-ledger` 逐条比对 `drizzle.__drizzle_migrations` 账本与 `drizzle/meta/_journal.json`，并直接读取 `pg_constraint` 检查 `scheduled_tasks` 的两个外键是否存在、是否 `convalidated`、`ON DELETE` 语义是否正确。关闭条件是用该工具对生产库跑一次（只读），按报告中的缺失迁移走正式 Drizzle migrator 完成，不要手工执行 SQL 伪造账本。 |
 | 中 | Expo / Universal App 依赖告警 | 审计仍将 `@expo/cli`、`expo` 与 `zod` 列为 3 个 high 依赖节点；来源是 Expo CLI 使用的 `zod@3.25.76`（[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)）。2026-10-30 核验 npm 最新 `@expo/cli@58.1.17` 仍声明 `zod ^3.25.76`，修复版本 `>=4.6.6` 超出其范围。Expo SDK 58 同时将 React Native 目标升级到 0.88，而本项目 SDK 57 使用 RN 0.86；不能把跨 SDK/RN 升级当作安全依赖小修，也不通过不兼容的 major override 掩盖它。待 Expo 发布兼容依赖范围后处理；参考 [Expo SDK 58 发行说明](https://expo.dev/changelog/sdk-58) 与 [SDK 对应版本表](https://docs.expo.dev/versions/latest/)。 |
-| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 截至 2026-10-31 的后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、KaTeX 重绘回调、cookie consent、extension dispatch、搜索重试、未调用的搜索质量 judge/retry、Incognito 状态镜像、首轮 turn controller、composer controller、active-chat abort、Search Progress Log、六个 namespace window 状态桥，以及移动模式处理器、顶栏显隐 wrapper、Cmd-K 输入/按键 handlers、语音停止 forwarder、内置模型 key 镜像、项目工作区新会话的项目 id 桥、流式播放测试开关和 Deep Research 模式镜像。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。 |
+| 中 | SPA 旧 DOM 与 React、兼容 CSS 并存 | 截至 2026-10-31 的后续批次已移除确认弹窗、prompt templates、More、Usage、Share、Profile、sidebar 用户、Composer Tools、附件、session-list、Cmd-K、agent-run、chat-runtime、math revision、KaTeX 重绘回调、cookie consent、extension dispatch、搜索重试、未调用的搜索质量 judge/retry、Incognito 状态镜像、首轮 turn controller、composer controller、active-chat abort、Search Progress Log、六个 namespace window 状态桥，以及移动模式处理器、顶栏显隐 wrapper、Cmd-K 输入/按键 handlers、语音停止 forwarder、内置模型 key 镜像、项目工作区新会话的项目 id 桥、流式播放测试开关和 Deep Research 模式镜像。`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和兼容 CSS 仍在生产接线中；继续按领域迁移，不能据此宣称 SPA 运行时兼容边界已退役。**2026-10-31 复核**：剩余量级为 `frontend/src` 内 436 处 `getElementById`（分布在 128 个文件）与兼容 CSS 冻结段（`!important` 622、硬编码半径 244、硬编码字号 436、legacy 通道 1097）。这是一场按领域推进的多 PR 迁移，本轮未做结构性缩减。 |
 | 中 | Universal App 与原生 Android 完整签收 | Web/Android/iOS 的功能、设备、语言和浏览器覆盖仍未完成。原生 Android 对齐文档保留明确的不支持场景和设备验收缺口；截图或 JVM 测试不能代替真机签收。 |
 
 ## 回归覆盖
@@ -170,3 +189,16 @@
 - Project workspace new-chat context now enters `resetApp({ projectId })` and stays in `stateStore` through `startSession()`; `projects-directory.spec.mjs` focused flow passes 1/1 and checks that `_nextProjectId` is absent, with frontend `npm run lint` and `npm run build` passing.
 - Smooth-stream test control now uses the persisted `socrates:smoothStream` preference; the preference disables both paced playback and tail reveal, while `prefers-reduced-motion` remains covered separately. `stream-smooth.spec.mjs` passes 9/9, frontend lint and production build pass, and no production source references `__socratesSmoothStream`.
 - Deep Research mode no longer uses `window.deepResearchOn`; extension activation, session capture, send routing, quick-chip state and Composer Tools share `config/deepResearchMode.ts`. Its unit test passes 1/1, the focused session-start and Composer Tools Playwright cases pass 2/2, and frontend lint/build pass.
+- `contentExtractor.ts` 归一化与测试环境稳健性修复：`normalizeExtractedArticle` 允许 worker 返回部分合法字段时平滑归一化而不是直接判定为 `null`；修复 `contentExtractorLifecycle.test.js` 在 Node 24 下的 worker 模拟数据，3/3 单测全通。
+- `reactBridge.ts` 保护与单测环境隔离：为 `window.addEventListener` 调用点补充函数存在性防卫；`finishViewport.test.mjs` 限定统计真实意图守卫事件，排除全局广播事件干扰；`legacyGateway.test.mjs` 改用 `setDeepResearchEnabled` 真实入口；`mockFallbackNotice.test.mjs` 改用模块导出的 `setLang`。四组聚焦单测 11/11 全通。
+- 中断轮次与零正文 Token 计费回归：`usageAccounting.test.js` 补充覆盖中断轮次下保留提示词 Token 估算、以及错误/中断前已获取到供应商 usage 时的准确解析；`runChatStreamPipeline.ts` 与 `minimaxProxy.ts` 接入 `resolveUsage` 统一兜底。
+- 旧 DOM 冗余与无用节点清理（方案 A 全面重构）：
+  - 移除了 `frontend/index.html` 中的历史过渡残留插槽 `<div id="examViewLegacyBody">` 与 `<div id="examViewLegacyFooter">`。
+  - 重构 `frontend/src/exam/ui.ts`、`frontend/src/app/lifecycle/reset.ts`、`frontend/src/session/loader.impl.ts`、`frontend/src/ui/share.impl.ts`，直接收敛至统一的标准容器 `#examViewBody` 与 `#examViewFooter`，消除历史双轨查询与非空断言（`!`）。
+  - 清理 `frontend/src/exam.ts` 中被已迁移的 React `ExamSetup.tsx` 替代的废弃旧 DOM 状态机函数（`toggleExamModelMenu`、`selectExamModel`、`toggleExamType`、`selectExamDifficulty`）以及 `EXAM_COMMANDS` 中的废弃命令，优化 `refreshExamFormI18n()` 安全字段读取。
+  - 清理 `frontend/src/exam/generation.ts` 中的 DOM 非空断言 `!`，改用带 safe chaining 的安全空值防御。
+  - 解除 `frontend/src/pickers.ts` 中全局 `click`/`keydown` 监听器在关闭/无挂载状态下对 `#modelPicker`、`#extensionsPicker` 的无谓 DOM 轮询，解耦 `syncModelPills` 对 `#modelPicker` 存在性的依赖以保证顶栏 chat model 同步永不阻断。
+  - 优化 `frontend/src/attachments/render.ts` 中 `WiredInput` 的元素引用缓存，消除每次 `dragenter` / `dragleave` / `drop` 全局事件时的重复 `getElementById` DOM 树遍历。
+  - 优化 `frontend/src/ui/cmdK.impl.ts` 中的 DOM 元素查询，抽取 `getCmdKOverlay` / `getCmdKInput`，消除所有非空断言与高频查询。
+  - 校验并保证 CSP 脚本哈希（`scripts/gen-csp-hashes.mjs`）保持严格一致无漂移。
+- 自动化门禁全面绿化：测试数据库 `socrates_test` 成功执行迁移并经只读账本核验通过（`npm run db:verify-ledger`，49/49 账本条目一致并验证外键约束）；服务端全量单元测试 1148/1148 通过；前端全量单元测试 1230/1230 通过；生产构建与体积上限校验（`scripts/check-bundle-size.mjs`）通过；静态站点 40 页面几何与 Chrome 漂移测试（`npm run test:site`，114/114）通过；OpenAPI 模式投影验证通过；全仓 24 项架构 Lint 守卫全数通过。

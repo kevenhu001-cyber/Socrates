@@ -260,39 +260,38 @@ function syncModelPills(){
   const label=document.getElementById("modelPickerLabel");
   const menu=document.getElementById("modelPickerMenu");
   const trigger=document.getElementById("modelPickerTrigger");
-  if(!picker||!label||!menu||!trigger)return;
   const providerConfig = getProviderConfigSnapshot();
-  /* P_init-sync — providers가 아직 로드되지 않았으면 중립 상태 표시.
-     "Add a model"은 서버 응답 후 진짜 빈 상태일 때만 노출. */
   const providers=providerConfig.providers||[];
-  if(!providerConfig.fetched && !providers.length){
-    showPickerLoading(label, trigger, menu);
-    _syncChatModelInternal();
-    return;
+
+  if(picker && label && menu && trigger){
+    /* P_init-sync — providers가 아직 로드되지 않았으면 중립 상태 표시.
+       "Add a model"은 서버 응답 후 진짜 빈 상태일 때만 노출. */
+    if(!providerConfig.fetched && !providers.length){
+      showPickerLoading(label, trigger, menu);
+    } else {
+      const { active, activeId } = resolvePickerProvider(providers, providerConfig.activeId);
+      /* P_model-autofallback — if no activeId is set but the providers
+         list includes the configured built-in provider, auto-select it so the model
+         picker never shows "Pick a model" on cold boot. */
+      updatePickerSelection(label, trigger, providers, active);
+      if (picker.getAttribute("data-open") === "true") renderPickerMenu(menu, providers, activeId);
+    }
   }
-  const { active, activeId } = resolvePickerProvider(providers, providerConfig.activeId);
-  /* P_model-autofallback — if no activeId is set but the providers
-     list includes the configured built-in provider, auto-select it so the model
-     picker never shows "Pick a model" on cold boot. */
-  updatePickerSelection(label, trigger, providers, active);
-  if (picker.getAttribute("data-open") === "true") renderPickerMenu(menu, providers, activeId);
   _syncChatModelInternal();
 }
 /* Click outside the picker closes the menu. */
 document.addEventListener("click",function(e){
   const p=document.getElementById("modelPicker");
-  if(!p)return;
-  if(p.getAttribute("data-open")!=="true")return;
+  if(!p || p.getAttribute("data-open")!=="true")return;
   if(!p.contains((e.target as Node | null)))closeModelPicker();
 });
 /* Esc closes the menu. */
 document.addEventListener("keydown",function(e){
   if(e.key!=="Escape")return;
   const p=document.getElementById("modelPicker");
-  if(p&&p.getAttribute("data-open")==="true"){
-    closeModelPicker();
-    e.stopPropagation();
-  }
+  if(!p || p.getAttribute("data-open")!=="true")return;
+  closeModelPicker();
+  e.stopPropagation();
 });
 
 subscribeToProviderConfig(function () {
@@ -301,14 +300,14 @@ subscribeToProviderConfig(function () {
 });
 /* Event delegation on model picker menu items */
 document.addEventListener("click", function(e){
-  const add = (e.target as Element)!.closest(".model-picker-add");
+  const add = (e.target as Element)?.closest?.(".model-picker-add");
   if (add && add.closest("#modelPickerMenu, #chatModelMenu")) {
     closeModelPicker();
     closeChatModelMenu();
     document.dispatchEvent(new CustomEvent("socrates:open-settings"));
     return;
   }
-  const item = (e.target as Element)!.closest(".model-picker-item");
+  const item = (e.target as Element)?.closest?.(".model-picker-item");
   if (!item) return;
   const menu = item.closest("#modelPickerMenu, #chatModelMenu");
   if (!menu) return;
@@ -539,7 +538,8 @@ function syncExtensionsUI(){
   EXTENSIONS.forEach(function(ext){
     if(ext.key==="extensiveThinking") ext.on = !!browserWindow.extensiveThinkingOn;
   });
-  if (document.getElementById("extensionsPicker")?.getAttribute("data-open") === "true") renderExtensionsMenu();
+  const extPicker = document.getElementById("extensionsPicker");
+  if (extPicker?.getAttribute("data-open") === "true") renderExtensionsMenu();
   const trigger=document.getElementById("extensionsTrigger");
   const label=document.getElementById("extensionsLabel");
   const n=countActiveExtensions();
@@ -569,17 +569,15 @@ function closeExtensionsPicker(){
 }
 document.addEventListener("click",function(e){
   const p=document.getElementById("extensionsPicker");
-  if(!p)return;
-  if(p.getAttribute("data-open")!=="true")return;
+  if(!p || p.getAttribute("data-open")!=="true")return;
   if(!p.contains((e.target as Node | null)))closeExtensionsPicker();
 });
 document.addEventListener("keydown",function(e){
   if(e.key!=="Escape")return;
   const p=document.getElementById("extensionsPicker");
-  if(p&&p.getAttribute("data-open")==="true"){
-    closeExtensionsPicker();
-    e.stopPropagation();
-  }
+  if(!p || p.getAttribute("data-open")!=="true")return;
+  closeExtensionsPicker();
+  e.stopPropagation();
 });
 
 /* ── Web search toggle (used by extensions picker and settings) ── */

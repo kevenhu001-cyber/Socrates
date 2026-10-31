@@ -154,20 +154,24 @@
 
 ## 6. 遗留清单（按建议优先级）
 
+> 状态复核（2026-10-31）：本节的多条已在本轮修复，逐条依据见
+> [技术债状态复核](../audits/2026-10-30-technical-debt-followup.md) 的
+> “2026-10-31 批次”表。下面保留原始条目并标注当前状态。
+
 ### P0
 
-- **中文场景的 token 估算严重偏低**（第 3 轮发现，未修）。`services/core/usageTracker.ts` 的 `estimateTokens` 是 `length / 4`，对中文低估约 3–4 倍（中文约 1 字 ≈ 1 token，英文约 4 字符 ≈ 1 token）。后果：①窗口预算对中文会话仍然偏乐观，长对话会被供应商用 context-length 400 拒掉（兼容链视为终态，硬失败）；②用量估算与配额口径偏低。**注意**：改它会同时改动用量展示与配额判定口径，影响面比看上去大，建议单独一轮，先决定"预算用保守估算、计费用 provider 上报"是否要拆成两个估算器。
-- **生产库缺失 `scheduled_tasks` 的两个外键，根因未确诊**。已排除"仓库漂移"：`server/drizzle/0018_add_status_monitor_events.sql:21-22` 早已声明这两个 FK，而同文件 `:5` 的 `CREATE TABLE "scheduled_tasks"` 没有 `IF NOT EXISTS` 保护（同文件的 `status_monitor_events` 有 `DO` 守卫）—— 若线上表是带外创建的，0018 在第 1 条语句就失败，`ADD CONSTRAINT` 从未执行。**需要你查生产库**（见第 7 节）。
-- **0045 生产迁移 / 正式部署未执行**。`server/drizzle/0045_repair_scheduled_task_integrity.sql` 就是外键修复迁移：先归档无 owner 任务与 lease、归档并置空悬空 session 引用，再恢复已验证的 user CASCADE / session SET NULL 外键（归档表在受限 `ops` schema）。`docs/audits/2026-10-23-provider-api-contracts.md:75` 明确写着"尚未执行：生产 0045 迁移、正式代码部署、服务重启、供应商额度调整"，第 95–98 行是发布步骤（低峰窗口走单写者 `deploy.sh`、用正常 Drizzle migrator 让账本与 `_journal` 一致、不要手工执行 SQL 后伪造账本）。本轮的服务端改动（能力表、契约）**不需要**新迁移，但 0045 仍待落地。
+- **中文场景的 token 估算严重偏低**（第 3 轮发现）—— **已修复**：usage 估算回退改为复用 `estimateContextTokens`（ASCII 每 4 字符、非 ASCII 每 2 字节向上取整），供应商 usage 仍是首选计量。
+- **生产库缺失 `scheduled_tasks` 的两个外键，根因未确诊** —— **根因确认 + 核验工具已交付**：`server/drizzle/0018_add_status_monitor_events.sql:5` 的 `CREATE TABLE "scheduled_tasks"` 没有 `IF NOT EXISTS` 保护（同文件的 `status_monitor_events` 有 `DO` 守卫），线上表若是带外创建的，0018 在第 1 条语句就失败，`ADD CONSTRAINT` 从未执行。`cd server && DATABASE_URL=… npm run db:verify-ledger` 现在会精确列出缺失的迁移并直接核验两个外键的语义（只读）。
+- **0045 生产迁移 / 正式部署未执行** —— **仍需运维执行**：按 `docs/audits/2026-10-23-provider-api-contracts.md:75` 的发布步骤走单写者 `deploy.sh`，用正常 Drizzle migrator 让账本与 `_journal` 一致，**不要**手工执行 SQL 后伪造账本。
 
 ### P1
 
-- **无空闲看门狗**：长会话空转没有兜底。
-- **错误文案未 i18n**：服务端错误文案硬编码英文，中文界面会混排。
-- **部署 / CI 批**：`SESSION_SECRET` 启动期 fail-fast（P1-14）、`site/` 无 CI（P1-17）、体积预算不执行（P1-18）、GitHub Action 未固定 SHA（P1-19）。
-- **三端 SSE 契约统一**：Universal App 把所有失败硬编码成 502（属迁移阻塞项而非线上故障）。
-- **Qwen 的 host 启发式**：需要 `api_keys` per-provider 能力列（迁移 + API + UI）。
-- **P1-12（声明 1 次重试 vs 实际 6 次）**：刻意没在 P0-5 里一起改，会改变重试预算语义，属独立决策。
+- **无空闲看门狗** —— **已修复**：`server/src/lib/turnWatchdog.ts` 提供“无进展”（默认 10 分钟）与“总时长”（默认 60 分钟）两条预算，超限以 `TURN_IDLE_TIMEOUT` / `TURN_MAX_DURATION`（504）结束 turn。
+- **错误文案未 i18n** —— **已修复**：`server/src/lib/errorMessages.ts` 按请求 locale 渲染通用错误文案（JSON 与 SSE 两条路径），只翻译通用文案，机器契约不变。
+- **部署 / CI 批** —— **已修复四项**：`SESSION_SECRET` 启动期 fail-fast（此前已修）、`site/` 进入 CI（`ci.yml` 的 `site` job）、体积预算（`scripts/check-bundle-size.mjs`）、GitHub Action 固定 SHA（`scripts/pin-actions.mjs` + `scripts/check-action-pinning.mjs`）。
+- **三端 SSE 契约统一** —— **已修复**：`packages/api` 的 `ApiError` 保留 `status`/`code`/`retryable`/`upstreamStatus`/`retryAfterMs`，旧式只带消息的帧仍回退到 502。
+- **Qwen 的 host 启发式** —— **已修复**：`api_keys.instant_encoding`（迁移 0048）承载 per-provider 覆盖值，`instantEncodingFor(capability, apiBase, override)` 中 override 优先于 host 猜测；设置页提供下拉。
+- **P1-12（声明 1 次重试 vs 实际 6 次）** —— **已决策**：契约是 429 最多 5 次尝试、瞬时失败最多 3 次、确定性失败不重试、所有尝试共享 8 秒预算。数字已导出并由 `server/test/upstreamRetryContract.test.mjs` 钉住。
 
 ### P2
 
@@ -182,8 +186,8 @@
    psql "$PROD_DATABASE_URL" -c "select count(*) from drizzle.__drizzle_migrations;"
    ```
 
-   测试库是 **47 条**且与 `server/drizzle/meta/_journal.json` 完全一致（含 `0018`）。**生产若少于 47 条**，就证实了"0018 第一条语句失败、两个 FK 从未 ADD"，`scheduled_tasks` 的外键缺失根因即告破。生产库我全程没有连接（按约定只读勘查阶段不碰生产）。
-2. **根目录 `node_modules` 缺 `yaml`**（根 package.json 的 devDependency，本次未安装）。导致 `npm run openapi:generate` / `openapi:check` 直接失败。临时解法：`ln -sfn ../server/node_modules/yaml node_modules/yaml`（未进版本控制）；正解：在根目录 `npm install`。
+   测试库是 **49 条**且与 `server/drizzle/meta/_journal.json` 完全一致（含 `0018`、`0047`、`0048`）。**生产若少于 49 条**，就证实了迁移落后或中途失败。`cd server && DATABASE_URL=… npm run db:verify-ledger` 会直接给出差额。生产库全程未连接（按约定只读勘查阶段不碰生产）。
+2. **根目录 `node_modules` 缺 `yaml`** —— **已解决**：已在根目录执行 `npm install --ignore-scripts` 正式补齐 `devDependencies` 中的 `yaml`，无需手动软链接。
 3. **生产迁移 0045 与部署流程**按上面的审计文档执行。
 
 ## 8. 必须遵守的工程约束（与本轮相关的部分）

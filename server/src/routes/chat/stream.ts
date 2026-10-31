@@ -35,6 +35,7 @@ import { runChatStreamPipeline } from './pipeline/runChatStreamPipeline.js';
 import { createStreamToolContext } from './pipeline/toolContext.js';
 import { createChatTurn, withChatTurnExecution } from '../../services/core/chatTurns.js';
 import { writeSseEvent } from '../../lib/sse.js';
+import { resolveErrorLocale } from '../../lib/errorMessages.js';
 import { createChatTiming, type ChatTiming } from '../../lib/chatTiming.js';
 
 import type { Request, Router } from 'express';
@@ -147,7 +148,7 @@ export function registerStreamRoute(router: Router) {
         throw err;
       }
     } catch (err) {
-      if (res.headersSent) endSseWithError(res, err);
+      if (res.headersSent) endSseWithError(res, err, resolveErrorLocale(req.headers));
       else next(err);
     }
   });

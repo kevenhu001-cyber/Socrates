@@ -287,6 +287,10 @@ export const zh = {
     "provider.multimodal":"多模态（支持图像理解）",
     "provider.multimodalHint":"允许将图片附件发送给此模型",
     "attach.notMultimodal":"当前模型无法理解图像。请添加多模态提供方或移除图片附件。",
+    /* P_provider-capability-override — see matching en block. */
+    "provider.instantEncoding":"即时模式编码",
+    "provider.instantEncodingAuto":"自动",
+    "provider.instantEncodingHint":"该接口如何表达「不思考」。除非模型忽略即时模式，否则保持自动即可。",
     /* P_lang-slogans — Tutor-mode hero was pinned English before; now
        translated so the whole app reads consistently in 中文.
        The chat-mode equivalents (`topic.titleChat` / `topic.subChat`)
@@ -1163,6 +1167,7 @@ export const zh = {
     "mistakes.redoneMany":"已重做 {n} 次",
     "mistakes.type.quiz":"测验",
     "mistakes.type.practice":"练习",
+    "mistakes.redoingPrompt":"— 重做做错的题目 —",
     "prompt.placeholderTitle":"如：代码审查",
     "prompt.placeholderShortcut":"/my-template",
     "prompt.placeholderDesc":"一行简介",

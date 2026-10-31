@@ -7,6 +7,8 @@ import { TrashIcon } from 'lucide-react';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { i18n } from '../legacy/gateway.ts';
 import { ProviderTextField } from './ProviderTextField';
+import { PreferenceSelect } from './PreferenceSelect';
+import { INSTANT_ENCODING_OPTIONS } from '../../config/providerConfig.types.ts';
 import type { ProviderListProps, SettingsProviderErrors, SettingsProviderSnapshot } from './types';
 
 interface ProviderRowProps {
@@ -98,6 +100,20 @@ export function ProviderRow({
           />
           <FieldLabel htmlFor={`provider-${provider.id}-vision`}>{i18n('provider.multimodal', 'Multimodal (vision-capable)')}</FieldLabel>
         </Field>
+        {/* P_provider-capability-override — the per-provider statement of
+            how this endpoint encodes "no thinking". "Automatic" leaves the
+            decision to the server's capability registry; the other values
+            are the four encodings the server accepts. */}
+        <PreferenceSelect
+          id={`provider-${provider.id}-instant`}
+          label={i18n('provider.instantEncoding', 'Instant encoding')}
+          value={provider.instantEncoding ?? 'auto'}
+          options={[
+            { value: 'auto', label: i18n('provider.instantEncodingAuto', 'Automatic') },
+            ...INSTANT_ENCODING_OPTIONS.map((encoding) => ({ value: encoding, label: encoding })),
+          ]}
+          onValueChange={(value) => onFieldChange(provider.id, 'instantEncoding', value === 'auto' ? '' : value)}
+        />
       </FieldGroup>
       </CardContent>
       <CardFooter className="justify-end">

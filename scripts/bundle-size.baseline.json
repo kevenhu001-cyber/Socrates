@@ -1,0 +1,12 @@
+{
+  "entryJsBytes": 860000,
+  "entryJsGzipBytes": 275000,
+  "totalJsBytes": 18600000,
+  "largestChunkBytes": 5300000,
+  "largestChunkName": "plotly.min-BPBU9tls.js",
+  "totalCssBytes": 1160000,
+  "jsChunkCount": 166,
+  "cssFileCount": 11,
+  "note": "Ceiling for the built SPA bundle, measured on 2026-10-31 at entry 778108 B raw / 248922 B gzip, total JS 16907201 B, largest chunk 4851164 B, CSS 1051247 B. The headroom (~10%) absorbs a patch-level dependency bump; a real regression does not fit. Raise with --update in the same commit as an intentional growth.",
+  "generatedBy": "check-bundle-size.mjs --update"
+}

@@ -180,7 +180,7 @@ function createRedoMessage(slotClass: string, quizId?: string|undefined) {
   const slot = quizId
     ? '<div class="' + slotClass + '" data-quiz-id="' + quizId + '"></div>'
     : '<div class="' + slotClass + '"></div>';
-  body.innerHTML = '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px">— Redoing a question you got wrong —</div>' + slot;
+  body.innerHTML = '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px">' + esc(t('mistakes.redoingPrompt')) + '</div>' + slot;
   message.appendChild(body);
   return message;
 }
@@ -289,11 +289,11 @@ export function createMistakeBook({
           correctAnswer: mistakeData.correctAnswer != null ? String(mistakeData.correctAnswer) : null,
           source: mistakeData.source || 'quiz',
         },
-      }).catch(function () {
-        console.log('[mistakes] failed to persist mistake');
+      }).catch(function (error) {
+        reportSwallow(error, 'ui/mistakeBook.persistMistake');
       });
-    } catch (_) {
-      console.log('[mistakes] persistMistake threw');
+    } catch (error) {
+      reportSwallow(error, 'ui/mistakeBook.persistMistakeCatch');
     }
   }
 

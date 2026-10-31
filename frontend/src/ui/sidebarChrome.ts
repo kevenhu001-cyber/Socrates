@@ -110,6 +110,7 @@ export function toggleSidebarView(view: string) {
    main.js at the same position the inline block used to run, so eval
    order is unchanged. */
 export function initSidebarChrome() {
+  const sidebar = document.getElementById('sidebar');
   try {
     const sbPref = localStorage.getItem('socrates-sb');
     /* Tablets and landscape phones sit between the phone drawer and a
@@ -118,7 +119,8 @@ export function initSidebarChrome() {
        content keeps the width, and keep honouring an explicit preference. */
     const wantsCollapsed = sbPref === '0' || (sbPref === null && browserWindow.innerWidth < 1025);
     if (wantsCollapsed) {
-      sidebarOpen = false; document.getElementById('sidebar')!.classList.add('collapsed');
+      sidebarOpen = false;
+      sidebar?.classList.add('collapsed');
     }
   } catch (error) { reportSwallow(error, 'ui/sidebarChrome.ts:111', 'expected'); }
   syncSidebarBtns();
@@ -130,7 +132,7 @@ export function initSidebarChrome() {
   try { browserWindow.sidebarOpen = sidebarOpen; } catch (error) { reportSwallow(error, 'ui/sidebarChrome.ts:118'); }
 
   document.addEventListener('click', function (e) {
-    const sbEl = document.getElementById('sidebar');
+    const sbEl = sidebar ?? document.getElementById('sidebar');
     if (!sbEl || sbEl.classList.contains('collapsed')) return;
     /* Clicks inside the sidebar or on the toggle button are not "outside". */
     if ((e.target as Element)!.closest('#sidebar')) return;
@@ -168,5 +170,5 @@ export function initSidebarChrome() {
      this listener is intentionally a no-op for non-backdrop targets and
      simply guarded against double-firing. */
   const sbBackdrop = document.getElementById('sidebarBackdrop');
-  if (sbBackdrop) sbBackdrop.addEventListener('click', function (e) { e.stopPropagation(); const sbEl = document.getElementById('sidebar'); if (isMobileViewport() && sbEl && !sbEl.classList.contains('collapsed')) toggleSidebar(); });
+  if (sbBackdrop) sbBackdrop.addEventListener('click', function (e) { e.stopPropagation(); const sbEl = sidebar ?? document.getElementById('sidebar'); if (isMobileViewport() && sbEl && !sbEl.classList.contains('collapsed')) toggleSidebar(); });
 }

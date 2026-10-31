@@ -9,6 +9,7 @@
 import type { Response } from 'express';
 import type { ToolCallDelta } from './types.js';
 import { buildSseErrorFrame } from '../../../lib/sseErrorFrame.js';
+import type { ErrorLocale } from '../../../lib/errorMessages.js';
 
 function flush(response: Response): void {
   try { (response as { flush?: () => void }).flush?.(); } catch {}
@@ -17,10 +18,13 @@ function flush(response: Response): void {
 export class SseEmitter {
   private readonly response: Response;
   private readonly aborted: () => boolean;
+  /** The locale the error frame is rendered in. */
+  private readonly locale: ErrorLocale;
 
-  constructor(response: Response, isAborted: () => boolean) {
+  constructor(response: Response, isAborted: () => boolean, locale: ErrorLocale = 'en') {
     this.response = response;
     this.aborted = isAborted;
+    this.locale = locale;
   }
 
   /** Raw frame write — escapes the abort guard only for lifecycle frames. */
@@ -83,7 +87,7 @@ export class SseEmitter {
     // provider-specific details. buildSseErrorFrame maps every failure to a
     // status-based message and keeps the machine-readable status/code/retryable
     // contract, so the browser does not replay a 400 or an exhausted 429.
-    const details = buildSseErrorFrame(error, { fallbackCode: 'LLM_UPSTREAM_ERROR' });
+    const details = buildSseErrorFrame(error, { fallbackCode: 'LLM_UPSTREAM_ERROR', locale: this.locale });
     try {
       this.writeRaw(`event: error\ndata: ${JSON.stringify(details)}\n\n`);
       this.response.write('data: [DONE]\n\n');

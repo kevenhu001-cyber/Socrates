@@ -1,11 +1,11 @@
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 
 export function examBody() {
-  return document.getElementById('examViewLegacyBody') || document.getElementById('examViewBody');
+  return document.getElementById('examViewBody');
 }
 
 export function examFooter() {
-  return document.getElementById('examViewLegacyFooter') || document.getElementById('examViewFooter');
+  return document.getElementById('examViewFooter');
 }
 
 export function examTitle() {

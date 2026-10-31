@@ -40,9 +40,10 @@
  *     applies. A window is never invented.
  *
  * The registry describes MODELS. Per-provider overrides that an operator can
- * set (the `api_keys.is_multimodal` precedent) are deliberately out of scope
- * here; a capability column on the provider row would be the natural next
- * step and would remove the one remaining endpoint-shaped guess below.
+ * set live on the provider row (`api_keys.instant_encoding`), the same way
+ * `api_keys.is_multimodal` does: the server reads the column when it
+ * builds the request, so the operator's statement about their own endpoint
+ * wins over the registry's host heuristic.
  */
 
 import { ApiError } from './errors.js';
@@ -243,11 +244,12 @@ const MODEL_CAPABILITIES: readonly ModelCapability[] = [
     /* Model Studio documents the TOP-LEVEL `enable_thinking` field. A
      * self-hosted vLLM exposes the same switch as
      * `chat_template_kwargs.enable_thinking`. The endpoint host is the only
-     * signal available to tell the two apart; a relay in front of Model
-     * Studio is therefore mis-detected, and vLLM silently ignores
-     * `enable_thinking`. This is the one remaining endpoint-shaped guess in
-     * the registry and it is why an operator-settable capability column
-     * (api_keys) is the right follow-up. */
+     * signal available to tell the two apart, so a relay in front of Model
+     * Studio is mis-detected and vLLM silently ignores `enable_thinking`.
+     * This was the last endpoint-shaped guess in the registry; it is now
+     * overridable per provider through `api_keys.instant_encoding`
+     * (P_provider-capability-override), which is what an operator sets
+     * when the host guess is wrong for their setup. */
     instantEncoding: 'chat_template_kwargs',
     instantEncodingByHost: { host: /dashscope|aliyuncs/i, encoding: 'enable_thinking_false' },
     effort: 'unsupported',
@@ -638,9 +640,14 @@ export function mapEffortLevel(capability: ModelCapability, level: string): stri
  * `undefined` means "do not send a switch": either the model never thinks
  * (the switch would be meaningless) or nothing is declared (the caller falls
  * back to the OpenAI-standard `reasoning_effort: none`).
+ *
+ * `override` is the per-provider statement (the `api_keys.instant_encoding`
+ * column). It wins over everything else, including the host heuristic:
+ * the operator knows which endpoint they point at, the server does not.
  */
-export function instantEncodingFor(capability: ModelCapability, apiBase?: string): InstantEncoding | undefined {
+export function instantEncodingFor(capability: ModelCapability, apiBase?: string, override?: string | null): InstantEncoding | undefined {
   if (capability.thinking !== 'supported') return undefined;
+  if (isInstantEncoding(override)) return override;
   const scoped = capability.instantEncodingByHost;
   if (scoped && apiBase) {
     let host = '';
@@ -649,6 +656,19 @@ export function instantEncodingFor(capability: ModelCapability, apiBase?: string
   }
   return capability.instantEncoding;
 }
+
+/** Is this value one of the encodings the registry knows how to send? */
+export function isInstantEncoding(value: unknown): value is InstantEncoding {
+  return typeof value === 'string' && (INSTANT_ENCODINGS as readonly string[]).includes(value);
+}
+
+/** Every encoding the registry (and the per-provider column) accepts. */
+export const INSTANT_ENCODINGS: readonly InstantEncoding[] = Object.freeze([
+  'reasoning_effort_none',
+  'thinking_disabled',
+  'enable_thinking_false',
+  'chat_template_kwargs',
+]);
 
 /**
  * Reject a request that asks for a thinking mode the model cannot deliver.

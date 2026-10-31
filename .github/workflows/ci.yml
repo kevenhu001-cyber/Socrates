@@ -51,7 +51,7 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           # Need history on both sides of the comparison.
           fetch-depth: 0
@@ -148,7 +148,7 @@ jobs:
     # Deliberately NOT gated on `changes`: a conflict marker inside a
     # docs-only PR is still a broken file, and this job costs seconds.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # 2026-09-26: merge ee20d6df committed qodana.yaml and
       # .github/workflows/qodana_code_quality.yml with live
@@ -168,7 +168,7 @@ jobs:
           fi
           echo "clean: no conflict markers in tracked files"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: 'npm'
@@ -194,6 +194,40 @@ jobs:
       - name: OpenAPI drift ratchet
         run: node scripts/check-openapi-drift.mjs
 
+  # The marketing/docs site is a separate static tree deployed to its own
+  # vhost. It had NO automated coverage at all until 2026-10-31: a broken
+  # stylesheet, a stale chrome asset or a layout regression shipped
+  # because only a human looking at the page would notice.
+  #
+  # `npm run test:site` runs the chrome-sync drift check plus the browser
+  # geometry tests (question homepage, product and content pages, motion).
+  # The job is gated on `changes` because site/** is classified as code —
+  # a site edit must not skip the gate.
+  site:
+    name: Site
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install root tooling
+        run: npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Site chrome sync and browser tests
+        run: npm run test:site
+
   frontend:
     name: Frontend
     needs: changes
@@ -213,16 +247,16 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
       - name: Restore Rust WASM cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cargo/registry
@@ -254,6 +288,14 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Bundle size ceiling. This guard measures the BUILT artifact, so it
+      # is the one check that cannot live in `npm run lint` (lint never
+      # builds). The ceiling covers the initial JS payload, the total JS,
+      # the largest single chunk and the CSS.
+      - name: Bundle size ceiling
+        working-directory: .
+        run: node scripts/check-bundle-size.mjs
 
       - name: Unit tests
         run: npm run test:unit
@@ -320,7 +362,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: playwright-report
           path: frontend/playwright-report
@@ -370,9 +412,9 @@ jobs:
       NODE_ENV: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: 'npm'
@@ -418,10 +460,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Restore Rust protocol cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cargo/registry
@@ -443,7 +485,7 @@ jobs:
         run: rm -f .cargo/config.toml && cargo test -p socrates-protocol
         working-directory: tools-rust
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
 
@@ -470,9 +512,9 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
           cache: 'npm'
@@ -509,7 +551,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: universal-app-report
           path: frontend/test-results

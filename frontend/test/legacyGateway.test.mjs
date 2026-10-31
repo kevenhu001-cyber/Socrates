@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { setDeepResearchEnabled } from '../src/config/deepResearchMode.ts';
 
 globalThis.window = {
   _activeTemplate: null,
@@ -18,7 +19,7 @@ const {
 test('typed legacy accessors read active composer mode and toggle flags', () => {
   window._activeTemplate = { extensionKey: 'write' };
   window.webSearchOn = true;
-  window.deepResearchOn = 1;
+  setDeepResearchEnabled(true);
   window.extensiveThinkingOn = false;
 
   assert.equal(getActiveTemplateExtensionKey(), 'write');

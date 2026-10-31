@@ -239,3 +239,45 @@ test('a provider that rejects temperature while reasoning gets none', async () =
   const instant = await bodyFor({ model: 'gpt-6-sol', reasoning_effort: 'none', temperature: 0.3 });
   assert.equal(instant.temperature, 0.3);
 });
+
+/* ── Per-provider override (P_provider-capability-override) ─────────── */
+
+test('the per-provider instant encoding overrides the registry', async () => {
+  /* Qwen's registry entry is the one case where the same model is served
+     by two documented, incompatible endpoints, so the registry falls back
+     to the endpoint host. The operator's own statement about their
+     endpoint must win over that host guess. */
+  const capability = resolveModelCapability('qwen3-8b');
+  assert.ok(capability.instantEncodingByHost, 'the registry keeps its host-scoped entry');
+
+  /* A neutral host takes the registry default (self-hosted vLLM). */
+  const guessed = await bodyFor({ model: 'qwen3-8b', reasoning_effort: 'none' });
+  assert.equal(guessed.enable_thinking, undefined);
+  assert.deepEqual(guessed.chat_template_kwargs, { enable_thinking: false });
+
+  /* A Model Studio host takes the host-scoped encoding. */
+  const studio = await bodyFor({
+    model: 'qwen3-8b',
+    reasoning_effort: 'none',
+    apiBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  });
+  assert.equal(studio.enable_thinking, false);
+  assert.equal(studio.chat_template_kwargs, undefined);
+
+  /* The operator's own statement wins over BOTH the default and the host
+     guess: a relay in front of Model Studio mis-detects the host, and
+     the column is how the operator states the truth. */
+  const overridden = await bodyFor({
+    model: 'qwen3-8b',
+    reasoning_effort: 'none',
+    instantEncoding: 'enable_thinking_false',
+  });
+  assert.equal(overridden.enable_thinking, false);
+  assert.equal(overridden.chat_template_kwargs, undefined);
+
+  /* An unknown override value is ignored rather than sent verbatim: the
+     server only ever sends an encoding it knows how to spell. */
+  const bogus = await bodyFor({ model: 'qwen3-8b', reasoning_effort: 'none', instantEncoding: 'not-an-encoding' });
+  assert.equal(bogus.enable_thinking, undefined);
+  assert.deepEqual(bogus.chat_template_kwargs, { enable_thinking: false });
+});

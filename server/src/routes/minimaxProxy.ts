@@ -140,6 +140,9 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           apiBase: provider.url,
           apiKey: provider.keyPlaintext,
           model: upstreamModel,
+          /* P_provider-capability-override — the operator's statement for
+           * the built-in endpoint wins over the registry's host guess. */
+          instantEncoding: provider.instantEncoding ?? null,
           messages: messages,
           /* undefined → llm.js default (32 K) so a long streamed
              answer isn't silently truncated by a small per-model cap. */
@@ -198,14 +201,16 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
             res.write('data: [DONE]\n\n');
             res.end();
           } catch { /* ignore */ }
-          if (req.userId && fullText.length > 0) {
+          if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0))) {
+            const settled = resolveUsage(null, { promptTokens, completionTokens: estimateTokens(fullText) });
             recordUsage({
               userId: req.userId,
               model: upstreamModel,
               sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
-              promptTokens,
-              completionTokens: estimateTokens(fullText),
+              promptTokens: settled.promptTokens,
+              completionTokens: settled.completionTokens,
               source: 'chat',
+              usageSource: settled.usageSource,
             });
           }
         },

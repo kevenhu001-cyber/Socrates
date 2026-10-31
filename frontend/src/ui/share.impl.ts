@@ -144,7 +144,7 @@ function openShareModal(sessionId?: string) {
 }
 
 function closeShareModal() {
-  document.getElementById("shareOverlay")!.classList.add("hidden");
+  document.getElementById("shareOverlay")?.classList.add("hidden");
 }
 
 function selectShareVis(vis: string) {
@@ -445,22 +445,23 @@ function prepareSharedExamChrome(session: { topic?: string }, exam: SharedExamDa
 }
 
 function renderSharedExamQuestions(questions: SharedExamQuestion[]) {
-  const body = document.getElementById("examViewLegacyBody") || document.getElementById("examViewBody");
+  const body = document.getElementById("examViewBody");
   if (!body) return;
   body.innerHTML = '<div id="examQuestionsContainer"></div>';
   const container = body.querySelector("#examQuestionsContainer");
+  if (!container) return;
   questions.forEach(function (question: SharedExamQuestion, index: number) {
     const card = document.createElement("div");
     card.className = "exam-q-card";
     card.id = "examQ" + index;
     card.setAttribute("data-idx", String(index));
-    container!.appendChild(card);
+    container.appendChild(card);
     renderSharedQuestionCard(index, question);
   });
 }
 
 function renderSharedExamFooter() {
-  const footer = document.getElementById("examViewLegacyFooter") || document.getElementById("examViewFooter");
+  const footer = document.getElementById("examViewFooter");
   if (!footer) return;
   const closeLabel = (getCurrentLanguage() === "zh") ? "关闭" : "Close";
   renderSharedExamFooterAction(footer, closeLabel);

@@ -25,7 +25,16 @@ for (const failure of ['timeout', 'exit', 'error']) {
             return;
           }
           setImmediate(() => this.emit('message', {
-            id, type: 'result', payload: { title: 'replacement', content: 'recovered' },
+            id, type: 'result', payload: {
+              title: 'replacement',
+              content: 'recovered',
+              length: 9,
+              method: 'readability',
+              excerpt: 'recovered',
+              byline: null,
+              siteName: null,
+              date: null,
+            },
           }));
         }
         terminate() {

@@ -213,7 +213,8 @@ function restoreExamState(session: LoadedSession, questions: ExamQuestion[]): vo
 }
 
 function paintRestoredExamQuestions(questions: ExamQuestion[]): void {
-  const body = (document.getElementById('examViewLegacyBody') || document.getElementById('examViewBody')) as HTMLElement;
+  const body = document.getElementById('examViewBody');
+  if (!body) return;
   body.replaceChildren();
   const container = document.createElement('div');
   container.id = 'examQuestionsContainer';
@@ -229,10 +230,12 @@ function paintRestoredExamQuestions(questions: ExamQuestion[]): void {
 }
 
 function paintRestoredExamChrome(module: ExamModule): void {
-  const examViewTitle = document.getElementById('examViewTitle') as HTMLElement;
-  examViewTitle.textContent = stateStore.read('examSubmitted')
-    ? ('Exam Results: ' + stateStore.read('examTopic'))
-    : (stateStore.read('examTopic') as string);
+  const examViewTitle = document.getElementById('examViewTitle') as HTMLElement | null;
+  if (examViewTitle) {
+    examViewTitle.textContent = stateStore.read('examSubmitted')
+      ? ('Exam Results: ' + stateStore.read('examTopic'))
+      : (stateStore.read('examTopic') as string);
+  }
   const titleBar = document.getElementById('examTitleBar');
   if (titleBar) titleBar.textContent = (stateStore.read('examTopic') as string) || 'Generate Exam';
   module.renderExamNav();

@@ -40,6 +40,7 @@ import { withTimeBudget } from '../../lib/timeBudget.js';
 import { splitPromptContext, appendTurnContext } from '../../lib/chatPromptContext.js';
 import { resolveSessionPromptOrAssemble } from '../../services/core/sessionPromptSnapshot.js';
 import { buildSseErrorFrame } from '../../lib/sseErrorFrame.js';
+import type { ErrorLocale } from '../../lib/errorMessages.js';
 /* ─────────────────────────────────────────────────────────────────
    extra_body sanitiser
    ─────────────────────────────────────────────────────────────────
@@ -827,14 +828,14 @@ export function writeSsePrime(res: import('express').Response): boolean {
    the response already committed. Errors BEFORE writeSsePrime should
    still use the legacy `res.status(...).json(...)` path — this helper
    assumes headers are out. */
-export function endSseWithError(res: import('express').Response, err: unknown): void {
+export function endSseWithError(res: import('express').Response, err: unknown, locale?: ErrorLocale): void {
   /* P_sse-error-contract — the error frame carries the same machine-readable
      fields as the JSON error path (status / code / retryable), so the browser
      can tell a deterministic failure (quota, bad key, unsupported mode) from
      a transient one and does not replay a whole turn for a request that
      cannot succeed. buildSseErrorFrame also guarantees that a raw upstream
      provider body is never forwarded to the client. */
-  const details = buildSseErrorFrame(err);
+  const details = buildSseErrorFrame(err, locale ? { locale } : {});
   const safe = (() => {
     try { return JSON.stringify(details); } catch { return '{}'; }
   })();

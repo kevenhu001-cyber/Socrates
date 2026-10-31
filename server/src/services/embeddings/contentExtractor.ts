@@ -64,16 +64,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isExtractedArticle(value: unknown): value is ExtractedArticle {
-  return isRecord(value)
-    && typeof value.title === 'string'
-    && (typeof value.byline === 'string' || value.byline === null)
-    && (typeof value.siteName === 'string' || value.siteName === null)
-    && typeof value.excerpt === 'string'
-    && typeof value.content === 'string'
-    && typeof value.length === 'number'
-    && (typeof value.date === 'string' || value.date === null)
-    && typeof value.method === 'string';
+function normalizeExtractedArticle(value: unknown): ExtractedArticle | null {
+  if (!isRecord(value) || typeof value.title !== 'string' || typeof value.content !== 'string') {
+    return null;
+  }
+  return {
+    title: value.title,
+    byline: typeof value.byline === 'string' ? value.byline : null,
+    siteName: typeof value.siteName === 'string' ? value.siteName : null,
+    excerpt: typeof value.excerpt === 'string' ? value.excerpt : value.content.slice(0, 320),
+    content: value.content,
+    length: typeof value.length === 'number' ? value.length : value.content.length,
+    date: typeof value.date === 'string' ? value.date : null,
+    method: typeof value.method === 'string' ? value.method : 'readability',
+    ...(typeof value.truncated === 'boolean' ? { truncated: value.truncated } : {}),
+  };
 }
 
 class WorkerSlot {
@@ -307,7 +312,7 @@ async function runOne(html: string, url: string, maxChars?: number): Promise<Ext
     const onMessage = (msg: unknown) => {
       if (!isRecord(msg) || msg.id !== id) return;
       if (msg.type === 'result') {
-        finish(isExtractedArticle(msg.payload) ? msg.payload : null);
+        finish(normalizeExtractedArticle(msg.payload));
       } else if (msg.type === 'error') {
         finish(null);
       }

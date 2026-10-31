@@ -82,6 +82,15 @@ export const apiKeys = pgTable('api_keys', {
    * with true; custom providers default to false and the user opts
    * in via the API key editor. */
   isMultimodal: boolean('is_multimodal').notNull().default(false),
+  /* P_provider-capability-override — per-provider override for how
+   * "no thinking" is encoded on the wire. The capability registry answers
+   * from the model id; the ONE case it cannot answer from the model id
+   * alone is the same model served by two documented, incompatible
+   * endpoints (Qwen's Model Studio vs a self-hosted vLLM), which the
+   * registry disambiguates by endpoint host. This column lets the
+   * operator state the truth for their own endpoint instead of the
+   * server guessing from a hostname. NULL means "use the registry". */
+  instantEncoding: text('instant_encoding'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('api_keys_user_id_idx').on(table.userId),

@@ -1,1 +1,1 @@
-ALTER TABLE "projects" ADD COLUMN "memory_mode" text DEFAULT 'default' NOT NULL;
+ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "memory_mode" text DEFAULT 'default' NOT NULL;

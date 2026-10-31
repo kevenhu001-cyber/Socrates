@@ -48,10 +48,6 @@ const EXAM_COMMANDS: Record<string, (target: ExamCommandTarget) => unknown> = {
   generate: () => startExamGeneration(),
   cancel: () => cancelExamGeneration(),
   submit: () => submitExam(),
-  'toggle-model': () => toggleExamModelMenu(),
-  'select-model': (target: ExamCommandTarget) => selectExamModel(target.dataset.mid || ""),
-  'toggle-type': (target: ExamCommandTarget) => toggleExamType(target.dataset.type || ""),
-  difficulty: (target: ExamCommandTarget) => selectExamDifficulty(target.dataset.diff || "intermediate"),
   count: (target: ExamCommandTarget) => adjustExamCount(Number(target.dataset.delta || 0)),
   'answer-option': (target: ExamCommandTarget) => selectExamOpt(Number(target.dataset.eidx), Number(target.dataset.oidx)),
   'nav-step': (target: ExamCommandTarget) => examNavStep(Number(target.dataset.delta || 0)),
@@ -295,67 +291,6 @@ export function renderExamForm(draft: ExamDraft | null = null) {
   renderExamSetup(bodyHost, footerHost, commandHost, snapshot);
 }
 
-/* ── Custom model dropdown ── */
-export function toggleExamModelMenu() {
-  const menu = document.getElementById("examModelMenu");
-  const trigger = document.getElementById("examModelTrigger");
-  if (!menu) return;
-  const isOpen = menu.classList.contains("open");
-  /* Close all exam-model-menus first */
-  document.querySelectorAll(".exam-model-menu").forEach(function (m) { m.classList.remove("open"); });
-  document.querySelectorAll(".exam-model-trigger").forEach(function (t) { t.classList.remove("open"); });
-  if (!isOpen) {
-    menu.classList.add("open");
-    if (trigger) trigger.classList.add("open");
-    /* Click outside to close */
-    setTimeout(function () {
-      function onDoc(e: Event) {
-        if (!(e.target as Element)!.closest(".exam-model-wrap")) {
-          menu!.classList.remove("open");
-          if (trigger) trigger.classList.remove("open");
-          document.removeEventListener("click", onDoc, true);
-        }
-      }
-      document.addEventListener("click", onDoc, true);
-    }, 0);
-  }
-}
-
-export function selectExamModel(id: string) {
-  const input = document.getElementById("examModel");
-  const label = document.getElementById("examModelLabel");
-  const opts = document.querySelectorAll(".exam-model-opt");
-  if (input) (input as HTMLInputElement).value = id;
-  opts.forEach(function (o) {
-    o.classList.toggle("active", (o as HTMLElement).dataset.mid === id);
-    if ((o as HTMLElement).dataset.mid === id && label) label.textContent = o.textContent;
-  });
-  /* Close menu */
-  const menu = document.getElementById("examModelMenu");
-  const trigger = document.getElementById("examModelTrigger");
-  if (menu) menu.classList.remove("open");
-  if (trigger) trigger.classList.remove("open");
-}
-
-export function toggleExamType(type: string) {
-  if (type !== 'mc' && type !== 'fb' && type !== 'sa') return;
-  const btn = document.querySelector('.exam-form-toggle-card[data-type="' + type + '"]');
-  if (!btn) return;
-  const countActive = document.querySelectorAll('.exam-form-toggle-card.active').length;
-  if (btn.classList.contains("active") && countActive <= 1) return;
-  btn.classList.toggle("active");
-  btn.setAttribute("aria-pressed", String(btn.classList.contains("active")));
-  _examSelectedTypes[type] = btn.classList.contains("active");
-}
-
-/* Difficulty segmented control — pick one value and highlight it. */
-export function selectExamDifficulty(val: string | null) {
-  _examDifficulty = val || 'intermediate';
-  document.querySelectorAll("#examDifficultySeg .exam-seg-btn").forEach(function (b) {
-    b.classList.toggle("active", b.getAttribute("data-diff") === val);
-  });
-}
-
 /* Question-count stepper — clamp to 1..50 and mirror to the hidden input
    that startExamGeneration reads. */
 export function adjustExamCount(delta: number) {
@@ -378,11 +313,15 @@ export function startExamGeneration() {
 function refreshExamFormI18n() {
   const form = document.querySelector(".exam-form-container");
   if (!form) return false;
+  const topicEl = document.getElementById("examTopic") as HTMLInputElement | null;
+  const instructionsEl = document.getElementById("examInstructions") as HTMLInputElement | null;
+  const countEl = document.getElementById("examCount") as HTMLInputElement | null;
+  const modelEl = document.getElementById("examModel") as HTMLInputElement | null;
   const snapshot = {
-    topic: ((document.getElementById("examTopic") || {}) as HTMLInputElement).value || "",
-    instructions: ((document.getElementById("examInstructions") || {}) as HTMLInputElement).value || "",
-    count: ((document.getElementById("examCount") || {}) as HTMLInputElement).value || "5",
-    model: ((document.getElementById("examModel") || {}) as HTMLInputElement).value || "",
+    topic: topicEl?.value || "",
+    instructions: instructionsEl?.value || "",
+    count: countEl?.value || "5",
+    model: modelEl?.value || "",
     difficulty: _examDifficulty,
     types: Object.assign({}, _examSelectedTypes)
   };

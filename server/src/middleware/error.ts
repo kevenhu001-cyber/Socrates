@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../lib/errors.js';
 import { safeUrl, sanitizeLogValue } from '../lib/log.js';
 import { wwwAuthenticateChallenge, OAUTH_AUTHORIZATION_ENDPOINT } from '../lib/oauthMeta.js';
+import { localizeErrorCode, resolveErrorLocale, upstreamFailureMessage } from '../lib/errorMessages.js';
 
 /**
  * Global request timeout middleware.
@@ -63,7 +64,7 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
     }
     res.status(504).json({
       code: 'REQUEST_TIMEOUT',
-      message: 'Request timed out',
+      message: localizeErrorCode('REQUEST_TIMEOUT', resolveErrorLocale(req?.headers), 'Request timed out'),
     });
   };
   timer = setTimeout(fire, DEFAULT_TIMEOUT_MS);
@@ -105,6 +106,10 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
 
   // Known ApiError — serialise consistently
   if (err instanceof ApiError) {
+    /* The locale comes from the request, so the SPA renders the failure in
+     * the language the user actually picked. `code` stays the machine
+     * contract; only the sentence changes. */
+    const locale = resolveErrorLocale(req?.headers);
     // RFC 6750 — every 401 from a protected resource carries a challenge so
     // agents can discover the authorization endpoint. Handlers that already
     // set a more specific challenge (requireScope's insufficient_scope) win.
@@ -120,7 +125,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     }
     return res.status(err.status).json({
       code: err.code,
-      message: err.message,
+      message: localizeErrorCode(err.code, locale, err.message),
       ...(err.code === 'LLM_UPSTREAM_ERROR' ? {
         upstreamStatus: err.status, retryable: false,
         ...(Number.isFinite(err.retryAfterMs) ? { retryAfterMs: err.retryAfterMs } : {}),
@@ -137,7 +142,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (errorDetails && (errorDetails.name === 'LlmProviderError' || errorDetails.code === 'LLM_UPSTREAM_ERROR') && typeof errorDetails.status === 'number') {
     return res.status(errorDetails.status).json({
       code: 'LLM_UPSTREAM_ERROR',
-      message: `LLM request failed (upstream ${errorDetails.status}). Try again later or switch model.`,
+      message: upstreamFailureMessage(errorDetails.status, resolveErrorLocale(req?.headers)),
       // The server already spent its provider retry budget; replaying here
       // would just repeat the same paid failure.
       retryable: false,
@@ -154,7 +159,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
       : (errorDetails.issues || errorDetails.errors);
     return res.status(400).json({
       code: 'VALIDATION_ERROR',
-      message: 'Request validation failed',
+      message: localizeErrorCode('VALIDATION_ERROR', resolveErrorLocale(req?.headers), 'Request validation failed'),
       detail,
     });
   }
@@ -163,14 +168,14 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (errorDetails?.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       code: 'FILE_TOO_LARGE',
-      message: 'File exceeds the 25 MB size limit',
+      message: localizeErrorCode('FILE_TOO_LARGE', resolveErrorLocale(req?.headers), 'File exceeds the 25 MB size limit'),
     });
   }
 
   // Catch-all — don't leak internals
   return res.status(500).json({
     code: 'INTERNAL_ERROR',
-    message: 'An unexpected error occurred',
+    message: localizeErrorCode('INTERNAL_ERROR', resolveErrorLocale(req?.headers), 'An unexpected error occurred'),
     ...(errorDetails?.retryable === false ? { retryable: false } : {}),
   });
 }
@@ -206,7 +211,7 @@ export function notFoundHandler(req: Request, res: Response) {
   }
   return res.status(404).json({
     code: 'NOT_FOUND',
-    message: 'Endpoint not found',
+    message: localizeErrorCode('ENDPOINT_NOT_FOUND', resolveErrorLocale(req?.headers), 'Endpoint not found'),
     hint: {
       openapi: '/openapi.json',
       developers: 'https://topodrive.top/developers',

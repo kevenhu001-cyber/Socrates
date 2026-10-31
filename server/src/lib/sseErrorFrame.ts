@@ -1,4 +1,5 @@
 import { ApiError } from './errors.js';
+import { localizeErrorCode, upstreamFailureMessage, type ErrorLocale } from './errorMessages.js';
 
 export interface SseErrorFrame {
   error: string;
@@ -29,16 +30,20 @@ export interface SseErrorFrame {
  * forwarded as-is; upstream failures always arrive as `LlmProviderError`
  * (numeric status) or `ApiError` (curated message).
  */
-export function buildSseErrorFrame(err: unknown, options: { fallbackCode?: string } = {}): SseErrorFrame {
+export function buildSseErrorFrame(
+  err: unknown,
+  options: { fallbackCode?: string; locale?: ErrorLocale } = {},
+): SseErrorFrame {
   const failure = err as (Error & { status?: number; code?: string; retryable?: boolean; retryAfterMs?: number }) | null | undefined;
   const status = typeof failure?.status === 'number' ? failure.status : undefined;
   const code = failure?.code || (err instanceof ApiError ? err.code : undefined) || options.fallbackCode || 'INTERNAL';
+  const locale = options.locale ?? 'en';
 
   const curated = err instanceof ApiError;
   const message = curated
-    ? (err as ApiError).message
+    ? localizeErrorCode((err as ApiError).code, locale, (err as ApiError).message)
     : status !== undefined
-      ? `LLM request failed (upstream ${status}). Try again later or switch model.`
+      ? upstreamFailureMessage(status, locale)
       : (failure?.message ?? 'The model connection failed. Please try again.');
 
   const frame: SseErrorFrame = {

@@ -21,14 +21,16 @@ type Surface = {
   active: DetailOptions | null;
   trigger: HTMLElement | null;
   inert: boolean | null;
+  appShell: HTMLElement | null;
+  sidebar: HTMLElement | null;
 };
 const surfaces = new WeakMap<Document, Surface>();
 const pendingOptions = new WeakMap<Document, DetailOptions>();
 const openRequests = new WeakMap<Document, number>();
 
 function syncLayout(doc: Document, surface: Surface) {
-  const app = doc.getElementById('appShell');
-  const sidebar = doc.getElementById('sidebar');
+  const app = surface.appShell ?? doc.getElementById('appShell');
+  const sidebar = surface.sidebar ?? doc.getElementById('sidebar');
   const available = (doc.defaultView?.innerWidth ?? 0) - (sidebar?.getBoundingClientRect().width ?? 0);
   const docked = available >= 1060;
   doc.documentElement.dataset.detailLayout = docked ? 'docked' : 'modal';
@@ -52,6 +54,8 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
   flushSync(() => {
     reactRoot = mountOwnedRoot(root, 'detail-surface', createElement(DetailSurfaceView, { options: null, onClose }));
   });
+  const appShell = doc.getElementById('appShell');
+  const sidebar = doc.getElementById('sidebar');
   const surface: Surface = {
     root,
     reactRoot,
@@ -63,6 +67,7 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
     body: root.querySelector<HTMLElement>('.detail-body')!,
     view: DetailSurfaceView,
     active: null, trigger: null, inert: null,
+    appShell, sidebar,
   };
   surfaces.set(doc, surface);
   doc.addEventListener('keydown', (event) => {
@@ -85,7 +90,6 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
   doc.defaultView?.addEventListener('resize', () => {
     if (surface.active) syncLayout(doc, surface);
   });
-  const sidebar = doc.getElementById('sidebar');
   const Observer = doc.defaultView?.ResizeObserver;
   if (sidebar && Observer) {
     new Observer(() => {
@@ -167,7 +171,7 @@ export function closeDetailSurface(owner?: string, doc: Document = document, res
   flushSync(() => surface.reactRoot.render(createElement(surface.view, { options: null, onClose: () => closeDetailSurface(undefined, doc) })));
   delete doc.documentElement.dataset.detailOpen;
   delete doc.documentElement.dataset.detailLayout;
-  const app = doc.getElementById('appShell');
+  const app = surface.appShell ?? doc.getElementById('appShell');
   if (app && surface.inert !== null) app.inert = surface.inert;
   surface.inert = null;
   previous.onClose?.();

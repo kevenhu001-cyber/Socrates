@@ -52,6 +52,9 @@ router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audi
       apiKey: provider.keyPlaintext!,
       model: provider.model,
       userId: req.userId,
+      /* P_provider-capability-override — the operator's own statement
+       * about their endpoint wins over the registry's host heuristic. */
+      instantEncoding: provider.instantEncoding ?? null,
       messages: finalMessages,
       maxTokens,
       temperature,

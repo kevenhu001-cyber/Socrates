@@ -16,7 +16,9 @@ import type {
   ProviderField,
   ProviderFieldValue,
   ProviderSaveResult,
+  InstantEncoding,
 } from './providerConfig.types.ts';
+import { INSTANT_ENCODING_OPTIONS } from './providerConfig.types.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 declare global {
@@ -53,6 +55,7 @@ const BUILT_IN_BASE: ProviderConfig = Object.freeze({
   vision: true,
   isBuiltIn: true,
   hasKey: true,
+  instantEncoding: null,
 });
 
 /* Input credentials live only in this service closure. Provider snapshots and
@@ -108,6 +111,14 @@ function normalizeCapabilities(raw: unknown): ProviderCapabilities | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
+/* P_provider-capability-override — only the four encodings the server
+ * accepts are kept; anything else is treated as "no override" so a
+ * malformed row cannot make the browser send an unknown encoding. */
+function normalizeInstantEncoding(raw: unknown): InstantEncoding | null {
+  if (typeof raw !== 'string') return null;
+  return (INSTANT_ENCODING_OPTIONS as readonly string[]).includes(raw) ? raw as InstantEncoding : null;
+}
+
 function normalizeProvider(row: Record<string, unknown>): ProviderConfig {
   const id = String(row.id || '');
   return {
@@ -119,6 +130,7 @@ function normalizeProvider(row: Record<string, unknown>): ProviderConfig {
     isBuiltIn: row.isBuiltIn === true || id === BUILT_IN_ID,
     hasKey: row.hasKey === true || Boolean(row.key),
     serverIsActive: row.isActive === true,
+    instantEncoding: normalizeInstantEncoding(row.instantEncoding),
     capabilities: normalizeCapabilities(row.capabilities),
   };
 }
@@ -205,11 +217,17 @@ export function updateProviderField(id: string, field: ProviderField, value: Pro
   } else {
     const providers = state.providers.map((item) => item.id !== id ? item : {
       ...item,
-      [field]: field === 'vision' ? Boolean(value) : String(value),
+      [field]: field === 'vision'
+        ? Boolean(value)
+        : field === 'instantEncoding'
+          /* P_provider-capability-override — the empty string is the UI's
+           * "Automatic" choice and means "no override". */
+          ? normalizeInstantEncoding(value === '' ? null : value)
+          : String(value),
     });
     publishProviderConfig({ providers });
   }
-  if (field !== 'vision' && field !== 'key') clearProviderError(id, field);
+  if (field !== 'vision' && field !== 'key' && field !== 'instantEncoding') clearProviderError(id, field);
   if (field === 'key') clearProviderError(id, 'key');
 }
 
@@ -227,6 +245,7 @@ export function addProvider(): string | null {
   publishProviderConfig({
     providers: [...current.providers, {
       id, label: '', url: '', model: '', vision: false, isBuiltIn: false, hasKey: false,
+      instantEncoding: null,
     }],
   });
   return id;
@@ -310,6 +329,8 @@ async function persistProvider(provider: ProviderConfig): Promise<{ originalId: 
       body: {
         label: provider.label || '', url: provider.url || '', key,
         model: provider.model || '', isMultimodal: provider.vision,
+        /* P_provider-capability-override — null clears the override. */
+        instantEncoding: provider.instantEncoding,
       },
     });
     const id = response?.id ? String(response.id) : provider.id;
@@ -317,6 +338,7 @@ async function persistProvider(provider: ProviderConfig): Promise<{ originalId: 
   }
   const update: Record<string, unknown> = {
     label: provider.label, url: provider.url, model: provider.model, isMultimodal: provider.vision,
+    instantEncoding: provider.instantEncoding,
   };
   if (key.trim()) update.key = key;
   await apiFetch(`/api/api-key/${encodeURIComponent(provider.id)}`, { method: 'PATCH', body: update });

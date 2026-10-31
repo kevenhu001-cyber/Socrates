@@ -1,0 +1,6 @@
+{
+  "unpinned": 0,
+  "refs": [],
+  "note": "GitHub Actions that are not pinned to a commit SHA. May only go down. Run with --update after an intentional reduction.",
+  "generatedBy": "check-action-pinning.mjs --update"
+}

@@ -159,6 +159,8 @@ interface ChatCompletionRequestOptions {
   reasoning_effort?: string;
   response_speed?: 'standard' | 'fast';
   extra_body?: Record<string, unknown>;
+  /** Per-provider override for the "no thinking" encoding. */
+  instantEncoding?: string | null;
   tools?: Array<{ type: 'function'; function: { name: string; [key: string]: unknown } }>;
   tool_choice?: unknown;
   onPreferenceFallback?: (detail: {
@@ -201,20 +203,47 @@ export class LlmProviderError extends Error {
  * for a response that is still running upstream — replaying it would double
  * the bill). This mirrors the client's own STREAM_RETRYABLE_STATUS set.
  */
-const RATE_LIMIT_STATUS = 429;
-const TRANSIENT_RETRYABLE_STATUS = new Set([408, 425, 500, 502, 503, 504, 520, 522]);
+/**
+ * The attempt contract of the upstream retry loop.
+ *
+ * These numbers ARE the contract — they were previously private constants
+ * that a note described as "1 retry", which is how the declared number and
+ * the real number drifted apart (P1-12). They are exported so the contract
+ * can be asserted in a test and so a change to them is a deliberate act:
+ *
+ *   - a rate-limited request (429) gets the initial attempt plus four
+ *     retries: the provider's own rpm window usually clears inside that.
+ *   - a transient upstream failure (408/425/500/502/503/504/520/522) gets
+ *     the initial attempt plus two retries.
+ *   - a deterministic failure (400/401/404/422 and friends) is NEVER
+ *     retried: replaying it cannot help and would charge the user twice.
+ *   - ALL attempts share one eight-second backoff budget
+ *     (UPSTREAM_RETRY_BUDGET_MS), so the worst case is bounded in wall
+ *     clock, not in attempt count.
+ *   - a compatibility variant (a provider that rejects tools, an unknown
+ *     optional field, …) is a separate axis: each variant gets its own
+ *     attempt budget within the same wall-clock budget.
+ */
+export const RATE_LIMIT_STATUS = 429;
+export const TRANSIENT_RETRYABLE_STATUS = new Set([408, 425, 500, 502, 503, 504, 520, 522]);
 
 /** Attempts for a rate-limited request: initial + 4 retries. */
-const RATE_LIMIT_ATTEMPTS = 5;
+export const RATE_LIMIT_ATTEMPTS = 5;
 /** Attempts for a transient upstream failure: initial + 2 retries. */
-const TRANSIENT_ATTEMPTS = 3;
+export const TRANSIENT_ATTEMPTS = 3;
 
 function isRetryableUpstreamStatus(status: number): boolean {
   return status === RATE_LIMIT_STATUS || TRANSIENT_RETRYABLE_STATUS.has(status);
 }
 
+/** How many attempts a status is allowed in total. */
 export function attemptsForUpstreamStatus(status: number): number {
   return status === RATE_LIMIT_STATUS ? RATE_LIMIT_ATTEMPTS : TRANSIENT_ATTEMPTS;
+}
+
+/** Is this status eligible for a retry at all? */
+export function isRetryableUpstreamFailure(status: number): boolean {
+  return isRetryableUpstreamStatus(status);
 }
 
 /**
@@ -312,6 +341,7 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
     userId: opts.userId,
     reasoning_effort,
     extra_body,
+    instantEncoding: opts.instantEncoding,
   });
   const protectedKeySet = new Set(protectedKeys);
   const hasTools = Array.isArray(tools) && tools.length > 0;

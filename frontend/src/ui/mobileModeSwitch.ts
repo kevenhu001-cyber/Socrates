@@ -118,12 +118,19 @@ export function selectAppMode(mode: string) {
    is the pre-flight contract: the toggle is a per-conversation
    choice, not a once-per-page one. */
 
+let _cachedMsgList: HTMLElement | null = null;
+function _getMsgList(): HTMLElement | null {
+  if (_cachedMsgList?.isConnected) return _cachedMsgList;
+  _cachedMsgList = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
+  return _cachedMsgList;
+}
+
 function _isConversationActive() {
   if (stateStore.read('topic')) return true;
   const kbNodes = stateStore.read('kbNodes');
   if (kbNodes && kbNodes.length > 0) return true;
   if (stateStore.read('phase') === "chat") return true;
-  const msgList = (typeof document !== "undefined") ? document.getElementById("msgList") : null;
+  const msgList = _getMsgList();
   /* React's MessageList always renders an empty placeholder
      (<div data-react-message-list-empty>) in #msgList even when there
      are no messages, so msgList.children.length > 0 is always true
@@ -192,7 +199,7 @@ function _applyModeSwitchVisibility(hidden: boolean) {
    added or cleared (covers loadSession, resetApp, appendMessage). */
 let _watching = false;
 function _watchMsgList() {
-  const msgList = document.getElementById("msgList");
+  const msgList = _getMsgList();
   /* Both the DOMContentLoaded listener and the readyState branch below can
      run for a module script, which used to install two observers. */
   if (_watching || !msgList || typeof MutationObserver === "undefined") return;

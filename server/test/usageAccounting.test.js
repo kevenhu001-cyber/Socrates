@@ -135,6 +135,19 @@ describe('resolveUsage: provenance', () => {
     assert.equal(r.usageSource, 'estimate');
     assert.equal(r.promptTokens, 7);
   });
+
+  test('zero completion tokens on aborted or error turn preserves prompt tokens', () => {
+    // When a turn is aborted before the first token streams, fullText is empty
+    // but prompt tokens were consumed and must be accounted.
+    const r = resolveUsage(null, { promptTokens: 42, completionTokens: 0 });
+    assert.deepEqual(r, { promptTokens: 42, completionTokens: 0, usageSource: 'estimate' });
+  });
+
+  test('partial provider usage on aborted turn overrides zero-text fallback', () => {
+    // If provider reported usage before an error or abort, provider tokens win.
+    const r = resolveUsage({ prompt_tokens: 30, completion_tokens: 5 }, { promptTokens: 42, completionTokens: 0 });
+    assert.deepEqual(r, { promptTokens: 30, completionTokens: 5, usageSource: 'provider' });
+  });
 });
 
 describe('streamChatCompletion: asks for usage', () => {

@@ -51,7 +51,15 @@ export interface ProviderControls {
  */
 export function applyProviderControls(
   body: Record<string, unknown>,
-  opts: { model: string; apiBase: string; userId?: string | null; reasoning_effort?: string; extra_body?: Record<string, unknown> },
+  opts: {
+    model: string;
+    apiBase: string;
+    userId?: string | null;
+    reasoning_effort?: string;
+    extra_body?: Record<string, unknown>;
+    /** Per-provider override (`api_keys.instant_encoding`). */
+    instantEncoding?: string | null;
+  },
 ): ProviderControls {
   const capability = resolveModelCapability(opts.model);
   assertThinkingModeSupported(capability, opts.reasoning_effort, opts.extra_body);
@@ -60,7 +68,7 @@ export function applyProviderControls(
   /* ── Thinking and effort ─────────────────────────────────────────── */
   const effort = opts.reasoning_effort;
   if (effort === 'none') {
-    const encoding = instantEncodingFor(capability, opts.apiBase);
+    const encoding = instantEncodingFor(capability, opts.apiBase, opts.instantEncoding);
     if (encoding === 'thinking_disabled') {
       delete body.reasoning_effort;
       body.thinking = { type: 'disabled' };

@@ -49,21 +49,23 @@ export function syncLayoutStateMirror(doc?: Document | null) {
   const d = doc || (typeof document !== 'undefined' ? document : null);
   if (!d || !d.documentElement) return;
   const root = d.documentElement;
+  const els: Record<string, HTMLElement | null> = {};
   for (let i = 0; i < MIRRORS.length; i++) {
     const m = MIRRORS[i];
     const el = d.getElementById(m.id);
+    els[m.id] = el;
     setFlag(root, m.attr, !!el && m.on(el));
   }
   /* P_composer-single — the flag keeps its landing-only meaning: the
      single shell sets it only while parked in the visible topic setup,
      so focusing the chat composer never trips landing rules. */
   const wrap = d.getElementById('composerInputWrap');
-  const ts = d.getElementById('topicSetup');
+  const ts = els['topicSetup'] ?? d.getElementById('topicSetup');
   const topicVisible = !!ts && !ts.classList.contains('hidden');
   setFlag(root, 'data-topic-input-focus', topicVisible && !!wrap && !!d.activeElement && wrap.contains(d.activeElement));
   /* Compat resync: legacy/test writers may toggle #chatView.hidden without
      going through mainViewController — keep #chatPage's gate aligned. */
-  const chatView = d.getElementById('chatView');
+  const chatView = els['chatView'] ?? d.getElementById('chatView');
   const chatPage = d.getElementById('chatPage');
   if (chatView && chatPage) {
     chatPage.classList.toggle('hidden', chatView.classList.contains('hidden'));
@@ -88,17 +90,23 @@ export function installLayoutStateMirror(doc?: Document | null) {
   /* :focus-within replacement for the single composer shell. focusout
      fires before the new target is focused, so read relatedTarget rather
      than activeElement. Landing-only, like the mirror above. */
-  const wrap2 = d.getElementById('composerInputWrap');
-  if (wrap2) {
-    wrap2.addEventListener('focusin', function () {
-      const ts2 = d.getElementById('topicSetup');
-      setFlag(root, 'data-topic-input-focus', !!ts2 && !ts2.classList.contains('hidden'));
+  const wrap = d.getElementById('composerInputWrap');
+  if (wrap) {
+    let cachedTopicSetup: HTMLElement | null = null;
+    const getTopicSetup = () => {
+      if (cachedTopicSetup?.isConnected) return cachedTopicSetup;
+      cachedTopicSetup = d.getElementById('topicSetup');
+      return cachedTopicSetup;
+    };
+    wrap.addEventListener('focusin', function () {
+      const ts = getTopicSetup();
+      setFlag(root, 'data-topic-input-focus', !!ts && !ts.classList.contains('hidden'));
     });
-    wrap2.addEventListener('focusout', function (e: FocusEvent) {
+    wrap.addEventListener('focusout', function (e: FocusEvent) {
       const next = e && e.relatedTarget;
-      const ts3 = d.getElementById('topicSetup');
-      const tv = !!ts3 && !ts3.classList.contains('hidden');
-      setFlag(root, 'data-topic-input-focus', tv && !!next && wrap2.contains(next as Node | null));
+      const ts = getTopicSetup();
+      const tv = !!ts && !ts.classList.contains('hidden');
+      setFlag(root, 'data-topic-input-focus', tv && !!next && wrap.contains(next as Node | null));
     });
   }
 }

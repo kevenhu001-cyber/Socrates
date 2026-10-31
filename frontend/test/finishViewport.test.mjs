@@ -7,9 +7,12 @@ async function withViewport(run) {
   const old = { requestAnimationFrame: globalThis.requestAnimationFrame, window: globalThis.window };
   const frames = [];
   const listeners = new Map();
+  const intentEvents = new Set(['wheel', 'touchstart', 'pointerdown', 'keydown']);
   globalThis.requestAnimationFrame = cb => (frames.push(cb), frames.length);
   globalThis.window = {
-    addEventListener(name, cb) { listeners.set(name, cb); },
+    addEventListener(name, cb) {
+      if (intentEvents.has(name)) listeners.set(name, cb);
+    },
     removeEventListener(name) { listeners.delete(name); },
   };
   resetState();

@@ -3041,7 +3041,9 @@ paths:
         model name is deliberately not exposed. The response also carries
         `builtInCapabilities`: the built-in provider is a system row and is
         therefore not part of the caller's list, but its capability summary
-        travels beside the list.
+        travels beside the list. A row may also carry `instantEncoding`: the
+        provider owner's own statement of how their endpoint encodes "no
+        thinking", which overrides the server's endpoint-host guess.
       responses:
         '200':
           description: The caller's providers plus the built-in provider's capability summary
@@ -3063,6 +3065,19 @@ paths:
                         isActive: { type: boolean }
                         isBuiltIn: { type: boolean }
                         isMultimodal: { type: boolean }
+                        instantEncoding:
+                          type: string
+                          nullable: true
+                          description: >-
+                            Per-provider statement of how this endpoint encodes
+                            "no thinking" (Instant). null means the server
+                            decides from its capability registry. The value
+                            overrides the registry's endpoint-host guess.
+                          enum:
+                            - reasoning_effort_none
+                            - thinking_disabled
+                            - enable_thinking_false
+                            - chat_template_kwargs
                         hasKey: { type: boolean }
                         createdAt: { type: string, format: date-time }
                         capabilities: { $ref: '#/components/schemas/ProviderCapabilities' }

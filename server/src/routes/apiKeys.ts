@@ -9,7 +9,7 @@ import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { getApiKeyLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 import { invalidateApiKeyCache } from '../services/core/apiKey.js';
-import { summarizeModelCapabilities, type ProviderCapabilitySummary } from '../lib/modelCapabilities.js';
+import { summarizeModelCapabilities, isInstantEncoding, type ProviderCapabilitySummary } from '../lib/modelCapabilities.js';
 
 /* P_model-capability-registry — a client cannot tell whether the selected
  * model can switch thinking off or has effort levels at all: the built-in
@@ -49,6 +49,10 @@ const SAFE_PROJECTION = {
   isActive: apiKeys.isActive,
   isBuiltIn: apiKeys.isBuiltIn,
   isMultimodal: apiKeys.isMultimodal,
+  /* P_provider-capability-override — the operator's own statement about
+   * how their endpoint encodes "no thinking". NULL means "use the
+   * capability registry's answer". */
+  instantEncoding: apiKeys.instantEncoding,
   createdAt: apiKeys.createdAt,
   /* For insert/update responses the row always has a ciphertext set
    * (we just inserted/rotated it), so a constant TRUE is correct. The
@@ -67,6 +71,25 @@ const SAFE_PROJECTION = {
 import { isAllowedProviderUrl } from '../lib/providerUrl.js';
 
 const router = Router();
+
+/* P_provider-capability-override — read the per-provider instant encoding
+ * from a request body.
+ *
+ * The value must be one of the encodings the registry knows how to send
+ * (`reasoning_effort_none`, `thinking_disabled`, `enable_thinking_false`,
+ * `chat_template_kwargs`). `null` / '' / undefined means "no override — use
+ * the registry's answer". Anything else is a 400: an unknown encoding would
+ * otherwise be stored and silently produce a request body the provider
+ * rejects. */
+function readInstantEncoding(value: unknown): string | null {
+  if (value === undefined || value === null || value === '') return null;
+  if (!isInstantEncoding(value)) {
+    throw new BadRequest(
+      'Unsupported instant encoding. Use one of: reasoning_effort_none, thinking_disabled, enable_thinking_false, chat_template_kwargs.',
+    );
+  }
+  return value;
+}
 
 // Reject malformed ids before they reach the DB. The `apiKeys.id` column is a UUID, so anything else would otherwise trigger a Postgres "invalid input syntax for type uuid" error, which the error middleware surfaces as a generic 500. NotFound is the honest answer.
 router.use(requireAuth);
@@ -91,6 +114,8 @@ router.get('/', async (req, res, next) => {
       isBuiltIn: apiKeys.isBuiltIn,
       /* P_attachments-multimodal — user-controlled vision flag. */
       isMultimodal: apiKeys.isMultimodal,
+      /* P_provider-capability-override — per-provider instant encoding. */
+      instantEncoding: apiKeys.instantEncoding,
       hasKey: sql`(${apiKeys.keyCiphertext} IS NOT NULL)`,
       createdAt: apiKeys.createdAt,
     }).from(apiKeys).where(eq(apiKeys.userId, req.userId!));
@@ -144,6 +169,11 @@ router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url
      * Coerce to strict boolean so a forged payload can't smuggle a
      * truthy non-boolean that survives JSON.parse in the client. */
     const isMultimodal = req.body.isMultimodal === true;
+    /* P_provider-capability-override — accept the per-provider instant
+     * encoding. Only the four encodings the registry knows how to send
+     * are accepted; anything else is a 400 rather than a value that would
+     * silently produce a malformed request body. */
+    const instantEncoding = readInstantEncoding(req.body.instantEncoding);
     const [result] = await db.insert(apiKeys).values({
       userId: req.userId!,
       label: label || 'Default',
@@ -153,6 +183,7 @@ router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url
       keyHint: key.slice(0, 8),
       isActive: true,
       isMultimodal,
+      instantEncoding,
     }).returning(SAFE_PROJECTION);
 
     /* P_ttfb-apikey-cache — a fresh row is the new active provider
@@ -196,6 +227,13 @@ router.patch('/:id', async (req, res, next) => {
     if (req.body.isMultimodal !== undefined) {
       if (!existing.isBuiltIn) {
         patch.isMultimodal = req.body.isMultimodal === true;
+      }
+    }
+    /* P_provider-capability-override — the per-provider instant encoding.
+     * `null` / '' clears the override, so the registry answers again. */
+    if (req.body.instantEncoding !== undefined) {
+      if (!existing.isBuiltIn) {
+        patch.instantEncoding = readInstantEncoding(req.body.instantEncoding);
       }
     }
     if (req.body.isActive !== undefined) {

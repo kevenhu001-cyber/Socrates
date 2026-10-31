@@ -296,6 +296,13 @@ export const en = {
     "provider.multimodal":"Multimodal (vision-capable)",
     "provider.multimodalHint":"Allow image attachments to be sent to this model",
     "attach.notMultimodal":"The active model can't view images. Add a multimodal provider or remove image attachments.",
+    /* P_provider-capability-override — the per-provider statement of how
+       the endpoint encodes "no thinking" (Instant). "Automatic" leaves the
+       decision to the server's capability registry; the other values are
+       the four encodings the server accepts. */
+    "provider.instantEncoding":"Instant encoding",
+    "provider.instantEncodingAuto":"Automatic",
+    "provider.instantEncodingHint":"How this endpoint encodes “no thinking”. Leave on Automatic unless the model ignores Instant.",
     /* P_lang-slogans — the topic-setup hero slogan was previously
        pinned English in BOTH i18n blocks (with a comment claiming
        this was intentional). That made the Tutor-mode hero stay
@@ -1194,6 +1201,7 @@ export const en = {
     "mistakes.redoneMany":"Redone {n} times",
     "mistakes.type.quiz":"Quiz",
     "mistakes.type.practice":"Practice",
+    "mistakes.redoingPrompt":"— Redoing a question you got wrong —",
     "prompt.placeholderTitle":"e.g. Code review",
     "prompt.placeholderShortcut":"/my-template",
     "prompt.placeholderDesc":"One-line summary",

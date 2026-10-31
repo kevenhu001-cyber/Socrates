@@ -104,19 +104,26 @@ function renderGenerationStart(topic: string, count: number, difficulty: string,
   renderExamActionView([examAction('cancel', _examUiL('Cancel', '取消'), 'outline')]);
 }
 
+function readExamFormInputs(selection: { difficulty?: string; selectedTypes?: QuestionSelection }) {
+  const countInput = document.getElementById("examCount") as HTMLInputElement | null;
+  const count = Math.max(1, Math.min(50, parseInt(countInput?.value || "5", 10) || 5));
+  const instructionsInput = document.getElementById("examInstructions") as HTMLInputElement | null;
+  const instructions = instructionsInput?.value.trim() || "";
+  const modelInput = document.getElementById("examModel") as HTMLInputElement | null;
+  const chosenModel = modelInput?.value || "";
+  const types = selectedQuestionTypes(selection.selectedTypes || {});
+  const difficulty = selection.difficulty || "intermediate";
+  return { count, instructions, chosenModel, types, difficulty };
+}
+
 export function runExamGeneration(selection: { difficulty?: string; selectedTypes?: QuestionSelection } = {}) {
-  const topicInput = document.getElementById("examTopic");
-  const topic = (topicInput as HTMLInputElement)!.value.trim();
-  if (!topic) { topicInput!.focus(); return; }
+  const topicInput = document.getElementById("examTopic") as HTMLInputElement | null;
+  const topic = topicInput?.value.trim() || "";
+  if (!topic) { topicInput?.focus(); return; }
   const activeProvider = typeof browserWindow.getActiveProvider === "function" ? browserWindow.getActiveProvider() : null;
   if (!activeProvider) { showProviderRequiredState(); return; }
 
-  const count = Math.max(1, Math.min(50, parseInt((document.getElementById("examCount") as HTMLInputElement)!.value, 10) || 5));
-  const difficulty = selection.difficulty || "intermediate";
-  const instructions = (document.getElementById("examInstructions") as HTMLInputElement)!.value.trim();
-  const modelInput = document.getElementById("examModel");
-  const chosenModel = modelInput ? (modelInput as HTMLInputElement).value : "";
-  const types = selectedQuestionTypes(selection.selectedTypes || {});
+  const { count, instructions, chosenModel, types, difficulty } = readExamFormInputs(selection);
   const lang = detectExamLang(topic);
   const providerConfig = getProviderConfigSnapshot();
 

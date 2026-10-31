@@ -60,6 +60,16 @@ import {
 import {SseEmitter} from './sseEmitter.js';
 import {createToolRunner} from './toolExecutors.js';
 import {createStreamToolContext} from './toolContext.js';
+import {
+  createTurnWatchdog,
+  turnWatchdogLimits,
+  watchdogAbortReason,
+  watchdogError,
+  watchdogExpiryFromReason,
+  WATCHDOG_CHECK_INTERVAL_MS,
+  type WatchdogExpiry,
+} from '../../../lib/turnWatchdog.js';
+import { resolveErrorLocale } from '../../../lib/errorMessages.js';
 import type {ChatStreamPipelineContext, PreparedCall, ToolCall, ToolCallDelta,} from './types.js';
 import type { StreamMessage } from './types.js';
 
@@ -285,6 +295,16 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     if (ctx.executionSignal.aborted) abortController.abort(ctx.executionSignal.reason);
     else ctx.executionSignal.addEventListener('abort', () => abortController.abort(ctx.executionSignal!.reason), { once: true });
   }
+  /* P_turn-watchdog — the SSE route is exempt from the request timeout
+     (a reasoning model may think for minutes), which also meant a turn
+     that produced NOTHING had no server-side deadline: the request never
+     finished, the turn row stayed `running`, and the user waited on a
+     socket that would never answer.
+     The watchdog bounds two things: silence (no content, no reasoning,
+     no tool event, no new upstream hop) and total wall clock. A turn that
+     is producing something is never cut off. */
+  const watchdog = createTurnWatchdog(turnWatchdogLimits());
+  const errorLocale = resolveErrorLocale(req.headers);
   let streamCompleted = false;  // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
   /* M1 async — when a turn is bound, socket close detaches the SSE feed
    * instead of cancelling the run: the upstream LLM keeps going, frames
@@ -340,7 +360,28 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     }
     unsubscribeTurn?.();
   };
-  registerCleanup?.(clearTurnTimer);
+  /* P_turn-watchdog — the interval only flips the abort signal; the
+     upstream call then fails on its own and the normal error path writes
+     the error frame. `unref` keeps the timer from holding the process
+     open if the pipeline unwinds early. */
+  const watchdogTimer = setInterval(() => {
+    if (abortController.signal.aborted) return;
+    const expiry = watchdog.expiry();
+    if (!expiry) return;
+    console.warn('[chat/stream] turn watchdog fired:', expiry, {
+      turnId: turnId || null,
+      idleMs: watchdog.idleMs(),
+      elapsedMs: watchdog.elapsedMs(),
+    });
+    abortController.abort(watchdogAbortReason(expiry));
+  }, WATCHDOG_CHECK_INTERVAL_MS);
+  watchdogTimer.unref?.();
+  /* One registration for both timers: the pipeline's cleanup hook keeps a
+   * single release function, so registering twice would drop the first. */
+  registerCleanup?.(() => {
+    clearTurnTimer();
+    clearInterval(watchdogTimer);
+  });
 
   req.on('close', () => {
     trackSseConnection(req.app, -1);
@@ -369,7 +410,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     }
   });
 
-  const emitter = new SseEmitter(res, () => abortController.signal.aborted || sseDetached);
+  const emitter = new SseEmitter(res, () => abortController.signal.aborted || sseDetached, errorLocale);
   /* M1 async — mirror lifecycle frames into the bound turn. Content and
    * reasoning deltas are persisted per-chunk (they are the resume
    * baseline); tool_use/tool_result/agent frames mark boundaries;
@@ -456,11 +497,21 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     turnEvents.activity(value);
   });
   const emitFatal = emitter.fatal.bind(emitter);
-  emitter.fatal = (error) => { turnEvents.done(abortController.signal.aborted ? 'stopped' : 'failed', Date.now() - activityStartedAt); emitFatal(error); };
+  emitter.fatal = (error) => {
+    turnEvents.done(abortController.signal.aborted ? 'stopped' : 'failed', Date.now() - activityStartedAt);
+    /* P_turn-watchdog — when the watchdog aborted the turn, the upstream
+       surfaces a bare AbortError. Replace it with the explicit timeout so
+       the client sees WHY the turn ended and can decide to retry. */
+    const expiry = watchdogExpiryFromReason(abortController.signal.reason);
+    emitFatal(expiry ? watchdogError(expiry, errorLocale) : error);
+  };
   const uiInputs = new Map<string, unknown>();
   const emitEvent = emitter.event.bind(emitter);
   emitter.event = (name, data) => {
     emitEvent(name, data);
+    /* P_turn-watchdog — a tool event is progress: the turn is doing
+     * something, so the idle budget must not fire while it works. */
+    if (name === 'tool_use' || name === 'tool_result') watchdog.touch();
     if (name === 'tool_use') {
       for (const call of (Array.isArray(data) ? data : [data]) as Array<{ id: string; name: string; input: unknown }>) {
         if (call?.name === 'render_intelligent_ui') uiInputs.set(call.id, call.input);
@@ -580,6 +631,9 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
        that keeps them groupable while still showing which hop was slow.
        This is the span that answers "was it the provider or was it us". */
     timing.mark('upstream_started');
+    /* P_turn-watchdog — a new upstream hop is progress too: the turn is
+     * alive, it just has not produced bytes yet. */
+    watchdog.touch();
     await withSpan('llm.stream', {
       'llm.model': provider.model,
       'llm.tools_offered': toolsAllowed ? activeToolDefs.length : 0,
@@ -590,6 +644,9 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
         apiKey: provider.keyPlaintext,
         model: provider.model,
         userId: req.userId,
+        /* P_provider-capability-override — the operator's own statement
+         * about their endpoint wins over the registry's host heuristic. */
+        instantEncoding: provider.instantEncoding ?? null,
         messages: requestMessages,
         maxTokens,
         temperature,
@@ -616,6 +673,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       // onChunk
       (chunk: string) => {
         turnEvents.generation();
+        watchdog.touch();
         fullText += chunk;
         iterContent += chunk;
         completionTokens = estimateTokens(fullText);
@@ -641,6 +699,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       (reasoning: string) => {
         activity.thinking();
         turnEvents.reasoning();
+        watchdog.touch();
         fullReasoning += reasoning;
         iterReasoning += reasoning;
         reportTtfb('reasoning');
@@ -678,14 +737,19 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
 
     if (upstreamErr) {
       // Error path already wrote [DONE] and ended the response.
-      if (req.userId && fullText.length > 0) {
+      if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
+        const settled = resolveUsage(accumulatedProviderUsage(), {
+          promptTokens,
+          completionTokens: estimateTokens(fullText),
+        });
         recordUsage({
           userId: req.userId,
           model: provider.model,
           sessionId: sessionIdFromQuery,
-          promptTokens,
-          completionTokens: estimateTokens(fullText),
+          promptTokens: settled.promptTokens,
+          completionTokens: settled.completionTokens,
           source: 'chat',
+          usageSource: settled.usageSource,
         });
       }
       if (turnId) {
@@ -964,14 +1028,19 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     turnRuntime = settleTurnRuntime(turnRuntime, 'stopped');
     /* Still record partial usage so the operator can see incomplete
      * responses in the heatmap and diagnose client-drop patterns. */
-    if (req.userId && fullText.length > 0) {
+    if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
+      const settled = resolveUsage(accumulatedProviderUsage(), {
+        promptTokens,
+        completionTokens: estimateTokens(fullText),
+      });
       recordUsage({
         userId: req.userId,
         model: provider.model,
         sessionId: sessionIdFromQuery,
-        promptTokens,
-        completionTokens: estimateTokens(fullText),
+        promptTokens: settled.promptTokens,
+        completionTokens: settled.completionTokens,
         source: 'chat',
+        usageSource: settled.usageSource,
       });
     }
     return;
@@ -983,16 +1052,21 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     // already flipped to interrupted by the interrupt endpoint.
     clearTurnTimer();
     checkpointTurn();
-    if (req.userId && fullText.length > 0) {
+    if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
+      const settled = resolveUsage(accumulatedProviderUsage(), {
+        promptTokens,
+        completionTokens: estimateTokens(fullText),
+      });
       recordUsage({
         userId: req.userId,
         model: provider.model,
         sessionId: sessionIdFromQuery,
-        promptTokens,
-        completionTokens: estimateTokens(fullText),
+        promptTokens: settled.promptTokens,
+        completionTokens: settled.completionTokens,
         source: 'chat',
+        usageSource: settled.usageSource,
       });
-      if (sessionIdFromQuery) {
+      if (sessionIdFromQuery && fullText.length > 0) {
         const db = getDb();
         const assistantClientId = (typeof req.body?.clientTurn?.assistantClientId === 'string' && req.body.clientTurn.assistantClientId)
           ? req.body.clientTurn.assistantClientId
