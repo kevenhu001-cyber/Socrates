@@ -100,7 +100,7 @@
   --type-caption-5: 400 .8125rem/1.125rem var(--site-font);
 
   /* Motion: quiet. 150ms colour changes, 200ms small moves. */
-  --site-ease: cubic-bezier(.4, 0, .2, 1);
+  --site-ease: cubic-bezier(.22, 1, .36, 1);
   --site-motion-fast: 150ms;
   --site-motion-medium: 200ms;
   --site-motion-slow: 400ms;

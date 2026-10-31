@@ -13,7 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261031o1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261031r1">
+  <link rel="stylesheet" href="/modules.css?cb=20261031r1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -157,9 +158,9 @@
     ]
   }
   </script>
-  <script src="/locale.js?cb=20261031o1"></script>
-  <link rel="stylesheet" href="/public.css?cb=20261031o1">
-  <link rel="stylesheet" href="/chrome.css?cb=20261031o1">
+  <script src="/locale.js?cb=20261031r1"></script>
+  <link rel="stylesheet" href="/public.css?cb=20261031r1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261031r1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -269,7 +270,7 @@
         </a>
 
         <a class="hero-plate" href="/product#knowledge-map">
-          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-plate.svg" width="760" height="760" fetchpriority="high" alt="An ink-blue grid of 100 points, with one point highlighted in orange. A paper slip reads one over one hundred."></span>
+          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-grid-v1.svg" width="760" height="760" fetchpriority="high" alt="A light gray grid of 100 points with a single black point ringed and labelled one in 100."></span>
           <div class="plate-caption"><span class="plate-index">A change of perspective</span><span>One in a hundred.</span></div>
         </a>
         <div class="feature-intro">
@@ -288,6 +289,182 @@
     <section class="home-tagline" aria-label="Our approach">
       <div class="home-shell">
         <p class="home-tagline-text">Start with what you think.<br> Follow the question a little further.<br> Keep the connection that makes it click.</p>
+      </div>
+    </section>
+
+    <section class="home-modes m-section" id="modes" aria-labelledby="modes-title">
+      <div class="home-shell">
+        <div class="m-intro">
+          <h2 id="modes-title">One tutor, five ways to learn.</h2>
+          <p>Move between modes as an idea takes shape: talk it through, test it, connect it and come back to it.</p>
+        </div>
+        <div class="m-tabs" data-tabs>
+          <div class="m-tablist" role="tablist" aria-label="Learning modes">
+            <button class="m-tab" type="button" role="tab" id="mode-tab-dialogue" aria-controls="mode-dialogue" aria-selected="true">Dialogue</button>
+            <button class="m-tab" type="button" role="tab" id="mode-tab-recall" aria-controls="mode-recall" aria-selected="false" tabindex="-1">Recall</button>
+            <button class="m-tab" type="button" role="tab" id="mode-tab-map" aria-controls="mode-map" aria-selected="false" tabindex="-1">Knowledge map</button>
+            <button class="m-tab" type="button" role="tab" id="mode-tab-exam" aria-controls="mode-exam" aria-selected="false" tabindex="-1">Exam mode</button>
+            <button class="m-tab" type="button" role="tab" id="mode-tab-mistakes" aria-controls="mode-mistakes" aria-selected="false" tabindex="-1">Mistake book</button>
+          </div>
+
+          <div class="m-panel is-active" role="tabpanel" id="mode-dialogue" aria-labelledby="mode-tab-dialogue" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>Think out loud, then go one step further.</h3>
+              <p>Socrates asks what you already know, follows your reasoning and offers the next question instead of the whole answer.</p>
+              <ul class="m-points"><li>Starts from your own words</li><li>Math and formulas render as you type</li><li>Follows your reasoning one step at a time</li></ul>
+              <a class="m-link" href="/product#dialogue">How dialogue works</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Physics · Entropy</span><span class="ui-tag">Illustration</span></div>
+                <div class="ui-body">
+                  <span class="ui-bubble">Can you just tell me what entropy is?</span>
+                  <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">Let’s start from what you know. A tidy room left alone: does it tend to stay tidy, or drift into mess?</span></span></span>
+                  <span class="ui-bubble">Mess. There are more ways to be messy.</span>
+                  <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">That’s the core of it. How would you count those “ways”?</span></span></span>
+                  <span class="ui-composer"><span>Reply in your own words…</span><span class="ui-send"></span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-panel" role="tabpanel" id="mode-recall" aria-labelledby="mode-tab-recall" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>Bring an idea back before it fades.</h3>
+              <p>Turn a good moment from a conversation into a card, then retrieve it in your own words a few days later.</p>
+              <ul class="m-points"><li>Cards drawn from your own sessions</li><li>Answer first, then compare</li><li>Return to the conversation in one tap</li></ul>
+              <a class="m-link" href="/product#recall">How recall works</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Recall · Probability</span><span class="ui-tag">Illustration</span></div>
+                <div class="ui-body">
+                  <span class="ui-row"><span class="ui-small ui-muted ui-grow">Card 3 of 8</span><span class="ui-meter ui-grow"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span></span>
+                  <span class="ui-stack"><span class="ui-flash"><span class="ui-small ui-muted">In your own words</span><span class="ui-q">Why can a reliable test still give many false alarms?</span><span class="ui-small ui-muted">Answer before you reveal.</span></span></span>
+                  <span class="ui-row"><span class="ui-btn">Reveal answer</span><span class="ui-btn ui-btn--soft">Open conversation</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-panel" role="tabpanel" id="mode-map" aria-labelledby="mode-tab-map" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>See how one idea leads to the next.</h3>
+              <p>Concepts you work through become points on a map, linked by the questions that joined them.</p>
+              <ul class="m-points"><li>Connections carry across sessions</li><li>Pick up a thread from any point</li><li>Notice the gaps between topics</li></ul>
+              <a class="m-link" href="/product#knowledge-map">How the map works</a>
+            </div>
+            <div class="ui ui-map" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Knowledge map</span><span class="ui-tag">Illustration</span></div>
+                <svg viewBox="0 0 560 320" fill="none">
+                  <g stroke="#cdcdcd"><path d="M280 160 150 92M280 160l146-64M280 160l-118 92M280 160l132 88M150 92 64 168M426 96l70 82M412 248l84-70"/></g>
+                  <circle cx="280" cy="160" r="36" stroke="rgb(0 0 0 / .06)"/>
+                  <circle cx="280" cy="160" r="8" fill="#0d0d0d"/>
+                  <g fill="#fff" stroke="#8f8f8f" stroke-width="1.25"><circle cx="150" cy="92" r="5"/><circle cx="426" cy="96" r="5"/><circle cx="162" cy="252" r="5"/><circle cx="412" cy="248" r="5"/><circle cx="64" cy="168" r="4"/><circle cx="496" cy="178" r="4"/></g>
+                  <g font-size="13" font-weight="500" fill="#5d5d5d"><text x="280" y="212" text-anchor="middle" fill="#0d0d0d" font-size="14">Bayes’ theorem</text><text x="150" y="74" text-anchor="middle">Prior</text><text x="426" y="78" text-anchor="middle">Likelihood</text><text x="162" y="280" text-anchor="middle">Base rate</text><text x="412" y="276" text-anchor="middle">Evidence</text></g>
+                  <g font-size="12" fill="#8f8f8f"><text x="64" y="194" text-anchor="middle">Fractions</text><text x="496" y="204" text-anchor="middle">Sensitivity</text></g>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-panel" role="tabpanel" id="mode-exam" aria-labelledby="mode-tab-exam" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>Find the gap before the exam does.</h3>
+              <p>Generate a practice exam on any topic, choose the difficulty and number of questions, then submit for grading.</p>
+              <ul class="m-points"><li>Topic, difficulty and length are yours</li><li>Feedback on every answer</li><li>Missed questions go to your mistake book</li></ul>
+              <a class="m-link" href="/product#exam">How exam mode works</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Exam · Linear algebra</span><span class="ui-tag">Illustration</span></div>
+                <div class="ui-body">
+                  <span class="ui-row"><span class="ui-tag ui-tag--line">8 questions</span><span class="ui-tag ui-tag--line">Intermediate</span><span class="ui-grow"></span><span class="ui-small ui-muted">3 answered</span></span>
+                  <span class="ui-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span>
+                  <span class="ui-strong">4. Which pair of vectors spans the plane?</span>
+                  <span class="ui-options"><span class="ui-option">(1, 2) and (2, 4)</span><span class="ui-option on">(1, 0) and (1, 1)</span><span class="ui-option">(0, 0) and (0, 3)</span></span>
+                  <span class="ui-row"><span class="ui-grow"></span><span class="ui-btn">Submit for grading</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="m-panel" role="tabpanel" id="mode-mistakes" aria-labelledby="mode-tab-mistakes" tabindex="0">
+            <div class="m-panel-copy">
+              <h3>Turn a wrong answer into the next question.</h3>
+              <p>Questions you miss in quizzes and practice are collected in one place, ready to redo until they hold.</p>
+              <ul class="m-points"><li>Collected automatically</li><li>Redo with the tutor beside you</li><li>Mark a question conquered</li></ul>
+              <a class="m-link" href="/product#mistake-book">How the mistake book works</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Mistake book</span><span class="ui-tag">Illustration</span></div>
+                <div class="ui-body">
+                  <span class="ui-seg"><span class="on">All</span><span>Quiz</span><span>Practice</span><span>Conquered</span></span>
+                  <span class="ui-list">
+                    <span><span class="ui-ring"></span><span class="ui-grow">Derivative of sin(x) · cos(x)</span><span class="ui-tag">Quiz</span><span class="ui-btn ui-btn--soft">Redo</span></span>
+                    <span><span class="ui-ring"></span><span class="ui-grow">Base rate in a screening test</span><span class="ui-tag">Practice</span><span class="ui-btn ui-btn--soft">Redo</span></span>
+                    <span><span class="ui-check"></span><span class="ui-grow ui-muted">Eigenvalues of a 2×2 matrix</span><span class="ui-tag">Redone twice</span></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-bento m-section" aria-labelledby="bento-title">
+      <div class="home-shell">
+        <div class="m-intro">
+          <h2 id="bento-title">Built for real study.</h2>
+          <p>The small things that keep a hard session moving.</p>
+        </div>
+        <div class="m-cards">
+          <a class="m-card m-card--wide" href="/product#dialogue">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">Write it with the base rate in the denominator:</span></span></span>
+              <span class="ui-row ui-row--center"><span class="ui-math"><i>P</i>(<i>A</i> | <i>B</i>) = <span class="ui-frac"><span><i>P</i>(<i>B</i> | <i>A</i>) <i>P</i>(<i>A</i>)</span><span><i>P</i>(<i>B</i>)</span></span></span></span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Math that reads like math.</h3><p>Formulas render cleanly in the conversation, so you can reason about the symbols, not the syntax.</p></div>
+          </a>
+          <a class="m-card" href="/pricing">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">Model</span>
+              <span class="ui-list">
+                <span><span class="ui-check"></span><span class="ui-grow ui-strong">Beagle</span><span class="ui-tag">Built in</span></span>
+                <span><span class="ui-ring"></span><span class="ui-grow">Your own provider</span><span class="ui-tag">Your key</span></span>
+              </span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Choose your model.</h3><p>Start with the built-in Beagle model, or match a model to the kind of thinking you want to do.</p></div>
+          </a>
+          <a class="m-card" href="/documents">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-file"><span class="ui-file-icon"></span><span class="ui-grow"><span class="ui-strong">lecture-notes.pdf</span><br><span class="ui-small ui-muted">Attached to this conversation</span></span></span>
+              <span class="ui-lines"><i></i><i class="mark"></i><i></i><i></i></span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Start from a document.</h3><p>Bring notes or a paper into the conversation instead of an empty page.</p></div>
+          </a>
+          <a class="m-card" href="/developers">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">API key</span>
+              <span class="ui-composer ui-composer--flat"><span>sk-••••••••••••</span><span class="ui-tag ui-tag--ink">Saved</span></span>
+              <span class="ui-small ui-muted">Available on Free and every paid plan.</span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Bring your own key.</h3><p>Use a provider API key when you want to manage your own model access.</p></div>
+          </a>
+          <a class="m-card" href="/privacy">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">Your data</span>
+              <span class="ui-list">
+                <span><span class="ui-grow">Export conversations</span><span class="ui-btn ui-btn--soft">Export</span></span>
+                <span><span class="ui-grow">Delete a session</span><span class="ui-btn ui-btn--soft">Delete</span></span>
+              </span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Your data stays yours.</h3><p>We do not train on your conversations. Export or delete any session from your account.</p></div>
+          </a>
+        </div>
       </div>
     </section>
 
@@ -315,6 +492,52 @@
       </div>
     </section>
 
+    <section class="home-graph m-section" aria-labelledby="graph-title">
+      <div class="home-shell m-graph">
+        <div class="m-graph-copy">
+          <h2 id="graph-title">Every question leaves a trace.</h2>
+          <p>As you learn, Socrates keeps the ideas you worked through and the links between them. Come back weeks later and the thread is still there.</p>
+          <ul class="m-points"><li>Concepts you reached on your own</li><li>Links made by the questions that joined them</li><li>A starting point for the next conversation</li></ul>
+          <a class="m-link" href="/research/maps-preserve-path/">Why maps preserve the path</a>
+        </div>
+        <figure class="m-graph-stage" data-graph>
+          <svg viewBox="0 0 720 480" role="img" aria-labelledby="graph-svg-title">
+            <title id="graph-svg-title">An illustrative knowledge map: Bayes’ theorem at the centre, linked to prior, likelihood, evidence, conditional probability, base rate and false positives.</title>
+            <g>
+              <line class="kg-edge" data-a="core" data-b="cond" x1="360" y1="250" x2="360" y2="120"/>
+              <line class="kg-edge" data-a="core" data-b="prior" x1="360" y1="250" x2="196" y2="176"/>
+              <line class="kg-edge" data-a="core" data-b="like" x1="360" y1="250" x2="540" y2="170"/>
+              <line class="kg-edge" data-a="core" data-b="evid" x1="360" y1="250" x2="560" y2="336"/>
+              <line class="kg-edge" data-a="core" data-b="fp" x1="360" y1="250" x2="340" y2="392"/>
+              <line class="kg-edge" data-a="prior" data-b="base" x1="196" y1="176" x2="150" y2="320"/>
+              <line class="kg-edge" data-a="base" data-b="fp" x1="150" y1="320" x2="340" y2="392"/>
+              <line class="kg-edge" data-a="base" data-b="test" x1="150" y1="320" x2="96" y2="420"/>
+              <line class="kg-edge" data-a="fp" data-b="sens" x1="340" y1="392" x2="500" y2="430"/>
+              <line class="kg-edge" data-a="evid" data-b="sens" x1="560" y1="336" x2="500" y2="430"/>
+              <line class="kg-edge" data-a="cond" data-b="indep" x1="360" y1="120" x2="560" y2="64"/>
+              <line class="kg-edge" data-a="cond" data-b="frac" x1="360" y1="120" x2="160" y2="64"/>
+              <line class="kg-edge" data-a="like" data-b="ratio" x1="540" y1="170" x2="640" y2="250"/>
+            </g>
+            <circle class="kg-halo" cx="360" cy="250" r="44"/>
+            <circle class="kg-halo" cx="360" cy="250" r="76"/>
+            <g class="kg-node kg-node--core" data-node="core"><circle cx="360" cy="250" r="9"/><text x="378" y="245">Bayes’ theorem</text></g>
+            <g class="kg-node" data-node="cond"><circle cx="360" cy="120" r="5.5"/><text x="360" y="102" text-anchor="middle">Conditional probability</text></g>
+            <g class="kg-node" data-node="prior"><circle cx="196" cy="176" r="5.5"/><text x="182" y="172" text-anchor="end">Prior</text></g>
+            <g class="kg-node" data-node="like"><circle cx="540" cy="170" r="5.5"/><text x="554" y="166">Likelihood</text></g>
+            <g class="kg-node" data-node="evid"><circle cx="560" cy="336" r="5.5"/><text x="574" y="340">Evidence</text></g>
+            <g class="kg-node" data-node="base"><circle cx="150" cy="320" r="5.5"/><text x="136" y="316" text-anchor="end">Base rate</text></g>
+            <g class="kg-node" data-node="fp"><circle cx="340" cy="392" r="5.5"/><text x="340" y="420" text-anchor="middle">False positives</text></g>
+            <g class="kg-node kg-node--soft" data-node="sens"><circle cx="500" cy="430" r="4"/><text x="512" y="446">Sensitivity</text></g>
+            <g class="kg-node kg-node--soft" data-node="ratio"><circle cx="640" cy="250" r="4"/><text x="640" y="274" text-anchor="middle">Odds</text></g>
+            <g class="kg-node kg-node--soft" data-node="test"><circle cx="96" cy="420" r="4"/><text x="96" y="446" text-anchor="middle">Screening</text></g>
+            <g class="kg-node kg-node--soft" data-node="indep"><circle cx="560" cy="64" r="4"/><text x="574" y="68">Independence</text></g>
+            <g class="kg-node kg-node--soft" data-node="frac"><circle cx="160" cy="64" r="4"/><text x="146" y="68" text-anchor="end">Fractions</text></g>
+          </svg>
+          <figcaption class="m-graph-legend"><span class="ui-tag ui-tag--line">Illustrative map</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
     <section class="home-research" aria-labelledby="research-title" data-reveal>
       <div class="home-shell">
         <div class="section-head">
@@ -328,6 +551,29 @@
             <li><a class="home-research-note" href="/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Practice</span><time datetime="2026-07-11">Jul 11, 2026</time></p><h3>The value of an honest pause</h3></div></a></li>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <section class="home-rail m-section" aria-labelledby="rail-title" data-rail>
+      <div class="home-shell">
+        <div class="m-rail-head">
+          <div>
+            <h2 id="rail-title">Keep reading</h2>
+            <p>More notes, guides and the ideas behind the product.</p>
+          </div>
+          <div class="m-rail-controls">
+            <button class="m-rail-btn" type="button" data-rail-prev aria-controls="rail-track" aria-label="Previous cards"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 8H3M7 4.1 3.1 8 7 11.9"/></svg></button>
+            <button class="m-rail-btn" type="button" data-rail-next aria-controls="rail-track" aria-label="Next cards"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></svg></button>
+          </div>
+        </div>
+        <ul class="m-rail" id="rail-track" tabindex="0" aria-label="Further reading">
+          <li><a class="m-rail-card" href="/research/maps-preserve-path/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M14 70c18-4 22-30 40-30s20 22 36 18 16-30 18-40"/><circle class="dot" cx="14" cy="70" r="3"/><circle class="dot" cx="54" cy="40" r="3"/><circle class="dot" cx="90" cy="58" r="3"/><circle class="ink" cx="108" cy="18" r="4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Knowledge mapping</span><time datetime="2026-06-24">Jun 24, 2026</time></p><h3>Maps that preserve the path</h3></div></a></li>
+          <li><a class="m-rail-card" href="/research/what-learners-keep/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><rect x="30" y="18" width="60" height="40" rx="6"/><rect x="24" y="28" width="72" height="44" rx="7"/><rect class="inkline" x="18" y="40" width="84" height="38" rx="8"/><path d="M30 54h40M30 64h26"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Practice</span><time datetime="2026-04-30">Apr 30, 2026</time></p><h3>What learners keep after a session</h3></div></a></li>
+          <li><a class="m-rail-card" href="/research/tutor-curiosity/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M24 20h72a8 8 0 0 1 8 8v28a8 8 0 0 1-8 8H52l-14 12V64H24a8 8 0 0 1-8-8V28a8 8 0 0 1 8-8Z"/><path d="M53 36a7 7 0 1 1 10 6c-2 1-3 3-3 5"/><circle class="ink" cx="60" cy="54" r="2.4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Tutoring</span><time datetime="2026-02-18">Feb 18, 2026</time></p><h3>When a tutor should say it is unsure</h3></div></a></li>
+          <li><a class="m-rail-card" href="/learn"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M60 26c-10-8-26-9-40-6v48c14-3 30-2 40 6 10-8 26-9 40-6V20c-14-3-30-2-40 6Z"/><path d="M60 26v48"/><path class="ink" d="M68 34h22v3H68zM68 44h18v3H68z"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Learn</span><span>Tutorials</span></p><h3>Tutorials, lessons and worked examples</h3></div></a></li>
+          <li><a class="m-rail-card" href="/principles"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><circle cx="60" cy="45" r="30"/><circle cx="60" cy="45" r="18"/><path d="M60 9v8M60 73v8M24 45h8M88 45h8"/><circle class="ink" cx="60" cy="45" r="4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Principles</span><span>How we build</span></p><h3>The principles we hold to</h3></div></a></li>
+          <li><a class="m-rail-card" href="/documents"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M38 12h32l16 16v50H38z"/><path d="M70 12v16h16"/><path d="M46 40h30M46 48h30M46 64h22"/><path class="ink" d="M44 54h34v5H44z"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Documents</span><span>Reference</span></p><h3>Long-form documentation</h3></div></a></li>
+        </ul>
       </div>
     </section>
 
@@ -546,7 +792,8 @@
 
   <script src="/site.js?cb=20261022p0"></script>
   <script src="/home-question.js?cb=20261023u4"></script>
-  <script src="/chrome.js?cb=20261031o1"></script>
-  <script src="/motion.js?cb=20261031o1"></script>
+  <script src="/modules.js?cb=20261031r1"></script>
+  <script src="/chrome.js?cb=20261031r1"></script>
+  <script src="/motion.js?cb=20261031r1"></script>
 </body>
 </html>

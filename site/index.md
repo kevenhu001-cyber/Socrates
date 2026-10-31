@@ -23,7 +23,7 @@ For the questions worth thinking through.
 
 ## A change of perspective
 
-[Original probability illustration](https://topodrive.top/media/socrates-probability-plate.svg): an ink-blue grid of 100 points, with one point highlighted in orange. A paper slip reads one over one hundred.
+[Original probability illustration](https://topodrive.top/media/socrates-probability-grid-v1.svg): a light gray grid of 100 points with a single black point ringed and labelled one in 100.
 
 One in a hundred.
 
@@ -55,6 +55,24 @@ Next time, try explaining this connection without looking at the conversation.
 - [A field guide to better questions](https://topodrive.top/guide) — Guide · Getting started
 - [Why we’re building Socrates](https://topodrive.top/about) — Company · Our approach
 
+## One tutor, five ways to learn
+
+Move between modes as an idea takes shape: talk it through, test it, connect it and come back to it. The product views below are illustrations.
+
+- **[Dialogue](https://topodrive.top/product#dialogue):** think out loud, then go one step further. Socrates asks what you already know and offers the next question instead of the whole answer.
+- **[Recall](https://topodrive.top/product#recall):** turn a good moment from a conversation into a card, then retrieve it in your own words a few days later.
+- **[Knowledge map](https://topodrive.top/product#knowledge-map):** concepts you work through become points on a map, linked by the questions that joined them.
+- **[Exam mode](https://topodrive.top/product#exam):** generate a practice exam on any topic, choose the difficulty and number of questions, then submit for grading.
+- **[Mistake book](https://topodrive.top/product#mistake-book):** questions you miss in quizzes and practice are collected in one place, ready to redo until they hold.
+
+## Built for real study
+
+- **Math that reads like math.** Formulas render cleanly in the conversation.
+- **Choose your model.** Start with the built-in Beagle model, or match a model to the kind of thinking you want to do.
+- **Start from a document.** Bring notes or a paper into the conversation instead of an empty page.
+- **Bring your own key.** Use a provider API key when you want to manage your own model access.
+- **Your data stays yours.** We do not train on your conversations. Export or delete any session from your account.
+
 ## Inside a learning session
 
 ### Keep a good question going
@@ -67,6 +85,10 @@ An answer can be a beginning. Work through the part you cannot explain yet, then
 
 The accompanying learning scene is illustrative, not a customer case study.
 
+## Every question leaves a trace
+
+As you learn, Socrates keeps the ideas you worked through and the links between them. Come back weeks later and the thread is still there. [Why maps preserve the path](https://topodrive.top/research/maps-preserve-path/)
+
 ## From our research
 
 What makes an explanation useful after a conversation ends? Read the questions, methods, and limits behind our work.
@@ -76,6 +98,15 @@ What makes an explanation useful after a conversation ends? Read the questions, 
 - [The value of an honest pause](https://topodrive.top/research/honest-pause/) — Practice · Jul 11, 2026. How making uncertainty explicit changes the next question a tutor can ask.
 
 [All research](https://topodrive.top/research)
+
+## Keep reading
+
+- [Maps that preserve the path](https://topodrive.top/research/maps-preserve-path/) — Knowledge mapping · Jun 24, 2026
+- [What learners keep after a session](https://topodrive.top/research/what-learners-keep/) — Practice · Apr 30, 2026
+- [When a tutor should say it is unsure](https://topodrive.top/research/tutor-curiosity/) — Tutoring · Feb 18, 2026
+- [Tutorials, lessons and worked examples](https://topodrive.top/learn) — Learn
+- [The principles we hold to](https://topodrive.top/principles) — Principles
+- [Long-form documentation](https://topodrive.top/documents) — Documents
 
 ## For the way you learn
 

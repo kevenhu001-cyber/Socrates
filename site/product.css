@@ -172,3 +172,12 @@
   .product-button .product-icon, .product-skip, .product-jump-nav a, .product-page .product-button, .product-page .product-text-link { transition: none; }
   .product-button:hover .product-icon, .product-page :is(.product-button, .product-text-link):active { transform: none; }
 }
+
+/* Added modules (modules.css): steps, comparison and FAQ. The tool section
+   already ends with section spacing, so the first module sits flush. */
+.product-page .product-flow { margin-top: 0; }
+.product-page .product-faq + .product-cta { margin-top: var(--space-900); }
+.product-page .m-table-wrap { max-width: 1040px; margin-inline: auto; }
+@media (max-width: 760px) {
+  .product-page .product-faq + .product-cta { margin-top: var(--space-700); }
+}

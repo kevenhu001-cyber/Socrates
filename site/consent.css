@@ -1,4 +1,5 @@
-/* Cookie consent banner — compact editorial dock.
+/* Cookie consent banner — a small white card with pill buttons, in the
+   public-site style (white, neutral grays, soft shadow, 20px radius).
    Injected by site/locale.js on every page. */
 #socratesCookieConsent {
   position: fixed;
@@ -10,31 +11,31 @@
   width: min(348px, calc(100vw - 28px));
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 14px 16px;
-  border-radius: 10px;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 20px;
   background: #ffffff;
-  border: 1px solid var(--ed-line, rgba(0, 0, 0, .12));
-  box-shadow: none;
+  border: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .06), 0 12px 40px -12px rgba(0, 0, 0, .18);
   color: var(--ed-ink, #000000);
   font-family: var(--ed-sans, inherit);
   font-size: 13px;
   line-height: 1.45;
   box-sizing: border-box;
   pointer-events: auto;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity .3s cubic-bezier(.22, 1, .36, 1), transform .3s cubic-bezier(.22, 1, .36, 1);
 }
 .socrates-cookie-consent-title {
   padding-right: 88px;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--ed-ink, #000000);
+  font-weight: 500;
+  color: #0d0d0d;
   letter-spacing: -0.01em;
 }
 .socrates-cookie-consent-message {
   margin: 0;
-  color: var(--ed-ink-soft, #56534e);
-  font-size: 11.75px;
+  color: #5d5d5d;
+  font-size: 12px;
   line-height: 1.48;
 }
 .socrates-cookie-consent-actions {
@@ -45,42 +46,44 @@
 }
 .socrates-cookie-consent-btn {
   min-height: 34px;
-  padding: 6px 12px;
-  border-radius: 7px;
-  border: 1px solid var(--ed-line, rgba(0, 0, 0, .12));
-  background: var(--ed-paper, #ffffff);
-  color: var(--ed-ink, #000000);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 0;
+  background: rgba(0, 0, 0, .04);
+  color: #0d0d0d;
   font-family: var(--ed-sans, inherit);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background .15s ease, color .15s ease, border-color .15s ease;
+  transition: background .15s cubic-bezier(.22, 1, .36, 1), color .15s cubic-bezier(.22, 1, .36, 1), transform .2s cubic-bezier(.22, 1, .36, 1);
 }
 .socrates-cookie-consent-btn:hover {
-  background: var(--ed-sand, #ffffff);
-  border-color: var(--ed-ink-soft, #56534e);
+  background: rgba(0, 0, 0, .08);
 }
+.socrates-cookie-consent-btn:active { transform: scale(.98); }
 .socrates-cookie-consent-btn.primary {
-  background: var(--ed-ink, #000000);
-  border-color: var(--ed-ink, #000000);
-  color: var(--ed-paper, #ffffff);
+  background: #0d0d0d;
+  color: #ffffff;
 }
 .socrates-cookie-consent-btn.primary:hover {
-  background: #000;
-  border-color: #000;
+  background: #303030;
   color: #fff;
 }
 .socrates-cookie-consent-link {
   position: absolute;
-  top: 14px;
-  right: 16px;
-  font-size: 11px;
-  color: var(--ed-clay, #000000);
+  top: 16px;
+  right: 18px;
+  font-size: 12px;
+  color: #5d5d5d;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .socrates-cookie-consent-link:hover {
-  color: var(--ed-clay-warm, #000000);
+  color: #0d0d0d;
+}
+@media (prefers-reduced-motion: reduce) {
+  #socratesCookieConsent, .socrates-cookie-consent-btn { transition: none; }
+  .socrates-cookie-consent-btn:active { transform: none; }
 }
 @media (max-width: 560px) {
   #socratesCookieConsent {
@@ -89,8 +92,8 @@
     bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     width: auto;
     gap: 6px;
-    padding: 12px 13px;
-    border-radius: 9px;
+    padding: 14px;
+    border-radius: 20px;
   }
   .socrates-cookie-consent-actions {
     display: grid;
@@ -99,8 +102,8 @@
   .socrates-cookie-consent-btn {
     width: 100%;
     text-align: center;
-    min-height: 32px;
-    padding: 5px 6px;
+    min-height: 36px;
+    padding: 6px 8px;
   }
   .socrates-cookie-consent-title { padding-right: 78px; font-size: 12.5px; }
   .socrates-cookie-consent-message { font-size: 11px; line-height: 1.42; }

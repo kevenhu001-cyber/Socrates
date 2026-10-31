@@ -23,7 +23,7 @@ Socrates · AI 导师
 
 ## 换个角度
 
-[原创概率图版](https://topodrive.top/media/socrates-probability-plate.svg)：一张墨蓝色图版上排列着 100 个点，其中一个以橙色标出；前方纸片上写着一百分之一。
+[原创概率图版](https://topodrive.top/media/socrates-probability-grid-v1.svg)：浅灰色图版上排列着 100 个点，其中一个黑点被圈出，标注为 1 in 100。
 
 一百分之一。
 
@@ -55,6 +55,24 @@ Socrates · AI 导师
 - [从一个更好的问题开始](https://topodrive.top/zh/guide) — 指南 · 开始使用
 - [为什么我们要做 Socrates](https://topodrive.top/zh/about) — 公司 · 我们的工作方式
 
+## 一位导师，五种学习方式
+
+随着想法逐渐成形，在不同模式间切换：先聊透，再检验，然后连起来，过几天再回来。下方的产品界面均为示意。
+
+- **[对话](https://topodrive.top/zh/product#dialogue)：**把想法说出来，再往前多走一步。Socrates 会先问你已经知道什么，给出下一个问题，而不是直接端出全部答案。
+- **[回忆](https://topodrive.top/zh/product#recall)：**把对话里有价值的一刻变成卡片，几天后再用自己的话把它回忆出来。
+- **[知识地图](https://topodrive.top/zh/product#knowledge-map)：**你钻研过的概念会成为地图上的点，由把它们联系起来的问题连成线。
+- **[考试模式](https://topodrive.top/zh/product#exam)：**围绕任意主题生成一份练习考卷，自选难度和题目数量，然后提交批改。
+- **[错题本](https://topodrive.top/zh/product#mistake-book)：**测验和练习中答错的题会集中收在一处，随时重做，直到真正掌握。
+
+## 为真正的学习而做
+
+- **公式，就该像公式一样好读。**数学公式在对话中清晰渲染。
+- **选择你的模型。**从内置的 Beagle 模型开始，或为想做的思考挑选合适的模型。
+- **从一份文档开始。**把笔记或论文带进对话，而不是面对一张白纸。
+- **自带 API 密钥。**想自己管理模型访问时，可以使用服务商的 API 密钥。
+- **你的数据，始终属于你。**我们不使用你的对话训练模型。任何会话都可以在账户页导出或删除。
+
 ## 一次学习，怎样继续
 
 ### 让一个好问题，继续下去
@@ -67,6 +85,10 @@ Socrates · AI 导师
 
 配图是学习场景示意，并非真实客户案例。
 
+## 每个问题，都会留下痕迹
+
+学习的过程中，Socrates 会保留你钻研过的想法，以及它们之间的联系。几周后再回来，线索依然在那里。[为什么地图要保留路径](https://topodrive.top/zh/research/maps-preserve-path/)
+
 ## 产品背后的研究
 
 一段对话结束后，什么样的解释还能留下来？了解我们工作背后的问题、方法，以及它们的局限。
@@ -76,6 +98,15 @@ Socrates · AI 导师
 - [诚实停顿的价值](https://topodrive.top/zh/research/honest-pause/) — 练习 · 2026 年 7 月 11 日。把不确定说清楚，会怎样改变导师接下来能够提出的问题。
 
 [全部研究](https://topodrive.top/zh/research)
+
+## 继续阅读
+
+- [保留路径的地图](https://topodrive.top/zh/research/maps-preserve-path/)：知识地图 · 2026 年 6 月 24 日
+- [学习者在会话后留下什么](https://topodrive.top/zh/research/what-learners-keep/)：练习 · 2026 年 4 月 30 日
+- [导师何时应该说自己不确定](https://topodrive.top/zh/research/tutor-curiosity/)：辅导 · 2026 年 2 月 18 日
+- [学习资源与引导练习](https://topodrive.top/zh/learn)：学习
+- [指导 Socrates 的学习原则](https://topodrive.top/zh/principles)：原则
+- [为下一个问题准备的一座小图书馆](https://topodrive.top/zh/documents)：文档
 
 ## 把它带进你的学习
 

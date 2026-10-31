@@ -10,7 +10,7 @@
   var observer;
 
   // Quiet motion in the reference style: short fades with a small rise.
-  var ease = 'cubic-bezier(.4,0,.2,1)';
+  var ease = 'cubic-bezier(.22,1,.36,1)';
 
   function animate(element, frames, options, allowReduced) {
     if ((reduced.matches && !allowReduced) || !element.animate) return;
@@ -27,6 +27,7 @@
     '.content-hero', '.research-note', '.company-visual', '.company-story', '.company-team', '.company-practices li', '.company-work-list li',
     '.page-head .shell', '.pricing-card', '.page-media-inline', '.ed-report-hero > .ed-shell', '.ed-article-hero-grid',
     '.home-faq-head', '.home-faq-item', '.home-cta-inner',
+    '.m-intro', '.m-tablist', '.m-card', '.m-graph-copy', '.m-graph-stage', '.m-rail-head', '.m-step', '.m-table-wrap', '.m-faq',
     'article > h2', 'article > blockquote'
   ];
   var elements = Array.from(main.querySelectorAll(selectors.join(',')));
