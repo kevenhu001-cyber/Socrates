@@ -181,3 +181,8 @@
 @media (max-width: 760px) {
   .product-page .product-faq + .product-cta { margin-top: var(--space-700); }
 }
+
+/* Round 4 texture: the preview is a gray card with grain and a hairline;
+   its inner sheets carry the shared layered shadow. */
+.product-preview { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); background-image: var(--site-noise); background-size: 160px 160px; }
+.product-sample { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }

@@ -65,11 +65,18 @@
 .site-chrome-shell { width: 100%; max-width: var(--site-width); margin-inline: auto; padding-inline: var(--site-gutter); }
 .site-locale { font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); }
 
-.site-header { position: sticky; top: 0; z-index: 100; transition: box-shadow var(--site-motion-color); }
+.site-header { position: sticky; top: 0; z-index: 100; }
 /* The blur lives on a pseudo-element: a filter on the header itself would
    become the containing block of the fixed mobile menu. */
-.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: rgb(255 255 255 / .92); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); pointer-events: none; }
-.site-header.is-scrolled { box-shadow: 0 1px 0 var(--site-color-line); }
+.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: rgb(255 255 255 / .78); box-shadow: 0 1px 0 var(--site-color-line); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); pointer-events: none; transition: opacity 300ms var(--site-ease); }
+/* At the top of the page the bar is clear and borderless; once the page
+   moves under it, the frosted layer fades in with a hairline below. Only
+   the layer's opacity animates; the blur itself stays on the compositor. */
+.site-header[data-scroll-aware]:not(.is-scrolled)::before { opacity: 0; }
+html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header::before { background: rgb(255 255 255 / .97); }
+}
 .site-header-inner { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--space-400); height: var(--site-header-height); }
 .site-header .site-brand,
 .site-footer .site-brand { display: inline-flex; align-items: center; flex-shrink: 0; gap: var(--space-75); min-height: 44px; }
@@ -230,6 +237,6 @@ html.site-menu-open { overflow: hidden; }
 /* Reading progress is visual, with no extra controls in article text. */
 .site-header[data-reading-progress]::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--site-color-ink); transform: scaleX(var(--reading-progress, 0)); transform-origin: left; }
 @media (prefers-reduced-motion: reduce) {
-  .site-header, .site-nav a::before, .site-try svg, .site-menu-toggle span, .site-header :is(.site-login, .site-try, .site-search), .site-footer-group a, .site-footer-summary::after { transition: none; }
+  .site-header, .site-header::before, .site-nav a::before, .site-try svg, .site-menu-toggle span, .site-header :is(.site-login, .site-try, .site-search), .site-footer-group a, .site-footer-summary::after { transition: none; }
   .site-try:hover svg { transform: none; }
 }

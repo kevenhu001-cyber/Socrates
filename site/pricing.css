@@ -167,3 +167,18 @@ body.pricing-page.ed-site .ed-price-card.is-featured .ed-button:hover { backgrou
 /* editorial.css (zh) sets table headers in an uppercase mono face without
    CJK glyphs; the comparison table keeps the public sans. */
 .pricing-page .m-table :is(th, td, caption) { font-family: var(--site-font); text-transform: none; letter-spacing: 0; }
+
+/* Round 4 texture: plan cards are white sheets with a hairline, a contact
+   shadow and a wide faint ambient shadow; on hover they lift 2px and the
+   deeper shadow (on ::after, so only its opacity changes) fades in. */
+body.pricing-page :is(.plan, .ed-price-card) { position: relative; box-shadow: var(--site-shadow-1), var(--site-inner-highlight); transition: transform 500ms var(--site-ease); }
+body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .04); background-image: var(--site-noise); background-size: 160px 160px; }
+body.pricing-page :is(.plan, .ed-price-card)::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--site-shadow-3); opacity: 0; pointer-events: none; transition: opacity 300ms var(--site-ease); }
+@media (hover: hover) and (pointer: fine) {
+  body.pricing-page :is(.plan, .ed-price-card):hover { transform: translateY(-2px); }
+  body.pricing-page :is(.plan, .ed-price-card):hover::after { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.pricing-page :is(.plan, .ed-price-card), body.pricing-page :is(.plan, .ed-price-card)::after { transition: none; }
+  body.pricing-page :is(.plan, .ed-price-card):hover { transform: none; }
+}

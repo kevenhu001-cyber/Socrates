@@ -36,6 +36,19 @@
   /* Shadows: neutral and very soft, used only on floating composers. */
   --site-shadow-raised: 0 0 0 1px rgb(0 0 0 / .05), 0 4px 24px -4px rgb(0 0 0 / .08);
   --site-shadow-ring: 0 0 0 1px rgb(0 0 0 / .08);
+  /* Texture: layered neutral shadows. Each step is a 1px hairline, a tight
+     contact shadow and a wide, very faint ambient one, so a white card reads
+     as a physical sheet without any colour. */
+  --site-hairline: rgb(0 0 0 / .06);
+  --site-shadow-1: 0 0 0 1px rgb(0 0 0 / .05), 0 1px 2px rgb(0 0 0 / .04), 0 4px 12px -4px rgb(0 0 0 / .05);
+  --site-shadow-2: 0 0 0 1px rgb(0 0 0 / .05), 0 1px 2px rgb(0 0 0 / .04), 0 12px 32px -12px rgb(0 0 0 / .12);
+  --site-shadow-3: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .04), 0 24px 56px -20px rgb(0 0 0 / .18);
+  /* A faint top highlight on raised surfaces and pills. */
+  --site-inner-highlight: inset 0 1px 0 rgb(255 255 255 / .7);
+  --site-inner-highlight-dark: inset 0 1px 0 rgb(255 255 255 / .14);
+  /* Film grain: a 160px fractal-noise tile at about 3% ink, laid over large
+     gray panels only. Static, rasterised once and tiled. */
+  --site-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.32'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
   --site-font: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   /* Display shares the sans family: one typeface, as on the reference. */
   --site-font-display: var(--site-font);
@@ -106,6 +119,9 @@
   --site-motion-slow: 400ms;
   --site-motion-color: var(--site-motion-fast) var(--site-ease);
   --site-motion-move: var(--site-motion-medium) var(--site-ease);
+  /* Entrances and layout-scale moves: about 500ms; colour and opacity 300ms. */
+  --site-motion-enter: 500ms;
+  --site-motion-fade: 300ms;
 }
 /* Text style classes, kebab-case names from the B1 table. */
 .heading-1 { font: var(--type-heading-1); letter-spacing: -.03em; }
@@ -182,7 +198,7 @@ html { scroll-padding-top: 0; }
 [data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link) { transition: color var(--site-motion-color); }
 [data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link) > :is(svg, [aria-hidden="true"]):last-child { display: inline-block; transition: transform var(--site-motion-move); }
 [data-site-public] .section-link::after { display: inline-block; transition: transform var(--site-motion-move); }
-:where([data-site-public]) :focus-visible { outline: 2px solid var(--site-color-ink); outline-offset: var(--space-50); border-radius: var(--radius-sm); }
+:where([data-site-public]) :focus-visible { outline: 2px solid var(--site-color-ink); outline-offset: 3px; border-radius: var(--radius-sm); }
 [data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link):hover > :is(svg, [aria-hidden="true"]):last-child,
 [data-site-public] .section-link:hover::after { transform: translateX(var(--space-50)); }
 [data-site-public] :is(.research-filters button, .ask-chip) { transition: background-color var(--site-motion-color), color var(--site-motion-color), border-color var(--site-motion-color), transform var(--site-motion-move); }
@@ -272,3 +288,11 @@ html { scroll-padding-top: 0; }
 [data-site-public].ed-site :is(.ed-page-hero, .ed-news-hero, .ed-home-hero, .ed-reference-hero, .ed-learning-hero)::before,
 [data-site-public].ed-site :is(.ed-page-hero, .ed-news-hero)::after { display: none !important; }
 [data-site-public].ed-site :is(.ed-page-hero, .ed-learning-hero) :is(.ed-page-title, h1) { font-size: clamp(32px, 3.6vw, 52px); }
+
+/* Texture layer (round 4). Shared by every public page that loads this
+   sheet: tabular figures where numbers line up, a highlight on dark pills,
+   and film grain on the few large gray panels. */
+[data-site-public] :is(time, .pricing-price, .price, .m-table td, .home-research-meta, .m-rail-meta, .news-meta) { font-variant-numeric: tabular-nums; }
+[data-site-public] :is(.home-button, .site-try, .content-button, .product-button, .ui-btn:not(.ui-btn--soft)) { box-shadow: var(--site-inner-highlight-dark), 0 1px 2px rgb(0 0 0 / .12); }
+/* Grain sits over the panel's own fill: background-image only, no layer. */
+[data-site-public] :is(.m-panel, .m-graph-stage, .home-cta-inner, .m-story-stage) { background-image: var(--site-noise); background-size: 160px 160px; }
