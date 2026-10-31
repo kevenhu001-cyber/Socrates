@@ -130,9 +130,21 @@ function toggleShareBtn() {
   }
 }
 
+function getShareOverlay(): HTMLElement | null {
+  return document.getElementById("shareOverlay");
+}
+
+function hideAuthGate() {
+  const gate = document.getElementById("authGate");
+  if (gate) gate.classList.add("hidden");
+  if (typeof browserWindow.hideGate === "function") {
+    try { browserWindow.hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:hideGate'); }
+  }
+}
+
 function openShareModal(sessionId?: string) {
   _shareSessionId = typeof sessionId === "string" ? sessionId : browserWindow.stateStore.read("currentSessionId");
-  const overlay = document.getElementById("shareOverlay");
+  const overlay = getShareOverlay();
   if (!overlay) return;
   _shareToken = null;
   _shareUrl = "";
@@ -144,7 +156,7 @@ function openShareModal(sessionId?: string) {
 }
 
 function closeShareModal() {
-  document.getElementById("shareOverlay")?.classList.add("hidden");
+  getShareOverlay()?.classList.add("hidden");
 }
 
 function selectShareVis(vis: string) {
@@ -342,13 +354,9 @@ function _switchToSharedChatView() {
   if (shareBtn) shareBtn.style.display = "none";
   const composer = document.getElementById("composerRoot");
   if (composer) composer.setAttribute("aria-disabled", "true");
-  const gate = document.getElementById("authGate");
-  if (gate) gate.classList.add("hidden");
   const recentsPane = document.getElementById("recentsPane");
   if (recentsPane) recentsPane.classList.add("hidden");
-  if (typeof browserWindow.hideGate === "function") {
-    try { browserWindow.hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:326'); }
-  }
+  hideAuthGate();
 }
 
 function restoreSharedMessage(message: SharedMessage) {
@@ -468,11 +476,7 @@ function renderSharedExamFooter() {
 }
 
 function revealSharedExam() {
-  const gate = document.getElementById("authGate");
-  if (gate) gate.classList.add("hidden");
-  if (typeof browserWindow.hideGate === "function") {
-    try { browserWindow.hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:426'); }
-  }
+  hideAuthGate();
   document.documentElement.dataset.bootState = "app";
 }
 

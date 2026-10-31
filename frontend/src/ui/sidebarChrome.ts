@@ -81,12 +81,15 @@ export function syncSidebarBtns() {
 export function isMobileViewport() { return browserWindow.innerWidth < 768; }
 
 export function switchTab(tab: string) {
-  const tk = document.getElementById('tabKnowledge'); if (tk) tk.classList.toggle('active', tab === 'knowledge');
+  const tk = document.getElementById('tabKnowledge');
   const mt = document.getElementById('tabMistakes');
-  if (mt) mt.classList.toggle('active', tab === 'mistakes');
-  const kp = document.getElementById('knowledgePanel'); if (kp) kp.classList.toggle('hidden', tab !== 'knowledge');
-  const rp = document.getElementById('recentsPanel'); if (rp) rp.classList.toggle('hidden', tab !== 'recents');
+  const kp = document.getElementById('knowledgePanel');
+  const rp = document.getElementById('recentsPanel');
   const mp = document.getElementById('mistakesPanel');
+  if (tk) tk.classList.toggle('active', tab === 'knowledge');
+  if (mt) mt.classList.toggle('active', tab === 'mistakes');
+  if (kp) kp.classList.toggle('hidden', tab !== 'knowledge');
+  if (rp) rp.classList.toggle('hidden', tab !== 'recents');
   if (mp) mp.classList.toggle('hidden', tab !== 'mistakes');
   if (tab === 'recents') _renderRecents();
   if (tab === 'mistakes') _renderMistakes();
@@ -104,6 +107,18 @@ export function toggleSidebarView(view: string) {
   const el = document.getElementById(view === 'knowledge' ? 'tabKnowledge' : 'tabMistakes');
   const isActive = el && el.classList.contains('active');
   switchTab(isActive ? 'recents' : view);
+}
+
+function isInteractiveControl(target: Element): boolean {
+  return Boolean(
+    target.closest('#sidebar')
+    || target.closest('.toggle-sidebar')
+    || target.closest('#sessionContextMenu')
+    || target.closest('.model-picker-menu')
+    || target.closest('.extensions-menu')
+    || target.closest('.model-picker, .extensions-picker')
+    || target.closest('input, textarea, select, button, a, [role=button], [role=option]')
+  );
 }
 
 /* Sidebar persisted state + mobile drawer listeners. Called once from
@@ -133,35 +148,9 @@ export function initSidebarChrome() {
 
   document.addEventListener('click', function (e) {
     const sbEl = sidebar ?? document.getElementById('sidebar');
-    if (!sbEl || sbEl.classList.contains('collapsed')) return;
-    /* Clicks inside the sidebar or on the toggle button are not "outside". */
-    if ((e.target as Element)!.closest('#sidebar')) return;
-    if ((e.target as Element)!.closest('.toggle-sidebar')) return;
-    /* If the context menu is open (long-press on a recent item), do NOT
-       close the sidebar. The context menu popover lives outside #sidebar
-       (appended to document.body), so it is not caught by the #sidebar
-       guard above. Tapping on the context menu or its label input should
-       not collapse the sidebar. */
-    if ((e.target as Element)!.closest('#sessionContextMenu')) return;
-    /* If ctx-menu-block is active, the user just long-pressed a recent
-       item. The synthetic click event that follows has its target resolved
-       outside .recent-item (because pointer-events:none), so the #sidebar
-       guard above does not catch it. Ignore all clicks while the block
-       class is present. */
-    if (sbEl.classList.contains('ctx-menu-block')) return;
-    /* Don't fight the user when they're interacting with form fields, the
-       model picker, the extensions picker, or any other transient menu.
-       If the click target is inside an open dropdown / form / modal
-       overlay, leave the sidebar alone — the user is clearly in
-       a nested interaction. */
-    if ((e.target as Element)!.closest('.model-picker-menu')) return;
-    if ((e.target as Element)!.closest('.extensions-menu')) return;
-    if ((e.target as Element)!.closest('.model-picker, .extensions-picker')) return;
-    if ((e.target as Element)!.closest('input, textarea, select, button, a, [role=button], [role=option]')) {
-      /* It's a control that may have its own click handler. Don't second-guess
-         it. The sidebar will close naturally if the tap ends up doing nothing. */
-      return;
-    }
+    if (!sbEl || sbEl.classList.contains('collapsed') || sbEl.classList.contains('ctx-menu-block')) return;
+    const target = (e.target as Element)?.closest ? (e.target as Element) : (e.target as Node)?.parentElement as Element | null;
+    if (!target?.closest || isInteractiveControl(target)) return;
     if (isMobileViewport()) toggleSidebar();
   });
   /* Backdrop tap on mobile also closes. The document-level handler above

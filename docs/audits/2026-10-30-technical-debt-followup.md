@@ -200,5 +200,9 @@
   - 解除 `frontend/src/pickers.ts` 中全局 `click`/`keydown` 监听器在关闭/无挂载状态下对 `#modelPicker`、`#extensionsPicker` 的无谓 DOM 轮询，解耦 `syncModelPills` 对 `#modelPicker` 存在性的依赖以保证顶栏 chat model 同步永不阻断。
   - 优化 `frontend/src/attachments/render.ts` 中 `WiredInput` 的元素引用缓存，消除每次 `dragenter` / `dragleave` / `drop` 全局事件时的重复 `getElementById` DOM 树遍历。
   - 优化 `frontend/src/ui/cmdK.impl.ts` 中的 DOM 元素查询，抽取 `getCmdKOverlay` / `getCmdKInput`，消除所有非空断言与高频查询。
+  - 深入重构 `frontend/src/pickers.ts`：抽象 `getModelPickerElements()`、`getChatModelElements()` 与 `getExtensionsPickerElements()` 统一访问层，消除 25+ 处重复 DOM 探测，重构事件委托消除非空断言。
+  - 收敛 `frontend/src/ui/share.impl.ts`：抽象 `getShareOverlay()` 与 `hideAuthGate()` 复用函数，消除认证遮罩与分享弹窗的重复 DOM 操作。
+  - 清理 `frontend/src/ui/sidebarChrome.ts`：为标签页切换与侧边栏外部点击监听补充安全可选链，消除原生事件目标非空断言。
+  - 清理 `frontend/src/styles/legacy/08-exam.css` 历史残存空规则与废弃媒体查询，同步更新 `css-debt.baseline.json` 锁定基线缩减成果（`stackedId` 43→41, `important` 622→589, `hexColor` 51→50, `literalRadius` 244→214, `literalFontSize` 436→414, `legacyChannel` 1097→969）。
   - 校验并保证 CSP 脚本哈希（`scripts/gen-csp-hashes.mjs`）保持严格一致无漂移。
 - 自动化门禁全面绿化：测试数据库 `socrates_test` 成功执行迁移并经只读账本核验通过（`npm run db:verify-ledger`，49/49 账本条目一致并验证外键约束）；服务端全量单元测试 1148/1148 通过；前端全量单元测试 1230/1230 通过；生产构建与体积上限校验（`scripts/check-bundle-size.mjs`）通过；静态站点 40 页面几何与 Chrome 漂移测试（`npm run test:site`，114/114）通过；OpenAPI 模式投影验证通过；全仓 24 项架构 Lint 守卫全数通过。

@@ -4,17 +4,17 @@
       "important": 14,
       "hexColor": 32,
       "literalRadius": 2,
-      "stackedId": 43,
+      "stackedId": 41,
       "literalFontSize": 60,
       "legacyChannel": 0
     },
     "frozen": {
-      "important": 622,
-      "hexColor": 51,
-      "literalRadius": 244,
+      "important": 589,
+      "hexColor": 50,
+      "literalRadius": 214,
       "stackedId": 59,
-      "literalFontSize": 436,
-      "legacyChannel": 1097
+      "literalFontSize": 414,
+      "legacyChannel": 969
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

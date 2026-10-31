@@ -175,36 +175,46 @@ function pickActiveProviderById(id: string){
     syncChatModel();
   });
 }
+function getModelPickerElements() {
+  const picker = document.getElementById("modelPicker");
+  if (!picker) return null;
+  return {
+    picker,
+    label: document.getElementById("modelPickerLabel"),
+    menu: document.getElementById("modelPickerMenu"),
+    trigger: document.getElementById("modelPickerTrigger"),
+  };
+}
+
 function toggleModelPicker(){
-  const p=document.getElementById("modelPicker");
-  if(!p)return;
-  if(p.getAttribute("data-open")==="true")closeModelPicker();
+  const els = getModelPickerElements();
+  if(!els) return;
+  if(els.picker.getAttribute("data-open")==="true") closeModelPicker();
   else return openModelPicker();
 }
+
 function openModelPicker(){
-  const p=document.getElementById("modelPicker");
-  if(!p)return;
-  const menu=document.getElementById("modelPickerMenu");
+  const els = getModelPickerElements();
+  if(!els) return;
   let ready;
-  if(menu){
+  if(els.menu){
     const config=getProviderConfigSnapshot();
-    if(config.fetched || (config.providers||[]).length) ready=renderPickerMenu(menu, config.providers||[], config.activeId);
+    if(config.fetched || (config.providers||[]).length) ready=renderPickerMenu(els.menu, config.providers||[], config.activeId);
     else {
-      menu.textContent="Loading…";
-      menu.setAttribute("aria-busy", "true");
+      els.menu.textContent="Loading…";
+      els.menu.setAttribute("aria-busy", "true");
     }
   }
-  p.setAttribute("data-open","true");
-  const t=document.getElementById("modelPickerTrigger");
-  if(t)t.setAttribute("aria-expanded","true");
+  els.picker.setAttribute("data-open","true");
+  if(els.trigger) els.trigger.setAttribute("aria-expanded","true");
   return ready;
 }
+
 function closeModelPicker(){
-  const p=document.getElementById("modelPicker");
-  if(!p)return;
-  p.setAttribute("data-open","false");
-  const t=document.getElementById("modelPickerTrigger");
-  if(t)t.setAttribute("aria-expanded","false");
+  const els = getModelPickerElements();
+  if(!els) return;
+  els.picker.setAttribute("data-open","false");
+  if(els.trigger) els.trigger.setAttribute("aria-expanded","false");
 }
 
 function resolvePickerProvider(providers: readonly ProviderConfig[], activeId: string|null) {
@@ -256,25 +266,22 @@ function renderPickerMenu(menu: HTMLElement, providers: readonly ProviderConfig[
 }
 
 function syncModelPills(){
-  const picker=document.getElementById("modelPicker");
-  const label=document.getElementById("modelPickerLabel");
-  const menu=document.getElementById("modelPickerMenu");
-  const trigger=document.getElementById("modelPickerTrigger");
+  const els = getModelPickerElements();
   const providerConfig = getProviderConfigSnapshot();
   const providers=providerConfig.providers||[];
 
-  if(picker && label && menu && trigger){
+  if(els && els.label && els.menu && els.trigger){
     /* P_init-sync — providers가 아직 로드되지 않았으면 중립 상태 표시.
-       "Add a model"은 서버 응답 후 진짜 빈 상태일 때만 노출. */
+       "Add a model"은 서버 응답 후 진짜 빈 상태일 때만 노出. */
     if(!providerConfig.fetched && !providers.length){
-      showPickerLoading(label, trigger, menu);
+      showPickerLoading(els.label, els.trigger, els.menu);
     } else {
       const { active, activeId } = resolvePickerProvider(providers, providerConfig.activeId);
       /* P_model-autofallback — if no activeId is set but the providers
          list includes the configured built-in provider, auto-select it so the model
          picker never shows "Pick a model" on cold boot. */
-      updatePickerSelection(label, trigger, providers, active);
-      if (picker.getAttribute("data-open") === "true") renderPickerMenu(menu, providers, activeId);
+      updatePickerSelection(els.label, els.trigger, providers, active);
+      if (els.picker.getAttribute("data-open") === "true") renderPickerMenu(els.menu, providers, activeId);
     }
   }
   _syncChatModelInternal();
@@ -327,16 +334,25 @@ document.addEventListener("click", function(e){
    The visible trigger is just a glyph now (see index.html) — the model
    label is preserved on a sr-only <span> so screen readers still hear
    the provider name. The glyph itself swaps on every model change. */
+function getChatModelElements() {
+  const trigger = document.getElementById("chatModel");
+  return {
+    trigger,
+    wrap: document.getElementById("chatModelWrap"),
+    menu: document.getElementById("chatModelMenu"),
+    label: document.getElementById("chatModelLabel"),
+    glyphEl: trigger ? trigger.querySelector(".chat-model-glyph") : null,
+  };
+}
+
 function _syncChatModelInternal(){
-  const label=document.getElementById("chatModelLabel");
-  const trigger=document.getElementById("chatModel");
-  const glyphEl=trigger && trigger.querySelector(".chat-model-glyph");
-  if(!label && !glyphEl)return;
+  const els = getChatModelElements();
+  if(!els.label && !els.glyphEl)return;
   const p=getActiveProvider();
   const displayName = providerDisplayName(p);
-  updateChatModelLabel(label, p, displayName);
-  updateChatModelTrigger(trigger, p, displayName);
-  updateChatModelGlyph(glyphEl, p);
+  updateChatModelLabel(els.label, p, displayName);
+  updateChatModelTrigger(els.trigger, p, displayName);
+  updateChatModelGlyph(els.glyphEl, p);
 }
 
 function providerDisplayName(provider: ProviderConfig|null) {
@@ -373,36 +389,35 @@ function syncChatModel(){
   _syncChatModelInternal();
 }
 function toggleChatModelMenu(){
-  const wrap=document.getElementById("chatModelWrap");
-  if(!wrap)return;
-  if(wrap.getAttribute("data-open")==="true"){closeChatModelMenu();return}
-  const menu=document.getElementById("chatModelMenu");
-  if(!menu)return;
-  wrap.setAttribute("data-open","true");
-  const trigger=document.getElementById("chatModel");
-  if(trigger)trigger.classList.add("menu-open");
-  if(trigger)trigger.setAttribute("aria-expanded","true");
+  const els = getChatModelElements();
+  if(!els.wrap || !els.menu)return;
+  if(els.wrap.getAttribute("data-open")==="true"){closeChatModelMenu();return}
+  els.wrap.setAttribute("data-open","true");
+  if(els.trigger){
+    els.trigger.classList.add("menu-open");
+    els.trigger.setAttribute("aria-expanded","true");
+  }
   const providerConfig = getProviderConfigSnapshot();
   const providers=providerConfig.providers||[];
-  renderPickerMenu(menu, providers, providerConfig.activeId);
-  menu.classList.remove("hidden");
-  menu.style.setProperty("display","block","important");
-  menu.style.setProperty("opacity","1","important");
-  menu.style.setProperty("visibility","visible","important");
+  renderPickerMenu(els.menu, providers, providerConfig.activeId);
+  els.menu.classList.remove("hidden");
+  els.menu.style.setProperty("display","block","important");
+  els.menu.style.setProperty("opacity","1","important");
+  els.menu.style.setProperty("visibility","visible","important");
 }
 function closeChatModelMenu(){
-  const wrap=document.getElementById("chatModelWrap");
-  if(wrap)wrap.setAttribute("data-open","false");
-  const menu=document.getElementById("chatModelMenu");
-  if(menu){
-    menu.classList.add("hidden");
-    menu.style.removeProperty("display");
-    menu.style.removeProperty("opacity");
-    menu.style.removeProperty("visibility");
+  const els = getChatModelElements();
+  if(els.wrap)els.wrap.setAttribute("data-open","false");
+  if(els.menu){
+    els.menu.classList.add("hidden");
+    els.menu.style.removeProperty("display");
+    els.menu.style.removeProperty("opacity");
+    els.menu.style.removeProperty("visibility");
   }
-  const trigger=document.getElementById("chatModel");
-  if(trigger)trigger.classList.remove("menu-open");
-  if(trigger)trigger.setAttribute("aria-expanded","false");
+  if(els.trigger){
+    els.trigger.classList.remove("menu-open");
+    els.trigger.setAttribute("aria-expanded","false");
+  }
 }
 function pickChatModel(id: string){
   if(!id)return;
@@ -412,10 +427,10 @@ function pickChatModel(id: string){
 }
 /* Click outside closes the menu. */
 document.addEventListener("click",function(e){
-  const wrap=document.getElementById("chatModelWrap");
-  if(!wrap)return;
-  if(wrap.getAttribute("data-open")!=="true")return;
-  if(!wrap.contains((e.target as Node | null)))closeChatModelMenu();
+  const els = getChatModelElements();
+  if(!els.wrap)return;
+  if(els.wrap.getAttribute("data-open")!=="true")return;
+  if(!els.wrap.contains((e.target as Node | null)))closeChatModelMenu();
 });
 /* Bind the chat model trigger via JS. */
 (function(){
@@ -473,18 +488,28 @@ const EXTENSIONS=[
      syncExtensionsUI();
    }},
 ];
+function getExtensionsPickerElements() {
+  const picker = document.getElementById("extensionsPicker");
+  return {
+    picker,
+    menu: document.getElementById("extensionsMenu"),
+    trigger: document.getElementById("extensionsTrigger"),
+    label: document.getElementById("extensionsLabel"),
+  };
+}
+
 function renderExtensionsMenu(){
-  const menu=document.getElementById("extensionsMenu");
-  if(!menu)return;
-  const request = Number(menu.dataset.pickerRenderRequest || 0) + 1;
-  menu.dataset.pickerRenderRequest = String(request);
-  menu.setAttribute("aria-busy", "true");
+  const els = getExtensionsPickerElements();
+  if(!els.menu)return;
+  const request = Number(els.menu.dataset.pickerRenderRequest || 0) + 1;
+  els.menu.dataset.pickerRenderRequest = String(request);
+  els.menu.setAttribute("aria-busy", "true");
   import('./react/pickers/pickerMenuHost.tsx').then(function (pickerMenu) {
-    if (!menu.isConnected || Number(menu.dataset.pickerRenderRequest) !== request) return;
-    pickerMenu.renderExtensionPickerMenu(menu, EXTENSIONS.map(function(extension){
+    if (!els.menu || !els.menu.isConnected || Number(els.menu.dataset.pickerRenderRequest) !== request) return;
+    pickerMenu.renderExtensionPickerMenu(els.menu, EXTENSIONS.map(function(extension){
       return { key: extension.key, name: extension.name, icon: extension.icon, on: Boolean(extension.on) };
     }));
-    menu.setAttribute("aria-busy", "false");
+    els.menu.setAttribute("aria-busy", "false");
   }).catch(function (error) {
     reportSwallow(error, 'pickers.js:renderExtensionsMenu');
   });
@@ -505,11 +530,11 @@ function toggleExtensionByKey(key: string){
 let _extMenuBound=false;
 function bindExtensionsMenuClicks(){
   if(_extMenuBound)return;
-  const menu=document.getElementById("extensionsMenu");
-  if(!menu)return;
+  const els = getExtensionsPickerElements();
+  if(!els.menu)return;
   _extMenuBound=true;
-  menu.addEventListener("click",function(e){
-    const btn=(e.target as Element)!.closest(".extensions-item");
+  els.menu.addEventListener("click",function(e){
+    const btn=(e.target as Element)?.closest?.(".extensions-item");
     if(!btn)return;
     e.stopPropagation();
     const key = btn.getAttribute("data-ext");
@@ -538,44 +563,40 @@ function syncExtensionsUI(){
   EXTENSIONS.forEach(function(ext){
     if(ext.key==="extensiveThinking") ext.on = !!browserWindow.extensiveThinkingOn;
   });
-  const extPicker = document.getElementById("extensionsPicker");
-  if (extPicker?.getAttribute("data-open") === "true") renderExtensionsMenu();
-  const trigger=document.getElementById("extensionsTrigger");
-  const label=document.getElementById("extensionsLabel");
+  const els = getExtensionsPickerElements();
+  if (els.picker?.getAttribute("data-open") === "true") renderExtensionsMenu();
   const n=countActiveExtensions();
-  if(trigger)trigger.classList.toggle("has-active",n>0);
-  if(label)label.textContent=n>0?("Extensions ("+n+")"):"Extensions";
+  if(els.trigger)els.trigger.classList.toggle("has-active",n>0);
+  if(els.label)els.label.textContent=n>0?("Extensions ("+n+")"):"Extensions";
 }
 function toggleExtensionsPicker(){
-  const p=document.getElementById("extensionsPicker");
-  if(!p)return;
-  if(p.getAttribute("data-open")==="true")closeExtensionsPicker();
+  const els = getExtensionsPickerElements();
+  if(!els.picker)return;
+  if(els.picker.getAttribute("data-open")==="true")closeExtensionsPicker();
   else openExtensionsPicker();
 }
 function openExtensionsPicker(){
-  const p=document.getElementById("extensionsPicker");
-  if(!p)return;
+  const els = getExtensionsPickerElements();
+  if(!els.picker)return;
   renderExtensionsMenu();
-  p.setAttribute("data-open","true");
-  const t=document.getElementById("extensionsTrigger");
-  if(t)t.setAttribute("aria-expanded","true");
+  els.picker.setAttribute("data-open","true");
+  if(els.trigger)els.trigger.setAttribute("aria-expanded","true");
 }
 function closeExtensionsPicker(){
-  const p=document.getElementById("extensionsPicker");
-  if(!p)return;
-  p.setAttribute("data-open","false");
-  const t=document.getElementById("extensionsTrigger");
-  if(t)t.setAttribute("aria-expanded","false");
+  const els = getExtensionsPickerElements();
+  if(!els.picker)return;
+  els.picker.setAttribute("data-open","false");
+  if(els.trigger)els.trigger.setAttribute("aria-expanded","false");
 }
 document.addEventListener("click",function(e){
-  const p=document.getElementById("extensionsPicker");
-  if(!p || p.getAttribute("data-open")!=="true")return;
-  if(!p.contains((e.target as Node | null)))closeExtensionsPicker();
+  const els = getExtensionsPickerElements();
+  if(!els.picker || els.picker.getAttribute("data-open")!=="true")return;
+  if(!els.picker.contains((e.target as Node | null)))closeExtensionsPicker();
 });
 document.addEventListener("keydown",function(e){
   if(e.key!=="Escape")return;
-  const p=document.getElementById("extensionsPicker");
-  if(!p || p.getAttribute("data-open")!=="true")return;
+  const els = getExtensionsPickerElements();
+  if(!els.picker || els.picker.getAttribute("data-open")!=="true")return;
   closeExtensionsPicker();
   e.stopPropagation();
 });
