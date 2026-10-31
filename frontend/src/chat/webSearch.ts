@@ -5,22 +5,18 @@ import { loadLocalMemory } from '../storage/localMemory.ts';
 import { stateStore } from '../state/store.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { shouldRefreshSearch } from './webSearchPolicy.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
 export { shouldRefreshSearch };
 
-function tr(key: string) { return typeof browserWindow.t === 'function' ? browserWindow.t(key) : key; }
-
 /* Fetch web context for `topic`. Returns a structured result so the UI
-   can show a "N sources" pill (or an error pill). The `state` fields
-   are populated as a side effect so any prompt builder can read
-   `window.stateStore.read("searchContext")` synchronously.
+   state fields are populated as a side effect so prompt builders can read
+   `stateStore.read("searchContext")` synchronously.
 
    Refresh strategy (set per the user):
    - First fetch: at session start (tutor mode) or at first chat turn (chat mode)
-   - Re-fetch: every 5 user turns (counted by window.stateStore.read("totalQ") mod 5)
-   - Old context is KEPT in window.stateStore.read("searchContext") until the new fetch
+   - Re-fetch: every 5 user turns (counted by `stateStore.read("totalQ")` mod 5)
+   - Old context is KEPT in `stateStore.read("searchContext")` until the new fetch
      resolves, so a slow refresh never causes a turn to ship without
      grounding. */
 /* Hard cap on /api/web-search POSTs per single fetchWebContext call.
@@ -56,16 +52,8 @@ function searchResultsFrom(value: unknown): SearchResult[] {
   return value.results.filter(isSearchResult);
 }
 
-function setSearchPillSafely(kind: string,count: number,label: string,source: string){
-  try{
-    setSearchPill(kind,count,label);
-  }catch(error){
-    reportSwallow(error,source);
-  }
-}
-
 function searchContextForBackground(background: boolean | undefined){
-  return background?browserWindow.stateStore.read("searchContext")||"":"";
+  return background ? stateStore.read('searchContext') || '' : '';
 }
 
 async function buildSearchQueries(topic: string,opts: { queries?: string[] }){
@@ -207,11 +195,9 @@ function searchFailureReason(searchResponses: SearchResponse[]){
 export async function fetchWebContext(topic: string,opts: { background?: boolean; queries?: string[] } = {}){
   opts=opts||{};
   if(!webSearchOn||!topic)return{ok:false,reason:"disabled",results:0,context:""};
-  setSearchPillSafely("loading",0,opts.background?"Refreshing…":"Searching…",opts.background?'webSearch.pill.refreshing':'webSearch.pill.searching');
-  /* Offline precheck resolves the pill immediately and keeps previous
-     background context available to the next turn. */
+  /* Offline precheck returns immediately and keeps previous background
+     context available to the next turn. */
   if(offlineGuard()){
-    setSearchPillSafely("err",0,"Offline",'webSearch.pill.offline');
     return{ok:false,reason:"offline",results:0,context:searchContextForBackground(opts.background)};
   }
   /* Keep the raw topic in every query set and reserve one budget slot for
@@ -223,7 +209,6 @@ export async function fetchWebContext(topic: string,opts: { background?: boolean
       const reason=searchFailureReason(searchResponses);
       console.log("[web search] all queries failed");
       stateStore.dispatch({type:'state/set',key:'searchContextError',value:reason});
-      setSearchPillSafely("err",0,"Search failed: "+reason,'webSearch.pill.noResults');
       return{ok:false,reason:reason,results:0,context:searchContextForBackground(opts.background)};
     }
 
@@ -238,13 +223,11 @@ export async function fetchWebContext(topic: string,opts: { background?: boolean
       searchResults:rankedResults
     }});
     console.log("[web search]",rankedResults.length,"results for:",topic);
-    setSearchPillSafely("ok",rankedResults.length,rankedResults.length+" sources",'webSearch.pill.done');
     return{ok:true,reason:"ok",results:rankedResults.length,context:context,sources:rankedResults};
   }catch(error){
     const reason=(error&&(error as Error).message)||String(error);
     console.log("[web search] failed");
     stateStore.dispatch({type:'state/set',key:'searchContextError',value:reason});
-    setSearchPillSafely("err",0,"Search: "+reason,'webSearch.pill.exception');
     /* Keep the previous context so a transient failure doesn't drop
        grounding from the next turn. */
     return{ok:false,reason:reason,results:0,context:searchContextForBackground(opts.background)};
@@ -257,18 +240,20 @@ export async function fetchWebContext(topic: string,opts: { background?: boolean
 export function extractChatQuery(){
   /* Walk the last few user messages, take the most recent non-trivial
      one, fall back to the session topic. */
-  const rec=browserWindow.stateStore.read("currentSessionId")?loadLocalMemory(browserWindow.stateStore.read("currentSessionId")):null;
+  const sessionId = stateStore.read('currentSessionId');
+  const rec = sessionId ? loadLocalMemory(sessionId) : null;
   if(rec&&rec.messages){
     for(let i=rec.messages.length-1;i>=0;i--){
       const m=rec.messages[i];
       if(m.role==="user"&&m.content&&m.content.trim().length>=4){
         let q=m.content.trim().slice(0,200);
-        if(browserWindow.stateStore.read("topic")&&q.length<20){q=browserWindow.stateStore.read("topic")+" — "+q}
+        const topic = stateStore.read('topic');
+        if (topic && q.length < 20) q = topic + ' — ' + q;
         return q;
       }
     }
   }
-  return browserWindow.stateStore.read("topic")||"";
+  return stateStore.read('topic') || '';
 }
 
 /* Use the configured LLM to turn the user's natural-language text
@@ -348,15 +333,4 @@ export async function rewriteQueryForSearch(rawText: string){
     console.log("[rewriter] failed");
     return null;
   }
-}
-
-/* Update the small pill in the chat header. `count=0` for loading/err. */
-export function setSearchPill(kind: string,count: number,label: string){
-  const p=document.getElementById("searchPill");
-  if(!p)return;
-  if(!webSearchOn){p.classList.add("hidden");return}
-  p.classList.remove("hidden");
-  p.className="search-pill "+kind;
-  p.textContent=tr("chat.webSearchLabel")+" "+(label||(count>0?tr("chat.webSearchSources").replace("{n}",String(count)):""));
-  p.title=kind==="ok"?tr("chat.webSearchResults"):kind==="err"?tr("chat.webSearchFailed"):"";
 }

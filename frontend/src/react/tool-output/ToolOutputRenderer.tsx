@@ -17,10 +17,10 @@ export function ToolOutputRenderer({ output, host }: ToolOutputRendererProps) {
   let content: ReactNode;
   switch (output.kind) {
     case 'visualization':
-      content = <VisualizationOutput output={output} host={host} />;
+      content = host ? <VisualizationOutput output={output} host={host} /> : null;
       break;
     case 'artifact':
-      content = <ArtifactOutput output={output} host={host} />;
+      content = <ArtifactOutput output={output} />;
       break;
     /* Text outputs stay in the row's detail panel — the attachment host only
        renders things that are not text. */

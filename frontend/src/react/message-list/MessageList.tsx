@@ -6,7 +6,7 @@ import { subscribeToChatRuntime } from '../../ui/chatRuntimeStore';
 import { ErrorBoundary } from '../ErrorBoundary';
 import type { LegacyChatMessage } from '../types/domain';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { claimReactMessageList, isMsgListMounted, isSharedMessageList } from '../../ui/msgListMount.ts';
+import { claimReactMessageList, isMsgListMounted, isSharedMessageList, registerSharedMessageListRestorer, takeOverSharedMessageList } from '../../ui/msgListMount.ts';
 import { entryId } from './messageIdentity';
 import { MessageItem } from './MessageItem';
 import { updateScrollFadeMask } from './messageScroll';
@@ -16,7 +16,7 @@ import { getMathRenderRevision } from '../../render/mathRevision.ts';
 
 const MSG_LIST_ID = 'msgList';
 
-function MessageList() {
+function MessageList({ readOnly = false }: { readOnly?: boolean }) {
   const visibleMessages = useSyncExternalStore(
     subscribeToChatRuntime,
     getVisibleMessagesSnapshot,
@@ -55,6 +55,7 @@ function MessageList() {
             key={id}
             message={entry}
             isLatest={isLatest}
+            readOnly={readOnly}
             mathRevision={getMathRenderRevision()}
           />
         );
@@ -64,6 +65,7 @@ function MessageList() {
 }
 
 const rootSlot = createRootSlot('msg-list');
+const sharedRootSlot = createRootSlot('shared-msg-list');
 
 /** Mount React rows without replacing the transcript shell or a shared view. */
 export function mountMessageList(): { root: Root | null } {
@@ -74,6 +76,22 @@ export function mountMessageList(): { root: Root | null } {
     claimReactMessageList(container, releaseMessageList));
   return { root: handle.root };
 }
+
+/** React owns public shared transcripts too; their rows omit live actions. */
+export function mountSharedMessageList(): { root: Root | null } {
+  const container = document.getElementById(MSG_LIST_ID);
+  if (!container) { sharedRootSlot.destroy(); return { root: null }; }
+  takeOverSharedMessageList(container);
+  if (!isSharedMessageList(container)) return { root: null };
+  const handle = sharedRootSlot.mount(container, <ErrorBoundary><MessageList readOnly /></ErrorBoundary>);
+  return { root: handle.root };
+}
+
+registerSharedMessageListRestorer((host) => {
+  if (document.getElementById(MSG_LIST_ID) !== host) return;
+  sharedRootSlot.destroy();
+  mountMessageList();
+});
 
 function releaseMessageList(): void {
   try { rootSlot.destroy(); }

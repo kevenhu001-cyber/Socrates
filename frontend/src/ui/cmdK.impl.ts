@@ -3,6 +3,7 @@ import { showToast } from './toast.js';
 import { loadSession } from '../session/loader.ts';
 import { ensureFuse } from '../vendor/lazy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { apiFetch } from '../util/api.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { publishCmdKState } from './cmdKState.ts';
 import type { CmdKDoc, CmdKRemoteDoc, CmdKHit } from './cmdKState.ts';
@@ -168,7 +169,7 @@ function onCmdKInput(q: string) {
   }
   const hits = _cmdKIndex ? _cmdKIndex.search(q, { limit: 20 }) : [];
   try {
-    browserWindow.apiFetch("/api/search", {
+    apiFetch("/api/search", {
       method: "POST",
       body: { q: q, scope: "all", limit: 20 },
     }).then(function (payload: unknown) {
@@ -250,7 +251,7 @@ function onCmdKKey(ev: KeyboardEvent) {
     } else {
       const q = (getCmdKInput()?.value || "").trim();
       if (q) {
-        browserWindow.apiFetch("/api/search", {
+        apiFetch("/api/search", {
           method: "POST",
           body: { q: q, scope: "all", limit: 20 },
         }).then(function (payload: unknown) {

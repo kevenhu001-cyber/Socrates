@@ -17,7 +17,8 @@ import { closeStorageModal } from './storage.js';
 import { closePromptTemplatesModal } from './promptTemplates.ts';
 /* Settings is a lazy React surface; the stable close command stays on window. */
 import { closeProfile, openProfile, toggleProfileWebSearch } from './profile.ts';
-import { isFindOpen } from '../react/find-in-session/findInSession.actions.ts';
+import { closeFindInSession, isFindOpen, openFindInSession } from '../react/find-in-session/findInSession.actions.ts';
+import { closeCmdK, openCmdK } from './cmdK.ts';
 import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../composer/controller.ts';
 import { cycleActiveProject } from '../session/organizeRuntime.ts';
 import { findLastUserMessage } from '../render/markdown.ts';
@@ -48,18 +49,26 @@ function closeOpenModal(event: KeyboardEvent) {
   if (event.key !== 'Escape') return false;
   if (typeof isFindOpen === 'function' && isFindOpen()) {
     event.preventDefault();
-    browserWindow.closeFindInSession();
+    closeFindInSession();
     return true;
   }
 
   const modalClosers: Array<[string, () => void]> = [
-    ['cmdKOverlay', () => browserWindow.closeCmdK()],
+    ['cmdKOverlay', closeCmdK],
     ['storageModalOverlay', closeStorageModal],
     ['promptTemplatesOverlay', closePromptTemplatesModal],
     ['profileOverlay', closeProfile],
-    ['settingsOverlay', () => browserWindow.closeSettings?.()],
+    ['settingsOverlay', () => {
+      void import('../react/settings/settings.service.ts')
+        .then((module) => module.closeSettings())
+        .catch((error) => reportSwallow(error, 'keyboardShortcuts.closeSettings'));
+    }],
     ['cheatsheetOverlay', closeCheatsheet],
-    ['usageOverlay', () => browserWindow.closeUsageModal?.()],
+    ['usageOverlay', () => {
+      void import('./usage.ts')
+        .then((module) => module.closeUsageModal())
+        .catch((error) => reportSwallow(error, 'keyboardShortcuts.closeUsageModal'));
+    }],
     ['tagEditorPopover', () => browserWindow.closeTagEditor()],
     ['shareOverlay', closeShareModal],
   ];
@@ -77,7 +86,7 @@ function handleBackslashSidebar(event: KeyboardEvent) {
 function handleCmdK(event: KeyboardEvent) {
   if (!isCommandShortcut(event, 'k')) return false;
   event.preventDefault();
-  if (typeof browserWindow.openCmdK === 'function') browserWindow.openCmdK();
+  openCmdK();
   return true;
 }
 
@@ -86,7 +95,7 @@ function handleFind(event: KeyboardEvent) {
   const chatView = document.getElementById('chatView');
   if (!chatView || chatView.classList.contains('hidden')) return false;
   event.preventDefault();
-  if (typeof browserWindow.openFindInSession === 'function') browserWindow.openFindInSession();
+  openFindInSession();
   return true;
 }
 
@@ -147,16 +156,6 @@ function handleWebSearch(event: KeyboardEvent) {
   return true;
 }
 
-function handleThinkingPreference(event: KeyboardEvent) {
-  if (!isCommandShortcut(event, 'm', true)) return false;
-  event.preventDefault();
-  const next = !(browserWindow.thinkingOn === true);
-  browserWindow.thinkingOn = next as typeof browserWindow.thinkingOn;
-  try { localStorage.setItem('socrates-thinking', JSON.stringify(next)); }
-  catch (error) { reportSwallow(error, 'ui/keyboardShortcuts.ts:155', 'expected'); }
-  return true;
-}
-
 function handleSend(event: KeyboardEvent) {
   if (!isCommandShortcut(event, 'enter')) return false;
   const composer = (event.target as Element)?.closest?.('.rich-composer');
@@ -205,7 +204,6 @@ const SHORTCUT_HANDLERS = [
   handleShare,
   handleTheme,
   handleWebSearch,
-  handleThinkingPreference,
   handleSend,
   handleProjects,
   handleCycleProject,

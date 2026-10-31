@@ -1,5 +1,6 @@
 import { disposeVisualizations } from '../render/vizStubs.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+import { restoreLiveMessageList } from './msgListMount.ts';
 
 /**
  * Remove only legacy-rendered message nodes from the shared message list.
@@ -8,6 +9,7 @@ import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 export function clearLegacyMsgListChildren() {
   const list = document.getElementById('msgList');
   if (!list) return;
+  restoreLiveMessageList(list);
   try { disposeVisualizations(list); } catch (_) {
     reportEmptyCatch(_, 'empty catch: ui/messageListDom.ts:10', 'expected');
     /* best effort cleanup */

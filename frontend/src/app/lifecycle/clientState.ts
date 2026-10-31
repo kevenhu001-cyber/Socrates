@@ -6,7 +6,6 @@ import { serverCache } from '../../session/serverCache.ts';
 import { setAppMode, LAST_ACTIVE_ID_KEY } from '../../config/providers.ts';
 import { resetProviderConfigForUser } from '../../config/providerConfig.service.ts';
 import { resetCmdKSearchState } from '../../ui/cmdK.ts';
-import { syncModelPills } from '../../pickers.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { clearUserMemories } from './userMemory.ts';
 import { resetExamSaveStateIfLoaded } from './examSaveReset.ts';
@@ -26,7 +25,7 @@ function clearExamSaveState() {
   resetExamSaveStateIfLoaded();
 }
 
-function callWindowHook(name: 'renderRecents' | 'renderMistakes' | 'updateMistakesBadge') {
+function callWindowHook(name: 'renderRecents') {
   try {
     if (typeof browserWindow[name] === 'function') browserWindow[name]();
   } catch (error) { reportSwallow(error, 'app/lifecycle.clearPerUser.' + name); }
@@ -34,9 +33,6 @@ function callWindowHook(name: 'renderRecents' | 'renderMistakes' | 'updateMistak
 
 function renderUserLists() {
   callWindowHook('renderRecents');
-  callWindowHook('renderMistakes');
-  callWindowHook('updateMistakesBadge');
-  attemptCleanup('app/lifecycle.clearPerUser.syncModelPills', syncModelPills);
 }
 
 /** Clear user-owned caches before a new user can see the application shell. */

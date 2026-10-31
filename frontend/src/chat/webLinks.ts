@@ -25,7 +25,7 @@ function isValidBareUrl(domain: string | undefined): boolean {
    enough to avoid false positives in pure conceptual Q&A. */
 export function looksLikeUserMentionedSite(text: string): boolean {
   if(!text)return false;
-  if(/网站|网址|网页|主页|站点|官网|链接|URL|url/i.test(text))return true;
+  if(/网站|网址|网页|主页|站点|官网|链接|URL|url|site|website|homepage/i.test(text))return true;
   if(/\b(visit|open|check|go to|browse|look at|see|read|fetch)\b/i.test(text)
      && /\b[a-z0-9-]+\.[a-z]{2,}\b/i.test(text))return true;
   /* "看看 xxx" / "看一下 xxx" / "了解下 xxx" style — but only if there's

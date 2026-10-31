@@ -5,15 +5,11 @@ import { restingRect } from '../../ui/pressFeedback.ts';
 import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOption } from './types';
 
 declare global {
-  interface Window {
-    syncEffortUI?: () => void;
-    openSettings?: () => void;
-  }
+  interface Window { openSettings?: () => void }
 }
 
 type Action = Omit<ChatConfigurationSnapshot, 'revision'>;
 let returnFocus: HTMLElement | null = null;
-let openTrigger: HTMLElement | null = null;
 
 const factoryBridge = createImmutableBridge<ChatConfigurationSnapshot, Action>({
   initial: {
@@ -23,6 +19,7 @@ const factoryBridge = createImmutableBridge<ChatConfigurationSnapshot, Action>({
     effort: 'medium',
     speed: 'standard',
     anchorRect: null,
+    triggerId: null,
     revision: 0,
   },
   reducer: (_state, action) => action,
@@ -47,8 +44,6 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
   returnFocus = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
   /* The trigger is still mid-press when its click opens the popover. */
   const rect = trigger ? restingRect(trigger) : null;
-  openTrigger = trigger || null;
-  openTrigger?.setAttribute('aria-expanded', 'true');
   const providerConfig = getProviderConfigSnapshot();
   const providers: ChatProviderOption[] = providerConfig.providers.map((provider) => ({
     id: provider.id,
@@ -64,6 +59,7 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
     activeId: String(providerConfig.activeId || ''),
     effort: getStoredReasoningEffort(),
     speed: getStoredResponseSpeed(),
+    triggerId: trigger?.id || null,
     anchorRect: rect
       ? { top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
       : null,
@@ -79,9 +75,8 @@ export function closeChatConfiguration(restoreFocus = true): void {
     effort: current.effort,
     speed: current.speed,
     anchorRect: current.anchorRect,
+    triggerId: null,
   });
-  openTrigger?.setAttribute('aria-expanded', 'false');
-  openTrigger = null;
   if (restoreFocus && returnFocus) {
     const target = returnFocus;
     window.setTimeout(() => target.focus({ preventScroll: true }), 0);

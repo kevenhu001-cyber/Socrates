@@ -79,6 +79,9 @@ export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
     attachments: message.attachments
       ? Object.freeze(message.attachments.map((attachment) => Object.freeze({ ...attachment })))
       : message.attachments,
+    pageLinkPreviews: message.pageLinkPreviews
+      ? Object.freeze(message.pageLinkPreviews.map((preview) => Object.freeze({ ...preview })))
+      : message.pageLinkPreviews,
     modelInfo: message.modelInfo ? Object.freeze({ ...message.modelInfo }) : message.modelInfo,
     toolCalls: message.toolCalls
       ? Object.freeze(message.toolCalls.map((call) => freezeToolCall(call)))

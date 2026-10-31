@@ -1,4 +1,5 @@
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+import { apiFetch } from '../util/api.ts';
 
 /* storage/memoryStore.ts — Cross-session memory.
  *
@@ -36,7 +37,6 @@ interface ServerMemoryRow {
 }
 
 interface MemoryLegacyWindow extends Window {
-  apiFetch?: (path: string, opts?: { method?: string }) => Promise<{ memories?: ServerMemoryRow[] }>;
   memoryStore?: typeof memoryStore;
   setMemory?: typeof setMemory;
   removeMemory?: typeof removeMemory;
@@ -89,10 +89,8 @@ function saveMemories(): void {
    local shape and merge by id — overwriting wholesale would drop any
    locally-added entries. */
 function loadFromServer(): void {
-  const apiFetch = (window as MemoryLegacyWindow).apiFetch;
-  if (typeof apiFetch !== "function") return;
   try {
-    apiFetch("/api/memory", { method: "GET" })
+    apiFetch<{ memories?: ServerMemoryRow[] }>("/api/memory", { method: "GET" })
       .then(function (res) {
         if (!res || !Array.isArray(res.memories)) return;
         const serverRows = res.memories.map(function (m): MemoryEntry | null {

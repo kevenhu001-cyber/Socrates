@@ -65,8 +65,8 @@ test('auth gate default views localize', async ({ page }) => {
   // The gate is hidden in an authed mock; reveal it the same way the auth
   // module does, then assert the first screen a zh user actually sees.
   await page.evaluate(() => {
-    window.showGate?.();
-    window.showAuthSignin?.();
+    window.__socratesLegacy.auth.showGate?.();
+    window.__socratesLegacy.auth.showAuthSignin?.();
   });
   await expect(page.locator('#authGate')).toBeVisible();
   await setLang(page, 'zh');
@@ -95,10 +95,9 @@ test('auth gate default views localize', async ({ page }) => {
   await expect(page.locator('#authForgotBtn')).toHaveText('发送重置链接');
 });
 
-test('sidebar toggle copy localizes through the JS-managed path', async ({ page }) => {
-  // #sidebarCloseBtn / #sidebarOpenBtn carry a state-dependent ⌘B hint and
-  // are written by syncSidebarBtns(), not a static data-i18n hook. Assert the
-  // JS path re-localizes on a language switch (socrates:langchange listener).
+test('sidebar toggle copy localizes from React state', async ({ page }) => {
+  // State-dependent labels are rendered by React and retain their language
+  // hooks so a locale switch refreshes the visible sidebar controls.
   await setLang(page, 'zh');
   await expect
     .poll(() => attr(page, '#sidebarCloseBtn', 'title'))

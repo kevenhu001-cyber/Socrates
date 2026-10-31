@@ -14,7 +14,7 @@ interface ToolCardElement extends HTMLDivElement {
  * tool_calls.
  *
  * Exports: TOOL_META, toolFormatInput, appendToolModule,
- *          setLastToolOutput, makeArtifactError, appendInlineArtifact,
+ *          setLastToolOutput,
  *          renderWebSearchResults, updateToolCardCode, findToolCard
  *
  * Reads from window.*: t, hljs, scrollMainToBottom
@@ -41,7 +41,6 @@ const renderToolOutputToggle = (...args: Parameters<ToolActions['renderToolOutpu
 
 export { stopToolCardTimerForCard } from './toolCardTimer.ts';
 export { renderWebSearchResults } from './toolSearchResults.ts';
-export { appendInlineArtifact, makeArtifactError } from './toolArtifacts.ts';
 
 /* ============================================================
    TOOL-CALLING UI HELPERS

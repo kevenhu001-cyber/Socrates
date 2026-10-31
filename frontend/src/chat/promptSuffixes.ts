@@ -32,7 +32,7 @@ export interface PromptSuffixDeps {
 import { appMode } from '../config/providers.ts';
 import { HIGH_EFFORT_OUTPUT_GUIDANCE } from './systemPrompts.ts';
 import { getTonePreset, getToneVoice } from '../config/tonePresets.ts';
-import { getReasoningEffort } from '../ui/effortPicker.ts';
+import { getStoredReasoningEffort } from '../config/chatPreferences.ts';
 import { injectMemoryContext } from '../storage/memoryStore.ts';
 import { stateStore } from '../state/store.ts';
 import { getCachedProjects } from '../projects/projectCache.ts';
@@ -135,8 +135,7 @@ export function toneVoiceSuffix(): string {
 export function thinkingSuffix(): string {
   const highTutorGuidance =
     appMode === 'tutor' &&
-    typeof getReasoningEffort === 'function' &&
-    getReasoningEffort() === 'high'
+    getStoredReasoningEffort() === 'high'
       ? '\n\n' + HIGH_EFFORT_OUTPUT_GUIDANCE
       : '';
   return (

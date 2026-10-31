@@ -224,18 +224,15 @@
          block and a conversation block with a hairline between them, so the
          eye can find where navigation stops and history begins. -->
     <div class="sidebar-nav-sep" role="separator" aria-orientation="horizontal"></div>
-    <div class="sidebar-more-popover hidden" id="moreNavPopover" role="menu" aria-label="更多"></div>
-    <!-- Unified sidebar search + view switch. The search box filters the
-         session list in place (setRecentsSearch → renderRecents). The two
-         icon buttons are tutor-only entries to the Knowledge map and the
-         Mistake book; they reuse the #tabKnowledge/#tabMistakes ids so the
-         existing switchTab() logic drives panel visibility unchanged. In
-         Chat mode both icons are hidden, so the row is just the search box
-         over a single list. -->
+    <div id="moreNavPopoverRoot"></div>
+    <!-- React owns the unified search and sidebar panel selection. The search
+         box filters recents; the tutor-only buttons select Knowledge or
+         Mistakes. In Chat mode both icons are hidden, leaving the search row
+         above the session list. -->
     <div class="sidebar-search-row" id="sidebarSearchRow"></div>
-    <div class="knowledge-panel tutor-only hidden" id="knowledgePanel">
+    <div class="knowledge-panel tutor-only" id="knowledgePanel">
       <div id="teachingPlanContent"></div>
-      <div id="kbContent"><div class="kb-empty" data-i18n-key="tutor.kbTopicFirst">Set a topic to build your knowledge map.</div></div>
+      <div id="kbContent"></div>
     </div>
     <div class="recents-panel" id="recentsPanel">
       <div class="recents-header"></div>
@@ -244,10 +241,7 @@
       <div class="recents-filter-chips" id="recentsFilterChips"></div>
       <div id="recentsList"></div>
     </div>
-    <div class="recents-panel hidden tutor-only" id="mistakesPanel">
-      <div class="recents-header"><span class="recents-title" data-i18n-key="sidebar.mistakeBook">Mistake Book</span></div>
-      <div id="mistakesList"></div>
-    </div>
+    <div class="recents-panel tutor-only sidebar-mistake-panel" id="mistakesPanel"></div>
 
     <div class="sidebar-footer" id="sidebarFooter">
       <!-- Account row — avatar + name over plan tier, matching the reference
@@ -309,6 +303,13 @@
 
       </div>
 
+      <!-- React-owned creation destinations. Their lazy roots mount when a
+           route opens; these static hosts let the view controller switch
+           pages without runtime-created shell nodes. -->
+      <section class="creation-panel main-page hidden" id="imagesPanel" data-surface="images"></section>
+      <section class="creation-panel main-page hidden" id="assistantsPanel" data-surface="assistants"></section>
+      <section class="creation-panel main-page hidden" id="sitesPanel" data-surface="sites"></section>
+
       <div class="diagnostic-view hidden tutor-only" id="diagnosticView"></div>
 
       <div class="shared-banner hidden" id="sharedBanner">
@@ -335,16 +336,8 @@
     </div>
 
     <div class="exam-view hidden" id="examView">
-      <!-- The visible exam title lives in the app top bar. Keep this heading
-           for programmatic announcements without rendering a duplicate title. -->
-      <h2 class="sr-only" id="examViewTitle">Generate Exam</h2>
-      <div class="exam-view-body" id="examViewBody">
-        <div class="exam-root-slot" id="examViewReactNav"></div>
-        <div class="exam-root-slot" id="examViewReactBody"></div>
-      </div>
-      <div class="exam-view-footer" id="examViewFooter">
-        <div class="exam-root-slot" id="examViewReactFooter"></div>
-      </div>
+      <!-- ExamView owns the complete title/body/navigation/footer tree. -->
+      <div class="exam-view-root" id="examViewReactRoot"></div>
     </div>
     <!-- #chatPage is the single structural owner of the chat surface:
          transcript + composer live under it in one vertical flex column.

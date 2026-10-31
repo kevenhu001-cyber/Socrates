@@ -1,29 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { act } from 'react';
 
 const dom = new JSDOM('<!doctype html><body></body>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { stateStore } = await import('../src/state/store.ts');
-/* The public editBranch.js path is now a lazy command facade. This unit test
-   targets the implementation's synchronous DOM/state semantics directly;
-   production loading behavior is covered by the entry-graph regression. */
-const { editUserMessage } = await import('../src/chat/editBranch.impl.ts');
+/* The public editBranch path lazily loads the state/API implementation. The
+   visible edit form is covered through MessageItem in Playwright. */
+const { commitUserMessageEdit } = await import('../src/chat/editBranch.impl.ts');
 const { turnState } = await import('../src/chat/turnState.ts');
 
-test('editing a frozen message replaces it and replays only after the server patch settles', async () => {
+test('committing a React-edited message replaces state and replays after the server patch settles', async () => {
   stateStore.dispatch({ type: 'session/replace-messages', payload: [
     { clientId: 'edit-user', role: 'user', rawText: 'original', html: 'stale', attachments: [] },
     { clientId: 'edit-answer', role: 'assistant', rawText: 'old answer' },
   ] });
   const previous = stateStore.read('messages');
   assert.ok(Object.isFrozen(previous[0]));
-  document.body.innerHTML = '<div data-client-id="edit-user"><div class="msg-body">original</div></div>'
-    + '<div data-client-id="edit-answer"><div class="msg-body">old answer</div></div>';
   const requests = [];
   const replayed = [];
   const errors = [];
@@ -37,12 +32,7 @@ test('editing a frozen message replaces it and replays only after the server pat
   };
   window.askChatTurn = text => { replayed.push(text); };
   try {
-    await act(() => editUserMessage('edit-user'));
-    const textarea = document.querySelector('.msg-edit-area');
-    const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, 'value').set;
-    setValue.call(textarea, 'updated');
-    await act(() => textarea.dispatchEvent(new dom.window.Event('input', { bubbles: true })));
-    await act(() => document.querySelector('.msg-edit-submit').click());
+    commitUserMessageEdit('edit-user', 'updated');
     assert.deepEqual(errors, []);
     const messages = stateStore.read('messages');
     assert.equal(messages.length, 1);
@@ -53,9 +43,7 @@ test('editing a frozen message replaces it and replays only after the server pat
     assert.equal(previous[0].rawText, 'original');
     assert.equal(previous[0].html, 'stale');
     assert.equal(previous.length, 2);
-    assert.equal(document.querySelector('.msg-edit-area'), null);
-    assert.equal(document.querySelector('[data-client-id="edit-user"] .msg-body').textContent, 'updated');
-    assert.equal(document.querySelector('[data-client-id="edit-answer"]'), null);
+    assert.equal(stateStore.read('messages').some((message) => message.clientId === 'edit-answer'), false);
     assert.equal(requests.length, 1);
     assert.equal(requests[0].options.method, 'PATCH');
     assert.deepEqual(JSON.parse(requests[0].options.body), {

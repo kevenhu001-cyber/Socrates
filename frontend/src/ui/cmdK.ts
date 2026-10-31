@@ -4,7 +4,7 @@ type FeatureRuntime = typeof import("./cmdK.impl.ts");
 
 /* Cmd+K compatibility facade.
  * The palette/search implementation is interaction-triggered, but this public
- * module stays statically importable by windowExports, lifecycle cleanup and
+ * module stays statically importable by startup, lifecycle cleanup and
  * session persistence without retaining the full search runtime at startup. */
 let runtimePromise: Promise<FeatureRuntime> | null = null;
 let runtime: FeatureRuntime | null = null;

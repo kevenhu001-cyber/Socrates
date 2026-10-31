@@ -9,7 +9,7 @@ replaces JavaScript module by module.
 
 ## Current status
 
-As of 2026-10-30, all 88 remaining first-party JavaScript modules under
+TypeScript inventory as of 2026-10-30: all 88 remaining first-party JavaScript modules under
 `frontend/src/` have been migrated to TypeScript. `frontend/tsconfig.json` has
 `allowJs: false`, and `scripts/check-legacy-js.mjs` has an empty baseline;
 third-party UMD bundles under `src/vendor-files/` are excluded. The React
@@ -22,6 +22,143 @@ progressively reduced: every `_reactOwnsXxx()` guard is gone, and most legacy
 renderers that lived behind those guards have been deleted or collapsed into
 React-only paths.
 
+React ownership update, 2026-10-31: the exam route and shared exam view,
+creation surfaces, knowledge and mistake panels, public shared transcripts,
+and streaming assistant rows now render through React roots/components. Retry
+actions for active and recovered turns are React event handlers. The composer
+effort control and top-bar model switcher now render from provider/preference
+state; React owns provider selection, the hidden compatibility picker and its
+DOM synchronizers have been removed. The Extensions picker controller also
+had no live host, so it is retired; extension actions now dispatch through
+the registry and the React composer tools. The imperative `ui/effortPicker.ts`
+owner plus its `syncEffortUI` window alias are gone. Focused coverage is in the
+exam, share, message-list, pending-turn restore, composer-tools, and top-bar
+specs. Web Search reads the typed state store directly; the old `#searchPill`
+writer was removed after confirming the application has no such host.
+
+React ownership update, 2026-10-31 (usage modal): usage API results now enter a
+structured typed snapshot; React renders the totals, Beagle limit summary,
+activity calendar, monthly table, period controls, loading/error states, and
+day tooltip. The old HTML string builder, delegated tab/hover listeners, and
+body-level tooltip writer were removed. The modal open state now comes from the
+same snapshot, with React reflecting it to the existing accessible overlay
+host so the shared focus manager continues to observe open/close transitions.
+
+React ownership update, 2026-10-31 (voice input): the microphone service now
+publishes recording phase, elapsed time, transcript, and sampled waveform data
+to a typed Zustand store. React renders the recording strip, waveform, timer,
+cancel/stop actions, microphone pressed state, and composer recording layout;
+the service retains only speech recognition, audio capture, and cleanup. The
+recording bar no longer creates nodes or writes labels, waveform styles, or
+composer classes directly. Focused Playwright coverage exercises transcript
+commit, cancellation, and track cleanup.
+
+React ownership update, 2026-10-31 (agent activity): workspace-agent plans,
+steps, disclosures, elapsed time, status, and output are now rendered from the
+persisted tool-call snapshot by `ToolRunAgentSteps`. `ui/agentSteps.ts` now
+contains only types and display-model helpers; its imperative section/row
+upserts and shared DOM timer were removed. The existing streamed-agent spec
+continues to cover step updates, plan progress, final duration, and expanded
+output.
+
+React ownership update, 2026-10-31 (detail and message auxiliaries): the shared
+detail surface renders its body content as React children; artifact previews,
+site previews, and library details no longer pass DOM nodes into that shell.
+Message image preview clicks now belong to `MessageBody`, and the old
+per-image listener that opened the unrelated visualization modal was removed.
+Fetched page previews and the missing-URL hint are stored as ephemeral message
+data and rendered by `LinkPreviews`; they no longer append cards to a React row.
+Home quick actions and tutor starters now own their click handlers, research
+toggle state, and dismissed-action state in React. Legacy web-search result
+cards render from a React root with sanitized links and React copy feedback.
+Focused coverage now includes detail preview interaction, fetched and missing
+link previews, the sanitized search-result model, and React-rendered result
+markup.
+
+React ownership update, 2026-10-31 (authentication gate): the auth tree now
+owns view selection, tab selection, controlled form fields, validation and
+request feedback, code-login steps, and focus requests through a typed auth UI
+store. React handles tab, link, and form events directly; selector-bound auth
+listeners have been removed. Auth request/session-adoption logic remains in
+`auth/forms.ts`, while the outer auth/app shell visibility and legacy i18n pass
+stay at the browser integration boundary. `auth-direct-handlers.spec.mjs` now
+exercises the React-owned flow, with focused state coverage in
+`test/authUiState.test.mjs`.
+
+React ownership update, 2026-10-31 (mistake redo): practice and quiz retries
+now append structured assistant messages to the typed session store. React
+renders each row and the existing React tutor-widget roots own answer input,
+feedback, and quiz selection. The mistake card no longer inserts message DOM,
+replaces a quiz subtree, or scrolls the transcript directly; quiz mistakes are
+re-associated with the new slot so a correct retry resolves the right entry.
+Focused unit and Playwright coverage checks both retry types and slot cleanup.
+
+React ownership update, 2026-10-31 (message editing): `MessageItem` now owns
+the inline edit state and controlled form. Committing delegates only the
+conversation rollback, persistence, attachment rebuild, and replay work; the
+React row updates from the session store. The temporary edit root and the
+message-body `innerHTML` restore helper were removed, along with the edit
+window bridge. Browser coverage exercises opening/canceling and editing a
+streamed turn; unit coverage checks state pruning and ordered server replay.
+
+React ownership update, 2026-10-31 (saved tool artifacts): `ArtifactOutput`
+now renders sandboxed HTML previews and download links directly, and owns the
+failed-file retry state. The imperative `ui/toolArtifacts.ts` renderer and its
+`postRender.appendInlineArtifact` bridge were removed; history recovery no
+longer inserts a second file node beside the React output. Generated images
+remain hidden until referenced by assistant prose. Focused tool-output browser
+coverage checks the sandbox, preview action, legacy artifact records, and a
+404-to-success retry.
+
+React ownership update, 2026-10-31 (continued): the Chat/Tutor mode control now
+subscribes to provider mode state, and its active label and roving tab stop
+render in React. The unreachable `#mobileMode` dropdown was removed after the
+active phone CSS proved it hidden at every viewport. Sidebar open state and incognito
+state now use explicit subscriptions; the top-bar/sidebar buttons render their
+visibility and accessible labels from those snapshots. The session search
+input is controlled by the React session-list store. Direct actions for the
+topbar, composer, sidebar view buttons, and settings button now live on their
+React components; the shell-wide document click dispatcher and its bootstrap
+action table were removed. The sidebar's recents/knowledge/mistakes selection
+now lives in the sidebar Zustand store, while React renders the selected button
+state and CSS applies it to the three panel hosts. The old `switchTab` DOM class
+mutator is gone; native web sessions still enter through `toggleSidebarView`,
+now a thin store-updating compatibility action.
+
+React ownership update, 2026-10-31 (composer tools): the plus menu now uses a
+typed Zustand store and React-rendered root. React owns disclosure, accessible
+expanded state, outside-click/Escape dismissal, and viewport-change listeners;
+the placement helper only measures the committed menu and applies its geometry.
+The legacy `ui/composerTools.ts` owner, `toggleComposerTools` window alias, and
+composer action bridge entry were removed. Coverage opens the menu through the
+actual React trigger and checks topic/chat behavior, action dispatch, and
+dismissal.
+
+React ownership update, 2026-10-31 (conversation chrome): `ModeSwitch` now
+derives active-conversation visibility from the typed session and knowledge
+stores. The message-list `MutationObserver`, inline visibility writer, and
+`syncConversationActive` window callback were removed; React publishes the
+body attribute used by the responsive shell CSS.
+
+React ownership update, 2026-10-31 (display preferences): the sidebar theme,
+display, text-size, width, grid, and background controls now use direct React
+handlers and state. React owns the popover visibility, outside-click dismissal,
+positioning, selected radio state, and control values. The document-level
+display-preferences click/input handlers and DOM control synchronizer are gone;
+the typed preference module retains persistence and applies theme variables to
+the document. Existing More-menu/native entry points dispatch a typed UI event.
+
+Compatibility bridge update, 2026-10-31: the unused `syncAppModeUI` and
+`launchDeepResearch` window aliases were removed. Locale and post-auth flows
+import mode synchronization directly; the chat send pipeline lazy-loads
+`startDeepResearch` directly. API requests, CSRF lookup, active-provider
+reads, Chat/Tutor mode state, web-search preference, and pending attachments
+now use their owning modules instead of `window` aliases. Attachment coverage
+selects files through the real composer input and checks rendered chips and
+actions. The `appMode` and attachment array mirrors are gone. All former
+`windowExports.ts` callers now use direct imports or the typed legacy gateway;
+the extension window delegates were also removed, so C4 is complete.
+
 Concrete progress since the runtime landed:
 
 - `_reactOwnsXxx()` guards deleted from `main.js`, every `ui/*.js`,
@@ -32,7 +169,7 @@ Concrete progress since the runtime landed:
   rebuild loop, the viz/mermaid/code-block post-process pass, the
   legacy local-recovery DOM mount, and the legacy
   streamingText-recovery DOM mount all deleted; state push + bridge
-  publish is authoritative; retry click delegated on `msgList`
+  publish is authoritative; retry actions are direct React handlers
   (commit `526c19d`).
 - `branchFromMessage` legacy DOM-rebuild loop replaced with a
   direct `state-synced` publish (commit `526c19d`).
@@ -41,7 +178,7 @@ Concrete progress since the runtime landed:
   path (filter / search / per-row HTML / `attachLongPress` /
   `setupRecentsListDelegated`) deleted (commit `526c19d`).
 - `replaceWithError` legacy `body.innerHTML=errHtml` fallback
-  collapsed to React-mode state push + click delegation
+  collapsed to React-mode state push + direct React retry callback
   (commit `526c19d`).
 - `setChatStopState` legacy innerHTML icon swap deleted; React
   re-renders `#sendBtnContent` from `dataset.stop` (commit
@@ -55,11 +192,10 @@ Concrete progress since the runtime landed:
   declared `list` and dropping the redundant
   `dataset.reactMigrationRuntime === "msg-list"` guard (commit
   `069e82d`).
-- 47 dead `*.ts` duplicates outside `react/` deleted — only the
-  `src/render/*.ts` files are wired through re-export bridges
-  (`export * from './foo.ts'`) in the `.js` siblings; everything
-  else was stale code drifting away from its live `.js` twin
-  (commits `77394bc`, `734e5f3`).
+- 47 dead `*.ts` duplicates outside `react/` deleted (commits
+  `77394bc`, `734e5f3`); first-party JavaScript modules have since
+  been migrated too, and no active `.js` re-export shells remain under
+  `frontend/src`.
 - At that stage, the tracked untyped-JS inventory shrank from 109 to 107 paths.
 - Pure lifecycle decision helpers `modeDecision` and `resetDecision` migrated
   to typed `.ts` modules; their JS callers and focused test imports now point
@@ -77,6 +213,11 @@ below.
       so the legacy bootstrap always imports
       `"./react/bootstrap.tsx"` and calls
       `bootstrapReactCompatibilityRuntime()`.
+- [x] Top-bar model selector and reasoning popover ported to React
+      (`frontend/src/react/topbar/` + `frontend/src/react/chat-configuration/`).
+      Provider selection, model labels, effort, and speed render from the
+      provider/preference stores; the retired hidden picker and its imperative
+      DOM synchronization have been removed.
 - [x] New-reply pill hydrated by React
 - [x] Legacy chat state and stream lifecycle exposed through an immutable
       `useSyncExternalStore` boundary
@@ -99,38 +240,35 @@ below.
       are typed; destination page adapters live in
       `src/sidebar/navigation.adapters.ts`. `src/sidebar/nav.ts` retains the
       connector OAuth return context and local icon/slash-command adapters.
-      The "More" popover remains legacy.
+      The More menu is React-owned: Zustand drives visibility, React positions
+      it, and React handles Escape/outside-click dismissal and trigger state.
 - [x] Composer "+" tools menu ported to React/TS
       (`frontend/src/react/composer/` +
-      `frontend/e2e/composer-tools-compat.spec.mjs`). Legacy
-      `src/ui/composerTools.ts` still owns open/close/positioning and the
-      document-level click/Escape/resize listeners; React renders the 6
-      menu items from `src/ui/composerToolsState.ts`.
-      The menu element is pre-created on module load so React can hydrate
-      eagerly; item clicks dispatch through legacy `window.composeAction` /
-      `researchAction` / `toggleExtensionByKey` / `openPromptTemplatesModal`
-      / `openAttachmentPicker`. Composer input textarea, attachment chips,
-      send/stop button, and effort/web-search/reasoning pickers remain
-      legacy (deferred).
+      `frontend/e2e/composer-tools-compat.spec.mjs`). A typed Zustand store
+      drives the disclosure state; React owns the menu markup, accessible
+      expanded state, outside-click/Escape dismissal, and viewport listeners.
+      A layout adapter measures the committed menu and applies its geometry.
+      Item clicks dispatch through typed feature actions for compose/research,
+      extensions, prompt templates, and attachment pickers. React also owns
+      the input, attachment chips, send/stop controls, and effort trigger.
 - [x] Attachment chip rows ported to React/TS
       (`frontend/src/react/attachments/` +
-      `frontend/e2e/attachments-compat.spec.mjs`). Both `#attachmentChips`
-      (chat composer) and `#topicAttachmentChips` (tutor topic setup) are
-      hydrated; the pending-attachment store in `src/attachments.ts`
-      remains the source of truth, and React renders snapshots from
-      `src/ui/attachmentsState.ts`. Remove button dispatches
-      through `window.removeAttachment`. Scope pivot from message list
-      (Batch 4 original) to attachment chips: the message list is too
-      tightly coupled to streaming + tool cards + thinking pills to port
-      in one batch (each sub-component would need its own bridge + port).
+      `frontend/e2e/attachments-compat.spec.mjs`). The active
+      `#composerAttachmentChips` row is hydrated by React; the pending
+      attachment module remains the source of truth and React renders
+      snapshots from `src/ui/attachmentsState.ts`. Remove and retry actions
+      dispatch through the typed composer gateway. The `window.attachments`
+      array alias has been removed; E2E coverage uses the file input and
+      rendered chip actions.
 - [x] React application shell and routing — sidebar header and footer
       ported to React/TS (`frontend/src/react/sidebar-chrome/`). The
       header (logo, new-chat button, close button) and footer (user
       avatar, name, tier badge, theme toggle, display, settings buttons)
       are rendered via `createRoot` + `render` under the always-on
-      runtime. Remaining app-shell surfaces: workspace pages
-      (library/projects/plugins) and scheduled page are already migrated;
-      exam page remains legacy.
+      runtime. Workspace pages (library/projects/plugins), scheduled page,
+      and exam page are React-owned; public shared exams use the same React
+      view in read-only mode. Route and lifecycle commands remain typed
+      imperative adapters around those React surfaces.
 - [x] Session list and project navigation — session list (recents)
       ported to React/TS (`frontend/src/react/session-list/`). The
       `#recentsList` element is rendered via `createRoot` + `render`
@@ -145,13 +283,21 @@ below.
       (arrow vs stop square) based on stream status. A typed Composer store
       and controller now own the single Tiptap editor, active surface, topic
       and chat drafts, extension tokens, and send/stop/reset commands. The
-      existing effort picker remains a separate legacy UI owner.
+      React also owns the effort trigger, which derives its label from
+      provider/preference state and opens the shared configuration popover.
+      The tools popover is React-owned through its typed Zustand store and
+      placement adapter.
 - [x] Settings modal ported to React/TS (`frontend/src/react/settings/`).
       React owns the overlay and its interactive surface. Provider state and
       provider API operations now live in a typed provider store/service;
       Settings keeps modal and external-API presentation state. Provider
       snapshots expose key presence without plaintext credentials, and the
       old `window.apiConfig` and `window.renderProviderList` aliases are gone.
+- [x] Display preferences popover and controls ported to React/TS
+      (`frontend/src/react/sidebar-chrome/SidebarFooterActions.tsx`). React
+      owns the open state, selection state, direct control handlers, dismissal,
+      and measured placement. The preference module owns persistence and the
+      document-level theme/background variables.
 - [x] Account, library, scheduled tasks, and plugins — all migrated as
       part of the workspace/scheduled page React components
       (`frontend/src/react/pages/workspace/`, `frontend/src/react/pages/scheduled/`).
@@ -160,41 +306,38 @@ below.
       `frontend/e2e/message-list-compat.spec.mjs`). React owns
       `#msgList`; `addMessage()` and the loadSession history rebuild
       push into `state.messages` and let React paint from the snapshot.
-      The streaming pipeline's `finish()` / `abort()` /
-      `replaceWithError()` paths drop the legacy bubble before the
-      bridge publishes, so the snapshot-driven re-render paints exactly
-      one finalized bubble. Toolbar callbacks dispatch to legacy
+      The streaming pipeline publishes its live assistant row and status into
+      the chat snapshot, so React owns the same row from the first rendered
+      token through the settled commit. Toolbar callbacks dispatch to typed
+      legacy actions for
       `window.editUserMessage` /
       `regenerateAssistantMessage` / `deleteUserMessage` /
       `branchFromMessage` / `sendFeedback` / `openShareModal` /
-      `toggleReadAloud`. Streaming bubbles stay legacy-managed during
-      the stream (the 1300-line `addStreamingMessage` pipeline is too
-      deeply coupled to incrementally port); React takes over the
-      moment the entry's `html` lands.
+      `toggleReadAloud`. Public shared transcripts use the same message
+      components in read-only mode, and recovered interrupted turns expose
+      retry through the React status control.
 - [x] Post-render wire hooks for tool cards and markdown (mermaid,
-      viz, viz-actions, code-block expand buttons, image lightbox)
+      viz, viz-actions, code-block expand buttons)
       re-fire from `MessageItem`'s `useEffect` after each
       `dangerouslySetInnerHTML` commit. The legacy
-      `processPendingMermaid` / `wireCodeBlockHeaders` /
-      `wireMsgBodyImages` helpers are bridged on `window` from
-      `main.js`; `processPendingViz` / `processPendingVizActions` are
-      already on `window` via `windowExports.js`. Each helper is
-      idempotent so repeated React re-renders remain safe.
+      `wireMsgBodyImages` helper has been retired; image preview clicks are
+      handled directly by `MessageBody`. `processPendingMermaid`,
+      `wireCodeBlockHeaders`, and the viz helpers are dispatched through the
+      typed `__socratesLegacy.postRender` gateway. Each helper is idempotent so
+      repeated React re-renders remain safe.
 
 ### Legacy DOM/window compatibility layer removal
 
 - [x] **C2 (full)** — `buildMessageToolbar` / `stripHtmlToText` /
       `legacyCopy` already deleted (commit `223d7b4`); only comments
-      referencing the migration remain in `main.js`.
+      referencing the migration remain in `main.ts`.
 - [x] **Per-surface `data-react-rendered` guards dropped** — every
       `_reactOwnsXxx()` guard is gone (commits `40dd5d7`,
       `b2668ab`, `a0de1fc`, `ca22389`, `d63279c`, `f8d9460`,
-      `2dacaa3`). The remaining `data-react-rendered` /
-      `reactMigrationRuntime` checks in `main.js` are limited to
-      streaming bubble cleanup (detach the legacy bubble so React's
-      snapshot-driven re-render doesn't duplicate it), which still
-      does real work.
-- [x] **`main.js` legacy render paths collapsed** — `addMessage`,
+      `2dacaa3`). The old `data-react-rendered` and
+      `reactMigrationRuntime` attributes no longer occur in active
+      first-party frontend source. React owns live streaming rows directly.
+- [x] **`main.ts` legacy render paths collapsed** — `addMessage`,
       `loadIntoHistory`, `branchFromMessage`, `doRenderRecents`,
       `replaceWithError`, `setChatStopState` are now React-only.
       Net: ~458 lines of dead DOM-mutation code removed (commit
@@ -206,24 +349,27 @@ below.
       the redundant `dataset.reactMigrationRuntime === "msg-list"`
       guard (commit `069e82d`).
 - [x] **Dead `*.ts` duplicates removed** — 47 stale `.ts` files
-      outside `react/` deleted. Only `src/render/*.ts` are wired
-      through re-export bridges in the `.js` siblings; every other
-      `.ts` twin was drifting away from its live `.js` version and
-      was never reached at runtime (commits `77394bc`, `734e5f3`).
-- [x] **C1** — trim `windowExports.js` (removed 72 unused bindings
+      outside `react/` deleted. The first-party `.js` siblings have since
+      been migrated too; no active `.js` re-export shells remain under
+      `frontend/src` (commits `77394bc`, `734e5f3` and the 2026-10-30 TS
+      conversion).
+- [x] **C1** — trim `windowExports.ts` (removed 72 unused bindings
       that were never read via `window.*` by any external module or
       inline handler. See commit details for the full list.)
 - [x] **C1'** — trim the `bridgeMainJsFunctions()` self-bridge in
-      `main.js` (the 11-line `window.switchTab / setRecentsSearch /
+      `main.ts` (the 11-line `window.switchTab / setRecentsSearch /
       toggleSidebarView / resetApp / submitChatMessage / startSession /
       signOut / showToast` set) and the 97 other inline
       `window.X = X` lines. Removed ~50 redundant bindings including
       bridgeMainJsFunctions (duplicated in bulk bridge), display/colors
       no-external-consumer bindings, api/safe/viz bindings now handled
-      by windowExports.js, and duplicate/safe-to-remove bindings from
+      by windowExports.ts, and duplicate/safe-to-remove bindings from
       the bulk bridge block.
-- [ ] **C4** — delete `windowExports.js` once no legacy reader
-      remains.
+- [x] **C4** — deleted `windowExports.ts` after replacing its remaining
+      callers with direct module imports or the typed legacy gateway. The
+      extension action window delegates and obsolete quick-chip DOM mirror
+      were removed with it; `main.ts` now imports the navigation adapters
+      directly.
 - [x] **B3** — TS migrate `render/widgetParsers.js` and
       `chat/toolRuntime.js` + `chat/toolRunState.js` (independent of C,
       low priority). `widgetParsers.js` was already a re-export shim for

@@ -5,12 +5,12 @@
  * (toolCallbacks, streaming finish, send paths).
  */
 import { ActiveTemplate, configureTemplateSystemPrompt } from './templateSystemPrompt.ts';
-import { toggleWebSearch } from '../pickers.ts';
+import { toggleWebSearch } from './webSearchToggle.ts';
+import { webSearchOn, extensiveThinkingOn, setExtensiveThinkingOn } from '../config/providers.ts';
 import { focusComposer, getComposerMarkdown, getVisibleComposerSurface, setComposerExtensionToken, setComposerMarkdown, subscribeComposer } from '../composer/controller.ts';
 import { loadPromptTemplates } from './promptTemplates.ts';
 import type { PromptTemplate } from './promptTemplates.ts';
 import { esc } from '../render/helpers.ts';
-import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { setDeepResearchEnabled } from '../config/deepResearchMode.ts';
 import { batchSetItem } from '../batchStorage.ts';
@@ -65,15 +65,15 @@ configureTemplateSystemPrompt({ getActiveTemplate: function(){ return _activeTem
    read the same state. Keeping side-effects inside setActiveTemplate /
    clearActiveTemplate means every "×" and menu click stay in sync. */
 const EXTENSION_SIDE_EFFECTS: Record<string, (on: boolean) => void> = {
-  webSearch:function(on: boolean){ if(on!==!!browserWindow.webSearchOn && typeof toggleWebSearch==="function") toggleWebSearch(); },
-  deepResearch:function(on: boolean){ setDeepResearchEnabled(on); if(typeof browserWindow.syncQuickChips==="function") browserWindow.syncQuickChips(); },
+  webSearch:function(on: boolean){ if(on!==webSearchOn) toggleWebSearch(); },
+  deepResearch:function(on: boolean){ setDeepResearchEnabled(on); },
   extensiveThinking:function(on: boolean){
-    browserWindow.extensiveThinkingOn=!!on;
+    setExtensiveThinkingOn(on);
     /* P_batch-storage — the toggle is a user click that lands in
        the middle of a render frame. Coalesce the persist into the
        next microtask's batch so a rapid on/off pair (double-click
        the chip) only writes once. */
-    try{batchSetItem("socrates-extensive-thinking",JSON.stringify(!!browserWindow.extensiveThinkingOn))}catch(e){reportSwallow(e, 'templateSlash.extensiveThinking.persist');}
+    try{batchSetItem("socrates-extensive-thinking",JSON.stringify(extensiveThinkingOn))}catch(e){reportSwallow(e, 'templateSlash.extensiveThinking.persist');}
   }
 };
 export function _applyExtensionSideEffects(prevExt: string | null, nextExt: string | null){
@@ -354,9 +354,6 @@ export function insertSelectedSlashTemplate(){
        idea why the response shape changed. */
     setActiveTemplate(t);
   }
-  if(typeof updateComposerBtn==="function")updateComposerBtn();
-  /* P_slash-topic — also sync the Begin button when on topic input. */
-  if(typeof updateComposerBtn==="function") updateComposerBtn();
   closeSlashCommandPalette();
 }
 /* Wire arrow / Enter / Esc handling for the palette itself. */
@@ -385,7 +382,6 @@ document.addEventListener("keydown",function(e){
    leading `/` is gone (e.g. user backspaces past it or
    pastes over it). */
 subscribeComposer(function(surface,v){
-  updateComposerBtn();
   if(v.charAt(0)==="/"){
     _slashActiveSurface=surface;
     if(!isSlashCommandPaletteOpen()) openSlashCommandPalette();

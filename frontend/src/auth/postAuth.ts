@@ -3,8 +3,7 @@ import { drainMessageOutbox } from '../session/mutationOutbox.ts';
 import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.ts';
 import { loadSession } from '../session/loader.ts';
 import { loadUserMemories, publishSidebarChrome } from '../ui/profile.ts';
-import { syncExtensionsUI } from '../pickers.ts';
-import { refreshApiConfig, syncSidebarForMode } from '../config/providers.ts';
+import { refreshApiConfig, syncAppModeUI, syncSidebarForMode } from '../config/providers.ts';
 import { syncWorkspaceRoute } from '../sidebar/navigation.service.ts';
 import { toggleShareBtn } from '../ui/share.ts';
 import { renderGreeting } from '../ui/greeting.js';
@@ -20,10 +19,6 @@ interface PostAuthLegacyWindow extends Window {
   isInAuthGraceWindow?: () => boolean;
   refreshServerSessions?: () => Promise<unknown>;
   renderRecents?: () => void;
-  renderMistakes?: () => void;
-  updateMistakesBadge?: () => void;
-  syncModelPills?: () => void;
-  syncAppModeUI?: () => void;
   initialLoad?: () => void;
 }
 
@@ -63,11 +58,7 @@ function refreshAuthenticatedUi(): void {
   try { renderGreeting(); }
   catch (error) { reportSwallow(error, 'auth/postAuth.greeting'); }
   if (typeof win.renderRecents === 'function') win.renderRecents();
-  if (typeof win.renderMistakes === 'function') win.renderMistakes();
-  if (typeof win.updateMistakesBadge === 'function') win.updateMistakesBadge();
-  if (typeof win.syncModelPills === 'function') win.syncModelPills();
-  syncExtensionsUI();
-  if (typeof win.syncAppModeUI === 'function') win.syncAppModeUI();
+  syncAppModeUI();
   syncSidebarForMode();
 }
 
@@ -98,10 +89,6 @@ function triggerInitialLoad(): void {
     return;
   }
   if (typeof win.renderRecents === 'function') win.renderRecents();
-  if (typeof win.renderMistakes === 'function') {
-    win.renderMistakes();
-    if (typeof win.updateMistakesBadge === 'function') win.updateMistakesBadge();
-  }
 }
 
 /** Load user-owned data and restore any chat/exam route after authentication. */
@@ -116,7 +103,11 @@ export async function afterAuthEnter(): Promise<void> {
     try { activateMainView('chatView', document); }
     catch (e) { reportSwallow(e, 'auth/postAuth.activateChatView'); }
   } else if (examId) {
-    try { activateMainView('examView', document); }
+    try {
+      const { mountExamView } = await import('../react/exam/mount.tsx');
+      mountExamView();
+      activateMainView('examView', document);
+    }
     catch (e) { reportSwallow(e, 'auth/postAuth.activateExamView'); }
   }
   const restorePromise = restoreSessionFromCurrentUrl();

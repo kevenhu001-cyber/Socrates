@@ -22,7 +22,6 @@ type WiredInput = {
   textareaId: string | null;
   barId: string | string[] | null;
   chipsId: string | null;
-  updateBtnName: 'updateComposerBtn';
   wrapEl?: HTMLElement | null;
   barEls?: HTMLElement[];
 };
@@ -71,7 +70,6 @@ function renderAndRefresh(){
   _renderRAF = requestAnimationFrame(function(){
     _renderRAF = null;
     renderAttachmentChips();
-    refreshAllSendBtns();
   });
 }
 
@@ -80,7 +78,6 @@ function renderAndRefresh(){
    buttons (a failed chip still counts toward activation). */
 export function retryComposerAttachment(id: string){
   const ok = retryAttachment(id, renderAndRefresh);
-  refreshAllSendBtns();
   return ok;
 }
 
@@ -88,7 +85,6 @@ export async function addComposerFiles(files: File[], source: string){
   const list = Array.from(files || []);
   if(!list.length) return { added:0, rejected:[] };
   const res = await addFiles(list, renderAndRefresh, updateProgressOnly, dedupToast);
-  refreshAllSendBtns();
   if(source === "paste" && res.added > 0){
     dedupToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
   }
@@ -104,16 +100,6 @@ function updateProgressOnly(){
   _progressRAF = requestAnimationFrame(function(){
     _progressRAF = null;
     publishAttachmentsState(attachments);
-  });
-}
-
-/* Run the wired input's "send button refresher" (updateComposerBtn).
-   Keeps the primary button in sync with pending attachments. */
-function refreshAllSendBtns(){
-  WIRED_INPUTS.forEach(function(w){
-    if(typeof window !== "undefined" && typeof browserWindow[w.updateBtnName] === "function"){
-      try{ browserWindow.updateComposerBtn(); }catch (error) { reportSwallow(error, 'attachments/render.ts:116'); }
-    }
   });
 }
 
@@ -163,7 +149,6 @@ function wireInputFileChange(input: HTMLElement, btn: HTMLElement | null) {
     const files = (input as HTMLInputElement).files;
     if (!files || !files.length) return;
     const result = await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
-    refreshAllSendBtns();
     if (!result.rejected.length || !btn) return;
     btn.classList.add('has-error');
     setTimeout(function() { btn.classList.remove('has-error'); }, 1500);
@@ -210,7 +195,6 @@ async function handlePasteFiles(event: ClipboardEvent) {
   event.preventDefault();
   event.stopPropagation();
   const result = await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
-  refreshAllSendBtns();
   if (result.added > 0) {
     dedupToast(result.added + ' file' + (result.added > 1 ? 's' : '') + ' pasted');
   }
@@ -243,8 +227,6 @@ function resolveBarEls(barId: string | string[] | null | undefined): HTMLElement
  *                  paint, so naming both the landing and chat containers
  *                  keeps the hint working wherever the shell is parked
  *   chipsId      — chips container id (renderAttachmentChips target)
- *   updateBtnName — name of the function on window to call after
- *                   mutations (updateComposerBtn)
  * Called once for the single composer; safe to call multiple times for
  * the same ids (de-duplicated by chipsId). */
 export function setupAttachmentInput(opts: WiredInput){
@@ -266,7 +248,6 @@ export function setupAttachmentInput(opts: WiredInput){
     textareaId: opts.textareaId ?? null,
     barId: opts.barId ?? null,
     chipsId: opts.chipsId ?? null,
-    updateBtnName: opts.updateBtnName ?? "updateComposerBtn",
     wrapEl: wrap,
     barEls,
   });
@@ -302,7 +283,6 @@ function mediaInput(kind: string){
     onChange: async function(files){
       if(!files.length) return;
       await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
-      refreshAllSendBtns();
     },
   });
   document.body.appendChild(mounted.host);
@@ -399,16 +379,15 @@ function autoWire(){
   booted = true;
   wireDocumentDrag();
   /* P_composer-single — one shell, one wiring. barId names both view
-     containers; only the visible one paints the drop hint. The paperclip
-     button keeps its tools-menu listener (legacyShellListeners); this
-     wiring owns the hidden file input, drop and paste only. */
+     containers; only the visible one paints the drop hint. The React tools
+     button owns its click handler; this wiring owns the hidden file input,
+     drop and paste only. */
   setupAttachmentInput({
     inputId: "composerAttachInput",
     wrapId: "composerInputWrap",
     textareaId: null,
     barId: ["chatInputBar", "topicSetup"],
     chipsId: "composerAttachmentChips",
-    updateBtnName: "updateComposerBtn",
   });
 }
 /* P_timing-DCL — the Vite IIFE evaluates before the DOM is ready,

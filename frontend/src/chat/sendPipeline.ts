@@ -24,7 +24,6 @@ import { enqueuePrompt } from './promptQueue.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { resetAttachments } from '../attachments.ts';
 import { renderAttachmentChips } from '../attachments/render.ts';
-import { updateComposerBtn } from '../ui/topicSetup.ts';
 
 function refreshTutorWebContext(text: string): void {
   const topic = stateStore.read('topic');
@@ -71,7 +70,6 @@ export async function submitChatMessage(
       clearComposer('chat');
       resetAttachments();
       renderAttachmentChips();
-      updateComposerBtn();
     }
     return;
   }

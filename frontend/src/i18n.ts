@@ -2,14 +2,12 @@ import {renderGreeting} from './ui/greeting.js';
 import {syncThemeUI} from './displayPrefs.js';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { getCurrentLanguage, setCurrentLanguage } from './i18n/languageState.ts';
+import { dispatchExam, examStore } from './store/index.ts';
+import { appMode, syncAppModeUI } from './config/providers.ts';
 
 // These hooks are published by the existing shell; keep their contract local.
 interface I18nWindow extends Window {
   __i18nReady?: Promise<void>;
-  appMode?: string;
-  syncAppModeUI?: () => void;
-  updateComposerBtn?: () => void;
-  refreshExamI18n?: () => void;
 }
 const browser = window as I18nWindow;
 
@@ -64,7 +62,7 @@ export function setLang(lang: string){
      #topicDisclaimer using the current appMode. Without this call
      the topic-setup copy could drift if anything else touched those
      elements between mode-sync ticks. Cheap and idempotent. */
-  try{if(typeof browser.syncAppModeUI==="function")browser.syncAppModeUI()}catch(e){reportSwallow(e, 'i18n.setLang.syncAppModeUI'); }
+  try{syncAppModeUI()}catch(e){reportSwallow(e, 'i18n.setLang.syncAppModeUI'); }
   /* Update language toggle active state. Only en + zh are supported;
      removing ja/ko from this iteration avoids keeping dead UI states
      if the toggle HTML reverts. */
@@ -111,18 +109,11 @@ function refreshThemeLabel(){
 }
 
 function updateComposerLabels(){
-  const ci=document.getElementById("composerRoot");
-  if(ci){
-    const _cv=document.getElementById("chatView");
-    const _inChat=!!_cv&&!_cv.classList.contains("hidden");
-    ci.setAttribute("aria-label",t(_inChat?"chat.placeholder":"topic.inputPlaceholder"));
-  }
   const ch=document.getElementById("chatInputHint");
   if(ch)ch.textContent=t("chat.hint");
 }
 
 function updateTopicSetupCopy(){
-  const appMode=(typeof window!=="undefined"&&browser.appMode)||"chat";
   const tt=document.getElementById("topicTitle");
   if(tt){
     if(typeof renderGreeting==="function")renderGreeting();
@@ -134,35 +125,13 @@ function updateTopicSetupCopy(){
   if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
 }
 
-function updatePrimaryComposerButton(){
-  const cpb=document.querySelector<HTMLButtonElement>("#composerPrimaryBtn");
-  if(cpb&&!cpb.classList.contains("chat-stop")&&!cpb.classList.contains("agent-stop")){
-    const composerLabel=t("chat.send");
-    cpb.setAttribute("aria-label",composerLabel);
-    cpb.setAttribute("title",composerLabel);
-    if(typeof browser.updateComposerBtn==="function"){
-      try{browser.updateComposerBtn();}catch(e){reportSwallow(e, 'i18n.applyI18n.updateComposerBtn'); }
-    }else{
-      cpb.disabled=!cpb.classList.contains("active");
-    }
-  }
-}
-
-function updateExtensionsLabel(){
-  const el=document.getElementById("extensionsLabel");
-  if(el)el.textContent=t("topic.extensions");
-}
-
 function refreshDynamicSurfaces(){
   /* Exam content is generated dynamically, so static data-i18n scanning
-     cannot update it. Repaint its UI chrome while preserving form values,
-     generated questions and answers. */
-  if(browser.stateStore?.read("_examInView")&&typeof browser.refreshExamI18n==="function"){
-    try{browser.refreshExamI18n()}catch(e){reportSwallow(e, 'i18n.applyI18n.refreshExam'); }
+     cannot update it. The React-owned screen reads the locale and redraws
+     from its store without replacing form values or answers. */
+  if(browser.stateStore?.read("_examInView")){
+    dispatchExam({ type: 'exam/set', key: 'examLocaleRevision', value: examStore.getState().examLocaleRevision + 1 });
   }
-  /* P_chatgpt-landing — the reasoning-effort trigger label (高/中/低) is
-     driven by JS, not a data-i18n-key element, so refresh it here too. */
-  if(typeof browser.syncEffortUI==="function"){try{browser.syncEffortUI();}catch(e){reportSwallow(e, 'i18n.applyI18n.syncEffortUI'); }}
 }
 
 function applyI18n(){
@@ -175,8 +144,6 @@ function applyI18n(){
   refreshThemeLabel();
   updateComposerLabels();
   updateTopicSetupCopy();
-  updatePrimaryComposerButton();
-  updateExtensionsLabel();
   refreshDynamicSurfaces();
 }
 /* Load saved language preference. languageState.ts is the single source

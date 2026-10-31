@@ -30,9 +30,9 @@ const SURFACES = {
   topbar: {
     // Desktop header chrome. Phone-only controls (mobile mode menu, mobile
     // new-chat/incognito) are excluded so their desktop display:none rules stay.
-    context: /\.top-bar(?![-\w])|\.top-bar-(?:left|right)(?![-\w])|#modeSegmentedTop|\.top-mode-tabs(?![-\w])|\.app-mode-toggle|#shareBtn|\.share-btn(?![-\w])|\.share-btn-label|#findBtn|\.find-btn(?![-\w])|#chatModelWrap|\.chat-model-(?:wrap|trigger|glyph|caret)(?![-\w])|#chatModel(?![-\w])|\.top-model-switcher/,
+    context: /\.top-bar(?![-\w])|\.top-bar-(?:left|right)(?![-\w])|#modeSegmentedTop|\.top-mode-tabs(?![-\w])|\.app-mode-toggle|#shareBtn|\.share-btn(?![-\w])|\.share-btn-label|#findBtn|\.find-btn(?![-\w])|\.top-model-switcher/,
     subject: /./,
-    exclude: /mobile-|incognito|plugin-workspace|chat-model-menu|model-picker|exam-|chat-stats|sidebarOpenBtn|toggle-sidebar|glyph-/,
+    exclude: /mobile-|incognito|plugin-workspace|exam-|chat-stats|sidebarOpenBtn|toggle-sidebar|glyph-/,
   },
   transcript: {
     // Message column, bubbles, markdown prose, code blocks and the per-message

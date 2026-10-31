@@ -1,8 +1,6 @@
 // e2e/composer-tools-compat.spec.mjs — Batch 3 of the React + TypeScript migration
-// Spec: when the app boots with ?react=1, the Composer "+" tools menu is
-// owned by React. The legacy entry point (toggleComposerTools) still drives
-// open/close/positioning; React renders the capability workflows via a shared
-// module store. Item clicks dispatch through the shared extension module.
+// Spec: the Composer "+" tools menu, including disclosure state, dismissal,
+// placement and action dispatch, is owned by React.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -58,28 +56,19 @@ test('Composer tools menu highlights the active template ahead of mode flags', a
   await expect(menu.locator('[data-composer-action="deepResearch"]')).not.toHaveClass(/is-active/);
 });
 
-test('Composer tools menu opens via legacy entry point and React mirrors state', async ({ page }) => {
+test('Composer tools menu opens and dismisses from React controls', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Open via the legacy window.toggleComposerTools(trigger, mode) — the
-  // inline-onclick contract in index.html still uses this entry point.
-  await page.evaluate(() => {
-    const btn = document.getElementById('composerToolsBtn');
-    if (btn && typeof window.toggleComposerTools === 'function') {
-      window.toggleComposerTools(btn, 'topic');
-    }
-  });
+  const trigger = page.locator('#composerToolsBtn');
+  await trigger.click();
 
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).not.toHaveClass(/hidden/);
-
-  // The legacy owner records mode and trigger state on the actual control.
-  const trigger = page.locator('#composerToolsBtn');
-  await expect(trigger).toHaveAttribute('data-composer-mode', 'topic');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(menu).toHaveAttribute('data-mode', 'topic');
   /* Expanded card: every workflow is visible at once with no disclosure. */
   const desktopItems = menu.locator('.composer-tools-desktop-items [data-composer-action]');
   await expect(desktopItems).toHaveCount(10);
@@ -116,27 +105,21 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
     window.__socratesLegacy.navigation.openPromptTemplatesModal = () => window.__composerCalls.push('skills');
   });
 
-  // Open menu from the chat composer.
+  // Open the menu from a live chat composer.
   await page.evaluate(() => {
-    const btn = document.getElementById('composerToolsBtn');
-    if (btn && typeof window.toggleComposerTools === 'function') {
-      window.toggleComposerTools(btn, 'chat');
-    }
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__testActivateMainView('chatView');
   });
+  await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).not.toHaveClass(/hidden/);
 
-  // Click the "write" item (closes the menu via the legacy handler).
+  // Click the "write" item (React closes before dispatching the action).
   await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
   // Re-open and click the "exam" item.
-  await page.evaluate(() => {
-    const btn = document.getElementById('composerToolsBtn');
-    if (btn && typeof window.toggleComposerTools === 'function') {
-      window.toggleComposerTools(btn, 'chat');
-    }
-  });
+  await page.locator('#composerToolsBtn').click();
   await expect(menu).not.toHaveClass(/hidden/);
   await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="exam"]').click();
   await expect(menu).toHaveClass(/hidden/);
@@ -144,6 +127,23 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
   const calls = await page.evaluate(() => window.__composerCalls);
   expect(calls).toContain('write');
   expect(calls).toContain('exam');
+});
+
+test('React composer selection activates the registered extension', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__testActivateMainView('chatView');
+  });
+
+  await page.locator('#composerToolsBtn').click();
+  const menu = page.locator('#composerToolsMenu');
+  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]').click();
+  await expect(menu).toHaveClass(/hidden/);
+  await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('write');
 });
 
 test('Composer tools menu React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
@@ -330,10 +330,10 @@ test('composer plus menu lists only connected plugins', async ({ page }) => {
   await expect(github).toHaveAttribute('aria-checked', 'true');
   const remove = page.locator('.composer-plugin-chip-remove');
   await expect(remove).toHaveAttribute('aria-label', 'Remove GitHub');
-  await page.evaluate(() => window.setLang('zh'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
   await expect(github).toHaveAttribute('aria-label', 'GitHub：已添加');
   await expect(remove).toHaveAttribute('aria-label', '移除 GitHub');
-  await page.evaluate(() => window.setLang('en'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   await expect(remove).toHaveAttribute('aria-label', 'Remove GitHub');
 });
 

@@ -153,6 +153,10 @@ export interface LegacyChatMessage {
     thumbnailUrl?: string;
     size?: number;
   }>;
+  /** Ephemeral preview cards for links fetched from the just-sent user turn. */
+  pageLinkPreviews?: ReadonlyArray<import('../../ui/linkPreviews.ts').LinkPreviewItem>;
+  /** The user mentioned a site but did not include a fetchable URL. */
+  pageLinkHint?: boolean;
   modelInfo?: { label?: string; model?: string } | null;
   toolCalls?: ReadonlyArray<ToolCall>;
   restoredFromHistory?: boolean;
@@ -258,8 +262,6 @@ export interface LiveTurnStatus {
   retryable?: boolean;
   /** Retry callback belongs to a restored transcript row, not a live turn owner. */
   retryMode?: 'restored';
-  /** Legacy retry host id used to preserve its viewport capture sequence. */
-  retryButtonId?: string;
 }
 
 export interface ChatRuntimeSnapshot {

@@ -6,14 +6,11 @@ import { AuthGate } from './AuthGate';
 let gateRoot: OwnedRootHandle | null = null;
 
 /**
- * Mounts the auth gate once, before `mountAuthListeners()` binds handlers to
- * `#authGate`. `flushSync` is required: the binders query `#authSigninView`,
- * `.auth-tab` and friends immediately after this returns.
+ * Mounts the auth gate once. `flushSync` keeps the complete React surface
+ * available before URL-route handlers can switch to a deep auth view.
  *
- * The tree is static — no props, no state — so every imperative write the auth
- * modules make afterwards (hidden classes, error text, button labels) sticks.
- * The one thing React cannot know about is the i18n pass, which ran during
- * module evaluation before this mount, so it is replayed here.
+ * The initial translation pass still uses the app's legacy i18n adapter, so
+ * replay it after React has mounted the elements that carry translation keys.
  */
 export function mountAuthGate(): OwnedRootHandle | null {
   const host = document.getElementById('authGate');

@@ -2,21 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { JSDOM } from 'jsdom';
-import { marked } from 'marked';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
-globalThis.t = (key) => key;
-/* buildAssistantHtml -> formatMsg reads the eagerly-bundled marked global. */
-globalThis.marked = marked;
 
 const {
   deleteUserMessage,
   findMessageIndex,
   reseatSavedArtifact,
-  restoreMessageBody,
   restorePersistedMessageExtras,
   rollbackMessagesAfter,
 } = await import('../src/ui/messageActions.ts');
@@ -74,20 +69,6 @@ test('deleteUserMessage removes the entry and its row', () => {
   assert.equal(row.parentNode, null);
   const ids = stateStore.read('messages').map((m) => m && m.clientId);
   assert.ok(!ids.includes('del-u1'));
-});
-
-test('restoreMessageBody re-renders markdown and honors saved html', () => {
-  const body = dom.window.document.createElement('div');
-  restoreMessageBody({ role: 'assistant', rawText: 'Hi **there**' }, body);
-  assert.match(body.innerHTML, /<strong>there<\/strong>/);
-
-  const htmlBody = dom.window.document.createElement('div');
-  restoreMessageBody({ role: 'user', html: '<p>saved</p>' }, htmlBody);
-  assert.match(htmlBody.innerHTML, /saved/);
-
-  const emptyBody = dom.window.document.createElement('div');
-  restoreMessageBody({}, emptyBody);
-  assert.equal(emptyBody.innerHTML, '');
 });
 
 test('restorePersistedMessageExtras is idempotent via its data marker', () => {

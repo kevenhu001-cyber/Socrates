@@ -67,3 +67,52 @@ test('a completed detached turn is restored once after loading its session', asy
   await expect.poll(() => page.evaluate((sessionId) =>
     localStorage.getItem(`socrates-pending-turn:${sessionId}`), SESSION_ID)).toBeNull();
 });
+
+test('a restored interrupted response retries through its React status control', async ({ page }) => {
+  await mockAuthedApp(page);
+  const sessionUrl = new RegExp('/api/(?:v2/)?sessions/' + SESSION_ID + '(?:\\?.*)?$');
+  await page.route(sessionUrl, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: SESSION_ID,
+        topic: 'Interrupted answer recovery',
+        title: 'Interrupted answer recovery',
+        mode: 'chat',
+        kind: 'chat',
+        phase: 'chat',
+        streamingText: 'A partial answer restored from the server.',
+        messages: [{
+          id: 'recovery-user',
+          clientId: 'recovery-user',
+          role: 'user',
+          rawText: 'What happened while I was away?',
+          html: '<p>What happened while I was away?</p>',
+        }],
+        kbNodes: [],
+        mistakes: [],
+      }),
+    });
+  });
+  const retriedBodies = [];
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    retriedBodies.push(route.request().postDataJSON());
+    await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'offline' }) });
+  });
+
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
+  await page.evaluate((sessionId) => window.loadSession(sessionId), SESSION_ID);
+
+  const recovered = page.locator('#msgList .msg.assistant').filter({ hasText: 'A partial answer restored from the server.' });
+  await expect(recovered).toHaveAttribute('data-react-owned', '1');
+  const retry = recovered.getByRole('button', { name: 'Retry' });
+  await expect(retry).toBeVisible();
+  await retry.click();
+
+  await expect(recovered).toHaveCount(0);
+  await expect.poll(() => retriedBodies.length).toBe(1);
+  expect(retriedBodies[0].messages.some((message) => message.content === 'What happened while I was away?')).toBe(true);
+});

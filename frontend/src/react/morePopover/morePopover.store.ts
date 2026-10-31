@@ -1,10 +1,9 @@
-import { useBridge } from '../../lib/bridge/useBridge.ts';
-import { morePopoverState } from '../../ui/morePopoverState.ts';
+import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { MorePopoverAction } from './types';
 
 export function useMorePopoverSnapshot() {
-  return useBridge(morePopoverState);
+  return useMorePopoverStore((state) => state.isOpen);
 }
 
 export function useMorePopoverDispatch(): { pick: (action: MorePopoverAction) => void } {

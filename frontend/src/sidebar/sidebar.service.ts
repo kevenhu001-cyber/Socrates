@@ -1,4 +1,4 @@
-import { bumpRecentsVersion, setSidebarRecentsFilter, useSidebarStore } from './sidebar.store';
+import { bumpRecentsVersion, setSidebarOpen, setSidebarRecentsFilter, useSidebarStore } from './sidebar.store';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 const RECENTS_FILTER_KEY = 'socrates-recents-filter';
@@ -143,14 +143,12 @@ export function toggleSidebar(): void {
     backdrop?.classList.remove('show');
   }
   const open = !sidebar.classList.contains('collapsed');
+  setSidebarOpen(open);
 
   if (desktop && main) {
     animateDesktopSidebarMotion(sidebar, main, beforeInset, open);
   }
 
-  const legacyWindow = window as Window & { sidebarOpen?: boolean; syncSidebarBtns?: () => void };
-  legacyWindow.sidebarOpen = open;
-  legacyWindow.syncSidebarBtns?.();
   try { localStorage.setItem('socrates-sb', open ? '1' : '0'); } catch (error) {
     reportEmptyCatch(error, 'empty catch: sidebar/sidebar.service.ts:150', 'expected');
     /* storage is optional */

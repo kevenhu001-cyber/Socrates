@@ -7,9 +7,8 @@ import { clearComposer, focusComposer, getComposerMarkdown } from '../../compose
 import type { ComposerSurface } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
-import { buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.ts';
+import { attachments, buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
-import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { addMessage } from '../messages.ts';
 import { playSendGlyph } from '../../ui/sendGlyph.js';
 import {
@@ -71,8 +70,7 @@ export function captureSendInput(textOverride?: string | null): SendInput | null
     }
   }
 
-  const composerAttachments = (window as SendInputWindow).attachments;
-  const hasAttachments = Array.isArray(composerAttachments) && composerAttachments.length > 0;
+  const hasAttachments = attachments.length > 0;
   if (!text && !hasAttachments) return null;
 
   const textForModel = serializeSelectedPluginContext(selectedComposerPlugins('chat').slice(), text);
@@ -127,13 +125,6 @@ export function commitSendInput(input: SendInput, options: CommitSendOptions): C
     else focusComposer('chat');
     resetAttachments();
     renderAttachmentChips();
-    /* P_composer-btn-collapse — the click frame used to call
-       updateComposerBtn() twice (once right after clearComposer, once
-       after the chip reset). Each call walks the composer for visible
-       artifacts and the toolbar's enabled state. One walk at the end
-       is enough because the toolbar reads state after both clear and
-       reset have settled. */
-    updateComposerBtn();
   }
   // Release the submitted draft before lazy loading or attachment preparation.
   // Attachments added while those tasks run belong to the next turn.

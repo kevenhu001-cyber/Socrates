@@ -39,7 +39,6 @@ export const deepResearchExtension: ExtensionDefinition = {
       systemPrompt: '',
       body: '',
     });
-    ctx.syncQuickChips?.();
     ctx.focusComposer();
   },
   onDeactivate(ctx) {
@@ -48,6 +47,5 @@ export const deepResearchExtension: ExtensionDefinition = {
     if (active && active.extensionKey === 'deepResearch') {
       ctx.clearTemplate();
     }
-    ctx.syncQuickChips?.();
   },
 };

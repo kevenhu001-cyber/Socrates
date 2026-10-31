@@ -134,9 +134,18 @@ async function openAssistantFixture(page, messages, options = {}) {
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   if (options.probe !== false) await installVizProbe(page);
+  if (options.beforeLoadSession) await options.beforeLoadSession(page);
   await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
   await page.evaluate((id) => window.loadSession(id), sessionId);
   return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
+}
+
+async function recordLegacyArtifactAppender(page) {
+  await page.evaluate(() => {
+    const postRender = window.__socratesLegacy?.postRender;
+    if (!postRender) throw new Error('legacy post-render bridge is not ready');
+    window.__legacyArtifactAppenderPresent = typeof postRender.appendInlineArtifact === 'function';
+  });
 }
 
 /* ── visibility under a collapsed run ─────────────────────────────────── */
@@ -478,6 +487,89 @@ test('a call persisted with the outputs protocol renders the same', async ({ pag
 
   const probe = await readVizProbe(page);
   expect(probe.created.map((m) => m.cardId)).toEqual(['viz-proto']);
+});
+
+test('HTML artifacts render in React with a sandboxed preview action', async ({ page }) => {
+  const artifact = {
+    id: 'html-call',
+    name: 'code_interpreter',
+    input: { code: 'write report' },
+    output: 'saved report.html',
+    durationMs: 10,
+    status: 'completed',
+    textOffset: 0,
+    outputs: [{ kind: 'artifact', fileId: 'html-report', mimeType: 'text/html', name: 'report.html' }],
+  };
+  const body = await openAssistantFixture(page, [userMessage(), assistantMessage([artifact])], {
+    beforeLoadSession: recordLegacyArtifactAppender,
+  });
+
+  const frame = body.locator('.exec-artifact-html-frame');
+  await expect(frame).toHaveCount(1);
+  await expect(frame).toHaveAttribute('src', '/api/files/html-report/raw');
+  await expect(frame).toHaveAttribute('title', 'report.html');
+  await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+  await expect(body.locator('[data-artifact-id="html-report"]')).toHaveCount(1);
+  await body.locator('.exec-artifact-open').click();
+  await expect(page.locator('[data-detail-owner="artifact"]')).toBeVisible();
+  expect(await page.evaluate(() => window.__legacyArtifactAppenderPresent)).toBe(false);
+});
+
+test('download artifacts use a React-owned link for legacy saved calls', async ({ page }) => {
+  const artifact = {
+    id: 'csv-call',
+    name: 'code_interpreter',
+    input: { code: 'write csv' },
+    output: 'saved summary.csv',
+    artifacts: [{ id: 'summary-file', mimeType: 'text/csv', name: 'summary.csv' }],
+    durationMs: 10,
+    status: 'completed',
+    textOffset: 0,
+  };
+  const body = await openAssistantFixture(page, [userMessage(), assistantMessage([artifact])], {
+    beforeLoadSession: recordLegacyArtifactAppender,
+  });
+
+  const link = body.locator('.exec-artifact-link');
+  await expect(link).toHaveCount(1);
+  await expect(link).toHaveAttribute('data-artifact-id', 'summary-file');
+  await expect(link).toHaveAttribute('href', '/api/files/summary-file/raw');
+  await expect(link).toHaveAttribute('download', '');
+  await expect(link).toHaveText('summary.csv');
+  expect(await page.evaluate(() => window.__legacyArtifactAppenderPresent)).toBe(false);
+});
+
+test('a missing download shows a local error and retries its availability check', async ({ page }) => {
+  let headAttempts = 0;
+  const artifact = {
+    id: 'broken-call',
+    name: 'code_interpreter',
+    input: { code: 'write pdf' },
+    output: 'saved report.pdf',
+    durationMs: 10,
+    status: 'completed',
+    textOffset: 0,
+    outputs: [{ kind: 'artifact', fileId: 'retry-file', mimeType: 'application/pdf', name: 'report.pdf' }],
+  };
+  const body = await openAssistantFixture(page, [userMessage(), assistantMessage([artifact])], {
+    beforeLoadSession: async () => {
+      await page.route('**/api/files/retry-file/raw', (route) => {
+        if (route.request().method() !== 'HEAD') {
+          return route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-1.4' });
+        }
+        headAttempts += 1;
+        return route.fulfill({ status: headAttempts === 1 ? 404 : 200, body: '' });
+      });
+    },
+  });
+
+  const error = body.locator('.artifact-error');
+  await expect(error).toBeVisible();
+  await expect(error).toContainText('HTTP 404');
+  await error.getByRole('button', { name: 'Retry' }).click();
+  await expect.poll(() => headAttempts).toBe(2);
+  await expect(error).toHaveCount(0);
+  await expect(body.locator('.exec-artifact-link')).toHaveAttribute('data-artifact-id', 'retry-file');
 });
 
 /* ── real renderer cases ──────────────────────────────────────────────── */

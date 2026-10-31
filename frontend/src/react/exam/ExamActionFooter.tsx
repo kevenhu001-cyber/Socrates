@@ -6,7 +6,7 @@ export type ExamAction = {
   variant?: 'default' | 'outline' | 'destructive';
 };
 
-function ExamActionFooter({ actions }: { actions: ExamAction[] }) {
+function ExamActionFooter({ actions, onCommand }: { actions: ExamAction[]; onCommand: (command: string) => void }) {
   return (
     <>
       {actions.map((action) => (
@@ -14,7 +14,7 @@ function ExamActionFooter({ actions }: { actions: ExamAction[] }) {
           key={action.command}
           variant={action.variant ?? 'default'}
           className="exam-action-button"
-          data-exam-command={action.command}
+          onClick={() => onCommand(action.command)}
         >
           {action.label}
         </Button>

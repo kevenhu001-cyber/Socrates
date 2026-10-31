@@ -116,6 +116,8 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
   // Shared view is rendered; the read-only messages are visible.
   const msgList = page.locator('#msgList .msg');
   await expect(msgList).toHaveCount(3);
+  await expect(msgList.first()).toHaveAttribute('data-react-owned', '1');
+  await expect(page.locator('#msgList .msg-toolbar')).toHaveCount(0);
   await expect(msgList.nth(0)).toContainText('What is gravity?');
   await expect(msgList.nth(1)).toContainText('Gravity is a force');
   await expect(page.locator('.visualization-card')).toContainText('Shared gravity curve');
@@ -226,7 +228,7 @@ test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
   expect(await page.evaluate(() => ['createShareLink', 'revokeShareLink'].filter((name) => name in window))).toEqual([]);
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
-    window.openShareModal();
+    window.__socratesLegacy.messages.openShareModal();
   });
   await page.evaluate(() => window.__socratesLegacy.share.createShareLink());
   await expect(page.locator('#shareLinkInput')).toBeVisible();
@@ -258,5 +260,12 @@ test('late compatibility mounting preserves the read-only shared transcript', as
   await expect(page.locator('#msgList .msg-toolbar')).toHaveCount(0);
   await expect(page.locator('#sharedBanner')).toBeVisible();
   await page.screenshot({ path: 'test-results/shared-transcript-readonly-mobile.png' });
+
+  await page.evaluate(() => window.resetApp({ confirmActiveSession: false }));
+  await expect(page.locator('#sharedBanner')).toBeHidden();
+  await expect(page.locator('#chatInputBar')).not.toHaveClass(/hidden/);
+  await expect(page.locator('#composerRoot')).not.toHaveAttribute('aria-disabled', 'true');
+  await expect(page.locator('#msgList .msg')).toHaveCount(0);
+  await expect(page.locator('#msgList > [data-react-message-list-empty="1"][data-react-owned="1"]')).toHaveCount(1);
   expect(errors).toEqual([]);
 });

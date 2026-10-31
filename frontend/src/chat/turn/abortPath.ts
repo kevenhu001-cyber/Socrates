@@ -9,9 +9,8 @@
  * path with one click.
  *
  * Extracted from chat/streamingTurn.ts during the 2026-10 addStreamingMessage
- * split. The split is structural only: the slot-ownership guard, the
- * partial-text finalize, the superseded-stub retirement, and the
- * legacy-shell eviction all keep their original sequencing.
+ * split. The slot-ownership guard, partial-text finalize, and
+ * superseded-stub retirement all keep their original sequencing.
  */
 import { settleTurnRuntime } from '@socrates/core';
 import { esc } from '../../render/helpers.ts';
@@ -106,20 +105,6 @@ function finalizeStoppedMessage(
   bindStoppedResend(state);
 }
 
-function evictLegacyAbortShell(state: TurnRuntimeState): void {
-  requestAnimationFrame(function () {
-    try {
-      const legacy = state.list.querySelector('[data-client-id="' + state.clientId + '"]');
-      if (legacy && !legacy.hasAttribute('data-react-owned') && legacy.parentNode === state.list) {
-        state.list.removeChild(legacy);
-      }
-    } catch (error) {
-      reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:106', 'expected');
-      /* legacy shell already gone */
-    }
-  });
-}
-
 function releaseActiveAbortTurn(state: TurnRuntimeState): void {
   if (turnState.activeChatCtl !== state.ret) return;
   turnState.chatStreaming = false;
@@ -139,7 +124,6 @@ function publishAbortedTurn(state: TurnRuntimeState): void {
     messageId: state.clientId,
     textLength: state.full.length,
   });
-  evictLegacyAbortShell(state);
 }
 
 /**
@@ -202,14 +186,11 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
       /* Task 4.1 — Resend affordance. After a user Stop, offer a
          Resend control on the stopped bubble that re-runs the send path
          from the most recent user message with a fresh turn (Req 2.6/2.7).
-         Mirrors the recovered-stream `data-stream-retry` pattern: the
-         button lives in the message HTML and clicks are delegated on the
-         React-owned list. Reuses askChatTurn's AbortController/isUserAbort
-         path — no new retry logic. */
+         The React status row dispatches through the active turn registry.
+         Reuses askChatTurn's AbortController/isUserAbort path — no new retry
+         logic. */
       finalizeStoppedMessage(state, abortedMessage, stoppedRaw, visibleStoppedRaw);
     }
-    /* Publish first, then remove only a throwaway shell on the next
-       frame (a non-React node with our clientId, if one ever exists). */
     publishAbortedTurn(state);
   }
   return { abort };

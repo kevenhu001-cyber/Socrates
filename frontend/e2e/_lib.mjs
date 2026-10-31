@@ -97,7 +97,7 @@ export async function login(page, { email = 'qa-tester@example.com', password = 
 
 export async function setLang(page, lang) {
   await page.evaluate((l) => {
-    try { window.setLang?.(l); } catch (_) {}
+    try { window.__socratesLegacy?.profile?.setLang(l); } catch (_) {}
   }, lang);
   await page.waitForTimeout(300);
 }

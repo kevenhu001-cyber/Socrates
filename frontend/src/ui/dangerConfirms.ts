@@ -9,13 +9,13 @@ import { resetState, stateStore } from '../state/store.ts';
 import { showConfirm } from './confirm.ts';
 import { clearProviderConfig } from '../config/providerConfig.service.ts';
 import { publishSidebarChrome } from './profile.ts';
+import { apiFetch } from '../util/api.ts';
 
 interface DangerWindow {
   t?: (key: string) => string;
   renderRecents?: () => void;
   resetApp?: () => void;
   closeProfile?: () => void;
-  apiFetch?: (path: string, options?: RequestInit) => Promise<unknown>;
   CURRENT_USER?: unknown;
   showGate?: () => void;
   showAuthSignin?: () => void;
@@ -61,10 +61,8 @@ function clearDeletedAccountStorage(): void {
   }
 }
 
-async function deleteAccountOnServer(w: DangerWindow | undefined): Promise<void> {
-  if (typeof w?.apiFetch === 'function') {
-    await w.apiFetch('/api/auth/account', { method: 'DELETE' });
-  }
+async function deleteAccountOnServer(): Promise<void> {
+  await apiFetch('/api/auth/account', { method: 'DELETE' });
 }
 
 function resetAfterAccountDeletion(w: DangerWindow | undefined): void {
@@ -86,7 +84,7 @@ function reportAccountDeletionFailure(error: unknown): void {
 async function performAccountDeletion(): Promise<void> {
   const w = getWindow();
   try {
-    await deleteAccountOnServer(w);
+    await deleteAccountOnServer();
     resetAfterAccountDeletion(w);
   } catch (error: unknown) {
     reportAccountDeletionFailure(error);

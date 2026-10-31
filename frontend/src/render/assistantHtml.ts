@@ -67,7 +67,7 @@ interface SlotEntry<Parsed> {
   parsed: Parsed;
 }
 
-type PracticeParsed = ParsedPractice & { correct?: string };
+type PracticeParsed = ParsedPractice & { correct?: string; slotId?: string | null };
 
 function fallbackBlock(inner: string): string {
   return (
@@ -115,11 +115,13 @@ export function stripTrailingSources(text: string): string {
 }
 
 function replaceQuizSlots(text: string, slots: SlotEntry<ParsedQuiz>[]): string {
-  return text.replace(/<quiz\b[^>]*>([\s\S]*?)<\/quiz>/gi, (raw: string, inner: string) => {
+  return text.replace(/<quiz\b([^>]*)>([\s\S]*?)<\/quiz>/gi, (raw: string, attrs: string, inner: string) => {
     const parsed = parseQuizInner(inner);
     if (slots.length) return '\n\n' + esc(parsed?.q || raw) + '\n\n';
     if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
-    const id = 'quiz-' + (slots.length + 1) + '-' + randomSuffix();
+    const requestedId = attrs.match(/\bdata-quiz-id\s*=\s*["']([\w-]{1,120})["']/i)?.[1];
+    const id = requestedId || 'quiz-' + (slots.length + 1) + '-' + randomSuffix();
+    parsed.slotId = id;
     slots.push({ id, parsed });
     return '\n\n<div class="quiz-slot" data-quiz-id="' + id + '"></div>\n\n';
   });
@@ -141,8 +143,10 @@ function replacePracticeSlots(text: string, slots: SlotEntry<PracticeParsed>[]):
     if (slots.length) return '\n\n' + esc(parsed?.problem || raw) + '\n\n';
     if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
     const correct = attrs.match(/correct="([^"]+)"/i);
-    if (correct) parsed.correct = correct[1];
-    const id = 'pr-' + (slots.length + 1) + '-' + randomSuffix();
+    if (correct) parsed.correct = decodeEntities(correct[1]);
+    const requestedId = attrs.match(/\bdata-practice-id\s*=\s*["']([\w-]{1,120})["']/i)?.[1];
+    const id = requestedId || 'pr-' + (slots.length + 1) + '-' + randomSuffix();
+    parsed.slotId = id;
     slots.push({ id, parsed });
     return '\n\n<div class="practice-slot" data-practice-id="' + id + '"></div>\n\n';
   });

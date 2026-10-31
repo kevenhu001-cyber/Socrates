@@ -35,10 +35,12 @@ const LABEL_CLASS = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap';
 export function SidebarNavButton({
   item,
   active,
+  expanded,
   onClick,
 }: {
   item: NavButtonSpec;
   active: boolean;
+  expanded?: boolean;
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const label = i18n(item.i18nKey, item.label);
@@ -51,6 +53,9 @@ export function SidebarNavButton({
       id={navButtonId(item.key)}
       data-i18n-title={item.i18nKey}
       aria-current={active ? 'page' : undefined}
+      aria-haspopup={item.key === 'more' ? 'menu' : undefined}
+      aria-expanded={item.key === 'more' ? Boolean(expanded) : undefined}
+      aria-controls={item.key === 'more' ? 'moreNavPopover' : undefined}
       onClick={onClick}
     >
       <span className={GLYPH_CLASS} dangerouslySetInnerHTML={{ __html: item.icon }} />

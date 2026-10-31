@@ -42,10 +42,10 @@ test('interrupted menus reverse from their visible opacity instead of replaying 
 
 test('rapid page navigation cancels the outgoing pane motion and keeps the final destination', async ({ page }) => {
   const result = await page.evaluate(() => {
-    window.openNav('library');
+    window.__socratesLegacy.navigation.openNav('library');
     const library = document.getElementById('libraryPanel');
     const previous = library.getAnimations()[0];
-    window.openNav('projects');
+    window.__socratesLegacy.navigation.openNav('projects');
     const projects = document.getElementById('spacesPanel');
     return {
       oldState: previous?.playState,
@@ -65,7 +65,7 @@ for (const media of [{ reducedMotion: 'reduce' }, { forcedColors: 'active' }]) {
   test(`pane transitions respect ${JSON.stringify(media)}`, async ({ page }) => {
     await page.emulateMedia(media);
     const count = await page.evaluate(() => {
-      window.openNav('library');
+      window.__socratesLegacy.navigation.openNav('library');
       return document.getElementById('libraryPanel').getAnimations().length;
     });
     expect(count).toBe(0);

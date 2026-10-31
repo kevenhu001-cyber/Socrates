@@ -15,8 +15,23 @@
 /* The toggle carries two glyphs; phones keep the drawer's ×. */
 #appShell #sidebarCloseBtn .sidebar-toggle-panel { display: none; }
 
+/* The React search row publishes the selected sidebar panel. The legacy
+   content hosts stay in index.html while CSS applies that state without a
+   second imperative owner mutating their classes. */
+#sidebar #knowledgePanel { display: none; }
+#sidebar #mistakesPanel { display: none; }
+body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="knowledge"]) #recentsPanel { display: none; }
+body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"]) #recentsPanel { display: none; }
+body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="knowledge"]) #knowledgePanel { display: flex; }
+body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"]) #mistakesPanel { display: flex; }
+
 .sidebar-project-nav { display: contents; }
 .sidebar-project-create { display: none; }
+
+.sidebar-more-popover[data-open="false"] {
+  visibility: hidden;
+  pointer-events: none;
+}
 
 @media (min-width: 769px) {
   #appShell #sidebarCloseBtn .sidebar-toggle-close { display: none; }

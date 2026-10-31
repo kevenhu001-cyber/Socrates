@@ -10,7 +10,6 @@
 
 
 export interface LegacyMessages {
-  editUserMessage(messageId: string): void;
   regenerateAssistantMessage(messageId: string): void;
   switchMessageBranch(messageId: string, targetIndex: number): void;
   deleteUserMessage(messageId: string): Promise<void> | void;
@@ -27,6 +26,7 @@ export interface LegacyMessages {
 export interface LegacyNavigation {
   resetApp(options?: { confirmActiveSession?: boolean; projectId?: string }): Promise<boolean>;
   startNewChat(): Promise<boolean>;
+  toggleAppMode: typeof import('../../app/lifecycle/mode.ts')['toggleAppMode'];
   toggleSidebar(): void;
   openNav(key: string): void;
   openSettings(): Promise<void> | void;
@@ -55,10 +55,6 @@ export interface LegacyConfirm {
   showConfirm(title: string, message: string, danger?: boolean): Promise<boolean>;
 }
 
-export interface LegacyKnowledge {
-  update(): void;
-}
-
 export interface LegacySessions {
   flushRecentsReconcile(): Promise<unknown> | void;
   getArchivedSessions: typeof import('../../session/recents.ts')['getArchivedSessions'];
@@ -81,7 +77,6 @@ export interface LegacyComposer {
   openMediaPicker?(kind: 'camera' | 'photos'): void;
   toggleWebSearch?(): void;
   exploreAction?(): void;
-  toggleTools?(trigger: HTMLElement, mode: 'topic' | 'chat'): void;
   composeAction(): void;
   researchAction(): void;
   deepResearchAction(): void;
@@ -93,10 +88,8 @@ export interface LegacyComposer {
   retryAttachment?(id: string): void;
   renderAttachmentChips?(): void;
   startSession(): Promise<void> | void;
-  submitChatMessage(): Promise<void> | void;
+  submitChatMessage(textOverride?: string | null, options?: { blurAfterSend?: boolean }): Promise<void> | void;
   stopChatResponse(): void;
-  /** Re-sync the model pill's tooltip/aria copy after the active model changes. */
-  syncEffortUI(): void;
 }
 
 export interface LegacyCmdK {
@@ -125,6 +118,11 @@ export interface LegacyProfile {
   setLang(lang: string): void;
 }
 
+export interface LegacyAuth {
+  showGate(): void;
+  showAuthSignin(): void;
+}
+
 export interface LegacyPostRender {
   appendToolModule: typeof import('../../ui/toolCards.ts')['appendToolModule'];
   processPendingMermaid(root?: HTMLElement): void;
@@ -144,18 +142,12 @@ export interface LegacyPostRender {
   reclaimVizCards?(root: HTMLElement): void;
   processPendingVizActions(root?: HTMLElement): void;
   wireCodeBlockHeaders(root: HTMLElement): void;
-  wireMsgBodyImages(root: HTMLElement): void;
   restorePersistedMessageExtras?(
     root: HTMLElement,
     message: Record<string, unknown>,
     idPrefix?: string,
   ): void;
-  /**
-   * Tool outputs that are not text: the v1 chart spec a call produced and any
-   * saved files attached to it. Both mounters dedup by id in the DOM, so the
-   * declarative renderer (react/tool-run) and the history-recovery pass above
-   * can hand the same host div to both without ever drawing a card twice.
-   */
+  /** A chart renderer lifecycle adapter. Saved files are rendered by React. */
   mountVisualization?(
     spec: Record<string, unknown>,
     host: HTMLElement,
@@ -173,12 +165,6 @@ export interface LegacyPostRender {
    * before React's cleanup runs; the tracked element is the remaining handle.
    */
   disposeVisualization?(card: unknown): void;
-  appendInlineArtifact?(
-    fileId: string,
-    mimeType?: string,
-    outEl?: HTMLElement | null,
-    displayName?: string,
-  ): void;
 }
 
 /**
@@ -208,17 +194,15 @@ export interface LegacyRender {
  * and answering a tool-approval request the run is blocked on.
  */
 export interface LegacyLiveTurn {
-  /** False when no live turn claims this message — the button is a no-op. */
-  retry(messageId: string): boolean;
   /** Null when the turn's runtime is gone (page reload, or already decided). */
   decideApproval(messageId: string, toolCallId: string, decision: string): void | Promise<void>;
 }
 
 export interface LegacyActions {
+  auth: LegacyAuth;
   messages: LegacyMessages;
   navigation: LegacyNavigation;
   confirm: LegacyConfirm;
-  knowledge: LegacyKnowledge;
   sessions: LegacySessions;
   composer: LegacyComposer;
   cmdK: LegacyCmdK;

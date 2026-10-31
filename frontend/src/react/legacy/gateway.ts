@@ -7,25 +7,20 @@
 //   import { getLegacyActions, t } from '../legacy/gateway.ts';
 //
 //   const { messages } = getLegacyActions();
-//   messages.editUserMessage(id);
 //
 //   const label = t('settings.title');
 
 import type { LegacyActions } from './types';
-import type { apiFetch } from '../../util/api';
+import { apiFetch } from '../../util/api.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
+import { webSearchOn, extensiveThinkingOn } from '../../config/providers.ts';
 
-type ApiFetchFn = typeof apiFetch;
-
-/** Standalone globals already published by windowExports.js. Keep their
+/** Standalone globals retained by the legacy shell. Keep their
  * compatibility shapes local to this boundary instead of bypassing types. */
 interface StandaloneGlobals {
   getConnectorIconMarkup?: (id: string) => string;
-  webSearchOn?: boolean;
   _activeTemplate?: { extensionKey?: unknown } | null;
-  extensiveThinkingOn?: boolean;
-  apiFetch?: ApiFetchFn;
   CURRENT_USER?: unknown;
 }
 
@@ -35,7 +30,7 @@ function standaloneWindow(): Window & StandaloneGlobals {
 
 /**
  * Lazy singleton — resolves window.__socratesLegacy once and caches the
- * reference. The bridge is populated during windowExports.js evaluation
+ * reference. The bridge is populated during app/legacyBridge.ts evaluation
  * (which happens before any React component mounts in the current
  * bootstrap order), so by the time React hydrates the bridge is ready.
  *
@@ -51,7 +46,7 @@ function resolveBridge(): LegacyActions {
   if (!b) {
     throw new Error(
       '[legacy-gateway] window.__socratesLegacy not initialized. ' +
-      'Ensure windowExports.js is imported before React hydrates.',
+      'Ensure app/legacyBridge.ts is imported before React hydrates.',
     );
   }
   _bridge = b;
@@ -130,7 +125,7 @@ export function applyLegacyI18n(): void {
 
 /**
  * Connector icon markup helper. Published on window by the legacy layer
- * (windowExports.js) because connector-icons.ts is a ~40 KB SVG module the
+ * because connector-icons.ts is a ~40 KB SVG module the
  * app loads lazily; resolving it through here keeps the direct window read
  * in this file instead of scattering it across React components.
  */
@@ -148,7 +143,7 @@ export function getConnectorIconMarkupFn(): ((id: string) => string) | null {
  * `socrates:websearchchange`; callers subscribe to that event for updates.
  */
 export function isWebSearchOn(): boolean {
-  return Boolean(standaloneWindow().webSearchOn);
+  return webSearchOn;
 }
 
 /** Active extension mode selected in the legacy template system, if any. */
@@ -166,7 +161,7 @@ export function isDeepResearchOn(): boolean {
 
 /** Legacy extensive-thinking toggle used by the composer tools menu. */
 export function isExtensiveThinkingOn(): boolean {
-  return Boolean(standaloneWindow().extensiveThinkingOn);
+  return extensiveThinkingOn;
 }
 
 /** Active UI language code tracked by the legacy i18n layer (defaults to zh). */
@@ -175,12 +170,12 @@ export function getCurrentLang(): 'zh' | 'en' {
 }
 
 /**
- * Legacy authenticated fetch helper, published in windowExports.js. Returns
- * null before the app boots so call sites keep their optional-chaining shape.
+ * Return the canonical authenticated API client through the typed legacy
+ * gateway. Keeping this helper avoids coupling React feature modules to the
+ * transport implementation.
  */
-export function getApiFetch(): ApiFetchFn | null {
-  const fn = standaloneWindow().apiFetch;
-  return typeof fn === 'function' ? (fn as ApiFetchFn) : null;
+export function getApiFetch(): typeof apiFetch | null {
+  return typeof apiFetch === 'function' ? apiFetch : null;
 }
 
 /** The signed-in user record published by the legacy auth layer, or null. */

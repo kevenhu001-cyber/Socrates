@@ -5,17 +5,17 @@
 import { stateStore } from '../state/store.ts';
 import { apiFetch } from '../util/api.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
-import { mountQuizWidget, mountPracticeWidget, configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.ts';
-import { scrollContainer } from '../ui/scroll.ts';
+import { configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.ts';
 import { createMistakeBook } from '../ui/mistakeBook.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { shouldRequestTutorAfterQuiz } from '../tutor/policy.ts';
-import { updateKB } from '../ui/knowledgePanel.ts';
 import { configureAssistantHtml } from '../render/assistantHtml.ts';
 import { configureTurnAnchor } from '../chat/turnAnchor.ts';
 import { isMsgListMounted } from '../ui/msgListMount.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
+import { registerMistakeRedoAction } from '../ui/mistakeBookCommands.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { addAssistantUiMessage } from '../chat/messages.ts';
 
 
 type MistakeBook = ReturnType<typeof createMistakeBook>;
@@ -23,13 +23,9 @@ let _installedBook: MistakeBook | null = null;
 
 export function getMistakeBookUI() {
   if (_installedBook) {
-    return {
-      recordMistake: _installedBook.recordMistake,
-      updateMistakesBadge: _installedBook.updateMistakesBadge,
-      renderMistakes: _installedBook.renderMistakes,
-    };
+    return { recordMistake: _installedBook.recordMistake };
   }
-  return { recordMistake: null, updateMistakesBadge: null, renderMistakes: null };
+  return { recordMistake: null };
 }
 
 export function installWidgetRuntime() {
@@ -39,16 +35,10 @@ export function installWidgetRuntime() {
     stateStore: stateStore,
     apiFetch: apiFetch,
     saveCurrentSession: saveCurrentSession,
-    mountQuizWidget: mountQuizWidget,
-    mountPracticeWidget: mountPracticeWidget,
-    scrollContainer: scrollContainer,
-    getTutorSocratic: function () { return browserWindow.tutorSocratic; },
+    appendAssistantMessage: addAssistantUiMessage,
   });
   const recordMistake = mistakeBook.recordMistake;
   const removeMistakeForQuizSlot = mistakeBook.removeMistakeForQuizSlot;
-  /* Note: updateMistakesBadge/renderMistakes from the mistake book are
-     bridged to window by main.js (window.updateMistakesBadge etc.);
-     installWidgetRuntime only wires the runtimes. */
   configureWidgetRuntimeEarly({
     formatMsg: formatMsg,
     t: browserWindow.t,
@@ -58,7 +48,6 @@ export function installWidgetRuntime() {
     removeMistakeForQuizSlot: removeMistakeForQuizSlot,
     handleQuizPick: handleQuizPick,
     shouldRequestTutorAfterQuiz: shouldRequestTutorAfterQuiz,
-    updateKB: updateKB,
     saveCurrentSession: saveCurrentSession,
   });
   configureAssistantHtml({
@@ -68,12 +57,6 @@ export function installWidgetRuntime() {
     isMsgListMounted: isMsgListMounted,
   });
   _installedBook = mistakeBook;
-  /* Bridge timing: installWidgetRuntime runs from main.js body (after all
-     imports), so these window assignments land before any event handler
-     or React gateway read. legacyBridge only re-exports the getter. */
-  try {
-    browserWindow.renderMistakes = mistakeBook.renderMistakes;
-    browserWindow.updateMistakesBadge = mistakeBook.updateMistakesBadge;
-  } catch (_) { /* empty-catch: intentional — window assignment in headless environments */ }
+  registerMistakeRedoAction(mistakeBook.redoMistake);
   return mistakeBook;
 }

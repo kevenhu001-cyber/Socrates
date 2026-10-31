@@ -72,9 +72,9 @@ test('mobile send places the submitted prompt and thinking state at the viewport
   const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
   await chatInput.focus();
   await chatInput.fill('A focused mobile send should remain at the newest message.');
-  /* Exercise the production button path: handleSendClick passes the blur
-     option into submitChatMessage, so mobile focus/keyboard collapse and the
-     turn anchor are tested in the same interaction. */
+  /* Exercise the React primary action: it passes the blur option into the
+     chat submit path, so mobile focus collapse and the turn anchor share one
+     interaction. */
   await page.locator('#composerPrimaryBtn').click();
   await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
   const enteringTransform = await page.locator('#msgList .msg.user').last().evaluate(
@@ -178,6 +178,8 @@ test('Tutor button send uses the same top anchor while the reply streams', async
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
+  await page.locator('#topModeTutor').click();
+  await expect(page.locator('#topModeTutor')).toHaveAttribute('aria-selected', 'true');
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
@@ -189,8 +191,6 @@ test('Tutor button send uses the same top anchor while the reply streams', async
     ] });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
-    window.appMode = 'tutor';
-
     for (let i = 0; i < 24; i += 1) {
       const role = i % 2 ? 'assistant' : 'user';
       const text = `Tutor history ${i + 1}: ${'reasoning context '.repeat(10)}`;
@@ -227,7 +227,7 @@ test('Tutor button send uses the same top anchor while the reply streams', async
       const users = list.querySelectorAll('.msg.user');
       const latest = users[users.length - 1];
       return {
-        mode: window.appMode,
+        mode: document.body.dataset.appMode,
         offset: Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top),
         anchored: Boolean(list.querySelector('.msg.assistant.turn-viewport-anchor')),
         away: window.stateStore.read('_userScrolledAway'),
@@ -268,7 +268,6 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '77777777-7777-4777-8777-777777777777' });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
-    window.appMode = 'chat';
     window.submitChatMessage('First prompt');
   });
   await expect(page.locator('#msgList .msg.user')).toHaveCount(1);
@@ -484,6 +483,11 @@ test('retry replaces the failed answer and resumes at the visible error position
 
 test('retry replays the failed turn content including attachments', async ({ page }) => {
   await mockAuthedApp(page);
+  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) => route.fulfill({
+    status: 201,
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 'retry-file', name: 'notes.txt', mimeType: 'text/plain', size: 43, kind: 'text' }),
+  }));
   const streamBodies = [];
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     streamBodies.push(route.request().postDataJSON());
@@ -510,15 +514,14 @@ test('retry replays the failed turn content including attachments', async ({ pag
     window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Retry content smoke' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '55555555-5555-4555-8555-555555555555' });
     window.__testActivateMainView('chatView');
-    window.appMode = 'chat';
-    /* Mutate the shared live array in place — window.attachments must keep
-       its identity across modules. */
-    window.attachments.push({
-      kind: 'text',
-      name: 'notes.txt',
-      text: 'Attachment payload the retry must preserve.',
-    });
   });
+
+  await page.locator('#composerAttachInput').setInputFiles({
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Attachment payload the retry must preserve.'),
+  });
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).not.toHaveClass(/pending|error/);
 
   await page.locator('#composerRoot .rich-composer-editor').first().fill('Read the attached notes.');
   await page.evaluate(() => window.submitChatMessage());

@@ -6,7 +6,7 @@
  *
  * Touches via window.*:
  *   CURRENT_USER, state, escapeHtml, esc, t, loadCustomInstructions,
- *   saveCustomInstructions, apiFetch, syncModelPills, closeProfile (self)
+ *   saveCustomInstructions, closeProfile (self)
  *
  * React subscribes to profile and sidebar-user module stores; this module
  * remains the owner of profile actions and imperative shell visibility.
@@ -19,6 +19,7 @@ import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { publishProfileState } from './profileState.ts';
 import { publishSidebarUser } from './sidebarUserState.ts';
 import { setUserMemories } from '../app/lifecycle/userMemory.ts';
+import { apiFetch } from '../util/api.ts';
 import {
   buildCustomInstructionsString,
   loadCustomInstructions,
@@ -126,7 +127,7 @@ function saveProfileName(newName: string) {
   const name = (newName || "").trim();
   if (!name || !browserWindow.CURRENT_USER) return;
   if (name === browserWindow.CURRENT_USER.displayName) return;
-  browserWindow.apiFetch("/api/users/me", {
+  apiFetch("/api/users/me", {
     method: "PATCH",
     body: { displayName: name },
   }).then(function () {
@@ -167,7 +168,7 @@ function onCustomInstructionsChange() {
     };
     saveCustomInstructions(value);
     updateInstSaveState(value.savedAt);
-    browserWindow.apiFetch("/api/users/me", {
+    apiFetch("/api/users/me", {
       method: "PATCH",
       body: { customInstructions: buildCustomInstructionsString(value) },
     }).catch(function () {
@@ -206,7 +207,7 @@ function loadUserMemories() {
   setUserMemories([]);
   if (!browserWindow.CURRENT_USER) return Promise.resolve();
   try {
-    return browserWindow.apiFetch<unknown>("/api/memory", { _authEndpoint: true }).then(function (value) {
+    return apiFetch<unknown>("/api/memory", { _authEndpoint: true }).then(function (value) {
       if (Array.isArray(value)) {
         setUserMemories(value.flatMap(function (memory): string[] {
           if (!memory || typeof memory !== 'object' || Array.isArray(memory)) return [];

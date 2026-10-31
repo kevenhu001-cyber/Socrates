@@ -7,18 +7,15 @@ import { setChatIdInURL } from '../../session/store.ts';
 import { flushRecentsReconcile } from '../../session/recents.ts';
 import { apiFetch } from '../../util/api.ts';
 import { activateMainView } from '../../ui/mainViewController.ts';
-import { syncConversationActive } from '../../ui/mobileModeSwitch.ts';
 import { focusComposer } from '../../composer/controller.ts';
 import { clearComposerPlugins } from '../../composer/pluginSelection.ts';
 import { buildMessageContent, resetAttachments } from '../../attachments.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
-import { updateComposerBtn } from '../../ui/topicSetup.ts';
-import { syncChatModel, getActiveProvider } from '../../pickers.ts';
+import { getActiveProvider } from '../../config/providerConfig.service.ts';
 import { loadWebSearch } from '../webSearchLoader.ts';
 import { generateTopicKBNodes } from '../topicKbNodes.ts';
 import { generateDiagnosticQuestions, type DiagQuestion } from '../diagnosticGenerator.ts';
 import { aiGenerate } from '../mockDiagnostic.ts';
-import { updateKB } from '../../ui/knowledgePanel.ts';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.ts';
 import { buildFallbackDiagnosticQuestions, shouldAutoSearchTutor } from '../../tutor/policy.ts';
 import { clearDiagnosticScreen, showDiagnosticError, showDiagnosticLoading, updateDiagnosticProgress } from '../../ui/diagnosticScreen.ts';
@@ -35,7 +32,6 @@ function isCurrentTutorSession(context: TutorStartContext) {
 function prepareTutorAttachments(context: TutorStartContext) {
   resetAttachments();
   renderAttachmentChips();
-  updateComposerBtn();
 
   if (typeof buildMessageContent !== 'function') {
     stateStore.dispatch({
@@ -89,8 +85,6 @@ function cancelDiagnostic() {
   const diagnosticView = document.getElementById('diagnosticView');
   if (diagnosticView) clearDiagnosticScreen();
   activateMainView('topicSetup', document);
-  updateKB();
-  syncConversationActive();
   clearComposerPlugins('topic');
   clearComposerPlugins('chat');
   focusComposer('topic');
@@ -108,7 +102,6 @@ function completeDiagnosticQuestions(questions: DiagQuestion[] | null) {
   stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'real' });
   updateDiagnosticProgress(100, translate('diag.ready'));
   renderDiagQuestion();
-  updateKB();
   return true;
 }
 
@@ -175,7 +168,6 @@ function installDiagnosticActions(context: TutorStartContext) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: 'Using built-in questions' });
     }
     renderDiagQuestion();
-    updateKB();
   };
 }
 
@@ -228,7 +220,6 @@ export async function startTutorSession(input: SessionStartContext) {
   // Topic generation renames this skeleton; it must also exist on API failure.
   stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: aiGenerate(context.topic).nodes });
   activateMainView('diagnosticView', document);
-  syncChatModel();
   prepareTutorAttachments(context);
   browserWindow.cancelDiagnostic = () => {
     if (isCurrentTutorSession(context)) cancelDiagnostic();

@@ -1,7 +1,6 @@
 // e2e/cmd-k-compat.spec.mjs — Batch 1.5 of the React + TypeScript migration
 // Spec: when the app boots with ?react=1, the Cmd+K palette is owned by
-// React. The legacy window.openCmdK() entry still opens it; React sends input
-// and key actions through the typed legacy gateway and shared module store.
+// React. Keyboard and component actions drive the shared module store.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -26,7 +25,7 @@ test('Cmd-K React mode hydrates the overlay with React', async ({ page }) => {
   expect(await page.evaluate(() => !('__socratesCmdK' in window))).toBe(true);
 });
 
-test('Cmd-K React mode opens via the legacy entry point and React renders the modal', async ({ page }) => {
+test('Cmd-K React mode opens from the keyboard and React renders the modal', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -42,10 +41,7 @@ test('Cmd-K React mode opens via the legacy entry point and React renders the mo
     json: { hits: [{ id: 'cmdk-e2e-result', title: 'React search result', snippet: 'module store result' }] },
   }));
 
-  // Trigger via the legacy window.openCmdK() used by the rest of the app.
-  await page.evaluate(() => {
-    if (typeof window.openCmdK === 'function') window.openCmdK();
-  });
+  await page.keyboard.press('Control+k');
 
   const overlay = page.locator('#cmdKOverlay');
   await expect(overlay).not.toHaveClass(/hidden/);

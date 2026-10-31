@@ -7,19 +7,19 @@ import { loadLibraryData, loadPluginsData, loadProjectsData } from '../react/pag
 import { loadScheduledTasks } from '../react/pages/scheduled/scheduled.service';
 import { ensureConnectorIcons, restoreConnectorReturnContext } from './nav.ts';
 import { getActiveDestination } from './navigation.store';
+import { setSidebarPanelView } from './sidebar.store';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { DESTINATIONS } from './navigation.destinations';
 
 function closeAllPanels(): void {
-  ['knowledgePanel', 'mistakesPanel'].forEach((id) => document.getElementById(id)?.classList.add('hidden'));
-  ['tabKnowledge', 'tabMistakes'].forEach((id) => document.getElementById(id)?.classList.remove('active'));
+  setSidebarPanelView('recents');
 }
 
 function openCreation(name: 'images' | 'assistants' | 'sites'): void {
-  void import('../ui/creationSurfaces.ts').then((module) => {
+  void import('../ui/creationSurfaces.ts').then(async (module) => {
     if (getActiveDestination() !== name) return;
-    module.renderCreationSurface(name);
-    // Creation hosts are inserted by the lazy module, unlike static panels.
+    await module.openCreationSurface(name);
+    if (getActiveDestination() !== name) return;
     activateMainView(DESTINATIONS[name].host, document);
   }).catch((error) => {
     console.error('[nav] creation surface failed to load', error);
@@ -48,8 +48,9 @@ function openPlugins(): void {
 }
 
 function openExam(): void {
-  const open = (window as Window & { openExamPanel?: () => void }).openExamPanel;
-  open?.();
+  void import('../exam.ts').then((module) => module.openExamPanel()).catch((error) => {
+    reportSwallow(error, 'sidebar/navigation.openExam');
+  });
 }
 
 function openAdmin(): void {

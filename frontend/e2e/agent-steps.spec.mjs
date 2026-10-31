@@ -53,9 +53,7 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
 
   const bubble = page.locator('.msg.assistant').last();
   const surface = bubble.locator('.turn-activity-surface');
-  /* Agent steps are owned by the React activity disclosure. The legacy step
-     markup is only a compatibility artifact and may sit beneath this surface;
-     exercise the visible user path rather than targeting that hidden copy. */
+  /* Agent steps are rendered in the React activity disclosure. */
   await surface.locator('.thinking-accordion-toggle').click();
   const steps = surface.locator('.agent-step');
   await expect(steps).toHaveCount(3);

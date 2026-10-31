@@ -353,7 +353,7 @@
    surfaces — the conversation composer is the landing composer. */
 #appShell .composer-shell .effort-picker {
   position: relative;
-  display: inline-flex;
+  display: none;
   align-self: end;
   width: auto;
   min-width: 0;
@@ -361,13 +361,6 @@
   opacity: 1;
   transform: none;
   pointer-events: auto;
-}
-/* ui/effortPicker.js toggles the standard `hidden` attribute to keep reasoning
-   effort in the top-bar configuration menu on desktop and in the composer rail
-   on phones. An author `display` outranks the user-agent `[hidden]` rule, so
-   the desktop leak has to be restated here at higher specificity. */
-#appShell .composer-shell .effort-picker[hidden] {
-  display: none;
 }
 #appShell .composer-shell .effort-trigger {
   display: inline-flex;
@@ -407,6 +400,7 @@
    Always two storeys: the editor gets the whole first row, the controls sit
    on a rail beneath it. Borderless card with a soft drop shadow. */
 @media (max-width: 768px) {
+  #appShell .composer-shell .effort-picker { display: inline-flex; }
   #appShell .composer-shell:not(.voice-recording-active),
   #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
   /* P_composer-single — the landing and conversation shells are one node
@@ -514,8 +508,7 @@
 }
 
 /* ── Voice recording ───────────────────────────────────────────────────────
-   While dictating, the shell hosts only the recording bar (ui/voiceInput.js
-   toggles .voice-recording-active and injects .voice-recording-bar). */
+   While dictating, the React composer store shows only its recording bar. */
 #appShell .composer-shell.voice-recording-active {
   position: relative;
   box-sizing: border-box;

@@ -32,25 +32,21 @@ async function openMistakeBook(page, mistakes) {
   await page.setViewportSize({ width: 1280, height: 1200 });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  /* After the top-bar Chat/Tutor pill was removed (see frontend/index.html),
-     enter tutor mode programmatically via the same entry point the deleted
-     pill used to drive. */
-  await page.evaluate(() => window.toggleAppMode?.('tutor'));
-  await expect.poll(() => page.evaluate(() => window.appMode)).toBe('tutor');
+  await page.locator('#topModeTutor').click();
+  await expect(page.locator('#topModeTutor')).toHaveAttribute('aria-selected', 'true');
   await page.locator('#tabMistakes').click();
   await expect(page.locator('#mistakesPanel')).toBeVisible();
   await page.evaluate((list) => {
     window.stateStore.dispatch({ type: 'state/set', key: 'mistakes', value: list });
-    window.updateMistakesBadge?.();
-    window.renderMistakes?.();
   }, mistakes);
-  /* Fall back to whatever the app exposes if the badge/redraw helpers are
-     not on window; the render is idempotent either way. */
+  await expect(page.locator('#mistakesTabBadge')).toHaveText(mistakes.length ? String(mistakes.length) : '');
+}
+
+async function activateTranscript(page) {
   await page.evaluate(() => {
-    const tab = document.getElementById('tabMistakes');
-    if (tab) tab.click();
+    window.__testActivateMainView('chatView');
+    document.body.dataset.conversationActive = 'true';
   });
-  await page.waitForTimeout(200);
 }
 
 test('the empty state is localized', async ({ page }) => {
@@ -77,4 +73,55 @@ test('cards localize the type, redo count and conquered tag', async ({ page }) =
      a "1 times", both read as broken. */
   await expect(second.locator('.mistake-redo-count')).toHaveText('已重做 1 次');
   await expect(second.locator('.mistake-resolved-tag')).toHaveCount(0);
+
+  await page.locator('#mistakeFilterBar [data-v="unresolved"]').click();
+  await expect(first).toHaveCount(0);
+  await expect(second).toHaveCount(1);
+  await page.locator('#mistakeFilterBar [data-v="all"]').click();
+  await expect(first).toHaveCount(1);
+});
+
+test('practice redo appends a React-owned assistant widget', async ({ page }) => {
+  await openMistakeBook(page, [{
+    id: 'redo-practice', type: 'practice', topic: '代数', q: '解释为什么 x = 4。',
+    options: [], correct: '因为两边同时减去 2。', userAnswer: null,
+    timestamp: Date.now(), redoCount: 0,
+  }]);
+  await activateTranscript(page);
+
+  await page.locator('[data-redo="redo-practice"]').click();
+  const message = page.locator('#msgList > .msg.assistant').last();
+  await expect(message).toHaveAttribute('data-react-owned', '1');
+  await expect(message).toContainText('重做做错的题目');
+  const widget = message.locator('.inline-practice');
+  await expect(widget).toHaveCount(1);
+  await expect(widget.locator('.inline-practice-problem')).toContainText('解释为什么 x = 4。');
+
+  await widget.locator('.inline-practice-reveal').click();
+  await expect(widget.locator('.inline-practice-feedback')).toHaveText('因为两边同时减去 2。');
+});
+
+test('quiz redo appends a React-owned widget and resolves the current mistake slot', async ({ page }) => {
+  await openMistakeBook(page, [{
+    id: 'redo-quiz', type: 'quiz', topic: '算术', q: '2 + 2 = ?',
+    options: [{ letter: 'A', text: '4' }, { letter: 'B', text: '5' }],
+    correct: 'A', userAnswer: 'B', quizSlotId: 'original-quiz-slot',
+    timestamp: Date.now(), redoCount: 0,
+  }]);
+  await activateTranscript(page);
+
+  await page.locator('[data-redo="redo-quiz"]').click();
+  const message = page.locator('#msgList > .msg.assistant').last();
+  await expect(message).toHaveAttribute('data-react-owned', '1');
+  const widget = message.locator('.inline-quiz');
+  await expect(widget).toHaveCount(1);
+  await expect(widget.locator('.inline-quiz-q')).toContainText('2 + 2 = ?');
+  const redoSlotId = await page.evaluate(() => window.stateStore.read('mistakes')[0].quizSlotId);
+  expect(redoSlotId).toMatch(/^redo-quiz-/);
+  const rawText = await page.evaluate(() => window.stateStore.read('messages').at(-1).rawText);
+  expect(rawText).toContain(`data-quiz-id="${redoSlotId}"`);
+
+  await widget.locator('[data-letter="A"]').click();
+  await expect(widget.locator('.inline-quiz-feedback')).toHaveClass(/\bok\b/);
+  await expect(page.locator('#mistakesList .mistake-card[data-mistake-id="redo-quiz"]')).toHaveCount(0);
 });

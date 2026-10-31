@@ -2,7 +2,7 @@
  * Share modal: create, copy, revoke share links for sessions. Also includes
  * read-only session loading from share tokens.
  * Extracted from main.js (post-Wave-2): toggleShareBtn L10076, openShareModal
- * L10107, loadSharedSession L10201, renderSharedQuestionCard L10390, etc.
+ * L10107, loadSharedSession L10201, etc.
  *
  * Touches via window.*:
  *   state, CURRENT_USER, apiFetch, esc, formatMsg, t, showToast
@@ -11,30 +11,28 @@
  * remains the owner of share actions and API requests.
  */
 
-import { esc } from '../render/helpers.ts';
 import { apiFetch } from '../util/api.ts';
 import { stateStore } from '../state/store.ts';
 import { showToast } from './toast.js';
 import { activateMainView } from './mainViewController.ts';
-import { takeOverSharedMessageList } from './msgListMount.ts';
-import { renderSharedAssistantTurn, releaseSharedAssistantTurns } from './assistantTurnRenderer.ts';
-
-import { disposeVisualizations } from '../render/vizStubs.ts';
+import { publishReactChatRuntime } from './reactBridge.ts';
+import { mountSharedMessageList } from '../react/message-list/MessageList.tsx';
+import { registerSharedViewCleanup } from './msgListMount.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishShareState, type ShareVisibility } from './shareState.ts';
-import { renderSharedExamFooter as renderSharedExamFooterAction } from '../react/exam/sharedExamFooterHost.tsx';
-import { restorePersistedMessageExtras, type MessageEntry } from './messageActions.ts';
+import type { MessageEntry } from './messageActions.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
-import { getCurrentLanguage } from '../i18n/languageState.ts';
-import type { ToolCall } from '../react/types/domain.ts';
+import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
+import { hideGate } from '../auth/index.ts';
+import { dispatchExam, dispatchUi } from '../store/index.ts';
+import type { ExamQuestion } from '../exam/types.ts';
 
 interface SharedMessage extends MessageEntry {
   role: string;
   content?: unknown;
   reasoningContent?: unknown;
 }
-interface SharedExamQuestion { type: string; q?: unknown; opts?: unknown[] }
-interface SharedExamData { questions?: SharedExamQuestion[]; answers?: Record<string, unknown>; submitted?: boolean; topic?: string }
+interface SharedExamData { questions?: ExamQuestion[]; answers?: Record<string, string | number | undefined>; submitted?: boolean; topic?: string }
 interface SharedSession {
   id: string;
   topic?: string;
@@ -65,11 +63,22 @@ function parseSharedSession(value: unknown): SharedSession | null {
   }) : [];
   const rawExam = isRecord(value.examData) ? value.examData : null;
   const examData = rawExam ? {
-    questions: Array.isArray(rawExam.questions) ? rawExam.questions.flatMap((question): SharedExamQuestion[] => {
-      if (!isRecord(question) || typeof question.type !== 'string') return [];
-      return [{ type: question.type, q: question.q, opts: Array.isArray(question.opts) ? question.opts : undefined }];
+    questions: Array.isArray(rawExam.questions) ? rawExam.questions.flatMap((question): ExamQuestion[] => {
+      if (!isRecord(question) || typeof question.q !== 'string' || typeof question.type !== 'string') return [];
+      const type = question.type === 'multiple-choice' || question.type === 'fill-blank' || question.type === 'short-answer' || question.type === 'error'
+        ? question.type : 'error';
+      const parsed: ExamQuestion = { q: question.q, type };
+      if (typeof question.explanation === 'string') parsed.explanation = question.explanation;
+      if (typeof question.answer === 'string' || typeof question.answer === 'number') parsed.answer = question.answer;
+      if (Array.isArray(question.answers)) parsed.answers = question.answers.filter((answer): answer is string => typeof answer === 'string');
+      if (Array.isArray(question.opts)) parsed.opts = question.opts.flatMap((option) => {
+        if (!isRecord(option)) return [];
+        const text = typeof option.text === 'string' || option.text === null ? option.text : null;
+        return [{ letter: typeof option.letter === 'string' ? option.letter : undefined, text }];
+      });
+      return [parsed];
     }) : [],
-    answers: isRecord(rawExam.answers) ? rawExam.answers : undefined,
+    answers: isRecord(rawExam.answers) ? Object.fromEntries(Object.entries(rawExam.answers).filter((entry): entry is [string, string | number] => typeof entry[1] === 'string' || typeof entry[1] === 'number')) : undefined,
     submitted: typeof rawExam.submitted === 'boolean' ? rawExam.submitted : undefined,
     topic: typeof rawExam.topic === 'string' ? rawExam.topic : undefined,
   } : undefined;
@@ -91,6 +100,7 @@ let _shareToken: string | null = null;
 let _shareUrl = "";
 let _shareStatus = "";
 let _shareError = "";
+let sharedShellRestore: (() => void) | null = null;
 
 /* React reads share data from the same typed module store. Overlay
    visibility remains owned by the legacy shell class. */
@@ -125,8 +135,8 @@ function toggleShareBtn() {
      sure the find bar itself is dismissed. */
   const findBtn = document.getElementById("findBtn");
   if (findBtn) findBtn.classList.toggle("hidden", !show);
-  if (!show && typeof browserWindow.closeFindInSession === "function") {
-    try { browserWindow.closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:75'); }
+  if (!show) {
+    try { closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:75'); }
   }
 }
 
@@ -135,11 +145,7 @@ function getShareOverlay(): HTMLElement | null {
 }
 
 function hideAuthGate() {
-  const gate = document.getElementById("authGate");
-  if (gate) gate.classList.add("hidden");
-  if (typeof browserWindow.hideGate === "function") {
-    try { browserWindow.hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:hideGate'); }
-  }
+  try { hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:hideGate'); }
 }
 
 function openShareModal(sessionId?: string) {
@@ -234,107 +240,29 @@ async function revokeShareLink() {
   }
 }
 
-/* Read-only message list used by loadSharedSession. Renders the
-   server-projected messages without an input area, share button, or
-   any editing affordances.
-
-   P_share-declarative-turn — an assistant turn that recorded inline tool
-   split points is laid out by the same React renderer the chat uses
-   (react/tool-run), read-only, instead of re-splicing HTML strings here. That
-   leaves this function with the prose path for everything the renderer cannot
-   take: user turns, turns with no tool calls, and turns stored before
-   textOffset existed (whose baked rows still ride along in `content`). */
-function sharedMessageSource(message: SharedMessage): string {
-  if (typeof message.rawText === "string" && message.rawText.length > 0) return message.rawText;
-  if (typeof message.content === "string" && message.content.length > 0) return message.content;
-  return "";
+function _renderSharedMessageList() {
+  publishReactChatRuntime({ type: 'state-synced', reason: 'shared-session-loaded' });
+  mountSharedMessageList();
 }
-
-function renderDeclarativeSharedTurn(body: HTMLElement, message: SharedMessage) {
-  if (message.role !== "assistant" || typeof message.rawText !== "string" || !message.rawText
-      || !Array.isArray(message.toolCalls) || message.toolCalls.length === 0) return false;
-  body.className = "msg-body content is-declarative";
-  try {
-    return renderSharedAssistantTurn(body, {
-      id: message.id || undefined,
-      clientId: message.id || undefined,
-      role: "assistant",
-      type: "assistant",
-      rawText: message.rawText,
-      html: typeof message.content === "string" ? message.content : "",
-      toolCalls: message.toolCalls as unknown as readonly ToolCall[],
-      reasoningContent: typeof message.reasoningContent === 'string' ? message.reasoningContent : null,
-    });
-  } catch (_) {
-    body.className = "msg-body content";
-    return false;
-  }
-}
-
-function renderSharedMessageFallback(body: HTMLDivElement, message: SharedMessage, source: string) {
-  let html = "";
-  try {
-    /* Preserve already-rendered inline rows in older saved messages. */
-    if (message.role === "assistant" && typeof message.content === "string"
-        && message.content.indexOf("tool-inline") !== -1) html = message.content;
-    if (!html) {
-      html = message.role === "assistant" && typeof browserWindow.renderAssistantHTML === "function"
-        ? browserWindow.renderAssistantHTML(source)
-        : (typeof browserWindow.formatMsg === "function" ? browserWindow.formatMsg(source) : ("<p>" + esc(source) + "</p>"));
-    }
-  } catch (_) {
-    html = "<p>" + esc(source) + "</p>";
-  }
-  body.innerHTML = html;
-}
-
-function restoreSharedMessageExtras(body: HTMLDivElement, message: SharedMessage) {
-  if (message.role !== "assistant") return;
-  restorePersistedMessageExtras(body, message, "share-" + (message.id || "message"));
-}
-
-function renderSharedMessage(message: SharedMessage) {
-  const div = document.createElement("div");
-  div.className = "msg " + (message.role || "user");
-  const body = document.createElement("div");
-  body.className = "msg-body content";
-  const source = sharedMessageSource(message);
-  /* The offsets index raw markdown; the renderer chooses the whole branch. */
-  const declarative = renderDeclarativeSharedTurn(body, message);
-  if (!declarative) {
-    if (body.className !== "msg-body content") body.className = "msg-body content";
-    renderSharedMessageFallback(body, message, source);
-  }
-  div.appendChild(body);
-  if (!declarative) restoreSharedMessageExtras(body, message);
-  return div;
-}
-
-function prepareSharedMessageList(msgList: HTMLElement) {
-  // Release React roots before any legacy child replacement.
-  takeOverSharedMessageList(msgList);
-  releaseSharedAssistantTurns();
-  if (typeof disposeVisualizations === "function") {
-    try { disposeVisualizations(msgList); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:195'); }
-  }
-  msgList.innerHTML = "";
-}
-
-function _renderSharedMessageList(messages: SharedMessage[]) {
-  const msgList = document.getElementById("msgList");
-  if (!msgList) return;
-  prepareSharedMessageList(msgList);
-  messages.forEach(function (message) {
-    if (message) msgList.appendChild(renderSharedMessage(message));
-  });
-}
-
 function _switchToSharedChatView() {
+  restoreSharedViewShell();
+  const banner = document.getElementById("sharedBanner");
+  const bannerParent = banner?.parentElement || null;
+  const bannerNextSibling = banner?.nextSibling || null;
+  const inputBar = document.getElementById("chatInputBar");
+  const inputBarWasHidden = inputBar?.classList.contains('hidden') || false;
+  const topBar = document.querySelector(".chat-top-bar");
+  const topBarDisplay = (topBar as HTMLElement | null)?.style.display || '';
+  const shareBtn = document.getElementById("shareBtn");
+  const shareButtonDisplay = shareBtn?.style.display || '';
+  const composer = document.getElementById("composerRoot");
+  const composerAriaDisabled = composer?.getAttribute('aria-disabled') ?? null;
+  const recentsPane = document.getElementById("recentsPane");
+  const recentsWereHidden = recentsPane?.classList.contains('hidden') || false;
   activateMainView("chatView", document);
   /* Show the read-only banner — it exists in index.html but was never
      unhidden, so shared sessions had no visible "this is not yours"
      affordance. */
-  const banner = document.getElementById("sharedBanner");
   if (banner) {
     // The transcript was lifted out of mainInner during the shell migration.
     // Its read-only notice must follow it instead of staying in the hidden landing container.
@@ -346,18 +274,34 @@ function _switchToSharedChatView() {
       if (text && text !== "share.readOnlyBanner") label.textContent = text;
     }
   }
-  const inputBar = document.getElementById("chatInputBar");
   if (inputBar) inputBar.classList.add("hidden");
-  const topBar = document.querySelector(".chat-top-bar");
   if (topBar) (topBar as HTMLElement).style.display = "none";
-  const shareBtn = document.getElementById("shareBtn");
   if (shareBtn) shareBtn.style.display = "none";
-  const composer = document.getElementById("composerRoot");
   if (composer) composer.setAttribute("aria-disabled", "true");
-  const recentsPane = document.getElementById("recentsPane");
   if (recentsPane) recentsPane.classList.add("hidden");
+  sharedShellRestore = () => {
+    if (banner) {
+      banner.classList.add('hidden');
+      if (bannerParent) bannerParent.insertBefore(banner, bannerNextSibling?.parentNode === bannerParent ? bannerNextSibling : null);
+    }
+    inputBar?.classList.toggle('hidden', inputBarWasHidden);
+    if (topBar) (topBar as HTMLElement).style.display = topBarDisplay;
+    if (shareBtn) shareBtn.style.display = shareButtonDisplay;
+    if (composer) {
+      if (composerAriaDisabled === null) composer.removeAttribute('aria-disabled');
+      else composer.setAttribute('aria-disabled', composerAriaDisabled);
+    }
+    recentsPane?.classList.toggle('hidden', recentsWereHidden);
+    sharedShellRestore = null;
+  };
   hideAuthGate();
 }
+
+function restoreSharedViewShell(): void {
+  sharedShellRestore?.();
+}
+
+registerSharedViewCleanup(restoreSharedViewShell);
 
 function restoreSharedMessage(message: SharedMessage) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : typeof message.content === 'string' ? message.content : '';
@@ -387,9 +331,9 @@ function installSharedSessionState(session: SharedSession) {
   });
 }
 
-function showSharedChatSession(session: SharedSession) {
+function showSharedChatSession() {
   _switchToSharedChatView();
-  _renderSharedMessageList(session.messages || []);
+  _renderSharedMessageList();
   document.documentElement.dataset.bootState = "app";
   if (typeof browserWindow.renderRecents === "function") browserWindow.renderRecents();
 }
@@ -397,11 +341,7 @@ function showSharedChatSession(session: SharedSession) {
 function recoverFailedSharedSessionLoad() {
   console.log("[share] load failed");
   document.documentElement.dataset.bootState = "app";
-  if (typeof browserWindow.hideGate === "function") {
-    try { browserWindow.hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:371'); }
-  }
-  const gate = document.getElementById("authGate");
-  if (gate) gate.classList.add("hidden");
+  try { hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:371'); }
   showToast("Shared session not found or has expired.");
 }
 
@@ -418,118 +358,47 @@ async function loadSharedSession(token: string|number|boolean) {
       await loadSharedExamSession(session);
       return;
     }
-    showSharedChatSession(session);
+    showSharedChatSession();
   } catch {
     recoverFailedSharedSessionLoad();
   }
 }
 
-function prepareSharedExamState(session: { topic?: string }, exam: SharedExamData, questions: SharedExamQuestion[]) {
-  const answers = exam.answers || {};
-  stateStore.dispatch({ type: 'state/batch', patch: {
+function prepareSharedExamState(session: { topic?: string }, exam: SharedExamData, questions: ExamQuestion[]) {
+  dispatchExam({ type: 'exam/patch', patch: {
     examReadOnly: true,
     examQuestions: questions,
-    examAnswers: answers,
+    examAnswers: exam.answers || {},
     examSubmitted: !!exam.submitted,
     examTopic: exam.topic || session.topic || '',
     examCount: questions.length,
-    _examInView: true,
-  } });
-}
-
-function prepareSharedExamChrome(session: { topic?: string }, exam: SharedExamData) {
-  activateMainView("examView", document);
-  /* exam.js is lazy — the shared view's Close button uses the delegated
-     data-exam-command listener, so kick off the module load now. */
-  if (typeof browserWindow.__loadExamModule === "function") {
-    try { browserWindow.__loadExamModule(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:397'); }
-  }
-  const sharedExamTitle = (exam.submitted ? "Exam Results: " : "") + (exam.topic || session.topic || "");
-  const titleEl = document.getElementById("examViewTitle");
-  if (titleEl) titleEl.textContent = sharedExamTitle;
-  const titleBar = document.getElementById("examTitleBar");
-  if (titleBar) { titleBar.textContent = sharedExamTitle; titleBar.classList.remove("hidden"); }
-  document.body.classList.add("exam-active");
-}
-
-function renderSharedExamQuestions(questions: SharedExamQuestion[]) {
-  const body = document.getElementById("examViewBody");
-  if (!body) return;
-  body.innerHTML = '<div id="examQuestionsContainer"></div>';
-  const container = body.querySelector("#examQuestionsContainer");
-  if (!container) return;
-  questions.forEach(function (question: SharedExamQuestion, index: number) {
-    const card = document.createElement("div");
-    card.className = "exam-q-card";
-    card.id = "examQ" + index;
-    card.setAttribute("data-idx", String(index));
-    container.appendChild(card);
-    renderSharedQuestionCard(index, question);
-  });
-}
-
-function renderSharedExamFooter() {
-  const footer = document.getElementById("examViewFooter");
-  if (!footer) return;
-  const closeLabel = (getCurrentLanguage() === "zh") ? "关闭" : "Close";
-  renderSharedExamFooterAction(footer, closeLabel);
+    examViewMode: 'questions',
+    examCancel: false,
+    examStatusMessage: '',
+    examStatusDetail: '',
+  } })
+  dispatchUi({ type: 'ui/set', key: '_examInView', value: true })
 }
 
 function revealSharedExam() {
-  hideAuthGate();
-  document.documentElement.dataset.bootState = "app";
+  hideAuthGate()
+  document.documentElement.dataset.bootState = 'app'
 }
 
 async function loadSharedExamSession(session: SharedSession) {
   if (!session) return;
-  try {
-    const examModule = await browserWindow.__loadExamModule?.();
-    examModule?.clearExamSetup?.();
-    examModule?.clearExamQuestionCards?.();
-  } catch (error) {
-    reportSwallow(error, 'ui/share.impl.ts:loadSharedExamSession.clearReactSetup');
-  }
+  const { mountExamView } = await import('../react/exam/mount.tsx');
+  mountExamView();
   const exam = session.examData || {};
-  const questions: SharedExamQuestion[] = Array.isArray(exam.questions) ? exam.questions : [];
+  const questions = Array.isArray(exam.questions) ? exam.questions : [];
+  activateMainView('examView', document);
   prepareSharedExamState(session, exam, questions);
-  prepareSharedExamChrome(session, exam);
-  renderSharedExamQuestions(questions);
-  renderSharedExamFooter();
   revealSharedExam();
 }
-
-function renderSharedQuestionCard(idx: number, q: SharedExamQuestion) {
-  const ph = document.getElementById("examQ" + idx);
-  if (!ph) return;
-  const saved = (browserWindow.stateStore.read("examAnswers") && browserWindow.stateStore.read("examAnswers")[idx]);
-  const zh = getCurrentLanguage() === "zh";
-  let html = '<div class="exam-q-num">' + (zh ? "题目" : "Question") + ' ' + (idx + 1) + ' / ' + Number(browserWindow.stateStore.read("examCount") || 0) + ' <span class="exam-q-type">' + esc(q.type || "") + '</span></div>';
-  html += '<div class="exam-q-text">' + (typeof browserWindow.formatMsg === "function" ? browserWindow.formatMsg(String(q.q || "")) : esc(q.q || "")) + '</div>';
-  if (q.type === "multiple-choice" && Array.isArray(q.opts)) {
-    html += '<div class="exam-q-opts">';
-    q.opts.forEach(function (o: unknown, oi: number) {
-      const isSel = (saved === oi);
-      html += '<div class="exam-q-opt' + (isSel ? " selected" : "") + '">' +
-        '<span class="exam-q-opt-letter">' + String.fromCharCode(65 + oi) + '</span>' +
-        '<span class="exam-q-opt-text">' + esc(o) + '</span>' +
-        (isSel ? '<span class="exam-q-opt-check">✓</span>' : '') +
-      '</div>';
-    });
-    html += '</div>';
-  } else if (q.type === "fill-blank") {
-    const v = (typeof saved === "string") ? saved : "";
-    html += '<div class="exam-q-fill-display">' + esc(v) + '</div>';
-  } else if (q.type === "short-answer") {
-    const vv = (typeof saved === "string") ? saved : "";
-    html += '<div class="exam-q-fill-display exam-q-fill-display-multiline">' + esc(vv) + '</div>';
-  }
-  ph.innerHTML = html;
-}
-
 export {
   toggleShareBtn,
   openShareModal, closeShareModal, selectShareVis, renderShareModal,
   createShareLink, copyShareLink, revokeShareLink, resetShareToken,
-  loadSharedSession, loadSharedExamSession, renderSharedQuestionCard,
+  loadSharedSession, loadSharedExamSession,
   _shareVisibility, _shareToken, _shareUrl,
 };

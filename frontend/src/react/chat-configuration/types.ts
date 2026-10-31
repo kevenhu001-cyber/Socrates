@@ -27,6 +27,7 @@ export interface ChatConfigurationSnapshot {
   effort: ReasoningEffort;
   speed: ResponseSpeed;
   anchorRect: ChatConfigurationAnchor | null;
+  triggerId: string | null;
   revision: number;
 }
 

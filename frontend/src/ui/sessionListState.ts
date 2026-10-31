@@ -40,6 +40,14 @@ export function getSessionListSearchQuery(): string {
 
 export function setSessionListSearchQuery(query: string): void {
   requestedSearchQuery = query || '';
+  const current = sessionListState.getSnapshot();
+  publishSessionListState({
+    sessions: current.sessions,
+    currentSessionId: current.currentSessionId,
+    searchQuery: requestedSearchQuery,
+    filter: current.filter,
+    fetchFailed: current.fetchFailed,
+  });
 }
 
 export const sessionListState = createImmutableBridge<SessionListSnapshot, SessionListUpdate>({

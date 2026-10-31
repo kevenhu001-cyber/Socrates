@@ -58,11 +58,7 @@
   .sidebar-more-item,
   .user-row,
   .kb-node,
-  .mobile-mode-item,
-  .mobile-mode-trigger,
   .home-quick-action,
-  .model-picker-item,
-  .extensions-item,
   .thinking-status-clickable
 ):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed),
 #appShell :is(
@@ -76,11 +72,7 @@
   .sidebar-more-item,
   .user-row,
   .kb-node,
-  .mobile-mode-item,
-  .mobile-mode-trigger,
   .home-quick-action,
-  .model-picker-item,
-  .extensions-item,
   .thinking-status-clickable
 ):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed) {
   background-color: var(--ui-press-tint);
@@ -100,11 +92,7 @@
     .sidebar-more-item,
     .user-row,
     .kb-node,
-    .mobile-mode-item,
-    .mobile-mode-trigger,
     .home-quick-action,
-    .model-picker-item,
-    .extensions-item,
     .thinking-status-clickable
   ) {
     scale: 1;
@@ -130,11 +118,7 @@
     .sidebar-more-item,
     .user-row,
     .kb-node,
-    .mobile-mode-item,
-    .mobile-mode-trigger,
     .home-quick-action,
-    .model-picker-item,
-    .extensions-item,
     .thinking-status-clickable
   ):is(:active, .is-pressed) {
     scale: 1;
@@ -154,11 +138,7 @@
     .sidebar-more-item,
     .user-row,
     .kb-node,
-    .mobile-mode-item,
-    .mobile-mode-trigger,
     .home-quick-action,
-    .model-picker-item,
-    .extensions-item,
     .thinking-status-clickable
   ).is-press-release {
     scale: 1;

@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 
 import { saveChatPreferences, type ReasoningEffort, type ResponseSpeed } from '../../config/chatPreferences';
 import { resolveEffectiveEffort } from '../../config/effectiveEffort';
-import { pickActiveProviderById } from '../../pickers.ts';
+import { setActiveProvider } from '../../config/providerConfig.service.ts';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import {
@@ -102,11 +102,7 @@ export function ChatConfiguration() {
   };
 
   const pickModel = (id: string) => {
-    if (id && id !== snapshot.activeId) {
-      pickActiveProviderById(id);
-      /* The pill's tooltip/aria copy carries the active model name. */
-      getLegacyActions().composer.syncEffortUI();
-    }
+    if (id && id !== snapshot.activeId) void setActiveProvider(id);
     closeChatConfiguration();
   };
 

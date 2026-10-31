@@ -4,7 +4,18 @@ import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { createElement } from 'react';
 import { mountTutorWidget } from '../react/tutor-widgets/widgetHost.tsx';
-import { ExampleWidget, FlashcardWidget, PracticeWidget, QuizWidget, TheoremWidget } from '../react/tutor-widgets/InlineTutorWidgets.tsx';
+import {
+  DefinitionWidget,
+  DerivationWidget,
+  ExampleWidget,
+  FlashcardWidget,
+  KeyPointWidget,
+  PracticeWidget,
+  ProofWidget,
+  QuizWidget,
+  StepListWidget,
+  TheoremWidget,
+} from '../react/tutor-widgets/InlineTutorWidgets.tsx';
 import type {
   ParsedDefinition,
   ParsedDerivation,
@@ -26,8 +37,7 @@ export interface WidgetRuntime {
   submitChatMessage?: typeof import('../chat/sendPipeline.ts')['submitChatMessage'];
   recordMistake?: (entry: Record<string, unknown>) => void;
   removeMistakeForQuizSlot?: (slotId: string) => void;
-  handleQuizPick?: typeof handleQuizPick;
-  updateKB?: typeof import('../ui/knowledgePanel.ts')['updateKB'];
+  handleQuizPick?: (picked: PickedQuizOption, parsed: QuizMountData) => QuizPickFeedback | Promise<QuizPickFeedback>;
   saveCurrentSession?: typeof import('../session/persistence.ts')['saveCurrentSession'];
 }
 
@@ -35,7 +45,8 @@ export type QuizMountData = ParsedQuiz;
 export type PracticeMountData = Pick<ParsedPractice, 'problem'> & Partial<ParsedPractice> & { slotId?: string | null; correct?: string };
 export interface ParsedStep { n: number; body: string }
 export interface TheoremMountData extends ParsedTheorem { proofTitle?: string; proofBody?: string }
-export interface PickedQuizOption { letter: string; text: string; html?: string }
+export interface PickedQuizOption { letter: string; text: string }
+export interface QuizPickFeedback { feedbackText: string; feedbackClass: string }
 
 let runtime: WidgetRuntime = {
   formatMsg: (value) => String(value ?? ''),
@@ -61,16 +72,16 @@ export function mountExampleWidget(slot: Element, parsed: ParsedExample) {
 }
 
 export function mountDefinitionWidget(slot: Element, parsed: ParsedDefinition) {
-  const el = document.createElement('div'); el.className = 'inline-definition';
-  if (parsed.term) { const node = document.createElement('div'); node.className = 'inline-definition-term'; node.innerHTML = runtime.formatMsg(parsed.term); el.appendChild(node); }
-  if (parsed.body) { const node = document.createElement('div'); node.className = 'inline-definition-body'; node.innerHTML = runtime.formatMsg(parsed.body); el.appendChild(node); }
-  slot.replaceWith(el);
+  return mountTutorWidget(slot, 'definition', createElement(DefinitionWidget, {
+    term: parsed.term ? runtime.formatMsg(parsed.term) : '',
+    body: parsed.body ? runtime.formatMsg(parsed.body) : '',
+  }));
 }
 
 export function mountStepList(slot: Element, steps: ParsedStep[]) {
-  const el = document.createElement('div'); el.className = 'inline-step-list';
-  steps.forEach((step) => { const row = document.createElement('div'); row.className = 'inline-step'; const number = document.createElement('span'); number.className = 'inline-step-n'; number.textContent = `${step.n}.`; const body = document.createElement('div'); body.className = 'inline-step-body'; body.innerHTML = runtime.formatMsg(step.body); row.append(number, body); el.appendChild(row); });
-  slot.replaceWith(el);
+  return mountTutorWidget(slot, 'step-list', createElement(StepListWidget, {
+    steps: steps.map((step) => ({ ...step, body: runtime.formatMsg(step.body) })),
+  }));
 }
 
 export function mountFlashcardWidget(slot: Element, parsed: ParsedFlashcard) {
@@ -91,9 +102,26 @@ export function mountTheoremWidget(slot: Element, parsed: TheoremMountData) {
   }));
 }
 
-export function mountProofWidget(slot: Element, parsed: ParsedProof) { const el = document.createElement('div'); el.className = 'inline-proof'; if (parsed.title) { const node = document.createElement('div'); node.className = 'inline-proof-title'; node.innerHTML = runtime.formatMsg(parsed.title); el.appendChild(node); } if (parsed.body) { const node = document.createElement('div'); node.className = 'inline-proof-body'; node.innerHTML = runtime.formatMsg(parsed.body); el.appendChild(node); } slot.replaceWith(el); }
-export function mountDerivationWidget(slot: Element, parsed: ParsedDerivation) { const el = document.createElement('div'); el.className = 'inline-derivation'; if (parsed.title) { const node = document.createElement('div'); node.className = 'inline-derivation-title'; node.innerHTML = runtime.formatMsg(parsed.title); el.appendChild(node); } if (parsed.body) { const node = document.createElement('div'); node.className = 'inline-derivation-body'; node.innerHTML = runtime.formatMsg(parsed.body); el.appendChild(node); } slot.replaceWith(el); }
-export function mountKeyPointWidget(slot: Element, parsed: ParsedKeyPoint) { const el = document.createElement('div'); el.className = 'inline-key-point'; const label = document.createElement('div'); label.className = 'inline-key-point-label'; label.textContent = runtime.t('tutor.keyPointLabel') || 'Key Point'; const body = document.createElement('div'); body.className = 'inline-key-point-body'; body.innerHTML = runtime.formatMsg(parsed.body); el.append(label, body); slot.replaceWith(el); }
+export function mountProofWidget(slot: Element, parsed: ParsedProof) {
+  return mountTutorWidget(slot, 'proof', createElement(ProofWidget, {
+    title: parsed.title ? runtime.formatMsg(parsed.title) : '',
+    body: parsed.body ? runtime.formatMsg(parsed.body) : '',
+  }));
+}
+
+export function mountDerivationWidget(slot: Element, parsed: ParsedDerivation) {
+  return mountTutorWidget(slot, 'derivation', createElement(DerivationWidget, {
+    title: parsed.title ? runtime.formatMsg(parsed.title) : '',
+    body: parsed.body ? runtime.formatMsg(parsed.body) : '',
+  }));
+}
+
+export function mountKeyPointWidget(slot: Element, parsed: ParsedKeyPoint) {
+  return mountTutorWidget(slot, 'key-point', createElement(KeyPointWidget, {
+    label: runtime.t('tutor.keyPointLabel') || 'Key Point',
+    body: runtime.formatMsg(parsed.body),
+  }));
+}
 
 export function mountPracticeWidget(slot: Element, parsed: PracticeMountData) {
   const { formatMsg, t, submitChatMessage, stateStore, recordMistake } = runtime;
@@ -124,19 +152,6 @@ export function mountQuizWidget(slot: Element, parsed: QuizMountData) {
   }));
 }
 
-function showQuizFeedback(feedback: HTMLDivElement, buttons: HTMLButtonElement[], picked: PickedQuizOption, correct: string | null, isRight: boolean, services: WidgetRuntime) {
-  const { t, esc: escape } = services;
-  buttons.forEach((button) => { button.disabled = true; });
-  const chosen = buttons.find((button) => button.getAttribute('data-letter') === picked.letter);
-  chosen?.classList.add('selected');
-  chosen?.classList.add(isRight ? 'correct' : 'wrong');
-  if (correct && !isRight) buttons.find((button) => button.getAttribute('data-letter') === correct)?.classList.add('correct');
-  if (correct) feedback.classList.add(isRight ? 'ok' : 'bad');
-  feedback.textContent = correct
-    ? (isRight ? t('tutor.quizCorrect') : t('tutor.quizWrong')).replace('{answer}', escape(correct))
-    : t('tutor.quizRecorded').replace('{letter}', picked.letter);
-}
-
 function recordQuizOutcome(parsed: QuizMountData, picked: PickedQuizOption, isRight: boolean, services: WidgetRuntime) {
   if (parsed.correct && !isRight) {
     services.recordMistake?.({ type: 'quiz', q: parsed.q, options: parsed.options.map((option) => ({ letter: option.letter, text: option.text })), correct: parsed.correct, userAnswer: picked.letter, quizSlotId: parsed.slotId || null });
@@ -157,27 +172,29 @@ function updateQuizStage(stateStore: WidgetRuntime['stateStore'], isRight: boole
 }
 
 function persistQuizOutcome(services: WidgetRuntime) {
-  // These writes are independent: a KB failure must not prevent saving the
-  // session, and neither failure should discard the feedback already shown.
-  try { services.updateKB?.(); }
-  catch (error) { reportSwallow(error, 'widgets.quiz.updateKB'); }
+  // The React knowledge panel subscribes to the KB store; only persistence
+  // remains an explicit side effect here.
   try { services.saveCurrentSession?.(); }
   catch (error) { reportSwallow(error, 'widgets.quiz.saveCurrentSession'); }
 }
 
-export function handleQuizPick(card: HTMLDivElement, options: HTMLDivElement, feedback: HTMLDivElement, buttons: HTMLButtonElement[], picked: PickedQuizOption, parsed: QuizMountData) {
+export function handleQuizPick(picked: PickedQuizOption, parsed: QuizMountData): QuizPickFeedback {
   const services = runtime;
   const quizData = parsed;
   const correct = quizData.correct;
   const isRight = Boolean(correct) && picked.letter === correct;
-  showQuizFeedback(feedback, buttons, picked, correct, isRight, services);
+  const feedbackText = correct
+    ? services.t(isRight ? 'tutor.quizCorrect' : 'tutor.quizWrong').replace('{answer}', correct)
+    : services.t('tutor.quizRecorded').replace('{letter}', picked.letter);
+  const feedbackClass = `inline-quiz-feedback${correct ? (isRight ? ' ok' : ' bad') : ''}`;
   recordQuizOutcome(quizData, picked, isRight, services);
   updateQuizStage(services.stateStore, isRight);
   if (!services.shouldRequestTutorAfterQuiz(correct, isRight)) {
     persistQuizOutcome(services);
-    return;
+    return { feedbackText, feedbackClass };
   }
   let text = `I chose ${picked.letter}. ${picked.text}`;
   if (correct) text += ` (Result: ${isRight ? 'correct' : `incorrect, correct is ${correct}`}.)`;
   services.submitChatMessage?.(text, { origin: 'quiz' });
+  return { feedbackText, feedbackClass };
 }

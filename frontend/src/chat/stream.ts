@@ -9,6 +9,7 @@
 
 import { stateStore } from '../state/store.ts';
 import { turnState } from './turnState.ts';
+import { getActiveProvider } from '../config/providerConfig.service.ts';
 import { offlineGuard, STREAM_MAX_ATTEMPTS } from './offline.ts';
 import {
   AI_MAX_ATTEMPTS,
@@ -18,12 +19,6 @@ import {
 } from './retryPolicy.ts';
 import { abandonServerTurn, newClientTurnId } from './turnClient.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-
-/** Bridges installed by main.js before any stream can run; a required shape
- * because a stream without them is a boot-order bug the original would throw on. */
-interface StreamWindow extends Window {
-  getActiveProvider: () => unknown;
-}
 
 /** Resolved value of a completed stream call. */
 export interface StreamResult {
@@ -129,7 +124,6 @@ function prepareNextAttempt(opts: StreamCallOptions | null | undefined, activeTu
 }
 
 async function executeStreamAttempts(args: {
-  win: StreamWindow;
   messages: unknown;
   maxTokens: number | undefined;
   onDelta: StreamDeltaHandler;
@@ -197,8 +191,6 @@ export async function callAPIStream(
   onThinking: StreamThinkingHandler = null,
   opts?: StreamCallOptions | null,
 ): Promise<StreamResult | null> {
-  const win = window as unknown as StreamWindow;
-  const getActiveProvider = win.getActiveProvider;
   const maxAttempts = maxStreamAttempts(opts);
   const retryOptions: AIRequestOptions = Object.assign({}, opts || {}, {
     source: 'chat',
@@ -226,7 +218,6 @@ export async function callAPIStream(
     // Bind cancellation before loading the execution graph so Stop/session
     // changes during a cold import cannot send a stale request.
     return await executeStreamAttempts({
-      win,
       messages,
       maxTokens,
       onDelta,

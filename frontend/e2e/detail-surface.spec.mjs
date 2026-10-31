@@ -14,19 +14,14 @@ async function boot(page, width = 1440) {
 
 async function openArtifact(page) {
   await page.evaluate(() => {
-    let trigger = document.getElementById('auditPreview');
-    if (!trigger) {
-      trigger = document.createElement('button');
-      trigger.id = 'auditPreview';
-      trigger.textContent = 'Preview';
-      trigger.setAttribute('data-artifact-preview', '1');
-      trigger.setAttribute('data-artifact-url', '/logo.png');
-      trigger.setAttribute('data-artifact-mime', 'image/png');
-      trigger.setAttribute('data-artifact-name', 'Logo');
-      document.getElementById('topicSetup').appendChild(trigger);
-    }
-    trigger.click();
+    window.__testActivateMainView('chatView');
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'a1111111-1111-4111-8111-111111111111' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.addMessage('assistant', '![Logo](/logo.png)');
   });
+  await expect(page.locator('.msg.assistant .msg-body img')).toBeVisible();
+  await page.locator('.msg.assistant .msg-body img').click();
   await expect(page.locator('.detail-surface')).toBeVisible();
 }
 
@@ -38,8 +33,8 @@ test('artifact preview uses the docked detail shell without covering chat', asyn
   await expect(page.locator('html')).toHaveAttribute('data-detail-layout', 'docked');
   const bounds = await page.evaluate(() => ({ main: document.querySelector('.main').getBoundingClientRect().right, detail: document.querySelector('.detail-surface').getBoundingClientRect().left }));
   expect(bounds.main).toBeLessThanOrEqual(bounds.detail + 1);
-  const footer = await page.locator('#topicDisclaimer').boundingBox();
-  expect(footer.x + footer.width).toBeLessThanOrEqual(bounds.detail + 1);
+  const transcript = await page.locator('#msgList').boundingBox();
+  expect(transcript.x + transcript.width).toBeLessThanOrEqual(bounds.detail + 1);
   await page.screenshot({ path: 'test-results/detail-surface-desktop.png' });
   await page.keyboard.press('Escape');
   await expect(page.locator('.detail-root')).toBeHidden();

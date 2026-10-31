@@ -8,6 +8,13 @@ const JOB = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const REFINED = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const USER = { clientId: 'user-question', role: 'user', rawText: 'Research evidence', type: 'user' };
 
+async function startResearchFromComposer(page, query = 'Research evidence') {
+  await page.locator('#composerRoot .rich-composer-editor').fill(query);
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="deepResearch"]').click();
+  await page.locator('#composerPrimaryBtn').click();
+}
+
 async function setup(page) {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => localStorage.setItem('socrates-theme', 'light'));
@@ -84,7 +91,7 @@ async function setup(page) {
 
 test('submits a durable task, shows reconnecting state and supports cancel/retry in both languages', async ({ page }) => {
   const state = await setup(page);
-  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  await startResearchFromComposer(page);
   await expect(page.getByRole('button', { name: 'Cancel research', exact: true })).toBeVisible();
   await expect(page.locator('.research-plan-panel')).toBeVisible();
   await expect(page.locator('.research-plan-title')).toHaveText('Plan');
@@ -98,14 +105,14 @@ test('submits a durable task, shows reconnecting state and supports cancel/retry
   await page.getByRole('button', { name: 'Cancel research', exact: true }).click();
   await expect(page.locator('.research-jobs')).toContainText('Research cancelled');
   await expect(page.getByRole('button', { name: 'Retry research', exact: true })).toBeVisible();
-  await page.evaluate(() => window.setLang('zh'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
   await expect(page.getByRole('button', { name: '重试研究', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '重试研究', exact: true }).click();
   await expect(page.getByRole('button', { name: '取消研究', exact: true })).toBeVisible();
   expect(state.controls).toEqual(['cancel', 'retry']);
   expect(state.submissions).toHaveLength(1);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.evaluate(() => window.toggleTheme());
+  await page.evaluate(() => document.getElementById('themeToggle')?.click());
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
   await page.screenshot({ path: 'test-results/research-running-mobile-dark.png', animations: 'disabled' });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -114,7 +121,7 @@ test('submits a durable task, shows reconnecting state and supports cancel/retry
 test('a lost submission response retries the same key and reports appear once after reload', async ({ page }) => {
   const state = await setup(page);
   state.failSubmit = true;
-  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  await startResearchFromComposer(page);
   await page.getByRole('button', { name: 'Resume submission', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Cancel research', exact: true })).toBeVisible();
   expect(state.submissions).toHaveLength(2);
@@ -133,7 +140,7 @@ test('a lost submission response retries the same key and reports appear once af
 
 test('a delayed result cannot enter another session and is recovered when its session reopens', async ({ page }) => {
   const state = await setup(page);
-  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  await startResearchFromComposer(page);
   let release;
   state.holdResult = new Promise((resolve) => { release = resolve; });
   state.complete();
@@ -149,7 +156,7 @@ test('a delayed result cannot enter another session and is recovered when its se
 
 test('unloading the page leaves the task running and reopening restores its completed report', async ({ page }) => {
   const state = await setup(page);
-  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  await startResearchFromComposer(page);
   await expect(page.getByRole('button', { name: 'Cancel research', exact: true })).toBeVisible();
   await page.goto('about:blank');
   expect(state.job.status).toBe('queued');
@@ -165,14 +172,14 @@ test('unloading the page leaves the task running and reopening restores its comp
 
 test('failed research retains a visible reason and retries the same task', async ({ page }) => {
   const state = await setup(page);
-  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  await startResearchFromComposer(page);
   Object.assign(state.job, { status: 'failed', error: 'research_no_sources', eventSequence: 2 });
   await expect(page.locator('.research-job-error')).toContainText('No usable sources');
-  await page.evaluate(() => window.toggleTheme());
+  await page.evaluate(() => document.getElementById('themeToggle')?.click());
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
   await page.screenshot({ path: 'test-results/research-failed-desktop-dark.png', animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.evaluate(() => window.toggleTheme());
+  await page.evaluate(() => document.getElementById('themeToggle')?.click());
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
   await page.screenshot({ path: 'test-results/research-failed-mobile-light.png', animations: 'disabled' });
   await page.getByRole('button', { name: 'Retry research', exact: true }).click();
@@ -183,7 +190,7 @@ test('failed research retains a visible reason and retries the same task', async
 
 test('adjusting focus cancels the current run and shows the replacement focus', async ({ page }) => {
   const state = await setup(page);
-  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  await startResearchFromComposer(page);
   await page.getByRole('button', { name: 'Adjust focus', exact: true }).click();
   await expect(page.getByLabel('What should the next research run focus on?')).toBeVisible();
   await page.getByLabel('What should the next research run focus on?').fill('Compare primary sources and call out disagreements.');
@@ -197,7 +204,7 @@ test('adjusting focus cancels the current run and shows the replacement focus', 
 
 test('completed research opens a report workspace with plan, sources and activity sections', async ({ page }) => {
   const state = await setup(page);
-  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  await startResearchFromComposer(page);
   state.complete();
   await expect(page.locator('#msgList')).toContainText('Persistent research report sentinel');
   await page.getByRole('button', { name: 'Open report', exact: true }).click();

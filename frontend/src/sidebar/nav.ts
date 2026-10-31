@@ -7,6 +7,7 @@ import { workspaceForPath, replaceRoute } from "../app/router.ts";
 import { openNav } from "./navigation.service.ts";
 import { reportSwallow } from "../util/reportSwallow.ts";
 import { refreshProjectPlugin } from "../react/pages/workspace/workspace.service.ts";
+import { apiFetch } from '../util/api.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import type { ComposerSurface } from '../composer/types.ts';
 
@@ -39,7 +40,7 @@ const CONNECTOR_RETURN_CONTEXT_TTL = 10 * 60 * 1000;
 
 function byId(id: string) { return document.getElementById(id); }
 function esc(value: string|null) { return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
-function api(path: string, options?: undefined) { return browserWindow.apiFetch(path, options); }
+function api(path: string, options?: undefined) { return apiFetch(path, options); }
 
 /* P_perf-local-icons — connector brand marks used to load from
    icon.horse / simpleicons / raw.githubusercontent.com, which can hang

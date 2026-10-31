@@ -125,6 +125,7 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
   });
 
   const userBubble = page.locator('[data-client-id^="msg-"].msg.user').first();
+  await expect(userBubble).toHaveAttribute('data-react-owned', '1');
   await userBubble.hover();
   await userBubble.locator('button.msg-toolbar-btn[aria-label="Copy"]').click();
 
@@ -133,7 +134,7 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
   }).toMatch(/Copied|Copy/);
 });
 
-test('message list toolbar actions dispatch through the typed legacy bridge', async ({ page }) => {
+test('React owns message editing while remaining toolbar actions dispatch through the typed bridge', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -142,18 +143,17 @@ test('message list toolbar actions dispatch through the typed legacy bridge', as
     'editUserMessage', 'deleteUserMessage', 'regenerateAssistantMessage',
     'branchFromMessage', 'switchMessageBranch', 'sendFeedback',
   ].filter((name) => name in window))).toEqual([]);
+  expect(await page.evaluate(() => typeof window.__socratesLegacy?.messages?.editUserMessage)).toBe('undefined');
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
     window.__msgSpecEditCalls = [];
     window.__msgSpecFeedbackCalls = [];
-    const editMock = (id) => { window.__msgSpecEditCalls.push(id); };
     const deleteMock = (id) => { window.__msgSpecEditCalls.push('del:'+id); };
     const regenMock = (id) => { window.__msgSpecEditCalls.push('regen:'+id); };
     const branchMock = (id) => { window.__msgSpecEditCalls.push('branch:'+id); };
     const feedbackMock = (id, rating) => { window.__msgSpecFeedbackCalls.push([id, rating]); };
     if (window.__socratesLegacy?.messages) {
-      window.__socratesLegacy.messages.editUserMessage = editMock;
       window.__socratesLegacy.messages.deleteUserMessage = deleteMock;
       window.__socratesLegacy.messages.regenerateAssistantMessage = regenMock;
       window.__socratesLegacy.messages.branchFromMessage = branchMock;
@@ -168,12 +168,14 @@ test('message list toolbar actions dispatch through the typed legacy bridge', as
   const userBubble = page.locator('[data-client-id^="msg-"].msg.user').first();
   await userBubble.hover();
   await userBubble.locator('button.msg-toolbar-btn[aria-label="Edit message"]').click();
+  await expect(userBubble.locator('.msg-edit-area')).toBeVisible();
+  await userBubble.locator('.msg-edit-cancel').click();
+  await expect(userBubble.locator('.msg-edit-area')).toHaveCount(0);
   await userBubble.locator('button.msg-toolbar-btn[aria-label="Delete message"]').click();
 
   const result = await page.evaluate(() => window.__msgSpecEditCalls);
-  expect(result.length).toBe(2);
-  expect(result[0]).toMatch(/^msg-/);
-  expect(result[1]).toMatch(/^del:msg-/);
+  expect(result).toHaveLength(1);
+  expect(result[0]).toMatch(/^del:msg-/);
 
   /* Now an assistant message so feedback + regen + branch get exercised. */
   await page.evaluate(() => {
@@ -200,7 +202,7 @@ test('message list toolbar actions dispatch through the typed legacy bridge', as
   expect(assistantResult.feedback[0][1]).toBe('up');
 });
 
-test('streaming bubble is removed at finish and React renders the finalized entry', async ({ page }) => {
+test('React owns the live streaming row and keeps it through the settled commit', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -217,8 +219,8 @@ test('streaming bubble is removed at finish and React renders the finalized entr
   await expect(page.locator('[data-client-id^="msg-"].msg.user')).toHaveCount(1);
 
   await page.evaluate(async () => {
-    /* Mock the chat stream endpoint so the assistant streaming
-       pipeline produces a single 'stream-final' frame. */
+    /* Hold the stream open after its first delta so the test can verify the
+       live row is already React-owned before the settled commit. */
     const originalFetch = window.fetch.bind(window);
     window.fetch = function(input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
@@ -226,10 +228,12 @@ test('streaming bubble is removed at finish and React renders the finalized entr
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         start(controller) {
-          const payload = { choices: [{ delta: { content: 'stream-final' } }] };
+          const payload = { choices: [{ delta: { content: 'stream-owned-live' } }] };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          controller.close();
+          window.__releaseMessageListStream = () => {
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          };
         },
       });
       return Promise.resolve(new Response(stream, {
@@ -237,24 +241,25 @@ test('streaming bubble is removed at finish and React renders the finalized entr
         headers: { 'Content-Type': 'text/event-stream' },
       }));
     };
-    /* Capture the in-flight ctl so the test can await its
-       stream-finished completion before counting bubbles. */
+    /* Capture the in-flight promise so the test can await completion after
+       releasing the controlled stream. */
     window.__msgSpecStreamPromise = window.askChatTurn('kick off a stream').catch(() => {});
   });
 
-  await expect.poll(async () => {
-    return await page.evaluate(() => Boolean(window.__msgSpecStreamPromise));
-  }).toBe(true);
-  /* Wait for the askChatTurn promise to settle (stream finished,
-     React re-rendered). We allow a small slack because the cleanup
-     handoff (legacy bubble removal + publish) happens in the same
-     microtask as the bridge publish. */
+  const liveAssistant = page.locator('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]');
+  await expect(liveAssistant.locator('.msg-body')).toContainText('stream-owned-live');
+  await expect(page.locator('[data-client-id^="msg-"].msg.assistant:not([data-react-owned="1"])')).toHaveCount(0);
+  await page.evaluate(() => {
+    window.__streamMessageNode = document.querySelector('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]');
+    window.__releaseMessageListStream();
+  });
   await page.evaluate(() => window.__msgSpecStreamPromise);
   await page.waitForTimeout(200);
 
   await expect(page.locator('[data-client-id^="msg-"].msg.user')).toHaveCount(1);
   await expect(page.locator('[data-client-id^="msg-"].msg.assistant')).toHaveCount(1);
-  await expect(page.locator('[data-client-id^="msg-"].msg.assistant .msg-body')).toContainText('stream-final');
+  await expect(page.locator('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"] .msg-body')).toContainText('stream-owned-live');
+  expect(await page.evaluate(() => window.__streamMessageNode === document.querySelector('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]'))).toBe(true);
   await expect(page.locator('[data-client-id^="msg-"].msg.assistant .msg-toolbar button.msg-toolbar-btn[aria-label="Copy"]')).toHaveCount(1);
 });
 

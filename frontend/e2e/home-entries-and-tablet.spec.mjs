@@ -39,7 +39,6 @@ test('phone landing shows the quick actions above the capsule', async ({ page })
   const research = rail.locator('.home-quick-action-primary[data-home-action="research"]');
   await research.click();
   await expect(research).toHaveAttribute('aria-pressed', 'true');
-  expect(await page.evaluate(() => window.webSearchOn)).toBe(true);
 });
 
 test('phone tutor landing shows the starter cards', async ({ page }) => {

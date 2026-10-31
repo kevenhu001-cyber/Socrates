@@ -3,7 +3,7 @@ import { prepareChatWorkbench, namedFrame, completeFrame } from './_chat-workben
 
 test('busy model shows a localized cooldown, restores input and never auto-replays the turn', async ({ page }) => {
   await prepareChatWorkbench(page);
-  await page.evaluate(async () => { await window.setLang('zh'); });
+  await page.evaluate(async () => { await window.__socratesLegacy.profile.setLang('zh'); });
   let requests = 0;
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     requests++;

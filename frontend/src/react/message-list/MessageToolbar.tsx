@@ -91,6 +91,7 @@ function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageB
 interface MessageToolbarProps {
   message: LegacyChatMessage;
   role: 'user' | 'assistant';
+  onEdit?: () => void;
   pending?: boolean;
   /** True for the newest row in the transcript — the one that keeps its
    *  full action row on touch, where there is no hover to reveal the rest. */
@@ -212,8 +213,9 @@ function MessageToolbarActions({
   );
 }
 
-function MessageToolbar({ message, role, pending = false, isLatest = false }: MessageToolbarProps): React.ReactElement | null {
-  const callbacks = useMessageToolbarCallbacks(message);
+function MessageToolbar({ message, role, onEdit, pending = false, isLatest = false }: MessageToolbarProps): React.ReactElement | null {
+  const legacyCallbacks = useMessageToolbarCallbacks(message);
+  const callbacks = onEdit ? { ...legacyCallbacks, onEdit } : legacyCallbacks;
   const touchLayout = React.useSyncExternalStore(subscribeTouch, readTouch);
   const [copied, setCopied] = React.useState(false);
   const [liked, setLiked] = React.useState(false);

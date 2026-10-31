@@ -7,10 +7,8 @@ import { askChatTurn } from '../turnController.js';
 import { isExpectedTurnAbort } from '../turnUi.ts';
 import { setActiveTemplate } from '../templateSlash.ts';
 import { addMessage } from '../messages.ts';
-import { updateKB } from '../../ui/knowledgePanel.ts';
 import { activateMainView } from '../../ui/mainViewController.ts';
 import { clearComposer } from '../../composer/controller.ts';
-import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.ts';
 import { buildMessageContent, resetAttachments } from '../../attachments.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
@@ -20,7 +18,6 @@ import type { SessionStartContext } from './input.ts';
 
 /** Legacy bridges read while booting the first chat turn. */
 interface ChatStartWindow extends Window {
-  startDeepResearch?: (topic: string) => Promise<unknown> | unknown;
   __loadStreamingTurn?: () => void;
   addStreamingMessage?: (options: { onRetry?: () => void }) => StreamingTurnController;
 }
@@ -57,7 +54,6 @@ async function assembleAndSendFirstTurn(
   initialSave: Promise<unknown> | null,
   contentPromise: Promise<BuiltMessageContent>,
 ): Promise<void> {
-  const win = window as ChatStartWindow;
   resetSessionTransients();
   if (context.activeTemplate) setActiveTemplate(context.activeTemplate);
 
@@ -81,8 +77,9 @@ async function assembleAndSendFirstTurn(
   turnState.pendingAttachments = attachments;
   patchFirstTurnAttachments(userClientId, topic, attachments);
 
-  if (context.deepResearchOn && typeof win.startDeepResearch === 'function') {
-    await win.startDeepResearch(context.topicForModel);
+  if (context.deepResearchOn) {
+    const { startDeepResearch } = await import('../../agent/researchAgent.ts');
+    await startDeepResearch(context.topicForModel);
     return;
   }
   try {
@@ -117,9 +114,6 @@ export async function startChatSession(context: SessionStartContext): Promise<vo
   // Clear the submitted chips before the lazy streaming module can yield.
   resetAttachments();
   renderAttachmentChips();
-  updateComposerBtn();
-  updateKB();
-
   // Prepare attachments while the streaming chunk loads; retries share the
   // immutable payload instead of reading the next draft or redoing uploads.
   const contentPromise: Promise<BuiltMessageContent> = buildMessageContent(context.topicForModel, context.startAttachments)

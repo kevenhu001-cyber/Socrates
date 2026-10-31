@@ -9,9 +9,11 @@ import { openNav } from '../../sidebar/navigation.service';
 import { useNavigationStore } from '../../sidebar/navigation.store';
 import { SidebarNavButton } from './SidebarNavButton';
 import { BUTTONS, NAV_ID } from './sidebarNav.items';
+import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
 
 function SidebarNav() {
   const active = useNavigationStore((state) => state.activeDestination);
+  const moreOpen = useMorePopoverStore((state) => state.isOpen);
 
   return (
     <>
@@ -22,6 +24,7 @@ function SidebarNav() {
             key={button.key}
             item={button}
             active={isActive}
+            expanded={button.key === 'more' ? moreOpen : undefined}
             onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
               if (button.key === 'new') {
                 /* The ⌘K badge names the command palette shortcut, so a

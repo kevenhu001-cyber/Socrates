@@ -96,24 +96,11 @@ function finalizeOwnedMessage(
   stateStore.dispatch({ type: 'state/set', key: '_canvasPendingId', value: null });
 }
 
-function markStreamDomSettled(state: TurnRuntimeState): void {
-  try {
-    if (state.div && state.div.isConnected) state.div.dataset.streamSettled = 'true';
-    if (state.list && state.list.querySelector) {
-      const settledRow = state.list.querySelector('.msg[data-client-id="' + state.clientId + '"]') as HTMLElement | null;
-      if (settledRow) settledRow.dataset.streamSettled = 'true';
-    }
-  } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/turn/finishRender.ts:102');
-    /* settled marker failed; React will reconcile */
-  }
-}
-
 /**
  * Build the finish-time render bound to one turn's state.
  *
  * Reads `state.full`, `state.fullReasoning`, `state.inlineToolRows`,
- * `state.clientId`, `state.msgIdx`, `state.div`, `state.list`.
+ * `state.clientId`, `state.msgIdx`, and `state.list`.
  */
 export function createFinishRender(state: TurnRuntimeState): FinishRender {
   function run(): FinishRenderResult {
@@ -145,7 +132,6 @@ export function createFinishRender(state: TurnRuntimeState): FinishRender {
        stops once the response is complete. */
     finalizeThinkingStatus(state);
     finalizeOwnedMessage(state, win, finalHtml);
-    markStreamDomSettled(state);
     /* Return the render result so the caller can run the post-render
        wiring (memory / a11y / save / stats / stop-button restore) with
        the same `visibleFinal` value used to build the html. */

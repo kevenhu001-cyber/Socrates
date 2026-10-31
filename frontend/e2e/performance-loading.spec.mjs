@@ -147,12 +147,12 @@ test('settings and workspace code load only when opened', async ({ page }) => {
   const newlyLoadedScripts = (before, after) => after.some((path) => !before.includes(path));
   const initial = await loadedScripts();
 
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(page.locator('#settingsOverlay')).toBeVisible();
   const afterSettings = await loadedScripts();
   expect(newlyLoadedScripts(initial, afterSettings)).toBe(true);
 
-  await page.evaluate(() => window.closeSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.closeSettings());
   await page.click('#navLibrary');
   await expect(page.locator('#libraryPanel')).not.toHaveAttribute('aria-busy', 'true');
   const afterWorkspace = await loadedScripts();
@@ -232,7 +232,7 @@ test('late creation imports cannot replace a newer navigation destination', asyn
     await mockAuthedApp(page);
     await gotoAndSettle(page, '/');
     await login(page);
-    await page.evaluate(() => window.openNav('sites'));
+    await page.evaluate(() => window.__socratesLegacy.navigation.openNav('sites'));
     await expect.poll(() => requested).toBe(true);
     await page.locator('#navLibrary').click();
     release();

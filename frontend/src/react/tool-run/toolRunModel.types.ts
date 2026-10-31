@@ -53,7 +53,7 @@ export interface ToolRunView {
   liveOutput?: string;
   /** Set when the call is blocked on a user decision (legacy approvals). */
   approval?: ApprovalView;
-  /** Agent-run step log, rendered by ui/agentSteps into a host. */
+  /** Agent-run step log, rendered by the React ToolRunAgentSteps component. */
   agentRun?: {
     runId: string | null;
     steps: AgentStepData[];

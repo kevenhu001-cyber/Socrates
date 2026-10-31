@@ -2,8 +2,6 @@
 .chat-config-pop,
 .sidebar-more-popover,
 .display-prefs-popover,
-.model-picker-menu,
-.extensions-menu,
 .tag-editor-popover {
   border: 1px solid var(--ui-border-subtle);
   background: var(--popover);
@@ -143,7 +141,7 @@ body #composerToolsMenu.composer-tools-menu {
 @media (max-width: 768px) {
   .composer-tools-desktop-items { display: none; }
   .composer-tools-mobile-items { display: block; }
-  /* Phone sheet. `ui/composerTools.js` pins it to the bottom edge; this owns
+  /* Phone sheet. The React menu controller pins it to the bottom edge; this owns
      its shape. It replaces the 236px floating card, which covered the
      composer's own `+` trigger and cut a row in half at its bottom edge while
      leaving ten of thirteen actions behind an invisible internal scroll. */

@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.evaluate(() => window.setLang('zh'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
 });
 
 test('tutor cards append editable prompts without sending or losing the draft', async ({ page }) => {
@@ -45,10 +45,9 @@ test('search shortcut mirrors the composer toggle and returns keyboard focus', a
   await search.click();
   await expect(search).toHaveAttribute('aria-pressed', initial === 'true' ? 'false' : 'true');
   await expect(page.locator('#composerRoot .rich-composer-editor')).toBeFocused();
-  await page.evaluate(() => {
-    window.webSearchOn = true;
-    document.dispatchEvent(new CustomEvent('socrates:websearchchange', { detail: { on: true } }));
-  });
+  await search.click();
+  await expect(search).toHaveAttribute('aria-pressed', 'false');
+  await search.click();
   await expect(search).toHaveAttribute('aria-pressed', 'true');
   await page.locator('.home-quick-action-dismiss').first().focus();
   await page.keyboard.press('Enter');

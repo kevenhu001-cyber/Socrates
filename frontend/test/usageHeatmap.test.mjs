@@ -1,24 +1,34 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { renderUsageHeatmap } from '../src/ui/usage.ts';
-import { usageState } from '../src/ui/usageState.ts';
+import {
+  beagleUsageSummary,
+  collectUsageEntries,
+  monthlyUsageSummaries,
+  usageLevel,
+} from '../src/ui/usageModel.ts';
 
-test('usage heatmap keeps totals, period controls, limits, and monthly breakdown', () => {
-  usageState.__resetForTests();
-  renderUsageHeatmap({ entries: [
+test('usage model preserves totals, heatmap levels, limits, and monthly breakdown', () => {
+  const entries = [
     { day: '2026-10-27', tokens: 1200, messages: 3 },
     { day: '2026-10-28', tokens: 600, messages: 2 },
     { day: '2026-09-30', tokens: 100, messages: 1 },
-  ] }, { beagleUsed: 800, beagleLimit: 1000 }, 'month');
-  usageState.flush();
-  const html = usageState.getSnapshot().bodyHtml;
+  ];
+  const totals = collectUsageEntries(entries);
 
-  assert.match(html, /1,900<\/div><div class="usage-stat-lbl">Total tokens/);
-  assert.match(html, /6<\/div><div class="usage-stat-lbl">Messages/);
-  assert.match(html, /width:80%/);
-  assert.match(html, /data-usage-period-placeholder/);
-  assert.match(html, /October 2026/);
-  assert.match(html, /data-date="2026-10-27"/);
-  assert.equal(usageState.getSnapshot().period, 'month');
-  usageState.__resetForTests();
+  assert.equal(totals.totalTokens, 1900);
+  assert.equal(totals.totalMsgs, 6);
+  assert.equal(totals.maxDay, 1200);
+  assert.equal(usageLevel(1200, totals.maxDay), 5);
+  assert.equal(usageLevel(600, totals.maxDay), 3);
+  assert.deepEqual(beagleUsageSummary({ beagleUsed: 800, beagleLimit: 1000 }), {
+    used: 800,
+    limit: 1000,
+    percent: 80,
+    color: 'hsl(35 80% 55%)',
+    message: 'approaching',
+  });
+  assert.deepEqual(monthlyUsageSummaries(entries), [
+    { month: 'October 2026', activeDays: 2, tokens: 1800, messages: 5 },
+    { month: 'September 2026', activeDays: 1, tokens: 100, messages: 1 },
+  ]);
 });

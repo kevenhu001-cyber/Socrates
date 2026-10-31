@@ -8,9 +8,10 @@ import { Icon } from '../../../ui/Icon';
  * 100-line budget.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useUiStore } from '../../../store/index.ts';
 import { useChatStreamStatus, useIsChatStreaming } from '../../useChatRuntime';
+import { useSendGlyphStore } from '../../../ui/sendGlyph.store.ts';
 
 const ICON_PROPS = {
   fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
@@ -26,27 +27,6 @@ function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} stro
    a subscription to that one namespace rather than to every state change. */
 function useScrolledAway(): boolean {
   return useUiStore((snapshot) => Boolean(snapshot._userScrolledAway));
-}
-
-/* The legacy updateComposerBtn mirrors draft state onto the button's
-   `.active` class (canSend = has text or attachments) and owns the
-   disabled state. Observe that class so the icon swaps exactly when the
-   legacy contract flips, without duplicating its canSend logic. Single
-   button since the composer shell is one instance (P_composer-single). */
-function useControlClass(className: string): boolean {
-  const [active, setActive] = useState(
-    () => document.getElementById('composerPrimaryBtn')?.classList.contains(className) ?? false,
-  );
-  useEffect(() => {
-    const btn = document.getElementById('composerPrimaryBtn');
-    if (!btn) return undefined;
-    const sync = () => setActive(btn.classList.contains(className));
-    const observer = new MutationObserver(sync);
-    observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
-    sync();
-    return () => observer.disconnect();
-  }, [className]);
-  return active;
 }
 
 export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
@@ -78,7 +58,7 @@ export function PrimaryButton() {
      composer submit: render the departing arrow over the arriving stop
      glyph so the swap reads as one motion instead of arrow → stop flicker
      while the draft clears and the stream starts. */
-  const sending = useControlClass('is-sending');
+  const sending = useSendGlyphStore((state) => state.isSending);
   if (sending) {
     return (
       <>

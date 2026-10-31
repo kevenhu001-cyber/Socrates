@@ -11,7 +11,7 @@ interface AuthUser {
   [key: string]: unknown;
 }
 
-/** Window bridges published by the legacy shell (windowExports.js). */
+/** Auth shell actions wired through the auth module. */
 interface AuthFormsWindow extends Window {
   setCurrentUser?: (user: unknown) => void;
   markAuthSuccess?: () => void;

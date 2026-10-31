@@ -17,21 +17,15 @@
    contract, not this comment. */
 import './batchStorage.ts';
 import './vendor/init.ts';
-/* Auth boot owns the preflight → reveal sequence; do not hide this startup
-   side effect behind a compatibility binding in windowExports.ts. */
+/* Auth boot owns the preflight → reveal sequence. */
 import './auth/boot.ts';
-/* Static import keeps legacy window bridges in the application bundle. */
-import './windowExports.ts';
+/* Register page adapters before bootstrap publishes the active destination. */
+import './sidebar/navigation.adapters.ts';
 import './tutorSocratic.ts';
 import './app/legacyBridge.ts';
 import './app/errorGuard.ts';
 import './render/katexRefresh.js';
 import { initCookieConsent } from './cookieConsent.ts';
-import { installHomeSurface } from './ui/homeSurface.ts';
-import { toggleComposerTools } from './ui/composerTools.ts';
-import { toggleEffortPicker } from './ui/effortPicker.ts';
-import { selectAppMode, toggleMobileModeMenu } from './ui/mobileModeSwitch.ts';
-import { openFindInSession } from './react/find-in-session/findInSession.actions.ts';
 import { initChatComposerReserve } from './ui/scroll.ts';
 import { initKeyboardLift } from './ui/keyboard/index.ts';
 import { initTopicFocusAssist } from './ui/topicFocusAssist.ts';
@@ -39,23 +33,18 @@ import './ui/composerAnim.js';
 import { installComposerShapeMirror } from './ui/composerShape.ts';
 import { installKeyboardShortcuts } from './ui/keyboardShortcuts.ts';
 import { initSidebarDrag } from './ui/sidebarResize.ts';
-import { switchTab, toggleSidebarView, initSidebarChrome } from './ui/sidebarChrome.ts';
+import { initSidebarChrome } from './ui/sidebarChrome.ts';
 import { wireScrollPill } from './ui/scrollPill.ts';
 import { wirePressFeedback } from './ui/pressFeedback.ts';
-import { openShareModal } from './ui/share.ts';
 import { loadMemories } from './storage/memoryStore.ts';
-import { initArtifactPreview } from './ui/artifactPreview.ts';
 import { initLinkFavicons } from './ui/linkFavicons.ts';
 import { installLayoutStateMirror } from './ui/layoutStateMirror.ts';
-import { installDiagnosticFlowListeners } from './tutor/diagnosticFlow.ts';
-import { startSession } from './chat/sessionBootstrap.ts';
-import { startNewChat, toggleIncognito, isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle.ts';
-import { setRecentsSearch } from './ui/recentsView.ts';
+import { installDiagnosticFlowActions } from './tutor/diagnosticFlow.ts';
+import { isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle.ts';
 import { installLiveTurnRetryListener } from './chat/liveTurn.ts';
 import { configurePromptSuffixes } from './chat/promptSuffixes.ts';
-import { toggleSidebar } from './sidebar/sidebar.service.ts';
-import { initTheme, loadDisplayPrefs, mountDisplayPrefsListeners } from './displayPrefs.ts';
-import { syncExtensionsUI, syncModelPills, syncWebSearchUI } from './pickers.ts';
+import { initTheme, loadDisplayPrefs } from './displayPrefs.ts';
+import { syncWebSearchUI } from './chat/webSearchToggle.ts';
 import { bootstrapApp } from './app/bootstrap.ts';
 import { installWidgetRuntime } from './app/widgetSetup.ts';
 import { loadTonePreset } from './config/tonePresets.ts';
@@ -65,8 +54,6 @@ import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 
 
 initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
-installHomeSurface();
-initArtifactPreview();
 initLinkFavicons();
 
 installLayoutStateMirror();
@@ -83,7 +70,6 @@ initTheme();
 
 loadDisplayPrefs();
 
-mountDisplayPrefsListeners();
 
 initSidebarDrag();
 
@@ -125,7 +111,7 @@ initTopicFocusAssist();
 })();
 initChatComposerReserve();
 
-installDiagnosticFlowListeners();
+installDiagnosticFlowActions();
 
 installLiveTurnRetryListener();
 
@@ -138,26 +124,9 @@ configurePromptSuffixes({ getUserMemories: getUserMemories });
 
 /* Wire the extracted feature modules into the auth-aware app bootstrap. */
 bootstrapApp({
-  syncModelPills: syncModelPills,
   syncWebSearchUI: syncWebSearchUI,
-  syncExtensionsUI: syncExtensionsUI,
   syncAppModeUI: syncAppModeUI,
   syncSidebarForMode: syncSidebarForMode,
   loadTonePreset: loadTonePreset,
   loadMemories: loadMemories,
-  toggleSidebar: toggleSidebar,
-  startNewChat: startNewChat,
-  toggleIncognito: toggleIncognito,
-  openFind: openFindInSession,
-  openShare: openShareModal,
-  openSettings: browserWindow.openSettings,
-  startSession: startSession,
-  sendMessage: browserWindow.handleSendClick,
-  toggleComposerTools: toggleComposerTools,
-  toggleEffort: toggleEffortPicker,
-  selectMode: selectAppMode,
-  toggleMobileMode: toggleMobileModeMenu,
-  searchRecents: setRecentsSearch,
-  switchTab: switchTab,
-  toggleSidebarView: toggleSidebarView,
 });

@@ -282,7 +282,7 @@ test('dark palette roles clear AA on every dark surface they sit on', async ({ p
 
 test('dark dialogs are elevated cards over a flat token scrim', async ({ page }) => {
   await openApp(page, { mode: 'dark' });
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(page.locator('#settingsOverlay')).toBeVisible();
   const settings = await page.evaluate(() => {
     const overlay = getComputedStyle(document.getElementById('settingsOverlay'));
@@ -304,7 +304,7 @@ test('dark dialogs are elevated cards over a flat token scrim', async ({ page })
 
 test('light dialogs are white cards over a flat token scrim', async ({ page }) => {
   await openApp(page, { mode: 'light' });
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(page.locator('#settingsOverlay')).toBeVisible();
   const settings = await page.evaluate(() => {
     const overlay = getComputedStyle(document.getElementById('settingsOverlay'));
@@ -312,9 +312,9 @@ test('light dialogs are white cards over a flat token scrim', async ({ page }) =
   });
   expect(rgb(settings.scrim).a).toBeLessThanOrEqual(0.5);
   expect(settings.blur).toBe('none');
-  await page.evaluate(() => window.closeSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.closeSettings());
 
-  await page.evaluate(() => window.openCmdK());
+  await page.keyboard.press('Control+k');
   await expect(page.locator('#cmdKOverlay')).toBeVisible();
   const palette = await page.evaluate(() => getComputedStyle(document.getElementById('cmdKOverlay')).backdropFilter);
   expect(palette).toBe('none');
@@ -332,7 +332,7 @@ test('phone light code blocks are light cards', async ({ page }) => {
   });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await loadSession(page);
   const code = await page.evaluate(() => {
@@ -354,7 +354,7 @@ test('phone light tools menu keeps light icon chips', async ({ page }) => {
   await openApp(page, { mode: 'light', viewport: { width: 390, height: 844 } });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');

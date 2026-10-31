@@ -114,7 +114,6 @@ test('light conversation is readable and find opens at the upper right', async (
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'light-conversation-test' });
     window.addMessage('user', 'Hello');
     window.addMessage('assistant', 'A readable answer with strong contrast.');
-    window.syncConversationActive?.();
   });
   await expect(page.locator('body')).toHaveAttribute('data-conversation-active', 'true');
   await expect(page.locator('#msgList .msg.assistant')).toContainText('strong contrast');

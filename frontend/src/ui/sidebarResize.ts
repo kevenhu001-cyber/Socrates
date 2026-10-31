@@ -10,13 +10,12 @@
 // frame cannot shift it and the Web panel and the Universal app play the
 // same motion.
 //
-// `syncSidebarBtns` (still defined in main.js) and `toggleSidebar`
-// (sidebar resize bindings) are imported lazily to avoid a hard dep cycle:
-// the resize listener below calls syncSidebarBtns only after the
-// module has wired up.
+// Sidebar open state is published through sidebar.store so React-owned
+// chrome can render the correct controls after a viewport transition.
 
 import { createSpring, Spring, SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { setSidebarOpen } from '../sidebar/sidebar.store.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
@@ -204,16 +203,13 @@ export function onViewportResize(){
   const open = s && !s.classList.contains("collapsed");
   if(w < 768 && open){
     if(s) s.classList.add("collapsed");
-    if(browserWindow.sidebarOpen !== undefined) browserWindow.sidebarOpen = false;
+    setSidebarOpen(false);
     if(bd) bd.classList.remove("show");
     // Persist so a mobile refresh restores the collapsed state.
     try{ localStorage.setItem("socrates-sb", "0"); }catch (error) { reportSwallow(error, 'ui/sidebarResize.ts:207', 'expected'); }
   } else if(w >= 768 && bd){
     bd.classList.remove("show");
   }
-  /* syncSidebarBtns is still in main.js — call it via window so the
-     coupling is one-directional. */
-  if(typeof browserWindow.syncSidebarBtns === "function") browserWindow.syncSidebarBtns();
 }
 
 // Side-effect: this ESM module has one canonical importer in main.ts, so its

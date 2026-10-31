@@ -64,4 +64,9 @@ test('display preferences own their controls without data-action delegation', as
   await expect(popover).toBeVisible();
   await page.locator('#displayPrefsBtn').click();
   await expect(popover).toBeHidden();
+
+  await page.locator('#navMore').click();
+  await page.getByRole('menuitem', { name: 'Display & theme' }).click();
+  await expect(popover).toBeVisible();
+  await expect(page.locator('#navMore')).toHaveAttribute('aria-expanded', 'false');
 });

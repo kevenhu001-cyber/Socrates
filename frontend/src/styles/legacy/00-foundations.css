@@ -146,28 +146,6 @@ body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1)
   button:focus-visible,a:focus-visible{outline:2px solid transparent;outline-offset:2px;border-radius:4px}
 }
 ::selection{background:hsl(var(--accent-000)/0.3);color:hsl(var(--text-000))}
-/* ──────────────────────────────────────────────────────────────────
-   P_hide-mode-switch-in-conversation — central gate that hides the
-   top-bar Chat/Tutor switcher once a conversation has started.
-
-   The body attribute `data-conversation-active` is set by
-   `syncConversationActive()` in src/ui/mobileModeSwitch.js. The
-   attribute is derived from the current session state: it is "true"
-   only while a conversation is actually in progress, and flips back
-   to "false" whenever the user returns to the topic-input page
-   (resetApp / new chat), so the top-bar pill reappears for the
-   next conversation.
-
-   This single rule covers:
-     • #mobileMode       — the mobile "Chat ⌄" dropdown
-   and uses !important so cowork / cowork-cascade overrides can't
-   reveal it mid-session. The rule lives up here (line ~130)
-   instead of next to the original `.top-mode-tabs { display: flex }`
-   block (line ~1667) so future readers see it before they decide to
-   tweak the visible-on-landing state.
-   ────────────────────────────────────────────────────────────────── */
-body[data-conversation-active="true"] #mobileMode,
-html[data-routed-session="true"] #mobileMode{display:none!important}
 /* ─── A11y utilities ── */
 /* P_a11y-visually-hidden — screen-reader-only text. The 1px size and
    clip-path trick keep the element in the accessibility tree without

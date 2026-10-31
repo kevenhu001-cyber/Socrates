@@ -10,6 +10,9 @@ export interface DiagResultNode {
   status: 'fuzzy' | 'blank';
 }
 
+export type DiagnosticCommand = 'cancel' | 'retry' | 'builtin' | 'select' | 'previous' | 'next' | 'skip' | 'finish' | 'proceed';
+export type DiagnosticCommandHandler = (command: DiagnosticCommand, index?: number) => void;
+
 export type DiagnosticScreen =
   | {
       kind: 'loading';
@@ -49,14 +52,14 @@ const CARD = 'mx-auto flex w-full max-w-[720px] flex-col gap-5 rounded-xl border
 
 /* Every control carries `data-diag-command`; `tutor/diagnosticFlow.ts` keeps
    one delegated listener on `#diagnosticView` and dispatches from it. */
-export function DiagnosticView({ screen }: { screen: DiagnosticScreen }) {
-  if (screen.kind === 'loading') return <DiagnosticLoading screen={screen} />;
-  if (screen.kind === 'question') return <DiagnosticQuestion screen={screen} />;
-  if (screen.kind === 'results') return <DiagnosticResults screen={screen} />;
-  return <DiagnosticErrorScreen screen={screen} />;
+export function DiagnosticView({ screen, onCommand }: { screen: DiagnosticScreen; onCommand: DiagnosticCommandHandler }) {
+  if (screen.kind === 'loading') return <DiagnosticLoading screen={screen} onCommand={onCommand} />;
+  if (screen.kind === 'question') return <DiagnosticQuestion screen={screen} onCommand={onCommand} />;
+  if (screen.kind === 'results') return <DiagnosticResults screen={screen} onCommand={onCommand} />;
+  return <DiagnosticErrorScreen screen={screen} onCommand={onCommand} />;
 }
 
-function DiagnosticLoading({ screen }: { screen: Extract<DiagnosticScreen, { kind: 'loading' }> }) {
+function DiagnosticLoading({ screen, onCommand }: { screen: Extract<DiagnosticScreen, { kind: 'loading' }>; onCommand: DiagnosticCommandHandler }) {
   return (
     <div className={`${CARD} diag-loading items-center justify-center gap-3 py-14 text-center`}>
       <span className="size-5 animate-spin rounded-full border-2 border-muted-foreground/25 border-t-primary" aria-hidden="true" />
@@ -79,14 +82,14 @@ function DiagnosticLoading({ screen }: { screen: Extract<DiagnosticScreen, { kin
           <span>{screen.step}</span>
         </div>
       </div>
-      <Button variant="outline" size="sm" className="diag-cancel-btn mt-1" data-diag-command="cancel">
+      <Button variant="outline" size="sm" className="diag-cancel-btn mt-1" data-diag-command="cancel" onClick={() => onCommand('cancel')}>
         {screen.cancelLabel}
       </Button>
     </div>
   );
 }
 
-function DiagnosticQuestion({ screen }: { screen: Extract<DiagnosticScreen, { kind: 'question' }> }) {
+function DiagnosticQuestion({ screen, onCommand }: { screen: Extract<DiagnosticScreen, { kind: 'question' }>; onCommand: DiagnosticCommandHandler }) {
   const answered = screen.selected !== null && screen.selected >= 0;
   const advance = screen.isLast ? 'finish' : 'next';
 
@@ -110,6 +113,7 @@ function DiagnosticQuestion({ screen }: { screen: Extract<DiagnosticScreen, { ki
               aria-checked={selected}
               data-diag-command="select"
               data-diag-index={index}
+              onClick={() => onCommand('select', index)}
               className={`h-auto w-full items-start justify-start gap-3 rounded-lg px-3.5 py-2.5 text-left font-normal whitespace-normal ${
                 selected
                   ? 'border-primary/40 bg-primary/10 text-foreground'
@@ -138,15 +142,16 @@ function DiagnosticQuestion({ screen }: { screen: Extract<DiagnosticScreen, { ki
           variant="ghost"
           size="sm"
           data-diag-command="previous"
+          onClick={() => onCommand('previous')}
           style={screen.isFirst ? { visibility: 'hidden' } : undefined}
         >
           {screen.labels.back}
         </Button>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" data-diag-command="skip">
+          <Button variant="ghost" size="sm" data-diag-command="skip" onClick={() => onCommand('skip')}>
             {screen.labels.skip}
           </Button>
-          <Button size="sm" data-diag-command={advance} disabled={!answered}>
+          <Button size="sm" data-diag-command={advance} onClick={() => onCommand(advance)} disabled={!answered}>
             {screen.isLast ? screen.labels.begin : screen.labels.next}
           </Button>
         </div>
@@ -155,7 +160,7 @@ function DiagnosticQuestion({ screen }: { screen: Extract<DiagnosticScreen, { ki
   );
 }
 
-function DiagnosticResults({ screen }: { screen: Extract<DiagnosticScreen, { kind: 'results' }> }) {
+function DiagnosticResults({ screen, onCommand }: { screen: Extract<DiagnosticScreen, { kind: 'results' }>; onCommand: DiagnosticCommandHandler }) {
   return (
     <div className="mx-auto flex w-full max-w-[600px] flex-col gap-5 py-2">
       <div className="text-center text-lg font-semibold text-foreground">{screen.title}</div>
@@ -199,7 +204,7 @@ function DiagnosticResults({ screen }: { screen: Extract<DiagnosticScreen, { kin
       <div className="text-center text-[13px] text-muted-foreground">{screen.summary}</div>
 
       <div className="flex justify-center pt-1">
-        <Button data-diag-command="proceed" className="px-8">
+        <Button data-diag-command="proceed" className="px-8" onClick={() => onCommand('proceed')}>
           {screen.continueLabel}
         </Button>
       </div>
@@ -207,16 +212,16 @@ function DiagnosticResults({ screen }: { screen: Extract<DiagnosticScreen, { kin
   );
 }
 
-function DiagnosticErrorScreen({ screen }: { screen: Extract<DiagnosticScreen, { kind: 'error' }> }) {
+function DiagnosticErrorScreen({ screen, onCommand }: { screen: Extract<DiagnosticScreen, { kind: 'error' }>; onCommand: DiagnosticCommandHandler }) {
   return (
     <div className="diag-error mx-auto flex w-full max-w-[520px] flex-col items-center gap-3 rounded-xl border border-border bg-card px-6 py-14 text-center">
       <p className="text-[15px] font-semibold text-foreground">{screen.title}</p>
       {screen.reason ? <p className="max-w-[340px] text-xs break-words text-muted-foreground">{screen.reason}</p> : null}
       <div className="mt-1 flex gap-2.5">
-        <Button size="sm" data-diag-command="retry">
+        <Button size="sm" data-diag-command="retry" onClick={() => onCommand('retry')}>
           {screen.retryLabel}
         </Button>
-        <Button variant="outline" size="sm" data-diag-command="builtin">
+        <Button variant="outline" size="sm" data-diag-command="builtin" onClick={() => onCommand('builtin')}>
           {screen.builtinLabel}
         </Button>
       </div>

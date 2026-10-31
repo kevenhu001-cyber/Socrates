@@ -37,12 +37,15 @@ test('usage modal renders API data and refreshes when the period changes', async
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
   });
-  await page.evaluate(() => window.openUsageModal());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openUsageModal());
 
   const overlay = page.locator('#usageOverlay');
   await expect(overlay).toBeVisible();
   await expect(overlay.locator('.usage-stat').filter({ hasText: 'Total tokens' }).locator('.usage-stat-val')).toHaveText('789');
-  await expect(overlay.locator(`[data-date="${calendarDay}"][data-tokens="789"][data-msgs="3"]`)).toHaveCount(1);
+  const activeDay = overlay.locator(`[data-date="${calendarDay}"][data-tokens="789"][data-msgs="3"]`);
+  await expect(activeDay).toHaveCount(1);
+  await activeDay.hover();
+  await expect(overlay.locator('#usageTooltip')).toContainText(`${calendarDay} — 789 tokens, 3 messages`);
 
   await overlay.locator('[data-usage-period="month"]').click();
   await expect.poll(() => requestedDays).toEqual(['365', '31']);

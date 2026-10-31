@@ -1,13 +1,15 @@
 /**
- * Shared contracts for the composer-tools menu React migration boundary.
- *
- * The legacy module (`src/ui/composerTools.ts`) owns the open/close
- * state machine and the lazy-created `#composerToolsMenu` element. This
- * module only describes what the React compatibility root needs to know
- * to render the menu items.
+ * Shared contracts for the React-owned composer-tools menu.
  */
 
-export type { ComposerMode, ComposerToolsSnapshot } from '../../ui/composerToolsState.ts';
+export type ComposerMode = 'topic' | 'chat';
+
+export interface ComposerToolsSnapshot {
+  isOpen: boolean;
+  mode: ComposerMode | null;
+  triggerId: string | null;
+  revision: number;
+}
 
 export type ComposerToolsAction =
   | 'camera'

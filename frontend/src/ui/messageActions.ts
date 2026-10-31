@@ -10,19 +10,14 @@ import { stateStore } from '../state/store.ts';
 import { apiFetch } from '../util/api.ts';
 import { i18n } from '../react/legacy/gateway.ts';
 import { showToast } from './toast.js';
-import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { visualizationSpecOf } from '../render/visualizationSpec.ts';
-import { formatMsg } from '../render/markdown.ts';
-import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.ts';
 import { publishReactChatRuntime } from './reactBridge.ts';
 import {
   appendFileChangeSummaryCards,
-  appendInlineArtifact,
   appendToolModule,
   renderToolTextOutput,
 } from './toolCards.ts';
 import { mountVisualization } from '../render/vizStubs.ts';
-import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/vizStubs.ts';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -173,52 +168,6 @@ export function deleteUserMessage(messageId: string): void {
   });
 }
 
-/**
- * Re-render one message body in place so the latest renderer (KaTeX,
- * weak-model fixes, scaffold widgets) applies to every message — not
- * the frozen html from when it was first saved.
- */
-export function restoreMessageBody(entry: MessageEntry, body: HTMLElement): void {
-  if (entry.rawText) {
-    const raw = entry.rawText;
-    if (entry.role === 'assistant') {
-      try {
-        body.innerHTML = buildAssistantHtml(raw);
-        try {
-          processPendingMermaid();
-        } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody'); }
-        try {
-          processPendingViz();
-        } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#2'); }
-        try {
-          processPendingVizActions();
-        } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#3'); }
-        return;
-      } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#4'); }
-    }
-    body.innerHTML = formatMsg(raw);
-  } else if (entry.html) {
-    body.innerHTML = entry.html;
-  } else {
-    body.innerHTML = '';
-  }
-  try {
-    processPendingMermaid();
-  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#5'); }
-  try {
-    processPendingViz();
-  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#6'); }
-  try {
-    processPendingVizActions();
-  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#7'); }
-  try {
-    wireCodeBlockHeaders(body);
-  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#8'); }
-  try {
-    wireMsgBodyImages(body);
-  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#9'); }
-}
-
 /* Restore non-HTML message content that is persisted separately from the
    assistant's markdown. React calls this after a history bubble commits;
    the public-share renderer uses the same helper so both paths stay in
@@ -243,7 +192,7 @@ function inlineToolRow(body: HTMLElement, selector: string): Element | null {
   }
 }
 
-function inlineArtifactHost(body: HTMLElement, row: Element, selector: string, callId?: string): HTMLElement {
+function inlineVisualizationHost(body: HTMLElement, row: Element, selector: string, callId?: string): HTMLElement {
   let host: HTMLElement | null = null;
   try {
     host = body.querySelector<HTMLElement>('.tool-inline-attachments[data-tool-anchor="' + selector + '"]');
@@ -273,18 +222,6 @@ function mountRestoredVisualization(
   }
 }
 
-function appendInlineArtifacts(artifacts: ToolCallEntry['artifacts'], host: HTMLElement): void {
-  if (!Array.isArray(artifacts)) return;
-  for (const artifact of artifacts) {
-    if (!artifact?.id) continue;
-    try {
-      appendInlineArtifact(artifact.id, artifact.mimeType || 'application/octet-stream', host, artifact.name);
-    } catch (error) {
-      reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#4');
-    }
-  }
-}
-
 function restoreInlineToolCall(
   body: HTMLElement,
   row: Element,
@@ -293,11 +230,9 @@ function restoreInlineToolCall(
   spec: NonNullable<ReturnType<typeof visualizationSpecOf>> | null,
   toolCallId: string,
 ): void {
-  const artifacts = call.artifacts;
-  if (!spec && (!Array.isArray(artifacts) || artifacts.length === 0)) return;
-  const host = inlineArtifactHost(body, row, selector, call.id);
-  if (spec) mountRestoredVisualization(spec, host, toolCallId, 'ui/messageActions.restorePersistedMessageExtras#3');
-  appendInlineArtifacts(artifacts, host);
+  if (!spec) return;
+  const host = inlineVisualizationHost(body, row, selector, call.id);
+  mountRestoredVisualization(spec, host, toolCallId, 'ui/messageActions.restorePersistedMessageExtras#3');
 }
 
 function restoreStandaloneToolCall(
@@ -306,9 +241,8 @@ function restoreStandaloneToolCall(
   spec: NonNullable<ReturnType<typeof visualizationSpecOf>> | null,
   toolCallId: string,
 ): void {
-  let card: HTMLElement | null = null;
   try {
-    card = appendToolModule(call.name!, (call.input || {}) as Parameters<typeof appendToolModule>[1], body, {
+    const card = appendToolModule(call.name!, (call.input || {}) as Parameters<typeof appendToolModule>[1], body, {
       restored: true,
       isError: call.isError === true,
     });
@@ -322,29 +256,6 @@ function restoreStandaloneToolCall(
     reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#5');
   }
   if (spec) mountRestoredVisualization(spec, body, toolCallId, 'ui/messageActions.restorePersistedMessageExtras#6');
-  appendStandaloneArtifacts(body, card, call.artifacts);
-}
-
-function appendStandaloneArtifacts(
-  body: HTMLElement,
-  card: HTMLElement | null,
-  artifacts: ToolCallEntry['artifacts'],
-): void {
-  if (!card || !Array.isArray(artifacts)) return;
-  for (const artifact of artifacts) {
-    if (!artifact?.id) continue;
-    const previewable = artifact.mimeType?.startsWith('image/') || artifact.mimeType?.startsWith('text/html');
-    try {
-      appendInlineArtifact(
-        artifact.id,
-        artifact.mimeType || 'application/octet-stream',
-        previewable ? body : card,
-        artifact.name,
-      );
-    } catch (error) {
-      reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#7');
-    }
-  }
 }
 
 function restoreToolCallExtras(body: HTMLElement, call: ToolCallEntry, index: number, idPrefix?: string): void {

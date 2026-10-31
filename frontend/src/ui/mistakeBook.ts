@@ -1,9 +1,6 @@
-import { esc } from '../render/helpers.ts';
-import { formatRelativeTime } from './recentsHelpers.ts';
+import { esc, escAttr } from '../render/helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { renderActionButton } from './actionButton.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
-import type { QuizMountData } from '../render/widgets.ts';
 
 interface MistakeOption { letter: string; text: string }
 interface MistakeEntry {
@@ -63,18 +60,12 @@ function readMistakes(stateStore: MistakeStore): MistakeEntry[] {
 }
 
 type MistakeStore = typeof import('../state/store.ts')['stateStore'];
-type QuizMount = typeof import('../render/widgetScheduler.ts')['mountQuizWidget'];
-type PracticeMount = typeof import('../render/widgetScheduler.ts')['mountPracticeWidget'];
 interface MistakeBookOptions {
   stateStore: MistakeStore;
   apiFetch: typeof import('../util/api.ts')['apiFetch'];
   saveCurrentSession: typeof import('../session/persistence.ts')['saveCurrentSession'];
-  mountQuizWidget: QuizMount;
-  mountPracticeWidget: PracticeMount;
-  scrollContainer: typeof import('./scroll.ts')['scrollContainer'];
-  getTutorSocratic?: () => RuntimeWindow['tutorSocratic'] | undefined;
+  appendAssistantMessage: typeof import('../chat/messages.ts')['addAssistantUiMessage'];
 }
-type RuntimeWindow = import('../types/runtimeWindow.ts').RuntimeWindow;
 
 
 /* P_mistakes-i18n — this panel shipped raw English literals while zh is
@@ -86,77 +77,6 @@ function t(key: string, vars?: Record<string, string | number> | undefined) {
   if (!vars) return v;
   return String(v).replace(/\{(\w+)\}/g, function (whole, name) {
     return Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : whole;
-  });
-}
-
-function renderMistakeList(stateStore: MistakeStore, getTutorSocratic: () => RuntimeWindow['tutorSocratic'] | undefined, onRedo: (mistakeId: string | null) => void) {
-  const cont = document.getElementById('mistakesList');
-  if (!cont) return;
-  const panel = document.getElementById('mistakesPanel');
-  if (panel && panel.classList.contains('hidden')) {
-    panel.dataset.mistakesDirty = '1';
-    return;
-  }
-  if (panel) delete panel.dataset.mistakesDirty;
-  const tutorSocratic = getTutorSocratic();
-  if (tutorSocratic && typeof tutorSocratic.renderMistakeFilterBar === 'function') {
-    try { tutorSocratic.renderMistakeFilterBar(); } catch (error) { reportSwallow(error, 'ui/mistakeBook.renderMistakeFilterBar'); }
-  }
-  const mistakes = readMistakes(stateStore);
-  if (mistakes.length === 0) {
-    cont.innerHTML = '<div class="recents-empty">' + esc(t('mistakes.empty'))
-      + '<br>' + esc(t('mistakes.emptyHint')) + '</div>';
-    return;
-  }
-  const filter = stateStore.read('mistakeFilter') || 'all';
-  let filtered: MistakeEntry[] = mistakes.slice();
-  if (filter === 'unresolved') {
-    filtered = filtered.filter(function (mistake: MistakeEntry) { return !mistake.resolved && !mistake.isResolved; });
-  } else if (filter === 'resolved') {
-    filtered = filtered.filter(function (mistake: MistakeEntry) { return !!(mistake.resolved || mistake.isResolved); });
-  }
-  if (!filtered.length) {
-    cont.innerHTML = '<div class="recents-empty">'
-      + esc(filter === 'resolved' ? t('mistakes.filterEmptyResolved') : t('mistakes.filterEmptyOther'))
-      + '</div>';
-    return;
-  }
-  let html = '';
-  filtered.forEach(function (mistake: MistakeEntry) {
-    let optionsHtml = '';
-    (mistake.options || []).forEach(function (option: MistakeOption) {
-      const tag = option.letter === mistake.correct ? 'correct-tag' : (option.letter === mistake.userAnswer ? 'wrong-tag' : '');
-      optionsHtml += '<div class="mistake-opt ' + tag + '"><span class="mistake-opt-letter">' + esc(option.letter) + '</span><span>' + esc(option.text) + '</span></div>';
-    });
-    const resolved = !!(mistake.resolved || mistake.isResolved);
-    const typeKey = 'mistakes.type.' + (mistake.type || '');
-    const typeLabel = t(typeKey);
-    html += '<div class="mistake-card' + (resolved ? ' mistake-card-resolved' : '') + '" data-mistake-id="' + esc(mistake.id) + '">';
-    html += '<div class="mistake-meta"><span class="mistake-type">' + esc(typeLabel === typeKey ? (mistake.type || '') : typeLabel) + '</span><span class="mistake-topic">' + esc(mistake.topic || '') + '</span><span class="mistake-time">' + formatRelativeTime(mistake.timestamp) + '</span>'
-      + (resolved ? '<span class="mistake-resolved-tag">' + esc(t('mistakes.conquered')) + '</span>' : '')
-      + '</div>';
-    html += '<div class="mistake-q">' + esc(mistake.q || '') + '</div>';
-    html += '<div class="mistake-opts">' + optionsHtml + '</div>';
-    if (mistake.redoCount) {
-      html += '<div class="mistake-redo-count">'
-        + esc(mistake.redoCount === 1 ? t('mistakes.redoneOne') : t('mistakes.redoneMany', { n: mistake.redoCount }))
-        + '</div>';
-    }
-    html += '<span class="mistake-redo-action-host" data-redo-host="' + esc(mistake.id) + '"></span>';
-    html += '</div>';
-  });
-  cont.innerHTML = html;
-  cont.querySelectorAll('.mistake-redo-action-host[data-redo-host]').forEach(function (host) {
-    const mistakeId = host.getAttribute('data-redo-host');
-    renderActionButton((host as HTMLElement), {
-      type: 'button',
-      variant: 'default',
-      size: 'sm',
-      className: 'mistake-redo-btn w-full',
-      ...{ 'data-redo': mistakeId },
-      children: t('mistakes.redo'),
-      onClick: function () { onRedo(mistakeId); },
-    });
   });
 }
 
@@ -172,84 +92,73 @@ function updateMistakeRedoState(stateStore: MistakeStore, mistakeId: string): Mi
   return updated;
 }
 
-function createRedoMessage(slotClass: string, quizId?: string|undefined) {
-  const message = document.createElement('div');
-  message.className = 'msg assistant';
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  const slot = quizId
-    ? '<div class="' + slotClass + '" data-quiz-id="' + quizId + '"></div>'
-    : '<div class="' + slotClass + '"></div>';
-  body.innerHTML = '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:6px">' + esc(t('mistakes.redoingPrompt')) + '</div>' + slot;
-  message.appendChild(body);
-  return message;
+function makeRedoSlotId(kind: 'quiz' | 'practice'): string {
+  return `redo-${kind}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function scrollToLatestMessage(scrollContainer: () => HTMLElement | null) {
-  const scroll = scrollContainer();
-  if (!scroll) return;
-  requestAnimationFrame(function () { scroll.scrollTop = scroll.scrollHeight; });
+function redoPrompt(): string {
+  return `_${esc(t('mistakes.redoingPrompt'))}_`;
 }
 
-function mountPracticeRedo(mistake: MistakeEntry, mountPracticeWidget: PracticeMount, scrollContainer: MistakeBookOptions['scrollContainer']) {
-  const message = createRedoMessage('practice-slot');
-  const list = document.getElementById('msgList');
-  if (list) list.appendChild(message);
-  scrollToLatestMessage(scrollContainer);
-  const slot = message.querySelector('.practice-slot');
-  if (slot) mountPracticeWidget(slot, { problem: mistake.q || '', correct: mistake.correct || '' });
+function practiceRedoText(mistake: MistakeEntry, slotId: string): string {
+  return `${redoPrompt()}\n\n<practice data-practice-id="${escAttr(slotId)}" correct="${escAttr(mistake.correct || '')}"><problem>${esc(mistake.q || '')}</problem></practice>`;
 }
 
-function quizPayload(mistake: MistakeEntry, slotId: string | null): QuizMountData {
-  return {
-    q: mistake.q,
-    options: mistake.options.map(function (option) { return { letter: option.letter, text: option.text }; }),
-    correct: mistake.correct,
-    slotId,
-  };
+function quizRedoText(mistake: MistakeEntry, quizId: string): string {
+  const options = mistake.options.map((option) =>
+    `<o letter="${escAttr(option.letter)}">${esc(option.text)}</o>`,
+  ).join('');
+  return `${redoPrompt()}\n\n<quiz data-quiz-id="${escAttr(quizId)}"><q>${esc(mistake.q || '')}</q>${options}<correct>${esc(mistake.correct || '')}</correct></quiz>`;
 }
 
-function mountExistingQuizRedo(mistake: MistakeEntry, mountQuizWidget: QuizMount) {
-  if (!mistake.quizSlotId) return false;
-  const slot = document.querySelector('[data-quiz-id="' + mistake.quizSlotId + '"]');
-  if (!slot) return false;
-  const parent = slot.closest('.inline-quiz');
-  if (!parent) return false;
-  const fresh = document.createElement('div');
-  parent.parentNode!.replaceChild(fresh, parent);
-  mountQuizWidget(fresh, quizPayload(mistake, mistake.quizSlotId));
-  return true;
+function setMistakeQuizSlotId(stateStore: MistakeStore, mistakeId: string, slotId: string): void {
+  const mistakes = readMistakes(stateStore);
+  stateStore.dispatch({
+    type: 'state/set', key: 'mistakes',
+    value: mistakes.map((item) => item.id === mistakeId ? { ...item, quizSlotId: slotId } : item),
+  });
 }
 
-function mountFallbackQuizRedo(mistake: MistakeEntry, mountQuizWidget: QuizMount, saveCurrentSession: MistakeBookOptions['saveCurrentSession'], scrollContainer: MistakeBookOptions['scrollContainer']) {
-  const quizId = 'redo-' + Date.now().toString(36);
-  const message = createRedoMessage('quiz-slot', quizId);
-  const list = document.getElementById('msgList');
-  if (list) list.appendChild(message);
-  scrollToLatestMessage(scrollContainer);
-  const slot = message.querySelector('.quiz-slot');
-  if (!slot) return;
-  const parsed = quizPayload(mistake, slot.getAttribute('data-quiz-id'));
-  mistake.quizSlotId = parsed.slotId ?? null;
+function appendPracticeRedo(
+  mistake: MistakeEntry,
+  slotId: string,
+  appendAssistantMessage: MistakeBookOptions['appendAssistantMessage'],
+  saveCurrentSession: MistakeBookOptions['saveCurrentSession'],
+) {
+  appendAssistantMessage(practiceRedoText(mistake, slotId));
   saveCurrentSession();
-  mountQuizWidget(slot, parsed);
 }
 
-function performMistakeRedo(dependencies: Pick<MistakeBookOptions, 'stateStore' | 'saveCurrentSession' | 'mountQuizWidget' | 'mountPracticeWidget' | 'scrollContainer'>, mistakeId: string) {
+function appendQuizRedo(
+  mistake: MistakeEntry,
+  stateStore: MistakeStore,
+  appendAssistantMessage: MistakeBookOptions['appendAssistantMessage'],
+  saveCurrentSession: MistakeBookOptions['saveCurrentSession'],
+) {
+  const quizId = makeRedoSlotId('quiz');
+  setMistakeQuizSlotId(stateStore, mistake.id, quizId);
+  appendAssistantMessage(quizRedoText(mistake, quizId));
+  saveCurrentSession();
+}
+
+function performMistakeRedo(dependencies: Pick<MistakeBookOptions, 'stateStore' | 'saveCurrentSession' | 'appendAssistantMessage'>, mistakeId: string) {
   const mistake = updateMistakeRedoState(dependencies.stateStore, mistakeId);
   if (!mistake) return;
-  dependencies.saveCurrentSession();
   const isPractice = mistake.type === 'practice' || !(mistake.options || []).length;
-  if (isPractice && typeof dependencies.mountPracticeWidget === 'function') {
-    mountPracticeRedo(mistake, dependencies.mountPracticeWidget, dependencies.scrollContainer);
+  if (isPractice) {
+    appendPracticeRedo(
+      mistake,
+      makeRedoSlotId('practice'),
+      dependencies.appendAssistantMessage,
+      dependencies.saveCurrentSession,
+    );
     return;
   }
-  if (mountExistingQuizRedo(mistake, dependencies.mountQuizWidget)) return;
-  mountFallbackQuizRedo(
+  appendQuizRedo(
     mistake,
-    dependencies.mountQuizWidget,
+    dependencies.stateStore,
+    dependencies.appendAssistantMessage,
     dependencies.saveCurrentSession,
-    dependencies.scrollContainer,
   );
 }
 
@@ -262,17 +171,12 @@ export function createMistakeBook({
   stateStore,
   apiFetch,
   saveCurrentSession,
-  mountQuizWidget,
-  mountPracticeWidget,
-  scrollContainer,
-  getTutorSocratic = () => (typeof window !== 'undefined' ? browserWindow.tutorSocratic : undefined),
+  appendAssistantMessage,
 }: MistakeBookOptions) {
   const redoDependencies = {
     stateStore,
     saveCurrentSession,
-    mountQuizWidget,
-    mountPracticeWidget,
-    scrollContainer,
+    appendAssistantMessage,
   };
 
   function persistMistake(mistakeData: { nodeName: string | null; questionContent: string; userAnswer: string | null; correctAnswer: string | null; source: string }) {
@@ -335,8 +239,6 @@ export function createMistakeBook({
       source: mistake.type === 'practice' ? 'practice' : 'quiz',
     });
     saveCurrentSession();
-    renderMistakes();
-    updateMistakesBadge();
   }
 
   function removeMistakeForQuizSlot(slotId: string) {
@@ -347,20 +249,7 @@ export function createMistakeBook({
     if (remaining.length !== before) {
       stateStore.dispatch({ type: 'state/set', key: 'mistakes', value: remaining });
       saveCurrentSession();
-      renderMistakes();
-      updateMistakesBadge();
     }
-  }
-
-  function updateMistakesBadge() {
-    const badge = document.getElementById('mistakesTabBadge');
-    if (!badge) return;
-    const count = readMistakes(stateStore).length;
-    badge.textContent = count > 0 ? String(count) : '';
-  }
-
-  function renderMistakes() {
-    renderMistakeList(stateStore, getTutorSocratic, handleMistakeRedo);
   }
 
   function handleMistakeRedo(mistakeId: string | null) {
@@ -368,5 +257,5 @@ export function createMistakeBook({
     performMistakeRedo(redoDependencies, mistakeId);
   }
 
-  return { recordMistake, removeMistakeForQuizSlot, updateMistakesBadge, renderMistakes };
+  return { recordMistake, removeMistakeForQuizSlot, redoMistake: handleMistakeRedo };
 }

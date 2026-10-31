@@ -1,9 +1,9 @@
 // scripts/archive/audit-window-bridges.mjs
 // One-shot audit helper for the M5 window-bridge decommission. Lists every
-// `window.X =` binding in windowExports.js and main.js, then cross-references
+// `window.X =` binding in main.ts, then cross-references
 // each against `window.X` reads across the frontend source tree. Bindings with
 // zero external readers (other than the binding site, e2e mocks, and the
-// windowExports.js export list itself) are reported as candidates for removal.
+// test harness) are reported as candidates for removal.
 //
 // Run: `node scripts/archive/audit-window-bridges.mjs`
 // This is a read-only diagnostic — it does not modify any files.
@@ -14,10 +14,9 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 
-const ROOT = dirname(fileURLToPath(import.meta.url)) + "/..";
+const ROOT = dirname(fileURLToPath(import.meta.url)) + "/../..";
 
 const BINDING_FILES = [
-  "frontend/src/windowExports.ts",
   "frontend/src/main.ts",
 ];
 
@@ -54,7 +53,7 @@ const READER_ALLOWLIST = new Set([
 // ──────────────────────────────────────────────────────────────────────────
 // Pass 1: collect bindings (window.X = …) from the two defined source files.
 // ──────────────────────────────────────────────────────────────────────────
-const bindingRe = /^\s*window\.([A-Za-z_$][\w$]*)\s*=/gm;
+const bindingRe = /^\s*(?:window|browserWindow)\.([A-Za-z_$][\w$]*)\s*=/gm;
 const bindings = new Map(); // name -> { file, line }
 
 for (const rel of BINDING_FILES) {
@@ -64,7 +63,7 @@ for (const rel of BINDING_FILES) {
   bindingRe.lastIndex = 0;
   while ((m = bindingRe.exec(text)) !== null) {
     const name = m[1];
-    // main.js has a few duplicate names; keep the first definition site.
+    // main.ts has a few duplicate names; keep the first definition site.
     if (!bindings.has(name)) {
       const upto = text.slice(0, m.index).split(/\r?\n/);
       bindings.set(name, { file: rel, line: upto.length });
@@ -76,7 +75,7 @@ for (const rel of BINDING_FILES) {
 // Pass 2: walk the source tree and count reads for each binding name.
 // ──────────────────────────────────────────────────────────────────────────
 const reads = new Map(); // name -> Set<file>
-const readRe = /\bwindow\.([A-Za-z_$][\w$]*)\b/g;
+const readRe = /\b(?:window|browserWindow)\.([A-Za-z_$][\w$]*)\b/g;
 
 async function walk(dir) {
   for (const entry of await readdir(dir)) {
@@ -98,7 +97,7 @@ async function walk(dir) {
       const name = m[1];
       if (!bindings.has(name)) continue;
       // skip the binding site itself
-      if (rel === BINDING_FILES[0] || rel === BINDING_FILES[1]) {
+      if (BINDING_FILES.includes(rel)) {
         const lineno = text.slice(0, m.index).split(/\r?\n/).length;
         const def = bindings.get(name);
         if (def.file === rel && Math.abs(lineno - def.line) <= 1) continue;

@@ -1,9 +1,8 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import { appMode, webSearchOn } from '../../config/providers.ts';
 
 /** Session-start bridges published by the legacy shell. */
 interface SessionBootstrapWindow extends Window {
-  appMode?: string;
-  webSearchOn?: boolean;
   renderRecents?: () => void;
 }
 
@@ -18,21 +17,11 @@ export function translate(key: string, fallback?: string): string {
 }
 
 export function getAppMode(): string {
-  try {
-    const win = window as SessionBootstrapWindow;
-    if (typeof window !== 'undefined' && win.appMode) return win.appMode;
-  } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.getAppMode'); }
-  return 'chat';
+  return appMode;
 }
 
 export function isWebSearchOn(): boolean {
-  try {
-    const win = window as SessionBootstrapWindow;
-    if (typeof window !== 'undefined' && typeof win.webSearchOn !== 'undefined') {
-      return Boolean(win.webSearchOn);
-    }
-  } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.isWebSearchOn'); }
-  return true;
+  return webSearchOn;
 }
 
 export function renderRecents(): void {

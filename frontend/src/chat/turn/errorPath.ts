@@ -2,14 +2,12 @@
  * chat/turn/errorPath.ts — replaceWithError path for addStreamingMessage.
  *
  * A transient failure (network, 429, 5xx) renders the partial answer plus
- * a retry control in the React turn status. The status keeps the viewport
- * capture sequence delegated through the message list.
+ * a retry control in the React turn status. React captures the press-time
+ * viewport; the active turn closure owns the retry budget and replacement.
  *
  * Extracted from chat/streamingTurn.ts during the 2026-10 addStreamingMessage
- * split. The split is structural only: every callback, capture, and read
- * order is preserved exactly so a transient failure still ends with the
- * same retry affordance, send-button restore, legacy-shell eviction, and
- * stream-failed runtime publish as before.
+ * split. The split is structural only: a transient failure keeps its retry
+ * affordance, send-button restore, and stream-failed runtime publish.
  */
 import { settleTurnRuntime } from '@socrates/core';
 import { esc } from '../../render/helpers.ts';
@@ -42,30 +40,6 @@ function makeRetryHandler(state: TurnRuntimeState, onRetry: () => unknown): () =
   };
 }
 
-function findRetryTarget(node: Element | null, retryBtnId: string): Element | null {
-  if (!node) return null;
-  if (node.id === retryBtnId) return node;
-  return node.closest ? node.closest('#' + retryBtnId) : null;
-}
-
-function bindDelegatedRetryButton(state: TurnRuntimeState, retryHandler: () => void): void {
-  const capturePress = (event: Event): void => {
-    if (!findRetryTarget(event.target as Element | null, state.retryBtnId)) return;
-    streamRetryViewport.captureViewport(state.list, state.clientId);
-    if (event.type === 'mousedown') event.preventDefault();
-  };
-  state.list.addEventListener('pointerdown', capturePress, true);
-  state.list.addEventListener('mousedown', capturePress, true);
-  const delegatedClick = (event: Event): void => {
-    if (!findRetryTarget(event.target as Element | null, state.retryBtnId)) return;
-    state.list.removeEventListener('pointerdown', capturePress, true);
-    state.list.removeEventListener('mousedown', capturePress, true);
-    state.list.removeEventListener('click', delegatedClick);
-    retryHandler();
-  };
-  state.list.addEventListener('click', delegatedClick);
-}
-
 function bindRetryAffordance(
   state: TurnRuntimeState,
   onRetry: (() => unknown) | undefined,
@@ -73,7 +47,6 @@ function bindRetryAffordance(
   if (typeof onRetry !== 'function') return;
   const retryHandler = makeRetryHandler(state, onRetry);
   claimLiveRetry(state.ret, retryHandler);
-  bindDelegatedRetryButton(state, retryHandler);
 }
 
 function renderErrorMessage(
@@ -96,7 +69,6 @@ function renderErrorMessage(
       setReactLiveStatus(message, {
         phase: 'error', label: errorText, error: errorText,
         retryable: typeof onRetry === 'function',
-        retryButtonId: state.retryBtnId,
       });
     }
   }
@@ -115,18 +87,6 @@ function releaseFailedTurn(state: TurnRuntimeState): void {
     /* turn already ended */
   }
   turnState.activeChatCtl = null;
-}
-
-function removeLegacyErrorShell(state: TurnRuntimeState): void {
-  try {
-    const legacy = state.list.querySelector('[data-client-id="' + state.clientId + '"]');
-    if (legacy && !legacy.hasAttribute('data-react-owned') && legacy.parentNode === state.list) {
-      state.list.removeChild(legacy);
-    }
-  } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts:116', 'expected');
-    /* legacy shell already gone */
-  }
 }
 
 function publishStreamFailure(state: TurnRuntimeState, errMsg: string): void {
@@ -164,10 +124,6 @@ export function createErrorPath(state: TurnRuntimeState): ErrorPath {
      * Guarded on the active controller so a new stream that
      * supersedes this one is not clobbered. */
     releaseFailedTurn(state);
-    /* Drop the legacy bubble so the next snapshot-driven re-render
-       doesn't duplicate the finalized error bubble. (Same bug as
-       finish/abort — `msgList` was undeclared here too.) */
-    removeLegacyErrorShell(state);
     /* The error row is the new end of the answer. Keep it inside the same
        dynamically measured safe area as normal text so the retry control
        can never settle underneath the composer. Save the last stable

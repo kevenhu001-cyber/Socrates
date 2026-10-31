@@ -132,20 +132,12 @@
   }
   .tool-inline-spinner{animation:none !important;opacity:.65}
   .tool-inline-leaving{animation-duration:0.01ms !important;animation-iteration-count:1 !important}
-  .model-picker-menu,.extensions-menu{transition:opacity .12s ease;transform:none !important}
-  .model-picker-menu .model-picker-item,
-  .model-picker-menu .model-picker-divider,
-  .model-picker-menu .model-picker-filter,
-  .model-picker-menu .model-picker-add,
-  .model-picker-menu .model-picker-empty,
-  .extensions-menu .extensions-item{animation:none}
   
   
   .composer-extension-inline{animation:none}
   .display-prefs-segs::before{transition:none}
   .display-prefs-seg:active{transform:none}
   
-  .chat-model-caret,
   .tool-run-summary-chev{transition:transform .12s ease,color .12s ease}
   /* Disable transform-on-press/hover for all interactive controls. */
   .icon-btn:active,

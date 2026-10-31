@@ -1,15 +1,12 @@
 // e2e/attachments-compat.spec.mjs — Batch 4 of the React + TypeScript migration
-// Spec: when the app boots with ?react=1, the attachment chip row above
-// the composer is owned by React. The legacy store (`attachments` array)
-// is the source of truth; React subscribes through the shared module store.
-// Removing a chip dispatches through `window.removeAttachment` which re-fires the
-// legacy renderer (a no-op in React mode).
+// The attachment chip row is React-owned. These specs use the file input and
+// rendered chip actions so they exercise the same path a learner uses.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('Attachment chip rows React mode hydrates both containers', async ({ page }) => {
+test('Attachment chip row React mode hydrates without a window array alias', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -19,105 +16,54 @@ test('Attachment chip rows React mode hydrates both containers', async ({ page }
   await expect(chatChips).toBeAttached();
   await expect(chatChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  const topicChips = page.locator('#composerAttachmentChips');
-  await expect(topicChips).toBeAttached();
-  await expect(topicChips).not.toHaveAttribute('data-mounted-by', /.+/);
-
   const ownership = await page.evaluate(() => ({
     bridge: '__socratesAttachmentsBridge' in window,
     retryAlias: 'retryComposerAttachment' in window,
     typedRetry: typeof window.__socratesLegacy?.composer?.retryAttachment === 'function',
     renderAlias: 'renderAttachmentChips' in window,
     typedRenderer: typeof window.__socratesLegacy?.composer?.renderAttachmentChips === 'function',
-    sharedArray: Array.isArray(window.attachments),
-    empty: Array.isArray(window.attachments) && window.attachments.length === 0,
+    windowArrayAlias: 'attachments' in window,
   }));
-  expect(ownership).toEqual({ bridge: false, retryAlias: false, typedRetry: true, renderAlias: false, typedRenderer: true, sharedArray: true, empty: true });
+  expect(ownership).toEqual({ bridge: false, retryAlias: false, typedRetry: true, renderAlias: false, typedRenderer: true, windowArrayAlias: false });
 });
 
-test('Attachment chips React mode mirrors the legacy attachments array', async ({ page }) => {
+test('Attachment chips React mode render files selected through the composer', async ({ page }) => {
   await mockAuthedApp(page);
+  await mockProviderAndUpload(page, []);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Seed the same shared source array used by addFiles(), then invoke its
-  // renderer so React observes the module-store publication.
-  await page.evaluate(() => {
-    window.attachments.push(
-      {
-        id: 'att-test-1',
-        kind: 'image',
-        name: 'cat.png',
-        mime: 'image/png',
-        size: 1234,
-        dataUrl: 'data:image/png;base64,iVBORw0KGgo=',
-      },
-      {
-        id: 'att-test-2',
-        kind: 'text',
-        name: 'notes.txt',
-        mime: 'text/plain',
-        size: 4321,
-        text: 'hello world',
-        truncated: false,
-      },
-    );
-    window.__socratesLegacy.composer.renderAttachmentChips();
-  });
-
-  // The shared module store batches publishes on requestAnimationFrame.
-  await page.waitForFunction(() => {
-    return window.attachments?.length === 2;
-  });
-  const snap = await page.evaluate(() => {
-    return window.attachments.map((a) => ({ id: a.id, kind: a.kind, name: a.name }));
-  });
-  expect(snap).toEqual([
-    { id: 'att-test-1', kind: 'image', name: 'cat.png' },
-    { id: 'att-test-2', kind: 'text', name: 'notes.txt' },
+  await page.locator('#composerAttachInput').setInputFiles([
+    { name: 'cat.png', mimeType: 'image/png', buffer: Buffer.from('image bytes') },
+    { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello world') },
   ]);
 
-  // React rendered both chips in the chat composer.
   const chips = page.locator('#composerAttachmentChips .attachment-chip');
   await expect(chips).toHaveCount(2);
-  await expect(chips.first()).toHaveAttribute('data-id', 'att-test-1');
-  await expect(chips.nth(1)).toHaveAttribute('data-id', 'att-test-2');
-
-  // The chip row should be visible (no .hidden class).
+  await expect(chips.nth(0)).toHaveAttribute('title', 'cat.png');
+  await expect(chips.nth(1)).toHaveAttribute('title', 'notes.txt');
   await expect(chatChipsAttrVisible(page, '#composerAttachmentChips')).resolves.toBe(true);
 });
 
-test('Attachment chips remove button dispatches through window.removeAttachment', async ({ page }) => {
+test('Attachment chips remove through the React action', async ({ page }) => {
   await mockAuthedApp(page);
+  await mockProviderAndUpload(page, []);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Seed two attachments in the shared source array and stub the legacy
-  // remove action so the React chip's dispatch can be captured.
-  await page.evaluate(() => {
-    window.__removedIds = [];
-    window.__socratesLegacy.composer.removeAttachment = function (id) {
-      window.__removedIds.push(id);
-      return true;
-    };
-    window.attachments.push(
-      { id: 'att-r-1', kind: 'image', name: 'one.png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=' },
-      { id: 'att-r-2', kind: 'image', name: 'two.png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=' },
-    );
-    window.__socratesLegacy.composer.renderAttachmentChips();
-  });
+  await page.locator('#composerAttachInput').setInputFiles([
+    { name: 'one.txt', mimeType: 'text/plain', buffer: Buffer.from('first') },
+    { name: 'two.txt', mimeType: 'text/plain', buffer: Buffer.from('second') },
+  ]);
 
-  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(2);
-
-  // Click the remove button on the first chip. We dispatch a click event
-  // directly to avoid Playwright's visibility heuristic failing on a
-  // tiny icon-only button rendered into a fresh DOM.
-  await page.locator('#composerAttachmentChips .attachment-chip').first().locator('.attachment-chip-remove').dispatchEvent('click');
-
-  const removed = await page.evaluate(() => window.__removedIds);
-  expect(removed).toContain('att-r-1');
+  const chips = page.locator('#composerAttachmentChips .attachment-chip');
+  await expect(chips).toHaveCount(2);
+  await expect(chips.first()).toHaveAttribute('title', 'one.txt');
+  await chips.first().getByRole('button', { name: '移除附件' }).click({ force: true });
+  await expect(chips).toHaveCount(1);
+  await expect(chips.first()).toHaveAttribute('title', 'two.txt');
 });
 
 test('Attachment chips React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
@@ -128,9 +74,6 @@ test('Attachment chips React mode always loads (no ?react=1 flag needed)', async
 
   const chatChips = page.locator('#composerAttachmentChips');
   await expect(chatChips).not.toHaveAttribute('data-mounted-by', /.+/);
-
-  const topicChips = page.locator('#composerAttachmentChips');
-  await expect(topicChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
   const retired = await page.evaluate(() => !('__socratesAttachmentsBridge' in window));
   expect(retired).toBe(true);
@@ -192,12 +135,11 @@ test('Image upload is admitted for a text-only model and stored as a durable fil
     buffer: Buffer.from('synthetic image bytes'),
   });
 
-  /* The pending stub uploads to /api/files and resolves into the durable
-     fileId — no "model can't view images" rejection anymore. */
-  await page.waitForFunction(() => {
-    return window.attachments?.[0]?.fileId === 'file-uuid-1';
-  });
-  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
+  /* The React chip settles through the durable upload path without a
+     model-capability rejection. */
+  const chip = page.locator('#composerAttachmentChips .attachment-chip');
+  await expect(chip).toHaveCount(1);
+  await expect(chip).not.toHaveClass(/pending|error/);
 });
 
 test('Image upload is admitted for a multimodal active model', async ({ page }) => {
@@ -215,23 +157,14 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
     mimeType: 'image/png',
     buffer: Buffer.from('synthetic image bytes'),
   });
-  await page.waitForFunction(() => {
-    return window.attachments?.[0]?.pending === false;
-  });
-  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
-  /* Multimodal images additionally carry an inline dataUrl for the
-     native image_url part, alongside the durable fileId. */
-  const entry = await page.evaluate(() => {
-    const a = window.attachments?.[0];
-    return a ? { fileId: a.fileId, hasDataUrl: !!a.dataUrl } : null;
-  });
-  expect(entry).toEqual({ fileId: 'file-uuid-1', hasDataUrl: true });
+  const chip = page.locator('#composerAttachmentChips .attachment-chip');
+  await expect(chip).toHaveCount(1);
+  await expect(chip).not.toHaveClass(/pending|error/);
+  await expect(chip.locator('.attachment-chip-visual')).toHaveAttribute('data-kind', 'image');
 });
 
-/* Regression: attachments/render.ts refreshes the primary button through
-   window[updateBtnName]; when window.updateComposerBtn lost
-   its binding an attachment-only draft left the button in voice mode,
-   and startSession() then early-returned on the empty topic anyway. */
+/* Regression: the attachment snapshot must activate the React-owned primary
+   button so an attachment-only landing draft can enter chat. */
 test('Attachment-only landing draft activates Send and enters chat', async ({ page }) => {
   await mockAuthedApp(page);
   await mockProviderAndUpload(page, [{
@@ -247,9 +180,7 @@ test('Attachment-only landing draft activates Send and enters chat', async ({ pa
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4 fake'),
   });
-  await page.waitForFunction(() => {
-    return window.attachments?.length === 1;
-  });
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
 
   const startBtn = page.locator('#composerPrimaryBtn');
   await expect(startBtn).toHaveClass(/active/);
@@ -307,10 +238,7 @@ test('Failed upload shows a retry affordance that re-runs the job', async ({ pag
   /* Retry re-uploads the retained File — no re-pick needed — and the
      same chip resolves into a durable fileId. */
   await retryBtn.click();
-  await page.waitForFunction(() => {
-    return window.attachments?.[0]?.fileId === 'file-uuid-1';
-  });
-  await expect(chip).not.toHaveClass(/error/);
+  await expect(chip).not.toHaveClass(/error|pending/);
   expect(attempts).toBe(2);
 });
 
@@ -328,9 +256,6 @@ test('Re-picking an identical file is deduplicated', async ({ page }) => {
   await page.locator('#composerAttachInput').setInputFiles(file);
   await page.locator('#composerAttachInput').setInputFiles(file);
 
-  await page.waitForFunction(() => {
-    return window.attachments?.length === 1;
-  });
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
 });
 
@@ -349,14 +274,9 @@ test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) =>
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4 fake'),
   });
-  await page.waitForFunction(() => {
-    return window.attachments?.[0]?.fileId === 'file-uuid-1';
-  });
-  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
-  const kind = await page.evaluate(() => {
-    return window.attachments?.[0]?.kind;
-  });
-  /* PDFs classify as 'document' with docKind pdf — the model reads them
-     via read_attachment, not as inline text. */
-  expect(kind).toBe('document');
+  const chip = page.locator('#composerAttachmentChips .attachment-chip');
+  await expect(chip).toHaveCount(1);
+  await expect(chip).not.toHaveClass(/pending|error/);
+  /* PDFs classify as documents in the rendered attachment affordance. */
+  await expect(chip.locator('.attachment-chip-visual')).toHaveAttribute('data-kind', 'pdf');
 });

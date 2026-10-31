@@ -23,8 +23,8 @@ export function aiGenerate(topic: string): { domain: string; nodes: unknown[]; d
   let domain=clean.length>30?clean.substring(0,27)+"...":clean;
   domain=domain.charAt(0).toUpperCase()+domain.slice(1);
 
-  /* Fixed 5-node KB skeleton, each carries the rich metadata that
-     updateKB() / mountKBDetail() expects.
+  /* Fixed 5-node KB skeleton, each carries the rich metadata consumed by
+     the React knowledge map and node-detail components.
      P_cold-start-coverage — the five nodes map 1:1 to DIAG_ASPECTS:
      0. Basic concepts (基础概念)
      1. Core principles (核心原理)

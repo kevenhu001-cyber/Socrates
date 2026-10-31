@@ -1,372 +1,66 @@
-import type { ExamSetupSnapshot } from './react/exam/ExamSetup.tsx';
-interface ExamCommandTarget { dataset: DOMStringMap }
-interface ExamCommandDetail { command: string; eidx?: number; oidx?: number; selectedTypes?: Record<'mc' | 'fb' | 'sa', boolean>; difficulty?: string }
-interface ExamDraft { topic?: string; instructions?: string; count?: string | number; model?: string; difficulty?: string; types?: Record<string, boolean> }
-/* ─── Exam View Composition ───
-   Owns delegated view events and the form view; generation, persistence,
-   navigation and result rendering live under ./exam/.
-   ============================================================ */
+/* Exam route and lifecycle commands. The screen itself is rendered by the
+   single React root in react/exam/ExamView.tsx. */
 
 import { stateStore } from './state/store.ts';
+import { dispatchExam, dispatchUi } from './store/index.ts';
 import { pushChatIdToURL, setExamIdInURL } from './session/store.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
-
 import { activateMainView } from './ui/mainViewController.ts';
 import { getProviderConfigSnapshot } from './config/providerConfig.service.ts';
-import { clearExamSetup, renderExamActions, renderExamSetup } from './react/exam/examUiHost.tsx';
-import { clearExamNavigation } from './react/exam/examNavigationHost.tsx';
 import { parseExamArrayJSON, parseSingleExamQuestion } from './exam/parsing.ts';
-import { examNavCurrentIdx, examNavJump, examNavStep, refreshExamNavTally, renderExamNav, syncExamNav } from './exam/navigation.ts';
-import { renderExamResults } from './exam/results.ts';
-import { appendExamErrorCard, cancelExamGeneration, finishExamGeneration, paintQuestionCard, clearExamQuestionCards, renderAllQuestions, replaceStreamingCardWithQuestion, restoreExamActiveProvider, refreshExamGenerationStatus, runExamGeneration, selectExamOpt } from './exam/generation.ts';
-import { doSaveExamSession, resetExamSaveState, saveExamSession, setExamAnswer, scheduleExamAnswerSave, submitExam } from './exam/persistence.ts';
-import { examBody as _examBody, examFooter as _examFooter, examUiL as _examUiL, setExamTitle as _setExamTitle } from './exam/ui.ts';
-import { ExamAction } from './react/exam/ExamActionFooter.tsx';
-import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
-import { getCurrentLanguage } from './i18n/languageState.ts';
-
+import { restoreExamActiveProvider } from './exam/generation.ts';
+import { resetExamSaveState } from './exam/persistence.ts';
+import { createExamFormDraft, type ExamFormDraft } from './state/exam.ts';
+import { registerExamSaveReset } from './app/lifecycle/examSaveReset.ts';
 
 export { parseExamArrayJSON, parseSingleExamQuestion };
-export { clearExamSetup };
-export { examNavCurrentIdx, examNavJump, examNavStep, refreshExamNavTally, renderExamNav, syncExamNav };
-export { renderExamResults };
-export {
-  appendExamErrorCard, cancelExamGeneration, doSaveExamSession, finishExamGeneration,
-  clearExamQuestionCards, paintQuestionCard, renderAllQuestions, replaceStreamingCardWithQuestion,
-  refreshExamGenerationStatus, resetExamSaveState, saveExamSession, scheduleExamAnswerSave, selectExamOpt, setExamAnswer, submitExam,
-};
 
-/* ── module-level state ── */
-let _examSelectedTypes: Record<'mc' | 'fb' | 'sa', boolean> = { mc: true, fb: true, sa: false };
-let _examDifficulty = "intermediate";
-let _examListenersMounted = false;
-let _examFormRevision = 0;
+registerExamSaveReset(resetExamSaveState);
 
-const EXAM_COMMANDS: Record<string, (target: ExamCommandTarget) => unknown> = {
-  close: () => closeExamView(),
-  form: () => renderExamForm(),
-  generate: () => startExamGeneration(),
-  cancel: () => cancelExamGeneration(),
-  submit: () => submitExam(),
-  count: (target: ExamCommandTarget) => adjustExamCount(Number(target.dataset.delta || 0)),
-  'answer-option': (target: ExamCommandTarget) => selectExamOpt(Number(target.dataset.eidx), Number(target.dataset.oidx)),
-  'nav-step': (target: ExamCommandTarget) => examNavStep(Number(target.dataset.delta || 0)),
-  'nav-jump': (target: ExamCommandTarget) => examNavJump(Number(target.dataset.navIdx || 0)),
-};
-
-function handleExamClick(event: MouseEvent) {
-  const view = event.currentTarget as HTMLElement;
-  const target = (event.target as Element)?.closest && (event.target as Element).closest<HTMLElement>("[data-exam-command]");
-  if (!target || !view.contains(target)) return;
-  const handler = EXAM_COMMANDS[target.getAttribute("data-exam-command") || ""];
-  if (handler) handler(target);
-}
-
-function handleExamCustomCommand(event: Event) {
-  const detail = (event as CustomEvent<ExamCommandDetail>).detail || {} as ExamCommandDetail;
-  if (detail.command === 'answer-option') {
-    selectExamOpt(Number(detail.eidx), Number(detail.oidx));
-    return;
-  }
-  if (detail.command === 'set-types') {
-    if (detail.selectedTypes) _examSelectedTypes = detail.selectedTypes;
-    return;
-  }
-  if (detail.command === 'set-difficulty') {
-    _examDifficulty = detail.difficulty || 'intermediate';
-    return;
-  }
-  if ('dataset' in detail && detail.dataset && typeof detail.dataset === 'object') {
-    EXAM_COMMANDS[detail.command]?.(detail as unknown as ExamCommandTarget);
-  }
-}
-
-function handleExamInput(event: Event) {
-  const view = event.currentTarget;
-  const input = (event.target as Element)!.closest<HTMLInputElement>(".exam-q-fill-input[data-eidx]");
-  if (!input || !(view as Node)!.contains(input)) return;
-  setExamAnswer(Number(input.dataset.eidx), input.value);
-  refreshExamNavTally();
-  scheduleExamAnswerSave();
-}
-
-export function mountExamListeners() {
-  const view = document.getElementById("examView");
-  if (!view || _examListenersMounted) return;
-  _examListenersMounted = true;
-  view.addEventListener("click", handleExamClick);
-  view.addEventListener("socrates:exam-command", handleExamCustomCommand);
-  view.addEventListener("input", handleExamInput);
-}
-
-/* ── open / close ── */
-/* prepareExamView — DOM + state scaffolding for any "exam is now
-   visible" path (fresh open via sidebar, restore from /api/sessions,
-   or deep-link from ?exam=<uuid>). Does NOT render the form — callers
-   are responsible for painting content into #examViewBody so this
-   helper can be reused by loadExamSession (which has its own
-   paintRestoredQuestionCard loop instead of renderExamForm). */
 export function prepareExamView() {
-  const ev = document.getElementById("examView");
-  if (!ev) return;
-  /* P_exam-nav — Exam is now a first-class sidebar panel (was an overlay).
-     The shared view controller hides core/workspace siblings, collapses
-     .main-inner, and applies body.exam-active as one transition. */
-  activateMainView("examView", document);
-  /* Show the exam-only top-bar elements (#examTitleBar);
-     the shared view controller already applied the conversation chrome. */
-  toggleExamOnlyTopBar(true);
-  /* The top bar is the single visible exam title. */
-  _setExamTitle(browserWindow.stateStore.read("examTopic") || (getCurrentLanguage() === "zh" ? "生成考卷" : "Generate Exam"));
-  /* Hide chat-specific top-bar elements that are meaningless in exam mode. */
-  ["chatModelWrap"].forEach(function (id) {
-    const el = document.getElementById(id);
-    if (el) el.classList.add("hidden");
-  });
-  stateStore.dispatch({type:'state/set',key:'_examInView',value:true});
-  if (!browserWindow.stateStore.read("_examScrollBound")) {
-    const cont = document.getElementById("examViewBody");
-    if (cont) {
-      cont.addEventListener("scroll", function () {
-        if (browserWindow.stateStore.read("_examInView")) syncExamNav();
-      });
-    }
-    const sc = document.getElementById("scrollContainer") || document.getElementById("msgScroll");
-    if (sc) {
-      sc.addEventListener("scroll", function () {
-        if (browserWindow.stateStore.read("_examInView")) syncExamNav();
-      });
-    }
-    stateStore.dispatch({type:'state/set',key:'_examScrollBound',value:true});
-  }
+  activateMainView('examView', document);
+  dispatchUi({ type: 'ui/set', key: '_examInView', value: true });
 }
-
-export function openExamPanel() {
+export async function openExamPanel() {
+  const { mountExamView } = await import('./react/exam/mount.tsx');
+  mountExamView();
   prepareExamView();
   renderExamForm();
 }
 
-/* Legacy alias — the Extensions picker and any other callers that still
-   reach for window.openExamModal() keep working. */
-export function openExamModal() { openExamPanel(); }
-
 export function closeExamView() {
-  toggleExamOnlyTopBar(false);
-  /* Mark the cancel flag so any in-flight generation loop bails. The
-     state itself (questions / answers / topic) is preserved — closing
-     the view is not the same as discarding the exam; resetState()
-     handles the latter and is called from resetApp(). */
-  stateStore.dispatch({type:'state/batch',patch:{
-    examCancel:true,_examInView:false,examReadOnly:false
-  }});
-  try { restoreExamActiveProvider() } catch (e) { reportSwallow(e, 'exam.closeExamView.restoreProvider'); }
-  /* Decide what to reveal behind the exam panel. Mirrors the
-     chat/tutor pattern: if a session is open, go back to chatView;
-     otherwise surface the topic-setup landing page. */
-  if (browserWindow.stateStore.read("currentSessionId")) {
-    activateMainView("chatView", document);
-    try { pushChatIdToURL(browserWindow.stateStore.read("currentSessionId")) } catch (e) { reportSwallow(e, 'exam.closeExamView.pushChatId'); }
+  const readOnly = stateStore.read('examReadOnly');
+  dispatchExam({ type: 'exam/patch', patch: {
+    examCancel: true,
+    examReadOnly: false,
+  } });
+  dispatchUi({ type: 'ui/set', key: '_examInView', value: false });
+  try { restoreExamActiveProvider(); } catch (error) { reportSwallow(error, 'exam.closeExamView.restoreProvider'); }
+
+  if (readOnly || stateStore.read('currentSessionId')) {
+    activateMainView('chatView', document);
+    try { pushChatIdToURL(stateStore.read('currentSessionId')); } catch (error) { reportSwallow(error, 'exam.closeExamView.pushChatId'); }
   } else {
-    activateMainView("topicSetup", document);
-    try { setExamIdInURL(null) } catch (e) { reportSwallow(e, 'exam.closeExamView.clearExamId'); }
+    activateMainView('topicSetup', document);
+    try { setExamIdInURL(null); } catch (error) { reportSwallow(error, 'exam.closeExamView.clearExamId'); }
   }
 }
 
-export function closeExamModal() {
-  closeExamView();
-}
-
-/* Show / hide the top-bar elements that are only meaningful while an
-   exam is in view (#examTitleBar). Everything else in
-   the top-bar follows the active view through mainViewController. */
-function toggleExamOnlyTopBar(show: boolean|undefined) {
-  document.body.classList.toggle("exam-active", show);
-  const els = document.querySelectorAll("[data-exam-only='true']");
-  els.forEach(function (el) {
-    if (show) el.classList.remove("hidden");
-    else el.classList.add("hidden");
-  });
-}
-
-/* ── render form ── */
-/* P_exam-ui — redesigned as a clean, ChatGPT-style setup card:
-   an intro line, a required Topic field, a Settings card with the model
-   dropdown + segmented Difficulty control + a stepper for the question
-   count, question-type pills, and an optional instructions box. */
-function examFormCopy(L: (en: string, zh: string) => string) {
-  return {
-    eyebrow: L("Assessment studio", "测评工作室"),
-    heroTitle: L("Build a focused practice exam", "创建一份专注的练习考卷"),
-    heroDescription: L("Choose the scope and challenge. Socrates will compose a balanced paper you can complete at your own pace.", "确定范围与难度，Socrates 会生成一份结构均衡、可按自己节奏完成的考卷。"),
-    topic: browserWindow.t("exam.topic"),
-    topicHelp: L("Name the subject or learning objective", "填写学科、章节或学习目标"),
-    topicPlaceholder: L("e.g. Linear Algebra, World War II...", "如：线性代数、量子力学、二战…"),
-    settings: L("Paper settings", "考卷设置"),
-    settingsHelp: L("Select the model, difficulty, and length", "选择生成模型、难度与题量"),
-    model: L("Model", "生成模型"),
-    modelPlaceholder: L("Select a model", "选择模型"),
-    noModels: L("No models available", "无可用模型"),
-    difficulty: browserWindow.t("exam.difficulty"),
-    count: browserWindow.t("exam.count"),
-    fewer: L("Fewer", "减少"),
-    more: L("More", "增加"),
-    types: browserWindow.t("exam.types"),
-    typesHelp: L("Keep at least one response format", "至少保留一种作答形式"),
-    multipleChoice: L("Multiple choice", "选择题"),
-    multipleChoiceHelp: L("Choose one answer", "从选项中选择答案"),
-    fillBlank: L("Fill blank", "填空题"),
-    fillBlankHelp: L("Recall key terms", "回忆关键概念或结果"),
-    shortAnswer: L("Short answer", "简答题"),
-    shortAnswerHelp: L("Explain your reasoning", "用自己的语言说明推理"),
-    instructions: browserWindow.t("exam.instructions"),
-    instructionsHelp: L("Optional constraints for the examiner", "可选，补充覆盖范围或出题偏好"),
-    instructionsPlaceholder: L("Specific topics to cover, or leave blank...", "具体说明要覆盖的知识点，留空则由 AI 决定…"),
-    cancel: browserWindow.t("common.cancel"),
-    generate: browserWindow.t("exam.generate"),
-    beginner: L("Beginner", "入门"),
-    intermediate: L("Intermediate", "中级"),
-    hard: L("Hard", "困难"),
-    expert: L("Expert", "专家"),
-  };
-}
-
-function examProviderOptions() {
+export function renderExamForm(draft: Partial<ExamFormDraft> = {}) {
   const providerConfig = getProviderConfigSnapshot();
-  const providerList = Array.isArray(providerConfig.providers) ? providerConfig.providers : [];
-  const providers = providerList.filter((provider) => provider?.id).map((provider) => ({
-    id: provider.id,
-    label: provider.label || provider.model || provider.id,
-  }));
-  return {
-    providers,
-    activeId: providers.find((provider) => provider.id === providerConfig.activeId)?.id || "",
-  };
-}
-
-function buildExamSetupSnapshot(draft: ExamDraft | null, key: number): ExamSetupSnapshot {
-  const L = (en: string, zh: string) => getCurrentLanguage() === "zh" ? zh : en;
-  const defaults = { mc: true, fb: true, sa: false };
-  _examSelectedTypes = Object.assign({}, defaults, draft?.types ?? {});
-  _examDifficulty = draft?.difficulty ?? "intermediate";
-  const { providers, activeId } = examProviderOptions();
-  return {
-    key,
-    locale: getCurrentLanguage() === "en" ? "en" : "zh",
-    topic: String(draft?.topic ?? ""),
-    instructions: String(draft?.instructions ?? ""),
-    count: String(draft?.count ?? "5"),
-    model: String(draft?.model || activeId),
-    difficulty: _examDifficulty,
-    selectedTypes: Object.assign({}, _examSelectedTypes),
-    providers,
-    text: examFormCopy(L),
-  };
-}
-
-export function renderExamFooterActions(actions: ExamAction[]) {
-  const host = document.getElementById('examViewReactFooter');
-  if (host) renderExamActions(host, actions);
-}
-
-export function renderExamForm(draft: ExamDraft | null = null) {
-  clearExamQuestionCards();
-  clearExamNavigation();
-  const legacyBody = _examBody();
-  const legacyFooter = _examFooter();
-  if (legacyBody) legacyBody.replaceChildren();
-  if (legacyFooter) legacyFooter.replaceChildren();
-  _setExamTitle(getCurrentLanguage() === "zh" ? "生成考卷" : "Generate Exam");
-  const meta = document.getElementById("examViewMeta");
-  if (meta) meta.textContent = "";
-  stateStore.dispatch({type:'state/batch',patch:{
-    examCancel:false,examQuestions:[],examAnswers:{},examSubmitted:false
-  }});
-
-  const snapshot = buildExamSetupSnapshot(draft, ++_examFormRevision);
-
-  const bodyHost = document.getElementById("examViewReactBody");
-  const footerHost = document.getElementById("examViewReactFooter");
-  const commandHost = document.getElementById("examView");
-  if (!bodyHost || !footerHost || !commandHost) return;
-  renderExamSetup(bodyHost, footerHost, commandHost, snapshot);
-}
-
-/* Question-count stepper — clamp to 1..50 and mirror to the hidden input
-   that startExamGeneration reads. */
-export function adjustExamCount(delta: number) {
-  const input = document.getElementById("examCount");
-  const display = document.getElementById("examCountDisplay");
-  let cur = parseInt(input ? (input as HTMLInputElement).value : '', 10);
-  if (!(cur >= 1)) cur = 5;
-  const next = Math.max(1, Math.min(50, cur + delta));
-  if (input) (input as HTMLInputElement).value = String(next);
-  if (display) display.textContent = String(next);
-}
-
-export function startExamGeneration() {
-  return runExamGeneration({
-    difficulty: _examDifficulty,
-    selectedTypes: Object.assign({}, _examSelectedTypes),
+  const formDraft = createExamFormDraft({
+    model: providerConfig.activeId || '',
+    ...draft,
   });
-}
-
-function refreshExamFormI18n() {
-  const form = document.querySelector(".exam-form-container");
-  if (!form) return false;
-  const topicEl = document.getElementById("examTopic") as HTMLInputElement | null;
-  const instructionsEl = document.getElementById("examInstructions") as HTMLInputElement | null;
-  const countEl = document.getElementById("examCount") as HTMLInputElement | null;
-  const modelEl = document.getElementById("examModel") as HTMLInputElement | null;
-  const snapshot = {
-    topic: topicEl?.value || "",
-    instructions: instructionsEl?.value || "",
-    count: countEl?.value || "5",
-    model: modelEl?.value || "",
-    difficulty: _examDifficulty,
-    types: Object.assign({}, _examSelectedTypes)
-  };
-  renderExamForm(snapshot);
-  return true;
-}
-
-function refreshExamQuestionsI18n() {
-  const questions = browserWindow.stateStore.read("examQuestions");
-  if (!Array.isArray(questions) || !questions.length) return false;
-  renderAllQuestions();
-  renderExamNav();
-  if (!document.getElementById('examViewReactFooter')) return true;
-  const valid = questions.some(function (q) { return q.type !== "error"; });
-  renderExamFooterActions(valid
-    ? [
-      { command: 'submit', label: _examUiL('Submit for Grading', '提交批改') },
-      { command: 'close', label: _examUiL('Close', '关闭'), variant: 'outline' },
-    ]
-    : [
-      { command: 'form', label: _examUiL('Try Again', '重新出题') },
-      { command: 'close', label: _examUiL('Close', '关闭'), variant: 'outline' },
-    ]);
-  return true;
-}
-
-function refreshExamGenerationI18n() {
-  refreshExamGenerationStatus();
-  if (document.querySelector('#examViewReactBody [data-slot="progress"]')) {
-    renderExamFooterActions([
-      { command: 'cancel', label: _examUiL('Cancel', '取消'), variant: 'outline' },
-    ]);
-  }
-}
-
-/* Repaint dynamic exam chrome when the application language changes.
-   Generated question text remains in the language requested from the model,
-   while labels, controls, placeholders and results follow the UI language. */
-export function refreshExamI18n() {
-  if (!browserWindow.stateStore.read("_examInView")) return;
-  if (refreshExamFormI18n()) return;
-  if (browserWindow.stateStore.read("examSubmitted")) {
-    renderExamResults();
-    return;
-  }
-  if (refreshExamQuestionsI18n()) return;
-  refreshExamGenerationI18n();
+  dispatchExam({ type: 'exam/patch', patch: {
+    examViewMode: 'form',
+    examFormDraft: formDraft,
+    examCancel: false,
+    examQuestions: [],
+    examAnswers: {},
+    examSubmitted: false,
+    examReadOnly: false,
+    examStatusMessage: '',
+    examStatusDetail: '',
+  } });
 }

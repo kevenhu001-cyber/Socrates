@@ -120,8 +120,8 @@ test('search replays the latest query when Fuse arrives without another server r
         { id: 'calculus', title: 'Differential calculus' },
         { id: 'physics', title: 'Particle physics' },
       ];
-      window.openCmdK();
     });
+    await page.keyboard.press('Control+k');
     await expect.poll(() => requested).toBe(true);
     const input = page.locator('#cmdKInput');
     await input.fill('calculus');

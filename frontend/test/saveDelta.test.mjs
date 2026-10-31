@@ -79,7 +79,7 @@ test('a row whose type changes is treated as dirty', () => {
 
 test('a row that gains its rendered html is treated as dirty', () => {
   /* Regression: the fingerprint memo used to compare rawText ONLY. The
-     redraw path (restoreMessageBody / the post-finish render) sets html
+     post-finish/history render sets html
      while rawText keeps the same string reference, so a rawText-only
      memo returned the stale fingerprint and the html was never sent. */
   const fp = createFingerprintCache();

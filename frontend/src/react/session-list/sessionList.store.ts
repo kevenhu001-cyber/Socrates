@@ -24,6 +24,10 @@ export function useCurrentSessionId(): string | null {
   return useBridgeSelector(sessionListState, (snapshot) => snapshot.currentSessionId);
 }
 
+export function useSessionListSearchQuery(): string {
+  return useBridgeSelector(sessionListState, (snapshot) => snapshot.searchQuery);
+}
+
 export function formatRelativeTime(value: string | number | null | undefined): string {
   if (!value) return '';
   const date = new Date(value);

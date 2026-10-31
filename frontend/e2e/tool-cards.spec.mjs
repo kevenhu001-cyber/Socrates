@@ -297,9 +297,9 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
 
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  await page.locator('#topModeTutor').click();
   await page.evaluate(async () => {
     const sessionId = '33333333-3333-4333-8333-333333333333';
-    window.setAppMode?.('tutor');
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Tutor tools' });
     window.stateStore.dispatch({ type: "state/set", key: "domain", value: 'Tutor tools' });

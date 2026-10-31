@@ -35,7 +35,7 @@ for (const theme of ['light', 'dark']) {
       expect(fonts.resources.reduce((sum, entry) => sum + entry.bytes, 0)).toBeLessThan(2_000_000);
       await page.screenshot({ path: `test-results/global-home-${encodeURIComponent(theme)}-${encodeURIComponent(width)}.png` });
 
-      await page.evaluate(() => window.openSettings());
+      await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
       const settings = page.locator('#settingsOverlay');
       await expect(settings).toBeVisible();
       await expect(settings.locator('.settings-nav button').first()).toHaveCSS('font-size', '14px');

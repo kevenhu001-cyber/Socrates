@@ -103,7 +103,6 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.syncEffortUI?.();
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Mobile reference check' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '66666666-6666-4666-8666-666666666666' });
@@ -116,11 +115,10 @@ test('mobile composer keeps model selector and reference controls discoverable',
   const editor = page.locator('#composerRoot .rich-composer-editor');
   const effort = composer.locator('.effort-picker');
 
-  /* The top-bar Chat/Tutor pill was removed; mobile dropdown is the
-     remaining user-facing mode switch and is hidden during a conversation
-     by the same body[data-conversation-active] contract. We assert the
-     dropdown here rather than the (now-absent) top pill. */
-  await expect(page.locator('#mobileMode')).toBeHidden();
+  /* The React Chat/Tutor control is shared with desktop and hidden during a
+     conversation by the body[data-conversation-active] contract. */
+  await expect(page.locator('#mobileMode')).toHaveCount(0);
+  await expect(page.locator('#topModeSwitch')).toBeHidden();
   await expect(composer.locator('#composerMicBtn')).toBeVisible();
   /* Empty composer → the shared primary control is the submit action: it
      shows the send arrow and stays disabled until a draft exists. The
@@ -138,7 +136,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(effort).toBeHidden();
   await page.evaluate(() => {
     localStorage.setItem('socrates-reasoning-effort', 'high');
-    window.syncEffortUI?.();
+    window.dispatchEvent(new CustomEvent('socrates:chat-preferences', { detail: { effort: 'high', speed: 'standard' } }));
   });
   await expect(effort).toBeVisible();
   await expect(effort.locator('.effort-value')).toHaveText('高');

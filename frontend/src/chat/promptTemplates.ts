@@ -7,6 +7,7 @@ export interface PromptTemplate {
 }
 
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { apiFetch } from '../util/api.ts';
 /* chat/promptTemplates.ts — built-in and user-defined prompt templates. */
 
 const ICON_SUMMARIZE='<svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.1"/><circle cx="3" cy="8" r="1.1"/><circle cx="3" cy="12" r="1.1"/><rect x="5.5" y="3.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="7.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="11.4" width="6" height="1.2" rx="0.6"/></svg>';
@@ -191,8 +192,7 @@ let _lastSyncAt=0;
 const SYNC_MIN_INTERVAL_MS=30000;
 
 export function syncPromptTemplates(force?: boolean|undefined){
-  const apiFetch=(typeof window!=="undefined")&&browserWindow.apiFetch;
-  if(typeof apiFetch!=="function")return Promise.resolve();
+  if(typeof window==="undefined")return Promise.resolve();
   const now=Date.now();
   if(!force&&now-_lastSyncAt<SYNC_MIN_INTERVAL_MS)return Promise.resolve();
   if(_syncInFlight)return _syncInFlight;
@@ -233,8 +233,7 @@ export function syncPromptTemplates(force?: boolean|undefined){
 /* Fire-and-forget write-through. Errors are swallowed — the local copy is
    already saved and the next pull sync reconciles. */
 function _syncTemplateToServer(t: PromptTemplate){
-  const apiFetch=(typeof window!=="undefined")&&browserWindow.apiFetch;
-  if(typeof apiFetch!=="function")return;
+  if(typeof window==="undefined")return;
   const row=_templateToServerRow(t);
   const op=_isServerId(t.id)
     ?apiFetch("/api/prompts/"+encodeURIComponent(t.id),{method:"PATCH",body:row})
@@ -251,7 +250,6 @@ function _syncTemplateToServer(t: PromptTemplate){
   op.catch(function () { /* noop: server sync failure is non-fatal */ });
 }
 function _deleteTemplateOnServer(id: string){
-  const apiFetch=(typeof window!=="undefined")&&browserWindow.apiFetch;
-  if(typeof apiFetch!=="function"||!_isServerId(id))return;
+  if(typeof window==="undefined"||!_isServerId(id))return;
   apiFetch("/api/prompts/"+encodeURIComponent(id),{method:"DELETE"}).catch(function () { /* noop: server sync failure is non-fatal */ });
 }

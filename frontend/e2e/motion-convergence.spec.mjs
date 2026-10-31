@@ -22,7 +22,7 @@ test('desktop sidebar commits layout once and animates the main surface with tra
     main.getAnimations().forEach((animation) => animation.cancel());
 
     const beforeInset = Number.parseFloat(getComputedStyle(main).paddingLeft);
-    window.toggleSidebar?.();
+    window.__socratesLegacy.navigation.toggleSidebar?.();
 
     const afterInset = Number.parseFloat(getComputedStyle(main).paddingLeft);
     const sidebarTransition = getComputedStyle(sidebar).transitionDuration;
@@ -52,13 +52,13 @@ test('rapid sidebar reversal preserves the visible position and reduced motion s
     const sidebar = document.getElementById('sidebar');
     const main = document.querySelector('#appShell .main');
     sidebar.classList.remove('collapsed');
-    window.toggleSidebar();
+    window.__socratesLegacy.navigation.toggleSidebar();
     const motion = main.getAnimations()[0];
     motion.pause();
     motion.currentTime = 60;
     const visibleInset = parseFloat(getComputedStyle(main).paddingLeft)
       + new DOMMatrixReadOnly(getComputedStyle(main).transform).m41;
-    window.toggleSidebar();
+    window.__socratesLegacy.navigation.toggleSidebar();
     const next = main.getAnimations()[0];
     next.pause();
     next.currentTime = 0;
@@ -72,7 +72,7 @@ test('rapid sidebar reversal preserves the visible position and reduced motion s
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const count = await page.evaluate(() => {
-    window.toggleSidebar();
+    window.__socratesLegacy.navigation.toggleSidebar();
     return document.querySelector('#appShell .main').getAnimations().length;
   });
   expect(count).toBe(0);

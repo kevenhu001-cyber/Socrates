@@ -80,10 +80,9 @@ function userMessageCallbacks(
   role: string,
   id: string | null,
   legacy: ReturnType<typeof getLegacyActions> | null,
-): Pick<MessageToolbarCallbacks, 'onEdit' | 'onDelete'> {
+): Pick<MessageToolbarCallbacks, 'onDelete'> {
   if (role !== 'user' || !id || !legacy) return {};
   return {
-    onEdit: () => legacy.messages.editUserMessage(id),
     onDelete: () => legacy.messages.deleteUserMessage(id),
   };
 }

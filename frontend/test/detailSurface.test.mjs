@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
+import { createElement } from 'react';
 import { openDetailSurface, closeDetailSurface } from '../src/ui/detailSurface.ts';
 import { activateMainView } from '../src/ui/mainViewController.ts';
 
@@ -12,7 +13,7 @@ function fixture(width = 1440) {
   globalThis.document = doc;
   doc.getElementById('sidebar').getBoundingClientRect = () => ({ width: 260 });
   doc.getElementById('trigger').focus();
-  return { dom, doc, options: (owner, onClose) => ({ owner, title: owner, closeLabel: 'Close', content: doc.createElement('div'), onClose }) };
+  return { dom, doc, options: (owner, onClose) => ({ owner, title: owner, closeLabel: 'Close', content: createElement('div', null, owner), onClose }) };
 }
 
 async function waitForSurface(doc) {

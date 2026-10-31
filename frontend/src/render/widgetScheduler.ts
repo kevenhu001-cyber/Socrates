@@ -72,7 +72,7 @@ export function mountPracticeWidget(slot: Element, parsed: PracticeMountData): u
   return loadWidgets().then(function (m) { return m.mountPracticeWidget(slot, parsed); });
 }
 
-export function handleQuizPick(...args: Parameters<WidgetsModule['handleQuizPick']>): void | Promise<void> {
+export function handleQuizPick(...args: Parameters<WidgetsModule['handleQuizPick']>): ReturnType<WidgetsModule['handleQuizPick']> | Promise<ReturnType<WidgetsModule['handleQuizPick']>> {
   if (_widgetsModule) return _widgetsModule.handleQuizPick(...args);
   return loadWidgets().then(function (m) {
     return m.handleQuizPick(...args);

@@ -101,7 +101,7 @@ test('new pages and settings fit a phone viewport in both themes', async ({ page
   await page.setViewportSize({ width: 390, height: 844 });
   for (const theme of ['dark', 'light']) {
     await page.evaluate((value) => document.querySelector(`[data-theme-option="${value}"]`)?.click(), theme);
-    await page.evaluate(() => window.openNav('sites'));
+    await page.evaluate(() => window.__socratesLegacy.navigation.openNav('sites'));
     await expect(page.locator('#sitesPanel')).toBeInViewport();
     await page.screenshot({ path: `test-results/socrates-reference-mobile-sites-empty-${encodeURIComponent(theme)}-390x844.png` });
     const sizes = await page.evaluate(() => ({
@@ -112,7 +112,7 @@ test('new pages and settings fit a phone viewport in both themes', async ({ page
     expect(sizes.panel).toBeLessThanOrEqual(sizes.viewport + 2);
     expect(sizes.scroll).toBeLessThanOrEqual(sizes.viewport + 2);
   }
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(page.locator('.settings-modal--full')).toBeInViewport();
   await expect(page.locator('.settings-nav')).toBeVisible();
 });

@@ -7,8 +7,7 @@
 /* The legacy .send-btn.active scales the button up 5% and casts an accent
    glow; the capsule controls keep a constant footprint in every state. */
 #appShell .effort-caret { width: 16px; height: 16px; color: var(--ui-text-tertiary); }
-/* The compact level label (高/中/低) is the phone variant of the pill —
-   filled by syncEffortUI() in ui/effortPicker.js; phone CSS reveals it. */
+/* The compact level label is the phone variant of the React-owned pill. */
 #appShell .effort-value { display: none; }
 
 /* Voice recording surface — the input becomes one calm, full-width audio

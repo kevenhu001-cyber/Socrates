@@ -4,6 +4,11 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SOURCE = [
   '先看例题，再完成自测。',
+  '<definition><term>函数定义</term><body>输入对应唯一输出。</body></definition>',
+  '<step n="1">整理条件</step><step n="2">写出关系式</step>',
+  '<proof><title>证明</title><body>由定义直接得出。</body></proof>',
+  '<derivation><title>推导</title><body>\n  x + 1\n= 2\n</body></derivation>',
+  '<key-point>核心结论：**答案为 2**。</key-point>',
   '<example><title>乘法示例</title><problem>2 × 3 = ?</problem><solution>2 × 3 = 6</solution></example>',
   '<quiz><q>2 + 2 = ?</q><o letter="A">4</o><o letter="B">5</o><correct>A</correct></quiz>',
   '<practice correct="42"><problem>6 × 7 = ?</problem><hint>可以分解为 6 × (5 + 2)。</hint></practice>',
@@ -32,9 +37,23 @@ for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light'
 
     const body = page.locator('.msg.assistant .msg-body');
     const example = body.locator('.inline-example');
+    const definition = body.locator('.inline-definition');
+    const steps = body.locator('.inline-step-list');
+    const proof = body.locator('.inline-proof');
+    const derivation = body.locator('.inline-derivation');
+    const keyPoint = body.locator('.inline-key-point');
     const quiz = body.locator('.inline-quiz');
     const practice = body.locator('.inline-practice');
     await expect(example).toHaveCount(1);
+    await expect(definition.locator('.inline-definition-term')).toHaveText('函数定义');
+    await expect(definition.locator('.inline-definition-body')).toContainText('输入对应唯一输出');
+    await expect(steps.locator('.inline-step')).toHaveCount(2);
+    await expect(steps.locator('.inline-step-n')).toHaveText(['1.', '2.']);
+    await expect(proof.locator('.inline-proof-title')).toHaveText('证明');
+    await expect(proof.locator('.inline-proof-body')).toContainText('由定义直接得出');
+    await expect(derivation.locator('.inline-derivation-body')).toContainText('x + 1');
+    await expect(keyPoint.locator('.inline-key-point-label')).toHaveText('要点');
+    await expect(keyPoint.locator('.inline-key-point-body')).toContainText('答案为 2');
     await expect(quiz).toHaveCount(1);
     await expect(practice).toHaveCount(1);
     await expect(example.locator('.inline-example-solution')).toBeHidden();

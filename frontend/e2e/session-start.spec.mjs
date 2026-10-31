@@ -57,7 +57,7 @@ test('typing into topic input enables the Start button; clicking does not throw'
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
 
   await topicInput.fill('quick smoke topic test');
-  await page.waitForTimeout(200); // autoResize + updateStartBtn fire on input
+  await page.waitForTimeout(200); // allow the composer editor and state snapshot to settle
 
   await startBtn.click({ timeout: 5_000 }).catch((e) => consoleErrors.push('click: ' + String(e)));
   await page.waitForTimeout(1_500);
@@ -84,12 +84,12 @@ test('Tutor start can skip boundary questions and enter the teaching chat', asyn
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.toggleAppMode('tutor');
     window.getActiveProvider = () => ({
       id: 'test-provider', label: 'Test', model: 'test-model', isBuiltIn: true, key: 'test-key',
     });
   });
-  expect(await page.evaluate(() => window.appMode)).toBe('tutor');
+  await page.locator('#topModeTutor').click();
+  await expect(page.locator('#topModeTutor')).toHaveAttribute('aria-selected', 'true');
 
   const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
   await topicInput.fill('Foundations of linear algebra');
@@ -101,7 +101,7 @@ test('Tutor start can skip boundary questions and enter the teaching chat', asyn
   await expect(explorationDialog).toBeVisible();
   await explorationDialog.locator('.tutor-explore-skip').click();
   const startupState = await page.evaluate(() => ({
-    mode: window.appMode,
+    mode: document.body.dataset.appMode,
     phase: window.stateStore.read('phase'),
     mainView: document.documentElement.dataset.mainView,
     visibleViews: ['topicSetup', 'diagnosticView', 'chatView']
@@ -113,7 +113,7 @@ test('Tutor start can skip boundary questions and enter the teaching chat', asyn
     .toBeVisible({ timeout: 15_000 });
 
   const session = await page.evaluate(() => ({
-    mode: window.appMode,
+    mode: document.body.dataset.appMode,
     topic: window.stateStore.read('topic'),
     phase: window.stateStore.read('phase'),
     sessionId: window.stateStore.read('currentSessionId'),
@@ -143,11 +143,11 @@ test('canceling Tutor topic analysis prevents the pending start from entering ch
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.toggleAppMode('tutor');
     window.getActiveProvider = () => ({
       id: 'test-provider', label: 'Test', model: 'test-model', isBuiltIn: true, key: 'test-key',
     });
   });
+  await page.locator('#topModeTutor').click();
 
   const modelRequests = [];
   page.on('request', (request) => {
@@ -160,7 +160,7 @@ test('canceling Tutor topic analysis prevents the pending start from entering ch
   await expect(explorationDialog).toBeVisible();
   await explorationDialog.locator('.tutor-explore-skip').click();
   const diagnosticState = await page.evaluate(() => ({
-    mode: window.appMode,
+    mode: document.body.dataset.appMode,
     mainView: document.documentElement.dataset.mainView,
     visibleViews: ['topicSetup', 'diagnosticView', 'chatView']
       .filter((id) => !document.getElementById(id)?.classList.contains('hidden')),
@@ -297,38 +297,57 @@ for (const [name, viewport] of [
   });
 }
 
-// Regression (P_deep-research-view): with the Deep Research extension enabled,
-// clicking Start on the landing screen used to early-return into
-// launchDeepResearch(), which posted agent output into the still-hidden
-// #msgList while topicSetup stayed up — the button looked dead. Starting a
-// deep-research session must switch to #chatView, commit the user bubble, and
-// hand the topic to startDeepResearch exactly once.
+// Regression (P_deep-research-view): selecting Deep Research in the composer
+// and starting from the landing screen must switch to #chatView, commit the
+// user bubble, and submit one durable server-side research job.
 test('Deep Research extension: Start on landing enters chat and runs research', async ({ page }) => {
   await mockAuthedApp(page);
+  const submissions = [];
+  await page.route('**/api/**/research-jobs**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === 'POST' && url.pathname.endsWith('/research-jobs')) {
+      const body = request.postDataJSON();
+      submissions.push(body);
+      const now = new Date().toISOString();
+      await route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify({ job: {
+          id: 'deep-research-session-start', sessionId: body.sessionId, projectId: null,
+          query: body.query, focus: null, status: 'queued', eventSequence: 1,
+          plan: ['Clarify the research question', 'Compare relevant sources', 'Write a sourced report'],
+          searched: 0, sourceCount: 0, resultArtifactId: null, error: null,
+          attempts: 0, createdAt: now, updatedAt: now, completedAt: null,
+        } }),
+      });
+      return;
+    }
+    if (url.pathname.endsWith('/events')) {
+      await route.fulfill({ status: 200, contentType: 'text/event-stream', body: ': keepalive\n\n' });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ jobs: [] }) });
+  });
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
   const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
   await topicInput.fill('history of the printing press');
-
-  // Stub the research agent so the test asserts routing, not the full
-  // plan/search/synthesize pipeline.
-  await page.evaluate(() => {
-    window.__researchCalls = [];
-    window.startDeepResearch = (q) => { window.__researchCalls.push(q); return Promise.resolve('report'); };
-    window.__socratesLegacy.composer.deepResearchAction();
-  });
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="deepResearch"]').click();
   await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('deepResearch');
   expect(await page.evaluate(() => typeof window.deepResearchOn)).toBe('undefined');
 
-  await page.waitForTimeout(150);
   await page.locator('button.composer-primary-btn, .composer-primary-btn').first().click();
 
   await expect(page.locator('#topicSetup')).toBeHidden();
   await expect(page.locator('#chatView')).toBeVisible();
   await expect(page.locator('#msgList .msg.user')).toContainText('history of the printing press');
 
-  await expect.poll(() => page.evaluate(() => window.__researchCalls || [])).toEqual(['history of the printing press']);
+  await expect.poll(() => submissions).toHaveLength(1);
+  expect(submissions[0]).toMatchObject({ query: 'history of the printing press' });
+  expect(submissions[0].sessionId).toBeTruthy();
   expect(await page.evaluate(() => window.stateStore.read('messages').filter((message) => message.type === 'streaming'))).toEqual([]);
 });

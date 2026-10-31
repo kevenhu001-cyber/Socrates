@@ -2,7 +2,6 @@ import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/write.ts
 
 import type { ExtensionDefinition } from '../types';
-import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export const WRITE_EDIT_ICON = interfaceIcon('edit', 18);
 
@@ -50,12 +49,6 @@ export const writeExtension: ExtensionDefinition = {
       systemPrompt: WRITE_EDIT_SYSTEM_PROMPT,
       body: '',
     });
-    const w = window as unknown as {
-      updateComposerBtn?: () => void;
-    };
-    try {
-      w.updateComposerBtn?.();
-    } catch (error) { reportSwallow(error, 'extensions/modules/write.ts:57'); }
     ctx.focusComposer();
   },
 };

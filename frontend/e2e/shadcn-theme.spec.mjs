@@ -68,7 +68,7 @@ test('display options support keyboard navigation and switches persist on mobile
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const settings = page.locator('#settingsOverlay');
   await settings.locator('.settings-nav [data-section="display"]').click();
   const options = settings.locator('[data-slot="toggle-group"]').first().getByRole('button');

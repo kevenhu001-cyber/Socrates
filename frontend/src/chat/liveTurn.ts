@@ -4,7 +4,7 @@
  * Zero-behavior-change lift; state lives in turnState.ts.
  */
 import { stateStore } from '../state/store.ts';
-import { turnState } from './turnState.ts';
+import { streamRetryViewport, turnState } from './turnState.ts';
 import type { ActiveChatController, LiveTurnRuntime } from './turnState.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
@@ -42,6 +42,38 @@ export function retryLiveTurn(messageId?: string | null): boolean {
   try { owner.run(); } catch (error) {
     reportEmptyCatch(error, 'empty catch: chat/liveTurn.ts:46');
     /* the retry handler threw — the turn is unchanged */
+  }
+  return true;
+}
+
+/** Preserve the visible error-row offset before React's Retry button takes focus. */
+export function captureLiveRetryViewport(messageId: string): void {
+  if (!messageId || typeof document === 'undefined') return;
+  const list = document.getElementById('msgList');
+  streamRetryViewport.captureViewport(list, messageId);
+}
+
+const recoveredRetries = new Map<string, () => void>();
+
+/** Register the one-shot action for a server-restored interrupted response. */
+export function registerRecoveredTurnRetry(messageId: string, action: () => void): void {
+  recoveredRetries.delete(messageId);
+  recoveredRetries.set(messageId, action);
+  while (recoveredRetries.size > 16) {
+    const oldest = recoveredRetries.keys().next().value;
+    if (oldest === undefined) break;
+    recoveredRetries.delete(oldest);
+  }
+}
+
+/** Run a restored response's recovery action from its React-owned status row. */
+export function retryRecoveredTurn(messageId: string): boolean {
+  const action = recoveredRetries.get(messageId);
+  if (!action) return false;
+  recoveredRetries.delete(messageId);
+  try { action(); }
+  catch (error) {
+    reportEmptyCatch(error, 'chat/liveTurn.retryRecoveredTurn');
   }
   return true;
 }

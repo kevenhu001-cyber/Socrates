@@ -26,7 +26,7 @@ test('interaction-only runtimes stay outside the production static closure', () 
     'src/ui/readAloud.impl.ts',
     'src/session/organize.ts',
     'src/ui/cmdK.impl.ts',
-    'src/ui/knowledgeDetail.impl.ts',
+    'src/react/tutor/KnowledgePanel.tsx',
     'src/tutor/socraticTurn.impl.ts',
     'src/chat/sessionBootstrap/tutorStart.impl.ts',
     'src/chat/send/tutorFlow.impl.ts',

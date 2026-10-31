@@ -2,11 +2,9 @@
 // Extension subsystem entry point.
 //
 // installExtensions() imports every module (which registers its
-// ExtensionDefinition) and installs thin window.* delegators so legacy inline
-// handlers and the existing windowExports.js keep working with identical signatures.
+// ExtensionDefinition); feature actions dispatch through typed imports.
 //
-// IMPORTANT: this module must be imported for side effects from
-// windowExports.js (or main.js) so Vite keeps it in the bundle.
+// Import this module from the startup composition or a feature action.
 
 import { registry } from './registry';
 import { buildExtensionContext } from './context';
@@ -49,11 +47,6 @@ export function installExtensions(): void {
 }
 
 /**
- * Thin window.* delegators — identical signatures to the legacy
- * hardcoded actions so external inline handlers never break.
- * Installed after all modules are registered.
- */
-/**
  * Public dispatch helper for legacy entry points (extensions picker,
  * composer tools). Toggle-kind extensions deactivate when already
  * active; template/action kinds always activate. Returns true if a
@@ -79,30 +72,6 @@ export function researchAction(): void { dispatchExtension('webSearch'); }
 export function exploreAction(): void { dispatchExtension('explore'); }
 export function deepResearchAction(): void { dispatchExtension('deepResearch'); }
 export function analyzeAction(): void { dispatchExtension('analyze'); }
-
-export function installWindowExtensionDelegates(): void {
-  installExtensions();
-
-  const w = window as unknown as {
-    composeAction?: () => void;
-    researchAction?: () => void;
-    exploreAction?: () => void;
-    deepResearchAction?: () => void;
-    analyzeAction?: () => void;
-    toggleExtensionByKey?: (key: string) => void;
-  };
-
-  if (!w.composeAction) w.composeAction = composeAction;
-  if (!w.researchAction) w.researchAction = researchAction;
-  if (!w.exploreAction) w.exploreAction = exploreAction;
-  if (!w.deepResearchAction) w.deepResearchAction = deepResearchAction;
-  if (!w.analyzeAction) w.analyzeAction = analyzeAction;
-  if (!w.toggleExtensionByKey) {
-    w.toggleExtensionByKey = (key: string) => {
-      dispatchExtension(key);
-    };
-  }
-}
 
 function createContextForKey() {
   return buildExtensionContext(getVisibleComposerSurface());

@@ -1,7 +1,12 @@
 import { createRootSlot } from '../lib/boot/ownedRoot';
-import { DiagnosticView, type DiagnosticScreen } from './DiagnosticView';
+import { DiagnosticView, type DiagnosticCommandHandler, type DiagnosticScreen } from './DiagnosticView';
 
 const root = createRootSlot('diagnostic-view');
+let onCommand: DiagnosticCommandHandler = () => undefined;
+
+export function setDiagnosticCommandHandler(handler: DiagnosticCommandHandler): void {
+  onCommand = handler;
+}
 
 /**
  * `#diagnosticView` is a single legacy view host: the loading screen, the
@@ -13,7 +18,7 @@ export function renderDiagnostic(screen: DiagnosticScreen): void {
   const host = document.getElementById('diagnosticView');
   if (!host) return;
   host.classList.remove('hidden');
-  const element = <DiagnosticView screen={screen} />;
+  const element = <DiagnosticView screen={screen} onCommand={onCommand} />;
   root.mount(host, element);
 }
 

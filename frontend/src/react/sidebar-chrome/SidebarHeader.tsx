@@ -1,8 +1,12 @@
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
-import { getLegacyActions, t } from '../legacy/gateway.ts';
+import { t } from '../legacy/gateway.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
 import { useUserInfo } from './sidebarChrome.store';
+import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
+import { useMobileViewport } from './useMobileViewport.ts';
+import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
+import { startNewChat } from '../../app/lifecycle.ts';
 
 const NEW_CHAT_ICON = sidebarIcons.newChat;
 
@@ -22,6 +26,11 @@ const SEARCH_ICON = sidebarIcons.search;
 const ICON_BUTTON = 'btn-icon rounded-[var(--ui-radius-sm)] border-0 active:not-aria-[haspopup]:translate-y-0';
 
 export function SidebarHeader() {
+  const sidebarOpen = useSidebarStore((snapshot) => snapshot.isOpen);
+  const isMobile = useMobileViewport();
+  const closeButtonHidden = isMobile && !sidebarOpen;
+  const closeSidebarKey = sidebarOpen ? 'chrome.closeSidebar' : 'chrome.openSidebar';
+  const closeSidebarLabel = t(closeSidebarKey);
   // Subscribe to the chrome bridge so the header re-renders on user change
   // (even though the header itself doesn't display user info, the bridge
   //  is the single React-side subscription for the chrome).
@@ -76,7 +85,7 @@ export function SidebarHeader() {
           data-i18n-aria="sidebar.startNewChat"
           onClick={(e) => {
             e.preventDefault();
-            getLegacyActions().navigation.startNewChat();
+            void startNewChat();
           }}
           dangerouslySetInnerHTML={{ __html: NEW_CHAT_ICON }}
         />
@@ -85,13 +94,16 @@ export function SidebarHeader() {
           size="icon-sm"
           className={ICON_BUTTON}
           id="sidebarCloseBtn"
-          title={t('chrome.closeSidebar')}
-          aria-label={t('chrome.closeSidebar')}
-          data-i18n-title="chrome.closeSidebar"
-          data-i18n-aria="chrome.closeSidebar"
+          title={closeSidebarLabel}
+          aria-label={closeSidebarLabel}
+          data-i18n-title={closeSidebarKey}
+          data-i18n-aria={closeSidebarKey}
           aria-controls="sidebar"
+          aria-expanded={sidebarOpen}
+          aria-hidden={closeButtonHidden}
+          style={{ display: closeButtonHidden ? 'none' : undefined }}
           onClick={() => {
-            getLegacyActions().navigation.toggleSidebar();
+            toggleSidebar();
           }}
           dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
         />

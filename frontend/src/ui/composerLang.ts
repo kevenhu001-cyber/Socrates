@@ -7,11 +7,13 @@
  * "composer.lang.current", so setLang() refreshes it together with the
  * rest of the chrome.
  *
- * Deliberately NOT wired through data-action: effortPicker.js shows that
+ * Deliberately NOT wired through data-action: the delegated shell listener shows that
  * self-contained document-level listeners keep the inline-handlers contract
  * (every data-action name must resolve on window) untouched, and this menu
  * has exactly two fixed items.
  */
+
+import { setLang } from '../i18n.ts';
 
 function _closeAll(): void {
   document.querySelectorAll(".composer-lang[data-open='true']").forEach((chip) => {
@@ -37,8 +39,7 @@ function _pick(item: Element | null): void {
   const lang = item && item.getAttribute ? item.getAttribute('data-lang') : null;
   if (!lang) return;
   _closeAll();
-  const w = window as unknown as { setLang?: (lang: string) => void };
-  if (typeof w.setLang === 'function') w.setLang(lang);
+  setLang(lang);
 }
 
 if (typeof document !== 'undefined') {

@@ -1,17 +1,18 @@
 /* tutor/diagnosticFlow.ts — extracted from main.js (B4 batch 1).
  * Diagnostic navigation + results + proceed-to-teaching.
- * Zero-behavior-change lift: cross-cluster callbacks (updateKB,
- * saveCurrentSession, askNextQuestion, cancel/retry/
+ * Zero-behavior-change lift: cross-cluster callbacks (saveCurrentSession,
+ * askNextQuestion, cancel/retry/
  * builtin handlers owned by startSession) are resolved via window.*
  * at call time to avoid circular imports with main.js.
  */
 import { stateStore } from '../state/store.ts';
+import { setDiagnosticCommandHandler } from '../react/tutor/diagnosticHost.tsx';
+import type { DiagnosticCommand } from '../react/tutor/DiagnosticView.tsx';
 import { applyDiagnosticResults } from '../chat/diagnosticResults.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
 import { renderDiagResultsScreen } from '../ui/diagnosticResults.ts';
 import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQuestion.ts';
 import { formatMsg } from '../render/markdown.ts';
-import { updateKB } from '../ui/knowledgePanel.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
@@ -88,8 +89,6 @@ export function finishDiagnostic() {
 export function proceedToTeaching() {
   if (stateStore.read('phase') !== 'diagnostic') return;
   activateMainView('chatView', document);
-  try { updateKB(); } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.ts:89'); }
-
   /* P_teaching-plan — generate the structured teaching plan from the
      freshly-populated KB. Sub-topics are sorted so blank nodes come
      first (teach the gaps), then fuzzy nodes, with all nodes taught
@@ -120,14 +119,14 @@ export function proceedToTeaching() {
   }, 400);
 }
 
-export function handleDiagnosticCommand(command: string, button: Element) {
+export function handleDiagnosticCommand(command: DiagnosticCommand, index?: number) {
   if (command === 'cancel') {
     if (typeof browserWindow.cancelDiagnostic === 'function') browserWindow.cancelDiagnostic();
   } else if (command === 'retry') {
     if (typeof browserWindow.retryDiagnostic === 'function') browserWindow.retryDiagnostic();
   } else if (command === 'builtin') {
     if (typeof browserWindow.useBuiltinDiagnostic === 'function') browserWindow.useBuiltinDiagnostic();
-  } else if (command === 'select') selectDiag(Number(button.getAttribute('data-diag-index')));
+  } else if (command === 'select' && typeof index === 'number') selectDiag(index);
   else if (command === 'previous') prevDiagQuestion();
   else if (command === 'next') nextDiagQuestion();
   else if (command === 'skip') skipDiagQuestion();
@@ -135,12 +134,6 @@ export function handleDiagnosticCommand(command: string, button: Element) {
   else if (command === 'proceed') proceedToTeaching();
 }
 
-export function installDiagnosticFlowListeners() {
-  const diagnosticView = document.getElementById('diagnosticView');
-  if (diagnosticView) diagnosticView.addEventListener('click', function (event) {
-    const button = (event.target as Element)!.closest && (event.target as Element)!.closest('[data-diag-command]');
-    if (!button || !diagnosticView.contains(button)) return;
-    const command = button.getAttribute('data-diag-command');
-    handleDiagnosticCommand(command!, button);
-  });
+export function installDiagnosticFlowActions() {
+  setDiagnosticCommandHandler(handleDiagnosticCommand);
 }

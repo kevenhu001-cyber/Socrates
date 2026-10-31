@@ -1,8 +1,8 @@
 import { Button } from '../ui/Button';
-import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { i18n } from '../legacy/gateway.ts';
 import type { LiveTurnStatus } from '../types/domain';
 import { normalizeChineseProse } from '../../util/chineseTypography.ts';
-import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
+import { captureLiveRetryViewport, retryLiveTurn, retryRecoveredTurn } from '../../chat/liveTurn.ts';
 
 export interface TurnStatusProps {
   status: LiveTurnStatus;
@@ -14,15 +14,8 @@ export interface TurnStatusProps {
 function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
   const message = normalizeChineseProse(status.error || status.label || '');
   const retry = () => {
-    /* The retry handler belongs to the in-flight turn (it knows the prompt,
-       the retry budget, and the viewport to re-anchor), so this hands off to
-       main.js rather than re-implementing a send. */
-    try {
-      getLegacyActions().liveTurn?.retry(messageId);
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/tool-run/TurnStatus.tsx:21', 'expected');
-      /* bridge unavailable — the button is inert */
-    }
+    if (status.retryMode === 'restored') retryRecoveredTurn(messageId);
+    else retryLiveTurn(messageId);
   };
   return (
     <div className="turn-surface-status msg-error" data-turn-surface-part="terminal">
@@ -31,9 +24,13 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
         <Button
           type="button"
           className="msg-retry-btn"
-          id={status.retryButtonId}
-          data-stream-retry={status.retryMode === 'restored' ? '' : undefined}
-          onClick={status.retryMode === 'restored' || status.retryButtonId ? undefined : retry}
+          onPointerDown={() => {
+            if (status.retryMode !== 'restored') captureLiveRetryViewport(messageId);
+          }}
+          onMouseDown={(event) => {
+            if (status.retryMode !== 'restored') event.preventDefault();
+          }}
+          onClick={retry}
         >
           {i18n('common.retry', 'Retry')}
         </Button>
@@ -45,12 +42,7 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
 /** A turn the reader stopped. Same slot, Resend instead of Retry. */
 function StoppedLine({ status, messageId, readOnly }: TurnStatusProps) {
   const resend = () => {
-    try {
-      getLegacyActions().liveTurn?.retry(messageId);
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/tool-run/TurnStatus.tsx:46', 'expected');
-      /* bridge unavailable — the button is inert */
-    }
+    retryLiveTurn(messageId);
   };
   return (
     <div className="turn-surface-status msg-error msg-resend" data-turn-surface-part="terminal" style={{ marginTop: '8px' }}>

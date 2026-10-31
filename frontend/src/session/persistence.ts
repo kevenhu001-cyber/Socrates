@@ -23,6 +23,7 @@ import { toggleShareBtn } from '../ui/share.ts';
 import { showToast } from '../ui/toast.js';
 import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.ts';
+import { appMode } from '../config/providers.ts';
 
 /** A message row in the save payload (html/rawText both travel). */
 export interface SessionPostMessage extends MessageLike {
@@ -99,7 +100,6 @@ interface SaveResponse {
 
 /** Window surfaces the save pipeline reads at call time. */
 interface PersistenceWindow extends Window {
-  appMode?: string;
   renderRecents?: () => void;
 }
 
@@ -195,12 +195,7 @@ function publishAcknowledgedSave(
 }
 
 function _appMode(): string {
-  try {
-    if (typeof window !== 'undefined' && (window as PersistenceWindow).appMode) return (window as PersistenceWindow).appMode as string;
-  } catch {
-    /* empty-catch: intentional — mode lookup is best-effort */
-  }
-  return 'chat';
+  return appMode;
 }
 
 export function saveCurrentSession(): Promise<unknown> | null {

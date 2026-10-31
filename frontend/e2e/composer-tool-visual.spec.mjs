@@ -71,16 +71,16 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const attachCenter = ((desktopControlBoxes.attach?.top ?? 0) + (desktopControlBoxes.attach?.bottom ?? 0)) / 2;
   expect(Math.abs(editorCenter - attachCenter)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-dark.png', fullPage: true });
-  await page.evaluate(() => window.toggleTheme?.());
+  await page.evaluate(() => document.getElementById('themeToggle')?.click?.());
   await page.waitForTimeout(250);
   await page.screenshot({ path: 'test-results/visual-qa/chat-tools-light.png', fullPage: true });
 
-  await page.evaluate(() => window.toggleTheme?.());
+  await page.evaluate(() => document.getElementById('themeToggle')?.click?.());
   await page.waitForTimeout(250);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
   await page.waitForTimeout(400);

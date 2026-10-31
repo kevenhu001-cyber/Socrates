@@ -3,16 +3,15 @@ import { setBuiltInProviderModel, setServerBuiltInKeyAvailable } from '../../con
 import { showToast } from '../../ui/toast.js';
 import { loadSharedSession } from '../../ui/share.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { showAuthView, submitAuthVerify, revealAppAndHydrate } from '../index.ts';
+import { clearAuthTabSelection, showAuthView, showAuthSignin, showGate, submitAuthVerify, revealAppAndHydrate } from '../index.ts';
 import { selectAuthUrlRoute } from './routeSelector.ts';
 import { recordBootedRouteKind } from './routeState.ts';
+import { setAuthField } from '../uiState.ts';
 
 /** Auth-view hooks still published on the window by the legacy shell. */
 interface BootRoutesWindow extends Window {
   setCurrentUser?: (user: unknown) => void;
   markAuthSuccess?: () => void;
-  showAuthSignin?: () => void;
-  showGate?: () => void;
   __resetToken?: string | null;
 }
 
@@ -111,26 +110,11 @@ function handlePasswordResetRoute(params: URLSearchParams): boolean {
 async function prefillResetEmail(token: string): Promise<void> {
   try {
     const info = await apiFetch<{ email?: string }>('/api/auth/reset-info?token=' + encodeURIComponent(token));
-    const emailInput = document.getElementById('authResetEmail') as HTMLInputElement | null;
-    if (emailInput && info && info.email) emailInput.value = info.email;
+    if (info && info.email) setAuthField('authResetEmail', info.email);
   } catch (error) { reportSwallow(error, 'auth/boot.passwordReset.prefillEmail'); }
 }
 
 function showSigninGate(): void {
   showGate();
-  const win = window as BootRoutesWindow;
-  if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
-}
-
-function showGate(): void {
-  const win = window as BootRoutesWindow;
-  if (typeof win.showGate === 'function') win.showGate();
-}
-
-function clearAuthTabSelection(): void {
-  document.querySelectorAll('.auth-tab').forEach((tab) => {
-    tab.classList.remove('active');
-    tab.setAttribute('aria-selected', 'false');
-    tab.setAttribute('tabindex', '-1');
-  });
+  showAuthSignin();
 }

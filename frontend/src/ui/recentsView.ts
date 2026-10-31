@@ -56,7 +56,5 @@ export function refreshRecentsFilterData() {
 export function setRecentsSearch(q: string) {
   const query = q || '';
   setSessionListSearchQuery(query);
-  const input = document.getElementById("sidebarSearch");
-  if (input && (input as HTMLInputElement).value !== query) (input as HTMLInputElement).value = query;
   renderRecents();
 }

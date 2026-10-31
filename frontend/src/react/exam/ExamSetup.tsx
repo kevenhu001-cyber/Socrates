@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
@@ -8,8 +7,6 @@ import { Textarea } from '../ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 
 export type ExamSetupSnapshot = {
-  key: number;
-  locale: 'en' | 'zh';
   topic: string;
   instructions: string;
   count: string;
@@ -55,17 +52,12 @@ export type ExamSetupSnapshot = {
 
 type ExamSetupProps = {
   snapshot: ExamSetupSnapshot;
-  commandHost: HTMLElement;
+  onDraftChange: (key: 'topic' | 'instructions' | 'count' | 'model' | 'difficulty' | 'selectedTypes', value: string | number | ExamSetupSnapshot['selectedTypes']) => void;
+  topicInputRef?: React.Ref<HTMLInputElement>;
 };
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'hard', 'expert'] as const;
 const TYPES = ['mc', 'fb', 'sa'] as const;
-
-function dispatchExamCommand(host: HTMLElement, command: string, payload: Record<string, unknown> = {}) {
-  host.dispatchEvent(new CustomEvent('socrates:exam-command', {
-    detail: { command, ...payload },
-  }));
-}
 
 function sectionHeader(index: string, title: string, description: string) {
   return (
@@ -79,25 +71,21 @@ function sectionHeader(index: string, title: string, description: string) {
   );
 }
 
-function ExamSetupBody({ snapshot, commandHost }: ExamSetupProps) {
+function ExamSetupBody({ snapshot, onDraftChange, topicInputRef }: ExamSetupProps) {
   const { text } = snapshot;
-  const [difficulty, setDifficulty] = useState(snapshot.difficulty);
-  const [selectedTypes, setSelectedTypes] = useState(snapshot.selectedTypes);
-  const [model, setModel] = useState(snapshot.model);
+  const { difficulty, selectedTypes, model } = snapshot;
   const activeTypes = TYPES.filter((type) => selectedTypes[type]);
 
   function onDifficultyChange(values: string[]) {
     const next = values[values.length - 1];
     if (!next || !DIFFICULTIES.includes(next as typeof DIFFICULTIES[number])) return;
-    setDifficulty(next);
-    dispatchExamCommand(commandHost, 'set-difficulty', { difficulty: next });
+    onDraftChange('difficulty', next);
   }
 
   function onTypesChange(values: string[]) {
     if (!values.length) return;
     const next = Object.fromEntries(TYPES.map((type) => [type, values.includes(type)])) as ExamSetupSnapshot['selectedTypes'];
-    setSelectedTypes(next);
-    dispatchExamCommand(commandHost, 'set-types', { selectedTypes: next });
+    onDraftChange('selectedTypes', next);
   }
 
   return (
@@ -113,7 +101,7 @@ function ExamSetupBody({ snapshot, commandHost }: ExamSetupProps) {
         <FieldGroup className="gap-0">
           <Field>
             <FieldLabel className="sr-only" htmlFor="examTopic">{text.topic}</FieldLabel>
-            <Input className="exam-form-input" id="examTopic" name="examTopic" autoComplete="off" placeholder={text.topicPlaceholder} defaultValue={snapshot.topic} />
+            <Input ref={topicInputRef} className="exam-form-input" id="examTopic" name="examTopic" autoComplete="off" placeholder={text.topicPlaceholder} value={snapshot.topic} onChange={(event) => onDraftChange('topic', event.target.value)} />
           </Field>
         </FieldGroup>
       </section>
@@ -124,7 +112,7 @@ function ExamSetupBody({ snapshot, commandHost }: ExamSetupProps) {
           <Field className="exam-form-field">
             <FieldLabel className="exam-form-label" htmlFor="examModelTrigger">{text.model}</FieldLabel>
             <div className="exam-model-wrap">
-              <Select value={model || null} onValueChange={(value) => setModel(value || '')}>
+              <Select value={model || null} onValueChange={(value) => onDraftChange('model', value || '')}>
                 <SelectTrigger className="exam-model-trigger" id="examModelTrigger" aria-label={text.model}>
                   <SelectValue className="exam-model-label" placeholder={text.modelPlaceholder} />
                 </SelectTrigger>
@@ -136,7 +124,6 @@ function ExamSetupBody({ snapshot, commandHost }: ExamSetupProps) {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Input id="examModel" type="hidden" value={model} readOnly />
             </div>
           </Field>
 
@@ -155,10 +142,10 @@ function ExamSetupBody({ snapshot, commandHost }: ExamSetupProps) {
             <Field className="exam-form-field">
               <FieldLabel className="exam-form-label">{text.count}</FieldLabel>
               <div className="exam-stepper">
-                <Button variant="ghost" size="icon-sm" className="exam-stepper-btn" type="button" data-exam-command="count" data-delta="-1" aria-label={text.fewer}><Minus data-icon="inline-start" /></Button>
+                <Button variant="ghost" size="icon-sm" className="exam-stepper-btn" type="button" aria-label={text.fewer} onClick={() => onDraftChange('count', Math.max(1, Math.min(50, Number(snapshot.count) - 1)))}><Minus data-icon="inline-start" /></Button>
                 <span className="exam-stepper-val" id="examCountDisplay">{snapshot.count}</span>
-                <Button variant="ghost" size="icon-sm" className="exam-stepper-btn" type="button" data-exam-command="count" data-delta="1" aria-label={text.more}><Plus data-icon="inline-start" /></Button>
-                <Input id="examCount" type="hidden" defaultValue={snapshot.count} />
+                <Button variant="ghost" size="icon-sm" className="exam-stepper-btn" type="button" aria-label={text.more} onClick={() => onDraftChange('count', Math.max(1, Math.min(50, Number(snapshot.count) + 1)))}><Plus data-icon="inline-start" /></Button>
+                <Input id="examCount" type="hidden" value={snapshot.count} readOnly />
               </div>
             </Field>
           </div>
@@ -188,7 +175,7 @@ function ExamSetupBody({ snapshot, commandHost }: ExamSetupProps) {
         <FieldGroup className="gap-0">
           <Field>
             <FieldLabel className="sr-only" htmlFor="examInstructions">{text.instructions}</FieldLabel>
-            <Textarea className="exam-form-textarea" id="examInstructions" name="examInstructions" placeholder={text.instructionsPlaceholder} rows={3} defaultValue={snapshot.instructions} />
+            <Textarea className="exam-form-textarea" id="examInstructions" name="examInstructions" placeholder={text.instructionsPlaceholder} rows={3} value={snapshot.instructions} onChange={(event) => onDraftChange('instructions', event.target.value)} />
           </Field>
         </FieldGroup>
       </section>
@@ -196,11 +183,11 @@ function ExamSetupBody({ snapshot, commandHost }: ExamSetupProps) {
   );
 }
 
-function ExamSetupFooter({ snapshot }: { snapshot: ExamSetupSnapshot }) {
+function ExamSetupFooter({ snapshot, onCancel, onGenerate }: { snapshot: ExamSetupSnapshot; onCancel: () => void; onGenerate: () => void }) {
   return (
     <>
-      <Button variant="outline" data-exam-command="close">{snapshot.text.cancel}</Button>
-      <Button data-exam-command="generate">{snapshot.text.generate}</Button>
+      <Button variant="outline" onClick={onCancel}>{snapshot.text.cancel}</Button>
+      <Button onClick={onGenerate}>{snapshot.text.generate}</Button>
     </>
   );
 }

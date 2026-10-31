@@ -250,8 +250,8 @@ test('caught failures report safely in the production bundle without opening an 
     const original = Storage.prototype.setItem;
     try {
       Storage.prototype.setItem = () => { throw new TypeError('DO_NOT_SEND_PRIVATE_CONTENT'); };
-      window.setLang('en');
-      window.setLang('en');
+      window.__socratesLegacy.profile.setLang('en');
+      window.__socratesLegacy.profile.setLang('en');
     } finally {
       Storage.prototype.setItem = original;
     }

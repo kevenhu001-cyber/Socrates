@@ -57,7 +57,7 @@ export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
   }
 
   function stampWaiting(sec: number): void {
-    if (!state.reactLive || statusIsBusy()) return;
+    if (statusIsBusy()) return;
     /* Reasoning owns the line once it starts. Reasoning deltas re-stamp
        phase "thinking" on every chunk; the 1s elapsed tick would otherwise
        flip the label back to the waiting copy between deltas. One-way rule:
@@ -76,7 +76,6 @@ export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
   }
 
   function stampThinking(sec?: number): void {
-    if (!state.reactLive) return;
     const _owner = liveMessage();
     const _prev = _owner && _owner._liveStatus;
     if (_prev && (_prev.phase === 'error' || _prev.phase === 'retrying' || _prev.phase === 'tool-running')) return;

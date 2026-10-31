@@ -5,6 +5,7 @@ import { animateSurfaceEntrance } from './motion/surface.ts';
 import { closeDetailSurface } from './detailSurface.ts';
 import { CORE_VIEW_IDS, MAIN_PAGE_IDS } from '../sidebar/navigation.destinations.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { dispatchUi, uiStore } from '../store/index.ts';
 
 
 export { CORE_VIEW_IDS, MAIN_PAGE_IDS };
@@ -60,6 +61,9 @@ export function activateMainView(viewId: string, doc?: Document | null) {
   if (!currentDocument || !VIEW_IDS.has(viewId)) return false;
   const target = currentDocument.getElementById(viewId);
   if (!target) return false;
+  if (viewId !== 'examView' && uiStore.getState()._examInView) {
+    dispatchUi({ type: 'ui/set', key: '_examInView', value: false });
+  }
   const previousView = currentDocument.documentElement.dataset.mainView || getVisibleCoreView(currentDocument);
   if (previousView !== viewId) closeDetailSurface(undefined, currentDocument, false);
   currentDocument.documentElement.dataset.mainView = viewId;

@@ -7,7 +7,7 @@ test('profile modal renders account, subscription, preferences, and data section
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   expect(await page.evaluate(() => '_userMemories' in window)).toBe(false);
-  await page.evaluate(() => window.openProfile());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openProfile());
 
   const profile = page.locator('.profile-modal');
   await expect(profile).toBeVisible();

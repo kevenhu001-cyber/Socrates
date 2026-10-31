@@ -9,10 +9,7 @@
 .chat-config-pop,
 .sidebar-more-popover,
 .display-prefs-popover,
-.model-picker-menu,
-.extensions-menu,
-.tag-editor-popover,
-.mobile-mode-menu {
+.tag-editor-popover {
   border-color: var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
   color: var(--foreground);
@@ -29,10 +26,7 @@
 }
 .sidebar-more-popover,
 .display-prefs-popover,
-.model-picker-menu,
-.extensions-menu,
-.tag-editor-popover,
-.mobile-mode-menu {
+.tag-editor-popover {
   border-radius: var(--ui-radius-popover);
 }
 .chat-config-pop {
@@ -78,9 +72,7 @@
 /* Menu rows: 8px radius everywhere, quiet hover. */
 .chat-config-pop button,
 .sidebar-more-popover .sidebar-more-item,
-.display-prefs-popover .display-prefs-seg,
-.mobile-mode-menu .mobile-mode-item,
-.model-picker-menu button {
+.display-prefs-popover .display-prefs-seg {
   border-radius: var(--ui-radius-control, 8px);
 }
 
@@ -222,11 +214,6 @@ body.composer-tools-open.composer-tools-open::after {
 .anchored-menu[data-state="closing"],
 [data-state="closing"].sidebar-account-menu,
 [data-state="closing"].composer-tools-menu,
-[data-state="closing"].model-picker-menu,
-[data-state="closing"].extensions-menu {
-  animation: ui-overlay-out var(--ui-duration-exit) var(--ui-ease-out) forwards;
-}
-
 .confirm-dialog[data-state="closing"],
 .settings-overlay[data-state="closing"],
 .profile-overlay[data-state="closing"],

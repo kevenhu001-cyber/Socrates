@@ -1160,6 +1160,9 @@ export const en = {
     "artifact.htmlAlt":"Generated HTML preview",
     "artifact.noInlinePreview":"This file opens in a separate tab.",
     "artifact.openFile":"Open file",
+    "artifact.loadFailed":"This file is temporarily unavailable.",
+    "artifact.retry":"Retry",
+    "artifact.details":"Details",
     "profile.disclaimerTutor":"Socrates asks questions to help you think. It does not judge your answers.",
     "tag.placeholder":"Add a tag and press Enter",
     "tag.title":"Tags for this session",
@@ -1169,13 +1172,7 @@ export const en = {
     "tag.done":"Done",
     "tag.remove":"Remove",
     "kb.placeholderNote":"Write anything you want to remember about this sub-topic...",
-    /* P_kb-i18n — the knowledge-boundary detail panel (ui/knowledgeDetail.js)
-     * was the last surface still hardcoding English. zh is the default
-     * locale, so every label below was showing up untranslated in the
-     * product's flagship knowledge feature. The status badge reuses the
-     * existing tutor.status* keys rather than adding a second vocabulary:
-     * the same "internalized" node must not read 已内化 in the plan
-     * sidebar and 已掌握 in its own detail panel. */
+    /* Knowledge-map detail labels reuse the tutor.status* keys so the sidebar and node editor share one status vocabulary. */
     "kb.questions":"{n} Qs",
     "kb.go":"→ Go",
     "kb.goTitle":"Jump the chat to this knowledge point",

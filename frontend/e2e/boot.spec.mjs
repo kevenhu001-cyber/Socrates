@@ -139,7 +139,7 @@ function collectSourceFiles(dir, out = []) {
 // Source-level twin of the dist hash above: the React tree must never
 // emit legacy inline handlers, whether or not a build exists. Limited
 // to src/react — legacy JS modules intentionally build inline-handler
-// HTML bridged through windowExports.js, but React components must use
+// HTML bridged through the typed shell gateway, but React components must use
 // onClick handlers via the typed gateway instead.
 test('no inline on* handlers built in src/react', async () => {
   const reactDir = resolve(__dirname, '..', 'src', 'react');

@@ -53,7 +53,14 @@ test('click-send blurs the composer; Enter-send keeps focus', async ({ page }) =
 
 test('click-send blurs before asynchronous attachment preparation finishes', async ({ page }) => {
   await mockAuthedApp(page);
+  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) => route.fulfill({
+    status: 201,
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 'blur-image', name: 'slow.png', mimeType: 'image/png', size: 68, kind: 'image' }),
+  }));
+  let visionStarted = false;
   await page.route(/\/api\/vision\/describe(?:\?|$)/, async (route) => {
+    visionStarted = true;
     await new Promise((resolve) => setTimeout(resolve, 900));
     await route.fulfill({
       status: 200,
@@ -70,21 +77,18 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
 
   const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.fill('send with a slow image');
-  await page.evaluate(() => {
-    window.attachments.push({
-      id: 'blur-delay-image',
-      kind: 'image',
-      name: 'slow.png',
-      mime: 'image/png',
-      size: 16,
-      dataUrl: 'data:image/png;base64,iVBORw0KGgo=',
-    });
+  await page.locator('#composerAttachInput').setInputFiles({
+    name: 'slow.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/g6sAAAAASUVORK5CYII=', 'base64'),
   });
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
   await editor.focus();
   await page.locator('#composerPrimaryBtn').click();
 
   // The vision request is still pending here. Focus and selection must
   // already be gone rather than waiting for buildMessageContent().
+  await expect.poll(() => visionStarted).toBe(true);
   await page.waitForTimeout(80);
   expect(await focusInComposer(page)).toBe(false);
   await expect(

@@ -13,13 +13,7 @@ test('Cmd-K opens the search palette and the input is focusable', async ({ page 
   await waitForAppShell(page);
   await page.waitForTimeout(400);
 
-  // Trigger Cmd-K via the bridge function so the test doesn't depend on
-  // OS-specific keydown bubbling.
-  await page.evaluate(() => {
-    if (typeof window.openCmdK === 'function') { window.openCmdK(); return; }
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
-  });
+  await page.keyboard.press('Control+k');
 
   const modal = page.locator('#cmdKModal, .cmd-k-modal').first();
   await expect(modal).toBeVisible({ timeout: 5_000 });
@@ -31,21 +25,12 @@ test('Cmd-K opens the search palette and the input is focusable', async ({ page 
   await expect(input).toHaveValue(/test/);
 });
 
-test('Ctrl-K keyboard shortcut opens the palette once', async ({ page }) => {
+test('Ctrl-K keyboard shortcut opens one React palette', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  await page.evaluate(() => {
-    const openCmdK = window.openCmdK;
-    window.__openCmdKCalls = 0;
-    window.openCmdK = () => {
-      window.__openCmdKCalls += 1;
-      openCmdK?.();
-    };
-  });
-
   await page.keyboard.press('Control+k');
   await expect(page.locator('#cmdKOverlay')).not.toHaveClass(/hidden/);
-  expect(await page.evaluate(() => window.__openCmdKCalls)).toBe(1);
+  await expect(page.locator('#cmdKModal')).toHaveCount(1);
 });

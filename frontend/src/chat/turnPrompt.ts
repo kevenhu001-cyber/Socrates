@@ -1,18 +1,14 @@
-import { getReasoningEffort } from '../ui/effortPicker.ts';
+import { getStoredReasoningEffort } from '../config/chatPreferences.ts';
+import { setExtensiveThinkingOn } from '../config/providers.ts';
 import { appendClientContextMessages, thinkingSuffix, toneVoiceSuffix, type PromptMessage } from './promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from './templateSystemPrompt.ts';
 import { languageDirectiveFor } from './lang.ts';
 import { CHAT_CONCISE_PROMPT, CHAT_SYSTEM_PROMPT } from './systemPrompts.ts';
 import type { HistoryEntry } from './history.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
 
 export interface ChatPromptMessage {
   role: string;
   content: unknown;
-}
-
-interface PromptWindow extends Window {
-  extensiveThinkingOn?: boolean;
 }
 
 export function buildChatTurnMessages(input: {
@@ -25,9 +21,8 @@ export function buildChatTurnMessages(input: {
   mentionedSite: boolean;
 }): ChatPromptMessage[] {
   const language = languageDirectiveFor(input.userText || input.topic);
-  const highEffort = getReasoningEffort() === 'high';
-  try { (window as PromptWindow).extensiveThinkingOn = highEffort; }
-  catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#9'); }
+  const highEffort = getStoredReasoningEffort() === 'high';
+  setExtensiveThinkingOn(highEffort);
 
   const prompt = highEffort ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
   const thinking = highEffort ? thinkingSuffix() : '';

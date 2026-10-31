@@ -1,4 +1,5 @@
 import { apiFetchRaw } from '../../util/api.ts';
+import { getActiveProvider } from '../../config/providerConfig.service.ts';
 import { AI_MAX_ATTEMPTS, isUserAbort } from '../retryPolicy.ts';
 import type { AIRequestOptions } from '../retryPolicy.ts';
 import { buildChatRequestBody } from './requestBody.ts';
@@ -49,11 +50,6 @@ type ProbeOutcome =
   | { kind: 'success'; result: ProbeResult }
   | { kind: 'failure'; error: unknown; semanticActivity: boolean }
   | { kind: 'cancelled' };
-
-/** Provider bridge published by the legacy shell. */
-interface ProbeWindow {
-  getActiveProvider: () => unknown;
-}
 
 function parseProbeError(payload: string): ChatApiError {
   let errorData: ProbePayload | null;
@@ -207,7 +203,7 @@ export async function callAPIChat(
   options?: AIRequestOptions,
 ): Promise<ProbeResult | null> {
   const retryOptions: AIRequestOptions = Object.assign({}, options || {}, { source: 'probe' });
-  if (!(window as unknown as ProbeWindow).getActiveProvider()) {
+  if (!getActiveProvider()) {
     setLastCallError('no provider');
     return null;
   }

@@ -20,13 +20,13 @@ function runtimePath() {
 
 async function boot(page, options = {}) {
   await prepareChatWorkbench(page, options);
-  await page.waitForFunction(() => typeof window.showConfirm === 'function');
+  await page.waitForFunction(() => typeof window.__socratesLegacy.confirm.showConfirm === 'function');
 }
 
 async function open(page, options = {}) {
   await page.evaluate((options) => {
     window.__confirmResults = [];
-    void window.showConfirm(options.title || 'Confirm action', options.msg || 'Continue with this change?', options.danger || false)
+    void window.__socratesLegacy.confirm.showConfirm(options.title || 'Confirm action', options.msg || 'Continue with this change?', options.danger || false)
       .then((result) => window.__confirmResults.push(result));
   }, options);
 }
@@ -189,7 +189,7 @@ test('long confirmation text scrolls while the actions remain keyboard reachable
 for (const variant of ['desktop', 'phone']) {
   test(`confirmation preserves the ${variant} surface and motion`, async ({ page }) => {
     await boot(page, { viewport: variant === 'phone' ? { width: 390, height: 640 } : { width: 1440, height: 900 } });
-    if (variant === 'phone') await page.evaluate(() => window.toggleTheme());
+    if (variant === 'phone') await page.evaluate(() => document.getElementById('themeToggle')?.click());
     await open(page, { title: 'Delete this draft?', msg: 'This action removes the selected draft.', danger: true });
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toBeVisible();

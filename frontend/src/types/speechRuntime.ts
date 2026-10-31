@@ -17,7 +17,6 @@ export interface SpeechRecognitionRuntime {
 }
 export interface VoiceSession {
   surface: 'chat' | 'topic';
-  bar: HTMLElement | null;
   stream: MediaStream | null;
   audioContext: AudioContext | null;
   analyser: AnalyserNode | null;
@@ -27,6 +26,7 @@ export interface VoiceSession {
   stopFallbackId: number;
   startedAt: number;
   wavePhase: number;
+  lastWavePublishAt: number;
   recognition: SpeechRecognitionRuntime | null;
   finalTranscript: string;
   interimTranscript: string;

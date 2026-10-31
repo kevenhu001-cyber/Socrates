@@ -41,7 +41,6 @@ export const exploreExtension: ExtensionDefinition = {
       runId,
       workflow: 'explore',
     });
-    ctx.syncQuickChips?.();
     ctx.publishAgentRun({
       runId,
       workflow: 'explore',

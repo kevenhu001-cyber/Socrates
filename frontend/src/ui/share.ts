@@ -3,6 +3,7 @@ type FeatureRuntime = typeof import("./share.impl.ts");
 
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
 
 
 /* ui/share.ts — lightweight share facade.
@@ -49,8 +50,8 @@ function toggleShareBtn() {
   btn.classList.toggle('hidden', !show);
   const findBtn = document.getElementById('findBtn');
   if (findBtn) findBtn.classList.toggle('hidden', !show);
-  if (!show && typeof browserWindow.closeFindInSession === 'function') {
-    try { browserWindow.closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.ts:47'); }
+  if (!show) {
+    try { closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.ts:47'); }
   }
 }
 
@@ -108,13 +109,6 @@ function loadSharedExamSession(session: Parameters<FeatureRuntime['loadSharedExa
   return loadShareImpl().then(function (module: FeatureRuntime) { return module.loadSharedExamSession(session); });
 }
 
-function renderSharedQuestionCard(
-  idx: Parameters<FeatureRuntime['renderSharedQuestionCard']>[0],
-  question: Parameters<FeatureRuntime['renderSharedQuestionCard']>[1],
-) {
-  runShareAction(function (module: FeatureRuntime) { module.renderSharedQuestionCard(idx, question); });
-}
-
 /* Historical named exports are retained for compatibility. They were not used
    as live bindings by first-party callers; the authoritative runtime values
    live in share.impl.mjs once the feature is loaded. */
@@ -127,6 +121,6 @@ export {
   toggleShareBtn,
   openShareModal, closeShareModal, selectShareVis, renderShareModal,
   createShareLink, copyShareLink, revokeShareLink, resetShareToken,
-  loadSharedSession, loadSharedExamSession, renderSharedQuestionCard,
+  loadSharedSession, loadSharedExamSession,
   _shareVisibility, _shareToken, _shareUrl,
 };

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { Label } from '../ui/shadcn/label';
 import { Textarea } from '../ui/shadcn/textarea';
@@ -32,11 +31,8 @@ export interface KnowledgeNodeDetailProps {
 }
 
 export function KnowledgeNodeDetail(props: KnowledgeNodeDetailProps) {
-  const [confidence, setConfidence] = useState(props.confidenceScore);
-  const [userNote, setUserNote] = useState(props.userNote);
   const setScore = (value: number) => {
-    const next = confidence === value ? 0 : value;
-    setConfidence(next);
+    const next = props.confidenceScore === value ? 0 : value;
     props.onConfidenceChange(next);
   };
 
@@ -53,7 +49,7 @@ export function KnowledgeNodeDetail(props: KnowledgeNodeDetailProps) {
         <div className="kb-conf-row" role="group" aria-label={props.confidenceLabel}>
           {Array.from({ length: 5 }, (_, index) => {
             const value = index + 1;
-            const selected = value <= confidence;
+            const selected = value <= props.confidenceScore;
             return (
               <Button
                 key={value}
@@ -83,9 +79,8 @@ export function KnowledgeNodeDetail(props: KnowledgeNodeDetailProps) {
           name="kbUserNote"
           rows={3}
           placeholder={props.userNotePlaceholder}
-          value={userNote}
+          value={props.userNote}
           onChange={(event) => {
-            setUserNote(event.currentTarget.value);
             props.onUserNoteChange(event.currentTarget.value);
           }}
         />

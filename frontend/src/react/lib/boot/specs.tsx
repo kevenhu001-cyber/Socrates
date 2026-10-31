@@ -23,7 +23,7 @@ import { mountSidebarChrome } from '../../sidebar-chrome';
 import { mountSessionList } from '../../session-list';
 import { mountMessageList } from '../../message-list';
 import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
-import { handleComposerEscape, submitComposer } from '../../composer-input/lifecycle';
+import { handleComposerEscape, submitComposer, submitPrimaryComposer } from '../../composer-input/lifecycle';
 
 import { NewReplyPill } from './indicatorComponents';
 
@@ -100,9 +100,25 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'topBar', label: 'top-bar',
       mount: () => import('../../topbar/TopBar').then((m) => m.mountTopBar()) },
     { hostId: 'recentsFilterChips', label: 'recents-filter-chips', mount: () => hydrateRecentsFilterChips() },
-    { hostId: 'composerToolsMenu', label: 'composer-tools-menu',
-      mount: () => import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu()) },
-    { hostId: 'moreNavPopover', label: 'more-popover',
+    { hostId: 'mistakesPanel', label: 'mistakes-panel', mount: (host) => {
+      return import('../../tutor/MistakeBookPanel').then(({ MistakeBookPanel }) => {
+        mountOwnedRoot(host, 'mistakes-panel', <MistakeBookPanel />);
+      });
+    } },
+    { hostId: 'teachingPlanContent', label: 'teaching-plan', mount: (host) => {
+      return import('../../tutor/KnowledgePanel').then(({ TeachingPlanPanel }) => {
+        mountOwnedRoot(host, 'teaching-plan', <TeachingPlanPanel />);
+      });
+    } },
+    { hostId: 'kbContent', label: 'knowledge-map', mount: (host) => {
+      return import('../../tutor/KnowledgePanel').then(({ KnowledgeMapPanel }) => {
+        mountOwnedRoot(host, 'knowledge-map', <KnowledgeMapPanel />);
+      });
+    } },
+    { hostId: 'composerToolsRoot', label: 'composer-tools-menu',
+      ensureHost: (doc) => ensureBodyChild(doc, 'composerToolsRoot'),
+      mount: (host) => import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu(host)) },
+    { hostId: 'moreNavPopoverRoot', label: 'more-popover',
       mount: () => import('../../morePopover').then((m) => m.hydrateMorePopover()) },
     { hostId: 'shareOverlay', label: 'share-modal',
       mount: () => import('../../shareModal').then((m) => m.hydrateShareModal()) },
@@ -180,6 +196,8 @@ export function mountRegistryList(): MountSpec[] {
         mountOwnedRoot(host, 'composer-shell', <ErrorBoundary><ComposerShell
           placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
           onSubmit={() => submitComposer(legacyComposer)}
+          onPrimarySubmit={() => submitPrimaryComposer(legacyComposer)}
+          onStop={() => legacyComposer.stopChatResponse()}
           onEscape={() => handleComposerEscape(legacyComposer)} /></ErrorBoundary>);
       });
     } },

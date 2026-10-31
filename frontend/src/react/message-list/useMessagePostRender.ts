@@ -35,7 +35,6 @@ export function useMessagePostRender(
     runOptionalPostRender(() => postRender.processPendingViz?.(root));
     runOptionalPostRender(() => postRender.processPendingVizActions?.(root));
     runOptionalPostRender(() => postRender.wireCodeBlockHeaders?.(root));
-    runOptionalPostRender(() => postRender.wireMsgBodyImages?.(root));
     if (message.restoredFromHistory) {
       runOptionalPostRender(() => {
         postRender.restorePersistedMessageExtras?.(

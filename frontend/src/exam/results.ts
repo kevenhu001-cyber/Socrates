@@ -1,11 +1,7 @@
 import type { ExamQuestion } from "./types.ts";
-import type { ExamResultQuestion } from '../react/exam/ExamResults.tsx';
+import type { ExamResultsSnapshot, ExamResultQuestion } from '../react/exam/ExamResults.tsx';
 import { formatMsg } from '../render/markdown.ts';
-import { clearExamSetup, renderExamActions, renderExamResultsView } from '../react/exam/examUiHost.tsx';
-import { clearExamQuestionCards } from '../react/exam/examQuestionHost.tsx';
-import { clearExamNavigation } from '../react/exam/examNavigationHost.tsx';
-import { examBody as _examBody, examUiL as _examUiL, setExamTitle as _setExamTitle } from './ui.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { examUiL } from './ui.ts';
 
 
 function resultTypeLabel(type: string, translate: (en: string, zh: string) => string) {
@@ -41,8 +37,7 @@ function gradeExamQuestion(question: ExamQuestion, answer: string | number | und
   return false;
 }
 
-function resultQuestion(question: ScorableExamQuestion, answer: string | number | undefined, isCorrect: boolean): ExamResultQuestion {
-  const translate = _examUiL;
+function resultQuestion(question: ScorableExamQuestion, answer: string | number | undefined, isCorrect: boolean, translate: typeof examUiL): ExamResultQuestion {
   const options = question.type === 'multiple-choice'
     ? (question.opts || []).map((option, index) => ({
       letter: option.letter || '',
@@ -68,19 +63,11 @@ function resultQuestion(question: ScorableExamQuestion, answer: string | number 
   };
 }
 
-export function renderExamResults() {
-  clearExamSetup();
-  clearExamQuestionCards();
-  clearExamNavigation();
-  const questions = browserWindow.stateStore.read('examQuestions') as ExamQuestion[];
-  const answers = browserWindow.stateStore.read('examAnswers') as Record<number, string | number | undefined> || {};
-  const legacyBody = _examBody();
-  const bodyHost = document.getElementById('examViewReactBody');
-  const footerHost = document.getElementById('examViewReactFooter');
-  if (legacyBody) legacyBody.replaceChildren();
-  if (!bodyHost || !footerHost) return;
-
-  _setExamTitle(_examUiL('Exam Results', '考试结果') + ': ' + browserWindow.stateStore.read('examTopic'));
+export function buildExamResultsSnapshot(
+  questions: ExamQuestion[],
+  answers: Record<number, string | number | undefined>,
+  translate: typeof examUiL = examUiL,
+): ExamResultsSnapshot {
   let correct = 0;
   const details: ReturnType<typeof resultQuestion>[] = [];
   questions.forEach((question, index) => {
@@ -88,18 +75,14 @@ export function renderExamResults() {
     const answer = answers[index];
     const isCorrect = gradeExamQuestion(question, answer);
     if (isCorrect) correct++;
-    details.push(resultQuestion(question, answer, isCorrect));
+    details.push(resultQuestion(question, answer, isCorrect, translate));
   });
   const total = details.length;
-  renderExamResultsView(bodyHost, {
+  return {
     correct,
     total,
     percent: total > 0 ? Math.round(correct / total * 100) : 0,
-    correctLabel: _examUiL('correct', '正确'),
+    correctLabel: translate('correct', '正确'),
     questions: details,
-  });
-  renderExamActions(footerHost, [
-    { command: 'form', label: _examUiL('New Exam', '新考试') },
-    { command: 'close', label: _examUiL('Close', '关闭'), variant: 'outline' },
-  ]);
+  };
 }

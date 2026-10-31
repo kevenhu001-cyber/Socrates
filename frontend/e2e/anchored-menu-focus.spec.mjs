@@ -98,7 +98,7 @@ for (const variant of ['light', 'dark', 'mobile']) {
       await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
     }
     await page.evaluate((theme) => {
-      if (document.documentElement.dataset.mode !== theme) window.toggleTheme();
+      if (document.documentElement.dataset.mode !== theme) document.getElementById('themeToggle')?.click();
     }, variant === 'dark' ? 'dark' : 'light');
     await page.locator('.sidebar-account-trigger').click();
     const menu = page.locator('.sidebar-account-menu');

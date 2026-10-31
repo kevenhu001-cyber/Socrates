@@ -70,13 +70,10 @@ export interface InlineToolRow {
 }
 
 export interface TurnRuntimeState {
-  /* identity / DOM refs, set once */
+  /* identity / scroll host, set once */
   list: HTMLElement;
-  div: HTMLElement;
   clientId: string;
   msgIdx: number;
-  reactLive: boolean;
-  retryBtnId: string;
   onRetry?: (() => unknown) | null;
 
   /* mutable streaming data */

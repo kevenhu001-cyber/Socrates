@@ -4,6 +4,8 @@
 // the hero read as two clauses ("下午好，Jiacheng。准备好开始了吗？") and
 // fought the reference composition, which is a single calm line.
 
+import { appMode } from '../config/providers.ts';
+
 const POOL_SCAN = 16;
 const _lastPick: Record<string, number> = { chat: -1, tutor: -1 };
 
@@ -33,8 +35,7 @@ function _pool(mode: string): string[] {
 export function renderGreeting(): void {
   const el = document.getElementById('topicTitle');
   if (!el) return;
-  const w = window as unknown as { appMode?: string };
-  const mode = (typeof window !== 'undefined' && w.appMode) || 'chat';
+  const mode = appMode;
   const pool = _pool(mode);
   let text = mode === 'tutor' ? "Let's explore." : 'Ready when you are';
   if (pool.length) {

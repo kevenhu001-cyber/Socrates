@@ -274,3 +274,21 @@ test('the chat mic uses the same recording bar', async ({ page }) => {
   await expect(editor).toContainText('voice test');
   await expect(primary).toHaveAttribute('aria-label', 'Send');
 });
+
+test('canceling the React recording bar discards the transcript and releases the mic', async ({ page }) => {
+  await bootVoiceFixture(page, { width: 390, height: 844 });
+  const wrap = page.locator('#composerInputWrap');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
+  const mic = wrap.locator('.mobile-mic-btn');
+
+  await mic.click();
+  const bar = wrap.locator('.voice-recording-bar');
+  await expect(bar).toBeVisible();
+  await expect(mic).toHaveAttribute('aria-pressed', 'true');
+  await bar.locator('.voice-recording-cancel').click();
+
+  await expect(wrap).not.toHaveClass(/voice-recording-active/);
+  await expect(editor).toHaveText('');
+  await expect.poll(() => page.evaluate(() => window.__voiceTrackStopped)).toBe(true);
+  await expect(mic).toHaveAttribute('aria-pressed', 'false');
+});

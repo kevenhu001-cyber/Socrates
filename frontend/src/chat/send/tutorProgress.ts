@@ -1,9 +1,7 @@
 import { stateStore } from '../../state/store.ts';
 import { askNextQuestion } from '../../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
-import { updateKB } from '../../ui/knowledgePanel.ts';
-import { reportSwallow } from '../../util/reportSwallow.ts';
-import { addAnchoredAssistant, getTutorSocratic } from './runtime.ts';
+import { addAnchoredAssistant } from './runtime.ts';
 import {
   countsTowardTutorProgress,
   isSubstantiveTutorAnswer,
@@ -12,13 +10,6 @@ import {
   type TutorTurnOptions,
 } from './tutorPolicy.ts';
 import type { KbNode, TeachingPlan } from '../teachingPlan.ts';
-
-function renderTutorProgress(method: string, context: string): void {
-  const tutor = getTutorSocratic() as Record<string, unknown> | null | undefined;
-  if (!tutor || typeof tutor[method] !== 'function') return;
-  try { (tutor[method] as () => void)(); }
-  catch (error) { reportSwallow(error, context); }
-}
 
 export function recordTutorProgress(
   text: string,
@@ -60,8 +51,6 @@ export function recordTutorProgress(
     }
   }
 
-  renderTutorProgress('renderPracticeProgress', 'sendPipeline.practiceProgress');
-  renderTutorProgress('renderTeachingPlan', 'sendPipeline.teachingPlan');
   return { node, isSubstantive };
 }
 
@@ -119,7 +108,6 @@ export function advanceTutorNodeIfReady(node: KbNode | null, origin?: string | n
   stateStore.dispatch({ type: 'state/set', key: 'substantiveCount', value: 0 });
 
   const nextNodeIndex = findNextNodeIndex(updatedNode);
-  updateKB();
   if (nextNodeIndex < 0) {
     addAnchoredAssistant(
       "Nice work — you've explored all the key areas of " + stateStore.read('domain')

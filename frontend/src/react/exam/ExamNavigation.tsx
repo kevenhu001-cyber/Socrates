@@ -12,7 +12,13 @@ export type ExamNavigationSnapshot = {
   };
 };
 
-function ExamNavigation({ snapshot }: { snapshot: ExamNavigationSnapshot }) {
+type ExamNavigationProps = {
+  snapshot: ExamNavigationSnapshot;
+  onStep: (direction: number) => void;
+  onJump: (index: number) => void;
+};
+
+function ExamNavigation({ snapshot, onStep, onJump }: ExamNavigationProps) {
   const current = Math.max(0, Math.min(snapshot.total - 1, snapshot.current));
   const answered = new Set(snapshot.answered);
 
@@ -24,8 +30,7 @@ function ExamNavigation({ snapshot }: { snapshot: ExamNavigationSnapshot }) {
           size="icon-sm"
           className="exam-nav-btn"
           id="examNavPrev"
-          data-exam-command="nav-step"
-          data-delta="-1"
+          onClick={() => onStep(-1)}
           aria-label={snapshot.labels.previous}
           disabled={current <= 0}
         >
@@ -46,8 +51,7 @@ function ExamNavigation({ snapshot }: { snapshot: ExamNavigationSnapshot }) {
           size="icon-sm"
           className="exam-nav-btn"
           id="examNavNext"
-          data-exam-command="nav-step"
-          data-delta="1"
+          onClick={() => onStep(1)}
           aria-label={snapshot.labels.next}
           disabled={current >= snapshot.total - 1}
         >
@@ -64,10 +68,9 @@ function ExamNavigation({ snapshot }: { snapshot: ExamNavigationSnapshot }) {
               variant={isCurrent ? 'secondary' : isAnswered ? 'outline' : 'ghost'}
               size="sm"
               className="exam-nav-pill"
-              data-nav-idx={index}
               data-answered={isAnswered ? 'true' : 'false'}
               data-current={isCurrent ? 'true' : 'false'}
-              data-exam-command="nav-jump"
+              onClick={() => onJump(index)}
               aria-current={isCurrent ? 'step' : undefined}
               aria-label={`${index + 1}${isAnswered ? `, ${snapshot.labels.answered}` : ''}`}
             >

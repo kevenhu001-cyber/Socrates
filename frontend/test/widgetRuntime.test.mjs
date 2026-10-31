@@ -28,7 +28,6 @@ beforeEach(() => {
     recordMistake: undefined,
     removeMistakeForQuizSlot: undefined,
     submitChatMessage: undefined,
-    updateKB: undefined,
     saveCurrentSession: undefined,
     shouldRequestTutorAfterQuiz: () => false,
   });
@@ -89,7 +88,7 @@ test('wrong quiz choice marks both options, records the slot and increments atte
   configureWidgetRuntime({
     handleQuizPick, recordMistake: (entry) => mistakes.push(entry),
     stateStore: teachingStore('exercise', 2, dispatches),
-    updateKB: () => persisted.push('kb'), saveCurrentSession: () => persisted.push('session'),
+    saveCurrentSession: () => persisted.push('session'),
   });
   const card = quiz();
   click(card.querySelector('[data-letter="B"]'));
@@ -104,7 +103,7 @@ test('wrong quiz choice marks both options, records the slot and increments atte
     correct: 'A', userAnswer: 'B', quizSlotId: 'quiz-slot',
   });
   assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 3 }]);
-  assert.deepEqual(persisted, ['kb', 'session']);
+  assert.deepEqual(persisted, ['session']);
 });
 
 test('correct exercise choice removes its mistake and advances to check', () => {
@@ -132,7 +131,7 @@ test('tutor follow-up submits grading context and leaves persistence to the turn
   configureWidgetRuntime({
     handleQuizPick, shouldRequestTutorAfterQuiz: () => true,
     submitChatMessage: (...args) => submitted.push(args),
-    updateKB: () => persisted.push('kb'), saveCurrentSession: () => persisted.push('session'),
+    saveCurrentSession: () => persisted.push('session'),
   });
   click(quiz().querySelector('[data-letter="B"]'));
   assert.deepEqual(submitted, [['I chose B. 5 (Result: incorrect, correct is A.)', { origin: 'quiz' }]]);
@@ -147,31 +146,28 @@ test('quiz without an answer records the selection without inventing a correct a
   assert.equal(card.querySelector('.inline-quiz-feedback').className, 'inline-quiz-feedback');
 });
 
-test('independent persistence failures are reported without losing grading feedback', (context) => {
+test('session persistence failure is reported without losing grading feedback', (context) => {
   const persisted = [], diagnostics = [];
   context.mock.method(console, 'warn', (...args) => diagnostics.push(args));
   configureWidgetRuntime({
     handleQuizPick,
-    updateKB: () => { persisted.push('kb'); throw new Error('KB failed'); },
     saveCurrentSession: () => { persisted.push('session'); throw new Error('Session failed'); },
   });
   const card = quiz();
   click(card.querySelector('[data-letter="A"]'));
-  assert.deepEqual(persisted, ['kb', 'session']);
-  assert.deepEqual(diagnostics.map((entry) => entry[1]), ['widgets.quiz.updateKB', 'widgets.quiz.saveCurrentSession']);
+  assert.deepEqual(persisted, ['session']);
+  assert.deepEqual(diagnostics.map((entry) => entry[1]), ['widgets.quiz.saveCurrentSession']);
   assert.equal(card.querySelector('.inline-quiz-feedback').textContent, 'Correct: A');
 });
 
 test('a runtime reconfiguration during recording affects only later answers', () => {
-  const dispatches = [], persisted = [];
+  const dispatches = [];
   configureWidgetRuntime({
     handleQuizPick, stateStore: teachingStore('exercise', 2, dispatches),
-    recordMistake: () => configureWidgetRuntime({ stateStore: teachingStore('check', 99, dispatches), updateKB: () => persisted.push('new') }),
-    updateKB: () => persisted.push('original'),
+    recordMistake: () => configureWidgetRuntime({ stateStore: teachingStore('check', 99, dispatches) }),
   });
   click(quiz().querySelector('[data-letter="B"]'));
   assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 3 }]);
-  assert.deepEqual(persisted, ['original']);
 });
 
 test('practice validates empty answers and toggles the hint without submitting', () => {

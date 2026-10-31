@@ -31,7 +31,10 @@ globalThis.document = dom.window.document;
 globalThis.location = dom.window.location;
 globalThis.history = dom.window.history;
 globalThis.localStorage = dom.window.localStorage;
-window.apiFetch = async () => ({ projects: [] });
+globalThis.fetch = async () => new Response(JSON.stringify({ projects: [] }), {
+  status: 200,
+  headers: { 'Content-Type': 'application/json' },
+});
 window.t = (key, fallback) => (fallback !== undefined ? fallback : key);
 
 const { openMobileTargetFromUrl } = await import('../src/native/mobileWebSessionBridge.ts');

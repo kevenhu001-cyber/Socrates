@@ -1,28 +1,8 @@
-/**
- * react/tool-run/ToolRunAgentSteps.tsx — the agent step log under a run's row.
- *
- * A workspace-agent turn reports its activity as a list of steps plus a todo
- * plan. Drawing that is genuinely intricate (running vs done rows, diffs, exit
- * codes, a shared elapsed timer, in-place upsert keyed by stepId) and
- * `ui/agentSteps.ts` already owns it, idempotently, for history replay and the
- * drawer. So this component does not re-implement the markup: it keeps a host
- * node and hands that node to the existing upserts whenever the data changes.
- *
- * What it does fix is where the data comes from. The steps used to live only in
- * DOM that finish() baked into message.html, which is why a reload re-drew them
- * but a declarative bubble could not; they are now persisted on the tool call
- * (server/src/routes/sessions.ts) and read back from here.
- */
-import { useEffect, useRef } from 'react';
-
-import {
-  settleAgentRun,
-  stopAgentRunTimer,
-  upsertAgentPlan,
-  upsertAgentStep,
-} from '../../ui/agentSteps.ts';
+import { useEffect, useRef, useState } from 'react';
+import { agentStepCommand, agentStepLabel, agentStepMeta, formatElapsed, MAX_OUTPUT_CHARS, type AgentPlanData, type AgentStepData } from '../../ui/agentSteps.ts';
+import { agentStepIcon } from '../../ui/icons/toolIcons.ts';
 import type { ToolRunView } from './toolRunModel';
-import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
+import { i18n } from '../legacy/gateway.ts';
 
 export interface ToolRunAgentStepsProps {
   run: NonNullable<ToolRunView['agentRun']>;
@@ -32,57 +12,120 @@ export interface ToolRunAgentStepsProps {
   state?: 'done' | 'failed' | 'cancelled';
 }
 
-/**
- * Cheap change detector: the step list only ever grows or flips a status, and
- * re-running the upserts is idempotent but not free.
- */
-function runSignature(props: ToolRunAgentStepsProps): string {
-  const { run, live, state } = props;
-  let steps = '';
-  for (const step of run.steps) steps += step.stepId + ':' + step.status + ';';
-  let plan = '';
-  if (run.plan) {
-    for (const item of run.plan.steps) plan += item.status + ',';
-  }
-  return `${run.runId}|${steps}|${plan}|${live ? 'live' : state || 'done'}`;
+function translate(key: string): string {
+  return i18n(key, key);
 }
 
-export function ToolRunAgentSteps(props: ToolRunAgentStepsProps) {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const drawnRef = useRef('');
-  /* The render keeps its own record of what was last drawn, so this effect can
-     run after every render without deps and still do nothing when the data is
-     unchanged — the alternative is a dep array on a `run` object that
-     toolRunView rebuilds each time. */
+function StepIcon({ kind }: { kind: string }) {
+  return <span className="agent-step-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: agentStepIcon(kind) }} />;
+}
+
+function AgentPlan({ plan }: { plan: AgentPlanData }) {
+  if (!plan.steps.length) return null;
+  const done = plan.steps.filter((step) => step.status === 'done').length;
+  const title = translate('agent.stepPlan');
+  return (
+    <section className="agent-plan" data-progress={`${done}/${plan.steps.length}`}>
+      <div className="agent-plan-head">
+        <span className="agent-plan-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: agentStepIcon('plan') }} />
+        <span className="agent-plan-title">{title === 'agent.stepPlan' ? '更新了计划' : title}</span>
+      </div>
+      <ol className="agent-plan-list">
+        {plan.steps.slice(0, 40).map((step, index) => (
+          <li className="agent-plan-item" data-status={step.status} key={`${index}-${step.title}`}>
+            <span className="agent-plan-mark" aria-hidden="true" />
+            <span className="agent-plan-text">{step.title}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="agent-plan-note" hidden={!plan.explanation}>{plan.explanation || ''}</p>
+    </section>
+  );
+}
+
+function AgentStep({ step, state, live }: { step: AgentStepData; state: ToolRunAgentStepsProps['state']; live: boolean }) {
+  const status = !live && step.status === 'running'
+    ? state === 'failed' ? 'failed' : 'done'
+    : step.status;
+  const displayedStep = status === step.status ? step : { ...step, status };
+  const command = agentStepCommand(displayedStep);
+  const meta = agentStepMeta(displayedStep, translate);
+  const bodyOutput = String(displayedStep.output || '');
+  const visibleOutput = bodyOutput.length > MAX_OUTPUT_CHARS
+    ? `…${bodyOutput.slice(-MAX_OUTPUT_CHARS)}`
+    : bodyOutput;
+  const paths = displayedStep.diffStat?.paths || [];
+  const flat = !displayedStep.command && paths.length === 0 && !displayedStep.output;
+
+  return (
+    <details
+      className={`agent-step${flat ? ' is-flat' : ''}`}
+      data-step-id={displayedStep.stepId}
+      data-kind={displayedStep.kind}
+      data-state={status}
+    >
+      <summary className="agent-step-head">
+        <StepIcon kind={displayedStep.kind} />
+        <span className="agent-step-label">{agentStepLabel(displayedStep, translate)}</span>
+        <code className="agent-step-cmd" hidden={!command}>{command}</code>
+        <span className="agent-step-meta">{meta}</span>
+      </summary>
+      <div className="agent-step-body">
+        {displayedStep.command ? <pre className="agent-step-pre" data-kind="command">{displayedStep.command}</pre> : null}
+        {paths.length ? (
+          <ul className="agent-step-paths">
+            {paths.slice(0, 20).map((path) => <li key={path}>{path}</li>)}
+          </ul>
+        ) : null}
+        {displayedStep.output ? <pre className="agent-step-pre" data-kind="output">{visibleOutput}</pre> : null}
+      </div>
+    </details>
+  );
+}
+
+export function ToolRunAgentSteps({ run, live, state }: ToolRunAgentStepsProps) {
+  const startedAtRef = useRef({ runId: run.runId, at: Date.now() });
+  if (startedAtRef.current.runId !== run.runId) {
+    startedAtRef.current = { runId: run.runId, at: Date.now() };
+  }
+  const [now, setNow] = useState(() => Date.now());
+  const [open, setOpen] = useState(true);
+
   useEffect(() => {
-    const signature = runSignature(props);
-    if (drawnRef.current === signature) return;
-    drawnRef.current = signature;
-    const host = hostRef.current;
-    if (!host) return;
-    const { run, live, state } = props;
-    try {
-      if (run.plan) upsertAgentPlan(host, run.plan, run.runId);
-      for (const step of run.steps) upsertAgentStep(host, step, run.runId);
-      if (!live) {
-        settleAgentRun(host, { runId: run.runId, state: state || 'done', durationMs: run.durationMs });
-      }
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/tool-run/ToolRunAgentSteps.tsx:69');
-      /* Presentation only — the row's own status line still tells the truth. */
-    }
-  });
+    if (!live) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [live]);
 
-  useEffect(() => () => {
-    /* A run that is still going when its bubble unmounts (session switch,
-       regenerate) must leave the shared timer, which otherwise keeps ticking a
-       detached node. */
-    const host = hostRef.current;
-    const section = host && host.querySelector('.agent-run');
-    if (section) stopAgentRunTimer(section as HTMLElement);
-  }, []);
+  const finalDuration = run.durationMs != null && run.durationMs > 0
+    ? run.durationMs
+    : Math.max(0, now - startedAtRef.current.at);
+  const runState = live ? 'running' : state || 'done';
+  const elapsed = formatElapsed(finalDuration, translate);
+  const steps = run.steps.slice(0, 200);
 
-  return <div className="agent-run-host" ref={hostRef} />;
+  return (
+    <div className="agent-run-host">
+      <section
+        className="agent-run"
+        data-run-id={run.runId || undefined}
+        data-state={runState}
+        data-started-at={startedAtRef.current.at}
+        data-duration-ms={!live ? Math.round(finalDuration) : undefined}
+      >
+        <details className="agent-run-shell" open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
+          <summary className="agent-run-summary">
+            <span className="agent-run-elapsed">{elapsed}</span>
+            <span className="agent-run-chev" aria-hidden="true" />
+          </summary>
+          <div className="agent-run-steps">
+            {run.plan ? <AgentPlan plan={run.plan} /> : null}
+            {steps.map((step) => <AgentStep key={step.stepId} step={step} state={state} live={live} />)}
+          </div>
+        </details>
+      </section>
+    </div>
+  );
 }
 
 export default ToolRunAgentSteps;

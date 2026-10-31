@@ -1,11 +1,13 @@
 import type { ExamQuestion } from "./types.ts";
 import { stateStore } from '../state/store.ts';
+import { dispatchExam } from '../store/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { pushExamIdToURL } from '../session/store.ts';
 import { toggleShareBtn } from '../ui/share.ts';
 import { prefersReducedMotion } from '../ui/motion.ts';
-import { renderExamResults } from './results.ts';
+import { apiFetch } from '../util/api.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getAppMode } from '../config/providers.ts';
 import { flushRecentsReconcile } from '../session/recents.ts';
 
 
@@ -16,7 +18,7 @@ let _examSaveDirty = false;
 export function setExamAnswer(index: number, value: string | number | undefined) {
   const answers = Object.assign({}, stateStore.read('examAnswers') || {});
   answers[index] = value;
-  stateStore.dispatch({ type: 'state/set', key: 'examAnswers', value: answers });
+  dispatchExam({ type: 'exam/set', key: 'examAnswers', value: answers });
 }
 
 export function resetExamSaveState() {
@@ -49,9 +51,8 @@ export function submitExam() {
     if (el) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
     return;
   }
-  stateStore.dispatch({type:'state/set',key:'examSubmitted',value:true});
+  dispatchExam({ type: 'exam/patch', patch: { examSubmitted: true } });
   saveExamSession();
-  renderExamResults();
 }
 
 export function saveExamSession() {
@@ -73,13 +74,8 @@ export function doSaveExamSession() {
     topic: browserWindow.stateStore.read("examTopic"),
     title: browserWindow.stateStore.read("examTopic"),
     domain: browserWindow.stateStore.read("examTopic"),
-    /* P_exam-mode — previously hardcoded to "chat" regardless of
-       the active user mode. A tutor-mode session that branched into
-       an exam would save as "chat", and on reload loadSession would
-       see mode="chat" and set chat-style UI. Use window.appMode
-       (which setAppMode() keeps in sync) so the session preserves
-       its originating mode. */
-    mode: browserWindow.appMode || "chat",
+    /* Preserve the mode that originated the exam session. */
+    mode: getAppMode(),
     phase: "chat",
     examData: {
       topic: browserWindow.stateStore.read("examTopic"),
@@ -101,7 +97,7 @@ export function doSaveExamSession() {
   };
   const currentSessionId = browserWindow.stateStore.read("currentSessionId");
   if (currentSessionId) body.id = currentSessionId;
-  _examSaveInFlight = browserWindow.apiFetch("/api/sessions", { method: "POST", body: body })
+  _examSaveInFlight = apiFetch("/api/sessions", { method: "POST", body: body })
     .then(function (response: unknown) {
       const id = response !== null && typeof response === 'object' && 'id' in response
         && typeof response.id === 'string' ? response.id : null;

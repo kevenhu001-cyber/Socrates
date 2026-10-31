@@ -1,7 +1,6 @@
+import { createElement, type ReactNode } from 'react';
 import { STROKE_ICONS } from './icons/toolIcons.ts';
 import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
-
-let initialized = false;
 
 /* Artifact URLs come from API payloads. Only our own origin, or a plain
    https host, may reach an <img src>, an <iframe src> or an <a href>:
@@ -40,33 +39,26 @@ export function openArtifactPreview(options?: { url?: string | null; mimeType?: 
   if (!url) return;
   const mime = String(opts.mimeType || 'application/octet-stream');
   const kind = mime.indexOf('image/') === 0 ? 'image' : mime.indexOf('text/html') === 0 ? 'html' : 'file';
-  const previewBody = document.createElement('div');
-  previewBody.className = 'artifact-preview-body';
+  let content: ReactNode;
   if (mime.indexOf('image/') === 0) {
-    const image = document.createElement('img');
-    image.className = 'artifact-preview-image';
-    image.src = url;
-    image.alt = String(opts.name || translate('artifact.imageAlt', 'Generated image'));
-    previewBody.appendChild(image);
+    content = createElement('div', { className: 'artifact-preview-body' }, createElement('img', {
+      className: 'artifact-preview-image',
+      src: url,
+      alt: String(opts.name || translate('artifact.imageAlt', 'Generated image')),
+    }));
   } else if (mime.indexOf('text/html') === 0) {
-    const frame = document.createElement('iframe');
-    frame.className = 'artifact-preview-frame';
-    frame.src = url;
-    frame.title = String(opts.name || translate('artifact.htmlAlt', 'Generated HTML preview'));
-    frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
-    previewBody.appendChild(frame);
+    content = createElement('div', { className: 'artifact-preview-body' }, createElement('iframe', {
+      className: 'artifact-preview-frame',
+      src: url,
+      title: String(opts.name || translate('artifact.htmlAlt', 'Generated HTML preview')),
+      sandbox: 'allow-scripts allow-forms allow-modals allow-popups',
+    }));
   } else {
-    const fallback = document.createElement('div');
-    fallback.className = 'artifact-preview-fallback';
-    fallback.innerHTML = '<span aria-hidden="true">' + STROKE_ICONS.read + '</span>'
-      + '<p>' + translate('artifact.noInlinePreview', 'This file opens in a separate tab.') + '</p>';
-    const open = document.createElement('a');
-    open.href = url;
-    open.target = '_blank';
-    open.rel = 'noopener';
-    open.textContent = translate('artifact.openFile', 'Open file');
-    fallback.appendChild(open);
-    previewBody.appendChild(fallback);
+    content = createElement('div', { className: 'artifact-preview-body' }, createElement('div', { className: 'artifact-preview-fallback' },
+      createElement('span', { 'aria-hidden': true, dangerouslySetInnerHTML: { __html: STROKE_ICONS.read } }),
+      createElement('p', null, translate('artifact.noInlinePreview', 'This file opens in a separate tab.')),
+      createElement('a', { href: url, target: '_blank', rel: 'noopener' }, translate('artifact.openFile', 'Open file')),
+    ));
   }
 
   openDetailSurface({
@@ -75,23 +67,6 @@ export function openArtifactPreview(options?: { url?: string | null; mimeType?: 
     meta: kind === 'html' ? translate('artifact.htmlMeta', 'Sandboxed HTML preview')
       : kind === 'image' ? translate('artifact.imageMeta', 'Image preview') : mime,
     closeLabel: translate('artifact.close', 'Close artifact preview'),
-    content: previewBody,
-  });
-}
-
-export function initArtifactPreview() {
-  if (initialized || typeof document === 'undefined') return;
-  initialized = true;
-  document.addEventListener('click', function (event) {
-    const target = event.target instanceof Element
-      ? event.target.closest('[data-artifact-preview], .msg.assistant .msg-body img:not(.exec-artifact-image):not(.site-link-favicon)')
-      : null;
-    if (!target) return;
-    event.preventDefault();
-    openArtifactPreview({
-      url: target.getAttribute('data-artifact-url') || target.getAttribute('src') || target.getAttribute('href'),
-      mimeType: target.getAttribute('data-artifact-mime') || (target.tagName === 'IMG' ? 'image/*' : ''),
-      name: target.getAttribute('data-artifact-name') || target.getAttribute('alt') || '',
-    });
+    content,
   });
 }

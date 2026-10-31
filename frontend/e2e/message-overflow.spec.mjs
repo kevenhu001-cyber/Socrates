@@ -93,10 +93,10 @@ test('opening the workbench keeps the model switcher usable above the chat pane'
   await expect(workbench).toContainText('Conversation');
   await expect(workbench).toContainText('Live workbench');
   await expect(workbench.getByRole('tablist', { name: 'Workbench view modes' })).toBeVisible();
-  await page.evaluate(() => window.setLang('zh'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
   await expect(workbench.locator('.workbench-title')).toHaveText('对话内容协同');
   await expect(workbench).toContainText('实时工作台');
-  await page.evaluate(() => window.setLang('en'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   await expect(workbench.locator('.workbench-title')).toHaveText('Conversation');
   const [barBox, chatBox, paneBox] = await Promise.all([
     header.boundingBox(), chat.boundingBox(), workbench.boundingBox(),
@@ -170,7 +170,7 @@ test('an action handing off to a confirmation keeps modal focus and restores the
   await boot(page);
   await page.evaluate(() => {
     window.__socratesLegacy.messages.branchFromMessage = async () => {
-      const accepted = await window.showConfirm('Branch response?', 'Continue in a new chat?');
+      const accepted = await window.__socratesLegacy.confirm.showConfirm('Branch response?', 'Continue in a new chat?');
       window.__overflowCalls.push(['confirmed', accepted]);
     };
   });
@@ -220,7 +220,7 @@ test('a delayed first menu load cannot reopen after Escape', async ({ page }) =>
 for (const variant of ['desktop', 'phone']) {
   test(`the ${variant} message menu stays in the viewport with shared motion and surface`, async ({ page }) => {
     await boot(page, variant === 'phone' ? { width: 390, height: 420 } : { width: 1440, height: 900 });
-    if (variant === 'phone') await page.evaluate(() => window.toggleTheme());
+    if (variant === 'phone') await page.evaluate(() => document.getElementById('themeToggle')?.click());
     await triggerOf(page, 1).click();
     const menu = menuOf(page);
     await expect(menu).toBeVisible();

@@ -12,8 +12,7 @@ import { serverCache } from './serverCache.ts';
 import { turnState } from '../chat/turnState.ts';
 import { apiFetch } from '../util/api.ts';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
-import { ensureSessionShape, setAppMode, syncAppModeUI, syncSidebarForMode, type AppMode } from '../config/providers.ts';
-import { syncChatModel } from '../pickers.ts';
+import { appMode, ensureSessionShape, setAppMode, syncAppModeUI, syncSidebarForMode, type AppMode } from '../config/providers.ts';
 import { pushChatIdToURL, pushExamIdToURL } from './store.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
@@ -32,11 +31,11 @@ import { reattachPendingTurn } from './pendingTurnRestore.ts';
 import { seedSyncedMessages } from './persistence.ts';
 import { toggleShareBtn } from '../ui/share.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
-import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { clearComposer } from '../composer/controller.ts';
-import { updateKB } from '../ui/knowledgePanel.ts';
 import { closeSidebarOnMobile } from '../sidebar/sidebar.service.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { dispatchExam, dispatchSession, dispatchUi } from '../store/index.ts';
+import type { ExamQuestion } from '../exam/types.ts';
 
 export { reattachPendingTurn };
 
@@ -80,35 +79,10 @@ export interface ExamDataShape {
   [key: string]: unknown;
 }
 
-export interface ExamQuestion {
-  type?: string;
-  opts?: unknown;
-  _idx?: number;
-  [key: string]: unknown;
-}
-
-/** The lazily-loaded exam module surface used by the restore path. */
-interface ExamModule {
-  clearExamSetup?(): void;
-  clearExamQuestionCards?(): void;
-  mountExamListeners?(): void;
-  prepareExamView?(): void;
-  renderExamNav(): void;
-  renderExamFooterActions(actions: Array<{ command: string; label: string; variant?: 'default' | 'outline' | 'destructive' }>): void;
-  renderExamResults(): void;
-  syncExamNav(): void;
-  paintQuestionCard(idx: number, question: ExamQuestion, host: HTMLElement): void;
-}
-
 /** Window surfaces the loader reads at call time. */
 interface LoaderWindow extends Window {
-  appMode?: string;
-  __loadExamModule?: () => Promise<ExamModule>;
   renderRecents?: () => void;
-  renderMistakes?: () => void;
-  updateMistakesBadge?: () => void;
   clearActiveTemplate?: () => void;
-  syncAppModeUI?: () => void;
 }
 
 function _t(key: string, fallback?: string): string {
@@ -121,28 +95,13 @@ function _t(key: string, fallback?: string): string {
   return fallback != null ? fallback : key;
 }
 function _appMode(): string {
-  try {
-    if (typeof window !== 'undefined' && (window as LoaderWindow).appMode) return (window as LoaderWindow).appMode as string;
-  } catch (e) { reportSwallow(e, 'session/loader._appMode'); }
-  return 'chat';
+  return appMode;
 }
 function _renderRecents(): void {
   try {
     const win = window as LoaderWindow;
     if (typeof window !== 'undefined' && typeof win.renderRecents === 'function') win.renderRecents();
   } catch (e) { reportSwallow(e, 'session/loader._renderRecents'); }
-}
-function _renderMistakes(): void {
-  try {
-    const win = window as LoaderWindow;
-    if (typeof window !== 'undefined' && typeof win.renderMistakes === 'function') win.renderMistakes();
-  } catch (e) { reportSwallow(e, 'session/loader._renderMistakes'); }
-}
-function _updateMistakesBadge(): void {
-  try {
-    const win = window as LoaderWindow;
-    if (typeof window !== 'undefined' && typeof win.updateMistakesBadge === 'function') win.updateMistakesBadge();
-  } catch (e) { reportSwallow(e, 'session/loader._updateMistakesBadge'); }
 }
 function _clearActiveTemplate(): void {
   try {
@@ -151,151 +110,50 @@ function _clearActiveTemplate(): void {
   } catch (e) { reportSwallow(e, 'session/loader._clearActiveTemplate'); }
 }
 
-/* exam.js is lazy-loaded (see windowExports.__loadExamModule). The exam
-   view only needs it when an exam session is actually restored, so the
-   module resolves here on first use and is cached for
-   paintRestoredQuestionCard below. */
-let _examMod: ExamModule | null = null;
-async function _ensureExamModule(): Promise<ExamModule> {
-  if (_examMod) return _examMod;
-  const win = window as LoaderWindow;
-  if (typeof window !== 'undefined' && typeof win.__loadExamModule === 'function') {
-    _examMod = await win.__loadExamModule();
-  } else {
-    _examMod = await import('../exam.ts') as unknown as ExamModule;
-    try { _examMod.mountExamListeners?.(); } catch (e) { reportSwallow(e, 'session/loader._ensureExamModule'); }
-  }
-  return _examMod;
-}
-
-function prepareRestoredExamView(module: ExamModule): void {
-  if (typeof module.prepareExamView === 'function') {
-    try { module.prepareExamView(); } catch (error) { reportSwallow(error, 'session/loader.loadSession.examView'); }
-    return;
-  }
-  const view = document.getElementById('examView');
-  ['topicSetup', 'diagnosticView', 'chatView'].forEach((id) => {
-    const element = document.getElementById(id);
-    if (element) element.classList.add('hidden');
-  });
-  const inner = document.getElementById('mainInner');
-  if (inner) inner.classList.add('hidden');
-  if (view) view.classList.remove('hidden');
-}
-
 function restoredExamQuestions(session: LoadedSession): ExamQuestion[] {
   const questions = session.examData && Array.isArray(session.examData.questions)
     ? session.examData.questions : [];
   return questions.map((question, index) => ({ ...question, _idx: index }));
 }
 
-function buildRestoredExamState(session: LoadedSession, questions: ExamQuestion[]): Record<string, unknown> {
+function buildRestoredExamState(session: LoadedSession, questions: ExamQuestion[]) {
   const exam = session.examData;
   return {
-    _examInView: true,
-    currentSessionId: session.id,
     examCancel: false,
+    examReadOnly: false,
     examTopic: (exam && exam.topic) || session.topic || '',
     examCount: (exam && exam.count) || questions.length,
     examLang: (exam && exam.lang) || 'English',
     examDifficulty: (exam && exam.difficulty) || 'intermediate',
     examTypes: exam && Array.isArray(exam.types) ? exam.types : [],
     examQuestions: questions,
-    examAnswers: (exam && exam.answers) || {},
+    examAnswers: (exam && exam.answers || {}) as Record<string, string | number | undefined>,
     examSubmitted: !!(exam && exam.submitted),
+    examViewMode: 'questions' as const,
+    examStatusMessage: '',
+    examStatusDetail: '',
   };
 }
 
 function restoreExamState(session: LoadedSession, questions: ExamQuestion[]): void {
-  stateStore.dispatch({ type: 'state/batch', patch: buildRestoredExamState(session, questions) });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: session.id });
+  dispatchUi({ type: 'ui/set', key: '_examInView', value: true });
+  dispatchExam({ type: 'exam/patch', patch: buildRestoredExamState(session, questions) });
   try { pushExamIdToURL(session.id); }
   catch (error) { reportSwallow(error, 'session/loader.loadSession.examUrl'); }
 }
 
-function paintRestoredExamQuestions(questions: ExamQuestion[]): void {
-  const body = document.getElementById('examViewBody');
-  if (!body) return;
-  body.replaceChildren();
-  const container = document.createElement('div');
-  container.id = 'examQuestionsContainer';
-  body.appendChild(container);
-  questions.forEach((question, index) => {
-    const card = document.createElement('div');
-    card.className = 'exam-q-card';
-    card.id = 'examQ' + index;
-    card.setAttribute('data-idx', String(index));
-    container.appendChild(card);
-    paintRestoredQuestionCard(index, question);
-  });
-}
-
-function paintRestoredExamChrome(module: ExamModule): void {
-  const examViewTitle = document.getElementById('examViewTitle') as HTMLElement | null;
-  if (examViewTitle) {
-    examViewTitle.textContent = stateStore.read('examSubmitted')
-      ? ('Exam Results: ' + stateStore.read('examTopic'))
-      : (stateStore.read('examTopic') as string);
-  }
-  const titleBar = document.getElementById('examTitleBar');
-  if (titleBar) titleBar.textContent = (stateStore.read('examTopic') as string) || 'Generate Exam';
-  module.renderExamNav();
-  if (stateStore.read('examSubmitted')) {
-    module.renderExamResults();
-  } else {
-    module.renderExamFooterActions([
-      { command: 'submit', label: _t('exam.submit', 'Submit for Grading') },
-      { command: 'close', label: _t('common.close', 'Close'), variant: 'outline' },
-    ]);
-  }
-}
-
-function bindRestoredExamScroll(syncExamNav: ExamModule['syncExamNav']): void {
-  if (!stateStore.read('_examScrollBound')) {
-    const container = document.getElementById('examViewBody');
-    if (container) {
-      container.addEventListener('scroll', () => {
-        if (stateStore.read('_examInView')) syncExamNav();
-      });
-    }
-    stateStore.dispatch({ type: 'state/set', key: '_examScrollBound', value: true });
-  }
+export async function loadExamSession(session: LoadedSession): Promise<void> {
+  const { mountExamView } = await import('../react/exam/mount.tsx');
+  mountExamView();
+  activateMainView('examView', document);
+  const questions = restoredExamQuestions(session);
+  restoreExamState(session, questions);
+  toggleShareBtn();
+  _renderRecents();
   const scroller = document.getElementById('scrollContainer') || document.getElementById('msgScroll');
   if (scroller) scroller.scrollTop = 0;
 }
-
-export async function loadExamSession(session: LoadedSession): Promise<void> {
-  const module = await _ensureExamModule();
-  module.clearExamSetup?.();
-  module.clearExamQuestionCards?.();
-  prepareRestoredExamView(module);
-  const questions = restoredExamQuestions(session);
-  restoreExamState(session, questions);
-  paintRestoredExamQuestions(questions);
-  paintRestoredExamChrome(module);
-  toggleShareBtn();
-  _renderRecents();
-  bindRestoredExamScroll(module.syncExamNav);
-}
-
-/* Helper for loadExamSession — fill a single .exam-q-card with the
- * saved question and the user's saved answer (option pre-selected for
- * multiple-choice, value prefilled for fill-blank / short-answer).
- * Wraps paintQuestionCard and adds the "selected" / "value" overrides. */
-export function paintRestoredQuestionCard(idx: number, q: ExamQuestion): void {
-  const ph = document.getElementById('examQ' + idx);
-  if (!ph || !_examMod) return;
-  _examMod.paintQuestionCard(idx, q, ph);
-  const answers = stateStore.read('examAnswers') as Record<number, unknown> | null;
-  const saved = answers && answers[idx];
-  if (q.type === 'multiple-choice' && q.opts && saved !== undefined) {
-    const btns = ph.querySelectorAll('.exam-q-opt');
-    btns.forEach(function (b, i) { if (i === saved) b.classList.add('selected'); });
-  } else if (q.type === 'fill-blank' || q.type === 'short-answer') {
-    const input = ph.querySelector('.exam-q-fill-input') as HTMLInputElement | null;
-    if (input && typeof saved === 'string') input.value = saved;
-  }
-}
-
 /* F2c — clear every cross-round transient so a previous session's
    web-search cache, call metadata, composer draft, plan fields, or
    pending-chat payload cannot leak into the next one. Called from
@@ -314,7 +172,6 @@ export function resetSessionTransients(): void {
     sessionTitle: null,
   } });
   try { clearComposer('chat'); } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients'); }
-  try { updateComposerBtn(); } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients~2'); }
   try { if (turnState.pendingChatContent !== undefined) turnState.pendingChatContent = null; } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients~3'); }
   try { if (turnState.pendingAttachments !== undefined) turnState.pendingAttachments = null; } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients~4'); }
   /* F2a-ext — clear the active template so a slash-command template
@@ -571,8 +428,6 @@ function restoreLoadedChat(
   recovery: SessionLoadRecovery,
 ): void {
   activateMainView('chatView', document);
-  syncChatModel();
-  const msgList = document.getElementById('msgList');
   recovery.previousMessages = (stateStore.read('messages') as unknown[]).slice();
   recovery.historyRebuildStarted = true;
   clearLegacyMsgListChildren();
@@ -582,7 +437,7 @@ function restoreLoadedChat(
   seedSyncedMessages(session.id, restoredMessages);
   restoreLocalAssistantFallback(session);
   const restorePartialFallback = (): void => {
-    try { restoreInterruptedResponse(session, msgList as HTMLElement); }
+    try { restoreInterruptedResponse(session); }
     catch (error) { reportSwallow(error, 'session/loader.restorePartialFallback'); }
   };
 
@@ -597,7 +452,6 @@ function restoreLoadedChat(
     reportSwallow(error, 'session/loader.loadSession~6');
   }
 
-  if (_appMode() !== 'chat' || (session.kbNodes && session.kbNodes.length > 0)) updateKB();
   _renderRecents();
   syncRestoredTutorPlan();
   publishReactChatRuntime({ type: 'state-synced', reason: 'session-loaded' });
@@ -605,8 +459,6 @@ function restoreLoadedChat(
   const stillCurrent = () => !controller.signal.aborted && stateStore.read('currentSessionId') === session.id;
   afterSessionPaint(controller.signal, stillCurrent, () => {
     mirrorSessionHistory(session, stillCurrent, controller.signal);
-    _renderMistakes();
-    _updateMistakesBadge();
   });
 }
 

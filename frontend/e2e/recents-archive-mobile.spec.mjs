@@ -95,7 +95,7 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
   // Expand the phone drawer if it boots collapsed.
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar?.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await page.waitForTimeout(300);
 

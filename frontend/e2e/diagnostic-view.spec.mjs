@@ -41,14 +41,10 @@ test('diagnostic view: failure, built-in questions and results', async ({ page }
   await gotoAndSettle(page);
   await waitForAppShell(page);
 
+  await page.locator('#topModeTutor').click();
   await page.locator('#composerRoot').click();
   await page.keyboard.type('Algebra');
-  await page.evaluate(() => {
-    window.setAppMode('tutor');
-    document.body.dataset.appMode = 'tutor';
-    document.querySelectorAll('.tutor-only').forEach((el) => { el.style.display = ''; });
-    void window.startSession();
-  });
+  await page.locator('#composerPrimaryBtn').click();
   await page.getByRole('button', { name: 'Start exploration' }).click();
 
   const view = page.locator('#diagnosticView');

@@ -13,15 +13,12 @@
 import { stateStore } from '../state/store.ts';
 import { turnState } from '../chat/turnState.ts';
 import { clearComposer } from '../composer/controller.ts';
-import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import type {
-  LoadedSession,
-  ExamQuestion,
-} from './loader.impl.ts';
+import type { LoadedSession } from './loader.impl.ts';
 
-export type { LoadedSession, ExamDataShape, ExamQuestion } from './loader.impl.ts';
+export type { LoadedSession, ExamDataShape } from './loader.impl.ts';
+export type { ExamQuestion } from '../exam/types.ts';
 
 type LoaderImpl = typeof import('./loader.impl.ts');
 
@@ -30,14 +27,10 @@ type SessionLoaderWindow = Window & {
 };
 
 let _loaderImport: Promise<LoaderImpl> | null = null;
-let _loaderModule: LoaderImpl | null = null;
 
 function loadLoaderImpl(): Promise<LoaderImpl> {
   if (!_loaderImport) {
-    _loaderImport = import('./loader.impl.ts').then(function (module) {
-      _loaderModule = module;
-      return module;
-    });
+    _loaderImport = import('./loader.impl.ts');
     _loaderImport.catch(function (error) {
       _loaderImport = null;
       console.error('[session-loader] failed to load restore runtime', error);
@@ -73,7 +66,6 @@ export function resetSessionTransients(): void {
     sessionTitle: null,
   } });
   try { clearComposer('chat'); } catch (error) { reportSwallow(error, 'session/loader.resetSessionTransients'); }
-  try { updateComposerBtn(); } catch (error) { reportSwallow(error, 'session/loader.resetSessionTransients~2'); }
   try { if (turnState.pendingChatContent !== undefined) turnState.pendingChatContent = null; }
   catch (error) { reportSwallow(error, 'session/loader.resetSessionTransients~3'); }
   try { if (turnState.pendingAttachments !== undefined) turnState.pendingAttachments = null; }
@@ -98,19 +90,6 @@ export function loadSession(id: string): Promise<void> {
 /** Exam-session restore shares the same deferred restore runtime. */
 export function loadExamSession(session: LoadedSession): Promise<void> {
   return loadLoaderImpl().then(function (module) { return module.loadExamSession(session); });
-}
-
-/* Public compatibility export. Current first-party code reaches this through
- * loadSession(), but keep the old surface without pinning the implementation
- * into the static graph. */
-export function paintRestoredQuestionCard(idx: number, question: ExamQuestion): void {
-  if (_loaderModule) {
-    _loaderModule.paintRestoredQuestionCard(idx, question);
-    return;
-  }
-  void loadLoaderImpl()
-    .then(function (module) { module.paintRestoredQuestionCard(idx, question); })
-    .catch(function () { /* loader logs */ });
 }
 
 export function reattachPendingTurn(sessionId: string): Promise<void> {

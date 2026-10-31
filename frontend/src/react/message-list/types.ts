@@ -10,9 +10,8 @@
 import type { LegacyChatMessage } from '../types/domain';
 
 /**
- * Click handler props passed to MessageToolbar. The legacy functions live
- * on `window` and remain the authoritative side-effect owner; the React
- * toolbar dispatches through them so the visible UI matches.
+ * Click handler props passed to MessageToolbar. React owns edit state;
+ * remaining actions dispatch through the typed legacy gateway.
  */
 export interface MessageToolbarCallbacks {
   onCopy: () => void;
@@ -35,4 +34,6 @@ export interface MessageItemProps {
   mathRevision?: number;
   /** True when this row is the latest message in the visible transcript. */
   isLatest?: boolean;
+  /** Shared public sessions render transcript content without message actions. */
+  readOnly?: boolean;
 }

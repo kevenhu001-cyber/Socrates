@@ -39,6 +39,31 @@ test('sidebar exposes the primary destinations', async ({ page }) => {
   await expect(page.locator('#navMore')).toHaveCount(1);
 });
 
+test('tutor sidebar panel selection is driven by React state', async ({ page }) => {
+  await page.locator('#topModeTutor').click();
+  await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'tutor');
+
+  const knowledge = page.locator('#tabKnowledge');
+  const mistakes = page.locator('#tabMistakes');
+  const knowledgePanel = page.locator('#knowledgePanel');
+  const mistakesPanel = page.locator('#mistakesPanel');
+  const recentsPanel = page.locator('#recentsPanel');
+
+  await knowledge.click();
+  await expect(knowledge).toHaveAttribute('aria-pressed', 'true');
+  await expect(knowledgePanel).toBeVisible();
+  await expect(recentsPanel).toBeHidden();
+
+  await knowledge.click();
+  await expect(knowledge).toHaveAttribute('aria-pressed', 'false');
+  await expect(recentsPanel).toBeVisible();
+
+  await mistakes.click();
+  await expect(mistakes).toHaveAttribute('aria-pressed', 'true');
+  await expect(mistakesPanel).toBeVisible();
+  await expect(recentsPanel).toBeHidden();
+});
+
 test('Plugins is a direct sidebar destination', async ({ page }) => {
   await page.locator('#navPlugins').click();
   await expect(page.locator('#navPlugins')).toHaveClass(NAV_ACTIVE);
@@ -103,7 +128,7 @@ test('Projects has one keyboard action and keeps creation in its directory', asy
 test('phone workspace destinations hide the landing too', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
-    if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.toggleSidebar();
+    if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar();
   });
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
   await page.locator('#navPlugins').click();
@@ -136,17 +161,39 @@ test('desktop share control renders its svg, not the text label', async ({ page 
 });
 
 test('Exam is a direct sidebar destination', async ({ page }) => {
-  await page.evaluate(() => window.openNav('exam'));
+  await page.evaluate(() => window.__socratesLegacy.navigation.openNav('exam'));
   await expect(page.locator('#navExam')).toHaveClass(NAV_ACTIVE);
   await expect(page.locator('#examView')).toBeVisible();
 });
 
 test('More keeps secondary settings and Skills reachable', async ({ page }) => {
-  await page.locator('#navMore').click();
+  const trigger = page.locator('#navMore');
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('#moreNavPopover')).toBeVisible();
   await expect(page.getByRole('menuitem', { name: /Skills|技能/ })).toBeVisible();
   await page.getByRole('menuitem', { name: /Keyboard shortcuts|键盘快捷键/ }).click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('#cheatsheetOverlay')).toBeVisible();
+});
+
+test('More menu closes on Escape and outside click', async ({ page }) => {
+  const trigger = page.locator('#navMore');
+  const menu = page.locator('#moreNavPopover');
+
+  await trigger.click();
+  await expect(menu).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+  await trigger.click();
+  await expect(menu).toBeVisible();
+  await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await expect(menu).toBeHidden();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('account row exposes profile and settings through its menu', async ({ page }) => {
@@ -189,7 +236,7 @@ test('account row exposes profile and settings through its menu', async ({ page 
 test('collapsed sidebar rail keeps only the avatar of the account row', async ({ page }) => {
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
   const row = page.locator('#sidebarUserRow');
@@ -212,7 +259,7 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar?.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
   const rows = await page.locator('#sidebarNav .sidebar-nav-btn:visible').evaluateAll((buttons) => buttons.map((button) => {
@@ -241,7 +288,7 @@ test('Admin console is a standalone /admin page with no sidebar entry', async ({
   // The operator console is deliberately not advertised in the nav —
   // it is reached only through the standalone route.
   await expect(page.locator('#navAdmin')).toHaveCount(0);
-  await page.evaluate(() => window.openNav('admin'));
+  await page.evaluate(() => window.__socratesLegacy.navigation.openNav('admin'));
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.locator('#adminPanel')).toBeVisible();
   // Unauthenticated (mock API has no admin session): the login form
@@ -249,22 +296,22 @@ test('Admin console is a standalone /admin page with no sidebar entry', async ({
   await expect(page.locator('.admin-login')).toBeVisible();
 });
 
-test('Admin page hides the chat top-bar chrome', async ({ page }) => {
+test('Admin page hides the conversation top-bar controls', async ({ page }) => {
   // Simulate an active session: the chat runtime unhides the share /
-  // find / model controls, which must all disappear on /admin.
+  // find actions, while React keeps the model switcher in the shell.
   await page.evaluate(() => {
-    for (const id of ['shareBtn', 'findBtn', 'chatModelWrap']) {
+    for (const id of ['shareBtn', 'findBtn']) {
       document.getElementById(id)?.classList.remove('hidden');
     }
   });
-  await page.evaluate(() => window.openNav('admin'));
+  await page.evaluate(() => window.__socratesLegacy.navigation.openNav('admin'));
   await expect(page.locator('#adminPanel')).toBeVisible();
-  const displays = await page.locator('#shareBtn, #findBtn, #chatModelWrap').evaluateAll((els) =>
+  const displays = await page.locator('#shareBtn, #findBtn, #topModelSwitcher').evaluateAll((els) =>
     els.map((el) => getComputedStyle(el).display),
   );
   expect(displays).toEqual(['none', 'none', 'none']);
   // Leaving the console drops the admin body class and restores chrome.
-  await page.evaluate(() => window.openNav('library'));
+  await page.evaluate(() => window.__socratesLegacy.navigation.openNav('library'));
   await expect(page.locator('#shareBtn')).toBeVisible();
 });
 

@@ -4,7 +4,6 @@ import {
   readComposerSurface,
 } from '../../composer/controller.ts';
 import { clearComposerPlugins } from '../../composer/pluginSelection.ts';
-import { updateComposerBtn } from '../../ui/topicSetup.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import type { LegacyComposer } from '../legacy/types';
 
@@ -17,6 +16,12 @@ export type ResetAppAction = (options?: ResetAppOptions) => Promise<boolean>;
 /** Route the editor's submit command to the currently active product flow. */
 export function submitComposer(actions: LegacyComposer, surface = readComposerSurface()): void {
   if (surface === 'chat') actions.submitChatMessage();
+  else actions.startSession();
+}
+
+/** The pointer Send action also collapses mobile focus after committing a turn. */
+export function submitPrimaryComposer(actions: LegacyComposer, surface = readComposerSurface()): void {
+  if (surface === 'chat') actions.submitChatMessage(null, { blurAfterSend: true });
   else actions.startSession();
 }
 
@@ -35,7 +40,6 @@ export function resetComposerForNewSession(): void {
   clearComposerDrafts();
   clearComposerPlugins('topic');
   clearComposerPlugins('chat');
-  updateComposerBtn();
 }
 
 export function focusComposerForNewSession(): void {

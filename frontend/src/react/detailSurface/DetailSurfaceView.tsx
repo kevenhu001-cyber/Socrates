@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { Button } from '../ui/shadcn/button';
 
 export interface DetailSurfaceOptions {
@@ -6,22 +6,11 @@ export interface DetailSurfaceOptions {
   title: string;
   meta?: string;
   closeLabel: string;
-  content: HTMLElement;
+  content: ReactNode;
   onClose?: () => void;
 }
 
 export function DetailSurfaceView({ options, onClose }: { options: DetailSurfaceOptions | null; onClose: () => void }) {
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const body = bodyRef.current;
-    const content = options?.content;
-    if (body) body.replaceChildren(...(content ? [content] : []));
-    return () => {
-      if (body && content?.parentNode === body) body.replaceChildren();
-    };
-  }, [options?.content]);
-
   const closeLabel = options?.closeLabel ?? '';
   return (
     <>
@@ -57,7 +46,7 @@ export function DetailSurfaceView({ options, onClose }: { options: DetailSurface
             </svg>
           </Button>
         </header>
-        <div className="detail-body" ref={bodyRef} />
+        <div className="detail-body">{options?.content}</div>
       </aside>
     </>
   );

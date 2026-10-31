@@ -43,7 +43,7 @@ test('provider radio arrow navigation preserves text editing and persists the ne
   ] } });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const settings = page.locator('#settingsOverlay');
   await settings.locator('[data-section="models"]').click();
   const first = settings.locator('.provider-row[data-id="first"]');
@@ -74,7 +74,7 @@ test('sharing RadioGroup uses arrow keys and submits the selected visibility', a
   await waitForAppShell(page);
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '11111111-1111-4111-8111-111111111111' });
-    window.openShareModal();
+    window.__socratesLegacy.messages.openShareModal();
   });
   const share = page.locator('#shareOverlay');
   const publicChoice = share.getByRole('radio', { name: 'Anyone with the link', exact: true });
@@ -96,7 +96,7 @@ test('provider Card fields and choices remain reachable on a narrow phone', asyn
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const settings = page.locator('#settingsOverlay');
   await settings.locator('[data-section="models"]').click();
   await settings.locator('#addProviderBtn').click();

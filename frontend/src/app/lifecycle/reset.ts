@@ -11,6 +11,7 @@ import { saveSessionBeforeReset } from '../../session/persistence.ts';
 import { renderGreeting } from '../../ui/greeting.js';
 import { activateMainView } from '../../ui/mainViewController.ts';
 import { setActiveNav } from '../../sidebar/navigation.service.ts';
+import { setSidebarOpen } from '../../sidebar/sidebar.store.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { translateLifecycleText } from './helpers.ts';
 import { shouldConfirmReset } from './resetDecision.ts';
@@ -80,45 +81,22 @@ function prepareCurrentSessionForReset() {
   catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.clearPendingAttachments'); }
 }
 
-function renderTopicSetupAfterReset(examWasOpen: boolean) {
+function renderTopicSetupAfterReset() {
   toggleShareBtn();
   clearSessionRouteInURL();
   activateMainView('topicSetup', document);
   setActiveNav(null);
   try { renderGreeting(); }
   catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.renderGreeting'); }
-  if (examWasOpen) {
-    const examBody = document.getElementById('examViewBody');
-    const examFooter = document.getElementById('examViewFooter');
-    if (examBody) examBody.replaceChildren();
-    if (examFooter) examFooter.replaceChildren();
-  }
   clearLegacyMsgListChildren();
   resetComposerForNewSession();
-  const knowledgeContent = document.getElementById('kbContent');
-  if (knowledgeContent) {
-    knowledgeContent.innerHTML = '<div class="kb-empty">'
-      + (typeof browserWindow.t === 'function'
-        ? translateLifecycleText('tutor.kbTopicFirst')
-        : 'Set a topic to build your knowledge map.')
-      + '</div>';
-  }
-  const teachingPlan = document.getElementById('teachingPlanContent');
-  if (teachingPlan) teachingPlan.innerHTML = '';
 }
 
 function renderListsAfterReset() {
-  callWindowHook('renderRecents');
-  callWindowHook('renderMistakes');
-  callWindowHook('updateMistakesBadge');
+  try { browserWindow.renderRecents?.(); }
+  catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.renderRecents'); }
   const sc = scrollContainer();
   if (sc) sc.scrollTop = 0;
-}
-
-function callWindowHook(name: 'renderRecents' | 'renderMistakes' | 'updateMistakesBadge' | 'syncSidebarBtns') {
-  try {
-    if (typeof browserWindow[name] === 'function') browserWindow[name]();
-  } catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.' + name); }
 }
 
 function closeMobileSidebarAfterReset() {
@@ -127,18 +105,13 @@ function closeMobileSidebarAfterReset() {
   const backdrop = document.getElementById('sidebarBackdrop');
   if (!sidebar || sidebar.classList.contains('collapsed')) return;
   sidebar.classList.add('collapsed');
-  try { browserWindow.sidebarOpen = false; }
-  catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.sidebarOpenFlag'); }
+  setSidebarOpen(false);
   if (backdrop) backdrop.classList.remove('show');
   try { localStorage.setItem('socrates-sb', '0'); }
   catch (error) { reportSwallow(error, 'app/lifecycle.resetApp'); }
 }
 
 function publishResetState() {
-  if (typeof browserWindow.syncConversationActive === 'function') {
-    try { browserWindow.syncConversationActive(); }
-    catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.syncConversationActive'); }
-  }
   publishReactChatRuntime({ type: 'state-synced', reason: 'session-reset' });
   focusComposerForNewSession();
 }
@@ -157,10 +130,9 @@ export async function resetApp(options?: ResetOptions) {
   if (options?.projectId) {
     stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: options.projectId });
   }
-  renderTopicSetupAfterReset(decision.examWasOpen);
+  renderTopicSetupAfterReset();
   renderListsAfterReset();
   closeMobileSidebarAfterReset();
-  callWindowHook('syncSidebarBtns');
   publishResetState();
   return true;
 }

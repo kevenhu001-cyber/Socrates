@@ -117,7 +117,7 @@
 
 /* Sites uses the same search, action and list rhythm as the other
    workspace destinations. The source site preview and publish flow remains
-   owned by creationSurfaces.js. */
+   owned by the React creation surface. */
 #appShell #sitesPanel .creation-sites-header { margin-bottom: 18px; }
 #appShell #sitesPanel .creation-sites-new { min-width: 72px; border-radius: var(--radius-lg); }
 /* Layout only — .creation-sites-search also carries the shared

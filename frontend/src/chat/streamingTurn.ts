@@ -3,7 +3,6 @@ import type { MessageOwnership } from './turn/messageOwnership.ts';
 import type { ToolRuntime } from './toolRuntime.ts';
 interface StreamingOptions { clientId?: string; onRetry?: (() => unknown) | null }
 interface StreamingState extends TurnRuntimeState {
-  body: HTMLElement;
   firstDelta: boolean;
   thinkStarted: number;
   visibleLen: number;
@@ -49,7 +48,6 @@ import { setChatStopState, markTurnInProgress, quietTurn } from './turnUi.ts';
 import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.ts';
 import { generateId } from '../util/ids.ts';
 import { hideNewReplyPill } from '../ui/scrollPill.ts';
-import { isMsgListMounted } from '../ui/msgListMount.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { createStreamPlayer } from '../render/streamPlayer.js';
 import { scheduleActiveTurnToTop, turnAnchorReserve, TURN_ANCHOR_TOP_OFFSET, RetryViewportOffset } from './turnAnchor.ts';
@@ -64,6 +62,7 @@ import { createFinishLifecycle } from './turn/finishLifecycle.ts';
 import { toolRunLabel } from '../ui/toolPresentationModel';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getAppMode } from '../config/providers.ts';
 
 
 function _t(key: string, fallback?: string | null) {
@@ -76,10 +75,7 @@ function _t(key: string, fallback?: string | null) {
   return fallback != null ? fallback : key;
 }
 function _appMode() {
-  try {
-    if (typeof window !== 'undefined' && browserWindow.appMode) return browserWindow.appMode;
-  } catch (e) { reportSwallow(e, 'streamingTurn._appMode.readGlobal'); }
-  return 'chat';
+  return getAppMode();
 }
 /* Smooth streaming decouples the network-arrival stream from the visual
    playback stream: upstream deltas only fill a buffer, and an adaptive
@@ -99,15 +95,7 @@ function _smoothStreamEnabled() {
 function prepareStreamingShell(opts: StreamingOptions){
   hideNewReplyPill();
   const list=document.getElementById("msgList")!;
-  const reactLive=isMsgListMounted();
-  const div=document.createElement("div");
-  div.className="msg assistant";
-  div.style.contentVisibility="visible";
-  const body=document.createElement("div");
-  body.className="msg-body";
-  div.appendChild(body);
   const clientId=opts.clientId?opts.clientId:("msg-"+generateId());
-  div.dataset.clientId=clientId;
   const initialTargetOffset=TURN_ANCHOR_TOP_OFFSET;
   stateStore.dispatch({
     type:'state/batch-actions',
@@ -155,13 +143,9 @@ function prepareStreamingShell(opts: StreamingOptions){
   }
   return {
     list:list,
-    div:div,
-    body:body,
     clientId:clientId,
     msgIdx:msgIdx,
-    reactLive:reactLive,
     onRetry:opts.onRetry,
-    retryBtnId:"retry-"+Math.random().toString(36).slice(2,10),
   };
 }
 
@@ -343,9 +327,9 @@ function createStreamingThinkController(state: StreamingState, statusChrome: Sta
   return {ensure:ensure,hide:hide,setLiveStatus:setLiveStatus};
 }
 
-function startStreamingTurn(state: StreamingState, statusChrome: StatusChrome, list: HTMLElement, div: HTMLElement, msgIdx: number, retryViewport: RetryViewportOffset | null){
+function startStreamingTurn(state: StreamingState, statusChrome: StatusChrome, list: HTMLElement, msgIdx: number, retryViewport: RetryViewportOffset | null){
   statusChrome.stampWaiting(0);
-  scheduleActiveTurnToTop(list,div,msgIdx,retryViewport);
+  scheduleActiveTurnToTop(list,null,msgIdx,retryViewport);
   turnState.chatStreaming=true;
   try{setChatStopState(true)}catch(error){reportSwallow(error,'streamingTurn.start.setChatStopState')}
   try{markTurnInProgress()}catch(error){reportSwallow(error,'streamingTurn.start.markTurnInProgress')}
@@ -380,8 +364,6 @@ function createStreamingToolRuntime(context: Pick<StreamingContext, 'state' | 's
   let segmentBase=0;
   const onSearchRetry=createSearchRetryHandler();
   const runtime=createToolRuntime({
-    body:state.body,
-    ownsLiveTurn:function(){return state.reactLive},
     stillOwnsSlot:context.stillOwnsSlot,
     getMessage:function(){
       return state.ownsMessageSlot()?(stateStore.read('messages')[state.msgIdx]||null):null;
@@ -410,7 +392,6 @@ function createStreamingToolRuntime(context: Pick<StreamingContext, 'state' | 's
         context.scheduleRender();
       }
     },
-    onSearchRetry:onSearchRetry,
   });
   state.toolRuntime=runtime;
   claimLiveSearchRetry(onSearchRetry);
@@ -424,11 +405,8 @@ export function addStreamingMessage(opts: StreamingOptions = {}){
   const shell=prepareStreamingShell(opts);
   const onRetry=shell.onRetry;
   const list=shell.list;
-  const div=shell.div;
-  const body=shell.body;
   const clientId=shell.clientId;
   const msgIdx=shell.msgIdx;
-  const reactLive=shell.reactLive;
 
   /* Shared turn state — passed to every helper factory below so the
      extracted modules can read/mutate the same closure-bound values
@@ -436,10 +414,8 @@ export function addStreamingMessage(opts: StreamingOptions = {}){
      path mutates (full, finished, _disposed, thinkCtl, inlineToolRows,
      _elapsedTick) lives on this object; functions close over it. */
   const state: StreamingState={
-    /* identity / DOM refs (set once) */
-    list: list, div: div, body: body, clientId: clientId, msgIdx: msgIdx,
-    reactLive: reactLive,
-    retryBtnId: shell.retryBtnId,
+    /* identity / scroll host, set once */
+    list: list, clientId: clientId, msgIdx: msgIdx,
     onRetry: onRetry,
     /* mutable streaming data */
     full: "",
@@ -533,7 +509,7 @@ export function addStreamingMessage(opts: StreamingOptions = {}){
      first-delta watchdog: a reasoning model may think for as long as it
      needs, so the waiting line stays up until real content arrives or the
      user stops the turn. */
-  startStreamingTurn(state,statusChrome,list,div,msgIdx,retryViewport);
+  startStreamingTurn(state,statusChrome,list,msgIdx,retryViewport);
 
   state._smooth=smooth;
   const rendering=createStreamingRenderController({

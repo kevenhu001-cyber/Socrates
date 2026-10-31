@@ -33,7 +33,8 @@ import type { PendingAttachment, UploadOutcome, AddFilesResult, UploadProgress }
  *   activeProviderSupportsImages()   — vision capability of the active model
  */
 
-import { apiFetch } from './util/api.ts';
+import { apiFetch, getCsrfToken } from './util/api.ts';
+import { getActiveProvider as getActiveProviderConfig } from './config/providerConfig.service.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { AttachmentClassification, classifyAttachmentFile, docKindFromFile } from './attachments/fileTypes.ts';
 import { compressImageFile, readFileAsDataUrl } from './attachments/imageCompression.ts';
@@ -136,8 +137,7 @@ function _t(key: string, fallback?: string | null) {
 }
 
 function getActiveProvider() {
-  if (typeof window === 'undefined' || typeof browserWindow.getActiveProvider !== 'function') return null;
-  try { return browserWindow.getActiveProvider() || null; } catch (_) { return null; }
+  return getActiveProviderConfig();
 }
 
 function providerSupportsImages(provider: { vision?: boolean; isMultimodal?: boolean } | null | undefined) {
@@ -227,8 +227,7 @@ function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (
        or draft id here is fine. */
     const sid = currentSessionId();
     if (sid) fd.append('sessionId', sid);
-    const csrf = (typeof window !== 'undefined' && browserWindow.getCsrfToken)
-      ? browserWindow.getCsrfToken() : '';
+    const csrf = getCsrfToken() || '';
     const xhr = new XMLHttpRequest();
     let idleTimer: number|undefined;
     const finish = (outcome: UploadOutcome) => {

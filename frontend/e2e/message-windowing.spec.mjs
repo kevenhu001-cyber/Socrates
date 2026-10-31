@@ -56,7 +56,7 @@ test('in-session find temporarily full-mounts history and restores the bounded w
   await prepareChatWorkbench(page, { messages: history(120) });
   await expect.poll(() => residentRows(page)).toBeLessThanOrEqual(60);
 
-  await page.evaluate(() => window.openFindInSession());
+  await page.keyboard.press('Control+f');
   await expect(page.locator('#findInput')).toBeVisible();
   await page.locator('#findInput').fill('History message 0');
 

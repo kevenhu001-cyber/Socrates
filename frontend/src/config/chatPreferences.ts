@@ -1,4 +1,5 @@
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+import { setExtensiveThinkingOn } from './providers.ts';
 
 export type ReasoningEffort = 'high' | 'medium' | 'low' | 'instant';
 export type ResponseSpeed = 'standard' | 'fast';
@@ -36,6 +37,7 @@ export function saveChatPreferences(effort: ReasoningEffort, speed: ResponseSpee
     reportEmptyCatch(error, 'empty catch: config/chatPreferences.ts:33', 'expected');
     /* the storage shim may be unavailable in an isolated harness */
   }
+  setExtensiveThinkingOn(safeEffort === 'high');
   window.dispatchEvent(new window.CustomEvent('socrates:chat-preferences', {
     detail: { effort: safeEffort, speed: safeSpeed },
   }));

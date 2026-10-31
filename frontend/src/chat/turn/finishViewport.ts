@@ -47,8 +47,7 @@ function findStreamingAnchor(
   list: HTMLElement,
   viewport: DOMRect,
 ): FinishAnchorCandidate {
-  const liveRow = state.div && state.div.isConnected ? state.div
-    : list.querySelector('.msg[data-client-id="' + state.clientId + '"]');
+  const liveRow = list.querySelector('.msg[data-client-id="' + state.clientId + '"]');
   if (!liveRow) return { node: null, streamRowOffset: null, streamRowNearTop: false };
   const liveRect = liveRow.getBoundingClientRect();
   if (liveRect.bottom <= viewport.top + 1 || liveRect.top >= viewport.bottom - 1) {
@@ -230,15 +229,14 @@ function applyFinishCorrection(state: TurnRuntimeState, viewport: FinishViewport
 /**
  * Build the finish-viewport capture/settle pair bound to one turn's DOM.
  *
- * `state.list` is the #msgList scroll container; `state.div` is the streaming
- * shell (legacy, may be detached by finish-time in the React path);
- * `state.reactLive` gates both phases to the React-owned list.
+ * `state.list` is the #msgList scroll container. Resolve the assistant row
+ * from React's committed transcript by its stable message id.
  */
 export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
   let finishViewport: FinishViewportCapture | null = null;
 
   function capture(): void {
-    if (!state.reactLive || !state.list) return;
+    if (!state.list) return;
     try { finishViewport = captureFinishViewport(state); }
     catch (error) {
       reportEmptyCatch(error, 'empty catch: chat/turn/finishViewport.ts:242');
@@ -250,7 +248,6 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
      captured reading position for a bounded number of frames, stopping as
      soon as the reader scrolls or interacts. */
   function settle(): void {
-    if (!state.reactLive) return;
     const viewport = finishViewport;
     if (!viewport || !viewport.scroller) return;
     const intent = installFinishIntentGuard();

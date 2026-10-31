@@ -14,7 +14,7 @@ async function openPalette(page, lang) {
   await mockAuthedApp(page, { lang });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.evaluate(() => window.openCmdK?.());
+  await page.keyboard.press('Control+k');
   await expect(page.locator('#cmdKModal')).toBeVisible({ timeout: 5_000 });
 }
 

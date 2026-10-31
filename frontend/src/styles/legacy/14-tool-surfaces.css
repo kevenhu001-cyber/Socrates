@@ -176,21 +176,6 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 .tool-run-summary-label{color:var(--tool-card-text)}
 .tool-run-summary-meta{color:var(--tool-card-text-subtle)}
 
-/* Extension/model menus: keep active state neutral and remove scale-heavy
-   entrance motion while preserving keyboard focus and selection semantics. */
-.extensions-menu,.model-picker-menu{padding:8px;transition:opacity .14s ease,transform .14s ease;will-change:auto}
-.extensions-item,.model-picker-item{min-height:40px;padding:9px 10px;border-radius:var(--tool-card-radius-sm);color:var(--tool-card-text-muted);font-size:var(--tool-card-desc-size)}
-.extensions-item:hover,.extensions-item.on,.model-picker-item:hover,.model-picker-item.active{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
-.extensions-item-icon,.model-picker-item-check{color:var(--tool-card-icon)}
-.extensions-item.on .extensions-item-icon,.model-picker-item-check{color:var(--tool-card-icon)}
-.extensions-item.on .extensions-item-check{background:var(--tool-card-text);border-color:var(--tool-card-text)}
-.extensions-item-check svg{stroke:var(--tool-card-surface)}
-.model-picker-item-sub{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
-.extensions-menu .extensions-item,.model-picker-menu .model-picker-item,.model-picker-menu .model-picker-divider,.model-picker-menu .model-picker-filter,.model-picker-menu .model-picker-add,.model-picker-menu .model-picker-empty{animation:none}
-.extensions-picker[data-open="true"] .extensions-menu{transform:translateY(0)}
-.model-picker[data-open="true"] .model-picker-menu{transform:translateX(-50%) translateY(0)}
-.model-picker-item:focus-visible,.extensions-item:focus-visible{outline:2px solid transparent;outline-offset:-2px}
-
 @media(max-width:768px){
   .tool-inline-detail{padding-left:10px}
   /* The phone plus-menu used to be styled as a bottom sheet here

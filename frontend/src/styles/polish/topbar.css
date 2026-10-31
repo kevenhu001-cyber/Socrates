@@ -98,9 +98,3 @@ body.plugins-active #appShell .mobile-newchat-btn {
 @media (max-width: 768px) {
 #appShell .top-bar-right .share-btn .share-btn-label { font-weight: var(--ui-font-weight-medium); }
 }
-
-/* Phone mode menu reuses the existing functional dropdown. */
-@media (max-width: 768px) {
-  #appShell #mobileModeTrigger { background: transparent; border: 0; box-shadow: none; color: var(--foreground); }
-  body.workspace-active #appShell #mobileMode { display: none; }
-}

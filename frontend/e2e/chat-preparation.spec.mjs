@@ -23,7 +23,6 @@ async function boot(page) {
     window.stateStore.dispatch({ type: 'state/batch', patch: {
       phase: 'chat', topic: 'Preparation', currentSessionId: '11111111-1111-4111-8111-111111111111',
     } });
-    window.appMode = 'chat';
     window.__testActivateMainView('chatView');
   });
 }
@@ -43,6 +42,53 @@ async function sendLink(page) {
   await expect.poll(() => page.evaluate(() => window.__pageReadStarted)).toBe(true);
   await expect(page.locator('#msgList .msg.assistant .thinking-status')).toBeVisible();
 }
+
+test('fetched link previews render as part of the React message row', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route(/\/api\/(?:v2\/)?fetch-batch(?:\?|$)/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ results: [{
+      ok: true,
+      title: '<img src=x onerror="window.__linkPreviewXss = 1">Example article',
+      content: 'x'.repeat(230),
+      truncated: true,
+      chars: 230,
+    }] }) });
+  });
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n' });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/batch', patch: {
+      phase: 'chat', topic: 'Link previews', currentSessionId: 'a2222222-2222-4222-8222-222222222222',
+    } });
+    window.__testActivateMainView('chatView');
+    window.__linkPreviewXss = 0;
+    window.submitChatMessage('Read https://example.com/article');
+  });
+
+  const card = page.locator('.msg.user .link-card').first();
+  await expect(card).toBeVisible();
+  await expect(card.locator('.link-card-status')).toHaveText('excerpt · 230 chars');
+  await expect(card.locator('.link-card-title')).toContainText('Example article');
+  await expect(card.locator('.link-card-title img[onerror]')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__linkPreviewXss)).toBe(0);
+});
+
+test('a site mention without a URL renders the React missing-link hint', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/batch', patch: {
+      phase: 'chat', topic: 'Link previews', currentSessionId: 'a3333333-3333-4333-8333-333333333333',
+    } });
+    window.__testActivateMainView('chatView');
+    window.submitChatMessage('Can you read that website?');
+  });
+  await expect(page.locator('.msg.user .no-url-hint')).toContainText('No URL detected');
+});
 
 test('a stalled linked page cannot indefinitely delay the model request', async ({ page }) => {
   await boot(page);

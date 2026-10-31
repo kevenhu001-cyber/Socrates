@@ -10,7 +10,7 @@ test('mobile conversation home matches the compact dark reference layout', async
 
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await page.waitForTimeout(350);
 
@@ -184,7 +184,7 @@ test('mobile conversation home matches the compact dark reference layout', async
      Set before the height baseline so any layout effect is absorbed. */
   await page.evaluate(() => {
     localStorage.setItem('socrates-reasoning-effort', 'high');
-    window.syncEffortUI?.();
+    window.dispatchEvent(new CustomEvent('socrates:chat-preferences', { detail: { effort: 'high', speed: 'standard' } }));
   });
   await expect(composer.locator('.effort-picker')).toBeVisible();
 
@@ -234,7 +234,6 @@ test('mobile conversation home matches the compact dark reference layout', async
      menu item role (aria-checked) rather than the plain one. */
   await menu.getByRole('menuitemcheckbox', { name: 'Think deeper' }).click();
   await expect(menu).toBeHidden();
-  await expect.poll(async () => page.evaluate(() => window.extensiveThinkingOn === true)).toBe(true);
 
   await page.locator('#composerToolsBtn').click();
   const activeThinking = menu.getByRole('menuitemcheckbox', { name: 'Think deeper' });

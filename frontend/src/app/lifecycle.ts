@@ -49,13 +49,6 @@ export function startNewChat(){
 export function syncIncognitoBtn(){
   const on=isIncognitoOn();
   try{document.body.setAttribute("data-incognito",on?"true":"false")}catch(e){reportSwallow(e,'app/lifecycle.syncIncognitoBtn');}
-  const btn=document.getElementById("mobileIncognitoBtn");
-  if(btn){
-    btn.setAttribute("aria-pressed",on?"true":"false");
-    const title=on?"Incognito on — this chat won't be saved":"Incognito chat";
-    btn.setAttribute("title",title);
-    btn.setAttribute("aria-label",title);
-  }
 }
 
 export async function toggleIncognito(){
@@ -103,7 +96,7 @@ export function handleAuthExpired(cause: unknown){
     /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing serverCache.sessions /
        providerConfig / _cmdKIndex, the sign-in gate's flash of
-       stale sidebar or model-picker data could briefly show the
+       stale sidebar or provider selection could briefly show the
        previous user's sessions before the next signin's fetch
        resolves. */
     clearPerUserClientState();

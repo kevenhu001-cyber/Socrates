@@ -138,19 +138,13 @@ interface ExecutionEvent {
 type ToolResult = ToolResultInput;
 
 interface ToolRuntimeOptions {
-  /** Accepted for compatibility; ignored — nothing is mounted. */
-  body?: HTMLElement | null;
   stillOwnsSlot?: () => boolean;
   getMessage?: () => ToolMessage | null;
   /** Commit detached tool data through the owning session action. */
   updateMessage: (patch: Pick<ToolMessage, 'toolCalls' | '_toolRunRev'>) => void;
   /** Notify the chat snapshot owner after the message data is committed. */
   publishRuntimeEvent?: (event: ChatRuntimeEvent) => void;
-  /** Accepted for compatibility; ignored — nothing is mounted. */
-  ensureToolContainer?: () => HTMLElement;
   onToolActivity?: (toolName?: string) => void;
-  /** Accepted for compatibility; ignored — retry buttons live in React. */
-  onSearchRetry?: (query: string) => void;
   requestAnimationFrame?: (callback: () => void) => number;
   cancelAnimationFrame?: (id: number) => void;
   EventSource?: typeof EventSource | null;
@@ -161,8 +155,6 @@ interface ToolRuntimeOptions {
    * progress/results and introduces a race between two terminal events.
    */
   useExecutionEventSource?: boolean;
-  /** Accepted for compatibility; ignored — all modes render from data. */
-  mode?: 'compact' | 'detailed';
   /**
    * Split-point chooser supplied by the stream controller. Called with a
    * null row: the return value is the character offset into the message's
@@ -170,10 +162,6 @@ interface ToolRuntimeOptions {
    * — the one piece of layout information React cannot derive.
    */
   onInlineTool?: (entry: { id: string; name: string }, row: null) => number | null;
-  /** Accepted for compatibility; ignored — grouping is derived by React. */
-  liveSingleCardSlot?: HTMLElement | null;
-  /** Accepted for compatibility; ignored — the runtime is always data-only. */
-  ownsLiveTurn?: () => boolean;
 }
 
 interface ExecutionConnection {

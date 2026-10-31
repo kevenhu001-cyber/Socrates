@@ -31,7 +31,7 @@ test('zh UI localizes live with the bundled Geist Sans face', async ({ page }) =
 
   /* Switch the app language at runtime — the composer must re-localize
      without a reload and without losing the draft. */
-  await page.evaluate(() => window.setLang('zh'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
   await expect(editor).toHaveAttribute('aria-label', '有问题，随便问');
 
@@ -56,7 +56,7 @@ test('zh UI localizes live with the bundled Geist Sans face', async ({ page }) =
   expect(brandFaces).toBe(true);
 
   /* Switching back to English must restore the Latin UI face. */
-  await page.evaluate(() => window.setLang('en'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   await expect(editor).toHaveAttribute('aria-label', 'Ask Socrates');
   const enFont = await editor.evaluate((el) => {
     const p = el.querySelector('p.is-editor-empty:first-child');
@@ -71,7 +71,7 @@ test('landing greeting has no leading logo and keeps the western Geist Sans face
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await page.evaluate(() => window.setLang('zh'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
 
   /* The greeting is a single line drawn at random from the zh pool; the
@@ -92,7 +92,7 @@ test('landing greeting has no leading logo and keeps the western Geist Sans face
   expect(zhStyle.paddingLeft).toBe('0px');
   expect(['none', 'normal']).toContain(zhStyle.beforeContent);
 
-  await page.evaluate(() => window.setLang('en'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   const enFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
   expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
 });

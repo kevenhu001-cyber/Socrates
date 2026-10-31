@@ -7,10 +7,9 @@
  * react/tool-output, which dispatches on the ToolOutput protocol and owns
  * per-output lifecycle and error isolation.
  *
- * Structural note: every output mounts into THIS wrapper (the shared host),
- * not into a per-output child. `restorePersistedMessageExtras` mounts into the
- * same wrapper on history restore; keeping one host is what makes the
- * `[data-visualization-id]` dedup hold across the two paths.
+ * The wrapper is the shared anchor for history recovery. Artifact outputs are
+ * rendered as React children immediately; only imperative visualization
+ * adapters wait for its DOM node.
  */
 import { validateIntelligentUi } from '@socrates/core';
 import { LazyIntelligenceUiBlock } from '../intelligence-ui/LazyIntelligenceUiBlock';
@@ -101,8 +100,8 @@ function renderIntelligenceUiAttachment(
 export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAttachmentsProps) {
   const outputs = attachmentOutputsOf(call);
   const hostRef = useRef<HTMLDivElement | null>(null);
-  /* Children mount only once the host element exists, so each renderer's
-     effect can hand the real node to the legacy mounter. */
+  /* Charts mount only once the host element exists. React artifact markup is
+     present from the first commit so history recovery can recognize it. */
   const [host, setHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -122,11 +121,9 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
       data-tool-anchor={call.id}
       ref={hostRef}
     >
-      {host
-        ? outputs.map((output) => (
-          <ToolOutputRenderer key={output.id} output={output} host={host} />
-        ))
-        : null}
+      {outputs.map((output) => (
+        <ToolOutputRenderer key={output.id} output={output} host={host ?? undefined} />
+      ))}
     </div>
   );
 }

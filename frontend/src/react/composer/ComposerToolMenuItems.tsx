@@ -1,7 +1,5 @@
 import { useEffect, useReducer } from 'react';
 
-import { repositionComposerTools } from '../../ui/composerTools';
-import { useComposerPluginSelectionSnapshot } from './useComposerPluginSelection';
 import { ComposerPluginItems } from './ComposerPluginItems';
 import { MenuItem, MobileMenuItem } from './ComposerToolItems';
 import {
@@ -31,15 +29,6 @@ export function ComposerToolMenuItems({
     document.addEventListener('socrates:langchange', refreshLanguage);
     return () => document.removeEventListener('socrates:langchange', refreshLanguage);
   }, []);
-  const selectionSnapshot = useComposerPluginSelectionSnapshot();
-  const selectedPluginCount = mode ? selectionSnapshot[mode].length : 0;
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const frame = window.requestAnimationFrame(() => repositionComposerTools());
-    return () => window.cancelAnimationFrame(frame);
-  }, [isOpen, selectedPluginCount]);
-
   const definitions = toolDefinitions();
   const findTools = (actions: ReadonlyArray<string>) => actions
     .map((key) => definitions.find((spec) => spec.key === key))

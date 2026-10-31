@@ -4,10 +4,6 @@
 // counter + active highlight track navigation, and that closing the bar
 // unwinds every <mark> cleanly.
 //
-// Like cmd-k.spec.mjs we drive the feature through the window bridge
-// functions rather than OS-level keydown so the spec is deterministic and
-// doesn't depend on browser find-shortcut interception.
-
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -35,8 +31,8 @@ test('Ctrl-F find highlights matches, navigates, and clears on close', async ({ 
     ].join('');
   });
 
-  // Open the bar via the bridge (mirrors the Ctrl-F path in main.js).
-  await page.evaluate(() => window.openFindInSession());
+  // Open through the same Ctrl-F shortcut users invoke.
+  await page.keyboard.press('Control+f');
   const bar = page.locator('#findBar').first();
   await expect(bar).toBeVisible();
 
@@ -72,7 +68,7 @@ test('Ctrl-F find highlights matches, navigates, and clears on close', async ({ 
   await expect(page.locator('#findCount')).toHaveText('3/3');
 
   // Closing removes the bar and every highlight, restoring the text.
-  await page.evaluate(() => window.closeFindInSession());
+  await page.keyboard.press('Escape');
   await expect(bar).toBeHidden();
   await expect(page.locator('#msgList mark.find-hl')).toHaveCount(0);
   await expect(page.locator('#msgList')).toContainText('A photon is a quantum of light.');
@@ -88,7 +84,7 @@ test('find bar sits above the top bar and keeps every typed character', async ({
     const list = document.getElementById('msgList');
     if (list) list.innerHTML = '<div class="msg assistant"><div class="msg-body">导数描述函数的变化率。</div></div>';
   });
-  await page.evaluate(() => window.openFindInSession());
+  await page.keyboard.press('Control+f');
   await expect(page.locator('#findInput')).toBeFocused();
   const hit = await page.evaluate(() => {
     const r = document.getElementById('findBar').getBoundingClientRect();
@@ -131,7 +127,7 @@ test('find flushes deferred history rows before searching the transcript', async
   await publishChatRuntime(page, { type: 'state-synced', reason: 'find-deferred-test' });
 
   await expect(page.locator('#msgList .msg')).toHaveCount(12);
-  await page.evaluate(() => window.openFindInSession());
+  await page.keyboard.press('Control+f');
   await page.locator('#findInput').fill('Deferred transcript marker 0');
 
   await expect(page.locator('#msgList .msg')).toHaveCount(30);

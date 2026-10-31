@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEventHandler } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
 import { setComposerMarkdown } from '../../composer/controller.ts';
@@ -14,6 +14,7 @@ interface CanvasBlockProps {
   html: string;
   canvasId: string;
   originalText: string;
+  onPreviewClick?: MouseEventHandler<HTMLDivElement>;
 }
 
 /**
@@ -33,7 +34,7 @@ interface CanvasBlockProps {
  * main.js:renderAssistantHTML. React hydrates from the same data-canvas-id
  * attribute and never enters dangerouslySetInnerHTML for this message.
  */
-export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlockProps) {
+export function CanvasBlock({ message, html, canvasId, originalText, onPreviewClick }: CanvasBlockProps) {
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [mode, setMode] = useState<CanvasMode>('view-edited');
   const [hasEdited, setHasEdited] = useState<boolean>(!!message.editedText);
@@ -134,7 +135,7 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
   })();
 
   return (
-    <div className={`canvas-block${isFullscreen ? ' is-fullscreen' : ''}`} data-canvas-id={canvasId} data-output-mode="canvas">
+    <div className={`canvas-block${isFullscreen ? ' is-fullscreen' : ''}`} data-canvas-id={canvasId} data-output-mode="canvas" onClick={onPreviewClick}>
       <CanvasToolbar
         mode={mode}
         extensionIcon={extensionIcon}

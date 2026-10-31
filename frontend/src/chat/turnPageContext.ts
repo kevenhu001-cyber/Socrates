@@ -6,8 +6,11 @@ import {
   looksLikeUserMentionedSite,
   type FetchedPage,
 } from './webLinks.ts';
-import { renderLinkPreviews, renderNoUrlHint } from '../ui/linkPreviews.ts';
+import { buildLinkPreviewItems } from '../ui/linkPreviews.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { stateStore } from '../state/store.ts';
+import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import type { LegacyChatMessage } from '../react/types/domain';
 
 export interface TurnPageContext {
   urls: string[];
@@ -16,20 +19,27 @@ export interface TurnPageContext {
   mentionedSite: boolean;
 }
 
-function renderFetchedLinks(urls: string[], results: FetchedPage[]): void {
+function updateLatestUserMessage(userMessage: string, patch: Record<string, unknown>): void {
   try {
-    const list = document.getElementById('msgList');
-    const last = list && list.lastElementChild;
-    if (last && last.classList.contains('user')) renderLinkPreviews(last as HTMLElement, urls, results);
-  } catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#7'); }
-}
-
-function renderMissingLinkHint(): void {
-  try {
-    const list = document.getElementById('msgList');
-    const last = list && list.lastElementChild;
-    if (last && last.classList.contains('user')) renderNoUrlHint(last as HTMLElement);
-  } catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#8'); }
+    const messages = stateStore.read('messages') as LegacyChatMessage[];
+    let index = -1;
+    for (let cursor = messages.length - 1; cursor >= 0; cursor -= 1) {
+      const message = messages[cursor];
+      if (message.role === 'user' && message.rawText === userMessage) {
+        index = cursor;
+        break;
+      }
+    }
+    if (index < 0) return;
+    const message = messages[index];
+    stateStore.dispatch({
+      type: 'session/update-message',
+      index,
+      ...(message.clientId ? { clientId: message.clientId } : {}),
+      patch,
+    });
+    publishReactChatRuntime({ type: 'state-synced', reason: 'user-link-preview-updated' });
+  } catch (error) { reportSwallow(error, 'chat/turnPageContext.updateLatestUserMessage'); }
 }
 
 export async function prepareTurnPageContext(
@@ -63,9 +73,9 @@ export async function prepareTurnPageContext(
       if (turnState.activeChatAbort === abortPreparation) turnState.activeChatAbort = null;
     }
     if (preparation.signal.aborted || turnWasCancelled()) return null;
-    renderFetchedLinks(urls, results);
+    updateLatestUserMessage(userMessage, { pageLinkPreviews: buildLinkPreviewItems(urls, results), pageLinkHint: false });
   } else if (mentionedSite) {
-    renderMissingLinkHint();
+    updateLatestUserMessage(userMessage, { pageLinkPreviews: [], pageLinkHint: true });
   }
 
   return { urls, blocks, results, mentionedSite };

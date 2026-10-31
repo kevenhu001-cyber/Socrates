@@ -31,8 +31,8 @@ function runEditBranchAction(action: (module: FeatureRuntime) => void) {
   void loadEditBranchImpl().then(action).catch(function () { /* loader logs */ });
 }
 
-export function editUserMessage(messageId: string) {
-  runEditBranchAction(function (module: FeatureRuntime) { module.editUserMessage(messageId); });
+export function commitUserMessageEdit(messageId: string, text: string) {
+  runEditBranchAction(function (module: FeatureRuntime) { module.commitUserMessageEdit(messageId, text); });
 }
 
 export function regenerateAssistantMessage(messageId: string) {

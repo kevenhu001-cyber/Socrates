@@ -16,10 +16,8 @@ test.describe('Modal accessibility focus trap and background isolation', () => {
     const appShell = page.locator('#appShell');
     await expect(appShell).not.toHaveAttribute('inert');
 
-    // Open Cmd-K
-    await page.evaluate(() => {
-      if (typeof window.openCmdK === 'function') window.openCmdK();
-    });
+    // Open through the user's keyboard shortcut.
+    await page.keyboard.press('Control+k');
 
     const overlay = page.locator('#cmdKOverlay');
     await expect(overlay).toBeVisible();
@@ -51,7 +49,7 @@ test.describe('Modal accessibility focus trap and background isolation', () => {
     const appShell = page.locator('#appShell');
     await expect(appShell).not.toHaveAttribute('inert');
 
-    await page.evaluate(() => window.openSettings());
+    await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
     const overlay = page.locator('#settingsOverlay');
     await expect(overlay).toBeVisible();
     await expect(appShell).toHaveAttribute('inert', '');

@@ -22,7 +22,7 @@ test.beforeEach(async ({ page }, testInfo) => {
 /* The provider and tone controls live in separate category panes;
    the modal opens on General, so these specs navigate to Models & voice. */
 async function openModelsPane(page) {
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await expect(overlay).toBeVisible();
   await overlay.locator('.settings-nav [data-section="models"]').click();
@@ -30,7 +30,7 @@ async function openModelsPane(page) {
 }
 
 test('tone choices have separate readable labels and expose the selected state', async ({ page }) => {
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await overlay.locator('.settings-nav [data-section="personalization"]').click();
   const options = overlay.locator('.tone-preset-btn');
@@ -58,7 +58,7 @@ test('tone choices have separate readable labels and expose the selected state',
 });
 
 test('settings modal opens with React-owned providers and tones, and closes', async ({ page }) => {
-  // Open via the legacy window binding (the model-picker "add" path).
+  // Open through the typed navigation action shared with the React model menu.
   const overlay = await openModelsPane(page);
   expect(await page.evaluate(() => typeof window.SERVER_HAS_BEAGLE_KEY)).toBe('undefined');
 
@@ -103,7 +103,7 @@ test('settings modal opens with React-owned providers and tones, and closes', as
 });
 
 test('settings modal closes on backdrop click and via Esc', async ({ page }) => {
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await expect(overlay).toBeVisible();
 
@@ -112,7 +112,7 @@ test('settings modal closes on backdrop click and via Esc', async ({ page }) => 
   await expect(overlay).toBeHidden();
 
   // Esc closes (React-owned keydown handler).
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(overlay).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(overlay).toBeHidden();
@@ -148,7 +148,7 @@ test('settings switch toggles by its label and persists', async ({ page }) => {
 
   // Persisted value survives a reopen.
   await overlay.locator('#settingsCloseBtn').click();
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(track).toHaveAttribute('aria-checked', expectedState);
 });
 
@@ -286,7 +286,7 @@ test('provider save keeps successful rows when another provider request fails', 
 });
 
 test('settings mounts only visited categories and preserves provider drafts across navigation and reopen', async ({ page }) => {
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await expect(overlay.locator('.settings-pane')).toHaveCount(1);
   await expect(overlay.locator('.settings-pane h2')).toHaveText('General');
@@ -301,7 +301,7 @@ test('settings mounts only visited categories and preserves provider drafts acro
   await overlay.locator('[data-section="models"]').click();
   await expect(draft).toHaveValue('Keep this draft');
   await overlay.locator('#settingsCloseBtn').click();
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(draft).toBeVisible();
   await expect(draft).toHaveValue('Keep this draft');
   await overlay.locator('.settings-nav input').fill('Account');
@@ -319,7 +319,7 @@ test('settings category load failure stays local and can be retried', async ({ p
     failures++;
     await route.abort('failed');
   });
-  await page.evaluate(() => window.openSettings());
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await overlay.locator('[data-section="display"]').click();
   await expect(overlay.getByRole('alert')).toContainText('Could not load this category');

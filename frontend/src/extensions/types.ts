@@ -74,12 +74,9 @@ export interface ExtensionContext {
   openNav?(page: string): void;
   openPromptTemplatesModal?(): void;
   openAttachmentPicker?(mode: 'topic' | 'chat'): void;
-  /** Legacy web-search toggle (flips window.webSearchOn). */
+  /** Toggle the canonical web-search preference and refresh its UI. */
   toggleWebSearch?(): void;
-  /** Legacy deep-research auto-launch (reads composer, clears it, runs). */
-  launchDeepResearch?(): void;
   /** Legacy quick-chip sync (reflects webSearchOn and the module-owned Deep Research mode). */
-  syncQuickChips?(): void;
 }
 
 /** Workflow-stage event published to the agent-run store. */

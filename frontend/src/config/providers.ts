@@ -6,13 +6,9 @@ import { LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId } from './provid
  * Extracted from main.js L9169-L9566 + refreshApiConfig at L9291.
  */
 
-/** Legacy window members this module still mirrors through the global scope. */
+/** Legacy window members this module still coordinates through the shell. */
 interface ProvidersLegacyWindow extends Window {
-  appMode?: string;
-  webSearchOn?: boolean;
   applyI18n?: () => void;
-  syncMobileModeSwitch?: () => void;
-  syncConversationActive?: () => void;
 }
 
 export type AppMode = 'chat' | 'tutor';
@@ -24,10 +20,10 @@ let webSearchOn = false;
  * CHAT_SYSTEM_PROMPT (verbose "careful scholar" voice + thinking suffix)
  * is injected; when off, CHAT_CONCISE_PROMPT replaces both. This is no
  * longer a standalone toggle — it is derived from the reasoning-effort
- * picker (High = deep thinking on). See ui/effortPicker.ts. */
+ * preference (High = deep thinking on). */
 let extensiveThinkingOn = false;
 let appMode: AppMode = "chat";
-const thinkingOn = true;
+const appModeListeners = new Set<() => void>();
 
 try {
   const savedMode = localStorage.getItem("socrates-appmode");
@@ -41,10 +37,8 @@ try {
     webSearchOn = _wsSaved === "true";
   }
 } catch (e) { /* localStorage blocked — keep the default (false) */ reportSwallow(e, 'config/providers.restoreWebSearchOn'); }
-/* Deep thinking now follows the reasoning-effort picker: High effort
- * enables the verbose prompt, Medium/Low use the concise one. Derive the
- * initial value from the persisted effort so the first turn matches the
- * picker before ui/effortPicker.ts finishes loading. */
+/* Deep thinking follows reasoning effort: High enables the verbose prompt,
+ * while Medium/Low use the concise one. */
 try {
   const savedEffort = localStorage.getItem("socrates-reasoning-effort");
   extensiveThinkingOn = (savedEffort === "high");
@@ -52,7 +46,6 @@ try {
 
 function setWebSearchOn(value: unknown): boolean {
   webSearchOn = !!value;
-  try { (window as ProvidersLegacyWindow).webSearchOn = webSearchOn; } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn'); }
   try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn#2', 'expected'); }
   /* The composer's web-search chip (RichComposer) subscribes to this. */
   try { document.dispatchEvent(new CustomEvent("socrates:websearchchange", { detail: { on: webSearchOn } })); } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn#3'); }
@@ -75,10 +68,8 @@ function ensureSessionShape(s?: Record<string, unknown> | null): Record<string, 
 }
 
 function syncAppModeUI(): void {
-  /* The top-bar Chat/Tutor pill (#modeSegmentedTop / .app-mode-toggle) was
-     removed, so there is no segmented indicator to drive here. Mode state is
-     mirrored onto <body data-app-mode> below; #mobileMode (narrow viewports)
-     and the tutor mode banner own their own per-mode UI. */
+  /* React subscribes to appMode for the top-bar mode control. The
+     body mirror remains for CSS-only tutor surfaces during this migration. */
   try { localStorage.setItem("socrates-appmode", appMode); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI'); }
   /* Mirror appMode to body[data-app-mode] so the CSS rule
      body[data-app-mode="chat"] .tutor-only{display:none !important}
@@ -94,34 +85,26 @@ function syncAppModeUI(): void {
   if (typeof win.applyI18n === 'function') {
     try { win.applyI18n(); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI#3'); }
   }
-  /* P_mobile-topbar — keep the mobile top-bar mode dropdown label +
-     active item in sync with the current mode. */
-  if (typeof win.syncMobileModeSwitch === 'function') {
-    try { win.syncMobileModeSwitch(); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI#4'); }
-  }
-  /* P_hide-mode-switch-in-conversation — re-evaluate the conversation-
-     active body attribute whenever the mode UI is re-synced. State
-     changes that don't touch msgList (e.g. setting a topic in tutor
-     mode, switching phase) are caught here; message-driven changes are
-     covered by the MutationObserver in mobileModeSwitch. */
-  if (typeof win.syncConversationActive === 'function') {
-    try { win.syncConversationActive(); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI#5'); }
-  }
 }
 
-/* Setter for appMode — updates the module-level variable so
-   syncAppModeUI / syncSidebarForMode / pickers.js see the new
-   value. main.js's toggleAppMode calls this instead of directly
-   assigning window.appMode, because the imported binding is
-   read-only and the old code was inadvertently reverting the
-   toggle by reading back the stale module variable. */
+/* Setter for appMode — updates the canonical module state and notifies
+   React subscribers. */
 function setAppMode(v: AppMode): void {
   appMode = v;
-  /* P_appMode-sync — keep window.appMode in lock-step so toggleAppMode
-     and all legacy code that reads window.appMode see the correct value.
-     Previously every call site had to manually sync both, and several
-     bugs leaked from forgetting one side of the mirror. */
-  (window as ProvidersLegacyWindow).appMode = v;
+  appModeListeners.forEach((listener) => listener());
+}
+
+export function getAppMode(): AppMode {
+  return appMode;
+}
+
+export function subscribeAppMode(listener: () => void): () => void {
+  appModeListeners.add(listener);
+  return () => appModeListeners.delete(listener);
+}
+
+function setExtensiveThinkingOn(value: unknown): void {
+  extensiveThinkingOn = Boolean(value);
 }
 
 function syncSidebarForMode(): void {
@@ -132,9 +115,9 @@ function syncSidebarForMode(): void {
 const refreshApiConfig = refreshProviderConfig;
 
 export {
-  webSearchOn, setWebSearchOn, extensiveThinkingOn, appMode, thinkingOn,
+  webSearchOn, setWebSearchOn, extensiveThinkingOn, appMode,
   hasUsableActive, ensureSessionShape,
-  syncAppModeUI, syncSidebarForMode, setAppMode,
+  syncAppModeUI, syncSidebarForMode, setAppMode, setExtensiveThinkingOn,
   refreshApiConfig,
   LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId,
 };

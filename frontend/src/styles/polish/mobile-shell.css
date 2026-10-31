@@ -22,9 +22,8 @@
   }
   #appShell #sidebarOpenBtn svg, #appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
   #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
-  /* The same mode control now serves desktop and phone. Model settings
+  /* The same React mode control serves desktop and phone. Model settings
      remain available as a separate, labelled action at the trailing edge. */
-  #appShell .top-bar #mobileMode { display: none; }
   #appShell .top-mode-switch {
     display: inline-flex;
     width: min(152px, calc(100vw - 112px));
@@ -105,21 +104,6 @@
     height: var(--ui-control-xs);
   }
   #appShell #topModelSwitcher:not(:has(.top-model-switcher-model:empty)) .top-model-switcher-settings { display: none; }
-  #appShell #mobileMode { position: absolute; left: 58px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); }
-  #appShell #mobileModeTrigger {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--foreground);
-    font-size: var(--ui-font-size-lg);
-    font-weight: var(--ui-font-weight-semibold);
-    line-height: 24px;
-  }
-  #appShell #mobileModeTrigger svg { width: 16px; height: 16px; }
-  #appShell #mobileModeMenu { left: 0; right: auto; transform: none; width: min(260px, calc(100vw - 72px)); }
   #appShell .main-content, #appShell .main-inner { padding: 0; }
   #appShell #topicSetup {
     position: relative;
@@ -156,12 +140,9 @@
      the switch. The tutor stage is still announced by the pill's status role
      on wider screens and by the conversation itself on phones. */
   #appShell #tutorMasteryPill { display: none; }
-  body.workspace-active #appShell #mobileMode { display: none; }
   body.workspace-active #appShell .mobile-newchat-btn { display: none; }
 }
 @media (max-width: 359px) {
-  #appShell #mobileMode { left: 48px; }
-  #appShell #mobileModeTrigger { font-size: var(--ui-font-size-md); }
   /* 320px leaves a 76px gutter beside the mode switch: the caret goes first
      so the model name still fits. The selector repeats the state prefix so it
      outranks the base chip rule, which carries the same two ids plus an

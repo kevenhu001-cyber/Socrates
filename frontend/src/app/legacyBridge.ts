@@ -14,10 +14,7 @@ import { askChatTurn } from '../chat/turnController.js';
 /* chat/streamingTurn.ts (~65KB) is lazy — window.addStreamingMessage is
    an async proxy below; all call sites sit inside async send/restore
    paths and await the controller. */
-import { syncSidebarBtns, toggleSidebarView } from '../ui/sidebarChrome.ts';
 import { loadSession } from '../session/loader.ts';
-import { toggleKBDetail } from '../ui/knowledgeDetail.ts';
-import { updateKB } from '../ui/knowledgePanel.ts';
 import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions, flushRecentsReconcile } from '../session/recents.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 import { openNav } from '../sidebar/navigation.service.ts';
@@ -33,33 +30,34 @@ import { saveCurrentSession } from '../session/persistence.ts';
 import { openAttachmentPicker, openMediaPicker, renderAttachmentChips, retryComposerAttachment } from '../attachments/render.ts';
 import { removeAttachment } from '../attachments.ts';
 import { saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch, openProfile, closeProfile } from '../ui/profile.ts';
-import { editUserMessage, regenerateAssistantMessage, branchFromMessage, switchMessageBranch } from '../chat/editBranch.ts';
+import { regenerateAssistantMessage, branchFromMessage, switchMessageBranch } from '../chat/editBranch.ts';
 import { toggleReadAloud } from '../ui/readAloud.ts';
 import { selectShareVis, copyShareLink, openShareModal, closeShareModal, createShareLink, revokeShareLink } from '../ui/share.ts';
 import { openCheatsheet, closeCheatsheet } from '../ui/cheatsheet.js';
 import { closeMorePopover } from '../sidebar/morePopover.ts';
-import { toggleComposerTools } from '../ui/composerTools.ts';
-import { composeAction, researchAction, exploreAction, deepResearchAction, analyzeAction } from '../extensions/index.ts';
+import { composeAction, researchAction, exploreAction, deepResearchAction, analyzeAction, dispatchExtension } from '../extensions/index.ts';
 import { toggleSidebar } from '../sidebar/sidebar.service.ts';
+import { toggleSidebarView } from '../ui/sidebarChrome.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.ts';
 import { openStorageModal, closeStorageModal } from '../ui/storage.js';
 import { openPromptTemplatesModal, closePromptTemplatesModal } from '../ui/promptTemplates.ts';
-import { toggleExtensionByKey, toggleWebSearch } from '../pickers.ts';
+import { toggleWebSearch } from '../chat/webSearchToggle.ts';
 import { openCmdK, closeCmdK, onCmdKInput, onCmdKKey, openCmdKResult } from '../ui/cmdK.ts';
 import { loadWebSearch } from '../chat/webSearchLoader.ts';
 /* ui/dangerConfirms.js is lazy — confirm actions import it on demand. */
 import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid, processPendingVizActions } from '../render/vizStubs.ts';
-import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.ts';
+import { wireCodeBlockHeaders } from '../render/postRender.ts';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.ts';
-import { appendInlineArtifact, appendToolModule } from '../ui/toolCards.ts';
+import { appendToolModule } from '../ui/toolCards.ts';
 import { formatMsgProgressive } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
-import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.ts';
+import { decideLiveApproval } from '../chat/liveTurn.ts';
 import { startSession } from '../chat/sessionBootstrap.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { setRecentsSearch } from '../ui/recentsView.ts';
-import { syncEffortUI } from '../ui/effortPicker.ts';
+import { setLang } from '../i18n.ts';
+import { showGate, showAuthSignin } from '../auth/index.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
@@ -77,10 +75,8 @@ browserWindow.addStreamingMessage = function (opts: Parameters<StreamingTurnModu
   if (_streamingModule) return _streamingModule.addStreamingMessage(opts);
   return _loadStreamingTurn().then(function (m) { return m.addStreamingMessage(opts); });
 };
-browserWindow.syncSidebarBtns = syncSidebarBtns;
 browserWindow.toggleSidebarView = toggleSidebarView;
 browserWindow.loadSession = loadSession;
-browserWindow.toggleKBDetail = toggleKBDetail;
 browserWindow.refreshServerSessions = refreshServerSessions;
 browserWindow.renderRecents = renderRecents;
 browserWindow.resendLastUserMessage = resendLastUserMessage;
@@ -116,7 +112,6 @@ browserWindow.setCurrentUser = setCurrentUser;
 browserWindow.markAuthSuccess = markAuthSuccess;
 browserWindow.isInAuthGraceWindow = isInAuthGraceWindow;
 browserWindow.clearPerUserClientState = clearPerUserClientState;
-browserWindow.toggleAppMode = toggleAppMode;
 browserWindow.addMessage = addMessage;
 browserWindow.askNextQuestion = askNextQuestion;
 browserWindow.saveCurrentSession = saveCurrentSession;
@@ -135,8 +130,11 @@ browserWindow.startSession = startSession;
 browserWindow.submitChatMessage = submitChatMessage;
 
 browserWindow.__socratesLegacy = {
+  auth: {
+    showGate,
+    showAuthSignin,
+  },
   messages: {
-    editUserMessage,
     regenerateAssistantMessage,
     switchMessageBranch,
     deleteUserMessage,
@@ -149,26 +147,15 @@ browserWindow.__socratesLegacy = {
   navigation: {
     resetApp,
     startNewChat,
+    toggleAppMode,
     toggleSidebar,
     openNav,
-    openSettings: function () {
-      if (typeof browserWindow.openSettings === 'function') return browserWindow.openSettings();
-      return import('../react/settings/settings.service.ts').then(function (m) { return m.openSettings(); });
-    },
-    closeSettings: function () {
-      if (typeof browserWindow.closeSettings === 'function') return browserWindow.closeSettings();
-      return import('../react/settings/settings.service.ts').then(function (m) { return m.closeSettings(); });
-    },
+    openSettings: () => import('../react/settings/settings.service.ts').then((module) => module.openSettings()),
+    closeSettings: () => import('../react/settings/settings.service.ts').then((module) => module.closeSettings()),
     openProfile,
     closeProfile,
-    openUsageModal: function () {
-      if (typeof browserWindow.openUsageModal === 'function') return browserWindow.openUsageModal();
-      return import('../ui/usage.ts').then(function (m) { return m.openUsageModal(); });
-    },
-    closeUsageModal: function () {
-      if (typeof browserWindow.closeUsageModal === 'function') return browserWindow.closeUsageModal();
-      return import('../ui/usage.ts').then(function (m) { return m.closeUsageModal(); });
-    },
+    openUsageModal: () => import('../ui/usage.ts').then((module) => module.openUsageModal()),
+    closeUsageModal: () => import('../ui/usage.ts').then((module) => module.closeUsageModal()),
     openStorageModal,
     closeStorageModal,
     openPromptTemplatesModal,
@@ -183,9 +170,6 @@ browserWindow.__socratesLegacy = {
   confirm: {
     closeConfirm,
     showConfirm,
-  },
-  knowledge: {
-    update: updateKB,
   },
   sessions: {
     flushRecentsReconcile,
@@ -211,19 +195,17 @@ browserWindow.__socratesLegacy = {
     openMediaPicker,
     toggleWebSearch,
     exploreAction,
-    toggleTools: toggleComposerTools,
     composeAction,
     researchAction,
     deepResearchAction,
     analyzeAction,
-    toggleExtensionByKey,
+    toggleExtensionByKey: (key) => { dispatchExtension(key); },
     removeAttachment,
     retryAttachment: retryComposerAttachment,
     renderAttachmentChips,
     startSession,
     submitChatMessage,
     stopChatResponse,
-    syncEffortUI,
   },
   cmdK: {
     openCmdK,
@@ -246,7 +228,7 @@ browserWindow.__socratesLegacy = {
     confirmClearCache: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearCache(); }); },
     confirmClearSettings: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearSettings(); }); },
     confirmDeleteAccount: function () { return _loadDangerConfirms().then(function (m) { return m.confirmDeleteAccount(); }); },
-    setLang: browserWindow.setLang,
+    setLang,
   },
   postRender: {
     appendToolModule,
@@ -256,12 +238,9 @@ browserWindow.__socratesLegacy = {
     reclaimVizCards,
     processPendingVizActions,
     wireCodeBlockHeaders,
-    wireMsgBodyImages,
     restorePersistedMessageExtras,
-    /* P_declarative-tool-run — react/tool-run renders a tool row's non-text
-       output (chart spec, saved files) from toolCalls[] instead of having
-       restorePersistedMessageExtras insert a sibling node after the row. Both
-       mounters dedup by id, so the two paths sharing one host is harmless. */
+    /* P_declarative-tool-run — chart specs are normalized from toolCalls[];
+       the React attachment owns the renderer host and its effect lifecycle. */
     mountVisualization: function (spec, host, options) {
       return typeof mountVisualization === 'function'
         ? mountVisualization(spec, host, options) : null;
@@ -275,11 +254,6 @@ browserWindow.__socratesLegacy = {
        value — survives a host the legacy pipeline emptied first. */
     disposeVisualization: function (card: Parameters<typeof disposeVisualization>[0]) {
       if (typeof disposeVisualization === 'function') disposeVisualization(card);
-    },
-    appendInlineArtifact: function (fileId, mimeType, outEl, displayName) {
-      if (typeof appendInlineArtifact === 'function') {
-        appendInlineArtifact(fileId, mimeType || 'application/octet-stream', outEl, displayName);
-      }
     },
   },
   /* P_declarative-tool-run — markdown rendering stays in legacy (it owns the
@@ -304,9 +278,6 @@ browserWindow.__socratesLegacy = {
   },
   /* Live controls remain owned by the streaming pipeline. */
   liveTurn: {
-    retry: function (messageId) {
-      return retryLiveTurn(messageId);
-    },
     decideApproval: function (messageId, toolCallId, decision) {
       return decideLiveApproval(messageId, toolCallId, decision) ?? undefined;
     },

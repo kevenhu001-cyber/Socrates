@@ -109,7 +109,7 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#composerInputWrap')).toBeVisible();

@@ -19,7 +19,6 @@ import { showToast } from '../ui/toast.js';
 import { clearComposer } from '../composer/controller.ts';
 import { clearComposerPlugins } from '../composer/pluginSelection.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
-import { updateComposerBtn } from '../ui/topicSetup.ts';
 import { turnState } from '../chat/turnState.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -434,13 +433,6 @@ export function bounceOutOfArchivedSession(): void {
   clearComposer('topic');
   clearComposerPlugins('topic');
   clearComposerPlugins('chat');
-  const kbContent = document.getElementById('kbContent');
-  if (kbContent) kbContent.innerHTML = '<div class="kb-empty">' + (typeof window.t === 'function' ? _t('tutor.kbTopicFirst') : 'Set a topic to build your knowledge map.') + '</div>';
-  /* Task 3.3 — clear the teaching-plan view on full reset so a
-     previous session's plan doesn't linger in the sidebar. */
-  const _tpc = document.getElementById('teachingPlanContent');
-  if (_tpc) _tpc.innerHTML = '';
-  updateComposerBtn();
 }
 
 /* ─── Session context menu (long-press / right-click) ───

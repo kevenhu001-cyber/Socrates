@@ -1,5 +1,3 @@
-import { esc } from './helpers.ts';
-import { openVizModalRaw } from './vizStubs.ts';
 import { highlightCodeElement } from './highlight.ts';
 
 function inferCodeLanguage(code: HTMLElement): string {
@@ -12,7 +10,6 @@ function inferCodeLanguage(code: HTMLElement): string {
   if (/^function\s|^const\s|^let\s|^var\s/.test(text)) return 'js';
   return '';
 }
-
 function createCodeBlockHeader(lang: string): HTMLElement {
   const header = document.createElement('div');
   header.className = 'code-block-header';
@@ -44,22 +41,5 @@ export function wireCodeBlockHeaders(body: Element | null): void {
     const lang = inferCodeLanguage(code);
     const header = createCodeBlockHeader(lang);
     (pre.parentNode as ParentNode).insertBefore(header, pre);
-  }
-}
-
-/** Wire ordinary message images to the shared fullscreen image modal. */
-export function wireMsgBodyImages(body: Element | null): void {
-  if (!body) return;
-  const images = body.querySelectorAll<HTMLElement>('.msg-body img:not(.exec-artifact-image)');
-  for (const image of images) {
-    if (image.dataset.lightboxWired) continue;
-    image.dataset.lightboxWired = '1';
-    image.addEventListener('click', (event) => {
-      event.preventDefault();
-      const src = image.getAttribute('src') || '';
-      if (!src) return;
-      const html = `<div class="img-lightbox"><img src="${esc(src)}" alt="" style="max-width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:6px"/></div>`;
-      openVizModalRaw(html, 'Image');
-    });
   }
 }

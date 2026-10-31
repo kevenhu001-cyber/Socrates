@@ -1,8 +1,11 @@
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Button as UiButton } from '../ui/Button';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway.ts';
+import { restingRect } from '../../ui/pressFeedback.ts';
+import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
 import {
   useMorePopoverDispatch,
   useMorePopoverSnapshot,
@@ -10,6 +13,8 @@ import {
 import type { MorePopoverAction } from './types';
 
 const POPOVER_ID = 'moreNavPopover';
+const TRIGGER_ID = 'navMore';
+const GAP = 8;
 
 interface MenuItemSpec {
   action: MorePopoverAction;
@@ -68,16 +73,76 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: MoreP
 }
 
 function MorePopover() {
-  // Refresh translated rows whenever the sidebar module opens or closes the menu.
-  useMorePopoverSnapshot();
+  const isOpen = useMorePopoverSnapshot();
   const { pick } = useMorePopoverDispatch();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<CSSProperties>({ left: 8, top: 8 });
+
+  useLayoutEffect(() => {
+    if (!isOpen) return undefined;
+    const menu = menuRef.current;
+    const trigger = document.getElementById(TRIGGER_ID);
+    if (!menu || !trigger) return undefined;
+
+    const updatePosition = () => {
+      const rect = restingRect(trigger);
+      const width = menu.offsetWidth || 220;
+      const height = menu.offsetHeight;
+      const maxLeft = Math.max(GAP, window.innerWidth - width - GAP);
+      const left = Math.max(GAP, Math.min(rect.right - width, maxLeft));
+      if (height > 0 && rect.top - GAP - height < GAP) {
+        const maxTop = Math.max(GAP, window.innerHeight - height - GAP);
+        const top = Math.max(GAP, Math.min(rect.bottom + GAP, maxTop));
+        setPosition({ left, top, bottom: 'auto' });
+      } else {
+        setPosition({ left, top: 'auto', bottom: window.innerHeight - rect.top + GAP });
+      }
+    };
+    const onDocumentClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node) || menu.contains(target) || trigger.contains(target)) return;
+      useMorePopoverStore.getState().setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      useMorePopoverStore.getState().setOpen(false);
+    };
+
+    updatePosition();
+    document.addEventListener('click', onDocumentClick, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    window.visualViewport?.addEventListener('resize', updatePosition);
+    window.visualViewport?.addEventListener('scroll', updatePosition);
+    return () => {
+      document.removeEventListener('click', onDocumentClick, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.visualViewport?.removeEventListener('resize', updatePosition);
+      window.visualViewport?.removeEventListener('scroll', updatePosition);
+    };
+  }, [isOpen]);
 
   return (
-    <>
+    <div
+      ref={menuRef}
+      id={POPOVER_ID}
+      className="sidebar-more-popover"
+      role="menu"
+      aria-label="更多"
+      aria-hidden={!isOpen}
+      aria-orientation="vertical"
+      aria-labelledby={TRIGGER_ID}
+      data-open={String(isOpen)}
+      style={position}
+    >
       {ITEMS.map((item) => (
         <MenuItem key={item.action} spec={item} onPick={pick} />
       ))}
-    </>
+    </div>
   );
 }
 
@@ -88,17 +153,11 @@ export interface MorePopoverHandle {
 }
 
 /**
- * Hydrate the legacy `#moreNavPopover` element with React. Idempotent.
- * The popover element keeps its id, classes, and CSS styling (including
- * the `.hidden` class toggled by the legacy module); React owns only
- * its direct children (the menu item buttons).
- *
- * The legacy `toggleMorePopover()` / `closeMorePopover()` still manage
- * the popover's position and open/close state via the `.hidden` class.
- * React subscribes to the module-owned state to refresh translated rows.
+ * Mount the complete More menu into its stable React host. React owns its
+ * visibility, placement, dismissal listeners, accessible state, and items.
  */
 export function hydrateMorePopover(): MorePopoverHandle | null {
-  const popover = document.getElementById(POPOVER_ID);
-  if (!popover) return null;
-  return { popover, ...mountOwnedRoot(popover, 'more-popover', <MorePopover />) };
+  const host = document.getElementById('moreNavPopoverRoot');
+  if (!host) return null;
+  return { popover: host, ...mountOwnedRoot(host, 'more-popover', <MorePopover />) };
 }

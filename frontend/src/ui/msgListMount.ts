@@ -1,7 +1,17 @@
-/** Transcript ownership belongs to actual DOM hosts. Both legacy streaming
- * and React consult this neutral module without importing each other's tree. */
+/** Transcript ownership belongs to the concrete React host. Live message
+ * state reaches it through the runtime snapshot, including streaming turns. */
 let current: { host: HTMLElement; release: () => void } | null = null;
 const sharedHosts = new WeakSet<HTMLElement>();
+let restoreSharedRoot: ((host: HTMLElement) => void) | null = null;
+let cleanupSharedView: (() => void) | null = null;
+
+export function registerSharedMessageListRestorer(restore: (host: HTMLElement) => void): void {
+  restoreSharedRoot = restore;
+}
+
+export function registerSharedViewCleanup(cleanup: () => void): void {
+  cleanupSharedView = cleanup;
+}
 
 export function isMsgListMounted(): boolean {
   const host = typeof document === 'undefined' ? null : document.getElementById('msgList');
@@ -24,4 +34,12 @@ export function isSharedMessageList(host: HTMLElement): boolean {
 export function takeOverSharedMessageList(host: HTMLElement): void {
   sharedHosts.add(host);
   if (current?.host === host) current.release();
+}
+
+/** Return a public share transcript to live ownership before a session switch. */
+export function restoreLiveMessageList(host: HTMLElement): void {
+  if (!sharedHosts.has(host)) return;
+  sharedHosts.delete(host);
+  cleanupSharedView?.();
+  restoreSharedRoot?.(host);
 }

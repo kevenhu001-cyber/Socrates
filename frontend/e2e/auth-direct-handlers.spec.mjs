@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 
-test('auth gate interactions are owned by the auth module', async ({ page }) => {
+test('React auth gate owns view transitions, form feedback, and submit actions', async ({ page }) => {
   await mockAuthedApp(page);
   const apiKeyRefreshes = [];
   page.on('request', (request) => {
@@ -16,8 +16,8 @@ test('auth gate interactions are owned by the auth module', async ({ page }) => 
   expect(await page.evaluate(() => 'refreshApiConfig' in window)).toBe(false);
 
   await page.evaluate(() => {
-    window.showGate();
-    window.showAuthSignin();
+    window.__socratesLegacy.auth.showGate();
+    window.__socratesLegacy.auth.showAuthSignin();
   });
 
   await expect(page.locator('#authGate')).toBeVisible();

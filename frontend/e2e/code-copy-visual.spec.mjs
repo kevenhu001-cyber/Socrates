@@ -99,9 +99,9 @@ test('code workbench title follows the active language', async ({ page }) => {
   await page.locator('.msg.assistant').last().locator('.code-block-workbench-btn').click();
   const title = page.locator('#artifactsWorkbench .workbench-title');
   await expect(title).toHaveText('JS code');
-  await page.evaluate(() => window.setLang('zh'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
   await expect(title).toHaveText('JS 代码');
-  await page.evaluate(() => window.setLang('en'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   await expect(title).toHaveText('JS code');
 });
 

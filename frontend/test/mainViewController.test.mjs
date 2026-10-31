@@ -10,7 +10,6 @@ import {
 function createDocument() {
   return new JSDOM(`<!doctype html><html><body class="workspace-active plugins-active admin-active exam-active">
     <div id="pluginWorkspaceTabs"></div>
-    <div id="mobileMode"></div>
     <button id="mobileIncognitoBtn"></button>
     <div id="mainInner" class="hidden">
       <div id="topicSetup"></div>
@@ -57,19 +56,16 @@ test('activateMainView applies plugin, admin and exam shell flags', () => {
   activateMainView('pluginsPanel', document);
   assert.equal(document.body.classList.contains('plugins-active'), true);
   assert.equal(document.getElementById('pluginWorkspaceTabs').hidden, false);
-  assert.equal(document.getElementById('mobileMode').style.display, '');
 
   activateMainView('adminPanel', document);
   assert.equal(document.body.classList.contains('admin-active'), true);
   assert.equal(document.body.classList.contains('plugins-active'), false);
-  assert.equal(document.getElementById('mobileMode').style.display, '');
 
   activateMainView('examView', document);
   assert.equal(document.body.classList.contains('exam-active'), true);
   assert.equal(document.body.classList.contains('workspace-active'), false);
   assert.equal(isHidden(document, 'mainInner'), true);
   assert.equal(isHidden(document, 'examView'), false);
-  assert.equal(document.getElementById('mobileMode').style.display, 'none');
 });
 
 test('activateMainView restores core views and reports the visible core view', () => {
@@ -83,7 +79,6 @@ test('activateMainView restores core views and reports the visible core view', (
   assert.equal(isHidden(document, 'examView'), true);
   assert.equal(isHidden(document, 'mainInner'), false);
   assert.equal(document.body.className, '');
-  assert.equal(document.getElementById('mobileMode').style.display, 'none');
 });
 
 test('activateMainView moves tutor sessions into the diagnostic view', () => {
@@ -96,5 +91,4 @@ test('activateMainView moves tutor sessions into the diagnostic view', () => {
   assert.equal(isHidden(document, 'chatView'), true);
   assert.equal(isHidden(document, 'pluginsPanel'), true);
   assert.equal(document.body.className, '');
-  assert.equal(document.getElementById('mobileMode').style.display, '');
 });

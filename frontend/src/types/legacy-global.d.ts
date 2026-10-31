@@ -8,7 +8,7 @@
 // DO NOT add new global fields here. If you need to expose new legacy
 // functionality to React, extend the LegacyActions interface in
 // src/react/legacy/types.ts and publish it via window.__socratesLegacy in
-// windowExports.js.
+// app/legacyBridge.ts.
 //
 import type { LegacyActions } from '../react/legacy/types';
 
@@ -58,13 +58,6 @@ declare global {
     /** Array of active session summaries read by SessionList. */
     SERVER_SESSIONS?: unknown[];
 
-    // ── Mount / render entry points (set by React, called by legacy JS) ──
-
-    // ── Legacy inline handler functions (windowExports.js) ──────────
-
-    exploreAction?: () => void;
-    toggleWebSearch?: () => void;
-    toggleComposerTools?: (trigger: HTMLElement, mode: string) => void;
   }
 }
 

@@ -15,8 +15,8 @@ const surfaces = {
   },
   topbar: {
     owners: ['parity/topbar.css', 'polish/topbar.css'],
-    context: /\.top-bar(?![-\w])|\.top-bar-(?:left|right)(?![-\w])|#modeSegmentedTop|\.top-mode-tabs(?![-\w])|\.app-mode-toggle|#shareBtn|\.share-btn(?![-\w])|\.share-btn-label|#findBtn|\.find-btn(?![-\w])|#chatModelWrap|\.chat-model-(?:wrap|trigger|glyph|caret)(?![-\w])|#chatModel(?![-\w])|\.top-model-switcher/,
-    exclude: /mobile-|incognito|plugin-workspace|chat-model-menu|model-picker|exam-|chat-stats|sidebarOpenBtn|toggle-sidebar|glyph-/,
+    context: /\.top-bar(?![-\w])|\.top-bar-(?:left|right)(?![-\w])|#modeSegmentedTop|\.top-mode-tabs(?![-\w])|\.app-mode-toggle|#shareBtn|\.share-btn(?![-\w])|\.share-btn-label|#findBtn|\.find-btn(?![-\w])|\.top-model-switcher/,
+    exclude: /mobile-|incognito|plugin-workspace|exam-|chat-stats|sidebarOpenBtn|toggle-sidebar|glyph-/,
   },
   transcript: {
     owners: ['parity/transcript.css', 'components/chat.css', 'polish/transcript.css'],

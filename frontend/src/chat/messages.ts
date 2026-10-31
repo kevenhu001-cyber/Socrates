@@ -1,7 +1,7 @@
 /* chat/messages.js — extracted from main.js (B4/B5 batch).
  * Authoritative message append path. Zero-behavior-change lift.
- * Main.js-local side effects (renderAssistantHTML, saveCurrentSession,
- * updateKB) resolve via window.* at call time to
+ * Main.js-local side effects (renderAssistantHTML, saveCurrentSession)
+ * resolve via window.* at call time to
  * avoid circular imports.
  */
 import { stateStore } from '../state/store.ts';
@@ -10,10 +10,9 @@ import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { appendLocalMemory } from '../storage/localMemory.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
-import { getActiveProvider } from '../pickers.ts';
+import { getActiveProvider } from '../config/providerConfig.service.ts';
 import { generateId } from '../util/ids.ts';
 import { streamRetryViewport } from './turnState.ts';
-import { updateKB } from '../ui/knowledgePanel.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 function _renderAssistantHtml(text: string): string {
@@ -98,17 +97,14 @@ function createMessageEntry(
 
 function createMessageBatchActions(role: string, entry: MessageEntry): {
   actions: Array<Record<string, unknown>>;
-  shouldUpdateKnowledgeNode: boolean;
 } {
   const actions: Array<Record<string, unknown>> = [{ type: 'session/append-message', payload: entry }];
-  let shouldUpdateKnowledgeNode = false;
   if (role === 'user') {
     actions.push({ type: 'state/set', key: '_userScrolledAway', value: false });
     const currentIndex = stateStore.read('currentNode') as number;
     const nodes = stateStore.read('kbNodes');
     const currentNode = nodes && nodes[currentIndex] as KnowledgeNodeSnapshot | undefined;
     if (currentNode && currentNode.status === 'blank') {
-      shouldUpdateKnowledgeNode = true;
       actions.push({
         type: 'kb/patch-node',
         index: currentIndex,
@@ -116,14 +112,10 @@ function createMessageBatchActions(role: string, entry: MessageEntry): {
       });
     }
   }
-  return { actions, shouldUpdateKnowledgeNode };
+  return { actions };
 }
 
-function publishMessageSideEffects(
-  role: string,
-  text: unknown,
-  shouldUpdateKnowledgeNode: boolean,
-): void {
+function publishMessageSideEffects(role: string, text: unknown): void {
   try {
     if (role === 'user' || role === 'assistant') {
       // empty-catch: intentional — local memory must not block the message append.
@@ -139,12 +131,6 @@ function publishMessageSideEffects(
           reportEmptyCatch(error, 'empty catch: chat/messages.ts:134', 'expected');
           /* best effort */
         }
-      }
-    }
-    if (role === 'user' && shouldUpdateKnowledgeNode) {
-      try { updateKB(); } catch (error) {
-        reportEmptyCatch(error, 'empty catch: chat/messages.ts:138', 'expected');
-        /* best effort */
       }
     }
   } catch (error) {
@@ -182,9 +168,21 @@ export function addMessage(
      messages. The legacy rAF write used to run before React committed and
      then race the smooth send scroll, causing a one-frame snap during
      composer collapse. Keep no second scroll owner here. */
-  publishMessageSideEffects(role, text, batch.shouldUpdateKnowledgeNode);
+  publishMessageSideEffects(role, text);
   /* Return the clientId so callers (e.g. startSession) can patch this
      entry in place once async work like buildMessageContent finishes —
      without re-running the side effects above. */
+  return clientId;
+}
+
+/** Append a non-model assistant surface to the React transcript. This is for
+ * locally generated UI flows such as retrying a tutor widget; it intentionally
+ * skips assistant memory writes and saves so the owning workflow can persist
+ * its complete state once after the message is appended. */
+export function addAssistantUiMessage(text: string): string {
+  const clientId = 'msg-' + generateId();
+  const entry = createMessageEntry('assistant', text, null, null, [], clientId);
+  stateStore.dispatch({ type: 'session/append-message', payload: entry });
+  publishReactChatRuntime({ type: 'message-added', messageId: clientId });
   return clientId;
 }

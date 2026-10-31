@@ -14,17 +14,25 @@ globalThis.sessionStorage = {
 globalThis.document = { cookie: '' };
 globalThis.window = {
   appMode: 'chat',
-  getActiveProvider: () => null,
-  apiFetch: async () => ({ content: '' }),
 };
 
 const { callAPI, callAPIChat, buildChatRequestBody } = await import('../src/chat/api.ts');
 const { stateStore } = await import('../src/state/store.ts');
 const { setAppMode } = await import('../src/config/providers.ts');
+const { publishProviderConfig } = await import('../src/config/providerConfig.store.ts');
 const encoder = new TextEncoder();
 
 function setProvider(provider) {
-  window.getActiveProvider = () => provider;
+  if (!provider) {
+    publishProviderConfig({ providers: [], activeId: null, fetched: true });
+    return;
+  }
+  const active = {
+    id: 'test-provider', label: 'Test provider', url: 'https://provider.example/v1',
+    model: 'test-model', vision: false, isBuiltIn: false, hasKey: true,
+    instantEncoding: null, ...provider,
+  };
+  publishProviderConfig({ providers: [active], activeId: active.id, fetched: true });
 }
 
 function streamResponse(frames) {
@@ -38,6 +46,7 @@ function streamResponse(frames) {
 }
 
 function clearContext() {
+  setProvider(null);
   stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
   stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: null });
   stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: null });
@@ -82,15 +91,18 @@ test('request body copies messages and includes session, project, assistant, and
 test('API facade routes custom providers and reports a missing provider', async () => {
   clearContext();
   let request;
-  setProvider({ isBuiltIn: false });
-  window.apiFetch = async (...args) => {
-    request = args;
-    return { content: 'custom answer' };
+  globalThis.fetch = async (path, options) => {
+    request = { path, options };
+    return new Response(JSON.stringify({ content: 'custom answer' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   };
+  setProvider({ isBuiltIn: false });
 
   assert.equal(await callAPI([{ role: 'user', content: 'hi' }], 100, { maxRetries: 0 }), 'custom answer');
-  assert.equal(request[0], '/api/chat');
-  assert.deepEqual(request[1].body.messages, [{ role: 'user', content: 'hi' }]);
+  assert.equal(new URL(request.path, 'http://localhost').pathname, '/api/v2/chat');
+  assert.deepEqual(JSON.parse(request.options.body).messages, [{ role: 'user', content: 'hi' }]);
 
   setProvider(null);
   assert.equal(await callAPI([], 100, { maxRetries: 0 }), null);
@@ -119,12 +131,13 @@ test('monthly limits are terminal for custom-provider calls', async () => {
   clearContext();
   let requests = 0;
   setProvider({ isBuiltIn: false });
-  window.apiFetch = async () => {
+  globalThis.fetch = async () => {
     requests += 1;
-    throw Object.assign(new Error('quota reached'), {
+    return new Response(JSON.stringify({
+      code: 'MONTHLY_LIMIT', message: 'Try again next month.',
+    }), {
       status: 429,
-      code: 'MONTHLY_LIMIT',
-      body: { message: 'Try again next month.' },
+      headers: { 'Content-Type': 'application/json' },
     });
   };
 

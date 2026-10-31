@@ -24,12 +24,10 @@
    absolutely centered rather than a third flex child: the two groups either
    side are variable-width (the left one carries the model switcher, whose
    label changes with the active model), so a centered flex child would sit
-   wherever the leftovers put it. It is hidden on phones — #mobileMode is the
-   phone equivalent and two mode controls on one screen would be the same
-   answer twice — and hidden once a conversation is running, because picking
-   a mode mid-answer can only destroy the answer in progress. That last rule
-   is applied inline from _applyModeSwitchVisibility() so it cannot lose a
-   specificity fight with the workspace/exam/admin chrome. */
+   wherever the leftovers put it. The same control serves phones and desktop,
+   and it is hidden once a conversation is running because picking
+   a mode mid-answer can only destroy the answer in progress. React derives
+   the conversation state from the session stores and hides this control. */
 #appShell .top-mode-switch {
   position: absolute;
   left: 50%;
@@ -79,9 +77,8 @@
 
 .top-model-switcher-settings { display: none; }
 
-/* P_mode-segment-top — the chat header owns this control, and the workspace /
-   exam / admin views own their own. Those views already hide #mobileMode in
-   legacy/06-chat-transcript.css; the pill needs the same treatment or it
+/* P_mode-segment-top — the chat header owns this control, and workspace /
+   exam / admin views own their own. Hide the pill outside the chat surface or it
    floats over a Plugins or Library page, which has no session mode to
    switch. No !important: the body:is() prefix plus the #appShell id already
    outranks the bare `#appShell .top-mode-switch` display above it, and the
@@ -284,9 +281,6 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     height: 16px;
     color: var(--ui-text-tertiary);
   }
-  /* The header switcher replaces the old icon-only model trigger. */
-  #appShell #chatModelWrap { display: none; }
-
   /* ── Right actions ───────────────────────────────────────────────────── */
   #appShell #shareBtn,
   #appShell #findBtn {
@@ -341,7 +335,6 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
 
 /* Workspace pages own their context; the chat model selector stays in chat. */
 html[data-main-view$="Panel"] #appShell #topModelSwitcher,
-html[data-main-view$="Panel"] #appShell #mobileMode,
 html[data-main-view$="Panel"] #appShell #mobileIncognitoBtn,
 html[data-main-view$="Panel"] #appShell #mobileNewChatBtn {
   display: none;

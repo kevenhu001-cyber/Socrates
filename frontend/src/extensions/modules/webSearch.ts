@@ -14,10 +14,8 @@ export const webSearchExtension: ExtensionDefinition = {
   placement: { tools: 2 },
   onActivate(ctx) {
     ctx.toggleWebSearch?.();
-    ctx.syncQuickChips?.();
   },
   onDeactivate(ctx) {
     ctx.toggleWebSearch?.();
-    ctx.syncQuickChips?.();
   },
 };

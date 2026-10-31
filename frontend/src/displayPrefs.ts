@@ -4,8 +4,6 @@
    ============================================================ */
 
 import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.ts';
-import { DEFAULT_DARK_PICKER, DEFAULT_LIGHT_PICKER } from './ui/tokens.ts';
-import { restingRect } from './ui/pressFeedback.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
@@ -33,7 +31,8 @@ type ThemeMode = 'light' | 'dark';
 export const displayPrefs: DisplayPreferences = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: false };
 
 let _systemThemeQuery: MediaQueryList|null = null;
-let _themeControlsDelegated = false;
+export const DISPLAY_PREFS_CHANGE_EVENT = 'socrates:display-prefs-change';
+export const DISPLAY_PREFS_TOGGLE_EVENT = 'socrates:display-prefs-toggle';
 
 function isThemePreference(value: string | null): value is ThemePreference {
   return value !== null && THEME_PREFERENCES.includes(value);
@@ -57,7 +56,6 @@ export function setThemeStyle(style: string | null) {
   if (!isThemeStyle(style)) return;
   document.documentElement.setAttribute("data-theme", style);
   try { localStorage.setItem("socrates-theme-style", style); } catch (_) { /* empty-catch: intentional — theme style preference write is best-effort */ }
-  syncThemeUI();
   applyDisplayPrefs();
 }
 
@@ -100,31 +98,7 @@ function syncMermaidTheme(mode: ThemeMode) {
 }
 
 export function syncThemeUI() {
-  const html = document.documentElement;
-  const preference = html.getAttribute("data-theme-preference") || getThemePreference();
-  const options = document.querySelectorAll("[data-theme-option]");
-  options.forEach(function (option) {
-    const active = option.getAttribute("data-theme-option") === preference;
-    option.classList.toggle("on", active);
-    option.setAttribute("aria-checked", active ? "true" : "false");
-  });
-  const currentStyle = html.getAttribute("data-theme") || getThemeStyle();
-  const styleOptions = document.querySelectorAll("[data-theme-style-option]");
-  styleOptions.forEach(function (option) {
-    const active = option.getAttribute("data-theme-style-option") === currentStyle;
-    option.classList.toggle("on", active);
-    option.setAttribute("aria-checked", active ? "true" : "false");
-  });
-  /* P_display-prefs-no-dup — the theme row is a radiogroup, so the checked
-     radio already states the current theme. The old #displayThemeModeLabel
-     readout repeated the same word next to it. */
-  const toggle = document.getElementById("themeToggle");
-  if (toggle) {
-    toggle.setAttribute("data-theme-preference", preference!);
-    const toggleLabel = typeof browserWindow.t === "function" ? browserWindow.t("display.themeToggle") : "Toggle theme";
-    toggle.setAttribute("title", toggleLabel);
-    toggle.setAttribute("aria-label", toggleLabel);
-  }
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(DISPLAY_PREFS_CHANGE_EVENT));
 }
 
 function syncBrowserChromeColor(mode: ThemeMode) {
@@ -148,7 +122,6 @@ function setEffectiveThemeMode(mode: ThemeMode) {
   html.setAttribute("data-mode", mode);
   html.style.colorScheme = mode;
   syncMermaidTheme(mode);
-  syncThemeUI();
   syncBrowserChromeColor(mode);
 }
 
@@ -179,20 +152,6 @@ export function initTheme() {
   document.documentElement.setAttribute("data-theme", style!);
   setEffectiveThemeMode(resolveThemeMode(preference));
   watchSystemTheme();
-  if (!_themeControlsDelegated) {
-    document.addEventListener("click", function (event) {
-      const eventTarget = event.target;
-      const target = eventTarget instanceof Element ? eventTarget : eventTarget instanceof Node ? eventTarget.parentElement : null;
-      const themeOption = target && target.closest("[data-theme-option]");
-      if (themeOption) {
-        setThemePreference(themeOption.getAttribute("data-theme-option"));
-        return;
-      }
-      const styleOption = target && target.closest("[data-theme-style-option]");
-      if (styleOption) setThemeStyle(styleOption.getAttribute("data-theme-style-option"));
-    });
-    _themeControlsDelegated = true;
-  }
   syncThemeUI();
 }
 
@@ -274,73 +233,17 @@ export function applyDisplayPrefs() {
     removeCustomBg();
   }
   document.documentElement.dataset.showGrid = displayPrefs.showGrid === false ? "false" : "true";
-  syncDisplayPrefsUI();
   /* After font/width change, layout shifts — keep pinned users at bottom */
   if (typeof browserWindow.scrollToBottomIfPinned === "function") {
     browserWindow.scrollToBottomIfPinned();
   }
+  syncThemeUI();
 }
 
 export function saveDisplayPrefs() {
   try { localStorage.setItem("socrates-display", JSON.stringify(displayPrefs)); } catch (error) {
     reportEmptyCatch(error, 'empty catch: displayPrefs.ts:260', 'expected');
     /* ignore */
-  }
-}
-
-export function syncDisplayPrefsUI() {
-  /* P_display-prefs-no-dup — the text-size and content-width rows are
-     radiogroups now, so the selected radio carries the value on its own.
-     The old #displayPrefsFontLabel / #displayPrefsWidthLabel readouts
-     printed the same letter the highlighted segment already showed. */
-  const fWrap = document.getElementById("displayPrefsFontSegs");
-  if (fWrap) Array.from(fWrap.children).forEach(function (b) {
-    const active = parseFloat((b as HTMLElement).dataset.font!) === displayPrefs.font;
-    b.classList.toggle("on", active);
-    b.setAttribute("aria-checked", active ? "true" : "false");
-  });
-  const wWrap = document.getElementById("displayPrefsWidthSegs");
-  if (wWrap) Array.from(wWrap.children).forEach(function (b) {
-    const active = parseFloat((b as HTMLElement).dataset.width!) === displayPrefs.width;
-    b.classList.toggle("on", active);
-    b.setAttribute("aria-checked", active ? "true" : "false");
-  });
-  /* Drive the sliding ::before indicator on each segs wrapper.
-     After toggling .on, the active button's offsetLeft/offsetWidth
-     reflects its new layout position — we copy those to CSS custom
-     properties so the indicator animates between segments instead
-     of snapping. Uses rAF on the first sync so the indicator lands
-     at the correct position before the popover reveals, avoiding a
-     flash from (0,0) to the real coordinates. */
-  const sWrap = document.getElementById("displayThemeStyleSegs");
-  const tWrap = document.getElementById("displayThemeSegs");
-  [fWrap, wWrap, sWrap, tWrap].forEach(function (wrap) {
-    if (!wrap) return;
-    const onBtn = wrap.querySelector(".display-prefs-seg.on");
-    if (!onBtn) return;
-    /* If we already have the seg vars set, the transition will
-       animate; otherwise wait one frame so initial layout is in
-       place (avoids a 0,0 flash on first reveal). */
-    const hasVars = wrap.style.getPropertyValue("--seg-x") && wrap.style.getPropertyValue("--seg-w");
-    const apply = function () {
-      const x = (onBtn as HTMLElement).offsetLeft;
-      const w = (onBtn as HTMLElement).offsetWidth;
-      if (w === 0) return;
-      wrap.style.setProperty("--seg-x", x + "px");
-      wrap.style.setProperty("--seg-w", w + "px");
-    };
-    if (!hasVars) requestAnimationFrame(apply);
-    else apply();
-  });
-  const darkInput = document.getElementById("displayPrefsBgDark");
-  if (darkInput) (darkInput as HTMLInputElement).value = displayPrefs.darkBg || DEFAULT_DARK_PICKER;
-  const lightInput = document.getElementById("displayPrefsBgLight");
-  if (lightInput) (lightInput as HTMLInputElement).value = displayPrefs.lightBg || DEFAULT_LIGHT_PICKER;
-  const gt = document.getElementById("gridToggle");
-  if (gt) {
-    const gridOn = displayPrefs.showGrid !== false;
-    gt.classList.toggle("on", gridOn);
-    gt.setAttribute("aria-checked", gridOn ? "true" : "false");
   }
 }
 
@@ -402,94 +305,9 @@ export function toggleGrid() {
   saveDisplayPrefs();
 }
 
-/* React owns the display-preferences controls. These document-level bridges
- * keep the long-standing ids and external toggleDisplayPrefs() callers
- * working after the component mounts, without binding to short-lived nodes. */
-export function mountDisplayPrefsListeners(){
-  const marker = document.documentElement;
-  if (marker.dataset.displayPrefsListenersMounted === "1") return null;
-  marker.dataset.displayPrefsListenersMounted = "1";
-
-  function onClick(event: Event) {
-    const eventTarget = event.target;
-    const target = eventTarget instanceof Element ? eventTarget : eventTarget instanceof Node ? eventTarget.parentElement : null;
-    if (!target) return;
-    if (target.closest("#displayPrefsBtn")) {
-      event.preventDefault();
-      toggleDisplayPrefs();
-      return;
-    }
-    if (target.closest("#themeToggle")) {
-      event.preventDefault();
-      toggleTheme();
-      return;
-    }
-    const font = target.closest("#displayPrefsFontSegs [data-font]");
-    if (font) { setDisplayFont(parseFloat(String((font as HTMLElement).dataset.font))); return; }
-    const width = target.closest("#displayPrefsWidthSegs [data-width]");
-    if (width) { setDisplayWidth(parseFloat(String((width as HTMLElement).dataset.width))); return; }
-    if (target.closest("#gridToggle")) { event.preventDefault(); toggleGrid(); return; }
-    if (target.closest("#displayPrefsBgDarkReset")) { event.preventDefault(); resetBackgroundDark(); return; }
-    if (target.closest("#displayPrefsBgLightReset")) { event.preventDefault(); resetBackgroundLight(); }
-  }
-
-  function onInput(event: Event) {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    /* React's onChange owns native picker changes. This fallback preserves
-       callers that dispatch the long-standing bubbling `input` event. */
-    if (target.id === "displayPrefsBgDark" && (target as HTMLInputElement).value !== displayPrefs.darkBg) {
-      setBackgroundDark((target as HTMLInputElement).value);
-    } else if (target.id === "displayPrefsBgLight" && (target as HTMLInputElement).value !== displayPrefs.lightBg) {
-      setBackgroundLight((target as HTMLInputElement).value);
-    }
-  }
-
-  document.addEventListener("click", onClick);
-  document.addEventListener("input", onInput);
-  return function unmountDisplayPrefsListeners() {
-    document.removeEventListener("click", onClick);
-    document.removeEventListener("input", onInput);
-    delete marker.dataset.displayPrefsListenersMounted;
-  };
-}
-
 /* ── popover ── */
 export function toggleDisplayPrefs() {
-  const p = document.getElementById("displayPrefsPopover");
-  if (!p) return;
-  const btn = document.getElementById("displayPrefsBtn");
-  const isOpen = !p.classList.contains("hidden");
-  if (isOpen) { p.classList.add("hidden"); return; }
-  if (btn) {
-    const r = restingRect(btn); /* not the mid-press box (ui/pressFeedback.ts) */
-    const popW = 240;
-    let left = r.right - popW;
-    if (left < 8) left = 8;
-    const bottom = browserWindow.innerHeight - r.top + 8;
-    p.style.left = left + "px";
-    p.style.bottom = bottom + "px";
-    p.style.right = "auto";
-    p.style.top = "auto";
-  }
-  p.classList.remove("hidden");
-  /* Resync now that the popover is visible. loadDisplayPrefs() ran
-     at module init when this was display:none, so offsetWidth was 0
-     and the indicator-position rAF inside syncDisplayPrefsUI bailed
-     before --seg-x / --seg-w were ever set — meaning the sliding
-     ::before pill stayed at the CSS default (0px, 0px) until the
-     user picked a new size. Forcing a re-sync here lets the rAF
-     actually measure and place the indicator for the saved values. */
-  syncDisplayPrefsUI();
-  setTimeout(function () {
-    function onDoc(e: Event) {
-      if (p!.contains((e.target as Node | null))) return;
-      if (btn && btn.contains((e.target as Node | null))) return;
-      p!.classList.add("hidden");
-      document.removeEventListener("click", onDoc, true);
-    }
-    document.addEventListener("click", onDoc, true);
-  }, 0);
+  document.dispatchEvent(new Event(DISPLAY_PREFS_TOGGLE_EVENT));
 }
 
 /* ── theme (tied to display prefs because theme changes update custom BG) ── */

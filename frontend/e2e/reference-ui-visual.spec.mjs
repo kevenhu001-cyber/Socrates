@@ -65,7 +65,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(Math.round(-MOBILE_DRAWER));
   await expect(page.locator('#topicSetup')).toBeVisible();
@@ -194,7 +194,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar?.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
     document.getElementById('navNew')?.click();
   });
   await expect(page.locator('#topicSetup')).toBeVisible();

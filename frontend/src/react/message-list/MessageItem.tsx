@@ -1,4 +1,4 @@
-import { memo, useRef } from 'react';
+import { memo, useRef, useState, type RefObject } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import type { LegacyChatMessage } from '../types/domain';
@@ -6,10 +6,14 @@ import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { MessageToolbar } from './MessageToolbar';
 import { MessageAttachments } from './MessageAttachments';
 import { MessageBody } from './MessageBody';
+import { MessageEditForm } from './MessageEditForm';
 import { TutorMessageActions } from './TutorMessageActions';
 import { areMessageItemsEqual } from './messageItemMemo';
 import type { MessageItemProps } from './types';
 import { useMessagePostRender } from './useMessagePostRender';
+import { commitUserMessageEdit } from '../../chat/editBranch.ts';
+import { stripMarkdown } from '../../render/markdown.ts';
+import { i18n } from '../legacy/gateway';
 
 type LiveFields = LegacyChatMessage & {
   _turnAnchorMinHeight?: number;
@@ -106,7 +110,54 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
   return Array.isArray(message.attachments) && message.attachments.length > 0;
 }
 
-function MessageItemBase({ message, isLatest }: MessageItemProps) {
+function MessageContent({ editing, message, role, html, isLive, readOnly, declarative, bodyRef, onCancelEdit, onCommitEdit }: {
+  editing: boolean;
+  message: LegacyChatMessage;
+  role: string;
+  html: string;
+  isLive: boolean;
+  readOnly: boolean;
+  declarative: boolean;
+  bodyRef: RefObject<HTMLDivElement | null>;
+  onCancelEdit: () => void;
+  onCommitEdit: (text: string) => void;
+}) {
+  if (editing && role === 'user') {
+    return (
+      <div className="msg-body">
+        <MessageEditForm
+          initialText={stripMarkdown(typeof message.rawText === 'string' ? message.rawText : '')}
+          cancelLabel={i18n('common.cancel', 'Cancel')}
+          submitLabel={i18n('chat.send', 'Send')}
+          onCancel={onCancelEdit}
+          onCommit={onCommitEdit}
+        />
+      </div>
+    );
+  }
+  return (
+    <MessageBody
+      message={message}
+      role={role}
+      html={html}
+      isLive={isLive}
+      readOnly={readOnly}
+      declarative={declarative}
+      bodyRef={bodyRef}
+    />
+  );
+}
+
+function shouldShowToolbar(role: string, showSettledToolbar: boolean, isLive: boolean, readOnly: boolean, editing: boolean): boolean {
+  return !readOnly && !editing && (role === 'user' || showSettledToolbar || isLive);
+}
+
+function userEditHandler(role: string, setEditing: (editing: boolean) => void): (() => void) | undefined {
+  return role === 'user' ? () => setEditing(true) : undefined;
+}
+
+function MessageItemBase({ message, isLatest, readOnly = false }: MessageItemProps) {
+  const [editing, setEditing] = useState(false);
   const role = messageRole(message);
   /* The chat runtime store gives React an immutable snapshot for this row. */
   const presentation = deriveTurnPresentationState(message);
@@ -122,6 +173,8 @@ function MessageItemBase({ message, isLatest }: MessageItemProps) {
   /* Keep the declarative tree mounted across the finish boundary so the
      toolbar and cursor transition without replacing the message body. */
   const declarative = usesDeclarativeBody(role);
+  const onEdit = userEditHandler(role, setEditing);
+  const showToolbar = shouldShowToolbar(role, presentation.showToolbar, isLive, readOnly, editing);
 
   useMessagePostRender(message, html, clientId, isLive, bodyRef);
 
@@ -145,16 +198,31 @@ function MessageItemBase({ message, isLatest }: MessageItemProps) {
       data-stream-settled={streamSettled ? 'true' : undefined}
     >
       {role === 'user' ? <MessageAttachments attachments={attachments} /> : null}
-      <MessageBody
+      <MessageContent
+        editing={editing}
         message={message}
         role={role}
         html={html}
         isLive={isLive}
+        readOnly={readOnly}
         declarative={declarative}
         bodyRef={bodyRef}
+        onCancelEdit={() => setEditing(false)}
+        onCommitEdit={(text) => {
+          setEditing(false);
+          commitUserMessageEdit(clientId, text);
+        }}
       />
-      <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} />
-      {role === 'user' || presentation.showToolbar || isLive ? <MessageToolbar message={message} role={toolbarRole(role)} pending={isLive} isLatest={isLatest} /> : null}
+      {!readOnly ? <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} /> : null}
+      {showToolbar ? (
+        <MessageToolbar
+          message={message}
+          role={toolbarRole(role)}
+          pending={isLive}
+          isLatest={isLatest}
+          onEdit={onEdit}
+        />
+      ) : null}
     </div>
   );
 }

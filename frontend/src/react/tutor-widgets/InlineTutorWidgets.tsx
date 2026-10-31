@@ -6,6 +6,7 @@ import { Field, FieldGroup } from '../ui/shadcn/field';
 import { Textarea } from '../ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 import type { ParsedQuiz } from '../../render/widgetParsers';
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 type Translatable = (key: string) => string;
 type HtmlContent = { html: string; className: string };
@@ -68,6 +69,55 @@ function TheoremWidget({ title, statement, proofTitle, proofBody, t }: {
         </Collapsible>
       )}
     </Card>
+  );
+}
+
+function DefinitionWidget({ term, body }: { term: string; body: string }) {
+  return (
+    <div className="inline-definition">
+      {term ? <HtmlContent html={term} className="inline-definition-term" /> : null}
+      {body ? <HtmlContent html={body} className="inline-definition-body" /> : null}
+    </div>
+  );
+}
+
+function StepListWidget({ steps }: { steps: Array<{ n: number; body: string }> }) {
+  return (
+    <div className="inline-step-list">
+      {steps.map((step, index) => (
+        <div className="inline-step" key={`${step.n}-${index}`}>
+          <span className="inline-step-n">{step.n}.</span>
+          <HtmlContent html={step.body} className="inline-step-body" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProofWidget({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="inline-proof">
+      {title ? <HtmlContent html={title} className="inline-proof-title" /> : null}
+      {body ? <HtmlContent html={body} className="inline-proof-body" /> : null}
+    </div>
+  );
+}
+
+function DerivationWidget({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="inline-derivation">
+      {title ? <HtmlContent html={title} className="inline-derivation-title" /> : null}
+      {body ? <HtmlContent html={body} className="inline-derivation-body" /> : null}
+    </div>
+  );
+}
+
+function KeyPointWidget({ body, label }: { body: string; label: string }) {
+  return (
+    <div className="inline-key-point">
+      <div className="inline-key-point-label">{label}</div>
+      <HtmlContent html={body} className="inline-key-point-body" />
+    </div>
   );
 }
 
@@ -191,37 +241,48 @@ type QuizResult = {
   feedbackClass: string;
 };
 
+type QuizPickResult = Pick<QuizResult, 'feedbackText' | 'feedbackClass'>;
+
+function isQuizPickPromise(value: QuizPickResult | Promise<QuizPickResult>): value is Promise<QuizPickResult> {
+  return !!value && typeof value === 'object' && 'then' in value && typeof value.then === 'function';
+}
+
 function QuizWidget({ question, options, correct, handleQuizPick, parsed, questionLabel }: {
   question: string;
   options: Array<{ letter: string; text: string; html: string }>;
   correct: string;
-  handleQuizPick?: (card: HTMLDivElement, options: HTMLDivElement, feedback: HTMLDivElement, buttons: HTMLButtonElement[], picked: { letter: string; text: string; html: string }, parsed: ParsedQuiz) => void;
+  handleQuizPick?: (picked: { letter: string; text: string }, parsed: ParsedQuiz) => QuizPickResult | Promise<QuizPickResult>;
   parsed: ParsedQuiz;
   questionLabel: string;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const feedbackRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
   const [result, setResult] = useState<QuizResult | null>(null);
+  const [pending, setPending] = useState(false);
 
   function onValueChange(values: string[]) {
     const pickedLetter = values[values.length - 1];
-    if (!pickedLetter || result || !handleQuizPick) return;
+    if (!pickedLetter || result || pending || !handleQuizPick) return;
     const picked = options.find((option) => option.letter === pickedLetter);
-    const card = cardRef.current;
-    const optionsElement = card?.querySelector<HTMLDivElement>('.inline-quiz-opts');
-    if (!picked || !card || !optionsElement || !feedbackRef.current) return;
-    const buttons = Array.from(buttonRefs.current.values());
-    handleQuizPick(card, optionsElement, feedbackRef.current, buttons, picked, parsed);
-    setResult({
-      picked: pickedLetter,
-      feedbackText: feedbackRef.current.textContent || '',
-      feedbackClass: feedbackRef.current.className,
-    });
+    if (!picked) return;
+    const publishResult = (feedback: QuizPickResult) => {
+      setResult({ picked: pickedLetter, ...feedback });
+      setPending(false);
+    };
+    const feedback = handleQuizPick({ letter: picked.letter, text: picked.text }, parsed);
+    if (isQuizPickPromise(feedback)) {
+      setPending(true);
+      void Promise.resolve(feedback)
+        .then(publishResult)
+        .catch((error: unknown) => {
+          setPending(false);
+          reportSwallow(error, 'react/tutor-widgets.quizPick');
+        });
+      return;
+    }
+    publishResult(feedback);
   }
 
   return (
-    <Card className="inline-quiz gap-2 p-3" ref={cardRef}>
+    <Card className="inline-quiz gap-2 p-3">
       <HtmlContent html={question} className="inline-quiz-q" />
       <ToggleGroup
         value={result ? [result.picked] : []}
@@ -244,8 +305,7 @@ function QuizWidget({ question, options, correct, handleQuizPick, parsed, questi
               value={option.letter}
               className={className}
               data-letter={option.letter}
-              disabled={Boolean(result)}
-              ref={(node) => { if (node) buttonRefs.current.set(option.letter, node); }}
+              disabled={Boolean(result) || pending}
             >
               <span className="inline-quiz-opt-letter">{option.letter}.</span>
               <span className="inline-quiz-opt-text" dangerouslySetInnerHTML={{ __html: option.html }} />
@@ -253,11 +313,22 @@ function QuizWidget({ question, options, correct, handleQuizPick, parsed, questi
           );
         })}
       </ToggleGroup>
-      <div className={result?.feedbackClass || 'inline-quiz-feedback'} role="status" aria-live="polite" ref={feedbackRef}>
+      <div className={result?.feedbackClass || 'inline-quiz-feedback'} role="status" aria-live="polite">
         {result?.feedbackText || ''}
       </div>
     </Card>
   );
 }
 
-export { ExampleWidget, TheoremWidget, FlashcardWidget, PracticeWidget, QuizWidget };
+export {
+  ExampleWidget,
+  TheoremWidget,
+  FlashcardWidget,
+  PracticeWidget,
+  QuizWidget,
+  DefinitionWidget,
+  StepListWidget,
+  ProofWidget,
+  DerivationWidget,
+  KeyPointWidget,
+};

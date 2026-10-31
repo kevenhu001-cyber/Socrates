@@ -4,6 +4,11 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function openApp(page) {
   await mockAuthedApp(page);
+  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) => route.fulfill({
+    status: 201,
+    contentType: 'application/json',
+    body: JSON.stringify({ id: 'feedback-file', name: 'attachment.txt', mimeType: 'text/plain', size: 10, kind: 'text' }),
+  }));
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 }
@@ -18,8 +23,16 @@ async function delayStreamingBridge(page) {
       await window.__streamGate;
       return original(options);
     };
-    window.attachments.push({ kind: 'text', name: 'submitted.txt', text: 'submitted attachment' });
   });
+}
+
+async function attachTextFile(page, name, text) {
+  await page.locator('#composerAttachInput').setInputFiles({
+    name,
+    mimeType: 'text/plain',
+    buffer: Buffer.from(text),
+  });
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
 }
 
 for (const surface of ['chat', 'topic']) {
@@ -30,11 +43,11 @@ for (const surface of ['chat', 'topic']) {
         window.stateStore.dispatch({ type: 'state/batch', patch: {
           phase: 'chat', topic: 'Feedback test', currentSessionId: '11111111-1111-4111-8111-111111111111',
         } });
-        window.appMode = 'chat';
         window.__testActivateMainView('chatView');
       });
     }
     await delayStreamingBridge(page);
+    await attachTextFile(page, 'submitted.txt', 'submitted attachment');
     const editor = page.locator('#composerRoot .rich-composer-editor').first();
     await editor.fill('Respond immediately');
     await page.evaluate((surface) => {
@@ -44,15 +57,15 @@ for (const surface of ['chat', 'topic']) {
     }, surface);
     await expect.poll(() => page.evaluate(() => !!window.__waitingForStream)).toBe(true);
     await expect(editor).toHaveText('');
-    expect(await page.evaluate(() => window.attachments.length)).toBe(0);
+    await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(0);
     await expect(page.locator('#msgList .msg.user').last()).toContainText('Respond immediately');
 
+    await attachTextFile(page, 'next.txt', 'keep for the next turn');
     await page.evaluate(() => {
-      window.attachments.push({ kind: 'text', name: 'next.txt', text: 'keep for the next turn' });
       window.__releaseStreamGate();
       return window.__sendPromise;
     });
-    expect(await page.evaluate(() => window.attachments.map((entry) => entry.name))).toEqual(['next.txt']);
+    await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveAttribute('title', 'next.txt');
   });
 }
 
@@ -91,7 +104,7 @@ test('home upload opens a file chooser, writing activates its template, and dism
   await page.locator('[data-home-action="upload"]').click();
   await (await chooser).setFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('Test notes') });
   await expect(page.locator('#composerAttachmentChips')).toContainText('notes.txt');
-  await expect.poll(() => page.evaluate(() => window.attachments[0]?.fileId)).toBe('uploaded-notes');
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).not.toHaveClass(/pending|error/);
   await page.locator('[data-home-action="write"]').click();
   await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('write');
   const row = page.locator('.home-quick-action').filter({ has: page.locator('[data-home-action="write"]') });

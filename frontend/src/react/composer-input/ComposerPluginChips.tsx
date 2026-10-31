@@ -7,6 +7,7 @@ import { syncComposerShellFlags } from '../../ui/composerShape.ts';
 import { getLegacyActions, i18n, isWebSearchOn } from '../legacy/gateway.ts';
 import { removeComposerPlugin } from '../../composer/pluginSelection.ts';
 import { useComposerPluginSelectionSnapshot } from '../composer/useComposerPluginSelection';
+import { toggleComposerTools } from '../composer/composerTools.store';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 /* Web search is picked from the "+" menu and then shown as a removable chip,
@@ -102,13 +103,11 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   const hiddenCount = Math.max(0, plugins.length - visiblePlugins.length);
   const openTools = () => {
     const trigger = document.getElementById('composerToolsBtn');
-    if (trigger) {
-      getLegacyActions().composer.toggleTools?.(trigger, surface);
-    }
+    if (trigger) toggleComposerTools(trigger, surface);
   };
 
   return (
-    <div className="composer-plugin-chips" aria-label="Selected plugins" data-i18n-aria="composer.selectedPlugins">
+    <div className="composer-plugin-chips" aria-label={i18n('composer.selectedPlugins', 'Selected plugins')}>
       {webSearchOn ? <WebSearchChip /> : null}
       {visiblePlugins.map((plugin) => (
         <Badge variant="secondary" className={`composer-plugin-chip ${CHIP_BOX}`} key={plugin.id} title={plugin.description || plugin.name}>

@@ -1,4 +1,5 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import { appMode, webSearchOn } from '../../config/providers.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { addMessage } from '../messages.ts';
 import { scheduleTurnToTopForMessage } from '../turnAnchor.ts';
@@ -6,8 +7,6 @@ import type { StreamingTurnController } from '../turnState.ts';
 
 /** Chat bridges published by the legacy shell. */
 interface SendRuntimeWindow extends Window {
-  appMode?: string;
-  webSearchOn?: boolean;
   tutorSocratic?: unknown;
   askChatTurn?: (text: string, pending: unknown, precreated?: unknown) => unknown;
   addStreamingMessage?: (options: { onRetry?: () => void }) => StreamingTurnController;
@@ -25,19 +24,11 @@ export function translate(key: string, fallback?: string): string {
 }
 
 export function getAppMode(): string {
-  try {
-    const win = window as SendRuntimeWindow;
-    if (typeof window !== 'undefined' && win.appMode) return win.appMode;
-  } catch (error) { reportSwallow(error, 'sendPipeline.getAppMode'); }
-  return 'chat';
+  return appMode;
 }
 
 export function isWebSearchOn(): boolean {
-  try {
-    const win = window as SendRuntimeWindow;
-    if (typeof window !== 'undefined' && typeof win.webSearchOn !== 'undefined') return !!win.webSearchOn;
-  } catch (error) { reportSwallow(error, 'sendPipeline.isWebSearchOn'); }
-  return true;
+  return webSearchOn;
 }
 
 export function getTutorSocratic(): unknown {

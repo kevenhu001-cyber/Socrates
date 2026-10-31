@@ -5,8 +5,7 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 // P1.2 — force-directed knowledge graph. The KB panel renders state.kbNodes
 // as an SVG force-directed graph: node COLOR = mastery (internalized / fuzzy
 // / blank), node SIZE = questions asked. Clicking a node opens the same
-// detail panel the list view uses (window.toggleKBDetail). Data is read
-// straight from state.kbNodes — no backend changes.
+// detail panel. Data is read straight from the KB store — no backend changes.
 
 const KB_NODES = [
   { name: 'Limits', status: 'internalized', questions: 9, confidence_score: 5 },
@@ -38,8 +37,6 @@ async function renderGraph(page, { currentNode = -1 } = {}) {
     // Hide the sibling recents panel so the knowledge panel takes the slot.
     const recents = document.getElementById('recentsPanel');
     if (recents) recents.classList.add('hidden');
-    // immediate:true bypasses the rAF render throttle so the DOM is ready.
-    window.tutorSocratic.renderKnowledgeBoundaryFile({ immediate: true });
   }, { nodes: KB_NODES, currentNode });
 }
 

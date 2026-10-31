@@ -8,7 +8,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     await expect(page).toHaveURL(/127\.0\.0\.1:4173/);
     await expect(page).toHaveTitle(/Socrates/i);
     await expect(page.locator('vite-error-overlay')).toHaveCount(0);
-    await page.evaluate(() => window.setLang('zh'));
+    await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
     const input = page.locator('#composerInputWrap .tiptap');
     await expect(input).toHaveAttribute('aria-label', '有问题，随便问');
     await expect.poll(() => page.evaluate(() => window.t('chat.placeholder'))).toBe('输入你的想法……');
@@ -62,7 +62,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     await expect(page.locator('.intui-text')).toHaveText('你好，世界！');
     await page.evaluate(() => window.showToast('已保存: "中文提示",请继续.', { duration: 10_000 }));
     await expect(page.locator('.msg-toast')).toHaveText('已保存： “中文提示”，请继续。');
-    await page.evaluate(() => { window.__chineseConfirm = window.showConfirm('系统提示: "确认"', '是否继续(本次操作)?'); });
+    await page.evaluate(() => { window.__chineseConfirm = window.__socratesLegacy.confirm.showConfirm('系统提示: "确认"', '是否继续(本次操作)?'); });
     await expect(page.locator('#confirmTitle')).toHaveText('系统提示： “确认”');
     await expect(page.locator('#confirmMsg')).toHaveText('是否继续（本次操作）？');
     await page.locator('#confirmCancelBtn').click();

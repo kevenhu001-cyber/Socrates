@@ -14,6 +14,7 @@ import { esc } from '../render/helpers.ts';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { generateId } from '../util/ids.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { registerRecoveredTurnRetry } from '../chat/liveTurn.ts';
 import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -245,9 +246,9 @@ export function restoreLocalAssistantFallback(session: RestorableSession): void 
   } catch (error) { reportSwallow(error, 'session/historyRestore.restoreLocalAssistantFallback'); }
 }
 
-/* Show server-persisted partial output after a refresh and attach its retry
-   action to the React-owned message list. */
-export function restoreInterruptedResponse(session: RestorableSession, msgList: HTMLElement): void {
+/* Show server-persisted partial output after a refresh and register its retry
+   action for the React-owned status control. */
+export function restoreInterruptedResponse(session: RestorableSession): void {
   if (!session.streamingText) return;
   const partialText = session.streamingText || '(partial content)';
   let partialRendered: string;
@@ -258,7 +259,7 @@ export function restoreInterruptedResponse(session: RestorableSession, msgList: 
       '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>' +
     '</div>';
   const partialClientId = 'stream-recovered-' + Date.now();
-  const partialIdx = stateStore.dispatch({ type: 'session/append-message', payload: {
+  stateStore.dispatch({ type: 'session/append-message', payload: {
     role: 'assistant',
     clientId: partialClientId,
     rawText: partialText,
@@ -266,11 +267,10 @@ export function restoreInterruptedResponse(session: RestorableSession, msgList: 
     type: 'assistant',
     _liveStatus: { phase: 'error', label: '(response interrupted — tap Retry to continue)', retryable: true, retryMode: 'restored' },
   } });
-  const retryDelegated = function (ev: MouseEvent): void {
-    const target = ev.target as Element | null;
-    if (!(target && target.matches && target.matches('[data-stream-retry]'))) return;
-    msgList.removeEventListener('click', retryDelegated);
-    stateStore.dispatch({
+  registerRecoveredTurnRetry(partialClientId, function (): void {
+    const currentMessages = stateStore.read('messages') as PersistedMessage[];
+    const partialIdx = currentMessages.findIndex((message) => message?.clientId === partialClientId);
+    if (partialIdx >= 0) stateStore.dispatch({
       type: 'session/remove-message-at', index: partialIdx, clientId: partialClientId,
     });
     apiFetch('/api/sessions/' + encodeURIComponent(session.id), {
@@ -297,8 +297,7 @@ export function restoreInterruptedResponse(session: RestorableSession, msgList: 
     } else {
       showToast(_t('toast.noRetryTarget'));
     }
-  };
-  msgList.addEventListener('click', retryDelegated);
+  });
   /* Avoid showing the same server-side partial message on the next reload. */
   apiFetch('/api/sessions/' + encodeURIComponent(session.id), {
     method: 'PATCH',

@@ -1,21 +1,39 @@
 /** React hooks and action routing for the composer tools menu. */
 
-import { useBridge, useBridgeSelector } from '../../lib/bridge/useBridge.ts';
-import { composerToolsState } from '../../ui/composerToolsState.ts';
+import { getComposerToolsSnapshot as readComposerToolsSnapshot, publishComposerToolsState, useComposerToolsState } from './composerTools.state';
 import { getLegacyActions, t as legacyT } from '../legacy/gateway.ts';
 import { loadPluginCatalog, normalisePluginId } from '../../composer/pluginCatalog.ts';
 import type { ComposerMode, ComposerToolsAction, ComposerToolsSnapshot } from './types';
 
 export function getComposerToolsSnapshot(): ComposerToolsSnapshot {
-  return composerToolsState.getSnapshot();
+  return readComposerToolsSnapshot();
+}
+
+export function closeComposerTools(): void {
+  const snapshot = getComposerToolsSnapshot();
+  if (!snapshot.isOpen) return;
+  publishComposerToolsState({ isOpen: false, mode: null, triggerId: null });
+}
+
+export function toggleComposerTools(trigger: HTMLElement, mode: string): void {
+  const snapshot = getComposerToolsSnapshot();
+  if (snapshot.isOpen && snapshot.triggerId === trigger.id) {
+    closeComposerTools();
+    return;
+  }
+  publishComposerToolsState({
+    isOpen: true,
+    mode: mode === 'topic' ? 'topic' : 'chat',
+    triggerId: trigger.id,
+  });
 }
 
 export function useComposerToolsSnapshot(): ComposerToolsSnapshot {
-  return useBridge(composerToolsState);
+  return useComposerToolsState();
 }
 
 export function useIsComposerToolsOpen(): boolean {
-  return useBridgeSelector(composerToolsState, (snapshot) => snapshot.isOpen);
+  return useComposerToolsState((snapshot) => snapshot.isOpen);
 }
 
 function openMobileAttachmentPicker(
@@ -94,15 +112,9 @@ export function useComposerToolsDispatch(): {
   return {
     pick: (action: ComposerToolsAction) => {
       const snap = getComposerToolsSnapshot();
-      /* Close the menu before running the action. File pickers are opened
-         with a synthetic input.click() that bubbles to the document-level
-         outside-click handler; closing afterwards would toggle the menu
-         back open behind the camera / file chooser. */
-      const trigger = snap.triggerId ? document.getElementById(snap.triggerId) : null;
-      const menu = document.getElementById('composerToolsMenu');
-      if (trigger && snap.mode && menu && !menu.classList.contains('hidden')) {
-        getLegacyActions().composer.toggleTools?.(trigger, snap.mode);
-      }
+      /* Close before opening a native picker. Its synthetic input click must
+         never leave the menu open behind the camera or file chooser. */
+      closeComposerTools();
       dispatchAction(action, snap.mode);
     },
   };

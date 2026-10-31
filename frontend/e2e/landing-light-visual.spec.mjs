@@ -101,7 +101,7 @@ test('light conversation home has a neutral readable palette and balanced compos
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     const setup = document.getElementById('topicSetup');
     if (setup) setup.scrollTop = 0;

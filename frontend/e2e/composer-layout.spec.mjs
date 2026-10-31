@@ -74,7 +74,7 @@ test('web search is picked from the + menu, shows a removable chip, and clears',
   const chip = wrap.locator('.composer-tool-chip[data-tool="webSearch"]');
   await expect(chip).toBeVisible();
   await expect(chip).toHaveAttribute('aria-label', 'Web search, click to remove');
-  expect(await page.evaluate(() => window.webSearchOn)).toBe(true);
+  await expect(wrap.locator('.composer-tool-chip[data-tool="webSearch"]')).toBeVisible();
 
   // chatgpt.com layout: editor on its own row, chip in the footer after "+".
   const m = await measure(page, '#composerInputWrap');
@@ -87,6 +87,6 @@ test('web search is picked from the + menu, shows a removable chip, and clears',
 
   await chip.click();
   await expect(chip).toHaveCount(0);
-  expect(await page.evaluate(() => window.webSearchOn)).toBe(false);
+  await expect(wrap.locator('.composer-tool-chip[data-tool="webSearch"]')).toHaveCount(0);
   expect(Math.round((await wrap.boundingBox()).height)).toBe(52);
 });

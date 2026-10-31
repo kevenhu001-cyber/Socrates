@@ -8,7 +8,7 @@ import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.ts';
 import { captureBrowserLoginRequest } from '../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishSidebarChrome } from '../ui/profile.ts';
-import { revealAppAndHydrate } from './index.ts';
+import { revealAppAndHydrate, showGate, showAuthSignin } from './index.ts';
 import { handleAuthUrlRoutes } from './boot/routes.ts';
 import {
   readBootPreflight,
@@ -24,8 +24,6 @@ interface BootLegacyWindow extends Window {
   isInAuthGraceWindow?: () => boolean;
   setCurrentUser?: (user: unknown) => void;
   markAuthSuccess?: () => void;
-  showGate?: () => void;
-  showAuthSignin?: () => void;
 }
 
 /** What /api/v2/config publishes; only these fields are read here. */
@@ -65,9 +63,8 @@ async function publishServerConfig(configRequest: Promise<unknown>): Promise<voi
 
 async function showSigninGate(): Promise<void> {
   await i18nSettled();
-  const win = window as BootLegacyWindow;
-  if (typeof win.showGate === 'function') win.showGate();
-  if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
+  showGate();
+  showAuthSignin();
 }
 
 async function finishAuthenticatedBoot(user: unknown, csrfReady: PromiseLike<unknown>): Promise<void> {
@@ -84,9 +81,8 @@ async function finishAuthenticatedBoot(user: unknown, csrfReady: PromiseLike<unk
 
 async function finishUnavailableBoot(): Promise<void> {
   await i18nSettled();
-  const win = window as BootLegacyWindow;
-  if (typeof win.showGate === 'function') win.showGate();
-  if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
+  showGate();
+  showAuthSignin();
   try { showToast(i18n('toast.authOffline', "Couldn't reach the server. Check your connection and retry."), 5000); }
   catch (error) { reportSwallow(error, 'auth/boot.offlineToast'); }
   publishSidebarChrome();
@@ -128,8 +124,7 @@ export async function authBoot(): Promise<void> {
 /* Keep the page responsive even if an unexpected startup step throws. */
 authBoot().catch(() => {
   try {
-    const win = window as BootLegacyWindow;
-    if (typeof win.showGate === 'function') win.showGate();
-    if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
+    showGate();
+    showAuthSignin();
   } catch (error) { reportSwallow(error, 'auth/boot.fallbackGate'); }
 });

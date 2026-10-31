@@ -40,10 +40,8 @@ export async function dispatchSendTurn({
       try { precreatedController.abort(); }
       catch (error) { reportSwallow(error, 'sendPipeline.deepResearch.abortPrecreated'); }
     }
-    const win = window as Window & { startDeepResearch?: (text: string) => unknown };
-    if (typeof win.startDeepResearch === 'function') {
-      await win.startDeepResearch(text);
-    }
+    const { startDeepResearch } = await import('../../agent/researchAgent.ts');
+    await startDeepResearch(text);
     return;
   }
 

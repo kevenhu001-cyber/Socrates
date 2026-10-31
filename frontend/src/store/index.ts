@@ -118,6 +118,20 @@ export function dispatchUi(action: UiAction): UiSnapshot {
   return uiStore.getState();
 }
 
+export function dispatchKb(action: KbAction): KbSnapshot {
+  kbBridge.dispatch(action);
+  kbBridge.flush();
+  notifyLegacyListeners();
+  return kbStore.getState();
+}
+
+export function dispatchExam(action: ExamAction): ExamSnapshot {
+  examBridge.dispatch(action);
+  examBridge.flush();
+  notifyLegacyListeners();
+  return examStore.getState();
+}
+
 /** The zustand snapshot stores, for advanced subscribers outside React. */
 export {
   callStore,

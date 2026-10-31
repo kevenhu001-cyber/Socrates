@@ -1,20 +1,87 @@
+import { useEffect, useSyncExternalStore, type ComponentProps, type FormEvent, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { Label } from '../ui/shadcn/label';
+import {
+  focusAuthTab,
+  resendAuthCode,
+  resendVerification,
+  showAuthCodeLogin,
+  showAuthForgotPassword,
+  showAuthRegister,
+  showAuthSignin,
+  submitAuthForgotPassword,
+  submitAuthLoginWithCode,
+  submitAuthRegister,
+  submitAuthResetPassword,
+  submitAuthSendCode,
+  submitAuthSignin,
+} from '../../auth/index.ts';
+import {
+  getAuthUiState,
+  setAuthField,
+  subscribeAuthUi,
+  type AuthUiState,
+} from '../../auth/uiState.ts';
 
-/**
- * The auth gate markup.
- *
- * Behaviour stays imperative: `auth/shell.ts` toggles `hidden` on the views,
- * writes errors with `textContent`, flips button labels while a request is in
- * flight, and `auth/index.ts` binds every handler to `#authGate` by selector.
- * This tree therefore renders once and never re-renders — React is the
- * template engine here, and every id / class / `data-i18n-*` hook below is
- * part of that contract.
- *
- * The only React-owned state is what the DOM cannot express: nothing.
- */
+function useAuthUi<T>(select: (state: AuthUiState) => T): T {
+  return useSyncExternalStore(
+    subscribeAuthUi,
+    () => select(getAuthUiState()),
+    () => select(getAuthUiState()),
+  );
+}
+
+function useAuthViewClass(id: string): string {
+  const visible = useAuthUi((state) => state.view === id);
+  return `auth-view${visible ? '' : ' hidden'}`;
+}
+
+function AuthInput(props: ComponentProps<typeof Input> & { id: string }) {
+  const value = useAuthUi((state) => state.fields[props.id] || '');
+  return <Input {...props} value={value} onChange={(event) => setAuthField(props.id, event.currentTarget.value)} />;
+}
+
+function AuthStatusButton(props: ComponentProps<typeof Button> & { id: string }) {
+  const status = useAuthUi((state) => state.buttons[props.id]);
+  return (
+    <Button {...props} disabled={status?.disabled ?? props.disabled}>
+      {status?.label ?? props.children}
+    </Button>
+  );
+}
+
+function AuthError({ id }: { id: string }) {
+  const message = useAuthUi((state) => state.errors[id] || '');
+  return <div className="auth-error" id={id} role="alert">{message}</div>;
+}
+
+function AuthText({ id }: { id: string }) {
+  return <>{useAuthUi((state) => state.text[id] || '')}</>;
+}
+
+function useAuthVisible(id: string, defaultVisible: boolean): boolean {
+  return useAuthUi((state) => state.visibility[id] ?? defaultVisible);
+}
+
+function handleAuthSubmit(event: FormEvent<HTMLFormElement>, action: () => Promise<void>): void {
+  event.preventDefault();
+  void action();
+}
+
+function handleAuthLink(event: ReactMouseEvent<HTMLAnchorElement>, action: () => void): void {
+  event.preventDefault();
+  action();
+}
+
+/** React owns auth view state, form values, validation feedback, and actions. */
 export function AuthGate() {
+  const focusRequest = useAuthUi((state) => state.focusRequest);
+  useEffect(() => {
+    if (focusRequest) document.getElementById(focusRequest.id)?.focus();
+  }, [focusRequest]);
+
+  const activeTab = useAuthUi((state) => state.activeTab);
   return (
     <>
       <div className="auth-card">
@@ -33,28 +100,32 @@ export function AuthGate() {
           <Button
             variant="ghost"
             type="button"
-            className="auth-tab active"
+            className={`auth-tab${activeTab === 'signin' ? ' active' : ''}`}
             id="authSigninTab"
             role="tab"
             aria-controls="authSigninView"
-            aria-selected="true"
-            tabIndex={0}
+            aria-selected={activeTab === 'signin'}
+            tabIndex={activeTab === 'signin' ? 0 : -1}
             data-tab="signin"
             data-i18n-key="auth.signIn"
+            onClick={() => showAuthSignin()}
+            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => focusAuthTab(event.currentTarget, event.nativeEvent)}
           >
             Sign in
           </Button>
           <Button
             variant="ghost"
             type="button"
-            className="auth-tab"
+            className={`auth-tab${activeTab === 'register' ? ' active' : ''}`}
             id="authRegisterTab"
             role="tab"
             aria-controls="authRegisterView"
-            aria-selected="false"
-            tabIndex={-1}
+            aria-selected={activeTab === 'register'}
+            tabIndex={activeTab === 'register' ? 0 : -1}
             data-tab="register"
             data-i18n-key="auth.createAccount"
+            onClick={() => showAuthRegister()}
+            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => focusAuthTab(event.currentTarget, event.nativeEvent)}
           >
             Create account
           </Button>
@@ -89,10 +160,11 @@ function FieldLabel({ htmlFor, labelKey, text }: { htmlFor: string; labelKey?: s
 }
 
 function SigninView() {
+  const className = useAuthViewClass('authSigninView');
   return (
-    <form className="auth-view" id="authSigninView">
+    <form className={className} id="authSigninView" onSubmit={(event) => handleAuthSubmit(event, submitAuthSignin)}>
       <FieldLabel htmlFor="authSigninEmail" labelKey="auth.email" text="Email" />
-      <Input
+      <AuthInput
         className="auth-input"
         id="authSigninEmail"
         name="authSigninEmail"
@@ -102,7 +174,7 @@ function SigninView() {
         placeholder="you@example.com"
       />
       <FieldLabel htmlFor="authSigninPassword" labelKey="auth.password" text="Password" />
-      <Input
+      <AuthInput
         className="auth-input"
         id="authSigninPassword"
         name="authSigninPassword"
@@ -111,13 +183,13 @@ function SigninView() {
         required
         placeholder="••••••••"
       />
-      <a className="auth-inline-link auth-inline-link-right" href="#" data-i18n-key="auth.forgotPassword">
+      <a className="auth-inline-link auth-inline-link-right" href="#" data-i18n-key="auth.forgotPassword" onClick={(event) => handleAuthLink(event, showAuthForgotPassword)}>
         Forgot password?
       </a>
-      <div className="auth-error" id="authSigninError" />
-      <Button className="auth-btn primary" id="authSigninBtn" type="submit" data-i18n-key="auth.signIn">
+      <AuthError id="authSigninError" />
+      <AuthStatusButton className="auth-btn primary" id="authSigninBtn" type="submit" data-i18n-key="auth.signIn">
         Sign in
-      </Button>
+      </AuthStatusButton>
       <div className="auth-view-separator" data-i18n-key="auth.or">or</div>
       <a
         className="auth-btn secondary auth-github-btn"
@@ -129,25 +201,26 @@ function SigninView() {
         </svg>
         <span data-i18n-key="auth.continueGithub">Continue with GitHub</span>
       </a>
-      <a className="auth-inline-link auth-code-login-link" href="#" data-i18n-key="auth.codeLoginLink">
+      <a className="auth-inline-link auth-code-login-link" href="#" data-i18n-key="auth.codeLoginLink" onClick={(event) => handleAuthLink(event, showAuthCodeLogin)}>
         Login with verification code
       </a>
       <div className="auth-foot">
         <span data-i18n-key="auth.noAccount">No account?</span>{' '}
-        <a href="#" data-i18n-key="auth.createOne">Create one</a>
+          <a href="#" data-i18n-key="auth.createOne" onClick={(event) => handleAuthLink(event, showAuthRegister)}>Create one</a>
       </div>
     </form>
   );
 }
 
 function RegisterView() {
+  const className = useAuthViewClass('authRegisterView');
   return (
-    <form className="auth-view hidden" id="authRegisterView">
+    <form className={className} id="authRegisterView" onSubmit={(event) => handleAuthSubmit(event, submitAuthRegister)}>
       <p className="auth-lede" data-i18n-key="auth.registerLede">
         Sign up with your email. We&apos;ll send a verification link — no codes to memorize.
       </p>
       <FieldLabel htmlFor="authRegisterEmail" labelKey="auth.email" text="Email" />
-      <Input
+      <AuthInput
         className="auth-input"
         id="authRegisterEmail"
         name="authRegisterEmail"
@@ -157,7 +230,7 @@ function RegisterView() {
         placeholder="you@example.com"
       />
       <FieldLabel htmlFor="authRegisterPassword" labelKey="auth.password" text="Password" />
-      <Input
+      <AuthInput
         className="auth-input"
         id="authRegisterPassword"
         name="authRegisterPassword"
@@ -168,13 +241,13 @@ function RegisterView() {
         placeholder="At least 8 characters"
         data-i18n-placeholder="chrome.passwordHint"
       />
-      <div className="auth-error" id="authRegisterError" />
-      <Button className="auth-btn primary" id="authRegisterBtn" type="submit" data-i18n-key="auth.sendVerificationLink">
+      <AuthError id="authRegisterError" />
+      <AuthStatusButton className="auth-btn primary" id="authRegisterBtn" type="submit" data-i18n-key="auth.sendVerificationLink">
         Send verification link
-      </Button>
+      </AuthStatusButton>
       <div className="auth-foot">
         <span data-i18n-key="auth.alreadyVerified">Already verified?</span>{' '}
-        <a href="#" data-i18n-key="auth.signIn">Sign in</a>
+        <a href="#" data-i18n-key="auth.signIn" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Sign in</a>
       </div>
     </form>
   );
@@ -190,32 +263,34 @@ function MailIcon() {
 }
 
 function VerifySentView() {
+  const className = useAuthViewClass('authVerifySentView');
   return (
-    <div className="auth-view hidden" id="authVerifySentView">
+    <div className={className} id="authVerifySentView">
       <div className="auth-icon">
         <MailIcon />
       </div>
       <h2 className="auth-title" data-i18n-key="auth.checkInbox">Check your inbox</h2>
       <p className="auth-lede">
         <span data-i18n-key="auth.verifySentPre">We sent a verification link to </span>
-        <strong id="authVerifyEmail" />
+        <strong id="authVerifyEmail"><AuthText id="authVerifyEmail" /></strong>
         <span data-i18n-key="auth.verifySentPost">
           . Click the button in the email to start learning with Socrates. The link expires in 24 hours.
         </span>
       </p>
-      <Button className="auth-btn secondary" type="button" data-i18n-key="auth.resendLink">
+      <Button className="auth-btn secondary" type="button" data-i18n-key="auth.resendLink" onClick={() => { void resendVerification(); }}>
         Resend the link
       </Button>
       <div className="auth-foot">
-        <a href="#" data-i18n-key="auth.useDifferentEmail">Use a different email</a>
+        <a href="#" data-i18n-key="auth.useDifferentEmail" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Use a different email</a>
       </div>
     </div>
   );
 }
 
 function VerifyFailedView() {
+  const className = useAuthViewClass('authVerifyFailedView');
   return (
-    <div className="auth-view hidden" id="authVerifyFailedView">
+    <div className={className} id="authVerifyFailedView">
       <div className="auth-icon auth-icon-warn">
         <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
@@ -223,13 +298,11 @@ function VerifyFailedView() {
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h2 className="auth-title" id="authVerifyFailedTitle">This link is invalid or expired</h2>
-      <p className="auth-lede" id="authVerifyFailedMsg">
-        Verification links expire after 24 hours. Enter your email and we&apos;ll send a fresh one.
-      </p>
-      <form>
+      <h2 className="auth-title" id="authVerifyFailedTitle"><AuthText id="authVerifyFailedTitle" /></h2>
+      <p className="auth-lede" id="authVerifyFailedMsg"><AuthText id="authVerifyFailedMsg" /></p>
+      <form onSubmit={(event) => handleAuthSubmit(event, resendVerification)}>
         <FieldLabel htmlFor="authResendEmail" labelKey="auth.email" text="Email" />
-        <Input
+        <AuthInput
           className="auth-input"
           id="authResendEmail"
           name="authResendEmail"
@@ -237,21 +310,22 @@ function VerifyFailedView() {
           required
           placeholder="you@example.com"
         />
-        <div className="auth-error" id="authVerifyFailedError" />
+        <AuthError id="authVerifyFailedError" />
         <Button className="auth-btn primary" type="submit" data-i18n-key="auth.sendNewLink">
           Send a new link
         </Button>
       </form>
       <div className="auth-foot">
-        <a href="#">Back to sign in</a>
+        <a href="#" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Back to sign in</a>
       </div>
     </div>
   );
 }
 
 function VerifiedView() {
+  const className = useAuthViewClass('authVerifiedView');
   return (
-    <div className="auth-view hidden" id="authVerifiedView">
+    <div className={className} id="authVerifiedView">
       <div className="auth-icon auth-icon-ok">
         <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12" />
@@ -267,7 +341,7 @@ function VerifiedView() {
 
 function BackLink() {
   return (
-    <a className="auth-back-link" href="#">
+    <a className="auth-back-link" href="#" onClick={(event) => handleAuthLink(event, showAuthSignin)}>
       <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <line x1="19" y1="12" x2="5" y2="12" />
         <polyline points="12 19 5 12 12 5" />
@@ -278,8 +352,9 @@ function BackLink() {
 }
 
 function ForgotPasswordView() {
+  const className = useAuthViewClass('authForgotPasswordView');
   return (
-    <form className="auth-view hidden" id="authForgotPasswordView">
+    <form className={className} id="authForgotPasswordView" onSubmit={(event) => handleAuthSubmit(event, submitAuthForgotPassword)}>
       <BackLink />
       <div className="auth-icon">
         <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
@@ -292,7 +367,7 @@ function ForgotPasswordView() {
         Enter your email and we&apos;ll send a reset link.
       </p>
       <FieldLabel htmlFor="authForgotEmail" labelKey="auth.email" text="Email" />
-      <Input
+      <AuthInput
         className="auth-input"
         id="authForgotEmail"
         name="authForgotEmail"
@@ -301,38 +376,40 @@ function ForgotPasswordView() {
         required
         placeholder="you@example.com"
       />
-      <div className="auth-error" id="authForgotError" />
-      <Button className="auth-btn primary" id="authForgotBtn" type="submit" data-i18n-key="auth.sendResetLink">
+      <AuthError id="authForgotError" />
+      <AuthStatusButton className="auth-btn primary" id="authForgotBtn" type="submit" data-i18n-key="auth.sendResetLink">
         Send reset link
-      </Button>
+      </AuthStatusButton>
     </form>
   );
 }
 
 function ForgotSentView() {
+  const className = useAuthViewClass('authForgotSentView');
   return (
-    <div className="auth-view hidden" id="authForgotSentView">
+    <div className={className} id="authForgotSentView">
       <div className="auth-icon">
         <MailIcon />
       </div>
       <h2 className="auth-title" data-i18n-key="auth.checkInbox">Check your inbox</h2>
       <p className="auth-lede">
         <span data-i18n-key="auth.forgotSentPre">If an account exists for </span>
-        <strong id="authForgotSentEmail" />
+        <strong id="authForgotSentEmail"><AuthText id="authForgotSentEmail" /></strong>
         <span data-i18n-key="auth.forgotSentPost">
           , we sent a password reset link. The link expires in 1 hour.
         </span>
       </p>
       <div className="auth-foot">
-        <a href="#" data-i18n-key="auth.backToSignIn">Back to sign in</a>
+        <a href="#" data-i18n-key="auth.backToSignIn" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Back to sign in</a>
       </div>
     </div>
   );
 }
 
 function ResetPasswordView() {
+  const className = useAuthViewClass('authResetPasswordView');
   return (
-    <form className="auth-view hidden" id="authResetPasswordView">
+    <form className={className} id="authResetPasswordView" onSubmit={(event) => handleAuthSubmit(event, submitAuthResetPassword)}>
       <div className="auth-icon auth-icon-ok">
         <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -348,7 +425,7 @@ function ResetPasswordView() {
           reset link carries the token + email, so this field stays hidden
           but part of the form. */}
       <Label className="auth-label sr-only-old" htmlFor="authResetEmail">Email</Label>
-      <Input
+      <AuthInput
         className="auth-input sr-only-opacity"
         id="authResetEmail"
         type="email"
@@ -357,7 +434,7 @@ function ResetPasswordView() {
         aria-hidden="true"
       />
       <FieldLabel htmlFor="authResetPassword" labelKey="auth.newPassword" text="New password" />
-      <Input
+      <AuthInput
         className="auth-input"
         id="authResetPassword"
         name="authResetPassword"
@@ -369,7 +446,7 @@ function ResetPasswordView() {
         data-i18n-placeholder="chrome.passwordHint"
       />
       <FieldLabel htmlFor="authResetConfirm" labelKey="auth.confirmPassword" text="Confirm password" />
-      <Input
+      <AuthInput
         className="auth-input"
         id="authResetConfirm"
         name="authResetConfirm"
@@ -380,17 +457,18 @@ function ResetPasswordView() {
         placeholder="Repeat your password"
         data-i18n-placeholder="chrome.repeatPassword"
       />
-      <div className="auth-error" id="authResetError" />
-      <Button className="auth-btn primary" id="authResetBtn" type="submit" data-i18n-key="auth.resetPassword">
+      <AuthError id="authResetError" />
+      <AuthStatusButton className="auth-btn primary" id="authResetBtn" type="submit" data-i18n-key="auth.resetPassword">
         Reset password
-      </Button>
+      </AuthStatusButton>
     </form>
   );
 }
 
 function ResetSuccessView() {
+  const className = useAuthViewClass('authResetSuccessView');
   return (
-    <div className="auth-view hidden" id="authResetSuccessView">
+    <div className={className} id="authResetSuccessView">
       <div className="auth-icon auth-icon-ok">
         <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12" />
@@ -400,7 +478,7 @@ function ResetSuccessView() {
       <p className="auth-lede" data-i18n-key="auth.passwordUpdatedLede">
         Your password has been reset successfully. Sign in with your new password.
       </p>
-      <Button className="auth-btn primary" type="button" data-i18n-key="auth.signIn">
+      <Button className="auth-btn primary" type="button" data-i18n-key="auth.signIn" onClick={() => showAuthSignin()}>
         Sign in
       </Button>
     </div>
@@ -408,8 +486,14 @@ function ResetSuccessView() {
 }
 
 function CodeLoginView() {
+  const className = useAuthViewClass('authCodeLoginView');
+  const codeWrapVisible = useAuthVisible('authCodeCodeWrap', false);
+  const sentMessageVisible = useAuthVisible('authCodeSentMsg', false);
+  const sendButtonVisible = useAuthVisible('authCodeSendBtn', true);
+  const loginButtonVisible = useAuthVisible('authCodeLoginBtn', false);
+  const resendVisible = useAuthVisible('authCodeResendWrap', false);
   return (
-    <div className="auth-view hidden" id="authCodeLoginView">
+    <div className={className} id="authCodeLoginView">
       <BackLink />
       <div className="auth-icon">
         <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
@@ -423,7 +507,7 @@ function CodeLoginView() {
         Enter your email to receive an 8-character login code.
       </p>
       <FieldLabel htmlFor="authCodeEmail" labelKey="auth.email" text="Email" />
-      <Input
+      <AuthInput
         className="auth-input"
         id="authCodeEmail"
         name="authCodeEmail"
@@ -432,9 +516,9 @@ function CodeLoginView() {
         required
         placeholder="you@example.com"
       />
-      <div id="authCodeCodeWrap" className="hidden">
+      <div id="authCodeCodeWrap" className={codeWrapVisible ? '' : 'hidden'}>
         <FieldLabel htmlFor="authCodeInput" labelKey="auth.codeLabel" text="8-character code" />
-        <Input
+        <AuthInput
           className="auth-input auth-code-input"
           id="authCodeInput"
           name="authCodeInput"
@@ -447,24 +531,24 @@ function CodeLoginView() {
           spellCheck={false}
           placeholder="ABCD2345"
         />
-        <p className="auth-msg hidden" id="authCodeSentMsg">
+        <p className={`auth-msg${sentMessageVisible ? '' : ' hidden'}`} id="authCodeSentMsg">
           <span data-i18n-key="auth.codeSentPre">We sent a code to </span>
-          <strong id="authCodeSentEmail" />
+          <strong id="authCodeSentEmail"><AuthText id="authCodeSentEmail" /></strong>
           <span data-i18n-key="auth.codeSentPost">. It expires in 10 minutes.</span>
         </p>
       </div>
-      <div className="auth-error" id="authCodeError" />
-      <Button className="auth-btn primary" id="authCodeSendBtn" type="button" data-i18n-key="auth.sendCode">
+      <AuthError id="authCodeError" />
+      <AuthStatusButton className={`auth-btn primary${sendButtonVisible ? '' : ' hidden'}`} id="authCodeSendBtn" type="button" data-i18n-key="auth.sendCode" onClick={() => { void submitAuthSendCode(); }}>
         Send code
-      </Button>
-      <Button className="auth-btn primary hidden" id="authCodeLoginBtn" type="button" data-i18n-key="auth.logIn">
+      </AuthStatusButton>
+      <AuthStatusButton className={`auth-btn primary${loginButtonVisible ? '' : ' hidden'}`} id="authCodeLoginBtn" type="button" data-i18n-key="auth.logIn" onClick={() => { void submitAuthLoginWithCode(); }}>
         Log in
-      </Button>
-      <div className="auth-foot hidden" id="authCodeResendWrap">
-        <a href="#" data-i18n-key="auth.resendCode">Resend code</a>
+      </AuthStatusButton>
+      <div className={`auth-foot${resendVisible ? '' : ' hidden'}`} id="authCodeResendWrap">
+        <a href="#" data-i18n-key="auth.resendCode" onClick={(event) => handleAuthLink(event, () => { void resendAuthCode(); })}>Resend code</a>
       </div>
       <div className="auth-foot">
-        <a href="#" data-i18n-key="auth.backToSignIn">Back to sign in</a>
+        <a href="#" data-i18n-key="auth.backToSignIn" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Back to sign in</a>
       </div>
     </div>
   );

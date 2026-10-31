@@ -57,7 +57,7 @@ test('typed recents filter updates while the compact drawer hides chips', async 
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar?.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await page.waitForTimeout(400);
   await page.evaluate(() => localStorage.setItem('socrates-recents-filter', 'algebra'));
@@ -93,9 +93,9 @@ test('React recents chips refresh after project and session caches change', asyn
   const projectChip = page.locator('#recentsFilterChips [data-filter="project:project-algebra"]');
   await expect(projectChip).toContainText('Algebra project');
   await expect(projectChip).toHaveAttribute('aria-label', 'Filter by project: Algebra project');
-  await page.evaluate(() => window.setLang('zh'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('zh'));
   await expect(projectChip).toHaveAttribute('aria-label', '按项目筛选：Algebra project');
-  await page.evaluate(() => window.setLang('en'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   await expect(projectChip).toHaveAttribute('aria-label', 'Filter by project: Algebra project');
   await page.evaluate(() => {
     window.SERVER_SESSIONS = [

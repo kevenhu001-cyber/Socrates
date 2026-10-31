@@ -13,10 +13,7 @@ type Surface = {
   reactRoot: OwnedRootHandle;
   backdrop: HTMLButtonElement;
   panel: HTMLElement;
-  title: HTMLElement;
-  meta: HTMLElement;
   close: HTMLButtonElement;
-  body: HTMLElement;
   view: DetailView;
   active: DetailOptions | null;
   trigger: HTMLElement | null;
@@ -61,10 +58,7 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
     reactRoot,
     backdrop: root.querySelector<HTMLButtonElement>('.detail-backdrop')!,
     panel: root.querySelector<HTMLElement>('.detail-surface')!,
-    title: root.querySelector<HTMLElement>('h2')!,
-    meta: root.querySelector<HTMLElement>('.detail-meta')!,
     close: root.querySelector<HTMLButtonElement>('.detail-close')!,
-    body: root.querySelector<HTMLElement>('.detail-body')!,
     view: DetailSurfaceView,
     active: null, trigger: null, inert: null,
     appShell, sidebar,
@@ -149,8 +143,11 @@ export function updateDetailSurface(owner: string, meta: string, doc: Document =
   }
   const surface = surfaces.get(doc);
   if (surface?.active?.owner !== owner) return;
-  surface.meta.textContent = meta;
-  surface.meta.hidden = !meta;
+  surface.active = { ...surface.active, meta };
+  flushSync(() => surface.reactRoot.render(createElement(surface.view, {
+    options: surface.active,
+    onClose: () => closeDetailSurface(undefined, doc),
+  })));
 }
 
 function cancelPendingOpen(owner: string | undefined, doc: Document): void {

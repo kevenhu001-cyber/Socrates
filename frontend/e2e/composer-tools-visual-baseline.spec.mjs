@@ -19,7 +19,7 @@ test('composer tools visual baseline covers desktop and mobile themes and locale
     for (const language of ['en', 'zh']) {
       for (const theme of ['dark', 'light']) {
         await page.evaluate(({ language: nextLanguage, theme: nextTheme }) => {
-          window.setLang(nextLanguage);
+          window.__socratesLegacy.profile.setLang(nextLanguage);
           document.documentElement.setAttribute('data-mode', nextTheme);
         }, { language, theme });
 

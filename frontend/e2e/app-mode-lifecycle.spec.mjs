@@ -11,17 +11,17 @@ test('mode change keeps an active session on cancel and resets only after confir
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
   });
 
-  const cancelledSwitch = page.evaluate(() => window.toggleAppMode('tutor'));
+  const cancelledSwitch = page.evaluate(() => window.__socratesLegacy.navigation.toggleAppMode('tutor'));
   await expect(page.locator('#confirmDialog')).toBeVisible();
   await page.locator('#confirmCancelBtn').click();
   await cancelledSwitch;
-  expect(await page.evaluate(() => window.appMode)).toBe('chat');
+  expect(await page.evaluate(() => document.body.dataset.appMode)).toBe('chat');
   expect(await page.evaluate(() => window.stateStore.read('topic'))).toBe('Mode-switch test session');
 
-  const confirmedSwitch = page.evaluate(() => window.toggleAppMode('tutor'));
+  const confirmedSwitch = page.evaluate(() => window.__socratesLegacy.navigation.toggleAppMode('tutor'));
   await expect(page.locator('#confirmDialog')).toBeVisible();
   await page.locator('#confirmOkBtn').click();
   await confirmedSwitch;
-  expect(await page.evaluate(() => window.appMode)).toBe('tutor');
+  expect(await page.evaluate(() => document.body.dataset.appMode)).toBe('tutor');
   expect(await page.evaluate(() => window.stateStore.read('topic'))).toBe('');
 });

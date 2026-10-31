@@ -70,7 +70,7 @@ test('file previews share the detail shell and ignore stale content responses', 
 test('directory headings and actions align without occupying the phone app bar', async ({ page }) => {
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.evaluate(() => window.openNav('plugins'));
+    await page.evaluate(() => window.__socratesLegacy.navigation.openNav('plugins'));
     await expect(page.locator('.plugin-directory')).toBeVisible();
     await page.evaluate(async () => {
       await document.fonts.ready;
@@ -78,7 +78,7 @@ test('directory headings and actions align without occupying the phone app bar',
       if (panel) await Promise.all(panel.getAnimations().map((a) => a.finished));
     });
     const plugin = await page.locator('.plugin-directory-heading h2').boundingBox();
-    await page.evaluate(() => window.openNav('library'));
+    await page.evaluate(() => window.__socratesLegacy.navigation.openNav('library'));
     await expect(page.locator('.library-directory')).toBeVisible();
     await page.evaluate(async () => {
       await document.fonts.ready;
@@ -96,7 +96,7 @@ test('directory headings and actions align without occupying the phone app bar',
     expect(actions.x).toBeGreaterThan(title.x + title.width);
     expect(actions.x + actions.width).toBeLessThanOrEqual(width - 16);
   }
-  await page.evaluate(() => { if (!document.querySelector('#sidebar').classList.contains('collapsed')) window.toggleSidebar(); });
+  await page.evaluate(() => { if (!document.querySelector('#sidebar').classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar(); });
   await page.locator('.library-new-pill').click();
   await expect(page.locator('.library-new-menu')).toBeInViewport();
   await page.locator('.library-new-pill').click();
@@ -194,7 +194,7 @@ test('phone library filters actual images and selects only visible rows', async 
   await page.setViewportSize({ width: 390, height: 769 });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   // The reference phone drawer is 65vw capped at 280px: 253.5px at 390px.
   await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(Math.round(-390 * 0.65));

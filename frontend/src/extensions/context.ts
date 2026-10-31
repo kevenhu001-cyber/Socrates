@@ -25,6 +25,8 @@ import type {
   TemplateChipSpec,
 } from './types';
 import { publishAgentRun } from './agentRunStore';
+import { toggleWebSearch } from '../chat/webSearchToggle.ts';
+import { openNav } from '../sidebar/navigation.service.ts';
 
 type SetActiveTemplateSpec = TemplateChipSpec & {
   systemPrompt: string;
@@ -56,12 +58,8 @@ interface LegacyWindow {
   }) => void;
   clearActiveTemplate?: () => void;
   showToast?: (msg: string) => void;
-  openNav?: (page: string) => void;
   openPromptTemplatesModal?: () => void;
   openAttachmentPicker?: (mode: string) => void;
-  toggleWebSearch?: () => void;
-  launchDeepResearch?: () => void;
-  syncQuickChips?: () => void;
 }
 
 function w(): LegacyWindow {
@@ -128,15 +126,13 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
     },
 
     // ── legacy bridge passthroughs ──
-    openNav: (page) => w().openNav?.(page),
+    openNav: (page) => openNav(page),
     openPromptTemplatesModal: () => w().openPromptTemplatesModal?.(),
     openAttachmentPicker: (_mode) => {
       // Legacy picker takes an element id — one composer, one input.
       w().openAttachmentPicker?.('composerAttachInput');
     },
-    toggleWebSearch: () => w().toggleWebSearch?.(),
-    launchDeepResearch: () => w().launchDeepResearch?.(),
-    syncQuickChips: () => w().syncQuickChips?.(),
+    toggleWebSearch: () => toggleWebSearch(),
   };
 }
 

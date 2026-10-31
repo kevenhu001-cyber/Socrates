@@ -116,7 +116,7 @@
 }
 
 @media (max-width: 768px) {
-  /* The plus menu is a bottom sheet: placement lives in ui/composerTools.js
+  /* The plus menu is a bottom sheet: placement lives in the React controller
      and the shape in components/menu.css. The floating-card geometry that
      used to sit here (252px wide, 16px from the composer's edge, 52dvh cap)
      is retired — it covered the composer's own trigger and cut its last

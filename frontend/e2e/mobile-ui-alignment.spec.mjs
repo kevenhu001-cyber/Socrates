@@ -36,7 +36,7 @@ for (const theme of ['light', 'dark']) {
     });
     const rect = await tabs.boundingBox();
     expect(Math.abs(rect.x + rect.width / 2 - 195)).toBeLessThanOrEqual(1);
-    await expect(page.locator('#mobileMode')).toBeHidden();
+    await expect(page.locator('#mobileMode')).toHaveCount(0);
     await expect(page.locator('#mobileNewChatBtn')).toBeHidden();
     const composer = page.locator('.rich-composer-editor');
     await composer.fill('保留我的学习问题');
@@ -109,7 +109,7 @@ test('project organization survives reload, respects search and retains the arch
     await page.locator('#sidebarOpenBtn').click();
   }
   await expect(page.locator('.recents-project-label')).toHaveText(['数学学习', '写作计划', '其他聊天']);
-  await page.evaluate(() => window.setLang('en'));
+  await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   await expect(page.locator('.recents-project-label')).toHaveText(['数学学习', '写作计划', 'Other chats']);
   await page.locator('#sidebarSearchBtn').click();
   await page.locator('#sidebarSearch').fill('导数');
