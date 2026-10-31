@@ -1,6 +1,11 @@
 (function () {
   "use strict";
 
+  // Runs in <head>: lets CSS tell "scripts are coming" from "no scripts" at
+  // first paint, so script-dependent chrome does not appear or collapse late
+  // and shift the page.
+  document.documentElement.setAttribute("data-site-js", "");
+
   /*
    * Socrates marketing-site locale layer.
    *

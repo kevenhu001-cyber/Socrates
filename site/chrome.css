@@ -202,10 +202,15 @@ html.site-menu-open { overflow: hidden; }
   .site-nav,
   .site-header-actions > .site-login { display: none; }
   .site-menu-toggle { display: block; }
-  /* Links remain available in the header when JS is disabled or fails. */
-  .site-header:not([data-chrome-ready]) .site-header-inner { flex-wrap: wrap; height: auto; min-height: var(--site-header-height); padding-block: var(--space-75); }
-  .site-header:not([data-chrome-ready]) .site-nav { display: flex; flex-wrap: wrap; order: 3; width: 100%; gap: 0 var(--space-50); }
-  .site-header:not([data-chrome-ready]) .site-menu-toggle { display: none; }
+}
+/* Links stay in the header when scripts are off. locale.js marks the root
+   in <head>, so with scripts the header is collapsed from the first paint and
+   chrome.js arriving at the end of the body no longer shrinks it and shifts
+   the page (was CLS 0.13 at 390). Every link also stays in the footer. */
+@media (max-width: 1080px) {
+  :root:not([data-site-js]) .site-header:not([data-chrome-ready]) .site-header-inner { flex-wrap: wrap; height: auto; min-height: var(--site-header-height); padding-block: var(--space-75); }
+  :root:not([data-site-js]) .site-header:not([data-chrome-ready]) .site-nav { display: flex; flex-wrap: wrap; order: 3; width: 100%; gap: 0 var(--space-50); }
+  :root:not([data-site-js]) .site-header:not([data-chrome-ready]) .site-menu-toggle { display: none; }
 }
 @media (max-width: 760px) {
   .site-header-inner { gap: var(--space-50); }
