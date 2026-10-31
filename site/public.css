@@ -267,3 +267,8 @@ html { scroll-padding-top: 0; }
 @media (prefers-reduced-motion: reduce) {
   [data-site-public] .page-media-card:hover .page-media-frame img { transform: none; }
 }
+/* Older editorial heroes (zh inner pages) drew a blurred gray glow behind
+   the title; the white ground stays plain, as on the home page. */
+[data-site-public].ed-site :is(.ed-page-hero, .ed-news-hero, .ed-home-hero, .ed-reference-hero, .ed-learning-hero)::before,
+[data-site-public].ed-site :is(.ed-page-hero, .ed-news-hero)::after { display: none !important; }
+[data-site-public].ed-site :is(.ed-page-hero, .ed-learning-hero) :is(.ed-page-title, h1) { font-size: clamp(32px, 3.6vw, 52px); }
