@@ -238,3 +238,32 @@ html { scroll-padding-top: 0; }
 @media (prefers-reduced-motion: reduce) {
   [data-word-ready] .site-word { opacity: 1; transition: none; }
 }
+
+/* Inner pages (learn, guide, documents, about, principles, announcements,
+   contact, developers, legal, research and its articles): one system with
+   the home page. Eyebrows lose their old dot and become small gray pills;
+   media bands align to the page container with 24px radii and no borders;
+   older card radii resolve to the 12 / 16 / 24 scale. */
+[data-site-public] { --r-md: 12px; --r-lg: 16px; --r-xl: 24px; }
+[data-site-public] .eyebrow:not(.sec-eyebrow), [data-site-public].ed-site .ed-page-hero .ed-kicker, [data-site-public].ed-site .ed-article-hero .ed-kicker { display: inline-flex; width: fit-content; height: 28px; align-items: center; gap: 0; padding-inline: 12px; border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-muted); font: var(--type-caption-4); letter-spacing: 0; text-transform: none; }
+[data-site-public] .eyebrow::before, [data-site-public].ed-site .ed-kicker::before { display: none !important; content: none !important; }
+[data-site-public] .sec-eyebrow { color: var(--site-color-muted); font: var(--type-caption-4); letter-spacing: 0; text-transform: none; }
+[data-site-public] .page-head .eyebrow { margin-bottom: var(--space-300); }
+[data-site-public] .page-title { max-width: 20ch; text-wrap: balance; }
+[data-site-public] .page-lede { color: var(--site-color-muted); text-wrap: pretty; }
+[data-site-public] .page-media-shell { width: min(calc(100% - var(--site-gutter) * 2), calc(var(--site-width) - var(--site-gutter) * 2)); }
+[data-site-public] .page-media-grid { gap: var(--space-300); }
+[data-site-public] .page-media-frame { border: 0; border-radius: var(--radius-3xl); background: var(--site-color-surface); }
+[data-site-public] .page-media-inline .page-media-frame, [data-site-public] .page-media-inline img { border-radius: var(--radius-3xl); }
+[data-site-public] .page-media-card figcaption { margin-top: var(--space-100); padding-inline: var(--space-50); color: var(--site-color-muted); font: var(--type-caption-5); }
+[data-site-public] .page-media-card:hover .page-media-frame img { transform: scale(1.025); transition: transform var(--site-motion-slow) var(--site-ease); }
+[data-site-public] :is(.card, .topic, .step3) { border-radius: var(--radius-2xl); }
+[data-site-public] :is(.faq details, .ed-related-card, .ed-author-card, .ed-table-wrap, .ed-figure) { border-radius: var(--radius-2xl); }
+[data-site-public] :is(.btn--ghost, .btn--light) { border-radius: var(--radius-full); }
+@media (max-width: 760px) {
+  [data-site-public] .page-media-grid { gap: var(--space-200); }
+  [data-site-public] .page-media-frame { border-radius: var(--radius-2xl); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-site-public] .page-media-card:hover .page-media-frame img { transform: none; }
+}
