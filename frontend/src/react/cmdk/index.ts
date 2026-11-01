@@ -1,4 +1,4 @@
-export { hydrateCmdKOverlay } from './CommandPalette';
+export { CommandPalette, mountCmdK, unmountCmdK, hydrateCmdKOverlay } from './CommandPalette';
 export {
   getCmdKSnapshot,
   subscribeToCmdK,

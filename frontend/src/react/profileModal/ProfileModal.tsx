@@ -35,6 +35,7 @@ function ProfileModal() {
       role="dialog"
       aria-modal="true"
       aria-label={i18n('profile.account', 'Account')}
+      data-i18n-aria="profile.account"
     >
       <div className="profile-modal" onClick={(event) => event.stopPropagation()}>
         <ProfileHeader user={snapshot.user} onSaveName={dispatch.saveName} />

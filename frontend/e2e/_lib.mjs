@@ -72,7 +72,11 @@ export async function gotoAndSettle(page, url = '/', opts = {}) {
   for (let i = 0; i < 60; i++) {
     await page.waitForTimeout(800);
     const ok = await page.evaluate((req) => {
-      return req.filter(k => typeof window[k] === 'function').length >= Math.ceil(req.length * 0.25);
+      const leg = window.__socratesLegacy || {};
+      const hasAny = (k) => typeof window[k] === 'function' ||
+        typeof leg[k] === 'function' ||
+        Object.values(leg).some((domain) => domain && typeof domain === 'object' && typeof domain[k] === 'function');
+      return req.filter(hasAny).length >= Math.ceil(req.length * 0.25);
     }, probe);
     if (ok) return;
   }

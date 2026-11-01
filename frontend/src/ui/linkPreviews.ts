@@ -26,25 +26,31 @@ function hostnameFor(url: string): string {
   }
 }
 
+function previewStatusOf(fetched: LinkPreviewResult | null, content: string, ok: boolean): string {
+  if (!ok) return fetched?.reason || 'fetch failed';
+  const prefix = fetched?.truncated ? 'excerpt · ' : 'full · ';
+  const count = fetched?.chars ?? content.length;
+  return `${prefix}${count} chars`;
+}
+
+function linkPreviewItemOf(rawUrl: string, fetched: LinkPreviewResult | null): LinkPreviewItem {
+  const url = sanitizeUrl(String(rawUrl || ''));
+  const content = fetched?.content || '';
+  const excerpt = content.length > 220 ? `${content.slice(0, 217)}…` : content;
+  const ok = fetched?.ok === true;
+  return {
+    url,
+    host: hostnameFor(url),
+    title: fetched?.title || url,
+    excerpt: ok ? excerpt : '',
+    status: previewStatusOf(fetched, content, ok),
+    failed: !ok,
+  };
+}
+
 export function buildLinkPreviewItems(
   urls: readonly string[],
   results?: readonly (LinkPreviewResult | null | undefined)[] | null,
 ): LinkPreviewItem[] {
-  return urls.map((rawUrl, index) => {
-    const url = sanitizeUrl(String(rawUrl || ''));
-    const fetched = results?.[index] || null;
-    const content = fetched?.content || '';
-    const excerpt = content.length > 220 ? `${content.slice(0, 217)}…` : content;
-    const ok = fetched?.ok === true;
-    return {
-      url,
-      host: hostnameFor(url),
-      title: fetched?.title || url,
-      excerpt: ok ? excerpt : '',
-      status: ok
-        ? `${fetched?.truncated ? 'excerpt · ' : 'full · '}${fetched?.chars ?? content.length} chars`
-        : fetched?.reason || 'fetch failed',
-      failed: !ok,
-    };
-  });
+  return urls.map((rawUrl, index) => linkPreviewItemOf(rawUrl, results?.[index] || null));
 }

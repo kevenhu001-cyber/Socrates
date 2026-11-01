@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useBridge, useBridgeSelector } from '../../lib/bridge';
 import { cmdKState } from '../../ui/cmdKState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
@@ -30,19 +31,22 @@ export function useCmdKCommands(): {
   key: (key: string) => void;
   activate: (index: number) => void;
 } {
-  return {
-    open: () => getLegacyActions().cmdK.openCmdK(),
-    close: () => getLegacyActions().cmdK.closeCmdK(),
-    input: (value: string) => getLegacyActions().cmdK.onCmdKInput(value),
-    key: (key: string) => {
-      const event = {
-        key,
-        preventDefault: () => {
-          /* no-op stub for legacy handler compatibility */
-        },
-      };
-      getLegacyActions().cmdK.onCmdKKey(event as unknown as KeyboardEvent);
-    },
-    activate: (index: number) => getLegacyActions().cmdK.openCmdKResult(index),
-  };
+  return useMemo(
+    () => ({
+      open: () => getLegacyActions().cmdK.openCmdK(),
+      close: () => getLegacyActions().cmdK.closeCmdK(),
+      input: (value: string) => getLegacyActions().cmdK.onCmdKInput(value),
+      key: (key: string) => {
+        const event = {
+          key,
+          preventDefault: () => {
+            /* no-op stub for legacy handler compatibility */
+          },
+        };
+        getLegacyActions().cmdK.onCmdKKey(event as unknown as KeyboardEvent);
+      },
+      activate: (index: number) => getLegacyActions().cmdK.openCmdKResult(index),
+    }),
+    [],
+  );
 }

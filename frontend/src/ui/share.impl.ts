@@ -235,56 +235,103 @@ function _renderSharedMessageList() {
   publishReactChatRuntime({ type: 'state-synced', reason: 'shared-session-loaded' });
   mountSharedMessageList();
 }
+function displayReadOnlyBanner(banner: HTMLElement | null): void {
+  if (!banner) return;
+  document.getElementById("chatPage")?.prepend(banner);
+  banner.classList.remove("hidden");
+  const label = banner.querySelector("[data-i18n-key='share.readOnlyBanner']");
+  if (label && typeof browserWindow.t === "function") {
+    const text = browserWindow.t("share.readOnlyBanner");
+    if (text && text !== "share.readOnlyBanner") label.textContent = text;
+  }
+}
+
+function createSharedViewRestorer(
+  banner: HTMLElement | null,
+  bannerParent: HTMLElement | null,
+  bannerNextSibling: Node | null,
+  saved: {
+    inputBar: HTMLElement | null;
+    inputBarWasHidden: boolean;
+    topBar: HTMLElement | null;
+    topBarDisplay: string;
+    shareBtn: HTMLElement | null;
+    shareButtonDisplay: string;
+    composer: HTMLElement | null;
+    composerAriaDisabled: string | null;
+    recentsPane: HTMLElement | null;
+    recentsWereHidden: boolean;
+  },
+): () => void {
+  return () => {
+    if (banner) {
+      banner.classList.add('hidden');
+      if (bannerParent) bannerParent.insertBefore(banner, bannerNextSibling?.parentNode === bannerParent ? bannerNextSibling : null);
+    }
+    saved.inputBar?.classList.toggle('hidden', saved.inputBarWasHidden);
+    if (saved.topBar) saved.topBar.style.display = saved.topBarDisplay;
+    if (saved.shareBtn) saved.shareBtn.style.display = saved.shareButtonDisplay;
+    if (saved.composer) {
+      if (saved.composerAriaDisabled === null) saved.composer.removeAttribute('aria-disabled');
+      else saved.composer.setAttribute('aria-disabled', saved.composerAriaDisabled);
+    }
+    saved.recentsPane?.classList.toggle('hidden', saved.recentsWereHidden);
+    sharedShellRestore = null;
+  };
+}
+
+function captureSharedViewShell(
+  inputBar: HTMLElement | null,
+  topBar: HTMLElement | null,
+  shareBtn: HTMLElement | null,
+  composer: HTMLElement | null,
+  recentsPane: HTMLElement | null,
+) {
+  return {
+    inputBar,
+    inputBarWasHidden: Boolean(inputBar?.classList.contains('hidden')),
+    topBar,
+    topBarDisplay: topBar?.style.display ?? '',
+    shareBtn,
+    shareButtonDisplay: shareBtn?.style.display ?? '',
+    composer,
+    composerAriaDisabled: composer?.getAttribute('aria-disabled') ?? null,
+    recentsPane,
+    recentsWereHidden: Boolean(recentsPane?.classList.contains('hidden')),
+  };
+}
+
+function applySharedViewOverrides(
+  inputBar: HTMLElement | null,
+  topBar: HTMLElement | null,
+  shareBtn: HTMLElement | null,
+  composer: HTMLElement | null,
+  recentsPane: HTMLElement | null,
+) {
+  inputBar?.classList.add("hidden");
+  if (topBar) topBar.style.display = "none";
+  if (shareBtn) shareBtn.style.display = "none";
+  composer?.setAttribute("aria-disabled", "true");
+  recentsPane?.classList.add("hidden");
+}
+
 function _switchToSharedChatView() {
   restoreSharedViewShell();
   const banner = document.getElementById("sharedBanner");
   const bannerParent = banner?.parentElement || null;
   const bannerNextSibling = banner?.nextSibling || null;
   const inputBar = document.getElementById("chatInputBar");
-  const inputBarWasHidden = inputBar?.classList.contains('hidden') || false;
-  const topBar = document.querySelector(".chat-top-bar");
-  const topBarDisplay = (topBar as HTMLElement | null)?.style.display || '';
+  const topBar = document.querySelector(".chat-top-bar") as HTMLElement | null;
   const shareBtn = document.getElementById("shareBtn");
-  const shareButtonDisplay = shareBtn?.style.display || '';
   const composer = document.getElementById("composerRoot");
-  const composerAriaDisabled = composer?.getAttribute('aria-disabled') ?? null;
   const recentsPane = document.getElementById("recentsPane");
-  const recentsWereHidden = recentsPane?.classList.contains('hidden') || false;
+
+  const saved = captureSharedViewShell(inputBar, topBar, shareBtn, composer, recentsPane);
   activateMainView("chatView", document);
-  /* Show the read-only banner — it exists in index.html but was never
-     unhidden, so shared sessions had no visible "this is not yours"
-     affordance. */
-  if (banner) {
-    // The transcript was lifted out of mainInner during the shell migration.
-    // Its read-only notice must follow it instead of staying in the hidden landing container.
-    document.getElementById("chatPage")?.prepend(banner);
-    banner.classList.remove("hidden");
-    const label = banner.querySelector("[data-i18n-key='share.readOnlyBanner']");
-    if (label && typeof browserWindow.t === "function") {
-      const text = browserWindow.t("share.readOnlyBanner");
-      if (text && text !== "share.readOnlyBanner") label.textContent = text;
-    }
-  }
-  if (inputBar) inputBar.classList.add("hidden");
-  if (topBar) (topBar as HTMLElement).style.display = "none";
-  if (shareBtn) shareBtn.style.display = "none";
-  if (composer) composer.setAttribute("aria-disabled", "true");
-  if (recentsPane) recentsPane.classList.add("hidden");
-  sharedShellRestore = () => {
-    if (banner) {
-      banner.classList.add('hidden');
-      if (bannerParent) bannerParent.insertBefore(banner, bannerNextSibling?.parentNode === bannerParent ? bannerNextSibling : null);
-    }
-    inputBar?.classList.toggle('hidden', inputBarWasHidden);
-    if (topBar) (topBar as HTMLElement).style.display = topBarDisplay;
-    if (shareBtn) shareBtn.style.display = shareButtonDisplay;
-    if (composer) {
-      if (composerAriaDisabled === null) composer.removeAttribute('aria-disabled');
-      else composer.setAttribute('aria-disabled', composerAriaDisabled);
-    }
-    recentsPane?.classList.toggle('hidden', recentsWereHidden);
-    sharedShellRestore = null;
-  };
+  displayReadOnlyBanner(banner);
+  applySharedViewOverrides(inputBar, topBar, shareBtn, composer, recentsPane);
+
+  sharedShellRestore = createSharedViewRestorer(banner, bannerParent, bannerNextSibling, saved);
   hideAuthGate();
 }
 

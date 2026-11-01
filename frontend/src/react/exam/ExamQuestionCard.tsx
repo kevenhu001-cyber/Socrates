@@ -26,6 +26,106 @@ type ExamQuestionCardProps = ExamQuestionCardData & {
   onTextChange: (index: number, value: string) => void;
 };
 
+function ExamChoiceOptions({
+  options,
+  selected,
+  readOnly,
+  answerLabel,
+  index,
+  onOptionChange,
+}: {
+  options: ExamQuestionCardProps['options'];
+  selected: string;
+  readOnly: boolean;
+  answerLabel: string;
+  index: number;
+  onOptionChange: (index: number, value: number) => void;
+}) {
+  if (readOnly) {
+    return (
+      <div className="exam-q-opts">
+        {options.map((option, optionIndex) => (
+          <div key={`${option.letter}-${optionIndex}`} className={`exam-q-opt${selected === String(optionIndex) ? ' selected' : ''}`}>
+            <span className="exam-q-opt-letter">{option.letter}</span>
+            <span className="exam-q-opt-text" dangerouslySetInnerHTML={{ __html: option.html }} />
+            {selected === String(optionIndex) && <span className="exam-q-opt-check">✓</span>}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <ToggleGroup
+      value={selected ? [selected] : []}
+      variant="outline"
+      size="lg"
+      spacing={2}
+      className="exam-q-opts"
+      aria-label={answerLabel}
+      onValueChange={(values) => {
+        const next = values[values.length - 1];
+        if (next !== undefined) onOptionChange(index, Number(next));
+      }}
+    >
+      {options.map((option, optionIndex) => (
+        <ToggleGroupItem
+          key={`${option.letter}-${optionIndex}`}
+          value={String(optionIndex)}
+          className={`exam-q-opt${selected === String(optionIndex) ? ' selected' : ''}`}
+        >
+          <span className="exam-q-opt-letter">{option.letter}</span>
+          <span className="exam-q-opt-text" dangerouslySetInnerHTML={{ __html: option.html }} />
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  );
+}
+
+function ExamTextResponse({
+  type,
+  readOnly,
+  savedAnswer,
+  answerLabel,
+  placeholder,
+  index,
+  onTextChange,
+}: {
+  type: 'fill-blank' | 'short-answer';
+  readOnly: boolean;
+  savedAnswer?: string | number | null;
+  answerLabel: string;
+  placeholder?: string;
+  index: number;
+  onTextChange: (index: number, value: string) => void;
+}) {
+  const value = typeof savedAnswer === 'string' ? savedAnswer : '';
+  if (type === 'fill-blank') {
+    if (readOnly) return <div className="exam-q-fill-display">{value}</div>;
+    return (
+      <Input
+        className="exam-q-fill-input"
+        name={`examAnswer${index}`}
+        aria-label={answerLabel}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onTextChange(index, event.target.value)}
+      />
+    );
+  }
+  if (readOnly) return <div className="exam-q-fill-display exam-q-fill-display-multiline">{value}</div>;
+  return (
+    <Textarea
+      className="exam-q-fill-input min-h-20 resize-y"
+      name={`examAnswer${index}`}
+      aria-label={answerLabel}
+      value={value}
+      placeholder={placeholder}
+      rows={3}
+      onChange={(event) => onTextChange(index, event.target.value)}
+    />
+  );
+}
+
 function ExamQuestionCard({
   index,
   total,
@@ -42,7 +142,6 @@ function ExamQuestionCard({
   onTextChange,
 }: ExamQuestionCardProps) {
   const selected = savedAnswer == null ? '' : String(savedAnswer);
-  const groupValue = savedAnswer == null ? [] : [selected];
 
   return (
     <>
@@ -52,61 +151,26 @@ function ExamQuestionCard({
       </div>
       <div className={`exam-q-text${type === 'error' ? ' exam-q-error' : ''}`} dangerouslySetInnerHTML={{ __html: questionHtml }} />
       {type === 'multiple-choice' && options.length > 0 && (
-        <>
-          {readOnly ? (
-            <div className="exam-q-opts">
-              {options.map((option, optionIndex) => (
-                <div key={`${option.letter}-${optionIndex}`} className={`exam-q-opt${selected === String(optionIndex) ? ' selected' : ''}`}>
-                  <span className="exam-q-opt-letter">{option.letter}</span>
-                  <span className="exam-q-opt-text" dangerouslySetInnerHTML={{ __html: option.html }} />
-                  {selected === String(optionIndex) && <span className="exam-q-opt-check">✓</span>}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <ToggleGroup value={groupValue} variant="outline" size="lg" spacing={2} className="exam-q-opts" aria-label={answerLabel} onValueChange={(values) => {
-              const next = values[values.length - 1];
-              if (next !== undefined) onOptionChange(index, Number(next));
-            }}>
-              {options.map((option, optionIndex) => (
-                <ToggleGroupItem
-                  key={`${option.letter}-${optionIndex}`}
-                  value={String(optionIndex)}
-                  className={`exam-q-opt${selected === String(optionIndex) ? ' selected' : ''}`}
-                >
-                  <span className="exam-q-opt-letter">{option.letter}</span>
-                  <span className="exam-q-opt-text" dangerouslySetInnerHTML={{ __html: option.html }} />
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          )}
-        </>
+        <ExamChoiceOptions
+          options={options}
+          selected={selected}
+          readOnly={readOnly}
+          answerLabel={answerLabel}
+          index={index}
+          onOptionChange={onOptionChange}
+        />
       )}
-      {type === 'fill-blank' && (readOnly ? (
-        <div className="exam-q-fill-display">{typeof savedAnswer === 'string' ? savedAnswer : ''}</div>
-      ) : (
-        <Input
-          className="exam-q-fill-input"
-          name={`examAnswer${index}`}
-          aria-label={answerLabel}
-          value={typeof savedAnswer === 'string' ? savedAnswer : ''}
+      {(type === 'fill-blank' || type === 'short-answer') && (
+        <ExamTextResponse
+          type={type}
+          readOnly={readOnly}
+          savedAnswer={savedAnswer}
+          answerLabel={answerLabel}
           placeholder={placeholder}
-          onChange={(event) => onTextChange(index, event.target.value)}
+          index={index}
+          onTextChange={onTextChange}
         />
-      ))}
-      {type === 'short-answer' && (readOnly ? (
-        <div className="exam-q-fill-display exam-q-fill-display-multiline">{typeof savedAnswer === 'string' ? savedAnswer : ''}</div>
-      ) : (
-        <Textarea
-          className="exam-q-fill-input min-h-20 resize-y"
-          name={`examAnswer${index}`}
-          aria-label={answerLabel}
-          value={typeof savedAnswer === 'string' ? savedAnswer : ''}
-          placeholder={placeholder}
-          rows={3}
-          onChange={(event) => onTextChange(index, event.target.value)}
-        />
-      ))}
+      )}
     </>
   );
 }

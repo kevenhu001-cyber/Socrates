@@ -1,1 +1,1 @@
-export { hydrateUsageModal } from './UsageModal';
+export { mountUsageModal, unmountUsageModal } from './UsageModal';

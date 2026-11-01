@@ -41,6 +41,7 @@ function ShareModal() {
       role="dialog"
       aria-modal="true"
       aria-label={i18n('chrome.shareChat', 'Share chat')}
+      data-i18n-aria="chrome.shareChat"
     >
       <div className="share-modal" onClick={(e) => e.stopPropagation()}>
         <div className="share-header">

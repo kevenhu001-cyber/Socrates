@@ -56,6 +56,21 @@ export function getVisibleCoreView(doc?: Document | null) {
   return 'topicSetup';
 }
 
+function applyWorkspaceClasses(doc: Document, viewId: string): void {
+  if (WORKSPACE_PAGE_IDS.has(viewId)) {
+    doc.body.classList.add('workspace-active');
+    doc.body.classList.toggle('plugins-active', viewId === 'pluginsPanel');
+    doc.body.classList.toggle('library-active', viewId === 'libraryPanel');
+    doc.body.classList.toggle('projects-active', viewId === 'spacesPanel');
+    doc.body.classList.toggle('scheduled-active', viewId === 'scheduledPanel');
+    doc.body.classList.toggle('admin-active', viewId === 'adminPanel');
+    const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
+    if (pluginTabs) pluginTabs.hidden = viewId !== 'pluginsPanel';
+  } else if (viewId === 'examView') {
+    doc.body.classList.add('exam-active');
+  }
+}
+
 export function activateMainView(viewId: string, doc?: Document | null) {
   const currentDocument = resolveDocument(doc);
   if (!currentDocument || !VIEW_IDS.has(viewId)) return false;
@@ -82,18 +97,7 @@ export function activateMainView(viewId: string, doc?: Document | null) {
   const mainInner = currentDocument.getElementById('mainInner');
   if (mainInner) mainInner.classList.toggle('hidden', viewId === 'examView');
 
-  if (WORKSPACE_PAGE_IDS.has(viewId)) {
-    currentDocument.body.classList.add('workspace-active');
-    currentDocument.body.classList.toggle('plugins-active', viewId === 'pluginsPanel');
-    currentDocument.body.classList.toggle('library-active', viewId === 'libraryPanel');
-    currentDocument.body.classList.toggle('projects-active', viewId === 'spacesPanel');
-    currentDocument.body.classList.toggle('scheduled-active', viewId === 'scheduledPanel');
-    currentDocument.body.classList.toggle('admin-active', viewId === 'adminPanel');
-    const pluginTabs = currentDocument.getElementById('pluginWorkspaceTabs');
-    if (pluginTabs) pluginTabs.hidden = viewId !== 'pluginsPanel';
-  } else if (viewId === 'examView') {
-    currentDocument.body.classList.add('exam-active');
-  }
+  applyWorkspaceClasses(currentDocument, viewId);
 
   setConversationChrome(CONVERSATION_CHROME_VIEWS.has(viewId), currentDocument);
   animateSurfaceEntrance(target, previousView, WORKSPACE_PAGE_IDS.has(viewId));

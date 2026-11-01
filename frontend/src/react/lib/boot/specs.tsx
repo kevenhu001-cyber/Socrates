@@ -55,6 +55,48 @@ function ensureWorkflowHost(doc: Document): HTMLElement | null {
    pageMounts.ts — sidebar navigation imports those functions directly;
    the specs below only tag the panels' ownership at bootstrap. */
 
+function workspacePageSpecs(): MountSpec[] {
+  return [
+    { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => undefined },
+    { hostId: 'libraryPanel', label: 'workspace-page', mount: () => undefined },
+    { hostId: 'libraryUploadReactRoot', label: 'library-upload-input', mount: (host) => {
+      return import('../../pages/workspace/LibraryUploadInput').then(({ LibraryUploadInput }) => {
+        mountOwnedRoot(host, 'library-upload-input', <LibraryUploadInput />);
+      });
+    } },
+    { hostId: 'adminPanel', label: 'admin-page', mount: () => undefined },
+    { hostId: 'spacesPanel', label: 'workspace-page', mount: () => undefined },
+    { hostId: 'pluginsPanel', label: 'workspace-page', mount: () => undefined },
+  ];
+}
+
+function lazyPortalSpecs(): MountSpec[] {
+  return [
+    { hostId: 'storageModalReactRoot', label: 'storage-modal',
+      ensureHost: (doc) => ensureBodyChild(doc, 'storageModalReactRoot'),
+      mount: () => import('../../storageModal').then((m) => m.mountStorageModal()) },
+    { hostId: 'cheatsheetReactRoot', label: 'cheatsheet',
+      ensureHost: (doc) => ensureBodyChild(doc, 'cheatsheetReactRoot'),
+      mount: () => import('../../cheatsheet').then((m) => m.mountCheatsheet()) },
+    { hostId: 'promptTemplatesReactRoot', label: 'prompt-templates',
+      ensureHost: (doc) => ensureBodyChild(doc, 'promptTemplatesReactRoot'),
+      mount: () => import('../../promptTemplatesModal').then((m) => m.mountPromptTemplatesModal()) },
+    { hostId: 'confirmDialogReactRoot', label: 'confirm-dialog',
+      ensureHost: (doc) => ensureBodyChild(doc, 'confirmDialogReactRoot'),
+      mount: () => import('../../confirm').then((m) => m.mountConfirmDialog()) },
+    { hostId: 'chatConfigurationReactRoot', label: 'chat-configuration',
+      ensureHost: (doc) => ensureBodyChild(doc, 'chatConfigurationReactRoot'),
+      mount: () => import('../../chat-configuration').then((m) => m.mountChatConfiguration()) },
+    { hostId: 'artifactsWorkbench', label: 'artifacts-workbench',
+      mount: () => import('../../workbench/WorkbenchDrawer').then(({ WorkbenchDrawer }) => {
+        const el = document.getElementById('artifactsWorkbench');
+        if (el) {
+          mountOwnedRoot(el, 'artifacts-workbench', <WorkbenchDrawer />);
+        }
+      }) },
+  ];
+}
+
 export function mountRegistryList(): MountSpec[] {
   const legacyComposer = getLegacyActions().composer;
   return [
@@ -70,8 +112,9 @@ export function mountRegistryList(): MountSpec[] {
         mountOwnedRoot(host, 'cookie-consent', <CookieConsent />);
       });
     } },
-    { hostId: 'cmdKOverlay', label: 'cmd-k',
-      mount: () => import('../../cmdk/CommandPalette').then((m) => m.hydrateCmdKOverlay()) },
+    { hostId: 'cmdKReactRoot', label: 'cmd-k',
+      ensureHost: (doc) => ensureBodyChild(doc, 'cmdKReactRoot'),
+      mount: () => import('../../cmdk/CommandPalette').then((m) => m.mountCmdK()) },
     { hostId: 'findBar', label: 'find-in-session',
       mount: () => import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()) },
     { hostId: 'sidebarNav', label: 'sidebar-nav', mount: () => mountSidebarNav() },
@@ -126,8 +169,9 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'profileModalReactRoot', label: 'profile-modal',
       ensureHost: (doc) => ensureBodyChild(doc, 'profileModalReactRoot'),
       mount: () => import('../../profileModal').then((m) => m.mountProfileModal()) },
-    { hostId: 'usageOverlay', label: 'usage-modal',
-      mount: () => import('../../usageModal').then((m) => m.hydrateUsageModal()) },
+    { hostId: 'usageModalReactRoot', label: 'usage-modal',
+      ensureHost: (doc) => ensureBodyChild(doc, 'usageModalReactRoot'),
+      mount: () => import('../../usageModal').then((m) => m.mountUsageModal()) },
     /* 3. Sidebar chrome — one root owns the header and portaled user
        footer; they share the bridge snapshot (sidebar-chrome/mount.tsx). */
     { hostId: 'sidebarHeader', label: 'sidebar-chrome', mount: () => { mountSidebarChrome(); } },
@@ -136,50 +180,10 @@ export function mountRegistryList(): MountSpec[] {
         mountOwnedRoot(host, 'sidebar-footer-actions', <SidebarFooterActions />);
       });
     } },
-    /* 4. Workspace pages — the registry tags each panel as React-owned;
-       the nav mounts them on demand through pageMounts.ts. */
-    { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => undefined },
-    { hostId: 'libraryPanel', label: 'workspace-page', mount: () => undefined },
-    { hostId: 'libraryUploadReactRoot', label: 'library-upload-input', mount: (host) => {
-      return import('../../pages/workspace/LibraryUploadInput').then(({ LibraryUploadInput }) => {
-        mountOwnedRoot(host, 'library-upload-input', <LibraryUploadInput />);
-      });
-    } },
-    /* /admin operator console — the React page owns #adminPanel when
-       the sidebar routes to it. */
-    { hostId: 'adminPanel', label: 'admin-page', mount: () => undefined },
-    { hostId: 'spacesPanel', label: 'workspace-page', mount: () => undefined },
-    { hostId: 'pluginsPanel', label: 'workspace-page', mount: () => undefined },
+    /* 4. Workspace pages */
+    ...workspacePageSpecs(),
     /* 5. Lazy portal roots */
-    { hostId: 'storageModalReactRoot', label: 'storage-modal',
-      ensureHost: (doc) => ensureBodyChild(doc, 'storageModalReactRoot'),
-      mount: () => import('../../storageModal').then((m) => m.mountStorageModal()) },
-    { hostId: 'cheatsheetReactRoot', label: 'cheatsheet',
-      ensureHost: (doc) => ensureBodyChild(doc, 'cheatsheetReactRoot'),
-      mount: () => import('../../cheatsheet').then((m) => m.mountCheatsheet()) },
-    { hostId: 'promptTemplatesReactRoot', label: 'prompt-templates',
-      ensureHost: (doc) => ensureBodyChild(doc, 'promptTemplatesReactRoot'),
-      mount: () => import('../../promptTemplatesModal').then((m) => m.mountPromptTemplatesModal()) },
-    /* M4 step 4.5c — confirm dialog is React-owned. The static
-       index.html #confirmDialog markup was removed; the mount spec
-       lazily creates the body-level root the component renders into. */
-    { hostId: 'confirmDialogReactRoot', label: 'confirm-dialog',
-      ensureHost: (doc) => ensureBodyChild(doc, 'confirmDialogReactRoot'),
-      mount: () => import('../../confirm').then((m) => m.mountConfirmDialog()) },
-    { hostId: 'chatConfigurationReactRoot', label: 'chat-configuration',
-      ensureHost: (doc) => ensureBodyChild(doc, 'chatConfigurationReactRoot'),
-      mount: () => import('../../chat-configuration').then((m) => m.mountChatConfiguration()) },
-    { hostId: 'artifactsWorkbench', label: 'artifacts-workbench',
-      mount: () => import('../../workbench/WorkbenchDrawer').then(({ WorkbenchDrawer }) => {
-        const el = document.getElementById('artifactsWorkbench');
-        if (el) {
-          mountOwnedRoot(el, 'artifacts-workbench', <WorkbenchDrawer />);
-        }
-      }) },
-    /* 5. Lazy portal roots. The session list mounts into the existing
-       `#recentsList` host (mountSessionList targets that id directly);
-       the hostId must match it or the registry skips the spec and the
-       Recents list stays empty. */
+    ...lazyPortalSpecs(),
     { hostId: 'recentsList', label: 'session-list',
       mount: () => mountSessionList() },
     /* 6. Global React roots — composer, message list, workflow layer.

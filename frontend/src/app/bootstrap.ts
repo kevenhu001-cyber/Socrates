@@ -1,10 +1,7 @@
-import { installModalA11y } from '../ui/modalA11y.ts';
 import { bootstrapReactCompatibilityRuntime } from '../react/bootstrap.tsx';
 import { mountAuthGate } from '../react/auth/authGateHost.tsx';
 import { bootstrapOutbox } from '../session/mutationOutbox.ts';
 import { installExtensions } from '../extensions/index.ts';
-import { closeCmdK } from '../ui/cmdK.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
 
 
 /**
@@ -36,13 +33,7 @@ export function bootstrapApp(options: BootstrapOptions) {
      once here for a cold start and then on every `online` event. */
   bootstrapOutbox();
 
-  installModalA11y({ overlayId: 'cmdKOverlay', closeFn: closeCmdK });
-  installModalA11y({ overlayId: 'usageOverlay', closeFn: () => {
-    void import('../ui/usage.ts')
-      .then((module) => module.closeUsageModal())
-      .catch((error) => reportSwallow(error, 'app/bootstrap.closeUsageModal'));
-  } });
-  /* The profile and share overlays are React-owned, so their components
+  /* Overlays (CmdK, profile, share, usage, settings) are React-owned, so their components
      install their own Esc/focus wiring once the elements exist. */
 
   try {

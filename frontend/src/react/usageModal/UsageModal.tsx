@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
-import { mountOwnedRoot } from '../lib/boot/ownedRoot';
-import type { Root } from 'react-dom/client';
+import { createRootSlot } from '../lib/boot/ownedRoot';
+import { cn } from 'cn';
+import { installModalA11y } from '../../ui/modalA11y.ts';
 
 import { t as _t } from '../legacy/gateway.ts';
 import {
@@ -279,44 +280,61 @@ function UsageModal() {
   const snap = useUsageSnapshot();
   const dispatch = useUsageDispatch();
 
-  useLayoutEffect(() => {
-    const overlay = document.getElementById(OVERLAY_ID);
-    overlay?.classList.toggle('hidden', !snap.open);
-  }, [snap.open]);
+  useEffect(() => {
+    installModalA11y({ overlayId: OVERLAY_ID, closeFn: () => dispatch.close() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div className="usage-modal" onClick={(event) => event.stopPropagation()}>
-      <div className="usage-header">
-        <span className="usage-title">{i18n('usage.title', 'Token Usage')}</span>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          type="button"
-          className="usage-close"
-          onClick={() => dispatch.close()}
-          aria-label={i18n('common.close', 'Close')}
-          data-initial-focus="true"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
-        </Button>
-      </div>
-      <div className="usage-body" id="usageBody">
-        <UsageReport />
+    <div
+      className={cn('usage-overlay', !snap.open && 'hidden')}
+      id={OVERLAY_ID}
+      role="dialog"
+      aria-modal="true"
+      aria-label={i18n('profile.usage', 'Token usage')}
+      data-i18n-aria="profile.usage"
+      onClick={() => dispatch.close()}
+    >
+      <div className="usage-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="usage-header">
+          <span className="usage-title">{i18n('usage.title', 'Token Usage')}</span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            type="button"
+            className="usage-close"
+            onClick={() => dispatch.close()}
+            aria-label={i18n('common.close', 'Close')}
+            data-initial-focus="true"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </Button>
+        </div>
+        <div className="usage-body" id="usageBody">
+          <UsageReport />
+        </div>
       </div>
     </div>
   );
 }
 
-export interface UsageModalHandle {
-  overlay: HTMLElement;
-  root: Root;
-  destroy: () => void;
+const rootSlot = createRootSlot('usage-modal');
+
+/**
+ * Mount the React-owned usage modal into its own body-level root.
+ */
+export function mountUsageModal(): void {
+  let container = document.getElementById('usageModalReactRoot');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'usageModalReactRoot';
+    document.body.appendChild(container);
+  }
+  rootSlot.mount(container, <UsageModal />);
 }
 
-export function hydrateUsageModal(): UsageModalHandle | null {
-  const overlay = document.getElementById(OVERLAY_ID);
-  if (!overlay) return null;
-  return { overlay, ...mountOwnedRoot(overlay, 'usage-modal', <UsageModal />) };
+export function unmountUsageModal(): void {
+  rootSlot.destroy();
 }

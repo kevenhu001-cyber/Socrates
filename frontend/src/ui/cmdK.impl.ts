@@ -57,6 +57,8 @@ export function resetCmdKSearchState() {
   }
 }
 
+let _cmdKOpen = false;
+
 function getCmdKOverlay(): HTMLElement | null {
   return document.getElementById("cmdKOverlay");
 }
@@ -69,7 +71,7 @@ function _publishCmdKState() {
   const overlay = getCmdKOverlay();
   const input = getCmdKInput();
   publishCmdKState({
-    isOpen: !!overlay && !overlay.classList.contains("hidden"),
+    isOpen: _cmdKOpen || (!!overlay && !overlay.classList.contains("hidden")),
     query: input?.value || "",
     results: _cmdKResults,
     selectedIndex: _cmdKSelected,
@@ -144,6 +146,7 @@ function openCmdK() {
     rebuildCmdKIndex();
     _cmdKIndexDirty = false;
   }
+  _cmdKOpen = true;
   const overlay = getCmdKOverlay();
   if (overlay) overlay.classList.remove("hidden");
   const input = getCmdKInput();
@@ -154,6 +157,7 @@ function openCmdK() {
 }
 
 function closeCmdK() {
+  _cmdKOpen = false;
   const overlay = getCmdKOverlay();
   if (overlay) overlay.classList.add("hidden");
   _publishCmdKState();
@@ -237,12 +241,14 @@ function onCmdKKey(ev: KeyboardEvent) {
     if (_cmdKResults.length) {
       _cmdKSelected = (_cmdKSelected + 1) % _cmdKResults.length;
       updateCmdKSelected();
+      _publishCmdKState();
     }
   } else if (ev.key === "ArrowUp") {
     ev.preventDefault();
     if (_cmdKResults.length) {
       _cmdKSelected = (_cmdKSelected - 1 + _cmdKResults.length) % _cmdKResults.length;
       updateCmdKSelected();
+      _publishCmdKState();
     }
   } else if (ev.key === "Enter") {
     ev.preventDefault();

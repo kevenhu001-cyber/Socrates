@@ -385,17 +385,8 @@
 <script type="module" src="/src/main.ts"></script>
 
 <!-- Settings Modal -->
-<!-- P1.2 — global search modal. Toggled by `Cmd/Ctrl+K` (and
-     `Esc` to close). The modal owns a single file picker that drives
-     a fuse.js fuzzy index over:
-       - session titles + topics (SERVER_SESSIONS)
-       - message raw text inside the active session
-       - cached titles of older sessions loaded from localStorage
-     Indexed on first open and rebuilt whenever a session is
-     saved. Recent queries persist under socrates-search-recent. -->
-<div class="cmd-k-overlay hidden" id="cmdKOverlay" role="dialog" aria-modal="true" aria-label="Command palette" data-i18n-aria="chrome.commandPalette">
-  <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
-</div>
+<!-- Command palette is React-owned: CommandPalette.tsx renders #cmdKOverlay
+     into #cmdKReactRoot at boot and handles its own Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- Share modal is React-owned: ShareModal.tsx renders #shareOverlay
      into #shareModalReactRoot at boot and handles its own
@@ -413,10 +404,9 @@
      renders #confirmDialog into #confirmDialogReactRoot at boot and
      handles its own Esc/focus/backdrop-close. No static markup here. -->
 
-<!-- usage modal -->
-<div class="usage-overlay hidden" id="usageOverlay" role="dialog" aria-modal="true" aria-label="Token usage" data-i18n-aria="profile.usage">
-  <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
-</div>
+<!-- usage modal is React-owned: UsageModal.tsx renders #usageOverlay
+     into #usageModalReactRoot at boot and handles its own
+     Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- First-visit consent controls render from the lightweight React boot slice. -->
 <div id="cookieConsentReactRoot"></div>
