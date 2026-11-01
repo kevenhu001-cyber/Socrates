@@ -182,10 +182,11 @@
     });
   }
 
-  // Round 7: the footer wordmark's point waits a little above the line in
-  // gray; when the reader reaches the end of the page it drops onto the
-  // baseline and turns black, answering the point of the hero's question
-  // mark. Without scripts or with reduced motion it simply sits there, black.
+  // Round 7 / 10: the footer wordmark's point, a square block of halftone
+  // dots, waits loose and as light as the letters; when the reader reaches
+  // the end of the page it gathers to its cells and turns ink, answering the
+  // point of the hero's question mark. Without scripts or with reduced
+  // motion it simply sits there, in ink.
   var wordmark = document.querySelector('[data-wordmark]');
   if (wordmark && 'IntersectionObserver' in window) {
     var lit = new IntersectionObserver(function (entries) {
@@ -214,11 +215,11 @@
 
 /* Round 9 · 404, back to the start (lives here, not in its own file, so
    the page loads no extra script before the shared chrome).
-   The page shows the home page's dot-matrix question mark with its stroke
-   loose and its point missing. Choosing "Go to the home page" gathers the
-   loose points into the missing point (~0.9s), the point that opens the
-   home page, and then goes there. Reduced motion, a modified click or a
-   missing Web Animations API simply follow the link. */
+   Round 10: the page shows the home page's halftone question mark with its
+   point missing. Choosing "Go to the home page" gathers the stroke's dots,
+   the end of the stem first, into the point's square block (~0.9s): the
+   point that opens the home page. Then it goes there. Reduced motion, a
+   modified click or a missing Web Animations API simply follow the link. */
 (function () {
   'use strict';
   var link = document.querySelector('.nf-primary');
@@ -228,6 +229,7 @@
   var point = svg.querySelector('.nf-point');
   var gap = svg.querySelector('.nf-gap');
   var cells = Array.prototype.slice.call(svg.querySelectorAll('.nf-stroke circle'));
+  var blocks = Array.prototype.slice.call(point.querySelectorAll('circle'));
   var ease = 'cubic-bezier(.22,1,.36,1)';
   var going = false;
   link.addEventListener('click', function (event) {
@@ -235,26 +237,37 @@
     event.preventDefault();
     going = true;
     var href = link.href;
-    var px = +point.getAttribute('cx');
-    var py = +point.getAttribute('cy');
+    var px = 0;
+    var py = 0;
+    blocks.forEach(function (c) { px += c.cx.baseVal.value / blocks.length; py += c.cy.baseVal.value / blocks.length; });
     svg.setAttribute('data-gathering', '');
     var last = 0;
     cells.forEach(function (cell, i) {
       // The end of the stroke, nearest the point, arrives first.
-      var delay = (cells.length - 1 - i) * 4;
+      var delay = (cells.length - 1 - i) * 5;
       last = Math.max(last, delay);
+      var dx = px - cell.cx.baseVal.value;
+      var dy = py - cell.cy.baseVal.value;
       cell.animate([
-        { transform: 'translate(0, 0)', opacity: .8 },
-        { transform: 'translate(' + (px - cell.cx.baseVal.value) * .85 + 'px,' + (py - cell.cy.baseVal.value) * .85 + 'px)', opacity: .8, offset: .8 },
-        { transform: 'translate(' + (px - cell.cx.baseVal.value) + 'px,' + (py - cell.cy.baseVal.value) + 'px)', opacity: 0 }
-      ], { duration: 600, delay: delay, easing: ease, fill: 'forwards' });
+        { transform: 'translate(0, 0)', opacity: 1 },
+        { transform: 'translate(' + dx * .85 + 'px,' + dy * .85 + 'px)', opacity: 1, offset: .8 },
+        { transform: 'translate(' + dx + 'px,' + dy + 'px)', opacity: 0 }
+      ], { duration: 560, delay: delay, easing: ease, fill: 'forwards' });
     });
-    if (gap) gap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' });
-    var grow = point.animate([{ opacity: 0, transform: 'scale(.2)' }, { opacity: 1, transform: 'scale(1)' }],
-      { duration: 280, delay: last + 380, easing: ease, fill: 'forwards' });
+    if (gap) gap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, delay: last + 300, fill: 'forwards' });
+    point.style.opacity = '1';
+    var grow = null;
+    blocks.forEach(function (c, i) {
+      // The block appears cell by cell from its centre outwards.
+      var d = Math.hypot(c.cx.baseVal.value - px, c.cy.baseVal.value - py);
+      grow = c.animate([{ opacity: 0, transform: 'scale(.2)', transformOrigin: c.cx.baseVal.value + 'px ' + c.cy.baseVal.value + 'px' },
+        { opacity: 1, transform: 'scale(1)', transformOrigin: c.cx.baseVal.value + 'px ' + c.cy.baseVal.value + 'px' }],
+        { duration: 260, delay: last + 340 + d * 50, easing: ease, fill: 'both' });
+    });
     var gone = false;
     function go() { if (gone) return; gone = true; window.location.href = href; }
-    grow.finished.then(function () { window.setTimeout(go, 80); }, go);
+    if (grow) grow.finished.then(function () { window.setTimeout(go, 80); }, go);
+    else go();
     window.setTimeout(go, 1200); // never strand the reader on this page
   });
   // Coming back from the home page through the back/forward cache.
@@ -262,6 +275,7 @@
     if (!event.persisted) return;
     going = false;
     svg.removeAttribute('data-gathering');
+    point.style.opacity = '';
     svg.getAnimations({ subtree: true }).forEach(function (a) { a.cancel(); });
   });
 }());

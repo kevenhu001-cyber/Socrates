@@ -66,17 +66,18 @@
 .site-locale { font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); }
 
 .site-header { position: sticky; top: 0; z-index: 100; }
-/* The blur lives on a pseudo-element: a filter on the header itself would
-   become the containing block of the fixed mobile menu. */
-.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: rgb(255 255 255 / .78); box-shadow: 0 1px 0 var(--site-color-line); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); pointer-events: none; transition: opacity 300ms var(--site-ease); }
-/* At the top of the page the bar is clear and borderless; once the page
-   moves under it, the frosted layer fades in with a hairline below. Only
-   the layer's opacity animates; the blur itself stays on the compositor. */
+/* The bar's layer is a pseudo-element, so nothing on the header itself can
+   become the containing block of the fixed mobile menu.
+   At the top of the page the bar is clear and borderless; once the page
+   moves under it, the layer fades in with a hairline below. Only the
+   layer's opacity animates.
+   Round 10 (performance): no backdrop blur. On the site's white pages the
+   frost was barely visible, yet the compositor re-filtered the whole bar on
+   every scrolled frame (about 3ms a frame without a GPU). A near-opaque
+   white reads the same. */
+.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: rgb(255 255 255 / .94); box-shadow: 0 1px 0 var(--site-color-line); pointer-events: none; transition: opacity 300ms var(--site-ease); }
 .site-header[data-scroll-aware]:not(.is-scrolled)::before { opacity: 0; }
 html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .site-header::before { background: rgb(255 255 255 / .97); }
-}
 .site-header-inner { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--space-400); height: var(--site-header-height); }
 .site-header .site-brand,
 .site-footer .site-brand { display: inline-flex; align-items: center; flex-shrink: 0; gap: var(--space-75); min-height: 44px; }
@@ -250,17 +251,22 @@ html.site-menu-open { overflow: hidden; }
 
 /* Round 7 · E. A full-width, very light "Socrates" wordmark closes every
    page (decorative, aria-hidden; outlines of Geist at weight 500, so it never
-   reflows when fonts load). Its full stop is a separate black point; with
-   motion it waits above the baseline in gray and drops and lights up when
-   the end of the page is reached (motion.js). */
+   reflows when fonts load). Round 10: its full stop answers the hero's
+   question mark in the same language: Geist's square period drawn as a 3 x 3
+   block of halftone dots (each .36 of its cell, like the hero's), not a solid
+   disc. With motion the block waits a little loose and as light as the
+   letters; when the end of the page is reached it gathers to its cells and
+   turns ink (motion.js). Without scripts or with reduced motion it is
+   simply there, in ink. */
 .site-wordmark { position: relative; margin-top: var(--space-500); user-select: none; pointer-events: none; }
 .site-wordmark img { display: block; width: 100%; height: auto; aspect-ratio: 4168 / 738; }
-.site-wordmark-dot { position: absolute; left: 95.441%; top: 72.629%; width: 4.559%; aspect-ratio: 1; border-radius: 50%; background: var(--site-color-ink); transform: none; }
-.site-wordmark-dot::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--site-color-ink); }
+.site-wordmark-dot, .site-wordmark-dot::after { --wm-dot: var(--site-color-ink); background: radial-gradient(circle closest-side, var(--wm-dot) 72%, transparent 78%) 0 0 / 33.3333% 33.3333%; }
+.site-wordmark-dot { position: absolute; left: 95.441%; top: 72.629%; width: 4.559%; aspect-ratio: 1; transform: none; }
+.site-wordmark-dot::after { content: ''; position: absolute; inset: 0; }
 @media (prefers-reduced-motion: no-preference) {
-  [data-site-js] .site-wordmark-dot { background: #dcdcdc; transition: transform 900ms cubic-bezier(.22,1,.36,1); }
-  [data-site-js] .site-wordmark-dot::after { opacity: 0; transition: opacity 400ms cubic-bezier(.22,1,.36,1) 450ms; }
-  [data-site-js] .site-wordmark:not(.is-lit) .site-wordmark-dot { transform: translateY(-110%); }
+  [data-site-js] .site-wordmark-dot { --wm-dot: #e3e3e3; transition: transform 900ms cubic-bezier(.22,1,.36,1); }
+  [data-site-js] .site-wordmark-dot::after { opacity: 0; transition: opacity 500ms cubic-bezier(.22,1,.36,1) 350ms; }
+  [data-site-js] .site-wordmark:not(.is-lit) .site-wordmark-dot { transform: scale(1.18); }
   [data-site-js] .site-wordmark.is-lit .site-wordmark-dot::after { opacity: 1; }
 }
 @media (max-width: 760px) {

@@ -302,9 +302,9 @@ test('the dot-matrix question mark is written once, then rests', async (t) => {
     const node = svg.querySelector(selector);
     return { x: mark.left + Number(node.getAttribute('cx')) * s, y: mark.top + Number(node.getAttribute('cy')) * s };
   }, selector);
-  const point = await at('.hm-dot');
+  const point = await at('.hm-point circle:not([fill-opacity])');
   const firstCell = await at('.hm-nodes circle:not([fill-opacity])');
-  assert.ok(await ink(point.x, point.y) > 200, 'the black point has landed after the ~1s entrance');
+  assert.ok(await ink(point.x, point.y) > 200, 'the point’s halftone block has landed after the ~1s entrance');
   assert.ok(await ink(firstCell.x, firstCell.y) > 200, 'the stroke’s cells are written in ink');
   // No idle loop: once written, the mark is still.
   const idle = await page.evaluate(async () => { const a = window.__draws; await new Promise((r) => setTimeout(r, 600)); return window.__draws - a; });
@@ -352,8 +352,44 @@ test('scrolling away absorbs the question into the field and hands its point to 
   await page.waitForTimeout(250);
   const top = await cell();
   assert.ok(await inkAt(top.x, top.y) < 60, 'the absorbed cells are no darker than the field');
-  // Landing: the canvas point is exactly where the chain's node is, then the
-  // node takes over and the canvas no longer draws a point.
+  // Round 10: the point's block gathers into exactly one black dot, the
+  // size of a chain node; no halftone cell of the point is left behind.
+  const dotBox = () => page.evaluate(() => {
+    const dots = [...document.querySelectorAll('.hero-mark-dot')];
+    const b = dots[0].getBoundingClientRect();
+    return { count: dots.length, x: b.left + b.width / 2, y: b.top + b.height / 2, w: b.width, o: Number(getComputedStyle(dots[0]).opacity) };
+  });
+  const travel = await page.evaluate(() => {
+    const dot = document.querySelector('.qc-step[data-qc-step="0"] .qc-dot').getBoundingClientRect();
+    return dot.top + dot.height / 2 + scrollY - innerHeight * .45;
+  });
+  await page.evaluate((y) => scrollTo({ top: y, behavior: 'instant' }), Math.round(travel * .04));
+  await page.waitForTimeout(250);
+  assert.equal((await dotBox()).o, 0, 'at first the point is still a block, not yet a dot');
+  const gatheredAt = Math.round(travel * .28);
+  await page.evaluate((y) => scrollTo({ top: y, behavior: 'instant' }), gatheredAt);
+  await page.waitForTimeout(250);
+  const gathered = await page.evaluate(() => {
+    const mark = document.querySelector('.hero-mark').getBoundingClientRect();
+    const svg = document.querySelector('.hm-fine');
+    const s = mark.width / svg.viewBox.baseVal.width;
+    return [...svg.querySelectorAll('.hm-point circle')].map((node) => ({ x: mark.left + Number(node.getAttribute('cx')) * s, y: mark.top + Number(node.getAttribute('cy')) * s }));
+  });
+  const blockCenter = { x: gathered.reduce((a, c) => a + c.x, 0) / gathered.length, y: gathered.reduce((a, c) => a + c.y, 0) / gathered.length };
+  const one = await dotBox();
+  const node = await firstNode.evaluate((n) => n.offsetWidth);
+  assert.equal(one.count, 1, 'one black dot');
+  assert.equal(one.o, 1);
+  assert.ok(Math.abs(one.w - node) < .5, 'the dot is a chain node’s size, not a large disc');
+  assert.ok(Math.hypot(one.x - blockCenter.x, one.y - blockCenter.y) < 1, 'it forms where the block was');
+  const canvasBox = await canvas.evaluate((n) => { const b = n.getBoundingClientRect(); return { t: b.top, b: b.bottom }; });
+  for (const cell of gathered) {
+    if (cell.y < canvasBox.t || cell.y > canvasBox.b) continue;
+    if (Math.hypot(cell.x - one.x, cell.y - one.y) < one.w) continue;
+    assert.equal(await inkAt(cell.x, cell.y, 1), 0, 'no halftone cell of the point is left once it has gathered');
+  }
+  // Landing: the dot is exactly where the chain's node is, then the node
+  // takes over and the dot is no longer shown.
   const end = await page.evaluate(() => {
     const dot = document.querySelector('.qc-step[data-qc-step="0"] .qc-dot').getBoundingClientRect();
     return dot.top + dot.height / 2 + scrollY - innerHeight * .45;
@@ -361,12 +397,13 @@ test('scrolling away absorbs the question into the field and hands its point to 
   await page.evaluate((y) => scrollTo({ top: y - 2, behavior: 'instant' }), end);
   await page.waitForTimeout(250);
   const near = await firstNode.evaluate((node) => { const b = node.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; });
-  assert.ok(await inkAt(near.x, near.y, 1) > 200, 'just before the hand-off the point sits on the node');
+  const before = await dotBox();
+  assert.ok(before.o > .99 && Math.hypot(before.x - near.x, before.y - near.y) < 1.5, 'just before the hand-off the dot sits on the node');
   await page.evaluate((y) => scrollTo({ top: y + 40, behavior: 'instant' }), end);
   await page.waitForFunction(() => !document.querySelector('.qc-list').hasAttribute('data-point-pending'));
   const landed = await firstNode.evaluate((node) => { const b = node.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2, v: getComputedStyle(node).visibility }; });
   assert.equal(landed.v, 'visible');
-  assert.equal(await inkAt(landed.x, landed.y, 6), 0, 'after the hand-off only the chain’s own node is drawn');
+  assert.equal((await dotBox()).o, 0, 'after the hand-off only the chain’s own node is shown');
   // Scrolling back up takes the point back out of the chain.
   await page.evaluate(() => scrollTo({ top: 120, behavior: 'instant' }));
   await page.waitForFunction(() => document.querySelector('.qc-list').hasAttribute('data-point-pending'));
@@ -392,7 +429,7 @@ test('without scripts the finished question mark is shown and the hero stays usa
   const page = await sitePage(site, t, '/zh/', 1440, false);
   assert.ok(await page.locator('.hm-fine').isVisible());
   assert.equal(await page.locator('canvas').count(), 0);
-  assert.equal(await page.locator('.hero-mark .hm-dot').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1);
+  assert.equal(await page.locator('.hero-mark .hm-point').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1);
   assert.equal(await page.locator('.qc-list[data-point-pending]').count(), 0);
   assert.ok(await page.locator('.qc-step[data-qc-step="0"] .qc-dot').isVisible(), 'the chain starts from its own point');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 1440);
@@ -509,6 +546,17 @@ test('the footer wordmark’s point drops and lights up at the end of the page',
   assert.equal(await mark.getAttribute('aria-hidden'), 'true');
   assert.equal(await mark.locator('img').getAttribute('alt'), '');
   const dot = mark.locator('.site-wordmark-dot');
+  // Round 10: the full stop is a 3 x 3 halftone block like the hero's point,
+  // not a solid disc, and it stays in proportion to the letters.
+  const look = await dot.evaluate((node) => {
+    const style = getComputedStyle(node);
+    // Layout size, not the (possibly scaled) painted box.
+    return { image: style.backgroundImage, size: style.backgroundSize, radius: style.borderTopLeftRadius, ratio: node.offsetHeight / node.parentElement.offsetHeight, square: node.offsetWidth / node.offsetHeight };
+  });
+  assert.match(look.image, /radial-gradient/);
+  assert.match(look.size, /^33\.33\d*% 33\.33\d*%$/, 'three dots a side');
+  assert.equal(look.radius, '0px', 'no disc');
+  assert.ok(look.ratio < .3 && Math.abs(look.square - 1) < .01, 'a period-sized square');
   assert.notEqual(await dot.evaluate((node) => getComputedStyle(node).transform), 'none', 'the point waits above the line');
   await page.evaluate(() => scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
   await page.waitForFunction(() => document.querySelector('[data-wordmark]').classList.contains('is-lit'));
@@ -631,8 +679,17 @@ test('the 404 question gathers into its missing point, then goes home', async (t
   await context.route('https://**/*', (route) => route.abort());
   const page = await context.newPage();
   await page.goto(site.baseURL + '/404.html');
-  assert.equal(await page.locator('.nf-mark .nf-stroke circle').count(), 57);
+  assert.equal(await page.locator('.nf-mark .nf-stroke circle').count(), 68);
   assert.equal(await page.locator('.nf-point').evaluate((node) => getComputedStyle(node).opacity), '0', 'the point is missing');
+  // Round 10: the same halftone cells as the home page's compact mark.
+  const nf = await page.evaluate(() => {
+    const cells = [...document.querySelectorAll('.nf-mark :is(.nf-stroke, .nf-point) circle')];
+    const home = (n) => [Number(n.getAttribute('cx')), Number(n.getAttribute('cy'))];
+    return { off: cells.filter((n) => home(n).some((v) => Math.abs(v - .5 - Math.round(v - .5)) > 1e-6)).length, point: document.querySelectorAll('.nf-point circle').length, largest: Math.max(...cells.map((n) => Number(n.getAttribute('r')))) };
+  });
+  assert.equal(nf.off, 0, 'every dot sits on a cell');
+  assert.equal(nf.point, 9, 'the missing point is a 3 x 3 block');
+  assert.ok(nf.largest <= .36 + 1e-6, 'no solid disc');
   await page.locator('.nf-primary').focus();
   await page.keyboard.press('Enter');
   assert.equal(await page.locator('.nf-mark').getAttribute('data-gathering'), '');
