@@ -3,11 +3,10 @@
 // Pins the readability contract for the conversation surface:
 //   - user bubble must be a light card with dark text (the workbench's
 //     dark override used to leak into light mode);
-//   - the sidebar identity avatar is the brand disc (saturated teal) with
-//     legible initials, not a neutral grey placeholder;
+//   - the sidebar identity avatar is the ink disc with legible initials;
 //   - the in-session composer keeps a visible outline;
-//   - the send control is the action blue with a legible arrow, in both
-//     modes.
+//   - the send control is the ink disc with a legible arrow, inverted in
+//     dark mode (R1 monochrome restyle).
 
 import { test, expect } from '@playwright/test';
 import { WORKBENCH_VIEWPORTS, prepareChatWorkbench } from './_chat-workbench.mjs';
@@ -80,31 +79,30 @@ test('light conversation surface stays readable and neutral', async ({ page }) =
   expect(luminance(bubbleBg)).toBeGreaterThan(0.8);
   expect(contrast(bubbleFg, bubbleBg)).toBeGreaterThanOrEqual(4.5);
 
-  // The identity avatar is the brand disc: the reference draws a saturated
-  // teal circle with light initials, and the system carries that as
-  // --ui-brand-accent. It must not be the ochre accent, and the initials
-  // have to stay legible on it (AA on the light page).
+  // The identity avatar is the ink disc (R1 restyle): a neutral, solid mark
+  // — not a grey placeholder and not a hue — with legible initials.
   const avatarBg = parseRgb(palette.avatar.background);
   const avatarFg = parseRgb(palette.avatar.color);
   expect(avatarBg).not.toBeNull();
-  expect(Math.max(...avatarBg) - Math.min(...avatarBg)).toBeGreaterThan(40);
-  expect(palette.avatar.background).not.toBe('rgb(174, 116, 21)');
+  expect(Math.max(...avatarBg) - Math.min(...avatarBg)).toBeLessThanOrEqual(8);
+  expect(luminance(avatarBg)).toBeLessThan(0.05);
   expect(contrast(avatarFg, avatarBg)).toBeGreaterThanOrEqual(4.5);
 
   // Composer hairline is actually painted in light mode.
   expect(parseFloat(palette.composer.borderWidth)).toBeGreaterThanOrEqual(1);
 
-  // The send control is the action blue with a light up-arrow. The arrow is
-  // a control glyph, so it is held to WCAG's 3:1 non-text contrast rather
-  // than to the 4.5:1 of body text.
+  // The send control is the ink disc with a light up-arrow (R1 restyle:
+  // black is the product's only accent). The arrow is a control glyph, so it
+  // is held to WCAG's 3:1 non-text contrast.
   const sendBg = parseRgb(palette.send.background);
   const sendFg = parseRgb(palette.send.color);
   expect(sendBg).not.toBeNull();
-  expect(sendBg[2] - sendBg[0]).toBeGreaterThan(120);
+  expect(Math.max(...sendBg) - Math.min(...sendBg)).toBeLessThanOrEqual(8);
+  expect(luminance(sendBg)).toBeLessThan(0.05);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 
-test('dark conversation surface keeps the action-blue send control', async ({ page }) => {
+test('dark conversation surface inverts the ink send control', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.addInitScript(() => {
     try { localStorage.setItem('socrates-theme', 'dark'); } catch (_) {}
@@ -118,13 +116,12 @@ test('dark conversation surface keeps the action-blue send control', async ({ pa
   expect(luminance(bubbleBg)).toBeLessThan(0.2);
   expect(contrast(bubbleFg, bubbleBg)).toBeGreaterThanOrEqual(4.5);
 
-  // The dark mode keeps the same action blue and the same light arrow: the
-  // send control does not flip with the mode, the way the baseline's
-  // monochrome send used to.
+  // Dark mode inverts the ink disc: a light neutral fill with a dark arrow.
   const sendBg = parseRgb(palette.send.background);
   const sendFg = parseRgb(palette.send.color);
   expect(sendBg).not.toBeNull();
-  expect(sendBg[2] - sendBg[0]).toBeGreaterThan(120);
+  expect(Math.max(...sendBg) - Math.min(...sendBg)).toBeLessThanOrEqual(8);
+  expect(luminance(sendBg)).toBeGreaterThan(0.6);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 
