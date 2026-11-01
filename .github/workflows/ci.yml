@@ -1,44 +1,17 @@
 name: CI
 
 on:
-  # Manual runs let a change be gated from the Actions tab without pushing
-  # an empty commit, which matters for long Playwright runs.
   workflow_dispatch:
   push:
-    branches: [main, feat/*]
+    branches: [main]
   pull_request:
     branches: [main]
 
-# ─── Why there is no `paths-ignore` here (ADR 0009, landed 2026-09-25) ───
-#
-# This workflow used to carry `paths-ignore: [docs/**, README*, AGENTS.md,
-# CLAUDE.md, .gitignore, .hintrc]` to avoid a 10-minute frontend build on
-# documentation PRs. Its own comment recorded the resulting trap: GitHub
-# reports NOTHING for a workflow skipped by path filtering, so if branch
-# protection marks Frontend / Server / Shared as required status checks, a
-# docs-only PR sits at "Pending" forever and can never be merged.
-#
-# ADR 0009 left the mitigation as an undecided two-way choice: drop the
-# required flags, or add a no-op mirror workflow that re-uses the same job
-# names. The mirror option is unsound — a PR that touches docs AND code
-# triggers both workflows, producing two check runs named "Frontend", and a
-# passing no-op can satisfy a requirement that the real job just failed.
-#
-# So the gate now always triggers and always reports, and a cheap
-# `changes` job decides whether the expensive jobs do any work. A job
-# skipped by `if:` is reported as successful for required-check purposes,
-# which is precisely the property the mirror was trying to fake — without
-# the duplicate-name hazard.
-#
-# Fail-safe: `changes` resolves to code=true whenever it cannot determine
-# the diff with confidence (shallow history, force push, first push on a
-# branch, unknown event). Wasting CI minutes is the acceptable failure
-# mode; skipping the gate is not.
-
+# Main CI always reports on PRs. Expensive product lanes are selected by the
+# changed-path classifier instead of workflow-level paths filters, so required
+# checks can be skipped safely without getting stuck in Pending.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  # A new PR revision supersedes the old one just as surely as a new push.
-  # Manual runs are explicit snapshots and are allowed to finish.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 permissions:
@@ -48,12 +21,16 @@ jobs:
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
-      code: ${{ steps.filter.outputs.code }}
+      site: ${{ steps.filter.outputs.site }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      server: ${{ steps.filter.outputs.server }}
+      shared: ${{ steps.filter.outputs.shared }}
+      universal: ${{ steps.filter.outputs.universal }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          # Need history on both sides of the comparison.
           fetch-depth: 0
 
       - name: Classify changed paths
@@ -65,101 +42,50 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Paths with no effect on the build. Everything else is code.
-          # Kept as an explicit allow-list: an unrecognised path counts as
-          # code, so adding a new source tree can never silently opt out.
-          #
-          # Deliberately NOT `*.md`: prompts/teacher-mode.md,
-          # prompts/beagle.md and prompts/code-interpreter.md are loaded at
-          # runtime by server/src/lib/prompts.ts and their contents are
-          # asserted by server/test/prompts.test.js (length ceilings plus
-          # required substrings). A blanket markdown rule would let a prompt
-          # edit skip the only test that guards that contract. Markdown
-          # elsewhere (mobile/docs/*.md, frontend/*_REPORT.md, per-package
-          # README.md) therefore classifies as code and merely costs CI
-          # minutes — the safe direction.
-          #
-          # docs/api/openapi.yaml is inside this bucket on purpose (ADR 0009
-          # weighed it explicitly): it is a cross-client contract, and its
-          # guardian — scripts/check-openapi-drift.mjs — runs in the
-          # always-on `sanity` job, so a spec-only edit is still checked
-          # while the expensive build/test jobs stay skipped. A deeper
-          # runtime contract test (Schemathesis/Dredd) would belong in the
-          # server job and would NOT cover spec-only edits for the same
-          # reason.
-          is_docs_only_path() {
-            case "$1" in
-              docs/*|README.md|README.zh.md|AGENTS.md|CLAUDE.md|.gitignore|.hintrc|\
-              .github/PULL_REQUEST_TEMPLATE.md|.github/CODEOWNERS|LICENSE|design-qa.md)
-                return 0 ;;
-              *) return 1 ;;
-            esac
-          }
+          # Manual runs are explicit full-gate snapshots.
+          if [[ "$EVENT" == "workflow_dispatch" ]]; then
+            bash scripts/ci-classify.sh --all | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           base=""
           case "$EVENT" in
             pull_request) base="$BASE_SHA" ;;
             push)         base="$BEFORE_SHA" ;;
-            *)            base="" ;;
           esac
 
-          # All-zero SHA means "branch did not exist before" (first push).
-          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
-            echo "no usable base ref for $EVENT — running the full gate"
-            echo "code=true" >> "$GITHUB_OUTPUT"
+          # Missing/unknown history fails safe: spend CI minutes rather than
+          # risk silently skipping a required lane.
+          if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
+            echo "No usable base SHA; running the full gate"
+            bash scripts/ci-classify.sh --all | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
-            echo "base $base not present locally — running the full gate"
-            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "Base $base is unavailable locally; running the full gate"
+            bash scripts/ci-classify.sh --all | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
 
           files="$(git diff --name-only "$base" "$GITHUB_SHA")"
-          if [ -z "$files" ]; then
-            echo "empty diff — running the full gate"
-            echo "code=true" >> "$GITHUB_OUTPUT"
+          if [[ -z "$files" ]]; then
+            echo "Empty diff; running the full gate"
+            bash scripts/ci-classify.sh --all | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "changed files:"
+          echo "Changed files:"
           printf '  %s\n' $files
-
-          code=false
-          while IFS= read -r f; do
-            [ -n "$f" ] || continue
-            if ! is_docs_only_path "$f"; then
-              echo "-> code change: $f"
-              code=true
-              break
-            fi
-          done <<< "$files"
-
-          echo "code=$code" >> "$GITHUB_OUTPUT"
-          if [ "$code" = "false" ]; then
-            echo "documentation-only change: the build/test jobs will be skipped,"
-            echo "and a skipped job reports as successful so required checks pass."
-          fi
+          printf '%s\n' "$files" | bash scripts/ci-classify.sh | tee -a "$GITHUB_OUTPUT"
 
   sanity:
     name: Repo sanity
     runs-on: ubuntu-latest
-    # Deliberately NOT gated on `changes`: a conflict marker inside a
-    # docs-only PR is still a broken file, and this job costs seconds.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      # 2026-09-26: merge ee20d6df committed qodana.yaml and
-      # .github/workflows/qodana_code_quality.yml with live
-      # <<<<<<< / ======= / >>>>>>> markers — the Qodana workflow was
-      # unparseable on main and nothing noticed.
-      #
-      # The side markers anchored at column 0 have no benign meaning in
-      # tracked text. `^={7}$` is included too: it is git's conflict
-      # divider, and this repo writes headings with '#' rather than
-      # setext underlines — a false positive means "make the markdown
-      # underline a different length", not a broken check.
       - name: No merge-conflict markers
         run: |
           if git grep -nE '^(<{7}|>{7}|\|{7})([[:space:]]|$)|^={7}$' -- .; then
@@ -168,14 +94,20 @@ jobs:
           fi
           echo "clean: no conflict markers in tracked files"
 
+      - name: CI gate routing regression tests
+        run: bash scripts/test-ci-classify.sh
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install root tooling
         run: npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
+
+      - name: Workflow action pinning
+        run: npm run lint:action-pinning
 
       - name: Published OpenAPI projection check and focused test
         run: |
@@ -187,72 +119,44 @@ jobs:
           node --test scripts/test-verify-sbom.mjs
           bash scripts/test-deploy-flow.sh
 
-      # Route↔spec drift ratchet. Lives here rather than in the `server`
-      # job on purpose: docs/api/openapi.yaml is classified docs-only, so
-      # a spec-only edit never triggers the server job — but this job
-      # always runs. New divergence fails; the baseline only shrinks.
       - name: OpenAPI drift ratchet
         run: node scripts/check-openapi-drift.mjs
 
-  # The marketing/docs site is a separate static tree deployed to its own
-  # vhost. It had NO automated coverage at all until 2026-10-31: a broken
-  # stylesheet, a stale chrome asset or a layout regression shipped
-  # because only a human looking at the page would notice.
-  #
-  # `npm run test:site` runs the chrome-sync drift check plus the browser
-  # geometry tests (question homepage, product and content pages, motion).
-  # The job is gated on `changes` because site/** is classified as code —
-  # a site edit must not skip the gate.
   site:
     name: Site
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.site == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: package-lock.json
-
       - name: Install root tooling
         run: npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
-
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-
       - name: Site chrome sync and browser tests
         run: npm run test:site
 
   frontend:
     name: Frontend
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
-    # 2026-10-25: the job was killed at the 35-minute mark while the
-    # Playwright smoke suite was still running (the gate cancelled the
-    # "End-to-end smoke tests" step and the job reported "cancelled", not
-    # "failed"). The steps before it are already expensive: the Rust WASM
-    # build, lint, bundle, unit tests, the coverage floor and the parity
-    # geometry gate (72 scenarios) run first, and the full smoke suite is
-    # ~600 specs on a single worker. 60 minutes leaves headroom without
-    # letting a genuinely hung job sit forever.
     timeout-minutes: 60
     defaults:
       run:
         working-directory: frontend
-
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: Restore Rust WASM cache
@@ -273,9 +177,6 @@ jobs:
 
       - name: Build Rust WASM support
         run: |
-          # tools-rust/.cargo/config.toml redirects crates.io to the
-          # rsproxy.cn mirror for the local dev network; hosted runners reach
-          # crates.io directly, and the mirror has timed out in CI.
           rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
           if ! wasm-bindgen --version 2>/dev/null | grep -qx 'wasm-bindgen 0.2.126'; then
@@ -285,54 +186,18 @@ jobs:
 
       - name: Lint
         run: npm run lint
-
       - name: Build
         run: npm run build
-
-      # Bundle size ceiling. This guard measures the BUILT artifact, so it
-      # is the one check that cannot live in `npm run lint` (lint never
-      # builds). The ceiling covers the initial JS payload, the total JS,
-      # the largest single chunk and the CSS.
       - name: Bundle size ceiling
         working-directory: .
         run: node scripts/check-bundle-size.mjs
-
       - name: Unit tests
         run: npm run test:unit
-
-      # Blocking. scripts/coverage.baseline.json records the floor; the
-      # ratchet fails both when coverage drops below it and when it drifts
-      # far enough above that the floor has stopped protecting anything.
-      # A 0.5-point downward tolerance absorbs V8 coverage jitter, which was
-      # measured at ~0.12 points between identical runs — an exact floor
-      # would fail at random and train people to bypass it.
       - name: Coverage floor
         working-directory: .
         run: node scripts/coverage-ratchet.mjs frontend
-
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-
-      # Geometry + layout-defect ratchet. Blocking.
-      #
-      # Until 2026-10-04 this audit was diagnostic-only: it wrote
-      # metrics.json / defects.json into the gitignored debug/parity/ and
-      # nothing read them. Three of its composer selectors still pointed at
-      # #topicInputWrap / #chatInputWrap / #startBtn, retired by
-      # P_composer-single, so the composer geometry it exists to protect was
-      # measuring `null` — which is how a `display:none` shipped on the three
-      # landing shortcut buttons and left a ~410px dead band under the
-      # composer without any gate noticing.
-      #
-      # The gate fails on (a) any layout defect, including the new
-      # `home-dead-zone` probe, and (b) >1px drift from
-      # frontend/scripts/parity-baseline.json. `--only` runs are supported:
-      # scenarios absent from the run are reported as coverage gaps, not
-      # failures.
-      #
-      # If this fails on geometry alone, read the baseline diff before
-      # regenerating: `npm run parity:update` is only correct when the visual
-      # change was intended.
       - name: Parity geometry gate
         run: |
           node e2e/dist-server.mjs &
@@ -347,19 +212,10 @@ jobs:
             exit 1
           }
           npm run parity:check
-
       - name: End-to-end smoke tests
         run: npm run test:smoke
-
-      # Mobile-desktop-compositor UX: the phone-sized composer surface has its
-      # own Playwright config (400x890, isMobile, hasTouch) and its own
-      # dist-server on :4174, so it cannot ride the desktop smoke server. It was
-      # previously only reachable via `npm run test:smoke:mobile` locally, so a
-      # regression in phone composer grouping, tool filtering or the connector
-      # empty state could reach main with nothing red.
       - name: Mobile composer UX smoke tests
         run: npm run test:smoke:mobile
-
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -372,22 +228,12 @@ jobs:
   server:
     name: Server
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
       run:
         working-directory: server
-
-    # A real Postgres is a correctness requirement, not a nicety.
-    # scripts/run-tests.mjs skips every DB-backed suite via t.skip() when
-    # DATABASE_URL is absent, which silently excluded the OAuth flow, the
-    # auth middleware, login lockout, agent keys, chat turns and the chunk
-    # index from the merge gate — i.e. the gate was green while the
-    # security-critical paths were never executed. `pgvector/pgvector` is
-    # used rather than plain `postgres` so migration 0030..0032 install the
-    # vector column instead of taking their graceful-degradation branch,
-    # keeping CI on the same schema shape as production.
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -402,53 +248,29 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
-
     env:
       DATABASE_URL: postgres://socrates:socrates@127.0.0.1:5432/socrates_test
-      # crypto.ts refuses to derive encryption keys without a master
-      # secret. Supply a throwaway one so the suites exercise the real
-      # HKDF path rather than the SOCRATES_ALLOW_DEV_SECRET escape hatch.
       SESSION_SECRET: ci-only-not-a-production-secret-0000000000000000
       NODE_ENV: test
-
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: server/package-lock.json
-
       - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
-
       - name: TypeScript and service boundaries
         run: npm run lint
-
       - name: Install Agent isolation runtime for boundary tests
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends bubblewrap
-
-      # Guards the migration metadata. A stale drizzle snapshot makes the next
-      # `db:generate` re-emit already-applied DDL in non-idempotent form,
-      # which aborts a production migration on "column already exists" — the
-      # part of the system with the least rollback. Caught by hand on
-      # 2026-09-25; this makes it a gate. Runs from the repo root.
       - name: Drizzle migration metadata
         working-directory: .
         run: node scripts/check-drizzle-drift.mjs
-
       - name: Run migrations
         run: npm run db:migrate
-
-      # test:strict fails fast when DATABASE_URL is missing instead of
-      # reporting green over skipped suites. Keep this as the gate command
-      # so a future change that drops the service container breaks loudly.
       - name: Unit tests (strict — no silent skips)
         run: npm run test:strict
-
-      # Blocking — see the frontend job for the rationale. Runs after
-      # test:strict so a plain test failure is reported as such rather than
-      # surfacing as a coverage drop.
       - name: Coverage floor
         working-directory: .
         run: node scripts/coverage-ratchet.mjs server
@@ -456,12 +278,11 @@ jobs:
   shared:
     name: Shared packages & Rust protocol
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.shared == 'true'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
       - name: Restore Rust protocol cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
@@ -472,86 +293,105 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-rust-protocol-v1-${{ hashFiles('tools-rust/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-rust-protocol-v1-
-
-      # socrates-protocol holds the ToolRun phase state machine whose
-      # TypeScript twin lives in packages/core. Its unit tests never
-      # ran in CI before; no wasm target needed for this crate.
-      # (A root `tsc -p tsconfig.json` gate is deferred: packages/core
-      # uses `.ts`-suffixed imports that need allowImportingTsExtensions,
-      # so it is red on main independent of any change.)
       - name: Rust protocol tests
-        # Drop the dev-network rsproxy mirror first — hosted runners reach
-        # crates.io directly and the mirror has timed out in CI.
         run: rm -f .cargo/config.toml && cargo test -p socrates-protocol
         working-directory: tools-rust
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-
-      # The other half of the same state machine. Both sides read
-      # packages/contracts/toolRunConformance.fixture.json and assert against
-      # the same expected values, so a change to one implementation fails the
-      # other. Before this the Rust tests were kept in step by a human copying
-      # cases between files ("Ported 1:1 from frontend/test/..."), which is
-      # exactly the drift a WASM-vs-JS-fallback split makes expensive: it
-      # reproduces on some clients and not others.
       - name: TypeScript twin conformance
         run: node --experimental-strip-types --test packages/core/src/toolRunConformance.test.ts
-
-      # Pure playback-clock logic (network-arrival vs visual-playback
-      # decoupling) also lives in packages/core with no DOM/rAF dependency.
       - name: Playback clock tests
         run: node --experimental-strip-types --test packages/core/src/streamPlayer.test.ts
 
   universal-app:
     name: Universal App web smoke
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.universal == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
-
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: |
             apps/socrates/package-lock.json
             frontend/package-lock.json
-
-      # The Universal App (apps/socrates + packages/) is the mobile/
-      # successor: same Sidebar/Chat/Composer/Settings/Projects on Web
-      # (RN Web) and Android. This gate exports the web bundle and runs
-      # the self-contained mock-server spec (no backend needed).
       - name: Install Universal App dependencies
         run: npm ci --include=dev --prefer-offline --no-audit --no-fund
         working-directory: apps/socrates
-
       - name: Universal App typecheck and shared tests
         run: |
           npm run typecheck
           npm run test:shared
           node ../../scripts/check-packages-dom.mjs
         working-directory: apps/socrates
-
       - name: Install Playwright dependencies
         run: npm ci --include=dev --prefer-offline --no-audit --no-fund
         working-directory: frontend
-
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
         working-directory: frontend
-
       - name: Universal App smoke tests
         run: npm run test:universal
         working-directory: frontend
-
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: universal-app-report
           path: frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  gate:
+    name: Merge gate
+    if: always()
+    needs: [changes, sanity, site, frontend, server, shared, universal-app]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every applicable lane
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          SANITY: ${{ needs.sanity.result }}
+          SITE: ${{ needs.site.result }}
+          FRONTEND: ${{ needs.frontend.result }}
+          SERVER: ${{ needs.server.result }}
+          SHARED: ${{ needs.shared.result }}
+          UNIVERSAL: ${{ needs.universal-app.result }}
+        run: |
+          set -euo pipefail
+
+          [[ "$CHANGES" == success ]] || {
+            echo "::error::Detect changes failed: $CHANGES"
+            exit 1
+          }
+          [[ "$SANITY" == success ]] || {
+            echo "::error::Repo sanity failed: $SANITY"
+            exit 1
+          }
+
+          failed=0
+          for pair in \
+            "Site:$SITE" \
+            "Frontend:$FRONTEND" \
+            "Server:$SERVER" \
+            "Shared:$SHARED" \
+            "Universal:$UNIVERSAL"; do
+            name="${pair%%:*}"
+            result="${pair#*:}"
+            case "$result" in
+              success|skipped)
+                echo "$name: $result"
+                ;;
+              *)
+                echo "::error::$name lane finished with $result"
+                failed=1
+                ;;
+            esac
+          done
+
+          exit "$failed"
