@@ -526,3 +526,150 @@ test('the footer wordmark’s point drops and lights up at the end of the page',
     assert.equal(await still.evaluate(() => document.documentElement.scrollWidth), width);
   }
 });
+
+// Round 9 ---------------------------------------------------------------
+
+test('writing in the hero box writes the question mark, and an empty box puts it back', async (t) => {
+  const page = await animatedPage(t);
+  const mark = page.locator('[data-hero-mark]');
+  await page.waitForFunction(() => document.querySelector('[data-hero-mark]').classList.contains('is-live'));
+  assert.equal(await mark.getAttribute('data-writing'), 'idle');
+  const input = page.locator('#askInputHero');
+  await input.focus();
+  assert.equal(await mark.getAttribute('data-writing'), 'empty', 'focus: a faint trace, the point an outline');
+  await input.pressSequentially('Why is the sky');
+  assert.equal(await mark.getAttribute('data-writing'), 'partial');
+  await input.pressSequentially(' blue at noon but red at sunset, every day?');
+  assert.equal(await mark.getAttribute('data-writing'), 'full', 'a whole question writes the whole mark');
+  await input.fill('');
+  assert.equal(await mark.getAttribute('data-writing'), 'empty', 'clearing goes back to the start of writing');
+  await page.locator('h1').click();
+  assert.equal(await mark.getAttribute('data-writing'), 'idle', 'leaving an empty box restores the finished mark');
+  // Writing never touches the form itself.
+  await input.fill('一个问题');
+  assert.equal(await input.inputValue(), '一个问题');
+  assert.ok(await page.locator('[data-ask-form]').evaluate((form) => form.classList.contains('has-value')));
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => !document.querySelector('[data-hero-mark]').hasAttribute('data-writing'));
+});
+
+test('the flying point never passes over a line of the question chain', async (t) => {
+  const context = await site.browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
+  t.after(() => context.close());
+  await context.route('https://**/*', (route) => route.abort());
+  const page = await context.newPage();
+  await page.goto(site.baseURL + '/');
+  await page.locator('[data-consent-choice="essential"]').click();
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(1400);
+  const end = await page.evaluate(() => document.querySelector('.qc-step[data-qc-step="0"] .qc-dot').getBoundingClientRect().top + scrollY - innerHeight * .45);
+  for (let f = .4; f < 1; f += .04) {
+    await page.evaluate((y) => scrollTo({ top: y, behavior: 'instant' }), Math.round(end * f));
+    const inked = await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => {
+      const canvas = document.querySelector('.hero-mark-canvas');
+      const box = canvas.getBoundingClientRect();
+      const ctx = canvas.getContext('2d');
+      const k = canvas.width / box.width;
+      const texts = document.querySelectorAll('.qc-stage-head > span, .qc-intro h2, .qc-intro p, .qc-label, .qc-question');
+      let hits = 0;
+      texts.forEach((node) => {
+        const r = node.getBoundingClientRect();
+        const x0 = Math.max(r.left, box.left), x1 = Math.min(r.right, box.right), y0 = Math.max(r.top, box.top), y1 = Math.min(r.bottom, box.bottom);
+        if (x1 - x0 < 1 || y1 - y0 < 1) return;
+        const data = ctx.getImageData(Math.floor((x0 - box.left) * k), Math.floor((y0 - box.top) * k), Math.ceil((x1 - x0) * k), Math.ceil((y1 - y0) * k)).data;
+        for (let i = 3; i < data.length; i += 4) if (data[i] > 200) hits += 1;
+      });
+      done(hits);
+    }))));
+    assert.equal(inked, 0, `at ${Math.round(f * 100)}% of the flight the point covers chain text`);
+  }
+});
+
+test('the question chain grows its map out of the dot field, node by node, on its points', async (t) => {
+  const page = await animatedPage(t);
+  const chain = page.locator('#question-chain');
+  await page.waitForFunction(() => document.querySelector('.qc-stage').hasAttribute('data-qc-grid'));
+  const offGrid = () => page.evaluate(() => {
+    const stage = document.querySelector('.qc-stage');
+    const style = getComputedStyle(stage);
+    const g = parseFloat(style.getPropertyValue('--qc-g'));
+    const gx = parseFloat(style.getPropertyValue('--qc-gx'));
+    const gy = parseFloat(style.getPropertyValue('--qc-gy'));
+    const at = stage.getBoundingClientRect();
+    const svg = document.querySelector('.qc-map-svg');
+    const m = svg.getScreenCTM();
+    let worst = 0;
+    svg.querySelectorAll('.qc-node circle').forEach((c) => {
+      const x = m.a * c.cx.baseVal.value + m.e - at.left - gx - g / 2;
+      const y = m.d * c.cy.baseVal.value + m.f - at.top - gy - g / 2;
+      for (const v of [x / g, y / g]) worst = Math.max(worst, Math.abs(v - Math.round(v)) * g);
+    });
+    return { worst, g };
+  });
+  const { worst, g } = await offGrid();
+  assert.ok(Number.isInteger(g), `a field step is a whole number of pixels (${g})`);
+  assert.ok(worst < .01, `every node sits on a point of the field (off by ${worst}px)`);
+  const grid = () => page.locator('.qc-map [data-at].is-grid').count();
+  assert.equal(await grid(), 8, 'at the first question only its own node is out of the field');
+  const next = chain.locator('[data-qc-next]');
+  await page.locator('.qc-list').scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => document.querySelector('[data-qc-count]').textContent.trim() === '2 / 4');
+  assert.equal(await grid(), 6, 'the struck answer becomes the crossed-out node');
+  await next.click();
+  assert.equal(await grid(), 4);
+  await next.click();
+  assert.equal(await grid(), 0, 'the last step leaves the whole map');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(200);
+  const narrow = await offGrid();
+  assert.ok(narrow.worst < .01 && Number.isInteger(narrow.g), 'still on the field on a phone');
+});
+
+test('the 404 question gathers into its missing point, then goes home', async (t) => {
+  const context = await site.browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
+  t.after(() => context.close());
+  await context.route('https://**/*', (route) => route.abort());
+  const page = await context.newPage();
+  await page.goto(site.baseURL + '/404.html');
+  assert.equal(await page.locator('.nf-mark .nf-stroke circle').count(), 57);
+  assert.equal(await page.locator('.nf-point').evaluate((node) => getComputedStyle(node).opacity), '0', 'the point is missing');
+  await page.locator('.nf-primary').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('.nf-mark').getAttribute('data-gathering'), '');
+  assert.ok(await page.evaluate(() => document.querySelector('.nf-mark').getAnimations({ subtree: true }).length > 50));
+  await page.waitForURL(site.baseURL + '/', { timeout: 3000 });
+
+  const reduced = await site.browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
+  t.after(() => reduced.close());
+  await reduced.route('https://**/*', (route) => route.abort());
+  const still = await reduced.newPage();
+  await still.goto(site.baseURL + '/404.html');
+  const started = Date.now();
+  await still.locator('.nf-primary').click();
+  await still.waitForURL(site.baseURL + '/');
+  assert.ok(Date.now() - started < 1500, 'reduced motion goes straight home');
+});
+
+test('pages cross-fade under a header that stays put, only where motion is welcome', async (t) => {
+  const page = await animatedPage(t, '/pricing');
+  const rule = await page.evaluate(() => {
+    for (const sheet of document.styleSheets) {
+      if (!(sheet.href || '').includes('/chrome.css')) continue;
+      for (const rule of sheet.cssRules) if (rule.media && /prefers-reduced-motion: no-preference/.test(rule.media.mediaText) && /@view-transition/.test(rule.cssText)) return rule.cssText;
+    }
+    return '';
+  });
+  assert.match(rule, /navigation: auto/);
+  assert.equal(await page.locator('.site-header').evaluate((node) => getComputedStyle(node).viewTransitionName), 'site-header');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await page.locator('.site-header').evaluate((node) => getComputedStyle(node).viewTransitionName), 'none');
+});
+
+test('each plan card carries a tier mark, one more point per step, without touching the plan copy', async (t) => {
+  for (const path of ['/pricing', '/zh/pricing']) {
+    const page = await sitePage(site, t, path, 1440);
+    const lit = await page.locator('.plan-tier').evaluateAll((marks) => marks.map((mark) => mark.querySelectorAll('i.is-on').length));
+    assert.deepEqual(lit, [1, 2, 3, 4]);
+    assert.ok(await page.locator('.plan-tier').evaluateAll((marks) => marks.every((mark) => mark.getAttribute('aria-hidden') === 'true' && mark.textContent === '')));
+  }
+});
