@@ -96,10 +96,12 @@ export async function startTracing(): Promise<void> {
       /* Traces answer "why was THIS turn slow"; metrics answer "is the
          service degrading". Push interval is deliberately coarse — this
          exporter feeds a collector, not a per-request scrape. */
-      metricReader: new PeriodicExportingMetricReader({
-        exporter: new OTLPMetricExporter({ url: `${otlpBase}/v1/metrics` }),
-        exportIntervalMillis: 30_000,
-      }),
+      metricReaders: [
+        new PeriodicExportingMetricReader({
+          exporter: new OTLPMetricExporter({ url: `${otlpBase}/v1/metrics` }),
+          exportIntervalMillis: 30_000,
+        }),
+      ],
       instrumentations: [
         /* Ignore the endpoints that would otherwise dominate the trace volume
            without telling us anything: the health probe fires every few
