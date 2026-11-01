@@ -23,7 +23,10 @@ import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../comp
 import { cycleActiveProject, closeTagEditor } from '../session/organizeRuntime.ts';
 import { findLastUserMessage } from '../render/markdown.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { t } from '../i18n.ts';
+import { startNewChat } from '../app/lifecycle.ts';
+import { startSession } from '../chat/sessionBootstrap.ts';
+import { submitChatMessage } from '../chat/sendPipeline.ts';
 
 
 function isCommandShortcut(event: KeyboardEvent, key: string, shiftKey = false) {
@@ -127,7 +130,7 @@ function handleProfile(event: KeyboardEvent) {
 function handleNewChat(event: KeyboardEvent) {
   if (!isCommandShortcut(event, 'o', true)) return false;
   event.preventDefault();
-  if (typeof browserWindow.startNewChat === 'function') browserWindow.startNewChat();
+  startNewChat();
   return true;
 }
 
@@ -137,7 +140,7 @@ function handleShare(event: KeyboardEvent) {
   if (typeof openShareModal === 'function' && stateStore.read('currentSessionId')) {
     openShareModal();
   } else {
-    showToast(browserWindow.t('toast.shareStartFirst'));
+    showToast(t('toast.shareStartFirst'));
   }
   return true;
 }
@@ -161,8 +164,8 @@ function handleSend(event: KeyboardEvent) {
   const composer = (event.target as Element)?.closest?.('.rich-composer');
   if (!composer) return true;
   event.preventDefault();
-  if (composer.getAttribute('data-surface') === 'topic') browserWindow.startSession();
-  else if (typeof browserWindow.submitChatMessage === 'function') browserWindow.submitChatMessage();
+  if (composer.getAttribute('data-surface') === 'topic') void startSession();
+  else void submitChatMessage();
   return true;
 }
 

@@ -14,7 +14,8 @@ import { esc } from '../render/helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { setDeepResearchEnabled } from '../config/deepResearchMode.ts';
 import { batchSetItem } from '../batchStorage.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getSlashApps, ensureSlashApps } from '../sidebar/nav.ts';
+import { submitChatMessage } from './sendPipeline.ts';
 
 
 export let _slashSelected=0;
@@ -116,7 +117,7 @@ export function setActiveTemplate(input: object | null){
   const prevExt = typeof previousExtension === 'string' ? previousExtension : null;
   const nextExt = typeof nextExtension === 'string' ? nextExtension : null;
   if(prevExt!==nextExt) _applyExtensionSideEffects(prevExt,nextExt);
-  try { browserWindow._activeTemplate = _activeTemplate; } catch (e) { reportSwallow(e, 'templateSlash.setActiveTemplate.mirrorGlobal'); }
+  try { (window as unknown as { _activeTemplate?: unknown })._activeTemplate = _activeTemplate; } catch (e) { reportSwallow(e, 'templateSlash.setActiveTemplate.mirrorGlobal'); }
   renderTemplateModeChip();
 }
 export function clearActiveTemplate(){
@@ -175,7 +176,7 @@ export function _currentSlashQuery(){
    group them and the insert step can branch. Substring match against
    shortcut, title, and description. */
 export function _slashAppEntries(){
-  const apps=(typeof browserWindow.getSlashApps==="function")?browserWindow.getSlashApps():[];
+  const apps = getSlashApps();
   return (apps||[]).map(function(a): SlashAppEntry {
     return { _kind:"app", id:a.id, title:a.title, shortcut:a.shortcut, description:a.description, icon:a.icon, insert:a.insert };
   });
@@ -211,11 +212,9 @@ export function openSlashCommandPalette(){
   p.classList.add("visible");
   /* Lazily fetch the connector list the first time the palette
      opens, then re-filter so connected apps appear inline. */
-  if(typeof browserWindow.ensureSlashApps==="function"){
-    Promise.resolve(browserWindow.ensureSlashApps()).then(function(){
-      if(isSlashCommandPaletteOpen()) updateSlashCommandPaletteFilter();
-    });
-  }
+  void Promise.resolve(ensureSlashApps()).then(function(){
+    if(isSlashCommandPaletteOpen()) updateSlashCommandPaletteFilter();
+  });
 }
 export function isSlashCommandPaletteOpen(){
   const p=document.getElementById("slashCommandPalette");
@@ -247,7 +246,7 @@ export function positionSlashCommandPalette(){
   p.style.left=rect.left+"px";
   p.style.right="";
   p.style.width=rect.width+"px";
-  p.style.bottom=(browserWindow.innerHeight-rect.top+6)+"px";
+  p.style.bottom=(window.innerHeight-rect.top+6)+"px";
   p.style.transform="translateY(0)";
 }
 /* Re-filter without closing. Called on every input event
@@ -357,25 +356,27 @@ export function insertSelectedSlashTemplate(){
   closeSlashCommandPalette();
 }
 /* Wire arrow / Enter / Esc handling for the palette itself. */
-document.addEventListener("keydown",function(e){
-  if(!isSlashCommandPaletteOpen())return;
-  const k=e.key;
-  if(k==="ArrowDown"){
-    e.preventDefault();
-    _slashSelected=(_slashSelected+1)%Math.max(1,_slashList.length);
-    updateSlashSelected();
-  }else if(k==="ArrowUp"){
-    e.preventDefault();
-    _slashSelected=(_slashSelected-1+_slashList.length)%Math.max(1,_slashList.length);
-    updateSlashSelected();
-  }else if(k==="Enter"&&!e.shiftKey){
-    e.preventDefault();
-    insertSelectedSlashTemplate();
-  }else if(k==="Escape"){
-    e.preventDefault();
-    closeSlashCommandPalette();
-  }
-});
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+  document.addEventListener("keydown",function(e){
+    if(!isSlashCommandPaletteOpen())return;
+    const k=e.key;
+    if(k==="ArrowDown"){
+      e.preventDefault();
+      _slashSelected=(_slashSelected+1)%Math.max(1,_slashList.length);
+      updateSlashSelected();
+    }else if(k==="ArrowUp"){
+      e.preventDefault();
+      _slashSelected=(_slashSelected-1+_slashList.length)%Math.max(1,_slashList.length);
+      updateSlashSelected();
+    }else if(k==="Enter"&&!e.shiftKey){
+      e.preventDefault();
+      insertSelectedSlashTemplate();
+    }else if(k==="Escape"){
+      e.preventDefault();
+      closeSlashCommandPalette();
+    }
+  });
+}
 /* Re-filter the palette on every input change. Catches
    the common case of typing `/sum` and expecting the
    list to narrow live. Also closes the palette when the
@@ -392,9 +393,11 @@ subscribeComposer(function(surface,v){
 });
 /* Reposition on resize/scroll so the palette stays flush
    with the input bar. */
-browserWindow.addEventListener("resize",function(){
-  if(isSlashCommandPaletteOpen()) positionSlashCommandPalette();
-});
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("resize",function(){
+    if(isSlashCommandPaletteOpen()) positionSlashCommandPalette();
+  });
+}
 
 /* Blur whatever is focused inside the composer (editor root OR
    the wider input wrap, which includes the send/attach buttons) and
@@ -424,7 +427,7 @@ export function blurChatComposer(){
   /* Clear DOM selection so the cursor caret / text highlight disappears
      and the selection-controlled CSS visuals reset. */
   try{
-    const sel=browserWindow.getSelection();
+    const sel=window.getSelection();
     if(sel&&sel.rangeCount)sel.removeAllRanges();
   }catch(e){reportSwallow(e, 'templateSlash.withinComposer.clearSelection');}
 }
@@ -435,7 +438,7 @@ export function _handleChatKey(e: KeyboardEvent){
   if(e.key==="Enter"&&!e.shiftKey){
     e.preventDefault();
     if(isSlashCommandPaletteOpen())closeSlashCommandPalette();
-    if (typeof window !== "undefined" && typeof browserWindow.submitChatMessage === "function") browserWindow.submitChatMessage();
+    void submitChatMessage();
 
   }
   /* P5.8 — Slash-command palette. The heavy lifting (open,

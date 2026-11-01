@@ -1,6 +1,6 @@
 import { esc, escAttr } from '../render/helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { t as i18nT } from '../i18n.ts';
 
 interface MistakeOption { letter: string; text: string }
 interface MistakeEntry {
@@ -73,7 +73,7 @@ interface MistakeBookOptions {
    into the card meta. i18n.ts's t() does no interpolation, so {n} is
    substituted here, matching the convention in ui/diagnosticQuestion.ts. */
 function t(key: string, vars?: Record<string, string | number> | undefined) {
-  const v = (typeof window !== 'undefined' && typeof browserWindow.t === 'function') ? browserWindow.t(key) : key;
+  const v = i18nT(key);
   if (!vars) return v;
   return String(v).replace(/\{(\w+)\}/g, function (whole, name) {
     return Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : whole;

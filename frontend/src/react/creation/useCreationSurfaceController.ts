@@ -3,7 +3,7 @@ import { focusComposer, setComposerMarkdown } from '../../composer/controller.ts
 import { dispatchExtension } from '../../extensions/index.ts';
 import { closeDetailSurface, openDetailSurface } from '../../ui/detailSurface.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from '../../types/runtimeWindow.ts';
+import { getLegacyActions } from '../legacy/gateway.ts';
 import {
   api,
   currentCopy,
@@ -54,7 +54,7 @@ function useCreationItems(name: CreationName) {
   useEffect(() => { void load(); }, [load]);
 
   async function deleteCreation(item: CreationItem) {
-    if (!browserWindow.confirm(currentCopy().confirmDelete)) return;
+    if (typeof window !== 'undefined' && !window.confirm(currentCopy().confirmDelete)) return;
     try {
       await api(`/api/creations/items/${name}/${item.id}`, { method: 'DELETE' });
       await load();
@@ -196,7 +196,7 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
   } = useCreationEditor(name, load, setBusy);
 
   async function startAssistantChat(item: CreationItem) {
-    const didReset = await (browserWindow.resetApp as (() => boolean | void | Promise<boolean | void>) | undefined)?.();
+    const didReset = await getLegacyActions().navigation.resetApp();
     if (didReset === false) return;
     sessionStorage.setItem('socrates-active-assistant', item.id);
     let starter = '';
@@ -212,7 +212,7 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
       return;
     }
     if (name === 'sites') {
-      const didReset = await (browserWindow.resetApp as (() => boolean | void | Promise<boolean | void>) | undefined)?.();
+      const didReset = await getLegacyActions().navigation.resetApp();
       if (didReset !== false) dispatchExtension('createSite');
       return;
     }
@@ -235,7 +235,7 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
       delete: () => { if (item) void deleteCreation(item); },
       use: () => { if (item) void startAssistantChat(item); },
       preview: () => { if (item) previewSite(item.source || '', item.title || ''); },
-      'view-image': () => { if (item) browserWindow.open(imageUrl(item.id), '_blank', 'noopener'); },
+      'view-image': () => { if (item && typeof window !== 'undefined') window.open(imageUrl(item.id), '_blank', 'noopener'); },
     };
     return handlers[action]?.();
   }

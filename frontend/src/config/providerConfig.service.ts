@@ -1,5 +1,6 @@
 import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
+import { getCurrentUser } from '../app/lifecycle.ts';
 import { i18n } from '../react/legacy/gateway.ts';
 import type { ProviderCapabilities } from '@socrates/contracts';
 import {
@@ -23,7 +24,6 @@ import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 declare global {
   interface Window {
-    CURRENT_USER?: { tier?: string } | null;
     TIER_KEY_LIMITS?: Record<string, number>;
   }
 }
@@ -153,7 +153,7 @@ function resolveActiveProviderId(
 }
 
 export async function refreshProviderConfig(): Promise<ProviderConfigSnapshot> {
-  if (!window.CURRENT_USER) {
+  if (!getCurrentUser()) {
     credentialDrafts.clear();
     publishSelectionAndProviders([], null);
     return getProviderConfigSnapshot();
@@ -232,7 +232,7 @@ export function updateProviderField(id: string, field: ProviderField, value: Pro
 }
 
 export function addProvider(): string | null {
-  const user = window.CURRENT_USER as { tier?: string } | null;
+  const user = getCurrentUser() as { tier?: string } | null;
   const limits = window.TIER_KEY_LIMITS || {};
   const limit = limits[user?.tier || 'diophantus'] || 2;
   const current = getProviderConfigSnapshot();
@@ -419,7 +419,7 @@ export async function saveProviderConfig(): Promise<ProviderSaveResult> {
 }
 
 export async function clearProviderConfig(): Promise<void> {
-  if (!window.CURRENT_USER) return;
+  if (!getCurrentUser()) return;
   const state = getProviderConfigSnapshot();
   const savedProviders = state.providers.filter((provider) => !provider.isBuiltIn && !provider.id.startsWith('new-'));
   await Promise.all(savedProviders.map((provider) => apiFetch(`/api/api-key/${encodeURIComponent(provider.id)}`, { method: 'DELETE' }).catch(() => undefined)));

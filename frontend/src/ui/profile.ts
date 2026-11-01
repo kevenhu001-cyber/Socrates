@@ -14,11 +14,11 @@
 
 import { webSearchOn, setWebSearchOn } from '../config/providers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { publishProfileState } from './profileState.ts';
 import { publishSidebarUser } from './sidebarUserState.ts';
 import { setUserMemories } from '../app/lifecycle/userMemory.ts';
+import { getCurrentUser } from '../app/lifecycle.ts';
 import { apiFetch } from '../util/api.ts';
 import {
   buildCustomInstructionsString,
@@ -40,7 +40,7 @@ function joinedDate(createdAt: string|number|Date|null|undefined) {
   catch { return String(createdAt); }
 }
 
-function profileUserSnapshot(user: NonNullable<import("../types/runtimeWindow.ts").RuntimeWindow["CURRENT_USER"]>) {
+function profileUserSnapshot(user: NonNullable<import("../app/lifecycle.ts").UserRecord>) {
   return {
     initials: userInitials(user.displayName || user.email || "?"),
     displayName: user.displayName || "",
@@ -54,7 +54,7 @@ function profileUserSnapshot(user: NonNullable<import("../types/runtimeWindow.ts
 }
 
 function _publishProfileState() {
-  const cu = browserWindow.CURRENT_USER || {};
+  const cu = getCurrentUser() || {};
   const inst = loadCustomInstructions();
   publishProfileState({
     open: _profileOpen,
@@ -72,7 +72,7 @@ function _publishProfileState() {
    the React side reads; the legacy DOM mutations are dropped. */
 
 /* The sidebar footer React component reads this normalized account view. */
-function sidebarUserSnapshot(user: import("../types/runtimeWindow.ts").RuntimeWindow["CURRENT_USER"]) {
+function sidebarUserSnapshot(user: import("../app/lifecycle.ts").UserRecord) {
   if (!user) return { initials: "?", displayName: "Guest", email: "", tier: "diophantus", tierLabel: "Free", isSignedIn: false };
   /* P_cowork-landing — the footer row is ~150px wide once the avatar and
      the three icon buttons take their share, so a full address ellipsised
@@ -91,7 +91,7 @@ function sidebarUserSnapshot(user: import("../types/runtimeWindow.ts").RuntimeWi
   };
 }
 
-function syncDocumentTier(user: import("../types/runtimeWindow.ts").RuntimeWindow["CURRENT_USER"]) {
+function syncDocumentTier(user: import("../app/lifecycle.ts").UserRecord) {
   try { document.documentElement.dataset.userTier = user?.tier || "diophantus"; }
   catch (_) {
     reportSwallow(_, 'empty catch: ui/profile.ts:97');
@@ -100,7 +100,7 @@ function syncDocumentTier(user: import("../types/runtimeWindow.ts").RuntimeWindo
 }
 
 export function publishSidebarChrome() {
-  const cu = browserWindow.CURRENT_USER || null;
+  const cu = getCurrentUser() || null;
   /* Mirror the tier onto <html> so CSS can gate free-tier affordances
      (the mobile "升级" pill in the top bar) without a JS listener. */
   syncDocumentTier(cu);
@@ -114,7 +114,7 @@ export function publishSidebarChrome() {
 let _profileOpen = false;
 
 function openProfile() {
-  if (!browserWindow.CURRENT_USER) return;
+  if (!getCurrentUser()) return;
   _profileOpen = true;
   loadCustomInstructionsIntoUI();
   syncProfileWebSearchUI();
@@ -131,13 +131,14 @@ function closeProfile() {
 
 function saveProfileName(newName: string): Promise<boolean> {
   const name = (newName || "").trim();
-  if (!name || !browserWindow.CURRENT_USER) return Promise.resolve(false);
-  if (name === browserWindow.CURRENT_USER.displayName) return Promise.resolve(true);
+  const user = getCurrentUser();
+  if (!name || !user) return Promise.resolve(false);
+  if (name === user.displayName) return Promise.resolve(true);
   return apiFetch("/api/users/me", {
     method: "PATCH",
     body: { displayName: name },
   }).then(function () {
-    browserWindow.CURRENT_USER!.displayName = name;
+    user.displayName = name;
     publishSidebarChrome();
     /* Republish so the modal reflects the confirmed name. */
     _publishProfileState();
@@ -155,8 +156,9 @@ let _customInstructionsSaveTimer: number|null|undefined = null;
 
 function loadCustomInstructionsIntoUI() {
   const data = loadCustomInstructions();
-  if (!data.response && typeof browserWindow.CURRENT_USER?.customInstructions === 'string') {
-    data.response = browserWindow.CURRENT_USER.customInstructions;
+  const user = getCurrentUser();
+  if (!data.response && typeof user?.customInstructions === 'string') {
+    data.response = user.customInstructions;
   }
   updateInstSaveState(data.savedAt);
 }
@@ -209,7 +211,7 @@ function syncProfileLangToggle() {
 
 function loadUserMemories() {
   setUserMemories([]);
-  if (!browserWindow.CURRENT_USER) return Promise.resolve();
+  if (!getCurrentUser()) return Promise.resolve();
   try {
     return apiFetch<unknown>("/api/memory", { _authEndpoint: true }).then(function (value) {
       if (Array.isArray(value)) {

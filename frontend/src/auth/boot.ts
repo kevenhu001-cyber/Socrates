@@ -9,6 +9,7 @@ import { captureBrowserLoginRequest } from '../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishSidebarChrome } from '../ui/profile.ts';
 import { revealAppAndHydrate, showGate, showAuthSignin } from './index.ts';
+import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow } from '../app/lifecycle.ts';
 import { handleAuthUrlRoutes } from './boot/routes.ts';
 import {
   readBootPreflight,
@@ -21,9 +22,6 @@ import {
 
 interface BootLegacyWindow extends Window {
   __i18nReady?: Promise<unknown>;
-  isInAuthGraceWindow?: () => boolean;
-  setCurrentUser?: (user: unknown) => void;
-  markAuthSuccess?: () => void;
 }
 
 /** What /api/v2/config publishes; only these fields are read here. */
@@ -69,12 +67,8 @@ async function showSigninGate(): Promise<void> {
 
 async function finishAuthenticatedBoot(user: unknown, csrfReady: PromiseLike<unknown>): Promise<void> {
   await Promise.all([csrfReady, i18nSettled()]);
-  const win = window as BootLegacyWindow;
-  if (typeof win.setCurrentUser === 'function') win.setCurrentUser(user);
-  else window.CURRENT_USER = user as Record<string, unknown>;
-  try {
-    if (win.markAuthSuccess) win.markAuthSuccess();
-  } catch (error) { reportSwallow(error, 'auth/boot.markAuthSuccess'); }
+  setCurrentUser(user as import('../app/lifecycle.ts').UserRecord);
+  markAuthSuccess();
   /* Consume the allow-listed mobile target after normal hydration. */
   revealAppAndHydrate(openMobileTargetFromUrl);
 }
@@ -98,7 +92,7 @@ export async function authBoot(): Promise<void> {
 
   const requests = startAuthRequests(preflight);
   const initialMe: AuthMeResult = await requests.meRequest;
-  if (shouldGateForInitialUnauthorized(initialMe, () => (window as BootLegacyWindow).isInAuthGraceWindow?.() ?? false)) {
+  if (shouldGateForInitialUnauthorized(initialMe, () => isInAuthGraceWindow())) {
     await showSigninGate();
     return;
   }

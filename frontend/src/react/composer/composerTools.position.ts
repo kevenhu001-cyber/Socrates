@@ -1,5 +1,4 @@
 import { restingRect } from '../../ui/pressFeedback.ts';
-import { runtimeWindow as browserWindow } from '../../types/runtimeWindow.ts';
 
 function positionTopicMenu(
   menu: HTMLElement,
@@ -96,10 +95,10 @@ export function positionComposerToolsMenu(
   menu.style.removeProperty('left');
   menu.style.removeProperty('right');
   const rect = restingRect(trigger);
-  const viewport = browserWindow.visualViewport;
+  const viewport = typeof window !== 'undefined' ? window.visualViewport : null;
   const viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
-  const viewportBottom = viewport ? viewportTop + viewport.height : browserWindow.innerHeight;
-  const viewportWidth = viewport ? viewport.width : browserWindow.innerWidth;
+  const viewportBottom = viewport ? viewportTop + viewport.height : (typeof window !== 'undefined' ? window.innerHeight : 800);
+  const viewportWidth = viewport ? viewport.width : (typeof window !== 'undefined' ? window.innerWidth : 1024);
   const menuHeightCap = viewportWidth > 768
     ? Math.max(120, Math.min(560, (viewportBottom - viewportTop) * 0.62))
     : Math.max(120, (viewportBottom - viewportTop) / 2);

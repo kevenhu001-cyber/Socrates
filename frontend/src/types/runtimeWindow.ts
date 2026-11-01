@@ -1,11 +1,9 @@
 import type { VendorGlobals } from "./vendorRuntime.ts";
-import type { SpeechRecognitionRuntime } from "./speechRuntime.ts";
 import type { GeoGebraApi } from "./vendorRuntime.ts";
 /** Existing imperative shell hooks. This local contract adds no browser globals.
  * Publishers remain the owners; consumers share their exported signatures. */
 export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER_SESSIONS'> & VendorGlobals & {
   CURRENT_USER: (Partial<import('@socrates/contracts').User> & { subscriptionEnd?: string | null; verifiedAt?: string | null; createdAt?: string | null; customInstructions?: unknown }) | null | undefined;
-  scrollToBottomIfPinned?: typeof import('../ui/scroll')['scrollToBottomIfPinned'];
   stateStore: typeof import('../state/store')['stateStore'];
   SERVER_SESSIONS: import('../session/store').SessionRow[];
 
@@ -13,11 +11,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "GGBApplet": new (options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void }, useBrowser: boolean) => { inject(target: HTMLElement | string): void };
   "ReactNativeWebView": { postMessage(message: string): void } | undefined;
   "SOCRATES_STORAGE_BLOCKED": boolean;
-  "SpeechRecognition": (new () => SpeechRecognitionRuntime) | undefined;
-  "SpeechSynthesisUtterance": typeof SpeechSynthesisUtterance;
-  "Audio": typeof Audio;
-  "URL": typeof URL;
-  "AudioContext": typeof AudioContext | undefined;
   "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;
   "__socratesKeyboard": ReturnType<typeof import("../ui/keyboard/index")["initKeyboardLift"]>;
   "__testActivateMainView": (viewId: string) => boolean;
@@ -52,8 +45,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "toggleSidebarView": typeof import("../ui/sidebarChrome")["toggleSidebarView"];
   "tutorSocratic": import("../tutorSocratic").TutorSocraticRuntime;
   "useBuiltinDiagnostic"?: () => void;
-  "webkitAudioContext": typeof AudioContext | undefined;
-  "webkitSpeechRecognition": (new () => SpeechRecognitionRuntime) | undefined;
 };
 
 function currentRuntimeWindow(): RuntimeWindow | undefined {

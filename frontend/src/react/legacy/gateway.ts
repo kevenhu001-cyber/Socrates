@@ -15,13 +15,15 @@ import { apiFetch } from '../../util/api.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { webSearchOn, extensiveThinkingOn } from '../../config/providers.ts';
+import { getCurrentUser as getAppCurrentUser } from '../../app/lifecycle.ts';
 
 /** Standalone globals retained by the legacy shell. Keep their
  * compatibility shapes local to this boundary instead of bypassing types. */
 interface StandaloneGlobals {
   getConnectorIconMarkup?: (id: string) => string;
   _activeTemplate?: { extensionKey?: unknown } | null;
-  CURRENT_USER?: unknown;
+  webSearchOn?: boolean;
+  extensiveThinkingOn?: boolean;
 }
 
 function standaloneWindow(): Window & StandaloneGlobals {
@@ -143,6 +145,9 @@ export function getConnectorIconMarkupFn(): ((id: string) => string) | null {
  * `socrates:websearchchange`; callers subscribe to that event for updates.
  */
 export function isWebSearchOn(): boolean {
+  if (typeof standaloneWindow().webSearchOn === 'boolean') {
+    return standaloneWindow().webSearchOn!;
+  }
   return webSearchOn;
 }
 
@@ -161,6 +166,9 @@ export function isDeepResearchOn(): boolean {
 
 /** Legacy extensive-thinking toggle used by the composer tools menu. */
 export function isExtensiveThinkingOn(): boolean {
+  if (typeof standaloneWindow().extensiveThinkingOn === 'boolean') {
+    return standaloneWindow().extensiveThinkingOn!;
+  }
   return extensiveThinkingOn;
 }
 
@@ -180,5 +188,5 @@ export function getApiFetch(): typeof apiFetch | null {
 
 /** The signed-in user record published by the legacy auth layer, or null. */
 export function getCurrentUser<T = Record<string, unknown>>(): T | null {
-  return (standaloneWindow().CURRENT_USER ?? null) as T | null;
+  return (getAppCurrentUser() ?? null) as T | null;
 }

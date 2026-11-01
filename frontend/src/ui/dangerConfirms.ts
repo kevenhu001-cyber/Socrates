@@ -8,36 +8,20 @@
 import { resetState, stateStore } from '../state/store.ts';
 import { showConfirm } from './confirm.ts';
 import { clearProviderConfig } from '../config/providerConfig.service.ts';
-import { publishSidebarChrome } from './profile.ts';
+import { publishSidebarChrome, closeProfile } from './profile.ts';
 import { apiFetch } from '../util/api.ts';
-
-interface DangerWindow {
-  t?: (key: string) => string;
-  renderRecents?: () => void;
-  resetApp?: () => void;
-  closeProfile?: () => void;
-  CURRENT_USER?: unknown;
-  showGate?: () => void;
-  showAuthSignin?: () => void;
-}
-
-function getWindow(): DangerWindow | undefined {
-  return typeof window !== 'undefined' ? (window as unknown as DangerWindow) : undefined;
-}
-
-function t(key: string): string {
-  const w = getWindow();
-  return typeof w?.t === 'function' ? w.t(key) : key;
-}
+import { t } from '../i18n.ts';
+import { resetApp, setCurrentUser } from '../app/lifecycle.ts';
+import { renderRecents } from './recentsView.ts';
+import { showGate, showAuthSignin } from '../auth/index.ts';
 
 export function confirmClearCache(): void {
   showConfirm(t('confirm.clearConversations.title'), t('confirm.clearConversations.msg'), false).then((yes) => {
     if (yes !== true) return;
     try { localStorage.removeItem('socrates-sessions-v2'); } catch { /* empty-catch: intentional — localStorage wipe best effort */ }
     stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
-    const w = getWindow();
-    w?.renderRecents?.();
-    w?.resetApp?.();
+    try { renderRecents(); } catch { /* empty-catch: intentional — recents view may not be mounted */ }
+    try { resetApp(); } catch { /* empty-catch: intentional — resetApp during cache wipe is best effort */ }
     location.reload();
   }).catch(() => { /* noop */ });
 }
@@ -45,7 +29,7 @@ export function confirmClearCache(): void {
 export function confirmClearSettings(): void {
   showConfirm(t('confirm.clearApiSettings.title'), t('confirm.clearApiSettings.msg'), false).then((yes) => {
     if (yes !== true) return;
-    clearProviderConfig().then(() => { getWindow()?.closeProfile?.(); }).catch(() => { /* empty-catch: intentional — clear provider config is best effort */ });
+    clearProviderConfig().then(() => { closeProfile(); }).catch(() => { /* empty-catch: intentional — clear provider config is best effort */ });
   }).catch(() => { /* noop */ });
 }
 
@@ -65,15 +49,15 @@ async function deleteAccountOnServer(): Promise<void> {
   await apiFetch('/api/auth/account', { method: 'DELETE' });
 }
 
-function resetAfterAccountDeletion(w: DangerWindow | undefined): void {
-  if (w) w.CURRENT_USER = null;
+function resetAfterAccountDeletion(): void {
+  setCurrentUser(null);
   clearDeletedAccountStorage();
   resetState();
-  w?.resetApp?.();
-  w?.showGate?.();
+  try { resetApp(); } catch { /* empty-catch: intentional — resetApp during account deletion is best effort */ }
+  showGate();
   publishSidebarChrome();
-  w?.closeProfile?.();
-  w?.showAuthSignin?.();
+  closeProfile();
+  showAuthSignin();
 }
 
 function reportAccountDeletionFailure(error: unknown): void {
@@ -82,10 +66,9 @@ function reportAccountDeletionFailure(error: unknown): void {
 }
 
 async function performAccountDeletion(): Promise<void> {
-  const w = getWindow();
   try {
     await deleteAccountOnServer();
-    resetAfterAccountDeletion(w);
+    resetAfterAccountDeletion();
   } catch (error: unknown) {
     reportAccountDeletionFailure(error);
   }

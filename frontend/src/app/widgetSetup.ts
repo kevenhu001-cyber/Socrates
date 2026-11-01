@@ -14,7 +14,7 @@ import { configureTurnAnchor } from '../chat/turnAnchor.ts';
 import { isMsgListMounted } from '../ui/msgListMount.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { registerMistakeRedoAction } from '../ui/mistakeBookCommands.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { t } from '../i18n.ts';
 import { addAssistantUiMessage } from '../chat/messages.ts';
 
 
@@ -41,7 +41,7 @@ export function installWidgetRuntime() {
   const removeMistakeForQuizSlot = mistakeBook.removeMistakeForQuizSlot;
   configureWidgetRuntimeEarly({
     formatMsg: formatMsg,
-    t: browserWindow.t,
+    t: t,
     submitChatMessage: submitChatMessage,
     stateStore: stateStore,
     recordMistake: recordMistake,

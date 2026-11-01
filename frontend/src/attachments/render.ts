@@ -12,7 +12,6 @@ import { attachments, addFiles, retryAttachment } from '../attachments.ts';
 import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { createAttachmentMediaInput } from '../react/attachments/mediaPickerInputHost.tsx';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { publishAttachmentsState } from '../ui/attachmentsState.ts';
 
 type WiredInput = {
@@ -404,8 +403,8 @@ function onComposerReady(){
   try { autoWire(); }
   catch (error) { reportSwallow(error, 'attachments/render.ts:composerready'); }
 }
-if(typeof window !== "undefined"){
-  browserWindow.addEventListener("DOMContentLoaded", dcl);
+if(typeof window !== "undefined" && typeof window.addEventListener === "function"){
+  window.addEventListener("DOMContentLoaded", dcl);
   document.addEventListener("socrates:composerready", onComposerReady);
   /* If the script runs after DOMContentLoaded (rare — Vite HMR,
      extension injection, SSR hydration), fire immediately. */

@@ -26,6 +26,13 @@ import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 export { resetApp, clearPerUserClientState, clearUserMemories, getUserMemories, toggleAppMode };
 
+export type UserRecord = (Partial<import('@socrates/contracts').User> & { subscriptionEnd?: string | null; verifiedAt?: string | null; createdAt?: string | null; customInstructions?: unknown }) | null | undefined;
+
+let _currentUser: UserRecord = null;
+
+export function getCurrentUser(): UserRecord {
+  return _currentUser ?? (typeof window !== 'undefined' ? (browserWindow.CURRENT_USER as UserRecord) : null);
+}
 
 /* Incognito state is shared with the session-save and research guards. */
 
@@ -71,7 +78,10 @@ export async function toggleIncognito(){
   if(typeof showToast==="function")showToast(_t("incognito.on"));
 }
 
-export function setCurrentUser(user: { tier?: string; }|null|undefined){ try { browserWindow.CURRENT_USER = user; } catch (e) { reportSwallow(e, 'app/lifecycle.setCurrentUser'); } }
+export function setCurrentUser(user: UserRecord){
+  _currentUser = user;
+  try { browserWindow.CURRENT_USER = user; } catch (e) { reportSwallow(e, 'app/lifecycle.setCurrentUser'); }
+}
 
 export function markAuthSuccess(){
   _lastAuthSuccessAt=Date.now();
@@ -100,6 +110,7 @@ export function handleAuthExpired(cause: unknown){
        previous user's sessions before the next signin's fetch
        resolves. */
     clearPerUserClientState();
+    _currentUser = null;
     try{browserWindow.CURRENT_USER=null;}catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.clearCurrentUser');}
     /* P_bleed-auth-expired-v2 — reset state so React components
        reading from state don't see the previous user's data after
@@ -179,6 +190,7 @@ export async function signOut(){
       level set (serverCache.sessions, providerConfig, _cmdKIndex, …)
       plus localStorage entries that survive sign-out. */
   clearPerUserClientState();
+  _currentUser = null;
   try{browserWindow.CURRENT_USER=null;}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearCurrentUser');}
   /* Reset state. */
   resetState();

@@ -1,5 +1,6 @@
 import { apiFetch, makeApiError } from '../../util/api.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import { isInAuthGraceWindow as getIsInAuthGraceWindow } from '../../app/lifecycle.ts';
 
 /** The shape index.html's <head> prefetch resolves to. */
 export interface BootPreflightResponse {
@@ -16,7 +17,6 @@ export interface BootPreflight {
 
 interface BootLegacyWindow extends Window {
   __bootApi?: BootPreflight | null;
-  isInAuthGraceWindow?: () => boolean;
 }
 
 /** Read the optional <head> prefetch installed by index.html. */
@@ -125,7 +125,7 @@ export interface RetryAuthMeOptions {
 export async function retryAuthMe(initialMe: AuthMeResult, options: RetryAuthMeOptions = {}): Promise<AuthMeOutcome> {
   const fetchMe = options.fetchMe || (() => apiFetch('/api/auth/me', { _authEndpoint: true }));
   const isInGraceWindow = options.isInGraceWindow
-    || (() => (window as BootLegacyWindow).isInAuthGraceWindow?.());
+    || getIsInAuthGraceWindow;
   const wait = options.wait || ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {

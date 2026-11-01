@@ -17,7 +17,8 @@ import { queueMessageOp } from '../session/mutationOutbox.ts';
 import { prepareUserEditBranch, prepareAssistantRegenerateBranch, switchMessageBranch } from './branchManager.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { t } from '../i18n.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { resetApp } from '../app/lifecycle.ts';
+import { askChatTurn } from './turnController.ts';
 
 function _t(key: string) {
   try {
@@ -48,7 +49,7 @@ function _saveCurrentSession() {
   try { saveCurrentSession(); } catch (e) { reportSwallow(e, 'editBranch._saveCurrentSession'); }
 }
 function _resetApp() {
-  return Promise.resolve(typeof browserWindow.resetApp === 'function' ? browserWindow.resetApp() : false);
+  return Promise.resolve(resetApp());
 }
 
 function stopCurrentTurnForEdit(): void {
@@ -65,11 +66,11 @@ function stopCurrentTurnForEdit(): void {
 }
 
 function replayEditedTurnAfterPatch(patchPromise: Promise<unknown>, editedText: string): void {
-  const askChatTurn = browserWindow.askChatTurn;
-  if (typeof askChatTurn !== "function") return;
+  const runner = (typeof window !== 'undefined' && (window as unknown as { askChatTurn?: typeof askChatTurn }).askChatTurn) || askChatTurn;
+  if (typeof runner !== "function") return;
   stopCurrentTurnForEdit();
   patchPromise.then(function () {
-    try { quietTurn(askChatTurn(editedText)); }
+    try { quietTurn(runner(editedText)); }
     catch (error) { reportSwallow(error, 'editBranch.commit.replay'); }
   });
 }
@@ -165,20 +166,19 @@ export function regenerateAssistantMessage(messageId: string){
      attachments so a regenerate of a message that had an image / PDF /
      text doesn't degrade to text-only. Null for text-only turns. */
   try{ turnState.pendingChatContent=buildUserContentParts(userText,userEntry.attachments); }catch(_){ turnState.pendingChatContent=null; }
-  if(typeof browserWindow.askChatTurn==="function"){
-    /* Abort any in-flight stream so the regenerated turn isn't racing
-       a previous reply that's still arriving. */
-    if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.abortActive'); }}
-    try{interruptPendingTurn()}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.interruptPending'); }
-    if(turnState.activeChatAbort){try{turnState.activeChatAbort("msg-regen")}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.globalAbort'); }}
-    /* P0.1 NOTE-P01-06 — re-ask only AFTER the server discardFollowing
-       settles, so the delete (assistant rows createdAt >= user turn)
-       can't land after the fresh reply is saved and wipe it. Mirrors
-       message edit. patchPromise resolves even on failure (.catch). */
-     patchPromise.then(function(){
-       try{ quietTurn(browserWindow.askChatTurn(userText)); }catch(e){ reportSwallow(e, 'editBranch.regenerateAssistantMessage.replay'); /* regen failed */}
-     });
-  }
+  /* Abort any in-flight stream so the regenerated turn isn't racing
+     a previous reply that's still arriving. */
+  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.abortActive'); }}
+  try{interruptPendingTurn()}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.interruptPending'); }
+  if(turnState.activeChatAbort){try{turnState.activeChatAbort("msg-regen")}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.globalAbort'); }}
+  /* P0.1 NOTE-P01-06 — re-ask only AFTER the server discardFollowing
+     settles, so the delete (assistant rows createdAt >= user turn)
+     can't land after the fresh reply is saved and wipe it. Mirrors
+     message edit. patchPromise resolves even on failure (.catch). */
+  const runner = (typeof window !== 'undefined' && (window as unknown as { askChatTurn?: typeof askChatTurn }).askChatTurn) || askChatTurn;
+  patchPromise.then(function(){
+    try{ quietTurn(runner(userText)); }catch(e){ reportSwallow(e, 'editBranch.regenerateAssistantMessage.replay'); /* regen failed */}
+  });
 }
 /* Branch from a message — fork the conversation at this point.
    Saves the current session first, then creates a new session
@@ -265,9 +265,8 @@ export function branchFromMessage(messageId: string, opts: { reExplain?: boolean
         }});
         publishReactChatRuntime({type:"state-synced",reason:"re-explain-prompt"});
         /* Fire the re-explain question immediately. */
-        if(typeof browserWindow.askChatTurn === "function"){
-          setTimeout(function(){ try{quietTurn(browserWindow.askChatTurn(reExplainMsg))}catch(e){reportSwallow(e, 'editBranch.branchTitle.reExplain');} }, 100);
-        }
+        const runner = (typeof window !== 'undefined' && (window as unknown as { askChatTurn?: typeof askChatTurn }).askChatTurn) || askChatTurn;
+        setTimeout(function(){ try{quietTurn(runner(reExplainMsg))}catch(e){reportSwallow(e, 'editBranch.branchTitle.reExplain');} }, 100);
       }
       _saveCurrentSession();
       showToast(reExplain ? "Re-explaining from a different angle" : "Branched from previous conversation");

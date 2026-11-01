@@ -44,7 +44,6 @@ export { processPendingMermaid, schedulePendingMermaid };
 export { openVizModal };
 export { openVizModalRaw } from './vizModals.ts';
 import { _pendingViz, takePendingViz, takePendingActions, nextVizId, queueVizActions, setVizViewPref } from './vizStubs.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
 /* P_viz-fix-loop — feed a client-side render failure back to the
@@ -433,9 +432,9 @@ function _handleVizMessage(ev: MessageEvent<Record<string, unknown>>) {
 }
 
 function _ensureMessageListener() {
-  if (_msgListenerInstalled || typeof window === 'undefined') return;
+  if (_msgListenerInstalled || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
   _msgListenerInstalled = true;
-  browserWindow.addEventListener('message', _handleVizMessage);
+  window.addEventListener('message', _handleVizMessage);
 }
 
 export function renderVizError(htmlStr: unknown, errorMsg: unknown) {

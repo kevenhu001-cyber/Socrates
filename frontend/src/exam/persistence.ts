@@ -6,7 +6,7 @@ import { pushExamIdToURL } from '../session/store.ts';
 import { toggleShareBtn } from '../ui/share.ts';
 import { prefersReducedMotion } from '../ui/motion.ts';
 import { apiFetch } from '../util/api.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentUser } from '../app/lifecycle.ts';
 import { getAppMode } from '../config/providers.ts';
 import { flushRecentsReconcile } from '../session/recents.ts';
 import { renderRecents } from '../ui/recentsView.ts';
@@ -57,7 +57,7 @@ export function submitExam() {
 }
 
 export function saveExamSession() {
-  if (!browserWindow.CURRENT_USER) return;
+  if (!getCurrentUser()) return;
   if (!stateStore.read("examTopic")) return;
   if (!stateStore.read("_examInView")) return;
   if (stateStore.read("examReadOnly")) return;

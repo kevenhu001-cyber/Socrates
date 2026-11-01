@@ -4,7 +4,6 @@
  */
 import { CLIENT_ERROR_PATH } from '../util/clientErrorReporter.ts';
 import { renderActionButton } from '../ui/actionButton.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 
@@ -130,7 +129,7 @@ export function installGlobalErrorGuard() {
         label: label,
         msg: message ? String(message) : (typeof payload === 'string' ? payload : String(payload)),
         stack: stack ? String(stack) : '',
-        href: typeof window !== 'undefined' && browserWindow.location ? browserWindow.location.href : '',
+        href: typeof window !== 'undefined' && window.location ? window.location.href : '',
         ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
       });
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
@@ -172,24 +171,26 @@ export function installGlobalErrorGuard() {
     }
   }
 
-  browserWindow.addEventListener('error', (ev) => {
-    /* Browsers report a ResizeObserver callback that resized observed
-       content as a window error. It is a benign layout notice (the
-       remaining notifications are simply delivered next frame), not a
-       crash, so it must not raise the red banner. */
-    if (ev && /ResizeObserver loop/i.test(String(ev.message || ''))) return true;
-    // ev.error holds the Error object when available; fall back to
-    // ev.message for the rare case the browser only reports a string.
-    handle('error', ev && (ev.error || ev.message) || 'unknown');
-    // Returning true suppresses the browser's default handler so we
-    // don't double-report via onerror("…", "…", line, col).
-    return true;
-  });
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('error', (ev) => {
+      /* Browsers report a ResizeObserver callback that resized observed
+         content as a window error. It is a benign layout notice (the
+         remaining notifications are simply delivered next frame), not a
+         crash, so it must not raise the red banner. */
+      if (ev && /ResizeObserver loop/i.test(String(ev.message || ''))) return true;
+      // ev.error holds the Error object when available; fall back to
+      // ev.message for the rare case the browser only reports a string.
+      handle('error', ev && (ev.error || ev.message) || 'unknown');
+      // Returning true suppresses the browser's default handler so we
+      // don't double-report via onerror("…", "…", line, col).
+      return true;
+    });
 
-  browserWindow.addEventListener('unhandledrejection', (ev) => {
-    handle('unhandledrejection', ev && (ev.reason || ev) || 'unknown');
-    // Don't preventDefault — let the dev tools still flag it.
-  });
+    window.addEventListener('unhandledrejection', (ev) => {
+      handle('unhandledrejection', ev && (ev.reason || ev) || 'unknown');
+      // Don't preventDefault — let the dev tools still flag it.
+    });
+  }
 }
 
 installGlobalErrorGuard();

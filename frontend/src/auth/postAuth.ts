@@ -9,32 +9,28 @@ import { toggleShareBtn } from '../ui/share.ts';
 import { renderGreeting } from '../ui/greeting.js';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { clearPerUserClientState, isInAuthGraceWindow } from '../app/lifecycle.ts';
+import { saveCurrentSession } from '../session/persistence.ts';
 import { fetchWithAuthGraceRetry, restoreRoutedSession } from './postAuth/flow.ts';
 import { migrateLegacyStorage } from './postAuth/migration.ts';
 
 /** Legacy boot hooks still published on the window by main.js. */
 interface PostAuthLegacyWindow extends Window {
-  clearPerUserClientState?: () => void;
-  saveCurrentSession?: () => void;
-  isInAuthGraceWindow?: () => boolean;
   refreshServerSessions?: () => Promise<unknown>;
   renderRecents?: () => void;
   initialLoad?: () => void;
 }
 
 function clearPreviousUserState(): void {
-  const win = window as PostAuthLegacyWindow;
-  if (typeof win.clearPerUserClientState !== 'function') return;
-  try { win.clearPerUserClientState(); }
+  try { clearPerUserClientState(); }
   catch (error) { reportSwallow(error, 'auth/postAuth.clearPreviousUserState'); }
 }
 
 function replayQueuedMessageEdits(): void {
-  const win = window as PostAuthLegacyWindow;
   try {
     Promise.resolve(drainMessageOutbox()).then((count) => {
-      if (count > 0 && typeof win.saveCurrentSession === 'function') {
-        try { win.saveCurrentSession(); }
+      if (count > 0) {
+        try { saveCurrentSession(); }
         catch (error) { reportSwallow(error, 'auth/postAuth.drainOutbox.saveCurrentSession'); }
       }
     }).catch((error) => reportSwallow(error, 'auth/postAuth.drainOutbox'));
@@ -43,8 +39,7 @@ function replayQueuedMessageEdits(): void {
 
 async function fetchBootstrapData(): Promise<void> {
   const win = window as PostAuthLegacyWindow;
-  const isInGraceWindow = () => typeof win.isInAuthGraceWindow === 'function'
-    && win.isInAuthGraceWindow();
+  const isInGraceWindow = () => isInAuthGraceWindow();
   await Promise.all([
     fetchWithAuthGraceRetry(win.refreshServerSessions, { isInGraceWindow }),
     fetchWithAuthGraceRetry(refreshApiConfig, { isInGraceWindow }),

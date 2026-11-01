@@ -63,7 +63,7 @@ import { toolRunLabel } from '../ui/toolPresentationModel';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { addMessage } from './messages.ts';
 import { t } from '../i18n.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { askChatTurn } from './turnController.ts';
 import { getAppMode } from '../config/providers.ts';
 
 function _t(key: string, fallback?: string | null) {
@@ -121,7 +121,7 @@ function prepareStreamingShell(opts: StreamingOptions){
     requestAnimationFrame(function stampTurnReserve(){
       try {
         if (!list || typeof list.getBoundingClientRect !== 'function') return;
-        const styles=(typeof window !== 'undefined' && browserWindow.getComputedStyle) ? browserWindow.getComputedStyle(list) : null;
+        const styles=(typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(list) : null;
         const bottomPadding=styles ? (parseFloat(styles.paddingBottom) || 0) : 0;
         const latestUser=list.querySelector ? list.querySelector('.msg.user:last-of-type') : null;
         const promptHeight=latestUser ? latestUser.getBoundingClientRect().height : 0;
@@ -354,7 +354,7 @@ function createSearchRetryHandler(){
     const retryText=prompt||(search?('Please retry the search: '+search):'');
     if(!retryText)return;
     addMessage('user',retryText);
-    if(typeof browserWindow.askChatTurn==='function')quietTurn(browserWindow.askChatTurn(retryText));
+    void quietTurn(askChatTurn(retryText));
   };
 }
 

@@ -19,7 +19,7 @@ import { notifyMockFallbackOnce } from '../chat/mockFallbackNotice.ts';
 import { addMessage as _addMessage } from '../chat/messages.ts';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { addStreamingMessage } from '../chat/streamingTurn.ts';
 
 
 /* omit entirely; backend passes through */
@@ -130,10 +130,7 @@ export async function generateFollowUpStream(answer: string, node: TutorNode, do
 /* Module-local bridges for main.js-owned turn surfaces. */
 
 function _addStreamingMessage(opts: { onRetry: () => void; }) {
-  if (typeof window !== 'undefined' && typeof browserWindow.addStreamingMessage === 'function') {
-    return browserWindow.addStreamingMessage(opts);
-  }
-  throw new Error('addStreamingMessage bridge missing');
+  return addStreamingMessage(opts);
 }
 function _addAnchoredAssistant(text: unknown) {
   const clientId=_addMessage("assistant",text);

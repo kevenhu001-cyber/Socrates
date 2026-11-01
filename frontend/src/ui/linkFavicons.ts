@@ -1,5 +1,4 @@
 
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 const EXTERNAL_LINK_SELECTOR = [
   '.msg-body p a[href^="http"]',
   '.msg-body li a[href^="http"]',
@@ -11,7 +10,8 @@ const EXTERNAL_LINK_SELECTOR = [
 
 function parsedUrl(rawUrl: unknown) {
   try {
-    const url = new URL(String(rawUrl || ''), browserWindow.location.href);
+    const base = typeof window !== 'undefined' ? window.location.href : 'https://app.topodrive.top';
+    const url = new URL(String(rawUrl || ''), base);
     return /^https?:$/.test(url.protocol) ? url : null;
   } catch (_) {
     return null;
@@ -135,7 +135,7 @@ export function initLinkFavicons() {
   const queue = function () {
     if (queued) return;
     queued = true;
-    browserWindow.requestAnimationFrame(flush);
+    requestAnimationFrame(flush);
   };
   const observer = new MutationObserver(function (records) {
     for (let r = 0; r < records.length; r++) {

@@ -21,7 +21,7 @@ import { registerSharedViewCleanup } from './msgListMount.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishShareState, type ShareVisibility } from './shareState.ts';
 import type { MessageEntry } from './messageActions.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentUser } from '../app/lifecycle.ts';
 import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
 import { hideGate } from '../auth/index.ts';
 import { dispatchExam, dispatchUi } from '../store/index.ts';
@@ -130,7 +130,7 @@ function toggleShareBtn() {
      is `.hidden { display: none !important }` (styles.css:1979),
      which beats any inline `style.display` we set. We must toggle
      the class itself, not the style attribute. */
-  const show = !!(browserWindow.CURRENT_USER && (stateStore.read("currentSessionId") || stateStore.read("_examInView")));
+  const show = !!(getCurrentUser() && (stateStore.read("currentSessionId") || stateStore.read("_examInView")));
   btn.classList.toggle("hidden", !show);
   /* P0.2 — the in-session Find button lives next to Share in the
      top bar and shares the exact same visibility rule (only useful

@@ -1,6 +1,7 @@
 import type { OwnedRootHandle } from '../react/lib/boot/ownedRoot';
 import type { BrowserLoginDialogProps } from '../react/browserLogin/BrowserLoginDialog';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { getCurrentUser } from '../app/lifecycle.ts';
 
 /* Chrome keeps its HttpOnly sid. Only a short-lived, PKCE-bound code leaves
  * the browser, after an explicit account confirmation and link click. */
@@ -137,7 +138,7 @@ export function offerBrowserLoginHandoff(): void {
   dialog.id = 'androidLoginHandoff';
   dialog.className = 'browser-login-handoff';
   dialog.setAttribute('aria-labelledby', 'androidLoginHandoffTitle');
-  const user = window.CURRENT_USER as { id?: unknown; email?: unknown } | null | undefined;
+  const user = getCurrentUser() as { id?: unknown; email?: unknown } | null | undefined;
   const description = `将使用当前网页账号${typeof user?.email === 'string' ? '（' + user.email + '）' : ''}登录 Android 应用。仅当你刚从该应用发起登录时才继续。`;
   let cancelled = false;
   let expiryTimer: ReturnType<typeof setTimeout> | undefined;

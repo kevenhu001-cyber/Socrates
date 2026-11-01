@@ -22,6 +22,7 @@ import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
 import { turnState } from '../chat/turnState.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { getCurrentUser } from '../app/lifecycle.ts';
 
 /** Render/reset surfaces published by the legacy shell. */
 interface RecentsWindow extends Window {
@@ -70,10 +71,7 @@ function _saveCurrentSession(): unknown {
   return null;
 }
 function _currentUser(): { tier?: string } | null {
-  try {
-    if (typeof window !== 'undefined') return window.CURRENT_USER || null;
-  } catch (e) { reportSwallow(e, 'session/recents.currentUser'); }
-  return null;
+  return (getCurrentUser() as { tier?: string } | null) || null;
 }
 
 export function getRecents(): SessionRow[] {

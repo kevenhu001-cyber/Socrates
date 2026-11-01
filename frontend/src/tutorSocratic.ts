@@ -4,6 +4,7 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 import { getCurrentLanguage } from './i18n/languageState.ts';
+import { t } from './i18n.ts';
 
 /* =====================================================================
  * tutorSocratic.js
@@ -60,12 +61,10 @@ const tutorSocraticRuntime = (function () {
      inline bilingual copy if the key is missing — keeps the
      module self-contained during incremental rollout. */
   function ti(key: string, fallback: string) {
-    if (typeof browserWindow.t === 'function') {
-      try {
-        const v = browserWindow.t(key);
-        if (v && v !== key) return v;
-      } catch (error) { reportSwallow(error, 'tutorSocratic.js:80'); }
-    }
+    try {
+      const v = t(key);
+      if (v && v !== key) return v;
+    } catch (error) { reportSwallow(error, 'tutorSocratic.js:80'); }
     return fallback;
   }
   function stageLabel(stage: string|number) {

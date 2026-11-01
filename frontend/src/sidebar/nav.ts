@@ -132,7 +132,7 @@ const APP_SLASH_HINTS: Record<string, { insert: string; description: string; }> 
 let _slashConnectorsLoaded = false;
 /* Fetch the connector list once so the slash palette can show which
    apps are actually callable. Fire-and-forget; safe to call repeatedly. */
-function ensureSlashApps() {
+export function ensureSlashApps() {
   ensureConnectorIcons();
   if (_slashConnectorsLoaded && workspaceCache.connectors.length) return Promise.resolve();
   return api("/api/connectors").then(function (res: unknown) {
@@ -172,6 +172,7 @@ let _pluginWorkspaceTabsBound = false;
    boot and a listener bound to the static node would die with it. The
    elements are resolved by id on every call for the same reason. */
 function bindPluginWorkspaceTabs() {
+  if (typeof document === "undefined" || typeof MutationObserver === "undefined") return;
   if (_pluginWorkspaceTabsBound) return;
   _pluginWorkspaceTabsBound = true;
 
@@ -204,7 +205,7 @@ function bindPluginWorkspaceTabs() {
       return;
     }
     openPromptTemplatesModal();
-    browserWindow.requestAnimationFrame(syncSelection);
+    requestAnimationFrame(syncSelection);
   });
   new MutationObserver(syncSelection).observe(document.body, { childList: true, subtree: true });
   syncSelection();
@@ -231,7 +232,7 @@ function composerReturnSnapshot() {
     return (Array.isArray(plugins) ? plugins : []).slice(0, 8).map(function (plugin) {
       const id = String(plugin && plugin.id || "").trim();
       if (!id) return null;
-      const icon = typeof browserWindow.getConnectorIconMarkup === "function" ? browserWindow.getConnectorIconMarkup(id) : "";
+      const icon = connectorIconWithFallback(id);
       return {
         id: id,
         name: String(plugin.name || id).slice(0, 120),
@@ -332,7 +333,7 @@ function restoreComposerReturnState(composer: ComposerReturnSnapshot | null) {
           description: String(plugin && plugin.description || ""),
           capabilities: Array.isArray(plugin && plugin.capabilities) ? plugin.capabilities.map(String) : [],
           directiveTemplate: plugin && plugin.directiveTemplate ? String(plugin.directiveTemplate) : undefined,
-          iconMarkup: typeof browserWindow.getConnectorIconMarkup === "function" ? browserWindow.getConnectorIconMarkup(id) : "",
+          iconMarkup: connectorIconWithFallback(id),
         };
       }).filter(function (plugin) { return plugin.id; }) });
     } catch (e) { reportSwallow(e, 'sidebar/nav.ensureConnectorIcons.list'); }

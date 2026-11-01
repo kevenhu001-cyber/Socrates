@@ -4,7 +4,7 @@
    ============================================================ */
 
 import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.ts';
-import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
+import { scrollToBottomIfPinned } from './ui/scroll.ts';
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
 
@@ -61,7 +61,7 @@ export function setThemeStyle(style: string | null) {
 
 function systemThemeMode(): ThemeMode {
   try {
-    return browserWindow.matchMedia && browserWindow.matchMedia("(prefers-color-scheme: dark)").matches
+    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
   } catch (_) {
@@ -88,8 +88,9 @@ export function resolveThemeMode(preference: string | null): ThemeMode {
 
 function syncMermaidTheme(mode: ThemeMode) {
   try {
-    if (typeof browserWindow.mermaid !== "undefined" && browserWindow.mermaid.initialize) {
-      browserWindow.mermaid.initialize({ startOnLoad: false, theme: mode === "dark" ? "dark" : "default" });
+    const mermaid = typeof window !== "undefined" ? (window as unknown as { mermaid?: { initialize?: (opts: unknown) => void } }).mermaid : undefined;
+    if (mermaid && mermaid.initialize) {
+      mermaid.initialize({ startOnLoad: false, theme: mode === "dark" ? "dark" : "default" });
     }
   } catch (_) {
     reportEmptyCatch(_, 'empty catch: displayPrefs.ts:92', 'expected');
@@ -126,9 +127,9 @@ function setEffectiveThemeMode(mode: ThemeMode) {
 }
 
 function watchSystemTheme() {
-  if (_systemThemeQuery || !browserWindow.matchMedia) return;
+  if (_systemThemeQuery || typeof window === 'undefined' || !window.matchMedia) return;
   try {
-    _systemThemeQuery = browserWindow.matchMedia("(prefers-color-scheme: dark)");
+    _systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = function () {
       if (getThemePreference() !== "system") return;
       setEffectiveThemeMode(resolveThemeMode("system"));
@@ -234,9 +235,7 @@ export function applyDisplayPrefs() {
   }
   document.documentElement.dataset.showGrid = displayPrefs.showGrid === false ? "false" : "true";
   /* After font/width change, layout shifts — keep pinned users at bottom */
-  if (typeof browserWindow.scrollToBottomIfPinned === "function") {
-    browserWindow.scrollToBottomIfPinned();
-  }
+  scrollToBottomIfPinned();
   syncThemeUI();
 }
 

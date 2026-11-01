@@ -16,7 +16,6 @@
 import { createSpring, Spring, SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { setSidebarOpen } from '../sidebar/sidebar.store.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
 const SIDEBAR_MIN_PX = 200;
@@ -100,7 +99,7 @@ export function initSidebarDrag(){
   loadSidebarWidth();
 
   function onDown(e: { clientX: number; preventDefault?: () => void }){
-    if(browserWindow.innerWidth <= 768) return; /* mobile: no resize */
+    if(window.innerWidth <= 768) return; /* mobile: no resize */
     dragging = true;
     startX = e.clientX;
     startW = sidebarWidthPx;
@@ -135,24 +134,24 @@ export function initSidebarDrag(){
     scheduleDragFrame();
   }
   handle.addEventListener("mousedown", onDown);
-  browserWindow.addEventListener("mousemove", onMove);
-  browserWindow.addEventListener("mouseup", onUp);
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
   /* A release that lands outside the window never reaches the mouseup
      listener, and a drag that stays "held" would keep the frame loop
      running forever. Treat losing the pointer or the window as a release. */
-  browserWindow.addEventListener("blur", onUp);
+  window.addEventListener("blur", onUp);
   document.addEventListener("mouseleave", onUp);
   /* Touch support so tablets can drag too. */
   handle.addEventListener("touchstart", function(e){
     if(e.touches.length !== 1) return;
     onDown({clientX: e.touches[0].clientX, preventDefault: function(){ e.preventDefault(); }});
   }, {passive: false});
-  browserWindow.addEventListener("touchmove", function(e){
+  window.addEventListener("touchmove", function(e){
     if(!dragging || e.touches.length !== 1) return;
     onMove({clientX: e.touches[0].clientX});
   }, {passive: true});
-  browserWindow.addEventListener("touchend", onUp);
-  browserWindow.addEventListener("touchcancel", onUp);
+  window.addEventListener("touchend", onUp);
+  window.addEventListener("touchcancel", onUp);
   /* Keyboard: focused handle, arrow keys nudge. A keyboard step is a
      discrete command and lands at once — the spring belongs to the
      pointer, where the lag reads as weight rather than as delay. */
@@ -190,9 +189,9 @@ function cancelDragSpring(){
    changes.  On Android, opening the virtual keyboard fires a resize
    event with the same innerWidth, and without this guard the sidebar
    would close every time the user taps the search input. */
-let _lastResizeWidth = browserWindow.innerWidth;
+let _lastResizeWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
 export function onViewportResize(){
-  const w = browserWindow.innerWidth;
+  const w = window.innerWidth;
   const sameWidth = w === _lastResizeWidth;
   _lastResizeWidth = w;
   /* If the width did not change, this is a height-only resize
@@ -215,6 +214,6 @@ export function onViewportResize(){
 // Side-effect: this ESM module has one canonical importer in main.ts, so its
 // viewport listener is registered once without a window-level sentinel.
 // (Other listeners on `window` resize live in main.js for now.)
-if(typeof window !== "undefined"){
-  browserWindow.addEventListener("resize", onViewportResize);
+if(typeof window !== "undefined" && typeof window.addEventListener === "function"){
+  window.addEventListener("resize", onViewportResize);
 }

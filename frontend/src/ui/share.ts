@@ -2,7 +2,7 @@ type FeatureRuntime = typeof import("./share.impl.ts");
 
 
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentUser } from '../app/lifecycle.ts';
 import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
 import { stateStore } from '../state/store.ts';
 
@@ -46,7 +46,7 @@ function toggleShareBtn() {
   const btn = document.getElementById('shareBtn');
   if (!btn) return;
   const store = stateStore;
-  const show = !!(browserWindow.CURRENT_USER && store
+  const show = !!(getCurrentUser() && store
     && (store.read('currentSessionId') || store.read('_examInView')));
   btn.classList.toggle('hidden', !show);
   const findBtn = document.getElementById('findBtn');

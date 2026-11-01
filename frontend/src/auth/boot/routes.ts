@@ -7,11 +7,10 @@ import { clearAuthTabSelection, showAuthView, showAuthSignin, showGate, submitAu
 import { selectAuthUrlRoute } from './routeSelector.ts';
 import { recordBootedRouteKind } from './routeState.ts';
 import { setAuthField } from '../uiState.ts';
+import { setCurrentUser, markAuthSuccess } from '../../app/lifecycle.ts';
 
 /** Auth-view hooks still published on the window by the legacy shell. */
 interface BootRoutesWindow extends Window {
-  setCurrentUser?: (user: unknown) => void;
-  markAuthSuccess?: () => void;
   __resetToken?: string | null;
 }
 
@@ -48,14 +47,8 @@ async function handleLocalDevRoute(params: URLSearchParams, csrfReady: PromiseLi
     setServerBuiltInKeyAvailable(true);
   } catch (error) { reportSwallow(error, 'auth/boot.localDev.config'); }
   const user = { id: 'local-dev', name: 'Local Dev', email: 'dev@local', plan: 'local', isLocal: true };
-  const win = window as BootRoutesWindow;
-  if (typeof win.setCurrentUser === 'function') win.setCurrentUser(user);
-  /* The window declaration only pins the fields providerConfig reads (`tier`);
-     the local-dev record is a wider shape, so widen before assigning. */
-  else window.CURRENT_USER = user as Record<string, unknown>;
-  try {
-    if (win.markAuthSuccess) win.markAuthSuccess();
-  } catch (error) { reportSwallow(error, 'auth/boot.localDev.markAuthSuccess'); }
+  setCurrentUser(user as import('../../app/lifecycle.ts').UserRecord);
+  markAuthSuccess();
   revealAppAndHydrate();
   return true;
 }

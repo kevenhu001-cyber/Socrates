@@ -2,22 +2,22 @@ import type { VoiceSession, SpeechRecognitionRuntime, SpeechResultEvent } from "
 import { getComposerMarkdown, insertComposerText } from '../composer/controller.ts';
 import { showToast } from './toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { t } from '../i18n.ts';
 import { useVoiceInputStore } from './voiceInput.store.ts';
 
 
 let activeSession: VoiceSession | null = null;
 
 function speechRecognitionConstructor() {
-  return browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition || null;
+  if (typeof window === 'undefined') return null;
+  const win = window as unknown as { SpeechRecognition?: (new () => SpeechRecognitionRuntime); webkitSpeechRecognition?: (new () => SpeechRecognitionRuntime) };
+  return win.SpeechRecognition || win.webkitSpeechRecognition || null;
 }
 
 function copy(key: string, english: string, chinese: string) {
   try {
-    if (typeof browserWindow.t === 'function') {
-      const translated = browserWindow.t(key);
-      if (translated && translated !== key) return translated;
-    }
+    const translated = t(key);
+    if (translated && translated !== key) return translated;
   } catch (error) { reportSwallow(error, 'ui/voiceInput.ts:16'); }
   return document.documentElement.lang === 'zh' ? chinese : english;
 }
@@ -96,13 +96,14 @@ function readAudioLevel(session: VoiceSession) {
 function animateWaveform(session: VoiceSession) {
   if (activeSession !== session) return;
   renderWaveform(session, readAudioLevel(session));
-  session.animationFrame = browserWindow.requestAnimationFrame(function () {
+  session.animationFrame = requestAnimationFrame(function () {
     animateWaveform(session);
   });
 }
 
 function setupAudioMeter(session: VoiceSession) {
-  const AudioContextConstructor = browserWindow.AudioContext || browserWindow.webkitAudioContext;
+  const win = typeof window !== 'undefined' ? (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }) : {};
+  const AudioContextConstructor = win.AudioContext || win.webkitAudioContext;
   if (!session.stream || typeof AudioContextConstructor !== 'function') {
     animateWaveform(session);
     return;
@@ -136,7 +137,7 @@ function setupAudioMeter(session: VoiceSession) {
 function startTimer(session: VoiceSession) {
   session.startedAt = performance.now();
   updateRecordingTimer(session);
-  session.timerId = browserWindow.setInterval(function () {
+  session.timerId = setInterval(function () {
     updateRecordingTimer(session);
   }, 250);
 }
@@ -179,9 +180,9 @@ function finishSession(session: VoiceSession) {
   if (!session || session.finished) return;
   session.finished = true;
 
-  if (session.animationFrame) browserWindow.cancelAnimationFrame(session.animationFrame);
-  if (session.timerId) browserWindow.clearInterval(session.timerId);
-  if (session.stopFallbackId) browserWindow.clearTimeout(session.stopFallbackId);
+  if (session.animationFrame) cancelAnimationFrame(session.animationFrame);
+  if (session.timerId) clearInterval(session.timerId);
+  if (session.stopFallbackId) clearTimeout(session.stopFallbackId);
 
   cleanupAudio(session);
   useVoiceInputStore.getState().reset();
@@ -306,7 +307,7 @@ export function stopSpeechInput() {
 
   try {
     session.recognition.stop();
-    session.stopFallbackId = browserWindow.setTimeout(function () {
+    session.stopFallbackId = setTimeout(function () {
       finishSession(session);
     }, 2500);
   } catch (_) {
@@ -333,7 +334,7 @@ export function cancelSpeechInput() {
 
   try {
     session.recognition.abort();
-    session.stopFallbackId = browserWindow.setTimeout(function () {
+    session.stopFallbackId = setTimeout(function () {
       finishSession(session);
     }, 1500);
   } catch (_) {

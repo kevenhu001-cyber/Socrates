@@ -4,7 +4,8 @@ import { loadSession } from '../session/loader.ts';
 import { ensureFuse } from '../vendor/lazy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { apiFetch } from '../util/api.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { getCurrentUser } from '../app/lifecycle.ts';
+import { serverCache } from '../session/serverCache.ts';
 import { publishCmdKState } from './cmdKState.ts';
 import type { CmdKDoc, CmdKRemoteDoc, CmdKHit } from './cmdKState.ts';
 
@@ -25,6 +26,7 @@ function parseRemoteHit(value: unknown): CmdKRemoteDoc | null {
   };
 }
 let _cmdKIndex: import('fuse.js').default<CmdKDoc> | null = null;
+let _fuseConstructor: typeof import('fuse.js').default | null = null;
 interface CmdKResult extends CmdKHit {
   item: CmdKDoc;
   score?: number;
@@ -80,10 +82,11 @@ function _publishCmdKState() {
 }
 
 function rebuildCmdKIndex() {
-  if (typeof browserWindow.Fuse === "undefined") {
+  if (!_fuseConstructor) {
     try {
-      ensureFuse().then(function () {
-        if (!browserWindow.CURRENT_USER || typeof browserWindow.Fuse === "undefined") return;
+      ensureFuse().then(function (Fuse) {
+        _fuseConstructor = Fuse;
+        if (!getCurrentUser() || !_fuseConstructor) return;
         rebuildCmdKIndex();
         const overlay = getCmdKOverlay();
         const input = getCmdKInput();
@@ -105,7 +108,7 @@ function rebuildCmdKIndex() {
     return;
   }
   const docs: CmdKDoc[] = [];
-  const sessions = browserWindow.SERVER_SESSIONS || [];
+  const sessions = serverCache.sessions || [];
   sessions.forEach(function (s) {
     docs.push({
       kind: "session",
@@ -131,7 +134,7 @@ function rebuildCmdKIndex() {
       snippet: message.rawText.slice(0, 200),
     });
   });
-  _cmdKIndex = new browserWindow.Fuse(docs, {
+  _cmdKIndex = new _fuseConstructor(docs, {
     keys: ["title", "topic", "snippet"],
     threshold: 0.4,
     ignoreLocation: true,
@@ -141,7 +144,7 @@ function rebuildCmdKIndex() {
 }
 
 function openCmdK() {
-  if (!browserWindow.CURRENT_USER) return;
+  if (!getCurrentUser()) return;
   if (!_cmdKIndex || _cmdKIndexDirty) {
     rebuildCmdKIndex();
     _cmdKIndexDirty = false;

@@ -3,6 +3,7 @@ import type { Message, ResearchJob, ResearchJobRefineResult, ResearchJobRequest 
 import { apiFetch, apiFetchRaw } from '../util/api.ts';
 import { stateStore } from '../state/store.ts';
 import { isIncognitoOn } from '../app/lifecycle/incognitoState.ts';
+import { getCurrentUser } from '../app/lifecycle.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { restoreSessionMessage } from '../session/historyRestore.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
@@ -66,11 +67,9 @@ export const researchClient = createResearchController({
   }),
 });
 
-type ResearchWindow = Window & { CURRENT_USER?: { id?: string; tier?: string } | null };
 function visibleScope(): ResearchScope | null {
-  const win = window as ResearchWindow;
   const sessionId = stateStore.read('currentSessionId') as string | null;
-  const userId = win.CURRENT_USER?.id;
+  const userId = getCurrentUser()?.id;
   if (!userId || !sessionId || isIncognitoOn() || stateStore.read('phase') !== 'chat') return null;
   return { userId, sessionId, projectId: stateStore.read('currentProjectId') as string | null || null };
 }

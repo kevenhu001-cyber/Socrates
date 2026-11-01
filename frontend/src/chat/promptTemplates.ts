@@ -6,7 +6,6 @@ export interface PromptTemplate {
  [key: string]: unknown;
 }
 
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { apiFetch } from '../util/api.ts';
 /* chat/promptTemplates.ts — built-in and user-defined prompt templates. */
 
@@ -222,7 +221,9 @@ export function syncPromptTemplates(force?: boolean|undefined){
           .catch(function(){ /* stays local-only until next sync */ });
       })).then(function(){
         savePromptTemplates(merged.concat(pending));
-        try { browserWindow.dispatchEvent(new CustomEvent("socrates:prompt-templates-synced")); } catch (_) { /* empty-catch: intentional — CustomEvent dispatch failure is non-fatal */ }
+        try {
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent("socrates:prompt-templates-synced"));
+        } catch (_) { /* empty-catch: intentional — CustomEvent dispatch failure is non-fatal */ }
       });
     })
     .catch(function(){ /* offline / guest — localStorage keeps working */ })

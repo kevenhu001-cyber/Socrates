@@ -2,6 +2,7 @@ import { apiFetch, type ApiError } from '../util/api.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getValue, setValue, setText, setVisible, focusId, setButton, type AuthRoot } from './shell.ts';
 import { adoptAuthenticatedUser } from './forms/sessionAdoption.ts';
+import { markAuthSuccess, setCurrentUser, getCurrentUser } from '../app/lifecycle.ts';
 
 /** The user record these flows carry between login, /me, and the window. */
 interface AuthUser {
@@ -13,8 +14,6 @@ interface AuthUser {
 
 /** Auth shell actions wired through the auth module. */
 interface AuthFormsWindow extends Window {
-  setCurrentUser?: (user: unknown) => void;
-  markAuthSuccess?: () => void;
   __resetToken?: string | null;
 }
 
@@ -53,11 +52,6 @@ function fetchCurrentUser(): Promise<{ user?: AuthUser | null } | null> {
   return apiFetch<{ user?: AuthUser | null } | null>('/api/auth/me', { _authEndpoint: true });
 }
 
-function markAuthSuccess(): void {
-  const win = window as AuthFormsWindow;
-  if (typeof win.markAuthSuccess === 'function') win.markAuthSuccess();
-}
-
 function signedIn(root: AuthRoot | undefined, error: AuthFailure, email: string, dependencies: AuthFormUi): void {
   const { showGate, showAuthView, setAuthError, translate } = dependencies;
   showGate(root);
@@ -79,8 +73,8 @@ async function verifyWithApi(token: string, dependencies: AuthFormDependencies):
   markAuthSuccess();
   await adoptAuthenticatedUser<AuthUser>(response && response.user ? response.user : null, {
     fetchMe: fetchCurrentUser,
-    setUser: (user) => (window as AuthFormsWindow).setCurrentUser?.(user),
-    getCurrentUser: () => window.CURRENT_USER as AuthUser | null,
+    setUser: (user) => setCurrentUser(user),
+    getCurrentUser: () => getCurrentUser() as AuthUser | null,
     retryAfterFailure: true,
     retryOnlyWithCurrentUser: true,
     nullFallback: true,
@@ -121,7 +115,7 @@ function createCredentialHandlers(ui: AuthFormUi) {
       markAuthSuccess();
       await adoptAuthenticatedUser<AuthUser>(response && response.user ? response.user : null, {
         fetchMe: fetchCurrentUser,
-        setUser: (user) => (window as AuthFormsWindow).setCurrentUser?.(user),
+        setUser: (user) => setCurrentUser(user),
         retryAfterFailure: true,
         report: reportSwallow,
         context: 'auth/forms.signin.recheckMe',
@@ -283,7 +277,7 @@ function createCodeHandlers(ui: AuthFormUi) {
       markAuthSuccess();
       await adoptAuthenticatedUser<AuthUser>(response && response.user ? response.user : null, {
         fetchMe: fetchCurrentUser,
-        setUser: (user) => (window as AuthFormsWindow).setCurrentUser?.(user),
+        setUser: (user) => setCurrentUser(user),
         report: reportSwallow,
         context: 'auth/forms.codeLogin.recheckMe',
       });

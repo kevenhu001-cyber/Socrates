@@ -2,7 +2,7 @@ import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upse
 import type { PromptTemplate } from '../chat/promptTemplates.ts';
 import { showToast } from './toast.js';
 import { showConfirm } from './confirm.js';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { t } from '../i18n.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 import { publishPromptTemplatesState, type PromptTemplateData } from './promptTemplatesState.ts';
 
@@ -69,7 +69,7 @@ function renderPromptTemplatesModal() {
 }
 
 function onPromptRowDelete(id: string) {
-  showConfirm(browserWindow.t("confirm.deleteTemplate.title"), browserWindow.t("confirm.deleteTemplate.msg"), true).then(function (yes) {
+  showConfirm(t("confirm.deleteTemplate.title"), t("confirm.deleteTemplate.msg"), true).then(function (yes) {
     if (!yes) return;
     deleteCustomTemplate(id);
     renderPromptTemplatesModal();

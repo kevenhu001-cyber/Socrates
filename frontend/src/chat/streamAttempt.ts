@@ -35,11 +35,10 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import { providerErrorMessage } from './providerErrorMessage.ts';
 import { ChatApiError } from './api/shared.ts';
 import { turnState } from './turnState.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
-
+import { t } from '../i18n.ts';
 
 function failureMessage(error: ChatApiError | null) {
-  return providerErrorMessage({ message: error?.message, status: error?.status, code: error?.code || undefined, body: error?.body }, typeof window !== 'undefined' ? browserWindow.t : undefined);
+  return providerErrorMessage({ message: error?.message, status: error?.status, code: error?.code || undefined, body: error?.body }, t);
 }
 
 function completed(result: StreamResult): StreamAttemptOutcome {

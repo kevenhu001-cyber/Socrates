@@ -35,13 +35,12 @@ const _CLOUD_FAILURE_LIMIT = 2;
 
 function _supported() {
   return typeof window !== "undefined"
-    && "speechSynthesis" in browserWindow
-    && typeof browserWindow.SpeechSynthesisUtterance === "function";
+    && "speechSynthesis" in window
+    && typeof window.SpeechSynthesisUtterance === "function";
 }
 
 import { showToast } from './toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
 function _notify(msg: unknown) {
@@ -52,7 +51,7 @@ function _notify(msg: unknown) {
    are read with a Chinese voice when the platform provides one. */
 function _pickVoice(lang: string) {
   try {
-    const voices = browserWindow.speechSynthesis.getVoices() || [];
+    const voices = window.speechSynthesis.getVoices() || [];
     if (!voices.length) return null;
     const want = (lang || "").slice(0, 2).toLowerCase();
     const match = voices.find(function (v) { return (v.lang || "").slice(0, 2).toLowerCase() === want; });
@@ -79,7 +78,7 @@ export function stopSpeaking() {
     _cloudAbort = null;
   }
   if (_supported()) {
-    try { browserWindow.speechSynthesis.cancel(); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.ts:79', 'expected'); }
+    try { window.speechSynthesis.cancel(); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.ts:79', 'expected'); }
   }
   _clearActive();
 }
@@ -87,7 +86,7 @@ export function stopSpeaking() {
 /* ── Cloud voice ──────────────────────────────────────────────────── */
 
 function _speakCloud(clean: string, lang: string, messageId?: string | number) {
-  if (!_cloudEnabled() || _cloudFailures >= _CLOUD_FAILURE_LIMIT || typeof browserWindow.fetch !== "function" || typeof browserWindow.Audio !== "function") {
+  if (!_cloudEnabled() || _cloudFailures >= _CLOUD_FAILURE_LIMIT || typeof fetch !== "function" || typeof Audio !== "function") {
     return Promise.resolve(false);
   }
   const controller = typeof AbortController === "function" ? new AbortController() : null;
@@ -98,7 +97,7 @@ function _speakCloud(clean: string, lang: string, messageId?: string | number) {
      ownership check, so a forged id cannot read or write another
      user's audio. */
   if (messageId) body.messageId = String(messageId);
-  return browserWindow.fetch("/api/tts", {
+  return fetch("/api/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "same-origin",
@@ -109,8 +108,8 @@ function _speakCloud(clean: string, lang: string, messageId?: string | number) {
     return resp.blob();
   }).then(function (blob) {
     return new Promise(function (resolve, reject) {
-      const audio = new browserWindow.Audio();
-      audio.src = browserWindow.URL.createObjectURL(blob);
+      const audio = new Audio();
+      audio.src = URL.createObjectURL(blob);
       audio.onended = function () {
         _clearActive();
         resolve(true);
@@ -142,14 +141,14 @@ function _speakCloud(clean: string, lang: string, messageId?: string | number) {
 
 function _speakPlatform(clean: string|undefined, lang: string) {
   return new Promise(function (resolve) {
-    const utter = new browserWindow.SpeechSynthesisUtterance(clean);
+    const utter = new window.SpeechSynthesisUtterance(clean);
     utter.lang = lang;
     const voice = _pickVoice(lang);
     if (voice) utter.voice = voice;
     utter.onend = function () { _clearActive(); resolve(true); };
     utter.onerror = function () { _clearActive(); resolve(true); };
     try {
-      browserWindow.speechSynthesis.speak(utter);
+      window.speechSynthesis.speak(utter);
     } catch (_) {
       _clearActive();
       resolve(false);
@@ -196,6 +195,6 @@ export function toggleReadAloud(btn: HTMLElement | null, text: unknown, messageI
 }
 
 /* Stop speaking if the user navigates away / resets the app. */
-if (typeof window !== "undefined") {
-  browserWindow.addEventListener("beforeunload", function () { try { stopSpeaking(); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.ts:197'); } });
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("beforeunload", function () { try { stopSpeaking(); } catch (error) { reportSwallow(error, 'ui/readAloud.impl.ts:197'); } });
 }

@@ -20,6 +20,7 @@ import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, st
 import { generateSessionTitle } from '../chat/sessionTitle.ts';
 import { markCmdKIndexDirty } from '../ui/cmdK.ts';
 import { toggleShareBtn } from '../ui/share.ts';
+import { getCurrentUser } from '../app/lifecycle.ts';
 import { showToast } from '../ui/toast.js';
 import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.ts';
@@ -205,7 +206,7 @@ export function saveCurrentSession(): Promise<unknown> | null {
      bailing here only blocks the temporary conversation itself. */
   if (isIncognitoOn()) return null;
   if (!stateStore.read('topic')) return null;
-  if (!(typeof window !== 'undefined' && window.CURRENT_USER)) return null; /* not signed in; do nothing */
+  if (!getCurrentUser()) return null; /* not signed in; do nothing */
   /* P_context-race — discard saves during session loading. The
      loadSession function is in the middle of rebuilding state and
      any intercepted save would capture mismatched sessionId vs
@@ -256,7 +257,7 @@ export function saveCurrentSession(): Promise<unknown> | null {
 export function saveSessionBeforeReset(): Promise<unknown> | null {
   if (isIncognitoOn()) return null;
   if (!stateStore.read('topic')) return null;
-  if (!(typeof window !== 'undefined' && window.CURRENT_USER)) return null;
+  if (!getCurrentUser()) return null;
   if (saveState.loadingSession) return null;
   const sid = stateStore.read('currentSessionId') as string | null;
   if (deletedSessionGuard.has(sid)) return null;
@@ -626,7 +627,7 @@ export function installUnloadSave(): void {
       return;
     }
     /* Only fire if we have data worth saving and a save is pending. */
-    if (!saveState.saveInFlight || !stateStore.read('currentSessionId') || !(typeof window !== 'undefined' && window.CURRENT_USER)) return;
+    if (!saveState.saveInFlight || !stateStore.read('currentSessionId') || !getCurrentUser()) return;
     /* F3: payload shape lives in session/beacon.ts (unit-tested); the
        keepalive wiring stays here because it runs during page teardown. */
     const payload = buildBeaconPayload({
@@ -673,4 +674,6 @@ export function installUnloadSave(): void {
   });
 }
 
-installUnloadSave();
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  installUnloadSave();
+}

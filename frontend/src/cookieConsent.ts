@@ -1,6 +1,5 @@
 
 import { reportSwallow } from './util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 
 
 /* Cookie consent manager
@@ -139,8 +138,8 @@ export function setConsentPreference(choice: string) {
   try { localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (error) { reportSwallow(error, 'cookieConsent.js:120', 'expected'); }
   try { document.cookie = consentCookieString(pref); } catch (error) { reportSwallow(error, 'cookieConsent.js:121', 'expected'); }
   try {
-    if (typeof window !== 'undefined' && typeof browserWindow.dispatchEvent === 'function') {
-      browserWindow.dispatchEvent(new CustomEvent('socrates:cookie-consent', {
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('socrates:cookie-consent', {
         detail: { preference: pref },
       }));
     }

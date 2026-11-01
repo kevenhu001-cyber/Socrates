@@ -3,13 +3,14 @@ import {syncThemeUI} from './displayPrefs.js';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { getCurrentLanguage, setCurrentLanguage } from './i18n/languageState.ts';
 import { dispatchExam, examStore } from './store/index.ts';
+import { stateStore } from './state/store.ts';
 import { appMode, syncAppModeUI } from './config/providers.ts';
 
 // These hooks are published by the existing shell; keep their contract local.
 interface I18nWindow extends Window {
   __i18nReady?: Promise<void>;
 }
-const browser = window as I18nWindow;
+const browser = (typeof window !== 'undefined' ? window : {}) as unknown as I18nWindow;
 
 const I18N: Partial<Record<string, Record<string, string>>> = {};
 /* Keep both locale tables out of the entry chunk. The saved locale loads in
@@ -129,7 +130,7 @@ function refreshDynamicSurfaces(){
   /* Exam content is generated dynamically, so static data-i18n scanning
      cannot update it. The React-owned screen reads the locale and redraws
      from its store without replacing form values or answers. */
-  if(browser.stateStore?.read("_examInView")){
+  if(stateStore.read("_examInView")){
     dispatchExam({ type: 'exam/set', key: 'examLocaleRevision', value: examStore.getState().examLocaleRevision + 1 });
   }
 }
@@ -188,7 +189,9 @@ try{
 }catch(e){reportSwallow(e, 'i18n.bootstrap.initialApply'); }
 
 /* Expose translation helpers used by legacy markup and modules. */
-browser.t = t;
-browser.applyI18n = applyI18n;
-/* auth/boot.js awaits this (bounded) before revealing UI. Always a Promise. */
-browser.__i18nReady = _initialLocaleReady;
+if (typeof window !== 'undefined') {
+  browser.t = t;
+  browser.applyI18n = applyI18n;
+  /* auth/boot.js awaits this (bounded) before revealing UI. Always a Promise. */
+  browser.__i18nReady = _initialLocaleReady;
+}
