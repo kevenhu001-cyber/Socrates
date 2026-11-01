@@ -266,3 +266,18 @@ html.site-menu-open { overflow: hidden; }
 @media (max-width: 760px) {
   .site-wordmark { margin-top: var(--space-200); }
 }
+
+/* Round 9: one continuous thought across pages. Same-origin navigations
+   cross-fade the page while the header, which every page shares, stays
+   exactly where it is (it is named, so it is matched, not faded). Browsers
+   without cross-document view transitions ignore all of this; reduced
+   motion switches it off. Only opacity moves, so nothing shifts layout. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  .site-header { view-transition-name: site-header; }
+  ::view-transition-group(site-header) { animation-duration: 0s; }
+  ::view-transition-old(root) { animation: 140ms cubic-bezier(.22,1,.36,1) both site-vt-out; }
+  ::view-transition-new(root) { animation: 220ms cubic-bezier(.22,1,.36,1) 40ms both site-vt-in; }
+}
+@keyframes site-vt-out { to { opacity: 0; } }
+@keyframes site-vt-in { from { opacity: 0; } }

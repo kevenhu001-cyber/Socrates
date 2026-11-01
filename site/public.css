@@ -296,3 +296,7 @@ html { scroll-padding-top: 0; }
 [data-site-public] :is(.home-button, .site-try, .content-button, .product-button, .ui-btn:not(.ui-btn--soft)) { box-shadow: var(--site-inner-highlight-dark), 0 1px 2px rgb(0 0 0 / .12); }
 /* Grain sits over the panel's own fill: background-image only, no layer. */
 [data-site-public] :is(.m-panel, .m-graph-stage, .home-cta-inner, .m-story-stage) { background-image: var(--site-noise); background-size: 160px 160px; }
+
+/* Round 9 polish: Chinese headings trim the leading half of an opening
+   bracket or quote at the start of a line, so the left edge stays flush. */
+:lang(zh) :is(h1, h2, h3) { text-spacing-trim: trim-start; }
