@@ -411,7 +411,26 @@ export default defineConfig({
       '@socrates/core/visualizationMath': fileURLToPath(new URL('../packages/core/src/visualizationMath.js', import.meta.url)),
       '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
+      /* RN-1 — shared React Native modules render through react-native-web.
+         Only the narrow entries are aliased, so the web shell never pulls in
+         the full packages/ui barrel (svg, reanimated, markdown). */
+      '@socrates/theme': fileURLToPath(new URL('../packages/theme/src/index.ts', import.meta.url)),
+      '@socrates/ui/primitives': fileURLToPath(new URL('../packages/ui/src/primitives/index.ts', import.meta.url)),
+      '@socrates/ui/home': fileURLToPath(new URL('../packages/ui/src/home/index.ts', import.meta.url)),
+      'react-native': 'react-native-web',
     },
+    /* packages/ have no node_modules of their own: resolve their bare React
+       imports from this app so the shell and the shared modules share one
+       React instance. */
+    dedupe: ['react', 'react-dom', 'react-native-web'],
+    /* Platform files win on web (`Foo.web.tsx` before `Foo.tsx`), matching
+       Metro's resolution for apps/socrates. */
+    extensions: ['.web.tsx', '.web.ts', '.web.mjs', '.web.js', '.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
+  },
+  optimizeDeps: {
+    /* react-native-web ships CommonJS helpers (fbjs, inline-style-prefixer);
+       pre-bundle them so the dev server does not crawl them on first use. */
+    include: ['react-native-web'],
   },
   build: {
     outDir: 'dist',
