@@ -9,9 +9,9 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     width: min(100%, var(--ui-content-chat));
-    margin: 24px auto 0;
+    margin: 20px auto 0;
     animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-out) both;
   }
 
@@ -21,19 +21,21 @@
     align-items: center;
     box-sizing: border-box;
     width: auto;
-    min-height: var(--ui-control-touch);
-    padding: 4px 34px 4px 14px;
+    min-height: var(--ui-control-md);
+    padding: 0 16px 0 12px;
     gap: 8px;
-    border: 1px solid transparent;
+    /* R1 restyle: suggestion chips are hairline capsules on the page, the
+       same chips the marketing site lines up under its question box. */
+    border: 1px solid var(--ui-border-default);
     border-radius: var(--ui-radius-pill);
-    background: transparent;
+    background: var(--ui-bg-surface);
     /* The reference landing view carries no quick-action row at all, so this
        strip is the one part of the surface that has no counterpart to
        match. It stays because it carries three real composer entry
        points, but it sits a tier quieter than the surrounding interface:
        the tertiary ink keeps it as a hint under the capsule instead of a
        row of buttons competing with it. */
-    color: var(--ui-text-tertiary);
+    color: var(--ui-text-secondary);
     text-align: left;
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
@@ -43,7 +45,8 @@
 
   #appShell .home-quick-action:hover,
   #appShell .home-quick-action:focus-within {
-    background: var(--accent);
+    border-color: var(--ui-border-strong);
+    background: var(--ui-bg-surface);
     color: var(--foreground);
   }
 
@@ -54,7 +57,7 @@
     gap: 8px;
     min-width: 0;
     margin: 0;
-    padding: 6px 0;
+    padding: 0;
     min-height: var(--ui-control-sm);
     border: 0;
     background: transparent;
@@ -98,21 +101,22 @@
   }
 
   #appShell .home-quick-action-dismiss {
+    /* The dismiss sits on the chip's corner as a small badge, so the chip
+       keeps even padding at rest instead of reserving a hidden slot. */
     position: absolute;
-    top: 50%;
-    right: 6px;
+    top: -6px;
+    right: -6px;
     display: inline-grid;
     place-items: center;
-    width: var(--ui-control-sm);
-    height: var(--ui-control-sm);
+    width: var(--ui-control-badge);
+    height: var(--ui-control-badge);
     padding: 0;
-    border: 0;
+    border: 1px solid var(--ui-border-default);
     border-radius: 50%;
-    background: transparent;
+    background: var(--ui-bg-surface);
     color: var(--muted-foreground);
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-50%);
     transition: opacity var(--ui-duration-fast) ease,
                 background-color var(--ui-duration-fast) ease,
                 color var(--ui-duration-fast) ease;
@@ -126,13 +130,13 @@
 
   #appShell .home-quick-action-dismiss svg {
     display: block;
-    width: 18px;
-    height: 18px;
+    width: 12px;
+    height: 12px;
   }
 
   #appShell .home-quick-action-dismiss:hover,
   #appShell .home-quick-action-dismiss:focus-visible {
-    background: var(--ui-bg-hover-ghost);
+    background: var(--ui-bg-control);
     color: var(--foreground);
   }
 
@@ -176,9 +180,11 @@
     gap: 6px;
     min-width: 0;
     padding: 16px;
-    border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-composer);
-    background: var(--ui-bg-composer);
+    /* R1 restyle: suggestion cards are hairline paper cards on the 16px
+       card corner, quieter than the composer capsule above them. */
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-bg-surface);
     color: var(--muted-foreground);
     text-align: start;
     white-space: normal;
@@ -191,7 +197,7 @@
                 border-color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell .home-tutor-card:hover {
-    background: var(--accent);
+    background: var(--ui-bg-surface);
     border-color: var(--ui-border-strong);
   }
   #appShell .home-tutor-card strong {
@@ -247,9 +253,9 @@
     min-height: 36px;
     padding: 0 10px;
     gap: 6px;
-    border: 1px solid var(--ui-border-subtle);
+    border: 1px solid var(--ui-border-default);
     border-radius: var(--ui-radius-pill);
-    background: transparent;
+    background: var(--ui-bg-surface);
     color: var(--muted-foreground);
     font-size: var(--ui-font-size-xs);
     line-height: 1;

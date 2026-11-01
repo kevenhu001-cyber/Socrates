@@ -129,9 +129,9 @@
     animation: none;
     font-family: var(--font-sans);
     font-size: calc(23px * var(--app-type-scale));
-    font-weight: var(--ui-font-weight-regular);
+    font-weight: var(--ui-font-weight-medium);
     line-height: 30px;
-    letter-spacing: 0;
+    letter-spacing: -0.01em;
     color: var(--foreground);
     text-align: center;
   }

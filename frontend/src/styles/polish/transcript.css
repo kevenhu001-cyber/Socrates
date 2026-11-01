@@ -302,7 +302,7 @@
    transcript show through the text. Both now sit on the raised overlay
    surface like every other floating card. */
 #appShell .msg-toast, .msg-toast {
-  border-radius: var(--ui-radius-control, 8px);
+  border-radius: var(--ui-radius-lg);
   border-color: var(--ui-border-subtle);
   background: var(--popover);
   color: var(--foreground);
