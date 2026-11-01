@@ -23,47 +23,15 @@
   // The bar is clear at the top and frosts once the page moves under it.
   header.setAttribute('data-scroll-aware', '');
 
-  // Home hero: the title rises line by line out of a mask (the words stay
-  // fully opaque, so the largest paint is not delayed), then the lede, the
-  // question box and the starters follow. Runs once, about a second.
-  var hero = main.querySelector('.home-hero-inner');
-  if (hero && !reduced.matches && document.body.animate) {
-    var title = hero.querySelector('h1');
-    if (title && !title.querySelector('.hero-line')) {
-      var lines = [[]];
-      Array.from(title.childNodes).forEach(function (node) {
-        if (node.nodeName === 'BR') lines.push([]);
-        else lines[lines.length - 1].push(node);
-      });
-      title.textContent = '';
-      lines.forEach(function (nodes, index) {
-        // Each line is its own block, so the <br> between them is dropped.
-        var line = document.createElement('span');
-        line.className = 'hero-line';
-        var inner = document.createElement('span');
-        nodes.forEach(function (node) {
-          // Leading spaces after a <br> would indent the centred line.
-          if (node.nodeType === 3) node.nodeValue = node.nodeValue.replace(/^\s+/, '');
-          inner.appendChild(node);
-        });
-        line.appendChild(inner);
-        title.appendChild(line);
-        animate(inner, [{ transform: 'translateY(105%)' }, { transform: 'translateY(0)' }],
-          { duration: 800, delay: 60 + index * 90, easing: ease, fill: 'backwards' });
-      });
-    }
-    var follow = [hero.querySelector('.home-hero-lede'), hero.querySelector('.ask-box')]
-      .concat(Array.from(hero.querySelectorAll('.ask-suggestions > *')));
-    follow.forEach(function (element, index) {
-      if (!element) return;
-      animate(element, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'translateY(0)' }],
-        { duration: 600, delay: 260 + Math.min(index, 2) * 90 + Math.max(0, index - 2) * 40, easing: ease, fill: 'backwards' });
-    });
-  }
+  // Home hero: no entrance of its own. The first screen has exactly one
+  // motion, the question mark written out of the dot field (hero-mark.js);
+  // the title, the question box and the starters are simply there, which is
+  // also what lets the reader start typing at once. (Round 8 removed the
+  // line-by-line title rise: it repeated the mark's "a question appears".)
 
   var selectors = [
     '.feature-main', '.hero-plate', '.feature-intro',
-    '.news-item', '.story-visual', '.story-layout > div', '.home-research-note', '.learning-layout > div',
+    '.news-item', '.story-visual', '.home-research-note', '.learning-layout > div',
     '.product-hero', '.product-preview', '.product-section-intro', '.product-feature-copy', '.product-sample', '.product-tool-grid > div',
     '.content-hero', '.research-note', '.company-visual', '.company-story', '.company-team', '.company-practices li', '.company-work-list li',
     '.page-head .shell', '.pricing-card', '.page-media-inline', '.ed-report-hero > .ed-shell', '.ed-article-hero-grid',

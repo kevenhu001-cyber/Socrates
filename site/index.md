@@ -89,18 +89,6 @@ Move between modes as an idea takes shape: talk it through, test it, connect it 
 - **Bring your own key.** Use a provider API key when you want to manage your own model access.
 - **Your data stays yours.** We do not train on your conversations. Export or delete any session from your account.
 
-## Inside a learning session
-
-### Keep a good question going
-
-An answer can be a beginning. Work through the part you cannot explain yet, then give yourself a reason to return.
-
-1. [Put it in your own words](https://topodrive.top/product#dialogue). Socrates starts from what you already think and asks the next question, not the whole answer.
-2. [Find the connection](https://topodrive.top/product#knowledge-map). Ideas you work through become points on your knowledge map, linked by the questions that joined them.
-3. [Come back to it](https://topodrive.top/product#recall). Turn a good moment into a recall card, then answer it in your own words a few days later.
-
-The accompanying product view is an illustration, not a customer case study.
-
 ## Every question leaves a trace
 
 As you learn, Socrates keeps the ideas you worked through and the links between them. Come back weeks later and the thread is still there. [Why maps preserve the path](https://topodrive.top/research/maps-preserve-path/)
