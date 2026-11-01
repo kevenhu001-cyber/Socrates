@@ -47,8 +47,11 @@
       var animation = null;
       var index = -1;
       var target = null;
+      // Round 10 (performance): only while the box is on screen. Each typed
+      // letter is a DOM change, and nobody reads a hint scrolled away.
+      var onScreen = true;
       function eligible() {
-        return prompts.length && !reduced.matches && !document.hidden && !input.value && document.activeElement !== input;
+        return prompts.length && onScreen && !reduced.matches && !document.hidden && !input.value && document.activeElement !== input;
       }
       function pause() {
         window.clearTimeout(timer);
@@ -111,6 +114,14 @@
       document.addEventListener('visibilitychange', function () { if (document.hidden) pause(); else schedule(); });
       reduced.addEventListener('change', function () { if (reduced.matches) pause(); else schedule(); });
       window.addEventListener('pagehide', pause);
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          var seen = entries[entries.length - 1].isIntersecting;
+          if (seen === onScreen) return;
+          onScreen = seen;
+          if (seen) schedule(); else pause();
+        }).observe(form);
+      }
       window.addEventListener('pageshow', function () { schedule(); });
       schedule(2400);
     }

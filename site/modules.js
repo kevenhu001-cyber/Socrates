@@ -255,7 +255,15 @@
       if (i !== active) setActive(i, false);
       setDone(step === cards.length);
     }
-    function onScroll() { if (!frame) frame = window.requestAnimationFrame(fromScroll); }
+    // Round 10 (performance): the deck reads its box only while it is near
+    // the view, not on every scrolled frame of the whole page.
+    var near = !('IntersectionObserver' in window);
+    if (!near) new IntersectionObserver(function (entries) {
+      near = entries[entries.length - 1].isIntersecting;
+      // One last read on the way out, so a jump past the deck still settles it.
+      if (!frame) frame = window.requestAnimationFrame(fromScroll);
+    }, { rootMargin: '100% 0px 100% 0px' }).observe(deck);
+    function onScroll() { if (near && !frame) frame = window.requestAnimationFrame(fromScroll); }
 
     function onPillClick(event) {
       if (!enabled) return;

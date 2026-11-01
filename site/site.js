@@ -144,10 +144,18 @@
     sweeping = false;
   };
 
+  // Round 10 (performance): a safety net does not need every frame. One
+  // sweep per 200ms of scrolling reads far fewer boxes, and once every
+  // section has been revealed the listeners are gone.
   var scheduleSweep = function () {
     if (sweeping) return;
+    if (!pending.length) {
+      window.removeEventListener('scroll', scheduleSweep);
+      window.removeEventListener('resize', scheduleSweep);
+      return;
+    }
     sweeping = true;
-    window.requestAnimationFrame(sweep);
+    window.setTimeout(function () { window.requestAnimationFrame(sweep); }, 200);
   };
 
   window.addEventListener('scroll', scheduleSweep, { passive: true });

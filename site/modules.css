@@ -442,19 +442,23 @@ a.m-card:active { transform: translateY(0) scale(.99); }
 @media (prefers-reduced-motion: no-preference) {
   [data-site-js] .deck-controls[hidden] { display: flex; visibility: hidden; }
   [data-site-js] .deck-cards { gap: 0; padding-bottom: 36px; touch-action: pan-y; }
-  [data-site-js] .deck-card { grid-area: 1 / 1; z-index: 1; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .03), 0 24px 64px -24px rgb(0 0 0 / .18); transform-origin: 50% 100%; transition: transform 700ms var(--m-ease), opacity 450ms var(--m-ease), visibility 0s linear 0s; will-change: transform; }
+  /* Round 10 (performance): no will-change and only 2D transforms, so at
+     rest the stack paints into the pinned stage's one layer instead of five
+     card-sized layers the software compositor re-blends every frame; a
+     turn's transition still runs on the compositor while it plays. */
+  [data-site-js] .deck-card { grid-area: 1 / 1; z-index: 1; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .03), 0 24px 64px -24px rgb(0 0 0 / .18); transform-origin: 50% 100%; transition: transform 700ms var(--m-ease), opacity 450ms var(--m-ease), visibility 0s linear 0s; }
   /* A veil grays the cards waiting behind, so their edges read as a stack. */
   [data-site-js] .deck-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--m-subtle); opacity: 0; pointer-events: none; transition: opacity 500ms var(--m-ease); }
   [data-site-js] :is(.deck-card[data-k='0'], .deck-card:not([data-k]):nth-child(1)) { z-index: 5; transform: none; }
-  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { z-index: 4; transform: translate3d(0, 12px, 0) scale(.965); }
-  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { z-index: 3; transform: translate3d(0, 24px, 0) scale(.93); }
-  [data-site-js] :is(.deck-card[data-k='3'], .deck-card:not([data-k]):nth-child(4)) { z-index: 2; transform: translate3d(0, 36px, 0) scale(.895); }
-  [data-site-js] :is(.deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(5)) { z-index: 1; transform: translate3d(0, 36px, 0) scale(.895); opacity: 0; }
+  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { z-index: 4; transform: translate(0, 12px) scale(.965); }
+  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { z-index: 3; transform: translate(0, 24px) scale(.93); }
+  [data-site-js] :is(.deck-card[data-k='3'], .deck-card:not([data-k]):nth-child(4)) { z-index: 2; transform: translate(0, 36px) scale(.895); }
+  [data-site-js] :is(.deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(5)) { z-index: 1; transform: translate(0, 36px) scale(.895); opacity: 0; }
   [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2))::after { opacity: .5; }
   [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3))::after { opacity: .8; }
   [data-site-js] :is(.deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+4))::after { opacity: 1; }
   /* A turned card slides up off the deck and fades. */
-  [data-site-js] .deck-card[data-k='-1'] { z-index: 6; transform: translate3d(0, -64px, 0); opacity: 0; visibility: hidden; transition: transform 700ms var(--m-ease), opacity 400ms var(--m-ease), visibility 0s linear 700ms; }
+  [data-site-js] .deck-card[data-k='-1'] { z-index: 6; transform: translate(0, -64px); opacity: 0; visibility: hidden; transition: transform 700ms var(--m-ease), opacity 400ms var(--m-ease), visibility 0s linear 700ms; }
   [data-site-js] .deck-card :is(.m-panel-copy, .ui) { transition: opacity 400ms var(--m-ease); }
   [data-site-js] :is(.deck-card[data-k]:not([data-k='0']), .deck-card:not([data-k]):nth-child(n+2)) :is(.m-panel-copy, .ui) { opacity: 0; }
   /* Unpinned: the end row counts the modes met, one dot each. */
@@ -480,7 +484,7 @@ a.m-card:active { transform: translateY(0) scale(.99); }
   [data-site-js] .deck[data-done] .deck-end-dots i:nth-child(4) { transition-delay: 150ms; }
   [data-site-js] .deck[data-done] .deck-end-dots i:nth-child(5) { transition-delay: 200ms; }
   /* Each card folds down into its dot. */
-  [data-site-js] .deck[data-done] .deck-card { opacity: 0; visibility: hidden; transform: translate3d(0, 0, 0) scale(.12); transform-origin: 50% 50%; transition: transform 600ms var(--m-ease), opacity 350ms var(--m-ease) 150ms, visibility 0s linear 600ms; }
+  [data-site-js] .deck[data-done] .deck-card { opacity: 0; visibility: hidden; transform: scale(.12); transform-origin: 50% 50%; transition: transform 600ms var(--m-ease), opacity 350ms var(--m-ease) 150ms, visibility 0s linear 600ms; }
 }
 @media (min-width: 1920px) {
   .deck-card { min-height: 540px; }
@@ -500,9 +504,9 @@ a.m-card:active { transform: translateY(0) scale(.99); }
 }
 @media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
   [data-site-js] .deck-cards { padding-bottom: 24px; }
-  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { transform: translate3d(0, 8px, 0) scale(.96); }
-  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { transform: translate3d(0, 16px, 0) scale(.92); }
-  [data-site-js] :is(.deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+4)) { transform: translate3d(0, 24px, 0) scale(.88); }
+  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { transform: translate(0, 8px) scale(.96); }
+  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { transform: translate(0, 16px) scale(.92); }
+  [data-site-js] :is(.deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+4)) { transform: translate(0, 24px) scale(.88); }
 }
 @media (max-width: 760px) {
   .deck-end { gap: var(--space-100) var(--space-200); margin-top: var(--space-300); }

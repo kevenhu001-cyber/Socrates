@@ -761,11 +761,17 @@
     if (!window.MutationObserver || !document.body) return;
 
     var pending = false;
-    var observer = new MutationObserver(function () {
+    var observer = new MutationObserver(function (records) {
       /* Coalesce bursts of DOM changes into a single re-pass so a
          script that appends 30 nodes doesn't trigger 30 localiseLinks()
-         runs. */
+         runs. Text-only changes (a hint typing itself, a counter) can
+         never add a link, so they never cost a re-pass. */
       if (pending) return;
+      var elements = records.some(function (record) {
+        for (var i = 0; i < record.addedNodes.length; i += 1) if (record.addedNodes[i].nodeType === 1) return true;
+        return false;
+      });
+      if (!elements) return;
       pending = true;
       window.requestAnimationFrame(function () {
         pending = false;
