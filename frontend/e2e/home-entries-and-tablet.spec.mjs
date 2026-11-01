@@ -17,8 +17,8 @@ test('phone landing shows the quick actions above the capsule', async ({ page })
 
   const rail = page.locator('#homeQuickActions');
   await expect(rail).toBeVisible();
-  await expect(rail.locator('.home-quick-action')).toHaveCount(3);
-  await expect(rail.locator('.home-quick-action[hidden]')).toHaveCount(0);
+  /* RN-1: shortcuts are React Native buttons; a dismissed one leaves the DOM. */
+  await expect(rail.locator('[data-testid^="home-shortcut-action-"]')).toHaveCount(3);
 
   /* The row sits above the composer, not under it, and does not run into the
      greeting either. */
@@ -36,7 +36,7 @@ test('phone landing shows the quick actions above the capsule', async ({ page })
   /* Tapping a chip still reaches the composer extension behind it. Phones
      express the active tool as the chip's pressed state (the composer's own
      tool chip is a desktop affordance), so assert the state, not a chip. */
-  const research = rail.locator('.home-quick-action-primary[data-home-action="research"]');
+  const research = rail.locator('[data-testid="home-shortcut-action-research"]');
   await research.click();
   await expect(research).toHaveAttribute('aria-pressed', 'true');
 });
@@ -50,7 +50,7 @@ test('phone tutor landing shows the starter cards', async ({ page }) => {
   await page.locator('#topModeTutor').click();
   const starters = page.locator('#homeTutorStarters');
   await expect(starters).toBeVisible();
-  await expect(starters.locator('.home-tutor-card')).toHaveCount(3);
+  await expect(starters.locator('[data-testid^="home-starter-"]')).toHaveCount(3);
   await expect(page.locator('#homeQuickActions')).toBeHidden();
 
   const boxes = await page.evaluate(() => {

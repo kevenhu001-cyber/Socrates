@@ -72,10 +72,13 @@ test('mobile conversation home matches the compact dark reference layout', async
      at 40.5% of the surface always lands the line on the reference hero
      position regardless of those shifts. */
   const centering = await page.evaluate(() => {
-    const greet = document.querySelector('#topicTitle.greeting');
+    /* RN-1: #topicTitle is the React Native hero text; its host #homeHero
+       carries the absolute anchor. */
+    const greet = document.querySelector('#topicTitle');
     const box = greet?.getBoundingClientRect();
     const surface = document.getElementById('topicSetup')?.getBoundingClientRect();
     const style = greet ? getComputedStyle(greet) : null;
+    const hostStyle = getComputedStyle(document.getElementById('homeHero'));
     return {
       x: box?.x,
       width: box?.width,
@@ -83,7 +86,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       surfaceTop: surface?.top,
       surfaceHeight: surface?.height,
       viewportWidth: window.innerWidth,
-      position: style?.position,
+      position: hostStyle.position,
       textAlign: style?.textAlign,
     };
   });

@@ -208,3 +208,21 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
 白板颜色回归同时核对编辑器段落与其父级文字颜色一致，防止 prose palette 再次渗入。
 最终桌面白板与手机只读分享截图人工检查通过；验收副本保存在当前 chat 的 visualizations 目录，
 避免后续 Playwright 清理 test-results 时丢失已交付证据。
+
+## RN-1：react-native-web 接入与首页空状态（2026-11-01）
+
+- 方向：`frontend/` 继续做线上 Web 外壳；每轮挑一个模块用 RN 组件重写在 `packages/ui`，换成新 UI 后挂进
+  frontend 替换旧组件，Android / iOS 之后经 `apps/socrates` 复用。旧的“与 frontend 像素一致”parity 规则作废。
+- 解析：`frontend/vite.config.js` 把 `react-native` 指向 `react-native-web`（0.21.3），`.web.*` 扩展名优先，
+  `react` / `react-dom` / `react-native-web` 去重；只为 `@socrates/theme` 与 `@socrates/ui/primitives`、
+  `@socrates/ui/home` 两个窄入口建别名，Web 外壳不会引入 `packages/ui` 的完整 barrel。
+  `react-native@0.86.3` 只作 devDependency 提供类型，`tsconfig.json` 固定 `types` 防止 `@types/node` 混入。
+- Tokens：`packages/theme/src/ui.ts` 是新 UI 的单一来源；`scripts/gen-ui-tokens.mjs` 生成
+  `frontend/src/styles/foundations/tokens.generated.css`（themes.css 引用），frontend lint 用 `--check` 防漂移。
+  canvas / card 直接复用背景阶梯色值，surface-ladder 守卫期望值不变。
+- 基元：`packages/ui/src/primitives`（UiThemeProvider / UiText / UiButton / UiPill / UiCard）。Web 侧传
+  `uiColorsCssVars`（`var(--ui-*)`），主题切换由 `[data-mode]` 完成，不触发 React 渲染。
+- 样板模块：`packages/ui/src/home`（HomeHero / HomeShortcuts / HomeStarters），frontend 由
+  `react/home/HomeStartComponents.tsx` 适配文案与行为，经 `mountOwnedRoot` 挂到 `#homeHero`、
+  `#homeQuickActions`、`#homeTutorStarters`。问候语由 `ui/greetingState.ts` 发布，hero 挂载后
+  `renderGreeting()` 不再直接写 DOM。e2e 选择器改用 RNW 的 `data-testid`（`home-shortcut-*`、`home-starter-*`）。

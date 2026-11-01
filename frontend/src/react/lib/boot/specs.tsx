@@ -123,9 +123,17 @@ export function mountRegistryList(): MountSpec[] {
         mountOwnedRoot(host, 'sidebar-search-row', <SidebarSearchRow />);
       });
     } },
+    /* RN-1 — the landing empty state is React Native (packages/ui/src/home)
+       rendered through react-native-web; the lazy import keeps RNW out of
+       the entry chunk. */
+    { hostId: 'homeHero', label: 'home-hero', mount: (host) => {
+      return import('../../home/HomeStartComponents').then(({ HomeHeroRoot }) => {
+        mountOwnedRoot(host, 'home-hero', <HomeHeroRoot />);
+      });
+    } },
     { hostId: 'homeQuickActions', label: 'home-quick-actions', mount: (host) => {
       return import('../../home/HomeStartComponents').then(({ HomeQuickActions }) => {
-        mountOwnedRoot(host, 'home-quick-actions', <HomeQuickActions />);
+        mountOwnedRoot(host, 'home-quick-actions', <HomeQuickActions host={host} />);
       });
     } },
     { hostId: 'homeTutorStarters', label: 'home-tutor-starters', mount: (host) => {

@@ -10,11 +10,21 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "skipLibCheck": true,
+    /* Pinned so devDependencies that ship @types/node (react-native, kept
+       for its type definitions only) do not swap browser timer types for
+       Node's. Matches the set that was implicitly included before RN-1. */
+    "types": ["esrecurse", "estree", "geojson", "json-schema", "minimatch", "react", "react-dom", "trusted-types", "use-sync-external-store", "validator"],
     "paths": {
       "@/*": ["./src/*"],
       "@socrates/contracts": ["../packages/contracts/src/index.ts"],
       "@socrates/core": ["../packages/core/src/index.ts"],
-      "@socrates/core/*": ["../packages/core/src/*"]
+      "@socrates/core/*": ["../packages/core/src/*"],
+      "@socrates/theme": ["../packages/theme/src/index.ts"],
+      "@socrates/ui/primitives": ["../packages/ui/src/primitives/index.ts"],
+      "@socrates/ui/home": ["../packages/ui/src/home/index.ts"],
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "react-native": ["./node_modules/react-native"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "../packages/core/src/**/*.ts", "../packages/contracts/src/**/*.ts"],

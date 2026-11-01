@@ -9,6 +9,9 @@
  * compatible. Product geometry remains owned by tokens.css / component styles.
  */
 
+/* RN-1 — new UI vocabulary generated from packages/theme/src/ui.ts. */
+@import './foundations/tokens.generated.css';
+
 html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {
   --font-sans: "Geist Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;

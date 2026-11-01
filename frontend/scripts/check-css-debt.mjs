@@ -33,6 +33,10 @@ const BASELINE = join(FRONTEND, 'scripts', 'css-debt.baseline.json');
 const UPDATE = process.argv.includes('--update');
 
 const FROZEN_DIRS = new Set(['legacy', 'restore']);
+/* Token projections written by scripts/gen-ui-tokens.mjs from packages/theme.
+ * Their literals are the shared source's values, not hand-authored debt, and
+ * gen-ui-tokens --check keeps them byte-identical to that source. */
+const GENERATED_TOKEN_FILES = new Set(['foundations/tokens.generated.css']);
 
 /* These aggregate files document their ordering contract inline. Keep the
  * machine check in sync with that contract so a routine import shuffle cannot
@@ -435,6 +439,7 @@ function collectCounts() {
   for (const file of walkCss(STYLES)) {
     const rel = relative(STYLES, file).split(sep).join('/');
     const top = rel.split('/')[0];
+    if (GENERATED_TOKEN_FILES.has(rel)) continue;
     const zone = FROZEN_DIRS.has(top) ? 'frozen' : 'live';
     const text = stripComments(readFileSync(file, 'utf8'));
     perFile[rel] = { zone };

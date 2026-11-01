@@ -273,7 +273,10 @@
              string into this element on boot and after profile changes.
              The data-i18n-key provides a fallback for the very first
              paint before JS runs. -->
-        <h1 class="topic-title greeting" id="topicTitle" data-i18n-key="greeting.chat"></h1>
+        <!-- RN-1: the hero is a React Native component (packages/ui/src/home)
+             mounted into #homeHero by spec `home-hero`. The h1 is only the
+             first-paint placeholder; the mounted hero keeps id="topicTitle". -->
+        <div class="home-hero" id="homeHero"><h1 class="topic-title greeting" id="topicTitle" data-greeting-static data-i18n-key="greeting.chat"></h1></div>
         <p class="topic-sub" id="topicSub"></p>
         <!-- .mobile-starter-prompts container removed: nothing ever
              populated it (see ui/homeSuggestions.ts, a no-op shim). -->

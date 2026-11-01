@@ -56,15 +56,13 @@ test('light conversation home has a neutral readable palette and balanced compos
   /* ChatGPT.html measures 768 x 52 with a 16px editor at 1440x900. */
   expect(geometry.composer?.height).toBe(52);
   expect(geometry.topicFontSize).toBe(16);
-  /* R1 restyle (2026-11-01): the greeting follows the marketing site's
-     heading rhythm — 28px Geist medium — instead of the 24px/400 ChatGPT
-     line it used to pin. */
+  /* RN-1 (2026-11-01): the greeting is the React Native hero, set on the
+     greeting step of packages/theme uiType (28px Geist medium), with a 40px
+     pause before the 768×52 composer (the #homeHero host margin). */
   expect(geometry.titleSize).toBe('28px');
   expect(geometry.fontFamily).toContain('Geist Sans');
-  /* Current ChatGPT landing geometry leaves a 36px pause between the
-     greeting and the 768×52 composer. */
-  expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(34);
-  expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(38);
+  expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(38);
+  expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(42);
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);

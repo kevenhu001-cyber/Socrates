@@ -101,21 +101,21 @@ test('home upload opens a file chooser, writing activates its template, and dism
     body: JSON.stringify({ id: 'uploaded-notes', name: 'notes.txt', kind: 'text', mimeType: 'text/plain', size: 10 }),
   }));
   const chooser = page.waitForEvent('filechooser');
-  await page.locator('[data-home-action="upload"]').click();
+  await page.locator('[data-testid="home-shortcut-action-upload"]').click();
   await (await chooser).setFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('Test notes') });
   await expect(page.locator('#composerAttachmentChips')).toContainText('notes.txt');
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).not.toHaveClass(/pending|error/);
-  await page.locator('[data-home-action="write"]').click();
+  await page.locator('[data-testid="home-shortcut-action-write"]').click();
   await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('write');
-  const row = page.locator('.home-quick-action').filter({ has: page.locator('[data-home-action="write"]') });
+  const row = page.locator('[data-testid="home-shortcut-write"]');
   await row.hover();
-  await row.locator('[data-home-dismiss]').click();
+  await row.locator('[data-testid="home-shortcut-dismiss-write"]').click();
   await expect(row).toBeHidden();
   await page.screenshot({ path: 'test-results/performance-home-shortcuts-desktop.png' });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('.home-quick-actions')).toBeVisible();
-  await expect(page.locator('[data-home-action="upload"]')).toBeVisible();
-  await expect(page.locator('[data-home-action="research"]')).toBeVisible();
+  await expect(page.locator('[data-testid="home-shortcut-action-upload"]')).toBeVisible();
+  await expect(page.locator('[data-testid="home-shortcut-action-research"]')).toBeVisible();
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.screenshot({ path: 'test-results/performance-home-shortcuts-mobile.png' });
 });
