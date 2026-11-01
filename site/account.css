@@ -568,3 +568,40 @@ html:lang(zh) .ed-app-card-title { font-family: var(--site-serif-cjk, var(--ed-s
   .ed-app-card,
   .ed-app-main { min-width: 0; }
 }
+
+/* Public-site alignment (2026-10-31): the account, API key, profile and
+   checkout pages keep their own app header and scripts but share the
+   marketing site's visual language — Geist Sans at weight 500 instead of
+   the old serif, no blurred glow behind the hero, pill buttons and the
+   12 / 16 / 24 radius scale. The unicode-range leaves CJK punctuation to
+   Noto Sans SC, as in chrome.css. */
+@font-face {
+  font-family: 'Geist Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/media/fonts/geist-sans-variable.woff2') format('woff2');
+  unicode-range: U+0000-2E7F, U+3040-FEFF, U+FFF0-FFFF;
+}
+body.ed-site {
+  --font-serif: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-sans: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --an-serif: var(--font-serif);
+  --an-sans: var(--font-sans);
+  --ed-serif: var(--font-serif);
+  --ed-sans: var(--font-sans);
+  --site-serif-latin: var(--font-sans);
+  --an-paper: #fff;
+  --ed-paper: #fff;
+  background: #fff;
+  font-family: var(--font-sans);
+}
+body.ed-site .ed-page-hero::before, body.ed-site .ed-page-hero::after { display: none !important; }
+body.ed-site :is(.ed-page-title, .ed-title, .ed-auth-title, .ed-state h2, .ed-modal-title, .ed-app-card-title, h1, h2, h3) { font-family: var(--font-sans) !important; font-weight: 500; letter-spacing: -.025em; }
+body.ed-site :is(.ed-copy-serif, .ed-page-hero p, .ed-state p) { font-family: var(--font-sans) !important; color: #5d5d5d; }
+body.ed-site :is(.ed-button, .ed-button-quiet) { border-radius: 9999px; }
+body.ed-site .ed-button-quiet { background: rgba(0, 0, 0, .04); border-color: transparent; color: #0d0d0d; }
+body.ed-site .ed-button-quiet:hover { background: rgba(0, 0, 0, .08); }
+body.ed-site :is(.ed-sub-hero, .ed-app-card, .ed-key-card, .ed-auth-card, .ed-modal) { border-radius: 24px; }
+body.ed-site :is(.ed-input, .ed-select, input[type="text"], input[type="email"], input[type="password"], textarea, select) { border-radius: 12px; }
+body.ed-site .page-media-frame { border: 0; border-radius: 16px; }

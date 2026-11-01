@@ -41,7 +41,7 @@ for (const prefix of ['', '/zh']) {
       assert.ok(layout.ctaBottom < layout.viewportHeight, 'main CTA belongs in the first viewport');
       assert.ok(layout.previewTop < layout.viewportHeight - 120, 'product demonstration starts in the first viewport');
       assert.equal(layout.width, width);
-      assert.equal(layout.headerHeight, width <= 760 ? 64 : 80);
+      assert.equal(layout.headerHeight, width <= 760 ? 56 : 64);
       assert.ok(Math.abs(layout.descriptionCenter - width / 2) < 1, 'hero description shares the title centerline');
       assert.ok(layout.descriptionGap >= 16 && layout.featureGaps.every((gap) => gap >= 16), 'paragraph resets must not erase editorial spacing');
       assert.ok(layout.minText >= 14, 'interface text must not be a scaled-down thumbnail');
@@ -118,15 +118,15 @@ for (const path of ['/', '/about', '/research', '/research/memory-recall/', '/pr
         footerLinks: document.querySelectorAll('.site-footer-grid a').length,
       };
     });
-    assert.equal(chrome.height, 80);
+    assert.equal(chrome.height, 64);
     assert.equal(chrome.logo, 0, 'the public header consistently uses the Socrates wordmark');
-    assert.equal(chrome.label, '24px');
+    assert.equal(chrome.label, '19px');
     assert.match(chrome.family, /Geist Sans/);
-    // landing-page-design B7: the header is a floating capsule centred on the page
-    // and sized to its content; the wordmark keeps a 24px (Spacing-300) inset inside it.
-    assert.ok(Math.abs(chrome.capsule.x + chrome.capsule.width / 2 - (chrome.headerBox.x + chrome.headerBox.width / 2)) < 1, 'the capsule is centred');
-    assert.ok(chrome.capsule.y >= 8, 'the capsule floats off the top edge');
-    assert.ok(Math.abs(chrome.x - chrome.capsule.x - 24) < 1);
+    // OpenAI-style bar: a plain top bar whose content row is the centred page
+    // container (never wider than 1440px of content), wordmark at the 32px gutter.
+    assert.ok(Math.abs(chrome.capsule.x + chrome.capsule.width / 2 - (chrome.headerBox.x + chrome.headerBox.width / 2)) < 1, 'the bar content is centred');
+    assert.ok(chrome.capsule.width <= 1504 && chrome.capsule.y === 0, 'the bar sits at the top edge inside the page container');
+    assert.ok(Math.abs(chrome.x - chrome.capsule.x - 32) < 1);
     assert.equal(chrome.footerLinks, 36);
     const prefix = path.startsWith('/zh/') ? '/zh' : '';
     assert.deepEqual(chrome.nav, ['product', 'research', 'principles', 'learn', 'developers', 'pricing', 'about'].map((part) => `${prefix}/${part}`));
@@ -135,8 +135,8 @@ for (const path of ['/', '/about', '/research', '/research/memory-recall/', '/pr
     if (path.includes('research/')) assert.equal(await page.locator('.site-nav a[aria-current="page"]').getAttribute('href'), `${prefix}/research`);
     await page.setViewportSize({ width: 390, height: 900 });
     await page.waitForFunction(() => document.querySelectorAll('.site-footer-col[open]').length === 0);
-    await page.waitForFunction(() => document.querySelector('.site-header').getBoundingClientRect().height === 64);
-    assert.equal((await page.locator('.site-header').boundingBox()).height, 64);
+    await page.waitForFunction(() => document.querySelector('.site-header').getBoundingClientRect().height === 56);
+    assert.equal((await page.locator('.site-header').boundingBox()).height, 56);
     assert.ok(await page.locator('[data-site-menu-toggle]').isVisible());
     assert.ok((await page.locator('.site-footer').boundingBox()).height < 720);
     await page.locator('.site-footer-summary').first().focus();

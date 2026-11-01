@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../site/', import.meta.url));
 // locale.js change: the site serves them with `cache-control: immutable,
 // max-age=604800`, so a returning browser keeps the old bytes for a week
 // unless the query string changes.
-const version = '20261031e1';
+const version = '20261101q1';
 const appPages = new Set(['account', 'profile', 'api-keys', 'checkout']);
 const appURL = 'https://app.topodrive.top';
 const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -41,7 +41,7 @@ const copy = {
       [['More', [['/announcements', 'Stories'], ['/research', 'Field notes'], ['/guide', 'Academy'], ['/principles', 'Our principles']]],
         ['Get started', [[appURL, 'Try Socrates'], [appURL, 'Log in'], ['/pricing', 'Plans']]]],
     ],
-    social: 'Social links', legal: 'Built for people who want to understand.',
+    social: 'Social links',
     policies: 'Legal', policyLinks: [['/privacy', 'Privacy policy'], ['/terms', 'Terms of service']],
   },
   zh: {
@@ -62,7 +62,7 @@ const copy = {
       [['更多', [['/announcements', '故事'], ['/research', '现场笔记'], ['/guide', '学院'], ['/principles', '我们的原则']]],
         ['开始使用', [[appURL, '试用 Socrates'], [appURL, '登录'], ['/pricing', '套餐']]]],
     ],
-    social: '社交链接', legal: '为真正想理解的人打造。',
+    social: '社交链接',
     policies: '法律信息', policyLinks: [['/privacy', '隐私政策'], ['/terms', '服务条款']],
   },
 };
@@ -111,22 +111,77 @@ ${links.map(([href, label]) => `            <a href="${localHref(href, locale)}"
   const footerLanguage = `<a class="site-locale site-footer-locale" href="${otherPath}" data-locale-switcher hreflang="${text.languageTag}" lang="${text.languageTag}">${globe}<span class="locale-label">${text.language}</span></a>`;
   const footer = `<footer class="site-footer">
     <div class="site-chrome-shell site-footer-inner">
-      <div class="site-footer-lead">
-        ${brand(locale)}
-        <p class="site-footer-tagline">${text.legal}</p>
-      </div>
       <div class="site-footer-grid">
         ${columns}
       </div>
       <div class="site-footer-bottom">
+        <nav class="site-footer-social" aria-label="${text.social}"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X">${socialIcons.x}</a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub">${socialIcons.github}</a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube">${socialIcons.youtube}</a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn">${socialIcons.linkedin}</a></nav>
         <p class="site-footer-legal">© 2026 Socrates</p>
         <nav class="site-footer-policies" aria-label="${text.policies}">${policies}</nav>
-        <nav class="site-footer-social" aria-label="${text.social}"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X">${socialIcons.x}</a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub">${socialIcons.github}</a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube">${socialIcons.youtube}</a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn">${socialIcons.linkedin}</a></nav>
         ${footerLanguage}
       </div>
+      <div class="site-wordmark" aria-hidden="true" data-wordmark><img src="/media/socrates-wordmark-v1.svg" width="4168" height="738" alt="" loading="lazy" decoding="async"><span class="site-wordmark-dot"></span></div>
     </div>
   </footer>`;
   return { header, footer };
+}
+
+// Chinese pages render their text in the self-hosted Noto Sans SC subsets
+// (fonts.css, font-display: swap). Fonts are discovered only after CSS is
+// parsed, so the first frame painted CJK text in a fallback whose advances
+// differ from Noto's; when the subsets arrived ~500 ms later the header
+// links, hero copy and cookie banner re-wrapped (zh product 390: CLS 0.11).
+// Preloading the subsets that the first screen needs lets them arrive with
+// the stylesheets, so the first frame already uses the final glyphs. The list
+// is derived from the page itself — the header, the zh cookie banner and the
+// first CJK_PRELOAD_CHARS ideographs of the body — so --check fails when copy
+// changes and the preloads drift. Every preloaded subset is one the page
+// downloads anyway: nothing extra is fetched, only earlier.
+const CJK_PRELOAD_CHARS = 400;
+const isCjk = (code) => (code >= 0x2e80 && code <= 0x2fdf) || (code >= 0x3000 && code <= 0x303f) ||
+  (code >= 0x3400 && code <= 0x9fff) || (code >= 0xf900 && code <= 0xfaff) || (code >= 0xff00 && code <= 0xffef);
+let notoSansSubsets;
+async function cjkSubsets() {
+  if (notoSansSubsets) return notoSansSubsets;
+  const css = await readFile(join(root, 'fonts.css'), 'utf8');
+  notoSansSubsets = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)]
+    .map(([, body]) => body)
+    .filter((body) => /font-family:\s*['"]Noto Sans SC['"]/.test(body))
+    .map((body) => ({
+      url: body.match(/src:\s*url\(['"]?([^'")]+)/)[1],
+      ranges: (body.match(/unicode-range:\s*([^;]+)/)?.[1] ?? '').split(',').map((part) => {
+        const [from, to = from] = part.trim().replace(/^U\+/i, '').split('-');
+        return [parseInt(from, 16), parseInt(to, 16)];
+      }),
+    }));
+  return notoSansSubsets;
+}
+let consentCopy;
+async function zhConsentText() {
+  if (consentCopy !== undefined) return consentCopy;
+  const script = await readFile(join(root, 'locale.js'), 'utf8');
+  consentCopy = script.match(/LOCALES\.zh \? \{([\s\S]*?)\}/)?.[1] ?? '';
+  return consentCopy;
+}
+async function cjkPreloads(html) {
+  const visible = html
+    .replace(/<head\b[\s\S]*?<\/head>/, '')
+    .replace(/<(script|style|svg|template|noscript)\b[\s\S]*?<\/\1>/g, '')
+    .replace(/<[^>]+>/g, '');
+  const text = (await zhConsentText()) + visible;
+  const chars = [];
+  for (const char of text) {
+    if (isCjk(char.codePointAt(0))) chars.push(char.codePointAt(0));
+    if (chars.length >= CJK_PRELOAD_CHARS) break;
+  }
+  const subsets = await cjkSubsets();
+  const urls = new Set();
+  for (const code of chars) {
+    const face = subsets.find(({ ranges }) => ranges.some(([from, to]) => code >= from && code <= to));
+    if (face) urls.add(face.url);
+  }
+  return [...urls].sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
+    .map((url) => `  <link rel="preload" href="${url}" as="font" type="font/woff2" crossorigin data-cjk-preload>\n`).join('');
 }
 
 async function htmlFiles(directory) {
@@ -155,9 +210,12 @@ export async function syncChrome({ check = false } = {}) {
         !/<footer class="(?:home-footer|ftr|ed-footer|site-footer)"/.test(source)) {
       throw new Error(`Missing public chrome in ${relativePath}`);
     }
-    const next = source
+    const withChrome = source
       .replace(/<header class="(?:home-site-header|hdr|ed-header|site-header)"[\s\S]*?<\/header>/, header)
-      .replace(/<footer class="(?:home-footer|ftr|ed-footer|site-footer)"[\s\S]*?<\/footer>/, footer)
+      .replace(/<footer class="(?:home-footer|ftr|ed-footer|site-footer)"[\s\S]*?<\/footer>/, footer);
+    const preloads = locale === 'zh' ? await cjkPreloads(withChrome) : '';
+    const next = withChrome
+      .replace(/[ \t]*<link rel="preload"[^>]*data-cjk-preload>\r?\n?/g, '')
       .replace(/[ \t]*<link rel="stylesheet" href="\/chrome\.css[^\"]*">\r?\n?/g, '')
       .replace(/[ \t]*<link rel="stylesheet" href="\/public\.css[^\"]*">\r?\n?/g, '')
       .replace(/[ \t]*<link rel="stylesheet" href="[^\"]*fonts\.css[^\"]*">\r?\n?/g, (tag) => locale === 'zh' ? '' : tag)
@@ -165,7 +223,7 @@ export async function syncChrome({ check = false } = {}) {
       .replace(/[ \t]*<script src="\/motion\.js[^\"]*"><\/script>\r?\n?/g, '')
       .replace(/<body\b(?![^>]*\bdata-site-public)([^>]*)>/, '<body$1 data-site-public>')
       .replace(/(<script src="[^\"]*\/locale\.js)\?[^\"]*("><\/script>)/g, `$1?cb=${version}$2`)
-      .replace(/\s*<\/head>/, `\n${locale === 'zh' ? `  <link rel="stylesheet" href="/fonts.css?cb=${version}">\n` : ''}  <link rel="stylesheet" href="/public.css?cb=${version}">\n  <link rel="stylesheet" href="/chrome.css?cb=${version}">\n</head>`)
+      .replace(/\s*<\/head>/, `\n${locale === 'zh' ? `${preloads}  <link rel="stylesheet" href="/fonts.css?cb=${version}">\n` : ''}  <link rel="stylesheet" href="/public.css?cb=${version}">\n  <link rel="stylesheet" href="/chrome.css?cb=${version}">\n</head>`)
       .replace(/\s*<\/body>/, `\n  <script src="/chrome.js?cb=${version}"></script>\n  <script src="/motion.js?cb=${version}"></script>\n</body>`);
     // Preserve existing whitespace around all non-generated content.
     if (source !== next) {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8f7f3">
+  <meta name="theme-color" content="#ffffff">
   <title>Socrates — Understanding begins with a question.</title>
   <meta name="description" content="An AI tutor for people who want to understand — built around Socratic dialogue, durable recall, and a knowledge map.">
   <link rel="icon" href="/favicon.png">
@@ -13,7 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261031e1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261101q1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101q1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -157,9 +158,9 @@
     ]
   }
   </script>
-  <script src="/locale.js?cb=20261031e1"></script>
-  <link rel="stylesheet" href="/public.css?cb=20261031e1">
-  <link rel="stylesheet" href="/chrome.css?cb=20261031e1">
+  <script src="/locale.js?cb=20261101q1"></script>
+  <link rel="stylesheet" href="/public.css?cb=20261101q1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261101q1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -197,7 +198,6 @@
 
   <main id="main">
     <section class="home-hero home-shell" aria-labelledby="hero-title">
-      <div class="hero-field" data-hero-field aria-hidden="true"><canvas></canvas></div>
       <div class="home-hero-inner">
         <h1 id="hero-title">What can I help<br> you understand?</h1>
         <p class="home-hero-lede">An AI tutor that helps you think it through, one good question at a time.</p>
@@ -206,7 +206,7 @@
             <div class="ask-box">
               <label class="home-sr-only" for="askInputHero">Your question for Socrates</label>
               <textarea class="ask-input" id="askInputHero" name="q" rows="2" placeholder=" " aria-describedby="ask-handoff-hero" autocomplete="off" spellcheck="false"></textarea>
-              <span class="ask-placeholder" data-ask-prompts="[&quot;Explain Bayes’ theorem, one step at a time…&quot;, &quot;Help me connect two ideas…&quot;, &quot;Quiz me on something I learned…&quot;]" aria-hidden="true">Help me understand a new idea…</span>
+              <span class="ask-placeholder" data-ask-prompts="[[&quot;Why is it hot in summer?&quot;, &quot;Why is it winter in Australia in July?&quot;], [&quot;What does a derivative tell me?&quot;, &quot;What does a derivative tell me about speed?&quot;], [&quot;Why does a positive test mislead?&quot;, &quot;Why does a rare condition change the odds?&quot;]]" aria-hidden="true">Help me understand a new idea…</span>
               <button class="ask-send" type="submit" aria-label="Open Socrates and start a conversation"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg></button>
             </div>
             <p class="ask-handoff home-sr-only" id="ask-handoff-hero">Continue with your question in the Socrates app.</p>
@@ -220,35 +220,105 @@
           </div>
         </div>
       </div>
+      <div class="hero-mark" data-hero-mark aria-hidden="true"><svg class="hero-mark-svg hm-fine" viewBox="0 0 18 25" focusable="false"><g class="hm-nodes"><circle cx="1.5" cy="8.5" r="0.08" fill-opacity="0.234" data-k="0.092"/><circle cx="1.5" cy="7.5" r="0.218" fill-opacity="0.667" data-k="0.475"/><circle cx="2.5" cy="8.5" r="0.122" fill-opacity="0.367" data-k="0.21"/><circle cx="2.5" cy="7.5" r="0.36" data-k="1"/><circle cx="2.5" cy="6.5" r="0.36" data-k="1"/><circle cx="3.5" cy="7.5" r="0.36" data-k="1"/><circle cx="1.5" cy="6.5" r="0.135" fill-opacity="0.406" data-k="0.244"/><circle cx="3.5" cy="8.5" r="0.143" fill-opacity="0.432" data-k="0.267"/><circle cx="3.5" cy="6.5" r="0.36" data-k="1"/><circle cx="4.5" cy="7.5" r="0.36" data-k="1"/><circle cx="2.5" cy="5.5" r="0.358" data-k="0.864"/><circle cx="3.5" cy="5.5" r="0.36" data-k="1"/><circle cx="4.5" cy="6.5" r="0.36" data-k="1"/><circle cx="4.5" cy="8.5" r="0.163" fill-opacity="0.495" data-k="0.322"/><circle cx="4.5" cy="5.5" r="0.36" data-k="1"/><circle cx="2.5" cy="4.5" r="0.167" fill-opacity="0.506" data-k="0.333"/><circle cx="5.5" cy="7.5" r="0.1" fill-opacity="0.296" data-k="0.147"/><circle cx="3.5" cy="4.5" r="0.36" data-k="1"/><circle cx="5.5" cy="6.5" r="0.232" fill-opacity="0.711" data-k="0.514"/><circle cx="4.5" cy="4.5" r="0.36" data-k="1"/><circle cx="5.5" cy="5.5" r="0.36" data-k="0.964"/><circle cx="5.5" cy="4.5" r="0.36" data-k="1"/><circle cx="3.5" cy="3.5" r="0.252" fill-opacity="0.776" data-k="0.571"/><circle cx="4.5" cy="3.5" r="0.36" data-k="1"/><circle cx="6.5" cy="5.5" r="0.121" fill-opacity="0.362" data-k="0.205"/><circle cx="5.5" cy="3.5" r="0.36" data-k="1"/><circle cx="6.5" cy="4.5" r="0.36" data-k="0.947"/><circle cx="6.5" cy="3.5" r="0.36" data-k="1"/><circle cx="4.5" cy="2.5" r="0.22" fill-opacity="0.673" data-k="0.48"/><circle cx="5.5" cy="2.5" r="0.36" data-k="0.977"/><circle cx="7.5" cy="4.5" r="0.212" fill-opacity="0.648" data-k="0.458"/><circle cx="6.5" cy="2.5" r="0.36" data-k="1"/><circle cx="7.5" cy="3.5" r="0.36" data-k="1"/><circle cx="7.5" cy="2.5" r="0.36" data-k="1"/><circle cx="5.5" cy="1.5" r="0.096" fill-opacity="0.286" data-k="0.138"/><circle cx="8.5" cy="3.5" r="0.36" data-k="1"/><circle cx="8.5" cy="4.5" r="0.1" fill-opacity="0.297" data-k="0.148"/><circle cx="6.5" cy="1.5" r="0.247" fill-opacity="0.757" data-k="0.555"/><circle cx="8.5" cy="2.5" r="0.36" data-k="1"/><circle cx="7.5" cy="1.5" r="0.345" data-k="0.828"/><circle cx="8.5" cy="1.5" r="0.36" data-k="0.964"/><circle cx="9.5" cy="3.5" r="0.36" data-k="1"/><circle cx="9.5" cy="2.5" r="0.36" data-k="1"/><circle cx="9.5" cy="4.5" r="0.08" fill-opacity="0.234" data-k="0.092"/><circle cx="9.5" cy="1.5" r="0.36" data-k="0.978"/><circle cx="10.5" cy="3.5" r="0.36" data-k="1"/><circle cx="10.5" cy="2.5" r="0.36" data-k="1"/><circle cx="10.5" cy="4.5" r="0.122" fill-opacity="0.365" data-k="0.208"/><circle cx="10.5" cy="1.5" r="0.36" data-k="0.9"/><circle cx="11.5" cy="3.5" r="0.36" data-k="1"/><circle cx="11.5" cy="2.5" r="0.36" data-k="1"/><circle cx="11.5" cy="4.5" r="0.245" fill-opacity="0.753" data-k="0.55"/><circle cx="11.5" cy="1.5" r="0.306" fill-opacity="0.945" data-k="0.721"/><circle cx="12.5" cy="3.5" r="0.36" data-k="1"/><circle cx="12.5" cy="2.5" r="0.36" data-k="1"/><circle cx="12.5" cy="4.5" r="0.36" data-k="0.981"/><circle cx="13.5" cy="3.5" r="0.36" data-k="1"/><circle cx="12.5" cy="1.5" r="0.197" fill-opacity="0.601" data-k="0.417"/><circle cx="13.5" cy="4.5" r="0.36" data-k="1"/><circle cx="13.5" cy="2.5" r="0.36" data-k="0.916"/><circle cx="12.5" cy="5.5" r="0.162" fill-opacity="0.492" data-k="0.32"/><circle cx="13.5" cy="5.5" r="0.36" data-k="1"/><circle cx="14.5" cy="3.5" r="0.36" data-k="0.995"/><circle cx="13.5" cy="1.5" r="0.065" fill-opacity="0.186" data-k="0.05"/><circle cx="14.5" cy="4.5" r="0.36" data-k="1"/><circle cx="14.5" cy="2.5" r="0.164" fill-opacity="0.497" data-k="0.325"/><circle cx="14.5" cy="5.5" r="0.36" data-k="1"/><circle cx="13.5" cy="6.5" r="0.34" data-k="0.813"/><circle cx="15.5" cy="3.5" r="0.182" fill-opacity="0.554" data-k="0.375"/><circle cx="14.5" cy="6.5" r="0.36" data-k="1"/><circle cx="15.5" cy="4.5" r="0.36" data-k="0.964"/><circle cx="15.5" cy="5.5" r="0.36" data-k="1"/><circle cx="13.5" cy="7.5" r="0.303" fill-opacity="0.935" data-k="0.712"/><circle cx="15.5" cy="6.5" r="0.36" data-k="1"/><circle cx="14.5" cy="7.5" r="0.36" data-k="1"/><circle cx="15.5" cy="7.5" r="0.36" data-k="1"/><circle cx="16.5" cy="4.5" r="0.09" fill-opacity="0.265" data-k="0.12"/><circle cx="16.5" cy="5.5" r="0.235" fill-opacity="0.722" data-k="0.524"/><circle cx="13.5" cy="8.5" r="0.36" data-k="0.902"/><circle cx="14.5" cy="8.5" r="0.36" data-k="1"/><circle cx="16.5" cy="6.5" r="0.317" fill-opacity="0.979" data-k="0.751"/><circle cx="15.5" cy="8.5" r="0.36" data-k="1"/><circle cx="16.5" cy="7.5" r="0.337" data-k="0.804"/><circle cx="13.5" cy="9.5" r="0.36" data-k="1"/><circle cx="14.5" cy="9.5" r="0.36" data-k="1"/><circle cx="16.5" cy="8.5" r="0.295" fill-opacity="0.911" data-k="0.69"/><circle cx="15.5" cy="9.5" r="0.36" data-k="1"/><circle cx="12.5" cy="9.5" r="0.276" fill-opacity="0.848" data-k="0.635"/><circle cx="13.5" cy="10.5" r="0.36" data-k="1"/><circle cx="14.5" cy="10.5" r="0.36" data-k="1"/><circle cx="16.5" cy="9.5" r="0.178" fill-opacity="0.543" data-k="0.365"/><circle cx="12.5" cy="10.5" r="0.36" data-k="1"/><circle cx="15.5" cy="10.5" r="0.319" fill-opacity="0.986" data-k="0.757"/><circle cx="13.5" cy="11.5" r="0.36" data-k="1"/><circle cx="11.5" cy="10.5" r="0.327" data-k="0.777"/><circle cx="14.5" cy="11.5" r="0.331" data-k="0.788"/><circle cx="12.5" cy="11.5" r="0.36" data-k="1"/><circle cx="11.5" cy="11.5" r="0.36" data-k="1"/><circle cx="15.5" cy="11.5" r="0.073" fill-opacity="0.211" data-k="0.071"/><circle cx="13.5" cy="12.5" r="0.265" fill-opacity="0.815" data-k="0.606"/><circle cx="12.5" cy="12.5" r="0.36" data-k="1"/><circle cx="10.5" cy="10.5" r="0.089" fill-opacity="0.263" data-k="0.118"/><circle cx="10.5" cy="11.5" r="0.36" data-k="0.924"/><circle cx="11.5" cy="12.5" r="0.36" data-k="1"/><circle cx="10.5" cy="12.5" r="0.36" data-k="1"/><circle cx="12.5" cy="13.5" r="0.174" fill-opacity="0.528" data-k="0.352"/><circle cx="11.5" cy="13.5" r="0.36" data-k="0.975"/><circle cx="9.5" cy="11.5" r="0.136" fill-opacity="0.409" data-k="0.247"/><circle cx="9.5" cy="12.5" r="0.36" data-k="0.963"/><circle cx="10.5" cy="13.5" r="0.36" data-k="1"/><circle cx="9.5" cy="13.5" r="0.36" data-k="1"/><circle cx="11.5" cy="14.5" r="0.195" fill-opacity="0.594" data-k="0.411"/><circle cx="10.5" cy="14.5" r="0.36" data-k="1"/><circle cx="8.5" cy="12.5" r="0.127" fill-opacity="0.382" data-k="0.223"/><circle cx="8.5" cy="13.5" r="0.359" data-k="0.867"/><circle cx="9.5" cy="14.5" r="0.36" data-k="1"/><circle cx="8.5" cy="14.5" r="0.36" data-k="1"/><circle cx="10.5" cy="15.5" r="0.36" data-k="0.936"/><circle cx="9.5" cy="15.5" r="0.36" data-k="1"/><circle cx="8.5" cy="15.5" r="0.36" data-k="1"/><circle cx="7.5" cy="14.5" r="0.158" fill-opacity="0.48" data-k="0.31"/><circle cx="10.5" cy="16.5" r="0.325" data-k="0.773"/><circle cx="9.5" cy="16.5" r="0.36" data-k="1"/><circle cx="7.5" cy="15.5" r="0.241" fill-opacity="0.739" data-k="0.538"/><circle cx="8.5" cy="16.5" r="0.36" data-k="1"/><circle cx="7.5" cy="16.5" r="0.279" fill-opacity="0.859" data-k="0.644"/><circle cx="10.5" cy="17.5" r="0.111" fill-opacity="0.332" data-k="0.178"/><circle cx="9.5" cy="17.5" r="0.134" fill-opacity="0.404" data-k="0.242"/><circle cx="8.5" cy="17.5" r="0.134" fill-opacity="0.404" data-k="0.242"/><circle cx="7.5" cy="17.5" r="0.105" fill-opacity="0.313" data-k="0.162"/></g><g class="hm-point"><circle cx="7.5" cy="20.5" r="0.36" data-k="1"/><circle cx="8.5" cy="20.5" r="0.36" data-k="1"/><circle cx="9.5" cy="20.5" r="0.36" data-k="1"/><circle cx="10.5" cy="20.5" r="0.36" data-k="1"/><circle cx="7.5" cy="21.5" r="0.36" data-k="1"/><circle cx="8.5" cy="21.5" r="0.36" data-k="1"/><circle cx="9.5" cy="21.5" r="0.36" data-k="1"/><circle cx="10.5" cy="21.5" r="0.36" data-k="1"/><circle cx="7.5" cy="22.5" r="0.36" data-k="1"/><circle cx="8.5" cy="22.5" r="0.36" data-k="1"/><circle cx="9.5" cy="22.5" r="0.36" data-k="1"/><circle cx="10.5" cy="22.5" r="0.36" data-k="1"/><circle cx="7.5" cy="23.5" r="0.36" data-k="0.961"/><circle cx="8.5" cy="23.5" r="0.36" data-k="0.961"/><circle cx="9.5" cy="23.5" r="0.36" data-k="0.961"/><circle cx="10.5" cy="23.5" r="0.36" data-k="0.961"/></g></svg><svg class="hero-mark-svg hm-compact" viewBox="0 0 13 18" focusable="false"><g class="hm-nodes"><circle cx="1.5" cy="5.5" r="0.281" fill-opacity="0.854" data-k="0.64"/><circle cx="2.5" cy="5.5" r="0.36" data-k="1"/><circle cx="1.5" cy="4.5" r="0.194" fill-opacity="0.563" data-k="0.383"/><circle cx="2.5" cy="4.5" r="0.36" data-k="1"/><circle cx="3.5" cy="5.5" r="0.36" data-k="0.872"/><circle cx="3.5" cy="4.5" r="0.36" data-k="1"/><circle cx="2.5" cy="3.5" r="0.358" data-k="0.864"/><circle cx="3.5" cy="3.5" r="0.36" data-k="1"/><circle cx="3.5" cy="6.5" r="0.085" fill-opacity="0.205" data-k="0.067"/><circle cx="4.5" cy="4.5" r="0.168" fill-opacity="0.477" data-k="0.307"/><circle cx="2.5" cy="2.5" r="0.124" fill-opacity="0.334" data-k="0.181"/><circle cx="4.5" cy="3.5" r="0.36" data-k="0.948"/><circle cx="3.5" cy="2.5" r="0.36" data-k="0.911"/><circle cx="4.5" cy="2.5" r="0.36" data-k="1"/><circle cx="5.5" cy="3.5" r="0.205" fill-opacity="0.602" data-k="0.418"/><circle cx="3.5" cy="1.5" r="0.094" fill-opacity="0.233" data-k="0.091"/><circle cx="5.5" cy="2.5" r="0.36" data-k="1"/><circle cx="4.5" cy="1.5" r="0.255" fill-opacity="0.768" data-k="0.564"/><circle cx="5.5" cy="1.5" r="0.36" data-k="0.872"/><circle cx="6.5" cy="2.5" r="0.36" data-k="1"/><circle cx="6.5" cy="3.5" r="0.118" fill-opacity="0.315" data-k="0.164"/><circle cx="6.5" cy="1.5" r="0.36" data-k="0.984"/><circle cx="7.5" cy="2.5" r="0.36" data-k="1"/><circle cx="7.5" cy="1.5" r="0.36" data-k="0.936"/><circle cx="7.5" cy="3.5" r="0.138" fill-opacity="0.378" data-k="0.219"/><circle cx="8.5" cy="2.5" r="0.36" data-k="1"/><circle cx="8.5" cy="1.5" r="0.317" fill-opacity="0.97" data-k="0.743"/><circle cx="8.5" cy="3.5" r="0.269" fill-opacity="0.813" data-k="0.604"/><circle cx="9.5" cy="2.5" r="0.36" data-k="1"/><circle cx="9.5" cy="3.5" r="0.36" data-k="1"/><circle cx="9.5" cy="1.5" r="0.189" fill-opacity="0.547" data-k="0.368"/><circle cx="10.5" cy="2.5" r="0.306" fill-opacity="0.936" data-k="0.713"/><circle cx="9.5" cy="4.5" r="0.294" fill-opacity="0.895" data-k="0.676"/><circle cx="10.5" cy="3.5" r="0.36" data-k="1"/><circle cx="10.5" cy="4.5" r="0.36" data-k="1"/><circle cx="9.5" cy="5.5" r="0.227" fill-opacity="0.673" data-k="0.48"/><circle cx="11.5" cy="3.5" r="0.234" fill-opacity="0.696" data-k="0.5"/><circle cx="10.5" cy="5.5" r="0.36" data-k="1"/><circle cx="11.5" cy="4.5" r="0.36" data-k="0.873"/><circle cx="11.5" cy="5.5" r="0.36" data-k="0.969"/><circle cx="9.5" cy="6.5" r="0.329" data-k="0.779"/><circle cx="10.5" cy="6.5" r="0.36" data-k="1"/><circle cx="11.5" cy="6.5" r="0.341" data-k="0.813"/><circle cx="9.5" cy="7.5" r="0.36" data-k="1"/><circle cx="10.5" cy="7.5" r="0.36" data-k="0.997"/><circle cx="8.5" cy="7.5" r="0.319" fill-opacity="0.98" data-k="0.751"/><circle cx="11.5" cy="7.5" r="0.172" fill-opacity="0.493" data-k="0.321"/><circle cx="9.5" cy="8.5" r="0.36" data-k="0.981"/><circle cx="10.5" cy="8.5" r="0.202" fill-opacity="0.591" data-k="0.408"/><circle cx="8.5" cy="8.5" r="0.36" data-k="1"/><circle cx="7.5" cy="7.5" r="0.096" fill-opacity="0.242" data-k="0.099"/><circle cx="7.5" cy="8.5" r="0.36" data-k="0.903"/><circle cx="9.5" cy="9.5" r="0.137" fill-opacity="0.375" data-k="0.217"/><circle cx="8.5" cy="9.5" r="0.36" data-k="0.889"/><circle cx="7.5" cy="9.5" r="0.36" data-k="1"/><circle cx="6.5" cy="8.5" r="0.126" fill-opacity="0.34" data-k="0.186"/><circle cx="6.5" cy="9.5" r="0.36" data-k="0.894"/><circle cx="8.5" cy="10.5" r="0.122" fill-opacity="0.326" data-k="0.173"/><circle cx="7.5" cy="10.5" r="0.36" data-k="0.991"/><circle cx="6.5" cy="10.5" r="0.36" data-k="1"/><circle cx="5.5" cy="9.5" r="0.081" fill-opacity="0.191" data-k="0.054"/><circle cx="7.5" cy="11.5" r="0.342" data-k="0.817"/><circle cx="6.5" cy="11.5" r="0.36" data-k="1"/><circle cx="5.5" cy="10.5" r="0.197" fill-opacity="0.574" data-k="0.393"/><circle cx="5.5" cy="11.5" r="0.259" fill-opacity="0.78" data-k="0.575"/><circle cx="7.5" cy="12.5" r="0.139" fill-opacity="0.383" data-k="0.224"/><circle cx="6.5" cy="12.5" r="0.164" fill-opacity="0.466" data-k="0.297"/><circle cx="5.5" cy="12.5" r="0.125" fill-opacity="0.336" data-k="0.183"/></g><g class="hm-point"><circle cx="5.5" cy="14.5" r="0.298" fill-opacity="0.907" data-k="0.687"/><circle cx="6.5" cy="14.5" r="0.338" data-k="0.805"/><circle cx="7.5" cy="14.5" r="0.337" data-k="0.803"/><circle cx="5.5" cy="15.5" r="0.355" data-k="0.854"/><circle cx="6.5" cy="15.5" r="0.36" data-k="1"/><circle cx="7.5" cy="15.5" r="0.36" data-k="0.998"/><circle cx="5.5" cy="16.5" r="0.348" data-k="0.834"/><circle cx="6.5" cy="16.5" r="0.36" data-k="0.977"/><circle cx="7.5" cy="16.5" r="0.36" data-k="0.974"/></g></svg></div>
+    </section>
+
+    <section class="home-chain" id="question-chain" aria-labelledby="chain-title" data-qc>
+      <div class="home-shell qc-layout">
+        <div class="qc-intro">
+          <h2 id="chain-title">Follow the question.</h2>
+          <p class="qc-lede">Socrates doesn’t hand you the answer. It asks the next question, until the explanation is yours.</p>
+          <p class="qc-lines"><span class="qc-line" data-qc-line="0">Start with what you think.</span><span class="qc-line" data-qc-line="1">Follow the question a little further.</span><span class="qc-line" data-qc-line="2">Keep the connection that makes it click.</span></p>
+          <div class="qc-controls">
+            <button class="home-button qc-next" type="button" data-qc-next data-qc-again="Start over" aria-controls="qc-list"><span data-qc-next-label>Ask the next question</span> <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+            <span class="qc-count" data-qc-count aria-hidden="true">1 / 4</span>
+          </div>
+          <p class="home-sr-only" data-qc-live aria-live="polite"></p>
+        </div>
+        <figure class="qc-stage">
+          <div class="qc-stage-head"><span>Learning / Earth science</span><span class="qc-badge">Illustrative session</span></div>
+          <ol class="qc-list" id="qc-list">
+            <li class="qc-step" data-qc-step="0">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Your question</p>
+              <p class="qc-question">Why is it hot in summer?</p>
+              <p class="qc-answer" data-qc-wrong><span class="qc-who">You</span><span class="home-sr-only" data-qc-revised hidden>Later revised:</span><span class="qc-answer-text">Because Earth is closer to the Sun.</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="1">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates asks</p>
+              <p class="qc-question">If that were true, what season would Australia have in July?</p>
+              <p class="qc-answer"><span class="qc-who">You</span><span class="qc-answer-text">Summer too… but it’s winter there. So distance can’t be it.</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="2">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates asks</p>
+              <p class="qc-question">Then what is different between the two halves of Earth in July?</p>
+              <p class="qc-answer"><span class="qc-who">You</span><span class="qc-answer-text">The tilt. The north leans toward the Sun, so its light arrives more directly.</span></p>
+            </li>
+            <li class="qc-step" data-qc-step="3">
+              <span class="qc-dot" aria-hidden="true"></span>
+              <p class="qc-label">Socrates asks</p>
+              <p class="qc-question">Can you say it to a friend in one sentence?</p>
+              <p class="qc-answer"><span class="qc-who">You</span><span class="qc-answer-text">Seasons come from Earth’s tilt: it changes how directly, and how long, sunlight reaches each half.</span></p>
+            </li>
+          </ol>
+          <div class="qc-map" data-qc-map>
+            <p class="qc-label">What you keep</p>
+            <svg class="qc-map-svg" viewBox="40 8 480 120" role="img" aria-labelledby="qc-map-title">
+              <title id="qc-map-title">The connections kept from this session: seasons link to axial tilt, which links to sun angle and day length. Distance is crossed out.</title>
+              <g class="qc-edges" fill="none">
+                <path class="qc-edge" data-at="2" pathLength="1" d="M80 64H224"/>
+                <path class="qc-edge" data-at="3" pathLength="1" d="M224 64L368 32"/>
+                <path class="qc-edge" data-at="3" pathLength="1" d="M224 64L368 96"/>
+                <path class="qc-edge qc-edge-cut" data-at="1" pathLength="1" d="M80 64V108"/>
+              </g>
+              <g class="qc-node qc-node-root" data-at="0"><circle cx="80" cy="64" r="6"/><text x="80" y="44" text-anchor="middle">Seasons</text></g>
+              <g class="qc-node" data-at="2"><circle cx="224" cy="64" r="5"/><text x="224" y="44" text-anchor="middle">Axial tilt</text></g>
+              <g class="qc-node" data-at="3"><circle cx="368" cy="32" r="5"/><text x="382" y="36">Sun angle</text></g>
+              <g class="qc-node" data-at="3"><circle cx="368" cy="96" r="5"/><text x="382" y="100">Day length</text></g>
+              <g class="qc-node qc-node-cut" data-at="1"><circle cx="80" cy="112" r="4"/><text x="94" y="116">Distance</text></g>
+            </svg>
+          </div>
+          <figcaption class="home-sr-only">An illustrative session, not a real learner’s transcript.</figcaption>
+        </figure>
+      </div>
     </section>
 
     <section class="home-feature" id="learning-session" aria-labelledby="feature-title" data-reveal>
       <div class="home-shell feature-layout">
-        <a class="feature-main" href="/product" aria-labelledby="feature-title">
+        <div class="feature-main" role="group" aria-labelledby="feature-title">
           <div class="feature-media">
             <div class="demo-frame">
               <div class="demo-app">
-                <div class="demo-chat">
+                <div class="demo-recall" data-recall>
                   <div class="demo-chat-head">
-                    <span class="demo-thread-title">Learning / Probability</span>
-                    <span class="demo-preview-label">Illustrative session</span>
+                    <span class="demo-thread-title">Recall / Probability</span>
+                    <span class="demo-preview-label">Illustrative card</span>
                   </div>
-                  <div class="demo-thread" data-sequence>
-                    <div class="demo-msg demo-msg--user">Why isn’t a positive test the whole story?</div>
-                    <div class="demo-msg demo-msg--tutor">
-                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
-                      <div class="demo-tutor-body">
-                        <div class="demo-tutor-name">Socrates</div>
-                        <p>If 1 in 100 people has the condition, how many is that in a group of 1,000?</p>
+                  <div class="rc-body">
+                    <div class="rc-card" data-rc-card>
+                      <div class="rc-face rc-front" id="rc-front">
+                        <p class="rc-label"><span class="rc-dot" aria-hidden="true"></span>Say it first, in your own words</p>
+                        <p class="rc-prompt">Why isn’t a positive test the whole story?</p>
+                        <p class="rc-hint">Try it out loud before you turn the card.</p>
+                      </div>
+                      <div class="rc-face rc-back" id="rc-back">
+                        <p class="rc-label"><span class="rc-dot rc-dot--open" aria-hidden="true"></span>Your explanation, from the session</p>
+                        <p class="rc-answer">If 1 in 100 people has the condition, many positives in a group of 1,000 come from the other 990. A result needs the <span class="rc-term">base rate</span> and the <span class="rc-term">false positives</span>.</p>
                       </div>
                     </div>
-                    <div class="demo-msg demo-msg--user">Ten. Some of the other 990 might test positive, too.</div>
-                    <div class="demo-msg demo-msg--tutor">
-                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
-                      <div class="demo-tutor-body">
-                        <div class="demo-tutor-name">Socrates</div>
-                        <p>Exactly. A positive result needs context: the base rate and the false positives.</p>
+                    <div class="rc-actions">
+                      <button class="rc-flip" type="button" data-rc-flip aria-controls="rc-back" aria-expanded="false" data-rc-again="Try it again"><span data-rc-flip-label>Turn the card</span></button>
+                      <div class="rc-rate" role="group" aria-label="How well did you remember it?" data-rc-rate>
+                        <button class="rc-grade" type="button" data-rc-grade="good" data-rc-note="Remembered. Leave it a little longer before the next try.">I remembered</button>
+                        <button class="rc-grade" type="button" data-rc-grade="fuzzy" data-rc-note="A bit fuzzy. Come back sooner, and explain it again.">A bit fuzzy</button>
                       </div>
+                    </div>
+                    <div class="rc-spacing" data-rc-spacing>
+                      <div class="rc-track" aria-hidden="true"><span class="rc-tick" data-at="0"></span><span class="rc-tick" data-at="1"></span><span class="rc-tick" data-at="2"></span><span class="rc-tick" data-at="3"></span><span class="rc-mark" data-rc-mark></span></div>
+                      <p class="rc-scale" aria-hidden="true"><span>Today</span><span>Soon</span><span>Later</span><span>Much later</span></p>
+                      <p class="rc-note" data-rc-note-out aria-live="polite">Each honest try decides when the idea comes back.</p>
                     </div>
                   </div>
                 </div>
@@ -265,12 +335,12 @@
             </div>
           </div>
           <div class="feature-caption">
-            <p class="feature-meta"><span>Product preview</span><span>Static illustration, not a live conversation</span></p>
+            <p class="feature-meta"><a href="/product#recall">Recall, in the product</a><span>Illustrative card, not a live conversation</span></p>
           </div>
-        </a>
+        </div>
 
         <a class="hero-plate" href="/product#knowledge-map">
-          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-plate.svg" width="760" height="760" fetchpriority="high" alt="An ink-blue grid of 100 points, with one point highlighted in orange. A paper slip reads one over one hundred."></span>
+          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-grid-v1.svg" width="760" height="760" fetchpriority="high" alt="A light gray grid of 100 points with a single black point ringed and labelled one in 100."></span>
           <div class="plate-caption"><span class="plate-index">A change of perspective</span><span>One in a hundred.</span></div>
         </a>
         <div class="feature-intro">
@@ -286,33 +356,244 @@
       </div>
     </section>
 
-    <section class="home-tagline" aria-label="Our approach">
+    <section class="home-modes m-section" id="modes" aria-labelledby="modes-title">
       <div class="home-shell">
-        <p class="home-tagline-text" data-word-reveal>Start with what you think.<br> Follow the question a little further.<br> Keep the connection that makes it click.</p>
+        <div class="m-intro">
+          <h2 id="modes-title">One tutor, five ways to learn.</h2>
+          <p>Move between modes as an idea takes shape: talk it through, test it, connect it and come back to it.</p>
+        </div>
+        <div class="deck" data-deck>
+          <div class="deck-stage">
+            <div class="deck-head">
+              <nav class="deck-nav" aria-label="Learning modes" data-deck-nav>
+                <a class="deck-pill" href="#mode-dialogue" data-deck-pill>Dialogue</a>
+                <a class="deck-pill" href="#mode-recall" data-deck-pill>Recall</a>
+                <a class="deck-pill" href="#mode-map" data-deck-pill>Knowledge map</a>
+                <a class="deck-pill" href="#mode-exam" data-deck-pill>Exam mode</a>
+                <a class="deck-pill" href="#mode-mistakes" data-deck-pill>Mistake book</a>
+              </nav>
+              <div class="deck-controls" data-deck-controls hidden>
+                <span class="deck-count" aria-hidden="true"><span data-deck-index>1</span> / 5</span>
+                <button class="deck-step" type="button" data-deck-prev aria-label="Previous mode"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                <button class="deck-step" type="button" data-deck-next aria-label="Next mode"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+              </div>
+            </div>
+            <ol class="deck-cards" data-deck-cards>
+            <li class="deck-card" id="mode-dialogue" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>01</span>Dialogue</p>
+              <h3>Think out loud, then go one step further.</h3>
+              <p>Socrates asks what you already know, follows your reasoning and offers the next question instead of the whole answer.</p>
+              <ul class="m-points"><li>Starts from your own words</li><li>Math and formulas render as you type</li><li>Follows your reasoning one step at a time</li></ul>
+              <a class="m-link" href="/product#dialogue">How dialogue works</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Physics · Entropy</span><span class="ui-tag">Illustration</span></div>
+                <div class="ui-body">
+                  <span class="ui-bubble">Can you just tell me what entropy is?</span>
+                  <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">Let’s start from what you know. A tidy room left alone: does it tend to stay tidy, or drift into mess?</span></span></span>
+                  <span class="ui-bubble">Mess. There are more ways to be messy.</span>
+                  <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">That’s the core of it. How would you count those “ways”?</span></span></span>
+                  <span class="ui-composer"><span>Reply in your own words…</span><span class="ui-send"></span></span>
+                </div>
+              </div>
+            </div>
+            </li>
+            <li class="deck-card" id="mode-recall" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>02</span>Recall</p>
+              <h3>Bring an idea back before it fades.</h3>
+              <p>Turn a good moment from a conversation into a card, then retrieve it in your own words a few days later.</p>
+              <ul class="m-points"><li>Cards drawn from your own sessions</li><li>Answer first, then compare</li><li>Return to the conversation in one tap</li></ul>
+              <a class="m-link" href="/product#recall">How recall works</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Recall · Probability</span><span class="ui-tag">Illustration</span></div>
+                <div class="ui-body">
+                  <span class="ui-row"><span class="ui-small ui-muted ui-grow">Card 3 of 8</span><span class="ui-meter ui-grow"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span></span>
+                  <span class="ui-stack"><span class="ui-flash"><span class="ui-small ui-muted">In your own words</span><span class="ui-q">Why can a reliable test still give many false alarms?</span><span class="ui-small ui-muted">Answer before you reveal.</span></span></span>
+                  <span class="ui-row"><span class="ui-btn">Reveal answer</span><span class="ui-btn ui-btn--soft">Open conversation</span></span>
+                </div>
+              </div>
+            </div>
+            </li>
+            <li class="deck-card" id="mode-map" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>03</span>Knowledge map</p>
+              <h3>See how one idea leads to the next.</h3>
+              <p>Concepts you work through become points on a map, linked by the questions that joined them.</p>
+              <ul class="m-points"><li>Connections carry across sessions</li><li>Pick up a thread from any point</li><li>Notice the gaps between topics</li></ul>
+              <a class="m-link" href="/product#knowledge-map">How the map works</a>
+            </div>
+            <div class="ui ui-map" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Knowledge map</span><span class="ui-tag">Illustration</span></div>
+                <svg viewBox="0 0 560 320" fill="none">
+                  <g stroke="#cdcdcd"><path d="M280 160 150 92M280 160l146-64M280 160l-118 92M280 160l132 88M150 92 64 168M426 96l70 82M412 248l84-70"/></g>
+                  <circle cx="280" cy="160" r="36" stroke="rgb(0 0 0 / .06)"/>
+                  <circle cx="280" cy="160" r="8" fill="#0d0d0d"/>
+                  <g fill="#fff" stroke="#8f8f8f" stroke-width="1.25"><circle cx="150" cy="92" r="5"/><circle cx="426" cy="96" r="5"/><circle cx="162" cy="252" r="5"/><circle cx="412" cy="248" r="5"/><circle cx="64" cy="168" r="4"/><circle cx="496" cy="178" r="4"/></g>
+                  <g font-size="13" font-weight="500" fill="#5d5d5d"><text x="280" y="212" text-anchor="middle" fill="#0d0d0d" font-size="14">Bayes’ theorem</text><text x="150" y="74" text-anchor="middle">Prior</text><text x="426" y="78" text-anchor="middle">Likelihood</text><text x="162" y="280" text-anchor="middle">Base rate</text><text x="412" y="276" text-anchor="middle">Evidence</text></g>
+                  <g font-size="12" fill="#8f8f8f"><text x="64" y="194" text-anchor="middle">Fractions</text><text x="496" y="204" text-anchor="middle">Sensitivity</text></g>
+                </svg>
+              </div>
+            </div>
+            </li>
+            <li class="deck-card" id="mode-exam" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>04</span>Exam mode</p>
+              <h3>Find the gap before the exam does.</h3>
+              <p>Generate a practice exam on any topic, choose the difficulty and number of questions, then submit for grading.</p>
+              <ul class="m-points"><li>Topic, difficulty and length are yours</li><li>Feedback on every answer</li><li>Missed questions go to your mistake book</li></ul>
+              <a class="m-link" href="/product#exam">How exam mode works</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Exam · Linear algebra</span><span class="ui-tag">Illustration</span></div>
+                <div class="ui-body">
+                  <span class="ui-row"><span class="ui-tag ui-tag--line">8 questions</span><span class="ui-tag ui-tag--line">Intermediate</span><span class="ui-grow"></span><span class="ui-small ui-muted">3 answered</span></span>
+                  <span class="ui-meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></span>
+                  <span class="ui-strong">4. Which pair of vectors spans the plane?</span>
+                  <span class="ui-options"><span class="ui-option">(1, 2) and (2, 4)</span><span class="ui-option on">(1, 0) and (1, 1)</span><span class="ui-option">(0, 0) and (0, 3)</span></span>
+                  <span class="ui-row"><span class="ui-grow"></span><span class="ui-btn">Submit for grading</span></span>
+                </div>
+              </div>
+            </div>
+            </li>
+            <li class="deck-card" id="mode-mistakes" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>05</span>Mistake book</p>
+              <h3>Turn a wrong answer into the next question.</h3>
+              <p>Questions you miss in quizzes and practice are collected in one place, ready to redo until they hold.</p>
+              <ul class="m-points"><li>Collected automatically</li><li>Redo with the tutor beside you</li><li>Mark a question conquered</li></ul>
+              <a class="m-link" href="/product#mistake-book">How the mistake book works</a>
+            </div>
+            <div class="ui" aria-hidden="true">
+              <div class="ui-window">
+                <div class="ui-bar"><span class="ui-dots"><i></i><i></i><i></i></span><span class="ui-title">Mistake book</span><span class="ui-tag">Illustration</span></div>
+                <div class="ui-body">
+                  <span class="ui-seg"><span class="on">All</span><span>Quiz</span><span>Practice</span><span>Conquered</span></span>
+                  <span class="ui-list">
+                    <span><span class="ui-ring"></span><span class="ui-grow">Derivative of sin(x) · cos(x)</span><span class="ui-tag">Quiz</span><span class="ui-btn ui-btn--soft">Redo</span></span>
+                    <span><span class="ui-ring"></span><span class="ui-grow">Base rate in a screening test</span><span class="ui-tag">Practice</span><span class="ui-btn ui-btn--soft">Redo</span></span>
+                    <span><span class="ui-check"></span><span class="ui-grow ui-muted">Eigenvalues of a 2×2 matrix</span><span class="ui-tag">Redone twice</span></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            </li>
+            </ol>
+            <div class="deck-end" data-deck-end>
+              <p class="deck-end-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></p>
+              <p class="deck-end-title">You’ve met all five ways to learn.</p>
+              <a class="home-text-link deck-end-link" href="/product">Explore the product <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+            </div>
+            <p class="home-sr-only" data-deck-live aria-live="polite"></p>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="home-stories" aria-labelledby="stories-title" data-reveal>
+    <section class="home-bento m-section" aria-labelledby="bento-title">
       <div class="home-shell">
-        <div class="section-head">
-          <h2 id="stories-title">Inside a learning session</h2>
-          <a class="section-link" href="/product">Explore the product</a>
+        <div class="m-intro">
+          <h2 id="bento-title">Built for real study.</h2>
+          <p>The small things that keep a hard session moving.</p>
         </div>
-        <div class="story-layout">
-          <figure class="story-visual">
-            <div class="story-media"><img src="/media/socrates-home-dialogue-photo-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Two people tracing a connection together on an open notebook."></div>
-            <figcaption>Illustrative learning scene, not a customer case study.</figcaption>
-          </figure>
-          <div>
-            <h3 class="home-editorial-title">Keep a good question going.</h3>
-            <p class="home-editorial-copy">An answer can be a beginning. Work through the part you cannot explain yet, then give yourself a reason to return.</p>
-            <div class="story-steps" data-sequence>
-              <a class="story-step" href="/product#dialogue"><span>01</span><div><h3>Put it in your own words.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-              <a class="story-step" href="/product#knowledge-map"><span>02</span><div><h3>Find the connection.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-              <a class="story-step" href="/product#recall"><span>03</span><div><h3>Come back to it.</h3></div><span><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span></a>
-            </div>
-          </div>
+        <div class="m-cards">
+          <a class="m-card m-card--wide" href="/product#dialogue">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-reply"><span class="ui-avatar"></span><span><span class="ui-name">Socrates</span><span class="ui-text">Write it with the base rate in the denominator:</span></span></span>
+              <span class="ui-row ui-row--center"><span class="ui-math"><i>P</i>(<i>A</i> | <i>B</i>) = <span class="ui-frac"><span><i>P</i>(<i>B</i> | <i>A</i>) <i>P</i>(<i>A</i>)</span><span><i>P</i>(<i>B</i>)</span></span></span></span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Math that reads like math.</h3><p>Formulas render cleanly in the conversation, so you can reason about the symbols, not the syntax.</p></div>
+          </a>
+          <a class="m-card" href="/pricing">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">Model</span>
+              <span class="ui-list">
+                <span><span class="ui-check"></span><span class="ui-grow ui-strong">Beagle</span><span class="ui-tag">Built in</span></span>
+                <span><span class="ui-ring"></span><span class="ui-grow">Your own provider</span><span class="ui-tag">Your key</span></span>
+              </span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Choose your model.</h3><p>Start with the built-in Beagle model, or match a model to the kind of thinking you want to do.</p></div>
+          </a>
+          <a class="m-card" href="/documents">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-file"><span class="ui-file-icon"></span><span class="ui-grow"><span class="ui-strong">lecture-notes.pdf</span><br><span class="ui-small ui-muted">Attached to this conversation</span></span></span>
+              <span class="ui-lines"><i></i><i class="mark"></i><i></i><i></i></span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Start from a document.</h3><p>Bring notes or a paper into the conversation instead of an empty page.</p></div>
+          </a>
+          <a class="m-card" href="/developers">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">API key</span>
+              <span class="ui-composer ui-composer--flat"><span>sk-••••••••••••</span><span class="ui-tag ui-tag--ink">Saved</span></span>
+              <span class="ui-small ui-muted">Available on Free and every paid plan.</span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Bring your own key.</h3><p>Use a provider API key when you want to manage your own model access.</p></div>
+          </a>
+          <a class="m-card" href="/privacy">
+            <div class="m-card-media"><div class="ui" aria-hidden="true"><div class="ui-window"><div class="ui-body">
+              <span class="ui-small ui-muted">Your data</span>
+              <span class="ui-list">
+                <span><span class="ui-grow">Export conversations</span><span class="ui-btn ui-btn--soft">Export</span></span>
+                <span><span class="ui-grow">Delete a session</span><span class="ui-btn ui-btn--soft">Delete</span></span>
+              </span>
+            </div></div></div></div>
+            <div class="m-card-copy"><h3>Your data stays yours.</h3><p>We do not train on your conversations. Export or delete any session from your account.</p></div>
+          </a>
         </div>
+      </div>
+    </section>
+
+
+    <section class="home-graph m-section" aria-labelledby="graph-title">
+      <div class="home-shell m-graph">
+        <div class="m-graph-copy">
+          <h2 id="graph-title">Every question leaves a trace.</h2>
+          <p>As you learn, Socrates keeps the ideas you worked through and the links between them. Come back weeks later and the thread is still there.</p>
+          <ul class="m-points"><li>Concepts you reached on your own</li><li>Links made by the questions that joined them</li><li>A starting point for the next conversation</li></ul>
+          <a class="m-link" href="/research/maps-preserve-path/">Why maps preserve the path</a>
+        </div>
+        <figure class="m-graph-stage" data-graph>
+          <svg viewBox="0 0 720 480" role="img" aria-labelledby="graph-svg-title">
+            <title id="graph-svg-title">An illustrative knowledge map: Bayes’ theorem at the centre, linked to prior, likelihood, evidence, conditional probability, base rate and false positives.</title>
+            <g>
+              <line class="kg-edge" data-a="core" data-b="cond" x1="360" y1="250" x2="360" y2="120"/>
+              <line class="kg-edge" data-a="core" data-b="prior" x1="360" y1="250" x2="196" y2="176"/>
+              <line class="kg-edge" data-a="core" data-b="like" x1="360" y1="250" x2="540" y2="170"/>
+              <line class="kg-edge" data-a="core" data-b="evid" x1="360" y1="250" x2="560" y2="336"/>
+              <line class="kg-edge" data-a="core" data-b="fp" x1="360" y1="250" x2="340" y2="392"/>
+              <line class="kg-edge" data-a="prior" data-b="base" x1="196" y1="176" x2="150" y2="320"/>
+              <line class="kg-edge" data-a="base" data-b="fp" x1="150" y1="320" x2="340" y2="392"/>
+              <line class="kg-edge" data-a="base" data-b="test" x1="150" y1="320" x2="96" y2="420"/>
+              <line class="kg-edge" data-a="fp" data-b="sens" x1="340" y1="392" x2="500" y2="430"/>
+              <line class="kg-edge" data-a="evid" data-b="sens" x1="560" y1="336" x2="500" y2="430"/>
+              <line class="kg-edge" data-a="cond" data-b="indep" x1="360" y1="120" x2="560" y2="64"/>
+              <line class="kg-edge" data-a="cond" data-b="frac" x1="360" y1="120" x2="160" y2="64"/>
+              <line class="kg-edge" data-a="like" data-b="ratio" x1="540" y1="170" x2="640" y2="250"/>
+            </g>
+            <circle class="kg-halo" cx="360" cy="250" r="44"/>
+            <circle class="kg-halo" cx="360" cy="250" r="76"/>
+            <g class="kg-node kg-node--core" data-node="core" data-why="Bayes’ theorem combines what you believed before (the prior) with how expected the evidence is (the likelihood)."><circle cx="360" cy="250" r="9"/><text x="378" y="245">Bayes’ theorem</text></g>
+            <g class="kg-node" data-node="cond" data-why="Bayes’ theorem is a rule about conditional probability: the chance of one thing, given another."><circle cx="360" cy="120" r="5.5"/><text x="360" y="102" text-anchor="middle">Conditional probability</text></g>
+            <g class="kg-node" data-node="prior" data-why="The prior is what you believed before the evidence arrived; Bayes’ theorem updates it."><circle cx="196" cy="176" r="5.5"/><text x="182" y="172" text-anchor="end">Prior</text></g>
+            <g class="kg-node" data-node="like" data-why="The likelihood asks how expected the evidence would be if the idea were true."><circle cx="540" cy="170" r="5.5"/><text x="554" y="166">Likelihood</text></g>
+            <g class="kg-node" data-node="evid" data-why="Evidence is what updates the prior; a test’s sensitivity says how reliably it produces it."><circle cx="560" cy="336" r="5.5"/><text x="574" y="340">Evidence</text></g>
+            <g class="kg-node" data-node="base" data-why="A base rate is a prior taken from the population, which is why it decides how screening results read."><circle cx="150" cy="320" r="5.5"/><text x="136" y="316" text-anchor="end">Base rate</text></g>
+            <g class="kg-node" data-node="fp" data-why="False positives come from the large group without the condition, so the base rate sets how many there are."><circle cx="340" cy="392" r="5.5"/><text x="340" y="420" text-anchor="middle">False positives</text></g>
+            <g class="kg-node kg-node--soft" data-node="sens" data-why="Sensitivity is how often a test catches real cases; false positives are the errors on the other side."><circle cx="500" cy="430" r="4"/><text x="512" y="446">Sensitivity</text></g>
+            <g class="kg-node kg-node--soft" data-node="ratio" data-why="Two likelihoods compared side by side become odds, a quick way to apply Bayes’ theorem."><circle cx="640" cy="250" r="4"/><text x="640" y="274" text-anchor="middle">Odds</text></g>
+            <g class="kg-node kg-node--soft" data-node="test" data-why="Screening tests many people at once, so a low base rate can mean many false alarms."><circle cx="96" cy="420" r="4"/><text x="96" y="446" text-anchor="middle">Screening</text></g>
+            <g class="kg-node kg-node--soft" data-node="indep" data-why="If two events are independent, knowing one doesn’t change the chance of the other."><circle cx="560" cy="64" r="4"/><text x="574" y="68">Independence</text></g>
+            <g class="kg-node kg-node--soft" data-node="frac" data-why="A conditional probability is a fraction: the cases with both, over the cases with the condition you know."><circle cx="160" cy="64" r="4"/><text x="146" y="68" text-anchor="end">Fractions</text></g>
+          </svg>
+          <p class="kg-why" data-graph-why aria-live="polite"><span class="kg-why-dot" aria-hidden="true"></span><span data-graph-why-text>Hover or focus a point to see why it is connected.</span></p>
+          <figcaption class="m-graph-legend"><span class="ui-tag ui-tag--line">Illustrative map</span></figcaption>
+        </figure>
       </div>
     </section>
 
@@ -324,11 +605,34 @@
         </div>
         <div class="home-research-layout">
           <ul class="home-research-list">
-            <li><a class="home-research-note" href="/research/memory-recall/"><span class="home-research-media"><img src="/media/socrates-research-memory-route-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Memory</span><time datetime="2026-08-12">Aug 12, 2026</time></p><h3>The route back to an idea</h3></div></a></li>
-            <li><a class="home-research-note" href="/research/explanation-evidence/"><span class="home-research-media"><img src="/media/socrates-research-explanation-evidence-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Explanation</span><time datetime="2026-07-29">Jul 29, 2026</time></p><h3>When a clear explanation becomes evidence</h3></div></a></li>
-            <li><a class="home-research-note" href="/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Practice</span><time datetime="2026-07-11">Jul 11, 2026</time></p><h3>The value of an honest pause</h3></div></a></li>
+            <li><a class="home-research-note" href="/research/memory-recall/"><span class="home-research-media"><img src="/media/socrates-research-memory-route-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Memory</span><time datetime="2026-08-12">Aug 12, 2026</time></p><h3>The route back to an idea</h3></div></a></li>
+            <li><a class="home-research-note" href="/research/explanation-evidence/"><span class="home-research-media"><img src="/media/socrates-research-explanation-evidence-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Explanation</span><time datetime="2026-07-29">Jul 29, 2026</time></p><h3>When a clear explanation becomes evidence</h3></div></a></li>
+            <li><a class="home-research-note" href="/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Practice</span><time datetime="2026-07-11">Jul 11, 2026</time></p><h3>The value of an honest pause</h3></div></a></li>
           </ul>
         </div>
+      </div>
+    </section>
+
+    <section class="home-rail m-section" aria-labelledby="rail-title" data-rail>
+      <div class="home-shell">
+        <div class="m-rail-head">
+          <div>
+            <h2 id="rail-title">Keep reading</h2>
+            <p>More notes, guides and the ideas behind the product.</p>
+          </div>
+          <div class="m-rail-controls">
+            <button class="m-rail-btn" type="button" data-rail-prev aria-controls="rail-track" aria-label="Previous cards"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 8H3M7 4.1 3.1 8 7 11.9"/></svg></button>
+            <button class="m-rail-btn" type="button" data-rail-next aria-controls="rail-track" aria-label="Next cards"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></svg></button>
+          </div>
+        </div>
+        <ul class="m-rail" id="rail-track" tabindex="0" aria-label="Further reading">
+          <li><a class="m-rail-card" href="/research/maps-preserve-path/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M14 70c18-4 22-30 40-30s20 22 36 18 16-30 18-40"/><circle class="dot" cx="14" cy="70" r="3"/><circle class="dot" cx="54" cy="40" r="3"/><circle class="dot" cx="90" cy="58" r="3"/><circle class="ink" cx="108" cy="18" r="4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Knowledge mapping</span><time datetime="2026-06-24">Jun 24, 2026</time></p><h3>Maps that preserve the path</h3></div></a></li>
+          <li><a class="m-rail-card" href="/research/what-learners-keep/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><rect x="30" y="18" width="60" height="40" rx="6"/><rect x="24" y="28" width="72" height="44" rx="7"/><rect class="inkline" x="18" y="40" width="84" height="38" rx="8"/><path d="M30 54h40M30 64h26"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Practice</span><time datetime="2026-04-30">Apr 30, 2026</time></p><h3>What learners keep after a session</h3></div></a></li>
+          <li><a class="m-rail-card" href="/research/tutor-curiosity/"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M24 20h72a8 8 0 0 1 8 8v28a8 8 0 0 1-8 8H52l-14 12V64H24a8 8 0 0 1-8-8V28a8 8 0 0 1 8-8Z"/><path d="M53 36a7 7 0 1 1 10 6c-2 1-3 3-3 5"/><circle class="ink" cx="60" cy="54" r="2.4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Tutoring</span><time datetime="2026-02-18">Feb 18, 2026</time></p><h3>When a tutor should say it is unsure</h3></div></a></li>
+          <li><a class="m-rail-card" href="/learn"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M60 26c-10-8-26-9-40-6v48c14-3 30-2 40 6 10-8 26-9 40-6V20c-14-3-30-2-40 6Z"/><path d="M60 26v48"/><path class="ink" d="M68 34h22v3H68zM68 44h18v3H68z"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Learn</span><span>Tutorials</span></p><h3>Tutorials, lessons and worked examples</h3></div></a></li>
+          <li><a class="m-rail-card" href="/principles"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><circle cx="60" cy="45" r="30"/><circle cx="60" cy="45" r="18"/><path d="M60 9v8M60 73v8M24 45h8M88 45h8"/><circle class="ink" cx="60" cy="45" r="4"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Principles</span><span>How we build</span></p><h3>The principles we hold to</h3></div></a></li>
+          <li><a class="m-rail-card" href="/documents"><span class="m-rail-art"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M38 12h32l16 16v50H38z"/><path d="M70 12v16h16"/><path d="M46 40h30M46 48h30M46 64h22"/><path class="ink" d="M44 54h34v5H44z"/></svg></span><div class="m-rail-copy"><p class="m-rail-meta"><span>Documents</span><span>Reference</span></p><h3>Long-form documentation</h3></div></a></li>
+        </ul>
       </div>
     </section>
 
@@ -439,8 +743,9 @@
     <section class="home-cta" aria-labelledby="cta-title">
       <div class="home-shell">
         <div class="home-cta-inner">
-          <h2 id="cta-title">Start free.<br> Add structure when you need it.</h2>
-          <p>The Free tier is permanently free. No card, no trial clock.</p>
+          <p class="cta-kicker"><span class="cta-thread" aria-hidden="true"><i></i><i></i><i></i></span><span>One last question</span></p>
+          <h2 id="cta-title">What will you understand next?</h2>
+          <p>Bring it to Socrates. The Free tier is permanently free: no card, no trial clock. Add structure when you need it.</p>
           <div class="home-cta-actions">
             <a class="home-button" href="https://app.topodrive.top">Try Socrates <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
             <a class="home-text-link" href="/pricing">Compare plans <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
@@ -453,10 +758,6 @@
 
   <footer class="site-footer">
     <div class="site-chrome-shell site-footer-inner">
-      <div class="site-footer-lead">
-        <a class="site-brand" href="/" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="site-brand-label">Socrates</span></a>
-        <p class="site-footer-tagline">Built for people who want to understand.</p>
-      </div>
       <div class="site-footer-grid">
         <details class="site-footer-col" open>
           <summary class="site-footer-summary">Learn &amp; practice</summary>
@@ -541,18 +842,20 @@
         </details>
       </div>
       <div class="site-footer-bottom">
+        <nav class="site-footer-social" aria-label="Social links"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a></nav>
         <p class="site-footer-legal">© 2026 Socrates</p>
         <nav class="site-footer-policies" aria-label="Legal"><a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a></nav>
-        <nav class="site-footer-social" aria-label="Social links"><a href="https://x.com/topodrive" target="_blank" rel="me noopener" aria-label="X"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a href="https://github.com/topodrive" target="_blank" rel="me noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener" aria-label="YouTube"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a></nav>
         <a class="site-locale site-footer-locale" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M3.2 10h13.6M10 3c2.2 2.3 3.2 4.6 3.2 7s-1 4.7-3.2 7c-2.2-2.3-3.2-4.6-3.2-7S7.8 5.3 10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="locale-label">中文</span></a>
       </div>
+      <div class="site-wordmark" aria-hidden="true" data-wordmark><img src="/media/socrates-wordmark-v1.svg" width="4168" height="738" alt="" loading="lazy" decoding="async"><span class="site-wordmark-dot"></span></div>
     </div>
   </footer>
 
-  <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261023u4"></script>
-  <script src="/home-field.js?cb=20261031e1"></script>
-  <script src="/chrome.js?cb=20261031e1"></script>
-  <script src="/motion.js?cb=20261031e1"></script>
+  <script src="/site.js?cb=20261101q1"></script>
+  <script src="/home-question.js?cb=20261101q1"></script>
+  <script src="/modules.js?cb=20261101q1"></script>
+  <script src="/hero-mark.js?cb=20261101q1"></script>
+  <script src="/chrome.js?cb=20261101q1"></script>
+  <script src="/motion.js?cb=20261101q1"></script>
 </body>
 </html>

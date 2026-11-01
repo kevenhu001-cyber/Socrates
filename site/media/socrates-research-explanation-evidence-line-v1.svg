@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" fill="none">
+  <title>When a clear explanation becomes evidence</title>
+  <desc>Gray bars for lines of an explanation; one line is struck through in black and rewritten underneath, joined by a short thread.</desc>
+  <rect width="1672" height="941" fill="#F3F3F3"/>
+  <rect x="386" y="150" width="900" height="640" rx="28" fill="#FFFFFF"/>
+  <rect x="386.5" y="150.5" width="899" height="639" rx="27.5" stroke="#000" stroke-opacity=".06"/>
+  <rect x="486" y="251" width="620" height="18" rx="9" fill="#E3E3E3"/>
+  <rect x="486" y="343" width="540" height="18" rx="9" fill="#E3E3E3"/>
+  <rect x="486" y="435" width="600" height="18" rx="9" fill="#E3E3E3"/>
+  <rect x="486" y="619" width="480" height="18" rx="9" fill="#E3E3E3"/>
+  <circle cx="456.0" cy="444.0" r="11.2" fill="#0D0D0D"/>
+  <path d="M474.0 444.0 L1106.0 444.0" stroke="#0D0D0D" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="486" y="527" width="560" height="18" rx="9" fill="#0D0D0D"/>
+  <circle cx="456.0" cy="536.0" r="11.2" fill="none" stroke="#0D0D0D" stroke-width="4"/>
+  <path d="M456.0 451.0 L456.0 529.0" stroke="#0D0D0D" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

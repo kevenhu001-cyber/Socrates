@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" fill="none">
+  <title>The route back to an idea</title>
+  <desc>A row of gray points on a line; a black route leaves one point, loops ahead and returns to an earlier idea.</desc>
+  <rect width="1672" height="941" fill="#F3F3F3"/>
+  <rect x="236" y="170" width="1200" height="600" rx="28" fill="#FFFFFF"/>
+  <rect x="236.5" y="170.5" width="1199" height="599" rx="27.5" stroke="#000" stroke-opacity=".06"/>
+  <path d="M356.0 470.0 L1316.0 470.0" stroke="#CDCDCD" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="356.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="476.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="596.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="716.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="836.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="956.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="1076.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="1196.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="1316.0" cy="470.0" r="11.2" fill="#CDCDCD"/>
+  <path d="M476 470 C 596 300, 956 300, 1076 470 S 836 640, 716 470" stroke="#0D0D0D" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="476.0" cy="470.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="1076.0" cy="470.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="716.0" cy="470.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="716.0" cy="470.0" r="24" fill="none" stroke="#0D0D0D" stroke-opacity=".2" stroke-width="3.0"/>
+</svg>

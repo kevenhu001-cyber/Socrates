@@ -15,11 +15,13 @@ for (const prefix of ['', '/zh']) {
       const geometry = await page.evaluate(() => {
         const visible = (node) => node.checkVisibility();
         const text = [...document.querySelectorAll('main h1, main h2, main h3, main p:not(.home-sr-only), .demo-node')].filter(visible);
-        const demo = document.querySelector('.demo-tutor-body p');
+        const demo = document.querySelector('.rc-prompt');
         const hero = document.querySelector('.home-hero').getBoundingClientRect();
         const art = document.querySelector('.hero-art').getBoundingClientRect();
         const ask = document.querySelector('.hero-ask .ask-box').getBoundingClientRect();
         const title = document.querySelector('h1').getBoundingClientRect();
+        const mark = document.querySelector('.hero-mark').getBoundingClientRect();
+        const glyph = [...document.querySelectorAll('.hero-mark-svg')].find(visible);
         const images = [...document.querySelectorAll('main img')].map((image) => image.getAttribute('src')).filter((src) => src !== '/logo.png');
         const map = document.querySelector('.demo-map-canvas').getBoundingClientRect();
         return {
@@ -28,14 +30,30 @@ for (const prefix of ['', '/zh']) {
           artTop: art.top,
           artRatio: art.width / art.height,
           askBottom: ask.bottom,
+          suggestionsBottom: document.querySelector('.hero-ask .ask-suggestions').getBoundingClientRect().bottom,
           askCenter: ask.x + ask.width / 2,
           titleCenter: title.x + title.width / 2,
+          titleLeft: title.left,
+          askLeft: ask.left,
+          askRight: ask.right,
+          mark: { left: mark.left, right: mark.right, top: mark.top, bottom: mark.bottom, center: mark.x + mark.width / 2, height: mark.height },
+          markNodes: glyph.querySelectorAll('.hm-nodes circle').length,
+          // Round 10: the point is a square block of the same halftone dots.
+          markPoint: [...glyph.querySelectorAll('.hm-point circle')].map((node) => ({ x: Number(node.getAttribute('cx')), y: Number(node.getAttribute('cy')), r: Number(node.getAttribute('r')) })),
+          markLargest: Math.max(...[...glyph.querySelectorAll('circle')].map((node) => Number(node.getAttribute('r')))),
+          markNodeMax: Math.max(...[...glyph.querySelectorAll('.hm-nodes circle')].map((node) => Number(node.getAttribute('r')))),
+          // Every stroke dot sits on a cell centre of the hero's dot field.
+          markOffGrid: [...glyph.querySelectorAll('.hm-nodes circle')].filter((node) => [node.getAttribute('cx'), node.getAttribute('cy')].some((v) => Math.abs(Number(v) - .5 - Math.round(Number(v) - .5)) > 1e-6)).length,
+          markCell: mark.width / glyph.viewBox.baseVal.width,
+          markCellY: mark.height / glyph.viewBox.baseVal.height,
+          fieldSize: getComputedStyle(document.querySelector('.hero-mark'), '::before').backgroundSize,
           titleBottom: title.bottom,
+          titleTop: title.top,
           askTop: ask.top,
           background: getComputedStyle(document.body).backgroundColor,
           radius: parseFloat(getComputedStyle(document.querySelector('.ask-box')).borderRadius),
           featureTop: document.querySelector('.home-feature').getBoundingClientRect().top,
-          questionSize: parseFloat(getComputedStyle(document.querySelector('.demo-msg--user')).fontSize),
+          questionSize: parseFloat(getComputedStyle(document.querySelector('.rc-answer')).fontSize),
           tutorSize: parseFloat(getComputedStyle(demo).fontSize),
           clippedText: text.filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => `${node.className}: ${node.textContent.trim()}`),
           clippedNodes: [...document.querySelectorAll('.demo-node')].some((node) => { const box = node.getBoundingClientRect(); return box.left < map.left - 1 || box.right > map.right + 1; }),
@@ -45,20 +63,52 @@ for (const prefix of ['', '/zh']) {
       });
       assert.equal(geometry.width, width);
       assert.ok(geometry.askBottom < 700, 'the question can be submitted from the first viewport');
-      assert.ok(Math.abs(geometry.askCenter - width / 2) < 1);
-      assert.ok(Math.abs(geometry.titleCenter - width / 2) < 1);
+      if (width >= 1024) {
+        // Round 7: desktop pairs the question (left) with the network
+        // question mark (right), which takes roughly half the screen.
+        assert.ok(Math.abs(geometry.titleLeft - geometry.askLeft) < 1, 'title and composer share one left edge');
+        assert.ok(geometry.mark.left >= geometry.askRight, 'the mark sits beside the question entry, never over it');
+        assert.ok(geometry.mark.center > width / 2 && geometry.mark.right <= width, 'the mark owns the right half');
+        assert.ok(geometry.mark.height >= 400, 'the mark is the hero’s large brand object');
+        assert.ok(geometry.mark.top < geometry.askTop && geometry.mark.bottom > geometry.askBottom - 40, 'mark and question are composed in one band');
+      } else {
+        assert.ok(Math.abs(geometry.askCenter - width / 2) < 1);
+        assert.ok(Math.abs(geometry.titleCenter - width / 2) < 1);
+        if (width > 760) assert.ok(geometry.mark.bottom <= geometry.titleTop + 1, 'tablets show the smaller mark above the title');
+        else assert.ok(geometry.mark.top >= geometry.suggestionsBottom + 16, 'phones keep the question entry first and show the mark after the starters');
+        assert.ok(Math.abs(geometry.mark.center - width / 2) < 1);
+      }
+      // Round 8: the mark is written in the hero's own dot field.
+      assert.ok(geometry.markNodes >= 50 && geometry.markNodes <= 140, 'the mark is 50-140 field dots');
+      assert.equal(geometry.markOffGrid, 0, 'every dot of the mark is a dot of the field');
+      assert.ok(Math.abs(geometry.markCell - geometry.markCellY) < .01, 'square cells');
+      assert.equal(geometry.fieldSize, `${geometry.markCell}px ${geometry.markCell}px`, 'the field repeats at exactly the mark’s cell size');
+      assert.ok(geometry.markCell >= 12 && geometry.markCell <= 20, 'field spacing stays between 12 and 20px');
+      // Round 10: no solid disc. The point is Geist's square period sampled
+      // on the same cells: at least a 3 x 3 block, on the field, with dots no
+      // larger than the stroke's (at most .36 of a cell).
+      assert.ok(geometry.markPoint.length >= 9, 'the point is a block of field dots');
+      assert.ok(geometry.markPoint.every((dot) => [dot.x, dot.y].every((v) => Math.abs(v - .5 - Math.round(v - .5)) < 1e-6)), 'every dot of the point is a dot of the field');
+      assert.equal(new Set(geometry.markPoint.map((dot) => dot.x)).size, new Set(geometry.markPoint.map((dot) => dot.y)).size, 'the block is square, like Geist’s period');
+      assert.ok(Math.abs(Math.max(...geometry.markPoint.map((dot) => dot.r)) - geometry.markNodeMax) < 1e-6, 'the point uses the stroke’s own dot size');
+      assert.ok(geometry.markLargest <= .36 + 1e-6, 'no dot of the mark is larger than .36 of a cell');
+      assert.equal(await page.locator('.hero-mark .hm-dot').count(), 0, 'no separate solid point');
+      assert.equal(await page.locator('.hero-mark .hm-point').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1, 'one point is shown');
+      assert.equal(await page.locator('.hero-mark').getAttribute('aria-hidden'), 'true');
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
       assert.ok(geometry.artTop >= geometry.featureTop, 'artwork belongs to the cards below the question');
       assert.ok(Math.abs(geometry.artRatio - 1) < .01, 'the diagram keeps its square composition');
-      // Ink-on-paper redesign: the page ground is the flat warm paper token.
-      assert.equal(geometry.background, 'rgb(248, 247, 243)');
+      // OpenAI-style redesign: the page ground is pure white.
+      assert.equal(geometry.background, 'rgb(255, 255, 255)');
       assert.ok(geometry.radius >= 18, 'the composer retains the rounded reference silhouette');
       assert.equal(await page.locator('[data-ask-form]').count(), 1, 'the homepage has one question entry at the top');
       assert.ok(geometry.tutorSize >= 16 && geometry.questionSize >= 15, 'preview copy uses actual reading sizes, not container-scaled pixels');
       assert.deepEqual(geometry.clippedText, []);
       assert.equal(geometry.clippedNodes, false, 'both connected ideas fit in the preview');
       assert.equal(new Set(geometry.images).size, geometry.images.length, 'do not reuse a cover in multiple sections');
-      assert.equal(geometry.images.length, 6, 'one original diagram, two learning scenes and three source-backed research covers');
+      // The session story is now a drawn, scroll-driven product view, so one
+      // learning photograph remains beside the original diagram and covers.
+      assert.equal(geometry.images.length, 5, 'one original diagram, one learning scene and three source-backed research covers');
       assert.ok(geometry.editorialRatios.every((ratio) => ratio >= 1.3 && ratio <= 1.8), 'editorial images stay landscape, not an intrinsic 941px-tall poster');
       assert.equal(await page.locator('.home-hero .hero-art, .home-hero .hero-actions, .home-hero em').count(), 0, 'the first screen stays focused on the question');
       assert.equal(await page.locator('.hero-ask .ask-chip').count(), 5);
@@ -66,26 +116,31 @@ for (const prefix of ['', '/zh']) {
       assert.equal(await page.locator('.demo-rail, .demo-live, .demo-compose, .demo-suggestions').count(), 0, 'remove tiny navigation and controls that imply a live session');
       assert.match(await page.locator('.feature-meta').innerText(), /not a live conversation|并非实时对话/);
       assert.equal(await page.locator('.feature-main').getAttribute('aria-labelledby'), 'feature-title');
-      assert.equal(await page.locator('.demo-msg').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 4, 'phones keep the learner’s correction, not just an unanswered tutor question');
+      // The preview is now a recall card: the prompt is in view, the learner's
+      // own explanation is one turn away and the rating follows it.
+      assert.ok(await page.locator('.rc-prompt').isVisible(), 'phones show the recall prompt, not a cropped card');
+      assert.equal(await page.locator('[data-rc-flip]').isVisible(), true, 'the card can be turned on every width');
+      assert.equal(await page.locator('.rc-grade').count(), 2);
+      assert.match(await page.locator('.rc-back').textContent(), /990/, 'the back keeps the learner’s explanation of the base rate');
       assert.equal(await page.locator('[data-art], .feature-rail').count(), 0, 'no generated gradient fields or competing story rail');
-      // The one canvas is the hero's decorative ink field: hidden from assistive
-      // technology, never interactive, and painted under the question entry.
-      assert.equal(await page.locator('canvas').count(), 1);
-      assert.equal(await page.locator('.home-hero [data-hero-field][aria-hidden="true"] canvas').count(), 1);
-      assert.equal(await page.locator('.hero-field').evaluate((node) => getComputedStyle(node).pointerEvents), 'none');
+      // Reduced motion (this suite's default) shows the finished SVG mark and
+      // never creates the animated canvas; nothing sits behind the question.
+      assert.equal(await page.locator('canvas, [data-hero-field]').count(), 0);
+      assert.equal(await page.locator('.hero-mark-svg:visible').count(), 1, 'one finished mark for this width');
       assert.ok(await page.locator('.hero-ask .ask-box').evaluate((box) => {
         const rect = box.getBoundingClientRect();
         return box.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
-      }), 'the artwork never covers the question entry');
+      }), 'nothing covers the question entry');
       assert.equal(await page.locator('.hero-plate img').getAttribute('loading'), null, 'the main artwork is not lazy-loaded');
       assert.equal(await page.locator('.hero-plate img').getAttribute('fetchpriority'), 'high');
       assert.match(await page.locator('#askInputHero').getAttribute('aria-describedby'), /ask-handoff/);
-      assert.equal(await page.locator('.story-layout').count(), 1);
       assert.equal(await page.locator('.home-research-list li').count(), 3);
       assert.equal(await page.locator('.home-research img').count(), 3);
-      assert.equal(await page.locator('.home-stories .card-grid, .home-teams .card-grid').count(), 0);
+      assert.equal(await page.locator('.home-teams .card-grid').count(), 0);
+      // Round 8: the scroll story repeated the question chain and the deck.
+      assert.equal(await page.locator('.home-stories, [data-story]').count(), 0);
       assert.equal(await page.locator('.learning-layout').count(), 1);
-      assert.match(await page.locator('.home-stories figcaption').innerText(), /not a customer case study|并非真实客户案例/);
+      assert.match(await page.locator('.qc-stage figcaption').textContent(), /not a real learner’s transcript|并非真实学习者的记录/);
     });
   }
 
@@ -130,7 +185,7 @@ for (const prefix of ['', '/zh']) {
     });
   }
 
-  test(`${path}: normal-motion sections reveal and the story remains keyboard-navigable`, async (t) => {
+  test(`${path}: normal-motion sections reveal and the mode links remain keyboard-navigable`, async (t) => {
     const context = await site.browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
     t.after(() => context.close());
     await context.route('https://**/*', (route) => route.abort());
@@ -139,11 +194,14 @@ for (const prefix of ['', '/zh']) {
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(site.baseURL + path);
     await page.locator('[data-consent-choice="essential"]').click();
-    for (const selector of ['.home-news', '.home-stories', '.home-research', '.home-teams']) {
+    for (const selector of ['.home-news', '.home-research', '.home-teams']) {
       await page.locator(selector).scrollIntoViewIfNeeded();
       await page.waitForFunction((selector) => getComputedStyle(document.querySelector(selector)).opacity === '1', selector);
     }
-    await page.locator('.story-step').first().focus();
+    // Back at the start of the deck the first mode's link is in front.
+    await page.evaluate(() => scrollTo({ top: document.querySelector('[data-deck]').getBoundingClientRect().top + scrollY, behavior: 'instant' }));
+    await page.waitForFunction(() => !document.querySelector('#mode-dialogue').inert);
+    await page.locator('#mode-dialogue a.m-link').focus();
     await page.keyboard.press('Enter');
     await page.waitForURL(`${site.baseURL}${prefix}/product#dialogue`);
     await page.waitForFunction(() => {
@@ -184,7 +242,8 @@ for (const prefix of ['', '/zh']) {
     assert.equal(await page.locator('[data-ask-chip]').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 0);
     assert.ok(await page.locator('.hero-ask .ask-chip--link').isVisible());
     assert.equal(await page.locator('.home-research-note').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 3);
-    assert.equal(await page.locator('.story-step').count(), 3);
+    assert.equal(await page.locator('.deck-card a.m-link').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 5);
+    assert.ok(await page.locator('.deck-end-link').isVisible(), 'the deck closes on the way into the product');
     assert.equal(await page.locator('.site-footer-grid a').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 36);
     const question = prefix ? '不使用脚本，也能带着问题开始。' : 'A question from a browser without JavaScript.';
     await page.locator('#askInputHero').fill(question);
@@ -208,7 +267,7 @@ test('home translations share structure, useful deep links and published researc
     const twin = await readFile(new URL(`../site/${twinPath}`, import.meta.url), 'utf8');
     assert.ok(source.includes(`href="https://topodrive.top/${twinPath}"`), 'each locale advertises its actual Markdown twin');
     assert.match(twin, i === 0 ? /# What can I help you understand\?/ : /# 有什么可以帮忙的？/);
-    assert.ok(!source.includes('/home-aurora.js'), 'retired particle and gradient code is not loaded');
+    assert.ok(!source.includes('/home-aurora.js') && !source.includes('/home-field.js'), 'retired particle, gradient and canvas code is not loaded');
     assert.ok(!source.includes('href="/site.css'), 'homepage content has one canonical stylesheet');
     const index = await readFile(new URL(`../site/${prefix}research.html`, import.meta.url), 'utf8');
     const homeNotes = [...source.matchAll(/class="home-research-note" href="([^"]+)"[\s\S]*?<time datetime="([^"]+)"[\s\S]*?<h3>([^<]+)<\/h3>/g)];

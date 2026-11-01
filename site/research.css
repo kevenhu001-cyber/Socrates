@@ -5,6 +5,10 @@
 .research-toolbar h2 { font-size: 18px; font-weight: 500; line-height: 1.5; letter-spacing: -.02em; }
 .research-count { color: var(--content-muted); font-size: 12px; line-height: 1.6; text-align: right; font-variant-numeric: tabular-nums; }
 .research-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+/* locale.js marks the root in <head> when scripts run, so the filter row
+   holds its place from the first paint instead of appearing when
+   research-index.js runs and pushing the list down (CLS 0.061 at 390). */
+[data-site-js] .research-filters[hidden] { display: flex; }
 .research-filters button { min-height: 44px; padding: 10px 18px; border: 1px solid var(--content-line); border-radius: 22px; background: #fff; color: var(--content-ink); font: inherit; font-size: 13px; line-height: 1.5; cursor: pointer; letter-spacing: -0.01em; }
 .research-filters button:hover { background: #f7f7f7; color: #111; border-color: #d0d0d0; }
 .research-filters button[aria-pressed="true"] { border-color: var(--content-ink); background: var(--content-ink); color: #fff; font-weight: 500; }
@@ -48,7 +52,7 @@
   .research-about { grid-template-columns: minmax(0, 1fr); gap: 24px; }
 }
 @media (max-width: 560px) {
-  .research-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .research-filters, [data-site-js] .research-filters[hidden] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .research-filters button { padding-inline: 8px; white-space: nowrap; }
 }
 @media (max-width: 380px) {

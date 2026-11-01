@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1448" height="1086" viewBox="0 0 1448 1086" fill="none">
+  <title>One kit, more than one learner</title>
+  <desc>Three black points above six gray cards; each point links to its own card and all three share one outlined card.</desc>
+  <rect width="1448" height="1086" fill="#F3F3F3"/>
+  <rect x="164" y="163" width="1120" height="760" rx="28" fill="#FFFFFF"/>
+  <rect x="164.5" y="163.5" width="1119" height="759" rx="27.5" stroke="#000" stroke-opacity=".06"/>
+  <rect x="344" y="503" width="220" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="372" y="543" width="110" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="372" y="575" width="160" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="604" y="503" width="220" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="632" y="543" width="110" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="632" y="575" width="160" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="864" y="503" width="220" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="892" y="543" width="110" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="892" y="575" width="160" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="344" y="683" width="220" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="372" y="723" width="110" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="372" y="755" width="160" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="604" y="683" width="220" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="632" y="723" width="110" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="632" y="755" width="160" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="864" y="683" width="220" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="892" y="723" width="110" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="892" y="755" width="160" height="12" rx="6" fill="#E3E3E3"/>
+  <path d="M484.0 323.0 L454.0 503.0" stroke="#CDCDCD" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M484.0 323.0 L714.0 683.0" stroke="#0D0D0D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M724.0 323.0 L714.0 503.0" stroke="#CDCDCD" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M724.0 323.0 L714.0 683.0" stroke="#0D0D0D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M964.0 323.0 L974.0 503.0" stroke="#CDCDCD" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M964.0 323.0 L714.0 683.0" stroke="#0D0D0D" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="484.0" cy="323.0" r="19.2" fill="#0D0D0D"/>
+  <circle cx="724.0" cy="323.0" r="19.2" fill="#0D0D0D"/>
+  <circle cx="964.0" cy="323.0" r="19.2" fill="#0D0D0D"/>
+  <rect x="604.75" y="683.75" width="218.5" height="138.5" rx="19.25" stroke="#0D0D0D" stroke-width="3"/>
+</svg>

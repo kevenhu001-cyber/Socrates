@@ -27,7 +27,8 @@ for (const path of ['/', '/zh/']) {
           frame: rect('.feature-media'),
           map: rect('.demo-map'),
           nodesFit: nodes.every((node) => node.left >= map.left - 1 && node.right <= map.right + 1),
-          messages: [...document.querySelectorAll('.demo-msg')].filter((node) => node.checkVisibility()).length,
+          card: rect('.rc-card'),
+          flip: rect('[data-rc-flip]'),
           newsColumns: getComputedStyle(document.querySelector('.news-grid')).gridTemplateColumns.split(' ').length,
         };
       });
@@ -38,7 +39,8 @@ for (const path of ['/', '/zh/']) {
       assert.ok(layout.composer.bottom < 400, 'the composer stays in the first viewport on phones');
       assert.ok(layout.composer.height <= 100, 'the mobile composer matches the compact reference');
       assert.ok(Math.abs(layout.composer.x + layout.composer.width / 2 - width / 2) < 1);
-      assert.equal(layout.messages, 4, 'the learner correction remains visible');
+      assert.ok(layout.card.x >= layout.frame.x && layout.card.right <= layout.frame.right + 1 && layout.card.height > 0, 'the recall card fits inside the preview');
+      assert.ok(layout.flip.bottom <= layout.frame.bottom && layout.flip.height >= 36, 'the turn control stays in the preview at a touch size');
       assert.ok(layout.nodesFit);
       assert.ok(layout.map.bottom <= layout.frame.bottom + 1);
       assert.equal(layout.newsColumns, 1);
@@ -52,7 +54,7 @@ for (const path of ['/', '/zh/']) {
     });
   }
 
-  test(`${path}: desktop centers the question above a wide preview and supporting card`, async (t) => {
+  test(`${path}: desktop pairs the question with the brand mark above a wide preview and supporting card`, async (t) => {
     const page = await sitePage(site, t, path, 1440);
     const geometry = await page.evaluate(() => {
       const composer = document.querySelector('.hero-ask .ask-box').getBoundingClientRect();
@@ -60,7 +62,10 @@ for (const path of ['/', '/zh/']) {
       const intro = document.querySelector('.feature-intro').getBoundingClientRect();
       const preview = document.querySelector('.feature-main').getBoundingClientRect();
       return {
-        centered: Math.abs(composer.x + composer.width / 2 - innerWidth / 2) < 1,
+        // Round 7: the question sits in the left column, the network
+        // question mark in the right one.
+        leftColumn: composer.right <= innerWidth / 2 + 40 && Math.abs(composer.left - document.querySelector('h1').getBoundingClientRect().left) < 1,
+        markBeside: document.querySelector('.hero-mark').getBoundingClientRect().left >= composer.right,
         composerWidth: composer.width,
         composerBottom: composer.bottom,
         artBelowQuestion: art.top > composer.bottom,
@@ -71,21 +76,21 @@ for (const path of ['/', '/zh/']) {
         previewWidth: preview.width,
         sheetColour: getComputedStyle(document.querySelector('.feature-media')).backgroundColor,
         groundColour: getComputedStyle(document.querySelector('.home-feature')).backgroundColor,
-        tutorSize: parseFloat(getComputedStyle(document.querySelector('.demo-tutor-body p')).fontSize),
+        tutorSize: parseFloat(getComputedStyle(document.querySelector('.rc-prompt')).fontSize),
       };
     });
-    assert.ok(geometry.centered);
-    assert.ok(geometry.composerWidth >= 880 && geometry.composerWidth <= 1056);
+    assert.ok(geometry.leftColumn && geometry.markBeside);
+    // OpenAI-style hero: a 720-800px composer under a medium 40px question.
+    assert.ok(geometry.composerWidth >= 720 && geometry.composerWidth <= 800);
     assert.ok(geometry.composerBottom < 600);
-    // landing-page-design B1/B5: the hero title is Heading 1 (text-6xl, 60px).
-    assert.ok(geometry.titleSize >= 56 && geometry.titleSize <= 64);
+    assert.ok(geometry.titleSize >= 36 && geometry.titleSize <= 44);
     assert.ok(geometry.artBelowQuestion && geometry.artBesidePreview);
     assert.ok(geometry.previewBeforeIntro, 'cards enter the page before the longer product copy');
     assert.ok(geometry.previewRatio >= 2.3 && geometry.previewRatio <= 2.4 && geometry.previewWidth >= 650);
     assert.equal(geometry.groundColour, 'rgba(0, 0, 0, 0)', 'the feature section continues the white page');
     assert.ok(geometry.tutorSize >= 16);
     assert.equal(await page.locator('[data-art], .feature-rail').count(), 0);
-    assert.equal(await page.locator('canvas').count(), 1, 'only the decorative hero ink field draws on a canvas');
+    assert.equal(await page.locator('canvas').count(), 0, 'reduced motion never creates the animated canvas; the static mark stands in');
     assert.equal(await page.locator('.site-footer-grid').evaluate((grid) => getComputedStyle(grid).gridTemplateColumns.split(' ').length), 5);
     assert.equal(await page.locator('details.site-footer-col[open]').count(), 5);
     assert.ok(!(await page.locator('.site-footer-summary').first().isVisible()));

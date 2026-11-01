@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" fill="none">
+  <title>Questions that narrow</title>
+  <desc>A line of circles, each smaller than the one before, ending in a single black point.</desc>
+  <rect width="1672" height="941" fill="#F3F3F3"/>
+  <rect x="236" y="220" width="1200" height="500" rx="28" fill="#FFFFFF"/>
+  <rect x="236.5" y="220.5" width="1199" height="499" rx="27.5" stroke="#000" stroke-opacity=".06"/>
+  <path d="M366.0 470.0 L1306.0 470.0" stroke="#CDCDCD" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="456" cy="470" r="110" fill="#FFFFFF" stroke="#8F8F8F" stroke-width="3"/>
+  <circle cx="646" cy="470" r="82" fill="#FFFFFF" stroke="#8F8F8F" stroke-width="3"/>
+  <circle cx="836" cy="470" r="58" fill="#FFFFFF" stroke="#8F8F8F" stroke-width="3"/>
+  <circle cx="1026" cy="470" r="38" fill="#FFFFFF" stroke="#8F8F8F" stroke-width="3"/>
+  <circle cx="1216" cy="470" r="22" fill="#FFFFFF" stroke="#0D0D0D" stroke-width="4"/>
+  <circle cx="1216.0" cy="470.0" r="11.2" fill="#0D0D0D"/>
+</svg>
