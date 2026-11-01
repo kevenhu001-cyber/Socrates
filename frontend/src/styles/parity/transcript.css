@@ -105,11 +105,13 @@
   #appShell #msgList .msg-body p { margin: 0 0 var(--msg-para-gap); }
   #appShell #msgList .msg-body p:last-child { margin-bottom: 0; }
   #appShell #msgList .msg-body strong { font-weight: var(--ui-font-weight-semibold); }
+  /* Headings take the marketing site's medium weight: hierarchy comes from
+     size and spacing, not from a heavy face. */
   #appShell #msgList .msg-body :where(h1, h2, h3, h4) {
     color: var(--foreground);
     font-family: var(--font-sans);
-    font-weight: var(--ui-font-weight-semibold);
-    letter-spacing: normal;
+    font-weight: var(--ui-font-weight-medium);
+    letter-spacing: -0.01em;
   }
   #appShell #msgList .msg-body h1 { margin: 28px 0 12px; font-size: var(--ui-font-size-xxl); line-height: 1.33; }
   #appShell #msgList .msg-body h2 { margin: 24px 0 12px; font-size: var(--ui-font-size-xl); line-height: 1.4; }
@@ -136,11 +138,13 @@
   #appShell #msgList .msg-body a:not(.code-block-copy):hover { text-decoration-color: currentColor; }
   #appShell #msgList .msg-body blockquote {
     margin: 0 0 var(--msg-para-gap);
-    padding: 10px 16px;
+    /* A hairline rule and muted ink — no fill, so a quote reads as an
+       aside in the prose rather than as a second card. */
+    padding: 2px 0 2px 16px;
     border: 0;
-    border-inline-start: 3px solid var(--ui-border-strong);
-    border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0;
-    background: color-mix(in srgb, var(--foreground) 3%, transparent);
+    border-inline-start: 2px solid var(--ui-border-strong);
+    border-radius: 0;
+    background: transparent;
     color: var(--muted-foreground);
     font-style: normal;
   }
@@ -167,7 +171,7 @@
     padding: 0 8px 0 16px;
     border: 1px solid var(--ui-border-code);
     border-bottom: 0;
-    border-radius: var(--ui-radius-xl) var(--ui-radius-xl) 0 0;
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
     background: var(--ui-bg-code-header, var(--ui-bg-code));
     color: var(--ui-text-tertiary);
     font-family: var(--font-sans);
@@ -189,7 +193,7 @@
     padding: 16px;
     overflow-x: auto;
     border: 1px solid var(--ui-border-code);
-    border-radius: var(--ui-radius-xl);
+    border-radius: var(--ui-radius-lg);
     background: var(--ui-bg-code);
     color: var(--foreground);
     font-family: var(--font-mono);
@@ -199,7 +203,7 @@
   #appShell #msgList .msg-body .code-block-header + pre {
     padding-top: 4px;
     border-top: 0;
-    border-radius: 0 0 var(--ui-radius-xl) var(--ui-radius-xl);
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
   }
   #appShell #msgList .msg-body pre code {
     padding: 0;

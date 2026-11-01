@@ -20,7 +20,7 @@
   flex-direction: column;
   padding: 12px;
   border-radius: var(--ui-radius-popover);
-  box-shadow: 0 12px 36px -8px rgb(0 0 0 / 24%), 0 2px 8px rgb(0 0 0 / 10%);
+  box-shadow: var(--ui-shadow-popover);
 }
 .tag-editor-popover.visible { display: flex; }
 

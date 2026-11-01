@@ -10,8 +10,10 @@ function i18n(key: string, fallback: string): string {
 
 /*
  * Geometry comes from the control ladder, not from shadcn's defaults:
- * a --ui-control-desktop row, the chatgpt.com 6/10 padding rhythm and the
- * --ui-radius-row radius. Everything else is the ghost variant's own paint.
+ * a --ui-control-desktop row, the chatgpt.com 6/10 padding rhythm, the
+ * --ui-radius-row radius and the 14px interface size (R1 restyle). The
+ * current destination sits on the selected rung (bg-secondary), one step
+ * firmer than the hover wash. Everything else is the ghost variant's own paint.
  * `sidebar-nav-btn` survives only as the row marker the shell's structural
  * rules (collapsed rail, press tint, per-destination order) key off.
  */
@@ -20,11 +22,11 @@ const ROW_CLASS = [
   'relative flex w-full shrink-0 items-center justify-start max-[768px]:justify-center',
   'h-(--ui-control-desktop) min-h-(--ui-control-desktop)',
   'gap-1.5 border-0 rounded-[var(--ui-radius-row)] bg-transparent px-2.5 py-1.5',
-  'text-base font-normal leading-[var(--ui-text-body-line)] text-foreground text-start',
+  'text-[length:var(--ui-text-ui)] font-normal leading-[var(--ui-text-ui-line)] text-foreground text-start',
   'whitespace-nowrap cursor-pointer select-none',
   'transition-colors duration-(--ui-duration-hover)',
   'hover:bg-accent focus-visible:bg-accent',
-  'aria-[current=page]:bg-accent [&[aria-current=page]]:[font-weight:var(--ui-font-weight-medium)]',
+  'aria-[current=page]:bg-secondary [&[aria-current=page]]:[font-weight:var(--ui-font-weight-medium)]',
   'active:not-aria-[haspopup]:translate-y-0',
   "[&_svg:not([class*='size-'])]:size-5",
 ].join(' ');

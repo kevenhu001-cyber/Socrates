@@ -50,7 +50,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --destructive-foreground: var(--background);
   --border: var(--geist-gray-400);
   --input: var(--border);
-  --ring: var(--geist-blue-900);
+  --ring: var(--geist-gray-900);
   --sidebar: var(--geist-gray-100);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
@@ -172,16 +172,11 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   /* Geist's monochrome primary + semantic status colors. */
   --ui-on-accent: var(--primary-foreground);
   --ui-accent-strong: var(--primary);
-  /* The action colour — the one saturated fill in the product, and the only
-   * place the brand is allowed to shout. It carries the composer's send
-   * button, which is the app's single "do the thing" control.
-   * The fill is the reference's own blue (measured #397EF7) and the glyph
-   * on it is the light one in both modes: the arrow is a control glyph, so
-   * WCAG's 3:1 non-text contrast applies (3.8:1 here), not the 4.5:1 of
-   * body text. Registered as a deliberate deviation in
-   * docs/ref/chatgpt-parity.md. */
-  --ui-accent-action: rgb(57 126 247);
-  --ui-on-action: rgb(255 255 255);
+  /* The action colour is ink, not a hue (R1 restyle, 2026-11-01): the
+   * product is monochrome and black is its one accent, as on the marketing
+   * site. In dark mode the disc inverts to the light ink with dark glyphs. */
+  --ui-accent-action: var(--primary);
+  --ui-on-action: var(--primary-foreground);
   /* The danger tone is a *text* colour, so it has to clear AA on the
      lightest dark rung as well as on the canvas. The old Lobe value
      (rgb(233 83 80)) cleared the near-black page but sat at 4.03:1 on
@@ -192,21 +187,15 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-thinking-accent: rgb(255 190 69);
   --ui-info: rgb(76 179 255);
   --ui-warning: var(--ui-thinking-accent);
-  --ui-link: var(--ui-info);
+  --ui-link: var(--ui-text-primary);
 
-  /* The focus indicator is Geist's blue: the one saturated colour the
-   * system allows on a neutral surface, so keyboard focus is never
-   * mistaken for a hover state. */
+  /* The focus indicator is a neutral ink ring (gray-900), not a hue: the
+   * product carries no colour, and the ring still clears 3:1 on every rung. */
   --ui-focus-ring: var(--ring);
 
-  /* The brand accent — the one saturated colour in the system, and the
-   * product's only colour anchor. The reference draws the account avatar as
-   * a saturated disc with light initials; the neutral rail around it makes
-   * that disc read as a deliberate mark.
-   * On the dark rail the teal is the reference's own step, where the
-   * initials flip to dark ink; on the light rail it is the darker step that
-   * still clears 4.5:1 under light initials (measured 4.75:1). */
-  --ui-brand-accent: rgb(31 199 168);
+  /* The brand accent is ink. The avatar disc is the primary fill with the
+   * primary-foreground initials, so it flips cleanly with the mode. */
+  --ui-brand-accent: var(--primary);
 
   /* Socrates product roles projected from the foundation. */
   --ui-avatar-bg: var(--ui-brand-accent);
@@ -218,12 +207,12 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-shadow-dialog: 0 0 0 1px rgb(255 255 255 / 10%), inset 0 1px 0 0 rgb(255 255 255 / 8%), 0 24px 64px -8px rgb(0 0 0 / 60%), 0 8px 24px -4px rgb(0 0 0 / 30%);
   --ui-composer-border: rgb(255 255 255 / 15%);
   --ui-composer-shadow: inset 0 1px 0 0 rgb(255 255 255 / 8%), inset 0 0 1px rgb(255 255 255 / 15%);
-  --ui-bubble-shadow: inset 0 1px 0 0 rgb(255 255 255 / 6%);
-  --ui-tool-chip-text: var(--ui-info);
-  --ui-tool-chip-hover-bg: color-mix(in srgb, var(--ui-info) 14%, var(--ui-bg-surface));
-  --ui-tool-chip-hover-text: rgb(156 218 255);
+  --ui-bubble-shadow: none;
+  --ui-tool-chip-text: var(--ui-text-secondary);
+  --ui-tool-chip-hover-bg: var(--ui-bg-hover);
+  --ui-tool-chip-hover-text: var(--ui-text-primary);
   --ui-bg-code: var(--ui-bg-raised);
-  --ui-bg-code-header: var(--ui-bg-surface);
+  --ui-bg-code-header: var(--ui-bg-code);
   --ui-border-code: var(--ui-border-default);
   --ui-bg-dialog: var(--ui-bg-surface);
   --ui-scrollbar-thumb: rgb(255 255 255 / 16%);
@@ -260,7 +249,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --destructive-foreground: var(--geist-background-100);
   --border: var(--geist-gray-400);
   --input: var(--border);
-  --ring: var(--geist-blue-700);
+  --ring: var(--geist-gray-900);
   --sidebar: var(--geist-gray-100);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
@@ -376,23 +365,18 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * The thinking accent stays a vivid chart/accent colour and is never used
    * as body text; warning no longer aliases it. */
   --ui-on-accent: var(--primary-foreground);
-  /* The action colour — the composer's send button. The same blue as the
-   * light mode: the dark rail carries it on a darker surface, and the
-   * glyph on it is the light one in both modes (3.8:1, the non-text
-   * contrast a control glyph needs). Registered as a deliberate deviation
-   * in docs/ref/chatgpt-parity.md. */
-  --ui-accent-action: rgb(57 126 247);
-  --ui-on-action: rgb(255 255 255);
+  /* The action colour — the composer's send button — is ink (see dark). */
+  --ui-accent-action: var(--primary);
+  --ui-on-action: var(--primary-foreground);
   --ui-accent-strong: var(--primary);
   --ui-danger: rgb(176 45 28);
   --ui-success: rgb(12 110 51);
   --ui-thinking-accent: rgb(254 180 0);
   --ui-info: rgb(0 92 184);
   --ui-warning: rgb(125 82 0);
-  --ui-link: rgb(0 96 204);
+  --ui-link: var(--ui-text-primary);
 
-  /* The focus indicator is Geist's blue, on the dark side of the ramp so
-   * the ring holds against the paper the control is cut from. */
+  /* Neutral focus ring — see the dark-mode note. */
   --ui-focus-ring: var(--ring);
 
   /* Socrates product roles projected from the foundation.
@@ -401,38 +385,30 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * lightness gap does the separating and the border only finishes the edge.
    * The dark composer sits on L4 for the same reason — there the paper is
    * the darkest tone and the elevated rung is the lighter one. */
-  /* The brand accent — the reference's own teal, darkened to the step that
-   * still clears 4.5:1 under the light initials (measured 4.75:1 on the
-   * light page). On the dark rail the accent's own contrast colour flips to
-   * dark ink, so the mark stays legible there at the reference's step. */
-  --ui-brand-accent: rgb(15 127 107);
+  /* The brand accent is ink — see the dark-mode note. */
+  --ui-brand-accent: var(--primary);
 
-  /* The account avatar is a solid disc with the person's initials in the
-     accent's own contrast colour — the reference draws a saturated disc
-     with light initials. The accent role is the system's one solid ink, so
-     the disc reads as a deliberate mark rather than a grey placeholder,
-     and the initials stay legible in both modes. */
   --ui-avatar-bg: var(--ui-brand-accent);
   --ui-bg-composer: var(--ui-bg-elevated);
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-surface);
-  --ui-shadow-control: 0 1px 2px rgb(0 0 0 / 4%), 0 0 0 1px rgb(0 0 0 / 3%);
-  --ui-shadow-popover: 0 0 0 1px rgb(0 0 0 / 5%), 0 4px 12px -2px rgb(0 0 0 / 5%), 0 16px 32px -4px rgb(0 0 0 / 6%);
-  --ui-shadow-dialog: 0 0 0 1px rgb(0 0 0 / 6%), 0 8px 24px -4px rgb(0 0 0 / 8%), 0 32px 64px -8px rgb(0 0 0 / 8%);
+  --ui-shadow-control: 0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%);
+  --ui-shadow-popover: 0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 12%);
+  --ui-shadow-dialog: 0 0 0 1px rgb(0 0 0 / 6%), 0 2px 4px rgb(0 0 0 / 4%), 0 24px 56px -20px rgb(0 0 0 / 18%);
   /* The composer is a hairline capsule on a near-white page, so its resting
      edge is the default rule. --ui-border-strong is held back for the
      focus-within state: with both states on the same border the capsule
      showed no focus cue at all. */
   --ui-composer-border: var(--ui-border-default);
-  --ui-composer-shadow: 0 0 0 1px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 4%), 0 12px 32px -8px rgb(0 0 0 / 5%);
-  --ui-bubble-shadow: 0 1px 2px rgb(0 0 0 / 3%);
-  --ui-tool-chip-text: var(--ui-link);
-  --ui-tool-chip-hover-bg: color-mix(in srgb, var(--ui-link) 10%, var(--ui-bg-surface));
-  --ui-tool-chip-hover-text: var(--ui-link);
+  --ui-composer-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 10%);
+  --ui-bubble-shadow: none;
+  --ui-tool-chip-text: var(--ui-text-secondary);
+  --ui-tool-chip-hover-bg: var(--ui-bg-hover);
+  --ui-tool-chip-hover-text: var(--ui-text-primary);
   --ui-bg-code: var(--ui-bg-surface);
-  --ui-bg-code-header: var(--ui-bg-sunken);
-  --ui-border-code: var(--ui-border-subtle);
+  --ui-bg-code-header: var(--ui-bg-code);
+  --ui-border-code: var(--ui-border-default);
   --ui-bg-dialog: var(--ui-bg-surface);
   --ui-scrollbar-thumb: rgb(0 0 0 / 12%);
   --ui-scrollbar-thumb-hover: rgb(0 0 0 / 24%);
@@ -510,9 +486,9 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-file-file: rgb(100 116 139);
   --ui-shadow-menu: var(--ui-shadow-popover);
   --ui-shadow-modal: var(--ui-shadow-dialog);
-  --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
-  /* The ring colour is declared per mode: it is Geist's blue, not a tint of
-     * the text, so keyboard focus is never mistaken for a hover state. */
+  --ui-shadow-toast: var(--ui-shadow-popover);
+  /* The ring colour is declared per mode: a neutral ink step, darker than
+     any hover fill, so keyboard focus is never mistaken for a hover state. */
   /* 2026-10-25 — the indicator used to be a two-layer shadow: a 2px
      page-coloured gap plus a 2px ring. The gap was always the *page*
      colour, so on every other rung of the ladder (the sidebar rail, an

@@ -13,12 +13,11 @@
   font-family: var(--cg-font);
   /* Brand typography has one live owner; the old restore pins are retired. */
   margin: 0 auto 36px;
-  /* The reference greeting is a regular-weight line, not a medium one: at
-     24px the medium weight read as a headline while the reference reads as
-     a sentence. Tracking follows the face's own metrics. */
-  font-weight: var(--ui-font-weight-regular);
-  line-height: 1.3;
-  letter-spacing: 0;
+  /* R1 restyle: the marketing site sets every heading in Geist medium with
+     slightly tightened tracking; the landing line follows it at 28px. */
+  font-weight: var(--ui-font-weight-medium);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 }
 

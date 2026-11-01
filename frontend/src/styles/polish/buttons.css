@@ -13,7 +13,8 @@
  * Mobile (≤768px) then bumps every `.btn` / `.btn-md` to 44 px touch height.
  *
  * Style language (docs/ref/chatgpt-parity.md):
- *   - square icon: 8px radius (`--ui-radius-control`)
+ *   - text button: capsule (`--ui-radius-pill`)
+ *   - square icon: `--ui-radius-control`
  *   - circle icon: pill (`--ui-radius-pill`)
  *   - sidebar row: 10px (`--ui-radius-row`)
  *   - colour feedback: `--ui-duration-hover` (100 ms)
@@ -42,9 +43,10 @@
   gap: 6px;
   min-height: var(--ui-control-md);
   min-width: var(--ui-control-md);
-  padding: 0 12px;
+  padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: var(--ui-radius-control);
+  /* R1 restyle: text buttons are capsules, like the marketing site. */
+  border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--muted-foreground);
   font: var(--ui-font-weight-regular) var(--ui-text-ui) / 20px var(--font-sans, system-ui, sans-serif);
