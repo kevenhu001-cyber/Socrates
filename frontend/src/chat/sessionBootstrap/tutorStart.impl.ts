@@ -21,7 +21,7 @@ import { buildFallbackDiagnosticQuestions, shouldAutoSearchTutor } from '../../t
 import { clearDiagnosticScreen, showDiagnosticError, showDiagnosticLoading, updateDiagnosticProgress } from '../../ui/diagnosticScreen.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isWebSearchOn, renderRecents, translate } from './runtime.ts';
-import { runtimeWindow as browserWindow } from "../../types/runtimeWindow.ts";
+import { registerDiagnosticActions } from '../../tutor/diagnosticRegistry.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 
 
@@ -150,25 +150,27 @@ async function runDiagnosticGeneration(context: TutorStartContext, reinjectLoadi
 }
 
 function installDiagnosticActions(context: TutorStartContext) {
-  browserWindow.retryDiagnostic = () => runDiagnosticGeneration(context, true);
-  browserWindow.useBuiltinDiagnostic = () => {
-    if (!isCurrentTutorSession(context) || stateStore.read('phase') !== 'diagnostic') return;
-    stateStore.dispatch({ type: 'state/batch', patch: { diagIndex: 0, diagAnswers: [] } });
-    stateStore.dispatch({
-      type: 'state/set',
-      key: 'diagQuestions',
-      value: buildFallbackDiagnosticQuestions(
-        context.topic,
-        context.tutorExploration.count,
-        getCurrentLanguage() === 'zh' || context.language === 'zh',
-      ),
-    });
-    stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' });
-    if (!stateStore.read('lastCallError')) {
-      stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: 'Using built-in questions' });
-    }
-    renderDiagQuestion();
-  };
+  registerDiagnosticActions({
+    retry: () => runDiagnosticGeneration(context, true),
+    builtin: () => {
+      if (!isCurrentTutorSession(context) || stateStore.read('phase') !== 'diagnostic') return;
+      stateStore.dispatch({ type: 'state/batch', patch: { diagIndex: 0, diagAnswers: [] } });
+      stateStore.dispatch({
+        type: 'state/set',
+        key: 'diagQuestions',
+        value: buildFallbackDiagnosticQuestions(
+          context.topic,
+          context.tutorExploration.count,
+          getCurrentLanguage() === 'zh' || context.language === 'zh',
+        ),
+      });
+      stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' });
+      if (!stateStore.read('lastCallError')) {
+        stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: 'Using built-in questions' });
+      }
+      renderDiagQuestion();
+    },
+  });
 }
 
 async function prepareKnowledgeNodes(context: TutorStartContext) {
@@ -221,9 +223,11 @@ export async function startTutorSession(input: SessionStartContext) {
   stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: aiGenerate(context.topic).nodes });
   activateMainView('diagnosticView', document);
   prepareTutorAttachments(context);
-  browserWindow.cancelDiagnostic = () => {
-    if (isCurrentTutorSession(context)) cancelDiagnostic();
-  };
+  registerDiagnosticActions({
+    cancel: () => {
+      if (isCurrentTutorSession(context)) cancelDiagnostic();
+    },
+  });
   showDiagnosticLoading();
   startTutorWebSearch(context);
 

@@ -8,7 +8,6 @@ import { openNav } from "./navigation.service.ts";
 import { reportSwallow } from "../util/reportSwallow.ts";
 import { refreshProjectPlugin } from "../react/pages/workspace/workspace.service.ts";
 import { apiFetch } from '../util/api.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import type { ComposerSurface } from '../composer/types.ts';
 
 
@@ -110,7 +109,9 @@ function hydrateConnectorIcons(root?: ParentNode) {
 /* React composer/plugin surfaces reuse the same local brand marks as the
    legacy connector panel. Keep the adapter on window so the React module
    does not duplicate Vite's raw SVG imports or introduce a second icon map. */
-browserWindow.getConnectorIconMarkup = connectorIconWithFallback;
+if (typeof window !== 'undefined') {
+  (window as unknown as { getConnectorIconMarkup?: typeof connectorIconWithFallback }).getConnectorIconMarkup = connectorIconWithFallback;
+}
 
 /* Connected-app slash commands. Each connector that has a matching
    server-side function-calling tool (see server/src/services/
@@ -141,7 +142,9 @@ export function ensureSlashApps() {
     _slashConnectorsLoaded = true;
   }).catch(function () { /* offline / not signed in — palette just shows templates */ });
 }
-browserWindow.ensureSlashApps = ensureSlashApps;
+if (typeof window !== 'undefined') {
+  (window as unknown as { ensureSlashApps?: typeof ensureSlashApps }).ensureSlashApps = ensureSlashApps;
+}
 /* Return the slash-command entries for apps that are callable right
    now: any connector with a live connection (arxiv_search is exposed
    only via the Connectors panel, never via the slash palette). Shape
@@ -164,7 +167,9 @@ export function getSlashApps(): SlashApp[] {
     return { id: c.id, title: c.name, shortcut: "/" + c.id, description: hint.description, icon: connectorIconWithFallback(c.id), insert: hint.insert };
   });
 }
-browserWindow.getSlashApps = getSlashApps;
+if (typeof window !== 'undefined') {
+  (window as unknown as { getSlashApps?: typeof getSlashApps }).getSlashApps = getSlashApps;
+}
 
 let _pluginWorkspaceTabsBound = false;
 /* Delegated on purpose: #pluginWorkspaceTabs is React-owned
@@ -372,4 +377,6 @@ export function restoreConnectorReturnContext() {
   return true;
 }
 
-browserWindow.rememberConnectorReturnContext = rememberConnectorReturnContext;
+if (typeof window !== 'undefined') {
+  (window as unknown as { rememberConnectorReturnContext?: typeof rememberConnectorReturnContext }).rememberConnectorReturnContext = rememberConnectorReturnContext;
+}

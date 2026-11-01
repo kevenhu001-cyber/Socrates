@@ -39,7 +39,6 @@ import { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK } from './scrollDecisi
 import { beginScrollOwner, endScrollOwner, writeScrollTop } from './scrollCoordinator.ts';
 import { stateStore } from '../state/store.ts';
 import { TurnAnchorList } from '@/chat/turnAnchor.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 
@@ -103,8 +102,7 @@ export function scrollContainer(){
    covers the Node unit-test stub. */
 function prefersReducedMotion(){
   try {
-    const hasWindow = typeof window !== 'undefined' && browserWindow;
-    const host = hasWindow || (typeof globalThis !== 'undefined' ? globalThis : null);
+    const host = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : null);
     if (!host || typeof host.matchMedia !== 'function') return false;
     return host.matchMedia('(prefers-reduced-motion: reduce)').matches;
   } catch (_) {

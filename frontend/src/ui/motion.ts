@@ -1,7 +1,4 @@
 interface MotionOptions { velocity?: number; minDuration?: number; maxDuration?: number; snapDistance?: number; easing?: string }
-
-
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 /*
  * Velocity-based motion planner.
  *
@@ -80,8 +77,7 @@ export function planMotion(distance: unknown, opts?: MotionOptions) {
  * Same `globalThis` fallback as scroll.js so the Node test stub works. */
 export function prefersReducedMotion() {
   try {
-    const hasWindow = typeof window !== 'undefined' && browserWindow;
-    const host = hasWindow || (typeof globalThis !== 'undefined' ? globalThis : null);
+    const host = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : null);
     if (!host || typeof host.matchMedia !== 'function') return false;
     return host.matchMedia('(prefers-reduced-motion: reduce)').matches;
   } catch (_) {

@@ -1,6 +1,5 @@
 import type { VendorGlobals } from "../types/vendorRuntime.ts";
 
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 /* P_perf-self-host — heavy renderers (mermaid / echarts / plotly) are
    committed as verbatim UMD files under src/vendor-files/ and injected
    as classic <script> tags only when a visualization actually mounts.
@@ -22,7 +21,7 @@ const highlightUrl = new URL('../vendor-files/highlight.min.js', import.meta.url
 const katexJsUrl = new URL('../vendor-files/katex/katex.min.js', import.meta.url).href;
 const katexCssUrl = new URL('../vendor-files/katex/katex.min.css', import.meta.url).href;
 
-const w = typeof window !== 'undefined' ? browserWindow : null;
+const w = typeof window !== 'undefined' ? (window as unknown as VendorGlobals) : null;
 const inflight = new Map<string, Promise<unknown>>();
 const katexReadyListeners = new Set<() => void>();
 let katexCssLoaded = false;

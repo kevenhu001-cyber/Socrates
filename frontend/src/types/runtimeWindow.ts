@@ -1,41 +1,28 @@
-import type { VendorGlobals } from "./vendorRuntime.ts";
-import type { GeoGebraApi } from "./vendorRuntime.ts";
 /** Existing imperative shell hooks. This local contract adds no browser globals.
  * Publishers remain the owners; consumers share their exported signatures. */
-export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER_SESSIONS'> & VendorGlobals & {
+export type RuntimeWindow = Window & {
   CURRENT_USER: (Partial<import('@socrates/contracts').User> & { subscriptionEnd?: string | null; verifiedAt?: string | null; createdAt?: string | null; customInstructions?: unknown }) | null | undefined;
-  stateStore: typeof import('../state/store')['stateStore'];
-  SERVER_SESSIONS: import('../session/store').SessionRow[];
-
-  renderMathInElement?: (root: Element, options?: Record<string, unknown>) => void;
-  "GGBApplet": new (options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void }, useBrowser: boolean) => { inject(target: HTMLElement | string): void };
-  "ReactNativeWebView": { postMessage(message: string): void } | undefined;
-  "SOCRATES_STORAGE_BLOCKED": boolean;
   "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;
   "__socratesKeyboard": ReturnType<typeof import("../ui/keyboard/index")["initKeyboardLift"]>;
+  "__socratesLegacy"?: unknown;
   "__testActivateMainView": (viewId: string) => boolean;
-  "_activeTemplate": import("../chat/templateSystemPrompt").ActiveTemplate | null;
   "addMessage": typeof import("../chat/messages")["addMessage"];
   "addStreamingMessage": (...args: Parameters<typeof import("../chat/streamingTurn")["addStreamingMessage"]>) => ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]> | Promise<ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]>>;
   "askChatTurn": typeof import("../chat/turnController")["askChatTurn"];
   "askNextQuestion": typeof import("../tutor/socraticTurn")["askNextQuestion"];
-  "cancelDiagnostic"?: () => void;
   "clearPerUserClientState": typeof import("../app/lifecycle/clientState")["clearPerUserClientState"];
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
-  "getConnectorIconMarkup": typeof import("../sidebar/nav")["connectorIconWithFallback"];
-  "getSlashApps": typeof import("../sidebar/nav")["getSlashApps"];
   "handleSendClick": typeof import("../chat/composerTurn")["handleSendClick"];
   "isInAuthGraceWindow": typeof import("../app/lifecycle")["isInAuthGraceWindow"];
+  "loadSession": typeof import("../session/loader")["loadSession"];
   "markAuthSuccess": typeof import("../app/lifecycle")["markAuthSuccess"];
   "openAttachmentPicker": typeof import("../attachments/render")["openAttachmentPicker"];
   "refreshServerSessions": typeof import("../session/recents")["refreshServerSessions"];
-  "rememberConnectorReturnContext": typeof import("../sidebar/nav")["rememberConnectorReturnContext"];
   "renderAssistantHTML": typeof import("../render/assistantHtml")["buildAssistantHtml"];
   "renderRecents": typeof import("../ui/recentsView")["renderRecents"];
   "resendLastUserMessage": typeof import("../chat/turnUi")["resendLastUserMessage"];
-  "retryDiagnostic"?: () => void;
+  "resetApp": typeof import("../app/lifecycle")["resetApp"];
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];
-  "scrollMainToBottom": (() => void) | undefined;
   "setChatStopState": typeof import("../chat/composerTurn")["setChatStopState"];
   "setCurrentUser": typeof import("../app/lifecycle")["setCurrentUser"];
   "showToast": typeof import("../ui/toast")["showToast"];
@@ -43,8 +30,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "startSession": typeof import("../chat/sessionBootstrap")["startSession"];
   "submitChatMessage": typeof import("../chat/sendPipeline")["submitChatMessage"];
   "toggleSidebarView": typeof import("../ui/sidebarChrome")["toggleSidebarView"];
-  "tutorSocratic": import("../tutorSocratic").TutorSocraticRuntime;
-  "useBuiltinDiagnostic"?: () => void;
 };
 
 function currentRuntimeWindow(): RuntimeWindow | undefined {

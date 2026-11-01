@@ -18,7 +18,7 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { askNextQuestion } from './socraticTurn.ts';
 import { t } from '../i18n.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { cancelDiagnosticAction, retryDiagnosticAction, useBuiltinDiagnosticAction } from './diagnosticRegistry.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 
 function _t(key: string, fallback?: string | null) {
@@ -120,11 +120,11 @@ export function proceedToTeaching() {
 
 export function handleDiagnosticCommand(command: DiagnosticCommand, index?: number) {
   if (command === 'cancel') {
-    if (typeof browserWindow.cancelDiagnostic === 'function') browserWindow.cancelDiagnostic();
+    cancelDiagnosticAction();
   } else if (command === 'retry') {
-    if (typeof browserWindow.retryDiagnostic === 'function') browserWindow.retryDiagnostic();
+    retryDiagnosticAction();
   } else if (command === 'builtin') {
-    if (typeof browserWindow.useBuiltinDiagnostic === 'function') browserWindow.useBuiltinDiagnostic();
+    useBuiltinDiagnosticAction();
   } else if (command === 'select' && typeof index === 'number') selectDiag(index);
   else if (command === 'previous') prevDiagQuestion();
   else if (command === 'next') nextDiagQuestion();

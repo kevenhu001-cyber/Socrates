@@ -2,7 +2,6 @@ import type { AppState, NamespaceBridge } from './index.ts';
 import type { ChatMessageShape } from './session.ts';
 const namespaceBridges = typedNamespaceBridges as unknown as Record<string, NamespaceBridge>;
 
-import { runtimeWindow as browserWindow } from '../types/runtimeWindow.ts';
 /** The string-path compatibility facade accepts open legacy actions. Domain
  * writers use the discriminated actions exported by store/index.ts. */
 interface LegacyStateAction { type: string; [key: string]: unknown }
@@ -322,7 +321,7 @@ function resetState() {
 }
 
 if (typeof window !== 'undefined') {
-  browserWindow.stateStore = stateStore;
+  (window as unknown as { stateStore?: typeof stateStore }).stateStore = stateStore;
 }
 
 export { stateStore, resetState };

@@ -8,10 +8,8 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
 import 'highlight.js/styles/atom-one-dark.css';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
-
-const w = typeof window !== 'undefined' ? browserWindow : null;
+const w = typeof window !== 'undefined' ? (window as unknown as { marked?: typeof marked; DOMPurify?: typeof DOMPurify }) : null;
 if (w) {
   w.marked = marked;
   w.DOMPurify = DOMPurify;

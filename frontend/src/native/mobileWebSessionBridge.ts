@@ -3,7 +3,6 @@ import { openNav } from '../sidebar/navigation.service.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.ts';
 import { openCheatsheet } from '../ui/cheatsheet.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 /*
  * Narrow bridge used only by the React Native embedded-workspace flow.
@@ -33,7 +32,8 @@ const WINDOW_TARGET_ACTIONS: Record<string, string> = {
 };
 
 function invokeWindowAction(name: string, ...args: unknown[]) {
-  const action = (browserWindow as unknown as Record<string, unknown>)[name];
+  if (typeof window === 'undefined') return false;
+  const action = (window as unknown as Record<string, unknown>)[name];
   if (typeof action !== 'function') return false;
   (action as (...values: unknown[]) => unknown)(...args);
   return true;
@@ -57,9 +57,14 @@ function openMobileTarget(target: string) {
   return actionName ? invokeWindowAction(actionName) : false;
 }
 
+function getReactNativeWebView() {
+  if (typeof window === 'undefined') return undefined;
+  return (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView;
+}
+
 function postToNative(message: { type: string; }) {
   try {
-    const bridge = browserWindow.ReactNativeWebView;
+    const bridge = getReactNativeWebView();
     if (bridge && typeof bridge.postMessage === 'function') {
       bridge.postMessage(JSON.stringify(message));
     }
@@ -93,7 +98,7 @@ const EMBEDDED_MODAL_SELECTORS: Record<string, string> = {
 };
 
 function watchEmbeddedModalClose(target: string) {
-  if (!browserWindow.ReactNativeWebView) return;
+  if (!getReactNativeWebView()) return;
   const selector = EMBEDDED_MODAL_SELECTORS[target];
   if (!selector || typeof MutationObserver === 'undefined') return;
 
@@ -119,7 +124,7 @@ function watchEmbeddedModalClose(target: string) {
   });
   observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
   /* React portals may mount after the open action publishes its state. */
-  browserWindow.setTimeout(() => {
+  setTimeout(() => {
     if (!closed && isOpen()) seenOpen = true;
   }, 0);
 }
@@ -130,12 +135,13 @@ function watchEmbeddedModalClose(target: string) {
  * ?share=… intact, and never treats arbitrary query data as a route.
  */
 export function openMobileTargetFromUrl() {
-  let url;
-  try { url = new URL(browserWindow.location.href); } catch (_) { return false; }
+  if (typeof window === 'undefined') return false;
+  let url: URL;
+  try { url = new URL(window.location.href); } catch (_) { return false; }
   const target = url.searchParams.get('mobile_target');
   if (!target || !TARGETS.has(target)) return false;
 
-  let opened;
+  let opened: boolean;
   try {
     opened = openMobileTarget(target);
   } catch (_) {
@@ -149,10 +155,10 @@ export function openMobileTargetFromUrl() {
      * than the pre-navigation URL, otherwise this cleanup silently replaces
      * /projects with / and breaks reload/back-route parity. */
     let current = url;
-    try { current = new URL(browserWindow.location.href); } catch (error) { reportSwallow(error, 'native/mobileWebSessionBridge.ts:144'); }
+    try { current = new URL(window.location.href); } catch (error) { reportSwallow(error, 'native/mobileWebSessionBridge.ts:144'); }
     current.searchParams.delete('mobile_target');
     const next = current.pathname + current.search + current.hash;
-    try { browserWindow.history.replaceState(browserWindow.history.state, '', next); } catch (error) { reportSwallow(error, 'native/mobileWebSessionBridge.ts:147', 'expected'); }
+    try { window.history.replaceState(window.history.state, '', next); } catch (error) { reportSwallow(error, 'native/mobileWebSessionBridge.ts:147', 'expected'); }
   }
   return opened;
 }

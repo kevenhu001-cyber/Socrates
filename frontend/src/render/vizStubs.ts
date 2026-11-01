@@ -46,7 +46,6 @@ export const VIZ_THEME_RESET =
 import { esc, escAttr } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { stateStore } from '../state/store.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
 /* Runtime snippet that runs at the END of every iframe body. It
@@ -154,8 +153,15 @@ function vizLoadingHtml() {
   return '<div class="viz-loading"><span class="viz-spinner"></span><span>Rendering…</span></div>';
 }
 
+function getMermaidGlobal() {
+  return typeof window !== 'undefined' ? (window as unknown as { mermaid?: { parse?: (code: string, opts?: unknown) => boolean } }).mermaid : undefined;
+}
+
 export function validMermaid(code: string) {
-  try { return typeof browserWindow.mermaid.parse === "function" ? browserWindow.mermaid.parse(code, { suppressErrors: true }) : true; }
+  try {
+    const m = getMermaidGlobal();
+    return typeof m?.parse === "function" ? m.parse(code, { suppressErrors: true }) : true;
+  }
   catch (_) { return false; }
 }
 
@@ -179,7 +185,8 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
      mermaid-still-loading callers (validated stays false) are parsed once
      in the drain, which is where they were parsed before. */
   let validated = false;
-  if (typeof browserWindow.mermaid !== "undefined") {
+  const mermaidGlobal = getMermaidGlobal();
+  if (typeof mermaidGlobal !== "undefined") {
     validated = true;
     if (!(stableId && _mermaidChecked[stableId] === 'ok')) {
       const ok = validMermaid(code);
@@ -212,7 +219,7 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
     _pendingMermaid.push({ id: id, code: code, validated: validated });
   }
   queueVizActions(id);
-  if (typeof browserWindow.mermaid === "undefined") ensureMermaid();
+  if (typeof mermaidGlobal === "undefined") ensureMermaid();
   return '<div class="viz" id="' + id + '" data-viz-state="loading">' +
     vizActions(id) +
     '<div class="viz-body">' + vizLoadingHtml() + '</div>' +

@@ -1,5 +1,6 @@
 import { getApiFetch, getLegacyActions } from '../../legacy/gateway.ts';
 import { getCachedProjects, hasCachedProjects, refreshCachedProjects, setCachedProjects, type CachedProject } from '../../../projects/projectCache.ts';
+import { rememberConnectorReturnContext } from '../../../sidebar/nav.ts';
 import { patchLibraryData, setWorkspaceLoading, setLibraryCollections, setWorkspacePlugins, setWorkspaceProjects, useWorkspaceStore } from './workspace.store';
 import type { LibraryItem, PluginItem } from './types';
 
@@ -200,8 +201,7 @@ export async function connectProjectPlugin(id: string): Promise<void> {
       return;
     }
     if (!result || !result.authorizationUrl) throw new Error('No authorization URL was returned');
-    const remember = (window as Window & { rememberConnectorReturnContext?: (connectorId: string) => void }).rememberConnectorReturnContext;
-    remember?.(id);
+    rememberConnectorReturnContext(id);
     window.location.assign(result.authorizationUrl);
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Could not start authorization');

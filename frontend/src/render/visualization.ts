@@ -18,7 +18,7 @@ import { flushSync } from 'react-dom';
 import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
 import { VisualizationActions, VisualizationFallbackActions } from '../react/visualization/VisualizationActions.tsx';
 import { Button } from '../react/ui/shadcn/button';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { t } from '../i18n.ts';
 
 export { parseFunctionExpression, sampleFunction, categoryAxisLayout, formatCategoryLabel };
 
@@ -163,7 +163,10 @@ function svgStageChart(stage: HTMLElement) {
 
 function renderCardMath(card: Element) {
   try {
-    if (typeof browserWindow.renderMathInElement === 'function') browserWindow.renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
+    if (typeof window !== 'undefined') {
+      const renderMath = (window as unknown as { renderMathInElement?: (el: Element, opts: unknown) => void }).renderMathInElement;
+      if (typeof renderMath === 'function') renderMath(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
+    }
   } catch (error) { reportSwallow(error, 'visualization.renderCardMath'); }
 }
 
@@ -238,10 +241,8 @@ function mountFallbackActions(card: VisualizationCard, host: HTMLElement, spec: 
    - any lookup throws. */
 function vizT(key: string, fallback?: string) {
   try {
-    if (typeof browserWindow.t === 'function') {
-      const value = browserWindow.t(key);
-      if (typeof value === 'string' && value && value !== key) return value;
-    }
+    const value = t(key);
+    if (typeof value === 'string' && value && value !== key) return value;
   } catch (error) { reportSwallow(error, 'visualization.translate'); }
   return fallback || key;
 }
@@ -395,11 +396,11 @@ function mountExtensionRenderer(spec: VizSpec, card: VisualizationCard, stage: H
     });
     mountCardReactSurface(card, errorBanner.querySelector('[data-viz-error-action-root]'), 'extension-error-action', fixButton);
   };
-  browserWindow.addEventListener('message', receiveExtensionMsg);
+  window.addEventListener('message', receiveExtensionMsg);
   frame.addEventListener('error', function () {
     reportSwallow(new Error('sandboxed visualization iframe failed to load'), 'visualization/' + spec.template + '/iframe_load_error', 'recoverable');
   });
-  card!._visualizationCleanup = function () { browserWindow.removeEventListener('message', receiveExtensionMsg); };
+  card!._visualizationCleanup = function () { window.removeEventListener('message', receiveExtensionMsg); };
 }
 
 function mountSemanticRenderer(spec: VizSpec, stage: HTMLElement) {
@@ -601,7 +602,7 @@ function _refreshCharts() {
   /* Re-run KaTeX on every live card so LaTeX renders pick up any token
    * change tied to the theme. We re-discover the cards via the data
    * attribute each time to avoid keeping strong references ourselves. */
-  if (typeof browserWindow.renderMathInElement === 'function') {
+  if (typeof window !== 'undefined' && typeof (window as unknown as { renderMathInElement?: unknown }).renderMathInElement === 'function') {
     document.querySelectorAll('.visualization-card').forEach(function (card) {
       renderCardMath(card);
     });

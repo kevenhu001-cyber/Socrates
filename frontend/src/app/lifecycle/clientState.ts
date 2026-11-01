@@ -9,7 +9,7 @@ import { resetCmdKSearchState } from '../../ui/cmdK.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { clearUserMemories } from './userMemory.ts';
 import { resetExamSaveStateIfLoaded } from './examSaveReset.ts';
-import { runtimeWindow as browserWindow } from "../../types/runtimeWindow.ts";
+import { renderRecents } from '../../ui/recentsView.ts';
 
 
 function attemptCleanup(context: string, cleanup: () => unknown, severity?: Parameters<typeof reportSwallow>[2]) {
@@ -25,14 +25,14 @@ function clearExamSaveState() {
   resetExamSaveStateIfLoaded();
 }
 
-function callWindowHook(name: 'renderRecents') {
-  try {
-    if (typeof browserWindow[name] === 'function') browserWindow[name]();
-  } catch (error) { reportSwallow(error, 'app/lifecycle.clearPerUser.' + name); }
-}
-
 function renderUserLists() {
-  callWindowHook('renderRecents');
+  try {
+    if (typeof window !== 'undefined' && typeof (window as unknown as { renderRecents?: () => void }).renderRecents === 'function') {
+      (window as unknown as { renderRecents?: () => void }).renderRecents!();
+    } else {
+      renderRecents();
+    }
+  } catch (error) { reportSwallow(error, 'app/lifecycle.clearPerUser.renderRecents'); }
 }
 
 /** Clear user-owned caches before a new user can see the application shell. */

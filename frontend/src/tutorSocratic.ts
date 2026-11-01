@@ -2,7 +2,6 @@ import { stateStore } from './state/store.ts';
 import { addMessage } from './chat/messages.ts';
 import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 import { getCurrentLanguage } from './i18n/languageState.ts';
 import { t } from './i18n.ts';
 
@@ -246,5 +245,7 @@ const tutorSocraticRuntime = (function () {
   };
 })();
 
-browserWindow.tutorSocratic = tutorSocraticRuntime;
+if (typeof window !== 'undefined') {
+  (window as unknown as { tutorSocratic?: typeof tutorSocraticRuntime }).tutorSocratic = tutorSocraticRuntime;
+}
 export type TutorSocraticRuntime = typeof tutorSocraticRuntime;

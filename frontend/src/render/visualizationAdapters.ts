@@ -2,7 +2,6 @@ import { whenFontsReady } from './helpers.ts';
 import { VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { ensureMermaid, ensurePlotly } from '../vendor/lazy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import type { VizSpec } from './visualizationSpec.ts';
 import type { GeoGebraApi } from '../types/vendorRuntime.ts';
 
@@ -16,7 +15,10 @@ export interface SpecializedVisualizationResult {
 let plotlyPromise: ReturnType<typeof ensurePlotly> | null = null;
 let mermaidPromise: ReturnType<typeof ensureMermaid> | null = null;
 let threePromise: Promise<[typeof import('three'), typeof import('three/addons/controls/OrbitControls.js')]> | null = null;
-type GeoGebraAppletConstructor = NonNullable<typeof browserWindow.GGBApplet>;
+type GeoGebraAppletConstructor = new (options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void }, useBrowser: boolean) => { inject(target: HTMLElement | string): void };
+interface GeoGebraWindow {
+  GGBApplet?: GeoGebraAppletConstructor;
+}
 let geogebraPromise: Promise<GeoGebraAppletConstructor> | undefined;
 
 const STRUCTURE_TEMPLATES = new Set(['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map']);
@@ -267,7 +269,7 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   const camera = new THREE.PerspectiveCamera(42, Math.max(stage.clientWidth, 1) / Math.max(stage.clientHeight, 1), 0.1, 1000);
   camera.position.set(6, 5, 8);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-  renderer.setPixelRatio(Math.min(browserWindow.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min((typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1, 2));
   renderer.setSize(Math.max(stage.clientWidth, 1), Math.max(stage.clientHeight, 1), false);
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
   stage.appendChild(renderer.domElement);
@@ -315,8 +317,13 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   };
 }
 
+function getGGBApplet(): GeoGebraAppletConstructor | undefined {
+  return typeof window !== 'undefined' ? (window as unknown as GeoGebraWindow).GGBApplet : undefined;
+}
+
 function loadGeoGebra(): Promise<GeoGebraAppletConstructor> {
-  if (browserWindow.GGBApplet) return Promise.resolve(browserWindow.GGBApplet);
+  const existing = getGGBApplet();
+  if (existing) return Promise.resolve(existing);
   geogebraPromise ||= new Promise<GeoGebraAppletConstructor>((resolve, reject) => {
     const script = document.createElement('script');
     /* A stalled CDN connection never fires onerror — the card would
@@ -330,8 +337,9 @@ function loadGeoGebra(): Promise<GeoGebraAppletConstructor> {
     script.async = true;
     script.onload = () => {
       clearTimeout(timer);
-      if (browserWindow.GGBApplet) {
-        resolve(browserWindow.GGBApplet);
+      const applet = getGGBApplet();
+      if (applet) {
+        resolve(applet);
       } else {
         script.remove();
         reject(new Error('GeoGebra loaded without GGBApplet'));

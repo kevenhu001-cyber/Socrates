@@ -12,7 +12,6 @@
 // access to storage" warnings per tutor-mode turn go away.
 
 import { showToast } from './ui/toast.js';
-import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
 
@@ -51,7 +50,7 @@ function _overrideStorageInstances() {
   _storageBlocked = true;
   _memStorage = new Map();
   _memSessionStorage = new Map();
-  try { browserWindow.SOCRATES_STORAGE_BLOCKED = true; } catch (_) { /* empty-catch: intentional — the diagnostic flag is optional outside a writable browser global. */ }
+  try { if (typeof window !== 'undefined') (window as unknown as { SOCRATES_STORAGE_BLOCKED?: boolean }).SOCRATES_STORAGE_BLOCKED = true; } catch (_) { /* empty-catch: intentional — the diagnostic flag is optional outside a writable browser global. */ }
   function _makeShim(bag: Map<string, string>) {
     return {
       setItem: function (k: string, v: string) { bag.set(k, v); },
@@ -66,17 +65,21 @@ function _overrideStorageInstances() {
   const localShim = _makeShim(_memStorage);
   const sessionShim = _makeShim(_memSessionStorage);
   try {
-    Object.defineProperty(browserWindow, 'localStorage', {
-      value: localShim, writable: false, configurable: true,
-    });
+    if (typeof window !== 'undefined') {
+      Object.defineProperty(window, 'localStorage', {
+        value: localShim, writable: false, configurable: true,
+      });
+    }
   } catch (_) {
     reportEmptyCatch(_, 'empty catch: batchStorage.ts:71');
     /* some hosts forbid redefining localStorage */
   }
   try {
-    Object.defineProperty(browserWindow, 'sessionStorage', {
-      value: sessionShim, writable: false, configurable: true,
-    });
+    if (typeof window !== 'undefined') {
+      Object.defineProperty(window, 'sessionStorage', {
+        value: sessionShim, writable: false, configurable: true,
+      });
+    }
   } catch (_) { /* empty-catch: intentional — a host may forbid replacing sessionStorage; the prototype fallback still runs. */ }
   /* Prototype fallback — captures of the old localStorage / sessionStorage
      (taken before the defineProperty ran) still need to hit our shim. */
@@ -103,13 +106,13 @@ function _overrideStorageInstances() {
 (function _probeStorage() {
   if (typeof window === "undefined") return;
   let inIframe;
-  try { inIframe = browserWindow.self !== browserWindow.top; } catch (_) { inIframe = true; }
+  try { inIframe = window.self !== window.top; } catch (_) { inIframe = true; }
   if (inIframe) { _overrideStorageInstances(); _notifyStorageBlockedOnce(); return; }
   const probeKey = "__socrates_probe__";
   try {
-    browserWindow.localStorage.setItem(probeKey, "1");
-    const v = browserWindow.localStorage.getItem(probeKey);
-    browserWindow.localStorage.removeItem(probeKey);
+    window.localStorage.setItem(probeKey, "1");
+    const v = window.localStorage.getItem(probeKey);
+    window.localStorage.removeItem(probeKey);
     if (v !== "1") { _overrideStorageInstances(); _notifyStorageBlockedOnce();  }
   } catch {
     _overrideStorageInstances(); _notifyStorageBlockedOnce();
