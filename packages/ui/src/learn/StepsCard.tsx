@@ -67,7 +67,7 @@ export function StepsCard({ kind, title, steps, testID }: StepsCardProps) {
         />
       ) : undefined}
     >
-      {title ? <Rich source={title} part={`${kind}-title`} /> : null}
+      {title && title.trim() !== label ? <Rich source={title} part={`${kind}-title`} /> : null}
       <View role="list" aria-label={title || label}>
         {visible.map((step, index) => (
           <StepRow key={`${step.n}-${index}`} step={step} kind={kind} last={index === visible.length - 1} />

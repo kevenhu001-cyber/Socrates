@@ -30,6 +30,7 @@
   font-family: var(--ui-font-ui);
   font-size: calc(var(--ui-type-label-size) * var(--app-font-scale, 1));
   line-height: 1.6;
+  text-align: start;
   overflow-wrap: anywhere;
 }
 
@@ -248,3 +249,26 @@
 .sc-live[data-scaffold-live="step"] + .sc-live[data-scaffold-live="step"] > .sc-live-head { display: none; }
 .sc-live[data-scaffold-live="step"]:has(+ .sc-live[data-scaffold-live="step"]) > .sc-live-body { padding-bottom: 0; }
 .sc-live[data-scaffold-live="step"] + .sc-live[data-scaffold-live="step"] > .sc-live-body { padding-top: var(--ui-gap-3); }
+
+/* A field that is a single formula renders as display math in prose; inside
+   option rows and step lists it reads as a line of text, start-aligned. */
+.sc-rich[data-part="quiz-option"] .katex-display,
+.sc-rich[data-part$="-step"] .katex-display {
+  display: block;
+  margin: 0;
+  text-align: start;
+}
+
+.sc-rich[data-part="quiz-option"] .katex-display > .katex,
+.sc-rich[data-part$="-step"] .katex-display > .katex {
+  text-align: start;
+}
+
+/* react-native-web renders role="list" / "listitem" as ul / li; keep the
+   transcript's prose list indent and markers off the RN step list. */
+.sc-host ul:not(.sc-rich ul),
+.sc-host li:not(.sc-rich li) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

@@ -89,6 +89,7 @@ test('derivation steps split by paragraph, then by chain continuations, never in
   assert.deepEqual(splitDerivationSteps('First line\n\nSecond line'), ['First line', 'Second line']);
   assert.deepEqual(splitDerivationSteps('$$\na = b\n\n= c\n$$'), ['$$\na = b\n\n= c\n$$']);
   assert.deepEqual(splitDerivationSteps('a\n\\Rightarrow b\n⇒ c'), ['a', '\\Rightarrow b', '⇒ c']);
+  assert.deepEqual(splitDerivationSteps('$a=b$\n$\\Rightarrow c$\n$= d$'), ['$a=b$', '$\\Rightarrow c$', '$= d$']);
   assert.deepEqual(splitDerivationSteps('   '), []);
 });
 

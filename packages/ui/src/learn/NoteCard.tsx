@@ -20,6 +20,8 @@ function Qed() {
 }
 
 function ProofBody({ title, body, part }: { title?: string; body: string; part: string }) {
+  const { strings } = useLearnHost();
+  if (title && title.trim() === strings.label.proof) title = '';
   return (
     <View style={{ gap: uiSpace[2] }}>
       {title ? <Rich source={title} part={`${part}-title`} /> : null}
@@ -106,7 +108,7 @@ export function ProofCard({ title, body, testID }: { title?: string; body: strin
     >
       {open
         ? <ProofBody title={title} body={body} part="proof" />
-        : (title ? <Rich source={title} part="proof-title" /> : <UiText variant="bodySm" tone="tertiary">…</UiText>)}
+        : (title && title.trim() !== strings.label.proof ? <Rich source={title} part="proof-title" /> : <UiText variant="bodySm" tone="tertiary">…</UiText>)}
     </ScaffoldCard>
   );
 }

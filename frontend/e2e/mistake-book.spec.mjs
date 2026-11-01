@@ -93,12 +93,12 @@ test('practice redo appends a React-owned assistant widget', async ({ page }) =>
   const message = page.locator('#msgList > .msg.assistant').last();
   await expect(message).toHaveAttribute('data-react-owned', '1');
   await expect(message).toContainText('重做做错的题目');
-  const widget = message.locator('.inline-practice');
+  const widget = message.locator('.sc-host[data-scaffold="practice"]');
   await expect(widget).toHaveCount(1);
-  await expect(widget.locator('.inline-practice-problem')).toContainText('解释为什么 x = 4。');
+  await expect(widget.locator('[data-part="practice-problem"]')).toContainText('解释为什么 x = 4。');
 
-  await widget.locator('.inline-practice-reveal').click();
-  await expect(widget.locator('.inline-practice-feedback')).toHaveText('因为两边同时减去 2。');
+  await widget.getByTestId('practice-reveal').click();
+  await expect(widget.getByTestId('practice-feedback')).toHaveText('因为两边同时减去 2。');
 });
 
 test('quiz redo appends a React-owned widget and resolves the current mistake slot', async ({ page }) => {
@@ -113,15 +113,16 @@ test('quiz redo appends a React-owned widget and resolves the current mistake sl
   await page.locator('[data-redo="redo-quiz"]').click();
   const message = page.locator('#msgList > .msg.assistant').last();
   await expect(message).toHaveAttribute('data-react-owned', '1');
-  const widget = message.locator('.inline-quiz');
+  const widget = message.locator('.sc-host[data-scaffold="quiz"]');
   await expect(widget).toHaveCount(1);
-  await expect(widget.locator('.inline-quiz-q')).toContainText('2 + 2 = ?');
+  await expect(widget.locator('[data-part="quiz-q"]')).toContainText('2 + 2 = ?');
   const redoSlotId = await page.evaluate(() => window.stateStore.read('mistakes')[0].quizSlotId);
   expect(redoSlotId).toMatch(/^redo-quiz-/);
   const rawText = await page.evaluate(() => window.stateStore.read('messages').at(-1).rawText);
   expect(rawText).toContain(`data-quiz-id="${redoSlotId}"`);
 
   await widget.locator('[data-letter="A"]').click();
-  await expect(widget.locator('.inline-quiz-feedback')).toHaveClass(/\bok\b/);
+  await widget.getByTestId('quiz-submit').click();
+  await expect(widget.getByTestId('quiz-feedback')).toHaveAttribute('data-verdict', 'correct');
   await expect(page.locator('#mistakesList .mistake-card[data-mistake-id="redo-quiz"]')).toHaveCount(0);
 });

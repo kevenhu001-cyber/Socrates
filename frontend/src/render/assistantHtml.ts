@@ -33,6 +33,7 @@ import {
   type ParsedQuiz,
 } from '@socrates/ui/learn-model';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+import { ensureKatex } from '../vendor/lazy.ts';
 
 /** Mistake-book entry written for <mistake> practice blocks. */
 export interface PracticeMistakeRecord {
@@ -215,6 +216,17 @@ export function buildAssistantHtml(rawText: unknown): string {
   /* formatMsg uses marked.parse, which passes raw <div> blocks through
      untouched. The slots will land in the final HTML intact. */
   let html = formatMsg(text);
+
+  /* Scaffold fields are rendered when their card mounts (or a face turns),
+     not by the formatMsg pass above, so math inside them would only request
+     KaTeX on interaction — and KaTeX arriving repaints the message, which
+     remounts the card and drops its state (a turned flashcard flips back).
+     Ask for KaTeX now so that one repaint lands before anyone interacts. */
+  const scaffoldCount = quizPH.length + examplePH.length + practicePH.length + definitionPH.length + stepPH.length
+    + flashcardPH.length + derivationPH.length + proofPH.length + theoremPH.length + keyPointPH.length;
+  if (scaffoldCount && /\$|\\\(|\\\[/.test(String(rawText || ''))) {
+    void ensureKatex().catch(() => { /* text stays readable; a later render can retry */ });
+  }
 
   /* Widget mounting is deferred until the rendered HTML is in the DOM. */
   scheduleWidgetMounts({

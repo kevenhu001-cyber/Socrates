@@ -161,7 +161,15 @@ export function extractScaffoldWidgets(
   while ((theoremMatch = theoremRe.exec(text)) !== null) {
     const inner = theoremMatch[1];
     const proofMatch = inner.match(/<proof\b[^>]*>([\s\S]*?)<\/proof>/i);
-    const proof = proofMatch ? parseProofInner(proofMatch[1]) : null;
+    let proof = proofMatch ? parseProofInner(proofMatch[1]) : null;
+    /* The proof pass above already turned a nested <proof> into a slot; the
+       theorem replacement would drop that slot, so the proof never mounted.
+       Take it back from proofPH and fold it into the theorem card. */
+    const hoisted = inner.match(/data-proof-id="([^"]+)"/);
+    if (!proof && hoisted) {
+      const at = proofPH.findIndex((entry) => entry.id === hoisted[1]);
+      if (at !== -1) proof = proofPH.splice(at, 1)[0].parsed;
+    }
     const parsed = parseTheoremInner(inner.replace(/<proof\b[^>]*>[\s\S]*?<\/proof>/gi, '')) as ParsedTheoremWithProof | null;
     if (!parsed) {
       const replacement = fallback(inner, t, esc);

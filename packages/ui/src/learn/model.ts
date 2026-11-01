@@ -228,7 +228,7 @@ export function parseKeyPointInner(inner: string): ParsedKeyPoint | null {
 /* Derivation steps and proof ending                                   */
 /* ------------------------------------------------------------------ */
 
-const CONTINUATION = /^\s*(?:=|≈|≤|≥|<|>|⇒|⟹|→|∴|\\Rightarrow|\\implies|\\Longrightarrow|\\therefore)/;
+const CONTINUATION = /^\s*\$*\s*(?:=|≈|≤|≥|<|>|⇒|⟹|→|∴|\\Rightarrow|\\implies|\\Longrightarrow|\\therefore)/;
 
 /**
  * Split a derivation body into numbered steps without breaking math:
