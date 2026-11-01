@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1448" height="1086" viewBox="0 0 1448 1086" fill="none">
+  <title>Context joins the notes</title>
+  <desc>Five separate gray notes joined in order by one black thread with a point on each note.</desc>
+  <rect width="1448" height="1086" fill="#F3F3F3"/>
+  <rect x="164" y="163" width="1120" height="760" rx="28" fill="#FFFFFF"/>
+  <rect x="164.5" y="163.5" width="1119" height="759" rx="27.5" stroke="#000" stroke-opacity=".06"/>
+  <rect x="284" y="283" width="280" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="312" y="323" width="150" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="312" y="355" width="210" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="744" y="263" width="280" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="772" y="303" width="150" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="772" y="335" width="210" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="414" y="563" width="280" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="442" y="603" width="150" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="442" y="635" width="210" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="884" y="543" width="280" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="912" y="583" width="150" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="912" y="615" width="210" height="12" rx="6" fill="#E3E3E3"/>
+  <rect x="604" y="743" width="280" height="140" rx="20" fill="#F3F3F3"/>
+  <rect x="632" y="783" width="150" height="12" rx="6" fill="#CDCDCD"/>
+  <rect x="632" y="815" width="210" height="12" rx="6" fill="#E3E3E3"/>
+  <path d="M536.0 329.0 L996.0 309.0 L1136.0 589.0 L666.0 609.0 L856.0 789.0" stroke="#0D0D0D" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="536.0" cy="329.0" r="12.8" fill="#0D0D0D"/>
+  <circle cx="996.0" cy="309.0" r="12.8" fill="#0D0D0D"/>
+  <circle cx="1136.0" cy="589.0" r="12.8" fill="#0D0D0D"/>
+  <circle cx="666.0" cy="609.0" r="12.8" fill="#0D0D0D"/>
+  <circle cx="856.0" cy="789.0" r="12.8" fill="#0D0D0D"/>
+</svg>

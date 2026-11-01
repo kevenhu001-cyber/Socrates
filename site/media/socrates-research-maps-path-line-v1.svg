@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" fill="none">
+  <title>Why maps preserve the path</title>
+  <desc>A light network of points and lines; one route through it is drawn in black from the first point to the last.</desc>
+  <rect width="1672" height="941" fill="#F3F3F3"/>
+  <rect x="236" y="150" width="1200" height="640" rx="28" fill="#FFFFFF"/>
+  <rect x="236.5" y="150.5" width="1199" height="639" rx="27.5" stroke="#000" stroke-opacity=".06"/>
+  <path d="M356.0 300.0 L520.0 220.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M520.0 220.0 L700.0 320.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M500.0 420.0 L680.0 560.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M700.0 320.0 L880.0 240.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M680.0 560.0 L900.0 460.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M880.0 240.0 L1060.0 340.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M900.0 460.0 L1080.0 600.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M1060.0 340.0 L1240.0 260.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M1080.0 600.0 L1260.0 480.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M500.0 420.0 L420.0 620.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M680.0 560.0 L420.0 620.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M1240.0 260.0 L1260.0 480.0" stroke="#E3E3E3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M356.0 300.0 L500.0 420.0" stroke="#0D0D0D" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M500.0 420.0 L700.0 320.0" stroke="#0D0D0D" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M700.0 320.0 L900.0 460.0" stroke="#0D0D0D" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M900.0 460.0 L1060.0 340.0" stroke="#0D0D0D" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M1060.0 340.0 L1260.0 480.0" stroke="#0D0D0D" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="356.0" cy="300.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="520.0" cy="220.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="500.0" cy="420.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="700.0" cy="320.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="680.0" cy="560.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="880.0" cy="240.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="900.0" cy="460.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="1060.0" cy="340.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="1080.0" cy="600.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="1240.0" cy="260.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="1260.0" cy="480.0" r="14.4" fill="#0D0D0D"/>
+  <circle cx="420.0" cy="620.0" r="11.2" fill="#CDCDCD"/>
+</svg>

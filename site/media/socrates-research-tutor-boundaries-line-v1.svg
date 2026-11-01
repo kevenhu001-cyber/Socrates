@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1672" height="941" viewBox="0 0 1672 941" fill="none">
+  <title>Where a tutor should stop</title>
+  <desc>A dashed circle around a black point; a black line runs to the edge of the circle and stops there, with lighter points outside.</desc>
+  <rect width="1672" height="941" fill="#F3F3F3"/>
+  <rect x="236" y="150" width="1200" height="640" rx="28" fill="#FFFFFF"/>
+  <rect x="236.5" y="150.5" width="1199" height="639" rx="27.5" stroke="#000" stroke-opacity=".06"/>
+  <circle cx="836" cy="470" r="210" stroke="#8F8F8F" stroke-width="3" stroke-dasharray="8 14"/>
+  <path d="M836.0 470.0 L1042.0 470.0" stroke="#0D0D0D" stroke-width="5.0" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="836.0" cy="470.0" r="19.2" fill="#0D0D0D"/>
+  <circle cx="1046.0" cy="470.0" r="11.2" fill="#FFFFFF" stroke="#0D0D0D" stroke-width="4"/>
+  <circle cx="723.2" cy="429.0" r="11.2" fill="#CDCDCD"/>
+  <circle cx="788.1" cy="338.4" r="11.2" fill="#CDCDCD"/>
+  <circle cx="781.0" cy="565.3" r="11.2" fill="#CDCDCD"/>
+  <circle cx="935.6" cy="386.4" r="11.2" fill="#CDCDCD"/>
+  <circle cx="1095.8" cy="620.0" r="9.6" fill="#E3E3E3"/>
+  <circle cx="558.9" cy="630.0" r="9.6" fill="#E3E3E3"/>
+  <circle cx="576.2" cy="320.0" r="9.6" fill="#E3E3E3"/>
+  <circle cx="981.0" cy="218.9" r="9.6" fill="#E3E3E3"/>
+  <circle cx="884.6" cy="745.7" r="9.6" fill="#E3E3E3"/>
+</svg>
