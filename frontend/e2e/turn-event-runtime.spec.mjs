@@ -33,8 +33,8 @@ test('nodes stream before tool_use, retain local state through commit, and coexi
   await ui.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect(ui.locator('[data-intui-id="value"]')).toContainText('2');
   await ui.locator('[data-intui-id="panel"]').evaluate((element) => { element.__sameNode = true; });
-  await message.locator('[data-activity-timeline] button').click();
-  await expect(message.locator('.turn-activity-list')).toContainText('Checking two official sources.');
+  await message.locator('[data-testid="turn-activity-toggle"]').click();
+  await expect(message.locator('[data-testid="thinking-timeline"]')).toContainText('Checking two official sources.');
   await expect(message.locator('.tool-run-prose').first()).toContainText('First finding.');
   await page.screenshot({ path: 'test-results/turn-event-progressive.png' });
 
@@ -53,7 +53,12 @@ test('nodes stream before tool_use, retain local state through commit, and coexi
   await expect(ui.locator('[data-intui-id="final"]')).toContainText('New evidence arrived.');
   await expect(ui.locator('[data-intui-id="value"]')).toContainText('2');
   expect(await ui.locator('[data-intui-id="panel"]').evaluate((element) => element.__sameNode)).toBe(true);
-  await expect(message.locator('.turn-activity-list [data-phase="running"]')).toHaveCount(1);
+  /* The public step survives the tool_use handoff and commit next to the
+     prose. The RN timeline only inks a step as running while the activity
+     surface itself is live, and answer prose has started here, so the step
+     is checked for presence rather than for data-phase="running". */
+  await expect(message.locator('[data-testid="thinking-step"]')).toHaveCount(1);
+  await expect(message.locator('[data-testid="thinking-step"]')).toContainText('Checking two official sources.');
   await expect(message).toContainText('The answer continues');
   await expect(message.locator('.msg-toolbar')).toBeHidden();
   await page.evaluate(() => {
@@ -62,7 +67,7 @@ test('nodes stream before tool_use, retain local state through commit, and coexi
   });
   await expect(message).toHaveAttribute('data-stream-settled', 'true');
   await expect(ui).toHaveAttribute('data-intui-streaming', 'false');
-  await expect(message.locator('.turn-activity-list [data-phase="running"]')).toHaveCount(0);
+  await expect(message.locator('[data-testid="thinking-step"][data-phase="running"]')).toHaveCount(0);
   await expect(ui.locator('[data-intui-id="value"]')).toContainText('2');
   await page.screenshot({ path: 'test-results/turn-event-completed.png' });
 });
@@ -99,8 +104,8 @@ test('completed checkpoint restores UI beyond the first event page and ignores o
   await expect(message).toHaveAttribute('data-stream-settled', 'true');
   await expect(message.locator('.intui')).toBeVisible();
   await expect(message.locator('[data-intui-id="value"]')).toContainText('1');
-  await message.locator('[data-activity-timeline] button').click();
-  await expect(message.locator('.turn-activity-list')).toContainText('Compared the official sources.');
+  await message.locator('[data-testid="turn-activity-toggle"]').click();
+  await expect(message.locator('[data-testid="thinking-timeline"]')).toContainText('Compared the official sources.');
   expect(await page.evaluate(() => window.stateStore.read('messages').at(-1).turnRuntime.seq)).toBe(800);
 });
 

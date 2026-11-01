@@ -370,7 +370,7 @@ test('superseding a still-thinking turn keeps the send visually stable', async (
   /* First turn stays in its empty "thinking" state (no deltas pushed). */
   await page.evaluate(() => window.submitChatMessage('First turn that stays in thinking'));
   await expect.poll(() => page.evaluate(() => Boolean(
-    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-status'),
+    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor [data-testid="turn-activity-label"][role="status"]'),
   ))).toBe(true);
   await expect.poll(() => page.evaluate(() => document.getElementById('msgList').dataset.turnAnchorSettling === 'true')).toBe(false);
   await page.waitForTimeout(200);

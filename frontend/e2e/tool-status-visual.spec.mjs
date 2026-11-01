@@ -68,18 +68,20 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await expect(bubble).toContainText('先把一段文本写入文件');
   await page.evaluate(() => window.__pushToolUse());
   // The deferred state: status line visible, NO mounted tool row yet.
-  await expect(bubble.locator('.tool-inline')).toHaveCount(0);
-  await expect(bubble).toContainText(/正在更新文件|工具运行中/);
-  await expect(bubble.locator('.thinking-status .tool-inline-tool-icon')).toHaveCount(1);
-  await expect(bubble.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-breathe');
-  await expect(bubble.locator('.thinking-status .thinking-spinner')).toHaveCount(0);
+  await expect(bubble.locator('.rn-tool-row')).toHaveCount(0);
+  await expect(bubble).toContainText(/正在更新文件|工具运行中|思考中/);
+  /* The live thinking line carries the running tool's icon and its
+     travelling hairline; no spinner. */
+  await expect(bubble.locator('[data-testid="turn-activity-toggle"] .tool-inline-tool-icon')).toHaveCount(1);
+  await expect(bubble.locator('[data-testid="turn-activity-progress"]')).toHaveCount(1);
+  await expect(bubble.locator('.thinking-spinner')).toHaveCount(0);
 
   // No orphaned stream cursor next to the status icon: while the live
   // status line shows, it owns the "alive" signal.
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
 
   // The unified progress heading is above the answer, with no duplicate trailer.
-  await expect(bubble.locator('.turn-activity-surface > .thinking-status')).toBeVisible();
+  await expect(bubble.locator('[data-testid="turn-activity-label"][role="status"]')).toBeVisible();
 
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-deferred.png' });
@@ -87,11 +89,11 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   // Completing the paragraph mounts the row exactly once, retires the
   // status line, and hands the liveness signal back to the cursor.
   await page.evaluate(() => window.__pushText('容。文件已经写好。\n\n你可以看了。'));
-  const row = bubble.locator('.tool-inline[data-tcid="w-defer"]');
+  const row = bubble.locator('.rn-tool-row[data-tcid="w-defer"]');
   await expect(row).toHaveCount(1);
-  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
+  await expect(bubble.locator('[data-testid="turn-activity"]')).toHaveCount(1);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  await expect(row.locator('.tool-inline-label')).toContainText('demo.txt');
+  await expect(row.locator('[data-testid="tool-row-target"]')).toContainText('demo.txt');
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-mounted.png' });
 });
@@ -148,12 +150,12 @@ test('an active tool at the turn tail owns progress without an extra cursor', as
   // the row mounts at the turn tail, so its cursor must follow it.
   await page.evaluate(() => window.__pushText('我先尝试获取那一节。\n\nabcdefg。\n\n'));
   await page.evaluate(() => window.__pushToolUse());
-  const row = bubble.locator('.tool-inline[data-tcid="w-tail"]');
+  const row = bubble.locator('.rn-tool-row[data-tcid="w-tail"]');
   await expect(row).toHaveCount(1);
 
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
+  await expect(bubble.locator('[data-testid="turn-activity"]')).toHaveCount(1);
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-cursor-below-row.png' });
 });

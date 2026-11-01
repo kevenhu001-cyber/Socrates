@@ -4,9 +4,10 @@
  * behaviour (composer, extensions, web search) and the web theme, so the
  * same components can mount in apps/socrates later without these bindings.
  */
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { uiColorsCssVars } from '@socrates/theme';
-import { UiThemeProvider } from '@socrates/ui/primitives';
+/* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
+import '../rn/rnwGlobal';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { HomeHero, HomeShortcuts, HomeStarters, type HomeShortcut } from '@socrates/ui/home';
 import { i18n } from '../legacy/gateway.ts';
 import { focusComposer, getComposerMarkdown, setComposerMarkdown } from '../../composer/controller.ts';
@@ -14,7 +15,6 @@ import { composeAction } from '../../extensions/index.ts';
 import { toggleWebSearch } from '../../chat/webSearchToggle.ts';
 import { webSearchOn } from '../../config/providers.ts';
 import { openAttachmentPicker } from '../../attachments/render.ts';
-import { DISPLAY_PREFS_CHANGE_EVENT, displayPrefs } from '../../displayPrefs.ts';
 import { getGreeting, subscribeGreeting } from '../../ui/greetingState.ts';
 
 function t(key: string, fallback: string): string {
@@ -28,35 +28,6 @@ const QUICK_ACTIONS = [
 ] as const;
 
 const TUTOR_PROMPTS = ['understand', 'practice', 'plan'] as const;
-
-/* The shell's text-size preference is stored as 1.125 = 100%; tokens.css
-   derives --app-type-scale the same way. */
-const BASE_FONT_PREF = 1.125;
-
-function useLocaleRefresh() {
-  const [, refresh] = useState(0);
-  useEffect(() => {
-    const onLanguageChange = () => refresh((revision) => revision + 1);
-    document.addEventListener('socrates:langchange', onLanguageChange);
-    return () => document.removeEventListener('socrates:langchange', onLanguageChange);
-  }, []);
-}
-
-function useTypeScale(): number {
-  const [scale, setScale] = useState(() => displayPrefs.font / BASE_FONT_PREF);
-  useEffect(() => {
-    const sync = () => setScale(displayPrefs.font / BASE_FONT_PREF);
-    window.addEventListener(DISPLAY_PREFS_CHANGE_EVENT, sync);
-    return () => window.removeEventListener(DISPLAY_PREFS_CHANGE_EVENT, sync);
-  }, []);
-  return scale;
-}
-
-/** Web theme: colours are `var(--ui-*)` references, so [data-mode] repaints. */
-function WebUiTheme({ children }: { children: ReactNode }) {
-  const typeScale = useTypeScale();
-  return <UiThemeProvider colors={uiColorsCssVars} typeScale={typeScale}>{children}</UiThemeProvider>;
-}
 
 export function HomeHeroRoot() {
   useLocaleRefresh();

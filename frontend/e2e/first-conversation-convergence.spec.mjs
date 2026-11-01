@@ -102,7 +102,7 @@ test('first conversation and reload presentation converge to the exact same UI s
   await expect(page.locator('#msgList .msg.assistant')).toHaveCount(1);
 
   // Wait for stream to finish and settle
-  await expect(page.locator('#msgList .msg.assistant .thinking-status')).toHaveCount(0, { timeout: 10_000 });
+  await expect(page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]')).toHaveCount(0, { timeout: 10_000 });
   await page.waitForTimeout(500);
 
   // Ensure save occurred

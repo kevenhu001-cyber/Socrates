@@ -6,9 +6,10 @@
 // may hide arguments and stdout, but never an output — and history restore must
 // land in the same host React already rendered instead of mounting a twin.
 //
-// Fixtures put the calls at the same textOffset so they fold into ONE run:
-// `showsHeader` needs two settled members, which is exactly the state that used
-// to move attachments inside `.tool-run-list[hidden]`.
+// Fixtures put the calls at the same textOffset so they fold into ONE run. In
+// RN-2 the run's rows live in the turn's collapsible activity timeline
+// (`.rn-turn-activity`, a 「Used N tools」 group); its outputs must stay in the
+// transcript, never inside that collapsed surface.
 //
 // Charts are observed by e2e/_viz-probe.mjs (a MutationObserver over
 // `.visualization-card`) where mount counts matter; the invalid-spec and
@@ -156,18 +157,17 @@ test('a settled visualization beside visible tool activities stays on screen', a
     assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Probe parabola')]),
   ]);
 
-  const group = body.locator('.tool-run-group');
+  const group = body.locator('.rn-turn-activity');
   await expect(group).toHaveCount(1);
-  await expect(group.locator('.tool-run-summary')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list')).toHaveCount(0);
+  await expect(group.locator('[data-testid="tool-group-search-1"]')).toHaveCount(1);
+  await expect(group.locator('[data-testid="turn-activity-toggle"]')).toHaveAttribute('aria-expanded', 'false');
 
   const card = body.locator('.visualization-card');
   await expect(card).toBeVisible();
   await expect(card).toContainText('Probe parabola');
-  // The chart is not buried inside the collapsed state panel (nor inside the
-  // section whose shape changes as members settle).
+  // The chart is not buried inside the collapsed activity (nor inside the
+  // tool group whose shape changes as members settle).
   await expect(group.locator('.visualization-card')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list .visualization-card')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
   expect(probe.created.map((m) => m.cardId)).toEqual(['viz-1']);
@@ -202,23 +202,26 @@ test('opening a mobile tool detail does not move or duplicate call outputs', asy
     ]),
   ]);
 
-  const group = body.locator('.tool-run-group');
+  const group = body.locator('.rn-turn-activity');
   const charts = body.locator('.visualization-card');
   await expect(charts).toHaveCount(2);
   await expect(charts.nth(0)).toContainText('Probe A');
   await expect(charts.nth(1)).toContainText('Probe B');
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list')).toHaveCount(0);
 
-  await body.locator('.thinking-accordion-toggle').click();
-  const row = group.locator('[data-tcid="search-1"]');
-  await row.locator(':scope > summary').click();
-  await expect(row.locator(':scope > summary')).toHaveAttribute('aria-expanded', 'true');
-  await expect(row.locator('.tool-inline-detail')).toBeVisible();
+  await body.locator('[data-testid="turn-activity-toggle"]').click();
+  await body.locator('[data-testid="tool-group-toggle"]').click();
+  await body.locator('[data-testid="tool-row-search-1"]').click();
+  /* Phone: the detail is a bottom sheet over the transcript, not an inline
+     expansion that could move the outputs. */
+  const sheet = page.locator('[data-testid="tool-detail"]');
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toHaveAttribute('data-layout', 'sheet');
   await expect(page.locator('[data-tool-run-sheet="1"]')).toHaveCount(0);
   await expect(charts).toHaveCount(2);
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list .visualization-card, .tool-run-list .exec-artifact')).toHaveCount(0);
+  await expect(group.locator('.visualization-card, .exec-artifact')).toHaveCount(0);
+  await expect(sheet.locator('.visualization-card, .exec-artifact')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
   expect(probe.created.map((mount) => mount.cardId)).toEqual(['viz-a', 'viz-b']);
@@ -241,14 +244,12 @@ test('a generated image stays hidden until assistant prose references it', async
     assistantMessage([code, vizCall('viz-1', 'Probe scatter')]),
   ]);
 
-  const group = body.locator('.tool-run-group');
-  await expect(group.locator('.tool-run-list')).toHaveCount(0);
+  const group = body.locator('.rn-turn-activity');
+  await expect(group).toHaveCount(1);
   await expect(body.locator('.visualization-card')).toBeVisible();
   await expect(body.locator('.exec-artifact, .exec-artifact-image')).toHaveCount(0);
   await expect(group.locator('.visualization-card')).toHaveCount(0);
   await expect(group.locator('.exec-artifact')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list .visualization-card')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list .exec-artifact')).toHaveCount(0);
 });
 
 test('an explicit markdown reference renders the generated image in assistant prose', async ({ page }) => {
@@ -283,7 +284,7 @@ test('two visualizations in one run mount once each, in call order', async ({ pa
   await expect(cards).toHaveCount(2);
   await expect(cards.nth(0)).toContainText('Probe A');
   await expect(cards.nth(1)).toContainText('Probe B');
-  await expect(body.locator('.tool-run-list .visualization-card')).toHaveCount(0);
+  await expect(body.locator('.rn-turn-activity .visualization-card')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
   expect(probe.created.map((m) => m.cardId)).toEqual(['viz-a', 'viz-b']);
@@ -377,14 +378,11 @@ test('a visualization stays visible across the running → result transition', a
     durationMs: 100,
   }), spec);
 
-  await expect(message.locator('.tool-inline[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'done');
-  const group = message.locator('.tool-run-group');
+  await expect(message.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'done');
+  const group = message.locator('.rn-turn-activity');
   await expect(group).toHaveCount(1);
-  await expect(group.locator('.tool-run-summary')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list')).toHaveCount(0);
   await expect(message.locator('.visualization-card')).toBeVisible();
   await expect(group.locator('.visualization-card')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list .visualization-card')).toHaveCount(0);
   await expect(message.locator('.visualization-card')).toHaveCount(1);
 
   /* The settle must not have torn the running renderer down and rebuilt it:
@@ -409,13 +407,19 @@ test('expanding and collapsing a tool ten times never remounts its chart', async
   await expect(card).toBeVisible();
   const handle = await card.elementHandle();
 
-  await body.locator('.thinking-accordion-toggle').click();
-  const row = body.locator('[data-tcid="search-1"]');
-  const summary = row.locator(':scope > summary');
+  /* RN-2: the row opens a drawer instead of expanding in place; toggling the
+     run's group open and closed is the in-transcript disclosure now. */
+  await body.locator('[data-testid="turn-activity-toggle"]').click();
+  const summary = body.locator('[data-testid="tool-group-toggle"]');
   for (let i = 0; i < 10; i++) {
     await summary.click();
     await expect(summary).toHaveAttribute('aria-expanded', i % 2 === 0 ? 'true' : 'false');
   }
+  await body.locator('[data-testid="tool-group-toggle"]').click();
+  await body.locator('[data-testid="tool-row-search-1"]').click();
+  await expect(page.locator('[data-testid="tool-detail"]')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-testid="tool-detail"]')).toHaveCount(0);
 
   const sameNode = await page.evaluate((el) => {
     const now = document.querySelector('.visualization-card[data-visualization-id="viz-1"]');
@@ -435,8 +439,8 @@ test('history restore reuses the declarative host instead of mounting a second c
     assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Probe restored')]),
   ]);
 
-  await expect(body.locator('.tool-inline[data-tcid="search-1"]')).toHaveAttribute('data-state', 'done');
-  await expect(body.locator('.tool-inline[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'done');
+  await expect(body.locator('.rn-tool-row[data-tcid="search-1"]')).toHaveAttribute('data-state', 'done');
+  await expect(body.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'done');
   await expect(body.locator('.visualization-card')).toHaveCount(1);
   await expect(body.locator('.tool-inline-attachments')).toHaveCount(1);
   await expect(body.locator('.agent-tool-card')).toHaveCount(0);
@@ -625,7 +629,7 @@ test('a rejected visualization shows the tool error without mounting its input s
     textOffset: 0,
   };
   const body = await openAssistantFixture(page, [userMessage(), assistantMessage([rejected])]);
-  await expect(body.locator('.tool-inline[data-tcid="bad-viz"]')).toHaveAttribute('data-error', '1');
+  await expect(body.locator('.rn-tool-row[data-tcid="bad-viz"]')).toHaveAttribute('data-error', '1');
   await expect(body.locator('.visualization-card')).toHaveCount(0);
 });
 

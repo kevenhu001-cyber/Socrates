@@ -16,6 +16,9 @@ export function usePressFeedback() {
   const scale = useRef(new Animated.Value(1)).current;
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
+  /* Pointer presses focus the control too; only keyboard focus shows the
+     ring (focus-visible), so a click never leaves a black outline behind. */
+  const pointer = useRef(false);
   const native = Platform.OS !== 'web';
   const to = (value: number) => Animated.timing(scale, {
     toValue: value,
@@ -27,14 +30,35 @@ export function usePressFeedback() {
     hovered,
     focused,
     handlers: {
-      onPressIn: () => to(0.97),
+      onPressIn: () => {
+        pointer.current = true;
+        setFocused(false);
+        to(0.97);
+      },
       onPressOut: () => to(1),
       onHoverIn: () => setHovered(true),
       onHoverOut: () => setHovered(false),
-      onFocus: () => setFocused(true),
-      onBlur: () => setFocused(false),
+      onFocus: (event: unknown) => setFocused(isKeyboardFocus(event, pointer.current)),
+      onBlur: () => {
+        pointer.current = false;
+        setFocused(false);
+      },
     },
   };
+}
+
+/** Web: ask the focused node for `:focus-visible` (the browser's own
+ * keyboard-vs-pointer heuristic). Native: focus without a press is keyboard. */
+function isKeyboardFocus(event: unknown, pressed: boolean): boolean {
+  const target = (event as { nativeEvent?: { target?: { matches?: (selector: string) => boolean } } } | null)?.nativeEvent?.target;
+  if (target && typeof target.matches === 'function') {
+    try {
+      return target.matches(':focus-visible');
+    } catch (_) {
+      return !pressed;
+    }
+  }
+  return !pressed;
 }
 
 export interface UiButtonProps extends Omit<PressableProps, 'children' | 'style'> {

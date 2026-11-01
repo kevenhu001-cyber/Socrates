@@ -102,13 +102,6 @@
        can still see all attachments by scrolling the strip. */
     max-height:64px;
   }
-  .tool-inline-detail{padding-left:10px}
-}
-@media(max-width:768px){
-  /* UI-align: keep send-btn at 30px on mobile to mirror start-btn. attach-btn
-     stays at 36px since the landing attach uses 36px as well. */
-  
-  .tool-run-summary{min-height:44px}
 }
 
 /* A11Y — respect the user's OS-level "reduce motion" preference. Disable
@@ -126,19 +119,11 @@
     color:hsl(var(--text-400)) !important;
     -webkit-text-fill-color:currentColor;
   }
-  .thinking-spinner{
-    animation:none !important;
-    border-color:hsl(var(--text-400)/0.55);
-  }
-  .tool-inline-spinner{animation:none !important;opacity:.65}
-  .tool-inline-leaving{animation-duration:0.01ms !important;animation-iteration-count:1 !important}
   
   
   .composer-extension-inline{animation:none}
   .display-prefs-segs::before{transition:none}
   .display-prefs-seg:active{transform:none}
-  
-  .tool-run-summary-chev{transition:transform .12s ease,color .12s ease}
   /* Disable transform-on-press/hover for all interactive controls. */
   .icon-btn:active,
   .recent-item:active,
@@ -146,7 +131,6 @@
   .recent-item-del:hover,
   .kb-node:active,
   .user-row:active,
-  .tool-run-summary:active,
   .new-reply-pill:active,
   .new-reply-pill:hover{transform:none !important}
   /* Disable icon micro-rotations. */

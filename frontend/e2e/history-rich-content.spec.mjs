@@ -151,7 +151,7 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
   await page.evaluate((id) => window.loadSession(id), INLINE_SESSION_ID);
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
-  await expect(body.locator('.tool-inline[data-tcid="inline-viz-call"]')).toHaveCount(1);
+  await expect(body.locator('.rn-tool-row[data-tcid="inline-viz-call"]')).toHaveCount(1);
   await expect(body.locator('.visualization-card')).toContainText('Restored parabola');
   // The chart must sit in the anchored host right after its row, not at
   // the bubble bottom after the trailing text segment.
@@ -212,13 +212,16 @@ test('restored edit actions keep the answer intact inside the unified activity h
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
   await expect.poll(async () => (await body.locator('.tool-run-prose').allTextContents()).join('').replace(/\s/g, '')).toBe(rawText.replace(/\s/g, ''));
-  await expect(body.locator('.tool-run-summary')).toHaveCount(0);
-  await expect(body.locator('.tool-inline-label')).toHaveText(['Edited moe.py', 'Edited router_v2.py']);
-  await expect(body.locator('.tool-inline-file-summary')).toHaveCount(0);
+  /* Two consecutive edits merge into one group; each row names its file. */
+  await body.locator('[data-testid="turn-activity-toggle"]').click();
+  await expect(body.locator('[data-testid="tool-group-title"]')).toHaveText('Used 2 tools');
+  await body.locator('[data-testid="tool-group-toggle"]').click();
+  await expect(body.locator('.rn-tool-row [data-testid="tool-row-verb"]')).toHaveText(['Edit file', 'Edit file']);
+  await expect(body.locator('.rn-tool-row [data-testid="tool-row-target"]')).toHaveText(['moe.py', 'router_v2.py']);
   const flow = await body.locator('.turn-evidence > *').evaluateAll((nodes) => nodes.map((node) => ({
     className: node.className,
     text: node.textContent.trim(),
   })));
-  expect(flow[0].className).toContain('turn-activity-surface');
+  expect(flow[0].className).toContain('rn-turn-activity');
   expect(flow.slice(1).every((node) => node.className.includes('tool-run-prose'))).toBe(true);
 });

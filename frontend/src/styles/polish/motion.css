@@ -31,21 +31,9 @@
   animation-timing-function: var(--ui-ease-out);
 }
 
-/* One soft breathing cue is the sole persistent cue for a live turn.
-   Tool glyphs and text stay still inside the activity history.
-   The cue animates opacity instead of a travelling gradient: sweeping
-   `background-position` over clipped glyphs repainted the text on every
-   frame, and this policy only allows compositor-friendly cues. */
-#appShell .thinking-accordion[data-live="true"] .thinking-status-label {
-  animation: ui-activity-breathe var(--ui-duration-shimmer) ease-in-out infinite;
-}
-@keyframes ui-activity-breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
-#appShell .turn-activity-surface :is(.tool-inline-tool-icon, .agent-step-icon, .tool-inline-label, .tool-run-summary-label, .agent-step-label) {
-  animation: none;
-}
+/* The live turn's thinking line and tool rows are react-native-web
+   components (packages/ui/src/turn): their breathing caption and progress
+   hairline are JS-driven opacity/transform and stop under reduced motion. */
 
 /* Recording: components/composer.css owns the dot geometry and
    polish/composer.css owns the halo shape. This policy owns the only
@@ -65,13 +53,9 @@
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {
   #appShell :is(
     .shimmer-text,
-    .thinking-status-label,
-    .tool-inline-label,
-    .tool-run-summary-label,
     .agent-step-label
   ).shimmer-text,
-  #appShell .voice-recording-indicator::after,
-  #appShell .thinking-accordion[data-live="true"] .thinking-status-label {
+  #appShell .voice-recording-indicator::after {
     animation: none;
   }
 }

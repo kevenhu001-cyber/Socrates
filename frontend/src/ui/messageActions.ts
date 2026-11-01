@@ -180,7 +180,10 @@ function toolCallSelector(id: string | undefined): string {
 function inlineToolRow(body: HTMLElement, selector: string): Element | null {
   if (!selector) return null;
   try {
-    return body.querySelector('.tool-inline[data-tcid="' + selector + '"]');
+    /* The RN tool row host (`.rn-tool-row`) carries data-tcid; older
+       persisted HTML may still have the legacy `.tool-inline` wrapper. */
+    return body.querySelector('.rn-tool-row[data-tcid="' + selector + '"]')
+      || body.querySelector('[data-tcid="' + selector + '"]');
   } catch (error) {
     reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras');
     return null;

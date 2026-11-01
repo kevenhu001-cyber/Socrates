@@ -79,7 +79,7 @@ function findVisibleInnerAnchor(anchor: Element | null, viewportTop: number): El
   if (!anchor) return null;
   const candidates = anchor.querySelectorAll(
     '.stream-settled-content > *,.stream-live-content > *,' +
-    '.think-prefix > *,.think-suffix > *,.tool-inline,' +
+    '.think-prefix > *,.think-suffix > *,.tool-inline,.rn-tool-row,.rn-turn-activity,' +
     '.visualization-card,.exec-artifact,.tool-run-prose > *,.msg-body > *',
   );
   for (let index = 0; index < candidates.length; index++) {

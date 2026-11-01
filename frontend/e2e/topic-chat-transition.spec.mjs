@@ -50,8 +50,8 @@ test('topic submit opens a stable chat with one user turn and one live assistant
   await expect(page.locator('#msgList .msg.user')).toHaveCount(1);
   await expect(page.locator('#msgList .msg.assistant')).toHaveCount(1);
   /* P_thinking-unified — every live phase (including pre-first-token
-     waiting) renders the same .thinking-status pill. */
-  await expect(page.locator('#msgList .msg.assistant .thinking-status')).toBeVisible();
+     waiting) renders the same live thinking caption. */
+  await expect(page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]')).toBeVisible();
 
   const first = await page.evaluate(() => window.stateStore.read('messages').map((message) => ({
     clientId: message.clientId,

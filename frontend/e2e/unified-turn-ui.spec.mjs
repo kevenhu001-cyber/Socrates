@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
+import { TURN, toolRow } from './_turn-ui.mjs';
 
 const nodes = [
   { id: 'panel', type: 'panel', title: 'Estimate', state: { count: 2 } },
@@ -20,24 +21,26 @@ const message = {
 
 test('one process disclosure contains public summaries and tools while results stay visible', async ({ page }) => {
   await prepareChatWorkbench(page, { messages: [message] });
-  const activity = page.locator('.turn-activity-surface');
+  const activity = page.locator(TURN.surface);
+  const toggle = activity.locator(TURN.toggle);
   await expect(activity).toHaveCount(1);
-  await expect(page.locator('.turn-summary')).toHaveCount(0);
-  await expect(activity.locator('button').first()).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.intui')).toBeVisible();
   const widths = await page.locator('.intui').evaluate((node) => ({ ui: node.clientWidth, host: node.parentElement.clientWidth }));
   expect(widths.ui).toBeGreaterThan(widths.host * .9);
   await expect(page.locator('.tool-run-prose')).toContainText(message.rawText);
   await expect(page.locator('.msg-body')).not.toContainText(message.summary);
-  await activity.locator('button').first().click();
+  await toggle.click();
   await expect(activity.getByText('Checked the assumptions.')).toBeVisible();
-  await expect(activity.locator('.tool-inline')).toBeVisible();
-  const type = await activity.locator('.tool-inline-label').evaluate((node) => ({ size: getComputedStyle(node).fontSize, line: parseFloat(getComputedStyle(node).lineHeight) }));
-  expect(type.size).toBe('14px');
-  expect(type.line).toBeCloseTo(20, 0);
-  await activity.locator('button').first().click();
+  await expect(toolRow(activity, 'ui')).toBeVisible();
+  /* Row text sits on the same small label step as the thinking line. */
+  const type = await toolRow(activity, 'ui').locator(TURN.verb).evaluate((node) => ({ size: parseFloat(getComputedStyle(node).fontSize), line: parseFloat(getComputedStyle(node).lineHeight) }));
+  const labelSize = await activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+  expect(type.size).toBe(labelSize);
+  expect(type.line).toBeGreaterThanOrEqual(type.size);
+  await toggle.click();
   await expect(page.locator('.intui')).toBeVisible();
-  await expect(activity.locator('.thinking-accordion-body')).toHaveCSS('opacity', '0');
+  await expect(activity.locator(TURN.body)).toBeHidden();
   await page.screenshot({ path: 'test-results/unified-turn-desktop.png' });
 });
 
@@ -118,22 +121,27 @@ test('a live turn has one text highlight and reduced motion disables it', async 
     ctl.recordTurnActivity({ type: 'public_reasoning_summary', text: 'Compared the official specifications.' });
     ctl.recordToolUse({ id: 'search', name: 'web_search', input: { query: 'official specifications' } });
   });
-  const activity = page.locator('.turn-activity-surface');
+  const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  await expect(activity.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-breathe');
-  await activity.locator('button').first().click();
-  await expect(activity.locator('.tool-inline .tool-inline-tool-icon')).toHaveCSS('animation-name', 'none');
+  /* The live caption breathes (RN Animated opacity on its wrapper). */
+  const captionOpacity = () => activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node.parentElement).opacity));
+  await expect.poll(captionOpacity, { timeout: 4000, intervals: [100] }).toBeLessThan(0.95);
+  await activity.locator(TURN.toggle).click();
+  await expect(toolRow(activity, 'search').locator('.tool-inline-tool-icon')).toHaveCSS('animation-name', 'none');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect(activity.locator('.thinking-status-label')).toHaveCSS('animation-name', 'none');
+  await expect.poll(captionOpacity).toBe(1);
+  await page.waitForTimeout(800);
+  expect(await captionOpacity()).toBe(1);
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
     ctl.recordToolResult({ id: 'search', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
     ctl.append('The answer.');
     ctl.finish();
   });
-  await expect(activity.locator('.thinking-status-label')).toHaveCSS('animation-name', 'none');
-  await expect(activity.locator('button').first()).toHaveAttribute('aria-expanded', 'true');
+  await expect(activity.locator(TURN.progress)).toHaveCount(0);
+  expect(await captionOpacity()).toBe(1);
+  await expect(activity.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
 });
 
 test('pending approvals remain visible with activity collapsed', async ({ page }) => {
@@ -141,8 +149,8 @@ test('pending approvals remain visible with activity collapsed', async ({ page }
     id: 'approval-tool', name: 'workspace_agent', status: 'running', textOffset: 0,
     approval: { runId: 'run-1', approvalId: 'approval-1', status: 'pending', kind: 'commandExecution', reason: 'Run the verification command' },
   }] }] });
-  await expect(page.locator('.thinking-accordion-toggle')).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.locator('.tool-inline-approval')).toBeVisible();
+  await expect(page.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator(TURN.approval)).toBeVisible();
   await expect(page.locator('[data-approval-action="accept"]')).toBeVisible();
-  expect(await page.locator('.tool-inline-approval').evaluate((node) => Boolean(node.closest('.turn-activity-surface')))).toBe(false);
+  expect(await page.locator(TURN.approval).evaluate((node) => Boolean(node.closest('[data-testid="turn-activity"]')))).toBe(false);
 });

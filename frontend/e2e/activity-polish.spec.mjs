@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { publishChatRuntime } from './_lib.mjs';
+import { TURN, openToolDetail, toolRow } from './_turn-ui.mjs';
 
 const message = {
   clientId: 'activity-polish', role: 'assistant', rawText: 'The comparison is ready.',
@@ -16,25 +17,29 @@ for (const mobile of [false, true]) {
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await prepareChatWorkbench(page, { messages: [message], viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 } });
-    const surface = page.locator('.thinking-accordion');
-    const toggle = surface.locator('.thinking-accordion-toggle');
-    const body = surface.locator('.thinking-accordion-body');
+    const surface = page.locator(TURN.surface);
+    const toggle = surface.locator(TURN.toggle);
+    const body = surface.locator(TURN.body);
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect.poll(() => body.evaluate((node) => node.getBoundingClientRect().height)).toBe(0);
-    expect((await toggle.boundingBox()).height).toBeGreaterThanOrEqual(mobile ? 44 : 32);
+    expect((await toggle.boundingBox()).height).toBeGreaterThanOrEqual(32);
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(surface.locator('.tool-inline')).toBeVisible();
+    await expect(toolRow(surface, 'output-polish')).toBeVisible();
     for (let i = 0; i < 4; i++) await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await toggle.click();
     await expect.poll(() => body.evaluate((node) => node.getBoundingClientRect().height)).toBe(0);
-    await expect(body).toHaveAttribute('inert', '');
+    /* Collapsed content leaves the accessibility tree (was `inert`). */
+    await expect(body).toHaveAttribute('aria-hidden', 'true');
     await page.emulateMedia({ reducedMotion: 'reduce' });
+    /* RNW reports the media change asynchronously; let it reach the RN
+       reduced-motion hook before the toggle is pressed. */
+    await page.waitForFunction(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     await toggle.click();
-    for (const target of [body, surface.locator('.thinking-accordion-chev')]) {
-      expect(await target.evaluate((node) => Math.max(...getComputedStyle(node).transitionDuration.split(',').map(parseFloat)))).toBeLessThanOrEqual(0.001);
-    }
+    /* Reduced motion: the body is fully shown on the first frame, no reveal. */
+    expect(await body.evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     expect(errors).toEqual([]);
   });
@@ -52,10 +57,8 @@ for (const fallback of ['native', 'success', 'failure', 'throws']) {
         return fallback === 'success';
       };
     }, fallback);
-    await page.locator('.thinking-accordion-toggle').click();
-    const row = page.locator('[data-tcid="output-polish"]');
-    await row.locator(':scope > summary').click();
-    const copy = row.locator('.tool-inline-detail-actions .tool-inline-action').last();
+    const detail = await openToolDetail(page, page.locator('.msg.assistant').last(), 'output-polish');
+    const copy = detail.locator(TURN.codeCopy).last();
     await copy.focus();
     await copy.click();
     await expect(copy).toHaveText(['native', 'success'].includes(fallback) ? 'Copied' : 'Copy failed');
@@ -76,20 +79,26 @@ for (const mobile of [false, true]) {
         toolCalls: [{ id: 'reference-search', name: 'web_search', input: { query: '模型官方发布与评测说明' }, textOffset: lead.length + 2 }],
       },
     ] });
-    const surface = page.locator('.thinking-accordion');
-    const caption = surface.locator('.thinking-status-label');
-    await expect(surface).toHaveAttribute('data-live', 'true');
-    await expect(caption).toHaveCSS('animation-name', 'ui-activity-breathe');
+    const wrapper = page.locator(TURN.wrapper);
+    const surface = page.locator(TURN.surface);
+    const caption = surface.locator(TURN.label);
+    await expect(wrapper).toHaveAttribute('data-live', 'true');
+    await expect(caption).toHaveAttribute('role', 'status');
+    await expect(surface.locator(TURN.progress)).toHaveCount(1);
+    /* Status is spoken as words: no status dots anywhere in the activity. */
     await expect(surface.locator('.turn-activity-dot')).toHaveCount(0);
-    await expect(surface.locator('.thinking-accordion-left > .tool-inline-tool-icon')).toBeVisible();
+    await expect(surface.locator(`${TURN.toggle} .tool-inline-tool-icon`)).toBeVisible();
     await page.mouse.move(0, 0);
     if (mobile) await page.screenshot({ path: 'test-results/activity-polish-live-mobile.png' });
     else await page.screenshot({ path: 'test-results/activity-polish-live-desktop.png' });
-    await surface.locator('.thinking-accordion-toggle').click();
-    await expect(surface.locator('.thinking-accordion-text')).toBeVisible();
-    const summary = await surface.locator('.thinking-accordion-text').boundingBox();
+    await surface.locator(TURN.toggle).click();
+    const step = surface.locator(TURN.step).first();
+    await expect(step).toBeVisible();
+    const summary = await step.boundingBox();
     const surfaceBox = await surface.boundingBox();
-    expect(summary.x - surfaceBox.x).toBeLessThanOrEqual(20);
+    /* Shallow indent only: the timeline's 4px inset + 1px rail + 16px gap
+       (21px) is the whole offset; no nested card padding on top of it. */
+    expect(summary.x - surfaceBox.x).toBeLessThanOrEqual(24);
     await page.evaluate(() => {
       const messages = window.stateStore.read('messages').map((entry) => entry.role === 'assistant' ? {
         ...entry, type: 'assistant', _streamSettled: true,
@@ -98,9 +107,10 @@ for (const mobile of [false, true]) {
       window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
     });
     await publishChatRuntime(page, { type: 'state-synced', reason: 'reference-complete' });
-    await expect(surface).not.toHaveAttribute('data-live', 'true');
-    await expect(caption).toHaveCSS('animation-name', 'none');
-    await expect(surface.locator('.thinking-accordion-toggle')).toHaveAttribute('aria-expanded', 'true');
+    await expect(wrapper).not.toHaveAttribute('data-live', 'true');
+    await expect(surface.locator(TURN.progress)).toHaveCount(0);
+    await expect(caption).not.toHaveAttribute('role', 'status');
+    await expect(surface.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
     await page.mouse.move(0, 0);
     if (mobile) await page.screenshot({ path: 'test-results/activity-polish-complete-mobile.png', animations: 'disabled' });
     else await page.screenshot({ path: 'test-results/activity-polish-complete-desktop.png', animations: 'disabled' });

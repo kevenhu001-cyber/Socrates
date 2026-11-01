@@ -183,19 +183,18 @@
 #appShell .msg-body .tool-run-prose.is-settled:not(.is-tail):not([data-prose-last]) > p:last-child { margin-bottom: var(--msg-para-gap); }
 
 /* Streaming cursor — the single owner (render state from AssistantTurn's
-   StreamCursor). One soft dot that pulses in opacity only: steady while text
-   is playing, slower while upstream is stalled (`is-starved`), fading out as
-   the turn settles. Pure opacity — never touches text layout. */
+   StreamCursor). A breathing dot: an 8px solid ink circle (the foreground
+   token, so it inverts on the dark canvas) that eases opacity and scale
+   together, slower while upstream is stalled (`is-starved`), fading out as
+   the turn settles. It is the one dot the transcript allows. Transform and
+   opacity only — never touches text layout; still under reduced motion. */
 #appShell .stream-cursor {
   display: inline-block;
   position: relative;
-  width: 12px;
-  height: 12px;
-  margin-left: 3px;
-  vertical-align: -1px;
-  color: transparent;
-  font-size: 0;
-  line-height: 0;
+  width: 8px;
+  height: 8px;
+  margin-left: 4px;
+  vertical-align: 1px;
   transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
 }
 #appShell .stream-cursor::before {
@@ -204,7 +203,8 @@
   inset: 0;
   border-radius: 50%;
   background: var(--foreground);
-  animation: streamCursorPulse var(--ui-duration-pulse) ease-in-out infinite;
+  transform-origin: center;
+  animation: streamCursorBreathe var(--ui-duration-pulse) ease-in-out infinite;
 }
 #appShell .stream-cursor.is-starved::before { animation-duration: var(--ui-duration-pulse-slow); }
 #appShell .stream-cursor.is-settling { opacity: 0; pointer-events: none; }
@@ -216,23 +216,23 @@
    height does not change. */
 #appShell :is(.msg-body, .turn-evidence) > .stream-cursor {
   display: block;
-  width: 12px;
+  width: 8px;
   height: 0;
   margin-left: 0;
 }
 #appShell :is(.msg-body, .turn-evidence) > .stream-cursor::before {
   inset: auto;
-  top: 8px;
+  top: 10px;
   left: 0;
-  width: 12px;
-  height: 12px;
+  width: 8px;
+  height: 8px;
 }
-@keyframes streamCursorPulse {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 0.32; }
+@keyframes streamCursorBreathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.72); }
 }
 @media (prefers-reduced-motion: reduce) {
-  #appShell .stream-cursor::before { animation: none; opacity: 0.7; }
+  #appShell .stream-cursor::before { animation: none; opacity: 0.85; transform: none; }
 }
 
 /* AI streaming output — progressive gradient reveal */
@@ -319,9 +319,6 @@
    second owner is how the row height, the rail indent and the chevron came
    to disagree between the same file and this one. Only the non-declarative
    (legacy/agent-card) nesting keeps its step. */
-#appShell .msg.assistant .msg-body:not(.is-declarative):has(.tool-run-group) .tool-inline[data-nested="1"] {
-  margin-left: 16px;
-}
 
 .code-block-copy.copied svg {
   animation: checkmarkPop var(--ui-duration-fast) var(--ui-ease-spring-bouncy) forwards;

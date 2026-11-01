@@ -23,16 +23,16 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(surface).toHaveCount(1);
   await expect(surface).toHaveAttribute('data-ui-surface', 'assistant-turn');
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
-  const status = message.locator('.thinking-status');
+  const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveCount(1);
-  await expect(status.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-breathe');
-  await expect(status.locator('.thinking-status-label')).not.toHaveClass(/shimmer-text/);
+  await expect(status.getByTestId('turn-activity-label')).toHaveText('Thinking · step 1');
+  await expect(status.getByTestId('turn-activity-progress')).toHaveCount(1);
   const before = await status.boundingBox();
 
   await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
-  await expect(message.locator('.thinking-status')).toHaveCount(1);
-  await expect(message.locator('.turn-activity-surface')).toHaveAttribute('data-answer-started', 'true');
-  await expect(message.locator('.thinking-status-context')).toContainText('Answering while activity continues');
+  await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
+  await expect(message.locator('.rn-turn-activity')).toHaveAttribute('data-answer-started', 'true');
+  await expect(message.getByTestId('turn-activity-meta').first()).toContainText('Answering while activity continues');
   const answer = message.locator('.tool-run-prose p').first();
   await expect(answer).toContainText('回答从同一个消息正文位置开始。');
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
@@ -54,22 +54,22 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
     window.__waitingController.recordTurnActivity({ type: 'thinking' });
   });
   const message = page.locator('#msgList .msg.assistant').last();
-  const status = message.locator('.thinking-status');
+  const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveAttribute('data-phase', 'waiting');
   await page.evaluate(() => window.__advanceReasoningClock());
-  await expect(status.locator('.thinking-status-detail')).toContainText(/[5-9]s/);
+  await expect(status.getByTestId('turn-activity-meta')).toContainText(/[5-9]s/);
   await page.screenshot({ path: 'test-results/waiting-response.png' });
   await page.evaluate(() => window.__waitingController.appendThinking('PRIVATE REASONING'));
   await expect(status).toHaveAttribute('data-phase', 'thinking');
-  await expect(status.locator('.thinking-status-detail')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-meta')).toHaveCount(0);
   const duration = await page.evaluate(() => window.stateStore.read('messages').at(-1).reasoningDurationSec);
   expect(duration).toBe(0);
   await page.screenshot({ path: 'test-results/observed-reasoning.png' });
   await expect(message).not.toContainText('PRIVATE REASONING');
   await page.evaluate(() => window.__waitingController.append('这才是正文。'));
   await expect(status).toHaveCount(1);
-  await expect(message.locator('.turn-activity-surface')).toHaveAttribute('data-answer-started', 'true');
-  await expect(message.locator('.thinking-status-context')).toContainText('Answering while activity continues');
+  await expect(message.locator('.rn-turn-activity')).toHaveAttribute('data-answer-started', 'true');
+  await expect(message.getByTestId('turn-activity-meta').first()).toContainText('Answering while activity continues');
   await page.evaluate(() => window.__waitingController.finish());
 });
 
@@ -90,7 +90,7 @@ test('streaming actions are absent and running tools own the activity surface', 
   await prepareChatWorkbench(page);
   await controller(page);
   const message = page.locator('#msgList .msg.assistant').last();
-  await expect(message.locator('.thinking-status')).toHaveCount(1);
+  await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
   await expect(message.locator('.msg-toolbar')).toBeHidden();
   await expect(message).not.toContainText('PRIVATE SCRATCH WORK');
   await expect(message).not.toContainText('相关解析与说明');
@@ -101,10 +101,10 @@ test('streaming actions are absent and running tools own the activity surface', 
     ctl.recordToolUse({ id: 'search', name: 'web_search', input: { query: 'React Context rendering' } });
     ctl.appendThinking('More private scratch work while searching.');
   });
-  await expect(message.locator('.tool-inline[data-state="running"]')).toHaveCount(1);
-  await expect(message.locator('.thinking-status')).toHaveCount(1);
-  await expect(message.locator('.turn-activity-surface')).toHaveCount(1);
-  await expect(message.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-breathe');
+  await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(1);
+  await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
+  await expect(message.locator('.rn-turn-activity')).toHaveCount(1);
+  await expect(message.getByTestId('turn-activity-label')).toHaveText(/^Thinking · step \d+$/);
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 
@@ -138,8 +138,10 @@ test('detail-free rows are static and native UI output is outside disclosure', a
   const before = await page.locator('.intui').innerText();
   await page.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect.poll(() => page.locator('.intui').innerText()).not.toBe(before);
-  await page.locator('.thinking-accordion-toggle').click();
-  await page.locator('.tool-inline summary').click();
+  await page.getByTestId('turn-activity-toggle').click();
+  await page.getByTestId('tool-row-ui').click();
+  await expect(page.getByTestId('tool-detail')).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(page.locator('.intui')).toBeVisible();
 
   await page.evaluate(() => {
@@ -149,8 +151,8 @@ test('detail-free rows are static and native UI output is outside disclosure', a
     }] });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'static-row-fixture' });
-  await expect(page.locator('div.tool-inline[data-tcid="empty"]')).toHaveCount(1);
-  await expect(page.locator('.tool-inline summary, details.tool-inline')).toHaveCount(0);
+  await expect(page.locator('.rn-tool-row[data-tcid="empty"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="tool-row-empty"][role="button"]')).toHaveCount(0);
 });
 
 test('native UI survives a tool-only settled turn and recovers raw streamed arguments', async ({ page }) => {

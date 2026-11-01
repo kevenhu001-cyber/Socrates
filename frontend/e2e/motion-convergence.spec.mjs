@@ -158,25 +158,18 @@ test('composer menu opens crisply on the shared clock and respects reduced motio
   await expect(menu).toHaveCSS('animation-name', 'none');
 });
 
-test('thinking, tools and recording share one primary persistent cue', async ({ page }) => {
+/* RN-2: the thinking line and tool rows are react-native-web components whose
+   motion is JS-driven (opacity breathing, progress hairline) and stops under
+   reduced motion; unified-turn-ui.spec.mjs and turn-activity.spec.mjs own
+   those checks. This test keeps the CSS-owned cues: agent steps stay still,
+   recording is the one persistent ring. */
+test('agent steps and recording share one primary persistent cue', async ({ page }) => {
   const normal = await page.evaluate(() => {
     const shell = document.getElementById('appShell');
     if (!shell) return null;
     const fixture = document.createElement('div');
     fixture.id = 'motion-convergence-fixture';
-    fixture.className = 'turn-activity-surface thinking-accordion';
-    fixture.dataset.live = 'true';
     fixture.innerHTML = `
-      <div class="thinking-status">
-        <span class="tool-inline-tool-icon"></span>
-        <span class="thinking-status-label">Thinking</span>
-      </div>
-      <details class="tool-inline" data-state="running">
-        <summary class="tool-inline-head">
-          <span class="tool-inline-tool-icon"></span>
-          <span class="tool-inline-label">Searching</span>
-        </summary>
-      </details>
       <div class="agent-step" data-state="running">
         <span class="agent-step-icon"></span>
         <span class="agent-step-label">Running command</span>
@@ -189,14 +182,8 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
       const node = fixture.querySelector(selector);
       return node ? getComputedStyle(node, pseudo).animationName : null;
     };
-    const thinking = fixture.querySelector('.thinking-status-label');
 
     return {
-      thinkingLabel: animation('.thinking-status-label'),
-      thinkingIcon: animation('.thinking-status .tool-inline-tool-icon'),
-      thinkingBackground: thinking ? getComputedStyle(thinking).backgroundImage : null,
-      inlineLabel: animation('.tool-inline-label'),
-      inlineIcon: animation('.tool-inline .tool-inline-tool-icon'),
       agentLabel: animation('.agent-step-label'),
       agentIcon: animation('.agent-step-icon'),
       voiceCore: animation('.voice-recording-indicator'),
@@ -205,13 +192,6 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
   });
 
   expect(normal).not.toBeNull();
-  expect(normal.thinkingLabel).toBe('ui-activity-breathe');
-  expect(normal.thinkingIcon).toBe('none');
-  /* The caption cue is compositor-only now: no travelling gradient is
-     painted on the text, so nothing has to repaint it every frame. */
-  expect(normal.thinkingBackground).toBe('none');
-  expect(normal.inlineLabel).toBe('none');
-  expect(normal.inlineIcon).toBe('none');
   expect(normal.agentLabel).toBe('none');
   expect(normal.agentIcon).toBe('none');
   expect(normal.voiceCore).toBe('none');
@@ -225,26 +205,13 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
       const node = fixture.querySelector(selector);
       return node ? getComputedStyle(node, pseudo).animationName : null;
     };
-    const thinking = fixture.querySelector('.thinking-status-label');
     return {
-      thinking: animation('.thinking-status-label'),
-      inline: animation('.tool-inline-label'),
       agent: animation('.agent-step-label'),
       voiceHalo: animation('.voice-recording-indicator', '::after'),
-      fill: thinking ? getComputedStyle(thinking).webkitTextFillColor : null,
     };
   });
 
   expect(reduced).not.toBeNull();
-  expect(reduced.thinking).toBe('none');
-  expect(reduced.inline).toBe('none');
   expect(reduced.agent).toBe('none');
   expect(reduced.voiceHalo).toBe('none');
-  expect(reduced.fill).not.toBe('transparent');
-
-  await page.emulateMedia({ reducedMotion: 'no-preference', forcedColors: 'active' });
-  const label = page.locator('#motion-convergence-fixture .thinking-status-label');
-  await expect(label).toHaveCSS('animation-name', 'none');
-  await expect(label).toHaveCSS('background-image', 'none');
-  expect(await label.evaluate((node) => getComputedStyle(node).color)).not.toBe('rgba(0, 0, 0, 0)');
 });

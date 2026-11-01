@@ -8,10 +8,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { normalizeSources } from '../src/react/tool-run/toolRunDetails.ts';
-import { ResultSection } from '../src/react/tool-run/ToolRunDetailSections.tsx';
 
 test('the source list drops duplicate entries and strips unsafe URLs', () => {
   const sources = normalizeSources([
@@ -29,22 +26,5 @@ test('the source list drops duplicate entries and strips unsafe URLs', () => {
   assert.equal(sources[1].host, '');
 });
 
-test('the source list renders sanitized links and escaped provider text', () => {
-  const sources = normalizeSources([
-    { title: 'Trusted source', url: 'https://example.test/source' },
-    { title: 'Unsafe source', url: 'javascript:alert(1)', source: '<img onerror=alert(1)>' },
-  ]);
-  const previousWindow = globalThis.window;
-  globalThis.window = { t: (key) => key };
-  try {
-    const html = renderToStaticMarkup(createElement(ResultSection, {
-      section: { kind: 'sources', title: 'Sources', items: sources },
-    }));
-    assert.match(html, /href="https:\/\/example\.test\/source"/);
-    assert.doesNotMatch(html, /href="javascript:/);
-    assert.match(html, /&lt;img onerror=alert\(1\)&gt;/);
-  } finally {
-    if (previousWindow === undefined) delete globalThis.window;
-    else globalThis.window = previousWindow;
-  }
-});
+/* Rendering (links only for http(s), provider text as text) moved to the
+   shared RN SourceList; see packages/ui/src/turn/turnModels.test.ts. */

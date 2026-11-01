@@ -92,17 +92,18 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   await page.evaluate(() => window.__pushText('Running the snippet now.\n\n'));
   await page.evaluate(() => window.__pushToolUse());
 
-  const row = bubble.locator(`.tool-inline[data-tcid="${TOOL_ID}"]`);
+  const row = bubble.locator(`.rn-tool-row[data-tcid="${TOOL_ID}"]`);
+  const rowButton = row.getByTestId(`tool-row-${TOOL_ID}`);
   await expect(row).toHaveCount(1);
 
-  // Running: the row carries the running state and says so for assistive
-  // technology. The legacy card kept this in a visible status chip; the
-  // declarative row keeps the same words in a live region.
+  // Running: the row carries the running state and says it in words (a
+  // status region), never with a dot.
   await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(row.locator('[role="status"]')).toContainText('Running');
+  await expect(row.getByTestId('tool-row-status')).toHaveText('Running');
+  await expect(row.getByTestId('tool-row-status')).toHaveAttribute('role', 'status');
 
   // The elapsed counter ticks while the row is in flight.
-  const meta = row.locator('.tool-inline-meta.is-visible');
+  const meta = row.getByTestId('tool-row-duration');
   const readMeta = async () => (await meta.count()) ? (await meta.first().innerText()).trim() : '';
   await expect.poll(readMeta, { timeout: 10_000 }).toMatch(/\d/);
   const firstReading = await readMeta();
@@ -111,10 +112,10 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   // The terminal frame settles the row.
   await page.evaluate(() => window.__pushToolResult());
   await expect(row).toHaveAttribute('data-state', 'done');
-  await expect(row.locator('[role="status"]')).toContainText('Done');
+  await expect(row.getByTestId('tool-row-status')).toHaveText('Done');
 
-  // The settled row carries its output and opens on demand.
-  const activityToggle = bubble.locator('.thinking-accordion-toggle');
+  // The settled row opens its detail drawer on demand; Escape closes it.
+  const activityToggle = bubble.getByTestId('turn-activity-toggle');
   if (await activityToggle.count()) {
     const isExpanded = await activityToggle.getAttribute('aria-expanded');
     if (isExpanded !== 'true') {
@@ -122,8 +123,13 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
     }
   }
 
-  await expect(row).toHaveAttribute('data-expandable', '1');
-  await expect(row).not.toHaveAttribute('open', '');
-  await row.locator('summary').click();
-  await expect(row).toHaveAttribute('open', '');
+  await expect(rowButton).toHaveAttribute('aria-haspopup', 'dialog');
+  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
+  await rowButton.click();
+  const detail = page.getByTestId('tool-detail');
+  await expect(detail).toBeVisible();
+  await expect(detail).toHaveAttribute('data-layout', 'drawer');
+  await expect(detail.getByTestId('tool-detail-section-input')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
 });

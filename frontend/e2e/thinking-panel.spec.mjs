@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+import { TURN, openActivity, openToolGroups, toolRow, toolRowButton } from './_turn-ui.mjs';
 
 async function installStream(page, immediate = true) {
   await page.evaluate((immediate) => {
@@ -68,22 +69,24 @@ async function startTurn(page, immediate = true) {
 
 test('intent stays in the unified activity and completed observations do not duplicate the answer', async ({ page }) => {
   const bubble = await startTurn(page);
-  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
-  await expect(bubble.locator('.thinking-spinner, .turn-summary-sparkle')).toHaveCount(0);
+  await expect(bubble.locator(TURN.surface)).toHaveCount(1);
+  await expect(bubble.locator(TURN.label)).toHaveAttribute('role', 'status');
+  await expect(bubble.locator(TURN.progress)).toHaveCount(1);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
-  await expect(bubble.locator('.turn-activity-intent')).toHaveText('Preparing the comparison.');
-  const previewToggle = bubble.locator('.thinking-accordion-toggle');
-  await expect(previewToggle).toBeEnabled();
-  await previewToggle.click();
-  await expect(previewToggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(bubble.locator('.turn-activity-intent')).toBeVisible();
-  await expect(bubble.locator('.turn-summary > summary')).toHaveCount(0);
+  const toggle = bubble.locator(TURN.toggle);
+  await expect(toggle).toBeEnabled();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(bubble.locator(TURN.stepTitle).first()).toHaveText('Preparing the comparison.');
+  await expect(bubble.locator(TURN.stepTitle).first()).toBeVisible();
   await page.evaluate(() => window.__pushThinkingFrame('', { choices: [{ delta: { reasoning_content: 'another private thought' } }] }));
   await expect(bubble).not.toContainText('another private thought');
   await page.evaluate(() => window.__finishThinking());
   await expect(bubble).toContainText('The final answer.');
-  await expect(bubble.locator('.thinking-status')).toHaveCount(0);
-  await expect(bubble.locator('.turn-activity-surface')).toHaveCount(0);
+  /* Settled: no live caption, no travelling hairline. */
+  await expect(bubble.locator(TURN.progress)).toHaveCount(0);
+  await expect(bubble.locator(`${TURN.label}[role="status"]`)).toHaveCount(0);
+  await expect(bubble.locator(`${TURN.wrapper}[data-live="true"]`)).toHaveCount(0);
   await expect(bubble).not.toContainText('private');
   await expect(page.locator('[data-thinking-panel], #thinkingPanelReactRoot, #summaryBtn')).toHaveCount(0);
 });
@@ -91,21 +94,29 @@ test('intent stays in the unified activity and completed observations do not dup
 test('tool status owns live progress without a duplicate activity list', async ({ page }) => {
   const bubble = await startTurn(page);
   await page.evaluate(() => window.__pushThinkingFrame('tool_use', [{ id: 'search-inline', name: 'web_search', input: { query: 'public query' } }]));
-  const row = bubble.locator('.tool-inline[data-tcid="search-inline"]');
+  const row = toolRow(bubble, 'search-inline');
   await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
+  await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  await expect(bubble.locator('.thinking-status-label')).toHaveText('Searching "public query"…');
-  await bubble.locator('.thinking-accordion-toggle').click();
+  /* The live caption counts steps; the running tool's icon leads it. */
+  await expect(bubble.locator(TURN.label)).toHaveText(/^Thinking · step \d+$/);
+  await expect(bubble.locator(`${TURN.toggle} .tool-inline-tool-icon svg`)).toBeVisible();
+  await openActivity(bubble);
+  await expect(row.locator(TURN.verb)).toHaveText('Search the web');
+  await expect(row.locator(TURN.target)).toHaveText('public query');
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', { id: 'search-inline', name: 'web_search', ok: true, output: 'Found a source', results: [{ title: 'Source', url: 'https://example.test' }], status: 'completed' }));
   await expect(row).toHaveAttribute('data-state', 'done');
-  // Native disclosure keyboard interaction still opens the execution detail.
-  await row.locator(':scope > summary').focus();
+  // Keyboard: the row is a button that opens the call's detail drawer.
+  const trigger = toolRowButton(bubble, 'search-inline');
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+  await trigger.focus();
   await page.keyboard.press('Enter');
-  await expect(row.locator(':scope > summary')).toHaveAttribute('aria-expanded', 'true');
-  await expect(row.locator('.tool-inline-src')).toBeVisible();
-  await page.keyboard.press('Space');
-  await expect(row.locator(':scope > summary')).toHaveAttribute('aria-expanded', 'false');
+  const detail = page.locator(TURN.detail);
+  await expect(detail).toBeVisible();
+  await expect(detail.locator(TURN.source)).toBeVisible();
+  await expect(detail.locator(TURN.sourceTitle)).toHaveText('Source');
+  await page.keyboard.press('Escape');
+  await expect(detail).toHaveCount(0);
   await page.evaluate(() => window.__finishThinking());
 });
 
@@ -115,41 +126,44 @@ test('parallel tools keep their order, DOM identity, and open details as later c
     { id: 'first-slow', name: 'Read', input: { file_path: 'slow.ts' } },
     { id: 'second-fast', name: 'web_search', input: { query: 'fast source' } },
   ]));
-  await bubble.locator('.thinking-accordion-toggle').click();
-  const first = bubble.locator('[data-tcid="first-slow"]');
-  const trigger = first.locator(':scope > summary');
+  await openActivity(bubble);
+  await openToolGroups(bubble);
+  const first = toolRow(bubble, 'first-slow');
   await expect(first).toBeVisible();
-  await trigger.click();
   const handle = await first.elementHandle();
-  const detailHandle = await first.locator(':scope > .tool-inline-detail').elementHandle();
-  const technical = first.locator('.tool-inline-tech');
-  await technical.locator('summary').click();
-  await expect(technical).toHaveAttribute('open', '');
+  await toolRowButton(bubble, 'first-slow').click();
+  const detail = page.locator(TURN.detail);
+  await expect(detail).toBeVisible();
+  await expect(detail.locator(TURN.detailTitle)).toHaveText('Read file · slow.ts');
+  const detailHandle = await detail.elementHandle();
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', {
     id: 'second-fast', name: 'web_search', ok: true, status: 'completed', output: 'Found source',
     results: [{ title: 'Source', url: 'https://example.test/fast' }],
   }));
-  await expect(bubble.locator('[data-tcid="second-fast"]')).toHaveAttribute('data-state', 'done');
-  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  expect(await page.evaluate((node) => node === document.querySelector('[data-tcid="first-slow"]'), handle)).toBe(true);
-  expect(await bubble.locator('.tool-inline').evaluateAll((nodes) => nodes.map((node) => node.dataset.tcid))).toEqual(['first-slow', 'second-fast']);
+  await expect(toolRow(bubble, 'second-fast')).toHaveAttribute('data-state', 'done');
+  /* A sibling settling neither closes nor remounts the open drawer. */
+  await expect(detail).toBeVisible();
+  expect(await page.evaluate((node) => node === document.querySelector('[data-testid="tool-detail"]'), detailHandle)).toBe(true);
+  expect(await page.evaluate((node) => node === document.querySelector('.rn-tool-row[data-tcid="first-slow"]'), handle)).toBe(true);
+  expect(await bubble.locator(TURN.row).evaluateAll((nodes) => nodes.map((node) => node.dataset.tcid))).toEqual(['first-slow', 'second-fast']);
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', { id: 'first-slow', name: 'Read', ok: true, status: 'completed', output: 'export const value = 1;' }));
   await expect(first).toHaveAttribute('data-state', 'done');
-  expect(await page.evaluate((node) => node === document.querySelector('[data-tcid="first-slow"]'), handle)).toBe(true);
-  expect(await page.evaluate((node) => node === document.querySelector('[data-tcid="first-slow"] > .tool-inline-detail'), detailHandle)).toBe(true);
-  await expect(technical).toHaveAttribute('open', '');
-  await expect(first.locator('.tool-inline-detail .tool-inline-detail')).toHaveCount(0);
-  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  expect(await page.evaluate((node) => node === document.querySelector('.rn-tool-row[data-tcid="first-slow"]'), handle)).toBe(true);
+  expect(await page.evaluate((node) => node === document.querySelector('[data-testid="tool-detail"]'), detailHandle)).toBe(true);
+  await expect(detail.locator(TURN.codeOutput).filter({ hasText: 'export const value = 1;' })).toBeVisible();
+  await expect(page.locator(TURN.detail)).toHaveCount(1);
+  await page.keyboard.press('Escape');
   await page.evaluate(() => window.__finishPlain());
 });
 
 test('a task preview does not leave a thought header on a plain answer', async ({ page }) => {
   const bubble = await startTurn(page, false);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing an answer.', phase: 'initial' }));
-  await expect(bubble.locator('.turn-activity-intent')).toHaveText('Preparing an answer.');
+  await openActivity(bubble);
+  await expect(bubble.locator(TURN.stepTitle).first()).toHaveText('Preparing an answer.');
   await page.evaluate(() => window.__finishPlain());
   await expect(bubble).toContainText('A direct answer.');
-  await expect(bubble.locator('.turn-summary')).toHaveCount(0);
+  await expect(bubble.locator(TURN.surface)).toHaveCount(0);
 });
 
 for (const theme of ['light', 'dark']) {
@@ -178,42 +192,50 @@ for (const theme of ['light', 'dark']) {
       await expect(page).toHaveTitle(/Socrates/i);
       expect(new URL(page.url()).pathname).toBe('/');
       const bubble = page.locator('.msg.assistant').last();
-      const process = bubble.locator('.thinking-accordion-toggle');
-      await expect(bubble.locator('.turn-summary-text')).toHaveCount(0);
+      const process = bubble.locator(TURN.toggle);
+      await expect(process).toHaveAttribute('aria-expanded', 'false');
       await process.click();
       await page.mouse.move(0, 0);
       await expect(process).toBeVisible();
       await expect(bubble).not.toContainText('private reasoning');
-      await expect(bubble.locator('.tool-run-summary, .turn-summary > summary')).toHaveCount(0);
-      await expect(bubble.locator('.tool-inline')).toHaveCount(3);
-      for (const row of await bubble.locator('.tool-inline').all()) {
+      /* Three consecutive calls merge into one 「使用了 3 个工具」 group. */
+      await expect(bubble.locator(TURN.groupTitle)).toHaveText('使用了 3 个工具');
+      await openToolGroups(bubble);
+      /* Rows are judged at rest: park the pointer so none is hovered. */
+      await page.mouse.move(0, 0);
+      await expect(bubble.locator(TURN.row)).toHaveCount(3);
+      for (const row of await bubble.locator(`${TURN.row} [data-testid^="tool-row-"][role="button"]`).all()) {
         await expect(row).toBeVisible();
-        await expect(row.locator(':scope > summary')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        await expect(row).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
       }
-      const brand = bubble.locator('[data-tcid="github-jobs"] .is-connector-brand svg');
+      const brand = toolRow(bubble, 'github-jobs').locator('.is-connector-brand svg');
       await expect(brand).toBeVisible();
-      await expect(bubble.locator('[data-tcid="github-jobs"] .tool-inline-label')).toHaveText('检查 GitHub Actions 工作流步骤');
-      const tool = bubble.locator('[data-tcid="search-example"]');
-      const label = tool.locator('.tool-inline-label');
-      await expect(label).toHaveText('已搜索「' + longQuery + '」');
-      const type = await label.evaluate((node) => ({ size: getComputedStyle(node).fontSize, color: getComputedStyle(node).color, whiteSpace: getComputedStyle(node).whiteSpace, height: node.getBoundingClientRect().height }));
-      await expect(process).toHaveCSS('font-size', type.size);
-      expect(parseFloat(type.size)).toBe(14);
-      expect(type.whiteSpace).toBe('normal');
-      /* Medium steps down one step on the dark canvas (500 → 450). */
-      await expect(process).toHaveCSS('font-weight', theme === 'dark' ? '450' : '500');
-      if (mobile) expect(type.height).toBeGreaterThan(30);
+      await expect(toolRow(bubble, 'github-jobs').locator(TURN.verb)).toHaveText('使用已连接应用');
+      const tool = toolRow(bubble, 'search-example');
+      await expect(tool.locator(TURN.verb)).toHaveText('搜索网页');
+      /* The object is clipped to one line; the full query lives in the drawer. */
+      const target = tool.locator(TURN.target);
+      await expect(target).toHaveText(/^检查 GitHub Actions/);
+      const verbType = await tool.locator(TURN.verb).evaluate((node) => ({ size: getComputedStyle(node).fontSize, lineHeight: node.getBoundingClientRect().height }));
+      const labelSize = await bubble.locator(TURN.label).evaluate((node) => getComputedStyle(node).fontSize);
+      expect(verbType.size).toBe(labelSize);
+      expect(await target.evaluate((node) => node.scrollWidth <= node.clientWidth + 1 || getComputedStyle(node).textOverflow === 'ellipsis')).toBe(true);
+      /* Rows bleed 8px (uiSpace[2]) each side so the hover fill frames the
+         text column; anything wider means the long object pushed the row. */
       const overflow = await bubble.evaluate((node) => node.scrollWidth - node.clientWidth);
-      expect(overflow).toBeLessThanOrEqual(1);
+      expect(overflow).toBeLessThanOrEqual(8);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       await bubble.scrollIntoViewIfNeeded();
       if (mobile && theme === 'light') await page.screenshot({ path: 'test-results/activity-reference-mobile-light.png' });
       else if (mobile) await page.screenshot({ path: 'test-results/activity-reference-mobile-dark.png' });
       else if (theme === 'light') await page.screenshot({ path: 'test-results/activity-reference-desktop-light.png' });
       else await page.screenshot({ path: 'test-results/activity-reference-desktop-dark.png' });
-      await tool.locator(':scope > summary').click();
-      await expect(tool.locator('.tool-inline-src')).toBeVisible();
-      await expect(tool.locator(':scope > summary')).toHaveAttribute('aria-expanded', 'true');
-      await expect(process).toBeVisible();
+      await toolRowButton(bubble, 'search-example').click();
+      const detail = page.locator(TURN.detail);
+      await expect(detail).toBeVisible();
+      await expect(detail).toHaveAttribute('data-layout', mobile ? 'sheet' : 'drawer');
+      await expect(detail.locator(TURN.detailTitle)).toContainText(longQuery.slice(0, 20));
+      await expect(detail.locator(TURN.source)).toBeVisible();
       await expect(page.locator('.tool-run-sheet, [data-thinking-panel], vite-error-overlay')).toHaveCount(0);
       expect(errors).toEqual([]);
     });

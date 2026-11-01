@@ -219,62 +219,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* Chat-first tool runs. One answer owns one quiet, collapsible activity
    group; individual cards are evidence, not a competing dashboard. */
-/* ── Inline tool status rows (P_inline-tools) ──
-   A <details class="tool-inline"> sits between text segments at the
-   exact point the tool fired. The row reads as one quiet grey line
-   in the assistant's prose — small icon on the left, label to the
-   right, no border, no background, no chevron, no duration tag. The
-   row visually belongs to the answer rather than competing with it:
-   the assistant's tool calls read like inline footnotes, not a
-   competing dashboard.
-
-   Layout rule (don't break paragraphs): `toolRowAnchorOffset` in
-   render/streaming.ts places the row after the paragraph in progress
-   when the tool fired mid-paragraph. The label itself is single-line
-   `white-space: nowrap` with `text-overflow: ellipsis` so a long
-   command path or filename is truncated with a trailing … rather
-   than wrapping and breaking visual rhythm with the surrounding prose. */
-.tool-inline{
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  gap:0;
-  clear:both;
-  width:100%;
-  box-sizing:border-box;
-  margin:2px 0;
-  padding:0;
-  border:0;
-  background:transparent;
-  font-size:13px;
-  line-height:1.5;
-  color:hsl(var(--text-400));
-  transition:color var(--crossfade-duration) ease;
-  overflow:hidden
-}
-/* P_tool-inline-group — borderless rows stack as plain lines; the
-   grouped head label carries the "(N)" count so merging stays a
-   semantic cue, not chrome. */
-.tool-inline:hover{color:hsl(var(--text-300))}
-.tool-inline-head{
-  display:flex; align-items:center; gap:var(--inline-row-gap);
-  min-height:var(--inline-row-height);
-  padding:2px 4px;
-  list-style:none;
-  cursor:pointer;
-  -webkit-user-select:none;
-  user-select:none;
-  border-radius:4px;
-  flex:1 1 auto;
-  min-width:0;
-  transition:background var(--crossfade-duration) ease;
-}
-.tool-inline-head::-webkit-details-marker{display:none}
-.tool-inline-head::marker{display:none;content:""}
-.tool-inline-head:hover{background:var(--inline-hover-bg)}
-.tool-inline-head:hover .tool-inline-label{color:hsl(var(--text-300))}
-.tool-inline-head:focus-visible{outline:2px solid transparent;outline-offset:-2px;border-radius:4px}
-.tool-inline[open] > .tool-inline-head{background:var(--inline-hover-bg)}
 
 /* P_tool-inline-status — bare 16px icon slot. No chip, no tinted
    fill: state is carried by color alone so a settled row reads as a
@@ -287,239 +231,20 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   transition:color var(--crossfade-duration) ease;
 }
 .tool-inline-tool-icon svg{width:var(--inline-icon-glyph);height:var(--inline-icon-glyph);display:block}
-.tool-inline[data-state="running"] .tool-inline-tool-icon{color:hsl(var(--text-400))}
-.tool-inline[data-state="done"] .tool-inline-tool-icon{color:hsl(var(--text-400))}
-.tool-inline[data-state="error"] .tool-inline-tool-icon{color:hsl(0 55% 52%)}
-[data-theme=socrates][data-mode=dark] .tool-inline[data-state="error"] .tool-inline-tool-icon{color:hsl(0 60% 66%)}
-.tool-inline[data-state="stopped"] .tool-inline-tool-icon{color:hsl(var(--text-500))}
 /* Settle crossfade: the spinner fades out while the tool glyph eases
    in on the same slot (.is-settling is added by toolInline.ts). */
-.tool-inline-tool-icon.is-settling .tool-inline-spinner{opacity:0;transition:opacity var(--crossfade-duration) ease}
 .tool-inline-tool-icon.is-settling svg:not(.tool-inline-spinner){animation:inline-icon-enter var(--crossfade-duration) ease both}
 @keyframes inline-icon-enter{
   from{opacity:0;transform:scale(.92)}
   to{opacity:1;transform:scale(1)}
 }
-
-/* P_tool-inline-chevron — hidden at rest; fades in on hover and stays
-   (rotated) while the detail is open. Still removed entirely when the
-   row has nothing to expand (data-expandable != 1). */
-.tool-inline-chev{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:16px; height:16px;
-  margin-left:2px;
-  flex:0 0 auto;
-  color:hsl(var(--text-500));
-  opacity:0;
-  transition:transform .22s var(--ease-out), opacity .18s ease;
-}
-.tool-inline-chev svg{width:var(--inline-chevron-size);height:var(--inline-chevron-size);display:block}
-.tool-inline-head:hover .tool-inline-chev{opacity:.55}
-.tool-inline[open] .tool-inline-chev{transform:rotate(90deg);opacity:.7}
-.tool-inline:not([data-expandable="1"]) .tool-inline-chev{display:none}
-.tool-inline-label{
-   min-width:0;
-   color:inherit;
-   overflow:hidden;
-   text-overflow:ellipsis;
-   white-space:nowrap;
-   flex:1 1 auto;
-   font-size:13px;
-   font-weight:var(--ui-font-weight-regular);
- }
-/* The label carries a softened neutral wave while in flight. */
-.tool-inline[data-state="running"] .tool-inline-label{
-  animation:neutralTextWave var(--shimmer-duration) linear infinite;
-  opacity:.85;
-}
-/* Spinner glyph that lives in the .tool-inline-tool-icon slot while the
-   tool is in flight. Same footprint as the tool-type icon so the label
-   never reflows when the tool settles; finer ring and slower symmetric
-   easing so it breathes rather than ticks. */
-.tool-inline-spinner{
-  display:inline-block;width:14px;height:14px;border-radius:50%;
-  border:1.6px solid currentColor;border-right-color:transparent;
-  animation:loadingSpin var(--ui-duration-spin) cubic-bezier(.45,.05,.55,.95) infinite;
-  transition:opacity var(--crossfade-duration) ease;
-}
 /* Elapsed chip: collapsed while hidden so it reserves no width; JS adds
    .is-visible after a few seconds in flight (or on settle) and the chip
    expands + fades in as a quiet "still alive" cue. */
-.tool-inline-meta{
-  flex:0 0 auto;
-  max-width:0;
-  overflow:hidden;
-  font-size:11px;
-  font-variant-numeric:tabular-nums;
-  color:hsl(var(--text-500));
-  opacity:0;
-  transition:max-width .4s var(--ease-out), opacity .4s ease;
-}
-.tool-inline-meta.is-visible{max-width:72px;opacity:1}
-.tool-inline-detail{
-  margin:2px 4px 6px var(--inline-detail-indent);
-  padding:8px 10px;
-  border:0;
-  border-radius:var(--inline-radius);
-  background:var(--inline-sunken-bg);
-  animation:tool-inline-detail-enter .18s var(--ease-out);
-}
-@keyframes tool-inline-detail-enter{
-  from{opacity:0;transform:translateY(-3px)}
-  to{opacity:1;transform:translateY(0)}
-}
-.tool-inline-detail-section + .tool-inline-detail-section{margin-top:10px}
-.tool-inline-detail-title{
-  margin-bottom:5px;
-  color:hsl(var(--text-500));
-  font:var(--ui-font-weight-semibold) calc(10px * var(--app-font-scale,1))/1.2 var(--font-sans);
-  letter-spacing:.07em;
-  text-transform:uppercase;
-}
-.tool-inline-detail-value{
-  max-height:280px;
-  margin:0;
-  padding:8px 11px;
-  overflow:auto;
-  border:0;
-  border-radius:var(--tool-card-radius-sm);
-  background:hsl(var(--bg-000)/.32);
-  color:hsl(var(--text-300));
-  font:var(--ui-font-weight-regular) calc(11.5px * var(--app-font-scale,1))/1.55 var(--font-mono);
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
-}
-.tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value,
-.tool-inline-detail-section[data-kind="technical"] .tool-inline-detail-value{
-  border-color:hsl(0 58% 52%/.22);
-  background:hsl(0 58% 52%/.055);
-}
-/* P_tool_error_code — the Error code section is rendered as a small
-   monospaced pill so it reads as a stable identifier the model and the
-   user can copy verbatim into logs / next-turn instructions. Tinted
-   border keeps it visually distinct from the prose Error details below
-   without screaming. */
-.tool-inline-detail-section[data-kind="technical"] .tool-inline-detail-value{
-  display:inline-block;
-  max-width:max-content;
-  padding:3px 9px;
-  font-family:var(--font-mono);
-  font-size:calc(10.5px * var(--app-font-scale,1));
-  letter-spacing:0;
-  color:var(--tool-card-text);
-  background:color-mix(in srgb, hsl(var(--accent-000)) 8%, var(--tool-card-bg-sunken));
-  border:1px solid color-mix(in srgb, hsl(var(--accent-000)) 18%, var(--tool-card-border));
-}
-/* P_tool_retryable — differentiate retryable=yes (soft accent) from
-   retryable=no (danger). The pill colour is the only signal; the text
-   already says "safe to run again" / "change the arguments first". */
-.tool-inline-detail-section[data-retryable="1"] .tool-inline-detail-value{
-  background:color-mix(in srgb, hsl(140 50% 50%) 10%, var(--tool-card-bg-sunken));
-  border-color:color-mix(in srgb, hsl(140 50% 50%) 25%, var(--tool-card-border));
-  color:hsl(140 50% 38%);
-}
-[data-theme=socrates][data-mode=dark] .tool-inline-detail-section[data-retryable="1"] .tool-inline-detail-value{color:hsl(140 50% 72%)}
-.tool-inline-detail-section[data-retryable="0"] .tool-inline-detail-value{
-  background:color-mix(in srgb, hsl(0 60% 55%) 8%, var(--tool-card-bg-sunken));
-  border-color:color-mix(in srgb, hsl(0 60% 55%) 28%, var(--tool-card-border));
-  color:hsl(0 60% 45%);
-}
-[data-theme=socrates][data-mode=dark] .tool-inline-detail-section[data-retryable="0"] .tool-inline-detail-value{color:hsl(0 60% 72%)}
-
-/* P_tool_retry_button — container + button styling for the Retry
-   affordance on failed search rows. Sits flush against the right edge
-   of the detail panel so it doesn't compete with the prose sections. */
-.tool-inline-error-actions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:8px;
-  margin-top:8px;
-  padding-top:6px;
-  border-top:1px dashed hsl(var(--border-300)/0.22);
-}
-/* Expand/copy affordance for long tool outputs — same pill look as
-   .tool-inline-retry but without the leading icon, and left-aligned so
-   it reads as part of the section, not an error action. */
-.tool-inline-detail-actions{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-top:8px;
-}
-.tool-inline-action{
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  padding:3px 10px;
-  border:1px solid color-mix(in srgb, hsl(var(--accent-000)) 24%, var(--tool-card-border-strong));
-  border-radius:999px;
-  background:transparent;
-  color:hsl(var(--accent-000));
-  font:var(--ui-font-weight-medium) calc(11px * var(--app-font-scale,1))/1 var(--font-sans);
-  cursor:pointer;
-  transition:background .14s ease,color .14s ease,border-color .14s ease,transform .12s ease;
-}
-.tool-inline-action:hover{
-  background:color-mix(in srgb, hsl(var(--accent-000)) 10%, transparent);
-  border-color:hsl(var(--accent-000));
-}
-
-.tool-inline-action:focus-visible{
-  outline:2px solid transparent;
-  outline-offset:2px;
-}
-.tool-inline-detail-empty{margin:0;color:hsl(var(--text-500));font-size:12px}
-.tool-inline-sources{display:flex;flex-direction:column;gap:1px}
-.tool-inline-src{
-  display:flex;align-items:baseline;gap:8px;
-  padding:4px 8px;margin:0 -4px;border-radius:6px;
-  font-size:13px;color:hsl(var(--text-300));
-  text-decoration:none;min-width:0;
-  transition:background .12s ease,color .12s ease;
-}
-a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--text-100))}
-.tool-inline-src-title{
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:80px;flex:1 1 180px;
-}
-.tool-inline-src-meta{display:flex;flex:0 1 auto;flex-wrap:wrap;gap:2px 8px;min-width:0;font-size:12px;color:hsl(var(--text-500))}
-.tool-inline-src-host{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.tool-inline-src-date,.tool-inline-src-engine{white-space:nowrap}
 
 /* P_codex-approval — inline, reviewable approval surface for the unified
    workspace agent. It intentionally sits inside the tool row so the user
    sees the exact action in the same conversation without a modal detour. */
-.tool-inline-approval{
-  margin:2px 10px 10px;
-  padding:12px;
-  border:1px solid color-mix(in srgb, hsl(38 90% 52%) 38%, var(--tool-card-border));
-  border-radius:var(--tool-card-radius-sm);
-  background:color-mix(in srgb, hsl(38 90% 52%) 8%, var(--tool-card-bg-sunken));
-  color:hsl(var(--text-300));
-}
-.tool-inline-approval-heading{display:flex;align-items:center;gap:8px;font-size:13px;color:hsl(var(--text-200))}
-.tool-inline-approval-dot{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:hsl(38 90% 52%);box-shadow:0 0 0 4px hsl(38 90% 52%/.12)}
-.tool-inline-approval-copy{margin:7px 0 9px;color:hsl(var(--text-500));font-size:12px;line-height:1.45}
-.tool-inline-approval-fact{display:flex;gap:8px;align-items:baseline;min-width:0;margin-top:5px;font-size:11.5px}
-.tool-inline-approval-fact-label{flex:0 0 54px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em;font-size:10px}
-.tool-inline-approval-fact-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:pre-wrap;overflow-wrap:anywhere;color:hsl(var(--text-300));font:11.5px/1.4 var(--font-mono)}
-.tool-inline-approval-status{margin-top:10px;color:hsl(var(--text-500));font-size:11.5px}
-.tool-inline-approval[data-state="accepted"] .tool-inline-approval-status{color:hsl(145 45% 38%)}
-.tool-inline-approval[data-state="declined"],.tool-inline-approval[data-state="stopped"]{border-color:color-mix(in srgb, hsl(0 58% 52%) 28%, var(--tool-card-border));background:color-mix(in srgb, hsl(0 58% 52%) 5%, var(--tool-card-bg-sunken))}
-.tool-inline-approval-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.tool-inline-approval-action{min-height:30px;padding:5px 10px;border:1px solid var(--tool-card-border-strong);border-radius:999px;background:transparent;color:hsl(var(--text-400));font:var(--ui-font-weight-medium) 11.5px/1 var(--font-sans);cursor:pointer;transition:background .14s ease,border-color .14s ease,color .14s ease}
-.tool-inline-approval-action:hover{border-color:hsl(var(--accent-000));color:hsl(var(--accent-000));background:hsl(var(--accent-000)/.08)}
-.tool-inline-approval-action.primary{border-color:hsl(var(--accent-000)/.5);background:hsl(var(--accent-000)/.1);color:hsl(var(--accent-000))}
-.tool-inline-approval-action:disabled{opacity:.5;cursor:default}
-.tool-inline-approval-action:focus-visible{outline:2px solid transparent;outline-offset:2px}
-
-@media(max-width:520px){
-  .tool-inline-approval{margin-left:7px;margin-right:7px;padding:10px}
-  .tool-inline-approval-actions{display:grid;grid-template-columns:1fr 1fr}
-  .tool-inline-approval-action{width:100%}
-}
 /* Anchored host for a tool run's visual output (charts, image
    artifacts). Sits immediately after the .tool-inline row so the
    output stays embedded at the point in the answer where the tool
@@ -530,14 +255,6 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    the rest of the turn is untouched, and Retry re-mounts only this renderer. */
 .tool-output-error{display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px 10px;border:1px solid hsl(var(--border-200));border-radius:8px;color:hsl(var(--text-300));font-size:calc(12px * var(--app-font-scale,1))}
 .tool-output-error button{border:0;background:transparent;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
-
-/* P_tool_live_card — the live streaming bubble hosts a single
-   `.tool-inline-live-slot` near the bottom. While the model is
-   running, the slot shows the most recent tool card; older tool
-   rows are still serialized into state.messages[i].html for history
-   and share. The slot is presentation-only. */
-.tool-inline-live-slot{display:flex;flex-direction:column}
-.tool-inline-live-slot:empty{display:none}
 /* P_tool-live-group — merged sibling rows of a same-category group stay
    hidden inside the slot while the collapsed head shows the running
    count; the row becomes visible again when it settles and replaces the
@@ -551,32 +268,12 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    cleanup; the @media (prefers-reduced-motion: reduce) override
    below shortens the duration to effectively zero while still
    keeping the keyframe accessible to cleanup. */
-.tool-inline-leaving{
-  animation:tool-inline-leaving .16s cubic-bezier(.4,0,1,1) forwards;
-  pointer-events:none;
-}
-@keyframes tool-inline-leaving{
-  from{opacity:1;transform:translateY(0)}
-  to{opacity:0;transform:translateY(-4px)}
-}
-
-/* P_tool_live_card — a brief color flash on the latest tool row so
-   a fresh tool is recognizable. Uses a `transition` (not `animation`)
-   so the global reduced-motion reset at the top of the file does not
-   suppress it; only the fade-out keyframe above is gated. */
-.tool-inline-flash{
-  background-color:hsl(var(--text-400)/.06);
-  transition:background-color 1.2s ease-out;
-}
 
 /* P_tool-inline-reduced-motion — static, half-opacity cues replace the
    spinner / shimmer / settle animation so reduced-motion users still
    see state without movement. */
 @media (prefers-reduced-motion: reduce){
-  .tool-inline-spinner{animation:none;opacity:.55}
-  .tool-inline[data-state="running"] .tool-inline-label{animation:none;opacity:.75}
   .tool-inline-tool-icon.is-settling svg{animation:none}
-  .tool-inline-meta{transition:opacity .4s ease}
 }
 
 /* P_declarative-tool-run — AssistantTurn wraps each prose slice of rawText in
@@ -587,41 +284,4 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    turn splits its prose into one wrapper per settled block, which is why the
    paragraph seam rule (P_stream-seam) sits next to `p:last-child` in
    polish/transcript.css — it has to outrank that `#appShell` rule. */
-.tool-run-group{
-  margin:8px 0 4px;
-  border:0;
-  border-radius:8px;
-  overflow:hidden;
-  background:transparent;
-}
-.tool-run-summary{
-  width:100%; min-height:34px; display:flex; align-items:center; gap:7px;
-  padding:6px 8px; border:0; border-radius:8px; background:transparent; color:hsl(var(--text-300));
-  font:var(--ui-font-weight-medium) calc(12px * var(--app-font-scale,1)) var(--font-sans); text-align:left; cursor:pointer;
-  transition:background .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;
-}
-.tool-run-summary:hover{background:hsl(var(--bg-200)/.5);color:hsl(var(--text-100))}
-
-.tool-run-summary:focus-visible{outline:2px solid transparent;outline-offset:-2px}
-.tool-run-summary-icon{
-  width:17px;height:17px;flex:0 0 auto;
-  display:inline-flex;align-items:center;justify-content:center;
-  color:hsl(var(--text-400));
-}
-.tool-run-summary-icon svg{width:100%;height:100%;display:block}
-.tool-run-group[data-state="running"] .tool-run-summary-icon{color:hsl(var(--text-300));animation:ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite}
-.tool-run-group[data-state="complete"] .tool-run-summary-icon{color:hsl(var(--text-400))}
-.tool-run-group[data-state="error"] .tool-run-summary-icon{color:hsl(0 55% 50%)}
-.tool-run-group[data-state="cancelled"] .tool-run-summary-icon{color:hsl(var(--text-500))}
-.tool-run-summary-label{font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-200))}
-.tool-run-summary-meta{color:hsl(var(--text-500));font-size:calc(11px * var(--app-font-scale,1));font-variant-numeric:tabular-nums}
-.tool-run-summary-chev{margin-left:auto;color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease}
-.tool-run-group.open .tool-run-summary-chev{transform:rotate(180deg);color:hsl(var(--text-300))}
-.tool-run-list{padding:0 8px 8px;border-top:0}
-.tool-run-list .agent-tool-card{margin-top:1px;background:transparent;border-color:transparent}
-.tool-run-list .agent-tool-card.open{box-shadow:none}
-.tool-run-list .agent-tool-head{min-height:30px;padding:4px 2px}
-.tool-run-list .agent-tool-icon{display:none}
-.tool-run-list .agent-tool-name{font-size:calc(13px * var(--app-font-scale,1))}
-.tool-run-list .agent-tool-input{font-family:var(--font-sans);font-size:calc(12px * var(--app-font-scale,1));opacity:1}
 .agent-tool-card[data-tool-state="cancelled"]{border-color:hsl(35 58% 48%/.34)}

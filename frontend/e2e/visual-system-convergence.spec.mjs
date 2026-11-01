@@ -64,11 +64,11 @@ for (const viewport of VIEWPORTS) for (const mode of ['light', 'dark']) {
     expect(typography.font).toContain('Noto Sans SC');
     expect(Math.abs(typography.x - chat.x)).toBeLessThanOrEqual(1);
     expect(Math.abs(typography.width - chat.width)).toBeLessThanOrEqual(1);
-    const toggle = page.locator('.thinking-accordion-toggle');
+    const toggle = page.locator('[data-testid="turn-activity-toggle"]');
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('.thinking-accordion-text')).toBeVisible();
+    await expect(page.locator('[data-testid="thinking-step"]').first()).toBeVisible();
     await toggle.press('Enter');
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await page.locator('#composerRoot .rich-composer-editor').focus();

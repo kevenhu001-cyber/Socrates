@@ -26,6 +26,7 @@ import {
   visualizationSpecKey,
 } from '../src/react/tool-run/toolRunModel.ts';
 import { toolRunGroupLabel, toolRunLabel } from '../src/ui/toolPresentationModel.ts';
+import { connectorActivityOf, connectorToolIdOf } from '../src/ui/toolActivity.ts';
 
 const RAW = 'First paragraph.\n\nSecond paragraph here.';
 
@@ -720,4 +721,24 @@ test('declarative terminal status strips duplicate stored Retry controls but pre
     if (previous === undefined) delete globalThis.DOMParser;
     else globalThis.DOMParser = previous;
   }
+});
+
+/* ── connector labels (moved from the retired toolRunRow DOM test) ───── */
+
+test('group outputs keep each call once, in order', () => {
+  const calls = [
+    { id: 'first-running', name: 'Read', input: { path: 'first.ts' }, textOffset: 0 },
+    { id: 'second-done', name: 'Read', input: { path: 'second.ts' }, status: 'completed', textOffset: 0 },
+  ];
+  const segment = buildTurnLayout('Answer.', calls)[0];
+  assert.deepEqual(groupOutputCalls(segment).map((c) => c.id), ['first-running', 'second-done']);
+});
+
+test('connector actions use service marks and descriptive workflow labels', () => {
+  assert.equal(connectorToolIdOf('oc_mcdonalds_cn_get_menu', ['mcdonalds', 'mcdonalds_cn']), 'mcdonalds_cn');
+  assert.equal(connectorToolIdOf('google_calendar_list_events', ['googlecalendar']), 'googlecalendar');
+  assert.equal(connectorToolIdOf('unknown_tool', ['github']), '');
+  assert.deepEqual(connectorActivityOf('oc_github', { action: 'github.get_job_logs' }), { service: 'GitHub', action: 'get_job_logs' });
+  assert.equal(toolRunLabel({ name: 'oc_github_list_workflow_run_jobs' }, 'running').text, 'Check GitHub Actions workflow steps');
+  assert.equal(toolRunLabel({ name: 'oc_github_get_job_logs' }, 'done').text, 'Read GitHub Actions workflow logs');
 });
