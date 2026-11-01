@@ -1,12 +1,11 @@
 name: Security
 
-# Supply-chain and static-analysis gate. Deliberately not path-filtered: a
-# security gate must report a check on every PR, and scheduled runs catch new
-# advisories in unchanged dependencies.
-
+# Supply-chain and static-analysis gate. It reports on every PR; scheduled
+# runs catch new advisories in unchanged dependencies. Feature branches are
+# intentionally not in push: an open PR already supplies the same revision.
 on:
   push:
-    branches: [main, 'feat/*']
+    branches: [main]
   pull_request:
     branches: [main]
   schedule:
@@ -14,7 +13,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
 
 permissions:
@@ -72,7 +71,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: ${{ matrix.project }}/package-lock.json
 
       - name: Dependency audit ratchet
@@ -114,19 +113,6 @@ jobs:
           mkdir -p sbom
           for project in frontend server apps/socrates; do
             echo "::group::$project"
-            # --package-lock-only: build the SBOM from the lockfile, the
-            # authoritative and reviewable supply-chain record, rather than
-            # from whatever node_modules happens to be installed.
-            # --ignore-npm-errors: even in lockfile-only mode the tool shells
-            # out to `npm ls`, which walks the symlinked `file:../../packages/*`
-            # links under apps/socrates. Those packages are first-party source,
-            # never installed, so npm reports their own deps (react, zustand,
-            # @socrates/contracts) as ELSPROBLEMS and exits non-zero. That is a
-            # layout artefact, not a broken dependency tree — the lockfile is
-            # still a complete and correct inventory.
-            # No `npm ci` here: nothing is executed and the lockfile alone
-            # describes the dependency set, so this also drops the download step.
-            # Completeness is asserted in the verification step below.
             cyclonedx-npm \
               --package-lock-only \
               --ignore-npm-errors \
@@ -137,8 +123,7 @@ jobs:
           done
 
       - name: Verify SBOM cache/generation output
-        run: |
-          node scripts/verify-sbom.mjs sbom
+        run: node scripts/verify-sbom.mjs sbom
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
