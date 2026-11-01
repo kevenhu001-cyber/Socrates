@@ -125,10 +125,8 @@
     });
   }, { threshold: .2 }) : null;
   function syncLive(ui) {
-    var panel = ui.closest('.deck-card, .m-story-scene');
-    var shown = !panel || (panel.classList.contains('deck-card')
-      ? !panel.hasAttribute('data-k') || panel.getAttribute('data-k') === '0'
-      : panel.classList.contains('is-active'));
+    var panel = ui.closest('.deck-card');
+    var shown = !panel || !panel.hasAttribute('data-k') || panel.getAttribute('data-k') === '0';
     ui.classList.toggle('is-live', !document.hidden && !reduced.matches && shown && liveTargets.has(ui));
   }
   function syncAllLive() { document.querySelectorAll('.ui').forEach(syncLive); }
@@ -413,39 +411,6 @@
     track.addEventListener('dragstart', function (event) { event.preventDefault(); });
   });
 
-  /* Scroll story: whichever step crosses the middle band of the viewport
-     sets the scene. Keyboard focus on a step does the same. */
-  document.querySelectorAll('[data-story]').forEach(function (story) {
-    var steps = Array.prototype.slice.call(story.querySelectorAll('[data-story-step]'));
-    var scenes = Array.prototype.slice.call(story.querySelectorAll('[data-scene]'));
-    story.querySelectorAll('.m-story-edge:not(.m-story-edge--new)').forEach(function (edge) { edge.setAttribute('pathLength', '1'); });
-    var index = -1;
-    function set(next, quiet) {
-      if (next === index || next < 0) return;
-      index = next;
-      steps.forEach(function (step, i) { step.classList.toggle('is-active', i === next); });
-      scenes.forEach(function (scene, i) {
-        var on = i === next;
-        scene.classList.toggle('is-active', on);
-        if (on && !quiet) stagger(scene.children, scene.querySelector('.ui-bubble') ? 260 : 80, 80);
-      });
-      var ui = story.querySelector('.ui');
-      if (ui) syncLive(ui);
-    }
-    set(0, true);
-    if (liveObserver) { var ui = story.querySelector('.ui'); if (ui) liveObserver.observe(ui); }
-    steps.forEach(function (step, i) { step.addEventListener('focusin', function () { set(i); }); });
-    if (!hasIO) return;
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) set(steps.indexOf(entry.target));
-      });
-    // On phones the product view sticks at the top, so the reading line
-    // sits below it instead of at the middle of the screen.
-    }, { rootMargin: window.matchMedia('(max-width: 760px)').matches ? '-60% 0px -32% 0px' : '-45% 0px -45% 0px', threshold: 0 });
-    steps.forEach(function (step) { observer.observe(step); });
-  });
-
   /* Steps: one hairline threads the three numbered points. As each step
      reaches the middle of the screen its point turns black and the black
      line grows to it. The line is measured from the points themselves, so
@@ -542,6 +507,8 @@
       });
       if (list) list.style.setProperty('--qc-progress', String(last ? index / last : 1));
       if (map) map.classList.toggle('is-on', index === last);
+      // Every step turns its own points of the field into nodes.
+      grown.forEach(function (item) { item.classList.toggle('is-grid', Number(item.getAttribute('data-at')) > index); });
       if (count) count.textContent = (index + 1) + ' / ' + steps.length;
       label.textContent = index === last ? againText : nextText;
       button.classList.toggle('is-again', index === last);
@@ -550,6 +517,35 @@
         live.textContent = text(step, '.qc-label') + ': ' + text(step, '.qc-question') + ' ' + text(step, '.qc-who') + ': ' + text(step, '.qc-answer-text');
       }
     }
+    var stage = root.querySelector('.qc-stage');
+    var mapSvg = map ? map.querySelector('svg') : null;
+    var grown = map ? Array.prototype.slice.call(map.querySelectorAll('[data-at]')) : [];
+    var UNIT = 16; // one step of the field, in map units; nodes sit on multiples
+    // Size the map so a field step is a whole number of pixels (no blurry,
+    // drifting tiles), then shift the field so it passes through (0, 0) of
+    // the map: every node lands exactly on a point.
+    function alignField() {
+      if (!stage || !mapSvg || !mapSvg.viewBox || !mapSvg.getScreenCTM) return;
+      var box = mapSvg.viewBox.baseVal;
+      var room = Math.min(560, map.clientWidth);
+      var step = Math.max(8, Math.min(20, Math.floor(room / (box.width / UNIT))));
+      mapSvg.style.width = (step * box.width / UNIT) + 'px';
+      var m = mapSvg.getScreenCTM();
+      if (!m) return;
+      var at = stage.getBoundingClientRect();
+      var g = UNIT * m.a;
+      function wrap(v) { return ((v - g / 2) % g + g) % g; }
+      stage.style.setProperty('--qc-g', g + 'px');
+      stage.style.setProperty('--qc-gx', wrap(m.e - at.left) + 'px');
+      stage.style.setProperty('--qc-gy', wrap(m.f - at.top) + 'px');
+      stage.setAttribute('data-qc-grid', '');
+    }
+    var alignFrame = 0;
+    function scheduleAlign() { if (!alignFrame) alignFrame = window.requestAnimationFrame(function () { alignFrame = 0; alignField(); }); }
+    alignField();
+    if ('ResizeObserver' in window && stage) new ResizeObserver(scheduleAlign).observe(stage);
+    else window.addEventListener('resize', scheduleAlign, { passive: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleAlign);
     root.setAttribute('data-qc-ready', '');
     // Reduced motion starts on the finished chain: every step, the struck
     // first answer and the map, with the button offering to step through.

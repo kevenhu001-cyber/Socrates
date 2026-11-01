@@ -399,7 +399,7 @@ body.home-refresh {
 .qc-next.is-again .home-icon { transform: rotate(180deg); }
 .qc-count { color: var(--quiet); font: 500 .8125rem/1 var(--site-font-mono); font-variant-numeric: tabular-nums; }
 
-.qc-stage { position: relative; margin: 0; padding: var(--space-400) var(--space-500) var(--space-400); border-radius: 28px; background: var(--subtle) var(--site-noise); box-shadow: inset 0 0 0 1px var(--site-hairline); }
+.qc-stage { position: relative; margin: 0; padding: var(--space-400) var(--space-500) var(--space-400); border-radius: var(--radius-3xl); background: var(--subtle) var(--site-noise); box-shadow: inset 0 0 0 1px var(--site-hairline); }
 .qc-stage-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-200); color: var(--copy); font: 500 .8125rem/1.4 var(--site-font); }
 .qc-badge { padding: var(--space-50) var(--space-100); border-radius: var(--radius-full); background: var(--fill); color: var(--muted); font-weight: 400; }
 .qc-list { --qc-progress: 1; position: relative; margin: var(--space-500) 0 0; padding: 0 0 0 var(--space-500); list-style: none; }
@@ -434,17 +434,26 @@ body.home-refresh {
 .qc-node-cut circle { stroke: var(--quiet); stroke-width: 1; }
 .qc-node text { fill: var(--copy); font: 500 13px var(--site-font); }
 .qc-node-cut text { fill: var(--quiet); text-decoration: line-through; }
-[data-qc-ready] .qc-map:not(.is-on) { opacity: 0; visibility: hidden; transition: opacity 300ms cubic-bezier(.22,1,.36,1), visibility 0s 300ms; }
-[data-qc-ready] .qc-map:not(.is-on) .qc-edge { stroke-dashoffset: 1; transition: none; }
-[data-qc-ready] .qc-map:not(.is-on) .qc-node { opacity: 0; transition: none; }
-.qc-map.is-on .qc-edge:nth-child(1) { transition-delay: 500ms; }
-.qc-map.is-on .qc-edge:nth-child(2) { transition-delay: 700ms; }
-.qc-map.is-on .qc-edge:nth-child(3) { transition-delay: 800ms; }
-.qc-map.is-on .qc-edge:nth-child(4) { transition-delay: 900ms; }
-.qc-map.is-on .qc-node:nth-of-type(1) { transition-delay: 400ms; }
-.qc-map.is-on .qc-node:nth-of-type(2) { transition-delay: 800ms; }
-.qc-map.is-on .qc-node:nth-of-type(3), .qc-map.is-on .qc-node:nth-of-type(4) { transition-delay: 1100ms; }
-.qc-map.is-on .qc-node:nth-of-type(5) { transition-delay: 1200ms; }
+/* Round 9: the chain is drawn on the hero's dot field. modules.js sizes the
+   map so one map unit (16) is a whole number of pixels and moves the field
+   so its points sit exactly under the map's nodes. Each step turns one or
+   two of those points into nodes and draws the link to them, so "What you
+   keep" grows out of the field. Without scripts the field stays off and
+   the map is simply complete. */
+.qc-stage { isolation: isolate; }
+.qc-stage::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(circle at center, rgb(0 0 0 / .13) .75px, transparent 1.15px) var(--qc-gx, 0) var(--qc-gy, 0) / var(--qc-g, 18px) var(--qc-g, 18px); }
+.qc-stage[data-qc-grid]::before { opacity: 1; }
+.qc-node circle { transform-box: fill-box; transform-origin: center; transition: transform 500ms cubic-bezier(.22,1,.36,1), fill 300ms cubic-bezier(.22,1,.36,1), stroke 300ms cubic-bezier(.22,1,.36,1); }
+.qc-node text { transition: opacity 400ms cubic-bezier(.22,1,.36,1); }
+/* Still a point of the field: the size and gray of its neighbours. */
+.qc-node.is-grid circle { fill: rgb(0 0 0 / .13); stroke: transparent; transform: scale(.18); transition-duration: 300ms; }
+.qc-node-root.is-grid circle { transform: scale(.15); }
+.qc-node-cut.is-grid circle { transform: scale(.225); }
+.qc-node.is-grid text { opacity: 0; transition-duration: 200ms; }
+.qc-edge.is-grid { stroke-dashoffset: 1; transition-duration: 300ms; }
+/* Becoming a node: the link reaches the point first, then it grows. */
+.qc-node:not(.is-grid) circle { transition-delay: 450ms; }
+.qc-node:not(.is-grid) text { transition-delay: 650ms; }
 
 @media (max-width: 1080px) {
   /* One column: the controls follow the stage, so each new step appears
