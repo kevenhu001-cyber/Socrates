@@ -505,13 +505,17 @@ body.home-refresh {
 .cta-thread i { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--surface); }
 .cta-thread i:last-child { background: var(--surface); box-shadow: 0 0 0 3px var(--surface), inset 0 0 0 1.25px var(--ink); }
 
-/* Round 8 · A. The dot-matrix question mark (hero-mark.js).
+/* Round 10 · A1. The halftone question mark (hero-mark.js).
    Meaning: every question grows out of what you already know. The first
    screen carries a faint, regular field of dots (everything known); the
-   question mark is made of the same dots, just the ones on its strokes made
-   darker and a little larger. Its point is one solid black dot, the only
-   "lead" dot on the site: it travels down to start the question chain and
-   comes back as the period of the footer's "Socrates.".
+   question mark is Geist's own "?" (weight 500) sampled on that field: each
+   cell's dot grows and darkens with how much of the glyph covers it, so the
+   outline stays smooth with small light dots at its edges. Its point is the
+   same halftone (Geist's period is square, so it is a square block of dots),
+   not a separate solid disc. With motion, scrolling away fades the stroke
+   back into the field and gathers the point's block into one black dot, the
+   size of a question-chain node, which then starts the chain; the footer's
+   "Socrates." ends on the same halftone point.
    The field is CSS on the mark's own box, so it is always aligned with the
    mark's cells: the box is exactly --hm-cols x --hm-rows cells of --hm-s
    pixels, and the field's origin sits a whole number of cells away. The
@@ -519,13 +523,21 @@ body.home-refresh {
    hero-mark.js writes the same cells onto a canvas. Nothing here depends on
    scripts for its size, so nothing shifts. */
 .home-hero { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; z-index: 2; overflow: clip; }
-.hero-mark { --hm-s: 12px; --hm-cols: 12; --hm-rows: 17; position: relative; order: -1; width: calc(var(--hm-cols) * var(--hm-s)); height: calc(var(--hm-rows) * var(--hm-s)); margin: 0 0 var(--space-100); pointer-events: none; }
-/* The field: 1.5px dots, very light, fading out well before any edge. */
-.hero-mark::before { content: ''; position: absolute; z-index: -1; inset: calc(-80 * var(--hm-s)); background: radial-gradient(circle at center, rgb(0 0 0 / .13) .75px, transparent 1.15px) 0 0 / var(--hm-s) var(--hm-s); -webkit-mask-image: radial-gradient(ellipse calc(var(--hm-s) * 30) calc(var(--hm-s) * 36) at 50% 50%, #000 0%, rgb(0 0 0 / .55) 50%, transparent 100%); mask-image: radial-gradient(ellipse calc(var(--hm-s) * 30) calc(var(--hm-s) * 36) at 50% 50%, #000 0%, rgb(0 0 0 / .55) 50%, transparent 100%); }
+.hero-mark { --hm-s: 12px; --hm-cols: 13; --hm-rows: 18; position: relative; order: -1; width: calc(var(--hm-cols) * var(--hm-s)); height: calc(var(--hm-rows) * var(--hm-s)); margin: 0 0 var(--space-100); pointer-events: none; }
+/* The field: 1.5px dots, very light, fading out well before any edge.
+   Round 10 (performance): the fade is a white veil painted over the dots
+   (::after) instead of a mask, and the field only covers the fade's own
+   ellipse, not 160 cells each way. A mask on a ~3000px layer had the
+   software compositor re-blend it on every scrolled frame; two plain
+   backgrounds are rasterised once. Both boxes start a whole number of
+   cells from the mark, so the dots stay on the mark's cells. */
+.hero-mark { --hm-fx: 24; --hm-fy: 27; }
+.hero-mark::before, .hero-mark::after { content: ''; position: absolute; z-index: -1; inset: calc(-1 * var(--hm-fy) * var(--hm-s)) calc(-1 * var(--hm-fx) * var(--hm-s)); pointer-events: none; }
+.hero-mark::before { background: radial-gradient(circle at center, rgb(0 0 0 / .13) .75px, transparent 1.15px) 0 0 / var(--hm-s) var(--hm-s); }
+.hero-mark::after { background: radial-gradient(closest-side, rgb(255 255 255 / 0) 0%, rgb(255 255 255 / .45) 50%, #fff 100%); }
 .hero-mark-svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
 .hm-fine { display: none; }
-.hm-nodes { fill: #111; }
-.hm-dot { fill: var(--ink); }
+.hm-nodes, .hm-point { fill: #111; }
 /* Scripts and motion are coming: hold the finished mark back so the canvas
    can write it, but bring it in anyway if the canvas never starts. */
 @media (prefers-reduced-motion: no-preference) {
@@ -537,13 +549,15 @@ body.home-refresh {
    question chain while the hero itself clips its dot field. */
 .home-refresh main { position: relative; }
 .hero-mark-canvas { position: absolute; z-index: 3; top: 0; left: 0; display: block; pointer-events: none; }
+/* The one black dot the point gathers into (hero-mark.js moves it). */
+.hero-mark-dot { position: absolute; z-index: 3; top: 0; left: 0; width: 12px; height: 12px; border-radius: 50%; background: #0d0d0d; opacity: 0; transform-origin: 50% 50%; pointer-events: none; will-change: transform; }
 /* Until the point has arrived, the chain's first node waits for it; the
    point then becomes that node (the canvas stops drawing it). */
 .qc-list[data-point-pending] .qc-step[data-qc-step="0"] .qc-dot { visibility: hidden; }
 .home-hero-inner { z-index: 1; }
 @media (min-width: 761px) and (max-width: 1023px) {
   .home-hero { padding-top: clamp(48px, 7vh, 72px); }
-  .hero-mark { --hm-s: 15px; margin-bottom: var(--space-300); }
+  .hero-mark { --hm-s: 14px; margin-bottom: var(--space-300); }
 }
 /* Phones: the question entry keeps the first screen (it must be reachable
    at once), so the mark follows the starters, right above the question
@@ -558,13 +572,12 @@ body.home-refresh {
   .home-hero-inner { width: 100%; margin: 0; }
   .home-hero h1, .home-hero-lede { margin-inline: 0; }
   .home-hero .ask-suggestions { justify-content: flex-start; }
-  .hero-mark { --hm-s: 16px; --hm-cols: 18; --hm-rows: 29; order: 0; justify-self: center; margin: 0; }
-  .hero-mark::before { -webkit-mask-image: radial-gradient(ellipse calc(var(--hm-s) * 42) calc(var(--hm-s) * 17) at 50% 50%, #000 0%, rgb(0 0 0 / .55) 50%, transparent 100%); mask-image: radial-gradient(ellipse calc(var(--hm-s) * 42) calc(var(--hm-s) * 17) at 50% 50%, #000 0%, rgb(0 0 0 / .55) 50%, transparent 100%); }
+  .hero-mark { --hm-s: 16px; --hm-cols: 18; --hm-rows: 25; order: 0; justify-self: center; margin: 0; }
+  .hero-mark { --hm-fx: 33; --hm-fy: 5; }
   .hm-fine { display: block; }
   .hm-compact { display: none; }
 }
 @media (min-width: 1024px) and (max-width: 1180px) {
   .home-hero { grid-template-columns: minmax(0, 600px) minmax(0, 1fr); }
 }
-@media (min-width: 1280px) { .hero-mark { --hm-s: 18px; } }
-@media (min-width: 1680px) { .hero-mark { --hm-s: 20px; } }
+@media (min-width: 1680px) { .hero-mark { --hm-s: 18px; } }

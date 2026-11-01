@@ -38,7 +38,9 @@ for (const prefix of ['', '/zh']) {
           askRight: ask.right,
           mark: { left: mark.left, right: mark.right, top: mark.top, bottom: mark.bottom, center: mark.x + mark.width / 2, height: mark.height },
           markNodes: glyph.querySelectorAll('.hm-nodes circle').length,
-          markDot: Number(glyph.querySelector('.hm-dot').getAttribute('r')),
+          // Round 10: the point is a square block of the same halftone dots.
+          markPoint: [...glyph.querySelectorAll('.hm-point circle')].map((node) => ({ x: Number(node.getAttribute('cx')), y: Number(node.getAttribute('cy')), r: Number(node.getAttribute('r')) })),
+          markLargest: Math.max(...[...glyph.querySelectorAll('circle')].map((node) => Number(node.getAttribute('r')))),
           markNodeMax: Math.max(...[...glyph.querySelectorAll('.hm-nodes circle')].map((node) => Number(node.getAttribute('r')))),
           // Every stroke dot sits on a cell centre of the hero's dot field.
           markOffGrid: [...glyph.querySelectorAll('.hm-nodes circle')].filter((node) => [node.getAttribute('cx'), node.getAttribute('cy')].some((v) => Math.abs(Number(v) - .5 - Math.round(Number(v) - .5)) > 1e-6)).length,
@@ -82,8 +84,16 @@ for (const prefix of ['', '/zh']) {
       assert.ok(Math.abs(geometry.markCell - geometry.markCellY) < .01, 'square cells');
       assert.equal(geometry.fieldSize, `${geometry.markCell}px ${geometry.markCell}px`, 'the field repeats at exactly the mark’s cell size');
       assert.ok(geometry.markCell >= 12 && geometry.markCell <= 20, 'field spacing stays between 12 and 20px');
-      assert.ok(geometry.markDot > geometry.markNodeMax * 4, 'its point is one larger solid dot');
-      assert.equal(await page.locator('.hero-mark .hm-dot').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1, 'one point is shown');
+      // Round 10: no solid disc. The point is Geist's square period sampled
+      // on the same cells: at least a 3 x 3 block, on the field, with dots no
+      // larger than the stroke's (at most .36 of a cell).
+      assert.ok(geometry.markPoint.length >= 9, 'the point is a block of field dots');
+      assert.ok(geometry.markPoint.every((dot) => [dot.x, dot.y].every((v) => Math.abs(v - .5 - Math.round(v - .5)) < 1e-6)), 'every dot of the point is a dot of the field');
+      assert.equal(new Set(geometry.markPoint.map((dot) => dot.x)).size, new Set(geometry.markPoint.map((dot) => dot.y)).size, 'the block is square, like Geist’s period');
+      assert.ok(Math.abs(Math.max(...geometry.markPoint.map((dot) => dot.r)) - geometry.markNodeMax) < 1e-6, 'the point uses the stroke’s own dot size');
+      assert.ok(geometry.markLargest <= .36 + 1e-6, 'no dot of the mark is larger than .36 of a cell');
+      assert.equal(await page.locator('.hero-mark .hm-dot').count(), 0, 'no separate solid point');
+      assert.equal(await page.locator('.hero-mark .hm-point').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1, 'one point is shown');
       assert.equal(await page.locator('.hero-mark').getAttribute('aria-hidden'), 'true');
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
       assert.ok(geometry.artTop >= geometry.featureTop, 'artwork belongs to the cards below the question');
