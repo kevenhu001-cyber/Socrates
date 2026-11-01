@@ -83,22 +83,22 @@ test('a live row waits for its paragraph, then mounts once in activity before th
   await expect(body.locator('.tool-run-prose')).toContainText('我先来查');
 
   await page.evaluate(() => window.__pushToolUse());
-  /* The status line proves the tool_use was processed and rendered — only
-     then is "no row" a meaningful assertion (otherwise we might just be
-     faster than the render pass). */
-  await expect(body.locator('.thinking-status-label')).toContainText('Searching the web…');
+  /* The live thinking line picks up the running tool's icon: proof the
+     tool_use was processed and rendered — only then is "no row" a meaningful
+     assertion (otherwise we might just be faster than the render pass). */
+  await expect(body.locator('[data-testid="turn-activity-toggle"] .tool-inline-tool-icon')).toBeVisible();
   /* The paragraph is unfinished: no row may mount (and therefore nothing
      can jump when punctuation arrives). A finished sentence alone must
      NOT mount it either — only a completed paragraph does. */
-  await expect(body.locator('.tool-inline')).toHaveCount(0);
+  await expect(body.locator('.rn-tool-row')).toHaveCount(0);
   await page.evaluate(() => window.__pushText('情况。后来出太阳了'));
-  await expect(body.locator('.tool-inline')).toHaveCount(0);
+  await expect(body.locator('.rn-tool-row')).toHaveCount(0);
 
   /* Complete the paragraph: the <think> tail buffer holds back ~7 chars,
      so push enough that the blank line flushes through, then exactly one
      row must mount in the unified activity surface. */
   await page.evaluate(() => window.__pushText('！查到了。今天很暖和。\n\n第二段讲讲结果。'));
-  const row = body.locator('.tool-inline[data-tcid="live-search"]');
+  const row = body.locator('.rn-tool-row[data-tcid="live-search"]');
   await expect(row).toHaveCount(1);
 
   await page.evaluate(() => {
@@ -114,16 +114,14 @@ test('a live row waits for its paragraph, then mounts once in activity before th
     const out = [];
     for (const node of Array.from(el.querySelector('.turn-evidence').children)) {
       if (node.classList.contains('tool-inline-attachments')) continue;
+      if (node.classList.contains('stream-cursor')) continue;
       if (node.classList.contains('tool-run-prose')) {
-        out.push(`text:${(node.textContent || '').replace(/▍/g, '').trim()}`);
-      } else if (node.classList.contains('turn-activity-surface')) {
-        for (const row of node.querySelectorAll('.tool-inline')) out.push(`row:${row.dataset.tcid}`);
-      } else if (node.classList.contains('tool-run-group')) {
-        for (const row of node.querySelectorAll(':scope > .tool-inline')) out.push(`row:${row.dataset.tcid}`);
-      } else if (node.classList.contains('tool-inline')) {
+        out.push(`text:${(node.textContent || '').trim()}`);
+      } else if (node.classList.contains('rn-turn-activity')) {
+        for (const row of node.querySelectorAll('.rn-tool-row')) out.push(`row:${row.dataset.tcid}`);
+      } else if (node.classList.contains('rn-tool-row')) {
         out.push(`row:${node.dataset.tcid}`);
       } else if (!node.classList.contains('tool-run-turn-status')
-        && !node.classList.contains('thinking-status')
         && !(node.textContent || '').includes('Tool running')) {
         out.push(`other:${node.className}`);
       }
@@ -193,18 +191,16 @@ async function loadColonFixture(page) {
 
 test('a restored colon-offset row stays in activity while prose splits at the next sentence', async ({ page }) => {
   const body = await loadColonFixture(page);
-  await expect(body.locator('.turn-activity-surface .tool-inline[data-tcid="c1"]')).toHaveCount(1);
+  await expect(body.locator('.rn-turn-activity .rn-tool-row[data-tcid="c1"]')).toHaveCount(1);
   const order = await body.evaluate((el) => {
     const out = [];
     for (const node of Array.from(el.querySelector('.turn-evidence').children)) {
       if (node.classList.contains('tool-inline-attachments')) continue;
       if (node.classList.contains('tool-run-prose')) {
         out.push(`text:${(node.textContent || '').trim()}`);
-      } else if (node.classList.contains('turn-activity-surface')) {
-        for (const row of node.querySelectorAll('.tool-inline')) out.push(`row:${row.dataset.tcid}`);
-      } else if (node.classList.contains('tool-run-group')) {
-        for (const row of node.querySelectorAll(':scope > .tool-inline')) out.push(`row:${row.dataset.tcid}`);
-      } else if (node.classList.contains('tool-inline')) {
+      } else if (node.classList.contains('rn-turn-activity')) {
+        for (const row of node.querySelectorAll('.rn-tool-row')) out.push(`row:${row.dataset.tcid}`);
+      } else if (node.classList.contains('rn-tool-row')) {
         out.push(`row:${node.dataset.tcid}`);
       } else {
         out.push(`other:${node.className}`);

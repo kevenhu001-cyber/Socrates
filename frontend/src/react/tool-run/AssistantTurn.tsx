@@ -4,17 +4,14 @@
  */
 import { TurnEvidence } from '../citations/TurnEvidence';
 import { TurnActivitySurface } from './TurnActivitySurface';
-import { ToolRunGroup } from './ToolRunGroup';
-import { ToolRunRow } from './ToolRunRow';
 import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { useEffect, useRef, useState } from 'react';
 import {
   buildTurnLayout,
+  groupOutputCalls,
   sortableToolCalls,
   stripLegacyToolHtml,
   toolRunStateOf,
-  toolRunView,
-  runStartedAt,
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
@@ -45,7 +42,9 @@ const STREAM_SETTLE_MS = 120;
 function StreamCursor({ state, settling }: { state?: string; settling?: boolean }) {
   const stateClass = state === 'starved' ? ' is-starved' : '';
   const settleClass = settling ? ' is-settling' : '';
-  return <span className={'stream-cursor' + stateClass + settleClass} aria-hidden="true">▍</span>;
+  /* The dot is drawn by CSS (::before); no glyph, so nothing leaks into
+     copied text or the accessible name. */
+  return <span className={'stream-cursor' + stateClass + settleClass} aria-hidden="true" />;
 }
 
 function lastTextIndex(segments: TurnSegment[]): number {
@@ -113,28 +112,11 @@ function useStreamSettling(isLive: boolean): boolean {
   return isSettling;
 }
 
-function ActivityToolRows({
-  segments,
-  messageId,
-  readOnly,
-}: {
-  segments: TurnSegment[];
-  messageId: string;
-  readOnly?: boolean;
-}): React.ReactElement {
-  return (
-    <>
-      {segments.map((segment, index) => {
-        if (segment.kind === 'group') {
-          return <ToolRunGroup key={segmentKey(segment, index)} segment={segment} messageId={messageId} readOnly={readOnly} activityOnly />;
-        }
-        if (segment.kind === 'tool') {
-          return <ToolRunRow key={segment.call.id} view={toolRunView(segment.call)} startedAt={runStartedAt(segment.call)} messageId={messageId} readOnly={readOnly} activityOnly />;
-        }
-        return null;
-      })}
-    </>
-  );
+/** Activity-layer calls in transcript order (group members, then lone calls). */
+function activityCallsOf(segments: TurnSegment[]): ToolCallRecord[] {
+  return segments.flatMap((segment) => segment.kind === 'group'
+    ? groupOutputCalls(segment)
+    : segment.kind === 'tool' ? [segment.call] : []);
 }
 
 function TurnSegmentsView({
@@ -253,10 +235,10 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           statusLabel={presentation.activityLabel}
           intentSummary={presentation.intentSummary}
           answerStarted={hasAnswerProse}
-          hasTools={segments.some((segment) => segment.kind === 'tool' || segment.kind === 'group')}
-        >
-          <ActivityToolRows segments={segments} messageId={messageId} readOnly={readOnly} />
-        </TurnActivitySurface>
+          calls={activityCallsOf(segments)}
+          messageId={messageId}
+          readOnly={readOnly}
+        />
         {legacyHtml ? (
           <div
             className="tool-run-prose is-settled"

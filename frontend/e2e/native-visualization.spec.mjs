@@ -31,13 +31,11 @@ async function renderLn(page) {
     window.__testActivateMainView('chatView');
     await window.askChatTurn('draw y = ln(x)');
   });
-  /* P_inline-tools — live chat renders each tool call as a compact
-     .tool-inline status row embedded in the message flow (the old
-     .tool-run-summary card group only appears in detailed/history
-     replay). The chart mounts in the anchored host right after the
-     row, so waiting for the settled row is enough. */
-  const row = page.locator('.tool-inline[data-tcid="visual-ln"]');
-  await expect(row).toBeVisible();
+  /* RN-2 — each call is a row in the (collapsed) activity timeline; the
+     chart mounts in the transcript's anchored host, so waiting for the
+     settled row is enough. */
+  const row = page.locator('.rn-tool-row[data-tcid="visual-ln"]');
+  await expect(row).toHaveCount(1);
   await expect(row).toHaveAttribute('data-state', 'done');
 }
 

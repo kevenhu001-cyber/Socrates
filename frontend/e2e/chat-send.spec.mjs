@@ -124,7 +124,7 @@ test('mobile send places the submitted prompt and thinking state at the viewport
     && frame.visibility !== 'hidden',
   )).toBe(true);
   await page.waitForFunction(() => Boolean(
-    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-status'),
+    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor [data-testid="turn-activity-label"][role="status"]'),
   ));
   /* The send-time anchor now glides the prompt into place; wait for the
      settling window to close before measuring the final offset. */
@@ -141,7 +141,7 @@ test('mobile send places the submitted prompt and thinking state at the viewport
     const list = document.getElementById('msgList');
     const users = list.querySelectorAll('.msg.user');
     const latestUser = users[users.length - 1];
-    const thinking = list.querySelector('.msg.assistant:last-child .thinking-status');
+    const thinking = list.querySelector('.msg.assistant:last-child [data-testid="turn-activity-label"][role="status"]');
     const listRect = list.getBoundingClientRect();
     const userRect = latestUser?.getBoundingClientRect();
     return {
@@ -213,7 +213,7 @@ test('Tutor button send uses the same top anchor while the reply streams', async
   await page.locator('#composerPrimaryBtn').click();
   try {
     await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
-    await expect(page.locator('#msgList .msg.assistant .thinking-status').last()).toBeVisible();
+    await expect(page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]').last()).toBeVisible();
     await expect.poll(() => page.evaluate(() => {
       const list = document.getElementById('msgList');
       const users = list.querySelectorAll('.msg.user');
@@ -271,7 +271,7 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
     window.submitChatMessage('First prompt');
   });
   await expect(page.locator('#msgList .msg.user')).toHaveCount(1);
-  await expect(page.locator('#msgList .thinking-status')).toBeVisible();
+  await expect(page.locator('#msgList [data-testid="turn-activity-label"][role="status"]')).toBeVisible();
 
   const firstTurnOffset = () => page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -453,7 +453,7 @@ test('retry replaces the failed answer and resumes at the visible error position
       '#msgList .msg.assistant[data-viewport-anchor="retry"]',
     );
     return Boolean(message && message.dataset.clientId !== oldId
-      && message.querySelector('.thinking-status'));
+      && message.querySelector('[data-testid="turn-activity-label"][role="status"]'));
   }, failedMessageId);
 
   const retried = await page.evaluate((oldId) => {

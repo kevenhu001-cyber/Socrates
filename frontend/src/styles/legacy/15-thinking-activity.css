@@ -186,8 +186,7 @@ body.composer-tools-open::after{
 /* Detailed/history rows use the same anatomy as live rows. The body still
    contains the existing Input/Output sections, but those sections now feel
    like an indented execution trace instead of a nested dashboard card. */
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card,
-.msg.assistant .msg-body:has(.tool-run-group) .tool-run-list .agent-tool-card{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card{
   display:block;
   margin:14px 0;
   border:0;
@@ -196,8 +195,7 @@ body.composer-tools-open::after{
   box-shadow:none;
   overflow:visible;
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card,
-.msg.assistant .msg-body:has(.tool-run-group) .tool-run-list .agent-tool-card{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card{
   display:block;
   margin:6px 0;
   border:0;
@@ -206,8 +204,7 @@ body.composer-tools-open::after{
   box-shadow:none;
   overflow:visible;
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head{
   display:inline-flex;
   align-items:center;
   min-height:28px;
@@ -220,20 +217,16 @@ body.composer-tools-open::after{
   cursor:pointer;
   transition:color .15s ease,background-color .15s ease;
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:hover,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:hover{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:hover{
   background:hsl(var(--bg-300)/0.45);
   color:hsl(var(--text-100));
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:focus-visible,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:focus-visible{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:focus-visible{
   outline:2px solid transparent;
   outline-offset:1px;
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-state-icon{display:none!important}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon{display:none!important}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon{
   display:inline-flex!important;
   align-items:center;
   justify-content:center;
@@ -246,12 +239,9 @@ body.composer-tools-open::after{
   box-shadow:none!important;
   color:currentColor!important;
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon svg{width:15px;height:15px;stroke-width:1.5}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-name{min-width:0;color:inherit;font-size:calc(13px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium)}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg{width:15px;height:15px;stroke-width:1.5}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name{min-width:0;color:inherit;font-size:calc(13px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium)}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input{
   min-width:0;
   flex:1 1 auto;
   overflow:hidden;
@@ -260,10 +250,8 @@ body.composer-tools-open::after{
   color:hsl(var(--text-500));
   font:12px/1.4 var(--font-mono);
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-status,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-status{flex:0 0 auto;color:hsl(var(--text-500));font-size:11px}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-status{flex:0 0 auto;color:hsl(var(--text-500));font-size:11px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev{
   flex:0 0 13px;
   width:13px;
   height:13px;
@@ -274,44 +262,32 @@ body.composer-tools-open::after{
   transform:rotate(0deg);
   transition:transform .18s cubic-bezier(.4,0,.2,1),opacity .18s ease;
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev svg,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev svg{width:13px;height:13px;stroke-width:1.6}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev::before,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev::before{content:none}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card.open .agent-tool-chev,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-card.open .agent-tool-chev{transform:rotate(180deg);opacity:.85}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev svg{width:13px;height:13px;stroke-width:1.6}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev::before{content:none}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card.open .agent-tool-chev{transform:rotate(180deg);opacity:.85}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body{
   margin:4px 0 6px 14px;
   padding:4px 0 6px 14px;
   border:0;
   border-left:1.5px solid hsl(var(--border-300)/0.35);
   background:transparent;
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-section,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-section{margin:0 0 8px;border:0;background:transparent}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-section-head,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-section-head{min-height:18px;padding:0 0 4px;color:hsl(var(--text-500));font-size:11px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-section{margin:0 0 8px;border:0;background:transparent}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-section-head{min-height:18px;padding:0 0 4px;color:hsl(var(--text-500));font-size:11px}
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code,
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-code,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-out{
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out{
   margin:0;
   border:0.5px solid hsl(var(--border-300)/0.25);
   border-radius:var(--ui-radius-sm);
   background:hsl(var(--bg-200)/0.65);
   color:hsl(var(--text-300));
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-code{padding:8px 10px;font:12px/1.55 var(--font-mono)}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-out{padding:8px 10px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code{padding:8px 10px;font:12px/1.55 var(--font-mono)}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out{padding:8px 10px}
 
 @media(max-width:768px){
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{margin-left:23px;padding-left:13px}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input{display:none}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body{margin-left:23px;padding-left:13px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input{display:none}
 
 }
 @media(prefers-reduced-motion:reduce){

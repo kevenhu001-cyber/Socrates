@@ -3,7 +3,6 @@ const EXTERNAL_LINK_SELECTOR = [
   '.msg-body p a[href^="http"]',
   '.msg-body li a[href^="http"]',
   '.msg-body blockquote a[href^="http"]',
-  '.tool-inline-src[href^="http"]',
   '.wsr-title[href^="http"]',
   '.link-card-title[href^="http"]',
 ].join(',');

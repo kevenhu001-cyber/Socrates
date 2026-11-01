@@ -1,18 +1,14 @@
-import { Button } from '../ui/Button';
 /**
  * react/tool-run/ToolRunApproval.tsx — a decision the run is blocked on.
  *
- * The agent pauses mid-turn whenever it wants to run a command or change files,
- * and the prompt used to be DOM that chat/toolRuntime.ts hung off the live row.
- * That made it a second-class citizen: it survived re-painting of the row but
- * vanished whenever React rebuilt the bubble, leaving a run waiting on a
- * question nobody could see. It now renders from `call.approval` like anything
- * else, and the runtime keeps `approval.ui` current while the POST is in
- * flight so the status line ("Saving your decision…", "Approved") arrives as
- * data rather than as a textContent write into nodes it no longer owns.
+ * Renders from `call.approval`; the runtime keeps `approval.ui` current while
+ * the POST is in flight, so the status line ("Saving your decision…",
+ * "Approved") arrives as data. RN-2 draws it with the shared RN card and pill
+ * buttons; the DOM wrapper keeps the region semantics and data hooks.
  */
-import { useId, type MouseEvent } from 'react';
+import { ToolApprovalCard, type ApprovalDecisionView } from '@socrates/ui/turn';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { WebUiTheme } from '../rn/WebUiTheme';
 import type { ApprovalDecision, ApprovalView } from './toolRunModel';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
@@ -25,72 +21,49 @@ export interface ToolRunApprovalProps {
   readOnly?: boolean;
 }
 
-const DECISIONS: ReadonlyArray<{ decision: ApprovalDecision; key: string; fallback: string; primary?: boolean }> = [
-  { decision: 'accept', key: 'tool.approveOnce', fallback: 'Allow once', primary: true },
-  { decision: 'acceptForSession', key: 'tool.approveRun', fallback: 'Allow this run' },
-  { decision: 'decline', key: 'tool.decline', fallback: 'Decline' },
-  { decision: 'stop', key: 'tool.stopRun', fallback: 'Stop run' },
+const DECISIONS: ReadonlyArray<{ decision: ApprovalDecision; key: string; fallback: string; variant: ApprovalDecisionView['variant'] }> = [
+  { decision: 'accept', key: 'tool.approveOnce', fallback: 'Allow once', variant: 'primary' },
+  { decision: 'acceptForSession', key: 'tool.approveRun', fallback: 'Allow this run', variant: 'secondary' },
+  { decision: 'decline', key: 'tool.decline', fallback: 'Decline', variant: 'secondary' },
+  { decision: 'stop', key: 'tool.stopRun', fallback: 'Stop run', variant: 'ghost' },
 ];
 
 export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolRunApprovalProps) {
-  const titleId = useId();
-  const copyId = useId();
-  const statusId = useId();
-  const decide = (decision: ApprovalDecision) => async (event: MouseEvent<HTMLButtonElement>) => {
-    /* The legacy path answers approvals through a delegated document listener;
-       stop here so a decision is never submitted twice. */
-    event.preventDefault();
-    event.stopPropagation();
+  const decide = async (decision: ApprovalDecision) => {
     try {
       await getLegacyActions().liveTurn?.decideApproval(messageId, toolCallId, decision);
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/tool-run/ToolRunApproval.tsx:45');
+      reportEmptyCatch(_, 'empty catch: react/tool-run/ToolRunApproval.tsx:decide');
       /* The runtime recorded the failure in `approval.ui` (and re-enabled the
          buttons), so the panel already shows what went wrong. */
     }
   };
+  const decisions = DECISIONS
+    .filter((spec) => view.decisions.includes(spec.decision))
+    .map((spec) => ({ id: spec.decision, label: i18n(spec.key, spec.fallback), variant: spec.variant }));
 
   return (
     <div
-      className="tool-inline-approval"
+      className="rn-tool-approval"
       data-approval-id={view.approvalId}
       data-run-id={view.runId}
       data-state={view.state}
-      aria-labelledby={titleId}
-      aria-describedby={`${copyId} ${statusId}`}
-      aria-busy={view.disabled && view.state === 'pending' ? 'true' : undefined}
       role="region"
-      aria-live="polite"
+      aria-label={view.title}
+      aria-busy={view.disabled && view.state === 'pending' ? 'true' : undefined}
     >
-      <div className="tool-inline-approval-heading">
-        <span className="tool-inline-approval-dot" aria-hidden="true" />
-        <strong id={titleId}>{view.title}</strong>
-      </div>
-      <p id={copyId} className="tool-inline-approval-copy">
-        {i18n('tool.codexApprovalCopy', 'Review the action before it continues.')}
-      </p>
-      {view.facts.map((fact) => (
-        <div className="tool-inline-approval-fact" key={fact.label}>
-          <span className="tool-inline-approval-fact-label">{fact.label}</span>
-          <code className="tool-inline-approval-fact-value">{fact.value}</code>
-        </div>
-      ))}
-      <div id={statusId} className="tool-inline-approval-status" role="status">{view.status}</div>
-      {!readOnly && !view.disabled && view.state === 'pending' && view.decisions.length ? (
-        <div className="tool-inline-approval-actions">
-          {DECISIONS.filter((spec) => view.decisions.includes(spec.decision)).map((spec) => (
-            <Button
-              type="button"
-              key={spec.decision}
-              className={`tool-inline-approval-action${spec.primary ? ' primary' : ''}`}
-              data-approval-action={spec.decision}
-              onClick={decide(spec.decision)}
-            >
-              {i18n(spec.key, spec.fallback)}
-            </Button>
-          ))}
-        </div>
-      ) : null}
+      <WebUiTheme>
+        <ToolApprovalCard
+          title={view.title}
+          badge={i18n('tool.status.awaiting', 'Needs approval')}
+          description={i18n('tool.codexApprovalCopy', 'Review the action before it continues.')}
+          facts={view.facts}
+          status={view.status}
+          decisions={decisions}
+          showControls={!readOnly && !view.disabled && view.state === 'pending'}
+          onDecide={(id) => { void decide(id as ApprovalDecision); }}
+        />
+      </WebUiTheme>
     </div>
   );
 }

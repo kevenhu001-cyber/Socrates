@@ -40,7 +40,7 @@ async function recordStreams(page) {
 async function sendLink(page) {
   await page.evaluate(() => { window.__preparePromise = window.submitChatMessage('Read https://example.com/page'); });
   await expect.poll(() => page.evaluate(() => window.__pageReadStarted)).toBe(true);
-  await expect(page.locator('#msgList .msg.assistant .thinking-status')).toBeVisible();
+  await expect(page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]')).toBeVisible();
 }
 
 test('fetched link previews render as part of the React message row', async ({ page }) => {

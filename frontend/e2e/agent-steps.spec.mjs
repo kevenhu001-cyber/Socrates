@@ -52,9 +52,9 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  const surface = bubble.locator('.turn-activity-surface');
-  /* Agent steps are rendered in the React activity disclosure. */
-  await surface.locator('.thinking-accordion-toggle').click();
+  const surface = bubble.locator('.rn-turn-activity');
+  /* Agent steps render under their tool row in the RN activity timeline. */
+  await surface.locator('[data-testid="turn-activity-toggle"]').click();
   const steps = surface.locator('.agent-step');
   await expect(steps).toHaveCount(3);
   await expect(steps.nth(0).locator('.agent-step-label')).toHaveText('读取了文件');

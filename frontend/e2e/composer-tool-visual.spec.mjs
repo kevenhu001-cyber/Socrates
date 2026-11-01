@@ -29,12 +29,12 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     await window.askChatTurn('Explore Socratic learning');
   });
 
-  await page.locator('.msg.assistant .thinking-accordion-toggle').click();
-  const toolRow = page.locator('.msg.assistant .tool-inline[data-tcid="search-visual"]');
+  await page.locator('.msg.assistant [data-testid="turn-activity-toggle"]').click();
+  const toolRow = page.locator('.msg.assistant .rn-tool-row[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
-  await expect(toolRow.locator('.tool-inline-label').first()).toHaveText('Searched for “Socratic learning”');
-  await expect(toolRow.locator('.tool-inline-meta')).toHaveText('2 sources');
-  await expect(page.locator('.tool-run-summary')).toHaveCount(0);
+  await expect(toolRow.locator('[data-testid="tool-row-verb"]')).toHaveText('Search the web');
+  await expect(toolRow.locator('[data-testid="tool-row-target"]')).toHaveText('Socratic learning');
+  await expect(toolRow.locator('[data-testid="tool-row-status"]')).toHaveText('Done');
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
 
   const chatComposer = page.locator('#composerInputWrap');

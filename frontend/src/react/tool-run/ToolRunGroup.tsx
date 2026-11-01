@@ -8,16 +8,13 @@ export interface ToolRunGroupProps {
   segment: GroupSegment;
   messageId?: string;
   readOnly?: boolean;
-  activityOnly?: boolean;
   tools?: ReadonlyArray<ToolCallRecord>;
 }
 
 /** Required actions and results remain in the transcript. Activity rows live
- * in the turn disclosure; stable output keys preserve interactive state. */
-export function ToolRunGroup({ segment, messageId, readOnly, tools, activityOnly }: ToolRunGroupProps) {
-  if (activityOnly) return <section className="tool-run-group" data-state={segment.state === 'done' ? 'complete' : segment.state} data-category={segment.category}>
-    <ToolRunRows segment={segment} messageId={messageId} readOnly={readOnly} activityOnly />
-  </section>;
+ * in the turn's RN activity surface (TurnActivitySurface); stable output keys
+ * preserve interactive state. */
+export function ToolRunGroup({ segment, messageId, readOnly, tools }: ToolRunGroupProps) {
   return (
     <>
       <ToolRunRows segment={segment} messageId={messageId} readOnly={readOnly} actionsOnly />

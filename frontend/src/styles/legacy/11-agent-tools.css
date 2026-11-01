@@ -375,11 +375,11 @@
 
 /* Open WebUI-style tool disclosure: a quiet status row until the reader
    explicitly opens Input/Output evidence. */
-.tool-run-list .agent-tool-card,.agent-tool-card{
+.agent-tool-card{
   background:transparent;border:0;overflow:visible;
 }
 .agent-tool-card:hover,.agent-tool-card.open{border:0;box-shadow:none}
-.agent-tool-head,.tool-run-list .agent-tool-head{
+.agent-tool-head{
   min-height:30px;gap:7px;border-radius:7px;
   color:hsl(var(--text-400));
 }
@@ -401,7 +401,7 @@
 .agent-tool-card[data-tool-state="cancelled"] .agent-tool-state-icon::before{
   content:"■";font-size:10px;color:hsl(var(--text-500));
 }
-.agent-tool-name,.tool-run-list .agent-tool-name{
+.agent-tool-name{
   flex:0 0 auto;font-size:calc(13px * var(--app-font-scale,1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-200));
 }
 .agent-tool-input{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:1}

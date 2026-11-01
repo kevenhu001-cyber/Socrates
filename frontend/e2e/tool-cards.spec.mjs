@@ -1,12 +1,12 @@
 // Live-chat tool-call path no longer renders an agent-tool-card.
-// The model announces what it is doing with an inline status label
-// (Searching / Coding / Data Processing); tool-specific SVGs identify
-// the active operation. Generated images stay hidden unless the assistant
+// RN-2: each call is one row in the turn's activity timeline (verb · object ·
+// status word · time); tool-specific SVGs identify the operation and the
+// row opens its detail as a drawer / sheet. Generated images stay hidden unless the assistant
 // explicitly cites one in its markdown response.
 //
 // This file keeps three regression checks:
-//   1. The inline status label appears during the tool_use event and
-//      is removed once the model's reply starts streaming.
+//   1. The row's status word is live during the tool_use event and
+//      settles once the result lands.
 //   2. Running search and code rows show their specific SVG glyphs.
 //   3. The search result parser still treats javascript: URLs as
 //      non-clickable (defence against the model emitting unsafe URLs).
@@ -17,6 +17,7 @@
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+import { TURN, openActivity, openToolDetail, openToolGroups, toolRow, toolRowButton } from './_turn-ui.mjs';
 
 /* Every copy assertion below is English — the app ships with zh as its default
    language, and the labels are now derived per-tool with objects ("Searched
@@ -62,25 +63,25 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await bubble.locator('.thinking-accordion-toggle').click();
+  await openActivity(bubble);
 
   // Live chat must not have the legacy tool card chrome.
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
-  await expect(page.locator('.tool-run-summary')).toHaveCount(0);
 
-  // The text reply landed, so the status pill should be gone.
-  await expect(bubble.locator('.thinking-status')).toHaveCount(0);
+  // The text reply landed, so the live caption is gone.
+  await expect(bubble.locator(TURN.progress)).toHaveCount(0);
 
-  const searchRow = bubble.locator('.tool-inline[data-tcid="search-1"]');
+  const searchRow = toolRow(bubble, 'search-1');
   await expect(searchRow).toHaveAttribute('data-state', 'done');
-  await expect(searchRow).toHaveAttribute('data-expandable', '1');
+  await expect(toolRowButton(bubble, 'search-1')).toHaveAttribute('aria-haspopup', 'dialog');
 
-  await searchRow.locator('summary').click();
-  await expect(searchRow).toHaveAttribute('open', '');
-  await expect(searchRow.locator('.tool-inline-sources')).toContainText('Trusted source');
-  await expect(searchRow.locator('.tool-inline-src[href]')).toHaveCount(1);
-  await expect(searchRow.locator('.tool-inline-src-date')).toHaveText('2026-07-15');
-  await expect(searchRow.locator('.tool-inline-src-engine')).toHaveText('bing');
+  const detail = await openToolDetail(page, bubble, 'search-1');
+  await expect(detail.locator(TURN.source).first()).toContainText('Trusted source');
+  /* Only the http(s) source becomes a link; javascript: never does. */
+  const links = detail.locator(`${TURN.source}[role="link"]`);
+  await expect(links).toHaveCount(1);
+  await expect(links).toContainText('Trusted source');
+  await expect(links).toContainText('example.test');
 });
 
 test('live Python image artifacts stay hidden until cited in assistant markdown', async ({ page }) => {
@@ -109,8 +110,8 @@ test('live Python image artifacts stay hidden until cited in assistant markdown'
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await bubble.locator('.thinking-accordion-toggle').click();
-  await expect(bubble.locator('.tool-inline[data-tcid="code-plot"]')).toHaveAttribute('data-state', 'done');
+  await openActivity(bubble);
+  await expect(toolRow(bubble, 'code-plot')).toHaveAttribute('data-state', 'done');
   await expect(bubble.locator('.exec-artifact, .exec-artifact-image')).toHaveCount(0);
 });
 
@@ -142,15 +143,15 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await bubble.locator('.thinking-accordion-toggle').click();
-  const row = bubble.locator('.tool-inline[data-tcid="boundary-search"]');
+  await openActivity(bubble);
+  const row = toolRow(bubble, 'boundary-search');
   await expect(row).toHaveCount(1);
-  await expect(bubble.locator('.turn-activity-surface [data-tcid="boundary-search"]')).toHaveCount(1);
+  await expect(bubble.locator(`${TURN.body} [data-tcid="boundary-search"]`)).toHaveCount(1);
   const prose = await bubble.locator('.tool-run-prose').allTextContents();
   expect(prose.join(' ').replace(/\s+/g, ' ')).toContain('先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。');
 });
 
-test('live chat shows a Searching label while the model is searching', async ({ page }) => {
+test('live chat shows a running search row while the model is searching', async ({ page }) => {
   await page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     window.fetch = (input, init) => {
@@ -199,26 +200,32 @@ test('live chat shows a Searching label while the model is searching', async ({ 
     window.__searchTurnPromise = window.askChatTurn('Look something up');
   });
 
-  await page.locator('.msg.assistant').last().locator('.thinking-accordion-toggle').click();
-  const row = page.locator('.msg.assistant .tool-inline[data-tcid="late-search"]').last();
+  const bubble = page.locator('.msg.assistant').last();
+  await openActivity(bubble);
+  const row = toolRow(bubble, 'late-search');
   await expect(row).toBeVisible();
-  await expect(row.locator('.tool-inline-label')).toContainText('Searching');
-  await expect(row.locator('.tool-inline-label')).not.toHaveClass(/shimmer-text/);
-  expect(await row.locator('.tool-inline-label').evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+  /* Verb and object are steady text; only the status word is live. */
+  await expect(row.locator(TURN.verb)).toHaveText('Search the web');
+  await expect(row.locator(TURN.target)).toHaveText('weather today');
+  await expect(row.locator(TURN.verb)).not.toHaveClass(/shimmer-text/);
+  expect(await row.locator(TURN.verb).evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+  await expect(row.locator(TURN.status)).toHaveText('Running');
   await expect(row.locator('.tool-inline-tool-icon svg circle')).toHaveCount(1);
   await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(1);
-  await expect(page.locator('.msg.assistant .thinking-status')).toHaveCount(1);
+  await expect(bubble.locator(TURN.progress)).toHaveCount(1);
   await expect(row).toHaveAttribute('data-state', 'running');
 
   await page.evaluate(() => window.__finishSearchStream());
   await expect(row).toHaveAttribute('data-state', 'done');
-  /* P_declarative-tool-run — the settled row names its object and moves the
-     count to meta: "Found 1 web results" said nothing about which search. */
-  await expect(row.locator('.tool-inline-label')).toContainText('Searched for “weather today”');
-  await expect(row.locator('.tool-inline-meta')).toContainText('1 source');
+  /* P_declarative-tool-run — the settled row still names its object; the
+     source count moves into the drawer's subtitle. */
+  await expect(row.locator(TURN.status)).toHaveText('Done');
+  await expect(row.locator(TURN.target)).toHaveText('weather today');
+  const detail = await openToolDetail(page, bubble, 'late-search');
+  await expect(detail).toContainText('1 source');
 });
 
-test('code execution switches from executing to data analysis without thinking overlap', async ({ page }) => {
+test('code execution streams live output into its row without thinking overlap', async ({ page }) => {
   await page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     window.fetch = (input, init) => {
@@ -267,18 +274,24 @@ test('code execution switches from executing to data analysis without thinking o
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await bubble.locator('.thinking-accordion-toggle').click();
-  const row = bubble.locator('.tool-inline[data-tcid="live-code"]').last();
-  await expect(row.locator('.tool-inline-label')).toContainText('Executing code');
+  await openActivity(bubble);
+  const row = toolRow(bubble, 'live-code');
+  await expect(row.locator(TURN.verb)).toHaveText('Run code');
+  await expect(row.locator(TURN.status)).toHaveText('Running');
   await expect(row.locator('.tool-inline-tool-icon svg')).toBeVisible();
   /* The icon set is a single-path glyph now; what the gate owns is that the
      inline tool icon actually paints, not how many paths it is cut into. */
   expect(await row.locator('.tool-inline-tool-icon svg path').count()).toBeGreaterThan(0);
-  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
+  await expect(bubble.locator(TURN.surface)).toHaveCount(1);
+  /* RN-2 dropped the phase relabel (Executing code → Analyzing data): the
+     verb stays put and the stdout chunk shows up as live output instead. */
   await page.evaluate(() => window.__sendCodeProgress());
-  await expect(row.locator('.tool-inline-label')).toContainText('Analyzing data');
+  const detail = await openToolDetail(page, bubble, 'live-code');
+  await expect(detail.locator('[data-testid="tool-detail-section-live"]')).toContainText('1');
+  await page.keyboard.press('Escape');
   await page.evaluate(() => window.__finishCodeStream());
   await expect(row).toHaveAttribute('data-state', 'done');
+  await expect(row.locator(TURN.status)).toHaveText('Done');
 });
 
 test('Tutor streams the same native tools and sends the tutor mode contract', async ({ page }) => {
@@ -312,16 +325,16 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
   });
 
   expect(requestMode).toBe('tutor');
-  await page.locator('.msg.assistant').last().locator('.thinking-accordion-toggle').click();
-  const row = page.locator('.msg.assistant .tool-inline[data-tcid="tutor-search"]').last();
+  const bubble = page.locator('.msg.assistant').last();
+  await openActivity(bubble);
+  const row = toolRow(bubble, 'tutor-search');
   await expect(row).toHaveAttribute('data-state', 'done');
-  await row.locator('summary').click();
-  await expect(row.locator('.tool-inline-sources')).toContainText('Primary source');
+  const detail = await openToolDetail(page, bubble, 'tutor-search');
+  await expect(detail.locator(TURN.sources)).toContainText('Primary source');
 });
 
 test('live chat keeps a burst in the reading flow and persists every call on finish', async ({ page }) => {
-  // P_tool_live_card — during streaming the bubble shows at most one
-  // .tool-inline. The persisted HTML on the finished message must
+  // P_tool_live_card — the persisted HTML on the finished message must
   // contain every call so a reload / share view re-renders all three
   // inline rows. The single-card slot is presentation-only; this is the
   // regression that proves it.
@@ -369,10 +382,13 @@ test('live chat keeps a burst in the reading flow and persists every call on fin
   for (const offset of finalized.offsets) {
     expect(typeof offset, 'each persisted call records its split point').toBe('number');
   }
-  await expect(page.locator('.msg.assistant').last().locator('.tool-inline')).toHaveCount(3);
+  const burst = page.locator('.msg.assistant').last();
+  await openActivity(burst);
+  await openToolGroups(burst);
+  await expect(burst.locator(TURN.row)).toHaveCount(3);
 });
 
-test('consecutive tools stay individually visible without an aggregate header', async ({ page }) => {
+test('consecutive tools merge into one group whose rows stay individually inspectable', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
@@ -401,20 +417,22 @@ test('consecutive tools stay individually visible without an aggregate header', 
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  await bubble.locator('.thinking-accordion-toggle').click();
-  const group = bubble.locator('.tool-run-group');
+  await openActivity(bubble);
+  /* RN-2 design: consecutive calls merge into 「Used N tools」. */
+  const group = bubble.locator('[data-testid="tool-group-group-a"]');
   await expect(group).toHaveCount(1);
-  await expect(group).toHaveAttribute('data-state', 'complete');
-  await expect(group.locator('.tool-run-summary')).toHaveCount(0);
-  await expect(group.locator('.tool-inline')).toHaveCount(2);
-  for (const id of ['group-a', 'group-b']) await expect(group.locator(`[data-tcid="${id}"]`)).toBeVisible();
-  const first = group.locator('[data-tcid="group-a"]');
-  await expect(first.locator('.tool-inline-label')).toHaveText('Searched for “alpha”');
-  await first.locator('summary').click();
-  await expect(first.locator('.tool-inline-src-title')).toHaveCount(1);
-  const second = group.locator('[data-tcid="group-b"]');
-  await second.locator('summary').click();
-  await expect(second.locator('.tool-inline-src-title')).toContainText('Beta');
+  await expect(group.locator(TURN.groupTitle)).toHaveText('Used 2 tools');
+  await expect(group.locator('[data-testid="tool-group-status"]')).toHaveText('Done');
+  await openToolGroups(bubble);
+  await expect(group.locator(TURN.row)).toHaveCount(2);
+  for (const id of ['group-a', 'group-b']) await expect(toolRow(group, id)).toBeVisible();
+  await expect(toolRow(group, 'group-a').locator(TURN.target)).toHaveText('alpha');
+  let detail = await openToolDetail(page, bubble, 'group-a');
+  await expect(detail.locator(TURN.sourceTitle)).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(page.locator(TURN.detail)).toHaveCount(0);
+  detail = await openToolDetail(page, bubble, 'group-b');
+  await expect(detail.locator(TURN.sourceTitle)).toContainText('Beta');
 
   /* Same split-point contract as the burst test above: the merged row is a
      rendering decision, the persistence is one record per call. */
@@ -457,15 +475,18 @@ test('a failed member marks the grouped run and keeps its own error detail', asy
 
   /* Failed actions remain visible beside successful actions. */
   const bubble = page.locator('.msg.assistant').last();
-  await bubble.locator('.thinking-accordion-toggle').click();
-  const group = bubble.locator('.tool-run-group').first();
-  await expect(group).toHaveAttribute('data-state', 'error');
-  await expect(group.locator('.tool-run-summary')).toHaveCount(0);
-  const failed = group.locator('.tool-inline[data-tcid="fail-b"]');
+  await openActivity(bubble);
+  const group = bubble.locator('[data-testid="tool-group-fail-a"]');
+  await expect(group.locator('[data-testid="tool-group-status"]')).toHaveText('Failed');
+  await openToolGroups(bubble);
+  const failed = toolRow(group, 'fail-b');
   await expect(failed).toHaveAttribute('data-state', 'error');
   await expect(failed).toHaveAttribute('data-error', '1');
-  await failed.locator('summary').click();
-  await expect(failed.locator('[data-kind="error"] .tool-inline-detail-value')).toContainText('boom');
+  await expect(failed.locator(TURN.status)).toHaveText('Failed');
+  const detail = await openToolDetail(page, bubble, 'fail-b');
+  await expect(detail.locator('[data-testid="tool-detail-section-error"]')).toContainText('boom');
+  await page.keyboard.press('Escape');
   /* The row that succeeded is not painted as a failure. */
-  await expect(group.locator('.tool-inline[data-tcid="fail-a"]')).toHaveAttribute('data-state', 'done');
+  await expect(toolRow(group, 'fail-a')).toHaveAttribute('data-state', 'done');
+  await expect(toolRow(group, 'fail-a').locator(TURN.status)).toHaveText('Done');
 });

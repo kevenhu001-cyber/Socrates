@@ -56,7 +56,7 @@ export function TurnSegmentContent({
   if (segment.kind === 'tool') {
     return (
       <Fragment key={'tool-' + segment.call.id}>
-        <ToolRunRow startedAt={runStartedAt(segment.call)} view={toolRunView(segment.call)} messageId={messageId} readOnly={readOnly} actionsOnly />
+        <ToolRunRow startedAt={runStartedAt(segment.call)} view={toolRunView(segment.call)} call={segment.call} messageId={messageId} readOnly={readOnly} actionsOnly />
         <ToolRunAttachments call={segment.call} tools={tools} readOnly={readOnly} />
       </Fragment>
     );

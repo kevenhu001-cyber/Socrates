@@ -1,5 +1,61 @@
+import { expect, test } from '@playwright/test';
 import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+
+/* The global error guard (src/app/errorGuard.ts) paints this banner for any
+   uncaught error. A workbench page must never show it: an uncaught error is
+   a bug, and a screenshot or spec that tolerates the banner hides it. */
+export const GLOBAL_ERROR_BANNER = '#__socrates_global_err_banner';
+
+function inTest() {
+  try { return Boolean(test.info()); } catch { return false; }
+}
+
+function flagWorkbenchError(page, kind, detail) {
+  const record = { kind, detail: String(detail).slice(0, 2000) };
+  page.__workbenchErrors.push(record);
+  if (inTest()) {
+    expect.soft(record, `workbench ${kind}: the page raised an uncaught error`).toBeNull();
+  } else {
+    console.error(`[workbench] ${kind}:`, record.detail);
+  }
+}
+
+/* Idempotent: listens for uncaught page errors and for the guard's banner
+   (a MutationObserver reports it through a binding, so a banner raised after
+   preparation still fails the test). */
+async function watchGlobalErrors(page) {
+  if (page.__workbenchErrors) return;
+  page.__workbenchErrors = [];
+  page.on('pageerror', (error) => {
+    /* Only the app's own documents count: a spec's init script throwing on
+       about:blank (no storage access) is not an app error. */
+    if (!/^https?:/.test(page.url())) return;
+    flagWorkbenchError(page, 'pageerror', error.stack || error.message);
+  });
+  await page.exposeBinding('__workbenchBanner', (_source, text) => flagWorkbenchError(page, 'error-banner', text));
+  await page.addInitScript((selector) => {
+    const report = () => {
+      const banner = document.querySelector(selector);
+      if (!banner || banner.dataset.workbenchReported) return;
+      banner.dataset.workbenchReported = '1';
+      window.__workbenchBanner(banner.textContent || '');
+    };
+    const start = () => new MutationObserver(report).observe(document.body, { childList: true });
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start, { once: true });
+  }, GLOBAL_ERROR_BANNER);
+}
+
+/** Uncaught errors / banners the workbench saw on this page so far. */
+export function workbenchErrors(page) {
+  return page.__workbenchErrors ? [...page.__workbenchErrors] : [];
+}
+
+/** Hard assertion: no banner on screen and no uncaught error recorded. */
+export async function expectNoGlobalError(page) {
+  await expect(page.locator(GLOBAL_ERROR_BANNER)).toHaveCount(0);
+  expect(workbenchErrors(page)).toEqual([]);
+}
 
 export const WORKBENCH_VIEWPORTS = Object.freeze({
   desktop: Object.freeze({ width: 1440, height: 900 }),
@@ -9,6 +65,7 @@ export const WORKBENCH_VIEWPORTS = Object.freeze({
 export async function prepareChatWorkbench(page, options = {}) {
   const viewport = options.viewport || WORKBENCH_VIEWPORTS.desktop;
   await page.setViewportSize(viewport);
+  if (!options.allowGlobalErrors) await watchGlobalErrors(page);
   await mockAuthedApp(page, { lang: options.lang || 'en' });
   if (options.streamBody) {
     await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
@@ -35,6 +92,7 @@ export async function prepareChatWorkbench(page, options = {}) {
     messages: options.messages || [],
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'workbench-fixture' });
+  if (!options.allowGlobalErrors) await expectNoGlobalError(page);
 }
 
 export function textFrame(text) {

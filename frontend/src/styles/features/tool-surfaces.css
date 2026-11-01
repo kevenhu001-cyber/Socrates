@@ -119,8 +119,6 @@
    Only an actual tool result gets a contained card. The previous activity
    treatment wrapped the entire answer in a panel, which made normal prose
    look like a user bubble and broke the visual hierarchy of the page. */
-.msg.assistant .msg-body:has(.tool-inline),
-.msg.assistant .msg-body:has(.tool-run-group),
 .msg.assistant .msg-body:has(.agent-run-host),
 .msg.assistant .msg-body:has(.agent-tool-card){
   margin:0;
@@ -132,27 +130,66 @@
   color:var(--foreground);
 }
 /* Embedded editors own their text palette; prose colors stop at that boundary. */
-.msg.assistant .msg-body:has(.tool-inline) p:not(:where(.tl-container *)),
-.msg.assistant .msg-body:has(.tool-inline) li:not(:where(.tl-container *)),
-.msg.assistant .msg-body:has(.tool-run-group) p:not(:where(.tl-container *)),
-.msg.assistant .msg-body:has(.tool-run-group) li:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.agent-tool-card) p:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.agent-tool-card) li:not(:where(.tl-container *)){
   color:var(--foreground);
 }
-.msg.assistant .msg-body:has(.tool-inline) strong:not(:where(.tl-container *)),
-.msg.assistant .msg-body:has(.tool-run-group) strong:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.agent-tool-card) strong:not(:where(.tl-container *)){
   color:var(--primary);
 }
-.msg.assistant .msg-body:has(.tool-inline) a:not(:where(.tl-container *)),
-.msg.assistant .msg-body:has(.tool-run-group) a:not(:where(.tl-container *)),
 .msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)){
   color:var(--foreground);
   text-decoration-color:var(--muted-foreground);
 }
-.msg.assistant .msg-body:has(.tool-inline) a:not(:where(.tl-container *)):hover,
-.msg.assistant .msg-body:has(.tool-run-group) a:not(:where(.tl-container *)):hover,
 .msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)):hover{
   color:var(--primary);
+}
+
+/* ── RN-2 hosts ──────────────────────────────────────────────────────────
+   DOM hosts around the shared React Native turn components
+   (@socrates/ui/turn). The components draw themselves; these rules only
+   let them stretch to the prose column and size the shell's SVG glyphs,
+   whose old sizing lived under the retired `.tool-inline` scope. */
+.rn-turn-activity,
+.rn-tool-row,
+.rn-tool-actions,
+.rn-tool-approval {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.rn-turn-activity,
+.rn-tool-row {
+  /* The prose column's legacy icon rule sizes by these tokens. */
+  --tc-icon: 16px;
+  --tc-glyph: 14px;
+}
+.rn-turn-activity {
+  margin-block-end: var(--ui-gap-2);
+}
+.rn-tool-actions {
+  gap: var(--ui-gap-2);
+  margin-block: var(--ui-gap-2);
+}
+.rn-turn-activity .tool-inline-tool-icon,
+.rn-tool-row .tool-inline-tool-icon {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-ink-tertiary);
+}
+.rn-turn-activity .tool-inline-tool-icon svg,
+.rn-turn-activity .tool-inline-tool-icon img,
+.rn-tool-row .tool-inline-tool-icon svg,
+.rn-tool-row .tool-inline-tool-icon img {
+  display: block;
+  width: 87.5%;
+  height: 87.5%;
+  object-fit: contain;
+}
+.rn-tool-row[data-state="error"] .tool-inline-tool-icon,
+.rn-tool-row[data-state="awaiting"] .tool-inline-tool-icon {
+  color: var(--ui-ink);
 }

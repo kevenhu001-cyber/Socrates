@@ -7,13 +7,18 @@ test('thinking disclosure supports keyboard control and preserves intent through
     clientId: 'disclosure-fixture', role: 'assistant', type: 'streaming',
     rawText: '<think>internal draft</think>', _activity: { type: 'public_reasoning_summary', text: 'Preparing a concise comparison.' }, _streamSettled: false,
   }] });
-  const accordion = page.locator('.thinking-accordion');
-  const toggle = accordion.locator('.thinking-accordion-toggle');
+  const accordion = page.locator('.rn-turn-activity');
+  const toggle = accordion.getByTestId('turn-activity-toggle');
+  const body = accordion.getByTestId('turn-activity-body');
+  // Live: 「思考中 · 第 N 步」 with a progress hairline, never a dot.
+  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking · step 1');
+  await expect(accordion.getByTestId('turn-activity-progress')).toHaveCount(1);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.focus();
   await page.keyboard.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(accordion.locator('.thinking-accordion-body')).toHaveAttribute('aria-hidden', 'false');
+  await expect(body).toBeVisible();
+  await expect(body).not.toHaveAttribute('aria-hidden', 'true');
   await page.keyboard.press('Space');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
@@ -24,7 +29,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-update' });
-  await expect(accordion.locator('.thinking-accordion-text')).toHaveText('Checked the relevant sources.');
+  await expect(accordion.getByTestId('thinking-step-title')).toHaveText('Checked the relevant sources.');
   await expect(accordion).not.toContainText('internal draft');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await page.keyboard.press('Enter');
@@ -34,10 +39,11 @@ test('thinking disclosure supports keyboard control and preserves intent through
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-complete' });
   await expect(accordion).not.toHaveAttribute('data-live', 'true');
+  await expect(accordion.getByTestId('turn-activity-progress')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await setLang(page, 'zh');
-  await expect(toggle).toContainText('思路总结');
-  await expect(accordion.locator('.thinking-copy-quote-btn')).toHaveCount(0);
+  // One public step, duration unknown: 「1 步」.
+  await expect(toggle).toContainText('1 步');
   await page.screenshot({ path: 'test-results/thinking-disclosure-desktop.png', animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'test-results/thinking-disclosure-mobile.png', animations: 'disabled' });

@@ -171,12 +171,12 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
      activity-row pass hides — without it the turn renders but reads inert. */
   await expect(body).toHaveClass(/is-declarative/);
 
-  await body.locator('.thinking-accordion-toggle').click();
-  // Consecutive calls remain visible in the shared transcript.
-  await expect(body.locator('.tool-run-group')).toHaveCount(1);
-  await expect(body.locator('.tool-run-summary')).toHaveCount(0);
-  await expect(body.locator('.tool-inline').first()).toBeVisible();
-  await expect(body.locator('.tool-inline')).toHaveCount(2);
+  await body.getByTestId('turn-activity-toggle').click();
+  // Consecutive calls merge into one 「Used N tools」 group in the shared transcript.
+  await expect(body.getByTestId('tool-group-title')).toHaveText('Used 2 tools');
+  await body.getByTestId('tool-group-toggle').click();
+  await expect(body.locator('.rn-tool-row').first()).toBeVisible();
+  await expect(body.locator('.rn-tool-row')).toHaveCount(2);
 
   // Both calls split at offset 0, so the run is the first thing in the turn
   // and the answer prose follows it as one segment — never re-baked rows.
@@ -186,21 +186,21 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   const order = await body.locator('.turn-evidence').evaluate((el) => Array.from(el.children).map((node) => (
     node.classList.contains('tool-run-prose')
       ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
-      : node.classList.contains('turn-activity-surface') ? 'activity' : 'other'
+      : node.classList.contains('rn-turn-activity') ? 'activity' : 'other'
   )));
   expect(order).toEqual(['activity', 'text:' + oneLine(SHARED_RAW)]);
 
-  await expect(body.locator('.tool-inline-label')).toHaveText([
-    'Searched for “inverse square law”',
-    'Read arxiv.org',
-  ]);
-  await body.locator('.tool-inline[data-tcid="shared-search"] summary').click();
+  await expect(body.getByTestId('tool-row-verb')).toHaveText(['Search the web', 'Read web page']);
+  await expect(body.getByTestId('tool-row-target')).toHaveText(['inverse square law', 'arxiv.org']);
+  await body.getByTestId('tool-row-shared-search').click();
   // Sources are shown only inside their own action detail.
-  await expect(body.locator('.tool-inline[data-tcid="shared-search"] .tool-inline-src-title')).toHaveCount(2);
+  await expect(page.getByTestId('tool-detail').getByTestId('tool-source')).toHaveCount(2);
+  await page.keyboard.press('Escape');
 
   /* Read-only: nothing in the turn can retry a call or answer a permission
      prompt, and the legacy card chrome must not come back alongside. */
-  await expect(body.locator('.tool-inline-retry')).toHaveCount(0);
+  await expect(body.getByTestId('tool-error-retry')).toHaveCount(0);
+  await expect(body.locator('[data-approval-action]')).toHaveCount(0);
   await expect(body.locator('.agent-tool-card')).toHaveCount(0);
 
   // The stylesheet's declarative block was authored against the chat surface;
@@ -254,7 +254,7 @@ test('late compatibility mounting preserves the read-only shared transcript', as
     window.__socratesMountReactCompatibility();
   });
   const turn = page.locator('#msgList .msg.assistant').last();
-  await expect(turn.locator('.tool-inline')).toHaveCount(2);
+  await expect(turn.locator('.rn-tool-row')).toHaveCount(2);
   await expect(page.locator('#msgList .msg')).toHaveCount(3);
   await expect(page.locator('#composerRoot')).toBeHidden();
   await expect(page.locator('#msgList .msg-toolbar')).toHaveCount(0);
