@@ -35,7 +35,9 @@ import {
   repairToolArguments,
   resolveToolName,
   sanitizeToolCallForProtocol,
+  looksTruncatedToolArguments,
   TOOL_ARGUMENT_ERRORS,
+  truncatedArgumentsHint,
   validateToolArguments,
 } from '../../../services/tools/toolCallSafety.js';
 import {SELF_NORMALIZING_TOOLS} from '../../../services/tools/toolRegistry.js';
@@ -899,6 +901,8 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           retryable: toolPolicy.remainingRetries(resolved.name) > 1,
           ...(repaired.error === TOOL_ARGUMENT_ERRORS.tooLarge ? {
             hint: `The arguments hit the ${Math.floor(MAX_TOOL_ARGUMENT_CHARS / 1024)} KB transport limit and were cut off, so they could not be parsed. Send a smaller payload — split the work across several calls.`,
+          } : looksTruncatedToolArguments(call.function?.arguments) ? {
+            hint: truncatedArgumentsHint(resolved.name),
           } : {}),
         };
       } else {

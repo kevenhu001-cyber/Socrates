@@ -209,3 +209,38 @@ export function recordHttpMetrics(
     'http.response.status_code': statusCode,
   });
 }
+
+/* ── Visual tool validation ────────────────────────────────────────────
+   One counter for render_intelligent_ui / render_visualization outcomes, so
+   a dashboard can show rejection rate by stage and template. Labels are
+   closed sets (stage names, the 28 template ids, "none"/"other") to keep
+   cardinality bounded. A process-local tally mirrors the counter for the
+   status page and tests, since the OTLP exporter is optional. */
+const visualizationValidations = meter.createCounter('socrates.viz.validation', {
+  description: 'Visual tool validation outcomes, by tool, outcome, stage and template.',
+});
+const visualizationTally = new Map<string, number>();
+
+export interface VisualizationValidationRecord {
+  tool: string;
+  outcome: 'accepted' | 'rejected';
+  stage: string;
+  template: string;
+}
+
+export function recordVisualizationValidation(record: VisualizationValidationRecord): void {
+  const attributes = {
+    'socrates.tool': record.tool,
+    'socrates.viz.outcome': record.outcome,
+    'socrates.viz.stage': record.stage,
+    'socrates.viz.template': record.template,
+  };
+  visualizationValidations.add(1, attributes);
+  const key = `${record.tool}|${record.outcome}|${record.stage}|${record.template}`;
+  visualizationTally.set(key, (visualizationTally.get(key) || 0) + 1);
+}
+
+/** Process-local copy of the validation counter (`tool|outcome|stage|template` → count). */
+export function visualizationValidationTally(): Record<string, number> {
+  return Object.fromEntries(visualizationTally);
+}

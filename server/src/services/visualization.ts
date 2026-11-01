@@ -2,21 +2,26 @@ import { z } from 'zod';
 
 import { MAX_TOOL_STRING_FIELD_CHARS } from './tools/toolCallSafety.js';
 import { parseFunctionExpression, sampleFunction } from '@socrates/core/visualizationMath';
+import {
+  MAX_VISUALIZATION_POINTS,
+  VISUALIZATION_ITEM_LIMITS,
+  VISUALIZATION_TEMPLATES as SHARED_VISUALIZATION_TEMPLATES,
+  normalizeVisualizationSpec,
+} from '@socrates/core/visualizationNormalize';
 
 /**
  * The visual tool deliberately accepts content, not presentation.  Palette,
  * typography, layout and renderer selection are owned by the client so every
  * generated card remains recognisably Socrates.
  */
-export const VISUALIZATION_TEMPLATES = [
-  'function', 'line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap',
-  'radar', 'boxplot', 'flowchart', 'sequence', 'state', 'tree', 'mindmap',
-  'network', 'timeline', 'comparison', 'process', 'number_line', 'geometry',
-  'concept_map', 'svg_illustration', 'interactive_simulation',
-  'paper_chart', 'math_construction', 'geometry_3d', 'whiteboard',
-] as const;
+export const VISUALIZATION_TEMPLATES = SHARED_VISUALIZATION_TEMPLATES;
+export { MAX_VISUALIZATION_POINTS };
 
 const finiteNumber = z.number().finite();
+/* `null` is a missing measurement (a gap in a line, an empty bar, "—" in the
+   table). The shared normalizer has already turned "3", "1,200", "45%" and
+   {name,value} points into numbers or gaps before this schema runs. */
+const cellNumber = z.union([finiteNumber, z.null()]);
 const categorySchema = z.union([z.string().min(1).max(120), finiteNumber]);
 const seriesHeader = {
   name: z.string().min(1).max(80).optional(),
@@ -24,7 +29,7 @@ const seriesHeader = {
 };
 const numericSeriesSchema = z.object({
   ...seriesHeader,
-  data: z.array(finiteNumber).min(1).max(5000),
+  data: z.array(cellNumber).min(1).max(MAX_VISUALIZATION_POINTS),
 }).passthrough();
 const scatterPointSchema = z.union([
   z.tuple([finiteNumber, finiteNumber]),
@@ -32,7 +37,7 @@ const scatterPointSchema = z.union([
 ]);
 const scatterSeriesSchema = z.object({
   ...seriesHeader,
-  data: z.array(scatterPointSchema).min(1).max(5000),
+  data: z.array(scatterPointSchema).min(1).max(MAX_VISUALIZATION_POINTS),
 }).passthrough();
 const nodeSchema = z.object({
   id: z.string().regex(/^[A-Za-z0-9_]{1,80}$/),
@@ -61,7 +66,7 @@ const functionPayload = z.object({
 }).passthrough();
 
 const categoryChartPayload = z.object({
-  categories: z.array(categorySchema).min(1).max(5000).optional(),
+  categories: z.array(categorySchema).min(1).max(MAX_VISUALIZATION_POINTS).optional(),
   series: z.array(numericSeriesSchema).min(1).max(20),
   xLabel: z.string().max(80).optional(),
   yLabel: z.string().max(80).optional(),
@@ -84,7 +89,7 @@ const scatterPayload = z.object({
 const heatmapPayload = z.object({
   xCategories: z.array(categorySchema).min(1).max(200),
   yCategories: z.array(categorySchema).min(1).max(200),
-  values: z.array(z.array(finiteNumber).min(1).max(200)).min(1).max(200),
+  values: z.array(z.array(cellNumber).min(1).max(200)).min(1).max(200),
   description: z.string().max(800).optional(),
 }).passthrough();
 
@@ -96,10 +101,10 @@ const radarPayload = z.object({
 
 const boxplotSeriesSchema = z.object({
   ...seriesHeader,
-  data: z.array(z.tuple([finiteNumber, finiteNumber, finiteNumber, finiteNumber, finiteNumber])).min(1).max(5000),
+  data: z.array(z.tuple([finiteNumber, finiteNumber, finiteNumber, finiteNumber, finiteNumber])).min(1).max(MAX_VISUALIZATION_POINTS),
 }).passthrough();
 const boxplotPayload = z.object({
-  categories: z.array(categorySchema).min(1).max(5000),
+  categories: z.array(categorySchema).min(1).max(MAX_VISUALIZATION_POINTS),
   series: z.array(boxplotSeriesSchema).min(1).max(20),
   description: z.string().max(800).optional(),
 }).passthrough();
@@ -108,7 +113,7 @@ const paperChartSeriesSchema = numericSeriesSchema.extend({
   kind: z.enum(['line', 'bar', 'scatter']).optional(),
 });
 const paperChartPayload = z.object({
-  categories: z.array(categorySchema).min(1).max(5000).optional(),
+  categories: z.array(categorySchema).min(1).max(MAX_VISUALIZATION_POINTS).optional(),
   series: z.array(paperChartSeriesSchema).min(1).max(20),
   xLabel: z.string().max(80).optional(),
   yLabel: z.string().max(80).optional(),
@@ -197,6 +202,9 @@ function schemaFor(template: string): z.ZodTypeAny {
   return teachingPayload;
 }
 
+const NUMBER_RULE = 'Write every value as a JSON number (12.5, not "12.5" or "12.5%") and use null for a missing measurement.';
+const POINT_RULE = `Keep each series at or below ${MAX_VISUALIZATION_POINTS} points; longer data is downsampled.`;
+const ID_RULE = 'Give every node a unique short id; ASCII letters, digits and underscores are safest (other ids are rewritten automatically).';
 const COMMON_GRAPH_PAYLOAD = { nodes: [{ id: 'start', label: 'Start' }, { id: 'finish', label: 'Finish' }], edges: [{ from: 'start', to: 'finish', label: 'next' }] };
 const COMMON_NUMERIC_PAYLOAD = { categories: ['A', 'B', 'C'], series: [{ name: 'Value', data: [3, 5, 4] }] };
 
@@ -207,33 +215,33 @@ const COMMON_NUMERIC_PAYLOAD = { categories: ['A', 'B', 'C'], series: [{ name: '
  */
 export const VISUALIZATION_TEMPLATE_CONTRACTS = {
   function: {
-    guidance: 'payload.functions is an array of {expression,label?,domain?}. Use Cartesian y=f(x) only. Expressions use x, pi, e, + - * / ^, parentheses, and named functions such as sin(x), ln(x), sqrt(x); always write multiplication explicitly (2*x), and function calls with parentheses. domain, when supplied, is [min,max] with min < max.',
+    guidance: 'payload.functions is an array of {expression,label?,domain?}. Use Cartesian y=f(x) only and send just the right-hand side (x^2, not y = x^2). Expressions use x, pi, e, + - * / ^, parentheses, and named functions such as sin(x), ln(x), sqrt(x); prefer explicit multiplication (2*x) and always call functions with parentheses. domain, when supplied, is [min,max] with min < max.',
     payload: { functions: [{ expression: 'sin(x)', label: 'sin(x)', domain: [-6.28, 6.28] }], xLabel: 'x', yLabel: 'y' },
   },
-  line: { guidance: 'payload is {categories?,series:[{name?,role?,data:[numbers]}],xLabel?,yLabel?}. If categories is present, every series.data has exactly the same length.', payload: COMMON_NUMERIC_PAYLOAD },
-  area: { guidance: 'Use the line-chart payload: categories? plus numeric series. If categories is present, every series.data has exactly the same length.', payload: COMMON_NUMERIC_PAYLOAD },
-  bar: { guidance: 'Use categories plus one or more numeric series. If categories is present, every series.data has exactly the same length. Keep labels short.', payload: COMMON_NUMERIC_PAYLOAD },
-  scatter: { guidance: 'payload.series is an array of {name?,data:[[x,y],...]}; every data item is one numeric [x,y] pair or {x,y}. Do not send categories.', payload: { series: [{ name: 'Samples', data: [[1, 2], [2, 4], [3, 3]] }], xLabel: 'x', yLabel: 'y' } },
-  pie: { guidance: 'Use exactly one series and provide categories plus the same number of non-negative numeric values. Pie data represents parts of one whole.', payload: { categories: ['A', 'B', 'C'], series: [{ name: 'Share', data: [45, 35, 20] }] } },
-  histogram: { guidance: 'Use categories as precomputed bin labels and numeric series as non-negative bin counts. If categories is present, every series.data has exactly the same length. Do not ask this renderer to calculate raw observations into bins.', payload: { categories: ['0–10', '10–20', '20–30'], series: [{ name: 'Count', data: [4, 9, 3] }] } },
-  heatmap: { guidance: 'payload is {xCategories:[...],yCategories:[...],values:[[...],...]}. values has one row per yCategory and one number per xCategory.', payload: { xCategories: ['Mon', 'Tue'], yCategories: ['AM', 'PM'], values: [[2, 4], [3, 1]] } },
+  line: { guidance: `payload is {categories?,series:[{name?,role?,data:[numbers]}],xLabel?,yLabel?}. series is always an array of objects. ${NUMBER_RULE} If categories is present, every series.data has exactly one value per category. ${POINT_RULE}`, payload: COMMON_NUMERIC_PAYLOAD },
+  area: { guidance: `Use the line-chart payload: categories? plus an array of numeric series. ${NUMBER_RULE} If categories is present, every series.data has exactly one value per category. ${POINT_RULE}`, payload: COMMON_NUMERIC_PAYLOAD },
+  bar: { guidance: `Use categories plus an array of one or more numeric series. ${NUMBER_RULE} If categories is present, every series.data has exactly one value per category. Keep labels short. ${POINT_RULE}`, payload: COMMON_NUMERIC_PAYLOAD },
+  scatter: { guidance: `payload.series is an array of {name?,data:[[x,y],...]}; every data item is one numeric [x,y] pair or {x,y}. Do not send categories. ${POINT_RULE}`, payload: { series: [{ name: 'Samples', data: [[1, 2], [2, 4], [3, 3]] }], xLabel: 'x', yLabel: 'y' } },
+  pie: { guidance: `Use exactly one series and provide categories plus the same number of non-negative numeric values. ${NUMBER_RULE} Pie data represents parts of one whole.`, payload: { categories: ['A', 'B', 'C'], series: [{ name: 'Share', data: [45, 35, 20] }] } },
+  histogram: { guidance: `Use categories as precomputed bin labels and numeric series as non-negative bin counts. ${NUMBER_RULE} If categories is present, every series.data has exactly one value per category. Do not ask this renderer to calculate raw observations into bins.`, payload: { categories: ['0–10', '10–20', '20–30'], series: [{ name: 'Count', data: [4, 9, 3] }] } },
+  heatmap: { guidance: `payload is {xCategories:[...],yCategories:[...],values:[[...],...]}. values has one row per yCategory and one number (or null) per xCategory.`, payload: { xCategories: ['Mon', 'Tue'], yCategories: ['AM', 'PM'], values: [[2, 4], [3, 1]] } },
   radar: { guidance: 'payload is {indicators:[{name,max?}],series:[{name?,data:[numbers]}]}. Each series.data has one value per indicator; use 3–12 indicators.', payload: { indicators: [{ name: 'Speed', max: 10 }, { name: 'Power', max: 10 }, { name: 'Focus', max: 10 }], series: [{ name: 'A', data: [8, 6, 9] }, { name: 'B', data: [6, 9, 7] }] } },
   boxplot: { guidance: 'Use categories plus numeric five-number summaries. Each series.data item is [min,q1,median,q3,max], ordered from smallest to largest. If categories is present, the number of summaries matches it.', payload: { categories: ['Group A'], series: [{ name: 'Scores', data: [[2, 4, 5, 7, 9]] }] } },
-  flowchart: { guidance: 'payload is {nodes:[{id,label,detail?}],edges:[{from,to,label?}],direction?}. direction may be horizontal or vertical. Use unique ASCII ids containing only letters, digits, and underscores. Every edge endpoint must name a node.', payload: COMMON_GRAPH_PAYLOAD },
+  flowchart: { guidance: `payload is {nodes:[{id,label,detail?}],edges:[{from,to,label?}],direction?}. direction may be horizontal or vertical. ${ID_RULE} Every edge endpoint must name a node id.`, payload: COMMON_GRAPH_PAYLOAD },
   sequence: { guidance: 'Use the graph payload: nodes are participants and edges are messages. Every edge endpoint must name a participant; put message text in edge.label.', payload: COMMON_GRAPH_PAYLOAD },
   state: { guidance: 'Use the graph payload: nodes are states and edges are transitions. Every transition endpoint must name a state; put the transition name in edge.label.', payload: COMMON_GRAPH_PAYLOAD },
   tree: { guidance: 'Use the graph payload as one directed tree: one root, every other node has one parent, and there are no cycles. Every edge endpoint must name a node.', payload: { nodes: [{ id: 'root', label: 'Root' }, { id: 'child', label: 'Child' }], edges: [{ from: 'root', to: 'child' }] } },
   mindmap: { guidance: 'Use the graph payload as one directed hierarchy: one root, every other node has one parent, and there are no cycles. Keep each label concise.', payload: { nodes: [{ id: 'root', label: 'Topic' }, { id: 'branch', label: 'Branch' }], edges: [{ from: 'root', to: 'branch' }] } },
-  network: { guidance: 'Use the graph payload for nodes and links; ids must be unique ASCII letters, digits, or underscores, and every edge endpoint must name a node.', payload: COMMON_GRAPH_PAYLOAD },
-  timeline: { guidance: 'payload.items is an array of 2–12 events ordered from earliest to latest. Use {label,value?,detail?}; value is a concise date or time label.', payload: { items: [{ label: 'Start', value: '2020' }, { label: 'Launch', value: '2024' }] } },
+  network: { guidance: `Use the graph payload for nodes and links. ${ID_RULE} Every edge endpoint must name a node id.`, payload: COMMON_GRAPH_PAYLOAD },
+  timeline: { guidance: 'payload.items is an array of 2–12 events ordered from earliest to latest (items beyond 12 are dropped). Use {label,value?,detail?}; value is a concise date or time label.', payload: { items: [{ label: 'Start', value: '2020' }, { label: 'Launch', value: '2024' }] } },
   comparison: { guidance: 'payload.items contains 2–8 alternatives as {label,value?,detail?}. Use a short value and a concise detail for each alternative.', payload: { items: [{ label: 'Option A', value: 'Low cost', detail: 'Fewer features' }, { label: 'Option B', value: 'Flexible', detail: 'More setup' }] } },
   process: { guidance: 'payload.items is an ordered list of 2–12 steps as {label,detail?}. Put explanations in detail.', payload: { items: [{ label: 'Collect data' }, { label: 'Compare results' }, { label: 'Decide' }] } },
   number_line: { guidance: 'payload.items contains 2–12 {label,value:number} points. Values must be finite, distinct, and within ±1,000,000,000; put the point label in label.', payload: { items: [{ label: 'A', value: -2 }, { label: 'Zero', value: 0 }, { label: 'B', value: 3 }] } },
   geometry: { guidance: 'payload.shapes supports point {type:"point",at:[x,y]}, segment {type:"segment",from:[x,y],to:[x,y]}, circle {type:"circle",center:[x,y],radius}, and polygon {type:"polygon",points:[[x,y],...]}; coordinates are numeric and labels are optional.', payload: { shapes: [{ type: 'point', at: [0, 0], label: 'O' }, { type: 'segment', from: [0, 0], to: [3, 2], label: 'AB' }, { type: 'circle', center: [0, 0], radius: 2 }] } },
-  concept_map: { guidance: 'Use the graph payload for concepts and labeled relationships. Ids must be unique ASCII letters, digits, or underscores, and every edge endpoint must name a node.', payload: COMMON_GRAPH_PAYLOAD },
+  concept_map: { guidance: `Use the graph payload for concepts and labeled relationships. ${ID_RULE} Every edge endpoint must name a node id.`, payload: COMMON_GRAPH_PAYLOAD },
   svg_illustration: { guidance: 'payload.source must be one complete standalone SVG document rooted at <svg>. Keep it static: no scripts, event handlers, forms, iframes, network calls, CSS imports, or external URLs. Put image/font assets inline as data URLs.', payload: { source: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120"><circle cx="120" cy="60" r="35" fill="#4f78dd"/></svg>' } },
   interactive_simulation: { guidance: 'payload.source is a self-contained HTML fragment or document with inline CSS/JavaScript. Inline scripts and handlers are allowed in the sandbox; network APIs, CSS imports, external URLs, nested frames, and forms are unavailable. Put image/font assets inline as data URLs.', payload: { source: '<button id="toggle">Start</button><script>document.getElementById("toggle").onclick=function(){this.textContent="Running"}</script>' } },
-  paper_chart: { guidance: 'Use categories? and numeric series; each series may set kind to line, bar, or scatter. If categories is present, each data array must match its length.', payload: { categories: ['A', 'B', 'C'], series: [{ name: 'Result', kind: 'line', data: [3, 5, 4] }] } },
+  paper_chart: { guidance: `Use categories? and an array of numeric series; each series may set kind to line, bar, or scatter. ${NUMBER_RULE} If categories is present, each data array has one value per category. ${POINT_RULE}`, payload: { categories: ['A', 'B', 'C'], series: [{ name: 'Result', kind: 'line', data: [3, 5, 4] }] } },
   math_construction: { guidance: 'payload.commands is an array of GeoGebra commands, one command per string. Use standard GeoGebra syntax such as A=(0,0) or Circle(A,4); this template requires the GeoGebra runtime.', payload: { appName: 'geometry', commands: ['A=(0,0)', 'Circle(A,4)'] } },
   geometry_3d: { guidance: 'payload.objects contains {type,position?,size?,label?}. size is [radius,unused,unused] for spheres, [radius,height,unused] for cylinders/cones, and [width,height,depth] for boxes; all supplied sizes must be positive.', payload: { objects: [{ type: 'sphere', position: [0, 1, 0], size: [1, 1, 1], label: 'Ball' }] } },
   whiteboard: { guidance: 'payload.items or payload.nodes contains labeled notes. Each item becomes a movable note on the board; use at most 30 concise items.', payload: { items: [{ label: 'Question' }, { label: 'Evidence' }, { label: 'Conclusion' }] } },
@@ -273,160 +281,22 @@ function compactIssues(error: z.ZodError, prefix = '') {
   }));
 }
 
-const ENVELOPE_KEYS = new Set(['version', 'template', 'title', 'caption', 'accessibilitySummary', 'payload']);
-
 /**
- * Normalize a possibly-malformed spec before validation.
- * LLMs often place template-specific keys (e.g. functions, expressions,
- * xAxis, yAxis, grid, xRange, yRange) at the top level instead of
- * nesting them under `payload`. This step silently moves them into
- * payload so the strict envelope schema does not reject them.
+ * Normalize with the shared @socrates/core normalizer, then validate. The
+ * accepted spec is exactly what the client renders, so a call the server
+ * accepts can never paint an empty chart.
  */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function firstDefined(record: Record<string, unknown>, keys: string[]): unknown {
-  for (const key of keys) {
-    if (record[key] !== undefined && record[key] !== null) return record[key];
-  }
-  return undefined;
-}
-
-function normalizeSpec(input: unknown): unknown {
-  if (!isRecord(input)) return input;
-  /* Unwrap only a single, recognizable provider-added envelope. Arbitrary
-     recursive unwrapping would make malformed calls ambiguous and harder to
-     audit. */
-  let source = input;
-  const inputKeys = Object.keys(source);
-  if (inputKeys.length === 1 && ['spec', 'input', 'arguments'].includes(inputKeys[0])
-      && isRecord(source[inputKeys[0]])) {
-    const nested = source[inputKeys[0]];
-    if (isRecord(nested)) source = nested;
-  }
-
-  const normalized: Record<string, unknown> = { ...source };
-  normalized.payload = isRecord(normalized.payload)
-    ? { ...normalized.payload }
-    : {};
-  if (normalized.version === '1') normalized.version = 1;
-  if (!normalized.template) normalized.template = firstDefined(normalized, ['type', 'chartType', 'chart_type']);
-  if (!normalized.accessibilitySummary) {
-    normalized.accessibilitySummary = firstDefined(normalized, [
-      'accessibility_summary', 'summary', 'description',
-    ]);
-  }
-  if (!normalized.accessibilitySummary && typeof normalized.title === 'string' && normalized.title.trim()) {
-    normalized.accessibilitySummary = `Visualization of ${normalized.title.trim()}.`;
-  }
-
-  const extra: Record<string, unknown> = {};
-  for (const key of Object.keys(normalized)) {
-    if (!ENVELOPE_KEYS.has(key)) {
-      /* Envelope aliases have already been consumed above; do not leak them
-         into the semantic payload where a permissive schema might retain
-         contradictory copies. */
-      if (!['type', 'chartType', 'chart_type', 'accessibility_summary', 'summary', 'description'].includes(key)) {
-        extra[key] = normalized[key];
-      }
-      delete normalized[key];
-    }
-  }
-  normalized.payload = { ...extra, ...(isRecord(normalized.payload) ? normalized.payload : {}) };
-  const payload = normalized.payload as Record<string, unknown>;
-
-  if (normalized.template === 'function') {
-    if (!Array.isArray(payload.functions)) {
-      const expression = firstDefined(payload, ['expression', 'expr', 'formula', 'equation', 'eq']);
-      if (typeof expression === 'string') payload.functions = [{ expression }];
-    }
-    if (Array.isArray(payload.functions)) {
-      payload.functions = payload.functions.map((item: unknown) => {
-        if (typeof item === 'string') return { expression: item };
-        if (!isRecord(item)) return item;
-        const fn = { ...item };
-        if (!fn.expression) fn.expression = firstDefined(fn, ['expr', 'formula', 'equation', 'eq']);
-        delete fn.expr; delete fn.formula; delete fn.equation; delete fn.eq;
-        return fn;
-      });
-    }
-  }
-
-  if (typeof normalized.template === 'string' && ['line', 'area', 'bar', 'pie', 'histogram', 'radar', 'boxplot', 'paper_chart'].includes(normalized.template)) {
-    if (!payload.categories) payload.categories = firstDefined(payload, ['labels', 'xValues', 'x_values']);
-    if (!payload.series) {
-      const values = firstDefined(payload, ['values', 'yValues', 'y_values', 'data']);
-      if (Array.isArray(values)) payload.series = [{ data: values }];
-    }
-    if (Array.isArray(payload.series)) {
-      if (payload.series.every((item: unknown) => typeof item === 'number')) {
-        payload.series = [{ data: payload.series }];
-      } else {
-        payload.series = payload.series.map((item: unknown) => {
-          if (Array.isArray(item)) return { data: item };
-          if (!isRecord(item)) return item;
-          const series = { ...item };
-          if (!series.name) series.name = firstDefined(series, ['title', 'label']);
-          if (!series.data) series.data = firstDefined(series, ['values', 'points', 'yValues', 'y_values']);
-          delete series.title; delete series.label; delete series.values;
-          delete series.points; delete series.yValues; delete series.y_values;
-          return series;
-        });
-      }
-    }
-    delete payload.labels; delete payload.xValues; delete payload.x_values;
-    delete payload.values; delete payload.yValues; delete payload.y_values;
-    /* `data` is a common alias only when it was promoted into series. */
-    if (payload.series && payload.data) delete payload.data;
-  }
-
-  if (typeof normalized.template === 'string' && ['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map'].includes(normalized.template)) {
-    if (Array.isArray(payload.nodes)) {
-      payload.nodes = payload.nodes.map((item: unknown) => {
-        if (!isRecord(item)) return item;
-        const node = { ...item };
-        if (!node.label) node.label = firstDefined(node, ['name', 'title', 'text']);
-        delete node.name; delete node.title; delete node.text;
-        return node;
-      });
-    }
-    if (Array.isArray(payload.edges)) {
-      payload.edges = payload.edges.map((item: unknown) => {
-        if (!isRecord(item)) return item;
-        const edge = { ...item };
-        if (!edge.from) edge.from = edge.source;
-        if (!edge.to) edge.to = edge.target;
-        delete edge.source; delete edge.target;
-        return edge;
-      });
-    }
-  }
-
-  if (Array.isArray(payload.items)) {
-    payload.items = payload.items.map((item: unknown) => {
-      if (typeof item === 'string') return { label: item };
-      if (!isRecord(item)) return item;
-      const entry = { ...item };
-      if (!entry.label) entry.label = firstDefined(entry, ['name', 'title', 'text']);
-      delete entry.name; delete entry.title; delete entry.text;
-      return entry;
-    });
-  }
-  return normalized;
-}
-
 export function validateVisualizationSpec(input: unknown) {
-  const normalized = normalizeSpec(input);
+  const { spec: normalized, warnings } = normalizeVisualizationSpec(input);
   const parsed = envelope.safeParse(normalized);
   const rawTemplate = normalized && typeof normalized === 'object' && !Array.isArray(normalized)
     ? (normalized as Record<string, unknown>).template
     : null;
-  if (!parsed.success) return { ok: false as const, stage: 'envelope', template: typeof rawTemplate === 'string' ? rawTemplate : null, issues: compactIssues(parsed.error) };
+  if (!parsed.success) return { ok: false as const, stage: 'envelope', template: typeof rawTemplate === 'string' ? rawTemplate : null, issues: compactIssues(parsed.error), warnings };
   const byteLength = Buffer.byteLength(JSON.stringify(normalized), 'utf8');
-  if (byteLength > 256 * 1024) return { ok: false as const, stage: 'size', template: parsed.data.template, issues: [{ path: 'spec', message: '规格不能超过 256 KB。' }] };
+  if (byteLength > 256 * 1024) return { ok: false as const, stage: 'size', template: parsed.data.template, issues: [{ path: 'spec', message: 'spec must not exceed 256 KB; downsample the data.' }], warnings };
   const payload = schemaFor(parsed.data.template).safeParse(parsed.data.payload);
-  if (!payload.success) return { ok: false as const, stage: 'payload_shape', template: parsed.data.template, issues: compactIssues(payload.error, 'payload') };
+  if (!payload.success) return { ok: false as const, stage: 'payload_shape', template: parsed.data.template, issues: compactIssues(payload.error, 'payload'), warnings };
   const semanticIssues: Array<{ path: string; message: string }> = [];
   const addIssue = (path: string, message: string) => semanticIssues.push({ path, message });
   // `safeParse` above proves the shape for the current template. Keep the
@@ -452,6 +322,11 @@ export function validateVisualizationSpec(input: unknown) {
     });
   }
 
+  const checkHasValues = (series: Array<{ data: Array<number | null> }>, path: string) => {
+    series.forEach((entry, index) => {
+      if (!entry.data.some((value) => typeof value === 'number')) addIssue(`${path}.${index}.data`, 'must contain at least one numeric value.');
+    });
+  };
   const checkSeriesLengths = (series: Array<{ data: unknown[] }>, count: number, path: string) => {
     series.forEach((entry, index) => {
       if (entry.data.length !== count) addIssue(`${path}.${index}.data`, `must contain exactly ${count} values to match the categories.`);
@@ -462,19 +337,20 @@ export function validateVisualizationSpec(input: unknown) {
       ? data as z.infer<typeof paperChartPayload>
       : data as z.infer<typeof categoryChartPayload>;
     if (Array.isArray(chartData.categories)) checkSeriesLengths(chartData.series, chartData.categories.length, 'payload.series');
+    checkHasValues(chartData.series, 'payload.series');
   }
   if (parsed.data.template === 'histogram') {
     (data as z.infer<typeof categoryChartPayload>).series.forEach((series, seriesIndex) => series.data.forEach((value, index) => {
-      if (value < 0) addIssue(`payload.series.${seriesIndex}.data.${index}`, 'histogram bin counts must be non-negative.');
+      if ((value ?? 0) < 0) addIssue(`payload.series.${seriesIndex}.data.${index}`, 'histogram bin counts must be non-negative.');
     }));
   }
   if (parsed.data.template === 'pie') {
     const pie = data as z.infer<typeof piePayload>;
     const values = pie.series[0]?.data || [];
     if (values.length !== pie.categories.length) addIssue('payload.series.0.data', 'must contain one value for each category.');
-    if (!values.some((value) => value > 0)) addIssue('payload.series.0.data', 'at least one pie value must be greater than zero.');
+    if (!values.some((value) => (value ?? 0) > 0)) addIssue('payload.series.0.data', 'at least one pie value must be greater than zero.');
     values.forEach((value, index) => {
-      if (value < 0) addIssue(`payload.series.0.data.${index}`, 'pie values must be non-negative.');
+      if ((value ?? 0) < 0) addIssue(`payload.series.0.data.${index}`, 'pie values must be non-negative.');
     });
   }
   if (parsed.data.template === 'scatter' && Object.hasOwn(data as object, 'categories')) {
@@ -490,10 +366,10 @@ export function validateVisualizationSpec(input: unknown) {
   if (parsed.data.template === 'radar') {
     const radar = data as z.infer<typeof radarPayload>;
     radar.series.forEach((series, seriesIndex) => {
-      if (series.data.length !== radar.indicators.length) addIssue(`payload.series.${seriesIndex}.data`, 'must contain one value for each indicator.');
+      if (series.data.length !== radar.indicators.length) addIssue(`payload.series.${seriesIndex}.data`, `must contain one value for each of the ${radar.indicators.length} indicators.`);
       series.data.forEach((value, index) => {
         const max = radar.indicators[index]?.max;
-        if (max !== undefined && value > max) addIssue(`payload.series.${seriesIndex}.data.${index}`, `must not exceed indicator max ${max}.`);
+        if (max !== undefined && value !== null && value > max) addIssue(`payload.series.${seriesIndex}.data.${index}`, `must not exceed indicator max ${max}.`);
       });
     });
   }
@@ -546,8 +422,7 @@ export function validateVisualizationSpec(input: unknown) {
   if (['timeline', 'comparison', 'process', 'number_line'].includes(parsed.data.template)) {
     const teaching = data as z.infer<typeof teachingPayload>;
     const items = teaching.items || [];
-    const minimum = ['comparison', 'number_line', 'timeline', 'process'].includes(parsed.data.template) ? 2 : 1;
-    const maximum = parsed.data.template === 'comparison' ? 8 : ['number_line', 'timeline', 'process'].includes(parsed.data.template) ? 12 : 40;
+    const [minimum, maximum] = VISUALIZATION_ITEM_LIMITS[parsed.data.template as keyof typeof VISUALIZATION_ITEM_LIMITS];
     if (items.length < minimum || items.length > maximum) addIssue('payload.items', `must contain ${minimum}–${maximum} items for ${parsed.data.template}.`);
     if (parsed.data.template === 'number_line') {
       const values = items.map((item) => item.value);
@@ -582,7 +457,7 @@ export function validateVisualizationSpec(input: unknown) {
     }
   }
 
-  if (semanticIssues.length) return { ok: false as const, stage: 'semantic', template: parsed.data.template, issues: semanticIssues.slice(0, 8) };
+  if (semanticIssues.length) return { ok: false as const, stage: 'semantic', template: parsed.data.template, issues: semanticIssues.slice(0, 8), warnings };
   if (['svg_illustration', 'interactive_simulation'].includes(parsed.data.template)) {
     const source = (data as z.infer<typeof extensionPayload>).source;
     /* P_interactive-sim-scripts — match the frontend's
@@ -609,13 +484,13 @@ export function validateVisualizationSpec(input: unknown) {
         : '扩展源不能包含脚本、iframe、object、embed 或 form 标签。' }] };
     }
     if (!isInteractive && /\son\w+\s*=/i.test(source)) {
-      return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源不能包含内联事件处理函数。' }] };
+      return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源不能包含内联事件处理函数。' }], warnings };
     }
     if (/\b(?:fetch|xmlhttprequest|websocket|sendbeacon|eventsource)\b/i.test(source)) {
-      return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源不能包含网络请求 API（沙箱已关闭网络访问，请把数据内联进源码）。' }] };
+      return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源不能包含网络请求 API（沙箱已关闭网络访问，请把数据内联进源码）。' }], warnings };
     }
     if (/@import\b/i.test(source)) {
-      return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源不能包含 CSS import；请将样式内联。' }] };
+      return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源不能包含 CSS import；请将样式内联。' }], warnings };
     }
     // Only local fragments and inline assets can render under this sandbox's CSP.
     const attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
@@ -623,21 +498,21 @@ export function validateVisualizationSpec(input: unknown) {
     while ((match = attrRe.exec(source)) !== null) {
       const value = String(match[1] || match[2] || match[3] || '').trim();
       if (/^(?:javascript|vbscript|livescript|mocha|data\s*:\s*text\/html)/i.test(value)) {
-      return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源包含危险 URL 协议。' }] };
+      return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源包含危险 URL 协议。' }], warnings };
       }
       if (!/^(?:#|data:(?:image\/|font\/)|blob:)/i.test(value)) {
-        return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源引用了外部资源；请改用片段引用或内联 data URL。' }] };
+        return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源引用了外部资源；请改用片段引用或内联 data URL。' }], warnings };
       }
     }
     const cssUrlRe = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi;
     while ((match = cssUrlRe.exec(source)) !== null) {
       const value = String(match[1] || match[2] || match[3] || '').trim();
       if (!/^(?:#|data:(?:image\/|font\/)|blob:)/i.test(value)) {
-        return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源包含外部 CSS 资源；请改为内联 data URL。' }] };
+        return { ok: false, stage: 'extension_safety', template: parsed.data.template, issues: [{ path: 'payload.source', message: '扩展源包含外部 CSS 资源；请改为内联 data URL。' }], warnings };
       }
     }
   }
-  return { ok: true as const, stage: 'accepted', template: parsed.data.template, spec: { ...parsed.data, payload: payload.data } };
+  return { ok: true as const, stage: 'accepted', template: parsed.data.template, spec: { ...parsed.data, payload: payload.data }, warnings };
 }
 
 export function visualizationError(issues: Array<{ path: string; message: string }>, durationMs = 0, retryable = true) {

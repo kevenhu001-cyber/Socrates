@@ -1,6 +1,7 @@
 import { validateIntelligentUi as validateEnvelope } from '../../../packages/core/src/intelligentUiValidation.js';
 import { inspectOpenUiProgram } from './openUiProgram.js';
 import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
+import type { IntelligentUiFailure } from './intelligentUiFeedback.js';
 const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'openui'];
 export const INTELLIGENT_UI_TOOL = {
   type: 'function' as const,
@@ -57,25 +58,50 @@ export const INTELLIGENT_UI_TOOL = {
   },
 };
 
-export function validateIntelligentUi(value: unknown):
-  | { ok: true; visualizations: Array<Record<string, unknown>> }
-  | { ok: false; error: string } {
+export type IntelligentUiValidation =
+  | { ok: true; visualizations: Array<Record<string, unknown>>; warnings: string[] }
+  | { ok: false; error: string; failure: IntelligentUiFailure };
+
+/**
+ * Validate the envelope, actions and every OpenUI program. Accepted
+ * visualizations are returned NORMALIZED (the exact spec the client renders)
+ * and tagged with the node they came from, so the client can prefer them
+ * over re-deriving the spec from raw program props.
+ */
+export function validateIntelligentUi(value: unknown): IntelligentUiValidation {
   const envelope = validateEnvelope(value);
-  if (!envelope.ok) return envelope;
+  const fail = (error: string, stage: IntelligentUiFailure['stage'], nodeId: string | null = null, extra: Partial<IntelligentUiFailure> = {}): IntelligentUiValidation => ({
+    ok: false, error, failure: { stage, nodeId, failures: [], sourceChars: 0, ...extra },
+  });
+  if (!envelope.ok) return fail(envelope.error, 'envelope');
   const visualizations: Array<Record<string, unknown>> = [];
+  const warnings: string[] = [];
   for (const node of (value as { nodes: Array<{ id: string; type: string; source?: string; action?: { type?: string; key?: string; prompt?: unknown; url?: unknown } }> }).nodes) {
     if (node.type === 'button' || node.action) {
       const action = node.action;
-      if (!action || !['set', 'increment', 'prompt', 'open_url'].includes(action.type || '')) return { ok: false, error: `UI ${node.id}: supply a supported explicit button action` };
-      if (['set', 'increment'].includes(action.type!) && (typeof action.key !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(action.key) || ['__proto__', 'constructor', 'prototype'].includes(action.key))) return { ok: false, error: `UI ${node.id}: local actions need a safe state key` };
-      if (action.type === 'set' && !('value' in action)) return { ok: false, error: `UI ${node.id}: set action needs a value` };
-      if (action.type === 'prompt' && !action.prompt) return { ok: false, error: `UI ${node.id}: prompt action needs prompt content` };
-      if (action.type === 'open_url' && !action.url) return { ok: false, error: `UI ${node.id}: open_url action needs a URL` };
+      if (!action || !['set', 'increment', 'prompt', 'open_url'].includes(action.type || '')) return fail(`UI ${node.id}: supply a supported explicit button action`, 'action', node.id);
+      if (['set', 'increment'].includes(action.type!) && (typeof action.key !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(action.key) || ['__proto__', 'constructor', 'prototype'].includes(action.key))) return fail(`UI ${node.id}: local actions need a safe state key`, 'action', node.id);
+      if (action.type === 'set' && !('value' in action)) return fail(`UI ${node.id}: set action needs a value`, 'action', node.id);
+      if (action.type === 'prompt' && !action.prompt) return fail(`UI ${node.id}: prompt action needs prompt content`, 'action', node.id);
+      if (action.type === 'open_url' && !action.url) return fail(`UI ${node.id}: open_url action needs a URL`, 'action', node.id);
     }
     if (node.type !== 'openui') continue;
     const inspected = inspectOpenUiProgram(node.source!);
-    if (inspected.issues.length) return { ok: false, error: `OpenUI ${node.id}: ${inspected.issues.join('; ')}` };
-    visualizations.push(...inspected.visualizations.slice(0, Math.max(0, 8 - visualizations.length)));
+    if (inspected.issues.length) {
+      const stage: IntelligentUiFailure['stage'] = inspected.incomplete ? 'openui_truncated'
+        : inspected.failures.length ? 'visualization'
+          : inspected.unparseable ? 'openui_syntax' : 'openui_program';
+      return fail(`OpenUI ${node.id}: ${inspected.issues.join('; ')}`, stage, node.id, {
+        failures: inspected.failures,
+        sourceChars: node.source!.length,
+      });
+    }
+    let index = 0;
+    for (const spec of inspected.visualizations) {
+      if (visualizations.length >= 8) break;
+      visualizations.push({ ...spec, nodeId: node.id, index: index++ });
+    }
+    warnings.push(...inspected.warnings);
   }
-  return { ok: true, visualizations };
+  return { ok: true, visualizations, warnings: [...new Set(warnings)].slice(0, 8) };
 }
