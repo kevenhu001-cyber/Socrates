@@ -13,8 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261101a1">
-  <link rel="stylesheet" href="/modules.css?cb=20261101a1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261101b1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101b1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — 理解，始于一个问题。">
@@ -27,10 +27,10 @@
   <meta name="twitter:title" content="Socrates — 理解，始于一个问题。">
   <meta name="twitter:description" content="为真正想理解的人打造的 AI 导师。">
   <meta name="twitter:image" content="https://topodrive.top/media/socrates-home-dialogue-photo-v1.webp">
-  <script src="/locale.js?cb=20261101a1"></script>
-  <link rel="stylesheet" href="/fonts.css?cb=20261101a1">
-  <link rel="stylesheet" href="/public.css?cb=20261101a1">
-  <link rel="stylesheet" href="/chrome.css?cb=20261101a1">
+  <script src="/locale.js?cb=20261101b1"></script>
+  <link rel="stylesheet" href="/fonts.css?cb=20261101b1">
+  <link rel="stylesheet" href="/public.css?cb=20261101b1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261101b1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -156,31 +156,38 @@
 
     <section class="home-feature" id="learning-session" aria-labelledby="feature-title" data-reveal>
       <div class="home-shell feature-layout">
-        <a class="feature-main" href="/zh/product" aria-labelledby="feature-title">
+        <div class="feature-main" role="group" aria-labelledby="feature-title">
           <div class="feature-media">
             <div class="demo-frame">
               <div class="demo-app">
-                <div class="demo-chat">
+                <div class="demo-recall" data-recall>
                   <div class="demo-chat-head">
-                    <span class="demo-thread-title">学习 / 概率</span>
-                    <span class="demo-preview-label">学习会话示意</span>
+                    <span class="demo-thread-title">回忆 / 概率</span>
+                    <span class="demo-preview-label">回忆卡示意</span>
                   </div>
-                  <div class="demo-thread" data-sequence>
-                    <div class="demo-msg demo-msg--user">为什么检测阳性，还不能确定结果？</div>
-                    <div class="demo-msg demo-msg--tutor">
-                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
-                      <div class="demo-tutor-body">
-                        <div class="demo-tutor-name">Socrates</div>
-                        <p>如果每 100 人中有 1 人患病，那么 1,000 人中会有多少人患病？</p>
+                  <div class="rc-body">
+                    <div class="rc-card" data-rc-card>
+                      <div class="rc-face rc-front" id="rc-front">
+                        <p class="rc-label"><span class="rc-dot" aria-hidden="true"></span>先用自己的话说一遍</p>
+                        <p class="rc-prompt">为什么检测阳性，还不能确定结果？</p>
+                        <p class="rc-hint">翻面之前，先试着说出来。</p>
+                      </div>
+                      <div class="rc-face rc-back" id="rc-back">
+                        <p class="rc-label"><span class="rc-dot rc-dot--open" aria-hidden="true"></span>你在那次对话里的解释</p>
+                        <p class="rc-answer">如果 100 人中只有 1 人患病，那么 1,000 人里的许多阳性结果，其实来自另外 990 人。判断结果，要同时看<span class="rc-term">基础发生率</span>和<span class="rc-term">假阳性</span>。</p>
                       </div>
                     </div>
-                    <div class="demo-msg demo-msg--user">10 人。但另外 990 人中，也可能有人检测阳性。</div>
-                    <div class="demo-msg demo-msg--tutor">
-                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
-                      <div class="demo-tutor-body">
-                        <div class="demo-tutor-name">Socrates</div>
-                        <p>对。理解阳性结果，还需要把基础发生率和假阳性一起考虑。</p>
+                    <div class="rc-actions">
+                      <button class="rc-flip" type="button" data-rc-flip aria-controls="rc-back" aria-expanded="false" data-rc-again="再试一次"><span data-rc-flip-label>翻开卡片</span></button>
+                      <div class="rc-rate" role="group" aria-label="你记得有多清楚？" data-rc-rate>
+                        <button class="rc-grade" type="button" data-rc-grade="good" data-rc-note="想起来了。下一次可以隔得久一点。">想起来了</button>
+                        <button class="rc-grade" type="button" data-rc-grade="fuzzy" data-rc-note="有点模糊。早点回来，再用自己的话讲一遍。">有点模糊</button>
                       </div>
+                    </div>
+                    <div class="rc-spacing" data-rc-spacing>
+                      <div class="rc-track" aria-hidden="true"><span class="rc-tick" data-at="0"></span><span class="rc-tick" data-at="1"></span><span class="rc-tick" data-at="2"></span><span class="rc-tick" data-at="3"></span><span class="rc-mark" data-rc-mark></span></div>
+                      <p class="rc-scale" aria-hidden="true"><span>今天</span><span>稍后</span><span>更久</span><span>很久以后</span></p>
+                      <p class="rc-note" data-rc-note-out aria-live="polite">每一次诚实的回想，决定这个想法什么时候再回来。</p>
                     </div>
                   </div>
                 </div>
@@ -197,12 +204,12 @@
             </div>
           </div>
           <div class="feature-caption">
-            <p class="feature-meta"><span>产品预览</span><span>非交互示意，并非实时对话</span></p>
+            <p class="feature-meta"><a href="/zh/product#recall">产品里的回忆练习</a><span>可以试按的示意卡片，并非实时对话</span></p>
           </div>
-        </a>
+        </div>
 
         <a class="hero-plate" href="/zh/product#knowledge-map">
-          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-grid-v1.svg" width="760" height="760" fetchpriority="high" alt="浅灰色图版上排列着 100 个点，其中一个黑点被圈出，标注为 1 in 100。"></span>
+          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-grid-zh-v1.svg" width="760" height="760" fetchpriority="high" alt="浅灰色图版上排列着 100 个点，其中一个黑点被圈出，标注为“100 人中 1 人”。"></span>
           <div class="plate-caption"><span class="plate-index">换个角度</span><span>一百分之一。</span></div>
         </a>
         <div class="feature-intro">
@@ -473,19 +480,20 @@
             </g>
             <circle class="kg-halo" cx="360" cy="250" r="44"/>
             <circle class="kg-halo" cx="360" cy="250" r="76"/>
-            <g class="kg-node kg-node--core" data-node="core"><circle cx="360" cy="250" r="9"/><text x="378" y="245">贝叶斯定理</text></g>
-            <g class="kg-node" data-node="cond"><circle cx="360" cy="120" r="5.5"/><text x="360" y="102" text-anchor="middle">条件概率</text></g>
-            <g class="kg-node" data-node="prior"><circle cx="196" cy="176" r="5.5"/><text x="182" y="172" text-anchor="end">先验</text></g>
-            <g class="kg-node" data-node="like"><circle cx="540" cy="170" r="5.5"/><text x="554" y="166">似然</text></g>
-            <g class="kg-node" data-node="evid"><circle cx="560" cy="336" r="5.5"/><text x="574" y="340">证据</text></g>
-            <g class="kg-node" data-node="base"><circle cx="150" cy="320" r="5.5"/><text x="136" y="316" text-anchor="end">基础比率</text></g>
-            <g class="kg-node" data-node="fp"><circle cx="340" cy="392" r="5.5"/><text x="340" y="420" text-anchor="middle">假阳性</text></g>
-            <g class="kg-node kg-node--soft" data-node="sens"><circle cx="500" cy="430" r="4"/><text x="512" y="446">灵敏度</text></g>
-            <g class="kg-node kg-node--soft" data-node="ratio"><circle cx="640" cy="250" r="4"/><text x="640" y="274" text-anchor="middle">比值</text></g>
-            <g class="kg-node kg-node--soft" data-node="test"><circle cx="96" cy="420" r="4"/><text x="96" y="446" text-anchor="middle">筛查</text></g>
-            <g class="kg-node kg-node--soft" data-node="indep"><circle cx="560" cy="64" r="4"/><text x="574" y="68">独立性</text></g>
-            <g class="kg-node kg-node--soft" data-node="frac"><circle cx="160" cy="64" r="4"/><text x="146" y="68" text-anchor="end">分数</text></g>
+            <g class="kg-node kg-node--core" data-node="core" data-why="贝叶斯定理把原先的看法（先验）和证据出现的可能（似然）合在一起。"><circle cx="360" cy="250" r="9"/><text x="378" y="245">贝叶斯定理</text></g>
+            <g class="kg-node" data-node="cond" data-why="贝叶斯定理讲的是条件概率：已知一件事时，另一件事发生的可能。"><circle cx="360" cy="120" r="5.5"/><text x="360" y="102" text-anchor="middle">条件概率</text></g>
+            <g class="kg-node" data-node="prior" data-why="先验是证据出现之前你的看法，贝叶斯定理负责更新它。"><circle cx="196" cy="176" r="5.5"/><text x="182" y="172" text-anchor="end">先验</text></g>
+            <g class="kg-node" data-node="like" data-why="似然问的是：如果这个想法成立，这份证据有多在意料之中。"><circle cx="540" cy="170" r="5.5"/><text x="554" y="166">似然</text></g>
+            <g class="kg-node" data-node="evid" data-why="证据用来更新先验；检测的灵敏度，说明它产生证据有多可靠。"><circle cx="560" cy="336" r="5.5"/><text x="574" y="340">证据</text></g>
+            <g class="kg-node" data-node="base" data-why="基础比率是来自人群的先验，所以它决定了筛查结果该怎么读。"><circle cx="150" cy="320" r="5.5"/><text x="136" y="316" text-anchor="end">基础比率</text></g>
+            <g class="kg-node" data-node="fp" data-why="假阳性来自人数更多的未患病人群，所以基础比率决定了它有多少。"><circle cx="340" cy="392" r="5.5"/><text x="340" y="420" text-anchor="middle">假阳性</text></g>
+            <g class="kg-node kg-node--soft" data-node="sens" data-why="灵敏度是检测抓住真实病例的频率；假阳性是另一侧的错误。"><circle cx="500" cy="430" r="4"/><text x="512" y="446">灵敏度</text></g>
+            <g class="kg-node kg-node--soft" data-node="ratio" data-why="把两个似然放在一起比较，就得到比值，这是使用贝叶斯定理的快捷方式。"><circle cx="640" cy="250" r="4"/><text x="640" y="274" text-anchor="middle">比值</text></g>
+            <g class="kg-node kg-node--soft" data-node="test" data-why="筛查一次检测很多人，基础比率低时，误报可能很多。"><circle cx="96" cy="420" r="4"/><text x="96" y="446" text-anchor="middle">筛查</text></g>
+            <g class="kg-node kg-node--soft" data-node="indep" data-why="如果两件事彼此独立，知道其中一件，并不会改变另一件的可能。"><circle cx="560" cy="64" r="4"/><text x="574" y="68">独立性</text></g>
+            <g class="kg-node kg-node--soft" data-node="frac" data-why="条件概率是一个分数：两者同时成立的情况，除以已知条件成立的情况。"><circle cx="160" cy="64" r="4"/><text x="146" y="68" text-anchor="end">分数</text></g>
           </svg>
+          <p class="kg-why" data-graph-why aria-live="polite"><span class="kg-why-dot" aria-hidden="true"></span><span data-graph-why-text>把指针移到某个点上，或用键盘聚焦，看看它为什么相连。</span></p>
           <figcaption class="m-graph-legend"><span class="ui-tag ui-tag--line">示意地图</span></figcaption>
         </figure>
       </div>
@@ -499,9 +507,9 @@
         </div>
         <div class="home-research-layout">
           <ul class="home-research-list">
-            <li><a class="home-research-note" href="/zh/research/memory-recall/"><span class="home-research-media"><img src="/media/socrates-research-memory-route-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>记忆</span><time datetime="2026-08-12">2026 年 8 月 12 日</time></p><h3>回到一个想法的路径</h3></div></a></li>
-            <li><a class="home-research-note" href="/zh/research/explanation-evidence/"><span class="home-research-media"><img src="/media/socrates-research-explanation-evidence-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>解释</span><time datetime="2026-07-29">2026 年 7 月 29 日</time></p><h3>清晰解释何时成为证据</h3></div></a></li>
-            <li><a class="home-research-note" href="/zh/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>练习</span><time datetime="2026-07-11">2026 年 7 月 11 日</time></p><h3>诚实停顿的价值</h3></div></a></li>
+            <li><a class="home-research-note" href="/zh/research/memory-recall/"><span class="home-research-media"><img src="/media/socrates-research-memory-route-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>记忆</span><time datetime="2026-08-12">2026 年 8 月 12 日</time></p><h3>回到一个想法的路径</h3></div></a></li>
+            <li><a class="home-research-note" href="/zh/research/explanation-evidence/"><span class="home-research-media"><img src="/media/socrates-research-explanation-evidence-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>解释</span><time datetime="2026-07-29">2026 年 7 月 29 日</time></p><h3>清晰解释何时成为证据</h3></div></a></li>
+            <li><a class="home-research-note" href="/zh/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>练习</span><time datetime="2026-07-11">2026 年 7 月 11 日</time></p><h3>诚实停顿的价值</h3></div></a></li>
           </ul>
         </div>
       </div>
@@ -637,8 +645,9 @@
     <section class="home-cta" aria-labelledby="cta-title">
       <div class="home-shell">
         <div class="home-cta-inner">
-          <h2 id="cta-title">免费开始，<br>需要时再加上结构。</h2>
-          <p>免费档永久免费。不绑卡，也没有试用倒计时。</p>
+          <p class="cta-kicker"><span class="cta-thread" aria-hidden="true"><i></i><i></i><i></i></span><span>最后一个问题</span></p>
+          <h2 id="cta-title">接下来，<br>你想弄懂什么？</h2>
+          <p>把它带给 Socrates。免费档永久免费：不绑卡，也没有试用倒计时；需要时再加上结构。</p>
           <div class="home-cta-actions">
             <a class="home-button" href="https://app.topodrive.top">试用 Socrates <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
             <a class="home-text-link" href="/zh/pricing">比较套餐 <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
@@ -744,9 +753,9 @@
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261101a1"></script>
-  <script src="/modules.js?cb=20261101a1"></script>
-  <script src="/chrome.js?cb=20261101a1"></script>
-  <script src="/motion.js?cb=20261101a1"></script>
+  <script src="/home-question.js?cb=20261101b1"></script>
+  <script src="/modules.js?cb=20261101b1"></script>
+  <script src="/chrome.js?cb=20261101b1"></script>
+  <script src="/motion.js?cb=20261101b1"></script>
 </body>
 </html>

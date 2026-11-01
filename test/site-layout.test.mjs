@@ -27,7 +27,8 @@ for (const path of ['/', '/zh/']) {
           frame: rect('.feature-media'),
           map: rect('.demo-map'),
           nodesFit: nodes.every((node) => node.left >= map.left - 1 && node.right <= map.right + 1),
-          messages: [...document.querySelectorAll('.demo-msg')].filter((node) => node.checkVisibility()).length,
+          card: rect('.rc-card'),
+          flip: rect('[data-rc-flip]'),
           newsColumns: getComputedStyle(document.querySelector('.news-grid')).gridTemplateColumns.split(' ').length,
         };
       });
@@ -38,7 +39,8 @@ for (const path of ['/', '/zh/']) {
       assert.ok(layout.composer.bottom < 400, 'the composer stays in the first viewport on phones');
       assert.ok(layout.composer.height <= 100, 'the mobile composer matches the compact reference');
       assert.ok(Math.abs(layout.composer.x + layout.composer.width / 2 - width / 2) < 1);
-      assert.equal(layout.messages, 4, 'the learner correction remains visible');
+      assert.ok(layout.card.x >= layout.frame.x && layout.card.right <= layout.frame.right + 1 && layout.card.height > 0, 'the recall card fits inside the preview');
+      assert.ok(layout.flip.bottom <= layout.frame.bottom && layout.flip.height >= 36, 'the turn control stays in the preview at a touch size');
       assert.ok(layout.nodesFit);
       assert.ok(layout.map.bottom <= layout.frame.bottom + 1);
       assert.equal(layout.newsColumns, 1);
@@ -71,7 +73,7 @@ for (const path of ['/', '/zh/']) {
         previewWidth: preview.width,
         sheetColour: getComputedStyle(document.querySelector('.feature-media')).backgroundColor,
         groundColour: getComputedStyle(document.querySelector('.home-feature')).backgroundColor,
-        tutorSize: parseFloat(getComputedStyle(document.querySelector('.demo-tutor-body p')).fontSize),
+        tutorSize: parseFloat(getComputedStyle(document.querySelector('.rc-prompt')).fontSize),
       };
     });
     assert.ok(geometry.centered);

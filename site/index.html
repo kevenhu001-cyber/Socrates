@@ -13,8 +13,8 @@
   <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261101a1">
-  <link rel="stylesheet" href="/modules.css?cb=20261101a1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261101b1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101b1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -158,9 +158,9 @@
     ]
   }
   </script>
-  <script src="/locale.js?cb=20261101a1"></script>
-  <link rel="stylesheet" href="/public.css?cb=20261101a1">
-  <link rel="stylesheet" href="/chrome.css?cb=20261101a1">
+  <script src="/locale.js?cb=20261101b1"></script>
+  <link rel="stylesheet" href="/public.css?cb=20261101b1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261101b1">
 </head>
 <body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
@@ -286,31 +286,38 @@
 
     <section class="home-feature" id="learning-session" aria-labelledby="feature-title" data-reveal>
       <div class="home-shell feature-layout">
-        <a class="feature-main" href="/product" aria-labelledby="feature-title">
+        <div class="feature-main" role="group" aria-labelledby="feature-title">
           <div class="feature-media">
             <div class="demo-frame">
               <div class="demo-app">
-                <div class="demo-chat">
+                <div class="demo-recall" data-recall>
                   <div class="demo-chat-head">
-                    <span class="demo-thread-title">Learning / Probability</span>
-                    <span class="demo-preview-label">Illustrative session</span>
+                    <span class="demo-thread-title">Recall / Probability</span>
+                    <span class="demo-preview-label">Illustrative card</span>
                   </div>
-                  <div class="demo-thread" data-sequence>
-                    <div class="demo-msg demo-msg--user">Why isn’t a positive test the whole story?</div>
-                    <div class="demo-msg demo-msg--tutor">
-                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
-                      <div class="demo-tutor-body">
-                        <div class="demo-tutor-name">Socrates</div>
-                        <p>If 1 in 100 people has the condition, how many is that in a group of 1,000?</p>
+                  <div class="rc-body">
+                    <div class="rc-card" data-rc-card>
+                      <div class="rc-face rc-front" id="rc-front">
+                        <p class="rc-label"><span class="rc-dot" aria-hidden="true"></span>Say it first, in your own words</p>
+                        <p class="rc-prompt">Why isn’t a positive test the whole story?</p>
+                        <p class="rc-hint">Try it out loud before you turn the card.</p>
+                      </div>
+                      <div class="rc-face rc-back" id="rc-back">
+                        <p class="rc-label"><span class="rc-dot rc-dot--open" aria-hidden="true"></span>Your explanation, from the session</p>
+                        <p class="rc-answer">If 1 in 100 people has the condition, many positives in a group of 1,000 come from the other 990. A result needs the <span class="rc-term">base rate</span> and the <span class="rc-term">false positives</span>.</p>
                       </div>
                     </div>
-                    <div class="demo-msg demo-msg--user">Ten. Some of the other 990 might test positive, too.</div>
-                    <div class="demo-msg demo-msg--tutor">
-                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
-                      <div class="demo-tutor-body">
-                        <div class="demo-tutor-name">Socrates</div>
-                        <p>Exactly. A positive result needs context: the base rate and the false positives.</p>
+                    <div class="rc-actions">
+                      <button class="rc-flip" type="button" data-rc-flip aria-controls="rc-back" aria-expanded="false" data-rc-again="Try it again"><span data-rc-flip-label>Turn the card</span></button>
+                      <div class="rc-rate" role="group" aria-label="How well did you remember it?" data-rc-rate>
+                        <button class="rc-grade" type="button" data-rc-grade="good" data-rc-note="Remembered. Leave it a little longer before the next try.">I remembered</button>
+                        <button class="rc-grade" type="button" data-rc-grade="fuzzy" data-rc-note="A bit fuzzy. Come back sooner, and explain it again.">A bit fuzzy</button>
                       </div>
+                    </div>
+                    <div class="rc-spacing" data-rc-spacing>
+                      <div class="rc-track" aria-hidden="true"><span class="rc-tick" data-at="0"></span><span class="rc-tick" data-at="1"></span><span class="rc-tick" data-at="2"></span><span class="rc-tick" data-at="3"></span><span class="rc-mark" data-rc-mark></span></div>
+                      <p class="rc-scale" aria-hidden="true"><span>Today</span><span>Soon</span><span>Later</span><span>Much later</span></p>
+                      <p class="rc-note" data-rc-note-out aria-live="polite">Each honest try decides when the idea comes back.</p>
                     </div>
                   </div>
                 </div>
@@ -327,9 +334,9 @@
             </div>
           </div>
           <div class="feature-caption">
-            <p class="feature-meta"><span>Product preview</span><span>Static illustration, not a live conversation</span></p>
+            <p class="feature-meta"><a href="/product#recall">Recall, in the product</a><span>Illustrative card, not a live conversation</span></p>
           </div>
-        </a>
+        </div>
 
         <a class="hero-plate" href="/product#knowledge-map">
           <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-grid-v1.svg" width="760" height="760" fetchpriority="high" alt="A light gray grid of 100 points with a single black point ringed and labelled one in 100."></span>
@@ -603,19 +610,20 @@
             </g>
             <circle class="kg-halo" cx="360" cy="250" r="44"/>
             <circle class="kg-halo" cx="360" cy="250" r="76"/>
-            <g class="kg-node kg-node--core" data-node="core"><circle cx="360" cy="250" r="9"/><text x="378" y="245">Bayes’ theorem</text></g>
-            <g class="kg-node" data-node="cond"><circle cx="360" cy="120" r="5.5"/><text x="360" y="102" text-anchor="middle">Conditional probability</text></g>
-            <g class="kg-node" data-node="prior"><circle cx="196" cy="176" r="5.5"/><text x="182" y="172" text-anchor="end">Prior</text></g>
-            <g class="kg-node" data-node="like"><circle cx="540" cy="170" r="5.5"/><text x="554" y="166">Likelihood</text></g>
-            <g class="kg-node" data-node="evid"><circle cx="560" cy="336" r="5.5"/><text x="574" y="340">Evidence</text></g>
-            <g class="kg-node" data-node="base"><circle cx="150" cy="320" r="5.5"/><text x="136" y="316" text-anchor="end">Base rate</text></g>
-            <g class="kg-node" data-node="fp"><circle cx="340" cy="392" r="5.5"/><text x="340" y="420" text-anchor="middle">False positives</text></g>
-            <g class="kg-node kg-node--soft" data-node="sens"><circle cx="500" cy="430" r="4"/><text x="512" y="446">Sensitivity</text></g>
-            <g class="kg-node kg-node--soft" data-node="ratio"><circle cx="640" cy="250" r="4"/><text x="640" y="274" text-anchor="middle">Odds</text></g>
-            <g class="kg-node kg-node--soft" data-node="test"><circle cx="96" cy="420" r="4"/><text x="96" y="446" text-anchor="middle">Screening</text></g>
-            <g class="kg-node kg-node--soft" data-node="indep"><circle cx="560" cy="64" r="4"/><text x="574" y="68">Independence</text></g>
-            <g class="kg-node kg-node--soft" data-node="frac"><circle cx="160" cy="64" r="4"/><text x="146" y="68" text-anchor="end">Fractions</text></g>
+            <g class="kg-node kg-node--core" data-node="core" data-why="Bayes’ theorem combines what you believed before (the prior) with how expected the evidence is (the likelihood)."><circle cx="360" cy="250" r="9"/><text x="378" y="245">Bayes’ theorem</text></g>
+            <g class="kg-node" data-node="cond" data-why="Bayes’ theorem is a rule about conditional probability: the chance of one thing, given another."><circle cx="360" cy="120" r="5.5"/><text x="360" y="102" text-anchor="middle">Conditional probability</text></g>
+            <g class="kg-node" data-node="prior" data-why="The prior is what you believed before the evidence arrived; Bayes’ theorem updates it."><circle cx="196" cy="176" r="5.5"/><text x="182" y="172" text-anchor="end">Prior</text></g>
+            <g class="kg-node" data-node="like" data-why="The likelihood asks how expected the evidence would be if the idea were true."><circle cx="540" cy="170" r="5.5"/><text x="554" y="166">Likelihood</text></g>
+            <g class="kg-node" data-node="evid" data-why="Evidence is what updates the prior; a test’s sensitivity says how reliably it produces it."><circle cx="560" cy="336" r="5.5"/><text x="574" y="340">Evidence</text></g>
+            <g class="kg-node" data-node="base" data-why="A base rate is a prior taken from the population, which is why it decides how screening results read."><circle cx="150" cy="320" r="5.5"/><text x="136" y="316" text-anchor="end">Base rate</text></g>
+            <g class="kg-node" data-node="fp" data-why="False positives come from the large group without the condition, so the base rate sets how many there are."><circle cx="340" cy="392" r="5.5"/><text x="340" y="420" text-anchor="middle">False positives</text></g>
+            <g class="kg-node kg-node--soft" data-node="sens" data-why="Sensitivity is how often a test catches real cases; false positives are the errors on the other side."><circle cx="500" cy="430" r="4"/><text x="512" y="446">Sensitivity</text></g>
+            <g class="kg-node kg-node--soft" data-node="ratio" data-why="Two likelihoods compared side by side become odds, a quick way to apply Bayes’ theorem."><circle cx="640" cy="250" r="4"/><text x="640" y="274" text-anchor="middle">Odds</text></g>
+            <g class="kg-node kg-node--soft" data-node="test" data-why="Screening tests many people at once, so a low base rate can mean many false alarms."><circle cx="96" cy="420" r="4"/><text x="96" y="446" text-anchor="middle">Screening</text></g>
+            <g class="kg-node kg-node--soft" data-node="indep" data-why="If two events are independent, knowing one doesn’t change the chance of the other."><circle cx="560" cy="64" r="4"/><text x="574" y="68">Independence</text></g>
+            <g class="kg-node kg-node--soft" data-node="frac" data-why="A conditional probability is a fraction: the cases with both, over the cases with the condition you know."><circle cx="160" cy="64" r="4"/><text x="146" y="68" text-anchor="end">Fractions</text></g>
           </svg>
+          <p class="kg-why" data-graph-why aria-live="polite"><span class="kg-why-dot" aria-hidden="true"></span><span data-graph-why-text>Hover or focus a point to see why it is connected.</span></p>
           <figcaption class="m-graph-legend"><span class="ui-tag ui-tag--line">Illustrative map</span></figcaption>
         </figure>
       </div>
@@ -629,9 +637,9 @@
         </div>
         <div class="home-research-layout">
           <ul class="home-research-list">
-            <li><a class="home-research-note" href="/research/memory-recall/"><span class="home-research-media"><img src="/media/socrates-research-memory-route-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Memory</span><time datetime="2026-08-12">Aug 12, 2026</time></p><h3>The route back to an idea</h3></div></a></li>
-            <li><a class="home-research-note" href="/research/explanation-evidence/"><span class="home-research-media"><img src="/media/socrates-research-explanation-evidence-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Explanation</span><time datetime="2026-07-29">Jul 29, 2026</time></p><h3>When a clear explanation becomes evidence</h3></div></a></li>
-            <li><a class="home-research-note" href="/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Practice</span><time datetime="2026-07-11">Jul 11, 2026</time></p><h3>The value of an honest pause</h3></div></a></li>
+            <li><a class="home-research-note" href="/research/memory-recall/"><span class="home-research-media"><img src="/media/socrates-research-memory-route-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Memory</span><time datetime="2026-08-12">Aug 12, 2026</time></p><h3>The route back to an idea</h3></div></a></li>
+            <li><a class="home-research-note" href="/research/explanation-evidence/"><span class="home-research-media"><img src="/media/socrates-research-explanation-evidence-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Explanation</span><time datetime="2026-07-29">Jul 29, 2026</time></p><h3>When a clear explanation becomes evidence</h3></div></a></li>
+            <li><a class="home-research-note" href="/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-line-v1.svg" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Practice</span><time datetime="2026-07-11">Jul 11, 2026</time></p><h3>The value of an honest pause</h3></div></a></li>
           </ul>
         </div>
       </div>
@@ -767,8 +775,9 @@
     <section class="home-cta" aria-labelledby="cta-title">
       <div class="home-shell">
         <div class="home-cta-inner">
-          <h2 id="cta-title">Start free.<br> Add structure when you need it.</h2>
-          <p>The Free tier is permanently free. No card, no trial clock.</p>
+          <p class="cta-kicker"><span class="cta-thread" aria-hidden="true"><i></i><i></i><i></i></span><span>One last question</span></p>
+          <h2 id="cta-title">What will you understand next?</h2>
+          <p>Bring it to Socrates. The Free tier is permanently free: no card, no trial clock. Add structure when you need it.</p>
           <div class="home-cta-actions">
             <a class="home-button" href="https://app.topodrive.top">Try Socrates <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
             <a class="home-text-link" href="/pricing">Compare plans <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
@@ -874,9 +883,9 @@
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261101a1"></script>
-  <script src="/modules.js?cb=20261101a1"></script>
-  <script src="/chrome.js?cb=20261101a1"></script>
-  <script src="/motion.js?cb=20261101a1"></script>
+  <script src="/home-question.js?cb=20261101b1"></script>
+  <script src="/modules.js?cb=20261101b1"></script>
+  <script src="/chrome.js?cb=20261101b1"></script>
+  <script src="/motion.js?cb=20261101b1"></script>
 </body>
 </html>

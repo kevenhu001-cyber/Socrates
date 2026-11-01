@@ -118,38 +118,60 @@
     syncValue();
   });
 
-  /* Interactive connection highlighting between the map and the dialogue */
-  var demoFrame = document.querySelector('.demo-frame');
-  if (demoFrame) {
-    var nodes = demoFrame.querySelectorAll('.demo-node');
-    var messages = demoFrame.querySelectorAll('.demo-msg');
-    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    nodes.forEach(function (node, index) {
-      node.style.cursor = 'pointer';
-      node.setAttribute('role', 'button');
-      node.setAttribute('tabindex', '0');
-      var highlight = function () {
-        nodes.forEach(function (n) { n.classList.remove('is-active'); });
-        node.classList.add('is-active');
-        if (reduced.matches) return;
-        var targetIndex = index === 0 ? 1 : 3;
-        var targetMsg = messages[targetIndex];
-        if (targetMsg && targetMsg.animate) {
-          targetMsg.animate([
-            { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,0,0,0)' },
-            { transform: 'scale(1.015)', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' },
-            { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,0,0,0)' }
-          ], { duration: 380, easing: 'cubic-bezier(.16, 1, .3, 1)' });
-        }
-      };
-      node.addEventListener('mouseenter', highlight);
-      node.addEventListener('click', highlight);
-      node.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          highlight();
-        }
+  /* Recall card: try first, turn the card, then rate the try. The rating
+     moves one black point along a hairline from "today" to "much later",
+     to show that an honest try decides when the idea comes back. The card
+     is illustrative; nothing is stored. */
+  document.querySelectorAll('[data-recall]').forEach(function (root) {
+    var card = root.querySelector('[data-rc-card]');
+    var flip = root.querySelector('[data-rc-flip]');
+    var flipLabel = root.querySelector('[data-rc-flip-label]');
+    var rate = root.querySelector('[data-rc-rate]');
+    var grades = Array.prototype.slice.call(root.querySelectorAll('[data-rc-grade]'));
+    var spacing = root.querySelector('[data-rc-spacing]');
+    var note = root.querySelector('[data-rc-note-out]');
+    var scale = Array.prototype.slice.call(root.querySelectorAll('.rc-scale span'));
+    if (!card || !flip || !rate || !flipLabel) return;
+    var front = root.querySelector('.rc-front');
+    var back = root.querySelector('.rc-back');
+    var turnText = flipLabel.textContent;
+    var againText = flip.getAttribute('data-rc-again') || turnText;
+    var firstNote = note ? note.textContent : '';
+    var state = 'front';
+    function at(index) {
+      spacing.style.setProperty('--rc-at', String(index));
+      scale.forEach(function (label, i) { label.classList.toggle('is-on', i === index); });
+    }
+    function render(next, focus) {
+      state = next;
+      var flipped = next !== 'front';
+      card.classList.toggle('is-flipped', flipped);
+      if (front) front.setAttribute('aria-hidden', flipped ? 'true' : 'false');
+      if (back) back.setAttribute('aria-hidden', flipped ? 'false' : 'true');
+      flip.setAttribute('aria-expanded', flipped ? 'true' : 'false');
+      var rating = next === 'back';
+      // The two controls share one place; the one not in use is hidden
+      // from the keyboard and from assistive technology as well as the eye.
+      rate.setAttribute('aria-hidden', rating ? 'false' : 'true');
+      flip.setAttribute('aria-hidden', rating ? 'true' : 'false');
+      grades.forEach(function (grade) { grade.tabIndex = rating ? 0 : -1; if (next !== 'rated') grade.setAttribute('aria-pressed', 'false'); });
+      flip.tabIndex = rating ? -1 : 0;
+      flipLabel.textContent = next === 'rated' ? againText : turnText;
+      if (next === 'front') { at(0); if (note) note.textContent = firstNote; }
+      if (focus) (rating ? grades[0] : flip).focus({ preventScroll: true });
+    }
+    flip.addEventListener('click', function () {
+      render(state === 'front' ? 'back' : 'front', true);
+    });
+    grades.forEach(function (grade) {
+      grade.addEventListener('click', function () {
+        grades.forEach(function (other) { other.setAttribute('aria-pressed', other === grade ? 'true' : 'false'); });
+        at(grade.getAttribute('data-rc-grade') === 'good' ? 2 : 1);
+        if (note) note.textContent = grade.getAttribute('data-rc-note') || '';
+        render('rated', true);
       });
     });
-  }
+    root.setAttribute('data-recall-ready', '');
+    render('front', false);
+  });
 }());

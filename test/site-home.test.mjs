@@ -15,7 +15,7 @@ for (const prefix of ['', '/zh']) {
       const geometry = await page.evaluate(() => {
         const visible = (node) => node.checkVisibility();
         const text = [...document.querySelectorAll('main h1, main h2, main h3, main p:not(.home-sr-only), .demo-node')].filter(visible);
-        const demo = document.querySelector('.demo-tutor-body p');
+        const demo = document.querySelector('.rc-prompt');
         const hero = document.querySelector('.home-hero').getBoundingClientRect();
         const art = document.querySelector('.hero-art').getBoundingClientRect();
         const ask = document.querySelector('.hero-ask .ask-box').getBoundingClientRect();
@@ -35,7 +35,7 @@ for (const prefix of ['', '/zh']) {
           background: getComputedStyle(document.body).backgroundColor,
           radius: parseFloat(getComputedStyle(document.querySelector('.ask-box')).borderRadius),
           featureTop: document.querySelector('.home-feature').getBoundingClientRect().top,
-          questionSize: parseFloat(getComputedStyle(document.querySelector('.demo-msg--user')).fontSize),
+          questionSize: parseFloat(getComputedStyle(document.querySelector('.rc-answer')).fontSize),
           tutorSize: parseFloat(getComputedStyle(demo).fontSize),
           clippedText: text.filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => `${node.className}: ${node.textContent.trim()}`),
           clippedNodes: [...document.querySelectorAll('.demo-node')].some((node) => { const box = node.getBoundingClientRect(); return box.left < map.left - 1 || box.right > map.right + 1; }),
@@ -68,7 +68,12 @@ for (const prefix of ['', '/zh']) {
       assert.equal(await page.locator('.demo-rail, .demo-live, .demo-compose, .demo-suggestions').count(), 0, 'remove tiny navigation and controls that imply a live session');
       assert.match(await page.locator('.feature-meta').innerText(), /not a live conversation|并非实时对话/);
       assert.equal(await page.locator('.feature-main').getAttribute('aria-labelledby'), 'feature-title');
-      assert.equal(await page.locator('.demo-msg').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 4, 'phones keep the learner’s correction, not just an unanswered tutor question');
+      // The preview is now a recall card: the prompt is in view, the learner's
+      // own explanation is one turn away and the rating follows it.
+      assert.ok(await page.locator('.rc-prompt').isVisible(), 'phones show the recall prompt, not a cropped card');
+      assert.equal(await page.locator('[data-rc-flip]').isVisible(), true, 'the card can be turned on every width');
+      assert.equal(await page.locator('.rc-grade').count(), 2);
+      assert.match(await page.locator('.rc-back').textContent(), /990/, 'the back keeps the learner’s explanation of the base rate');
       assert.equal(await page.locator('[data-art], .feature-rail').count(), 0, 'no generated gradient fields or competing story rail');
       // The hero is plain: no decorative canvas or artwork behind the question.
       assert.equal(await page.locator('canvas, [data-hero-field]').count(), 0);

@@ -164,7 +164,7 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
 .m-graph-stage { position: relative; overflow: hidden; border-radius: var(--radius-3xl); background: var(--m-subtle); }
 .m-graph-stage svg { display: block; width: 100%; height: auto; font-family: var(--site-font); }
 .kg-edge { stroke: #cdcdcd; stroke-width: 1; transition: opacity 400ms var(--m-ease), stroke 150ms var(--m-ease); }
-.kg-node { cursor: default; transition: opacity 400ms var(--m-ease); }
+.kg-node { cursor: pointer; pointer-events: bounding-box; transition: opacity 400ms var(--m-ease); }
 .kg-node circle { fill: #fff; stroke: #8f8f8f; stroke-width: 1.25; transition: transform 300ms var(--m-ease); transform-box: fill-box; transform-origin: center; }
 .kg-node text { fill: var(--m-muted); font-size: 13px; font-weight: 500; }
 .kg-node--core circle { fill: var(--m-ink); stroke: none; }
@@ -176,6 +176,12 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
 .m-graph-stage.is-hovering .kg-edge.is-lit { opacity: 1; stroke: var(--m-ink); }
 .m-graph-stage.is-hovering .kg-node.is-lit { opacity: 1; }
 .kg-node.is-lit circle { transform: scale(1.35); }
+.kg-why { display: flex; align-items: baseline; gap: var(--space-100); min-height: 3em; margin: calc(-1 * var(--space-200)) var(--space-300) var(--space-300); border-top: 1px solid rgb(0 0 0 / .06); padding-top: var(--space-200); color: var(--m-copy); font: 400 .875rem/1.5 var(--site-font); text-wrap: pretty; }
+.kg-why-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--m-ink); transform: translateY(-1px); }
+:root:not([data-site-js]) .kg-why { display: none; }
+.kg-node:focus { outline: none; }
+.kg-node:focus-visible circle { stroke: var(--m-ink); stroke-width: 2; }
+.kg-node:focus-visible text { fill: var(--m-ink); text-decoration: underline; text-underline-offset: 3px; }
 .m-graph-legend { position: absolute; left: var(--space-300); top: var(--space-300); display: flex; flex-wrap: wrap; gap: var(--space-75); }
 /* Entrance: points and lines fade in one after another, once. */
 .js .m-graph-stage[data-graph]:not(.is-in) :is(.kg-node, .kg-edge) { opacity: 0; }
@@ -471,4 +477,15 @@ a.m-card:active { transform: translateY(0) scale(.99); }
   .m-faq details > div { padding-left: calc(var(--space-200) + 22px); }
   .m-faq details > div::before { left: calc(var(--space-200) + 3px); }
   .m-faq details > div::after { left: var(--space-200); }
+}
+
+/* Steps thread (modules.js): a hairline through the numbered points, drawn
+   in black up to the last step reached. Scale only, from the first point. */
+.m-thread { position: absolute; z-index: 1; background: var(--m-line, #e5e5e5); pointer-events: none; }
+.m-thread::after { content: ''; position: absolute; inset: 0; background: var(--m-ink); transform: scaleX(var(--thread, 0)); transform-origin: left center; transition: transform 900ms cubic-bezier(.22,1,.36,1); }
+.m-steps.is-vertical .m-thread::after { transform: scaleY(var(--thread, 0)); transform-origin: center top; }
+[data-thread] .m-step::before { position: relative; z-index: 2; transition: background-color 400ms cubic-bezier(.22,1,.36,1) 300ms, color 400ms cubic-bezier(.22,1,.36,1) 300ms, box-shadow 400ms cubic-bezier(.22,1,.36,1); }
+[data-thread] .m-step.is-reached::before { background: var(--m-ink); color: #fff; box-shadow: 0 0 0 4px var(--m-subtle); }
+@media (prefers-reduced-motion: reduce) {
+  .m-thread::after, [data-thread] .m-step::before { transition: none; }
 }

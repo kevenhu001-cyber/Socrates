@@ -111,15 +111,60 @@ body.home-refresh {
 .demo-chat-head { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: var(--space-100); padding: var(--space-100) var(--space-300); border-bottom: 1px solid var(--line); }
 .demo-thread-title { font: var(--type-caption-4); }
 .demo-preview-label { display: inline-flex; align-items: center; height: 24px; padding-inline: 10px; border-radius: var(--radius-full); background: var(--fill); color: var(--muted); font: var(--type-caption-5); }
-.demo-thread { display: flex; flex-direction: column; gap: var(--space-300); padding: var(--space-400) var(--space-400); }
-.demo-msg { max-width: 80%; font: var(--type-body-3); }
-.demo-msg--user { align-self: flex-end; border-radius: var(--radius-3xl); background: var(--surface); color: var(--ink); padding: 10px var(--space-200); }
-.demo-msg--tutor { display: flex; gap: var(--space-100); align-self: flex-start; }
-.demo-tutor-avatar { display: grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: var(--radius-full); box-shadow: 0 0 0 1px var(--line); }
-.demo-tutor-avatar img { width: 18px; height: 18px; }
-.demo-tutor-body { min-width: 0; }
-.demo-tutor-name { margin-bottom: 2px; color: var(--muted); font: var(--type-caption-4); }
-.demo-tutor-body p { font: var(--type-body-3); }
+/* Recall card: say it first, turn the card, then rate the try. The two
+   faces share one grid cell, so turning never changes the height; without
+   the script both faces read in order and the controls stay out. */
+.rc-body { display: grid; gap: var(--space-300); padding: var(--space-400); }
+.rc-card { display: grid; perspective: 1400px; }
+.rc-face { grid-area: auto; display: flex; min-width: 0; flex-direction: column; gap: var(--space-75); border-radius: 18px; background: var(--subtle); box-shadow: inset 0 0 0 1px var(--site-hairline); padding: var(--space-300); }
+.rc-face + .rc-face { margin-top: var(--space-100); }
+.rc-label { display: flex; align-items: center; gap: var(--space-75); color: var(--quiet); font: 500 .8125rem/1.4 var(--site-font); }
+.rc-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--ink); }
+.rc-dot--open { background: transparent; box-shadow: inset 0 0 0 1.25px var(--ink); }
+.rc-prompt { color: var(--ink); font: var(--type-heading-5); letter-spacing: -.01em; text-wrap: pretty; }
+:lang(zh) .rc-prompt { letter-spacing: 0; }
+.rc-hint { margin-top: auto; padding-top: var(--space-100); color: var(--muted); font: var(--type-caption-5); }
+.rc-answer { color: var(--copy); font: var(--type-body-3); text-wrap: pretty; }
+.rc-term { color: var(--ink); font-weight: 500; background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat; }
+.rc-actions, .rc-spacing { display: none; }
+[data-site-js] .rc-card { grid-template-areas: 'face'; }
+[data-site-js] .rc-face { grid-area: face; margin: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; transition: transform 700ms cubic-bezier(.22,1,.36,1), visibility 0s 350ms; }
+[data-site-js] .rc-back { transform: rotateY(180deg); visibility: hidden; }
+[data-site-js] .rc-card.is-flipped .rc-front { transform: rotateY(-180deg); visibility: hidden; }
+[data-site-js] .rc-card.is-flipped .rc-back { transform: rotateY(0deg); visibility: visible; }
+[data-site-js] .rc-actions { display: grid; grid-template-areas: 'act'; justify-items: start; }
+[data-site-js] .rc-spacing { display: grid; gap: var(--space-100); }
+.rc-actions > * { grid-area: act; transition: opacity 300ms cubic-bezier(.22,1,.36,1), transform 400ms cubic-bezier(.22,1,.36,1), visibility 0s; }
+.rc-actions > [aria-hidden="true"] { visibility: hidden; opacity: 0; transform: translateY(4px); transition-delay: 0s, 0s, 300ms; }
+.rc-rate { display: flex; flex-wrap: wrap; gap: var(--space-75); }
+.rc-flip, .rc-grade { display: inline-flex; height: 36px; align-items: center; border-radius: var(--radius-full); padding-inline: var(--space-200); font: var(--type-button-sm); transition: background-color var(--site-motion-color), color var(--site-motion-color), box-shadow var(--site-motion-color), transform 160ms cubic-bezier(.22,1,.36,1); }
+.rc-flip { background: var(--ink); color: #fff; }
+.rc-flip:hover { background: #333; }
+.rc-grade { background: var(--raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.rc-grade:hover { background: var(--subtle); }
+.rc-grade[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.rc-flip:active, .rc-grade:active { transform: scale(.97); }
+/* A hairline from today to much later; the black point is when the idea
+   comes back. Its position is a transform of a full-width layer, so the
+   move never lays anything out again. */
+.rc-track { position: relative; height: 11px; margin-inline: 5px; }
+.rc-track::before, .rc-track::after { content: ''; position: absolute; left: 0; right: 0; top: 5px; height: 1px; background: var(--line-strong); }
+.rc-track::after { background: var(--ink); transform: scaleX(calc(var(--rc-at, 0) / 3)); transform-origin: left; transition: transform 700ms cubic-bezier(.22,1,.36,1); }
+.rc-tick { position: absolute; top: 2px; width: 7px; height: 7px; margin-left: -3.5px; border-radius: 50%; background: var(--raised); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.rc-tick[data-at="0"] { left: 0; }
+.rc-tick[data-at="1"] { left: 33.333%; }
+.rc-tick[data-at="2"] { left: 66.667%; }
+.rc-tick[data-at="3"] { left: 100%; }
+.rc-mark { position: absolute; inset: 0; transform: translateX(calc(var(--rc-at, 0) * 33.333%)); transition: transform 700ms cubic-bezier(.22,1,.36,1); }
+.rc-mark::after { content: ''; position: absolute; left: -5.5px; top: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--raised); }
+.rc-scale { position: relative; height: 1.4em; color: var(--quiet); font: 500 .75rem/1.4 var(--site-font); }
+.rc-scale span { position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); transition: color 300ms cubic-bezier(.22,1,.36,1); }
+.rc-scale span:nth-child(1) { left: 0; transform: none; }
+.rc-scale span:nth-child(2) { left: 33.333%; }
+.rc-scale span:nth-child(3) { left: 66.667%; }
+.rc-scale span:nth-child(4) { left: 100%; transform: translateX(-100%); }
+.rc-scale span.is-on { color: var(--ink); }
+.rc-note { color: var(--muted); font: var(--type-caption-5); }
 .demo-map { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-75) var(--space-300); align-items: center; border-top: 1px solid var(--line); padding: var(--space-200) var(--space-400); }
 .demo-map-head { color: var(--muted); font: var(--type-caption-4); }
 .demo-map-canvas { grid-column: 2; grid-row: 1 / 3; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-75) var(--space-300); }
@@ -130,14 +175,14 @@ body.home-refresh {
 .demo-map-foot { max-width: 380px; color: var(--muted); font: var(--type-caption-5); }
 .feature-caption { padding: var(--space-200) var(--space-50) 0; }
 .feature-meta { display: flex; flex-wrap: wrap; gap: var(--space-50) var(--space-200); color: var(--muted); font: var(--type-caption-5); }
-.feature-meta span:first-child { color: var(--ink); font-weight: 500; }
+.feature-meta > :first-child { color: var(--ink); font-weight: 500; }
 .hero-plate { display: flex; min-width: 0; flex-direction: column; align-self: start; }
 .plate-media { display: block; overflow: hidden; aspect-ratio: 1; border-radius: var(--radius-3xl); background: var(--surface); }
 .hero-art { width: 100%; height: auto; aspect-ratio: 1; }
 .plate-caption { display: grid; gap: var(--space-50); padding: var(--space-200) var(--space-50) 0; font: var(--type-heading-5); letter-spacing: -.01em; }
 .plate-caption > span:last-child { order: -1; }
 .plate-index { color: var(--muted); font: var(--type-caption-5); letter-spacing: 0; }
-.hero-plate:hover .plate-caption > span:last-child, .feature-main:hover .feature-meta span:first-child { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.hero-plate:hover .plate-caption > span:last-child, .feature-meta a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .feature-intro { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-300) var(--space-700); margin-top: var(--space-800); }
 .feature-intro h2 { font: var(--type-heading-3); letter-spacing: -.015em; text-wrap: balance; }
 :lang(zh) .feature-intro h2 { letter-spacing: 0; line-height: 1.35; }
@@ -248,7 +293,6 @@ body.home-refresh {
   .feature-layout { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
   .feature-intro { column-gap: var(--space-500); }
   .home-faq-layout { grid-template-columns: minmax(0, 1fr); }
-  .demo-thread { padding: var(--space-300); }
 }
 @media (max-width: 760px) {
   body.home-refresh { --section-gap: var(--space-700); }
@@ -264,8 +308,6 @@ body.home-refresh {
   .feature-layout { grid-template-columns: minmax(0, 1fr); }
   .feature-media { border-radius: var(--radius-2xl); padding: var(--space-75); }
   .demo-chat-head { padding-inline: var(--space-200); }
-  .demo-thread { padding: var(--space-300) var(--space-200); gap: var(--space-200); }
-  .demo-msg { max-width: 100%; }
   .demo-map { padding: var(--space-200); }
   .demo-node--b::before { display: none; }
   .hero-plate { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: var(--space-200); }
@@ -444,3 +486,22 @@ body.home-refresh {
 .qc-next.is-again { background: var(--fill); color: var(--ink); box-shadow: none; }
 .qc-next.is-again:hover { background: var(--fill-hover); }
 .home-chain + .home-feature { margin-top: var(--section-gap); }
+
+@media (max-width: 760px) {
+  .rc-body { gap: var(--space-200); padding: var(--space-300) var(--space-200); }
+  .rc-face { padding: var(--space-200); }
+  .rc-prompt { font-size: 1.0625rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The card swaps faces at once instead of turning. */
+  [data-site-js] .rc-face, .rc-actions > *, .rc-track::after, .rc-mark, .rc-scale span { transition: none !important; }
+  .rc-flip:active, .rc-grade:active { transform: none; }
+}
+
+/* Closing question: the thread from the question chain returns as three
+   points, the last one still open, above the site's final question. */
+.cta-kicker { display: inline-flex; align-items: center; gap: var(--space-100); color: var(--quiet); font: 500 .8125rem/1.4 var(--site-font); }
+.cta-thread { position: relative; display: inline-flex; align-items: center; gap: 14px; }
+.cta-thread::before { content: ''; position: absolute; left: 3px; right: 3px; top: 50%; height: 1px; background: var(--line-strong); }
+.cta-thread i { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--surface); }
+.cta-thread i:last-child { background: var(--surface); box-shadow: 0 0 0 3px var(--surface), inset 0 0 0 1.25px var(--ink); }

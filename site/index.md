@@ -48,14 +48,13 @@ One in a hundred.
 
 Start with what you think. Follow the question a little further. Keep the connection that makes it click.
 
-### Illustrative session: probability
+### Illustrative recall card: probability
 
-This is a non-interactive illustration, not a live conversation.
+This is an illustrative card, not a live conversation. Say the answer in your own words first, then turn the card.
 
-- **Learner:** Why isn’t a positive test the whole story?
-- **Socrates:** If 1 in 100 people has the condition, how many is that in a group of 1,000?
-- **Learner:** Ten. Some of the other 990 might test positive, too.
-- **Socrates:** Exactly. A positive result needs context: the base rate and the false positives.
+- **Front:** Why isn’t a positive test the whole story?
+- **Back (your explanation, from the session):** If 1 in 100 people has the condition, many positives in a group of 1,000 come from the other 990. A result needs the base rate and the false positives.
+- **Then rate yourself:** “I remembered” leaves the idea a little longer before the next try; “A bit fuzzy” brings it back sooner.
 
 **A connection to keep:** Base rate → False positives.
 
@@ -150,9 +149,9 @@ The practical details.
 - **What if I change my mind?** Cancel within fourteen days of a first paid plan and write to us for a refund.
 - **Does Socrates support invoices and VAT?** Yes. Add billing details from the account page and EU customers are billed with VAT applied where required.
 
-## Start free. Add structure when you need it.
+## One last question: what will you understand next?
 
-The Free tier is permanently free. No card, no trial clock.
+Bring it to Socrates. The Free tier is permanently free: no card, no trial clock. Add structure when you need it.
 
 [Try Socrates](https://app.topodrive.top) · [Product](https://topodrive.top/product) · [Pricing](https://topodrive.top/pricing) · [中文](https://topodrive.top/zh/)
 

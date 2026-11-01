@@ -99,13 +99,34 @@
       nodes.forEach(function (other) { other.classList.toggle('is-lit', !!linked[other.getAttribute('data-node')]); });
       stage.classList.add('is-hovering');
     }
+    // One sentence under the map says why the lit point belongs where it
+    // is. Points take keyboard focus too, so the map can be read without a
+    // pointer; the sentence sits in a polite live region.
+    var why = stage.querySelector('[data-graph-why-text]');
+    var whyIdle = why ? why.textContent : '';
+    function say(text) {
+      if (!why || why.textContent === text) return;
+      why.textContent = text;
+      if (!reduced.matches && why.animate) why.animate([{ opacity: 0, transform: 'translateY(3px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' });
+    }
     function clear() {
       stage.classList.remove('is-hovering');
       nodes.concat(edges).forEach(function (item) { item.classList.remove('is-lit'); });
+      say(whyIdle);
     }
+    var svg = stage.querySelector('svg');
+    if (why && svg) svg.setAttribute('role', 'group');
     nodes.forEach(function (node) {
-      node.addEventListener('pointerenter', function () { light(node); });
+      var label = node.querySelector('text');
+      function show() { light(node); if (node.hasAttribute('data-why')) say(node.getAttribute('data-why')); }
+      node.addEventListener('pointerenter', show);
       node.addEventListener('pointerleave', clear);
+      if (!why || !node.hasAttribute('data-why')) return;
+      node.setAttribute('tabindex', '0');
+      node.setAttribute('role', 'img');
+      if (label) node.setAttribute('aria-label', label.textContent);
+      node.addEventListener('focus', show);
+      node.addEventListener('blur', clear);
     });
   });
 })();
@@ -305,6 +326,58 @@
     // sits below it instead of at the middle of the screen.
     }, { rootMargin: window.matchMedia('(max-width: 760px)').matches ? '-60% 0px -32% 0px' : '-45% 0px -45% 0px', threshold: 0 });
     steps.forEach(function (step) { observer.observe(step); });
+  });
+
+  /* Steps: one hairline threads the three numbered points. As each step
+     reaches the middle of the screen its point turns black and the black
+     line grows to it. The line is measured from the points themselves, so
+     it follows the row on desktop and the column on phones. */
+  document.querySelectorAll('.m-steps').forEach(function (list) {
+    var steps = Array.prototype.slice.call(list.querySelectorAll('.m-step'));
+    if (steps.length < 2) return;
+    var thread = document.createElement('span');
+    thread.className = 'm-thread';
+    thread.setAttribute('aria-hidden', 'true');
+    list.insertBefore(thread, list.firstChild);
+    list.setAttribute('data-thread', '');
+    var reached = -1;
+    function point(step) {
+      var box = step.getBoundingClientRect();
+      var badge = window.getComputedStyle(step, '::before');
+      var padTop = parseFloat(window.getComputedStyle(step).paddingTop) || 0;
+      var padLeft = parseFloat(window.getComputedStyle(step).paddingLeft) || 0;
+      var size = parseFloat(badge.width) || 36;
+      return { x: box.left + padLeft + size / 2, y: box.top + padTop + size / 2 };
+    }
+    function measure() {
+      var origin = list.getBoundingClientRect();
+      var a = point(steps[0]);
+      var b = point(steps[steps.length - 1]);
+      var vertical = Math.abs(b.x - a.x) < 2;
+      list.classList.toggle('is-vertical', vertical);
+      thread.style.left = (a.x - origin.left) + 'px';
+      thread.style.top = (a.y - origin.top) + 'px';
+      thread.style.width = vertical ? '1px' : (b.x - a.x) + 'px';
+      thread.style.height = vertical ? (b.y - a.y) + 'px' : '1px';
+    }
+    function reach(index) {
+      if (index <= reached) return;
+      reached = index;
+      steps.forEach(function (step, i) { step.classList.toggle('is-reached', i <= reached); });
+      thread.style.setProperty('--thread', String(reached / (steps.length - 1)));
+    }
+    measure();
+    if ('ResizeObserver' in window) new ResizeObserver(measure).observe(list);
+    else window.addEventListener('resize', measure);
+    if (reduced.matches || !hasIO) { reach(steps.length - 1); return; }
+    var seen = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        reach(steps.indexOf(entry.target));
+        if (reached === steps.length - 1) seen.disconnect();
+      });
+    }, { rootMargin: '0px 0px -38% 0px', threshold: 0 });
+    steps.forEach(function (step) { seen.observe(step); });
   });
 
   /* Question chain: one question at a time, each leading to the next. Every
