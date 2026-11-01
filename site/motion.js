@@ -42,17 +42,13 @@
   var elements = Array.from(main.querySelectorAll(selectors.join(',')));
   elements.forEach(function (element) { element.setAttribute('data-site-reveal', ''); });
 
+  // A block that scrolls in arrives with one quiet fade, all at once:
+  // no rise and no sibling stagger (round 9 dropped both; they said
+  // nothing about the content). Reduced motion shows it as it is.
   function reveal(element) {
     if (element.hasAttribute('data-site-seen')) return;
     element.setAttribute('data-site-seen', '');
-    var host = element.parentElement.tagName === 'LI' ? element.parentElement : element;
-    var index = Array.prototype.indexOf.call(host.parentElement.children, host);
-    // A light fade with a 12px rise over 500ms, once; siblings in a grid
-    // arrive 60ms apart (at most four steps, so nothing waits long).
-    animate(element, [
-      { opacity: 0, transform: 'translateY(12px)' },
-      { opacity: 1, transform: 'translateY(0)' }
-    ], { duration: 500, delay: (index % 4) * 60, easing: ease, fill: 'backwards' });
+    animate(element, [{ opacity: 0 }, { opacity: 1 }], { duration: 400, easing: ease, fill: 'backwards' });
   }
 
   if ('IntersectionObserver' in window) {
@@ -66,31 +62,9 @@
     elements.forEach(function (element) { observer.observe(element); });
   }
 
-  // Scroll narrative: children of [data-sequence] arrive one after another
-  // (a conversation turn by turn, a map node by node, steps in order). The
-  // content is in the DOM and readable before, during and without this.
-  var sequences = Array.from(main.querySelectorAll('[data-sequence]'));
-  function play(container) {
-    var items = Array.from(container.children);
-    var step = container.matches('.demo-thread, .product-chat') ? 260 : 100;
-    var base = container.classList.contains('demo-map-canvas') ? 1000 : 150;
-    items.forEach(function (item, index) {
-      animate(item, [
-        { opacity: 0, transform: 'translateY(8px)' },
-        { opacity: 1, transform: 'translateY(0)' }
-      ], { duration: 400, delay: base + index * step, easing: ease, fill: 'backwards' });
-    });
-  }
-  if (sequences.length && 'IntersectionObserver' in window) {
-    var sequenceObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        play(entry.target);
-        sequenceObserver.unobserve(entry.target);
-      });
-    }, { threshold: .25 });
-    sequences.forEach(function (container) { sequenceObserver.observe(container); });
-  }
+  // [data-sequence] blocks (a short thread, a pair of map nodes) used to
+  // arrive child by child; round 9 shows them whole, since the order of
+  // arrival added nothing the layout does not already say.
 
   var menu = header.querySelector('.site-mobile-menu');
   if (menu && 'MutationObserver' in window) {
@@ -235,5 +209,59 @@
       var target = animation.effect && animation.effect.target;
       if (target && target.contains(event.target)) animation.cancel();
     });
+  });
+}());
+
+/* Round 9 · 404, back to the start (lives here, not in its own file, so
+   the page loads no extra script before the shared chrome).
+   The page shows the home page's dot-matrix question mark with its stroke
+   loose and its point missing. Choosing "Go to the home page" gathers the
+   loose points into the missing point (~0.9s), the point that opens the
+   home page, and then goes there. Reduced motion, a modified click or a
+   missing Web Animations API simply follow the link. */
+(function () {
+  'use strict';
+  var link = document.querySelector('.nf-primary');
+  var svg = document.querySelector('.nf-mark');
+  if (!link || !svg || !svg.animate) return;
+  var reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+  var point = svg.querySelector('.nf-point');
+  var gap = svg.querySelector('.nf-gap');
+  var cells = Array.prototype.slice.call(svg.querySelectorAll('.nf-stroke circle'));
+  var ease = 'cubic-bezier(.22,1,.36,1)';
+  var going = false;
+  link.addEventListener('click', function (event) {
+    if (going || reduced.matches || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    going = true;
+    var href = link.href;
+    var px = +point.getAttribute('cx');
+    var py = +point.getAttribute('cy');
+    svg.setAttribute('data-gathering', '');
+    var last = 0;
+    cells.forEach(function (cell, i) {
+      // The end of the stroke, nearest the point, arrives first.
+      var delay = (cells.length - 1 - i) * 4;
+      last = Math.max(last, delay);
+      cell.animate([
+        { transform: 'translate(0, 0)', opacity: .8 },
+        { transform: 'translate(' + (px - cell.cx.baseVal.value) * .85 + 'px,' + (py - cell.cy.baseVal.value) * .85 + 'px)', opacity: .8, offset: .8 },
+        { transform: 'translate(' + (px - cell.cx.baseVal.value) + 'px,' + (py - cell.cy.baseVal.value) + 'px)', opacity: 0 }
+      ], { duration: 600, delay: delay, easing: ease, fill: 'forwards' });
+    });
+    if (gap) gap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' });
+    var grow = point.animate([{ opacity: 0, transform: 'scale(.2)' }, { opacity: 1, transform: 'scale(1)' }],
+      { duration: 280, delay: last + 380, easing: ease, fill: 'forwards' });
+    var gone = false;
+    function go() { if (gone) return; gone = true; window.location.href = href; }
+    grow.finished.then(function () { window.setTimeout(go, 80); }, go);
+    window.setTimeout(go, 1200); // never strand the reader on this page
+  });
+  // Coming back from the home page through the back/forward cache.
+  window.addEventListener('pageshow', function (event) {
+    if (!event.persisted) return;
+    going = false;
+    svg.removeAttribute('data-gathering');
+    svg.getAnimations({ subtree: true }).forEach(function (a) { a.cancel(); });
   });
 }());
