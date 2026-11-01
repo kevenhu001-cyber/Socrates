@@ -305,10 +305,9 @@
    text token: the dark theme's --ui-text-primary is #e6e6e6, which reads as
    a greyed-out control rather than the inverted disc the reference ships. */
 #appShell .composer-shell .composer-primary-btn {
-  /* The send button is the product's one saturated fill: the reference
-     draws it as a blue disc with a light up-arrow. The glyph is a control
-     glyph, so it is held to WCAG's 3:1 non-text contrast (3.8:1 on this
-     blue), not to the 4.5:1 of body text. */
+  /* The send button is the ink disc (R1 restyle): black with a white arrow
+     in light mode, inverted in dark. --ui-accent-action resolves to the
+     primary ink in themes.css; the product carries no hue. */
   background: var(--ui-accent-action);
   color: var(--ui-on-action);
   font-weight: var(--ui-font-weight-medium);

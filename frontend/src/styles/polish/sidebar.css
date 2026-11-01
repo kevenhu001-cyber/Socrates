@@ -79,7 +79,7 @@
        surface. The field used to be a transparent nav row that only gained
        a fill on hover, which made it hard to read as a text field at rest. */
     border: 1px solid var(--border);
-    border-radius: var(--ui-radius-sm);
+    border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-surface);
     color: var(--foreground);
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
@@ -179,7 +179,7 @@
   }
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current="true"] {
-    background: var(--accent);
+    background: var(--ui-bg-selected);
     color: var(--foreground);
   }
   #appShell #sidebar .recent-item.active .recent-item-text,

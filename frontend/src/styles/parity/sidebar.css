@@ -195,9 +195,11 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
        own surface already separates it from the page. */
     color: var(--foreground);
     font: inherit;
-    font-size: var(--ui-font-size-md);
+    /* R1 restyle: the rail is set at the interface size (14px), one step
+       under the prose, so the transcript stays the loudest text on screen. */
+    font-size: var(--ui-text-ui);
     font-weight: var(--ui-font-weight-regular);
-    line-height: var(--ui-text-body-line);
+    line-height: var(--ui-text-ui-line);
     letter-spacing: normal;
     text-align: start;
     white-space: nowrap;
@@ -209,9 +211,11 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     background: var(--accent);
     color: var(--foreground);
   }
+  /* Selected is a solid step of the ladder, not the hover wash, so the
+     current chat stays marked while the pointer moves over its neighbours. */
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current="true"] {
-    background: var(--accent);
+    background: var(--ui-bg-selected);
     color: var(--foreground);
   }
   /* The reference lights the primary destination while the composer is
@@ -268,7 +272,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     height: var(--sidebar-row);
     padding: 0 10px;
     border: 1px solid var(--border);
-    border-radius: var(--ui-radius-sm);
+    border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-surface);
     transition: background-color var(--ui-duration-hover) ease,
                 border-color var(--ui-duration-hover) ease;
@@ -285,7 +289,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     flex: 0 0 20px;
     width: 20px;
     height: 20px;
-    color: var(--foreground);
+    color: var(--ui-text-tertiary);
   }
   #appShell #sidebarSearch {
     flex: 1 1 auto;
@@ -300,7 +304,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     font-size: var(--ui-text-ui);
     line-height: var(--ui-text-ui-line);
   }
-  #appShell #sidebarSearch::placeholder { color: var(--foreground); opacity: 1; }
+  #appShell #sidebarSearch::placeholder { color: var(--ui-text-tertiary); opacity: 1; }
   #appShell #sidebarSearch:focus::placeholder { color: var(--ui-text-placeholder); }
   /* The search field is a bare input inside a ghost pill — it has no frame
      of its own, so the global focus contract painted a hard ring around
