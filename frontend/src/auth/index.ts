@@ -16,6 +16,7 @@ import { syncCookieConsentPlacement } from '../cookieConsent.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { afterAuthEnter } from './postAuth.ts';
 import { createAuthFormHandlers } from './forms.ts';
+import { t } from '../i18n.ts';
 import {
   setGateVisible,
   setBootState,
@@ -161,7 +162,7 @@ const authFormHandlers = createAuthFormHandlers({
   setAuthError,
   clearAuthTabSelection,
   revealAppAndHydrate,
-  translate: (key: string) => window.t(key),
+  translate: (key: string) => t(key),
 });
 
 export const {

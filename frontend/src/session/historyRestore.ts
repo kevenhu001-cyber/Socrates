@@ -17,6 +17,7 @@ import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { registerRecoveredTurnRetry } from '../chat/liveTurn.ts';
 import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { t } from '../i18n.ts';
 
 /** A persisted message row from GET /api/sessions/:id. */
 export interface PersistedMessage {
@@ -181,6 +182,8 @@ function _t(key: string): string {
       const value = window.t(key);
       if (value && value !== key) return value;
     }
+    const value = t(key);
+    if (value && value !== key) return value;
   } catch (error) { reportSwallow(error, 'session/historyRestore._t'); }
   return key;
 }

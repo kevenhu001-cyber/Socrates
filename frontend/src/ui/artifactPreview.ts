@@ -1,6 +1,7 @@
 import { createElement, type ReactNode } from 'react';
 import { STROKE_ICONS } from './icons/toolIcons.ts';
 import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
+import { t } from '../i18n.ts';
 
 /* Artifact URLs come from API payloads. Only our own origin, or a plain
    https host, may reach an <img src>, an <iframe src> or an <a href>:
@@ -22,7 +23,11 @@ function safeArtifactUrl(raw: unknown) {
 
 function translate(key: string, fallback: string) {
   try {
-    const value = typeof window.t === 'function' ? window.t(key) : '';
+    if (typeof window !== 'undefined' && typeof window.t === 'function') {
+      const value = window.t(key);
+      if (value && value !== key) return value;
+    }
+    const value = t(key);
     return value && value !== key ? value : fallback;
   } catch (_) {
     return fallback;

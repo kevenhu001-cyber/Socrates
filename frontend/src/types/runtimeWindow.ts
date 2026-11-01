@@ -1,11 +1,8 @@
 /** Existing imperative shell hooks. This local contract adds no browser globals.
  * Publishers remain the owners; consumers share their exported signatures. */
 export type RuntimeWindow = Window & {
-  CURRENT_USER: (Partial<import('@socrates/contracts').User> & { subscriptionEnd?: string | null; verifiedAt?: string | null; createdAt?: string | null; customInstructions?: unknown }) | null | undefined;
   "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;
-  "__socratesKeyboard": ReturnType<typeof import("../ui/keyboard/index")["initKeyboardLift"]>;
   "__socratesLegacy"?: unknown;
-  "__testActivateMainView": (viewId: string) => boolean;
   "addMessage": typeof import("../chat/messages")["addMessage"];
   "addStreamingMessage": (...args: Parameters<typeof import("../chat/streamingTurn")["addStreamingMessage"]>) => ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]> | Promise<ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]>>;
   "askChatTurn": typeof import("../chat/turnController")["askChatTurn"];

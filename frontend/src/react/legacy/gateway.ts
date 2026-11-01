@@ -16,6 +16,7 @@ import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { webSearchOn, extensiveThinkingOn } from '../../config/providers.ts';
 import { getCurrentUser as getAppCurrentUser } from '../../app/lifecycle.ts';
+import { t as appT } from '../../i18n.ts';
 
 /** Standalone globals retained by the legacy shell. Keep their
  * compatibility shapes local to this boundary instead of bypassing types. */
@@ -42,9 +43,16 @@ function standaloneWindow(): Window & StandaloneGlobals {
  */
 let _bridge: LegacyActions | null = null;
 
+export function setLegacyActions(actions: LegacyActions): void {
+  _bridge = actions;
+  if (typeof window !== 'undefined') {
+    (window as Window & { __socratesLegacy?: LegacyActions }).__socratesLegacy = actions;
+  }
+}
+
 function resolveBridge(): LegacyActions {
   if (_bridge) return _bridge;
-  const b = window.__socratesLegacy;
+  const b = typeof window !== 'undefined' ? (window as Window & { __socratesLegacy?: LegacyActions }).__socratesLegacy : undefined;
   if (!b) {
     throw new Error(
       '[legacy-gateway] window.__socratesLegacy not initialized. ' +
@@ -69,7 +77,8 @@ export function getLegacyActions(): LegacyActions {
  * throwing when the bridge is absent (late boot, teardown, tests).
  */
 export function getLegacyActionsOrNull(): LegacyActions | null {
-  return window.__socratesLegacy ?? null;
+  if (_bridge) return _bridge;
+  return (typeof window !== 'undefined' ? (window as Window & { __socratesLegacy?: LegacyActions }).__socratesLegacy : undefined) ?? null;
 }
 
 /**
@@ -87,9 +96,11 @@ export function resetBridgeCache(): void {
  * Falls back to the key itself if the translation function is unavailable.
  */
 export function t(key: string, ...args: unknown[]): string {
-  const fn = window.t;
-  if (typeof fn === 'function') return fn(key, ...args);
-  return key;
+  if (typeof window !== 'undefined') {
+    const fn = window.t;
+    if (typeof fn === 'function') return fn(key, ...args);
+  }
+  return appT(key);
 }
 
 /**

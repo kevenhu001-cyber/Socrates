@@ -50,7 +50,6 @@ import { installWidgetRuntime } from './app/widgetSetup.ts';
 import { loadTonePreset } from './config/tonePresets.ts';
 import { installAuthHooks } from './util/api.ts';
 import { syncAppModeUI, syncSidebarForMode } from './config/providers.ts';
-import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 
 
 initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
@@ -83,7 +82,9 @@ const keyboardLift = initKeyboardLift({
   container: document.getElementById('appShell'),
 });
 
-browserWindow.__socratesKeyboard = keyboardLift;
+if (typeof window !== 'undefined') {
+  (window as unknown as { __socratesKeyboard?: typeof keyboardLift }).__socratesKeyboard = keyboardLift;
+}
 initTopicFocusAssist();
 
 (function initMsgScrollbar(){

@@ -23,6 +23,9 @@ import { turnState } from '../chat/turnState.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getCurrentUser } from '../app/lifecycle.ts';
+import { t } from '../i18n.ts';
+import { renderRecents } from '../ui/recentsView.ts';
+import { renderArchivedList } from '../ui/storage.ts';
 
 /** Render/reset surfaces published by the legacy shell. */
 interface RecentsWindow extends Window {
@@ -48,19 +51,29 @@ function _t(key: string, fallback?: string): string {
       const v = window.t(key);
       if (v && v !== key) return v;
     }
+    const val = t(key);
+    if (val && val !== key) return val;
   } catch (e) { reportSwallow(e, 'session/recents._t'); }
   return fallback != null ? fallback : key;
 }
 function _renderRecents(): void {
   try {
     const win = window as RecentsWindow;
-    if (typeof win.renderRecents === 'function') win.renderRecents();
+    if (typeof win.renderRecents === 'function') {
+      win.renderRecents();
+    } else {
+      renderRecents();
+    }
   } catch (e) { reportSwallow(e, 'session/recents._renderRecents'); }
 }
 function _renderArchivedList(): void {
   try {
     const win = window as RecentsWindow;
-    if (typeof win.renderArchivedList === 'function') win.renderArchivedList();
+    if (typeof win.renderArchivedList === 'function') {
+      win.renderArchivedList();
+    } else {
+      renderArchivedList();
+    }
   } catch (e) { reportSwallow(e, 'session/recents._renderArchivedList'); }
 }
 function _saveCurrentSession(): unknown {

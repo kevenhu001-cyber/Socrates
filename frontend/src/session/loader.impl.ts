@@ -38,6 +38,7 @@ import { dispatchExam, dispatchSession, dispatchUi } from '../store/index.ts';
 import type { ExamQuestion } from '../exam/types.ts';
 import { clearActiveTemplate } from '../chat/templateSlash.ts';
 import { renderRecents } from '../ui/recentsView.ts';
+import { t } from '../i18n.ts';
 
 export { reattachPendingTurn };
 
@@ -87,6 +88,8 @@ function _t(key: string, fallback?: string): string {
       const v = window.t(key);
       if (v && v !== key) return v;
     }
+    const val = t(key);
+    if (val && val !== key) return val;
   } catch (e) { reportSwallow(e, 'session/loader._t'); }
   return fallback != null ? fallback : key;
 }

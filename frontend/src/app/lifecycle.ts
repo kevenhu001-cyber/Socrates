@@ -21,24 +21,36 @@ import { clearPerUserClientState } from './lifecycle/clientState.ts';
 import { clearUserMemories, getUserMemories } from './lifecycle/userMemory.ts';
 import { translateLifecycleText as _t } from './lifecycle/helpers.ts';
 import { toggleAppMode } from './lifecycle/mode.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
-
 
 export { resetApp, clearPerUserClientState, clearUserMemories, getUserMemories, toggleAppMode };
 
 export type UserRecord = (Partial<import('@socrates/contracts').User> & { subscriptionEnd?: string | null; verifiedAt?: string | null; createdAt?: string | null; customInstructions?: unknown }) | null | undefined;
 
+interface CurrentUserWindow extends Window {
+  CURRENT_USER?: UserRecord;
+}
+
 let _currentUser: UserRecord = null;
 
 export function getCurrentUser(): UserRecord {
-  return _currentUser ?? (typeof window !== 'undefined' ? (browserWindow.CURRENT_USER as UserRecord) : null);
+  if (_currentUser !== null && _currentUser !== undefined) return _currentUser;
+  if (typeof window !== 'undefined') {
+    const win = window as CurrentUserWindow;
+    return win.CURRENT_USER ?? null;
+  }
+  return null;
 }
 
 /* Incognito state is shared with the session-save and research guards. */
 
 /* Cross-module CURRENT_USER — single source is window.CURRENT_USER (mirrored
    below); no module-local copy so readers never drift. */
-try { if (typeof window !== 'undefined' && browserWindow.CURRENT_USER === undefined) browserWindow.CURRENT_USER = null; } catch (e) { reportSwallow(e, 'app/lifecycle.currentUserMirror'); }
+try {
+  if (typeof window !== 'undefined') {
+    const win = window as CurrentUserWindow;
+    if (win.CURRENT_USER === undefined) win.CURRENT_USER = null;
+  }
+} catch (e) { reportSwallow(e, 'app/lifecycle.currentUserMirror'); }
 
 /* Post-auth grace window (see isInAuthGraceWindow). */
 let _lastAuthSuccessAt = 0;
@@ -80,7 +92,11 @@ export async function toggleIncognito(){
 
 export function setCurrentUser(user: UserRecord){
   _currentUser = user;
-  try { browserWindow.CURRENT_USER = user; } catch (e) { reportSwallow(e, 'app/lifecycle.setCurrentUser'); }
+  try {
+    if (typeof window !== 'undefined') {
+      (window as CurrentUserWindow).CURRENT_USER = user;
+    }
+  } catch (e) { reportSwallow(e, 'app/lifecycle.setCurrentUser'); }
 }
 
 export function markAuthSuccess(){
@@ -110,8 +126,7 @@ export function handleAuthExpired(cause: unknown){
        previous user's sessions before the next signin's fetch
        resolves. */
     clearPerUserClientState();
-    _currentUser = null;
-    try{browserWindow.CURRENT_USER=null;}catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.clearCurrentUser');}
+    clearCurrentUserMirror();
     /* P_bleed-auth-expired-v2 — reset state so React components
        reading from state don't see the previous user's data after
        the gate shows. Without this, state.session, stateStore.read("messages"),
@@ -149,6 +164,24 @@ export function handleAuthExpired(cause: unknown){
   }catch(e){/* handleAuthExpired failed */ reportSwallow(e,'app/lifecycle.handleAuthExpired.outer');}
 }
 
+function clearLocalCookies(host: string): void {
+  document.cookie.split(";").forEach(function(c){
+    const eq=c.indexOf("="),name=eq>-1?c.substring(0,eq).trim():c.trim();
+    if(!name)return;
+    document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain="+host;
+  });
+}
+
+function clearCurrentUserMirror(): void {
+  _currentUser = null;
+  try {
+    if (typeof window !== 'undefined') {
+      (window as CurrentUserWindow).CURRENT_USER = null;
+    }
+  } catch(e) { reportSwallow(e, 'app/lifecycle.clearCurrentUserMirror'); }
+}
+
 export async function signOut(){
   try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(e){reportSwallow(e,'app/lifecycle.signOut.apiLogout');}
   /* Clear browser cookies on the current domain. The server already
@@ -159,13 +192,7 @@ export async function signOut(){
    * host-only match and skip the parent-domain variant — the
    * server's Set-Cookie with Domain=.topodrive.top will already
    * overwrite it on the next login. */
-  const host=location.hostname;
-  document.cookie.split(";").forEach(function(c){
-    const eq=c.indexOf("="),name=eq>-1?c.substring(0,eq).trim():c.trim();
-    if(!name)return;
-    document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-    document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain="+host;
-  });
+  clearLocalCookies(location.hostname);
   /* Re-fetch the CSRF token cookie so subsequent auth POSTs succeed. */
   try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(e){reportSwallow(e,'app/lifecycle.signOut.csrfRefresh');}
   /* P_bleed-signout — drain any in-flight save first, so the
@@ -190,8 +217,7 @@ export async function signOut(){
       level set (serverCache.sessions, providerConfig, _cmdKIndex, …)
       plus localStorage entries that survive sign-out. */
   clearPerUserClientState();
-  _currentUser = null;
-  try{browserWindow.CURRENT_USER=null;}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearCurrentUser');}
+  clearCurrentUserMirror();
   /* Reset state. */
   resetState();
   /* Abort any active chat stream — resetApp() isn't called from

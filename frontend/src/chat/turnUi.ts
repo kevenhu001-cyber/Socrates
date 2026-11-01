@@ -9,6 +9,7 @@ import { showToast } from '../ui/toast.js';
 import { turnState } from './turnState.ts';
 import { buildUserContentParts } from './history.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { t } from '../i18n.ts';
 export { setChatStopState, handleSendClick, stopChatResponse, interruptPendingTurn } from './composerTurn.ts';
 
 /** The chat entry point published by the legacy shell. */
@@ -32,7 +33,12 @@ interface Catchable {
 
 function _t(key: string): string {
   try {
-    if (typeof window !== 'undefined' && typeof window.t === 'function') return window.t(key);
+    if (typeof window !== 'undefined' && typeof window.t === 'function') {
+      const val = window.t(key);
+      if (val && val !== key) return val;
+    }
+    const val = t(key);
+    if (val && val !== key) return val;
   } catch (e) { reportSwallow(e, 'chat/turnUi._t'); }
   return key;
 }

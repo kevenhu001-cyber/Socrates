@@ -1,4 +1,5 @@
 import { showToast } from '../ui/toast.js';
+import { t } from '../i18n.ts';
 
 let notified = false;
 
@@ -7,6 +8,8 @@ function _t(key: string, fallback: string): string {
     const s = window.t(key);
     if (s && s !== key) return s;
   }
+  const s = t(key);
+  if (s && s !== key) return s;
   return fallback;
 }
 

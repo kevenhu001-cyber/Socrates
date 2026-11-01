@@ -10,6 +10,8 @@ import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
 import { renderTagEditor } from '../react/session-tags/tagEditorHost.tsx';
 import type { TagEditorLabels, TagEditorPopoverProps } from '../react/session-tags/TagEditorPopover.tsx';
+import { t } from '../i18n.ts';
+import { renderRecents } from '../ui/recentsView.ts';
 
 /** Window surfaces this module reads or writes. */
 interface OrganizeWindow extends Window {
@@ -33,6 +35,8 @@ function _t(key: string, fallback?: string): string {
       const v = window.t(key);
       if (v && v !== key) return v;
     }
+    const val = t(key);
+    if (val && val !== key) return val;
   } catch {
     /* empty-catch: intentional — translation is best-effort */
   }
@@ -41,7 +45,11 @@ function _t(key: string, fallback?: string): string {
 function _renderRecents(): void {
   try {
     const win = window as OrganizeWindow;
-    if (typeof win.renderRecents === 'function') win.renderRecents();
+    if (typeof win.renderRecents === 'function') {
+      win.renderRecents();
+    } else {
+      renderRecents();
+    }
   } catch {
     /* empty-catch: intentional — rendering is best-effort */
   }

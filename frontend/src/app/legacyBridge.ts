@@ -57,6 +57,7 @@ import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { setRecentsSearch } from '../ui/recentsView.ts';
 import { setLang } from '../i18n.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';
+import { setLegacyActions } from '../react/legacy/gateway.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
@@ -278,3 +279,5 @@ browserWindow.__socratesLegacy = {
     },
   },
 };
+
+setLegacyActions(browserWindow.__socratesLegacy);

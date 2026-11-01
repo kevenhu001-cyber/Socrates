@@ -4,7 +4,6 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import { animateSurfaceEntrance } from './motion/surface.ts';
 import { closeDetailSurface } from './detailSurface.ts';
 import { CORE_VIEW_IDS, MAIN_PAGE_IDS } from '../sidebar/navigation.destinations.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { dispatchUi, uiStore } from '../store/index.ts';
 
 
@@ -106,5 +105,5 @@ export function activateMainView(viewId: string, doc?: Document | null) {
 
 /* Test hook — e2e drives the production view and composer transition. */
 if (typeof window !== 'undefined') {
-  browserWindow.__testActivateMainView = (viewId: string) => activateMainView(viewId, document);
+  (window as unknown as { __testActivateMainView?: (viewId: string) => boolean }).__testActivateMainView = (viewId: string) => activateMainView(viewId, document);
 }

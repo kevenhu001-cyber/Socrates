@@ -1,4 +1,5 @@
 import { showToast } from '../ui/toast.js';
+import { t } from '../i18n.ts';
 
 /* Tutor/Socratic turns fall back to canned strings from `chat/mocks.ts`
    when no usable model is configured (or a turn returns nothing). Those
@@ -14,7 +15,8 @@ function _t(key: string, fallback: string): string {
     const s = window.t(key);
     if (s && s !== key) return s;
   }
-  return fallback;
+  const s = t(key);
+  return s && s !== key ? s : fallback;
 }
 
 export function notifyMockFallbackOnce(): void {

@@ -25,6 +25,8 @@ import { showToast } from '../ui/toast.js';
 import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.ts';
 import { appMode } from '../config/providers.ts';
+import { t } from '../i18n.ts';
+import { renderRecents } from '../ui/recentsView.ts';
 
 /** A message row in the save payload (html/rawText both travel). */
 export interface SessionPostMessage extends MessageLike {
@@ -110,6 +112,8 @@ function _t(key: string, fallback?: string): string {
       const v = window.t(key);
       if (v && v !== key) return v;
     }
+    const val = t(key);
+    if (val && val !== key) return val;
   } catch {
     /* empty-catch: intentional — translation is best-effort */
   }
@@ -132,7 +136,11 @@ function _applySavedRow(
 function _renderRecents(): void {
   try {
     const win = window as PersistenceWindow;
-    if (typeof window !== 'undefined' && typeof win.renderRecents === 'function') win.renderRecents();
+    if (typeof window !== 'undefined' && typeof win.renderRecents === 'function') {
+      win.renderRecents();
+    } else {
+      renderRecents();
+    }
   } catch {
     /* empty-catch: intentional — rendering is best-effort */
   }
