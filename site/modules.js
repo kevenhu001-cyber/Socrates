@@ -1,44 +1,10 @@
-/* Shared marketing modules: tabs, card rail arrows and the knowledge-graph
-   highlight. Every module is readable without this script: tab panels
-   stack, the rail scrolls natively and the graph is fully drawn. */
+/* Shared marketing modules: the mode deck, card rail arrows and the
+   knowledge-graph highlight. Every module is readable without this script:
+   the deck's cards stack as a list, the rail scrolls natively and the graph
+   is fully drawn. */
 (function () {
   'use strict';
   var reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
-
-  /* Tabs: WAI-ARIA tab pattern with roving tabindex and arrow keys. */
-  Array.prototype.forEach.call(document.querySelectorAll('[data-tabs]'), function (root) {
-    var tabs = Array.prototype.slice.call(root.querySelectorAll('[role="tab"]'));
-    var panels = tabs.map(function (tab) { return document.getElementById(tab.getAttribute('aria-controls')); });
-    function select(index, focus) {
-      tabs.forEach(function (tab, i) {
-        var on = i === index;
-        tab.setAttribute('aria-selected', on ? 'true' : 'false');
-        tab.tabIndex = on ? 0 : -1;
-        if (panels[i]) { panels[i].classList.toggle('is-active', on); panels[i].hidden = !on; }
-      });
-      if (focus) {
-        tabs[index].focus();
-        if (tabs[index].scrollIntoView && tabs[index].parentElement.scrollWidth > tabs[index].parentElement.clientWidth) {
-          tabs[index].scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduced.matches ? 'auto' : 'smooth' });
-        }
-      }
-    }
-    tabs.forEach(function (tab, i) {
-      tab.addEventListener('click', function () { select(i, false); });
-      tab.addEventListener('keydown', function (event) {
-        var next = null;
-        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (i + 1) % tabs.length;
-        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (i - 1 + tabs.length) % tabs.length;
-        else if (event.key === 'Home') next = 0;
-        else if (event.key === 'End') next = tabs.length - 1;
-        if (next === null) return;
-        event.preventDefault();
-        select(next, true);
-      });
-    });
-    var start = tabs.findIndex(function (tab) { return tab.getAttribute('aria-selected') === 'true'; });
-    select(start < 0 ? 0 : start, false);
-  });
 
   /* Rail: round arrow buttons scroll by one card; they disable at the ends. */
   Array.prototype.forEach.call(document.querySelectorAll('[data-rail]'), function (root) {
@@ -159,8 +125,10 @@
     });
   }, { threshold: .2 }) : null;
   function syncLive(ui) {
-    var panel = ui.closest('.m-panel, .m-story-scene');
-    var shown = !panel || panel.classList.contains('is-active');
+    var panel = ui.closest('.deck-card, .m-story-scene');
+    var shown = !panel || (panel.classList.contains('deck-card')
+      ? !panel.hasAttribute('data-k') || panel.getAttribute('data-k') === '0'
+      : panel.classList.contains('is-active'));
     ui.classList.toggle('is-live', !document.hidden && !reduced.matches && shown && liveTargets.has(ui));
   }
   function syncAllLive() { document.querySelectorAll('.ui').forEach(syncLive); }
@@ -183,56 +151,173 @@
     if (ui) syncLive(ui);
   }
 
-  /* Tabs: a gliding pill on wide screens and a replay of the miniature. */
-  document.querySelectorAll('[data-tabs]').forEach(function (root) {
-    var list = root.querySelector('[role="tablist"]');
-    var tabs = Array.prototype.slice.call(root.querySelectorAll('[role="tab"]'));
-    if (!list || !tabs.length) return;
-    root.querySelectorAll('.ui-map svg > g:first-child path').forEach(function (path) { path.setAttribute('pathLength', '1'); });
-    root.querySelectorAll('.ui-map').forEach(function (map) { map.classList.add('is-drawable'); });
-    var wide = window.matchMedia('(min-width: 761px)');
-    var glider = document.createElement('span');
-    glider.className = 'm-tab-glider';
-    glider.setAttribute('aria-hidden', 'true');
-    glider.appendChild(document.createElement('i'));
-    function current() { return tabs.find(function (tab) { return tab.getAttribute('aria-selected') === 'true'; }) || tabs[0]; }
-    function place(animate) {
-      if (!wide.matches) {
-        if (glider.parentNode) glider.remove();
-        list.classList.remove('has-glider');
-        return;
-      }
-      if (!glider.parentNode) list.insertBefore(glider, list.firstChild);
-      var tab = current();
-      var width = list.scrollWidth;
-      var left = tab.offsetLeft;
-      var right = width - left - tab.offsetWidth;
-      var inner = glider.firstChild;
-      if (!animate) inner.style.transition = 'none';
-      glider.style.width = width + 'px';
-      inner.style.clipPath = 'inset(0 ' + right + 'px 0 ' + left + 'px round 999px)';
-      if (!animate) { void inner.offsetWidth; inner.style.transition = ''; }
-      list.classList.add('has-glider');
-    }
+  /* Round 7: the mode deck. Without motion (or without this script) the
+     five cards are a list and the pills are anchor links. With motion the
+     pills become a WAI-ARIA tab list over a stacked deck: only the front
+     card is reachable (the others are inert), arrows, Home/End, the round
+     buttons and a horizontal swipe turn the cards. On wide, tall screens the
+     stage is sticky (CSS) and the scroll position inside the 300vh track
+     picks the front card; choosing a mode there scrolls to its place so the
+     two never disagree. Scroll only schedules a frame. */
+  document.querySelectorAll('[data-deck]').forEach(function (deck) {
+    var nav = deck.querySelector('[data-deck-nav]');
+    var pills = Array.prototype.slice.call(deck.querySelectorAll('[data-deck-pill]'));
+    var cards = Array.prototype.slice.call(deck.querySelectorAll('[data-deck-card]'));
+    var list = deck.querySelector('[data-deck-cards]');
+    var controls = deck.querySelector('[data-deck-controls]');
+    var prev = deck.querySelector('[data-deck-prev]');
+    var next = deck.querySelector('[data-deck-next]');
+    var indexLabel = deck.querySelector('[data-deck-index]');
+    var live = deck.querySelector('[data-deck-live]');
+    if (!nav || !list || !controls || !prev || !next || pills.length !== cards.length || !cards.length) return;
+    var pinned = window.matchMedia('(prefers-reduced-motion: no-preference) and (min-width: 1024px) and (min-height: 700px)');
+    var active = 0;
+    var enabled = false;
     var seen = false;
-    tabs.forEach(function (tab) {
-      new MutationObserver(function () {
-        if (tab.getAttribute('aria-selected') !== 'true') return;
-        place(true);
-        if (seen) playPanel(document.getElementById(tab.getAttribute('aria-controls')));
-      }).observe(tab, { attributes: true, attributeFilter: ['aria-selected'] });
+    var frame = 0;
+    var swipe = null;
+
+    function clampIndex(i) { return Math.max(0, Math.min(cards.length - 1, i)); }
+
+    function setActive(i, announce) {
+      i = clampIndex(i);
+      var changed = i !== active;
+      active = i;
+      cards.forEach(function (card, k) {
+        var d = Math.max(-1, Math.min(4, k - i));
+        card.setAttribute('data-k', String(d));
+        card.inert = d !== 0;
+        var ui = card.querySelector('.ui');
+        if (ui) syncLive(ui);
+      });
+      pills.forEach(function (pill, k) {
+        pill.setAttribute('aria-selected', k === i ? 'true' : 'false');
+        pill.tabIndex = k === i ? 0 : -1;
+      });
+      if (indexLabel) indexLabel.textContent = String(i + 1);
+      prev.disabled = i === 0;
+      next.disabled = i === cards.length - 1;
+      // Never leave focus inside a card that just went inert.
+      if (cards.some(function (card, k) { return k !== i && card.contains(document.activeElement); })) pills[i].focus();
+      if (changed && seen) playPanel(cards[i]);
+      if (announce && live) live.textContent = pills[i].textContent + ' · ' + (i + 1) + ' / ' + cards.length;
+    }
+
+    function track() {
+      var box = deck.getBoundingClientRect();
+      return { top: box.top + window.scrollY, span: deck.offsetHeight - window.innerHeight };
+    }
+
+    function go(i, announce) {
+      i = clampIndex(i);
+      if (pinned.matches) {
+        var t = track();
+        if (t.span > 0) window.scrollTo({ top: Math.round(t.top + t.span * (i + .5) / cards.length), behavior: 'smooth' });
+      }
+      setActive(i, announce);
+    }
+
+    function fromScroll() {
+      frame = 0;
+      if (!enabled || !pinned.matches) return;
+      var box = deck.getBoundingClientRect();
+      var span = deck.offsetHeight - window.innerHeight;
+      if (span <= 0) return;
+      var progress = Math.max(0, Math.min(1, -box.top / span));
+      var i = Math.min(cards.length - 1, Math.floor(progress * cards.length));
+      if (i !== active) setActive(i, false);
+    }
+    function onScroll() { if (!frame) frame = window.requestAnimationFrame(fromScroll); }
+
+    function onPillClick(event) {
+      if (!enabled) return;
+      event.preventDefault();
+      go(pills.indexOf(event.currentTarget), false);
+    }
+    function onPillKey(event) {
+      if (!enabled) return;
+      var i = pills.indexOf(event.currentTarget);
+      var target = null;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') target = (i + 1) % pills.length;
+      else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') target = (i - 1 + pills.length) % pills.length;
+      else if (event.key === 'Home') target = 0;
+      else if (event.key === 'End') target = pills.length - 1;
+      if (target === null) return;
+      event.preventDefault();
+      go(target, false);
+      pills[target].focus();
+      if (pills[target].scrollIntoView && nav.scrollWidth > nav.clientWidth) pills[target].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+    function onPrev() { go(active - 1, true); }
+    function onNext() { go(active + 1, true); }
+    function onDown(event) { if (event.isPrimary) swipe = { x: event.clientX, y: event.clientY }; }
+    function onUp(event) {
+      if (!swipe || !event.isPrimary) return;
+      var dx = event.clientX - swipe.x;
+      var dy = event.clientY - swipe.y;
+      swipe = null;
+      if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) go(active + (dx < 0 ? 1 : -1), true);
+    }
+
+    pills.forEach(function (pill) {
+      pill.addEventListener('click', onPillClick);
+      pill.addEventListener('keydown', onPillKey);
     });
-    place(false);
-    window.addEventListener('resize', function () { place(false); }, { passive: true });
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { place(false); });
+    prev.addEventListener('click', onPrev);
+    next.addEventListener('click', onNext);
+    list.addEventListener('pointerdown', onDown);
+    list.addEventListener('pointerup', onUp);
+    list.addEventListener('pointercancel', function () { swipe = null; });
+
+    function enable() {
+      if (enabled) return;
+      enabled = true;
+      nav.setAttribute('role', 'tablist');
+      pills.forEach(function (pill, k) {
+        pill.setAttribute('role', 'tab');
+        pill.id = pill.id || 'mode-tab-' + cards[k].id.replace(/^mode-/, '');
+        pill.setAttribute('aria-controls', cards[k].id);
+      });
+      cards.forEach(function (card, k) {
+        card.setAttribute('role', 'tabpanel');
+        card.setAttribute('aria-labelledby', pills[k].id);
+        card.querySelectorAll('.ui-map svg > g:first-child path').forEach(function (path) { path.setAttribute('pathLength', '1'); });
+        card.querySelectorAll('.ui-map').forEach(function (map) { map.classList.add('is-drawable'); });
+      });
+      controls.hidden = false;
+      setActive(active, false);
+      fromScroll();
+    }
+    function disable() {
+      if (!enabled) return;
+      enabled = false;
+      nav.removeAttribute('role');
+      pills.forEach(function (pill) {
+        ['role', 'aria-controls', 'aria-selected', 'tabindex'].forEach(function (name) { pill.removeAttribute(name); });
+      });
+      cards.forEach(function (card) {
+        ['role', 'aria-labelledby', 'data-k'].forEach(function (name) { card.removeAttribute(name); });
+        card.inert = false;
+        card.querySelectorAll('.ui-map').forEach(function (map) { map.classList.remove('is-drawable', 'is-drawn'); });
+      });
+      controls.hidden = true;
+      syncAllLive();
+    }
+    function sync() { if (reduced.matches) disable(); else enable(); }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    if (pinned.addEventListener) pinned.addEventListener('change', onScroll);
+    if (reduced.addEventListener) reduced.addEventListener('change', sync);
+    sync();
     if (hasIO) {
       var observer = new IntersectionObserver(function (entries) {
         if (!entries.some(function (entry) { return entry.isIntersecting; })) return;
         seen = true;
         observer.disconnect();
-        playPanel(document.getElementById(current().getAttribute('aria-controls')));
-      }, { threshold: .3 });
-      observer.observe(root);
+        if (enabled) playPanel(cards[active]);
+      }, { threshold: .2 });
+      observer.observe(list);
     } else { seen = true; }
   });
 

@@ -14,7 +14,7 @@
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/home-refresh.css?cb=20261101e1">
-  <link rel="stylesheet" href="/modules.css?cb=20261101b1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101e1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -364,17 +364,26 @@
           <h2 id="modes-title">One tutor, five ways to learn.</h2>
           <p>Move between modes as an idea takes shape: talk it through, test it, connect it and come back to it.</p>
         </div>
-        <div class="m-tabs" data-tabs>
-          <div class="m-tablist" role="tablist" aria-label="Learning modes">
-            <button class="m-tab" type="button" role="tab" id="mode-tab-dialogue" aria-controls="mode-dialogue" aria-selected="true">Dialogue</button>
-            <button class="m-tab" type="button" role="tab" id="mode-tab-recall" aria-controls="mode-recall" aria-selected="false" tabindex="-1">Recall</button>
-            <button class="m-tab" type="button" role="tab" id="mode-tab-map" aria-controls="mode-map" aria-selected="false" tabindex="-1">Knowledge map</button>
-            <button class="m-tab" type="button" role="tab" id="mode-tab-exam" aria-controls="mode-exam" aria-selected="false" tabindex="-1">Exam mode</button>
-            <button class="m-tab" type="button" role="tab" id="mode-tab-mistakes" aria-controls="mode-mistakes" aria-selected="false" tabindex="-1">Mistake book</button>
-          </div>
-
-          <div class="m-panel is-active" role="tabpanel" id="mode-dialogue" aria-labelledby="mode-tab-dialogue" tabindex="0">
-            <div class="m-panel-copy">
+        <div class="deck" data-deck>
+          <div class="deck-stage">
+            <div class="deck-head">
+              <nav class="deck-nav" aria-label="Learning modes" data-deck-nav>
+                <a class="deck-pill" href="#mode-dialogue" data-deck-pill>Dialogue</a>
+                <a class="deck-pill" href="#mode-recall" data-deck-pill>Recall</a>
+                <a class="deck-pill" href="#mode-map" data-deck-pill>Knowledge map</a>
+                <a class="deck-pill" href="#mode-exam" data-deck-pill>Exam mode</a>
+                <a class="deck-pill" href="#mode-mistakes" data-deck-pill>Mistake book</a>
+              </nav>
+              <div class="deck-controls" data-deck-controls hidden>
+                <span class="deck-count" aria-hidden="true"><span data-deck-index>1</span> / 5</span>
+                <button class="deck-step" type="button" data-deck-prev aria-label="Previous mode"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                <button class="deck-step" type="button" data-deck-next aria-label="Next mode"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+              </div>
+            </div>
+            <ol class="deck-cards" data-deck-cards>
+            <li class="deck-card" id="mode-dialogue" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>01</span>Dialogue</p>
               <h3>Think out loud, then go one step further.</h3>
               <p>Socrates asks what you already know, follows your reasoning and offers the next question instead of the whole answer.</p>
               <ul class="m-points"><li>Starts from your own words</li><li>Math and formulas render as you type</li><li>Follows your reasoning one step at a time</li></ul>
@@ -392,10 +401,10 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="m-panel" role="tabpanel" id="mode-recall" aria-labelledby="mode-tab-recall" tabindex="0">
-            <div class="m-panel-copy">
+            </li>
+            <li class="deck-card" id="mode-recall" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>02</span>Recall</p>
               <h3>Bring an idea back before it fades.</h3>
               <p>Turn a good moment from a conversation into a card, then retrieve it in your own words a few days later.</p>
               <ul class="m-points"><li>Cards drawn from your own sessions</li><li>Answer first, then compare</li><li>Return to the conversation in one tap</li></ul>
@@ -411,10 +420,10 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="m-panel" role="tabpanel" id="mode-map" aria-labelledby="mode-tab-map" tabindex="0">
-            <div class="m-panel-copy">
+            </li>
+            <li class="deck-card" id="mode-map" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>03</span>Knowledge map</p>
               <h3>See how one idea leads to the next.</h3>
               <p>Concepts you work through become points on a map, linked by the questions that joined them.</p>
               <ul class="m-points"><li>Connections carry across sessions</li><li>Pick up a thread from any point</li><li>Notice the gaps between topics</li></ul>
@@ -433,10 +442,10 @@
                 </svg>
               </div>
             </div>
-          </div>
-
-          <div class="m-panel" role="tabpanel" id="mode-exam" aria-labelledby="mode-tab-exam" tabindex="0">
-            <div class="m-panel-copy">
+            </li>
+            <li class="deck-card" id="mode-exam" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>04</span>Exam mode</p>
               <h3>Find the gap before the exam does.</h3>
               <p>Generate a practice exam on any topic, choose the difficulty and number of questions, then submit for grading.</p>
               <ul class="m-points"><li>Topic, difficulty and length are yours</li><li>Feedback on every answer</li><li>Missed questions go to your mistake book</li></ul>
@@ -454,10 +463,10 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="m-panel" role="tabpanel" id="mode-mistakes" aria-labelledby="mode-tab-mistakes" tabindex="0">
-            <div class="m-panel-copy">
+            </li>
+            <li class="deck-card" id="mode-mistakes" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>05</span>Mistake book</p>
               <h3>Turn a wrong answer into the next question.</h3>
               <p>Questions you miss in quizzes and practice are collected in one place, ready to redo until they hold.</p>
               <ul class="m-points"><li>Collected automatically</li><li>Redo with the tutor beside you</li><li>Mark a question conquered</li></ul>
@@ -476,6 +485,9 @@
                 </div>
               </div>
             </div>
+            </li>
+            </ol>
+            <p class="home-sr-only" data-deck-live aria-live="polite"></p>
           </div>
         </div>
       </div>
@@ -887,7 +899,7 @@
 
   <script src="/site.js?cb=20261022p0"></script>
   <script src="/home-question.js?cb=20261101b1"></script>
-  <script src="/modules.js?cb=20261101b1"></script>
+  <script src="/modules.js?cb=20261101e1"></script>
   <script src="/hero-mark.js?cb=20261101e1"></script>
   <script src="/chrome.js?cb=20261101b1"></script>
   <script src="/motion.js?cb=20261101b1"></script>

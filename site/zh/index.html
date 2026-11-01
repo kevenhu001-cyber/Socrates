@@ -14,7 +14,7 @@
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/home-refresh.css?cb=20261101e1">
-  <link rel="stylesheet" href="/modules.css?cb=20261101b1">
+  <link rel="stylesheet" href="/modules.css?cb=20261101e1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — 理解，始于一个问题。">
@@ -245,17 +245,26 @@
           <h2 id="modes-title">一位导师，五种学习方式。</h2>
           <p>随着想法逐渐成形，在不同模式间切换：先聊透，再检验，然后连起来，过几天再回来。</p>
         </div>
-        <div class="m-tabs" data-tabs>
-          <div class="m-tablist" role="tablist" aria-label="学习模式">
-            <button class="m-tab" type="button" role="tab" id="mode-tab-dialogue" aria-controls="mode-dialogue" aria-selected="true">对话</button>
-            <button class="m-tab" type="button" role="tab" id="mode-tab-recall" aria-controls="mode-recall" aria-selected="false" tabindex="-1">回忆</button>
-            <button class="m-tab" type="button" role="tab" id="mode-tab-map" aria-controls="mode-map" aria-selected="false" tabindex="-1">知识地图</button>
-            <button class="m-tab" type="button" role="tab" id="mode-tab-exam" aria-controls="mode-exam" aria-selected="false" tabindex="-1">考试模式</button>
-            <button class="m-tab" type="button" role="tab" id="mode-tab-mistakes" aria-controls="mode-mistakes" aria-selected="false" tabindex="-1">错题本</button>
-          </div>
-
-          <div class="m-panel is-active" role="tabpanel" id="mode-dialogue" aria-labelledby="mode-tab-dialogue" tabindex="0">
-            <div class="m-panel-copy">
+        <div class="deck" data-deck>
+          <div class="deck-stage">
+            <div class="deck-head">
+              <nav class="deck-nav" aria-label="学习模式" data-deck-nav>
+                <a class="deck-pill" href="#mode-dialogue" data-deck-pill>对话</a>
+                <a class="deck-pill" href="#mode-recall" data-deck-pill>回忆</a>
+                <a class="deck-pill" href="#mode-map" data-deck-pill>知识地图</a>
+                <a class="deck-pill" href="#mode-exam" data-deck-pill>考试模式</a>
+                <a class="deck-pill" href="#mode-mistakes" data-deck-pill>错题本</a>
+              </nav>
+              <div class="deck-controls" data-deck-controls hidden>
+                <span class="deck-count" aria-hidden="true"><span data-deck-index>1</span> / 5</span>
+                <button class="deck-step" type="button" data-deck-prev aria-label="上一个模式"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                <button class="deck-step" type="button" data-deck-next aria-label="下一个模式"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+              </div>
+            </div>
+            <ol class="deck-cards" data-deck-cards>
+            <li class="deck-card" id="mode-dialogue" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>01</span>对话</p>
               <h3>把想法说出来，再往前多走一步。</h3>
               <p>Socrates 会先问你已经知道什么，顺着你的思路，给出下一个问题，而不是直接端出全部答案。</p>
               <ul class="m-points"><li>从你自己的话开始</li><li>公式在对话里直接渲染</li><li>一步一步跟上你的思路</li></ul>
@@ -273,10 +282,10 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="m-panel" role="tabpanel" id="mode-recall" aria-labelledby="mode-tab-recall" tabindex="0">
-            <div class="m-panel-copy">
+            </li>
+            <li class="deck-card" id="mode-recall" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>02</span>回忆</p>
               <h3>在遗忘之前，把想法找回来。</h3>
               <p>把对话里有价值的一刻变成卡片，几天后再用自己的话把它回忆出来。</p>
               <ul class="m-points"><li>卡片来自你自己的会话</li><li>先作答，再对照</li><li>一键回到原来的对话</li></ul>
@@ -292,10 +301,10 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="m-panel" role="tabpanel" id="mode-map" aria-labelledby="mode-tab-map" tabindex="0">
-            <div class="m-panel-copy">
+            </li>
+            <li class="deck-card" id="mode-map" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>03</span>知识地图</p>
               <h3>看见一个想法如何通向下一个。</h3>
               <p>你钻研过的概念会成为地图上的点，由把它们联系起来的问题连成线。</p>
               <ul class="m-points"><li>连接跨会话保留</li><li>从任意一点接着往下学</li><li>发现知识之间的空白</li></ul>
@@ -314,10 +323,10 @@
                 </svg>
               </div>
             </div>
-          </div>
-
-          <div class="m-panel" role="tabpanel" id="mode-exam" aria-labelledby="mode-tab-exam" tabindex="0">
-            <div class="m-panel-copy">
+            </li>
+            <li class="deck-card" id="mode-exam" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>04</span>考试模式</p>
               <h3>在考试之前，先找到漏洞。</h3>
               <p>围绕任意主题生成一份练习考卷，自选难度和题目数量，然后提交批改。</p>
               <ul class="m-points"><li>主题、难度、题量由你决定</li><li>每道题都有反馈</li><li>答错的题自动进入错题本</li></ul>
@@ -335,10 +344,10 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="m-panel" role="tabpanel" id="mode-mistakes" aria-labelledby="mode-tab-mistakes" tabindex="0">
-            <div class="m-panel-copy">
+            </li>
+            <li class="deck-card" id="mode-mistakes" data-deck-card>
+            <div class="m-panel-copy deck-copy">
+              <p class="deck-kicker"><span>05</span>错题本</p>
               <h3>把一次答错，变成下一个问题。</h3>
               <p>测验和练习中答错的题会集中收在一处，随时重做，直到真正掌握。</p>
               <ul class="m-points"><li>自动收集</li><li>重做时导师就在身边</li><li>答对后标记为已攻克</li></ul>
@@ -357,6 +366,9 @@
                 </div>
               </div>
             </div>
+            </li>
+            </ol>
+            <p class="home-sr-only" data-deck-live aria-live="polite"></p>
           </div>
         </div>
       </div>
@@ -768,7 +780,7 @@
 
   <script src="/site.js?cb=20261022p0"></script>
   <script src="/home-question.js?cb=20261101b1"></script>
-  <script src="/modules.js?cb=20261101b1"></script>
+  <script src="/modules.js?cb=20261101e1"></script>
   <script src="/hero-mark.js?cb=20261101e1"></script>
   <script src="/chrome.js?cb=20261101b1"></script>
   <script src="/motion.js?cb=20261101b1"></script>

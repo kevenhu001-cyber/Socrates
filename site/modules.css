@@ -42,20 +42,6 @@
 .m-link:hover::after { transform: translateX(2px); }
 .m-link:active { transform: scale(.98); }
 
-/* Tabs: a pill segmented control over one soft gray stage. The selected
-   tab is a white pill with a hairline ring, as on the reference. */
-.m-tablist { display: flex; width: max-content; max-width: 100%; margin: 0 auto var(--space-400); padding: 4px; gap: 2px; overflow-x: auto; scrollbar-width: none; border-radius: var(--radius-full); background: var(--m-fill); }
-.m-tablist::-webkit-scrollbar { display: none; }
-.m-tab { position: relative; flex: none; height: 36px; padding-inline: var(--space-200); border: 0; border-radius: var(--radius-full); background: transparent; color: var(--m-muted); font: var(--type-button-sm); cursor: pointer; transition: background-color 150ms var(--m-ease), color 150ms var(--m-ease), box-shadow 150ms var(--m-ease); }
-.m-tab:hover { color: var(--m-ink); }
-.m-tab[aria-selected='true'] { background: #fff; color: var(--m-ink); box-shadow: 0 0 0 1px rgb(0 0 0 / .06), 0 1px 3px rgb(0 0 0 / .06); }
-.m-tab:focus-visible { outline: 2px solid var(--m-ink); outline-offset: 2px; }
-.m-panel { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; gap: var(--space-700); min-height: 480px; padding: var(--space-600); border-radius: var(--radius-3xl); background: var(--m-subtle); }
-.m-panel + .m-panel { margin-top: var(--space-200); }
-.js .m-panel:not(.is-active) { display: none; }
-.js .m-panel + .m-panel { margin-top: 0; }
-.js .m-panel.is-active { animation: m-panel-in 500ms var(--m-ease) both; }
-.m-panel:focus-visible { outline: 2px solid var(--m-ink); outline-offset: 4px; }
 .m-panel-copy { max-width: 420px; }
 .m-panel-copy h3 { font: var(--type-heading-3); letter-spacing: -.015em; text-wrap: balance; }
 :lang(zh) .m-panel-copy h3 { letter-spacing: 0; line-height: 1.35; }
@@ -257,11 +243,7 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
 .m-faq details > div p + p { margin-top: var(--space-100); }
 
 /* Responsive */
-@media (min-width: 1920px) {
-  .m-panel { min-height: 540px; }
-}
 @media (max-width: 1080px) {
-  .m-panel { gap: var(--space-500); padding: var(--space-500); }
   .m-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .m-card--wide { grid-column: 1 / -1; }
   .m-graph { gap: var(--space-500); }
@@ -272,10 +254,6 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
   .m-intro { margin-bottom: var(--space-400); }
   .m-intro h2, .m-graph-copy h2 { font: var(--type-heading-3); }
   .m-intro p { font: var(--type-body-3); }
-  .m-tablist { justify-content: flex-start; width: auto; margin-inline: calc(-1 * var(--site-gutter, 24px)); padding: 4px; border-radius: 0; background: transparent; gap: 6px; padding-inline: var(--site-gutter, 24px); scroll-padding-inline: var(--site-gutter, 24px); }
-  .m-tab { height: 36px; background: var(--m-fill); }
-  .m-tab[aria-selected='true'] { background: var(--m-ink); color: #fff; box-shadow: none; }
-  .m-panel { grid-template-columns: minmax(0, 1fr); gap: var(--space-400); min-height: 0; padding: var(--space-300) var(--space-200) var(--space-200); border-radius: var(--radius-2xl); }
   .m-panel-copy { padding-inline: var(--space-100); }
   .m-panel-copy h3 { font: var(--type-heading-4); }
   .m-panel-copy p { font: var(--type-body-3); }
@@ -316,8 +294,8 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
   .m-table thead th:not(:first-child) { text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-site-public] :is(.m-link, .m-link::after, .m-tab, .m-panel, .m-card, .m-card-media > *, .kg-edge, .kg-node, .kg-node circle, .m-rail-btn, .m-rail-art svg, .m-faq details, .m-faq summary::before) { transition: none !important; animation: none !important; }
-  .js .m-panel.is-active, .m-faq details[open] > div { animation: none; }
+  [data-site-public] :is(.m-link, .m-link::after, .m-card, .m-card-media > *, .kg-edge, .kg-node, .kg-node circle, .m-rail-btn, .m-rail-art svg, .m-faq details, .m-faq summary::before) { transition: none !important; animation: none !important; }
+  .m-faq details[open] > div { animation: none; }
   a.m-card:hover .m-card-media > *, .m-rail-card:hover .m-rail-art svg, .m-link:hover::after, .m-rail-btn:active, .m-link:active, .kg-node.is-lit circle { transform: none; }
   .js .m-graph-stage[data-graph]:not(.is-in) :is(.kg-node, .kg-edge) { opacity: 1; }
   .m-rail { scroll-behavior: auto; }
@@ -335,7 +313,7 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
 
 /* Raised surfaces: layered shadows and a faint top highlight. */
 .ui-window { box-shadow: var(--site-shadow-2), var(--site-inner-highlight); }
-.m-panel, .m-graph-stage { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }
+.m-graph-stage { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }
 .m-step::before { box-shadow: var(--site-shadow-1); }
 
 /* Cards lift 2px and their shadow deepens. The shadow lives on ::after so
@@ -351,15 +329,6 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
 }
 a.m-card:active { transform: translateY(0) scale(.99); }
 
-/* Tabs: on wide screens a single white pill glides between tabs. The pill
-   is clipped (clip-path, paint only) inside a wrapper whose drop-shadow
-   follows the clipped shape, so the hairline ring travels with it. */
-.m-tablist { position: relative; isolation: isolate; }
-.m-tab { z-index: 1; }
-.m-tab-glider { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; pointer-events: none; filter: drop-shadow(0 0 .5px rgb(0 0 0 / .22)) drop-shadow(0 1px 2px rgb(0 0 0 / .07)); }
-.m-tab-glider i { display: block; height: 100%; background: #fff; transition: clip-path 500ms var(--m-ease); }
-.m-tablist.has-glider .m-tab[aria-selected='true'] { background: transparent; box-shadow: none; }
-.m-tablist.has-glider .m-tab { transition: color 300ms var(--m-ease); }
 
 /* Miniature conversations: a thin caret blinks in the composer while the
    miniature is on screen (the class is removed off screen and when the
@@ -453,7 +422,7 @@ a.m-card:active { transform: translateY(0) scale(.99); }
   .js .m-story-step:last-child { padding-bottom: var(--space-200); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .m-card, .m-card::after, .m-rail-art, .m-tab-glider i, .m-tablist.has-glider .m-tab,
+  .m-card, .m-card::after, .m-rail-art,
   .js .m-story-scene, .js .m-story-scene:not(.is-active), .js .m-story-step .story-step, .js .m-story-step .story-step h3, .js .m-story-text, .m-story-step .story-step > span:first-child,
   .js .m-graph-stage.is-drawable :is(.kg-edge, .kg-node, .kg-node circle, .kg-halo), .js .m-story-scene .m-story-edge { transition: none !important; }
   .js .m-story-scene:not(.is-active) { transform: none; }
@@ -488,4 +457,85 @@ a.m-card:active { transform: translateY(0) scale(.99); }
 [data-thread] .m-step.is-reached::before { background: var(--m-ink); color: #fff; box-shadow: 0 0 0 4px var(--m-subtle); }
 @media (prefers-reduced-motion: reduce) {
   .m-thread::after, [data-thread] .m-step::before { transition: none; }
+}
+
+/* Round 7 · B. The mode deck (replaces the round-4 tabs).
+   Five large cards, each a real miniature of one mode. Without scripts or
+   with reduced motion they are a plain vertical list under a row of anchor
+   pills. With scripts and motion the layout is decided by CSS at first
+   paint (no shift when modules.js arrives): the cards stack in one grid
+   cell, the next ones peeking above the front card. On wide, tall screens
+   the stage is sticky and scrolling turns the cards one by one (the track
+   is 300vh, so the pinned run is two viewports); elsewhere the arrows,
+   pills or a swipe turn them. Only transform and opacity move. */
+.home-modes { overflow-x: clip; } /* a turned card tilts toward the reader; never widen the page */
+.deck-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-200); margin-bottom: var(--space-300); }
+.deck-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.deck-pill { display: inline-flex; align-items: center; height: 36px; padding-inline: var(--space-200); border-radius: var(--radius-full); background: var(--m-fill); color: var(--m-copy); font: var(--type-button-sm); white-space: nowrap; transition: background-color 300ms var(--m-ease), color 300ms var(--m-ease), transform 200ms var(--m-ease); }
+.deck-pill:hover { background: var(--m-fill-hover); color: var(--m-ink); }
+.deck-pill:active { transform: scale(.98); }
+.deck-pill[aria-selected='true'] { background: var(--m-ink); color: #fff; }
+.deck-pill:focus-visible, .deck-step:focus-visible, .deck-card:focus-visible { outline: 2px solid var(--m-ink); outline-offset: 2px; }
+.deck-controls { display: flex; align-items: center; gap: 6px; }
+.deck-count { min-width: 3.5em; margin-right: var(--space-100); color: var(--m-muted); font: var(--type-caption-4); font-variant-numeric: tabular-nums; text-align: right; }
+.deck-count [data-deck-index] { color: var(--m-ink); }
+.deck-step { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--m-fill); color: var(--m-ink); transition: background-color 300ms var(--m-ease), transform 200ms var(--m-ease), opacity 300ms var(--m-ease); }
+.deck-step:hover { background: var(--m-fill-hover); }
+.deck-step:active { transform: scale(.96); }
+.deck-step:disabled { opacity: .35; cursor: default; }
+.deck-step[data-deck-prev] .home-icon { transform: rotate(180deg); }
+.deck-step .home-icon { width: 16px; height: 16px; }
+.deck-cards { display: grid; gap: var(--space-200); margin: 0; padding: 0; list-style: none; }
+.deck-card { position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; gap: var(--space-700); min-height: 480px; padding: var(--space-600); border-radius: var(--radius-3xl); background: var(--m-subtle); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); scroll-margin-top: calc(var(--site-header-height) + var(--space-300)); }
+.deck-kicker { display: flex; align-items: center; gap: var(--space-100); margin: 0 0 var(--space-200) !important; color: var(--m-muted) !important; font: var(--type-caption-4) !important; }
+.deck-kicker span { color: var(--m-ink); font-variant-numeric: tabular-nums; }
+.deck-controls[hidden] { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-site-js] .deck-controls[hidden] { display: flex; visibility: hidden; }
+  [data-site-js] .deck-cards { gap: 0; padding-top: 60px; perspective: 2000px; touch-action: pan-y; }
+  [data-site-js] .deck-card { grid-area: 1 / 1; z-index: 1; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .03), 0 24px 64px -24px rgb(0 0 0 / .18); transform-origin: 50% 0; transition: transform 800ms var(--m-ease), opacity 500ms var(--m-ease), visibility 0s linear 0s; will-change: transform; }
+  /* A veil grays the cards waiting behind, so their edges read as a stack. */
+  [data-site-js] .deck-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--m-subtle); opacity: 0; pointer-events: none; transition: opacity 500ms var(--m-ease); }
+  [data-site-js] :is(.deck-card[data-k='0'], .deck-card:not([data-k]):nth-child(1)) { z-index: 5; transform: none; }
+  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { z-index: 4; transform: translate3d(0, -22px, 0) scale(.955); }
+  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { z-index: 3; transform: translate3d(0, -42px, 0) scale(.91); }
+  [data-site-js] :is(.deck-card[data-k='3'], .deck-card:not([data-k]):nth-child(4)) { z-index: 2; transform: translate3d(0, -60px, 0) scale(.865); }
+  [data-site-js] :is(.deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(5)) { z-index: 1; transform: translate3d(0, -60px, 0) scale(.865); opacity: 0; }
+  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2))::after { opacity: .55; }
+  [data-site-js] :is(.deck-card[data-k='2'], .deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+3))::after { opacity: 1; }
+  /* A turned card lifts off the top of the deck and away. */
+  [data-site-js] .deck-card[data-k='-1'] { z-index: 6; transform: translate3d(0, -120px, 0) rotateX(16deg) scale(1.02); opacity: 0; visibility: hidden; transition: transform 800ms var(--m-ease), opacity 400ms var(--m-ease), visibility 0s linear 800ms; }
+  [data-site-js] .deck-card :is(.m-panel-copy, .ui) { transition: opacity 400ms var(--m-ease); }
+  [data-site-js] :is(.deck-card[data-k]:not([data-k='0']), .deck-card:not([data-k]):nth-child(n+2)) :is(.m-panel-copy, .ui) { opacity: 0; }
+}
+/* Wide and tall enough: the stage pins and scrolling turns the cards. */
+@media (prefers-reduced-motion: no-preference) and (min-width: 1024px) and (min-height: 700px) {
+  [data-site-js] .deck { height: 300vh; }
+  [data-site-js] .deck-stage { position: sticky; top: var(--site-header-height); display: flex; height: calc(100vh - var(--site-header-height)); flex-direction: column; justify-content: center; }
+}
+@media (min-width: 1920px) {
+  .deck-card { min-height: 540px; }
+}
+@media (max-width: 1080px) {
+  .deck-card { gap: var(--space-500); padding: var(--space-500); }
+}
+@media (max-width: 760px) {
+  .deck-head { flex-direction: column; flex-wrap: nowrap; align-items: stretch; margin-bottom: var(--space-200); }
+  .deck-nav { flex-wrap: nowrap; margin-inline: calc(-1 * var(--site-gutter, 24px)); padding-inline: var(--site-gutter, 24px); overflow-x: auto; scrollbar-width: none; scroll-padding-inline: var(--site-gutter, 24px); }
+  .deck-nav::-webkit-scrollbar { display: none; }
+  .deck-controls { justify-content: flex-end; }
+  .deck-card { grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-300); min-height: 0; padding: var(--space-300) var(--space-200) var(--space-200); border-radius: var(--radius-2xl); }
+  .deck-card .m-points { display: none; }
+  [data-site-js] .deck-card .ui-window { max-height: 300px; -webkit-mask-image: linear-gradient(#000 82%, transparent); mask-image: linear-gradient(#000 82%, transparent); }
+  .deck-card .m-panel-copy .m-link { margin-top: var(--space-200); }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  [data-site-js] .deck-cards { padding-top: 36px; }
+  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { transform: translate3d(0, -14px, 0) scale(.95); }
+  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { transform: translate3d(0, -26px, 0) scale(.9); }
+  [data-site-js] :is(.deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+4)) { transform: translate3d(0, -36px, 0) scale(.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-pill, .deck-step, .deck-card, .deck-card::after { transition: none !important; }
 }

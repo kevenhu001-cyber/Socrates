@@ -309,3 +309,79 @@ test('without scripts the finished question mark is shown and the hero stays usa
   assert.equal(await page.locator('.hero-mark .hm-dot').count(), 1);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 1440);
 });
+
+// Round 7 · B. The mode deck.
+test('the mode deck pins, turns with scroll, keys and buttons, and keeps one card reachable', async (t) => {
+  const page = await animatedPage(t);
+  const deck = page.locator('[data-deck]');
+  const tabs = page.locator('[data-deck-nav] [role="tab"]');
+  assert.equal(await page.locator('[data-deck-nav]').getAttribute('role'), 'tablist');
+  assert.equal(await tabs.count(), 5);
+  assert.equal(await page.locator('[data-deck-card][role="tabpanel"]').count(), 5);
+  assert.equal(await tabs.first().getAttribute('aria-selected'), 'true');
+  assert.equal(await page.locator('[data-deck-card][data-k="0"]').getAttribute('id'), 'mode-dialogue');
+  assert.equal(await page.locator('[data-deck-card]').evaluateAll((cards) => cards.filter((card) => card.inert).length), 4, 'only the front card is reachable');
+  const geometry = await deck.evaluate((node) => ({ height: node.offsetHeight, vh: innerHeight, sticky: getComputedStyle(node.querySelector('.deck-stage')).position }));
+  assert.equal(geometry.sticky, 'sticky');
+  assert.ok(geometry.height <= geometry.vh * 3.05, 'the pinned run stays within about three viewports');
+  // Scroll halfway through the track: the third mode comes to the front.
+  await deck.evaluate((node) => scrollTo({ top: node.getBoundingClientRect().top + scrollY + (node.offsetHeight - innerHeight) * .5, behavior: 'instant' }));
+  await page.waitForFunction(() => document.querySelector('[data-deck-index]').textContent === '3');
+  assert.equal(await page.locator('[data-deck-card][data-k="0"]').getAttribute('id'), 'mode-map');
+  assert.equal(await page.locator('[data-deck-card][data-k="-1"]').count(), 2, 'turned cards have left the deck');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 1280);
+  // Keyboard: arrows move selection and focus, and the page follows.
+  await tabs.nth(2).focus();
+  await page.keyboard.press('ArrowRight');
+  assert.ok(await tabs.nth(3).evaluate((node) => document.activeElement === node));
+  assert.equal(await tabs.nth(3).getAttribute('aria-selected'), 'true');
+  assert.equal(await tabs.nth(3).getAttribute('tabindex'), '0');
+  await page.waitForFunction(() => document.querySelector('[data-deck-index]').textContent === '4');
+  await page.waitForTimeout(900);
+  assert.equal(await page.locator('[data-deck-index]').innerText(), '4', 'the scroll position agrees with the chosen mode');
+  await page.keyboard.press('End');
+  assert.equal(await tabs.last().getAttribute('aria-selected'), 'true');
+  assert.ok(await page.locator('[data-deck-next]').isDisabled());
+  await page.waitForTimeout(900);
+  await page.locator('[data-deck-prev]').click();
+  await page.waitForFunction(() => document.querySelector('[data-deck-index]').textContent === '4');
+  assert.match(await page.locator('[data-deck-live]').innerText(), /Exam mode/);
+  assert.ok(await page.locator('#mode-exam a.m-link').isVisible());
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => !document.querySelector('[data-deck-nav]').hasAttribute('role'));
+  assert.equal(await page.locator('[data-deck-card][data-k]').count(), 0);
+  assert.equal(await page.locator('[data-deck-card]').evaluateAll((cards) => cards.filter((card) => card.inert).length), 0);
+  assert.equal(await deck.evaluate((node) => getComputedStyle(node.querySelector('.deck-stage')).position), 'static');
+});
+
+test('phones turn the deck without pinning; reduced motion and no-JS list every card', async (t) => {
+  const context = await site.browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'no-preference', hasTouch: true });
+  t.after(() => context.close());
+  await context.route('https://**/*', (route) => route.abort());
+  const page = await context.newPage();
+  await page.goto(site.baseURL + '/zh/');
+  await page.locator('[data-consent-choice="essential"]').click();
+  const deck = page.locator('[data-deck]');
+  assert.equal(await deck.evaluate((node) => getComputedStyle(node.querySelector('.deck-stage')).position), 'static');
+  assert.ok(await deck.evaluate((node) => node.offsetHeight < innerHeight * 1.6), 'no sticky run on phones');
+  await page.locator('[data-deck-next]').click();
+  assert.equal(await page.locator('[data-deck-index]').innerText(), '2');
+  assert.equal(await page.locator('[data-deck-card][data-k="0"]').getAttribute('id'), 'mode-recall');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 390);
+
+  const reduced = await sitePage(site, t, '/', 390);
+  const cards = reduced.locator('[data-deck-card]');
+  assert.equal(await cards.count(), 5);
+  for (const card of await cards.all()) {
+    await card.scrollIntoViewIfNeeded();
+    assert.ok(await card.isVisible());
+    assert.equal(await card.evaluate((node) => getComputedStyle(node).opacity), '1');
+  }
+  assert.ok(await reduced.locator('[data-deck-controls]').evaluate((node) => node.hidden));
+  const tops = await cards.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
+  assert.ok(tops.every((top, i) => i === 0 || top > tops[i - 1]), 'the cards form a vertical list');
+
+  const noJS = await sitePage(site, t, '/', 1440, false);
+  assert.equal(await noJS.locator('[data-deck-pill]').first().getAttribute('href'), '#mode-dialogue');
+  assert.equal(await noJS.locator('[data-deck-card]').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 5);
+});
