@@ -32,7 +32,7 @@ function ensureEn(){
   }
   return _enReady;
 }
-function t(key: string){const table=I18N[getCurrentLanguage()];let v=table&&table[key];if(typeof v!=="undefined")return v;v=I18N.en&&I18N.en[key];if(typeof v!=="undefined")return v;return key;}
+export function t(key: string){const table=I18N[getCurrentLanguage()];let v=table&&table[key];if(typeof v!=="undefined")return v;v=I18N.en&&I18N.en[key];if(typeof v!=="undefined")return v;return key;}
 function syncLanguageToggleOptions(lang: string){
   for(let i=0;i<LANG_OPTION_IDS.length;i++){
     const el=document.getElementById(LANG_OPTION_IDS[i]);

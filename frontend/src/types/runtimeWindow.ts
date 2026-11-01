@@ -27,9 +27,7 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "askChatTurn": typeof import("../chat/turnController")["askChatTurn"];
   "askNextQuestion": typeof import("../tutor/socraticTurn")["askNextQuestion"];
   "cancelDiagnostic"?: () => void;
-  "clearActiveTemplate": typeof import("../chat/templateSlash")["clearActiveTemplate"];
   "clearPerUserClientState": typeof import("../app/lifecycle/clientState")["clearPerUserClientState"];
-  "closeTagEditor": typeof import("../session/organizeRuntime")["closeTagEditor"];
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
   "getConnectorIconMarkup": typeof import("../sidebar/nav")["connectorIconWithFallback"];
   "getSlashApps": typeof import("../sidebar/nav")["getSlashApps"];
@@ -45,7 +43,6 @@ export type RuntimeWindow = Omit<Window, 'CURRENT_USER' | 'stateStore' | 'SERVER
   "retryDiagnostic"?: () => void;
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];
   "scrollMainToBottom": (() => void) | undefined;
-  "setActiveTemplate": typeof import("../chat/templateSlash")["setActiveTemplate"];
   "setChatStopState": typeof import("../chat/composerTurn")["setChatStopState"];
   "setCurrentUser": typeof import("../app/lifecycle")["setCurrentUser"];
   "showToast": typeof import("../ui/toast")["showToast"];

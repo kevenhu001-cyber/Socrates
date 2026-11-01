@@ -1,4 +1,5 @@
 import { stateStore } from './state/store.ts';
+import { addMessage } from './chat/messages.ts';
 import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
@@ -148,7 +149,6 @@ const tutorSocraticRuntime = (function () {
    * system auto-falls through to an explanation.
    * ---------------------------------------------------------------- */
   function showExplainPrompt() {
-    if (typeof browserWindow.addMessage !== 'function') return;
     const msg = ti('tutor.explainPrompt', currentLang() === 'zh'
       ? '这里需要梳理一下吗？'
       : 'Want to walk through this concept?');
@@ -156,7 +156,7 @@ const tutorSocraticRuntime = (function () {
       { text: ti('tutor.explain', currentLang() === 'zh' ? '讲解一下' : 'Explain'), action: 'explain', primary: true },
       { text: ti('tutor.explainKeepTrying', currentLang() === 'zh' ? '再想想' : 'Keep trying'), action: 'retry' }
     ];
-    const clientId = browserWindow.addMessage('assistant', msg, 'suggest', actions);
+    const clientId = addMessage('assistant', msg, 'suggest', actions);
     const list = document.getElementById('msgList');
     scheduleTurnToTopForMessage(list, clientId);
   }
@@ -171,7 +171,6 @@ const tutorSocraticRuntime = (function () {
    *   跳过      → mark this practice problem as skipped
    * ---------------------------------------------------------------- */
   function showFourOptionDialog(questionText: string) {
-    if (typeof browserWindow.addMessage !== 'function') return;
     const preview = questionText && questionText.length > 80
       ? questionText.slice(0, 80) + '…'
       : (questionText || '');
@@ -184,7 +183,7 @@ const tutorSocraticRuntime = (function () {
       { text: ti('tutor.fourOptionMistake',  currentLang() === 'zh' ? '加入错题本' : 'Add to mistakes'), action: 'mistake' },
       { text: ti('tutor.fourOptionSkip',     currentLang() === 'zh' ? '跳过' : 'Skip'),          action: 'skip' }
     ];
-    const clientId = browserWindow.addMessage('assistant', msg, 'suggest', actions);
+    const clientId = addMessage('assistant', msg, 'suggest', actions);
     const list = document.getElementById('msgList');
     scheduleTurnToTopForMessage(list, clientId);
     try {
@@ -217,7 +216,7 @@ const tutorSocraticRuntime = (function () {
     const entry: import('./state/kb.ts').MistakeStateEntry = {
       id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       type: opts.type || 'practice',
-      topic: opts.topic || (browserWindow.stateStore.read("topic") || ''),
+      topic: opts.topic || (stateStore.read("topic") || ''),
       q: opts.q || '',
       options: opts.options || [],
       correct: opts.correct || null,

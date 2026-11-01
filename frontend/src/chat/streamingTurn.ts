@@ -61,16 +61,15 @@ import { createMessageOwnership } from './turn/messageOwnership.ts';
 import { createFinishLifecycle } from './turn/finishLifecycle.ts';
 import { toolRunLabel } from '../ui/toolPresentationModel';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { addMessage } from './messages.ts';
+import { t } from '../i18n.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { getAppMode } from '../config/providers.ts';
 
-
 function _t(key: string, fallback?: string | null) {
   try {
-    if (typeof window !== 'undefined' && typeof browserWindow.t === 'function') {
-      const v = browserWindow.t(key);
-      if (v && v !== key) return v;
-    }
+    const v = t(key);
+    if (v && v !== key) return v;
   } catch (e) { reportSwallow(e, 'streamingTurn._t.prefLookup'); }
   return fallback != null ? fallback : key;
 }
@@ -354,7 +353,7 @@ function createSearchRetryHandler(){
     const search=String(query||'').trim();
     const retryText=prompt||(search?('Please retry the search: '+search):'');
     if(!retryText)return;
-    if(typeof browserWindow.addMessage==='function')browserWindow.addMessage('user',retryText);
+    addMessage('user',retryText);
     if(typeof browserWindow.askChatTurn==='function')quietTurn(browserWindow.askChatTurn(retryText));
   };
 }

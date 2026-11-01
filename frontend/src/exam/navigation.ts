@@ -1,5 +1,5 @@
 import { prefersReducedMotion } from '../ui/motion.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { stateStore } from '../state/store.ts';
 
 export function examNavCurrentIdx() {
   const container = document.getElementById('examQuestionsContainer');
@@ -26,7 +26,7 @@ export function examNavJump(index: string|number) {
 }
 
 export function examNavStep(direction: number, current = examNavCurrentIdx()) {
-  const total = browserWindow.stateStore.read('examQuestions').length;
+  const total = stateStore.read('examQuestions').length;
   if (total === 0) return null;
   const next = Math.max(0, Math.min(total - 1, current + direction));
   examNavJump(next);

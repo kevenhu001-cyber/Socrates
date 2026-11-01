@@ -15,16 +15,16 @@ import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQues
 import { formatMsg } from '../render/markdown.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { saveCurrentSession } from '../session/persistence.ts';
+import { askNextQuestion } from './socraticTurn.ts';
+import { t } from '../i18n.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 
-
 function _t(key: string, fallback?: string | null) {
   try {
-    if (typeof window !== 'undefined' && typeof browserWindow.t === 'function') {
-      const v = browserWindow.t(key);
-      if (v && v !== key) return v;
-    }
+    const v = t(key);
+    if (v && v !== key) return v;
   } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.ts:23'); }
   return fallback != null ? fallback : key;
 }
@@ -39,8 +39,7 @@ export function stateView() {
 }
 
 export function renderDiagQuestion() {
-  const tFn = (typeof window !== 'undefined' && typeof browserWindow.t === 'function') ? browserWindow.t : function (k: string) { return _t(k, k); };
-  renderDiagQuestionUI(stateView(), tFn, formatMsg);
+  renderDiagQuestionUI(stateView(), (k: string) => _t(k, k), formatMsg);
 }
 
 export function skipDiagQuestion() {
@@ -107,14 +106,14 @@ export function proceedToTeaching() {
   /* AUDIT-R5 — diagnostic is over; the session now lives in the chat
      view, so persist phase="chat" (loadSession also uses this as the
      signal that the conversation is resumable). */
-  try { if (typeof browserWindow.saveCurrentSession === 'function') browserWindow.saveCurrentSession(); } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.ts:109'); }
+  try { saveCurrentSession(); } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.ts:109'); }
 
   /* First Socratic question */
   const sessionId = stateStore.read('currentSessionId');
   setTimeout(function () {
     if (stateStore.read('currentSessionId') !== sessionId || stateStore.read('phase') !== 'chat') return;
     try {
-      if (typeof browserWindow.askNextQuestion === 'function') browserWindow.askNextQuestion();
+      askNextQuestion();
     } catch (error) { reportSwallow(error, 'tutor/diagnosticFlow.ts:115'); }
   }, 400);
 }

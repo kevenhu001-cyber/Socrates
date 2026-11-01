@@ -19,12 +19,9 @@ import type { LoadedSession } from './loader.impl.ts';
 
 export type { LoadedSession, ExamDataShape } from './loader.impl.ts';
 export type { ExamQuestion } from '../exam/types.ts';
+import { clearActiveTemplate as clearTemplate } from '../chat/templateSlash.ts';
 
 type LoaderImpl = typeof import('./loader.impl.ts');
-
-type SessionLoaderWindow = Window & {
-  clearActiveTemplate?: () => void;
-};
 
 let _loaderImport: Promise<LoaderImpl> | null = null;
 
@@ -41,10 +38,7 @@ function loadLoaderImpl(): Promise<LoaderImpl> {
 
 function clearActiveTemplate(): void {
   try {
-    const win = window as SessionLoaderWindow;
-    if (typeof window !== 'undefined' && typeof win.clearActiveTemplate === 'function') {
-      win.clearActiveTemplate();
-    }
+    clearTemplate();
   } catch (error) {
     reportSwallow(error, 'session/loader.clearActiveTemplate');
   }

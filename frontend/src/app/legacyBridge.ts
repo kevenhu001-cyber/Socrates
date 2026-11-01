@@ -8,8 +8,8 @@ import { updateSessionMetadata } from '../session/rowActions.ts';
  */
 import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.ts';
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.ts';
-import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.ts';
-import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd } from '../session/organizeRuntime.ts';
+import { clearActiveTemplate } from '../chat/templateSlash.ts';
+import { openTagEditor, onSessionDragStart, onSessionDragEnd } from '../session/organizeRuntime.ts';
 import { askChatTurn } from '../chat/turnController.js';
 /* chat/streamingTurn.ts (~65KB) is lazy — window.addStreamingMessage is
    an async proxy below; all call sites sit inside async send/restore
@@ -60,9 +60,6 @@ import { showGate, showAuthSignin } from '../auth/index.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
-browserWindow.setActiveTemplate = setActiveTemplate;
-browserWindow.clearActiveTemplate = clearActiveTemplate;
-browserWindow.closeTagEditor = closeTagEditor;
 browserWindow.askChatTurn = askChatTurn;
 /* Warm path returns the controller synchronously — callers that read
    state.messages right after askChatTurn() (the placeholder is pushed
@@ -205,6 +202,7 @@ browserWindow.__socratesLegacy = {
     startSession,
     submitChatMessage,
     stopChatResponse,
+    clearActiveTemplate,
   },
   cmdK: {
     openCmdK,

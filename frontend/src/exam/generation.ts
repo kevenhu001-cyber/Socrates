@@ -8,7 +8,7 @@ import { dispatchExam } from '../store/index.ts';
 import { examUiL as _examUiL } from './ui.ts';
 import type { ExamProgress, ExamFormDraft } from '../state/exam.ts';
 import { apiFetch } from '../util/api.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
+import { stateStore } from '../state/store.ts';
 
 function updateExamProgress(index: number, total: number, step: ExamProgress['step']) {
   dispatchExam({ type: 'exam/patch', patch: {
@@ -87,7 +87,7 @@ export function runExamGeneration(draft: ExamFormDraft) {
 }
 
 export function restoreExamActiveProvider() {
-  const prev = browserWindow.stateStore.read("_examPrevActiveId");
+  const prev = stateStore.read("_examPrevActiveId");
   if (!prev) return;
   const providerConfig = getProviderConfigSnapshot();
   if (providerConfig.activeId === prev) return;
@@ -176,7 +176,7 @@ type GeneratedExamQuestion =
   | { status: 'ready'; question: ExamQuestion };
 
 async function generateExamQuestion(context: QuestionContext, index: number, previousTexts: string[]): Promise<GeneratedExamQuestion> {
-  if (browserWindow.stateStore.read("examCancel")) {
+  if (stateStore.read("examCancel")) {
     restoreExamActiveProvider();
     return { status: "cancelled" };
   }
@@ -184,10 +184,10 @@ async function generateExamQuestion(context: QuestionContext, index: number, pre
   updateExamProgress(index, context.total, 'generating');
   const prompt = buildQuestionPrompt({ ...context, questionType, index, previousTexts });
   const response = await requestExamQuestion(prompt, index);
-  if (browserWindow.stateStore.read("examCancel")) return { status: "cancelled" };
+  if (stateStore.read("examCancel")) return { status: "cancelled" };
 
   if (!response.text || !response.text.trim()) {
-    const reason = (response.error && (response.error as Error).message) || browserWindow.stateStore.read("lastCallError") || _examUiL("no response", "模型无响应");
+    const reason = (response.error && (response.error as Error).message) || stateStore.read("lastCallError") || _examUiL("no response", "模型无响应");
     const stopped = await skipFailedQuestion(index, context.total, _examUiL("Failed", "生成失败"), _examUiL("Generation failed — no response", "生成失败：模型无响应"), String(reason));
     return { status: stopped ? "stopped" : "skipped" };
   }
@@ -215,7 +215,7 @@ async function generateAllQuestions(topic: string, count: number, difficulty: st
     previousTexts.push(generated.question.q);
   }
   restoreExamActiveProvider();
-  if (browserWindow.stateStore.read("examCancel")) return;
+  if (stateStore.read("examCancel")) return;
   if (questions.length === 0) {
     failExamGeneration(_examUiL("Generation failed — no questions", "生成失败：没有成功生成任何题目"));
     return;
@@ -228,14 +228,14 @@ async function generateAllQuestions(topic: string, count: number, difficulty: st
 }
 
 export function selectExamOpt(qidx: number, oidx: number) {
-  if (browserWindow.stateStore.read("examSubmitted")) return;
+  if (stateStore.read("examSubmitted")) return;
   setExamAnswer(qidx, oidx);
   saveExamSession();
 }
 
 export function finishExamGeneration() {
-  const valid = browserWindow.stateStore.read("examQuestions").filter(function (q: { type: string; }) { return q.type !== "error"; });
-  if (browserWindow.stateStore.read("examCancel")) {
+  const valid = stateStore.read("examQuestions").filter(function (q: { type: string; }) { return q.type !== "error"; });
+  if (stateStore.read("examCancel")) {
     return;
   }
   dispatchExam({ type: 'exam/set', key: 'examViewMode', value: 'questions' });

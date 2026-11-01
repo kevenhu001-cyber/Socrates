@@ -15,12 +15,14 @@ import { showToast } from '../ui/toast.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
 import { prepareUserEditBranch, prepareAssistantRegenerateBranch, switchMessageBranch } from './branchManager.ts';
+import { saveCurrentSession } from '../session/persistence.ts';
+import { t } from '../i18n.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
-
 
 function _t(key: string) {
   try {
-    if (typeof window !== 'undefined' && typeof browserWindow.t === 'function') return browserWindow.t(key);
+    const v = t(key);
+    if (v && v !== key) return v;
   } catch (e) { reportSwallow(e, 'editBranch._t.readGlobal'); }
   return key;
 }
@@ -43,7 +45,7 @@ function queueEditReplay(anchorId: string|undefined, dropped: MessageEntry[], ne
   }
 }
 function _saveCurrentSession() {
-  try { if (typeof browserWindow.saveCurrentSession === 'function') browserWindow.saveCurrentSession(); } catch (e) { reportSwallow(e, 'editBranch._saveCurrentSession'); }
+  try { saveCurrentSession(); } catch (e) { reportSwallow(e, 'editBranch._saveCurrentSession'); }
 }
 function _resetApp() {
   return Promise.resolve(typeof browserWindow.resetApp === 'function' ? browserWindow.resetApp() : false);

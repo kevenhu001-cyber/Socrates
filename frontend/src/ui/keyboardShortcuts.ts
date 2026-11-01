@@ -20,7 +20,7 @@ import { closeProfile, openProfile, toggleProfileWebSearch } from './profile.ts'
 import { closeFindInSession, isFindOpen, openFindInSession } from '../react/find-in-session/findInSession.actions.ts';
 import { closeCmdK, openCmdK } from './cmdK.ts';
 import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../composer/controller.ts';
-import { cycleActiveProject } from '../session/organizeRuntime.ts';
+import { cycleActiveProject, closeTagEditor } from '../session/organizeRuntime.ts';
 import { findLastUserMessage } from '../render/markdown.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
@@ -69,7 +69,7 @@ function closeOpenModal(event: KeyboardEvent) {
         .then((module) => module.closeUsageModal())
         .catch((error) => reportSwallow(error, 'keyboardShortcuts.closeUsageModal'));
     }],
-    ['tagEditorPopover', () => browserWindow.closeTagEditor()],
+    ['tagEditorPopover', closeTagEditor],
     ['shareOverlay', closeShareModal],
   ];
 

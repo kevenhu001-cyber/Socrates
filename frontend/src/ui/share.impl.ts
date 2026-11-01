@@ -26,6 +26,8 @@ import { closeFindInSession } from '../react/find-in-session/findInSession.actio
 import { hideGate } from '../auth/index.ts';
 import { dispatchExam, dispatchUi } from '../store/index.ts';
 import type { ExamQuestion } from '../exam/types.ts';
+import { renderRecents } from './recentsView.ts';
+import { t } from '../i18n.ts';
 
 interface SharedMessage extends MessageEntry {
   role: string;
@@ -128,7 +130,7 @@ function toggleShareBtn() {
      is `.hidden { display: none !important }` (styles.css:1979),
      which beats any inline `style.display` we set. We must toggle
      the class itself, not the style attribute. */
-  const show = !!(browserWindow.CURRENT_USER && (browserWindow.stateStore.read("currentSessionId") || browserWindow.stateStore.read("_examInView")));
+  const show = !!(browserWindow.CURRENT_USER && (stateStore.read("currentSessionId") || stateStore.read("_examInView")));
   btn.classList.toggle("hidden", !show);
   /* P0.2 — the in-session Find button lives next to Share in the
      top bar and shares the exact same visibility rule (only useful
@@ -147,7 +149,7 @@ function hideAuthGate() {
 }
 
 function openShareModal(sessionId?: string) {
-  _shareSessionId = typeof sessionId === "string" ? sessionId : browserWindow.stateStore.read("currentSessionId");
+  _shareSessionId = typeof sessionId === "string" ? sessionId : stateStore.read("currentSessionId");
   _shareToken = null;
   _shareUrl = "";
   _shareStatus = "";
@@ -182,7 +184,7 @@ function _setShareStatus(msg: string) {
 }
 
 async function createShareLink() {
-  const sessionId = _shareSessionId || browserWindow.stateStore.read("currentSessionId");
+  const sessionId = _shareSessionId || stateStore.read("currentSessionId");
   if (!sessionId) { _setShareError("No active session"); return; }
   _setShareError("");
   _setShareStatus("Creating share link…");
@@ -218,7 +220,7 @@ function resetShareToken() {
 }
 
 async function revokeShareLink() {
-  const sessionId = _shareSessionId || browserWindow.stateStore.read("currentSessionId");
+  const sessionId = _shareSessionId || stateStore.read("currentSessionId");
   if (!_shareToken || !sessionId) return;
   try {
     await apiFetch("/api/sessions/" + encodeURIComponent(sessionId) + "/share", { method: "DELETE" });
@@ -240,8 +242,8 @@ function displayReadOnlyBanner(banner: HTMLElement | null): void {
   document.getElementById("chatPage")?.prepend(banner);
   banner.classList.remove("hidden");
   const label = banner.querySelector("[data-i18n-key='share.readOnlyBanner']");
-  if (label && typeof browserWindow.t === "function") {
-    const text = browserWindow.t("share.readOnlyBanner");
+  if (label) {
+    const text = t("share.readOnlyBanner");
     if (text && text !== "share.readOnlyBanner") label.textContent = text;
   }
 }
@@ -373,7 +375,7 @@ function showSharedChatSession() {
   _switchToSharedChatView();
   _renderSharedMessageList();
   document.documentElement.dataset.bootState = "app";
-  if (typeof browserWindow.renderRecents === "function") browserWindow.renderRecents();
+  renderRecents();
 }
 
 function recoverFailedSharedSessionLoad() {

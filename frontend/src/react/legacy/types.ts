@@ -90,6 +90,7 @@ export interface LegacyComposer {
   startSession(): Promise<void> | void;
   submitChatMessage(textOverride?: string | null, options?: { blurAfterSend?: boolean }): Promise<void> | void;
   stopChatResponse(): void;
+  clearActiveTemplate?(): void;
 }
 
 export interface LegacyCmdK {

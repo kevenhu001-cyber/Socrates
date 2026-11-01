@@ -15,7 +15,8 @@ import { setSidebarOpen } from '../../sidebar/sidebar.store.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { translateLifecycleText } from './helpers.ts';
 import { shouldConfirmReset } from './resetDecision.ts';
-import { runtimeWindow as browserWindow } from "../../types/runtimeWindow.ts";
+import { clearActiveTemplate } from '../../chat/templateSlash.ts';
+import { renderRecents } from '../../ui/recentsView.ts';
 
 
 function readResetDecision(options?: ResetOptions) {
@@ -48,7 +49,7 @@ async function confirmResetIfRequired(requiresConfirmation: boolean) {
 
 function clearActivePromptTemplate() {
   try {
-    if (typeof browserWindow.clearActiveTemplate === 'function') browserWindow.clearActiveTemplate();
+    clearActiveTemplate();
   } catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.clearActiveTemplate'); }
 }
 
@@ -93,14 +94,14 @@ function renderTopicSetupAfterReset() {
 }
 
 function renderListsAfterReset() {
-  try { browserWindow.renderRecents?.(); }
+  try { renderRecents(); }
   catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.renderRecents'); }
   const sc = scrollContainer();
   if (sc) sc.scrollTop = 0;
 }
 
 function closeMobileSidebarAfterReset() {
-  if (!(browserWindow.innerWidth < 768)) return;
+  if (typeof window !== 'undefined' && !(window.innerWidth < 768)) return;
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('sidebarBackdrop');
   if (!sidebar || sidebar.classList.contains('collapsed')) return;

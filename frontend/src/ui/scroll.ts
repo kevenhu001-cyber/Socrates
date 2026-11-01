@@ -300,7 +300,7 @@ function advanceScrollAnimation(animation: ScrollAnimation, now: number){
   if(animation.cancelled)return;
   const {list}=animation;
   if((list.dataset&&list.dataset.turnViewportOwner==='turn')||
-      (typeof window!=='undefined'&&browserWindow.stateStore.read('_userScrolledAway'))){
+      (typeof window!=='undefined'&&stateStore.read('_userScrolledAway'))){
     animation.stop();
     return;
   }
@@ -515,7 +515,7 @@ function createPinMetrics(list: HTMLElement, pinState: PinState, getLastMessage:
       msgHeight:message?message.offsetHeight:null
     };
   }
-  function userScrolledAway(){return !!browserWindow.stateStore.read("_userScrolledAway")}
+  function userScrolledAway(){return !!stateStore.read("_userScrolledAway")}
   function wasPinned(metrics: ScrollMetrics | null){
     return !!metrics&&!userScrolledAway()&&
       metrics.scrollHeight-metrics.scrollTop-metrics.clientHeight<=pinSlack;

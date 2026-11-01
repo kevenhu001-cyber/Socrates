@@ -36,6 +36,8 @@ import { closeSidebarOnMobile } from '../sidebar/sidebar.service.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { dispatchExam, dispatchSession, dispatchUi } from '../store/index.ts';
 import type { ExamQuestion } from '../exam/types.ts';
+import { clearActiveTemplate } from '../chat/templateSlash.ts';
+import { renderRecents } from '../ui/recentsView.ts';
 
 export { reattachPendingTurn };
 
@@ -79,12 +81,6 @@ export interface ExamDataShape {
   [key: string]: unknown;
 }
 
-/** Window surfaces the loader reads at call time. */
-interface LoaderWindow extends Window {
-  renderRecents?: () => void;
-  clearActiveTemplate?: () => void;
-}
-
 function _t(key: string, fallback?: string): string {
   try {
     if (typeof window !== 'undefined' && typeof window.t === 'function') {
@@ -99,14 +95,12 @@ function _appMode(): string {
 }
 function _renderRecents(): void {
   try {
-    const win = window as LoaderWindow;
-    if (typeof window !== 'undefined' && typeof win.renderRecents === 'function') win.renderRecents();
+    renderRecents();
   } catch (e) { reportSwallow(e, 'session/loader._renderRecents'); }
 }
 function _clearActiveTemplate(): void {
   try {
-    const win = window as LoaderWindow;
-    if (typeof window !== 'undefined' && typeof win.clearActiveTemplate === 'function') win.clearActiveTemplate();
+    clearActiveTemplate();
   } catch (e) { reportSwallow(e, 'session/loader._clearActiveTemplate'); }
 }
 

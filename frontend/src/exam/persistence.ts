@@ -9,6 +9,7 @@ import { apiFetch } from '../util/api.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 import { getAppMode } from '../config/providers.ts';
 import { flushRecentsReconcile } from '../session/recents.ts';
+import { renderRecents } from '../ui/recentsView.ts';
 
 
 let _examAnswerSaveTimer: number|null|undefined = null;
@@ -37,8 +38,8 @@ export function scheduleExamAnswerSave() {
 }
 
 export function submitExam() {
-  const qs = browserWindow.stateStore.read("examQuestions") as ExamQuestion[];
-  const ans = browserWindow.stateStore.read("examAnswers") as Record<number, string | number | undefined>;
+  const qs = stateStore.read("examQuestions") as ExamQuestion[];
+  const ans = stateStore.read("examAnswers") as Record<number, string | number | undefined>;
   const validQs = qs.filter(function (q: { type: string; }) { return q.type !== "error"; });
   if (!validQs.length) return;
   const missing: number[] = [];
@@ -57,9 +58,9 @@ export function submitExam() {
 
 export function saveExamSession() {
   if (!browserWindow.CURRENT_USER) return;
-  if (!browserWindow.stateStore.read("examTopic")) return;
-  if (!browserWindow.stateStore.read("_examInView")) return;
-  if (browserWindow.stateStore.read("examReadOnly")) return;
+  if (!stateStore.read("examTopic")) return;
+  if (!stateStore.read("_examInView")) return;
+  if (stateStore.read("examReadOnly")) return;
   if (_examSaveInFlight) {
     _examSaveDirty = true;
     return;
@@ -71,31 +72,31 @@ export function saveExamSession() {
 export function doSaveExamSession() {
   const body: { id?: string; [key: string]: unknown } = {
     kind: "exam",
-    topic: browserWindow.stateStore.read("examTopic"),
-    title: browserWindow.stateStore.read("examTopic"),
-    domain: browserWindow.stateStore.read("examTopic"),
+    topic: stateStore.read("examTopic"),
+    title: stateStore.read("examTopic"),
+    domain: stateStore.read("examTopic"),
     /* Preserve the mode that originated the exam session. */
     mode: getAppMode(),
     phase: "chat",
     examData: {
-      topic: browserWindow.stateStore.read("examTopic"),
-      difficulty: browserWindow.stateStore.read("examDifficulty") || "intermediate",
-      count: browserWindow.stateStore.read("examCount"),
-      lang: browserWindow.stateStore.read("examLang") || "English",
-      types: Array.isArray(browserWindow.stateStore.read("examTypes")) ? browserWindow.stateStore.read("examTypes") : [],
-      questions: (browserWindow.stateStore.read("examQuestions") as ExamQuestion[]).map(function (q) {
+      topic: stateStore.read("examTopic"),
+      difficulty: stateStore.read("examDifficulty") || "intermediate",
+      count: stateStore.read("examCount"),
+      lang: stateStore.read("examLang") || "English",
+      types: Array.isArray(stateStore.read("examTypes")) ? stateStore.read("examTypes") : [],
+      questions: (stateStore.read("examQuestions") as ExamQuestion[]).map(function (q) {
         const c: ExamQuestion = { q: q.q, type: q.type, explanation: q.explanation || "" };
         if (q.opts) c.opts = q.opts;
         if (q.answer !== undefined) c.answer = q.answer;
         if (q.answers) c.answers = q.answers;
         return c;
       }),
-      answers: browserWindow.stateStore.read("examAnswers") || {},
-      submitted: !!browserWindow.stateStore.read("examSubmitted"),
+      answers: stateStore.read("examAnswers") || {},
+      submitted: !!stateStore.read("examSubmitted"),
       generatedAt: Date.now(),
     },
   };
-  const currentSessionId = browserWindow.stateStore.read("currentSessionId");
+  const currentSessionId = stateStore.read("currentSessionId");
   if (currentSessionId) body.id = currentSessionId;
   _examSaveInFlight = apiFetch("/api/sessions", { method: "POST", body: body })
     .then(function (response: unknown) {
@@ -108,7 +109,7 @@ export function doSaveExamSession() {
       /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
          to be in the sidebar the moment the save returns. */
       return flushRecentsReconcile().then(function () {
-        try { browserWindow.renderRecents() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.renderRecents'); }
+        try { renderRecents() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.renderRecents'); }
         try { toggleShareBtn() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.toggleShareBtn'); }
       });
     })

@@ -18,6 +18,7 @@ import type { ComposerSurface } from '../../composer/types.ts';
 import { addComposerFiles } from '../../attachments/render.ts';
 import { ExtensionToken } from './extensionToken';
 import type { ComposerShapeHandlers } from './useComposerShape';
+import { getActiveTemplateExtensionKey, getLegacyActionsOrNull } from '../legacy/gateway.ts';
 
 interface RichComposerEditorOptions {
   activePlaceholder: string;
@@ -35,14 +36,10 @@ export function useRichComposerEditor({
   shape,
 }: RichComposerEditorOptions) {
   const onRemoveExtension = useCallback((key: string) => {
-    const legacyWindow = window as Window & {
-      _activeTemplate?: { extensionKey?: string } | null;
-      clearActiveTemplate?: () => void;
-    };
     /* Pasted prompt text should not exit image creation mode. An explicit
        remove-button click still clears that mode through its non-empty key. */
-    if (!key && legacyWindow._activeTemplate?.extensionKey === 'createImage') return;
-    legacyWindow.clearActiveTemplate?.();
+    if (!key && getActiveTemplateExtensionKey() === 'createImage') return;
+    getLegacyActionsOrNull()?.composer.clearActiveTemplate?.();
   }, []);
 
   const extensions = useMemo(() => [

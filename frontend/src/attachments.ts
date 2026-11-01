@@ -40,8 +40,9 @@ import { AttachmentClassification, classifyAttachmentFile, docKindFromFile } fro
 import { compressImageFile, readFileAsDataUrl } from './attachments/imageCompression.ts';
 import { createBuildMessageContent } from './attachments/messageContent.ts';
 import { ATTACHMENT_READY_TIMEOUT_MS, MAX_CONCURRENT_UPLOADS, MAX_FILE_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_DATAURL_CHARS, MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL, MAX_TOTAL_ATTACHMENTS, XHR_TIMEOUT_MS, UPLOAD_IDLE_TIMEOUT_MS } from './attachments/limits.ts';
-import { runtimeWindow as browserWindow } from "./types/runtimeWindow.ts";
 import { publishAttachmentsState } from './ui/attachmentsState.ts';
+import { stateStore } from './state/store.ts';
+import { t } from './i18n.ts';
 
 
 export {
@@ -128,10 +129,8 @@ export function __resetUploadQueueForTests() {
 
 function _t(key: string, fallback?: string | null) {
   try {
-    if (typeof window !== 'undefined' && typeof browserWindow.t === 'function') {
-      const v = browserWindow.t(key);
-      if (v && v !== key) return v;
-    }
+    const v = t(key);
+    if (v && v !== key) return v;
   } catch (e) { reportSwallow(e, 'attachments._t.prefLookup'); /* fall through */ }
   return fallback != null ? fallback : key;
 }
@@ -151,11 +150,8 @@ export function activeProviderSupportsImages() {
 
 function currentSessionId() {
   try {
-    const store = (typeof window !== 'undefined') ? browserWindow.stateStore : null;
-    if (store && typeof store.read === 'function') {
-      const sid = store.read('currentSessionId');
-      if (typeof sid === 'string' && sid) return sid;
-    }
+    const sid = stateStore.read('currentSessionId');
+    if (typeof sid === 'string' && sid) return sid;
   } catch (e) { reportSwallow(e, 'attachments.store.sessionIdLookup'); /* fall through */ }
   return '';
 }

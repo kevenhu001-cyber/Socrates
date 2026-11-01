@@ -31,23 +31,10 @@ export type CreationSurfacePreferences = {
   setImageModel: Dispatch<SetStateAction<string>>;
 };
 
-export function useCreationSurfaceController(name: CreationName, preferences: CreationSurfacePreferences) {
+function useCreationItems(name: CreationName) {
   const [items, setItems] = useState<CreationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [editor, setEditor] = useState<CreationEditor>(null);
-  const [draft, setDraft] = useState<EditorDraft>(emptyEditorDraft);
-  const [busy, setBusy] = useState(false);
-  const [generatingSite, setGeneratingSite] = useState(false);
-  const [query, setQuery] = useState('');
-  const imagePromptRef = useRef<HTMLTextAreaElement>(null);
-  const [, setLocaleRevision] = useState(0);
-
-  useEffect(() => {
-    const onLanguageChange = () => setLocaleRevision((revision) => revision + 1);
-    document.addEventListener('socrates:langchange', onLanguageChange);
-    return () => document.removeEventListener('socrates:langchange', onLanguageChange);
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,6 +52,28 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
   }, [name]);
 
   useEffect(() => { void load(); }, [load]);
+
+  async function deleteCreation(item: CreationItem) {
+    if (!browserWindow.confirm(currentCopy().confirmDelete)) return;
+    try {
+      await api(`/api/creations/items/${name}/${item.id}`, { method: 'DELETE' });
+      await load();
+    } catch (cause) {
+      notice((cause as Error)?.message || currentCopy().error);
+    }
+  }
+
+  return { items, loading, error, load, deleteCreation };
+}
+
+function useCreationEditor(
+  name: CreationName,
+  load: () => Promise<void>,
+  setBusy: (busy: boolean) => void,
+) {
+  const [editor, setEditor] = useState<CreationEditor>(null);
+  const [draft, setDraft] = useState<EditorDraft>(emptyEditorDraft);
+  const [generatingSite, setGeneratingSite] = useState(false);
 
   function setDraftField(field: EditorField, value: string) {
     if (field === 'visibility') {
@@ -85,21 +94,6 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
     setDraft(emptyEditorDraft());
   }
 
-  async function resetAppForComposer(): Promise<boolean> {
-    const didReset = await (browserWindow.resetApp as (() => boolean | void | Promise<boolean | void>) | undefined)?.();
-    return didReset !== false;
-  }
-
-  async function startAssistantChat(item: CreationItem) {
-    if (!await resetAppForComposer()) return;
-    sessionStorage.setItem('socrates-active-assistant', item.id);
-    let starter = '';
-    try { starter = JSON.parse(item.source || '{}').starter || ''; }
-    catch (cause) { reportSwallow(cause, 'creation.startAssistantChat.parseStarter'); }
-    if (starter) setComposerMarkdown('topic', starter);
-    focusComposer('topic');
-  }
-
   function previewSite(source: string, title: string) {
     const frame = createElement('iframe', {
       className: 'creation-preview-frame',
@@ -108,49 +102,6 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
       srcDoc: source,
     });
     void openDetailSurface({ owner: 'site-preview', title, closeLabel: currentCopy().cancel, content: frame });
-  }
-
-  async function deleteCreation(item: CreationItem) {
-    if (!browserWindow.confirm(currentCopy().confirmDelete)) return;
-    try {
-      await api(`/api/creations/items/${name}/${item.id}`, { method: 'DELETE' });
-      await load();
-    } catch (cause) {
-      notice((cause as Error)?.message || currentCopy().error);
-    }
-  }
-
-  async function startNewCreation() {
-    if (name === 'images') {
-      imagePromptRef.current?.focus();
-      return;
-    }
-    if (name === 'sites') {
-      if (await resetAppForComposer()) dispatchExtension('createSite');
-      return;
-    }
-    openEditor('assistants', null);
-  }
-
-  function handleAction(action: string, id?: string) {
-    if (['close', 'edit', 'new'].includes(action)) closeDetailSurface('site-preview');
-    const item = items.find((entry) => entry.id === id);
-    const handlers: Record<string, () => void | Promise<void>> = {
-      retry: () => { void load(); },
-      new: startNewCreation,
-      close: closeEditor,
-      edit: () => { if (item) openEditor(name, item); },
-      'edit-image': () => {
-        if (!item) return;
-        openEditor('images', item);
-        imagePromptRef.current?.focus();
-      },
-      delete: () => { if (item) void deleteCreation(item); },
-      use: () => { if (item) void startAssistantChat(item); },
-      preview: () => { if (item) previewSite(item.source || '', item.title || ''); },
-      'view-image': () => { if (item) browserWindow.open(imageUrl(item.id), '_blank', 'noopener'); },
-    };
-    return handlers[action]?.();
   }
 
   async function generateSite() {
@@ -164,30 +115,6 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
       notice((cause as Error)?.message || currentCopy().error);
     } finally {
       setGeneratingSite(false);
-    }
-  }
-
-  async function submitImage() {
-    const text = currentCopy();
-    const prompt = preferences.imagePrompt.trim();
-    if (!prompt) { notice(text.noPrompt); return; }
-    const model = preferences.imageModel.trim();
-    if (model) {
-      try { localStorage.setItem('socrates-image-model', model); }
-      catch (cause) { reportSwallow(cause, 'creation.saveImageModel'); }
-    }
-    const reference = editor?.type === 'images' ? editor.item : null;
-    const url = reference ? `/api/creations/images/${reference.id}/edit` : '/api/creations/images';
-    setBusy(true);
-    try {
-      await api(url, { method: 'POST', body: { prompt, model } });
-      closeEditor();
-      await load();
-    } catch (cause) {
-      const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : undefined;
-      notice(code === 'IMAGE_PROVIDER_NOT_CONFIGURED' ? text.imageUnavailable : (cause as Error)?.message || text.error);
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -228,24 +155,121 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
     }
   }
 
-  function submitImageForm(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void submitImage();
+  return {
+    editor,
+    draft,
+    generatingSite,
+    setDraftField,
+    openEditor,
+    closeEditor,
+    previewSite,
+    previewDraft: () => previewSite(draft.source, currentCopy().preview),
+    generateSite,
+    submitEditor,
+  };
+}
+
+export function useCreationSurfaceController(name: CreationName, preferences: CreationSurfacePreferences) {
+  const { items, loading, error, load, deleteCreation } = useCreationItems(name);
+  const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
+  const imagePromptRef = useRef<HTMLTextAreaElement>(null);
+  const [, setLocaleRevision] = useState(0);
+
+  useEffect(() => {
+    const onLanguageChange = () => setLocaleRevision((revision) => revision + 1);
+    document.addEventListener('socrates:langchange', onLanguageChange);
+    return () => document.removeEventListener('socrates:langchange', onLanguageChange);
+  }, []);
+
+  const {
+    editor,
+    draft,
+    generatingSite,
+    setDraftField,
+    openEditor,
+    closeEditor,
+    previewSite,
+    previewDraft,
+    generateSite,
+    submitEditor,
+  } = useCreationEditor(name, load, setBusy);
+
+  async function startAssistantChat(item: CreationItem) {
+    const didReset = await (browserWindow.resetApp as (() => boolean | void | Promise<boolean | void>) | undefined)?.();
+    if (didReset === false) return;
+    sessionStorage.setItem('socrates-active-assistant', item.id);
+    let starter = '';
+    try { starter = JSON.parse(item.source || '{}').starter || ''; }
+    catch (cause) { reportSwallow(cause, 'creation.startAssistantChat.parseStarter'); }
+    if (starter) setComposerMarkdown('topic', starter);
+    focusComposer('topic');
   }
 
-  function submitEditorForm(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void submitEditor();
+  async function startNewCreation() {
+    if (name === 'images') {
+      imagePromptRef.current?.focus();
+      return;
+    }
+    if (name === 'sites') {
+      const didReset = await (browserWindow.resetApp as (() => boolean | void | Promise<boolean | void>) | undefined)?.();
+      if (didReset !== false) dispatchExtension('createSite');
+      return;
+    }
+    openEditor('assistants', null);
   }
 
-  function previewDraft() {
-    previewSite(draft.source, currentCopy().preview);
+  function handleAction(action: string, id?: string) {
+    if (['close', 'edit', 'new'].includes(action)) closeDetailSurface('site-preview');
+    const item = items.find((entry) => entry.id === id);
+    const handlers: Record<string, () => void | Promise<void>> = {
+      retry: () => { void load(); },
+      new: startNewCreation,
+      close: closeEditor,
+      edit: () => { if (item) openEditor(name, item); },
+      'edit-image': () => {
+        if (!item) return;
+        openEditor('images', item);
+        imagePromptRef.current?.focus();
+      },
+      delete: () => { if (item) void deleteCreation(item); },
+      use: () => { if (item) void startAssistantChat(item); },
+      preview: () => { if (item) previewSite(item.source || '', item.title || ''); },
+      'view-image': () => { if (item) browserWindow.open(imageUrl(item.id), '_blank', 'noopener'); },
+    };
+    return handlers[action]?.();
+  }
+
+  async function submitImage() {
+    const text = currentCopy();
+    const prompt = preferences.imagePrompt.trim();
+    if (!prompt) { notice(text.noPrompt); return; }
+    const model = preferences.imageModel.trim();
+    if (model) {
+      try { localStorage.setItem('socrates-image-model', model); }
+      catch (cause) { reportSwallow(cause, 'creation.saveImageModel'); }
+    }
+    const reference = editor?.type === 'images' ? editor.item : null;
+    const url = reference ? `/api/creations/images/${reference.id}/edit` : '/api/creations/images';
+    setBusy(true);
+    try {
+      await api(url, { method: 'POST', body: { prompt, model } });
+      closeEditor();
+      await load();
+    } catch (cause) {
+      const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : undefined;
+      notice(code === 'IMAGE_PROVIDER_NOT_CONFIGURED' ? text.imageUnavailable : (cause as Error)?.message || text.error);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return {
     items, loading, error, editor, draft, busy, generatingSite, query, setQuery,
     ...preferences,
     imagePromptRef, setDraftField, closeEditor, handleAction, load, generateSite,
-    submitImageForm, submitEditorForm, previewDraft,
+    submitImageForm: (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void submitImage(); },
+    submitEditorForm: (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void submitEditor(); },
+    previewDraft,
   };
 }

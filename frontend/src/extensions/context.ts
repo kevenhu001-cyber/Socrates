@@ -27,6 +27,11 @@ import type {
 import { publishAgentRun } from './agentRunStore';
 import { toggleWebSearch } from '../chat/webSearchToggle.ts';
 import { openNav } from '../sidebar/navigation.service.ts';
+import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.ts';
+import { showToast } from '../ui/toast.ts';
+import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
+import { openAttachmentPicker } from '../attachments/render.ts';
+import { t } from '../i18n.ts';
 
 type SetActiveTemplateSpec = TemplateChipSpec & {
   systemPrompt: string;
@@ -42,30 +47,6 @@ type SetActiveTemplateSpec = TemplateChipSpec & {
   outputMode?: ExtensionOutputMode;
 };
 
-interface LegacyWindow {
-  setActiveTemplate?: (t: {
-    id: string;
-    title: string;
-    shortcut?: string;
-    icon: string;
-    systemPrompt: string;
-    body?: string;
-    hint?: string;
-    extensionKey?: string;
-    runId?: string;
-    workflow?: string;
-    outputMode?: ExtensionOutputMode;
-  }) => void;
-  clearActiveTemplate?: () => void;
-  showToast?: (msg: string) => void;
-  openPromptTemplatesModal?: () => void;
-  openAttachmentPicker?: (mode: string) => void;
-}
-
-function w(): LegacyWindow {
-  return window as unknown as LegacyWindow;
-}
-
 /** Resolve the surface a module should act on. Falls back to visible. */
 function resolveSurface(surface?: ComposerSurface): ComposerSurface {
   if (surface === 'chat' || surface === 'topic') return surface;
@@ -77,9 +58,7 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
     surface,
 
     setTemplate(spec: SetActiveTemplateSpec) {
-      const legacy = w();
-      if (typeof legacy.setActiveTemplate !== 'function') return;
-      legacy.setActiveTemplate({
+      setActiveTemplate({
         id: `tpl-${spec.key}`,
         title: spec.title,
         shortcut: spec.shortcut,
@@ -95,8 +74,7 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
     },
 
     clearTemplate() {
-      const legacy = w();
-      if (typeof legacy.clearActiveTemplate === 'function') legacy.clearActiveTemplate();
+      clearActiveTemplate();
     },
 
     getMarkdown(s) {
@@ -108,17 +86,12 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
     },
 
     t(key, fallback) {
-      const fn = (window as unknown as { t?: (k: string) => string }).t;
-      if (typeof fn === 'function') {
-        const v = fn(key);
-        return v !== key ? v : fallback;
-      }
-      return fallback;
+      const v = t(key);
+      return v !== key ? v : fallback;
     },
 
     toast(message) {
-      const legacy = w();
-      if (typeof legacy.showToast === 'function') legacy.showToast(message);
+      showToast(message);
     },
 
     publishAgentRun(event: AgentRunEvent) {
@@ -127,10 +100,10 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
 
     // ── legacy bridge passthroughs ──
     openNav: (page) => openNav(page),
-    openPromptTemplatesModal: () => w().openPromptTemplatesModal?.(),
+    openPromptTemplatesModal: () => openPromptTemplatesModal(),
     openAttachmentPicker: (_mode) => {
       // Legacy picker takes an element id — one composer, one input.
-      w().openAttachmentPicker?.('composerAttachInput');
+      openAttachmentPicker('composerAttachInput');
     },
     toggleWebSearch: () => toggleWebSearch(),
   };

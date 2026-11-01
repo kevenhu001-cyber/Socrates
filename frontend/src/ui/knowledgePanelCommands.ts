@@ -1,12 +1,13 @@
 import { dispatchKb, dispatchSession, kbStore } from '../store/index.ts';
 import type { BoundarySnapshot, KbNode } from '../state/kb.ts';
-import { runtimeWindow as browserWindow } from '../types/runtimeWindow.ts';
+import { saveCurrentSession } from '../session/persistence.ts';
+import { askNextQuestion } from '../tutor/socraticTurn.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 let noteSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 function saveCurrentSessionSafely(): void {
-  try { browserWindow.saveCurrentSession?.(); }
+  try { saveCurrentSession(); }
   catch (error) { reportSwallow(error, 'ui/knowledgePanelCommands.saveCurrentSession'); }
 }
 
@@ -31,7 +32,7 @@ export function updateKnowledgeNodeNote(index: number, user_note: string): void 
 export async function jumpToKnowledgeNode(index: number): Promise<void> {
   dispatchKb({ type: 'kb/set', key: 'currentNode', value: index });
   dispatchSession({ type: 'session/patch', patch: { stuckCount: 0, substantiveCount: 0 } });
-  await browserWindow.askNextQuestion?.();
+  await askNextQuestion();
   saveCurrentSessionSafely();
 }
 

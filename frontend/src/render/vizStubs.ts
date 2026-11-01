@@ -45,6 +45,7 @@ export const VIZ_THEME_RESET =
 
 import { esc, escAttr } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { stateStore } from '../state/store.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
 
 
@@ -283,7 +284,7 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
      updated in-place (innerHTML swap), which keeps the layout
      stable and avoids the iframe tearing down + re-mounting. */
   const id = opts.stableId || "viz-card-" + (++_vizId);
-  const title = (browserWindow.stateStore.read("topic") || "Canvas").toString().slice(0, 40);
+  const title = (stateStore.read("topic") || "Canvas").toString().slice(0, 40);
   // P_svg-no-xml-pi — strip the `<?xml version="1.0"?>` processing
   // instruction if the user pasted a standalone SVG document. Inside
   // an HTML <body>, the HTML5 tokenizer turns `<?...?>` into a bogus
