@@ -1,46 +1,20 @@
 name: Server CI
 
-# Fast-feedback typecheck and service-boundary guard for server/ changes. No services.
-#
-# Scope was narrowed on 2026-09-25 because this workflow had become a
-# liability rather than a gate:
-#
-#   - `npm test` here duplicated ci.yml's Server job while running WITHOUT
-#     a database, so every DB-backed suite (OAuth flow, auth middleware,
-#     login lockout, agent keys, chat turns, chunk index) reported green via
-#     t.skip(). Two workflows claiming to test the server, neither of them
-#     executing the security-critical paths. The real gate now lives in
-#     ci.yml with a Postgres service and `npm run test:strict`, which fails
-#     loudly instead of skipping.
-#
-#   - `find src/ -name '*.js' -exec node --check` was vestigial: the backend
-#     is TypeScript, and the only .js left under src/ is the systemd
-#     compatibility shim. `tsc --noEmit` subsumes it.
-#
-#   - `npm audit` ran with `continue-on-error: true`, i.e. it was a report
-#     styled as a check. It is now a blocking job in security.yml.
-#
-# Keeping this workflow (rather than deleting it) preserves the existing
-# required-check name while the duplicated work is gone. If branch
-# protection is reconciled later, folding it into ci.yml is the next step.
+# Compatibility check for the legacy required-check name. The complete
+# database-backed Server gate lives in ci.yml; this lane stays intentionally
+# small until branch protection is switched to the aggregate Merge gate.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'server/**'
-      - '.github/workflows/server-ci.yml'
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
       - 'server/**'
-      # A workflow-only PR must exercise this lane before merge; otherwise a
-      # syntax/runtime regression is invisible until the next server change.
       - '.github/workflows/server-ci.yml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 permissions:
   contents: read
@@ -50,11 +24,9 @@ jobs:
     name: Syntax & lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     defaults:
       run:
         working-directory: server
-
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -62,13 +34,10 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22
-          cache: 'npm'
+          node-version: '22'
+          cache: npm
           cache-dependency-path: server/package-lock.json
 
-      # Typecheck and the native TypeScript AST guard need no install hooks.
-      # Preserve the esbuild-only allow-list and skip install-time audit/funding
-      # calls; security.yml owns the blocking advisory check.
       - name: Install dependencies
         run: npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
 
