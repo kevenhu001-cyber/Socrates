@@ -210,3 +210,28 @@ test('the 404 thread breaks off before an open question', async (t) => {
   await page.reload();
   assert.equal(await page.evaluate(() => document.getAnimations().length), 0);
 });
+
+// Chinese pages render in self-hosted Noto Sans SC subsets (font-display: swap).
+// Without the generated <link rel="preload" data-cjk-preload> tags the subsets
+// arrived ~500 ms after first paint and the header links, hero copy and cookie
+// banner re-wrapped: zh product at 390 measured CLS 0.11–0.16.
+test('Chinese pages do not shift when their CJK font subsets arrive', async (t) => {
+  for (const [path, width] of [['/zh/product', 390], ['/zh/', 390], ['/zh/research', 1440], ['/zh/pricing', 1440]]) {
+    const context = await site.browser.newContext({ viewport: { width, height: 900 } });
+    t.after(() => context.close());
+    await context.route('https://**/*', (route) => route.abort());
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+      window.__cls = 0;
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__cls += entry.value;
+      }).observe({ type: 'layout-shift', buffered: true });
+    });
+    await page.goto(site.baseURL + path);
+    assert.ok(await page.locator('link[rel="preload"][data-cjk-preload]').count() > 0, `${path} preloads its first-screen CJK subsets`);
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(1000);
+    const cls = await page.evaluate(() => window.__cls);
+    assert.ok(cls <= 0.01, `${path} at ${width}px shifted by CLS ${cls.toFixed(4)}`);
+  }
+});

@@ -125,6 +125,64 @@ ${links.map(([href, label]) => `            <a href="${localHref(href, locale)}"
   return { header, footer };
 }
 
+// Chinese pages render their text in the self-hosted Noto Sans SC subsets
+// (fonts.css, font-display: swap). Fonts are discovered only after CSS is
+// parsed, so the first frame painted CJK text in a fallback whose advances
+// differ from Noto's; when the subsets arrived ~500 ms later the header
+// links, hero copy and cookie banner re-wrapped (zh product 390: CLS 0.11).
+// Preloading the subsets that the first screen needs lets them arrive with
+// the stylesheets, so the first frame already uses the final glyphs. The list
+// is derived from the page itself — the header, the zh cookie banner and the
+// first CJK_PRELOAD_CHARS ideographs of the body — so --check fails when copy
+// changes and the preloads drift. Every preloaded subset is one the page
+// downloads anyway: nothing extra is fetched, only earlier.
+const CJK_PRELOAD_CHARS = 400;
+const isCjk = (code) => (code >= 0x2e80 && code <= 0x2fdf) || (code >= 0x3000 && code <= 0x303f) ||
+  (code >= 0x3400 && code <= 0x9fff) || (code >= 0xf900 && code <= 0xfaff) || (code >= 0xff00 && code <= 0xffef);
+let notoSansSubsets;
+async function cjkSubsets() {
+  if (notoSansSubsets) return notoSansSubsets;
+  const css = await readFile(join(root, 'fonts.css'), 'utf8');
+  notoSansSubsets = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)]
+    .map(([, body]) => body)
+    .filter((body) => /font-family:\s*['"]Noto Sans SC['"]/.test(body))
+    .map((body) => ({
+      url: body.match(/src:\s*url\(['"]?([^'")]+)/)[1],
+      ranges: (body.match(/unicode-range:\s*([^;]+)/)?.[1] ?? '').split(',').map((part) => {
+        const [from, to = from] = part.trim().replace(/^U\+/i, '').split('-');
+        return [parseInt(from, 16), parseInt(to, 16)];
+      }),
+    }));
+  return notoSansSubsets;
+}
+let consentCopy;
+async function zhConsentText() {
+  if (consentCopy !== undefined) return consentCopy;
+  const script = await readFile(join(root, 'locale.js'), 'utf8');
+  consentCopy = script.match(/LOCALES\.zh \? \{([\s\S]*?)\}/)?.[1] ?? '';
+  return consentCopy;
+}
+async function cjkPreloads(html) {
+  const visible = html
+    .replace(/<head\b[\s\S]*?<\/head>/, '')
+    .replace(/<(script|style|svg|template|noscript)\b[\s\S]*?<\/\1>/g, '')
+    .replace(/<[^>]+>/g, '');
+  const text = (await zhConsentText()) + visible;
+  const chars = [];
+  for (const char of text) {
+    if (isCjk(char.codePointAt(0))) chars.push(char.codePointAt(0));
+    if (chars.length >= CJK_PRELOAD_CHARS) break;
+  }
+  const subsets = await cjkSubsets();
+  const urls = new Set();
+  for (const code of chars) {
+    const face = subsets.find(({ ranges }) => ranges.some(([from, to]) => code >= from && code <= to));
+    if (face) urls.add(face.url);
+  }
+  return [...urls].sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
+    .map((url) => `  <link rel="preload" href="${url}" as="font" type="font/woff2" crossorigin data-cjk-preload>\n`).join('');
+}
+
 async function htmlFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const paths = await Promise.all(entries.map((entry) => {
@@ -151,9 +209,12 @@ export async function syncChrome({ check = false } = {}) {
         !/<footer class="(?:home-footer|ftr|ed-footer|site-footer)"/.test(source)) {
       throw new Error(`Missing public chrome in ${relativePath}`);
     }
-    const next = source
+    const withChrome = source
       .replace(/<header class="(?:home-site-header|hdr|ed-header|site-header)"[\s\S]*?<\/header>/, header)
-      .replace(/<footer class="(?:home-footer|ftr|ed-footer|site-footer)"[\s\S]*?<\/footer>/, footer)
+      .replace(/<footer class="(?:home-footer|ftr|ed-footer|site-footer)"[\s\S]*?<\/footer>/, footer);
+    const preloads = locale === 'zh' ? await cjkPreloads(withChrome) : '';
+    const next = withChrome
+      .replace(/[ \t]*<link rel="preload"[^>]*data-cjk-preload>\r?\n?/g, '')
       .replace(/[ \t]*<link rel="stylesheet" href="\/chrome\.css[^\"]*">\r?\n?/g, '')
       .replace(/[ \t]*<link rel="stylesheet" href="\/public\.css[^\"]*">\r?\n?/g, '')
       .replace(/[ \t]*<link rel="stylesheet" href="[^\"]*fonts\.css[^\"]*">\r?\n?/g, (tag) => locale === 'zh' ? '' : tag)
@@ -161,7 +222,7 @@ export async function syncChrome({ check = false } = {}) {
       .replace(/[ \t]*<script src="\/motion\.js[^\"]*"><\/script>\r?\n?/g, '')
       .replace(/<body\b(?![^>]*\bdata-site-public)([^>]*)>/, '<body$1 data-site-public>')
       .replace(/(<script src="[^\"]*\/locale\.js)\?[^\"]*("><\/script>)/g, `$1?cb=${version}$2`)
-      .replace(/\s*<\/head>/, `\n${locale === 'zh' ? `  <link rel="stylesheet" href="/fonts.css?cb=${version}">\n` : ''}  <link rel="stylesheet" href="/public.css?cb=${version}">\n  <link rel="stylesheet" href="/chrome.css?cb=${version}">\n</head>`)
+      .replace(/\s*<\/head>/, `\n${locale === 'zh' ? `${preloads}  <link rel="stylesheet" href="/fonts.css?cb=${version}">\n` : ''}  <link rel="stylesheet" href="/public.css?cb=${version}">\n  <link rel="stylesheet" href="/chrome.css?cb=${version}">\n</head>`)
       .replace(/\s*<\/body>/, `\n  <script src="/chrome.js?cb=${version}"></script>\n  <script src="/motion.js?cb=${version}"></script>\n</body>`);
     // Preserve existing whitespace around all non-generated content.
     if (source !== next) {
