@@ -4,6 +4,8 @@
  * behaviour (composer, extensions, web search) and the web theme, so the
  * same components can mount in apps/socrates later without these bindings.
  */
+/* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
+import '../rn/rnwGlobal';
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { uiColorsCssVars } from '@socrates/theme';
 import { UiThemeProvider } from '@socrates/ui/primitives';
