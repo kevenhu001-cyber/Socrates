@@ -21,6 +21,7 @@ for (const prefix of ['', '/zh']) {
         const ask = document.querySelector('.hero-ask .ask-box').getBoundingClientRect();
         const title = document.querySelector('h1').getBoundingClientRect();
         const mark = document.querySelector('.hero-mark').getBoundingClientRect();
+        const glyph = [...document.querySelectorAll('.hero-mark-svg')].find(visible);
         const images = [...document.querySelectorAll('main img')].map((image) => image.getAttribute('src')).filter((src) => src !== '/logo.png');
         const map = document.querySelector('.demo-map-canvas').getBoundingClientRect();
         return {
@@ -29,15 +30,21 @@ for (const prefix of ['', '/zh']) {
           artTop: art.top,
           artRatio: art.width / art.height,
           askBottom: ask.bottom,
+          suggestionsBottom: document.querySelector('.hero-ask .ask-suggestions').getBoundingClientRect().bottom,
           askCenter: ask.x + ask.width / 2,
           titleCenter: title.x + title.width / 2,
           titleLeft: title.left,
           askLeft: ask.left,
           askRight: ask.right,
           mark: { left: mark.left, right: mark.right, top: mark.top, bottom: mark.bottom, center: mark.x + mark.width / 2, height: mark.height },
-          markNodes: document.querySelectorAll('.hero-mark .hm-nodes circle').length,
-          markDot: Number(document.querySelector('.hero-mark .hm-dot').getAttribute('r')),
-          markNodeMax: Math.max(...[...document.querySelectorAll('.hero-mark .hm-nodes circle')].map((node) => Number(node.getAttribute('r')))),
+          markNodes: glyph.querySelectorAll('.hm-nodes circle').length,
+          markDot: Number(glyph.querySelector('.hm-dot').getAttribute('r')),
+          markNodeMax: Math.max(...[...glyph.querySelectorAll('.hm-nodes circle')].map((node) => Number(node.getAttribute('r')))),
+          // Every stroke dot sits on a cell centre of the hero's dot field.
+          markOffGrid: [...glyph.querySelectorAll('.hm-nodes circle')].filter((node) => [node.getAttribute('cx'), node.getAttribute('cy')].some((v) => Math.abs(Number(v) - .5 - Math.round(Number(v) - .5)) > 1e-6)).length,
+          markCell: mark.width / glyph.viewBox.baseVal.width,
+          markCellY: mark.height / glyph.viewBox.baseVal.height,
+          fieldSize: getComputedStyle(document.querySelector('.hero-mark'), '::before').backgroundSize,
           titleBottom: title.bottom,
           titleTop: title.top,
           askTop: ask.top,
@@ -65,11 +72,18 @@ for (const prefix of ['', '/zh']) {
       } else {
         assert.ok(Math.abs(geometry.askCenter - width / 2) < 1);
         assert.ok(Math.abs(geometry.titleCenter - width / 2) < 1);
-        assert.ok(geometry.mark.bottom <= geometry.titleTop + 1, 'phones and tablets show the smaller mark above the title');
+        if (width > 760) assert.ok(geometry.mark.bottom <= geometry.titleTop + 1, 'tablets show the smaller mark above the title');
+        else assert.ok(geometry.mark.top >= geometry.suggestionsBottom + 16, 'phones keep the question entry first and show the mark after the starters');
         assert.ok(Math.abs(geometry.mark.center - width / 2) < 1);
       }
-      assert.ok(geometry.markNodes >= 120 && geometry.markNodes <= 180, 'the mark is a network of 120-180 nodes');
-      assert.ok(geometry.markDot > geometry.markNodeMax * 3, 'its point is one larger solid dot');
+      // Round 8: the mark is written in the hero's own dot field.
+      assert.ok(geometry.markNodes >= 50 && geometry.markNodes <= 140, 'the mark is 50-140 field dots');
+      assert.equal(geometry.markOffGrid, 0, 'every dot of the mark is a dot of the field');
+      assert.ok(Math.abs(geometry.markCell - geometry.markCellY) < .01, 'square cells');
+      assert.equal(geometry.fieldSize, `${geometry.markCell}px ${geometry.markCell}px`, 'the field repeats at exactly the mark’s cell size');
+      assert.ok(geometry.markCell >= 12 && geometry.markCell <= 20, 'field spacing stays between 12 and 20px');
+      assert.ok(geometry.markDot > geometry.markNodeMax * 4, 'its point is one larger solid dot');
+      assert.equal(await page.locator('.hero-mark .hm-dot').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1, 'one point is shown');
       assert.equal(await page.locator('.hero-mark').getAttribute('aria-hidden'), 'true');
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
       assert.ok(geometry.artTop >= geometry.featureTop, 'artwork belongs to the cards below the question');
@@ -102,7 +116,7 @@ for (const prefix of ['', '/zh']) {
       // Reduced motion (this suite's default) shows the finished SVG mark and
       // never creates the animated canvas; nothing sits behind the question.
       assert.equal(await page.locator('canvas, [data-hero-field]').count(), 0);
-      assert.ok(await page.locator('.hero-mark-svg').isVisible());
+      assert.equal(await page.locator('.hero-mark-svg:visible').count(), 1, 'one finished mark for this width');
       assert.ok(await page.locator('.hero-ask .ask-box').evaluate((box) => {
         const rect = box.getBoundingClientRect();
         return box.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
@@ -110,12 +124,13 @@ for (const prefix of ['', '/zh']) {
       assert.equal(await page.locator('.hero-plate img').getAttribute('loading'), null, 'the main artwork is not lazy-loaded');
       assert.equal(await page.locator('.hero-plate img').getAttribute('fetchpriority'), 'high');
       assert.match(await page.locator('#askInputHero').getAttribute('aria-describedby'), /ask-handoff/);
-      assert.equal(await page.locator('.story-layout').count(), 1);
       assert.equal(await page.locator('.home-research-list li').count(), 3);
       assert.equal(await page.locator('.home-research img').count(), 3);
-      assert.equal(await page.locator('.home-stories .card-grid, .home-teams .card-grid').count(), 0);
+      assert.equal(await page.locator('.home-teams .card-grid').count(), 0);
+      // Round 8: the scroll story repeated the question chain and the deck.
+      assert.equal(await page.locator('.home-stories, [data-story]').count(), 0);
       assert.equal(await page.locator('.learning-layout').count(), 1);
-      assert.match(await page.locator('.home-stories figcaption').innerText(), /not a customer case study|并非真实客户案例/);
+      assert.match(await page.locator('.qc-stage figcaption').textContent(), /not a real learner’s transcript|并非真实学习者的记录/);
     });
   }
 
@@ -160,7 +175,7 @@ for (const prefix of ['', '/zh']) {
     });
   }
 
-  test(`${path}: normal-motion sections reveal and the story remains keyboard-navigable`, async (t) => {
+  test(`${path}: normal-motion sections reveal and the mode links remain keyboard-navigable`, async (t) => {
     const context = await site.browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
     t.after(() => context.close());
     await context.route('https://**/*', (route) => route.abort());
@@ -169,11 +184,14 @@ for (const prefix of ['', '/zh']) {
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(site.baseURL + path);
     await page.locator('[data-consent-choice="essential"]').click();
-    for (const selector of ['.home-news', '.home-stories', '.home-research', '.home-teams']) {
+    for (const selector of ['.home-news', '.home-research', '.home-teams']) {
       await page.locator(selector).scrollIntoViewIfNeeded();
       await page.waitForFunction((selector) => getComputedStyle(document.querySelector(selector)).opacity === '1', selector);
     }
-    await page.locator('.story-step').first().focus();
+    // Back at the start of the deck the first mode's link is in front.
+    await page.evaluate(() => scrollTo({ top: document.querySelector('[data-deck]').getBoundingClientRect().top + scrollY, behavior: 'instant' }));
+    await page.waitForFunction(() => !document.querySelector('#mode-dialogue').inert);
+    await page.locator('#mode-dialogue a.m-link').focus();
     await page.keyboard.press('Enter');
     await page.waitForURL(`${site.baseURL}${prefix}/product#dialogue`);
     await page.waitForFunction(() => {
@@ -214,7 +232,8 @@ for (const prefix of ['', '/zh']) {
     assert.equal(await page.locator('[data-ask-chip]').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 0);
     assert.ok(await page.locator('.hero-ask .ask-chip--link').isVisible());
     assert.equal(await page.locator('.home-research-note').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 3);
-    assert.equal(await page.locator('.story-step').count(), 3);
+    assert.equal(await page.locator('.deck-card a.m-link').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 5);
+    assert.ok(await page.locator('.deck-end-link').isVisible(), 'the deck closes on the way into the product');
     assert.equal(await page.locator('.site-footer-grid a').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 36);
     const question = prefix ? '不使用脚本，也能带着问题开始。' : 'A question from a browser without JavaScript.';
     await page.locator('#askInputHero').fill(question);

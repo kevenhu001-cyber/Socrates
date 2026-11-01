@@ -54,7 +54,7 @@ test('reduced motion shows all content without entrances, including the localize
   const page = await sitePage(site, t, '/zh/', 390);
   const hint = page.locator('[data-ask-prompts]');
   const initial = await hint.innerText();
-  for (const selector of ['.feature-intro', '.home-stories', '.home-research-note', '.home-teams']) {
+  for (const selector of ['.feature-intro', '.home-news', '.home-research-note', '.home-teams']) {
     await page.locator(selector).first().scrollIntoViewIfNeeded();
     assert.equal(await page.locator(selector).first().evaluate((node) => getComputedStyle(node).opacity), '1');
   }
@@ -236,8 +236,33 @@ test('Chinese pages do not shift when their CJK font subsets arrive', async (t) 
   }
 });
 
-// Round 7 · A. The network question mark.
-test('the hero question mark gathers once, unwinds onto the chain and rests when out of view', async (t) => {
+test('the research filter row holds its place from the first paint', async (t) => {
+  for (const [path, width] of [['/research', 390], ['/zh/research', 390], ['/research', 1440]]) {
+    const context = await site.browser.newContext({ viewport: { width, height: 844 } });
+    t.after(() => context.close());
+    await context.route('https://**/*', (route) => route.abort());
+    // Hold research-index.js back, so a late filter row would push the list.
+    await context.route(/research-index\.js/, async (route) => { await new Promise((r) => setTimeout(r, 600)); await route.continue(); });
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+      window.__cls = 0;
+      new PerformanceObserver((list) => { for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__cls += entry.value; }).observe({ type: 'layout-shift', buffered: true });
+    });
+    await page.goto(site.baseURL + path, { waitUntil: 'commit' });
+    await page.waitForFunction(() => document.querySelector('#research-notes') && [...document.styleSheets].some((sheet) => (sheet.href || '').includes('/research.css')) && document.fonts.status === 'loaded');
+    const before = await page.locator('#research-notes').evaluate((node) => node.getBoundingClientRect().top + scrollY);
+    await page.waitForFunction(() => !document.querySelector('[data-research-filters]').hidden);
+    await page.waitForTimeout(400);
+    assert.equal(await page.locator('#research-notes').evaluate((node) => node.getBoundingClientRect().top + scrollY), before, `${path} list stays put`);
+    const cls = await page.evaluate(() => window.__cls);
+    assert.ok(cls <= 0.01, `${path} at ${width}px shifted by CLS ${cls.toFixed(4)}`);
+  }
+  const noJS = await sitePage(site, t, '/research', 390, false);
+  assert.ok(await noJS.locator('[data-research-filters]').evaluate((node) => !node.checkVisibility()), 'without scripts the inert filters stay hidden');
+});
+
+// Round 8 · A. The dot-matrix question mark.
+test('the dot-matrix question mark is written once, then rests', async (t) => {
   const context = await site.browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
   t.after(() => context.close());
   await context.route('https://**/*', (route) => route.abort());
@@ -253,13 +278,12 @@ test('the hero question mark gathers once, unwinds onto the chain and rests when
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(site.baseURL + '/');
   await page.locator('[data-consent-choice="essential"]').click();
-  const canvas = page.locator('.home-hero canvas.hero-mark-canvas');
+  const canvas = page.locator('main > canvas.hero-mark-canvas');
   assert.equal(await canvas.count(), 1);
   assert.equal(await canvas.getAttribute('aria-hidden'), 'true');
   assert.equal(await canvas.evaluate((node) => getComputedStyle(node).pointerEvents), 'none');
   assert.ok(await page.locator('.hero-mark').evaluate((node) => node.classList.contains('is-live')));
-  assert.equal(await page.locator('.hero-mark-svg').evaluate((node) => getComputedStyle(node).opacity), '0', 'the canvas, not the static mark, plays the entrance');
-  // Drawn at device pixels, sized to the hero and reaching the chain's first dot.
+  assert.equal(await page.locator('.hm-fine').evaluate((node) => getComputedStyle(node).opacity), '0', 'the canvas, not the static mark, writes the entrance');
   const size = await canvas.evaluate((node) => ({ w: node.width, cssW: node.getBoundingClientRect().width }));
   assert.equal(size.w, Math.round(size.cssW * Math.min(2, await page.evaluate(() => devicePixelRatio))));
   await page.waitForTimeout(1500);
@@ -271,42 +295,106 @@ test('the hero question mark gathers once, unwinds onto the chain and rests when
     for (let i = 3; i < data.length; i += 4) max = Math.max(max, data[i]);
     return max;
   }, [x, y]);
-  const point = await page.evaluate(() => {
+  const at = (selector) => page.evaluate((selector) => {
     const mark = document.querySelector('.hero-mark').getBoundingClientRect();
-    const dot = document.querySelector('.hero-mark .hm-dot');
-    const s = mark.height / 560;
-    return { x: mark.left + Number(dot.getAttribute('cx')) * s, y: mark.top + Number(dot.getAttribute('cy')) * s };
-  });
-  assert.ok(await ink(point.x, point.y) > 200, 'the black point is in place after the ~1.2s entrance');
-  // Breathing keeps redrawing while the hero is in view.
-  const breathing = await page.evaluate(async () => { const a = window.__draws; await new Promise((r) => setTimeout(r, 400)); return window.__draws - a; });
-  assert.ok(breathing > 3, 'the nodes breathe');
-  // Scrolling away unwinds the mark; the point lands on the chain's first dot.
-  const target = await page.evaluate(() => {
-    const dot = document.querySelector('.home-chain .qc-dot').getBoundingClientRect();
-    return dot.top + scrollY;
-  });
-  await page.evaluate((y) => scrollTo({ top: y - innerHeight * .4, behavior: 'instant' }), target);
-  await page.waitForTimeout(400);
-  const landed = await page.evaluate(() => { const dot = document.querySelector('.home-chain .qc-dot').getBoundingClientRect(); return { x: dot.left + dot.width / 2, y: dot.top + dot.height / 2 }; });
-  assert.ok(await ink(landed.x, landed.y) > 200, 'the point has dropped onto the question chain');
-  // Off screen, nothing redraws.
-  await page.evaluate(() => scrollTo({ top: document.querySelector('.home-feature').getBoundingClientRect().top + scrollY + 400, behavior: 'instant' }));
-  await page.waitForTimeout(300);
-  const idle = await page.evaluate(async () => { const a = window.__draws; await new Promise((r) => setTimeout(r, 500)); return window.__draws - a; });
-  assert.equal(idle, 0, 'the canvas rests when the hero is out of view');
+    const svg = document.querySelector('.hm-fine');
+    const s = mark.width / svg.viewBox.baseVal.width;
+    const node = svg.querySelector(selector);
+    return { x: mark.left + Number(node.getAttribute('cx')) * s, y: mark.top + Number(node.getAttribute('cy')) * s };
+  }, selector);
+  const point = await at('.hm-dot');
+  const firstCell = await at('.hm-nodes circle:not([fill-opacity])');
+  assert.ok(await ink(point.x, point.y) > 200, 'the black point has landed after the ~1s entrance');
+  assert.ok(await ink(firstCell.x, firstCell.y) > 200, 'the stroke’s cells are written in ink');
+  // No idle loop: once written, the mark is still.
+  const idle = await page.evaluate(async () => { const a = window.__draws; await new Promise((r) => setTimeout(r, 600)); return window.__draws - a; });
+  assert.equal(idle, 0, 'nothing redraws while the reader is not scrolling');
   assert.ok(await page.evaluate(() => window.__shift) < .01, 'the mark never shifts the layout');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.waitForFunction(() => !document.querySelector('canvas.hero-mark-canvas'));
-  await page.waitForFunction(() => getComputedStyle(document.querySelector('.hero-mark-svg')).opacity === '1');
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.hm-fine')).opacity === '1');
+  assert.equal(await page.locator('.qc-list[data-point-pending]').count(), 0, 'the chain’s first node is shown again');
   assert.deepEqual(errors, []);
+});
+
+test('scrolling away absorbs the question into the field and hands its point to the question chain', async (t) => {
+  const context = await site.browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
+  t.after(() => context.close());
+  await context.route('https://**/*', (route) => route.abort());
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto(site.baseURL + '/');
+  await page.locator('[data-consent-choice="essential"]').click();
+  await page.waitForTimeout(1400);
+  const canvas = page.locator('canvas.hero-mark-canvas');
+  const firstNode = page.locator('.qc-step[data-qc-step="0"] .qc-dot');
+  // Before the hand-off the chain's node waits, so two points never show.
+  assert.ok(await page.locator('.qc-list').evaluate((node) => node.hasAttribute('data-point-pending')));
+  assert.equal(await firstNode.evaluate((node) => getComputedStyle(node).visibility), 'hidden');
+  const inkAt = (x, y, r = 2) => canvas.evaluate((node, [x, y, r]) => {
+    const box = node.getBoundingClientRect();
+    const scale = node.width / box.width;
+    const data = node.getContext('2d').getImageData(Math.round((x - box.left) * scale) - r, Math.round((y - box.top) * scale) - r, 2 * r + 1, 2 * r + 1).data;
+    let max = 0;
+    for (let i = 3; i < data.length; i += 4) max = Math.max(max, data[i]);
+    return max;
+  }, [x, y, r]);
+  const cell = () => page.evaluate(() => {
+    const mark = document.querySelector('.hero-mark').getBoundingClientRect();
+    const svg = document.querySelector('.hm-fine');
+    const s = mark.width / svg.viewBox.baseVal.width;
+    const node = svg.querySelector('.hm-nodes circle:not([fill-opacity])');
+    return { x: mark.left + Number(node.getAttribute('cx')) * s, y: mark.top + Number(node.getAttribute('cy')) * s };
+  });
+  // Midway the top of the stroke has already faded back to the field's gray.
+  await page.evaluate(() => scrollTo({ top: 200, behavior: 'instant' }));
+  await page.waitForTimeout(250);
+  const top = await cell();
+  assert.ok(await inkAt(top.x, top.y) < 60, 'the absorbed cells are no darker than the field');
+  // Landing: the canvas point is exactly where the chain's node is, then the
+  // node takes over and the canvas no longer draws a point.
+  const end = await page.evaluate(() => {
+    const dot = document.querySelector('.qc-step[data-qc-step="0"] .qc-dot').getBoundingClientRect();
+    return dot.top + dot.height / 2 + scrollY - innerHeight * .45;
+  });
+  await page.evaluate((y) => scrollTo({ top: y - 2, behavior: 'instant' }), end);
+  await page.waitForTimeout(250);
+  const near = await firstNode.evaluate((node) => { const b = node.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; });
+  assert.ok(await inkAt(near.x, near.y, 1) > 200, 'just before the hand-off the point sits on the node');
+  await page.evaluate((y) => scrollTo({ top: y + 40, behavior: 'instant' }), end);
+  await page.waitForFunction(() => !document.querySelector('.qc-list').hasAttribute('data-point-pending'));
+  const landed = await firstNode.evaluate((node) => { const b = node.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2, v: getComputedStyle(node).visibility }; });
+  assert.equal(landed.v, 'visible');
+  assert.equal(await inkAt(landed.x, landed.y, 6), 0, 'after the hand-off only the chain’s own node is drawn');
+  // Scrolling back up takes the point back out of the chain.
+  await page.evaluate(() => scrollTo({ top: 120, behavior: 'instant' }));
+  await page.waitForFunction(() => document.querySelector('.qc-list').hasAttribute('data-point-pending'));
+  assert.deepEqual(errors, []);
+
+  // Phones: the question fades back, the point never leaves the hero and the
+  // chain's node is simply there.
+  const phone = await site.browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'no-preference' });
+  t.after(() => phone.close());
+  await phone.route('https://**/*', (route) => route.abort());
+  const small = await phone.newPage();
+  await small.goto(site.baseURL + '/zh/');
+  await small.locator('[data-consent-choice="essential"]').click();
+  await small.waitForTimeout(1400);
+  assert.ok(await small.locator('.hm-compact').evaluate((node) => node.checkVisibility()));
+  assert.equal(await small.locator('.qc-list[data-point-pending]').count(), 0);
+  await small.evaluate(() => scrollTo({ top: 1200, behavior: 'instant' }));
+  assert.equal(await small.locator('.qc-step[data-qc-step="0"] .qc-dot').evaluate((node) => getComputedStyle(node).visibility), 'visible');
+  assert.equal(await small.evaluate(() => document.documentElement.scrollWidth), 390);
 });
 
 test('without scripts the finished question mark is shown and the hero stays usable', async (t) => {
   const page = await sitePage(site, t, '/zh/', 1440, false);
-  assert.ok(await page.locator('.hero-mark-svg').isVisible());
+  assert.ok(await page.locator('.hm-fine').isVisible());
   assert.equal(await page.locator('canvas').count(), 0);
-  assert.equal(await page.locator('.hero-mark .hm-dot').count(), 1);
+  assert.equal(await page.locator('.hero-mark .hm-dot').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1);
+  assert.equal(await page.locator('.qc-list[data-point-pending]').count(), 0);
+  assert.ok(await page.locator('.qc-step[data-qc-step="0"] .qc-dot').isVisible(), 'the chain starts from its own point');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 1440);
 });
 
@@ -323,9 +411,16 @@ test('the mode deck pins, turns with scroll, keys and buttons, and keeps one car
   assert.equal(await page.locator('[data-deck-card]').evaluateAll((cards) => cards.filter((card) => card.inert).length), 4, 'only the front card is reachable');
   const geometry = await deck.evaluate((node) => ({ height: node.offsetHeight, vh: innerHeight, sticky: getComputedStyle(node.querySelector('.deck-stage')).position }));
   assert.equal(geometry.sticky, 'sticky');
-  assert.ok(geometry.height <= geometry.vh * 3.05, 'the pinned run stays within about three viewports');
-  // Scroll halfway through the track: the third mode comes to the front.
-  await deck.evaluate((node) => scrollTo({ top: node.getBoundingClientRect().top + scrollY + (node.offsetHeight - innerHeight) * .5, behavior: 'instant' }));
+  assert.ok(geometry.height <= geometry.vh * 2.85, 'the pinned run stays within 2.8 viewports (shorter than round 7)');
+  // At rest the deck reads as a stack: the cards behind sit lower, smaller
+  // and grayer than the front one.
+  const stack = await page.locator('[data-deck-card]').evaluateAll((cards) => cards.slice(0, 4).map((card) => { const m = new DOMMatrix(getComputedStyle(card).transform); return { y: m.f, s: m.a, veil: Number(getComputedStyle(card, '::after').opacity) }; }));
+  for (let i = 1; i < 4; i += 1) {
+    assert.ok(stack[i].y > stack[i - 1].y && stack[i].y - stack[i - 1].y >= 8 && stack[i].y - stack[i - 1].y <= 14, 'each card behind steps down by 8-14px');
+    assert.ok(stack[i].s < stack[i - 1].s && stack[i].veil > stack[i - 1].veil, 'and is smaller and grayer');
+  }
+  // Scroll to the middle of the third step (one step per card, then the end).
+  await deck.evaluate((node) => scrollTo({ top: node.getBoundingClientRect().top + scrollY + (node.offsetHeight - innerHeight) * 2.5 / 6, behavior: 'instant' }));
   await page.waitForFunction(() => document.querySelector('[data-deck-index]').textContent === '3');
   assert.equal(await page.locator('[data-deck-card][data-k="0"]').getAttribute('id'), 'mode-map');
   assert.equal(await page.locator('[data-deck-card][data-k="-1"]').count(), 2, 'turned cards have left the deck');
@@ -343,8 +438,23 @@ test('the mode deck pins, turns with scroll, keys and buttons, and keeps one car
   assert.equal(await tabs.last().getAttribute('aria-selected'), 'true');
   assert.ok(await page.locator('[data-deck-next]').isDisabled());
   await page.waitForTimeout(900);
+  // One more step past the fifth card folds the deck into its end row.
+  await deck.evaluate((node) => scrollTo({ top: node.getBoundingClientRect().top + scrollY + (node.offsetHeight - innerHeight) * .97, behavior: 'instant' }));
+  await page.waitForFunction(() => document.querySelector('[data-deck]').hasAttribute('data-done'));
+  await page.waitForTimeout(900);
+  assert.equal(await page.locator('[data-deck-index]').innerText(), '5', 'the count stays on 5 / 5');
+  assert.equal(await page.locator('[data-deck-card]').evaluateAll((cards) => cards.filter((card) => card.checkVisibility({ visibilityProperty: true })).length), 0, 'the cards have folded away');
+  assert.equal(await page.locator('.deck-end-dots i').evaluateAll((dots) => dots.filter((dot) => getComputedStyle(dot).opacity === '1').length), 5, 'five dots: every mode met');
+  const endLink = page.locator('.deck-end-link');
+  assert.ok(await endLink.isVisible());
+  assert.equal(await endLink.getAttribute('href'), '/product');
+  await endLink.focus();
+  assert.ok(await endLink.evaluate((node) => document.activeElement === node), 'the way into the product is reachable by keyboard');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 1280);
+  // Choosing a mode again unfolds the deck on that card.
   await page.locator('[data-deck-prev]').click();
   await page.waitForFunction(() => document.querySelector('[data-deck-index]').textContent === '4');
+  await page.waitForFunction(() => !document.querySelector('[data-deck]').hasAttribute('data-done'));
   assert.match(await page.locator('[data-deck-live]').innerText(), /Exam mode/);
   assert.ok(await page.locator('#mode-exam a.m-link').isVisible());
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -367,6 +477,12 @@ test('phones turn the deck without pinning; reduced motion and no-JS list every 
   await page.locator('[data-deck-next]').click();
   assert.equal(await page.locator('[data-deck-index]').innerText(), '2');
   assert.equal(await page.locator('[data-deck-card][data-k="0"]').getAttribute('id'), 'mode-recall');
+  // Unpinned, the end row fills one dot per mode met, in step with n / 5.
+  assert.equal(await page.locator('.deck-end-dots i.is-on').count(), 2);
+  for (let i = 0; i < 3; i += 1) await page.locator('[data-deck-next]').click();
+  assert.equal(await page.locator('.deck-end-dots i.is-on').count(), 5);
+  assert.ok(await page.locator('.deck-end-link').isVisible());
+  assert.equal(await page.locator('[data-deck]').getAttribute('data-done'), null, 'phones never fold the deck away');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 390);
 
   const reduced = await sitePage(site, t, '/', 390);
