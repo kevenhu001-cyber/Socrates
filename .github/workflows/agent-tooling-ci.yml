@@ -1,31 +1,60 @@
 name: Agent & tool-calling checks
 
-# Fast, targeted PR signal for the agent-step and tool-calling path. The full
-# product gate remains in ci.yml; direct pushes to main are already covered by
-# that workflow, so this focused lane does not run a second time after merge.
+# Focused gate for the Codex agent-step pipeline and the tool-calling
+# reliability layer. The full CI workflow still runs everything; this one
+# gives a fast, targeted signal on the modules that own the behaviour:
+#
+#   server   toolCallSafety (argument repair + name resolution),
+#            toolTurnPolicy (per-turn budget, per-tool degradation),
+#            toolErrorFeedback (schema + copyable example on rejection),
+#            agentStepProjection (Codex events -> chat steps),
+#            codexHarness command parsing, chat prompt assembly
+#   frontend agentSteps / agentMode / toolRuntime units, plus the
+#            Playwright spec that drives real agent_step SSE frames
+#
+# Runs on demand (workflow_dispatch) and whenever those paths change.
+
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [main, 'feat/*', 'p*/**']
     paths:
-      - 'server/src/services/tool*.ts'
+      - 'server/src/services/toolCallSafety.ts'
+      - 'server/src/services/toolTurnPolicy.ts'
+      - 'server/src/services/toolErrorFeedback.ts'
       - 'server/src/services/agentStepProjection.ts'
-      - 'server/src/services/codex*.ts'
+      - 'server/src/services/codexEvents.ts'
+      - 'server/src/services/codexHarness.ts'
       - 'server/src/services/agentRuntime.ts'
       - 'server/src/routes/chat/**'
       - 'server/src/routes/agentRuns.ts'
       - 'server/test/**'
       - 'frontend/src/chat/**'
-      - 'frontend/src/ui/agent*'
+      - 'frontend/src/ui/agentSteps.ts'
+      - 'frontend/src/ui/agentMode.js'
       - 'frontend/src/ui/icons/**'
       - 'frontend/src/ui/toolInline.ts'
       - 'frontend/src/ui/toolCards.ts'
       - 'frontend/test/**'
       - 'frontend/e2e/agent-steps.spec.mjs'
       - '.github/workflows/agent-tooling-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/src/services/tool*.ts'
+      - 'server/src/services/agentStepProjection.ts'
+      - 'server/src/services/codex*.ts'
+      - 'server/src/routes/chat/**'
+      - 'frontend/src/chat/**'
+      - 'frontend/src/ui/agent*'
+      - 'frontend/test/**'
+      - 'frontend/e2e/agent-steps.spec.mjs'
+      # Workflow-only edits should exercise this focused lane too; otherwise a
+      # syntax/runtime regression can only be discovered after merge/manual run.
+      - '.github/workflows/agent-tooling-ci.yml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 permissions:
@@ -35,20 +64,24 @@ jobs:
   server-tooling:
     name: Server tool-calling
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     defaults:
       run:
         working-directory: server
+
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-          cache: npm
+          cache: 'npm'
           cache-dependency-path: server/package-lock.json
+
       - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
+
       - name: TypeScript check
         run: npx tsc --noEmit
+
       - name: Tool-calling and agent projection tests
         run: |
           node --import tsx --test \
@@ -60,6 +93,9 @@ jobs:
             test/codexEvents.test.js \
             test/codexCommand.test.js \
             test/chat-helpers.test.js
+
+      # Manual runs are occasionally used as a deeper diagnostic. Push/PR
+      # runs stay focused because ci.yml already owns the complete server gate.
       - name: Full server suite (manual diagnostic)
         if: github.event_name == 'workflow_dispatch'
         run: npm test
@@ -67,16 +103,17 @@ jobs:
   frontend-agent-ui:
     name: Frontend agent UI
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     defaults:
       run:
         working-directory: frontend
+
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-          cache: npm
+          cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
       - name: Restore Rust WASM cache
@@ -95,8 +132,15 @@ jobs:
 
       - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
 
+      # The chat runtime loads a Rust/WASM mechanism library at runtime and
+      # falls back to TypeScript when it is absent, so the unit tests do not
+      # need it. The Vite build does, because the bundle imports the wasm
+      # entry point.
       - name: Build Rust WASM support
         run: |
+          # tools-rust/.cargo/config.toml points cargo at the rsproxy.cn
+          # mirror, which exists for the local dev network and stalls
+          # intermittently from hosted runners. Hosted runners use crates.io.
           rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
           if ! wasm-bindgen --version 2>/dev/null | grep -qx 'wasm-bindgen 0.2.126'; then
@@ -116,16 +160,24 @@ jobs:
             test/toolInlineErrors.test.mjs \
             test/toolRunState.test.mjs
 
+      # The complete unit suite is already a blocking job in ci.yml. Keep it
+      # available for manual diagnostics without paying for it on every PR.
       - name: Full unit suite (manual diagnostic)
         if: github.event_name == 'workflow_dispatch'
         run: npm run test:unit
 
       - name: Build
         run: npm run build
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
+
+      # Drives real agent_step / agent_plan SSE frames through the streaming
+      # controller and asserts the rendered step list, the plan card, the
+      # elapsed summary, and that the steps survive message serialization.
       - name: Agent step e2e
         run: npx playwright test e2e/agent-steps.spec.mjs
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
