@@ -156,8 +156,9 @@
      pills become a WAI-ARIA tab list over a stacked deck: only the front
      card is reachable (the others are inert), arrows, Home/End, the round
      buttons and a horizontal swipe turn the cards. On wide, tall screens the
-     stage is sticky (CSS) and the scroll position inside the 300vh track
-     picks the front card; choosing a mode there scrolls to its place so the
+     stage is sticky (CSS) and the scroll position inside the 280vh track
+     picks the front card (one step per card, then a closing step that
+     folds the deck into its end row); choosing a mode there scrolls to its place so the
      two never disagree. Scroll only schedules a frame. */
   document.querySelectorAll('[data-deck]').forEach(function (deck) {
     var nav = deck.querySelector('[data-deck-nav]');
@@ -169,6 +170,7 @@
     var next = deck.querySelector('[data-deck-next]');
     var indexLabel = deck.querySelector('[data-deck-index]');
     var live = deck.querySelector('[data-deck-live]');
+    var endDots = Array.prototype.slice.call(deck.querySelectorAll('.deck-end-dots i'));
     if (!nav || !list || !controls || !prev || !next || pills.length !== cards.length || !cards.length) return;
     var pinned = window.matchMedia('(prefers-reduced-motion: no-preference) and (min-width: 1024px) and (min-height: 700px)');
     var active = 0;
@@ -176,6 +178,20 @@
     var seen = false;
     var frame = 0;
     var swipe = null;
+    var done = false;
+    var steer = null;
+    var met = [];
+    // Pinned, the track has one step per card plus the closing step.
+    function steps() { return cards.length + 1; }
+
+    function setDone(on) {
+      if (on === done) return;
+      done = on;
+      if (on) deck.setAttribute('data-done', ''); else deck.removeAttribute('data-done');
+      // Folded away, the fifth card is not reachable; the end link is.
+      cards[active].inert = on;
+      if (on && cards[active].contains(document.activeElement)) pills[active].focus();
+    }
 
     function clampIndex(i) { return Math.max(0, Math.min(cards.length - 1, i)); }
 
@@ -186,7 +202,7 @@
       cards.forEach(function (card, k) {
         var d = Math.max(-1, Math.min(4, k - i));
         card.setAttribute('data-k', String(d));
-        card.inert = d !== 0;
+        card.inert = d !== 0 || done;
         var ui = card.querySelector('.ui');
         if (ui) syncLive(ui);
       });
@@ -195,6 +211,8 @@
         pill.tabIndex = k === i ? 0 : -1;
       });
       if (indexLabel) indexLabel.textContent = String(i + 1);
+      met[i] = true;
+      endDots.forEach(function (dot, k) { dot.classList.toggle('is-on', !!met[k]); });
       prev.disabled = i === 0;
       next.disabled = i === cards.length - 1;
       // Never leave focus inside a card that just went inert.
@@ -212,20 +230,32 @@
       i = clampIndex(i);
       if (pinned.matches) {
         var t = track();
-        if (t.span > 0) window.scrollTo({ top: Math.round(t.top + t.span * (i + .5) / cards.length), behavior: 'smooth' });
+        if (t.span > 0) window.scrollTo({ top: Math.round(t.top + t.span * (i + .5) / steps()), behavior: 'smooth' });
+        setDone(false);
+        // The smooth scroll passes through other steps; they must not
+        // override the mode just chosen.
+        steer = { i: i, until: Date.now() + 1200 };
+        window.setTimeout(onScroll, 1250);
       }
       setActive(i, announce);
     }
 
     function fromScroll() {
       frame = 0;
-      if (!enabled || !pinned.matches) return;
+      if (!enabled) return;
+      if (!pinned.matches) { setDone(false); return; }
       var box = deck.getBoundingClientRect();
       var span = deck.offsetHeight - window.innerHeight;
       if (span <= 0) return;
       var progress = Math.max(0, Math.min(1, -box.top / span));
-      var i = Math.min(cards.length - 1, Math.floor(progress * cards.length));
+      var step = Math.min(cards.length, Math.floor(progress * steps()));
+      var i = Math.min(cards.length - 1, step);
+      if (steer) {
+        if (Date.now() < steer.until && step !== steer.i) return;
+        steer = null;
+      }
       if (i !== active) setActive(i, false);
+      setDone(step === cards.length);
     }
     function onScroll() { if (!frame) frame = window.requestAnimationFrame(fromScroll); }
 
@@ -301,6 +331,9 @@
         card.querySelectorAll('.ui-map').forEach(function (map) { map.classList.remove('is-drawable', 'is-drawn'); });
       });
       controls.hidden = true;
+      setDone(false);
+      met = [];
+      endDots.forEach(function (dot) { dot.classList.remove('is-on'); });
       syncAllLive();
     }
     function sync() { if (reduced.matches) disable(); else enable(); }

@@ -459,16 +459,22 @@ a.m-card:active { transform: translateY(0) scale(.99); }
   .m-thread::after, [data-thread] .m-step::before { transition: none; }
 }
 
-/* Round 7 · B. The mode deck (replaces the round-4 tabs).
+/* Round 8 · B. The mode deck.
+   Meaning: each card you lift is one more way of learning you have met.
    Five large cards, each a real miniature of one mode. Without scripts or
    with reduced motion they are a plain vertical list under a row of anchor
-   pills. With scripts and motion the layout is decided by CSS at first
-   paint (no shift when modules.js arrives): the cards stack in one grid
-   cell, the next ones peeking above the front card. On wide, tall screens
-   the stage is sticky and scrolling turns the cards one by one (the track
-   is 300vh, so the pinned run is two viewports); elsewhere the arrows,
-   pills or a swipe turn them. Only transform and opacity move. */
-.home-modes { overflow-x: clip; } /* a turned card tilts toward the reader; never widen the page */
+   pills, closed by the end line. With scripts and motion the layout is
+   decided by CSS at first paint (no shift when modules.js arrives): the
+   cards stack in one grid cell, and even at rest it reads as a deck: the
+   next cards sit a little lower, smaller and grayer behind the front one.
+   Turning lifts the front card up and away and the next one steps forward.
+   On wide, tall screens the stage is sticky and the scroll position turns
+   the cards; one last step past the fifth card folds the deck into a row of
+   five dots, "you have met them all", with the way into the product.
+   Elsewhere the arrows, pills or a swipe turn the cards and the end row
+   below the deck fills one dot per mode met. Only transform and opacity
+   move. */
+.home-modes { overflow-x: clip; }
 .deck-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-200); margin-bottom: var(--space-300); }
 .deck-nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .deck-pill { display: inline-flex; align-items: center; height: 36px; padding-inline: var(--space-200); border-radius: var(--radius-full); background: var(--m-fill); color: var(--m-copy); font: var(--type-button-sm); white-space: nowrap; transition: background-color 300ms var(--m-ease), color 300ms var(--m-ease), transform 200ms var(--m-ease); }
@@ -490,29 +496,55 @@ a.m-card:active { transform: translateY(0) scale(.99); }
 .deck-kicker { display: flex; align-items: center; gap: var(--space-100); margin: 0 0 var(--space-200) !important; color: var(--m-muted) !important; font: var(--type-caption-4) !important; }
 .deck-kicker span { color: var(--m-ink); font-variant-numeric: tabular-nums; }
 .deck-controls[hidden] { display: none; }
+/* The end line: five dots, one per mode, and the way into the product. */
+.deck-end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-100) var(--space-300); margin-top: var(--space-400); }
+.deck-end-dots { display: flex; gap: 8px; margin: 0; }
+.deck-end-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--m-ink); transition: background-color 400ms var(--m-ease), box-shadow 400ms var(--m-ease), transform 500ms var(--m-ease), opacity 400ms var(--m-ease); }
+.deck-end-title { margin: 0; color: var(--m-ink); font: var(--type-body-6); }
+.deck-end-link { margin-left: auto; }
 
 @media (prefers-reduced-motion: no-preference) {
   [data-site-js] .deck-controls[hidden] { display: flex; visibility: hidden; }
-  [data-site-js] .deck-cards { gap: 0; padding-top: 60px; perspective: 2000px; touch-action: pan-y; }
-  [data-site-js] .deck-card { grid-area: 1 / 1; z-index: 1; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .03), 0 24px 64px -24px rgb(0 0 0 / .18); transform-origin: 50% 0; transition: transform 800ms var(--m-ease), opacity 500ms var(--m-ease), visibility 0s linear 0s; will-change: transform; }
+  [data-site-js] .deck-cards { gap: 0; padding-bottom: 36px; touch-action: pan-y; }
+  [data-site-js] .deck-card { grid-area: 1 / 1; z-index: 1; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .03), 0 24px 64px -24px rgb(0 0 0 / .18); transform-origin: 50% 100%; transition: transform 700ms var(--m-ease), opacity 450ms var(--m-ease), visibility 0s linear 0s; will-change: transform; }
   /* A veil grays the cards waiting behind, so their edges read as a stack. */
   [data-site-js] .deck-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--m-subtle); opacity: 0; pointer-events: none; transition: opacity 500ms var(--m-ease); }
   [data-site-js] :is(.deck-card[data-k='0'], .deck-card:not([data-k]):nth-child(1)) { z-index: 5; transform: none; }
-  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { z-index: 4; transform: translate3d(0, -22px, 0) scale(.955); }
-  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { z-index: 3; transform: translate3d(0, -42px, 0) scale(.91); }
-  [data-site-js] :is(.deck-card[data-k='3'], .deck-card:not([data-k]):nth-child(4)) { z-index: 2; transform: translate3d(0, -60px, 0) scale(.865); }
-  [data-site-js] :is(.deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(5)) { z-index: 1; transform: translate3d(0, -60px, 0) scale(.865); opacity: 0; }
-  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2))::after { opacity: .55; }
-  [data-site-js] :is(.deck-card[data-k='2'], .deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+3))::after { opacity: 1; }
-  /* A turned card lifts off the top of the deck and away. */
-  [data-site-js] .deck-card[data-k='-1'] { z-index: 6; transform: translate3d(0, -120px, 0) rotateX(16deg) scale(1.02); opacity: 0; visibility: hidden; transition: transform 800ms var(--m-ease), opacity 400ms var(--m-ease), visibility 0s linear 800ms; }
+  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { z-index: 4; transform: translate3d(0, 12px, 0) scale(.965); }
+  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { z-index: 3; transform: translate3d(0, 24px, 0) scale(.93); }
+  [data-site-js] :is(.deck-card[data-k='3'], .deck-card:not([data-k]):nth-child(4)) { z-index: 2; transform: translate3d(0, 36px, 0) scale(.895); }
+  [data-site-js] :is(.deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(5)) { z-index: 1; transform: translate3d(0, 36px, 0) scale(.895); opacity: 0; }
+  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2))::after { opacity: .5; }
+  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3))::after { opacity: .8; }
+  [data-site-js] :is(.deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+4))::after { opacity: 1; }
+  /* A turned card slides up off the deck and fades. */
+  [data-site-js] .deck-card[data-k='-1'] { z-index: 6; transform: translate3d(0, -64px, 0); opacity: 0; visibility: hidden; transition: transform 700ms var(--m-ease), opacity 400ms var(--m-ease), visibility 0s linear 700ms; }
   [data-site-js] .deck-card :is(.m-panel-copy, .ui) { transition: opacity 400ms var(--m-ease); }
   [data-site-js] :is(.deck-card[data-k]:not([data-k='0']), .deck-card:not([data-k]):nth-child(n+2)) :is(.m-panel-copy, .ui) { opacity: 0; }
+  /* Unpinned: the end row counts the modes met, one dot each. */
+  [data-site-js] .deck-end-dots i { background: transparent; box-shadow: inset 0 0 0 1.25px var(--line-strong, #cdcdcd); }
+  [data-site-js] .deck-end-dots i.is-on { background: var(--m-ink); box-shadow: inset 0 0 0 1.25px var(--m-ink); }
 }
-/* Wide and tall enough: the stage pins and scrolling turns the cards. */
+/* Wide and tall enough: the stage pins and scrolling turns the cards, then
+   one more step folds the deck into its end state. */
 @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) and (min-height: 700px) {
-  [data-site-js] .deck { height: 300vh; }
+  [data-site-js] .deck { height: 280vh; }
   [data-site-js] .deck-stage { position: sticky; top: var(--site-header-height); display: flex; height: calc(100vh - var(--site-header-height)); flex-direction: column; justify-content: center; }
+  [data-site-js] .deck-end { position: absolute; left: 0; right: 0; top: 50%; z-index: 7; flex-direction: column; justify-content: center; gap: var(--space-300); margin: 0; text-align: center; pointer-events: none; visibility: hidden; transform: translateY(-50%); transition: visibility 0s linear 500ms; }
+  [data-site-js] .deck-end-title { font: 500 1.75rem/1.25 var(--site-font); letter-spacing: -.02em; opacity: 0; transform: translateY(8px); transition: opacity 500ms var(--m-ease), transform 500ms var(--m-ease); }
+  [data-site-js] .deck-end-link { margin: 0; opacity: 0; transition: opacity 500ms var(--m-ease); }
+  [data-site-js] .deck-end-dots { gap: 12px; }
+  [data-site-js] .deck-end-dots i { width: 12px; height: 12px; opacity: 0; transform: translateY(-80px) scale(3); }
+  [data-site-js] .deck[data-done] .deck-end { pointer-events: auto; visibility: visible; transition: none; }
+  [data-site-js] .deck[data-done] .deck-end-title { opacity: 1; transform: none; transition-delay: 300ms; }
+  [data-site-js] .deck[data-done] .deck-end-link { opacity: 1; transition-delay: 450ms; }
+  [data-site-js] .deck[data-done] .deck-end-dots i { opacity: 1; transform: none; background: var(--m-ink); box-shadow: none; }
+  [data-site-js] .deck[data-done] .deck-end-dots i:nth-child(2) { transition-delay: 50ms; }
+  [data-site-js] .deck[data-done] .deck-end-dots i:nth-child(3) { transition-delay: 100ms; }
+  [data-site-js] .deck[data-done] .deck-end-dots i:nth-child(4) { transition-delay: 150ms; }
+  [data-site-js] .deck[data-done] .deck-end-dots i:nth-child(5) { transition-delay: 200ms; }
+  /* Each card folds down into its dot. */
+  [data-site-js] .deck[data-done] .deck-card { opacity: 0; visibility: hidden; transform: translate3d(0, 0, 0) scale(.12); transform-origin: 50% 50%; transition: transform 600ms var(--m-ease), opacity 350ms var(--m-ease) 150ms, visibility 0s linear 600ms; }
 }
 @media (min-width: 1920px) {
   .deck-card { min-height: 540px; }
@@ -531,11 +563,16 @@ a.m-card:active { transform: translateY(0) scale(.99); }
   .deck-card .m-panel-copy .m-link { margin-top: var(--space-200); }
 }
 @media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
-  [data-site-js] .deck-cards { padding-top: 36px; }
-  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { transform: translate3d(0, -14px, 0) scale(.95); }
-  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { transform: translate3d(0, -26px, 0) scale(.9); }
-  [data-site-js] :is(.deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+4)) { transform: translate3d(0, -36px, 0) scale(.85); }
+  [data-site-js] .deck-cards { padding-bottom: 24px; }
+  [data-site-js] :is(.deck-card[data-k='1'], .deck-card:not([data-k]):nth-child(2)) { transform: translate3d(0, 8px, 0) scale(.96); }
+  [data-site-js] :is(.deck-card[data-k='2'], .deck-card:not([data-k]):nth-child(3)) { transform: translate3d(0, 16px, 0) scale(.92); }
+  [data-site-js] :is(.deck-card[data-k='3'], .deck-card[data-k='4'], .deck-card:not([data-k]):nth-child(n+4)) { transform: translate3d(0, 24px, 0) scale(.88); }
+}
+@media (max-width: 760px) {
+  .deck-end { gap: var(--space-100) var(--space-200); margin-top: var(--space-300); }
+  .deck-end-title { flex: 1 1 100%; order: 2; }
+  .deck-end-link { order: 3; margin-left: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .deck-pill, .deck-step, .deck-card, .deck-card::after { transition: none !important; }
+  .deck-pill, .deck-step, .deck-card, .deck-card::after, .deck-end-dots i { transition: none !important; }
 }
