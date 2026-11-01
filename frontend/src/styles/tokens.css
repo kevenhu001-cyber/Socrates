@@ -94,7 +94,9 @@
   --ui-radius-row: 10px;
   --ui-radius-bubble: 20px;
   --ui-radius-pill: 999px;
-  --ui-radius-popover: var(--ui-radius-xl);
+  /* R1 restyle: menus and popovers share the 16px card corner of the
+     marketing site; dialogs keep the larger 24px sheet corner. */
+  --ui-radius-popover: var(--ui-radius-lg);
   --ui-radius-dialog: var(--ui-radius-2xl);
   /* The composer tools popup is the one floating surface whose pixels are
      committed to the repository: e2e/composer-tools-visual-baseline.spec.mjs
@@ -203,7 +205,9 @@
   --ui-text-body: calc(var(--ui-foundation-font-size-lg) * var(--app-type-scale));
   --ui-text-body-line: calc(28px * var(--app-type-scale));
   --ui-text-page: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
-  --ui-text-hero: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
+  /* R1 restyle: the landing headline is a 28px medium line (marketing-site
+     heading rhythm, scaled down for the app). */
+  --ui-text-hero: calc(28px * var(--app-type-scale));
   --app-type-scale: calc(var(--app-font-scale, 1.125) / 1.125);
 
   /* Layering */
