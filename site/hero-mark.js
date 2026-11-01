@@ -90,6 +90,13 @@
   var resizeObserver = null;
   var list = null;
   var chainDot = null;
+  // The question box. While the reader is writing, the mark answers: the
+  // stroke drops back to a faint trace and darkens again, in writing order,
+  // as far as the question has been written; the point turns solid once
+  // there is anything to ask. null = not writing (the finished mark).
+  var input = document.getElementById('askInputHero');
+  var writing = null;
+  var FULL = 48;        // a whole question, in Latin-letter widths
 
   function measure() {
     var hostBox = host.getBoundingClientRect();
@@ -123,9 +130,14 @@
       if (cy > bottom) {
         g.fly = true;
         g.target = { x: cx, y: cy };
-        // Come in through the stage's gutter, left of its labels.
-        g.gutter = mix(stageBox.left - hostBox.left, cx, .5);
-        left = Math.min(left, g.gutter - 64, cx - 24);
+        // The lane: the empty column between the chain's intro and its
+        // stage, so the point never passes over a line of text.
+        var intro = document.querySelector('.home-chain .qc-intro');
+        var introRight = intro ? intro.getBoundingClientRect().right - hostBox.left : stageBox.left - hostBox.left - 56;
+        var stageLeft = stageBox.left - hostBox.left;
+        g.lane = stageLeft - Math.max(12, Math.min(28, (stageLeft - introRight) / 2));
+        g.stageTop = stageBox.top - hostBox.top;
+        left = Math.min(left, g.lane - 24, cx - 24);
         bottom = Math.max(bottom, cy + 24);
         // The point is home when the chain's first node is at ~45% of the view.
         g.start = 0;
@@ -154,6 +166,28 @@
 
   function progress() { return geo ? clamp((window.scrollY - geo.start) / (geo.end - geo.start)) : 0; }
 
+  // The writing state only shapes the mark while it is still the mark,
+  // not once the point has left for the chain.
+  function f0(p) { return !geo.fly || p < .3; }
+
+  function readWriting() {
+    if (!input || (document.activeElement !== input && !input.value)) return null;
+    var text = input.value.replace(/\s+/g, ' ').trim();
+    // CJK characters count double: they carry about two Latin letters each.
+    var width = 0;
+    for (var i = 0; i < text.length; i += 1) width += /[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]/.test(text[i]) ? 2 : 1;
+    return { empty: !text, q: text ? Math.min(1, .04 + width / FULL) : 0 };
+  }
+  function onWrite() {
+    var next = readWriting();
+    var key = next ? (next.empty ? 'e' : next.q.toFixed(3)) : '';
+    var prev = writing ? (writing.empty ? 'e' : writing.q.toFixed(3)) : '';
+    writing = next;
+    // Mirrored on the mark for styles and tests; the canvas is the picture.
+    root.setAttribute('data-writing', !next ? 'idle' : next.empty ? 'empty' : next.q >= 1 ? 'full' : 'partial');
+    if (key !== prev) { lastKey = ''; request(); }
+  }
+
   function setPending(on) {
     if (!list) return;
     if (on) list.setAttribute('data-point-pending', '');
@@ -176,6 +210,7 @@
     for (var i = 0; i < cells.length; i += 1) {
       var c = cells[i];
       var write = entranceDone ? 1 : ease(clamp((elapsed - c.t * WRITE) / CELL));
+      if (writing) write *= writing.q > 0 && c.t <= writing.q ? 1 : .22;
       var absorb = ease(clamp((p - c.t * .4) / .3));
       var amount = write * (1 - absorb);
       if (amount <= .01) continue;
@@ -205,21 +240,42 @@
           var hostBox = host.getBoundingClientRect();
           var tx = box.left + box.width / 2 - hostBox.left;
           var ty = box.top + box.height / 2 - hostBox.top;
-          // A cubic path: down out of the hero, then in through the stage's
-          // gutter, so the point never crosses the chain's words.
-          var p1x = x0, p1y = ty - Math.max(90, (ty - y0) * .35);
-          var p2x = g.gutter - 40, p2y = ty - 6;
-          var u = 1 - f;
-          x = u * u * u * x0 + 3 * u * u * f * p1x + 3 * u * f * f * p2x + f * f * f * tx;
-          y = u * u * u * y0 + 3 * u * u * f * p1y + 3 * u * f * f * p2y + f * f * f * ty;
+          // Two legs. First a cubic out of the hero into the lane, arriving
+          // above the stage's top edge; then a rounded corner down the lane
+          // and in to the node along its own row. The stage head and the
+          // labels all sit right of the node, so neither leg crosses words.
+          var sy = Math.min(g.stageTop - 20, ty - 60);
+          var split = .62;
+          if (f < split) {
+            var a = f / split;
+            var u = 1 - a;
+            var q1y = mix(y0, sy, .45);
+            var q2y = mix(y0, sy, .7);
+            x = u * u * u * x0 + 3 * u * u * a * x0 + 3 * u * a * a * g.lane + a * a * a * g.lane;
+            y = u * u * u * y0 + 3 * u * u * a * q1y + 3 * u * a * a * q2y + a * a * a * sy;
+          } else {
+            var b = (f - split) / (1 - split);
+            var v = 1 - b;
+            x = v * v * g.lane + 2 * v * b * g.lane + b * b * tx;
+            y = v * v * sy + 2 * v * b * ty + b * b * ty;
+          }
           r = mix(r0, box.width / 2, f);
         }
       }
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = POINT;
       ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
+      if (writing && writing.empty && f0(p)) {
+        // Nothing written yet: the point is only an outline, waiting.
+        ctx.strokeStyle = POINT;
+        ctx.globalAlpha = alpha * .35;
+        ctx.lineWidth = 1.25;
+        ctx.arc(x, y, r - .625, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = POINT;
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.globalAlpha = 1;
     setPending(g.fly && !home);
@@ -231,7 +287,7 @@
     if (!started) started = now;
     var animating = !entranceDone;
     var p = progress();
-    var key = p.toFixed(4) + (g2key());
+    var key = p.toFixed(4) + (g2key()) + (writing ? (writing.empty ? 'e' : writing.q.toFixed(3)) : '');
     if (animating || key !== lastKey) draw(now);
     lastKey = key;
     if (animating) request();
@@ -267,6 +323,8 @@
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize, { passive: true });
     document.addEventListener('visibilitychange', onVisibility);
+    if (input) ['focus', 'blur', 'input'].forEach(function (type) { input.addEventListener(type, onWrite); });
+    onWrite();
     if (wide.addEventListener) wide.addEventListener('change', onResize);
     if (window.ResizeObserver) {
       // Late fonts or the chain's own layout can move the target node.
@@ -286,6 +344,9 @@
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('resize', onResize);
     document.removeEventListener('visibilitychange', onVisibility);
+    if (input) ['focus', 'blur', 'input'].forEach(function (type) { input.removeEventListener(type, onWrite); });
+    writing = null;
+    root.removeAttribute('data-writing');
     if (wide.removeEventListener) wide.removeEventListener('change', onResize);
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
