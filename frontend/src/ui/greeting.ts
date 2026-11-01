@@ -5,6 +5,7 @@
 // fought the reference composition, which is a single calm line.
 
 import { appMode } from '../config/providers.ts';
+import { setGreeting } from './greetingState.ts';
 
 const POOL_SCAN = 16;
 const _lastPick: Record<string, number> = { chat: -1, tutor: -1 };
@@ -33,8 +34,6 @@ function _pool(mode: string): string[] {
 }
 
 export function renderGreeting(): void {
-  const el = document.getElementById('topicTitle');
-  if (!el) return;
   const mode = appMode;
   const pool = _pool(mode);
   let text = mode === 'tutor' ? "Let's explore." : 'Ready when you are';
@@ -46,6 +45,11 @@ export function renderGreeting(): void {
     _lastPick[mode] = idx;
     text = pool[idx];
   }
-  el.textContent = text;
-  el.classList.add('greeting');
+  setGreeting(text);
+  /* Before the React Native hero mounts, #topicTitle is the static
+     placeholder from index.html and still shows the line directly. Once the
+     hero owns the node, React renders the published text; writing the DOM
+     here would detach React's text node. */
+  const el = document.getElementById('topicTitle');
+  if (el?.hasAttribute('data-greeting-static')) el.textContent = text;
 }

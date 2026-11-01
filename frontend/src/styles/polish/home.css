@@ -1,370 +1,83 @@
 /*
- * polish/home.css — quiet landing shortcuts.
- * The actions remain easy to discover without competing with the greeting
- * and composer; secondary controls appear only when the row is engaged.
+ * polish/home.css — landing empty-state hosts.
+ *
+ * RN-1: the hero, the chat shortcuts and the tutor starters are React Native
+ * components from packages/ui/src/home, rendered through react-native-web.
+ * They own their own look (tokens from packages/theme). This sheet only
+ * places the three host nodes in the landing column and decides which mode
+ * shows which host; the entrance motion lives in the components.
  */
 
+/* Hero host: the welcome line sits above the composer. */
+@media (min-width: 769px) {
+  #appShell #topicSetup .home-hero {
+    width: min(100%, var(--ui-content-chat));
+    margin: 0 auto 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Phones anchor the hero in the upper-middle band, like the old greeting,
+     so it stays put while the keyboard opens. */
+  #appShell #topicSetup .home-hero {
+    position: absolute;
+    inset-inline: 0;
+    top: 40.5%;
+    padding: 0 var(--ui-mobile-page-gutter);
+    transform: translateY(-50%);
+  }
+}
+
+/* The static h1 is a first-paint placeholder only; the mounted hero
+   replaces it. Keep its box but never flash the legacy typography. */
+#appShell #homeHero [data-greeting-static] { visibility: hidden; }
+
+/* Chat mode shortcuts. */
 @media (min-width: 769px) {
   #appShell .home-quick-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    width: min(100%, var(--ui-content-chat));
-    margin: 20px auto 0;
-    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-out) both;
-  }
-
-  #appShell .home-quick-action {
-    position: relative;
-    display: flex;
-    align-items: center;
-    box-sizing: border-box;
-    width: auto;
-    min-height: var(--ui-control-md);
-    padding: 0 16px 0 12px;
-    gap: 8px;
-    /* R1 restyle: suggestion chips are hairline capsules on the page, the
-       same chips the marketing site lines up under its question box. */
-    border: 1px solid var(--ui-border-default);
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-surface);
-    /* The reference landing view carries no quick-action row at all, so this
-       strip is the one part of the surface that has no counterpart to
-       match. It stays because it carries three real composer entry
-       points, but it sits a tier quieter than the surrounding interface:
-       the tertiary ink keeps it as a hint under the capsule instead of a
-       row of buttons competing with it. */
-    color: var(--ui-text-secondary);
-    text-align: left;
-    cursor: pointer;
-    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                border-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
-  }
-
-  #appShell .home-quick-action:hover,
-  #appShell .home-quick-action:focus-within {
-    border-color: var(--ui-border-strong);
-    background: var(--ui-bg-surface);
-    color: var(--foreground);
-  }
-
-  #appShell .home-quick-action-primary {
-    display: flex;
-    flex: 1 1 auto;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    min-height: var(--ui-control-sm);
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  #appShell .home-quick-action-icon {
-    display: inline-grid;
-    place-items: center;
-    flex: 0 0 var(--ui-control-xs);
-    width: var(--ui-control-xs);
-    height: var(--ui-control-xs);
-    border-radius: var(--ui-radius-pill);
-    background: transparent;
-    color: var(--ui-text-tertiary);
-  }
-
-  #appShell .home-quick-action-icon svg {
-    display: block;
-    width: 16px;
-    height: 16px;
-  }
-
-  #appShell .home-quick-action-copy {
-    display: block;
-    min-width: 0;
-    color: inherit;
-    font-size: var(--ui-text-ui);
-    font-weight: var(--ui-font-weight-regular);
-    line-height: var(--ui-text-ui-line);
-  }
-
-  #appShell .home-quick-action-copy span {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  #appShell .home-quick-action-dismiss {
-    /* The dismiss sits on the chip's corner as a small badge, so the chip
-       keeps even padding at rest instead of reserving a hidden slot. */
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    display: inline-grid;
-    place-items: center;
-    width: var(--ui-control-badge);
-    height: var(--ui-control-badge);
-    padding: 0;
-    border: 1px solid var(--ui-border-default);
-    border-radius: 50%;
-    background: var(--ui-bg-surface);
-    color: var(--muted-foreground);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--ui-duration-fast) ease,
-                background-color var(--ui-duration-fast) ease,
-                color var(--ui-duration-fast) ease;
-  }
-
-  #appShell .home-quick-action:hover .home-quick-action-dismiss,
-  #appShell .home-quick-action:focus-within .home-quick-action-dismiss {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  #appShell .home-quick-action-dismiss svg {
-    display: block;
-    width: 12px;
-    height: 12px;
-  }
-
-  #appShell .home-quick-action-dismiss:hover,
-  #appShell .home-quick-action-dismiss:focus-visible {
-    background: var(--ui-bg-control);
-    color: var(--foreground);
-  }
-
-  #appShell .home-quick-action[hidden] { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #appShell .home-quick-action,
-  #appShell .home-quick-action-dismiss { transition: none; }
-}
-
-/* Tutor uses the reference's secondary-mode cards, with real learning
-   prompts. Visibility follows the existing mode attribute without a render
-   pass, network request, or extra observer on the conversation. */
-#appShell .home-tutor-starters { display: none; }
-
-@media (min-width: 769px) {
-  body[data-app-mode="tutor"] #appShell .home-quick-actions { display: none; }
-  body[data-app-mode="tutor"]  #appShell .home-tutor-starters {
     display: block;
     width: min(100%, var(--ui-content-chat));
-    margin: 28px auto 0;
-    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-out) both;
-  }
-  #appShell .home-tutor-starters h2 {
-    margin: 0 0 12px 12px;
-    color: var(--muted-foreground);
-    font-size: var(--ui-font-size-sm);
-    font-weight: var(--ui-font-weight-regular);
-    line-height: 1.5;
-  }
-  #appShell .home-tutor-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-  }
-  #appShell .home-tutor-card {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    min-width: 0;
-    padding: 16px;
-    /* R1 restyle: suggestion cards are hairline paper cards on the 16px
-       card corner, quieter than the composer capsule above them. */
-    border: 1px solid var(--ui-border-default);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-bg-surface);
-    color: var(--muted-foreground);
-    text-align: start;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    font: inherit;
-    font-size: var(--ui-font-size-sm);
-    line-height: 1.5;
-    cursor: pointer;
-    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                border-color var(--ui-duration-hover) var(--ui-ease-apple, ease);
-  }
-  #appShell .home-tutor-card:hover {
-    background: var(--ui-bg-surface);
-    border-color: var(--ui-border-strong);
-  }
-  #appShell .home-tutor-card strong {
-    color: var(--foreground);
-    font-size: var(--ui-text-ui);
-    font-weight: var(--ui-font-weight-medium);
-  }
-  #appShell .home-tutor-card-icon {
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    margin-bottom: 8px;
-    color: var(--foreground);
-    font-size: 24px;
-    line-height: 1;
-  }
-  #appShell .home-quick-action:has([aria-pressed="true"]) {
-    color: var(--ui-tool-chip-text);
+    margin: 24px auto 0;
   }
 }
 
-/* Phones: the landing surface otherwise ends at the greeting + composer, so
-   the same entry points the desktop row offers (upload · write · search) come
-   back as one scrollable chip rail directly above the capsule. Tutor mode
-   swaps the rail for its three prompt cards, scrolled horizontally instead of
-   stacking (three stacked cards would bury the composer on a 568px screen). */
 @media (max-width: 768px) {
   #appShell .home-quick-actions {
-    display: flex;
+    display: block;
     order: -1;
-    flex-wrap: nowrap;
-    justify-content: center;
-    /* `safe center` keeps a single centred row when the chips fit, but falls
-       back to start-alignment when they overflow — plain centring clips the
-       first chip past the scroll container's left edge, where it can never be
-       scrolled back into view. */
-    justify-content: safe center;
-    gap: 6px;
     box-sizing: border-box;
     width: 100%;
-    margin: 0 0 10px;
-    padding: 0;
+    margin: 0 0 12px;
     overflow-x: auto;
     scrollbar-width: none;
   }
   #appShell .home-quick-actions::-webkit-scrollbar { display: none; }
+}
 
-  #appShell .home-quick-action {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    min-height: 36px;
-    padding: 0 10px;
-    gap: 6px;
-    border: 1px solid var(--ui-border-default);
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-surface);
-    color: var(--muted-foreground);
-    font-size: var(--ui-font-size-xs);
-    line-height: 1;
-    white-space: nowrap;
-  }
-  #appShell .home-quick-action:active {
-    background: var(--accent);
-    color: var(--foreground);
-  }
-  #appShell .home-quick-action-primary {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    line-height: 1;
-  }
-  #appShell .home-quick-action-icon {
-    display: inline-grid;
-    place-items: center;
-    width: 16px;
-    height: 16px;
-  }
-  #appShell .home-quick-action-icon svg { display: block; width: 16px; height: 16px; }
-  /* No hover on touch, so the per-chip dismiss would only be reachable by a
-     long-press that also opens the context menu. */
-  #appShell .home-quick-action-dismiss { display: none; }
+/* Tutor mode starters. Visibility follows the existing mode attribute
+   without a render pass. */
+#appShell .home-tutor-starters { display: none; }
 
+@media (min-width: 769px) {
+  body[data-app-mode="tutor"] #appShell .home-quick-actions { display: none; }
+  body[data-app-mode="tutor"] #appShell .home-tutor-starters {
+    display: block;
+    width: min(100%, var(--ui-content-chat));
+    margin: 40px auto 0;
+  }
+}
+
+@media (max-width: 768px) {
   body[data-app-mode="tutor"] #appShell .home-quick-actions { display: none; }
   body[data-app-mode="tutor"] #appShell .home-tutor-starters {
     display: block;
     order: -1;
     width: 100%;
-    margin: 0 0 10px;
-  }
-  #appShell .home-tutor-starters h2 {
-    margin: 0 0 8px 2px;
-    color: var(--muted-foreground);
-    font-size: var(--ui-font-size-sm);
-    font-weight: var(--ui-font-weight-regular);
-    line-height: 1.4;
-  }
-  #appShell .home-tutor-grid {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 74%;
-    gap: 8px;
-    padding-bottom: 2px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-  #appShell .home-tutor-grid::-webkit-scrollbar { display: none; }
-  #appShell .home-tutor-card {
-    scroll-snap-align: start;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 12px;
-    border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-composer);
-    background: var(--ui-bg-composer);
-    color: var(--muted-foreground);
-    text-align: start;
-    font: inherit;
-    font-size: var(--ui-font-size-xs);
-    line-height: 1.45;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-  #appShell .home-tutor-card strong {
-    color: var(--foreground);
-    font-size: var(--ui-font-size-sm);
-    font-weight: var(--ui-font-weight-medium);
-  }
-  #appShell .home-tutor-card-icon {
-    font-size: var(--ui-font-size-lg);
-    line-height: 1;
-    color: var(--foreground);
+    margin: 0 0 12px;
   }
 }
 
-/* 568px-tall phones leave ~40px between the greeting and the capsule, so the
-   rail gives back its margins rather than crowding the greeting. */
 @media (max-width: 768px) and (max-height: 700px) {
   #appShell .home-quick-actions,
   body[data-app-mode="tutor"] #appShell .home-tutor-starters { margin-bottom: 6px; }
-  #appShell .home-quick-action { min-height: 32px; padding: 0 10px; }
-}
-
-/* 320px cannot hold three labelled chips; fade the trailing edge so the row
-   reads as scrollable instead of looking clipped. */
-@media (max-width: 359px) {
-  #appShell .home-quick-actions {
-    -webkit-mask-image: linear-gradient(to right, black calc(100% - 20px), transparent 100%);
-    mask-image: linear-gradient(to right, black calc(100% - 20px), transparent 100%);
-  }
-}
-
-@keyframes homeStartersIn {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  #appShell .home-quick-actions,
-  body[data-app-mode="tutor"] #appShell .home-tutor-starters { animation: none; }
-  #appShell .home-tutor-card { transition: none; }
 }

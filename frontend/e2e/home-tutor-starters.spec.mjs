@@ -19,10 +19,10 @@ test('tutor cards append editable prompts without sending or losing the draft', 
   await page.locator('#topModeTutor').click();
   await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'tutor');
   await expect(page.locator('.home-quick-actions')).toBeHidden();
-  await expect(page.locator('.home-tutor-card')).toHaveCount(3);
+  await expect(page.locator('[data-testid^="home-starter-"]')).toHaveCount(3);
   const editor = page.locator('#composerRoot .rich-composer-editor');
   await editor.fill('我的目标：');
-  await page.locator('[data-home-prompt="understand"]').click();
+  await page.locator('[data-testid="home-starter-understand"]').click();
   await expect(editor).toContainText('我的目标：');
   await expect(editor).toContainText('帮我理解一个概念');
   await expect(editor).toBeFocused();
@@ -40,7 +40,7 @@ test('tutor cards append editable prompts without sending or losing the draft', 
 });
 
 test('search shortcut mirrors the composer toggle and returns keyboard focus', async ({ page }) => {
-  const search = page.locator('[data-home-action="research"]');
+  const search = page.locator('[data-testid="home-shortcut-action-research"]');
   const initial = await search.getAttribute('aria-pressed');
   await search.click();
   await expect(search).toHaveAttribute('aria-pressed', initial === 'true' ? 'false' : 'true');
@@ -49,9 +49,9 @@ test('search shortcut mirrors the composer toggle and returns keyboard focus', a
   await expect(search).toHaveAttribute('aria-pressed', 'false');
   await search.click();
   await expect(search).toHaveAttribute('aria-pressed', 'true');
-  await page.locator('.home-quick-action-dismiss').first().focus();
+  await page.locator('[data-testid^="home-shortcut-dismiss-"]').first().focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('[data-home-action="write"]')).toBeFocused();
+  await expect(page.locator('[data-testid="home-shortcut-action-write"]')).toBeFocused();
 });
 
 test('reduced motion stops the mode slider and tutor entrance', async ({ page }) => {
