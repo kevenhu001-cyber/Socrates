@@ -1,5 +1,5 @@
 import { createParser, evaluate, split, tokenize, walkAST, type ASTNode, type LibraryJSONSchema } from '@openuidev/lang-core';
-import { openUiProgramIssues, openUiRuntimeIssues } from '../../../packages/core/src/openUiProgram.js';
+import { OPENUI_AST_BUDGET, openUiProgramIssues, openUiRuntimeIssues } from '../../../packages/core/src/openUiProgram.js';
 import { validateVisualizationSpec } from './visualization.js';
 import { OPENUI_SCHEMA } from './openUiPrompt.generated.js';
 
@@ -21,14 +21,32 @@ export function validateOpenUiProgram(source: string): string[] {
   return inspectOpenUiProgram(source).issues;
 }
 
+/** One Visualization(...) inside a program that the native validator rejected. */
+export interface OpenUiVisualizationFailure {
+  template: string | null;
+  title: string | null;
+  stage: string;
+  issues: Array<{ path: string; message: string }>;
+}
+
+export interface OpenUiInspection {
+  issues: string[];
+  visualizations: Array<Record<string, unknown>>;
+  /** Rejected Visualization calls, for template-specific correction hints. */
+  failures: OpenUiVisualizationFailure[];
+  /** Normalizer notes for accepted visualizations (truncation, gaps). */
+  warnings: string[];
+  /** The program ends mid-string or mid-statement (likely truncated). */
+  incomplete: boolean;
+  /** The parser itself threw (not just reported issues). */
+  unparseable: boolean;
+}
+
 /** Parse and validate OpenUI once, returning native Visualization specs that
  * can be consumed by clients without an OpenUI runtime (for example the
  * Universal App). Dynamic values are evaluated from the program's declared
  * initial state; unresolved client-only values stay in the OpenUI document. */
-export function inspectOpenUiProgram(source: string): {
-  issues: string[];
-  visualizations: Array<Record<string, unknown>>;
-} {
+export function inspectOpenUiProgram(source: string): OpenUiInspection {
   try {
     const declarations = split(tokenize(source)).map((statement) => statement.id);
     const parsed = parser.parse(source);
@@ -38,13 +56,44 @@ export function inspectOpenUiProgram(source: string): {
       ...openUiRuntimeIssues(parsed, parsed.stateDeclarations),
       ...embedded.issues,
     ];
+    const meta = (parsed as { meta?: { incomplete?: boolean } }).meta;
     return {
       issues: [...new Set(issues)].slice(0, 8),
       visualizations: issues.length === 0 ? embedded.visualizations : [],
+      failures: embedded.failures,
+      warnings: embedded.warnings,
+      incomplete: Boolean(meta?.incomplete),
+      unparseable: false,
     };
-  } catch {
-    return { issues: ['OpenUI program could not be parsed; use the supplied component signatures'], visualizations: [] };
+  } catch (error) {
+    return {
+      issues: [`OpenUI program could not be parsed (${String((error as Error)?.message || 'syntax error').slice(0, 120)}); use the supplied component signatures`],
+      visualizations: [],
+      failures: [],
+      warnings: [],
+      incomplete: looksUnterminated(source),
+      unparseable: true,
+    };
   }
+}
+
+/** Unclosed quote or bracket at the end of the source text. */
+function looksUnterminated(source: string): boolean {
+  let depth = 0;
+  let quote = '';
+  let escaped = false;
+  for (const char of source) {
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (char === '\\') { escaped = true; continue; }
+      if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'") { quote = char; continue; }
+    if ('([{'.includes(char)) depth++;
+    else if (')]}'.includes(char)) depth--;
+  }
+  return Boolean(quote) || depth > 0;
 }
 
 /** The model sometimes hands the whole render_visualization envelope to the
@@ -73,10 +122,14 @@ function envelopeMisuse(props: Record<string, unknown>): string | null {
 function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unknown>): {
   issues: string[];
   visualizations: Array<Record<string, unknown>>;
+  failures: OpenUiVisualizationFailure[];
+  warnings: string[];
 } {
   const issues: string[] = [];
   const visualizations: Array<Record<string, unknown>> = [];
-  let budget = 20000;
+  const failures: OpenUiVisualizationFailure[] = [];
+  const warnings: string[] = [];
+  let budget = OPENUI_AST_BUDGET;
   const walk = (value: unknown, depth = 0): void => {
     if (!value || typeof value !== 'object' || --budget < 0 || depth > 100) return;
     const node = value as Record<string, unknown>;
@@ -84,7 +137,10 @@ function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unkn
       const names = ['template', 'title', 'payload', 'accessibilitySummary', 'caption'];
       const props = (node.props || node.mappedProps || Object.fromEntries(names.map((name, index) => [name, (node.args as unknown[])[index]]))) as Record<string, unknown>;
       const misuse = envelopeMisuse(props);
-      if (misuse) { issues.push(misuse); }
+      if (misuse) {
+        issues.push(misuse);
+        failures.push({ template: null, title: null, stage: 'envelope_misuse', issues: [{ path: 'Visualization', message: misuse }] });
+      }
       else {
         let unresolved = false;
         const resolve = (input: unknown): unknown => {
@@ -110,10 +166,19 @@ function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unkn
         const spec = resolve({ version: 1, ...props });
         if (!unresolved) {
           const validation = validateVisualizationSpec(spec);
+          const record = spec && typeof spec === 'object' ? spec as Record<string, unknown> : {};
           if (!validation.ok) {
-            issues.push(`Visualization: ${validation.issues?.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`);
+            const label = typeof record.title === 'string' && record.title ? ` "${record.title.slice(0, 60)}"` : '';
+            issues.push(`Visualization${label}: ${validation.issues?.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`);
+            failures.push({
+              template: validation.template ?? (typeof record.template === 'string' ? record.template : null),
+              title: typeof record.title === 'string' ? record.title : null,
+              stage: validation.stage,
+              issues: validation.issues ?? [],
+            });
           } else if (visualizations.length < 8) {
             visualizations.push(validation.spec as unknown as Record<string, unknown>);
+            warnings.push(...(validation.warnings ?? []));
           }
         }
       }
@@ -121,5 +186,5 @@ function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unkn
     for (const item of Object.values(node)) walk(item, depth + 1);
   };
   walk(root);
-  return { issues: [...new Set(issues)].slice(0, 8), visualizations };
+  return { issues: [...new Set(issues)].slice(0, 8), visualizations, failures: failures.slice(0, 8), warnings: [...new Set(warnings)].slice(0, 8) };
 }

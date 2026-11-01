@@ -14,6 +14,10 @@
       "types": "./src/visualizationMath.d.ts",
       "import": "./src/visualizationMath.js"
     },
+    "./visualizationNormalize": {
+      "types": "./src/visualizationNormalize.d.ts",
+      "import": "./src/visualizationNormalize.js"
+    },
     "./motion/spring": {
       "types": "./src/motion/spring.ts",
       "import": "./src/motion/spring.ts"

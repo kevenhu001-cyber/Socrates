@@ -64,17 +64,51 @@ export function VisualizationActions({
 export interface VisualizationFallbackActionsProps {
   retryLabel: string;
   fixLabel: string;
+  tableLabel?: string;
+  hideTableLabel?: string;
+  /** The card has a data table to fall back to. */
+  tableAvailable?: boolean;
+  /** The table is already shown (automatic fallback after a chart failure). */
+  tableInitiallyOpen?: boolean;
+  onToggleTable?: (open: boolean) => void;
   onRetry: () => void;
   onFix: () => void;
 }
 
-export function VisualizationFallbackActions({ retryLabel, fixLabel, onRetry, onFix }: VisualizationFallbackActionsProps) {
+/**
+ * Failure actions: [View as table] is the primary action whenever the data
+ * can be read as a table; [Retry] re-renders locally; [Fix with AI] asks the
+ * model for a corrected call. When the card already fell back to its table,
+ * the table toggle is not repeated.
+ */
+export function VisualizationFallbackActions({
+  retryLabel,
+  fixLabel,
+  tableLabel,
+  hideTableLabel,
+  tableAvailable = false,
+  tableInitiallyOpen = false,
+  onToggleTable,
+  onRetry,
+  onFix,
+}: VisualizationFallbackActionsProps) {
+  const [tableOpen, setTableOpen] = useState(tableInitiallyOpen);
+  const showTableToggle = tableAvailable && !tableInitiallyOpen && !!onToggleTable;
   return (
     <div className="visualization-fallback-actions">
+      {showTableToggle ? (
+        <Button size="sm" data-viz-fallback="table" aria-expanded={tableOpen} onClick={() => {
+          const next = !tableOpen;
+          setTableOpen(next);
+          onToggleTable?.(next);
+        }}>
+          {tableOpen ? hideTableLabel || tableLabel : tableLabel}
+        </Button>
+      ) : null}
       <Button variant="outline" size="sm" data-viz-fallback="retry" onClick={onRetry}>
         {retryLabel}
       </Button>
-      <Button size="sm" data-viz-fallback="fix" onClick={onFix}>
+      <Button variant={showTableToggle ? 'ghost' : 'outline'} size="sm" data-viz-fallback="fix" onClick={onFix}>
         {fixLabel}
       </Button>
     </div>

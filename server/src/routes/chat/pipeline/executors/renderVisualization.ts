@@ -5,10 +5,12 @@
 
 import {
   executeVisualization,
+  VISUALIZATION_TEMPLATES,
   visualizationTemplateCorrectionHint,
   visualizationTemplateExample,
 } from '../../../../services/visualization.js';
 import { buildToolErrorFeedback } from '../../../../services/tools/toolErrorFeedback.js';
+import { recordVisualizationValidation } from '../../../../lib/telemetry.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 
@@ -53,6 +55,13 @@ export const executeRenderVisualization: ToolExecutor = async (
     userMessage: result.userMessage,
     detail: result.detail,
     durationMs: result.durationMs,
+  });
+  const template = result.diagnostics?.template || result.visualization?.template || null;
+  recordVisualizationValidation({
+    tool: 'render_visualization',
+    outcome: result.status === 'completed' ? 'accepted' : 'rejected',
+    stage: String(result.diagnostics?.stage || (result.status === 'completed' ? 'accepted' : 'unknown')),
+    template: typeof template === 'string' && (VISUALIZATION_TEMPLATES as readonly string[]).includes(template) ? template : template ? 'other' : 'none',
   });
   console.info('[visualization]', JSON.stringify({
     stage: result.diagnostics?.stage || (result.status === 'completed' ? 'server_accepted' : 'server_rejected'),

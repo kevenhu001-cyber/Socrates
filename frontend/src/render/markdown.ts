@@ -151,6 +151,19 @@ function replaceProgressiveScaffolds(source: string, bank: PlaceholderBank): str
     (_match, tag: string, attrs: string, content: string) => renderProgressiveScaffold(tag, content, attrs, bank));
 }
 
+/* Only an explicit ```html / ```viz / ```svg fence, or an UNLABELED fence
+   whose body is unmistakably a page, runs in the sandboxed preview. Any other
+   language label is source code to read: a ```jsx or ```vue component that
+   contains `</div>` used to be executed as HTML and shown as "Interactive". */
+export function unlabeledHtml(lang: string, trimmed: string): boolean {
+  if (lang) return false;
+  const hasSvgTag = /<svg[\s>]/i.test(trimmed);
+  const looksLikeHtml = hasSvgTag || (
+    trimmed.length > 30 && /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
+  );
+  return looksLikeHtml && (trimmed.length > 20 || hasSvgTag);
+}
+
 function replaceProgressiveCodeBlocks(
   source: string,
   complete: boolean,
@@ -175,11 +188,7 @@ function replaceProgressiveCodeBlocks(
   source = source.replace(/```(\w*)\n?([\s\S]*?)```/g, (_match, lang: string, code: string) => {
     const trimmed = code.trim();
     const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
-    const hasSvgTag = /<svg[\s>]/i.test(trimmed);
-    const looksLikeHtml = isHtmlLang || hasSvgTag || (
-      trimmed.length > 30 && /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
-    );
-    if (isHtmlLang || (looksLikeHtml && (trimmed.length > 20 || hasSvgTag))) {
+    if (isHtmlLang || unlabeledHtml(lang, trimmed)) {
       return bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
     }
     const hljsLang = safeHljsLang(lang);
@@ -448,11 +457,7 @@ function replaceSettledCodeBlocks(source: string, bank: PlaceholderBank): string
   return source.replace(/```(\w*)\n?([\s\S]*?)```/g, (_match, lang: string, code: string) => {
     const trimmed = code.trim();
     const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
-    const hasSvgTag = /<svg[\s>]/i.test(trimmed);
-    const looksLikeHtml = isHtmlLang || hasSvgTag || (
-      trimmed.length > 30 && /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
-    );
-    if (isHtmlLang || (looksLikeHtml && (trimmed.length > 20 || hasSvgTag))) {
+    if (isHtmlLang || unlabeledHtml(lang, trimmed)) {
       return bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
     }
     const hljsLang = safeHljsLang(lang);

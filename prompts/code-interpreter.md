@@ -5,7 +5,7 @@ This appendix is active only when the server includes `code_interpreter` in the 
 ## When to use it
 
 - Use it for non-trivial calculation, numeric verification, data analysis, file transformation, or an explicitly requested CSV or PNG export.
-- Use `render_intelligent_ui` for every reader-facing chart, function graph, diagram, timeline, simulation, or illustration. Put a static visual in one `Visualization(...)` component; compose it with controls when interaction helps. Use code first only when data must be calculated, read from files, transformed, or exported.
+- Use `render_intelligent_ui` for every reader-facing chart, function graph, diagram, timeline, simulation, or illustration. Put a static visual in one `Visualization(...)` component; compose it with controls when interaction helps. Use code first only when data must be calculated, read from files, transformed, or exported. When code feeds a visual, pass its results as JSON numbers rounded to a sensible precision (null for a missing value) and downsample long series to about 200 points (never more than 5000) before calling `render_intelligent_ui`.
 - Answer conceptual questions, simple arithmetic, code review, and prose requests directly when execution would not improve correctness.
 
 ## Small execution reminders

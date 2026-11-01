@@ -2,6 +2,7 @@ import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { disposeVisualization, disposeVisualizations, mountVisualization } from '../src/render/visualization.ts';
+import { getCurrentLanguage, setCurrentLanguage } from '../src/i18n/languageState.ts';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;
@@ -13,10 +14,11 @@ const spec = {
   payload: { shapes: [{ type: 'circle', center: [0, 0], radius: 1, label: 'Unit circle' }] },
 };
 
+const initialLanguage = getCurrentLanguage();
 beforeEach(() => {
   document.body.replaceChildren();
-  delete window.t;
-  delete globalThis.renderMathInElement;
+  delete window.renderMathInElement;
+  setCurrentLanguage(initialLanguage);
 });
 afterEach(() => disposeVisualizations(document.body));
 
@@ -61,19 +63,25 @@ test('cleanup failure is reported once and does not block card removal', async (
 test('math enhancement failure preserves the SVG and its action controls', async (context) => {
   const diagnostics = [];
   context.mock.method(console, 'warn', (...args) => diagnostics.push(args));
-  globalThis.renderMathInElement = () => { throw new Error('Math renderer failed'); };
+  /* renderCardMath reads the KaTeX auto-render hook from `window`, which in
+     this test is the JSDOM window rather than Node's globalThis. */
+  window.renderMathInElement = () => { throw new Error('Math renderer failed'); };
   const card = await mount();
   assert.ok(card.querySelector('svg'));
   assert.equal(card.querySelector('[data-viz-action="download"]').hidden, false);
   assert.deepEqual(diagnostics.map((entry) => entry[1]), ['visualization.renderCardMath']);
 });
 
-test('translation failure reports a diagnostic and preserves English fallback labels', async (context) => {
-  const diagnostics = [];
-  context.mock.method(console, 'warn', (...args) => diagnostics.push(args));
-  window.t = () => { throw new Error('Translator failed'); };
-  const card = await mount();
+test('action labels follow the active locale through the imported translator', async () => {
+  /* The card used to read a global window.t that tests could replace; it now
+     imports `t` from i18n.ts and only falls back to English when a key is
+     missing, so the locale itself decides the label. */
+  setCurrentLanguage('en');
+  let card = await mount();
   assert.equal(card.querySelector('[data-viz-action="download"]').textContent, 'Download PNG');
-  assert.ok(diagnostics.length > 0);
-  assert.ok(diagnostics.every((entry) => entry[1] === 'visualization.translate'));
+  disposeVisualizations(document.body);
+  document.body.replaceChildren();
+  setCurrentLanguage('zh');
+  card = await mount();
+  assert.equal(card.querySelector('[data-viz-action="download"]').textContent, '下载 PNG');
 });

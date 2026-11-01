@@ -13,6 +13,8 @@
  */
 import { validateIntelligentUi } from '@socrates/core';
 import { LazyIntelligenceUiBlock } from '../intelligence-ui/LazyIntelligenceUiBlock';
+import { NormalizedVisualizationsContext } from '../intelligence-ui/openui/normalizedVisualizations';
+import { IntelligenceUiFailureCard } from '../intelligence-ui/IntelligenceUiFailureCard';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
@@ -79,20 +81,46 @@ function renderIntelligenceUiAttachment(
   const document = surface && surface.phase !== 'aborted'
     ? { version: 1, nodes: surface.nodes }
     : intelligenceUiDocumentOf(call);
-  /* A validated-looking document may be painted as soon as its arguments
-     are complete; the tool row remains the authority for final success. */
-  if (!document || state === 'error' || state === 'stopped') return null;
+  /* A rejected call keeps a visible card (title, reason, table, repair)
+     instead of vanishing, unless a later attempt in the same turn replaced
+     it: that retry renders its own card. */
+  if (state === 'error') return renderIntelligenceUiFailure(call, tools, readOnly);
+  if (!document || state === 'stopped') return null;
   const source = document.nodes.map((node) => JSON.stringify(node)).join('\n');
   if (!source) return null;
+  const serverSpecs = Array.isArray(call.visualizations)
+    ? call.visualizations.filter((spec): spec is Record<string, unknown> => !!spec && typeof spec === 'object' && !Array.isArray(spec))
+    : [];
   return (
     <div className="tool-inline-attachments" data-tool-anchor={call.id}>
-      <LazyIntelligenceUiBlock
-        source={source}
-        showActivityCue={false}
-        tools={tools}
-        open={surface && surface.phase !== 'aborted' ? surface.phase === 'streaming' : state === 'running' || state === 'awaiting'}
-        readOnly={readOnly}
-      />
+      <NormalizedVisualizationsContext.Provider value={serverSpecs}>
+        <LazyIntelligenceUiBlock
+          source={source}
+          showActivityCue={false}
+          tools={tools}
+          open={surface && surface.phase !== 'aborted' ? surface.phase === 'streaming' : state === 'running' || state === 'awaiting'}
+          readOnly={readOnly}
+        />
+      </NormalizedVisualizationsContext.Provider>
+    </div>
+  );
+}
+
+function supersededByLaterAttempt(call: ToolCallRecord, tools: ReadonlyArray<ToolCallRecord>): boolean {
+  const index = tools.findIndex((entry) => entry.id === call.id);
+  if (index < 0) return false;
+  return tools.slice(index + 1).some((entry) => entry.name === call.name);
+}
+
+function renderIntelligenceUiFailure(
+  call: ToolCallRecord,
+  tools: ReadonlyArray<ToolCallRecord>,
+  readOnly?: boolean,
+): ReactElement | null {
+  if (supersededByLaterAttempt(call, tools)) return null;
+  return (
+    <div className="tool-inline-attachments" data-tool-anchor={call.id} data-tool-failed="true">
+      <IntelligenceUiFailureCard call={call} readOnly={readOnly} />
     </div>
   );
 }

@@ -1,0 +1,74 @@
+/* Native visualization loading / failure states (V1 reliability).
+   Restrained on purpose: surface, 1px subtle rules, muted text. No shimmer,
+   no pulse, no dot patterns. The full visual pass (V2) replaces this. */
+.viz-state {
+  display: grid;
+  gap: var(--ui-space-sm);
+  margin: var(--ui-space-sm) 0;
+  padding: var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-width: 0;
+}
+.viz-state-title {
+  margin: 0;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1.4;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.viz-state-stage {
+  position: relative;
+  height: 11rem;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  display: grid;
+  align-content: space-evenly;
+}
+.viz-state-gridline {
+  display: block;
+  height: 0;
+  border-top: 1px solid var(--ui-border-subtle);
+  opacity: 0.6;
+}
+.viz-state-baseline { display: none; }
+.viz-state-progress,
+.viz-state-reason,
+.viz-state-note {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.5;
+}
+.viz-state-body { display: grid; gap: var(--ui-space-xs); justify-items: start; }
+.viz-state-heading { font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-semibold); }
+.viz-state-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-xs); margin-top: var(--ui-space-xs); }
+.viz-state-details { color: var(--muted-foreground); font-size: var(--ui-font-size-xs); }
+.viz-state-details summary { cursor: pointer; }
+.viz-state-details code { display: block; margin-top: var(--ui-space-xxs); white-space: pre-wrap; overflow-wrap: anywhere; }
+.viz-state-table { max-width: 100%; }
+.viz-state-table td[data-numeric="true"] { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Legacy imperative card: progress line inside the reserved stage, and the
+   compact notice above an automatic table fallback. */
+.visualization-stage-progress {
+  margin: 0;
+  padding: var(--ui-space-md);
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  font-family: var(--font-sans);
+}
+.visualization-stage.visualization-stage-collapsed { height: auto; min-height: 0; }
+.visualization-fallback.visualization-fallback-inline {
+  display: grid;
+  place-content: start;
+  justify-items: start;
+  height: auto;
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  text-align: start;
+}
+.visualization-fallback-inline .visualization-fallback-actions { justify-content: flex-start; }
+.openui-visualization { min-width: 0; }

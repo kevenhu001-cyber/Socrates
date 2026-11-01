@@ -68,6 +68,46 @@ export function isOversizedToolArguments(text: unknown): boolean {
 }
 
 /**
+ * True when argument text stops inside an open string or with brackets
+ * still open: the signature of a stream that was cut off mid-object (output
+ * token limit, dropped connection) rather than text that is simply not JSON.
+ * Used to tell the model to send LESS data instead of "re-emit the JSON".
+ */
+export function looksTruncatedToolArguments(text: unknown): boolean {
+  if (typeof text !== 'string') return false;
+  let source = text.replace(/^\uFEFF/, '').trim();
+  source = source.replace(/^```(?:json)?\s*/i, '');
+  if (!source.startsWith('{')) return false;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+    if (inString) {
+      if (escaped) { escaped = false; continue; }
+      if (char === '\\') { escaped = true; continue; }
+      if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') { inString = true; continue; }
+    if (char === '{' || char === '[') depth++;
+    else if (char === '}' || char === ']') depth--;
+  }
+  return inString || depth > 0;
+}
+
+const VISUAL_TOOLS = new Set(['render_intelligent_ui', 'patch_intelligent_ui', 'render_visualization']);
+
+/** Model-facing instruction for arguments that were cut off mid-object. */
+export function truncatedArgumentsHint(toolName: string | null | undefined): string {
+  const base = 'The arguments stopped mid-object (an unclosed string or bracket), which usually means the output limit was reached while writing them. Do not resend the same payload.';
+  if (toolName && VISUAL_TOOLS.has(toolName)) {
+    return `${base} Send fewer data points: downsample each series to at most 200 points (never more than 5000), shorten labels, drop decorative text, or split the visual into several smaller calls.`;
+  }
+  return `${base} Send a smaller payload or split the work across several calls.`;
+}
+
+/**
  * Every complete top-level `{…}` region in `source`, longest first.
  *
  * Used to recover from a stream that carried more than the argument object:

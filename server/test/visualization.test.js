@@ -97,12 +97,19 @@ test('every documented template example passes the same validator that executes 
 });
 
 test('semantic diagnostics preserve the rejected template for a targeted correction example', () => {
-  const result = executeVisualization({ ...lnSpec, payload: { functions: [{ expression: 'x', domain: [5, 1] }] } });
+  /* A reversed domain is now repaired by the shared normalizer (swapped,
+     with a warning); an expression with no finite values in its domain is
+     still a semantic failure that must name its template. */
+  const result = executeVisualization({ ...lnSpec, payload: { functions: [{ expression: 'sqrt(x)', domain: [-5, -1] }] } });
   assert.equal(result.status, 'failed');
   assert.equal(result.diagnostics.stage, 'semantic');
   assert.equal(result.diagnostics.template, 'function');
-  assert.deepEqual(result.diagnostics.issuePaths, ['payload.functions.0.domain']);
+  assert.deepEqual(result.diagnostics.issuePaths, ['payload.functions.0.expression']);
   assert.equal(visualizationTemplateExample(result.diagnostics.template).template, 'function');
+  const swapped = validateVisualizationSpec({ ...lnSpec, payload: { functions: [{ expression: 'x', domain: [5, 1] }] } });
+  assert.equal(swapped.ok, true);
+  assert.deepEqual(swapped.spec.payload.functions[0].domain, [1, 5]);
+  assert.ok(swapped.warnings.some((line) => /reversed function domain/.test(line)));
 });
 
 test('static SVG illustrations accept standalone XML documents', () => {

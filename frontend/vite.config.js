@@ -409,6 +409,7 @@ export default defineConfig({
          index.ts. */
       '@socrates/core/motion/spring': fileURLToPath(new URL('../packages/core/src/motion/spring.ts', import.meta.url)),
       '@socrates/core/visualizationMath': fileURLToPath(new URL('../packages/core/src/visualizationMath.js', import.meta.url)),
+      '@socrates/core/visualizationNormalize': fileURLToPath(new URL('../packages/core/src/visualizationNormalize.js', import.meta.url)),
       '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
       /* RN-1 — shared React Native modules render through react-native-web.
