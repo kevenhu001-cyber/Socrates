@@ -221,6 +221,25 @@
   window.addEventListener('pageshow', scheduleScroll);
   updateScroll();
 
+  // Plan cards: on hover a hairline is drawn around the card from its top
+  // left corner, the same line that threads the questions elsewhere. It is
+  // one SVG rect per card with pathLength=1, so only its dash offset moves.
+  if (document.body.classList.contains('pricing-page') && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    main.querySelectorAll('.plan, .ed-price-card').forEach(function (card) {
+      if (card.querySelector('.m-trace')) return;
+      var svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('class', 'm-trace');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.setAttribute('focusable', 'false');
+      var rect = document.createElementNS(svgNS, 'rect');
+      rect.setAttribute('pathLength', '1');
+      svg.appendChild(rect);
+      card.appendChild(svg);
+      card.setAttribute('data-trace', '');
+    });
+  }
+
   reduced.addEventListener('change', function () {
     if (!reduced.matches) return;
     running.forEach(function (animation) { animation.cancel(); });

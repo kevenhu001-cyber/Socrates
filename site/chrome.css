@@ -174,7 +174,9 @@ html.site-menu-open { overflow: hidden; }
 .site-footer-group + .site-footer-group { margin-top: var(--space-500); }
 .site-footer .site-footer-group h2 { margin: 0 0 var(--space-100); color: var(--site-color-quiet); font: var(--type-caption-4); font-family: var(--site-chrome-font); }
 .site-footer-group a { display: block; width: fit-content; max-width: 100%; padding-block: 7px; color: var(--site-color-ink); font: 400 .8125rem/1.125rem var(--site-chrome-font); overflow-wrap: anywhere; transition: color var(--site-motion-color); }
-.site-footer-group a:hover { color: var(--site-color-muted); }
+/* The underline is drawn from the left on hover and erased the same way. */
+.site-footer-group a { background: linear-gradient(currentColor, currentColor) 0 calc(50% + .75em) / 0 1px no-repeat; transition: color var(--site-motion-color), background-size 400ms cubic-bezier(.22,1,.36,1); }
+.site-footer-group a:hover, .site-footer-group a:focus-visible { color: var(--site-color-muted); background-size: 100% 1px; }
 .site-footer-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-100) var(--space-300); }
 .site-footer-social { display: flex; flex-wrap: wrap; align-items: center; gap: 0; margin-left: calc(var(--space-100) * -1); }
 .site-footer-social a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--radius-full); color: var(--site-color-ink); transition: background-color var(--site-motion-color), transform var(--site-motion-move); }
