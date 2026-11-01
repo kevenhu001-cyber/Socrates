@@ -41,6 +41,7 @@
 @import './components/tool-card.css';
 @import './features/tool-surfaces.css';
 @import './features/thinking-activity.css';
+@import './components/visualization-states.css';
 
 /* Compatibility visuals still consumed by unmigrated feature surfaces */
 @import './restore/index.css';

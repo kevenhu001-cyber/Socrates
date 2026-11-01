@@ -10,6 +10,7 @@ import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visual
 import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.ts';
 import { asVisualizationSpec, VizSpec } from './visualizationSpec.ts';
+import { normalizeVisualizationSpec } from '@socrates/core/visualizationNormalize';
 import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { openWorkbench } from '../react/workbench/workbenchStore';
@@ -225,9 +226,16 @@ function bindCard(card: VisualizationCard, spec: VizSpec, chart: ExportableChart
 }
 
 function mountFallbackActions(card: VisualizationCard, host: HTMLElement, spec: VizSpec, options: VisualizationMountOptions, error: unknown) {
+  const table = card.querySelector<HTMLElement>('.visualization-data');
+  const tableAvailable = !!(table && table.querySelector('table'));
   const content = createElement(VisualizationFallbackActions, {
-    retryLabel: vizT('viz.action.retry', 'Retry locally'),
+    retryLabel: vizT('viz.action.retryRender', 'Retry'),
     fixLabel: vizT('viz.action.fixWithAi', 'Fix with AI'),
+    tableLabel: vizT('viz.action.viewTable', 'View as table'),
+    hideTableLabel: vizT('viz.action.hideTable', 'Hide table'),
+    tableAvailable: tableAvailable,
+    tableInitiallyOpen: tableAvailable && !!table && !table.hidden,
+    onToggleTable: function (open: boolean) { if (table) table.hidden = !open; },
     onRetry: function () { remountVisualization(spec, host, options, card); },
     onFix: function () { dispatchExtensionRepair(card, spec, (error as Error | null)?.message || 'renderer returned no chart option'); },
   });
@@ -256,7 +264,7 @@ function createVisualizationCard(spec: VizSpec, host: HTMLElement, cardId: strin
   card.dataset.visualizationId = cardId;
   card.setAttribute('aria-label', spec.title + '. ' + spec.accessibilitySummary);
   mounting.set(cardId, card);
-  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions" data-viz-actions-root></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
+  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions" data-viz-actions-root></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"><p class="visualization-stage-progress" role="status">' + esc(vizT('viz.state.loadingRenderer', 'Loading the chart renderer…')) + '</p></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
   host.appendChild(card);
   mounting.delete(cardId);
   renderCardMath(card);
@@ -273,6 +281,7 @@ function rendererName(template: string) {
 
 async function mountSpecializedRenderer(spec: VizSpec, card: VisualizationCard, stage: HTMLElement, renderState: VisualizationRenderState, isCancelled: () => boolean) {
   await whenFontsReady('Noto Sans SC');
+  clearStageProgress(stage);
   const specialized = await mountSpecializedVisualization(spec, stage, { sampleFunction: sampleFunction });
   if (!specialized.handled) return false;
   card._visualizationCleanup = specialized.cleanup || null;
@@ -318,10 +327,69 @@ function watchChartResize(card: VisualizationCard, stage: HTMLElement, chart: Ch
   };
 }
 
+type FallbackReason = 'dataMissing' | 'render' | 'library';
+
+const FALLBACK_REASON_TEXT: Record<FallbackReason, [string, string]> = {
+  dataMissing: ['viz.reason.dataMissing', 'The chart has no data to draw.'],
+  render: ['viz.reason.render', 'The chart renderer hit an error.'],
+  library: ['viz.reason.library', 'The chart library failed to load.'],
+};
+
+function fallbackReasonOf(error: unknown): FallbackReason {
+  const message = String((error as Error | null)?.message || '');
+  if (/load|script|chunk|network/i.test(message)) return 'library';
+  if (/no chart option|no data|empty/i.test(message)) return 'dataMissing';
+  return 'render';
+}
+
+/* One failure surface for every renderer. When the data table exists the
+   card switches to it automatically (the numbers are still readable) and
+   says why; otherwise it states the reason. Never the old fixed
+   "视觉内容暂未渲染" with the accessibility summary in place of a reason. */
+function renderVisualizationFailure(spec: VizSpec, host: HTMLElement, options: VisualizationMountOptions, card: VisualizationCard, stage: HTMLElement, error: unknown) {
+  const table = card.querySelector<HTMLElement>('.visualization-data');
+  const hasTable = !!(table && table.querySelector('table'));
+  const reason = FALLBACK_REASON_TEXT[fallbackReasonOf(error)];
+  const reasonText = vizT('viz.state.reasonLabel', 'Reason: ') + vizT(reason[0], reason[1]);
+  card.dataset.visualizationState = hasTable ? 'fallback-table' : 'failed';
+  if (hasTable && table) {
+    table.hidden = false;
+    stage.classList.add('visualization-stage-collapsed');
+    stage.innerHTML = '<div class="visualization-fallback visualization-fallback-inline" role="status"><p><strong>' + esc(vizT('viz.state.fellBack', 'The chart could not be displayed, so the data is shown as a table.')) + '</strong> ' + esc(reasonText) + '</p><div data-viz-fallback-root></div></div>';
+  } else {
+    stage.innerHTML = '<div class="visualization-fallback" role="status"><strong>' + esc(vizT('viz.state.failedTitle', 'The chart could not be drawn')) + '</strong><p>' + esc(reasonText) + '</p><div data-viz-fallback-root></div></div>';
+  }
+  mountFallbackActions(card, host, spec, options, error);
+}
+
 function renderChartFallback(spec: VizSpec, host: HTMLElement, options: VisualizationMountOptions, card: VisualizationCard, stage: HTMLElement) {
-  stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><div data-viz-fallback-root></div></div>';
-  mountFallbackActions(card, host, spec, options, null);
-  reportSwallow(new Error('renderer returned no chart option'), 'visualization/' + spec.template + '/empty_options', 'recoverable');
+  const error = new Error('renderer returned no chart option');
+  renderVisualizationFailure(spec, host, options, card, stage, error);
+  reportSwallow(error, 'visualization/' + spec.template + '/empty_options', 'recoverable');
+}
+
+/* A chart option with no series or no data points draws an empty axis with
+   no error at all (the audit's F1). Treat it as a failure instead. */
+function chartOptionIsEmpty(spec: VizSpec, chartOptions: Record<string, unknown>) {
+  if (spec.template === 'function') return false;
+  const series = Array.isArray(chartOptions.series) ? chartOptions.series as Array<{ data?: unknown }> : [];
+  if (!series.length) return true;
+  return series.every(function (entry) {
+    const data = entry && entry.data;
+    if (!Array.isArray(data) || !data.length) return true;
+    return data.every(function (point) {
+      if (point === null || point === undefined || point === '-') return true;
+      if (typeof point === 'object' && !Array.isArray(point)) {
+        const value = (point as { value?: unknown }).value;
+        return value === null || value === undefined || (Array.isArray(value) && value.every(function (cell) { return cell === null || cell === undefined; }));
+      }
+      return false;
+    });
+  });
+}
+
+function clearStageProgress(stage: HTMLElement) {
+  stage.querySelectorAll('.visualization-stage-progress').forEach(function (node) { node.remove(); });
 }
 
 async function mountChartRenderer(spec: VizSpec, host: HTMLElement, options: VisualizationMountOptions, card: VisualizationCard, stage: HTMLElement, renderState: VisualizationRenderState, isCancelled: () => boolean) {
@@ -331,16 +399,15 @@ async function mountChartRenderer(spec: VizSpec, host: HTMLElement, options: Vis
   const useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series: { data: unknown[] }) {
     return series.data && series.data.length > 1200;
   });
+  clearStageProgress(stage);
+  const chartOptions = optionForChart(spec, palette());
+  if (!chartOptions || chartOptionIsEmpty(spec, chartOptions as Record<string, unknown>)) {
+    renderChartFallback(spec, host, options, card, stage);
+    return false;
+  }
   const chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });
   renderState.chart = chart;
   card.dataset.visualizationRenderer = 'echarts';
-  const chartOptions = optionForChart(spec, palette());
-  if (!chartOptions) {
-    chart.dispose();
-    renderChartFallback(spec, host, options, card, stage);
-    renderState.chart = null;
-    return false;
-  }
   if (isCancelled()) {
     chart.dispose();
     renderState.chart = null;
@@ -457,8 +524,9 @@ function cardSkipsChartReset(spec: VizSpec, card: VisualizationCard) {
 
 function createChartRuntime(card: VisualizationCard, chart: ChartInstance, initialSpec: VizSpec, liveEntry: LiveChart | null) {
   let currentSpec = initialSpec;
-  function update(next: VizSpec) {
-    if (card._visualizationDisposed || chart.isDisposed() || next.template !== currentSpec.template) return false;
+  function update(rawNext: VizSpec) {
+    const next = asVisualizationSpec(normalizeVisualizationSpec(rawNext).spec);
+    if (!next || card._visualizationDisposed || chart.isDisposed() || next.template !== currentSpec.template) return false;
     const nextOptions = optionForChart(next, palette());
     if (!nextOptions) return false;
     chart.setOption(nextOptions, { replaceMerge: ['series'] });
@@ -467,7 +535,11 @@ function createChartRuntime(card: VisualizationCard, chart: ChartInstance, initi
     card.querySelector('.visualization-header h3')!.textContent = next.title || '';
     card.querySelector('.visualization-summary')!.textContent = next.accessibilitySummary || '';
     card.setAttribute('aria-label', (next.title || '') + '. ' + (next.accessibilitySummary || ''));
-    card.querySelector('.visualization-data')!.innerHTML = renderVisualizationTable(next, esc, vizT);
+    try {
+      card.querySelector('.visualization-data')!.innerHTML = renderVisualizationTable(next, esc, vizT);
+    } catch (error) {
+      reportSwallow(error, 'visualization/' + next.template + '/table_failure', 'recoverable');
+    }
     let caption = card.querySelector<HTMLElement>('.visualization-caption');
     if (!caption && next.caption) {
       caption = document.createElement('figcaption');
@@ -510,16 +582,17 @@ function handleVisualizationMountFailure(error: unknown, spec: VizSpec, host: HT
     }
   }
   reportSwallow(error, 'visualization/' + spec.template + '/render_failure', 'recoverable');
-  stage!.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><div data-viz-fallback-root></div></div>';
-  mountFallbackActions(card, host, spec, options, error);
+  renderVisualizationFailure(spec, host, options, card, stage, error);
   bindCard(card, spec, null, { noReset: true });
-  console.warn('[visualization] render failed', (error as Error | null)?.name || 'Error');
   return card;
 }
 
 export async function mountVisualization(rawSpec: unknown, host: HTMLElement | null | undefined, options: VisualizationMountOptions = {}) {
-  if (invalidVisualizationInput(rawSpec, host) || !host) return null;
-  const spec = asVisualizationSpec(rawSpec);
+  /* Every entry point (tool result, OpenUI component, restored history,
+     share view) draws the same canonical data the server validated. */
+  const normalizedSpec = normalizeVisualizationSpec(rawSpec).spec;
+  if (invalidVisualizationInput(normalizedSpec, host) || !host) return null;
+  const spec = asVisualizationSpec(normalizedSpec);
   if (!spec) return null;
   options = options || {};
   _ensureThemeWatcher();
@@ -530,10 +603,18 @@ export async function mountVisualization(rawSpec: unknown, host: HTMLElement | n
   const card = createVisualizationCard(spec, host, cardId, mounted.mounting!);
   const stage = card.querySelector<HTMLElement>('.visualization-stage')!;
   const renderState: VisualizationRenderState = { chart: null, liveEntry: null };
+  /* The table and the chart fail independently: a table error used to throw
+     before the chart was even tried, taking a drawable chart down with it. */
   try {
     card.querySelector('.visualization-data')!.innerHTML = renderVisualizationTable(spec, esc, vizT);
+  } catch (error) {
+    reportSwallow(error, 'visualization/' + spec.template + '/table_failure', 'recoverable');
+    card.querySelector('.visualization-data')!.innerHTML = '';
+  }
+  try {
     const cancelled = await mountTemplateRenderer(spec, host, options, card, stage, cardId, renderState, isCancelled);
     if (stopCancelledMount(cancelled, card, isCancelled)) return null;
+    clearStageProgress(stage);
     const chart = renderState.chart;
     const chartRuntime = chartRuntimeForCard(spec, card, renderState);
     bindCard(card, spec, chart, {
@@ -544,6 +625,7 @@ export async function mountVisualization(rawSpec: unknown, host: HTMLElement | n
       noReset: cardSkipsChartReset(spec, card),
     });
   } catch (error) {
+    clearStageProgress(stage);
     return handleVisualizationMountFailure(error, spec, host, options, card, stage, renderState, isCancelled);
   }
   return card;
