@@ -57,9 +57,9 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(geometry.composer?.height).toBe(52);
   expect(geometry.topicFontSize).toBe(16);
   /* RN-1 (2026-11-01): the greeting is the React Native hero, set on the
-     display step of packages/theme uiType (52px Geist medium), with a 40px
+     greeting step of packages/theme uiType (28px Geist medium), with a 40px
      pause before the 768×52 composer (the #homeHero host margin). */
-  expect(geometry.titleSize).toBe('52px');
+  expect(geometry.titleSize).toBe('28px');
   expect(geometry.fontFamily).toContain('Geist Sans');
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(38);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(42);

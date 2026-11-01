@@ -48,7 +48,7 @@ export function HomeHero({ title, subtitle, titleId }: HomeHeroProps) {
         nativeID={titleId}
         role="heading"
         {...headingLevel(1)}
-        variant={compact ? 'displayCompact' : 'display'}
+        variant={compact ? 'greetingCompact' : 'greeting'}
         align="center"
       >
         {title}

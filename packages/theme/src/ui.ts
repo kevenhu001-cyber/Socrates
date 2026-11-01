@@ -121,6 +121,9 @@ export interface UiTypeStep {
 export const uiType = {
   display: { size: 52, lineHeight: 56, weight: '500', tracking: -1.82 },
   displayCompact: { size: 34, lineHeight: 40, weight: '500', tracking: -0.85 },
+  /** Home greeting: kept at the app's restrained 28px (24px on phones). */
+  greeting: { size: 28, lineHeight: 36, weight: '500', tracking: -0.42 },
+  greetingCompact: { size: 24, lineHeight: 32, weight: '500', tracking: -0.36 },
   title: { size: 20, lineHeight: 28, weight: '500', tracking: -0.3 },
   titleSm: { size: 17, lineHeight: 24, weight: '500', tracking: -0.17 },
   body: { size: 16, lineHeight: 26, weight: '400', tracking: 0 },

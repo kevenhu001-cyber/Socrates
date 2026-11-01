@@ -17,6 +17,14 @@
   --ui-type-display-compact-line: 40px;
   --ui-type-display-compact-weight: 500;
   --ui-type-display-compact-tracking: -0.85px;
+  --ui-type-greeting-size: 28px;
+  --ui-type-greeting-line: 36px;
+  --ui-type-greeting-weight: 500;
+  --ui-type-greeting-tracking: -0.42px;
+  --ui-type-greeting-compact-size: 24px;
+  --ui-type-greeting-compact-line: 32px;
+  --ui-type-greeting-compact-weight: 500;
+  --ui-type-greeting-compact-tracking: -0.36px;
   --ui-type-title-size: 20px;
   --ui-type-title-line: 28px;
   --ui-type-title-weight: 500;
