@@ -47,13 +47,14 @@ jobs:
       # when a device-validation suite is explicitly selected.
       - name: Build, run JVM tests, and compile instrumentation tests
         working-directory: apps/socrates-android
-        run: ./gradlew build testDebugUnitTest assembleDebugAndroidTest
+        run: ./gradlew build testDebugUnitTest assembleDebugAndroidTest 2>&1 | tee android-build.log
       - name: Preserve APKs and verification reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: socrates-native-android
           path: |
+            apps/socrates-android/android-build.log
             apps/socrates-android/app/build/outputs/apk/debug/*.apk
             apps/socrates-android/app/build/outputs/apk/androidTest/debug/*.apk
             apps/socrates-android/app/build/reports/tests/testDebugUnitTest/
