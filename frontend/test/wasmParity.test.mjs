@@ -23,7 +23,8 @@ import {
   transitionToolRun,
   summarizeToolRuns,
 } from '../src/chat/toolRunState.ts';
-import { truncateDetailLines, toolCategory } from '../src/ui/toolInline.ts';
+import { truncateLines } from '../src/react/tool-run/toolRunDetails.ts';
+import { toolCategory } from '../src/render/toolCategory.ts';
 import { createLiveOutputBuffer, renderLivePreview } from '../src/chat/liveOutput.ts';
 
 const wasmJsUrl = new URL('../wasm/socrates_wasm.js', import.meta.url);
@@ -187,7 +188,7 @@ test('wasm truncate_tool_output matches expected head/tail/ellipsis semantics', 
   assert.deepEqual(w.truncate_tool_output('', 5, 5), { lines: [], omittedLines: 0 });
 });
 
-test('wasm truncate matches TS fallback truncateDetailLines on edge cases', async (t) => {
+test('wasm truncate matches the TS fallback truncateLines on edge cases', async (t) => {
   const w = await loadWasm(t);
   if (!w) return;
 
@@ -204,7 +205,7 @@ test('wasm truncate matches TS fallback truncateDetailLines on edge cases', asyn
     for (const [head, tail] of [[5, 5], [2, 4], [0, 2], [1, 1], [3, 0]]) {
       assert.deepEqual(
         w.truncate_tool_output(text, head, tail),
-        truncateDetailLines(text, head, tail),
+        truncateLines(text, head, tail),
         `truncate mismatch for head=${head} tail=${tail} text=${JSON.stringify(text)}`,
       );
     }

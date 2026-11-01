@@ -2,8 +2,10 @@ export type { ProfileSnapshot, ProfileUserSnapshot } from '../../ui/profileState
 
 export interface ProfileDispatch {
   close: () => void;
-  saveName: (name: string) => void;
-  onInstChange: () => void;
+  /** Resolves false when the rename was rejected, so the caller can restore
+   *  its draft. */
+  saveName: (name: string) => Promise<boolean>;
+  onInstChange: (response: string, about: string) => void;
   toggleWebSearch: () => void;
   openUsage: () => void;
   openStorage: () => void;

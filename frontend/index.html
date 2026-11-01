@@ -397,18 +397,17 @@
   <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
 </div>
 
-<div class="share-overlay hidden" id="shareOverlay" role="dialog" aria-modal="true" aria-label="Share chat" data-i18n-aria="chrome.shareChat">
-  <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
-</div>
+<!-- Share modal is React-owned: ShareModal.tsx renders #shareOverlay
+     into #shareModalReactRoot at boot and handles its own
+     Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- Settings modal is React-owned (M4 step 4.5b): SettingsModal.tsx
      renders #settingsOverlay into #settingsModalReactRoot at boot and
      handles its own Esc/focus/backdrop-close. No static markup here. -->
 
-<!-- profile modal -->
-<div class="profile-overlay hidden" id="profileOverlay" role="dialog" aria-modal="true" aria-label="Account" data-i18n-aria="profile.account">
-  <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
-</div>
+<!-- profile modal is React-owned: ProfileModal.tsx renders #profileOverlay
+     into #profileModalReactRoot at boot and handles its own
+     Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- Confirm dialog is React-owned (M4 step 4.5c): ConfirmDialog.tsx
      renders #confirmDialog into #confirmDialogReactRoot at boot and

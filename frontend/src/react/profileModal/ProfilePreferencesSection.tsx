@@ -3,6 +3,7 @@ import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 import { Switch } from '../ui/shadcn/switch';
 import { Field, FieldLabel } from '../ui/shadcn/field';
+import { useCallback, useRef } from 'react';
 import { cn } from 'cn';
 import type { ProfileDispatch, ProfileSnapshot } from './types';
 import { profileText } from './profileText';
@@ -14,6 +15,15 @@ export function ProfilePreferencesSection({
   snapshot: ProfileSnapshot;
   dispatch: ProfileDispatch;
 }) {
+  /* The two fields are one saved value, so an edit in either reports both.
+     React reads its own fields — the legacy module never reaches into this
+     surface for their values. */
+  const responseRef = useRef<HTMLTextAreaElement>(null);
+  const aboutRef = useRef<HTMLTextAreaElement>(null);
+  const handleInstChange = useCallback(() => {
+    dispatch.onInstChange(responseRef.current?.value ?? '', aboutRef.current?.value ?? '');
+  }, [dispatch]);
+
   return (
     <div className="profile-section">
       <div className="profile-section-title">{profileText('profile.preferences', 'Preferences')}</div>
@@ -59,7 +69,7 @@ export function ProfilePreferencesSection({
           maxLength={4000}
           placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language."
           defaultValue={snapshot.instResponse}
-          onInput={dispatch.onInstChange}
+          onInput={handleInstChange}
         />
         <ShadcnLabel
           className="profile-instructions-label"
@@ -75,7 +85,7 @@ export function ProfilePreferencesSection({
           maxLength={4000}
           placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns."
           defaultValue={snapshot.instAbout}
-          onInput={dispatch.onInstChange}
+          onInput={handleInstChange}
         />
         <div className="profile-instructions-foot">
           <span

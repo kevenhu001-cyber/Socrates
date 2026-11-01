@@ -1,7 +1,7 @@
 /** Independent read-only tool turns share the ordinary root lifecycle. */
 import { createRootGroup } from '../lib/boot/ownedRoot';
 import { AssistantTurn } from './AssistantTurn.js';
-import { hasTurnStructure } from './toolRunModel.js';
+import { restoredToolCalls, sortableToolCalls } from './toolRunLayout.js';
 import type { LegacyChatMessage } from '../types/domain';
 
 const roots = createRootGroup('assistant-turn');
@@ -26,7 +26,13 @@ export function mountAssistantTurn(
 ): boolean {
   const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
-  if (!hasTurnStructure(rawText, calls)) {
+  /* A restored turn keeps calls whose offset was never persisted; the
+     restored layout anchors them at the end of the prose so the row still
+     reaches the transcript. */
+  const turnCalls = message.restoredFromHistory
+    ? restoredToolCalls(rawText, calls)
+    : sortableToolCalls(rawText, calls);
+  if (turnCalls.length === 0) {
     // The caller may now write fallback markup into this same host.
     roots.release(container);
     return false;

@@ -11,7 +11,6 @@ export function useShareDispatch() {
   return {
     selectVis: (visibility: ShareVisibility) => share.selectShareVis(visibility),
     createLink: () => share.createShareLink(),
-    copyLink: () => share.copyShareLink(),
     revokeLink: () => share.revokeShareLink(),
     close: () => share.closeShareModal(),
   };

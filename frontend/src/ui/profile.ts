@@ -57,6 +57,7 @@ function _publishProfileState() {
   const cu = browserWindow.CURRENT_USER || {};
   const inst = loadCustomInstructions();
   publishProfileState({
+    open: _profileOpen,
     user: profileUserSnapshot(cu),
     webSearchOn: !!webSearchOn,
     currentLang: getCurrentLanguage(),
@@ -108,37 +109,43 @@ export function publishSidebarChrome() {
 
 /* ─── Profile modal shell ─── */
 
+/* React owns the overlay: it renders `#profileOverlay` and its `hidden`
+   class from the published `open` flag. This module only publishes state. */
+let _profileOpen = false;
+
 function openProfile() {
   if (!browserWindow.CURRENT_USER) return;
+  _profileOpen = true;
   loadCustomInstructionsIntoUI();
   syncProfileWebSearchUI();
   syncProfileLangToggle();
-  document.getElementById("profileOverlay")!.classList.remove("hidden");
   _publishProfileState();
 }
 
 function closeProfile() {
-  document.getElementById("profileOverlay")!.classList.add("hidden");
+  _profileOpen = false;
+  _publishProfileState();
 }
 
 /* ─── Rename user ─── */
 
-function saveProfileName(newName: string) {
+function saveProfileName(newName: string): Promise<boolean> {
   const name = (newName || "").trim();
-  if (!name || !browserWindow.CURRENT_USER) return;
-  if (name === browserWindow.CURRENT_USER.displayName) return;
-  apiFetch("/api/users/me", {
+  if (!name || !browserWindow.CURRENT_USER) return Promise.resolve(false);
+  if (name === browserWindow.CURRENT_USER.displayName) return Promise.resolve(true);
+  return apiFetch("/api/users/me", {
     method: "PATCH",
     body: { displayName: name },
   }).then(function () {
     browserWindow.CURRENT_USER!.displayName = name;
     publishSidebarChrome();
-    const el = document.getElementById("profileName");
-    if (el) (el as HTMLInputElement).value = name;
+    /* Republish so the modal reflects the confirmed name. */
+    _publishProfileState();
+    return true;
   }).catch(function () {
-    /* revert */
-    const el = document.getElementById("profileName");
-    if (el) (el as HTMLInputElement).value = browserWindow.CURRENT_USER!.displayName || "";
+    /* Republish the unchanged name so the modal restores its draft. */
+    _publishProfileState();
+    return false;
   });
 }
 
@@ -154,16 +161,13 @@ function loadCustomInstructionsIntoUI() {
   updateInstSaveState(data.savedAt);
 }
 
-function onCustomInstructionsChange() {
-  const respEl = document.getElementById("profileInstResponse");
-  const aboutEl = document.getElementById("profileInstAbout");
-  if (!respEl || !aboutEl) return;
+function onCustomInstructionsChange(response: string, about: string) {
   updateInstSaveState(null);
   clearTimeout((_customInstructionsSaveTimer ?? undefined));
   _customInstructionsSaveTimer = setTimeout(function () {
     const value = {
-      response: (respEl as HTMLInputElement).value,
-      about: (aboutEl as HTMLInputElement).value,
+      response: response,
+      about: about,
       savedAt: new Date().toISOString(),
     };
     saveCustomInstructions(value);

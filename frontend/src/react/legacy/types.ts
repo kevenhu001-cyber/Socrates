@@ -103,14 +103,13 @@ export interface LegacyCmdK {
 export interface LegacyShare {
   selectShareVis(vis: string): void;
   createShareLink(): void;
-  copyShareLink(): void;
   revokeShareLink(): void;
   closeShareModal(): void;
 }
 
 export interface LegacyProfile {
-  saveProfileName(name: string): void;
-  onCustomInstructionsChange(): void;
+  saveProfileName(name: string): Promise<boolean>;
+  onCustomInstructionsChange(response: string, about: string): void;
   toggleProfileWebSearch(): void;
   confirmClearCache(): void;
   confirmClearSettings(): void;
@@ -124,7 +123,6 @@ export interface LegacyAuth {
 }
 
 export interface LegacyPostRender {
-  appendToolModule: typeof import('../../ui/toolCards.ts')['appendToolModule'];
   processPendingMermaid(root?: HTMLElement): void;
   /**
    * Frame-coalesced variant of processPendingMermaid for per-row callers:

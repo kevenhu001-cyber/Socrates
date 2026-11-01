@@ -32,7 +32,7 @@ import { removeAttachment } from '../attachments.ts';
 import { saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch, openProfile, closeProfile } from '../ui/profile.ts';
 import { regenerateAssistantMessage, branchFromMessage, switchMessageBranch } from '../chat/editBranch.ts';
 import { toggleReadAloud } from '../ui/readAloud.ts';
-import { selectShareVis, copyShareLink, openShareModal, closeShareModal, createShareLink, revokeShareLink } from '../ui/share.ts';
+import { selectShareVis, openShareModal, closeShareModal, createShareLink, revokeShareLink } from '../ui/share.ts';
 import { openCheatsheet, closeCheatsheet } from '../ui/cheatsheet.js';
 import { closeMorePopover } from '../sidebar/morePopover.ts';
 import { composeAction, researchAction, exploreAction, deepResearchAction, analyzeAction, dispatchExtension } from '../extensions/index.ts';
@@ -48,7 +48,6 @@ import { loadWebSearch } from '../chat/webSearchLoader.ts';
 import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid, processPendingVizActions } from '../render/vizStubs.ts';
 import { wireCodeBlockHeaders } from '../render/postRender.ts';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.ts';
-import { appendToolModule } from '../ui/toolCards.ts';
 import { formatMsgProgressive } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
@@ -217,7 +216,6 @@ browserWindow.__socratesLegacy = {
   share: {
     selectShareVis,
     createShareLink,
-    copyShareLink,
     revokeShareLink,
     closeShareModal,
   },
@@ -231,7 +229,6 @@ browserWindow.__socratesLegacy = {
     setLang,
   },
   postRender: {
-    appendToolModule,
     processPendingMermaid,
     schedulePendingMermaid: () => schedulePendingMermaid(),
     processPendingViz,

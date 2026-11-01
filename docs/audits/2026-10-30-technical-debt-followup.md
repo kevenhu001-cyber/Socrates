@@ -205,4 +205,9 @@
   - 清理 `frontend/src/ui/sidebarChrome.ts`：为标签页切换与侧边栏外部点击监听补充安全可选链，消除原生事件目标非空断言。
   - 清理 `frontend/src/styles/legacy/08-exam.css` 历史残存空规则与废弃媒体查询，同步更新 `css-debt.baseline.json` 锁定基线缩减成果（`stackedId` 43→41, `important` 622→589, `hexColor` 51→50, `literalRadius` 244→214, `literalFontSize` 436→414, `legacyChannel` 1097→969）。
   - 校验并保证 CSP 脚本哈希（`scripts/gen-csp-hashes.mjs`）保持严格一致无漂移。
-- 自动化门禁全面绿化：测试数据库 `socrates_test` 成功执行迁移并经只读账本核验通过（`npm run db:verify-ledger`，49/49 账本条目一致并验证外键约束）；服务端全量单元测试 1148/1148 通过；前端全量单元测试 1230/1230 通过；生产构建与体积上限校验（`scripts/check-bundle-size.mjs`）通过；静态站点 40 页面几何与 Chrome 漂移测试（`npm run test:site`，114/114）通过；OpenAPI 模式投影验证通过；全仓 24 项架构 Lint 守卫全数通过。
+- 2026-11-01 批次（深入推进 SPA React 化与旧 DOM 退役）：
+  - 彻底移除了遗留的命令式 `ui/toolCards.ts`、`ui/toolInline.ts`（及其辅助子模块 `toolCardTimer.ts`、`toolCardHelpers.ts`、`toolCardView.ts`、`toolInline/details.ts`）以及过渡包装器 `react/toolCards/*`，全量收敛至声明式 React `react/tool-run` 架构。
+  - `frontend/index.html` 中剥离静态残余的 `#profileOverlay` 与 `#shareOverlay` 宿主标记；`ProfileModal.tsx` 与 `ShareModal.tsx` 升级为直接持有遮罩层并在自身生命周期挂载焦点拦截（`modalA11y`），移除原生 `index.html` 冗余。
+  - 从 `app/legacyBridge.ts` 中删除已无外部消费者的 `appendToolModule` 与 `copyShareLink`，从 `messageActions.ts` 中移除针对历史 DOM 卡片的补丁钩子。
+  - 定向单测 35/35 通过；Playwright 端到端（`profile-modal`、`share-view`、`tool-card-lifecycle`）全数通过；生产构建与体积预算校验全绿。
+

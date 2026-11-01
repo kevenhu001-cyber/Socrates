@@ -1,10 +1,10 @@
 /**
  * render/toolCategory.ts — the tool-name → display-category mapping.
  *
- * Extracted from ui/toolInline.ts so the classification is available to the
- * declarative renderer (react/tool-run), the imperative rows, and the runtime
- * merge logic without importing a DOM-manipulating module. This file must
- * stay free of DOM access: it is imported by Node unit tests directly.
+ * The classification is available to the declarative renderer (react/tool-run)
+ * and the runtime merge logic without importing a DOM-manipulating module.
+ * This file must stay free of DOM access: it is imported by Node unit tests
+ * directly.
  *
  * The classification is deliberately pure TS rather than WASM-backed: the
  * Rust library's `categorize_tool_js` is kept as the parity reference for the

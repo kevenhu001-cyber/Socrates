@@ -48,6 +48,33 @@ export function sortableToolCalls(
 }
 
 /**
+ * The restored-turn variant of {@link sortableToolCalls}.
+ *
+ * A live call always carries the offset of the sentence that introduced it.
+ * A call persisted before split points were written — or one whose offset
+ * no longer fits the saved prose — has none, so the live filter drops it and
+ * the tool output disappears from the transcript after a reload. Those calls
+ * are anchored at the end of the prose instead: the row is drawn by the
+ * declarative renderer, next to the prose it belongs to, instead of being
+ * lost and re-created by an imperative card outside React's tree.
+ */
+export function restoredToolCalls(
+  rawText: string,
+  toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
+): ToolCallRecord[] {
+  const raw = String(rawText || '');
+  const list = Array.isArray(toolCalls) ? (toolCalls as ToolCallRecord[]) : [];
+  const out: ToolCallRecord[] = [];
+  for (const tc of list) {
+    if (!tc || !tc.id || !tc.name) continue;
+    const usable = typeof tc.textOffset === 'number' && tc.textOffset >= 0 && tc.textOffset <= raw.length;
+    const textOffset = usable ? tc.textOffset : raw.length;
+    out.push(usable ? tc : { ...tc, textOffset });
+  }
+  return out.sort((a, b) => (a.textOffset as number) - (b.textOffset as number));
+}
+
+/**
  * P_tool-order-mount — may a row mount at `offset` right now? A paragraph
  * start is always safe (the block before it is finished — this also covers
  * headings and other unterminated blocks that no sentence test accepts).
@@ -118,7 +145,7 @@ export function buildTurnLayout(
   const rowAnchor = opts?.restoredFromHistory && !defer
     ? restoredToolRowAnchorOffset
     : toolRowAnchorOffset;
-  const calls = sortableToolCalls(raw, toolCalls).filter((call) => {
+  const calls = (opts?.restoredFromHistory ? restoredToolCalls(raw, toolCalls) : sortableToolCalls(raw, toolCalls)).filter((call) => {
     if (!defer) return true;
     /* Approvals need a human decision: never hide them behind prose. */
     if (call.approval && call.approval.approvalId) return true;

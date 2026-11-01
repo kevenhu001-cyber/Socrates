@@ -4,8 +4,6 @@ import { mountAuthGate } from '../react/auth/authGateHost.tsx';
 import { bootstrapOutbox } from '../session/mutationOutbox.ts';
 import { installExtensions } from '../extensions/index.ts';
 import { closeCmdK } from '../ui/cmdK.ts';
-import { closeShareModal } from '../ui/share.ts';
-import { closeProfile } from '../ui/profile.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 
@@ -39,13 +37,13 @@ export function bootstrapApp(options: BootstrapOptions) {
   bootstrapOutbox();
 
   installModalA11y({ overlayId: 'cmdKOverlay', closeFn: closeCmdK });
-  installModalA11y({ overlayId: 'shareOverlay', closeFn: closeShareModal });
   installModalA11y({ overlayId: 'usageOverlay', closeFn: () => {
     void import('../ui/usage.ts')
       .then((module) => module.closeUsageModal())
       .catch((error) => reportSwallow(error, 'app/bootstrap.closeUsageModal'));
   } });
-  installModalA11y({ overlayId: 'profileOverlay', closeFn: closeProfile });
+  /* The profile and share overlays are React-owned, so their components
+     install their own Esc/focus wiring once the elements exist. */
 
   try {
     bootstrapReactCompatibilityRuntime();

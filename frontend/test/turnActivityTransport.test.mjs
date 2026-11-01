@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStreamFrameProcessor } from '../src/chat/streamFrameProcessor.ts';
 import { dispatchChatSseFrame } from '@socrates/core';
-import { doneLabel, runningLabel, errorLabel } from '../src/ui/toolInline/labels.ts';
 import { toolRunLabel } from '../src/ui/toolPresentationModel.ts';
 import { deriveTurnPresentationState } from '../src/ui/turnActivityModel.ts';
 
@@ -66,15 +65,18 @@ test('think-only raw text keeps the activity line visible', () => {
   assert.equal(live.status?.phase, 'thinking');
 });
 
-test('React and degraded renderers derive tool copy from the same call', () => {
+test('the tool row copy is derived from the call for every tool shape', () => {
   for (const [name, input] of [
     ['web_search', { query: 'React Context' }], ['Read', { path: 'src/App.tsx' }],
     ['code_interpreter', {}], ['oc_github_get_job_logs', {}], ['render_intelligent_ui', {}],
   ]) {
     const result = { status: 'completed', output: '8 passed', results: [{ url: 'https://example.com/source' }] };
-    assert.equal(runningLabel(name, input), toolRunLabel({ name, input }, 'running').text);
-    assert.equal(doneLabel(name, result, input), toolRunLabel({ name, input, ...result }, 'done').text);
-    assert.equal(errorLabel(name, { ...result, ok: false }, input), toolRunLabel({ name, input, ...result, isError: true }, 'error').text);
+    const running = toolRunLabel({ name, input }, 'running').text;
+    const done = toolRunLabel({ name, input, ...result }, 'done').text;
+    const failed = toolRunLabel({ name, input, ...result, isError: true }, 'error').text;
+    assert.ok(running, `${name} must have a running label`);
+    assert.ok(done, `${name} must have a settled label`);
+    assert.ok(failed, `${name} must have a failed label`);
   }
 });
 

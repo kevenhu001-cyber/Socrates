@@ -79,10 +79,6 @@ function createShareLink() {
   runShareAction(function (module: FeatureRuntime) { void module.createShareLink(); });
 }
 
-function copyShareLink() {
-  runShareAction(function (module: FeatureRuntime) { module.copyShareLink(); });
-}
-
 function revokeShareLink() {
   runShareAction(function (module: FeatureRuntime) { void module.revokeShareLink(); });
 }
@@ -120,7 +116,7 @@ export {
   loadShareImpl,
   toggleShareBtn,
   openShareModal, closeShareModal, selectShareVis, renderShareModal,
-  createShareLink, copyShareLink, revokeShareLink, resetShareToken,
+  createShareLink, revokeShareLink, resetShareToken,
   loadSharedSession, loadSharedExamSession,
   _shareVisibility, _shareToken, _shareUrl,
 };

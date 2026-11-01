@@ -12,11 +12,6 @@ import { i18n } from '../react/legacy/gateway.ts';
 import { showToast } from './toast.js';
 import { visualizationSpecOf } from '../render/visualizationSpec.ts';
 import { publishReactChatRuntime } from './reactBridge.ts';
-import {
-  appendFileChangeSummaryCards,
-  appendToolModule,
-  renderToolTextOutput,
-} from './toolCards.ts';
 import { mountVisualization } from '../render/vizStubs.ts';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -235,40 +230,14 @@ function restoreInlineToolCall(
   mountRestoredVisualization(spec, host, toolCallId, 'ui/messageActions.restorePersistedMessageExtras#3');
 }
 
-function restoreStandaloneToolCall(
-  body: HTMLElement,
-  call: ToolCallEntry,
-  spec: NonNullable<ReturnType<typeof visualizationSpecOf>> | null,
-  toolCallId: string,
-): void {
-  try {
-    const card = appendToolModule(call.name!, (call.input || {}) as Parameters<typeof appendToolModule>[1], body, {
-      restored: true,
-      isError: call.isError === true,
-    });
-    if (card && call.output != null) {
-      renderToolTextOutput(card, String(call.output), {
-        isError: call.isError === true,
-        kind: call.isError === true ? 'error' : 'output',
-      });
-    }
-  } catch (error) {
-    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#5');
-  }
-  if (spec) mountRestoredVisualization(spec, body, toolCallId, 'ui/messageActions.restorePersistedMessageExtras#6');
-}
-
 function restoreToolCallExtras(body: HTMLElement, call: ToolCallEntry, index: number, idPrefix?: string): void {
   if (!call.name) return;
   const selector = toolCallSelector(call.id);
   const row = inlineToolRow(body, selector);
   const spec = visualizationSpecOf(call);
   const toolCallId = call.id || ((idPrefix || 'history') + '-viz-' + index);
-  if (row) {
-    restoreInlineToolCall(body, row, selector, call, spec, toolCallId);
-    return;
-  }
-  restoreStandaloneToolCall(body, call, spec, toolCallId);
+  if (!row) return;
+  restoreInlineToolCall(body, row, selector, call, spec, toolCallId);
 }
 
 export function restorePersistedMessageExtras(
@@ -281,11 +250,6 @@ export function restorePersistedMessageExtras(
   if (body.dataset && body.dataset.persistedExtrasFor === messageKey) return;
   const calls: ToolCallEntry[] = Array.isArray(entry.toolCalls) ? entry.toolCalls : [];
   calls.forEach((call, index) => restoreToolCallExtras(body, call, index, idPrefix));
-  try {
-    appendFileChangeSummaryCards(body);
-  } catch (error) {
-    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#8');
-  }
   if (body.dataset) body.dataset.persistedExtrasFor = messageKey;
 }
 

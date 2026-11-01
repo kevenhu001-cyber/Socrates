@@ -118,10 +118,10 @@ function approvalActionText(value: unknown, fallback: string): string {
 }
 
 /**
- * Line-aware head/tail truncation. Mirrors ui/toolInline.ts's
- * truncateDetailLines (TOOL_CALL_MAX_LINES) without the WASM hop: the
- * mechanism library path is exercised in test/wasmParity.test.mjs against the
- * ui implementation, and this keeps the model importable in plain Node.
+ * Line-aware head/tail truncation. Mirrors the tool-call detail truncation
+ * (TOOL_CALL_MAX_LINES) without the WASM hop: the mechanism library path is
+ * exercised in test/wasmParity.test.mjs against the ui implementation, and
+ * this keeps the model importable in plain Node.
  */
 export function truncateLines(
   text: string,

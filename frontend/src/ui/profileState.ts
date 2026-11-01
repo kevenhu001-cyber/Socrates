@@ -12,6 +12,9 @@ export interface ProfileUserSnapshot {
 }
 
 export interface ProfileSnapshot {
+  /** Whether the profile modal is on screen. React owns the overlay's
+   *  visibility; the legacy module only publishes this flag. */
+  open: boolean;
   user: ProfileUserSnapshot;
   webSearchOn: boolean;
   currentLang: string;
@@ -25,6 +28,7 @@ type ProfileUpdate = Omit<ProfileSnapshot, 'revision'>;
 
 export const profileState = createImmutableBridge<ProfileSnapshot, ProfileUpdate>({
   initial: {
+    open: false,
     user: {
       initials: '',
       displayName: '',

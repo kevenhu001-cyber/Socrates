@@ -100,12 +100,14 @@ let _shareToken: string | null = null;
 let _shareUrl = "";
 let _shareStatus = "";
 let _shareError = "";
+let _shareOpen = false;
 let sharedShellRestore: (() => void) | null = null;
 
-/* React reads share data from the same typed module store. Overlay
-   visibility remains owned by the legacy shell class. */
+/* React reads share data from the same typed module store and owns the
+   overlay's visibility from the published `open` flag. */
 function _publishShareState() {
   publishShareState({
+    open: _shareOpen,
     visibility: _shareVisibility,
     shareToken: _shareToken,
     shareUrl: _shareUrl,
@@ -140,29 +142,24 @@ function toggleShareBtn() {
   }
 }
 
-function getShareOverlay(): HTMLElement | null {
-  return document.getElementById("shareOverlay");
-}
-
 function hideAuthGate() {
   try { hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:hideGate'); }
 }
 
 function openShareModal(sessionId?: string) {
   _shareSessionId = typeof sessionId === "string" ? sessionId : browserWindow.stateStore.read("currentSessionId");
-  const overlay = getShareOverlay();
-  if (!overlay) return;
   _shareToken = null;
   _shareUrl = "";
   _shareStatus = "";
   _shareError = "";
-  overlay.classList.remove("hidden");
+  _shareOpen = true;
   _shareVisibility = "public";
   _publishShareState();
 }
 
 function closeShareModal() {
-  getShareOverlay()?.classList.add("hidden");
+  _shareOpen = false;
+  _publishShareState();
 }
 
 function selectShareVis(vis: string) {
@@ -207,15 +204,9 @@ async function createShareLink() {
   }
 }
 
-function copyShareLink() {
-  if (!_shareUrl) return;
-  navigator.clipboard.writeText(_shareUrl).then(function () {
-    _setShareStatus("Link copied to clipboard.");
-  }).catch(function () {
-    const input = document.getElementById("shareLinkInput");
-    if (input) { (input as HTMLInputElement).select(); document.execCommand("copy"); _setShareStatus("Link copied to clipboard."); }
-  });
-}
+/* Copying is owned by the React panel: it renders the link input and can
+   fall back to a selection copy when the async clipboard API is missing.
+   This module only owns the link itself. */
 
 /* Session-teardown hook: main.js's reset paths (bounceOutOfArchivedSession,
    resetState, sign-out) call this so a stale share token can't be reused
@@ -398,7 +389,7 @@ async function loadSharedExamSession(session: SharedSession) {
 export {
   toggleShareBtn,
   openShareModal, closeShareModal, selectShareVis, renderShareModal,
-  createShareLink, copyShareLink, revokeShareLink, resetShareToken,
+  createShareLink, revokeShareLink, resetShareToken,
   loadSharedSession, loadSharedExamSession,
   _shareVisibility, _shareToken, _shareUrl,
 };

@@ -143,6 +143,27 @@ restore_site_previous() {
   done < <(find "$snap" -type f -print0)
 }
 
+# Bound the site snapshot history.
+#
+# Why: backup_site_previous() writes a fresh site-<TS>/ tree on every publish
+# and nothing removed them, so $SITE_WEB_ROOT/.previous grew by one full copy
+# of the marketing tree per run, without limit. The rollback path only ever
+# reads the snapshot taken by the current run (its path is held in $snapshot),
+# so once a publish passes its gate the older snapshots are history rather
+# than recovery material. Keeping the newest few preserves a manual rollback
+# target while bounding the footprint.
+prune_site_snapshots() {
+  local keep="${SITE_SNAPSHOT_RETENTION:-3}" stale
+  [[ "$keep" =~ ^[0-9]+$ ]] || keep=3
+  [[ -d "$SITE_WEB_ROOT/.previous" ]] || return 0
+  # Newest first, then drop everything past the retention count.
+  while IFS= read -r stale; do
+    [[ -n "$stale" ]] || continue
+    $SUDO rm -rf "$stale"
+  done < <(find "$SITE_WEB_ROOT/.previous" -maxdepth 1 -mindepth 1 -type d -name 'site-*' \
+             -printf '%T@ %p\n' 2>/dev/null | sort -rn | tail -n "+$((keep + 1))" | cut -d' ' -f2-)
+}
+
 # Every internal reference in the published tree must resolve to a file we
 # actually publish. nginx serves the tree with
 #   try_files $uri $uri.html $uri/ =404
@@ -280,6 +301,11 @@ run_site_only_deploy() {
     restore_site_previous "$snapshot"
     exit 1
   fi
+
+  # The gate passed, so the snapshot is no longer needed for this run. Bound the
+  # snapshot history instead of letting it grow without limit: every --site-only
+  # publish writes a fresh site-<TS>/ tree and nothing else removed them.
+  prune_site_snapshots
 
   # Record the site-only release separately. The main .deploy-state.json
   # describes a full release (SPA bundle, migrations, backend); claiming
@@ -441,7 +467,12 @@ DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.l
 STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
 BACKEND_ARTIFACT_DIR="${BACKEND_ARTIFACT_DIR:-}"
 FRONTEND_ARTIFACT_DIR="${FRONTEND_ARTIFACT_DIR:-}"
-ASSET_RETENTION_DAYS="${ASSET_RETENTION_DAYS:-30}"
+# Asset retention window for $APP_WEB_ROOT/assets. Content-hashed bundles are
+# never reused, so every deploy leaves the previous build's files behind; the
+# window bounds that accumulation. 7 days comfortably exceeds the SPA document's
+# edge-cache lifetime (CDN-Cache-Control max-age=60, stale-while-revalidate=600,
+# stale-if-error=86400), so a stale cached HTML can still resolve its assets.
+ASSET_RETENTION_DAYS="${ASSET_RETENTION_DAYS:-7}"
 if [[ ! "$ASSET_RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
   echo "ERROR: ASSET_RETENTION_DAYS must be a non-negative integer" >&2
   exit 1
