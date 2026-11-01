@@ -1,4 +1,12 @@
 /** Shared, DOM-free checks on parser data. No generated code is executed here. */
+
+/* AST walk budget. It used to be 20000, which rejected a Visualization with
+   about 4991 points ("OpenUI program is too complex") even though the
+   visualization contract promises 5000. The source itself is capped at 50000
+   characters, so a budget that is several times the node count of the
+   largest legal program keeps the guard against pathological nesting
+   without becoming the real data limit. */
+export const OPENUI_AST_BUDGET = 200000;
 export function openUiProgramIssues(parsed, declarations) {
   const issues = new Set();
   const declared = new Set(declarations);
@@ -15,7 +23,7 @@ export function openUiProgramIssues(parsed, declarations) {
   const live = new Set();
   const inputs = new Set();
   const writes = new Map();
-  let budget = 20000;
+  let budget = OPENUI_AST_BUDGET;
   const visit = (value, callback, depth = 0) => {
     if (--budget < 0 || depth > 100) { issues.add('OpenUI program is too complex'); return; }
     if (!value || typeof value !== 'object') return;
@@ -118,7 +126,7 @@ export function openUiRuntimeIssues(parsed, state) {
   const stateIssue = openUiStateIssue(state);
   if (stateIssue) issues.add(stateIssue);
   const unknown = Symbol('unknown');
-  let budget = 20000;
+  let budget = OPENUI_AST_BUDGET;
   const read = (node, depth = 0) => {
     if (--budget < 0 || depth > 100) return unknown;
     if (!node || typeof node !== 'object') return node;
