@@ -1,54 +1,58 @@
-/* Home hero · the network question mark.
-   The inline SVG in .hero-mark is the finished mark: it is what readers see
-   without scripts or with reduced motion, and it is the single source of the
-   node positions drawn here. With motion this script draws the same nodes on
-   a canvas laid over the hero:
-     1. once, ~1.2s: scattered nodes gather into the question mark;
-     2. then the nodes breathe by at most 2px (paused when the hero is off
-        screen or the page is hidden);
-     3. while the reader scrolls away, the mark unwinds into one vertical
-        thread and the black point drops along it onto the first dot of the
-        question chain below, a hand-off from the hero to the next section.
-   The canvas is absolutely positioned and pointer-transparent, so it never
-   moves layout or covers the question entry. Scroll only schedules a frame;
-   all drawing happens in requestAnimationFrame. */
+/* Home hero · the dot-matrix question mark.
+   Narrative: "Every understanding starts with a question; Socrates helps you
+   turn the question mark into a period."
+   The hero's dot field (CSS) stands for what the reader already knows. The
+   inline SVG in .hero-mark is the finished question mark, written in the
+   field's own cells, and is what readers see without scripts or with
+   reduced motion. With motion this script writes the same cells on a canvas:
+     1. once, ~1s: the cells on the stroke darken one by one, top to bottom,
+        as if the question were being written out of the field; the point
+        lands last. Then everything is still (no idle loop at all);
+     2. while the reader scrolls away, the stroke's cells fade back into the
+        field's gray, top first: the question is absorbed into knowledge;
+     3. on desktop the black point is not absorbed: it travels down and
+        becomes the first node of the question chain ("your question is where
+        this conversation starts"). The chain's own node is hidden until the
+        point arrives, so there is never a moment with two points.
+   On phones and tablets the question fades back the same way, the point
+   stays in the hero and the chain's node is simply there.
+   The canvas is absolutely positioned on <main> and pointer-transparent.
+   Scroll only schedules a frame; all drawing happens in rAF, and nothing is
+   drawn while the page is hidden or the scroll position has not changed. */
 (function () {
   'use strict';
   var root = document.querySelector('[data-hero-mark]');
   if (!root || !window.requestAnimationFrame) return;
-  var svg = root.querySelector('svg');
   var hero = root.closest('.home-hero');
-  if (!svg || !hero) return;
+  var host = hero && hero.parentElement;
+  if (!hero || !host) return;
   var reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+  var wide = window.matchMedia ? window.matchMedia('(min-width: 1024px)') : { matches: true };
   var probe = document.createElement('canvas');
   if (!probe.getContext || !probe.getContext('2d')) return;
 
-  var VIEW_W = 400;
-  var VIEW_H = 560;
-  var ENTRANCE = 1200;
+  var WRITE = 760;      // the last stroke cell starts darkening at ~0.76s
+  var CELL = 300;       // each cell takes 0.3s
+  var POINT_AT = 820;   // then the point lands (0.82s -> 1.12s)
+  var POINT_DUR = 300;
+  var INK = '#111111';
+  var POINT = '#0d0d0d';
 
-  var nodes = Array.prototype.map.call(svg.querySelectorAll('.hm-nodes circle'), function (circle) {
-    return { x: +circle.getAttribute('cx'), y: +circle.getAttribute('cy'), r: +circle.getAttribute('r') };
-  });
-  var dotNode = svg.querySelector('.hm-dot');
-  if (!nodes.length || !dotNode) return;
-  var dot = { x: +dotNode.getAttribute('cx'), y: +dotNode.getAttribute('cy'), r: +dotNode.getAttribute('r') };
-  var edges = (svg.getAttribute('data-edges') || '').split(/\s+/).map(function (pair) {
-    return pair.split('-').map(Number);
-  }).filter(function (pair) { return pair.length === 2 && nodes[pair[0]] && nodes[pair[1]]; });
-
-  // Deterministic scatter and breathing phases, so every visit looks alike.
-  var seed = 20261101;
-  function random() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
-  nodes.forEach(function (node, i) {
-    var angle = random() * Math.PI * 2;
-    var distance = 90 + random() * 190;
-    node.t = i / Math.max(1, nodes.length - 1); // order along the stroke
-    node.sx = VIEW_W / 2 + Math.cos(angle) * distance * 1.15;
-    node.sy = VIEW_H / 2 + Math.sin(angle) * distance * 1.1;
-    node.phase = random() * Math.PI * 2;
-    node.speed = .7 + random() * .6;
-  });
+  function readMark(svg) {
+    var box = svg.viewBox.baseVal;
+    var cells = Array.prototype.map.call(svg.querySelectorAll('.hm-nodes circle'), function (c, i, all) {
+      var op = c.hasAttribute('fill-opacity') ? +c.getAttribute('fill-opacity') : 1;
+      // Document order is stroke order, top of the hook to the stem's end.
+      return { x: +c.getAttribute('cx'), y: +c.getAttribute('cy'), r: +c.getAttribute('r'), a: op, t: i / Math.max(1, all.length - 1) };
+    });
+    var dot = svg.querySelector('.hm-dot');
+    return { cols: box.width, rows: box.height, cells: cells, dot: { x: +dot.getAttribute('cx'), y: +dot.getAttribute('cy'), r: +dot.getAttribute('r') } };
+  }
+  function activeMark() {
+    var svgs = root.querySelectorAll('.hero-mark-svg');
+    for (var i = 0; i < svgs.length; i += 1) if (getComputedStyle(svgs[i]).display !== 'none') return readMark(svgs[i]);
+    return null;
+  }
 
   // cubic-bezier(.22, 1, .36, 1), the site-wide curve.
   function bezier(p1x, p1y, p2x, p2y) {
@@ -71,198 +75,201 @@
     };
   }
   var ease = bezier(.22, 1, .36, 1);
-  function clamp(value) { return value < 0 ? 0 : value > 1 ? 1 : value; }
+  var inOut = bezier(.65, 0, .35, 1);
+  function clamp(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
   function mix(a, b, t) { return a + (b - a) * t; }
 
   var canvas = null;
   var ctx = null;
   var frame = 0;
-  var started = 0;      // entrance start time, 0 until the page is visible
+  var started = 0;
   var entranceDone = false;
-  var heroVisible = true;
-  var lastDraw = 0;
-  var lastProgress = -1;
+  var lastKey = '';
   var geo = null;
-  var observer = null;
+  var mark = null;
   var resizeObserver = null;
+  var list = null;
+  var chainDot = null;
 
   function measure() {
-    var heroBox = hero.getBoundingClientRect();
+    var hostBox = host.getBoundingClientRect();
     var markBox = root.getBoundingClientRect();
-    var inner = hero.querySelector('.home-hero-inner');
-    var innerBottom = inner ? inner.getBoundingClientRect().bottom - heroBox.top : heroBox.height;
-    var chainDot = document.querySelector('.home-chain .qc-dot');
-    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var s = markBox.width / mark.cols;
     var g = {
-      dpr: dpr,
-      width: hero.clientWidth,
-      scale: markBox.height / VIEW_H,
-      ox: markBox.left - heroBox.left,
-      oy: markBox.top - heroBox.top,
-      heroTop: heroBox.top + window.scrollY,
-      chain: null,
+      dpr: Math.min(2, window.devicePixelRatio || 1),
+      s: s,
+      gridR: .75,
+      // Mark origin relative to <main>.
+      mx: markBox.left - hostBox.left,
+      my: markBox.top - hostBox.top,
+      hostTop: hostBox.top + window.scrollY,
+      fly: false,
     };
-    g.height = Math.ceil(markBox.bottom - heroBox.top + 8);
-    if (chainDot) {
+    var left = g.mx - s;
+    var right = g.mx + markBox.width + s;
+    var top = g.my - s;
+    var bottom = g.my + markBox.height + s;
+    // Phones and tablets: the question is absorbed while the mark itself
+    // scrolls from the upper third of the view to off the top.
+    var markTop = g.hostTop + g.my;
+    g.start = Math.max(0, markTop - window.innerHeight * .35);
+    g.end = Math.max(g.start + 160, markTop + markBox.height * .6);
+    if (wide.matches && chainDot) {
       var box = chainDot.getBoundingClientRect();
-      var cx = box.left + box.width / 2 - heroBox.left;
-      var cy = box.top + box.height / 2 - heroBox.top;
-      // The thread lives in the open space below the question entry and
-      // ends on the chain's first dot, so it never crosses the hero's words.
-      var top = Math.max(innerBottom, g.oy + markBox.height * .5) + 28;
-      if (cy > top + 40) {
-        g.chain = { x: cx, y: cy, r: box.width / 2, top: top };
-        g.height = Math.ceil(Math.max(g.height, cy + box.height));
+      var stage = chainDot.closest('.qc-stage');
+      var stageBox = stage ? stage.getBoundingClientRect() : box;
+      var cx = box.left + box.width / 2 - hostBox.left;
+      var cy = box.top + box.height / 2 - hostBox.top;
+      if (cy > bottom) {
+        g.fly = true;
+        g.target = { x: cx, y: cy };
+        // Come in through the stage's gutter, left of its labels.
+        g.gutter = mix(stageBox.left - hostBox.left, cx, .5);
+        left = Math.min(left, g.gutter - 64, cx - 24);
+        bottom = Math.max(bottom, cy + 24);
+        // The point is home when the chain's first node is at ~45% of the view.
+        g.start = 0;
+        g.end = Math.max(240, g.hostTop + cy - window.innerHeight * .45);
       }
     }
+    g.left = Math.floor(Math.max(0, left));
+    g.top = Math.floor(Math.max(0, top));
+    g.width = Math.ceil(Math.min(host.clientWidth, right) - g.left);
+    g.height = Math.ceil(bottom - g.top);
     return g;
   }
 
   function size() {
+    mark = activeMark();
+    if (!mark) return false;
     geo = measure();
     canvas.width = Math.round(geo.width * geo.dpr);
     canvas.height = Math.round(geo.height * geo.dpr);
     canvas.style.width = geo.width + 'px';
     canvas.style.height = geo.height + 'px';
-    lastProgress = -1;
+    canvas.style.transform = 'translate(' + geo.left + 'px,' + geo.top + 'px)';
+    lastKey = '';
+    return true;
   }
 
-  function scrollProgress() {
-    if (!geo || !geo.chain) return 0;
-    var dotY = geo.heroTop + geo.chain.y;
-    var end = Math.max(240, dotY - window.innerHeight * .45);
-    return clamp(window.scrollY / end);
+  function progress() { return geo ? clamp((window.scrollY - geo.start) / (geo.end - geo.start)) : 0; }
+
+  function setPending(on) {
+    if (!list) return;
+    if (on) list.setAttribute('data-point-pending', '');
+    else list.removeAttribute('data-point-pending');
   }
 
   function draw(now) {
     var g = geo;
-    var s = g.scale;
+    var s = g.s;
     var elapsed = started ? now - started : 0;
-    if (!entranceDone && started && elapsed >= ENTRANCE + 80) entranceDone = true;
-    var progress = scrollProgress();
-    var breathing = entranceDone && progress < 1;
-    var time = now / 1000;
-    var line = g.chain;
-
+    if (!entranceDone && started && elapsed >= POINT_AT + POINT_DUR + 40) entranceDone = true;
+    var p = progress();
     ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
     ctx.clearRect(0, 0, g.width, g.height);
+    ctx.translate(-g.left, -g.top);
 
-    var points = new Array(nodes.length);
-    var alphas = new Array(nodes.length);
-    for (var i = 0; i < nodes.length; i += 1) {
-      var node = nodes[i];
-      var gather = entranceDone ? 1 : ease(clamp((elapsed - node.t * 250) / 950));
-      var x = mix(node.sx, node.x, gather) * s + g.ox;
-      var y = mix(node.sy, node.y, gather) * s + g.oy;
-      if (breathing) {
-        // At most 1.6px: the network is alive, never wobbling.
-        var lift = (1 - progress) * gather;
-        x += Math.sin(time * node.speed + node.phase) * 1.6 * lift;
-        y += Math.cos(time * node.speed * .8 + node.phase) * 1.6 * lift;
-      }
-      if (line && progress > 0) {
-        // The stem end leaves first, the hook's tip last.
-        var unwind = ease(clamp(progress * 1.5 - (1 - node.t) * .5));
-        x = mix(x, line.x, unwind);
-        y = mix(y, mix(line.top, line.y - line.r - 10, node.t), unwind);
-      }
-      points[i] = [x, y];
-      alphas[i] = started || entranceDone ? .15 + .85 * gather : 0;
-    }
-
-    // Hairlines first, then nodes, then the point.
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = '#e2e2e2';
-    for (var e = 0; e < edges.length; e += 1) {
-      var a = edges[e][0];
-      var b = edges[e][1];
-      var alpha = Math.min(alphas[a], alphas[b]);
-      if (alpha <= .02) continue;
-      ctx.globalAlpha = alpha * alpha;
+    // 1 + 2. The stroke: written top to bottom, absorbed top to bottom.
+    ctx.fillStyle = INK;
+    var cells = mark.cells;
+    for (var i = 0; i < cells.length; i += 1) {
+      var c = cells[i];
+      var write = entranceDone ? 1 : ease(clamp((elapsed - c.t * WRITE) / CELL));
+      var absorb = ease(clamp((p - c.t * .4) / .3));
+      var amount = write * (1 - absorb);
+      if (amount <= .01) continue;
+      var r = mix(g.gridR, c.r * s, amount);
+      ctx.globalAlpha = mix(.13, c.a, amount);
       ctx.beginPath();
-      ctx.moveTo(points[a][0], points[a][1]);
-      ctx.lineTo(points[b][0], points[b][1]);
-      ctx.stroke();
-    }
-    if (line && progress > 0) {
-      ctx.globalAlpha = clamp(progress * 1.4);
-      ctx.strokeStyle = '#cdcdcd';
-      ctx.beginPath();
-      ctx.moveTo(line.x, line.top);
-      ctx.lineTo(line.x, line.y);
-      ctx.stroke();
-    }
-    ctx.fillStyle = '#c2c2c2';
-    for (var n = 0; n < nodes.length; n += 1) {
-      if (alphas[n] <= .02) continue;
-      ctx.globalAlpha = alphas[n];
-      ctx.beginPath();
-      ctx.arc(points[n][0], points[n][1], Math.max(.5, nodes[n].r * Math.max(s, .55) * (line && progress > 0 ? 1 - progress * .7 : 1)), 0, Math.PI * 2);
+      ctx.arc(g.mx + c.x * s, g.my + c.y * s, r, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    var dotIn = entranceDone ? 1 : ease(clamp((elapsed - 650) / 550));
-    if (dotIn > 0) {
-      var dx = dot.x * s + g.ox;
-      var dy = dot.y * s + g.oy - (1 - dotIn) * 28 * s;
-      var dr = Math.max(dot.r * s, 4) * dotIn;
-      if (line && progress > 0) {
-        var fall = ease(clamp(progress * 1.2));
-        dx = mix(dx, line.x, fall);
-        dy = mix(dy, line.y, fall);
-        dr = mix(dr, line.r + .5, fall);
+    // 3. The point.
+    var land = entranceDone ? 1 : ease(clamp((elapsed - POINT_AT) / POINT_DUR));
+    var home = g.fly && p >= 1;
+    if (land > 0 && !home) {
+      var x0 = g.mx + mark.dot.x * s;
+      var y0 = g.my + mark.dot.y * s;
+      var r0 = mark.dot.r * s;
+      var x = x0;
+      var y = y0 - (1 - land) * s * .8;
+      var r = r0 * mix(.4, 1, land);
+      var alpha = land;
+      if (g.fly) {
+        var f = inOut(clamp((p - .3) / .7));
+        if (f > 0) {
+          // Measured every frame: the node may be scaled as the chain plays.
+          var box = chainDot.getBoundingClientRect();
+          var hostBox = host.getBoundingClientRect();
+          var tx = box.left + box.width / 2 - hostBox.left;
+          var ty = box.top + box.height / 2 - hostBox.top;
+          // A cubic path: down out of the hero, then in through the stage's
+          // gutter, so the point never crosses the chain's words.
+          var p1x = x0, p1y = ty - Math.max(90, (ty - y0) * .35);
+          var p2x = g.gutter - 40, p2y = ty - 6;
+          var u = 1 - f;
+          x = u * u * u * x0 + 3 * u * u * f * p1x + 3 * u * f * f * p2x + f * f * f * tx;
+          y = u * u * u * y0 + 3 * u * u * f * p1y + 3 * u * f * f * p2y + f * f * f * ty;
+          r = mix(r0, box.width / 2, f);
+        }
       }
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#0d0d0d';
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = POINT;
       ctx.beginPath();
-      ctx.arc(dx, dy, dr, 0, Math.PI * 2);
+      ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
-    lastProgress = progress;
-    lastDraw = now;
+    setPending(g.fly && !home);
   }
-
-  function wantsBreath() { return entranceDone && heroVisible && !document.hidden && scrollProgress() < 1; }
 
   function tick(now) {
     frame = 0;
-    if (!canvas) return;
-    if (!started && !document.hidden) started = now;
-    var animating = started && !entranceDone;
-    var progress = scrollProgress();
-    // Breathing runs at ~30fps; the entrance and scroll at the display rate.
-    if (animating || progress !== lastProgress || now - lastDraw > 32) draw(now);
-    if (animating || wantsBreath()) request();
+    if (!canvas || document.hidden) return;
+    if (!started) started = now;
+    var animating = !entranceDone;
+    var p = progress();
+    var key = p.toFixed(4) + (g2key());
+    if (animating || key !== lastKey) draw(now);
+    lastKey = key;
+    if (animating) request();
   }
+  // While the point is in flight its target can move (the chain's node
+  // grows when it becomes current), so the key includes the node's size.
+  function g2key() { return geo && geo.fly && chainDot ? '|' + chainDot.getBoundingClientRect().width.toFixed(2) : ''; }
   function request() { if (!frame && canvas) frame = window.requestAnimationFrame(tick); }
   function onScroll() { request(); }
   function onVisibility() { if (!document.hidden) request(); }
-  function onResize() { if (canvas) { size(); request(); } }
+  var resizeFrame = 0;
+  function onResize() {
+    if (!canvas || resizeFrame) return;
+    resizeFrame = window.requestAnimationFrame(function () {
+      resizeFrame = 0;
+      if (canvas && size()) request();
+    });
+  }
 
   function setup(withEntrance) {
     if (canvas) return;
+    list = document.querySelector('.home-chain .qc-list');
+    chainDot = list ? list.querySelector('.qc-step[data-qc-step="0"] .qc-dot') : null;
     canvas = document.createElement('canvas');
     canvas.className = 'hero-mark-canvas';
     canvas.setAttribute('aria-hidden', 'true');
     ctx = canvas.getContext('2d');
-    hero.appendChild(canvas);
-    size();
+    host.appendChild(canvas);
+    if (!size()) { teardown(); return; }
     entranceDone = !withEntrance;
-    started = withEntrance ? 0 : 1;
+    started = 0;
     root.classList.add('is-live');
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize, { passive: true });
     document.addEventListener('visibilitychange', onVisibility);
-    if (window.IntersectionObserver) {
-      observer = new IntersectionObserver(function (entries) {
-        heroVisible = entries[entries.length - 1].isIntersecting;
-        if (heroVisible) request();
-      });
-      observer.observe(hero);
-    }
+    if (wide.addEventListener) wide.addEventListener('change', onResize);
     if (window.ResizeObserver) {
-      // Late fonts or the chain's own layout can move the target dot.
+      // Late fonts or the chain's own layout can move the target node.
       resizeObserver = new ResizeObserver(onResize);
       resizeObserver.observe(hero);
       var chain = document.querySelector('.home-chain');
@@ -279,11 +286,12 @@
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('resize', onResize);
     document.removeEventListener('visibilitychange', onVisibility);
-    if (observer) observer.disconnect();
+    if (wide.removeEventListener) wide.removeEventListener('change', onResize);
     if (resizeObserver) resizeObserver.disconnect();
-    observer = resizeObserver = null;
+    resizeObserver = null;
     canvas.remove();
     canvas = ctx = null;
+    setPending(false);
     root.classList.remove('is-live');
   }
 

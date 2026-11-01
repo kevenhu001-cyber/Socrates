@@ -347,13 +347,8 @@ body.home-refresh {
   .news-item:active, .story-step:active, .home-refresh .ask-chip:active, .home-refresh .ask-send:active, .home-button:active, .home-text-link:active, .section-link:active, .home-button:hover .home-icon { transform: none; }
 }
 
-/* Round 4: hero motion. motion.js wraps each title line in .hero-line; the
-   line clips its own inner span while it rises, with a little room kept for
-   descenders. (The round-4 dot field behind the question was removed in
-   round 7: the network question mark now carries the hero.) */
+/* The hero is its own stacking context: the dot field sits behind its words. */
 .home-hero { isolation: isolate; }
-.hero-line { display: block; overflow: clip; overflow-clip-margin: 0; padding-bottom: .12em; margin-bottom: -.12em; }
-.hero-line > span { display: block; }
 /* The question box: white sheet, hairline, contact shadow and a wide soft
    ambient shadow; focus deepens the ring, never a colour. */
 .ask-box { box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 1px 2px rgb(0 0 0 / .04), 0 12px 40px -12px rgb(0 0 0 / .14), var(--site-inner-highlight); transition: box-shadow 300ms var(--site-ease); }
@@ -501,45 +496,66 @@ body.home-refresh {
 .cta-thread i { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 3px var(--surface); }
 .cta-thread i:last-child { background: var(--surface); box-shadow: 0 0 0 3px var(--surface), inset 0 0 0 1.25px var(--ink); }
 
-/* Round 7 · A. The network question mark (hero-mark.js).
-   The hero's brand object: ~140 gray nodes on hairlines in the shape of a
-   question mark, its point one solid black dot. The inline SVG is the
-   finished mark and the only thing shown without scripts or with reduced
-   motion; with motion, hero-mark.js draws the same nodes on a canvas that
-   gathers them, lets them breathe and unwinds them into the question chain
-   below. The mark's box is sized by CSS alone, so nothing shifts. */
-.home-hero { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; z-index: 2; }
-.hero-mark { position: relative; order: -1; width: auto; height: 76px; aspect-ratio: 400 / 560; margin-bottom: var(--space-200); pointer-events: none; }
-.hero-mark-svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.hm-lines { fill: none; stroke: #e2e2e2; stroke-width: 1; vector-effect: non-scaling-stroke; }
-.hm-nodes { fill: #c2c2c2; }
+/* Round 8 · A. The dot-matrix question mark (hero-mark.js).
+   Meaning: every question grows out of what you already know. The first
+   screen carries a faint, regular field of dots (everything known); the
+   question mark is made of the same dots, just the ones on its strokes made
+   darker and a little larger. Its point is one solid black dot, the only
+   "lead" dot on the site: it travels down to start the question chain and
+   comes back as the period of the footer's "Socrates.".
+   The field is CSS on the mark's own box, so it is always aligned with the
+   mark's cells: the box is exactly --hm-cols x --hm-rows cells of --hm-s
+   pixels, and the field's origin sits a whole number of cells away. The
+   inline SVG is the finished mark (no scripts, reduced motion); with motion
+   hero-mark.js writes the same cells onto a canvas. Nothing here depends on
+   scripts for its size, so nothing shifts. */
+.home-hero { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; z-index: 2; overflow: clip; }
+.hero-mark { --hm-s: 12px; --hm-cols: 12; --hm-rows: 17; position: relative; order: -1; width: calc(var(--hm-cols) * var(--hm-s)); height: calc(var(--hm-rows) * var(--hm-s)); margin: 0 0 var(--space-100); pointer-events: none; }
+/* The field: 1.5px dots, very light, fading out well before any edge. */
+.hero-mark::before { content: ''; position: absolute; z-index: -1; inset: calc(-80 * var(--hm-s)); background: radial-gradient(circle at center, rgb(0 0 0 / .13) .75px, transparent 1.15px) 0 0 / var(--hm-s) var(--hm-s); -webkit-mask-image: radial-gradient(ellipse calc(var(--hm-s) * 30) calc(var(--hm-s) * 36) at 50% 50%, #000 0%, rgb(0 0 0 / .55) 50%, transparent 100%); mask-image: radial-gradient(ellipse calc(var(--hm-s) * 30) calc(var(--hm-s) * 36) at 50% 50%, #000 0%, rgb(0 0 0 / .55) 50%, transparent 100%); }
+.hero-mark-svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+.hm-fine { display: none; }
+.hm-nodes { fill: #111; }
 .hm-dot { fill: var(--ink); }
 /* Scripts and motion are coming: hold the finished mark back so the canvas
-   can gather it, but bring it in anyway if the canvas never starts. */
+   can write it, but bring it in anyway if the canvas never starts. */
 @media (prefers-reduced-motion: no-preference) {
   [data-site-js] .hero-mark-svg { opacity: 0; animation: hero-mark-fallback 300ms var(--site-ease) 2.5s forwards; }
   [data-site-js] .hero-mark.is-live .hero-mark-svg { animation: none; opacity: 0; }
 }
 @keyframes hero-mark-fallback { to { opacity: 1; } }
-.hero-mark-canvas { position: absolute; z-index: 0; top: 0; left: 0; display: block; pointer-events: none; }
+/* The canvas lives on <main>, so the point can leave the hero for the
+   question chain while the hero itself clips its dot field. */
+.home-refresh main { position: relative; }
+.hero-mark-canvas { position: absolute; z-index: 3; top: 0; left: 0; display: block; pointer-events: none; }
+/* Until the point has arrived, the chain's first node waits for it; the
+   point then becomes that node (the canvas stops drawing it). */
+.qc-list[data-point-pending] .qc-step[data-qc-step="0"] .qc-dot { visibility: hidden; }
 .home-hero-inner { z-index: 1; }
 @media (min-width: 761px) and (max-width: 1023px) {
-  .hero-mark { height: 168px; margin-bottom: var(--space-400); }
+  .home-hero { padding-top: clamp(48px, 7vh, 72px); }
+  .hero-mark { --hm-s: 15px; margin-bottom: var(--space-300); }
 }
+/* Phones: the question entry keeps the first screen (it must be reachable
+   at once), so the mark follows the starters, right above the question
+   chain it hands its point to. */
 @media (max-width: 760px) {
-  .home-hero { padding-top: var(--space-100); }
-  .hero-mark { margin-bottom: 10px; }
-  .hm-dot { r: 30px; } /* keep the point legible when the mark is small */
+  .hero-mark { order: 1; margin: var(--space-400) 0 0; }
 }
-/* Desktop: the question on the left, the mark as large as half the screen
-   on the right. */
+/* Desktop: the question on the left, the mark on the right, drawn at the
+   finer resolution. */
 @media (min-width: 1024px) {
   .home-hero { grid-template-columns: minmax(0, 720px) minmax(0, 1fr); align-items: center; justify-items: stretch; column-gap: clamp(48px, 6vw, 120px); padding-block: clamp(32px, 6vh, 72px) var(--space-700); text-align: left; }
   .home-hero-inner { width: 100%; margin: 0; }
   .home-hero h1, .home-hero-lede { margin-inline: 0; }
   .home-hero .ask-suggestions { justify-content: flex-start; }
-  .hero-mark { order: 0; justify-self: center; width: min(100%, calc(clamp(420px, 62vh, 620px) * 400 / 560)); height: auto; margin: 0; }
+  .hero-mark { --hm-s: 16px; --hm-cols: 18; --hm-rows: 29; order: 0; justify-self: center; margin: 0; }
+  .hero-mark::before { -webkit-mask-image: radial-gradient(ellipse calc(var(--hm-s) * 42) calc(var(--hm-s) * 17) at 50% 50%, #000 0%, rgb(0 0 0 / .55) 50%, transparent 100%); mask-image: radial-gradient(ellipse calc(var(--hm-s) * 42) calc(var(--hm-s) * 17) at 50% 50%, #000 0%, rgb(0 0 0 / .55) 50%, transparent 100%); }
+  .hm-fine { display: block; }
+  .hm-compact { display: none; }
 }
 @media (min-width: 1024px) and (max-width: 1180px) {
   .home-hero { grid-template-columns: minmax(0, 600px) minmax(0, 1fr); }
 }
+@media (min-width: 1280px) { .hero-mark { --hm-s: 18px; } }
+@media (min-width: 1680px) { .hero-mark { --hm-s: 20px; } }
