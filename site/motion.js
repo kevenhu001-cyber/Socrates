@@ -240,6 +240,22 @@
     });
   }
 
+  // Round 7: the footer wordmark's point waits a little above the line in
+  // gray; when the reader reaches the end of the page it drops onto the
+  // baseline and turns black, answering the point of the hero's question
+  // mark. Without scripts or with reduced motion it simply sits there, black.
+  var wordmark = document.querySelector('[data-wordmark]');
+  if (wordmark && 'IntersectionObserver' in window) {
+    var lit = new IntersectionObserver(function (entries) {
+      if (!entries.some(function (entry) { return entry.isIntersecting; })) return;
+      wordmark.classList.add('is-lit');
+      lit.disconnect();
+    }, { threshold: .95 });
+    lit.observe(wordmark);
+  } else if (wordmark) {
+    wordmark.classList.add('is-lit');
+  }
+
   reduced.addEventListener('change', function () {
     if (!reduced.matches) return;
     running.forEach(function (animation) { animation.cancel(); });

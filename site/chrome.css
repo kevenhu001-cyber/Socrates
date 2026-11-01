@@ -247,3 +247,22 @@ html.site-menu-open { overflow: hidden; }
   .site-header, .site-header::before, .site-nav a::before, .site-try svg, .site-menu-toggle span, .site-header :is(.site-login, .site-try, .site-search), .site-footer-group a, .site-footer-summary::after { transition: none; }
   .site-try:hover svg { transform: none; }
 }
+
+/* Round 7 · E. A full-width, very light "Socrates" wordmark closes every
+   page (decorative, aria-hidden; outlines of Geist at weight 500, so it never
+   reflows when fonts load). Its full stop is a separate black point; with
+   motion it waits above the baseline in gray and drops and lights up when
+   the end of the page is reached (motion.js). */
+.site-wordmark { position: relative; margin-top: var(--space-500); user-select: none; pointer-events: none; }
+.site-wordmark img { display: block; width: 100%; height: auto; aspect-ratio: 4168 / 738; }
+.site-wordmark-dot { position: absolute; left: 95.441%; top: 72.629%; width: 4.559%; aspect-ratio: 1; border-radius: 50%; background: var(--site-color-ink); transform: none; }
+.site-wordmark-dot::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--site-color-ink); }
+@media (prefers-reduced-motion: no-preference) {
+  [data-site-js] .site-wordmark-dot { background: #dcdcdc; transition: transform 900ms cubic-bezier(.22,1,.36,1); }
+  [data-site-js] .site-wordmark-dot::after { opacity: 0; transition: opacity 400ms cubic-bezier(.22,1,.36,1) 450ms; }
+  [data-site-js] .site-wordmark:not(.is-lit) .site-wordmark-dot { transform: translateY(-110%); }
+  [data-site-js] .site-wordmark.is-lit .site-wordmark-dot::after { opacity: 1; }
+}
+@media (max-width: 760px) {
+  .site-wordmark { margin-top: var(--space-200); }
+}

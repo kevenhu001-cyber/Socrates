@@ -385,3 +385,28 @@ test('phones turn the deck without pinning; reduced motion and no-JS list every 
   assert.equal(await noJS.locator('[data-deck-pill]').first().getAttribute('href'), '#mode-dialogue');
   assert.equal(await noJS.locator('[data-deck-card]').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 5);
 });
+
+// Round 7 · E. The footer wordmark.
+test('the footer wordmark’s point drops and lights up at the end of the page', async (t) => {
+  const page = await animatedPage(t, '/product');
+  const mark = page.locator('.site-footer [data-wordmark]');
+  assert.equal(await mark.getAttribute('aria-hidden'), 'true');
+  assert.equal(await mark.locator('img').getAttribute('alt'), '');
+  const dot = mark.locator('.site-wordmark-dot');
+  assert.notEqual(await dot.evaluate((node) => getComputedStyle(node).transform), 'none', 'the point waits above the line');
+  await page.evaluate(() => scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
+  await page.waitForFunction(() => document.querySelector('[data-wordmark]').classList.contains('is-lit'));
+  await page.waitForFunction(() => {
+    const node = document.querySelector('.site-wordmark-dot');
+    return getComputedStyle(node).transform === 'matrix(1, 0, 0, 1, 0, 0)' || getComputedStyle(node).transform === 'none';
+  });
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.site-wordmark-dot'), '::after').opacity === '1');
+  const fit = await mark.evaluate((node) => ({ w: node.getBoundingClientRect().width, inner: document.querySelector('.site-footer-bottom').getBoundingClientRect().width }));
+  assert.ok(Math.abs(fit.w - fit.inner) < 1, 'the wordmark spans the content width');
+  for (const [path, width] of [['/zh/', 390], ['/', 2560]]) {
+    const still = await sitePage(site, t, path, width);
+    await still.evaluate(() => scrollTo(0, document.body.scrollHeight));
+    assert.equal(await still.locator('.site-wordmark-dot').evaluate((node) => getComputedStyle(node).transform), 'none', 'reduced motion shows the lit point in place');
+    assert.equal(await still.evaluate(() => document.documentElement.scrollWidth), width);
+  }
+});
