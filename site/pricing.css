@@ -29,6 +29,12 @@ body.pricing-page .page-meta b { display: inline; margin: 0; color: var(--site-c
 body.pricing-page :is(.plans, .ed-pricing-grid) { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-200); }
 body.pricing-page :is(.plan, .ed-price-card) { display: flex; min-height: 0; flex-direction: column; padding: var(--space-300); border: 0; border-radius: var(--radius-3xl); background: var(--site-color-raised); color: var(--site-color-ink); box-shadow: inset 0 0 0 1px var(--site-color-line-strong); }
 body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) { background: var(--site-color-surface); color: var(--site-color-ink); box-shadow: none; }
+/* Round 9: a tier mark at the top of each card, one more point lit per
+   step up (Free one, Euclid four). It marks the order of the plans only;
+   it is not a measure of how much each plan can do. Decorative. */
+body.pricing-page .plan-tier { order: -2; display: flex; gap: 6px; margin: 0 0 var(--space-200); }
+body.pricing-page .plan-tier i { width: 6px; height: 6px; border-radius: 50%; background: rgb(0 0 0 / .13); }
+body.pricing-page .plan-tier i.is-on { background: var(--site-color-ink); }
 body.pricing-page .plan-tag { order: -1; width: fit-content; margin: 0 0 var(--space-100); padding: 0; border: 0; background: none; color: var(--site-color-muted); font: var(--type-caption-1); font-family: var(--site-font); letter-spacing: 0; text-transform: none; }
 body.pricing-page :is(.plan-name, .ed-price-card h2) { margin: 0; color: inherit; font: var(--type-heading-4); letter-spacing: -.01em; }
 body.pricing-page :is(.plan-price, .ed-price) { order: 0; margin: var(--space-200) 0 var(--space-50); color: inherit; font: 500 2.5rem/1.1 var(--site-font); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
@@ -95,7 +101,7 @@ body.pricing-page .split-side .card { border: 0; border-radius: var(--radius-3xl
 /* Closing call: a centred gray panel, like the home and product pages. */
 body.pricing-page .cta-slim { padding-block: var(--space-900) 0; border: 0; background: none; }
 body.pricing-page .cta-slim .shell { display: grid; justify-items: center; gap: var(--space-200); padding: var(--space-800) var(--space-300); border-radius: var(--radius-3xl); background: var(--site-color-surface); text-align: center; }
-body.pricing-page .cta-slim .h2 { max-width: 720px; font: var(--type-heading-3); letter-spacing: -.015em; text-wrap: balance; }
+body.pricing-page .cta-slim .h2 { max-width: 720px; margin: 0; font: var(--type-heading-3); letter-spacing: -.015em; text-wrap: balance; }
 body.pricing-page .cta-slim .body { color: var(--site-color-muted); font: var(--type-body-7); }
 body.pricing-page .cta-slim .btn { margin-top: var(--space-100); height: 40px; min-height: 0; padding: 0 var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-ink); color: #fff; font: var(--type-button-sm); }
 body.pricing-page .cta-slim .btn:hover { background: var(--site-color-ink-hover); }
@@ -149,7 +155,7 @@ body.pricing-page.ed-site .ed-price-card.is-featured .ed-button:hover { backgrou
 
 /* Plan comparison table and the zh FAQ accordion (modules.css). Prices and
    plan contents repeat the cards above word for word. */
-.pricing-page .pricing-compare { margin-top: var(--space-800); }
+.pricing-page .pricing-compare { margin-top: var(--space-900); }
 .pricing-page .m-table--plans td { font-size: .875rem; line-height: 1.375rem; }
 .pricing-page .m-table--plans tbody th { width: 26%; }
 .pricing-page .m-table--plans td { text-align: left; }
@@ -206,3 +212,8 @@ body.pricing-page [data-trace]:hover .m-trace rect, body.pricing-page [data-trac
 @media (prefers-reduced-motion: reduce) {
   body.pricing-page .m-trace rect { transition: none; }
 }
+
+/* Round 9 polish (1440 audit): sections share the site's 96px rhythm, plan
+   prices in the comparison head use tabular figures like the cards above. */
+body.pricing-page .sec:not(.sec--flush) { padding-block: var(--space-900); }
+body.pricing-page :is(th small, .plan-price) { font-variant-numeric: tabular-nums; }
