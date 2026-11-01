@@ -1,5 +1,5 @@
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from './vizStubs.ts';
-import type { WidgetRuntime, QuizMountData, PracticeMountData, ParsedStep, TheoremMountData } from './widgets.ts';
+import type { WidgetRuntime, QuizMountData, PracticeMountData, ParsedStep, TheoremMountData } from './widgetRuntime.ts';
 import type {
   ParsedDefinition,
   ParsedDerivation,
@@ -7,7 +7,7 @@ import type {
   ParsedFlashcard,
   ParsedKeyPoint,
   ParsedProof,
-} from './widgetParsers.ts';
+} from '@socrates/ui/learn-model';
 
 export interface WidgetPlaceholder<Parsed = unknown> {
   id: string;
@@ -133,7 +133,8 @@ export function scheduleWidgetMounts({
     const widgets = _widgetsModule;
     if (!widgets) {
       /* Don't burn retries while the chunk is on the wire — retry once it lands. */
-      loadWidgets().then(attempt);
+      /* A failed chunk load is logged in loadWidgets; nothing else to do. */
+      loadWidgets().then(attempt, () => undefined);
       return;
     }
     tries += 1;

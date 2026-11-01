@@ -7,7 +7,7 @@
 import { stateStore } from '../state/store.ts';
 import { getMistakeBookUI } from '../app/widgetSetup.ts';
 import { submitChatMessage } from './sendPipeline.ts';
-import { parsePracticeInner } from '../render/widgetParsers.ts';
+import { parsePracticeInner } from '@socrates/ui/learn-model';
 import { getExplanation, askNextQuestion } from '../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { addMessage } from './messages.ts';

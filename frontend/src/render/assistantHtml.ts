@@ -31,7 +31,7 @@ import {
   type ParsedExample,
   type ParsedPractice,
   type ParsedQuiz,
-} from './widgetParsers.ts';
+} from '@socrates/ui/learn-model';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /** Mistake-book entry written for <mistake> practice blocks. */
@@ -116,7 +116,7 @@ export function stripTrailingSources(text: string): string {
 
 function replaceQuizSlots(text: string, slots: SlotEntry<ParsedQuiz>[]): string {
   return text.replace(/<quiz\b([^>]*)>([\s\S]*?)<\/quiz>/gi, (raw: string, attrs: string, inner: string) => {
-    const parsed = parseQuizInner(inner);
+    const parsed = parseQuizInner(inner, attrs);
     if (slots.length) return '\n\n' + esc(parsed?.q || raw) + '\n\n';
     if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
     const requestedId = attrs.match(/\bdata-quiz-id\s*=\s*["']([\w-]{1,120})["']/i)?.[1];

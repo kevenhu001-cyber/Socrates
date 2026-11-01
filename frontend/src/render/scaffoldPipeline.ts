@@ -12,7 +12,7 @@ import {
   type ParsedKeyPoint,
   type ParsedProof,
   type ParsedTheorem,
-} from './widgetParsers.ts';
+} from '@socrates/ui/learn-model';
 
 export interface ScaffoldPlaceholder<Parsed = unknown> {
   id: string;

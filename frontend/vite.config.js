@@ -419,6 +419,8 @@ export default defineConfig({
       '@socrates/ui/primitives': fileURLToPath(new URL('../packages/ui/src/primitives/index.ts', import.meta.url)),
       '@socrates/ui/home': fileURLToPath(new URL('../packages/ui/src/home/index.ts', import.meta.url)),
       '@socrates/ui/turn': fileURLToPath(new URL('../packages/ui/src/turn/index.ts', import.meta.url)),
+      '@socrates/ui/learn-model': fileURLToPath(new URL('../packages/ui/src/learn/model.ts', import.meta.url)),
+      '@socrates/ui/learn': fileURLToPath(new URL('../packages/ui/src/learn/index.ts', import.meta.url)),
       'react-native': 'react-native-web',
     },
     /* packages/ have no node_modules of their own: resolve their bare React
