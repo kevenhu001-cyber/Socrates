@@ -44,19 +44,21 @@
 | `services/integrations/` | 第三方 SaaS / 项目平台 connector，每个一个文件 | `arxivConnector.ts`、`feishuConnector.ts`、`giteeConnector.ts`、`githubConnector.ts`、`notionConnector.ts`、`oomolProjectConnector.ts`、`zoteroConnector.ts`、`oauthTokens.ts` |
 | `services/integrations/openConnector/` | ~~open-connector 整个集成面（Apache-2.0 vendored fork 的 wrapper）~~ **作废，见 ADR 0014** | `openConnectorCatalog.ts`、`openConnectorChatTools.ts`、~~`openConnectorSidecar.ts`（已删除）~~、`openConnectorAppInventory.ts`、`openConnectorCloudAuth.generated.ts` |
 | `services/tools/` | agent / tool registry / tool-call-safety 周边 | `toolRegistry.ts`、`toolCallSafety.ts`、`toolDispatch.ts`、`toolErrorFeedback.ts`、`toolTurnPolicy.ts`、`agentRuntime.ts`、`agentStepProjection.ts`、`piAgent.ts`、`toolRegistry.ts` |
-| `services/embeddings/` | 文本向量化、chunkIndex、RAG、tts 等模型边缘 | `embedding.ts`、`rag.ts`、`chunkIndex.ts`、`ttsCache.ts`、`ttsStore.ts`、`vision.ts`、`scoring.ts`、`sessionCompressor.ts`、`attachmentReader.ts`、`contentExtractor.ts`、`contentExtractorWorker.ts`（包含现有 `fileParsers/` 与 `searchEngines/` 子目录） |
+| `services/embeddings/` | 文本向量化、chunkIndex、RAG、tts 等模型边缘 | `embedding.ts`、`rag.ts`、`chunkIndex.ts`、`hybridRetrieval.ts`、`ttsCache.ts`、`ttsStore.ts`、`vision.ts`、`scoring.ts`、`sessionCompressor.ts`、`attachmentReader.ts`、`contentExtractor.ts`、`contentExtractorWorker.ts` |
 | `services/util/` | 跨切面工具，不属于上述任意域 | `cleanupDb.ts`、`fetchBatch.ts`、`statusMonitor.ts`、`workspacePaths.ts`、`workspaceResources.ts`、`artifactOwnership.ts`、`fileArtifacts.ts`、`connectorTools.ts`、`projectConnectorTools.ts` |
 
-> 注：`fileParsers/` 与 `searchEngines/` 子目录已存在，纳入 `embeddings/` 之下的 `parsers/` 与 `engines/` 子层（避免引用面扩展），保持向后兼容的 export。
+> 注：`fileParsers/` 与 `searchEngines/` 子目录当时计划纳入 `embeddings/` 之下的
+> `parsers/` 与 `engines/` 子层。**实际未执行**：两个子目录仍留在 `services/` 根下
+> （`services/fileParsers/`、`services/searchEngines/`），未产生转发壳。
 
 ## 影响
 
 - **PR 切分**（每 PR ≤ 1 个子目录 + 自带测试迁移）：
-  1. PR-0010.1：迁 `services/util/`（跨切面工具）。**已落地（2026-10-15）**：7 个文件归仓入 `services/util/`（artifactOwnership / workspacePaths / workspaceResources / cleanupDb / fileArtifacts / fetchBatch / statusMonitor），保留向后兼容转发层。
-  2. PR-0010.2：迁 `services/core/`（LLM proxy / 认证 / 调度 / 用量流水线）。**已落地（2026-10-15）**：11 个核心服务文件归仓入 `services/core/`，保留向后兼容转发层。
-  3. PR-0010.3：迁 `services/embeddings/`（向量化 / chunkIndex / RAG / TTS / 视觉）。**已落地（2026-10-15）**：11 个模型边缘与检索服务归仓入 `services/embeddings/`，保留向后兼容转发层。
-  4. PR-0010.4：迁 `services/tools/`（agent / tool-call 周边）。**已落地（2026-10-15）**：8 个核心工具调度、注册与运行态文件归仓入 `services/tools/`，保留向后兼容转发层。
-  5. PR-0010.6：迁 `services/integrations/`（第三方 SaaS connectors 与开放连接器）。**已落地（2026-10-15）**：14 个文件已归仓入 `services/integrations/`，保留向后兼容转发层。
+  1. PR-0010.1：迁 `services/util/`（跨切面工具）。**已落地（2026-10-15）**：7 个文件归仓入 `services/util/`（artifactOwnership / workspacePaths / workspaceResources / cleanupDb / fileArtifacts / fetchBatch / statusMonitor），当时的向后兼容转发层已于 2026-10-17 退役（见「状态」）。
+  2. PR-0010.2：迁 `services/core/`（LLM proxy / 认证 / 调度 / 用量流水线）。**已落地（2026-10-15）**：11 个核心服务文件归仓入 `services/core/`，当时的向后兼容转发层已于 2026-10-17 退役（见「状态」）。
+  3. PR-0010.3：迁 `services/embeddings/`（向量化 / chunkIndex / RAG / TTS / 视觉）。**已落地（2026-10-15）**：11 个模型边缘与检索服务归仓入 `services/embeddings/`，当时的向后兼容转发层已于 2026-10-17 退役（见「状态」）。
+  4. PR-0010.4：迁 `services/tools/`（agent / tool-call 周边）。**已落地（2026-10-15）**：8 个核心工具调度、注册与运行态文件归仓入 `services/tools/`，当时的向后兼容转发层已于 2026-10-17 退役（见「状态」）。
+  5. PR-0010.6：迁 `services/integrations/`（第三方 SaaS connectors 与开放连接器）。**已落地（2026-10-15）**：14 个文件已归仓入 `services/integrations/`，当时的向后兼容转发层已于 2026-10-17 退役（见「状态」）。
 - **代码**：每次迁移涉及相对路径批量更新，IDE 全局重写 + grep 双保险；跨子目录的循环 import 风险由每个 PR 末的 ESLint `import/no-cycle` 验证。
 - **CI**：`server-ci.yml` 与 `ci.yml:server` job 跑 `server/test/`；每 PR 跑回归。
 - **数据**：无 schema 变更。
@@ -67,6 +69,18 @@
 - 回滚成本：中。每个 PR 是 squash 单 commit；revert 单一子目录的迁移是局部可逆。
 - 回滚步骤：`git revert <PR-sha>` 单一 squash commit + 删新建子目录。
 - 边界保护：路由层 (`server/src/routes/`) 不参与本次重命名，避免外延扩散。
+
+## 状态
+
+- **转发层已退役（2026-10-17，commit `39192686`）**：本 ADR 落地时在
+  `server/src/services/*.ts` 保留的向后兼容转发层，连同前端 `.js` 包装层一并删除
+  （85 个壳，337 个文件改动）。仓库内 re-export-only 文件数由 85 降为 **0**，
+  由 `scripts/check-forwarding-shims.mjs` 以棘轮方式锁定（基线只降不升，
+  任何新引入的转发壳立即失败）。
+- **当前唯一导入路径**：每个模块以其所属子目录中的规范文件为准
+  （例如 `services/core/llm.ts`、`services/embeddings/rag.ts`、
+  `services/tools/toolRegistry.ts`、`services/integrations/githubConnector.ts`）。
+- 本 ADR 的分组决策本身不变；退役转发层只是清理了同一模块的第二个名字。
 
 ## 相关链接
 

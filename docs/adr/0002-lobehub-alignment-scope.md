@@ -56,7 +56,7 @@ pipeline 化、协议与共享层、体验能力（云 TTS/模型选择/性能�
    工厂（WASM 绑定惰性注入）。桌面端 `chat/toolRunState.ts` 变薄封装；
    RN/服务端可用纯 TS 参考实现；parity 测试继续以纯 TS 为基准。
    前端经 `file:` 依赖 + vite alias + tsconfig paths 以源码形态消费。
-2. **RAG 检索核心**：`server/src/services/rag.ts` — 段落优先、带重叠
+2. **RAG 检索核心**：`server/src/services/embeddings/rag.ts` — 段落优先、带重叠
    窗口的 chunker + BM25 评分检索（纯函数、零基础设施依赖），为后续
    持久化 chunk 索引与 embedding 重排打地基。
 

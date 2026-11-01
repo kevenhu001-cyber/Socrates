@@ -258,8 +258,8 @@ Socrates/
 │   │   ├── store/          # createDomainStore 工厂 + index hooks
 │   │   ├── i18n.ts         # I18N 字典（en）+ 语言切换
 │   │   ├── i18n/zh.ts      # zh 字典（从 i18n.ts 拆出）
-│   │   ├── windowExports.ts# 类型化的 window.* 兼容桥接
 │   │   ├── types/          # TypeScript 类型定义
+│   │   │                   #  (runtimeWindow.ts — 类型化的 window.* 兼容桥接)
 │   │   ├── react/          # React/TS UI 层 (~34 个模块)
 │   │   │   ├── bootstrap.tsx
 │   │   │   ├── useChatRuntime.ts
@@ -272,7 +272,7 @@ Socrates/
 │   │   │   ├── pages/
 │   │   │   ├── legacy/     # 类型化桥接 (gateway.ts)
 │   │   │   └── ...
-│   │   ├── app/            # 启动装配 + legacyBridge.ts
+│   │   ├── app/            # 启动装配 + legacyBridge.ts（window.* 桥接）
 │   │   ├── ui/             # 类型化 UI 运行时模块
 │   │   │   ├── legacyShellListeners.ts # 显式 shell 元素映射
 │   │   │   └── ...

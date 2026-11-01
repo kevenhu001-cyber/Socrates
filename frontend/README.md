@@ -21,14 +21,19 @@ explicit migration boundaries; React does not own every user-facing flow yet.
 
 ## Runtime and state boundaries
 
-`src/main.ts` is the browser entry. It loads `src/windowExports.ts` and
-`src/app/legacyBridge.ts` to keep older JavaScript callers working and to
-publish the typed `window.__socratesLegacy` action gateway. React code should
-call `getLegacyActions()` from `src/react/legacy/gateway.ts`; use the temporary
-global-value reader there only for legacy state that has not moved to a typed
-store. New state should have one domain owner and a typed snapshot/action
-boundary. Do not remove same-name `.js` and `.ts` files in bulk: some are
-compatibility adapters and must be checked at their call sites.
+`src/main.ts` is the browser entry. Its first side-effect import must stay
+`src/batchStorage.ts`: that module installs the in-memory `localStorage` /
+`sessionStorage` shim before any other module reaches storage, and
+`e2e/storage-bootstrap.spec.mjs` is the executable contract for the order.
+
+`src/app/legacyBridge.ts` publishes the legacy `window.*` bridges that keep
+older JavaScript callers working, plus the typed `window.__socratesLegacy`
+action gateway. React code should call `getLegacyActions()` from
+`src/react/legacy/gateway.ts`; use the temporary global-value reader there only
+for legacy state that has not moved to a typed store. New state should have one
+domain owner and a typed snapshot/action boundary. Do not remove same-name
+`.js` and `.ts` files in bulk: some are compatibility adapters and must be
+checked at their call sites.
 
 The React bootstrap in `src/react/bootstrap.tsx` hydrates the surfaces that
 have migrated. Chat lifecycle, SSE streaming, session behavior, and parts of

@@ -14,7 +14,8 @@
 - `frontend/` 是当前唯一的视觉/功能基准，直到本计划逐模块签收。
 - M4 继续：消除 `document.getElementById` / `window.xxx` / 全局事件桥，核心界面
   全部由 React 管理。`frontend/src/extensions/chipSync.ts` 是本轮增量范例
-  （DOM 归属移到专注模块，`windowExports.js` 只保留兼容别名）。
+  （DOM 归属移到专注模块，兼容别名收敛到 `frontend/src/app/legacyBridge.ts`；
+  原 `windowExports.ts` 已随 M4 删除）。
 
 ## 2. 共享核心层（DOM-free，`scripts/check-packages-dom.mjs` 强制）
 

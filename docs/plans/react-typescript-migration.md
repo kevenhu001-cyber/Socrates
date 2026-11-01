@@ -581,13 +581,13 @@ Sweep runs every hour (existing schedule) and is unref'd so it
 never keeps the process alive on its own.
 
 M3 deferred (2026-09-05): session-scoped RAG persistence. The
-existing pure `server/src/services/rag.ts` (chunkText + BM25 +
+existing pure `server/src/services/embeddings/rag.ts` (chunkText + BM25 +
 searchRagIndex, all covered by `rag.test.js`) was waiting on a
 durable chunk index. A new `session_chunks` table
 (`server/drizzle/0030_session_chunks.sql`, FKs `messages.id` and
 `sessions.id` both ON DELETE CASCADE) holds one row per chunk
 keyed by `(message_id, ordinal)` (unique). The unique key makes
-re-indexing idempotent. `server/src/services/chunkIndex.ts`
+re-indexing idempotent. `server/src/services/embeddings/chunkIndex.ts`
 exposes `indexMessageChunks`, `removeMessageChunks`,
 `searchSessionChunks`, and the pure owner-check helper
 `sessionOwnedBy`. Two write paths auto-index: the session-save
@@ -640,7 +640,7 @@ session_chunks retrieval. A nullable `vector(1536)` column on
 `session_chunks` (`server/drizzle/0031_session_chunks_embedding.sql`,
 guarded `CREATE EXTENSION` so an operator without the pgvector .so
 is not surprised by a hard migration failure) plus an HNSW cosine
-index. `services/embedding.ts` is the OpenAI-compatible
+index. `services/embeddings/embedding.ts` is the OpenAI-compatible
 `/embeddings` client: it reads the active row from a new
 admin-managed `embedding_config` table, decrypts the AES-GCM key
 (same crypto as `api_keys`), validates the response shape

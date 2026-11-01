@@ -331,8 +331,8 @@ Socrates/
 │   │   ├── store/          # createDomainStore factory + index hooks
 │   │   ├── i18n.ts         # I18N dictionary (en) + language switching
 │   │   ├── i18n/zh.ts      # zh dictionary (split out of i18n.ts)
-│   │   ├── windowExports.ts# Typed window.* compatibility bridge
 │   │   ├── types/          # TypeScript type definitions
+│   │   │                   #  (runtimeWindow.ts — typed window.* bridge)
 │   │   ├── react/          # React/TS UI layers (~34 modules)
 │   │   │   ├── bootstrap.tsx
 │   │   │   ├── useChatRuntime.ts
@@ -345,7 +345,7 @@ Socrates/
 │   │   │   ├── pages/
 │   │   │   ├── legacy/     # Typed bridge (gateway.ts)
 │   │   │   └── ...
-│   │   ├── app/            # Boot wiring + legacyBridge.ts
+│   │   ├── app/            # Boot wiring + legacyBridge.ts (window.* bridges)
 │   │   ├── ui/             # Typed UI runtime modules
 │   │   │   ├── legacyShellListeners.ts # Explicit shell element map
 │   │   │   └── ...
