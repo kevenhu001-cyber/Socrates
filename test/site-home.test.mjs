@@ -20,6 +20,7 @@ for (const prefix of ['', '/zh']) {
         const art = document.querySelector('.hero-art').getBoundingClientRect();
         const ask = document.querySelector('.hero-ask .ask-box').getBoundingClientRect();
         const title = document.querySelector('h1').getBoundingClientRect();
+        const mark = document.querySelector('.hero-mark').getBoundingClientRect();
         const images = [...document.querySelectorAll('main img')].map((image) => image.getAttribute('src')).filter((src) => src !== '/logo.png');
         const map = document.querySelector('.demo-map-canvas').getBoundingClientRect();
         return {
@@ -30,7 +31,15 @@ for (const prefix of ['', '/zh']) {
           askBottom: ask.bottom,
           askCenter: ask.x + ask.width / 2,
           titleCenter: title.x + title.width / 2,
+          titleLeft: title.left,
+          askLeft: ask.left,
+          askRight: ask.right,
+          mark: { left: mark.left, right: mark.right, top: mark.top, bottom: mark.bottom, center: mark.x + mark.width / 2, height: mark.height },
+          markNodes: document.querySelectorAll('.hero-mark .hm-nodes circle').length,
+          markDot: Number(document.querySelector('.hero-mark .hm-dot').getAttribute('r')),
+          markNodeMax: Math.max(...[...document.querySelectorAll('.hero-mark .hm-nodes circle')].map((node) => Number(node.getAttribute('r')))),
           titleBottom: title.bottom,
+          titleTop: title.top,
           askTop: ask.top,
           background: getComputedStyle(document.body).backgroundColor,
           radius: parseFloat(getComputedStyle(document.querySelector('.ask-box')).borderRadius),
@@ -45,8 +54,23 @@ for (const prefix of ['', '/zh']) {
       });
       assert.equal(geometry.width, width);
       assert.ok(geometry.askBottom < 700, 'the question can be submitted from the first viewport');
-      assert.ok(Math.abs(geometry.askCenter - width / 2) < 1);
-      assert.ok(Math.abs(geometry.titleCenter - width / 2) < 1);
+      if (width >= 1024) {
+        // Round 7: desktop pairs the question (left) with the network
+        // question mark (right), which takes roughly half the screen.
+        assert.ok(Math.abs(geometry.titleLeft - geometry.askLeft) < 1, 'title and composer share one left edge');
+        assert.ok(geometry.mark.left >= geometry.askRight, 'the mark sits beside the question entry, never over it');
+        assert.ok(geometry.mark.center > width / 2 && geometry.mark.right <= width, 'the mark owns the right half');
+        assert.ok(geometry.mark.height >= 400, 'the mark is the hero’s large brand object');
+        assert.ok(geometry.mark.top < geometry.askTop && geometry.mark.bottom > geometry.askBottom - 40, 'mark and question are composed in one band');
+      } else {
+        assert.ok(Math.abs(geometry.askCenter - width / 2) < 1);
+        assert.ok(Math.abs(geometry.titleCenter - width / 2) < 1);
+        assert.ok(geometry.mark.bottom <= geometry.titleTop + 1, 'phones and tablets show the smaller mark above the title');
+        assert.ok(Math.abs(geometry.mark.center - width / 2) < 1);
+      }
+      assert.ok(geometry.markNodes >= 120 && geometry.markNodes <= 180, 'the mark is a network of 120-180 nodes');
+      assert.ok(geometry.markDot > geometry.markNodeMax * 3, 'its point is one larger solid dot');
+      assert.equal(await page.locator('.hero-mark').getAttribute('aria-hidden'), 'true');
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
       assert.ok(geometry.artTop >= geometry.featureTop, 'artwork belongs to the cards below the question');
       assert.ok(Math.abs(geometry.artRatio - 1) < .01, 'the diagram keeps its square composition');
@@ -75,8 +99,10 @@ for (const prefix of ['', '/zh']) {
       assert.equal(await page.locator('.rc-grade').count(), 2);
       assert.match(await page.locator('.rc-back').textContent(), /990/, 'the back keeps the learner’s explanation of the base rate');
       assert.equal(await page.locator('[data-art], .feature-rail').count(), 0, 'no generated gradient fields or competing story rail');
-      // The hero is plain: no decorative canvas or artwork behind the question.
+      // Reduced motion (this suite's default) shows the finished SVG mark and
+      // never creates the animated canvas; nothing sits behind the question.
       assert.equal(await page.locator('canvas, [data-hero-field]').count(), 0);
+      assert.ok(await page.locator('.hero-mark-svg').isVisible());
       assert.ok(await page.locator('.hero-ask .ask-box').evaluate((box) => {
         const rect = box.getBoundingClientRect();
         return box.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));

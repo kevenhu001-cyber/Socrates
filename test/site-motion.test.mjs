@@ -235,3 +235,77 @@ test('Chinese pages do not shift when their CJK font subsets arrive', async (t) 
     assert.ok(cls <= 0.01, `${path} at ${width}px shifted by CLS ${cls.toFixed(4)}`);
   }
 });
+
+// Round 7 · A. The network question mark.
+test('the hero question mark gathers once, unwinds onto the chain and rests when out of view', async (t) => {
+  const context = await site.browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
+  t.after(() => context.close());
+  await context.route('https://**/*', (route) => route.abort());
+  await context.addInitScript(() => {
+    window.__shift = 0;
+    new PerformanceObserver((list) => { for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__shift += entry.value; }).observe({ type: 'layout-shift', buffered: true });
+    const clear = CanvasRenderingContext2D.prototype.clearRect;
+    window.__draws = 0;
+    CanvasRenderingContext2D.prototype.clearRect = function (...args) { window.__draws += 1; return clear.apply(this, args); };
+  });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto(site.baseURL + '/');
+  await page.locator('[data-consent-choice="essential"]').click();
+  const canvas = page.locator('.home-hero canvas.hero-mark-canvas');
+  assert.equal(await canvas.count(), 1);
+  assert.equal(await canvas.getAttribute('aria-hidden'), 'true');
+  assert.equal(await canvas.evaluate((node) => getComputedStyle(node).pointerEvents), 'none');
+  assert.ok(await page.locator('.hero-mark').evaluate((node) => node.classList.contains('is-live')));
+  assert.equal(await page.locator('.hero-mark-svg').evaluate((node) => getComputedStyle(node).opacity), '0', 'the canvas, not the static mark, plays the entrance');
+  // Drawn at device pixels, sized to the hero and reaching the chain's first dot.
+  const size = await canvas.evaluate((node) => ({ w: node.width, cssW: node.getBoundingClientRect().width }));
+  assert.equal(size.w, Math.round(size.cssW * Math.min(2, await page.evaluate(() => devicePixelRatio))));
+  await page.waitForTimeout(1500);
+  const ink = (x, y) => canvas.evaluate((node, [x, y]) => {
+    const box = node.getBoundingClientRect();
+    const scale = node.width / box.width;
+    const data = node.getContext('2d').getImageData(Math.round((x - box.left) * scale) - 2, Math.round((y - box.top) * scale) - 2, 5, 5).data;
+    let max = 0;
+    for (let i = 3; i < data.length; i += 4) max = Math.max(max, data[i]);
+    return max;
+  }, [x, y]);
+  const point = await page.evaluate(() => {
+    const mark = document.querySelector('.hero-mark').getBoundingClientRect();
+    const dot = document.querySelector('.hero-mark .hm-dot');
+    const s = mark.height / 560;
+    return { x: mark.left + Number(dot.getAttribute('cx')) * s, y: mark.top + Number(dot.getAttribute('cy')) * s };
+  });
+  assert.ok(await ink(point.x, point.y) > 200, 'the black point is in place after the ~1.2s entrance');
+  // Breathing keeps redrawing while the hero is in view.
+  const breathing = await page.evaluate(async () => { const a = window.__draws; await new Promise((r) => setTimeout(r, 400)); return window.__draws - a; });
+  assert.ok(breathing > 3, 'the nodes breathe');
+  // Scrolling away unwinds the mark; the point lands on the chain's first dot.
+  const target = await page.evaluate(() => {
+    const dot = document.querySelector('.home-chain .qc-dot').getBoundingClientRect();
+    return dot.top + scrollY;
+  });
+  await page.evaluate((y) => scrollTo({ top: y - innerHeight * .4, behavior: 'instant' }), target);
+  await page.waitForTimeout(400);
+  const landed = await page.evaluate(() => { const dot = document.querySelector('.home-chain .qc-dot').getBoundingClientRect(); return { x: dot.left + dot.width / 2, y: dot.top + dot.height / 2 }; });
+  assert.ok(await ink(landed.x, landed.y) > 200, 'the point has dropped onto the question chain');
+  // Off screen, nothing redraws.
+  await page.evaluate(() => scrollTo({ top: document.querySelector('.home-feature').getBoundingClientRect().top + scrollY + 400, behavior: 'instant' }));
+  await page.waitForTimeout(300);
+  const idle = await page.evaluate(async () => { const a = window.__draws; await new Promise((r) => setTimeout(r, 500)); return window.__draws - a; });
+  assert.equal(idle, 0, 'the canvas rests when the hero is out of view');
+  assert.ok(await page.evaluate(() => window.__shift) < .01, 'the mark never shifts the layout');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => !document.querySelector('canvas.hero-mark-canvas'));
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.hero-mark-svg')).opacity === '1');
+  assert.deepEqual(errors, []);
+});
+
+test('without scripts the finished question mark is shown and the hero stays usable', async (t) => {
+  const page = await sitePage(site, t, '/zh/', 1440, false);
+  assert.ok(await page.locator('.hero-mark-svg').isVisible());
+  assert.equal(await page.locator('canvas').count(), 0);
+  assert.equal(await page.locator('.hero-mark .hm-dot').count(), 1);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 1440);
+});
