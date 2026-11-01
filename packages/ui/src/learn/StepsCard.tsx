@@ -31,7 +31,7 @@ export interface StepsCardProps {
 function StepRow({ step, last, kind }: { step: StepItem; last: boolean; kind: string }) {
   const { colors } = useUiTheme();
   return (
-    <View role="listitem" testID={`${kind}-step-${step.n}`} style={{ flexDirection: 'row', gap: uiSpace[3] }}>
+    <View testID={`${kind}-step-${step.n}`} style={{ flexDirection: 'row', gap: uiSpace[3] }}>
       <View aria-hidden style={{ width: 20, alignItems: 'center' }}>
         <UiText variant="labelSm" tone="secondary" style={{ fontVariant: ['tabular-nums'], lineHeight: 24 }}>{String(step.n)}</UiText>
         {last ? null : <View style={{ flex: 1, width: 1, minHeight: 8, marginTop: 2, backgroundColor: colors.hairlineStrong }} />}
@@ -68,7 +68,7 @@ export function StepsCard({ kind, title, steps, testID }: StepsCardProps) {
       ) : undefined}
     >
       {title && title.trim() !== label ? <Rich source={title} part={`${kind}-title`} /> : null}
-      <View role="list" aria-label={title || label}>
+      <View role="group" aria-label={title || label}>
         {visible.map((step, index) => (
           <StepRow key={`${step.n}-${index}`} step={step} kind={kind} last={index === visible.length - 1} />
         ))}
