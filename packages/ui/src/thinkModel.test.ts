@@ -4,11 +4,13 @@ import {
   EMPTY_CHAIN,
   LEARNING_MODES,
   appendChainStep,
+  appendOwnQuestion,
   askCandidates,
   chainNodeLabel,
   chainView,
   isLearningModeId,
   learningModeAction,
+  looksLikeQuestion,
   mistakeCandidates,
   normalizeChainText,
   seedChain,
@@ -85,4 +87,25 @@ test('askCandidates skips questions already on the chain, falling back to all', 
   const walked = [{ id: 'root', text: 'Root' }, { id: 's1', text: 'Why?' }];
   assert.deepEqual(askCandidates(['Why?', 'How?'], walked).map((c) => c.text), ['How?']);
   assert.deepEqual(askCandidates(['Why?'], walked).map((c) => c.text), ['Why?']);
+});
+
+test('RN-14 looksLikeQuestion: question marks, interrogatives and particles; answers are not questions', () => {
+  for (const text of ['那二阶导数呢？', 'why does it work', 'Is x = 2 a root?', '为什么要取极限', '这样算对吗', '能不能换个例子', 'what about x=0']) {
+    assert.equal(looksLikeQuestion(text), true, text);
+  }
+  for (const text of ['我觉得是时间间隔很短', 'I think it is 2x', '42', '?', '', '   ', '好的']) {
+    assert.equal(looksLikeQuestion(text), false, text);
+  }
+});
+
+test('RN-14 appendOwnQuestion marks the step as the learner\'s own and skips anything already on the chain', () => {
+  const root = seedChain(EMPTY_CHAIN, 'a', '为什么导数能表示变化率？');
+  assert.equal(appendOwnQuestion(root, ' 为什么导数能表示变化率？ '), root, 'the root is not added twice');
+  const own = appendOwnQuestion(root, '那二阶导数呢？');
+  assert.deepEqual(own.steps.at(-1), { id: 's1', text: '那二阶导数呢？', origin: 'own' });
+  const followed = appendChainStep(own, 'AI 的下一问？');
+  assert.equal(followed.steps.at(-1)?.origin, undefined, 'a followed suggestion carries no origin');
+  assert.equal(appendOwnQuestion(followed, '那二阶导数呢？'), followed, 'an earlier own question is not repeated');
+  assert.equal(appendOwnQuestion(followed, '   '), followed);
+  assert.equal(chainView(followed.steps, true).walked[1].origin, 'own', 'the view keeps the origin');
 });

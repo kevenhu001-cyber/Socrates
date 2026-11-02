@@ -10,4 +10,5 @@ export { ProblemCard, type ProblemCardProps, type AnswerFeedback, type AnswerFee
 export { StepsCard, type StepsCardProps, type StepItem } from './StepsCard';
 export { DefinitionCard, KeyPointCard, TheoremCard, ProofCard } from './NoteCard';
 export { ScaffoldCard, Rich, PillAction } from './parts';
+export { ReviewSession, defaultReviewStrings, type ReviewSessionProps, type ReviewStrings, type ReviewCardInput } from './ReviewSession';
 export * from './model';

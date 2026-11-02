@@ -53,7 +53,7 @@
 .viz[data-viz-state="loading"] .viz-status-dot{animation:ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite}
 .viz[data-viz-state="loading"] .viz-status-label::before{content:"Rendering"}
 .viz[data-viz-state="ready"] .viz-status-label::before{content:"Interactive"}
-.viz[data-viz-state="ready"] .viz-status-dot{background:hsl(145 45% 45%)}
+.viz[data-viz-state="ready"] .viz-status-dot{background:var(--ui-ink)}
 .viz[data-viz-state="error"] .viz-status-label::before{content:"Needs attention"}
 .viz[data-viz-state="error"] .viz-status-dot{background:hsl(30 70% 48%)}
 .viz-btn{opacity:.35;transform:translateY(0);transition:opacity .18s cubic-bezier(.4,0,.2,1),transform .12s ease}
@@ -399,7 +399,7 @@ html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
 .auth-title{font-family:var(--font-display);font-size:calc(20px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-100));text-align:center;margin:4px 0 8px;line-height:1.3}
 .auth-icon{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:hsl(var(--accent-000)/0.1);color:hsl(var(--accent-000));margin:0 auto 12px}
 .auth-icon-warn{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 65%)}
-.auth-icon-ok{background:hsl(145 50% 50%/0.15);color:hsl(145 50% 65%)}
+.auth-icon-ok{background:var(--ui-fill);color:var(--ui-ink)}
 .auth-label{font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin:6px 0 2px}
 .auth-input{width:100%;padding:10px 12px;font-size:calc(14px * var(--app-font-scale, 1));outline:none;margin-bottom:4px}
 .auth-input:focus{border-color:hsl(var(--accent-000)/0.5)}

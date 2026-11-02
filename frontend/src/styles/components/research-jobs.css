@@ -245,7 +245,7 @@
   align-items: center;
   gap: var(--ui-space-xs);
   margin-top: var(--ui-space-sm);
-  color: var(--ui-success, var(--muted-foreground));
+  color: var(--ui-ink);
   font-size: var(--ui-text-meta);
 }
 .research-jobs button.research-report-open-btn {
@@ -381,7 +381,7 @@
   color: var(--ui-text-tertiary);
   font-size: var(--ui-text-meta);
 }
-.research-report-meta span:first-child { color: var(--ui-success, var(--muted-foreground)); font-weight: var(--ui-font-weight-semibold); }
+.research-report-meta span:first-child { color: var(--ui-ink); font-weight: var(--ui-font-weight-semibold); }
 .research-report-article {
   max-width: 54rem;
   color: var(--foreground);

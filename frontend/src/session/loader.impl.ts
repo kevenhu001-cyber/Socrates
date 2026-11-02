@@ -9,6 +9,7 @@ import { afterSessionPaint } from './afterSessionPaint.ts';
 import { stateStore } from '../state/store.ts';
 import { saveState } from './saveState.ts';
 import { serverCache } from './serverCache.ts';
+import { archiveSessionMistakes } from '../tutor/mistakeArchive.ts';
 import { turnState } from '../chat/turnState.ts';
 import { apiFetch } from '../util/api.ts';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
@@ -411,6 +412,8 @@ function hydrateSessionFields(session: LoadedSession): void {
     ...buildSessionCoreFields(session),
     ...buildSessionTeachingFields(session),
   } });
+  /* RN-14: mirror this session's mistakes for the cross-session book. */
+  archiveSessionMistakes(session.id, session.title || session.topic || '', session.mistakes);
   restoreAssistantSelection(session);
   refreshLoadedSessionProject(session);
   toggleShareBtn();

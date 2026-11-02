@@ -140,3 +140,33 @@ test('quiz redo appends a React-owned widget and resolves the current mistake sl
   await expect(widget.getByTestId('quiz-feedback')).toHaveAttribute('data-verdict', 'correct');
   await expect(page.locator('#mistakesList [data-mistake-id="redo-quiz"]')).toHaveCount(0);
 });
+
+/* RN-14: the book gathers every session's mistakes, so the home page's
+   "mistakes into next questions" never opens onto an empty book when an
+   earlier session left mistakes behind. */
+test('home mistakes mode shows mistakes from earlier sessions', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('socrates-mistake-archive-v1:u-test-1', JSON.stringify({ v: 1, sessions: {
+      's-calculus': { label: '导数入门', at: Date.now() - 60_000, mistakes: [
+        { id: 'arch-1', type: 'quiz', topic: '导数', q: 'd/dx (x³) = ?', options: [{ letter: 'A', text: '3x²' }, { letter: 'B', text: 'x²' }], correct: 'A', userAnswer: 'B', timestamp: Date.now() - 60_000 },
+      ] },
+      's-integral': { label: '积分', at: Date.now() - 120_000, mistakes: [
+        { id: 'arch-2', type: 'practice', topic: '', q: '∫2x dx = ?', options: [], correct: 'x² + C', userAnswer: '2', timestamp: Date.now() - 120_000 },
+      ] },
+    } }));
+  });
+  await mockAuthedApp(page, { lang: 'zh' });
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('[data-testid="learning-mode-mistakes"]').click();
+  await expect(page.locator('#mistakesPanel')).toBeVisible();
+  await expect(page.locator('#mistakesList [data-mistake-empty]')).toHaveCount(0);
+  await expect(page.locator('#mistakesList [data-mistake-id="arch-1"]')).toHaveCount(1);
+  await expect(page.locator('#mistakesList [data-mistake-id="arch-2"]')).toHaveCount(1);
+  /* A row without a topic groups under its session's title. */
+  await expect(page.locator('#mistakesList [data-mistake-group]')).toHaveCount(2);
+  await expect(page.locator('#mistakesList')).toContainText('积分');
+  /* The sidebar badge counts the same cross-session list, not only the open session's. */
+  await expect(page.locator('#mistakesTabBadge')).toHaveText('2');
+});

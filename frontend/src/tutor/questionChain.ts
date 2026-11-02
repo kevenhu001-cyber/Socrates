@@ -5,8 +5,9 @@
  * (packages/ui/src/think/model.ts) owns the rules; this file binds them to
  * the current session and lets React roots subscribe.
  */
-import { EMPTY_CHAIN, appendChainStep, seedChain, type ChainState } from '@socrates/ui/think-model';
+import { EMPTY_CHAIN, appendChainStep, appendOwnQuestion, looksLikeQuestion, seedChain, type ChainState } from '@socrates/ui/think-model';
 import { stateStore } from '../state/store.ts';
+import { getAppMode } from '../config/providers.ts';
 
 let chain: ChainState = EMPTY_CHAIN;
 const listeners = new Set<() => void>();
@@ -39,6 +40,17 @@ export function syncQuestionChain(): ChainState {
 /** Record that the learner followed `text` down the chain. */
 export function followQuestionChain(text: string): void {
   publish(appendChainStep(syncQuestionChain(), text));
+}
+
+/**
+ * RN-14: a question the learner typed in the composer joins the chain as
+ * "You asked". Tutor only (the chain is a tutor surface), and only text
+ * that reads as a question: most learner messages in a tutor session are
+ * answers to the tutor's own question.
+ */
+export function noteOwnQuestion(text: string): void {
+  if (getAppMode() !== 'tutor' || !looksLikeQuestion(text)) return;
+  publish(appendOwnQuestion(syncQuestionChain(), text));
 }
 
 export function getQuestionChain(): ChainState {

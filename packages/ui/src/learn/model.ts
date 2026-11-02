@@ -401,6 +401,19 @@ export type FlashcardAction = { type: 'flip' } | { type: 'rate'; rating: RecallR
 
 export const initialFlashcardState: FlashcardState = { face: 'front', rating: null, flips: 0 };
 
+/**
+ * RN-14: the state a remounted card resumes from. A rating is only kept
+ * with the answer side showing (a rating belongs to the back), and a
+ * missing or malformed snapshot starts the card fresh.
+ */
+export function resumeFlashcardState(snapshot: Partial<FlashcardState> | null | undefined): FlashcardState {
+  if (!snapshot) return initialFlashcardState;
+  const face = snapshot.face === 'back' ? 'back' : 'front';
+  const rating = snapshot.rating === 'good' || snapshot.rating === 'fuzzy' || snapshot.rating === 'forgot' ? snapshot.rating : null;
+  const flips = typeof snapshot.flips === 'number' && snapshot.flips > 0 ? Math.floor(snapshot.flips) : (face === 'back' ? 1 : 0);
+  return { face, rating: rating && (face === 'back' || flips > 0) ? rating : null, flips };
+}
+
 export function flashcardReducer(state: FlashcardState, action: FlashcardAction): FlashcardState {
   switch (action.type) {
     case 'flip':
@@ -449,3 +462,5 @@ export function isFullyRevealed(state: RevealState): boolean {
 export function fillTemplate(template: string, values: Record<string, string | number>): string {
   return String(template).replace(/\{(\w+)\}/g, (match, name: string) => (name in values ? String(values[name]) : match));
 }
+
+export * from './review';

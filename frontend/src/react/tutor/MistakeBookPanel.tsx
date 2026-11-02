@@ -7,8 +7,9 @@ import { useSyncExternalStore } from 'react';
 import { MistakeBook, defaultMistakeStrings, type MistakeStrings } from '@socrates/ui/study';
 import { dispatchKb, useKbStore } from '../../store/index.ts';
 import { formatRelativeTime } from '../../ui/recentsHelpers.ts';
-import { requestMistakeRedo } from '../../ui/mistakeBookCommands.ts';
-import { getPendingNextQuestion, subscribePendingNextQuestion, turnMistakeIntoNextQuestion } from '../../tutor/mistakeAnalysis.ts';
+import { getPendingNextQuestion, subscribePendingNextQuestion } from '../../tutor/mistakeAnalysis.ts';
+import { nextQuestionFromAnyMistake, redoAnyMistake } from '../../tutor/mistakeCrossSession.ts';
+import { useAllSessionMistakes } from './useAllSessionMistakes';
 import { i18n } from '../legacy/gateway';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { useInlineMath } from '../rn/useInlineMath';
@@ -48,7 +49,7 @@ function mistakeStrings(): MistakeStrings {
 }
 
 export function MistakeBookPanel() {
-  const mistakes = useKbStore((snapshot) => snapshot.mistakes);
+  const mistakes = useAllSessionMistakes();
   const filter = useKbStore((snapshot) => snapshot.mistakeFilter);
   const pendingNextId = useSyncExternalStore(subscribePendingNextQuestion, getPendingNextQuestion);
   const renderText = useInlineMath();
@@ -61,8 +62,8 @@ export function MistakeBookPanel() {
           filter={filter}
           strings={mistakeStrings()}
           onFilter={(value) => dispatchKb({ type: 'kb/set', key: 'mistakeFilter', value })}
-          onRedo={requestMistakeRedo}
-          onNextQuestion={(id) => { void turnMistakeIntoNextQuestion(id); }}
+          onRedo={redoAnyMistake}
+          onNextQuestion={nextQuestionFromAnyMistake}
           pendingNextId={pendingNextId}
           renderText={renderText}
         />

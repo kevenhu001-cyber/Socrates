@@ -375,8 +375,8 @@ body.admin-active #topicDisclaimer{display:none!important}
 .find-nav-btn:hover,.find-close-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .find-nav-btn svg,.find-close-btn svg{width:16px;height:16px;stroke:currentColor}
 /* Match highlight marks injected into .msg-body by findInSession.js. */
-mark.find-hl{background:hsl(48 100% 62% / 0.45);color:inherit;border-radius:2px;padding:0 1px}
-mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--always-black));box-shadow:0 0 0 1px hsl(28 100% 45% / 0.6)}
+mark.find-hl{background:var(--ui-fill-pressed);color:inherit;border-radius:2px;padding:0 1px;box-shadow:inset 0 -1px 0 var(--ui-ink-tertiary)}
+mark.find-hl.find-hl-active{background:var(--ui-ink);color:var(--ui-on-ink);box-shadow:0 0 0 1px var(--ui-ink)}
 @media(max-width:768px){
   .find-bar{top:8px;right:8px;left:8px;justify-content:flex-start}
   .find-bar input{flex:1;width:auto;max-width:none}

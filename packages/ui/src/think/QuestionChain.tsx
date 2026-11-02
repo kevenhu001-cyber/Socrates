@@ -38,6 +38,11 @@ export interface QuestionChainStrings {
   collapse: string;
   /** Prefix read before the current question ("Current question"). */
   current: string;
+  /**
+   * RN-14: tag on a question the learner typed themselves ("You asked").
+   * Optional so older hosts keep compiling; absent hides the tag.
+   */
+  own?: string;
 }
 
 export interface QuestionChainProps {
@@ -109,6 +114,34 @@ function Rail({ label, tone, lineAbove, lineBelow, nodeTop, live }: { label: str
       <View style={{ position: 'absolute', top: nodeTop, left: (RAIL - NODE_W) / 2 }}>
         <ChainNode label={label} tone={tone} live={live} />
       </View>
+    </View>
+  );
+}
+
+/**
+ * RN-14: "You asked" on a question the learner typed. Told apart from the
+ * model's follow-ups by wording and a hairline-ringed capsule, never by a
+ * hue: the same quiet ring and tertiary ink as the rest of the stage.
+ */
+function OwnTag({ label }: { label: string }) {
+  const { colors } = useUiTheme();
+  return (
+    <View
+      testID="question-chain-own-tag"
+      style={{ flexShrink: 0, height: 20, justifyContent: 'center', paddingHorizontal: S[75], borderRadius: R.pill, boxShadow: insetRing(colors.hairlineStrong) }}
+    >
+      <UiText variant="labelSm" tone="tertiary" numberOfLines={1}>{label}</UiText>
+    </View>
+  );
+}
+
+/** A step's text with its "You asked" tag on the same line when it is the learner's own. */
+function StepLine({ step, own, children }: { step: ChainStep; own?: string; children: ReactNode }) {
+  if (step.origin !== 'own' || !own) return <>{children}</>;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: S[75] }}>
+      <View style={{ flexShrink: 1, minWidth: 0 }}>{children}</View>
+      <OwnTag label={own} />
     </View>
   );
 }
@@ -219,10 +252,12 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, rend
 
       <View>
         {view.walked.map((step, position) => (
-          <View key={step.id} testID={`question-chain-walked-${step.index}`} style={{ flexDirection: 'row' }}>
+          <View key={step.id} testID={`question-chain-walked-${step.index}`} style={{ flexDirection: 'row' }} {...dataSet({ origin: step.origin })}>
             <Rail label={chainNodeLabel(step.index)} tone="walked" lineAbove={position > 0} lineBelow nodeTop={1} />
             <View style={{ flex: 1, minWidth: 0, paddingBottom: S[100], paddingTop: 1 }}>
-              <UiText variant="bodySm" tone="tertiary" numberOfLines={1}>{step.text}</UiText>
+              <StepLine step={step} own={strings.own}>
+                <UiText variant="bodySm" tone="tertiary" numberOfLines={1}>{step.text}</UiText>
+              </StepLine>
               {position === 0 && view.hiddenCount > 0 ? (
                 <UiText testID="question-chain-folded" variant="labelSm" tone="tertiary" style={{ marginTop: S[100] }}>
                   {strings.folded.replace('{n}', String(view.hiddenCount))}
@@ -233,7 +268,7 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, rend
         ))}
 
         {view.current ? (
-          <Animated.View testID="question-chain-current" style={[{ flexDirection: 'row' }, join]}>
+          <Animated.View testID="question-chain-current" style={[{ flexDirection: 'row' }, join]} {...dataSet({ origin: view.current.origin })}>
             <Rail
               label={chainNodeLabel(view.current.index)}
               tone="current"
@@ -242,7 +277,14 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, rend
               nodeTop={1}
             />
             <View style={{ flex: 1, minWidth: 0, paddingBottom: hasCandidates ? S[200] : 0, paddingTop: 1, gap: 2 }}>
-              <UiText variant="label" accessibilityLabel={`${strings.current}: ${view.current.text}`}>{view.current.text}</UiText>
+              <StepLine step={view.current} own={strings.own}>
+                <UiText
+                  variant="label"
+                  accessibilityLabel={`${strings.current}: ${view.current.origin === 'own' && strings.own ? `${strings.own}, ` : ''}${view.current.text}`}
+                >
+                  {view.current.text}
+                </UiText>
+              </StepLine>
             </View>
           </Animated.View>
         ) : null}

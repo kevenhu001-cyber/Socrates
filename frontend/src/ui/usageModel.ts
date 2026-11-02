@@ -142,7 +142,7 @@ export function beagleUsageSummary(limits: UsageLimits | null): {
   const color = percent >= 90
     ? 'hsl(0 65% 55%)'
     : percent >= 70
-      ? 'hsl(35 80% 55%)'
+      ? 'var(--ui-ink-secondary)'
       : 'hsl(var(--accent-000))';
   return { used, limit, percent, color, message: percent >= 100 ? 'limit' : percent >= 80 ? 'approaching' : null };
 }

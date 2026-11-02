@@ -27,6 +27,7 @@ import { detailCache } from './detailCache.ts';
 import { appMode } from '../config/providers.ts';
 import { t } from '../i18n.ts';
 import { renderRecents } from '../ui/recentsView.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /** A message row in the save payload (html/rawText both travel). */
 export interface SessionPostMessage extends MessageLike {
@@ -345,6 +346,8 @@ function doSave(): void {
   /* Kick off AI title generation based on the user's first input. */
   generateSessionTitle();
   payload.title = (stateStore.read('sessionTitle') as string) || payload.title;
+  /* RN-14: mirror this session's mistakes for the cross-session book. */
+  archiveMistakesFor(payload);
   /* Mark Cmd-K search index dirty instead of rebuilding during interaction. */
   markCmdKIndexDirty();
   /* Fire-and-forget write to server. The local SERVER_SESSIONS cache is
@@ -356,6 +359,12 @@ function doSave(): void {
      save kept sending the original (rejected) id, breaking the upsert
      and producing duplicate rows. */
   postSession(payload);
+}
+
+function archiveMistakesFor(payload: SessionPostPayload): void {
+  void import('../tutor/mistakeArchive.ts')
+    .then(({ archiveSessionMistakes }) => archiveSessionMistakes(payload.id, payload.title || payload.topic || '', payload.mistakes))
+    .catch((error) => reportSwallow(error, 'session/persistence.archiveMistakes'));
 }
 
 /* Snapshot the active session into a POST payload without touching state. */

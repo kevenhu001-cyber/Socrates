@@ -156,6 +156,47 @@ for (const width of [1440, 390]) {
   });
 }
 
+test('RN-14: a question the learner types joins the chain as "You asked"; an answer does not', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  const streams = await setupTutor(page, 1440);
+  await startLesson(page);
+  await expect(chain(page)).toHaveAttribute('data-steps', '1');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
+
+  /* An answer to the tutor is not a question: the chain does not grow. */
+  let before = streams.length;
+  await clearEditor(editor);
+  await editor.fill('我觉得是时间间隔很短');
+  await page.locator('#composerPrimaryBtn').click();
+  await expect.poll(() => streams.length).toBe(before + 1);
+  await expect(page.locator('[data-testid="question-chain-current"]')).toBeVisible();
+  await expect(chain(page)).toHaveAttribute('data-steps', '1');
+
+  before = streams.length;
+  await clearEditor(editor);
+  await editor.fill('那二阶导数又表示什么？');
+  await page.locator('#composerPrimaryBtn').click();
+  await expect.poll(() => streams.length).toBe(before + 1);
+  await expect(chain(page)).toHaveAttribute('data-steps', '2');
+  const current = page.locator('[data-testid="question-chain-current"]');
+  await expect(current).toHaveAttribute('data-origin', 'own');
+  await expect(current).toContainText('那二阶导数又表示什么？');
+  await expect(current.getByTestId('question-chain-own-tag')).toHaveText('自己问的');
+  /* The model's next questions stay apart: white bubbles, no tag. */
+  await expect(nextQuestions(page).first()).toBeVisible();
+  await expect(nextQuestions(page).getByTestId('question-chain-own-tag')).toHaveCount(0);
+
+  /* Following a suggestion afterwards: the own step is walked and keeps its tag. */
+  await nextQuestions(page).first().click();
+  await expect(chain(page)).toHaveAttribute('data-steps', '3');
+  const walked = page.locator('[data-testid="question-chain-walked-2"]');
+  await expect(walked).toHaveAttribute('data-origin', 'own');
+  await expect(walked.getByTestId('question-chain-own-tag')).toHaveText('自己问的');
+  await expect(page.locator('[data-testid="question-chain-current"]')).not.toHaveAttribute('data-origin', 'own');
+  expect(errors).toEqual([]);
+});
+
 test('conversation learning-mode menu opens inline and keeps the chain', async ({ page }) => {
   await setupTutor(page, 1440);
   await startLesson(page);

@@ -50,12 +50,12 @@
 .inline-quiz-opt-text .katex{vertical-align:baseline}
 .inline-quiz-opt.selected{background:var(--accent);border-color:var(--ring);color:var(--accent-foreground)}
 .inline-quiz-opt.selected .inline-quiz-opt-letter{color:var(--accent-foreground)}
-.inline-quiz-opt.correct{background:color-mix(in srgb, var(--ui-success) 12%, transparent);border-color:color-mix(in srgb, var(--ui-success) 55%, transparent);color:var(--ui-success)}
-.inline-quiz-opt.correct .inline-quiz-opt-letter{color:var(--ui-success)}
+.inline-quiz-opt.correct{background:var(--ui-fill);border-color:var(--ui-ink);color:var(--ui-ink)}
+.inline-quiz-opt.correct .inline-quiz-opt-letter{color:var(--ui-ink)}
 .inline-quiz-opt.wrong{background:color-mix(in srgb, var(--destructive) 12%, transparent);border-color:color-mix(in srgb, var(--destructive) 55%, transparent);color:var(--destructive)}
 .inline-quiz-opt.wrong .inline-quiz-opt-letter{color:var(--destructive)}
 .inline-quiz-feedback{margin-top:8px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
-.inline-quiz-feedback.ok{color:hsl(145 55% 50%)}
+.inline-quiz-feedback.ok{color:var(--ui-ink)}
 .inline-quiz-feedback.bad{color:hsl(0 60% 55%)}
 
 /* Example: problem prose, then a "Show solution" button (no

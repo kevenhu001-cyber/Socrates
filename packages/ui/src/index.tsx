@@ -181,7 +181,8 @@ const MISTAKE_RGB = {
   card: 'rgba(49,12,12,0.35)', cardBorder: 'rgba(122,31,31,0.4)', cardEdge: 'rgb(209,71,71)',
   type: 'rgba(122,31,31,0.4)', typeText: 'rgb(230,153,153)',
   wrong: 'rgba(204,51,51,0.14)', wrongText: 'rgb(230,153,153)', wrongLetter: 'rgb(214,92,92)',
-  correct: 'rgba(57,172,105,0.12)', correctText: 'rgb(159,223,186)', correctLetter: 'rgb(83,198,131)',
+  /* RN-14: the correct option in grey ink rather than green; wrong keeps the error red. */
+  correct: 'rgba(255,255,255,0.10)', correctText: 'rgb(237,237,237)', correctLetter: 'rgb(237,237,237)',
   badge: 'rgba(204,51,51,0.18)', badgeText: 'rgb(224,133,133)',
 } as const;
 
@@ -206,9 +207,10 @@ function MistakesPanel({ mistakes, filter, onFilter, onRedo, mode, language, com
     { key: 'resolved', label: t.mistakeFilterResolved },
   ];
   const strongText = mode === 'dark' ? '#ededed' : legacy.text.primary;
+  /* RN-14: "conquered" in ink on a grey fill, not green. */
   const resolvedTag = mode === 'dark'
-    ? { bg: 'rgba(64,191,117,0.22)', fg: 'rgb(140,217,172)' }
-    : { bg: 'rgba(57,172,105,0.18)', fg: 'rgb(64,191,117)' };
+    ? { bg: 'rgba(255,255,255,0.10)', fg: '#ededed' }
+    : { bg: 'rgba(0,0,0,0.07)', fg: '#0d0d0d' };
   return (
     <View testID="socrates-mistakes-panel" style={[styles.mistakesPanel, !compact && styles.mistakesPanelWide]}>
       <View testID="socrates-mistakes-filter" style={[styles.mistakeFilterBar, { borderBottomColor: tutorRgba(legacy.border, 0.08) }]}>

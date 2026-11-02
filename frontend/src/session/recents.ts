@@ -27,6 +27,13 @@ import { t } from '../i18n.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 import { renderArchivedList } from '../ui/storage.ts';
 
+/* RN-14: a deleted session's mistakes leave the cross-session book. */
+function forgetSessionMistakes(id: string): void {
+  void import('../tutor/mistakeArchive.ts')
+    .then(({ forgetArchivedSession }) => forgetArchivedSession(id))
+    .catch((error) => reportSwallow(error, 'session/recents.forgetSessionMistakes'));
+}
+
 /** Render/reset surfaces published by the legacy shell. */
 interface RecentsWindow extends Window {
   renderRecents?: () => void;
@@ -220,6 +227,7 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
      call fails, the catch handler re-fetches and re-renders. */
   serverCache.sessions = serverCache.sessions.filter(function (s) { return s.id !== id; });
   clearLocalMemory(id);
+  forgetSessionMistakes(id);
   /* P2 SWR — a deleted/archived session must not survive in the detail cache. */
   detailCache.invalidate(id);
   _renderRecents();
@@ -393,6 +401,7 @@ export function confirmPurgeSession(id: string): void {
       }
       serverCache.sessions = serverCache.sessions.filter(function (r) { return r.id !== id; });
       clearLocalMemory(id);
+      forgetSessionMistakes(id);
       _renderArchivedList();
       _renderRecents();
       showToast(_t('session.deleted'));

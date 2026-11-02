@@ -264,4 +264,4 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    turn splits its prose into one wrapper per settled block, which is why the
    paragraph seam rule (P_stream-seam) sits next to `p:last-child` in
    polish/transcript.css — it has to outrank that `#appShell` rule. */
-.agent-tool-card[data-tool-state="cancelled"]{border-color:hsl(35 58% 48%/.34)}
+.agent-tool-card[data-tool-state="cancelled"]{border-color:var(--ui-hairline-strong)}

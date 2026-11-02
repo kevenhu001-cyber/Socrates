@@ -25,6 +25,14 @@ import { clearComposer } from '../composer/controller.ts';
 import { resetAttachments } from '../attachments.ts';
 import { renderAttachmentChips } from '../attachments/render.ts';
 
+/* RN-14: a question the learner typed joins the question chain ("You
+   asked"). Loaded lazily so the send path's first frame stays as it was. */
+function noteTypedQuestion(text: string): void {
+  void import('../tutor/questionChain.ts')
+    .then(({ noteOwnQuestion }) => noteOwnQuestion(text))
+    .catch((error) => reportSwallow(error, 'chat/sendPipeline.noteTypedQuestion'));
+}
+
 function refreshTutorWebContext(text: string): void {
   const topic = stateStore.read('topic');
   if (!isWebSearchOn() || !topic || !shouldRefreshSearch()) return;
@@ -67,6 +75,7 @@ export async function submitChatMessage(
     const currentSessionId = (stateStore.read('currentSessionId') as string) || null;
     enqueuePrompt({ text: input.text, sessionId: currentSessionId });
     if (input.isComposerSubmit) {
+      noteTypedQuestion(input.text);
       clearComposer('chat');
       resetAttachments();
       renderAttachmentChips();
@@ -86,6 +95,7 @@ export async function submitChatMessage(
   if (!input) return;
 
   const committed = commitSendInput(input, sendOptions);
+  if (input.isComposerSubmit && !sendOptions.origin) noteTypedQuestion(input.text);
   // Upload completion and the streaming chunk load are independent.
   const [precreatedTurn, payload] = await Promise.all([
     committed.precreatedTurn,

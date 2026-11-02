@@ -94,8 +94,8 @@
   line-height: var(--ui-line-height-normal);
 }
 .msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend="up"] {
-  background: color-mix(in srgb, var(--ui-success) 12%, transparent);
-  color: var(--ui-success);
+  background: var(--ui-fill);
+  color: var(--ui-ink);
 }
 .msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend="down"] {
   background: color-mix(in srgb, var(--destructive) 12%, transparent);

@@ -1,14 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { ExamData } from '@socrates/contracts';
-import { getThemePaletteHex, type ThemeMode } from '@socrates/theme';
+import { getThemePaletteHex, uiColors, type ThemeMode } from '@socrates/theme';
 import {
   examAnswersOf, examAnswerValue, examProgress, gradeExam, missingExamAnswers, parseExamQuestions,
   type ExamAnswerValue, type ExamAnswers, type ExamQuestion,
 } from './examModel';
 import { uiStrings, type UiLanguage } from './strings';
 
-const green = (mode: ThemeMode) => (mode === 'dark' ? '#4cc38a' : '#1a7f4b');
+/* RN-14: a correct answer is marked in ink (wording + weight), not green; wrong stays the error red. */
+const correctInk = (mode: ThemeMode) => uiColors[mode].ink;
 
 /* Exam surface: renders the questions stored on the session, collects
  * answers (persisted by the host), and grades locally on submit — the same
@@ -67,14 +68,14 @@ export function ExamView({ examData, mode = 'light', language = 'en', saving, on
           <Text style={[styles.cardHead, { color: p.text.muted }]}>
             {t.examQuestionOf(order + 1, questions.length)} · {typeLabel(question)}
           </Text>
-          {verdict !== undefined ? <Text style={[styles.verdict, { color: verdict ? green(mode) : p.danger }]}>{verdict ? t.examCorrect : t.examIncorrect}</Text> : null}
+          {verdict !== undefined ? <Text style={[styles.verdict, { color: verdict ? correctInk(mode) : p.danger }]}>{verdict ? t.examCorrect : t.examIncorrect}</Text> : null}
         </View>
         <Text selectable style={[styles.prompt, { color: p.text.primary }]}>{question.prompt}</Text>
         {question.type === 'multiple-choice' ? question.options.map((option, index) => {
           const isCorrect = submitted && option.letter === question.answer;
           const isWrongPick = submitted && selected === index && !isCorrect;
           const isPicked = selected === index;
-          const borderColor = isCorrect ? green(mode) : isWrongPick ? p.danger : isPicked ? p.accent.strong : p.border.default;
+          const borderColor = isCorrect ? correctInk(mode) : isWrongPick ? p.danger : isPicked ? p.accent.strong : p.border.default;
           return <Pressable
             key={`${question.index}-${index}`}
             accessibilityRole={submitted ? undefined : 'button'}
@@ -87,7 +88,7 @@ export function ExamView({ examData, mode = 'light', language = 'en', saving, on
             <Text style={{ color: p.text.primary, flex: 1 }}>{option.text}</Text>
           </Pressable>;
         }) : submitted ? (
-          <View style={[styles.answerBox, { borderColor: verdict ? green(mode) : p.danger }]}>
+          <View style={[styles.answerBox, { borderColor: verdict ? correctInk(mode) : p.danger }]}>
             <Text selectable style={{ color: p.text.primary }}>{String(value ?? '')}</Text>
           </View>
         ) : (
@@ -102,7 +103,7 @@ export function ExamView({ examData, mode = 'light', language = 'en', saving, on
           />
         )}
         {submitted && verdict === false && question.type !== 'multiple-choice' ? (
-          <Text style={{ color: green(mode), fontSize: 13 }}>
+          <Text style={{ color: correctInk(mode), fontSize: 13 }}>
             {t.examCorrectAnswer}: <Text style={{ fontWeight: '600' }}>{question.type === 'fill-blank' ? question.answers.join(', ') : question.answer}</Text>
           </Text>
         ) : null}

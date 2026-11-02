@@ -1711,7 +1711,19 @@ export const en = {
     "recents.group.today":"Today",
     "recents.group.yesterday":"Yesterday",
     "recents.group.previous7":"Previous 7 days",
-    "recents.group.previous30":"Previous 30 days"
+    "recents.group.previous30":"Previous 30 days",
+    "chain.own":"You asked",
+    "review.due.one":"1 card due for review today",
+    "review.due.many":"{n} cards due for review today",
+    "review.title":"Review",
+    "review.progress":"{n} / {total}",
+    "review.next":"Next card",
+    "review.finish":"Finish",
+    "review.done":"That was every card due today.",
+    "review.close":"Close",
+    "review.laterToday":"Back again later today",
+    "review.tomorrow":"Next review tomorrow",
+    "review.inDays":"Next review in {n} days"
 };
 
 export default en;

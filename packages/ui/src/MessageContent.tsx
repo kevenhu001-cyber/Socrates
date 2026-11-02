@@ -445,8 +445,9 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
   </View>;
 });
 const styles = StyleSheet.create({
-  findMark: { backgroundColor: 'rgba(255, 216, 77, 0.6)' },
-  findActive: { backgroundColor: 'rgba(255, 153, 60, 0.92)', color: '#171717' },
+  /* RN-14: find matches in neutral grey that reads on both modes; the active one is solid. */
+  findMark: { backgroundColor: 'rgba(128, 128, 128, 0.28)' },
+  findActive: { backgroundColor: '#5d5d5d', color: '#ffffff' },
   text: { fontSize: 16, lineHeight: 28, marginBottom: 12 },
   textLast: { marginBottom: 0 },
   userText: { marginBottom: 0 },

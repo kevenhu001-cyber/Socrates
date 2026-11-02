@@ -1668,5 +1668,17 @@ export const zh = {
     "recents.group.today":"今天",
     "recents.group.yesterday":"昨天",
     "recents.group.previous7":"过去 7 天",
-    "recents.group.previous30":"过去 30 天"
+    "recents.group.previous30":"过去 30 天",
+    "chain.own":"自己问的",
+    "review.due.one":"今天有 1 张卡待复习",
+    "review.due.many":"今天有 {n} 张卡待复习",
+    "review.title":"复习",
+    "review.progress":"{n} / {total}",
+    "review.next":"下一张",
+    "review.finish":"完成",
+    "review.done":"今天到期的卡都复习完了。",
+    "review.close":"关闭",
+    "review.laterToday":"今天稍后再复习",
+    "review.tomorrow":"明天再复习",
+    "review.inDays":"{n} 天后再复习"
 };
