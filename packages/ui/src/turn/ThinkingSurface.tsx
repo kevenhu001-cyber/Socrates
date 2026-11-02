@@ -8,11 +8,11 @@
  */
 import { type ReactNode } from 'react';
 import { Animated, Pressable, View } from 'react-native';
-import { uiRadius, uiSpace } from '@socrates/theme';
+import { R, S, focusRing, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { Chevron, ProgressHairline, useBreathing, useReveal } from './parts';
+import { Chevron, ProgressHairline, useBreathing, useReducedMotion, useReveal } from './parts';
 
 export interface ThinkingSurfaceProps {
   label: string;
@@ -31,6 +31,7 @@ export interface ThinkingSurfaceProps {
 
 export function ThinkingSurface({ label, live, meta = [], icon, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
   const breathing = useBreathing(live);
   const reveal = useReveal(open);
@@ -49,16 +50,15 @@ export function ThinkingSurface({ label, live, meta = [], icon, expandable, open
           alignSelf: 'flex-start',
           flexDirection: 'row',
           alignItems: 'center',
-          gap: uiSpace[2],
+          gap: S[75],
           minHeight: 32,
-          paddingLeft: uiSpace[2],
-          paddingRight: expandable ? uiSpace[1] : uiSpace[3],
-          marginLeft: -uiSpace[2],
-          borderRadius: uiRadius.pill,
+          paddingLeft: S[100],
+          paddingRight: expandable ? S[50] : S[100],
+          marginLeft: -S[100],
+          borderRadius: R.pill,
           backgroundColor: expandable && hovered ? colors.fill : 'transparent',
-          outlineStyle: focused ? 'solid' : undefined,
-          outlineWidth: focused ? 2 : 0,
-          outlineColor: colors.ink,
+          ...focusRing(colors, focused),
+          ...transition('background-color', reduced),
           cursor: expandable ? 'pointer' : 'auto',
         }}
       >
@@ -84,7 +84,7 @@ export function ThinkingSurface({ label, live, meta = [], icon, expandable, open
         testID="turn-activity-body"
         nativeID={bodyId}
         aria-hidden={!open}
-        style={[{ display: open ? 'flex' : 'none', marginTop: uiSpace[2] }, reveal]}
+        style={[{ display: open ? 'flex' : 'none', marginTop: S[75] }, reveal]}
       >
         {children}
       </Animated.View>
@@ -103,16 +103,16 @@ export type TimelineEntry =
 export function ThinkingTimeline({ entries }: { entries: ReadonlyArray<TimelineEntry> }) {
   const { colors } = useUiTheme();
   return (
-    <View testID="thinking-timeline" style={{ paddingLeft: uiSpace[1] }}>
+    <View testID="thinking-timeline" style={{ paddingLeft: S[50] }}>
       {entries.map((entry, index) => {
         const last = index === entries.length - 1;
         const active = entry.kind === 'step' && entry.live;
         return (
           <View key={entry.key} style={{ flexDirection: 'row', alignItems: 'stretch' }}>
-            <View aria-hidden style={{ width: 1, marginRight: uiSpace[4], backgroundColor: active ? colors.inkSecondary : colors.hairlineStrong }} />
-            <View style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : uiSpace[3], paddingTop: index === 0 ? 0 : 2 }}>
+            <View aria-hidden style={{ width: 1, marginRight: S[200], backgroundColor: active ? colors.ink : colors.hairlineStrong }} />
+            <View style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : S[100], paddingTop: index === 0 ? 0 : 2 }}>
               {entry.kind === 'step' ? (
-                <View testID="thinking-step" {...{ dataSet: { phase: entry.live ? 'running' : 'done' } }}>
+                <View testID="thinking-step" style={{ gap: 2 }} {...{ dataSet: { phase: entry.live ? 'running' : 'done' } }}>
                   {entry.title ? <UiText testID="thinking-step-title" variant="labelSm" tone="ink">{entry.title}</UiText> : null}
                   {entry.summary ? <UiText testID="thinking-step-summary" variant="bodySm" tone="secondary">{entry.summary}</UiText> : null}
                 </View>
