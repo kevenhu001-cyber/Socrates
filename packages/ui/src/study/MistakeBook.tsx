@@ -30,9 +30,13 @@ export interface MistakeBookProps {
   strings?: MistakeStrings;
   onFilter: (value: MistakeFilterValue) => void;
   onRedo: (id: string) => void;
+  /** RN-6: ask the model for a follow-up question built on this mistake. */
+  onNextQuestion?: (id: string) => void;
+  /** RN-6: the mistake whose next question is being written, if any. */
+  pendingNextId?: string | null;
 }
 
-export function MistakeBook({ mistakes, filter: rawFilter, strings = defaultMistakeStrings, onFilter, onRedo }: MistakeBookProps) {
+export function MistakeBook({ mistakes, filter: rawFilter, strings = defaultMistakeStrings, onFilter, onRedo, onNextQuestion, pendingNextId }: MistakeBookProps) {
   const filter = normalizeMistakeFilter(rawFilter);
   const rows = mistakes.map(mistakeView);
   const visible = filterMistakeViews(rows, filter);
@@ -70,6 +74,8 @@ export function MistakeBook({ mistakes, filter: rawFilter, strings = defaultMist
               expanded={open[row.id] === true}
               onToggle={() => setOpen((current) => ({ ...current, [row.id]: !current[row.id] }))}
               onRedo={() => onRedo(row.id)}
+              onNextQuestion={onNextQuestion ? () => onNextQuestion(row.id) : undefined}
+              nextPending={pendingNextId === row.id}
             />
           ))}
         </View>
@@ -117,7 +123,7 @@ function AnswerLine({ label, value, strong, data }: { label: string; value: stri
   );
 }
 
-function MistakeCard({ row, strings, expanded, onToggle, onRedo }: { row: MistakeView; strings: MistakeStrings; expanded: boolean; onToggle: () => void; onRedo: () => void }) {
+function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion, nextPending }: { row: MistakeView; strings: MistakeStrings; expanded: boolean; onToggle: () => void; onRedo: () => void; onNextQuestion?: () => void; nextPending?: boolean }) {
   const { colors } = useUiTheme();
   const { hovered, focused, handlers } = usePressFeedback();
   const detailId = `mistake-detail-${row.id}`;
@@ -177,15 +183,38 @@ function MistakeCard({ row, strings, expanded, onToggle, onRedo }: { row: Mistak
               ))}
             </View>
           ) : null}
-          <AnswerLine label={strings.yourAnswer} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeCause: row.id }} />
-          {row.correctAnswer ? <AnswerLine label={strings.correctAnswer} value={row.correctAnswer} strong data={{ mistakeRight: row.id }} /> : null}
+          {row.whyWrong || row.rightWay ? (
+            <>
+              {/* RN-6: the AI analysis takes the two headline lines; the plain
+                  answers stay underneath when there are no options to mark. */}
+              {!row.options.length ? <AnswerLine label={strings.answerGiven} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeGiven: row.id }} /> : null}
+              {!row.options.length && row.correctAnswer ? <AnswerLine label={strings.answerKeyed} value={row.correctAnswer} data={{ mistakeKeyed: row.id }} /> : null}
+              {row.whyWrong ? <AnswerLine label={strings.yourAnswer} value={row.whyWrong} data={{ mistakeCause: row.id, mistakeAi: '1' }} /> : null}
+              {row.rightWay ? <AnswerLine label={strings.correctAnswer} value={row.rightWay} strong data={{ mistakeRight: row.id, mistakeAi: '1' }} /> : null}
+            </>
+          ) : (
+            <>
+              <AnswerLine label={strings.yourAnswer} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeCause: row.id }} />
+              {row.correctAnswer ? <AnswerLine label={strings.correctAnswer} value={row.correctAnswer} strong data={{ mistakeRight: row.id }} /> : null}
+            </>
+          )}
         </View>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: uiSpace[2], paddingHorizontal: uiSpace[3], paddingVertical: uiSpace[2], borderTopWidth: 1, borderTopColor: colors.hairline }}>
         <UiText variant="eyebrow" tone="tertiary" style={{ letterSpacing: 0 }} {...dataSet({ mistakeRedoCount: row.redoCount || undefined })}>
           {row.redoCount ? (row.redoCount === 1 ? strings.redoneOne : fill(strings.redoneMany, { n: row.redoCount })) : ''}
         </UiText>
-        <PillAction tone="solid" label={strings.redo} onPress={onRedo} data={{ redo: row.id }} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: uiSpace[2] }}>
+          {onNextQuestion ? (
+            <PillAction
+              label={nextPending ? strings.toNextQuestionBusy : strings.toNextQuestion}
+              onPress={onNextQuestion}
+              disabled={nextPending}
+              data={{ mistakeNext: row.id, mistakeNextBusy: nextPending ? '1' : undefined }}
+            />
+          ) : null}
+          <PillAction tone="solid" label={strings.redo} onPress={onRedo} data={{ redo: row.id }} />
+        </View>
       </View>
     </View>
   );

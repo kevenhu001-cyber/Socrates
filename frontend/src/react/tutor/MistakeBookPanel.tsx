@@ -3,10 +3,12 @@
  * KB store, writes the filter back, and hands "Redo" to the existing redo
  * command (ui/mistakeBookCommands → the widget runtime re-mounts the item).
  */
+import { useSyncExternalStore } from 'react';
 import { MistakeBook, defaultMistakeStrings, type MistakeStrings } from '@socrates/ui/study';
 import { dispatchKb, useKbStore } from '../../store/index.ts';
 import { formatRelativeTime } from '../../ui/recentsHelpers.ts';
 import { requestMistakeRedo } from '../../ui/mistakeBookCommands.ts';
+import { getPendingNextQuestion, subscribePendingNextQuestion, turnMistakeIntoNextQuestion } from '../../tutor/mistakeAnalysis.ts';
 import { i18n } from '../legacy/gateway';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 
@@ -30,6 +32,10 @@ function mistakeStrings(): MistakeStrings {
     redoneMany: i18n('mistakes.redoneMany', d.redoneMany),
     yourAnswer: i18n('mistakes.yourAnswer', d.yourAnswer),
     correctAnswer: i18n('mistakes.correctAnswer', d.correctAnswer),
+    answerGiven: i18n('mistakes.answerGiven', d.answerGiven),
+    answerKeyed: i18n('mistakes.answerKeyed', d.answerKeyed),
+    toNextQuestion: i18n('mistakes.toNextQuestion', d.toNextQuestion),
+    toNextQuestionBusy: i18n('mistakes.toNextQuestionBusy', d.toNextQuestionBusy),
     noAnswer: i18n('mistakes.noAnswer', d.noAnswer),
     showDetail: i18n('mistakes.showDetail', d.showDetail),
     hideDetail: i18n('mistakes.hideDetail', d.hideDetail),
@@ -43,6 +49,7 @@ function mistakeStrings(): MistakeStrings {
 export function MistakeBookPanel() {
   const mistakes = useKbStore((snapshot) => snapshot.mistakes);
   const filter = useKbStore((snapshot) => snapshot.mistakeFilter);
+  const pendingNextId = useSyncExternalStore(subscribePendingNextQuestion, getPendingNextQuestion);
   useLocaleRefresh();
   return (
     <div className="mistake-book-rn" id="mistakesList">
@@ -53,6 +60,8 @@ export function MistakeBookPanel() {
           strings={mistakeStrings()}
           onFilter={(value) => dispatchKb({ type: 'kb/set', key: 'mistakeFilter', value })}
           onRedo={requestMistakeRedo}
+          onNextQuestion={(id) => { void turnMistakeIntoNextQuestion(id); }}
+          pendingNextId={pendingNextId}
         />
       </WebUiTheme>
     </div>
