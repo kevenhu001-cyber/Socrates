@@ -1,4 +1,5 @@
 import { scrollContainer } from './scroll.js';
+import { t } from '../i18n.ts';
 import { renderDiagnostic } from '../react/tutor/diagnosticHost.tsx';
 
 function resultsNotice(isZh: boolean) {
@@ -9,6 +10,11 @@ function resultsNotice(isZh: boolean) {
 
 /* The results screen is a React view; `data-diag-command="proceed"` keeps the
    delegated handler in `tutor/diagnosticFlow.js` working unchanged. */
+function tr(key: string, fallback: string): string {
+  const value = t(key);
+  return value && value !== key ? value : fallback;
+}
+
 export function renderDiagResultsScreen(state: { kbNodes: { name: string; status: string }[] }, isZh: boolean) {
   const summary = { internalized: 0, fuzzy: 0, blank: 0 };
   state.kbNodes.forEach(function (node) {
@@ -30,6 +36,17 @@ export function renderDiagResultsScreen(state: { kbNodes: { name: string; status
     statusLabels: {
       fuzzy: isZh ? "有一定基础" : "Some familiarity",
       blank: isZh ? "未知/空白" : "Unknown/Blank",
+    },
+    copy: {
+      coverage: tr('diag.coverage', 'Coverage'),
+      coverageOf: tr('diag.coverageOf', '{n} of {total} with some familiarity'),
+      gaps: tr('diag.gaps', 'Gaps, weakest first'),
+      next: tr('diag.nextStep', 'Suggested next step'),
+      startsWith: tr('diag.startsWith', 'Learning starts from the core definition of “{name}”.'),
+      focus: tr('diag.focus', 'Give extra time to: {names}.'),
+      allFamiliar: tr('diag.allFamiliar', 'Every dimension has some footing; keep the pace brisk.'),
+      rankLabel: tr('diag.rank', '#{n}'),
+      separator: isZh ? '、' : ', ',
     },
   });
 
