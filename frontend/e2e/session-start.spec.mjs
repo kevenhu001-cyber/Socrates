@@ -168,8 +168,11 @@ test('canceling Tutor topic analysis prevents the pending start from entering ch
   expect(diagnosticState, `unexpected Tutor state; model requests: ${modelRequests.join(', ')}`)
     .toMatchObject({ mode: 'tutor', mainView: 'diagnosticView' });
   expect(modelRequests, 'Tutor topic analysis should be waiting on the mocked model response').not.toHaveLength(0);
-  await expect(page.locator('#diagnosticView .diag-cancel-btn')).toBeVisible();
-  await page.locator('#diagnosticView .diag-cancel-btn').click();
+  /* The diagnostic is the RN panel (packages/ui/src/study); its cancel pill
+     carries `data-diag-command`, the legacy `.diag-cancel-btn` class is gone. */
+  const cancelDiagnostic = page.locator('#diagnosticView [data-diag-command="cancel"]');
+  await expect(cancelDiagnostic).toBeVisible();
+  await cancelDiagnostic.click();
   await expect(page.locator('#topicSetup')).toBeVisible();
 
   releaseModelResponse();
