@@ -12,7 +12,10 @@ val prepareToolRendererAssets by tasks.registering(Copy::class) {
 val bundleToolRenderer by tasks.registering(Exec::class) {
     val output = toolRendererAssets.get().file("render/tool-renderer.js").asFile
     workingDir(repositoryRoot)
-    commandLine(repositoryRoot.resolve("frontend/node_modules/.bin/esbuild").absolutePath,
+    // Vite 8/Rolldown no longer guarantees a top-level frontend/.bin/esbuild.
+    // Pin the renderer bundler explicitly so Android builds do not depend on
+    // Vite's private dependency graph. npx reuses the npm cache on CI/local.
+    commandLine("npx", "--yes", "esbuild@0.25.12",
         "apps/socrates-android/renderer/toolRendererEntry.ts",
         "--bundle", "--minify", "--format=esm", "--platform=browser", "--target=es2020",
         "--define:process.env.NODE_ENV=\"production\"",
