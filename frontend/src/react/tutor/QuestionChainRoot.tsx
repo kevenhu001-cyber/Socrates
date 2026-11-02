@@ -21,6 +21,7 @@ import {
   type QuestionChainStrings,
 } from '@socrates/ui/think';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
+import { useInlineMath } from '../rn/useInlineMath';
 import { i18n } from '../legacy/gateway.ts';
 import { useKbStore } from '../../store/index.ts';
 import { useIsChatStreaming } from '../useChatRuntime.ts';
@@ -62,13 +63,14 @@ export function QuestionChainRoot({ prompts, onFollow }: QuestionChainRootProps)
   const mode = useLearningMode();
   const mistakes = useKbStore((snapshot) => snapshot.mistakes);
   const streaming = useIsChatStreaming();
+  const renderText = useInlineMath();
   const fromMistakes = learningModeSpec(mode).candidatesFromMistakes ? mistakeCandidates(mistakes) : [];
   /* While a reply streams there is nothing to choose yet: the chain shows
      where the learner is, and the next questions return with the reply. */
   const candidates = streaming ? [] : (fromMistakes.length > 0 ? fromMistakes : askCandidates(prompts, chain.steps));
   return (
     <WebUiTheme>
-      <QuestionChain steps={chain.steps} candidates={candidates} strings={chainStrings()} onSelect={onFollow} busy={streaming} />
+      <QuestionChain steps={chain.steps} candidates={candidates} strings={chainStrings()} onSelect={onFollow} busy={streaming} renderText={renderText} />
     </WebUiTheme>
   );
 }

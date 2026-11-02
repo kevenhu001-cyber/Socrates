@@ -61,6 +61,18 @@ export function findStreamScaffold(name: string): StreamScaffoldPlugin | null {
  * ------------------------------------------------------------------ */
 
 const STREAM_SCAFFOLD_TAGS = new Set(Object.keys(STREAM_SCAFFOLD_FALLBACK));
+const COMPLETE_SCAFFOLD_RE = new RegExp(
+  '<(' + Object.keys(STREAM_SCAFFOLD_FALLBACK).join('|') + ')\\b[^>]*>[\\s\\S]*?</\\1>', 'i',
+);
+
+/**
+ * True when the text holds at least one closed scaffold block. The streaming
+ * renderer only ever paints `.sc-live` previews, so a settled turn that holds
+ * one must be painted by the final renderer for its card to mount.
+ */
+export function hasCompleteScaffold(text: string): boolean {
+  return COMPLETE_SCAFFOLD_RE.test(String(text || ''));
+}
 
 const STREAM_LABEL_KEYS: Record<string, [string, string]> = {
   quiz: ['learn.label.quiz', 'Quiz'],

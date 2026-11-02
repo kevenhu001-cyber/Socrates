@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   clearStreamScaffolds,
   findStreamScaffold,
+  hasCompleteScaffold,
   registerStreamScaffold,
   renderStreamScaffoldPreview,
 } from '../src/render/markdownScaffolds.ts';
@@ -50,4 +51,13 @@ test('stream scaffold plugin registry replaces duplicate names and clears', () =
     clearStreamScaffolds();
   }
   assert.equal(findStreamScaffold('custom'), null);
+});
+
+test('a settled turn needs the final renderer only when it holds a closed scaffold', () => {
+  assert.equal(hasCompleteScaffold('<quiz><q>Q</q><o letter="A">1</o></quiz>'), true);
+  assert.equal(hasCompleteScaffold('前文\n\n<flashcard>\n<front>F</front><back>B</back>\n</flashcard>'), true);
+  assert.equal(hasCompleteScaffold('<key-point>K</key-point>'), true);
+  assert.equal(hasCompleteScaffold('<quiz><q>half typed'), false);
+  assert.equal(hasCompleteScaffold('plain prose with <b>bold</b>'), false);
+  assert.equal(hasCompleteScaffold(''), false);
 });

@@ -7,7 +7,8 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Image, Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
-import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
+import { uiMotion } from '@socrates/theme';
+import { R, S, focusRing, insetRing, shadow, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { UiButton, usePressFeedback } from '../primitives/UiButton';
@@ -50,13 +51,13 @@ export function ToolDetailSheet({ visible, onClose, title, subtitle, status, clo
     ? { translateX: enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }
     : { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [48, 0] }) };
   const panel = mode === 'drawer'
-    ? { position: 'absolute' as const, top: uiSpace[3], right: uiSpace[3], bottom: uiSpace[3], width: Math.min(440, width - uiSpace[6]), borderRadius: uiRadius.card }
-    : { position: 'absolute' as const, left: 0, right: 0, bottom: 0, maxHeight: '86%' as const, borderTopLeftRadius: uiRadius.card, borderTopRightRadius: uiRadius.card };
+    ? { position: 'absolute' as const, top: S[100], right: S[100], bottom: S[100], width: Math.min(440, width - S[400]), borderRadius: R.stage }
+    : { position: 'absolute' as const, left: 0, right: 0, bottom: 0, maxHeight: '86%' as const, borderTopLeftRadius: R.stage, borderTopRightRadius: R.stage };
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={{ flex: 1 }}>
         <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: enter }}>
-          <Pressable testID="tool-detail-backdrop" aria-label={closeLabel} onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)' }} />
+          <Pressable testID="tool-detail-backdrop" aria-label={closeLabel} onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.16)' }} />
         </Animated.View>
         <Animated.View
           testID="tool-detail"
@@ -66,16 +67,15 @@ export function ToolDetailSheet({ visible, onClose, title, subtitle, status, clo
           {...{ dataSet: { layout: mode } }}
           style={[panel, {
             backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.hairline,
+            boxShadow: shadow(colors, 'dialog'),
             overflow: 'hidden',
             opacity: enter,
             transform: [slide],
           }]}
         >
-          {mode === 'sheet' ? <View aria-hidden style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, marginTop: uiSpace[2], backgroundColor: colors.hairlineStrong }} /> : null}
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: uiSpace[3], paddingHorizontal: uiSpace[5], paddingTop: uiSpace[4], paddingBottom: uiSpace[3], borderBottomWidth: 1, borderBottomColor: colors.hairline }}>
-            <View style={{ flex: 1, minWidth: 0 }}>
+          {mode === 'sheet' ? <View aria-hidden style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, marginTop: S[75], backgroundColor: colors.hairlineStrong }} /> : null}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[100], minHeight: 64, paddingHorizontal: S[300], paddingVertical: S[100], borderBottomWidth: 1, borderBottomColor: colors.hairline }}>
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
               <UiText testID="tool-detail-title" variant="label" tone="ink" numberOfLines={2} role="heading" aria-level={2}>{title}</UiText>
               {subtitle || status ? (
                 <UiText variant="labelSm" tone="tertiary" numberOfLines={1} style={{ fontWeight: '400' }}>
@@ -85,7 +85,7 @@ export function ToolDetailSheet({ visible, onClose, title, subtitle, status, clo
             </View>
             <UiButton testID="tool-detail-close" label={closeLabel} variant="secondary" size="sm" onPress={onClose} />
           </View>
-          <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ padding: uiSpace[5], gap: uiSpace[5] }}>
+          <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ padding: S[300], gap: S[300] }}>
             {children}
           </ScrollView>
         </Animated.View>
@@ -96,8 +96,8 @@ export function ToolDetailSheet({ visible, onClose, title, subtitle, status, clo
 
 export function DetailSection({ title, kind, children }: { title: string; kind: string; children: ReactNode }) {
   return (
-    <View testID={`tool-detail-section-${kind}`} style={{ gap: uiSpace[2] }}>
-      <UiText variant="eyebrow" tone="tertiary">{title}</UiText>
+    <View testID={`tool-detail-section-${kind}`} style={{ gap: S[75] }}>
+      <UiText variant="labelSm" tone="tertiary">{title}</UiText>
       {children}
     </View>
   );
@@ -121,6 +121,7 @@ export interface CodeBlockProps {
 /** Monospace output block with a copy pill. */
 export function CodeBlock({ text, onCopy, copyLabel, copiedLabel, failedLabel, extra, tone = 'plain', maxHeight = 360, testID }: CodeBlockProps) {
   const { colors } = useUiTheme();
+  const { subtle } = sheets(colors);
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -133,16 +134,16 @@ export function CodeBlock({ text, onCopy, copyLabel, copiedLabel, failedLabel, e
     timer.current = setTimeout(() => setState('idle'), 1500);
   };
   return (
-    <View style={{ gap: uiSpace[2] }}>
+    <View style={{ gap: S[75] }}>
       <ScrollView
         testID={testID}
         horizontal={false}
-        style={{ maxHeight, borderRadius: uiRadius.md, backgroundColor: colors.fill, borderWidth: tone === 'error' ? 1 : 0, borderColor: colors.hairlineStrong }}
-        contentContainerStyle={{ padding: uiSpace[3] }}
+        style={{ maxHeight, borderRadius: R.row, backgroundColor: subtle, boxShadow: insetRing(tone === 'error' ? colors.hairlineStrong : colors.hairline) }}
+        contentContainerStyle={{ paddingHorizontal: S[200], paddingVertical: S[100] }}
       >
         <MonoText testID="tool-code-output" style={{ fontFamily: monoFamily, lineHeight: 20 }}>{text}</MonoText>
       </ScrollView>
-      <View style={{ flexDirection: 'row', gap: uiSpace[2] }}>
+      <View style={{ flexDirection: 'row', gap: S[75] }}>
         {extra}
         {onCopy ? (
           <UiButton
@@ -164,16 +165,17 @@ function SourceFavicon({ source }: { source: SourceCardView }) {
   const [failed, setFailed] = useState(!source.favicon);
   if (failed || !source.favicon) {
     return (
-      <View aria-hidden style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: colors.fillPressed, alignItems: 'center', justifyContent: 'center' }}>
+      <View aria-hidden style={{ width: 20, height: 20, borderRadius: 6, backgroundColor: colors.fill, alignItems: 'center', justifyContent: 'center' }}>
         <UiText variant="eyebrow" tone="secondary" style={{ fontSize: 10, lineHeight: 12, letterSpacing: 0 }}>{source.monogram}</UiText>
       </View>
     );
   }
-  return <Image aria-hidden source={{ uri: source.favicon }} onError={() => setFailed(true)} style={{ width: 16, height: 16, borderRadius: 4 }} />;
+  return <Image aria-hidden source={{ uri: source.favicon }} onError={() => setFailed(true)} style={{ width: 20, height: 20, borderRadius: 6 }} />;
 }
 
 function SourceCard({ source, onOpen }: { source: SourceCardView; onOpen?: (url: string) => void }) {
   const { colors } = useUiTheme();
+  const { subtle } = sheets(colors);
   const { hovered, focused, handlers } = usePressFeedback();
   const link = Boolean(source.url && onOpen);
   return (
@@ -187,16 +189,14 @@ function SourceCard({ source, onOpen }: { source: SourceCardView; onOpen?: (url:
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: uiSpace[3],
-        paddingVertical: uiSpace[2],
-        paddingHorizontal: uiSpace[3],
-        borderRadius: uiRadius.md,
-        borderWidth: 1,
-        borderColor: colors.hairline,
-        backgroundColor: hovered && link ? colors.fill : colors.card,
-        outlineStyle: focused ? 'solid' : undefined,
-        outlineWidth: focused ? 2 : 0,
-        outlineColor: colors.ink,
+        gap: S[100],
+        minHeight: 52,
+        paddingVertical: S[75],
+        paddingHorizontal: S[100],
+        borderRadius: R.row,
+        backgroundColor: hovered && link ? subtle : colors.card,
+        boxShadow: insetRing(hovered && link ? colors.hairlineStrong : colors.hairline),
+        ...focusRing(colors, focused),
       }}
     >
       <SourceFavicon source={source} />
@@ -211,7 +211,7 @@ function SourceCard({ source, onOpen }: { source: SourceCardView; onOpen?: (url:
 /** Search sources as compact cards: favicon, title and domain. */
 export function SourceList({ sources, onOpen }: { sources: ReadonlyArray<SourceCardView>; onOpen?: (url: string) => void }) {
   return (
-    <View testID="tool-sources" style={{ gap: uiSpace[2] }}>
+    <View testID="tool-sources" style={{ gap: S[75] }}>
       {sources.map((source) => <SourceCard key={source.key} source={source} onOpen={onOpen} />)}
     </View>
   );
@@ -231,7 +231,7 @@ export function ImageOutput({ uri, alt }: { uri: string; alt: string }) {
         const source = (event.nativeEvent as { source?: { width?: number; height?: number } }).source;
         if (source?.width && source?.height) setRatio(source.width / source.height);
       }}
-      style={{ width: '100%', aspectRatio: ratio, borderRadius: uiRadius.md, backgroundColor: colors.fill }}
+      style={{ width: '100%', aspectRatio: ratio, borderRadius: R.row, backgroundColor: colors.fill }}
     />
   );
 }
