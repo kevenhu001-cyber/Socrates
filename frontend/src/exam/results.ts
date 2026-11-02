@@ -1,6 +1,5 @@
 import type { ExamQuestion } from "./types.ts";
 import type { ExamResultsSnapshot, ExamResultQuestion } from '../react/exam/ExamResults.tsx';
-import { formatMsg } from '../render/markdown.ts';
 import { examUiL } from './ui.ts';
 
 
@@ -41,7 +40,7 @@ function resultQuestion(question: ScorableExamQuestion, answer: string | number 
   const options = question.type === 'multiple-choice'
     ? (question.opts || []).map((option, index) => ({
       letter: option.letter || '',
-      html: formatMsg(option.text || ''),
+      text: String(option.text ?? '').trim(),
       isCorrect: option.letter === question.answer,
       isSelected: answer === index,
     }))
@@ -51,7 +50,7 @@ function resultQuestion(question: ScorableExamQuestion, answer: string | number 
     type: question.type,
     typeLabel: resultTypeLabel(question.type, translate),
     questionLabel: translate('Question', '题目'),
-    questionHtml: formatMsg(question.q),
+    questionText: String(question.q ?? '').trim(),
     answer: typeof answer === 'string' ? answer : '',
     options,
     isCorrect,
@@ -59,7 +58,7 @@ function resultQuestion(question: ScorableExamQuestion, answer: string | number 
     expectedLabel: isFillBlank ? translate('Correct answer', '正确答案') : translate('Expected', '期望答案'),
     expectedAnswer: isFillBlank ? (question.answers || []).join(', ') : String(question.answer || ''),
     explanationLabel: translate('Explanation', '解释'),
-    explanationHtml: question.explanation ? formatMsg(question.explanation) : '',
+    explanationText: String(question.explanation ?? '').trim(),
   };
 }
 

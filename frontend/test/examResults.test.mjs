@@ -27,3 +27,21 @@ test('exam result model grades supported question types and omits failed cards',
   assert.equal(result.questions[0].options[1].isSelected, true);
   assert.equal(result.questions[1].expectedAnswer, 'four');
 });
+
+test('exam result model hands raw text to the view so `$…$` can be typeset there', () => {
+  const result = buildExamResultsSnapshot([
+    {
+      type: 'multiple-choice',
+      q: '  $f(x)=x^2$ 在 $x=1$ 处的导数是？ ',
+      opts: [{ letter: 'A', text: '$2$' }, { letter: 'B', text: '<b>1</b>' }],
+      answer: 'A',
+      explanation: '由 $f\'(x)=2x$ 得 $f\'(1)=2$。',
+    },
+  ], { 0: 0 }, (english) => english);
+  const question = result.questions[0];
+  assert.equal(question.questionText, '$f(x)=x^2$ 在 $x=1$ 处的导数是？');
+  assert.equal(question.options[0].text, '$2$');
+  assert.equal(question.options[1].text, '<b>1</b>');
+  assert.equal(question.explanationText, '由 $f\'(x)=2x$ 得 $f\'(1)=2$。');
+  assert.equal('questionHtml' in question, false);
+});

@@ -1,10 +1,14 @@
 import { Input } from '../ui/shadcn/input';
 import { Textarea } from '../ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
+import { useInlineMath, type InlineTextRenderer } from '../rn/useInlineMath';
 
+/* RN-11: stems and options are raw model text. `$…$` is typeset by the
+   shared inline KaTeX renderer (prose escaped); text without a formula
+   stays a plain React string. */
 export type ExamQuestionOption = {
   letter: string;
-  html: string;
+  text: string;
 };
 
 export type ExamQuestionCardData = {
@@ -13,7 +17,7 @@ export type ExamQuestionCardData = {
   type: string;
   questionLabel: string;
   typeLabel: string;
-  questionHtml: string;
+  questionText: string;
   options: ExamQuestionOption[];
   savedAnswer: number | string | null;
   answerLabel: string;
@@ -33,6 +37,7 @@ function ExamChoiceOptions({
   answerLabel,
   index,
   onOptionChange,
+  renderText,
 }: {
   options: ExamQuestionCardProps['options'];
   selected: string;
@@ -40,6 +45,7 @@ function ExamChoiceOptions({
   answerLabel: string;
   index: number;
   onOptionChange: (index: number, value: number) => void;
+  renderText: InlineTextRenderer;
 }) {
   if (readOnly) {
     return (
@@ -47,7 +53,7 @@ function ExamChoiceOptions({
         {options.map((option, optionIndex) => (
           <div key={`${option.letter}-${optionIndex}`} className={`exam-q-opt${selected === String(optionIndex) ? ' selected' : ''}`}>
             <span className="exam-q-opt-letter">{option.letter}</span>
-            <span className="exam-q-opt-text" dangerouslySetInnerHTML={{ __html: option.html }} />
+            <span className="exam-q-opt-text">{renderText(option.text, 'exam-option')}</span>
             {selected === String(optionIndex) && <span className="exam-q-opt-check">✓</span>}
           </div>
         ))}
@@ -74,7 +80,7 @@ function ExamChoiceOptions({
           className={`exam-q-opt${selected === String(optionIndex) ? ' selected' : ''}`}
         >
           <span className="exam-q-opt-letter">{option.letter}</span>
-          <span className="exam-q-opt-text" dangerouslySetInnerHTML={{ __html: option.html }} />
+          <span className="exam-q-opt-text">{renderText(option.text, 'exam-option')}</span>
         </ToggleGroupItem>
       ))}
     </ToggleGroup>
@@ -132,7 +138,7 @@ function ExamQuestionCard({
   type,
   questionLabel,
   typeLabel,
-  questionHtml,
+  questionText,
   options,
   savedAnswer,
   answerLabel,
@@ -142,6 +148,7 @@ function ExamQuestionCard({
   onTextChange,
 }: ExamQuestionCardProps) {
   const selected = savedAnswer == null ? '' : String(savedAnswer);
+  const renderText = useInlineMath();
 
   return (
     <>
@@ -149,7 +156,7 @@ function ExamQuestionCard({
         {questionLabel} {index + 1} / {total}
         <span className="exam-q-type">{typeLabel}</span>
       </div>
-      <div className={`exam-q-text${type === 'error' ? ' exam-q-error' : ''}`} dangerouslySetInnerHTML={{ __html: questionHtml }} />
+      <div className={`exam-q-text${type === 'error' ? ' exam-q-error' : ''}`}>{renderText(questionText, 'exam-q')}</div>
       {type === 'multiple-choice' && options.length > 0 && (
         <ExamChoiceOptions
           options={options}
@@ -158,6 +165,7 @@ function ExamQuestionCard({
           answerLabel={answerLabel}
           index={index}
           onOptionChange={onOptionChange}
+          renderText={renderText}
         />
       )}
       {(type === 'fill-blank' || type === 'short-answer') && (

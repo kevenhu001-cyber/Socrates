@@ -584,3 +584,11 @@
   border-color: var(--ui-ink);
   color: var(--ui-ink);
 }
+
+/* RN-11 — exam stems and explanations are raw model text now (inline KaTeX,
+   prose escaped), no longer markdown paragraphs: keep the model's line
+   breaks the way markdown `breaks: true` did. */
+#appShell .exam-q-text,
+#appShell .exam-q-result .explain {
+  white-space: pre-line;
+}
