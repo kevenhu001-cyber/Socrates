@@ -489,3 +489,46 @@ export function mistakeEmptyKind(total: number, visible: number, filter: Mistake
   if (visible) return null;
   return filter === 'resolved' ? 'filterResolved' : 'filterOther';
 }
+
+/* ------------------------------------------- RN-14: mistakes across sessions */
+
+/** One session's mistakes, as an archive or the server mirror hands them over. */
+export interface SessionMistakesInput<T extends MistakeRowInput = MistakeRowInput> {
+  sessionId: string;
+  /** The session's title or topic, used when an entry carries no topic. */
+  label?: string | null;
+  mistakes: readonly T[];
+}
+
+export type SessionMistake<T extends MistakeRowInput = MistakeRowInput> = T & { sessionId: string | null };
+
+/**
+ * The mistake book across every session: the open session's own entries
+ * (live, so they always win), then every other session's, newest first.
+ * An entry without a topic takes its session's label so it still groups
+ * under something the learner recognises. Duplicate ids keep the first.
+ */
+export function mergeSessionMistakes<T extends MistakeRowInput>(
+  current: readonly T[],
+  currentSessionId: string | null,
+  others: readonly SessionMistakesInput<T>[],
+): SessionMistake<T>[] {
+  const seen = new Set<string>();
+  const out: SessionMistake<T>[] = [];
+  const add = (entry: T, sessionId: string | null, label?: string | null) => {
+    if (!entry || typeof entry.id !== 'string' || seen.has(entry.id)) return;
+    seen.add(entry.id);
+    const topic = entry.topic && entry.topic.trim() ? entry.topic : (label || '').trim();
+    out.push({ ...entry, topic, sessionId });
+  };
+  for (const entry of current) add(entry, currentSessionId);
+  for (const session of others) {
+    if (!session || session.sessionId === currentSessionId) continue;
+    for (const entry of session.mistakes) add(entry, session.sessionId, session.label);
+  }
+  /* Stable: equal timestamps keep the open session first. */
+  return out
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => (b.entry.timestamp ?? 0) - (a.entry.timestamp ?? 0) || a.index - b.index)
+    .map(({ entry }) => entry);
+}

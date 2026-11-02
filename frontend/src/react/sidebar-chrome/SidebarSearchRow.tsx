@@ -1,14 +1,15 @@
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { i18n } from '../legacy/gateway';
-import { useKbStore } from '../../store/index.ts';
+import { useAllSessionMistakes } from '../tutor/useAllSessionMistakes';
 import { renderRecents, setRecentsSearch } from '../../ui/recentsView.ts';
 import { setSidebarPanelView, toggleSidebarPanelView, useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useSessionListSearchQuery } from '../session-list/sessionList.store.ts';
 
 /** The search field and tutor-only view actions share one React-owned row. */
 export function SidebarSearchRow() {
-  const mistakeCount = useKbStore((snapshot) => snapshot.mistakes.length);
+  /* RN-14: the badge counts every session's mistakes, the same list the mistake book shows. */
+  const mistakeCount = useAllSessionMistakes().length;
   const searchQuery = useSessionListSearchQuery();
   const activePanel = useSidebarStore((snapshot) => snapshot.activePanel);
   const showRecents = () => {

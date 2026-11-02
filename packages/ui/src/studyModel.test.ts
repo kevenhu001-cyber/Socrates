@@ -208,3 +208,22 @@ test('mistake analysis surfaces only what the model wrote', () => {
   assert.equal(legacy.whyWrong, null);
   assert.equal(legacy.rightWay, null);
 });
+
+test('RN-14 mergeSessionMistakes: every session, open session first among equals, newest first', async () => {
+  const { mergeSessionMistakes } = await import('./study/model.ts');
+  const merged = mergeSessionMistakes(
+    [{ id: 'm-open', topic: '导数', q: 'd/dx x²', timestamp: 200 }],
+    'open',
+    [
+      { sessionId: 'open', label: 'stale copy', mistakes: [{ id: 'm-open-old', q: 'old copy', timestamp: 999 }] },
+      { sessionId: 's1', label: '积分入门', mistakes: [{ id: 'm1', topic: '', q: '∫x dx', timestamp: 300 }, { id: 'm-open', q: 'dup', timestamp: 1 }] },
+      { sessionId: 's2', label: null, mistakes: [{ id: 'm2', topic: '极限', q: 'lim', timestamp: 200 }] },
+    ],
+  );
+  assert.deepEqual(merged.map((row) => row.id), ['m1', 'm-open', 'm2']);
+  assert.deepEqual(merged.map((row) => row.sessionId), ['s1', 'open', 's2']);
+  assert.equal(merged[0].topic, '积分入门', 'a row without a topic takes its session label');
+  assert.equal(merged[2].topic, '极限');
+  assert.deepEqual(mergeSessionMistakes([], null, []), []);
+  assert.deepEqual(mergeSessionMistakes([], null, [{ sessionId: 's', mistakes: [{ id: 'x', q: 'q' }] }]).map((row) => row.sessionId), ['s'], 'home (no open session) still sees every session');
+});

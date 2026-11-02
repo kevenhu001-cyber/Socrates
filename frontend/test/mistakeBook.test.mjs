@@ -105,3 +105,41 @@ test('MistakeBook quiz redo appends a stable slot and persists it once', () => {
   assert.match(appended[0], new RegExp(`<quiz data-quiz-id="${state.mistakes[0].quizSlotId}"><q>2 \\+ 2\\? &lt;tip&gt;<\\/q><o letter="A">4 &amp; 1<\\/o><o letter="B">5<\\/o><correct>A<\\/correct><\\/quiz>`));
   assert.equal(saved.length, 1);
 });
+
+test('RN-14 retrying a quiz and missing again refreshes the entry instead of adding a duplicate', () => {
+  const { runtime, state, calls, saved } = createHarness();
+  const miss = (userAnswer, quizSlotId = 'quiz-retry') => runtime.recordMistake({
+    type: 'quiz',
+    q: 'Solve x + 2 = 5',
+    options: [{ letter: 'A', text: '2' }, { letter: 'B', text: '3' }, { letter: 'C', text: '7' }],
+    correct: 'B',
+    userAnswer,
+    quizSlotId,
+  });
+
+  miss('A');
+  const first = state.mistakes[0];
+  miss('A');
+  assert.equal(state.mistakes.length, 1, 'the same miss on retry is one mistake');
+  assert.equal(state.mistakes[0].id, first.id);
+  miss('C');
+  assert.equal(state.mistakes.length, 1);
+  assert.equal(state.mistakes[0].userAnswer, 'C', 'the latest wrong answer is kept');
+  assert.equal(calls.filter((call) => call.path === '/api/mistakes').length, 1, 'mirrored to the server once');
+  assert.equal(saved.length, 3);
+
+  /* A different quiz (another slot) is a different mistake. */
+  miss('A', 'quiz-other');
+  assert.equal(state.mistakes.length, 2);
+});
+
+test('RN-14 a resolved entry does not absorb a new miss on the same question', async () => {
+  const { findSameMistake } = await import('../src/ui/mistakeBook.ts');
+  const entries = [
+    { id: 'a', type: 'practice', q: '∫x dx', quizSlotId: null, resolved: true },
+    { id: 'b', type: 'practice', q: '∫x dx', quizSlotId: null },
+  ];
+  assert.equal(findSameMistake(entries, { type: 'practice', q: ' ∫x dx ', quizSlotId: null })?.id, 'b');
+  assert.equal(findSameMistake(entries, { type: 'quiz', q: '∫x dx', quizSlotId: null }), null, 'kinds do not mix');
+  assert.equal(findSameMistake(entries.slice(0, 1), { type: 'practice', q: '∫x dx', quizSlotId: null }), null);
+});

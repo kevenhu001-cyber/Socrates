@@ -69,6 +69,24 @@ function readMistakes(stateStore: MistakeStore): MistakeEntry[] {
   }) : [];
 }
 
+/**
+ * RN-14: the unresolved entry a new miss repeats, if any. A quiz with a slot
+ * id is matched by that id (a redo gets its own slot); otherwise by kind and
+ * question text. Exported for tests.
+ */
+export function findSameMistake(
+  entries: readonly MistakeEntry[],
+  next: { type: string; q: string; quizSlotId: string | null },
+): MistakeEntry | null {
+  const question = next.q.trim();
+  if (!question && !next.quizSlotId) return null;
+  return entries.find((entry) => {
+    if (entry.resolved || entry.isResolved || entry.type !== next.type) return false;
+    if (next.quizSlotId && entry.quizSlotId) return entry.quizSlotId === next.quizSlotId;
+    return entry.q.trim() === question;
+  }) ?? null;
+}
+
 type MistakeStore = typeof import('../state/store.ts')['stateStore'];
 interface MistakeBookOptions {
   stateStore: MistakeStore;
@@ -211,6 +229,22 @@ export function createMistakeBook({
     }
   }
 
+  function refreshRepeatedMistake(existing: MistakeEntry[], same: MistakeEntry, userAnswer: string | null, judgedAnswer: string | null) {
+    const answerChanged = same.userAnswer !== userAnswer;
+    const refreshed: MistakeEntry = { ...same, userAnswer, judgedAnswer: judgedAnswer ?? same.judgedAnswer, timestamp: Date.now() };
+    /* A different wrong answer may be a different slip: let the model rewrite it. */
+    if (answerChanged) delete refreshed.analysis;
+    stateStore.dispatch({
+      type: 'state/set', key: 'mistakes',
+      value: [refreshed, ...existing.filter((item) => item.id !== same.id)],
+    });
+    saveCurrentSession();
+    if (!answerChanged) return;
+    void import('../tutor/mistakeAnalysis.ts')
+      .then(({ analyzeMistake }) => analyzeMistake(same.id))
+      .catch((error) => reportSwallow(error, 'ui/mistakeBook.reanalyze'));
+  }
+
   function recordMistake(rec: Record<string, unknown>) {
     const type = typeof rec.type === 'string' ? rec.type : 'quiz';
     const question = typeof rec.q === 'string' ? rec.q : '';
@@ -219,6 +253,15 @@ export function createMistakeBook({
     const userAnswer = typeof rec.userAnswer === 'string' ? rec.userAnswer : null;
     const judgedAnswer = typeof rec.judgedAnswer === 'string' ? rec.judgedAnswer : null;
     const quizSlotId = typeof rec.quizSlotId === 'string' ? rec.quizSlotId : null;
+    /* RN-14: retrying a quiz (or resubmitting a practice answer) and missing
+       again is the same mistake, not a new one: refresh the entry already in
+       the book instead of adding a duplicate. */
+    const existing = readMistakes(stateStore);
+    const same = findSameMistake(existing, { type, q: question, quizSlotId });
+    if (same) {
+      refreshRepeatedMistake(existing, same, userAnswer, judgedAnswer);
+      return;
+    }
     const kbNodes = (stateStore.read('kbNodes') || []) as Array<{ name?: string }>;
     const currentNode = stateStore.read('currentNode');
     const node = kbNodes[currentNode] || {};
@@ -239,7 +282,7 @@ export function createMistakeBook({
     };
     stateStore.dispatch({
       type: 'state/set', key: 'mistakes',
-      value: [mistake, ...readMistakes(stateStore)],
+      value: [mistake, ...existing],
     });
     persistMistake({
       nodeName: mistake.node || null,
