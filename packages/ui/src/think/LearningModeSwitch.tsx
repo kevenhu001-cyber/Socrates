@@ -11,7 +11,8 @@
  */
 import { useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
-import { uiRadius, uiSpace } from '@socrates/theme';
+import { R, S, focusRing, transition } from '../look';
+import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
@@ -45,6 +46,7 @@ export interface LearningModeSwitchProps {
 
 function ModeOption({ option, selected, tabStop, compact, nodeRef, onPress, onArrow }: { option: LearningModeOption; selected: boolean; tabStop: boolean; compact: boolean; nodeRef: (node: View | null) => void; onPress: () => void; onArrow: (delta: 1 | -1) => void }) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
   const { scale, hovered, focused, handlers } = usePressFeedback();
   return (
     <Pressable
@@ -69,19 +71,20 @@ function ModeOption({ option, selected, tabStop, compact, nodeRef, onPress, onAr
         style={{
           height: 32,
           /* Phones: tighter capsules so all five fit a 390px row. */
-          paddingHorizontal: compact ? 9 : uiSpace[3],
-          borderRadius: uiRadius.pill,
+          paddingHorizontal: compact ? 9 : S[100],
+          borderRadius: R.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: selected ? colors.ink : hovered ? colors.fillHover : 'transparent',
-          outlineStyle: focused ? 'solid' : undefined,
-          outlineWidth: focused ? 2 : 0,
-          outlineColor: colors.ink,
-          outlineOffset: 2,
+          /* Site `.ui-seg`: the chosen segment is a white capsule lifted by
+             a 6% ring on the grey track; the others are quiet text. */
+          backgroundColor: selected ? colors.card : hovered ? colors.fillHover : 'transparent',
+          boxShadow: selected ? `0 0 0 1px ${colors.hairline}, 0 1px 2px rgb(0 0 0 / 4%)` : undefined,
+          ...focusRing(colors, focused),
+          ...transition('background-color, box-shadow', reduced),
           transform: [{ scale }],
         }}
       >
-        <UiText variant="labelSm" tone={selected ? 'onInk' : 'secondary'} numberOfLines={1}>{option.label}</UiText>
+        <UiText variant="labelSm" tone={selected ? 'ink' : 'secondary'} numberOfLines={1}>{option.label}</UiText>
       </Animated.View>
     </Pressable>
   );
@@ -107,7 +110,7 @@ function ModeTrack({ options, value, onChange, label, centered }: { options: rea
         alignSelf: centered && !compact ? 'center' : 'flex-start',
         gap: 2,
         padding: 3,
-        borderRadius: uiRadius.pill,
+        borderRadius: R.pill,
         backgroundColor: colors.fill,
       }}
     >
@@ -130,7 +133,7 @@ function ModeTrack({ options, value, onChange, label, centered }: { options: rea
   );
   if (!compact) return track;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: uiSpace[2] }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: S[75] }}>
       {track}
     </ScrollView>
   );
@@ -147,7 +150,7 @@ export function LearningModeSwitch({ options, value, onChange, label, variant = 
 
   if (variant === 'row') {
     return (
-      <View testID={testID} style={{ gap: uiSpace[2] }} {...dataSet({ mode: value ?? 'none' })}>
+      <View testID={testID} style={{ gap: S[75] }} {...dataSet({ mode: value ?? 'none' })}>
         <ModeTrack options={options} value={value} onChange={onChange} label={label} centered />
         {hint}
       </View>
@@ -155,8 +158,9 @@ export function LearningModeSwitch({ options, value, onChange, label, variant = 
   }
 
   return (
-    <View testID={testID} style={{ gap: uiSpace[2], alignItems: 'flex-start' }} {...dataSet({ mode: value ?? 'none', open: open ? 'true' : 'false' })}>
+    <View testID={testID} style={{ gap: S[75], alignItems: 'flex-start' }} {...dataSet({ mode: value ?? 'none', open: open ? 'true' : 'false' })}>
       <PillAction
+        size="sm"
         testID="learning-mode-trigger"
         label={selected ? triggerLabel.replace('{mode}', selected.label) : label}
         accessibilityLabel={selected ? `${label}, ${selected.label}` : label}
@@ -165,7 +169,7 @@ export function LearningModeSwitch({ options, value, onChange, label, variant = 
         onPress={() => setOpen((value) => !value)}
       />
       {open ? (
-        <View style={{ gap: uiSpace[2], alignSelf: 'stretch' }}>
+        <View style={{ gap: S[75], alignSelf: 'stretch' }}>
           <ModeTrack
             options={options}
             value={value}

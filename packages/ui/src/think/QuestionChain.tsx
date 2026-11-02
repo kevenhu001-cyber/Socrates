@@ -1,19 +1,22 @@
 /**
  * RN-4 — the question chain ("Think out loud").
  *
- * One vertical spine, drawn as a 1px hairline, with numbered rounded-square
- * nodes (never dots). From top to bottom:
+ * RN-8: drawn on the site's question-chain stage (a #f9f9f9 sheet with a
+ * hairline ring, 20px radius). One vertical spine, drawn as a 1px hairline,
+ * with numbered capsule nodes (never dots). From top to bottom:
  *   - walked questions, folded to the root and the last step when long;
  *   - the current question, its node filled in ink;
- *   - the questions the learner can follow next, as hairline capsules whose
- *     nodes are outlined and carry the number the step would get.
+ *   - the questions the learner can follow next, as white bubbles whose
+ *     nodes are ringed → capsules: unnumbered, since a follow-up only gets
+ *     its number once it is chosen and joins the chain.
  *
  * Motion: when a new question joins the chain, its node and text rise in
  * once. That is the only movement; reduced motion shows it in place.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, View } from 'react-native';
-import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
+import { uiMotion } from '@socrates/theme';
+import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
@@ -44,45 +47,67 @@ export interface QuestionChainProps {
   onSelect: (candidate: ChainCandidate) => void;
   /** Disable candidates while a reply is streaming. */
   busy?: boolean;
+  /**
+   * Host typesetting for a follow-up's text (web: `$…$` through KaTeX, which
+   * mistake-book candidates often carry). Rendered inside a UiText, so it
+   * inherits its font and colour. Absent: the plain text.
+   */
+  renderText?: (text: string, part: string) => ReactNode;
   testID?: string;
 }
 
-const NODE = 24;
+const NODE_W = 32;
+const NODE_H = 24;
 const RAIL = 32;
 
 type NodeTone = 'walked' | 'current' | 'next';
 
-function ChainNode({ label, tone }: { label: string; tone: NodeTone }) {
+/**
+ * A step's number as a capsule (site "How a session flows" `01`): ink for
+ * the current question, pale fill for walked ones. A question that could
+ * come next has no number yet (it only gets one once it joins the chain),
+ * so its node is a white ringed capsule holding a quiet arrow that turns
+ * ink while its bubble is hovered. Never dots.
+ */
+function ChainNode({ label, tone, live }: { label: string; tone: NodeTone; live?: boolean }) {
   const { colors } = useUiTheme();
+  if (tone === 'next') {
+    return (
+      <View
+        aria-hidden
+        style={{ width: NODE_W, height: NODE_H, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, boxShadow: insetRing(live ? colors.ink : colors.hairlineStrong) }}
+      >
+        <UiText variant="labelSm" tone={live ? 'ink' : 'tertiary'}>→</UiText>
+      </View>
+    );
+  }
   return (
     <View
       aria-hidden
       style={{
-        width: NODE,
-        height: NODE,
-        borderRadius: 7,
+        width: NODE_W,
+        height: NODE_H,
+        borderRadius: R.pill,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: tone === 'current' ? colors.ink : tone === 'walked' ? colors.fill : colors.card,
-        borderWidth: tone === 'current' ? 0 : 1,
-        borderColor: tone === 'next' ? colors.hairlineStrong : colors.hairline,
+        backgroundColor: tone === 'current' ? colors.ink : colors.fill,
       }}
     >
-      <UiText variant="eyebrow" tone={tone === 'current' ? 'onInk' : 'secondary'} style={{ letterSpacing: 0, fontVariant: ['tabular-nums'] }}>{label}</UiText>
+      <UiText variant="labelSm" tone={tone === 'current' ? 'onInk' : 'tertiary'} style={{ fontVariant: ['tabular-nums'] }}>{label}</UiText>
     </View>
   );
 }
 
 /** Left rail: a node with the spine running above and/or below it. */
-function Rail({ label, tone, lineAbove, lineBelow, nodeTop }: { label: string; tone: NodeTone; lineAbove: boolean; lineBelow: boolean; nodeTop: number }) {
+function Rail({ label, tone, lineAbove, lineBelow, nodeTop, live }: { label: string; tone: NodeTone; lineAbove: boolean; lineBelow: boolean; nodeTop: number; live?: boolean }) {
   const { colors } = useUiTheme();
   const line = { position: 'absolute' as const, left: RAIL / 2 - 0.5, width: 1, backgroundColor: colors.hairlineStrong };
   return (
-    <View style={{ width: RAIL, alignSelf: 'stretch' }}>
+    <View style={{ width: RAIL, alignSelf: 'stretch', marginRight: S[100] }}>
       {lineAbove ? <View style={[line, { top: 0, height: nodeTop }]} /> : null}
-      {lineBelow ? <View style={[line, { top: nodeTop + NODE, bottom: 0 }]} /> : null}
-      <View style={{ position: 'absolute', top: nodeTop, left: (RAIL - NODE) / 2 }}>
-        <ChainNode label={label} tone={tone} />
+      {lineBelow ? <View style={[line, { top: nodeTop + NODE_H, bottom: 0 }]} /> : null}
+      <View style={{ position: 'absolute', top: nodeTop, left: (RAIL - NODE_W) / 2 }}>
+        <ChainNode label={label} tone={tone} live={live} />
       </View>
     </View>
   );
@@ -110,13 +135,16 @@ function useJoinMotion(stepCount: number) {
   };
 }
 
-function CandidateRow({ candidate, label, last, busy, onSelect }: { candidate: ChainCandidate; label: string; last: boolean; busy?: boolean; onSelect: (candidate: ChainCandidate) => void }) {
+/** A question to follow: the site's answer bubble (white, 18px radius, shadow-1) with a quiet arrow. */
+function CandidateRow({ candidate, last, busy, onSelect, renderText }: { candidate: ChainCandidate; last: boolean; busy?: boolean; onSelect: (candidate: ChainCandidate) => void; renderText: (text: string, part: string) => ReactNode }) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
   const { scale, hovered, focused, handlers } = usePressFeedback();
+  const live = hovered && !busy;
   return (
     <View style={{ flexDirection: 'row' }}>
-      <Rail label={label} tone="next" lineAbove lineBelow={!last} nodeTop={uiSpace[2] + 1} />
-      <View style={{ flex: 1, paddingBottom: last ? 0 : uiSpace[2] }}>
+      <Rail label="" tone="next" lineAbove lineBelow={!last} nodeTop={8} live={live} />
+      <View style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : S[75] }}>
         <Pressable
           role="button"
           testID={`question-chain-next-${candidate.id}`}
@@ -132,25 +160,20 @@ function CandidateRow({ candidate, label, last, busy, onSelect }: { candidate: C
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: uiSpace[2],
+              gap: S[100],
               minHeight: 40,
-              paddingVertical: uiSpace[2],
-              paddingLeft: uiSpace[4],
-              paddingRight: uiSpace[3],
-              borderRadius: uiRadius.pill,
-              borderWidth: 1,
-              borderColor: hovered && !busy ? colors.hairlineStrong : colors.hairline,
-              backgroundColor: hovered && !busy ? colors.fill : colors.card,
+              paddingVertical: S[75],
+              paddingHorizontal: S[200],
+              borderRadius: R.face,
+              backgroundColor: colors.card,
+              boxShadow: shadow(colors, live ? 'overlay' : 'raised'),
               opacity: busy ? 0.5 : 1,
-              outlineStyle: focused ? 'solid' : undefined,
-              outlineWidth: focused ? 2 : 0,
-              outlineColor: colors.ink,
-              outlineOffset: 2,
+              ...focusRing(colors, focused),
+              ...transition('box-shadow', reduced, 200),
               transform: [{ scale }],
             }}
           >
-            <UiText variant="bodySm" style={{ flexShrink: 1 }}>{candidate.text}</UiText>
-            <UiText variant="labelSm" tone="tertiary" aria-hidden>→</UiText>
+            <UiText variant="bodySm" style={{ flexShrink: 1 }}>{renderText(candidate.text, 'chain-next')}</UiText>
           </Animated.View>
         </Pressable>
       </View>
@@ -158,7 +181,10 @@ function CandidateRow({ candidate, label, last, busy, onSelect }: { candidate: C
   );
 }
 
-export function QuestionChain({ steps, candidates, strings, onSelect, busy, testID = 'question-chain' }: QuestionChainProps) {
+const plainText = (text: string): ReactNode => text;
+
+export function QuestionChain({ steps, candidates, strings, onSelect, busy, renderText = plainText, testID = 'question-chain' }: QuestionChainProps) {
+  const { colors } = useUiTheme();
   const [expanded, setExpanded] = useState(false);
   const view = chainView(steps, expanded);
   const join = useJoinMotion(steps.length);
@@ -167,13 +193,21 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, test
   const walkedCount = view.walked.length + view.hiddenCount;
 
   if (!view.current && !hasCandidates) return null;
+  const subtle = sheets(colors).subtle;
 
   return (
-    <View testID={testID} role="group" aria-label={strings.title} style={{ gap: uiSpace[2] }} {...dataSet({ steps: steps.length })}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 24 }}>
-        <UiText variant="eyebrow" tone="tertiary">{strings.title}</UiText>
+    <View
+      testID={testID}
+      role="group"
+      aria-label={strings.title}
+      style={{ gap: S[100], paddingHorizontal: S[200], paddingTop: S[100], paddingBottom: S[200], borderRadius: R.sheet, backgroundColor: subtle, boxShadow: insetRing(colors.hairline) }}
+      {...dataSet({ steps: steps.length })}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S[100], minHeight: 32 }}>
+        <UiText variant="labelSm" tone="secondary">{strings.title}</UiText>
         {walkedCount > 2 ? (
           <PillAction
+            size="sm"
             testID="question-chain-toggle"
             label={expanded ? strings.collapse : strings.expand}
             expanded={expanded}
@@ -187,10 +221,10 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, test
         {view.walked.map((step, position) => (
           <View key={step.id} testID={`question-chain-walked-${step.index}`} style={{ flexDirection: 'row' }}>
             <Rail label={chainNodeLabel(step.index)} tone="walked" lineAbove={position > 0} lineBelow nodeTop={1} />
-            <View style={{ flex: 1, paddingBottom: uiSpace[3], paddingTop: 2 }}>
-              <UiText variant="bodySm" tone="secondary" numberOfLines={1}>{step.text}</UiText>
+            <View style={{ flex: 1, minWidth: 0, paddingBottom: S[100], paddingTop: 1 }}>
+              <UiText variant="bodySm" tone="tertiary" numberOfLines={1}>{step.text}</UiText>
               {position === 0 && view.hiddenCount > 0 ? (
-                <UiText testID="question-chain-folded" variant="labelSm" tone="tertiary" style={{ marginTop: uiSpace[3] }}>
+                <UiText testID="question-chain-folded" variant="labelSm" tone="tertiary" style={{ marginTop: S[100] }}>
                   {strings.folded.replace('{n}', String(view.hiddenCount))}
                 </UiText>
               ) : null}
@@ -207,7 +241,7 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, test
               lineBelow={hasCandidates}
               nodeTop={1}
             />
-            <View style={{ flex: 1, paddingBottom: hasCandidates ? uiSpace[4] : 0, paddingTop: 1, gap: 2 }}>
+            <View style={{ flex: 1, minWidth: 0, paddingBottom: hasCandidates ? S[200] : 0, paddingTop: 1, gap: 2 }}>
               <UiText variant="label" accessibilityLabel={`${strings.current}: ${view.current.text}`}>{view.current.text}</UiText>
             </View>
           </Animated.View>
@@ -215,10 +249,10 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, test
 
         {hasCandidates ? (
           <View style={{ flexDirection: 'row' }}>
-            <View style={{ width: RAIL, alignSelf: 'stretch' }}>
+            <View style={{ width: RAIL, alignSelf: 'stretch', marginRight: S[100] }}>
               {view.current ? <ChainSpine /> : null}
             </View>
-            <UiText variant="eyebrow" tone="tertiary" style={{ paddingBottom: uiSpace[2] }}>
+            <UiText variant="labelSm" tone="tertiary" style={{ paddingBottom: S[75] }}>
               {fromMistakes ? strings.nextFromMistakes : strings.next}
             </UiText>
           </View>
@@ -228,10 +262,10 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, test
           <CandidateRow
             key={candidate.id}
             candidate={candidate}
-            label={chainNodeLabel(view.nextIndex)}
             last={position === candidates.length - 1}
             busy={busy}
             onSelect={onSelect}
+            renderText={renderText}
           />
         ))}
       </View>

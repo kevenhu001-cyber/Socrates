@@ -175,7 +175,7 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     // Quiz proxy: a wrong pick with a declared answer locks the card, shows
     // the baseline feedback and sends the synthetic "I chose …" turn.
     await page.getByRole('button', { name: 'Answer A for What is 2+2?' }).click();
-    await expect(page.getByText('Not quite. The correct answer is B.')).toBeVisible();
+    await expect(page.getByText('Not quite. The correct answer is option B.')).toBeVisible();
     await expect(page.getByText('I chose A. 3 (Result: incorrect, correct is B.)')).toBeVisible();
     await expect(page.getByText('What is 3+3?', { exact: true })).toBeVisible();
     expect(chatStreams.at(-1)).toContain('I chose A. 3');
@@ -260,10 +260,10 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     await quizRow().getByRole('button', { name: 'Redo', exact: true }).click();
     await expect(quizRow().getByText('Redone once', { exact: true })).toBeVisible();
     if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
-    await expect(page.getByText('Not quite. The correct answer is B.')).toHaveCount(0);
+    await expect(page.getByText('Not quite. The correct answer is option B.')).toHaveCount(0);
     const conquerStreams = chatStreams.length;
     await page.getByRole('button', { name: 'Answer B for What is 2+2?' }).click();
-    await expect(page.getByText('Correct (B).')).toBeVisible();
+    await expect(page.getByText('Correct (option B).')).toBeVisible();
     expect(chatStreams.length).toBe(conquerStreams);
     await reopenMistakes();
     await expect(quizRow()).toHaveCount(0);
