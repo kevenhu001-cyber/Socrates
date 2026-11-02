@@ -20,8 +20,9 @@ import { AccessibilityInfo, Animated, Platform, Pressable, ScrollView, View, use
 import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
-import { UiButton } from '../primitives/UiButton';
-import { UiPressableCard } from '../primitives/UiCard';
+import { UiButton, usePressFeedback } from '../primitives/UiButton';
+import { useReducedMotion } from '../turn/parts';
+import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 
 /** Below this width the layout switches to the phone composition. */
 export const HOME_COMPACT_WIDTH = 769;
@@ -199,8 +200,8 @@ export function HomeStarters({ heading, headingId, items, onSelect }: HomeStarte
   const enter = useEntrance(items.length, 'starters');
   return (
     <View style={{ gap: compact ? uiSpace[3] : uiSpace[4] }}>
-      <UiText nativeID={headingId} role="heading" {...headingLevel(2)} variant="eyebrow" tone="tertiary" align={compact ? 'left' : 'center'}>
-        {heading.toUpperCase()}
+      <UiText nativeID={headingId} role="heading" {...headingLevel(2)} variant="labelSm" tone="tertiary" align={compact ? 'left' : 'center'}>
+        {heading}
       </UiText>
       {compact ? (
         /* Phones scroll the cards sideways: three stacked cards would bury
@@ -225,36 +226,60 @@ export function HomeStarters({ heading, headingId, items, onSelect }: HomeStarte
   );
 }
 
+/**
+ * Starter card (site `.story-step` / `.m-card`): a #f9f9f9 sheet on a
+ * hairline ring with a 24px radius, the index in a white ringed disc, the
+ * title and one line of hint. Hover lifts it onto white with the site's
+ * second shadow (`.news-item:hover`); reduced motion keeps it in place.
+ */
 function StarterCard({ item, index, compact, onSelect }: { item: HomeStarter; index: number; compact: boolean; onSelect: (id: string) => void }) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
+  const { subtle } = sheets(colors);
+  const { scale, hovered, focused, handlers } = usePressFeedback();
+  const lift = hovered && !reduced;
   return (
-    <UiPressableCard
+    <Pressable
       testID={`home-starter-${item.id}`}
+      accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.hint}`}
       onPress={() => onSelect(item.id)}
+      {...handlers}
       style={{ flexGrow: 1 }}
     >
-      <View style={{ gap: compact ? uiSpace[3] : uiSpace[6], flexGrow: 1 }}>
+      <Animated.View
+        style={{
+          flexGrow: 1,
+          gap: compact ? S[200] : S[400],
+          padding: compact ? S[200] : S[300],
+          borderRadius: R.stage,
+          backgroundColor: hovered ? colors.card : subtle,
+          boxShadow: hovered ? shadow(colors, 'overlay') : insetRing(colors.hairline),
+          ...focusRing(colors, focused),
+          ...transition('background-color, box-shadow, transform', reduced, 300),
+          transform: [{ translateY: lift ? -2 : 0 }, { scale }],
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{
-            minWidth: 32,
+            width: 32,
             height: 32,
-            paddingHorizontal: uiSpace[2],
-            borderRadius: uiRadius.pill,
-            backgroundColor: colors.fill,
+            borderRadius: R.pill,
+            backgroundColor: colors.card,
+            boxShadow: insetRing(colors.hairline),
             alignItems: 'center',
             justifyContent: 'center',
           }}
           >
-            <UiText variant="labelSm">{String(index + 1).padStart(2, '0')}</UiText>
+            <UiText variant="labelSm" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>{String(index + 1).padStart(2, '0')}</UiText>
           </View>
-          <UiText variant="label" tone="tertiary" aria-hidden>→</UiText>
+          <UiText variant="label" tone={hovered ? 'ink' : 'tertiary'} aria-hidden>→</UiText>
         </View>
-        <View style={{ gap: uiSpace[1] }}>
+        <View style={{ gap: S[50] }}>
           <UiText variant="titleSm">{item.title}</UiText>
           <UiText variant="bodySm" tone="secondary" numberOfLines={2}>{item.hint}</UiText>
         </View>
-      </View>
-    </UiPressableCard>
+      </Animated.View>
+    </Pressable>
   );
 }
