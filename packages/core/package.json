@@ -18,6 +18,10 @@
       "types": "./src/visualizationNormalize.d.ts",
       "import": "./src/visualizationNormalize.js"
     },
+    "./learningBlocks": {
+      "types": "./src/learningBlocks.ts",
+      "import": "./src/learningBlocks.ts"
+    },
     "./motion/spring": {
       "types": "./src/motion/spring.ts",
       "import": "./src/motion/spring.ts"
