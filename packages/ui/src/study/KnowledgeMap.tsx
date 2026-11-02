@@ -195,7 +195,8 @@ function ConfidenceSteps({ value, strings, onChange }: { value: number; strings:
   return (
     <View role="group" aria-label={strings.detail.confidence} style={{ flexDirection: 'row', alignSelf: 'flex-start', gap: 2, padding: 3, borderRadius: R.pill, backgroundColor: colors.fill }}>
       {[1, 2, 3, 4, 5].map((step) => {
-        const on = step <= value;
+        /* Only the chosen level is filled with ink; the rest stay on the pale track. */
+        const on = step === value;
         const label = fill(strings.detail.confidenceSet, { n: step });
         return (
           <Pressable

@@ -4,7 +4,7 @@
  * wrong and the keyed answer. "Redo" hands the id back to the host, which
  * re-mounts the question (the existing redo flow).
  */
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
@@ -34,9 +34,17 @@ export interface MistakeBookProps {
   onNextQuestion?: (id: string) => void;
   /** RN-6: the mistake whose next question is being written, if any. */
   pendingNextId?: string | null;
+  /**
+   * Host typesetting for the question and option text (web: `$…$` through
+   * KaTeX). Its result sits inside a UiText, so it inherits font, colour and
+   * line clamp. Absent: the plain text.
+   */
+  renderText?: (text: string, part: string) => ReactNode;
 }
 
-export function MistakeBook({ mistakes, filter: rawFilter, strings = defaultMistakeStrings, onFilter, onRedo, onNextQuestion, pendingNextId }: MistakeBookProps) {
+const plainText = (text: string): ReactNode => text;
+
+export function MistakeBook({ mistakes, filter: rawFilter, strings = defaultMistakeStrings, onFilter, onRedo, onNextQuestion, pendingNextId, renderText = plainText }: MistakeBookProps) {
   const filter = normalizeMistakeFilter(rawFilter);
   const rows = mistakes.map(mistakeView);
   const visible = filterMistakeViews(rows, filter);
@@ -77,6 +85,7 @@ export function MistakeBook({ mistakes, filter: rawFilter, strings = defaultMist
               onRedo={() => onRedo(row.id)}
               onNextQuestion={onNextQuestion ? () => onNextQuestion(row.id) : undefined}
               nextPending={pendingNextId === row.id}
+              renderText={renderText}
             />
           ))}
         </View>
@@ -153,7 +162,7 @@ function OptionMark({ letter, tag }: { letter: string; tag?: string | null }) {
  * the analysis sits on two sheets (where it went wrong / the right way,
  * the latter ringed in ink). Actions live in a hairline-ruled footer.
  */
-function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion, nextPending }: { row: MistakeView; strings: MistakeStrings; expanded: boolean; onToggle: () => void; onRedo: () => void; onNextQuestion?: () => void; nextPending?: boolean }) {
+function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion, nextPending, renderText }: { row: MistakeView; strings: MistakeStrings; expanded: boolean; onToggle: () => void; onRedo: () => void; onNextQuestion?: () => void; nextPending?: boolean; renderText: (text: string, part: string) => ReactNode }) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { subtle } = sheets(colors);
@@ -199,7 +208,7 @@ function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion,
           ) : null}
           <Chevron open={expanded} size={6} tone={hovered ? 'ink' : 'tertiary'} />
         </View>
-        <UiText variant="label" numberOfLines={expanded ? undefined : 2} {...dataSet({ mistakeQ: '1' })}>{row.question}</UiText>
+        <UiText variant="label" numberOfLines={expanded ? undefined : 2} {...dataSet({ mistakeQ: '1' })}>{renderText(row.question, 'mistake-q')}</UiText>
       </Pressable>
       {expanded ? (
         <View nativeID={detailId} {...dataSet({ mistakeDetail: row.id })} style={{ paddingHorizontal: S[200], paddingBottom: S[200], gap: S[75] }}>
@@ -209,7 +218,7 @@ function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion,
                 <View key={`${option.letter}-${index}`} role="listitem" {...dataSet({ mistakeOpt: option.letter, mistakeTag: option.tag ?? undefined })} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: S[75] }}>
                   <OptionMark letter={option.letter} tag={option.tag} />
                   <UiText variant="bodySm" tone={option.tag === 'correct' ? 'ink' : option.tag === 'wrong' ? 'secondary' : 'tertiary'} style={{ flex: 1, textDecorationLine: option.tag === 'wrong' ? 'line-through' : 'none' }}>
-                    {option.text}
+                    {renderText(option.text, 'mistake-option')}
                   </UiText>
                 </View>
               ))}

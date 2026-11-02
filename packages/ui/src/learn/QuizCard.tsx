@@ -51,7 +51,9 @@ function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
  * Site `.ui-option`: a 44px row on a 12px radius with an inset hairline;
  * the chosen row takes the `#f9f9f9` sheet and a 1.5px ink ring. The letter
  * sits in a 24px ring (a circle for one answer, a rounded square for many)
- * that fills with ink when chosen and turns into ✓ / ✕ once graded.
+ * that fills with ink when chosen. Once graded the letter stays, so the
+ * feedback line ("the correct answer is option B") can point at it, and the
+ * verdict sits at the row end as a ✓ / ✕ glyph.
  */
 function OptionRow({ option, mark, multi, disabled, onPress }: {
   option: QuizOption;
@@ -72,7 +74,7 @@ function OptionRow({ option, mark, multi, disabled, onPress }: {
       ? insetRing(colors.ink, 1)
       : insetRing(live ? colors.hairlineStrong : colors.hairline, 1);
   const tileInk = mark === 'selected' || mark === 'correct';
-  const glyph = mark === 'correct' || mark === 'missed' ? '✓' : mark === 'incorrect' ? '✕' : option.letter;
+  const verdict = mark === 'correct' || mark === 'missed' ? 'correct' : mark === 'incorrect' ? 'incorrect' : null;
   const checked = mark === 'selected' || mark === 'correct' || mark === 'incorrect';
   return (
     <Pressable
@@ -116,9 +118,10 @@ function OptionRow({ option, mark, multi, disabled, onPress }: {
             boxShadow: tileInk ? undefined : insetRing(mark === 'missed' ? colors.ink : colors.hairlineStrong, mark === 'missed' ? 1.5 : 1),
           }}
         >
-          <UiText variant="labelSm" tone={tileInk ? 'onInk' : (mark === 'incorrect' ? 'tertiary' : 'secondary')} style={{ fontVariant: ['tabular-nums'] }}>{glyph}</UiText>
+          <UiText variant="labelSm" tone={tileInk ? 'onInk' : (mark === 'incorrect' ? 'tertiary' : 'secondary')} style={{ fontVariant: ['tabular-nums'] }}>{option.letter}</UiText>
         </View>
         <Rich source={option.text} part="quiz-option" style={{ flex: 1, paddingTop: 1, opacity: mark === 'incorrect' ? 0.7 : 1 }} />
+        {verdict ? <View style={{ paddingTop: 2 }}><VerdictGlyph verdict={verdict} /></View> : null}
       </Animated.View>
     </Pressable>
   );

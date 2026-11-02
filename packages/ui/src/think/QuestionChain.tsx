@@ -6,13 +6,14 @@
  * with numbered capsule nodes (never dots). From top to bottom:
  *   - walked questions, folded to the root and the last step when long;
  *   - the current question, its node filled in ink;
- *   - the questions the learner can follow next, as hairline capsules whose
- *     nodes are outlined and carry the number the step would get.
+ *   - the questions the learner can follow next, as white bubbles whose
+ *     nodes are ringed → capsules: unnumbered, since a follow-up only gets
+ *     its number once it is chosen and joins the chain.
  *
  * Motion: when a new question joins the chain, its node and text rise in
  * once. That is the only movement; reduced motion shows it in place.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Pressable, View } from 'react-native';
 import { uiMotion } from '@socrates/theme';
 import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
@@ -46,6 +47,12 @@ export interface QuestionChainProps {
   onSelect: (candidate: ChainCandidate) => void;
   /** Disable candidates while a reply is streaming. */
   busy?: boolean;
+  /**
+   * Host typesetting for a follow-up's text (web: `$…$` through KaTeX, which
+   * mistake-book candidates often carry). Rendered inside a UiText, so it
+   * inherits its font and colour. Absent: the plain text.
+   */
+  renderText?: (text: string, part: string) => ReactNode;
   testID?: string;
 }
 
@@ -57,11 +64,23 @@ type NodeTone = 'walked' | 'current' | 'next';
 
 /**
  * A step's number as a capsule (site "How a session flows" `01`): ink for
- * the current question, pale fill for walked ones, a white ringed capsule
- * for the questions that could come next. Numbers, never dots.
+ * the current question, pale fill for walked ones. A question that could
+ * come next has no number yet (it only gets one once it joins the chain),
+ * so its node is a white ringed capsule holding a quiet arrow that turns
+ * ink while its bubble is hovered. Never dots.
  */
-function ChainNode({ label, tone }: { label: string; tone: NodeTone }) {
+function ChainNode({ label, tone, live }: { label: string; tone: NodeTone; live?: boolean }) {
   const { colors } = useUiTheme();
+  if (tone === 'next') {
+    return (
+      <View
+        aria-hidden
+        style={{ width: NODE_W, height: NODE_H, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, boxShadow: insetRing(live ? colors.ink : colors.hairlineStrong) }}
+      >
+        <UiText variant="labelSm" tone={live ? 'ink' : 'tertiary'}>→</UiText>
+      </View>
+    );
+  }
   return (
     <View
       aria-hidden
@@ -71,17 +90,16 @@ function ChainNode({ label, tone }: { label: string; tone: NodeTone }) {
         borderRadius: R.pill,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: tone === 'current' ? colors.ink : tone === 'walked' ? colors.fill : colors.card,
-        boxShadow: tone === 'next' ? insetRing(colors.hairlineStrong) : undefined,
+        backgroundColor: tone === 'current' ? colors.ink : colors.fill,
       }}
     >
-      <UiText variant="labelSm" tone={tone === 'current' ? 'onInk' : tone === 'walked' ? 'tertiary' : 'secondary'} style={{ fontVariant: ['tabular-nums'] }}>{label}</UiText>
+      <UiText variant="labelSm" tone={tone === 'current' ? 'onInk' : 'tertiary'} style={{ fontVariant: ['tabular-nums'] }}>{label}</UiText>
     </View>
   );
 }
 
 /** Left rail: a node with the spine running above and/or below it. */
-function Rail({ label, tone, lineAbove, lineBelow, nodeTop }: { label: string; tone: NodeTone; lineAbove: boolean; lineBelow: boolean; nodeTop: number }) {
+function Rail({ label, tone, lineAbove, lineBelow, nodeTop, live }: { label: string; tone: NodeTone; lineAbove: boolean; lineBelow: boolean; nodeTop: number; live?: boolean }) {
   const { colors } = useUiTheme();
   const line = { position: 'absolute' as const, left: RAIL / 2 - 0.5, width: 1, backgroundColor: colors.hairlineStrong };
   return (
@@ -89,7 +107,7 @@ function Rail({ label, tone, lineAbove, lineBelow, nodeTop }: { label: string; t
       {lineAbove ? <View style={[line, { top: 0, height: nodeTop }]} /> : null}
       {lineBelow ? <View style={[line, { top: nodeTop + NODE_H, bottom: 0 }]} /> : null}
       <View style={{ position: 'absolute', top: nodeTop, left: (RAIL - NODE_W) / 2 }}>
-        <ChainNode label={label} tone={tone} />
+        <ChainNode label={label} tone={tone} live={live} />
       </View>
     </View>
   );
@@ -118,14 +136,14 @@ function useJoinMotion(stepCount: number) {
 }
 
 /** A question to follow: the site's answer bubble (white, 18px radius, shadow-1) with a quiet arrow. */
-function CandidateRow({ candidate, label, last, busy, onSelect }: { candidate: ChainCandidate; label: string; last: boolean; busy?: boolean; onSelect: (candidate: ChainCandidate) => void }) {
+function CandidateRow({ candidate, last, busy, onSelect, renderText }: { candidate: ChainCandidate; last: boolean; busy?: boolean; onSelect: (candidate: ChainCandidate) => void; renderText: (text: string, part: string) => ReactNode }) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { scale, hovered, focused, handlers } = usePressFeedback();
   const live = hovered && !busy;
   return (
     <View style={{ flexDirection: 'row' }}>
-      <Rail label={label} tone="next" lineAbove lineBelow={!last} nodeTop={8} />
+      <Rail label="" tone="next" lineAbove lineBelow={!last} nodeTop={8} live={live} />
       <View style={{ flex: 1, minWidth: 0, paddingBottom: last ? 0 : S[75] }}>
         <Pressable
           role="button"
@@ -145,8 +163,7 @@ function CandidateRow({ candidate, label, last, busy, onSelect }: { candidate: C
               gap: S[100],
               minHeight: 40,
               paddingVertical: S[75],
-              paddingLeft: S[200],
-              paddingRight: S[100],
+              paddingHorizontal: S[200],
               borderRadius: R.face,
               backgroundColor: colors.card,
               boxShadow: shadow(colors, live ? 'overlay' : 'raised'),
@@ -156,8 +173,7 @@ function CandidateRow({ candidate, label, last, busy, onSelect }: { candidate: C
               transform: [{ scale }],
             }}
           >
-            <UiText variant="bodySm" style={{ flexShrink: 1 }}>{candidate.text}</UiText>
-            <UiText variant="labelSm" tone={live ? 'ink' : 'tertiary'} aria-hidden>→</UiText>
+            <UiText variant="bodySm" style={{ flexShrink: 1 }}>{renderText(candidate.text, 'chain-next')}</UiText>
           </Animated.View>
         </Pressable>
       </View>
@@ -165,7 +181,9 @@ function CandidateRow({ candidate, label, last, busy, onSelect }: { candidate: C
   );
 }
 
-export function QuestionChain({ steps, candidates, strings, onSelect, busy, testID = 'question-chain' }: QuestionChainProps) {
+const plainText = (text: string): ReactNode => text;
+
+export function QuestionChain({ steps, candidates, strings, onSelect, busy, renderText = plainText, testID = 'question-chain' }: QuestionChainProps) {
   const { colors } = useUiTheme();
   const [expanded, setExpanded] = useState(false);
   const view = chainView(steps, expanded);
@@ -244,10 +262,10 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, test
           <CandidateRow
             key={candidate.id}
             candidate={candidate}
-            label={chainNodeLabel(view.nextIndex)}
             last={position === candidates.length - 1}
             busy={busy}
             onSelect={onSelect}
+            renderText={renderText}
           />
         ))}
       </View>
