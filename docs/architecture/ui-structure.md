@@ -1,6 +1,6 @@
 # UI 结构与迁移边界
 
-更新：2026-10-30。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
+更新：2026-11-02。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
 历史迁移计划中的旧目录 / 旧工作流不能作为当前入口清单。
 前端 JavaScript → TypeScript 迁移已完成；窗口桥接和旧 DOM 写入者仍按领域逐步退役。
 
@@ -10,12 +10,16 @@
 |---|---|---|
 | `frontend/` | 生产 Vite SPA，视觉与功能基准 | React 渐进接管静态 shell，仍有旧 DOM 业务 |
 | `apps/socrates/` | Expo Universal App：Web / Android / iOS | 业务状态、协议和 RN UI 来自 packages；平台适配留在 app |
-| `packages/ui/` | Universal 的共享 RN 组件 | DOM-free，不承接 SPA 的 react-dom 组件 |
-| `packages/theme/` | 共享 token 与 RN 色值 | SPA 最终调色板由 themes.css 提供 |
+| `packages/ui/` | Universal 与 SPA 已接入模块的共享 RN 组件 | DOM-free；SPA 经 RN Web + Web host adapter 使用，不迁入 react-dom / DOM 逻辑 |
+| `packages/theme/` | 共享 token 与 RN 色值；新 UI token 生成源 | `ui.ts` 生成新 UI CSS 变量；SPA 现有几何仍归 tokens.css，最终调色板及别名桥接归 themes.css |
 | `apps/socrates-android/` | 独立 Kotlin + Compose Android | ADR 0021 例外，共享 `/api/v2` 协议 |
 | `site/` | 独立营销和文档站 | 独立部署，静态资源修改要同步 cache-busting 版本 |
 
 `mobile/`、`capacitor/` 已删除。`desktop/dist/` 是 gitignored 导出物，没有源代码归属。
+
+RN Web 的增量接入不代表旧 SPA、Universal 全功能或原生平台已经签收，也不授权批量改写移动参考。
+RN-1 的新视觉方向适用于明确迁移的模块；未移交表面继续保留现有宿主 ID、密度、截图与样式优先级契约。
+`packages/ui` 只持有共享呈现，Web 宿主、认证时序、DOM 测量和兼容动作仍留在 frontend 的适配边界。
 
 ## SPA 入口与依赖方向
 
@@ -117,6 +121,16 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 
 注册表在懒加载期间预留宿主，阻止旧 DOM 写入与重复启动；成功后记录完成，失败则报告并释放预留。
 
+关键启动宿主（composer、topbar、message list、sidebar nav / chrome）通过注册表的 `onFailure` 提供局部恢复提示。
+提示只追加独立节点，不清空旧内容、不写草稿或消息状态，也不依赖失败的动态 UI chunk。
+重试仅执行失败的 spec；实际宿主被替换、已有 root 或已有占用时，旧重试入口不执行。
+进行中的重试沿用宿主预留去重；成功或明确返回 `false` 后释放提示及按钮监听，失败则替换为可再次操作的提示。
+非关键浮层继续按需加载并上报失败，不因局部故障强制刷新整页。页面 `loadPage` 的失败恢复仍是独立协议。
+
+恢复提示是 `react/ui/mountRecovery.ts` 内的 boot-safe 原生适配器，复用 `.btn` / token / i18n，
+不额外创建 React root，不拉入菜单、弹窗或编辑器依赖。注册表中的失败若发生于 root 已创建之后，
+不得释放该 root 的所有权或追加提示覆盖它；组件渲染异常仍由各自的 ErrorBoundary 处理。
+
 ## Transcript 与分享协议
 
 1. live message list 挂载时 claim 实际宿主；流式代码通过 `isMsgListMounted` 查询当前 DOM 的归属。
@@ -174,6 +188,8 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 | 第六轮：Admin 模态标准化、10 个遗留模块 TS 迁移与基线紧缩 | 14/14 | 22 个用例全通：sidebar-nav 16/16，chrome-i18n 4/4，recents-archive 1/1，storage-bootstrap 1/1 |
 
 当前最小单测：ownedRoot、modalA11y、cookieConsent、foundationTokens、legacyGateway、attachments、sessionListState、cmdKState、proseRenderer。
+启动恢复另覆盖 mountRegistry 单测与 `e2e/mount-recovery.spec.mjs`：失败、重复重试、旧宿主、占用移交、
+提示清理、保留草稿节点，以及生产 chunk 请求失败后不刷新页面恢复编辑器。新增用例须以本轮实际执行结果签收，不能沿用历史记录。
 先 build，再按 diff 跑 message-list-compat、share-view、whiteboard-lifecycle、chat-send、
 chat-stop-resend、streaming-render、react-compat、storage-bootstrap、recents-archive 等 Playwright。
 frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告保持 gitignored。
@@ -226,3 +242,26 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
   `react/home/HomeStartComponents.tsx` 适配文案与行为，经 `mountOwnedRoot` 挂到 `#homeHero`、
   `#homeQuickActions`、`#homeTutorStarters`。问候语由 `ui/greetingState.ts` 发布，hero 挂载后
   `renderGreeting()` 不再直接写 DOM。e2e 选择器改用 RNW 的 `data-testid`（`home-shortcut-*`、`home-starter-*`）。
+
+## 启动恢复首轮验证（2026-11-02）
+
+- mountRegistry / ownedRoot / pageLoader 共 19 项相关单测通过；本轮新增与扩展注册表恢复用例。
+- production build 与 bundle-size 预算通过；TypeScript、ESLint、架构守卫通过（修正新测试截图路径后，重跑该守卫及此前未执行的后续守卫）。已有 3 条非本轮文件的 complexity warning 保留。
+- 新恢复场景覆盖浅色桌面、深色中文手机、键盘重试；连同 React compatibility 和非预算类 performance-loading，共 12 项浏览器测试通过，截图已检查。
+- 当前 HEAD 源码对照构建也复现 3 项既有失败，不能宣称全量门禁已绿：FoundationMenu 静态依赖链触及 vendor-editor；首屏静态 JS gzip 589936 B，超过 360000 B；blocked-storage 启动观察到 2 次读取，门槛为 1 次。本轮实现的静态闭包增量约 0.7 KB gzip，不调整原门槛。
+- 对照构建以构建期 transform 在内存替换本轮变更的生产源码为 HEAD 版本，不回退或 stash 工作区文件；验证后已重新生成当前改动的 production dist。依赖与浏览器环境修复没有修改 package.json / lockfile。
+
+上述三项失败的后续处理见下一节；保留首轮记录，不把后来的结果倒写为历史全绿。
+
+## 静态依赖与启动收敛（2026-11-02）
+
+- Rolldown 不再使用会递归吞并共享依赖的 `manualChunks` 兼容模式；改为显式 `codeSplitting` 分组并禁用依赖递归归组，启用 strict execution order。React 与 Oxc helper 不得归入 editor / tldraw / three；Oxc helper 独立为小型 `vendor-runtime`。保留 preload helper 和 React store shim 的既有归属。
+- `specs.tsx` 直接导入轻量适配器，不经 sidebar barrel 将 RN 导航提前拉入主入口。导航、sidebar chrome 与 transcript 在原有启动阶段发起异步导入并预留宿主；不等用户第一次点击，也不串行等待 config / auth。回调核对实际宿主，避免迟到导入挂进替换后的节点；导航失败复用局部恢复入口。
+- `diagnosticHost` 和只读 `mountTurn` 保留同步 host/root 接口，通过 Suspense 加载实际视图。诊断提供状态文案；分享工具视图加载或失败时保留可读纯文本，加载后仍由原组件提供声明式工具行。
+- `vizStubs` 不再于模块求值时读取 `socrates-viz-view`。偏好在首次查询时读取一次，显式选择优先，未知值或 blocked storage 使用 preview 默认；不增加第二个 storage shim。
+- 最终静态 JS 闭包为 **318997 B gzip**，低于原 **360000 B** 门槛；HEAD 对照为 589936 B，下降约 46%。HTML 4599 B、linked CSS 163154 B，静态闭包保留 380 个模块。这里是构建图按独立 gzip 流统计，不是全部首屏请求或 LCP 测量；启动阶段仍会请求必要的异步可见 UI。
+- 原三个失败均通过，未调整传输预算或 storage 次数断言。新增断言阻止 React / runtime helper 被重型 vendor 捕获，并要求导航、正文与诊断实现保持非静态加载。
+- `streaming-render` 的旧 h3 字重断言仍固定为 600，与 HEAD 在 `f1f8bde0` 已采用的 medium 标题契约冲突。本轮不改 CSS；测试改为验证实际字重等于主题 medium token、仍重于正文，保留标题字号至少比正文大 10% 的检查。
+- 验证：完整 frontend lint（仅保留原有 3 条 complexity warning）、生产构建、bundle-size 预算通过；45 项相关单测通过；最终统一执行的 60 项 Chromium 回归全部通过，涵盖 storage、预算、菜单/白板、导航、诊断、发送/停止/重试、流式滚动、分享、兼容挂载和局部失败恢复。已检查浅色桌面、深色中文手机的恢复截图。
+
+未改变 API / SSE / 持久化键、宿主 ID、设计令牌值、样式导入顺序或移动参考密度。下一阶段再按表面与属性推进 token 映射和覆盖清理，不将其与启动依赖改造混成一次视觉重写。

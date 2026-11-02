@@ -1,10 +1,12 @@
 /** Independent read-only tool turns share the ordinary root lifecycle. */
 import { createRootGroup } from '../lib/boot/ownedRoot';
-import { AssistantTurn } from './AssistantTurn.js';
+import { lazy, Suspense } from 'react';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { restoredToolCalls, sortableToolCalls } from './toolRunLayout.js';
 import type { LegacyChatMessage } from '../types/domain';
 
 const roots = createRootGroup('assistant-turn');
+const AssistantTurn = lazy(() => import('./AssistantTurn').then((module) => ({ default: module.AssistantTurn })));
 
 export interface MountAssistantTurnOptions {
   /** Share / replay: hides Retry and approval. Default true here. */
@@ -37,7 +39,15 @@ export function mountAssistantTurn(
     roots.release(container);
     return false;
   }
-  roots.render(container, <AssistantTurn message={message} readOnly={options.readOnly !== false} />);
+  // Keep public prose available while the tool renderer loads or fails.
+  const fallback = <div className="msg-text">{rawText}</div>;
+  roots.render(container, (
+    <ErrorBoundary fallback={fallback}>
+      <Suspense fallback={fallback}>
+        <AssistantTurn message={message} readOnly={options.readOnly !== false} />
+      </Suspense>
+    </ErrorBoundary>
+  ));
   return true;
 }
 

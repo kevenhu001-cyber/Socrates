@@ -470,6 +470,7 @@ export default defineConfig({
       return undefined;
     },
     rollupOptions: {
+      preserveEntrySignatures: false,
       onwarn(warning, defaultHandler) {
         const source = String(warning.id || (warning.loc && warning.loc.file) || warning.message || '')
           .replace(/\\/g, '/');
@@ -489,49 +490,47 @@ export default defineConfig({
         defaultHandler(warning);
       },
       output: {
-        manualChunks(id) {
-          const f = id.split('\\').join('/');
-          /* P_perf-tldraw-eager — Vite's __vitePreload runtime helper is
-             imported by every module that uses dynamic import(). Function-
-             form manualChunks used to merge it into vendor-tldraw (the
-             largest manual chunk), so the entry's static import of the
-             ~300 B helper dragged the whole 1.4 MB tldraw bundle — and its
-             CSS — into the first-paint modulepreload list. Pin it to
-             vendor-react, which is already eagerly loaded. */
-          if (f.includes('vite/preload-helper')) {
-            return 'vendor-react';
-          }
-          if (f.includes('/node_modules/')) {
-            // Menus, editors and tldraw share these small dependencies. Giving
-            // them independent chunks prevents an opened menu from fetching an
-            // entire heavy editor just to reach its positioning/store helpers.
-            if (f.includes('/node_modules/@floating-ui/')) return 'vendor-floating';
-            // Keep React's store shim with React: separating its CommonJS
-            // helpers into another chunk creates a vendor-react import cycle.
-            if (f.includes('/node_modules/use-sync-external-store/')) return 'vendor-react';
-            if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/') || f.includes('/node_modules/zustand/')) {
+        // Rolldown's manualChunks compatibility mode recursively captures
+        // dependencies: an editor group can swallow React and shared helpers.
+        // Keep ownership explicit and preserve side-effect evaluation order.
+        strictExecutionOrder: true,
+        codeSplitting: {
+          includeDependenciesRecursively: false,
+          groups: [{ debugName: 'explicit-vendors', name(id) {
+            const f = id.split('\\').join('/');
+            if (f.includes('@oxc-project') && f.includes('/helpers/')) return 'vendor-runtime';
+            // The shared preload helper must not pull a lazy vendor into boot.
+            if (f.includes('vite/preload-helper')) {
               return 'vendor-react';
             }
-            if (f.includes('/node_modules/@tiptap/') || f.includes('/node_modules/prosemirror-') || f.includes('/node_modules/orderedmap/')) {
-              return 'vendor-editor';
+            if (f.includes('/node_modules/')) {
+              // Shared positioning/store helpers must not belong to an editor.
+              if (f.includes('/node_modules/@floating-ui/')) return 'vendor-floating';
+              if (f.includes('/node_modules/use-sync-external-store/')) return 'vendor-react';
+              if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/') || f.includes('/node_modules/zustand/')) {
+                return 'vendor-react';
+              }
+              if (f.includes('/node_modules/@tiptap/') || f.includes('/node_modules/prosemirror-') || f.includes('/node_modules/orderedmap/')) {
+                return 'vendor-editor';
+              }
+              if (f.includes('/node_modules/marked/') || f.includes('/node_modules/dompurify/')) {
+                return 'vendor-markdown';
+              }
+              if (f.includes('/node_modules/tldraw/') || f.includes('/node_modules/@tldraw/')) {
+                return 'vendor-tldraw';
+              }
+              if (f.includes('/node_modules/three/')) {
+                return 'vendor-three';
+              }
+              if (f.includes('/node_modules/@lobehub/')) {
+                return 'vendor-icons';
+              }
+              return;
             }
-            if (f.includes('/node_modules/marked/') || f.includes('/node_modules/dompurify/')) {
-              return 'vendor-markdown';
+            if (f.includes('connector-icons') || f.includes('/assets/connector-icons/')) {
+              return 'vendor-connector-icons';
             }
-            if (f.includes('/node_modules/tldraw/') || f.includes('/node_modules/@tldraw/')) {
-              return 'vendor-tldraw';
-            }
-            if (f.includes('/node_modules/three/')) {
-              return 'vendor-three';
-            }
-            if (f.includes('/node_modules/@lobehub/')) {
-              return 'vendor-icons';
-            }
-            return;
-          }
-          if (f.includes('connector-icons') || f.includes('/assets/connector-icons/')) {
-            return 'vendor-connector-icons';
-          }
+          } }],
         },
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames(chunkInfo) {

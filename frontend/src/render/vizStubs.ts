@@ -126,11 +126,7 @@ function vizRuntime(vizId: string) {
    user flips any card to "code", subsequently rendered cards honor it
    (streaming re-renders included, since renderViz reads it fresh each
    call). Persisted so the choice survives reloads. */
-let _vizViewPref: string|null = null;
-try {
-  if (typeof localStorage !== 'undefined') _vizViewPref = localStorage.getItem('socrates-viz-view');
-} catch (e) { reportSwallow(e, 'vizStubs.readViewPref'); /* storage can be blocked in browser privacy modes */ }
-if (_vizViewPref !== 'code') _vizViewPref = 'preview';
+let _vizViewPref: 'preview' | 'code' | undefined;
 
 function vizActions(cardId: unknown, showSource?: boolean|undefined, viewToggle?: boolean|undefined) {
   return '<div class="viz-actions" data-viz-actions-root data-viz-card-id="' + escAttr(cardId) +
@@ -324,7 +320,7 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
     _pendingViz.push({ id: id });
   }
   queueVizActions(id);
-  return '<div class="viz" id="' + id + '" data-viz-state="loading" data-viz-view="' + _vizViewPref + '" data-title="' + esc(title) + '">' +
+  return '<div class="viz" id="' + id + '" data-viz-state="loading" data-viz-view="' + vizViewPref() + '" data-title="' + esc(title) + '">' +
     vizActions(id, true, true) +
     '<div class="viz-body">' + bodyHtml + '</div>' +
   '</div>';
@@ -525,7 +521,15 @@ export function nextVizId() {
   return ++_vizId;
 }
 
-export function vizViewPref() {
+export function vizViewPref(): 'preview' | 'code' {
+  // This module participates in boot cycles. Do not access storage before
+  // batchStorage installs its fallback; only cards need the saved preference.
+  if (_vizViewPref === undefined) {
+    _vizViewPref = 'preview';
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('socrates-viz-view') === 'code') _vizViewPref = 'code';
+    } catch (e) { reportSwallow(e, 'vizStubs.readViewPref', 'expected'); }
+  }
   return _vizViewPref;
 }
 

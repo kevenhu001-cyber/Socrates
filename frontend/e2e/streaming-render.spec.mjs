@@ -230,8 +230,10 @@ test('markdown h3 heading is visually distinct from body text', async ({ page })
     return {
       headingSize: parseFloat(h.fontSize),
       headingWeight: parseInt(h.fontWeight, 10),
+      headingWeightToken: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-weight-medium')),
       headingColor: h.color,
       bodySize: parseFloat(p.fontSize),
+      bodyWeight: parseInt(p.fontWeight, 10),
       bodyColor: p.color,
       headingText: heading.textContent,
     };
@@ -242,10 +244,10 @@ test('markdown h3 heading is visually distinct from body text', async ({ page })
      The previous 1.05em failed this — Chinese characters at that delta
      read as the same line of text. */
   expect(metrics.headingSize).toBeGreaterThanOrEqual(metrics.bodySize * 1.1);
-  /* Heading weight must be heavier than the body's (typically 400).
-     600 vs 400 is a clear, perceptible bump; 500 vs 400 was barely
-     distinguishable on CJK glyphs. */
-  expect(metrics.headingWeight).toBeGreaterThanOrEqual(600);
+  /* The transcript owner uses the medium role (including dark-mode 450),
+     not a fixed 600. Keep both role fidelity and a real body-weight step. */
+  expect(metrics.headingWeight).toBe(metrics.headingWeightToken);
+  expect(metrics.headingWeight).toBeGreaterThan(metrics.bodyWeight);
 });
 
 /* P_anchor-finish — when the reader is looking at the top of the streaming

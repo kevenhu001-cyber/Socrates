@@ -16,12 +16,10 @@ import type { MountSpec } from './registry';
    more-popover, profile/share/usage modals) are dynamically imported in
    their mount callbacks below so their module graph stays out of the
    entry chunk; they still mount during the boot registry pass, just a
-   tick later. Visible chrome (sidebar nav, recents, session list,
-   message list, attachment chips) stays statically imported. */
-import { hydrateRecentsFilterChips, mountSidebarNav } from '../../sidebar';
-import { mountSidebarChrome } from '../../sidebar-chrome';
+   tick later. RN sidebar and transcript hosts are reserved while their
+   rendering trees load, independently of authentication/config requests. */
+import { hydrateRecentsFilterChips } from '../../sidebar/RecentsFilterChips';
 import { mountSessionList } from '../../session-list';
-import { mountMessageList } from '../../message-list';
 import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
 import { handleComposerEscape, submitComposer, submitPrimaryComposer } from '../../composer-input/lifecycle';
 
@@ -110,7 +108,11 @@ export function mountRegistryList(): MountSpec[] {
   return [
     /* 1. Bootstrap seeds the chat runtime store before this registry
        runs, so every root can subscribe during mount. */
-    { hostId: 'msgList', label: 'msg-list', mount: () => mountMessageList().root !== null },
+    { hostId: 'msgList', label: 'msg-list', mount: (host) =>
+      import('../../message-list/MessageList').then(({ mountMessageList }) => {
+        // A read-only shared transcript intentionally retains its own owner.
+        return document.getElementById('msgList') === host && mountMessageList().root !== null;
+      }) },
     { hostId: 'newReplyPill', label: 'new-reply-pill', mount: (host) => {
       hydrateOwnedRoot(host, 'new-reply-pill', <StrictMode><NewReplyPill host={host} /></StrictMode>);
     } },
@@ -125,7 +127,10 @@ export function mountRegistryList(): MountSpec[] {
       mount: () => import('../../cmdk/CommandPalette').then((m) => m.mountCmdK()) },
     { hostId: 'findBar', label: 'find-in-session',
       mount: () => import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()) },
-    { hostId: 'sidebarNav', label: 'sidebar-nav', mount: () => mountSidebarNav() },
+    { hostId: 'sidebarNav', label: 'sidebar-nav', mount: (host) =>
+      import('../../sidebar/SidebarNav').then(({ mountSidebarNav }) => {
+        return document.getElementById('sidebarNav') === host && mountSidebarNav();
+      }) },
     { hostId: 'sidebarSearchRow', label: 'sidebar-search-row', mount: (host) => {
       return import('../../sidebar-chrome/SidebarSearchRow').then(({ SidebarSearchRow }) => {
         mountOwnedRoot(host, 'sidebar-search-row', <SidebarSearchRow />);
@@ -204,7 +209,11 @@ export function mountRegistryList(): MountSpec[] {
       mount: () => import('../../usageModal').then((m) => m.mountUsageModal()) },
     /* 3. Sidebar chrome — one root owns the header and portaled user
        footer; they share the bridge snapshot (sidebar-chrome/mount.tsx). */
-    { hostId: 'sidebarHeader', label: 'sidebar-chrome', mount: () => { mountSidebarChrome(); } },
+    { hostId: 'sidebarHeader', label: 'sidebar-chrome', mount: (host) =>
+      import('../../sidebar-chrome/mount').then(({ mountSidebarChrome }) => {
+        if (document.getElementById('sidebarHeader') !== host) return false;
+        mountSidebarChrome();
+      }) },
     { hostId: 'sidebarFooterActions', label: 'sidebar-footer-actions', mount: (host) => {
       return import('../../sidebar-chrome/SidebarFooterActions').then(({ SidebarFooterActions }) => {
         mountOwnedRoot(host, 'sidebar-footer-actions', <SidebarFooterActions />);

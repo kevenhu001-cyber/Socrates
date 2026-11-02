@@ -33,6 +33,11 @@ test('interaction-only runtimes stay outside the production static closure', () 
     'src/react/menu/FoundationMenu.tsx',
     'src/react/dialog/FoundationDialog.tsx',
     'src/react/confirm/ConfirmDialogContent.tsx',
+    'src/react/tutor/DiagnosticView.tsx',
+    'src/react/message-list/MessageList.tsx',
+    'src/react/tool-run/AssistantTurn.tsx',
+    'src/react/sidebar/SidebarNav.tsx',
+    'src/react/sidebar-chrome/mount.tsx',
   ];
 
   for (const id of deferred) {
@@ -48,6 +53,13 @@ test('interaction-only runtimes stay outside the production static closure', () 
   }
 
   const chunks = new Map(report.chunks.map((chunk) => [chunk.file, chunk]));
+  const shared = report.modules.filter((module) => module.id.includes('@oxc-project')
+    || /node_modules\/(?:react|react-dom|use-sync-external-store)\//.test(module.id));
+  expect(shared.length, 'the build must retain shared React/runtime helpers').toBeGreaterThan(0);
+  for (const module of shared) {
+    expect(module.chunk, `${module.id} must not be captured by a heavy vendor group`)
+      .not.toMatch(/vendor-(?:editor|tldraw|three)-/);
+  }
   for (const id of ['src/react/menu/FoundationMenu.tsx', 'src/react/dialog/FoundationDialog.tsx']) {
     const primitive = report.modules.find((item) => item.id === id);
     const scripts = new Set([primitive.chunk]);

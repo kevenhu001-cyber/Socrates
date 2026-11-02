@@ -3,6 +3,10 @@
    pay for it, and zh users fetch it in parallel with the auth boot
    fetches while the boot-loading screen is still up. */
 export const zh = {
+    "boot.composerUnavailable": "消息编辑器加载失败，已保存的草稿未被更改。",
+    "boot.headerUnavailable": "对话操作栏加载失败。",
+    "boot.messagesUnavailable": "对话加载失败，消息内容未被更改。",
+    "boot.navigationUnavailable": "导航加载失败。",
     "intui.simSpeed": "初速度",
     "intui.simAngle": "发射角度",
     "intui.simGravity": "重力加速度",

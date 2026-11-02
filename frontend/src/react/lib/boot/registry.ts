@@ -33,6 +33,7 @@
 
 import { reportSwallow } from '../../../util/reportSwallow';
 import { clearHostMounted, hostIsMounted, hostIsMountedBy as ownsHost, markHostMountedBy as markOwnership } from './ownership.ts';
+import { hasOwnedRoot } from './ownedRoot';
 
 export type EnsureHostFn = (document: Document) => HTMLElement | null;
 
@@ -72,6 +73,24 @@ export interface MountRegistryResult {
 export interface MountRegistryOptions {
   /** Restrict a pass to the lightweight/visible labels requested by the caller. */
   labels?: ReadonlySet<string>;
+  /** Optional local recovery UI. Its disposer runs when the host recovers. */
+  onFailure?: (failure: MountFailure) => (() => void) | void;
+}
+
+export interface MountFailure {
+  spec: MountSpec;
+  host: HTMLElement;
+  error: unknown;
+  /** Retry only this spec, provided the actual host still belongs to it. */
+  retry: () => MountRegistryResult | undefined;
+}
+
+const recoveries = new WeakMap<HTMLElement, () => void>();
+
+function clearRecovery(host: HTMLElement): void {
+  const dispose = recoveries.get(host);
+  recoveries.delete(host);
+  dispose?.();
 }
 
 /**
@@ -83,12 +102,20 @@ export function runMountRegistry(
   document: Document,
   options: MountRegistryOptions = {},
 ): MountRegistryResult {
+  return runMountSpecs(document, mountRegistry, options);
+}
+
+function runMountSpecs(
+  document: Document,
+  specs: readonly MountSpec[],
+  options: MountRegistryOptions,
+): MountRegistryResult {
   const mounted: MountSpec[] = [];
   const skipped: MountSpec[] = [];
   const pending: Promise<void>[] = [];
   const failed: MountRegistryResult['failed'] = [];
 
-  for (const spec of mountRegistry) {
+  for (const spec of specs) {
     if (options.labels && !options.labels.has(spec.label)) {
       skipped.push(spec);
       continue;
@@ -102,17 +129,36 @@ export function runMountRegistry(
       continue;
     }
     if (hostIsMounted(host)) {
+      if (hasOwnedRoot(host)) clearRecovery(host);
       skipped.push(spec);
       continue;
     }
     const fail = (error: unknown) => {
-      clearHostMounted(host);
       failed.push({ spec, error });
       reportSwallow(error, `react:mount:${spec.label}`);
+      // A callback can fail after mounting, or after another surface takes over.
+      // Never release that root or offer a retry that would overwrite its UI.
+      if (hasOwnedRoot(host)) {
+        clearRecovery(host);
+        return;
+      }
+      if (ownsHost(host, spec.label)) clearHostMounted(host);
+      if (document.getElementById(spec.hostId) !== host || hostIsMounted(host)) return;
+      try {
+        clearRecovery(host);
+        const dispose = options.onFailure?.({ spec, host, error, retry: () => {
+          if (!mountRegistry.includes(spec) || document.getElementById(spec.hostId) !== host || hostIsMounted(host) || hasOwnedRoot(host)) return;
+          return runMountSpecs(document, [spec], options);
+        } });
+        if (dispose) recoveries.set(host, dispose);
+      } catch (recoveryError) {
+        reportSwallow(recoveryError, `react:mount-recovery:${spec.label}`);
+      }
     };
     try {
       const result = spec.mount(host);
       if (result === false) {
+        clearRecovery(host);
         skipped.push(spec);
         continue;
       }
@@ -122,13 +168,16 @@ export function runMountRegistry(
       if (result instanceof Promise) {
         pending.push(result.then((value) => {
           if (value === false) {
-            clearHostMounted(host);
+            if (!hasOwnedRoot(host) && ownsHost(host, spec.label)) clearHostMounted(host);
+            clearRecovery(host);
             skipped.push(spec);
           } else {
+            clearRecovery(host);
             mounted.push(spec);
           }
         }).catch(fail));
       } else {
+        clearRecovery(host);
         mounted.push(spec);
       }
     } catch (error) {

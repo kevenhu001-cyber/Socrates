@@ -1,8 +1,25 @@
-import { configureMountRegistry, runMountRegistry } from './lib/boot/registry';
+import { configureMountRegistry, runMountRegistry, type MountRegistryOptions } from './lib/boot/registry';
 import { mountRegistryList } from './lib/boot/specs';
 import { mountAssistantTurn, releaseAssistantTurns } from './tool-run/mountTurn';
 import { registerAssistantTurnRenderer } from '../ui/assistantTurnRenderer';
 import { publishReactChatRuntime } from '../ui/reactBridge';
+import { showMountRecovery } from './ui/mountRecovery';
+import { i18n } from './legacy/gateway';
+
+const RECOVERY_MESSAGES: Record<string, [string, string]> = {
+  'sidebar-nav': ['boot.navigationUnavailable', 'The navigation could not load.'],
+  'sidebar-chrome': ['boot.navigationUnavailable', 'The navigation could not load.'],
+  'composer-shell': ['boot.composerUnavailable', 'The message editor could not load. Your saved draft has not been changed.'],
+  'top-bar': ['boot.headerUnavailable', 'The conversation controls could not load.'],
+  'msg-list': ['boot.messagesUnavailable', 'The conversation could not load. Your messages have not been changed.'],
+};
+
+const mountOptions: MountRegistryOptions = {
+  onFailure: (failure) => {
+    const message = RECOVERY_MESSAGES[failure.spec.label];
+    if (message) return showMountRecovery(failure, i18n(...message), i18n('error.retry', 'Try again'), message[0]);
+  },
+};
 
 export function bootstrapReactCompatibilityRuntime(): void {
   registerAssistantTurnRenderer({ mount: mountAssistantTurn, releaseAll: releaseAssistantTurns });
@@ -18,11 +35,11 @@ export function bootstrapReactCompatibilityRuntime(): void {
      hydrated; mount the remaining app surfaces after auth reveals the shell. The
      registry is idempotent, so a second call only mounts hosts that were
      deferred. */
-  runMountRegistry(document, { labels: new Set(['sidebar-nav', 'cookie-consent']) });
+  runMountRegistry(document, { ...mountOptions, labels: new Set(['sidebar-nav', 'cookie-consent']) });
   const runtime = window as Window & {
     __socratesMountReactCompatibility?: () => void;
   };
   runtime.__socratesMountReactCompatibility = () => {
-    runMountRegistry(document);
+    runMountRegistry(document, mountOptions);
   };
 }

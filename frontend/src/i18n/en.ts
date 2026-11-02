@@ -1,5 +1,9 @@
 /* English locale table. Kept synchronous because it is the fallback for all locales. */
 export const en = {
+    "boot.composerUnavailable": "The message editor could not load. Your saved draft has not been changed.",
+    "boot.headerUnavailable": "The conversation controls could not load.",
+    "boot.messagesUnavailable": "The conversation could not load. Your messages have not been changed.",
+    "boot.navigationUnavailable": "The navigation could not load.",
     "intui.simSpeed": "Speed",
     "intui.simAngle": "Angle",
     "intui.simGravity": "Gravity",
