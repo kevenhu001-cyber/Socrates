@@ -12,6 +12,10 @@ val prepareToolRendererAssets by tasks.registering(Copy::class) {
 val bundleToolRenderer by tasks.registering(Exec::class) {
     val output = toolRendererAssets.get().file("render/tool-renderer.js").asFile
     workingDir(repositoryRoot)
+    // packages/ui intentionally has no node_modules. Match frontend/vite.config.js
+    // by resolving bare React dependencies from the frontend install and by
+    // compiling shared React Native components through react-native-web.
+    environment("NODE_PATH", repositoryRoot.resolve("frontend/node_modules").absolutePath)
     // Vite 8/Rolldown no longer guarantees a top-level frontend/.bin/esbuild.
     // Pin the renderer bundler explicitly so Android builds do not depend on
     // Vite's private dependency graph. npx reuses the npm cache on CI/local.
@@ -19,6 +23,8 @@ val bundleToolRenderer by tasks.registering(Exec::class) {
         "apps/socrates-android/renderer/toolRendererEntry.ts",
         "--bundle", "--minify", "--format=esm", "--platform=browser", "--target=es2020",
         "--define:process.env.NODE_ENV=\"production\"",
+        "--alias:react-native=react-native-web",
+        "--resolve-extensions=.web.tsx,.web.ts,.web.mjs,.web.js,.mjs,.js,.mts,.ts,.jsx,.tsx,.json",
         // The shared frontend graph now contains connector brand assets. Vite's
         // `?raw` SVG imports evaluate to source text; esbuild's text loader is
         // the equivalent contract. PNG marks are self-contained as data URLs so
