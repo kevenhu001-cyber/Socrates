@@ -107,7 +107,11 @@ export function FlashcardCard({ front, back, onRate, initialState, onStateChange
       </Pressable>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: S[75], minHeight: H.action }}>
         {onBack ? (
-          <View role="group" aria-label={strings.flashcardRate} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: S[75] }}>
+          /* RN-14: flexShrink + minWidth 0 keep the group inside the row, so its
+             pills wrap on a phone. Without them the group took its one-line
+             width (wider than a 390 card), and focusing a pill past the edge
+             scrolled the card's overflow-hidden box, cutting off its left side. */
+          <View role="group" aria-label={strings.flashcardRate} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: S[75], flexShrink: 1, minWidth: 0 }}>
             <UiText variant="labelSm" tone="secondary">{strings.flashcardRate}</UiText>
             {RECALL_RATINGS.map((rating) => (
               <PillAction
