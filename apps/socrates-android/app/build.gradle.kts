@@ -30,6 +30,11 @@ val bundleToolRenderer by tasks.registering(Exec::class) {
         // the equivalent contract. PNG marks are self-contained as data URLs so
         // the Android WebView never depends on Vite-emitted hashed asset files.
         "--loader:.svg=text", "--loader:.png=dataurl",
+        // Android does not package frontend/wasm. socratesWasm.ts is explicitly
+        // designed to fall back to the pure-TS implementation when its lazy
+        // import fails, matching the RN client path and avoiding a duplicate Rust
+        // build just for this WebView renderer.
+        "--external:../../wasm/socrates_wasm.js",
         // tldraw ships Vite-only `?url` asset imports; the whiteboard adapter is
         // never mounted on Android, so leave its module out of the bundle.
         "--external:./visualizationWhiteboard.ts", "--outfile=${output.absolutePath}")
