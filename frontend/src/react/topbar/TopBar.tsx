@@ -193,7 +193,12 @@ function TopBarLeft({ phone, conversationActive }: { phone: boolean; conversatio
     <div className="top-bar-left">
       <SidebarToggle />
       <WebUiTheme>
-        <ModelSwitcher phone={phone} conversationActive={conversationActive} />
+        {/* 手机对话中不显示模型 chip。槽位让页面按
+            body[data-conversation-active] 同步隐藏（与 RN-7 前一致），
+            不必等 store 推导后的下一次渲染。 */}
+        <span className="top-model-slot" data-topbar-slot="model">
+          <ModelSwitcher phone={phone} conversationActive={conversationActive} />
+        </span>
         <PracticeProgress phone={phone} conversationActive={conversationActive} />
         <StageProgress phone={phone} conversationActive={conversationActive} />
       </WebUiTheme>

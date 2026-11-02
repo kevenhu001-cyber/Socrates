@@ -78,6 +78,31 @@ function anchor(id: string): HTMLElement | null {
   return document.getElementById(id);
 }
 
+/** 控件栏三个图标按钮的已翻译名称（同时用作 aria-label 与 title）。 */
+function controlLabels(streaming: boolean): { primaryLabel: string; toolsLabel: string; voiceLabel: string } {
+  return {
+    primaryLabel: streaming ? i18n('chat.stop', 'Stop generating') : i18n('chat.send', 'Send'),
+    toolsLabel: i18n('chrome.addToolsFiles', 'Add tools and files'),
+    voiceLabel: i18n('chrome.voiceInput', 'Voice input'),
+  };
+}
+
+/**
+ * react-native-web 不转发 `title`，提问框的图标按钮由宿主补上悬停提示，
+ * 与 aria-label 用同一份已翻译文案（RN-7 前每个按钮都有 title）。
+ */
+function useControlTitles(tools: string, effort: string, voice: string, primary: string): void {
+  useLayoutEffect(() => {
+    const titles: ReadonlyArray<readonly [string, string]> = [
+      ['composerToolsBtn', tools],
+      ['effortTrigger', effort],
+      ['composerMicBtn', voice],
+      ['composerPrimaryBtn', primary],
+    ];
+    for (const [id, title] of titles) anchor(id)?.setAttribute('title', title);
+  }, [tools, effort, voice, primary]);
+}
+
 /**
  * React owns the complete composer shell. The stable outer host stays in the
  * document so the landing/chat transition can move it without rebuilding the
@@ -101,14 +126,10 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   const effortValue = effortLabel(effort);
   const effortAccessibleLabel = modelLabel ? `${modelLabel} · ${effortValue}` : effortValue;
   const canSend = Boolean(draft.trim() || attachments.length > 0);
-  const primaryLabel = streaming
-    ? i18n('chat.stop', 'Stop generating')
-    : i18n('chat.send', 'Send');
+  const { primaryLabel, toolsLabel, voiceLabel } = controlLabels(streaming);
   const composerLabel = surface === 'chat'
     ? i18n('chat.placeholder', 'Ask Socrates')
     : i18n('topic.inputPlaceholder', placeholder);
-  const toolsLabel = i18n('chrome.addToolsFiles', 'Add tools and files');
-  const voiceLabel = i18n('chrome.voiceInput', 'Voice input');
   const handlePrimaryClick = () => {
     if (streaming) {
       onStop();
@@ -135,6 +156,8 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
     if (voiceActive) host.setAttribute('data-voice-recording', 'true');
     else host.removeAttribute('data-voice-recording');
   }, [voiceActive]);
+
+  useControlTitles(toolsLabel, effortAccessibleLabel, voiceLabel, primaryLabel);
 
   useEffect(() => {
     /* Attachment wiring runs at DOMContentLoaded. The file input is created
@@ -171,6 +194,7 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
           controls={{
             tools: {
               label: toolsLabel,
+              i18nKey: 'chrome.addToolsFiles',
               expanded: composerTools.isOpen && composerTools.triggerId === 'composerToolsBtn',
               onPress: () => {
                 const trigger = anchor('composerToolsBtn');
@@ -191,6 +215,7 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
             },
             mic: {
               label: voiceLabel,
+              i18nKey: 'chrome.voiceInput',
               listening: voiceActive,
               onPress: () => {
                 const target = readComposerSurface();

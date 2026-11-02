@@ -28,6 +28,8 @@ type PressState = PressableStateCallbackType & { hovered?: boolean };
 
 export interface ComposerToolsControl {
   label: string;
+  /** Web 宿主的 i18n 键，输出为 data-i18n-title / data-i18n-aria，切换语言时由宿主重新翻译。 */
+  i18nKey?: string;
   expanded: boolean;
   onPress: () => void;
 }
@@ -48,6 +50,8 @@ export interface ComposerEffortControl {
 
 export interface ComposerMicControl {
   label: string;
+  /** 同 ComposerToolsControl.i18nKey。 */
+  i18nKey?: string;
   listening: boolean;
   onPress: () => void;
 }
@@ -72,10 +76,11 @@ export interface ComposerControlsProps {
   compact?: boolean;
 }
 
-function RoundControl({ id, control, label, expanded, pressed: ariaPressed, haspopup, filled, children, onPress }: {
+function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPressed, haspopup, filled, children, onPress }: {
   id: string;
   control: string;
   label: string;
+  i18nKey?: string;
   expanded?: boolean;
   pressed?: boolean;
   haspopup?: 'menu' | 'dialog';
@@ -94,7 +99,7 @@ function RoundControl({ id, control, label, expanded, pressed: ariaPressed, hasp
       aria-pressed={ariaPressed}
       aria-haspopup={haspopup}
       onPress={onPress}
-      {...dataSet({ composerControl: control })}
+      {...dataSet({ composerControl: control, i18nTitle: i18nKey, i18nAria: i18nKey })}
       style={({ pressed, hovered }: PressState) => ({
         width: COMPOSER_CONTROL_SIZE,
         height: COMPOSER_CONTROL_SIZE,
@@ -122,6 +127,7 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
         id="composerToolsBtn"
         control="tools"
         label={tools.label}
+        i18nKey={tools.i18nKey}
         expanded={tools.expanded}
         haspopup="menu"
         filled={compact}
@@ -177,6 +183,7 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
         id="composerMicBtn"
         control="mic"
         label={mic.label}
+        i18nKey={mic.i18nKey}
         pressed={mic.listening}
         filled={compact}
         onPress={mic.onPress}

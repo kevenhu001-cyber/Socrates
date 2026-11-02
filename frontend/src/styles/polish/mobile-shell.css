@@ -29,6 +29,8 @@
     top: calc(50% + env(safe-area-inset-top, 0px) / 2);
   }
   body:not([data-conversation-active="true"]) #appShell .mobile-newchat-btn { display: none; }
+  /* 手机对话中不显示模型 chip（RN-7 前的行为）；模型设置仍可从提问框的强度胶囊打开。 */
+  body[data-conversation-active="true"] #appShell .top-model-slot { display: none; }
   /* Phone model control: a chip that names the model. The desktop lockup
      ("Socrates <model>") is 278px wide, which painted straight through the
      centred mode switch on a 390px bar and read as a page title; the phone

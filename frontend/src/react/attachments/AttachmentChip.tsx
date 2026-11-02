@@ -196,6 +196,7 @@ function AttachmentChipActions({ entry, onRemove, onRetry }: AttachmentChipProps
         type="button"
         className="attachment-chip-remove"
         aria-label={i18n('chat.attach.remove.aria', 'Remove attachment')}
+        title={i18n('chat.attach.remove.aria', 'Remove attachment')}
         onClick={() => onRemove(entry.id)}
         dangerouslySetInnerHTML={{ __html: REMOVE_ICON }}
       />

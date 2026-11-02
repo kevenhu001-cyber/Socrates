@@ -36,6 +36,8 @@
 #appShell #sidebarOpenBtn svg { width: 24px; height: 24px; }
 
 #appShell .mobile-newchat-btn { display: none; }
+/* 模型 chip 的布局槽位不参与排版；手机对话中由 mobile-shell.css 隐藏。 */
+#appShell .top-model-slot { display: contents; }
 #appShell .toggle-sidebar .glyph-hamburger { display: none; }
 
 #appShell #pluginWorkspaceTabs {
