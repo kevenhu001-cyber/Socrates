@@ -19,6 +19,11 @@ val bundleToolRenderer by tasks.registering(Exec::class) {
         "apps/socrates-android/renderer/toolRendererEntry.ts",
         "--bundle", "--minify", "--format=esm", "--platform=browser", "--target=es2020",
         "--define:process.env.NODE_ENV=\"production\"",
+        // The shared frontend graph now contains connector brand assets. Vite's
+        // `?raw` SVG imports evaluate to source text; esbuild's text loader is
+        // the equivalent contract. PNG marks are self-contained as data URLs so
+        // the Android WebView never depends on Vite-emitted hashed asset files.
+        "--loader:.svg=text", "--loader:.png=dataurl",
         // tldraw ships Vite-only `?url` asset imports; the whiteboard adapter is
         // never mounted on Android, so leave its module out of the bundle.
         "--external:./visualizationWhiteboard.ts", "--outfile=${output.absolutePath}")
