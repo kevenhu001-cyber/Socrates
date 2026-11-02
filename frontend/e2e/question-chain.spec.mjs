@@ -1,22 +1,23 @@
 import { test, expect } from '@playwright/test';
-import { mkdirSync } from 'node:fs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 /* RN-4: question chain + learning modes (packages/ui/src/think).
-   Set RN4_SHOTS=<dir> to also write the review screenshots. */
-const SHOTS = process.env.RN4_SHOTS || '';
-if (SHOTS) mkdirSync(SHOTS, { recursive: true });
+   Set RN4_SHOTS=1 to also write the review screenshots
+   (to test-results/rn4-shots/). */
+const SHOTS = Boolean(process.env.RN4_SHOTS);
 
 async function shot(locator, name) {
   if (!SHOTS) return;
   await locator.page().mouse.move(0, 0);
   await locator.page().waitForTimeout(450);
-  await locator.screenshot({ path: `${SHOTS}/${name}.png`, animations: 'disabled' });
+  await locator.screenshot({ path: `test-results/rn4-shots/${encodeURIComponent(name)}.png`, animations: 'disabled' });
 }
 
 const NODES = ['Limits', 'Derivatives', 'Applications', 'Pitfalls', 'Connections'];
-const LESSON = '导数描述的是函数在某一点附近的瞬时变化率。你觉得「瞬时」这个词在这里意味着什么？';
+/* RN-6: the next questions come from the reply's own <next-questions> block. */
+const NEXT = ['「瞬时」能不能理解成时间间隔为零？', '平均速度和瞬时速度差在哪一步？', '没有极限的话还能定义导数吗？'];
+const LESSON = '导数描述的是函数在某一点附近的瞬时变化率。你觉得「瞬时」这个词在这里意味着什么？\n\n<next-questions>' + JSON.stringify(NEXT) + '</next-questions>';
 
 async function setupTutor(page, width) {
   await page.setViewportSize({ width, height: 900 });
@@ -75,7 +76,7 @@ async function clearEditor(editor) {
 const chain = (page) => page.locator('[data-testid="question-chain"]');
 const nextQuestions = (page) => page.locator('[data-testid^="question-chain-next-"]');
 
-test('home learning modes: nothing selected in chat, choosing one switches to tutor and pre-fills', async ({ page }) => {
+test('home learning modes: nothing selected in chat, choosing one switches to tutor without pre-filling copy', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await setupTutor(page, 1440);
@@ -90,7 +91,8 @@ test('home learning modes: nothing selected in chat, choosing one switches to tu
   await page.locator('[data-testid="learning-mode-recall"]').click();
   await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'tutor');
   await expect(page.locator('[data-testid="learning-mode-recall"]')).toHaveAttribute('aria-checked', 'true');
-  await expect(editor).toContainText('知识卡片');
+  /* RN-6: no fixed request is pre-filled; the mode rides on the session's requests. */
+  await expect(editor).toHaveText('');
   await expect(page.locator('[data-testid="learning-mode-hint"]')).toContainText('知识卡片');
   const setup = page.locator('#topicSetup');
   await shot(setup, 'home-mode-recall');
@@ -101,14 +103,12 @@ test('home learning modes: nothing selected in chat, choosing one switches to tu
   await expect(page.locator('[data-testid="learning-mode-connect"]')).toBeFocused();
   await expect(page.locator('[data-testid="learning-mode-recall"]')).toHaveAttribute('aria-checked', 'true');
 
-  await clearEditor(editor);
   await page.locator('[data-testid="learning-mode-connect"]').click();
-  await expect(editor).toContainText('联系');
+  await expect(editor).toHaveText('');
   await shot(setup, 'home-mode-connect');
 
-  await clearEditor(editor);
   await page.locator('[data-testid="learning-mode-diagnose"]').click();
-  await expect(editor).toContainText('诊断');
+  await expect(editor).toHaveText('');
   await shot(setup, 'home-mode-diagnose');
 
   await clearEditor(editor);
@@ -131,6 +131,8 @@ for (const width of [1440, 390]) {
     await expect(chain(page)).toBeVisible();
     await expect(page.locator('[data-testid="question-chain-current"]')).toContainText('为什么导数能表示变化率');
     await expect(nextQuestions(page)).toHaveCount(3);
+    await expect(nextQuestions(page).first()).toContainText(NEXT[0]);
+    expect(streams.at(-1).learningMode).toBe('think');
     const bar = page.locator('#chatInputBar');
     if (width === 1440) await shot(bar, 'chain-initial');
 
@@ -164,10 +166,14 @@ test('conversation learning-mode menu opens inline and keeps the chain', async (
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('#learningModeBar [role="radio"]')).toHaveCount(5);
   await shot(page.locator('#chatInputBar'), 'session-modes-open');
-  await page.locator('#learningModeBar [data-testid="learning-mode-diagnose"]').click();
+  await page.locator('#learningModeBar [data-testid="learning-mode-think"]').click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText('诊断题');
+  await expect(page.locator('#composerRoot .rich-composer-editor')).toHaveText('');
   await expect(chain(page)).toBeVisible();
+  /* RN-6: "Find gaps" in a session runs a fresh formal diagnostic. */
+  await trigger.click();
+  await page.locator('#learningModeBar [data-testid="learning-mode-diagnose"]').click();
+  await expect(page.locator('#diagnosticView [data-diag-command="select"]').first()).toBeVisible();
 });
 
 test('reduced motion: a new step joins the chain in place', async ({ page }) => {
