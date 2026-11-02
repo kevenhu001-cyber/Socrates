@@ -18,8 +18,9 @@ const loader = {
 };
 const resolveExtensions = ['.web.tsx', '.web.ts', '.web.mjs', '.web.js', '.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'];
 
-test('Android tool renderer bundles with frontend web resolution and leaves tldraw out', async () => {
+test('Android tool renderer bundles with frontend web resolution and leaves optional assets out', async () => {
   assert.ok(externals.includes('./visualizationWhiteboard.ts'), 'gradle keeps the whiteboard module external');
+  assert.ok(externals.includes('../../wasm/socrates_wasm.js'), 'gradle intentionally uses the pure-TS WASM fallback on Android');
   assert.match(gradle, /environment\("NODE_PATH", repositoryRoot\.resolve\("frontend\/node_modules"\)/, 'gradle resolves shared-package dependencies from frontend');
   assert.match(gradle, /"--alias:react-native=react-native-web"/, 'gradle compiles shared RN components through RN Web');
   assert.match(gradle, /"--resolve-extensions=\.web\.tsx,\.web\.ts,\.web\.mjs,\.web\.js,\.mjs,\.js,\.mts,\.ts,\.jsx,\.tsx,\.json"/, 'gradle prefers web platform files');
