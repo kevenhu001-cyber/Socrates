@@ -196,7 +196,7 @@
 .kb-history-empty{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
 
 /* Tab badge for mistakes */
-.tab-badge{display:inline-block;min-width:16px;height:16px;line-height:14px;padding:0 4px;margin-left:4px;border-radius:8px;background:hsl(0 60% 50%/0.18);color:hsl(0 60% 70%);font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);text-align:center;vertical-align:middle;transition:background .15s,color .15s}
+.tab-badge{display:inline-block;min-width:16px;height:16px;line-height:14px;padding:0 4px;margin-left:4px;border-radius:8px;background:var(--ui-ink);color:var(--ui-on-ink);font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);text-align:center;vertical-align:middle;transition:background .15s,color .15s}
 .tab-badge:empty{display:none}
 
 

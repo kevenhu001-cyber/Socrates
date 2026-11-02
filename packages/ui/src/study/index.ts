@@ -14,6 +14,7 @@ export {
   type DiagnosticInsight,
   type DiagnosticScreen,
   type RenderDiagnosticRich,
+  type RenderDiagnosticText,
 } from './DiagnosticPanel';
 export { MistakeBook, type MistakeBookProps } from './MistakeBook';
 export * from './strings';

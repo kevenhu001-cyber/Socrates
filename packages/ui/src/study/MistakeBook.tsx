@@ -123,7 +123,7 @@ function FilterPill({ value, label, selected, onPress }: { value: string; label:
 }
 
 /** One line of the analysis on a tinted sheet; `strong` is the keyed answer / right way (ink ring). */
-function AnswerLine({ label, value, strong, data }: { label: string; value: string; strong?: boolean; data: Record<string, string> }) {
+function AnswerLine({ label, value, strong, data, renderText = plainText }: { label: string; value: string; strong?: boolean; data: Record<string, string>; renderText?: (text: string, part: string) => ReactNode }) {
   const { colors } = useUiTheme();
   const { subtle } = sheets(colors);
   return (
@@ -139,7 +139,7 @@ function AnswerLine({ label, value, strong, data }: { label: string; value: stri
       }}
     >
       <UiText variant="labelSm" tone="tertiary">{label}</UiText>
-      <UiText variant="bodySm" tone={strong ? 'ink' : 'secondary'}>{value}</UiText>
+      <UiText variant="bodySm" tone={strong ? 'ink' : 'secondary'}>{renderText(value, 'mistake-answer')}</UiText>
     </View>
   );
 }
@@ -234,15 +234,15 @@ function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion,
             <>
               {/* RN-6: the AI analysis takes the two headline lines; the plain
                   answers stay underneath when there are no options to mark. */}
-              {!row.options.length ? <AnswerLine label={strings.answerGiven} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeGiven: row.id }} /> : null}
-              {!row.options.length && row.correctAnswer ? <AnswerLine label={strings.answerKeyed} value={row.correctAnswer} data={{ mistakeKeyed: row.id }} /> : null}
-              {row.whyWrong ? <AnswerLine label={strings.yourAnswer} value={row.whyWrong} data={{ mistakeCause: row.id, mistakeAi: '1' }} /> : null}
-              {row.rightWay ? <AnswerLine label={strings.correctAnswer} value={row.rightWay} strong data={{ mistakeRight: row.id, mistakeAi: '1' }} /> : null}
+              {!row.options.length ? <AnswerLine label={strings.answerGiven} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeGiven: row.id }} renderText={renderText} /> : null}
+              {!row.options.length && row.correctAnswer ? <AnswerLine label={strings.answerKeyed} value={row.correctAnswer} data={{ mistakeKeyed: row.id }} renderText={renderText} /> : null}
+              {row.whyWrong ? <AnswerLine label={strings.yourAnswer} value={row.whyWrong} data={{ mistakeCause: row.id, mistakeAi: '1' }} renderText={renderText} /> : null}
+              {row.rightWay ? <AnswerLine label={strings.correctAnswer} value={row.rightWay} strong data={{ mistakeRight: row.id, mistakeAi: '1' }} renderText={renderText} /> : null}
             </>
           ) : (
             <>
-              <AnswerLine label={strings.yourAnswer} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeCause: row.id }} />
-              {row.correctAnswer ? <AnswerLine label={strings.correctAnswer} value={row.correctAnswer} strong data={{ mistakeRight: row.id }} /> : null}
+              <AnswerLine label={strings.yourAnswer} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeCause: row.id }} renderText={renderText} />
+              {row.correctAnswer ? <AnswerLine label={strings.correctAnswer} value={row.correctAnswer} strong data={{ mistakeRight: row.id }} renderText={renderText} /> : null}
             </>
           )}
         </View>

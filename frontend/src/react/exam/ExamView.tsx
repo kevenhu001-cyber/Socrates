@@ -9,7 +9,6 @@ import { dispatchExam, useExamStore, useUiStore } from '../../store/index.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import { i18n } from '../legacy/gateway.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.service.ts';
-import { formatMsg } from '../../render/markdown.ts';
 import { buildExamResultsSnapshot } from '../../exam/results.ts';
 import { examNavCurrentIdx, examNavJump, examNavStep } from '../../exam/navigation.ts';
 import { cancelExamGeneration, runExamGeneration, selectExamOpt } from '../../exam/generation.ts';
@@ -72,10 +71,10 @@ function buildQuestionCardData(question: ExamQuestion, index: number, total: num
     type: question.type,
     questionLabel: L('Question', '题目'),
     typeLabel: typeLabels[question.type] || question.type,
-    questionHtml: formatMsg(question.q),
+    questionText: String(question.q ?? '').trim(),
     options: Array.isArray(question.opts) ? question.opts.map((option) => ({
       letter: option.letter || '',
-      html: formatMsg(option.text || ''),
+      text: String(option.text ?? '').trim(),
     })) : [],
     savedAnswer: savedAnswer == null ? null : savedAnswer,
     answerLabel: L('Answer for question ', '第 ') + (index + 1) + L('', ' 题答案'),

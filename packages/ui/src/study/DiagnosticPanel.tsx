@@ -21,7 +21,7 @@ export type DiagnosticCommandHandler = (command: DiagnosticCommand, index?: numb
 
 export interface DiagnosticOption {
   letter: string;
-  /** Host-rendered rich source (HTML on web). */
+  /** Host rich source, handed to `renderRich` (markdown on web, formatted at paint time). */
   text: string;
 }
 
@@ -81,11 +81,15 @@ export type DiagnosticScreen =
   | { kind: 'error'; title: string; reason: string; retryLabel: string; builtinLabel: string };
 
 export type RenderDiagnosticRich = (source: string, part: 'diag-question' | 'diag-option' | 'diag-notice') => ReactNode;
+/** RN-11: one line of plain copy (gap names, AI reasons) — the host can typeset `$…$`. */
+export type RenderDiagnosticText = (text: string, part: string) => ReactNode;
 
-export function DiagnosticPanel({ screen, onCommand, renderRich }: { screen: DiagnosticScreen; onCommand: DiagnosticCommandHandler; renderRich: RenderDiagnosticRich }) {
+const plainText: RenderDiagnosticText = (text) => text;
+
+export function DiagnosticPanel({ screen, onCommand, renderRich, renderText = plainText }: { screen: DiagnosticScreen; onCommand: DiagnosticCommandHandler; renderRich: RenderDiagnosticRich; renderText?: RenderDiagnosticText }) {
   if (screen.kind === 'loading') return <Loading screen={screen} onCommand={onCommand} />;
   if (screen.kind === 'question') return <Question screen={screen} onCommand={onCommand} renderRich={renderRich} />;
-  if (screen.kind === 'results') return <Results screen={screen} onCommand={onCommand} renderRich={renderRich} />;
+  if (screen.kind === 'results') return <Results screen={screen} onCommand={onCommand} renderRich={renderRich} renderText={renderText} />;
   return <Failure screen={screen} onCommand={onCommand} />;
 }
 
@@ -193,7 +197,7 @@ function Question({ screen, onCommand, renderRich }: { screen: Extract<Diagnosti
   );
 }
 
-function Results({ screen, onCommand, renderRich }: { screen: Extract<DiagnosticScreen, { kind: 'results' }>; onCommand: DiagnosticCommandHandler; renderRich: RenderDiagnosticRich }) {
+function Results({ screen, onCommand, renderRich, renderText }: { screen: Extract<DiagnosticScreen, { kind: 'results' }>; onCommand: DiagnosticCommandHandler; renderRich: RenderDiagnosticRich; renderText: RenderDiagnosticText }) {
   const { colors } = useUiTheme();
   const { subtle } = sheets(colors);
   const report = diagnosticReport(screen.nodes);
@@ -218,13 +222,13 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
           <UiText variant="labelSm" tone="tertiary">{copy.next}</UiText>
           {aiNext ? (
             <>
-              <UiText variant="bodySm" {...dataSet({ diagAiNext: '1' })}>{aiNext}</UiText>
-              {aiSummary ? <UiText variant="bodySm" tone="secondary" {...dataSet({ diagAiSummary: '1' })}>{aiSummary}</UiText> : null}
+              <UiText variant="bodySm" {...dataSet({ diagAiNext: '1' })}>{renderText(aiNext, 'diag-ai-next')}</UiText>
+              {aiSummary ? <UiText variant="bodySm" tone="secondary" {...dataSet({ diagAiSummary: '1' })}>{renderText(aiSummary, 'diag-ai-summary')}</UiText> : null}
             </>
           ) : (
             <>
-              {report.startsWith ? <UiText variant="bodySm">{fill(copy.startsWith, { name: report.startsWith })}</UiText> : null}
-              <UiText variant="bodySm" tone="secondary">{report.focus.length ? fill(copy.focus, { names: report.focus.join(copy.separator) }) : copy.allFamiliar}</UiText>
+              {report.startsWith ? <UiText variant="bodySm">{renderText(fill(copy.startsWith, { name: report.startsWith }), 'diag-starts-with')}</UiText> : null}
+              <UiText variant="bodySm" tone="secondary">{report.focus.length ? renderText(fill(copy.focus, { names: report.focus.join(copy.separator) }), 'diag-focus') : copy.allFamiliar}</UiText>
               {screen.insight?.status === 'loading' && copy.analyzing ? (
                 <UiText variant="labelSm" tone="tertiary" aria-live="polite" {...dataSet({ diagAnalyzing: '1' })}>{copy.analyzing}</UiText>
               ) : null}
@@ -251,8 +255,8 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
                   <UiText variant="labelSm" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>{String(node.rank).padStart(2, '0')}</UiText>
                 </View>
                 <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                  <UiText variant="label">{node.name}</UiText>
-                  {reason ? <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400' }} {...dataSet({ diagReason: node.order })}>{reason}</UiText> : null}
+                  <UiText variant="label">{renderText(node.name, 'diag-node')}</UiText>
+                  {reason ? <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400' }} {...dataSet({ diagReason: node.order })}>{renderText(reason, 'diag-reason')}</UiText> : null}
                 </View>
                 <View style={{ height: H.tag, justifyContent: 'center', paddingHorizontal: 10, borderRadius: R.pill, backgroundColor: familiar ? colors.card : colors.fill, boxShadow: familiar ? insetRing(colors.ink, 1.5) : undefined }}>
                   <UiText variant="eyebrow" tone={familiar ? 'ink' : 'tertiary'} style={{ letterSpacing: 0 }}>{familiar ? screen.statusLabels.fuzzy : screen.statusLabels.blank}</UiText>

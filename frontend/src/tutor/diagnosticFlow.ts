@@ -12,7 +12,6 @@ import { applyDiagnosticResults } from '../chat/diagnosticResults.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
 import { renderDiagResultsScreen } from '../ui/diagnosticResults.ts';
 import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQuestion.ts';
-import { formatMsg } from '../render/markdown.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
@@ -39,7 +38,7 @@ export function stateView() {
 }
 
 export function renderDiagQuestion() {
-  renderDiagQuestionUI(stateView(), (k: string) => _t(k, k), formatMsg);
+  renderDiagQuestionUI(stateView(), (k: string) => _t(k, k));
 }
 
 export function skipDiagQuestion() {
