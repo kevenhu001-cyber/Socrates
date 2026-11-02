@@ -141,6 +141,19 @@ export function mountRegistryList(): MountSpec[] {
         mountOwnedRoot(host, 'home-tutor-starters', <HomeTutorStarters />);
       });
     } },
+    /* RN-4 — learning modes (packages/ui/src/think): the segmented control
+       under the landing composer and the capsule menu by the conversation
+       composer. */
+    { hostId: 'homeLearningModes', label: 'home-learning-modes', mount: (host) => {
+      return import('../../home/HomeLearningModes').then(({ HomeLearningModes }) => {
+        mountOwnedRoot(host, 'home-learning-modes', <HomeLearningModes />);
+      });
+    } },
+    { hostId: 'learningModeBar', label: 'learning-mode-bar', mount: (host) => {
+      return import('../../tutor/QuestionChainRoot').then(({ SessionLearningModes }) => {
+        mountOwnedRoot(host, 'learning-mode-bar', <SessionLearningModes />);
+      });
+    } },
     /* The header chrome — one root renders every control inside
        `<div class="top-bar" id="topBar">`. Its ids are the shell
        contract for the legacy runtime, so the React tree owns the

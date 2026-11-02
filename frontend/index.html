@@ -299,6 +299,10 @@
              suggestions block (id="homeSuggestionsWrap") was removed — those
              chips read as noise on mobile and were the most-skipped UI on the
              landing surface. -->
+        <!-- RN-4: five learning modes (packages/ui/src/think) as a capsule
+             segmented control; mounted by spec `home-learning-modes`. -->
+        <div class="home-learning-modes" id="homeLearningModes"></div>
+
         <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions" data-i18n-aria="chrome.quickActions"></div>
 
 
@@ -364,6 +368,8 @@
         <div class="find-bar hidden" id="findBar" role="search"></div>
         <div class="chat-input-bar" id="chatInputBar">
           <!-- P_socratic-suggestions — Proactive cognitive scaffolding chips in Tutor mode -->
+          <!-- RN-4: learning-mode capsule menu next to the conversation composer (tutor only). -->
+          <div class="learning-mode-bar tutor-only" id="learningModeBar"></div>
           <div class="socratic-suggestions tutor-only hidden" id="socraticSuggestions" role="region" aria-label="启发式思维建议" data-i18n-aria="tutor.suggestion.prefix"></div>
           <!-- P_pill-anchor-composer — moved inside chat-input-bar so the
                pill anchors to the composer's top edge instead of

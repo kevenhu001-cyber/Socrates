@@ -1633,7 +1633,32 @@ export const en = {
     "consent.message":"We use strictly necessary cookies to make Socrates work. Non-essential cookies (for example analytics) are only placed after you choose to allow them.",
     "consent.accept":"Accept all",
     "consent.essential":"Essential only",
-    "consent.learnMore":"Privacy policy"
+    "consent.learnMore":"Privacy policy",
+    /* RN-4 question chain and learning modes */
+    "chain.title":"Question chain",
+    "chain.next":"Ask next",
+    "chain.nextFromMistakes":"Ask next, from your mistakes",
+    "chain.expand":"Show all",
+    "chain.collapse":"Fold",
+    "chain.folded":"{n} more questions in between",
+    "chain.current":"Current question",
+    "learnMode.label":"Learning mode",
+    "learnMode.trigger":"Mode: {mode}",
+    "learnMode.think.label":"Think it through",
+    "learnMode.think.hint":"Follow the question chain one step at a time, out loud.",
+    "learnMode.recall.label":"Recall",
+    "learnMode.recall.hint":"Recall with flashcards first, then turn them to check.",
+    "learnMode.recall.prompt":"Help me recall the key points of this topic with a few flashcards: let me try first, then turn them to check. The topic is: ",
+    "learnMode.recall.sessionPrompt":"Help me recall what we just covered with a few flashcards: let me try first, then turn them to check.",
+    "learnMode.connect.label":"See connections",
+    "learnMode.connect.hint":"See how the concepts connect in the knowledge map.",
+    "learnMode.connect.prompt":"I want to see how the concepts in this topic connect. The topic is: ",
+    "learnMode.diagnose.label":"Find gaps",
+    "learnMode.diagnose.hint":"Answer a few diagnostic questions to find the gaps.",
+    "learnMode.diagnose.prompt":"Start with a few diagnostic questions to find the gaps in my understanding. The topic is: ",
+    "learnMode.diagnose.sessionPrompt":"Give me a few diagnostic questions to find the gaps in my understanding of this part.",
+    "learnMode.mistakes.label":"Mistakes to next question",
+    "learnMode.mistakes.hint":"Turn questions you missed into the next step on the chain."
   };
 
 export default en;
