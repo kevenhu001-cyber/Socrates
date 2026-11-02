@@ -1,0 +1,274 @@
+/*
+ * styles/features/learn-scaffolds.css — RN-3 learning scaffolds.
+ *
+ * The cards themselves are React Native (packages/ui/src/learn) and style
+ * themselves from the shared tokens. This sheet owns the three DOM pieces
+ * around them:
+ *   .sc-host  — the owned-root host that replaces a scaffold slot;
+ *   .sc-rich  — host-rendered markdown + KaTeX fields inside a card;
+ *   .sc-live  — the static streaming preview, built to the card's metrics
+ *               (radius, hairline, 36px label header, 16px body, 32px
+ *               control rows) so the mount at stream end does not move.
+ * White / grey, hairlines, black as the only accent; no dotted decoration.
+ */
+
+.sc-host,
+.sc-live {
+  margin: var(--ui-gap-3) 0;
+}
+
+.sc-host:first-child,
+.sc-live:first-child {
+  margin-top: var(--ui-gap-1);
+}
+
+/* ---- rich fields ------------------------------------------------------ */
+
+.sc-rich {
+  min-width: 0;
+  color: var(--ui-ink);
+  font-family: var(--ui-font-ui);
+  font-size: calc(var(--ui-type-label-size) * var(--app-font-scale, 1));
+  line-height: 1.6;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.sc-rich > :first-child { margin-top: 0; }
+.sc-rich > :last-child { margin-bottom: 0; }
+.sc-rich p { margin: 0 0 0.5em; }
+.sc-rich ul,
+.sc-rich ol { margin: 0.25em 0 0.5em; padding-left: 1.4em; }
+.sc-rich strong { font-weight: var(--ui-font-weight-semibold); }
+
+.sc-rich .katex-display {
+  margin: 0.4em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.sc-rich[data-part="quiz-q"],
+.sc-rich[data-part$="-title"],
+.sc-rich[data-part="theorem-statement"] {
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.sc-rich[data-part="definition-term"] {
+  font-size: calc(var(--ui-type-title-sm-size) * var(--app-font-scale, 1));
+  line-height: 1.45;
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.sc-rich[data-part="quiz-option"],
+.sc-rich[data-part="hint"],
+.sc-rich[data-part="quiz-explanation"],
+.sc-rich[data-part="practice-answer"] {
+  font-size: calc(var(--ui-type-body-sm-size) * var(--app-font-scale, 1));
+}
+
+.sc-rich[data-part$="-step"] .katex-display { margin: 0; }
+
+/* ---- streaming preview ------------------------------------------------ */
+
+.sc-live {
+  border: 1px solid var(--ui-hairline);
+  border-radius: var(--ui-round-lg);
+  background: var(--ui-card);
+  overflow: hidden;
+}
+
+.sc-live-head {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-2);
+  min-height: 36px;
+  padding: var(--ui-gap-2) var(--ui-gap-4);
+  border-bottom: 1px solid var(--ui-hairline);
+}
+
+.sc-live-label,
+.sc-live-face-label {
+  font-family: var(--ui-font-ui);
+  font-size: calc(var(--ui-type-label-sm-size) * var(--app-font-scale, 1));
+  line-height: var(--ui-type-label-sm-line);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-ink-tertiary);
+}
+
+.sc-live-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-3);
+  padding: var(--ui-gap-4);
+}
+
+.sc-live-skeleton {
+  height: 12px;
+  width: 40%;
+  margin: 6px 0;
+  border-radius: var(--ui-round-pill);
+  background: var(--ui-fill);
+}
+
+.sc-live-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-2);
+  min-height: 32px;
+}
+
+.sc-live-pill {
+  box-sizing: border-box;
+  display: inline-block;
+  height: 32px;
+  border-radius: var(--ui-round-pill);
+  background: var(--ui-fill);
+  vertical-align: middle;
+}
+
+.sc-live-pill--solid { background: var(--ui-fill-pressed); }
+.sc-live-pill--quiet { background: transparent; border: 1px solid var(--ui-hairline); }
+.sc-live-head .sc-live-pill { height: 24px; }
+
+.sc-live-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-2);
+}
+
+.sc-live-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-gap-3);
+  padding: 10px var(--ui-gap-3);
+  border: 1px solid var(--ui-hairline);
+  border-radius: var(--ui-round-md);
+}
+
+.sc-live-option > .sc-rich {
+  flex: 1;
+  padding-top: 1px;
+}
+
+.sc-live-letter {
+  box-sizing: border-box;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border: 1px solid var(--ui-hairline-strong);
+  border-radius: var(--ui-round-sm);
+  font-family: var(--ui-font-ui);
+  font-size: calc(var(--ui-type-label-sm-size) * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--ui-ink);
+}
+
+.sc-live-input {
+  box-sizing: border-box;
+  height: 84px;
+  border: 1px solid var(--ui-hairline);
+  border-radius: var(--ui-round-md);
+}
+
+.sc-live-face {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-gap-2);
+  min-height: 96px;
+  padding: var(--ui-gap-4);
+  border: 1px solid var(--ui-hairline);
+  border-radius: var(--ui-round-md);
+  background: var(--ui-fill);
+}
+
+/* Numbered steps joined by a thin vertical rule (same geometry as StepsCard). */
+.sc-live-steps {
+  display: flex;
+  flex-direction: column;
+}
+
+.sc-live-step {
+  position: relative;
+  display: flex;
+  gap: var(--ui-gap-3);
+}
+
+.sc-live-step-n {
+  flex: none;
+  width: 20px;
+  text-align: center;
+  font-family: var(--ui-font-ui);
+  font-size: calc(var(--ui-type-label-sm-size) * var(--app-font-scale, 1));
+  line-height: 24px;
+  font-weight: var(--ui-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-ink-secondary);
+}
+
+.sc-live-step-body {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: var(--ui-gap-3);
+}
+
+.sc-live-step:last-child .sc-live-step-body { padding-bottom: 0; }
+
+.sc-live-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 26px;
+  bottom: 0;
+  left: 9.5px;
+  width: 1px;
+  background: var(--ui-hairline-strong);
+}
+
+/* Consecutive <step> previews read as one list, like the mounted card. */
+.sc-live[data-scaffold-live="step"]:has(+ .sc-live[data-scaffold-live="step"]) {
+  margin-bottom: 0;
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.sc-live[data-scaffold-live="step"] + .sc-live[data-scaffold-live="step"] {
+  margin-top: 0;
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.sc-live[data-scaffold-live="step"] + .sc-live[data-scaffold-live="step"] > .sc-live-head { display: none; }
+.sc-live[data-scaffold-live="step"]:has(+ .sc-live[data-scaffold-live="step"]) > .sc-live-body { padding-bottom: 0; }
+.sc-live[data-scaffold-live="step"] + .sc-live[data-scaffold-live="step"] > .sc-live-body { padding-top: var(--ui-gap-3); }
+
+/* A field that is a single formula renders as display math in prose; inside
+   option rows and step lists it reads as a line of text, start-aligned. */
+.sc-rich[data-part="quiz-option"] .katex-display,
+.sc-rich[data-part$="-step"] .katex-display {
+  display: block;
+  margin: 0;
+  text-align: start;
+}
+
+.sc-rich[data-part="quiz-option"] .katex-display > .katex,
+.sc-rich[data-part$="-step"] .katex-display > .katex {
+  text-align: start;
+}
+
+/* react-native-web renders role="list" / "listitem" as ul / li; keep the
+   transcript's prose list indent and markers off the RN step list. */
+.sc-host ul:not(.sc-rich ul),
+.sc-host li:not(.sc-rich li) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

@@ -6,6 +6,7 @@
    formatTickSlice — convenience wrapper for the type-tick slider.
    All three exported for use by main.js / doRender / streaming. */
 
+import { stripNextQuestions } from '@socrates/core/learningBlocks';
 import { esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang } from './helpers.ts';
 import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './vizStubs.ts';
 import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPreprocessOptions } from './preprocess.ts';
@@ -294,7 +295,9 @@ export function formatMsgProgressive(
   if (_renderDepth >= MAX_RENDER_DEPTH) return '<p>' + escHTML(String(t)) + '</p>';
   _renderDepth += 1;
   try {
-    return _formatMsgProgressive(String(t), opts);
+    /* RN-6: the tutor's <next-questions> block feeds the question chain and
+       is never painted in the bubble, not even half-typed while streaming. */
+    return _formatMsgProgressive(stripNextQuestions(String(t)), opts);
   } finally {
     _renderDepth -= 1;
   }
@@ -335,7 +338,7 @@ export function formatMsg(t: string | null | undefined): string {
   if (_renderDepth >= MAX_RENDER_DEPTH) return '<p>' + escHTML(String(t)) + '</p>';
   _renderDepth += 1;
   try {
-    return _formatMsg(String(t));
+    return _formatMsg(stripNextQuestions(String(t)));
   } finally {
     _renderDepth -= 1;
   }

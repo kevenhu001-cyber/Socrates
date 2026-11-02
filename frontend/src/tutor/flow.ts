@@ -23,6 +23,13 @@ import {
   type PromptMessage,
 } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
+import { takeRecallContext } from './recallRatings.ts';
+
+/** RN-6: add the learner's flashcard self-ratings (if any) as turn context. */
+function withRecallContext(msgs: PromptMessage[]): PromptMessage[] {
+  const recall = takeRecallContext();
+  return recall ? msgs.concat([recall]) : msgs;
+}
 
 /** Teaching sub-topic node as read from the knowledge graph. */
 export interface TutorNode {
@@ -155,7 +162,7 @@ export function buildSocraticMessages(
       '\n\n' +
       turnScope,
   );
-  const msgs = appendClientContextMessages([{ role: 'system', content: prompt }], true).concat(
+  const msgs = withRecallContext(appendClientContextMessages([{ role: 'system', content: prompt }], true)).concat(
     history,
   );
   msgs.push({
@@ -234,8 +241,38 @@ export function buildFollowUpMessages(
       'Do NOT restart the entire topic from scratch on every turn; instead, advance the lesson while keeping the foundation as the persistent anchor for any new material.',
   );
   return injectTemplateSystemPrompt(
-    appendClientContextMessages([{ role: 'system', content: prompt }], true)
+    withRecallContext(appendClientContextMessages([{ role: 'system', content: prompt }], true))
       .concat(history)
       .concat([{ role: 'user', content: answer }]),
+  );
+}
+
+/**
+ * RN-6 — messages for a turn the learner started by choosing a learning
+ * mode (recall from the mode menu, practice on a knowledge-map node). The
+ * lesson context is the usual one; what to write comes from the server-owned
+ * learning-mode prompt, so the closing user line only names the request.
+ */
+export function buildLearningModeMessages(
+  node: TutorNode,
+  domain: string,
+  history: PromptMessage[],
+  opts: { learningMode?: string; learningFocus?: string },
+): PromptMessage[] {
+  const stage = (stateStore.read('teachingStage') as string) || 'motivate';
+  const prompt = buildSocraticPrompt(
+    domain,
+    BASELINE_LEVEL,
+    fromBasicsDirective(node, { continuation: true }) +
+      'Current teaching stage: ' + stage + '. Sub-topic: ' + node.name + '. ' +
+      'The learner chose a learning mode for this turn; follow the server learning-mode instructions for it. ' +
+      'Stay anchored to what this conversation has already established.',
+  );
+  const mode = opts.learningMode || 'think';
+  const focus = opts.learningFocus ? ' Focus: ' + opts.learningFocus : '';
+  return injectTemplateSystemPrompt(
+    withRecallContext(appendClientContextMessages([{ role: 'system', content: prompt }], true))
+      .concat(history)
+      .concat([{ role: 'user', content: '[Learning mode: ' + mode + ']' + focus }]),
   );
 }

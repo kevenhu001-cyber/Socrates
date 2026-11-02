@@ -97,14 +97,15 @@ test('stream splitting keeps an open Tutor scaffold in the live tail', () => {
 
 test('Tutor scaffolds render as typed live cards before the closing tag arrives', () => {
   const partial = renderProgressive('<key-point>核心结论：$x=1');
-  assert.match(partial, /class="inline-key-point scaffold-stream-live"/);
+  assert.match(partial, /class="sc-live"/);
   assert.match(partial, /data-scaffold-live="key-point"/);
   assert.match(partial, /核心结论/);
 
   const complete = renderProgressive('<quiz><q>选择</q><o letter="A">是</o><o letter="B">否</o></quiz>');
-  assert.match(complete, /class="inline-quiz scaffold-stream-live"/);
-  assert.match(complete, /inline-quiz-opt-letter">A\.<\/span>/);
-  assert.match(complete, /inline-quiz-opt-letter">B\.<\/span>/);
+  assert.match(complete, /data-scaffold-live="quiz"/);
+  assert.match(complete, /sc-live-letter">A<\/span>/);
+  assert.match(complete, /sc-live-letter">B<\/span>/);
+  assert.match(complete, /sc-live-actions/, 'the preview reserves the controls row');
 });
 
 /* ── Streaming-safe math ─────────────────────────────────────────

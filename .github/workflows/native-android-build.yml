@@ -41,20 +41,28 @@ jobs:
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
       - name: Install Android SDK 35
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
-      # The androidTest source set intentionally contains compile-only regression
-      # fixtures as well as true device tests. Keep the push/PR gate deterministic:
-      # compile every instrumentation test APK here, and run connected tests only
-      # when a device-validation suite is explicitly selected.
-      - name: Build, run JVM tests, and compile instrumentation tests
+      # PR/push validation is intentionally debug-scoped. Keep each invariant
+      # as a separate step so a red gate identifies the failing layer directly.
+      - name: Build debug APK
         working-directory: apps/socrates-android
-        run: ./gradlew build testDebugUnitTest assembleDebugAndroidTest
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --stacktrace 2>&1 | tee android-debug-build.log
+      - name: Run Android JVM unit tests
+        working-directory: apps/socrates-android
+        run: ./gradlew testDebugUnitTest --stacktrace
+      - name: Compile Android instrumentation tests
+        working-directory: apps/socrates-android
+        run: ./gradlew assembleDebugAndroidTest --stacktrace
       - name: Preserve APKs and verification reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: socrates-native-android
+          if-no-files-found: warn
           path: |
+            apps/socrates-android/android-debug-build.log
             apps/socrates-android/app/build/outputs/apk/debug/*.apk
             apps/socrates-android/app/build/outputs/apk/androidTest/debug/*.apk
             apps/socrates-android/app/build/reports/tests/testDebugUnitTest/
-            apps/socrates-android/app/build/reports/lint-results-*.html

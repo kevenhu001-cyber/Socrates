@@ -410,6 +410,7 @@ export default defineConfig({
       '@socrates/core/motion/spring': fileURLToPath(new URL('../packages/core/src/motion/spring.ts', import.meta.url)),
       '@socrates/core/visualizationMath': fileURLToPath(new URL('../packages/core/src/visualizationMath.js', import.meta.url)),
       '@socrates/core/visualizationNormalize': fileURLToPath(new URL('../packages/core/src/visualizationNormalize.js', import.meta.url)),
+      '@socrates/core/learningBlocks': fileURLToPath(new URL('../packages/core/src/learningBlocks.ts', import.meta.url)),
       '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
       /* RN-1 — shared React Native modules render through react-native-web.
@@ -419,6 +420,11 @@ export default defineConfig({
       '@socrates/ui/primitives': fileURLToPath(new URL('../packages/ui/src/primitives/index.ts', import.meta.url)),
       '@socrates/ui/home': fileURLToPath(new URL('../packages/ui/src/home/index.ts', import.meta.url)),
       '@socrates/ui/turn': fileURLToPath(new URL('../packages/ui/src/turn/index.ts', import.meta.url)),
+      '@socrates/ui/learn-model': fileURLToPath(new URL('../packages/ui/src/learn/model.ts', import.meta.url)),
+      '@socrates/ui/learn': fileURLToPath(new URL('../packages/ui/src/learn/index.ts', import.meta.url)),
+      '@socrates/ui/think-model': fileURLToPath(new URL('../packages/ui/src/think/model.ts', import.meta.url)),
+      '@socrates/ui/think': fileURLToPath(new URL('../packages/ui/src/think/index.ts', import.meta.url)),
+      '@socrates/ui/study': fileURLToPath(new URL('../packages/ui/src/study/index.ts', import.meta.url)),
       'react-native': 'react-native-web',
     },
     /* packages/ have no node_modules of their own: resolve their bare React

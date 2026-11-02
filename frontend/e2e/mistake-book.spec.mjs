@@ -51,7 +51,7 @@ async function activateTranscript(page) {
 
 test('the empty state is localized', async ({ page }) => {
   await openMistakeBook(page, []);
-  const empty = page.locator('#mistakesList .recents-empty');
+  const empty = page.locator('#mistakesList [data-mistake-empty="empty"]');
   await expect(empty).toContainText('还没有错题');
   await expect(empty).not.toContainText('No mistakes yet');
 });
@@ -59,26 +59,40 @@ test('the empty state is localized', async ({ page }) => {
 test('cards localize the type, redo count and conquered tag', async ({ page }) => {
   await openMistakeBook(page, MISTAKES);
 
-  const first = page.locator('#mistakesList .mistake-card[data-mistake-id="m1"]');
+  const first = page.locator('#mistakesList [data-mistake-id="m1"]');
   await expect(first).toHaveCount(1);
   /* The internal enum must not reach the learner. */
-  await expect(first.locator('.mistake-type')).toHaveText('测验');
-  await expect(first.locator('.mistake-resolved-tag')).toHaveText('已攻克');
-  await expect(first.locator('.mistake-redo-count')).toHaveText('已重做 3 次');
-  await expect(first.locator('.mistake-redo-btn')).toHaveText('重做');
+  await expect(first.locator('[data-mistake-type]')).toHaveText('测验');
+  await expect(first.locator('[data-mistake-resolved-tag]')).toHaveText('已攻克');
+  await expect(first.locator('[data-mistake-redo-count]')).toHaveText('已重做 3 次');
+  await expect(first.locator('[data-redo]')).toHaveText('重做');
 
-  const second = page.locator('#mistakesList .mistake-card[data-mistake-id="m2"]');
-  await expect(second.locator('.mistake-type')).toHaveText('练习');
-  /* Singular is a separate key — an "s" appended to a Chinese string, or
-     a "1 times", both read as broken. */
-  await expect(second.locator('.mistake-redo-count')).toHaveText('已重做 1 次');
-  await expect(second.locator('.mistake-resolved-tag')).toHaveCount(0);
+  const second = page.locator('#mistakesList [data-mistake-id="m2"]');
+  await expect(second.locator('[data-mistake-type]')).toHaveText('练习');
+  /* Singular is a separate key. */
+  await expect(second.locator('[data-mistake-redo-count]')).toHaveText('已重做 1 次');
+  await expect(second.locator('[data-mistake-resolved-tag]')).toHaveCount(0);
 
-  await page.locator('#mistakeFilterBar [data-v="unresolved"]').click();
+  await page.locator('#mistakesList [data-v="unresolved"]').click();
   await expect(first).toHaveCount(0);
   await expect(second).toHaveCount(1);
-  await page.locator('#mistakeFilterBar [data-v="all"]').click();
+  await page.locator('#mistakesList [data-v="all"]').click();
   await expect(first).toHaveCount(1);
+});
+
+test('expanding a card shows where it went wrong and the right way', async ({ page }) => {
+  await openMistakeBook(page, MISTAKES);
+  const first = page.locator('#mistakesList [data-mistake-id="m1"]');
+  const toggle = first.locator('[data-mistake-toggle]');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(first.locator('[data-mistake-cause]')).toContainText('B · x');
+  await expect(first.locator('[data-mistake-right]')).toContainText('A · 2x');
+  await expect(first.locator('[data-mistake-tag="correct"]')).toHaveAttribute('data-mistake-opt', 'A');
+  await expect(first.locator('[data-mistake-tag="wrong"]')).toHaveAttribute('data-mistake-opt', 'B');
+  /* Two topics → two groups. */
+  await expect(page.locator('#mistakesList [data-mistake-group]')).toHaveCount(2);
 });
 
 test('practice redo appends a React-owned assistant widget', async ({ page }) => {
@@ -93,12 +107,12 @@ test('practice redo appends a React-owned assistant widget', async ({ page }) =>
   const message = page.locator('#msgList > .msg.assistant').last();
   await expect(message).toHaveAttribute('data-react-owned', '1');
   await expect(message).toContainText('重做做错的题目');
-  const widget = message.locator('.inline-practice');
+  const widget = message.locator('.sc-host[data-scaffold="practice"]');
   await expect(widget).toHaveCount(1);
-  await expect(widget.locator('.inline-practice-problem')).toContainText('解释为什么 x = 4。');
+  await expect(widget.locator('[data-part="practice-problem"]')).toContainText('解释为什么 x = 4。');
 
-  await widget.locator('.inline-practice-reveal').click();
-  await expect(widget.locator('.inline-practice-feedback')).toHaveText('因为两边同时减去 2。');
+  await widget.getByTestId('practice-reveal').click();
+  await expect(widget.getByTestId('practice-feedback')).toHaveText('因为两边同时减去 2。');
 });
 
 test('quiz redo appends a React-owned widget and resolves the current mistake slot', async ({ page }) => {
@@ -113,15 +127,16 @@ test('quiz redo appends a React-owned widget and resolves the current mistake sl
   await page.locator('[data-redo="redo-quiz"]').click();
   const message = page.locator('#msgList > .msg.assistant').last();
   await expect(message).toHaveAttribute('data-react-owned', '1');
-  const widget = message.locator('.inline-quiz');
+  const widget = message.locator('.sc-host[data-scaffold="quiz"]');
   await expect(widget).toHaveCount(1);
-  await expect(widget.locator('.inline-quiz-q')).toContainText('2 + 2 = ?');
+  await expect(widget.locator('[data-part="quiz-q"]')).toContainText('2 + 2 = ?');
   const redoSlotId = await page.evaluate(() => window.stateStore.read('mistakes')[0].quizSlotId);
   expect(redoSlotId).toMatch(/^redo-quiz-/);
   const rawText = await page.evaluate(() => window.stateStore.read('messages').at(-1).rawText);
   expect(rawText).toContain(`data-quiz-id="${redoSlotId}"`);
 
   await widget.locator('[data-letter="A"]').click();
-  await expect(widget.locator('.inline-quiz-feedback')).toHaveClass(/\bok\b/);
-  await expect(page.locator('#mistakesList .mistake-card[data-mistake-id="redo-quiz"]')).toHaveCount(0);
+  await widget.getByTestId('quiz-submit').click();
+  await expect(widget.getByTestId('quiz-feedback')).toHaveAttribute('data-verdict', 'correct');
+  await expect(page.locator('#mistakesList [data-mistake-id="redo-quiz"]')).toHaveCount(0);
 });

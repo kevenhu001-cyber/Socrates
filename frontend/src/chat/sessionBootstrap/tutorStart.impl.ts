@@ -14,6 +14,8 @@ import { renderAttachmentChips } from '../../attachments/render.ts';
 import { getActiveProvider } from '../../config/providerConfig.service.ts';
 import { loadWebSearch } from '../webSearchLoader.ts';
 import { generateTopicKBNodes } from '../topicKbNodes.ts';
+import { applyConceptMap } from '../../tutor/conceptMap.ts';
+import { normalizeConceptMap } from '@socrates/core/learningBlocks';
 import { generateDiagnosticQuestions, type DiagQuestion } from '../diagnosticGenerator.ts';
 import { aiGenerate } from '../mockDiagnostic.ts';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.ts';
@@ -176,16 +178,25 @@ function installDiagnosticActions(context: TutorStartContext) {
 async function prepareKnowledgeNodes(context: TutorStartContext) {
   try {
     updateDiagnosticProgress(10, translate('diag.analyzingTopic'));
-    const topicNodes = await generateTopicKBNodes(context.topic, context.language);
+    const generated = await generateTopicKBNodes(context.topic, context.language);
     if (!isCurrentTutorSession(context)) return;
-    if (topicNodes && topicNodes.length >= 3) {
+    const topicNodes = generated ? generated.names.slice() : null;
+    if (generated && topicNodes && topicNodes.length >= 3) {
       while (topicNodes.length < stateStore.read('kbNodes').length) {
         topicNodes.push(stateStore.read('kbNodes')[topicNodes.length].name);
       }
       const namedNodes = stateStore.read('kbNodes').map((node, index) => (
         topicNodes[index] ? Object.assign({}, node, { name: topicNodes[index] }) : node
       ));
-      stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: namedNodes });
+      /* RN-6: the same call wrote each node's definition and the links
+         between them; apply them by position (names were just set). */
+      const withConcepts = generated.map.status === 'ok'
+        ? applyConceptMap(namedNodes, normalizeConceptMap({
+          nodes: generated.map.nodes.map((node) => ({ name: node.name, definition: node.definition })),
+          links: generated.map.links.map((link) => ({ ...link, why: link.why })),
+        }, namedNodes.map((node) => node.name)))
+        : namedNodes;
+      stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: withConcepts });
       const count = stateStore.read('kbNodes').length;
       updateDiagnosticProgress(15, getCurrentLanguage() === 'zh'
         ? '已识别 ' + count + ' 个知识点'

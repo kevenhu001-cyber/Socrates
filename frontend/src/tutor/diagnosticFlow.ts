@@ -79,7 +79,21 @@ export function finishDiagnostic() {
   stateStore.dispatch({
     type: 'state/set', key: 'kbNodes', value: applyDiagnosticResults(stateView())
   });
-  renderDiagResultsScreen(stateView(), _isZh());
+  renderDiagResultsScreen(stateView(), _isZh(), { status: 'loading' });
+  void loadDiagnosticInsight();
+}
+
+/* RN-6 — the gap reasons and the next step are written by the model from
+   the learner's answers; the screen shows its computed copy until they land
+   (or if they never do). Only applies while this results screen is up. */
+async function loadDiagnosticInsight() {
+  const sessionId = stateStore.read('currentSessionId');
+  const { generateDiagnosticInsight } = await import('./diagnosticInsight.ts');
+  const insight = await generateDiagnosticInsight();
+  if (stateStore.read('currentSessionId') !== sessionId || stateStore.read('phase') !== 'diagnostic') return;
+  renderDiagResultsScreen(stateView(), _isZh(), insight
+    ? { status: 'ready', summary: insight.summary, nextStep: insight.nextStep, reasons: insight.reasons }
+    : { status: 'none' });
 }
 
 /* P_test-interpretation — proceed from the results screen to the actual

@@ -81,8 +81,8 @@ test(`loading an old conversation rebuilds scaffold widgets and visualizations (
      which is what makes the "stale HTML" case meaningful. */
   await expect(page.locator('#msgList .msg.user strong')).toHaveCount(0);
   await expect(page.locator('#msgList .msg.user .msg-body')).toHaveText('Explain a **parabola**');
-  await expect(page.locator('.inline-definition-term')).toHaveText('Parabola');
-  await expect(page.locator('.inline-definition-body')).toContainText('A quadratic curve');
+  await expect(page.locator('[data-part="definition-term"]')).toHaveText('Parabola');
+  await expect(page.locator('[data-part="definition-body"]')).toContainText('A quadratic curve');
   await expect(page.locator('.visualization-card')).toContainText('Restored parabola');
   await expect(page.locator('.visualization-card svg path')).not.toHaveCount(0);
   await expect(page.locator('#msgList')).not.toContainText('stale snapshot without dynamic content');
@@ -95,7 +95,7 @@ test(`loading an old conversation rebuilds scaffold widgets and visualizations (
   if (!withSnapshot) {
     await page.screenshot({ path: 'test-results/raw-history-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.locator('.inline-definition-term')).toHaveText('Parabola');
+    await expect(page.locator('[data-part="definition-term"]')).toHaveText('Parabola');
     await expect(page.locator('.visualization-card')).toBeVisible();
     await page.screenshot({ path: 'test-results/raw-history-mobile.png' });
   }

@@ -1,94 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { KnowledgeMap, defaultKnowledgeStrings, type KnowledgeStrings } from '@socrates/ui/study';
 import { useKbStore, useSessionStore } from '../../store/index.ts';
-import type { BoundarySnapshot, KbNode } from '../../state/kb.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
-import { reportSwallow } from '../../util/reportSwallow.ts';
-import { i18n, t } from '../legacy/gateway.ts';
-import { Button } from '../ui/shadcn/button';
-import { TutorSnapshotAction } from './TutorSnapshotAction';
-import { KnowledgeNodeDetail, type KnowledgeHistoryItem } from './KnowledgeNodeDetail';
+import { i18n } from '../legacy/gateway.ts';
+import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import {
   jumpToKnowledgeNode,
   patchKnowledgeNode,
   saveKnowledgeBoundarySnapshot,
   updateKnowledgeNodeNote,
 } from '../../ui/knowledgePanelCommands.ts';
-
-const GRAPH_WIDTH = 320;
-const GRAPH_HEIGHT = 240;
-const GRAPH_PADDING = 26;
-
-interface GraphPosition { x: number; y: number }
-let cachedLayoutKey = '';
-let cachedLayoutPositions: GraphPosition[] = [];
-
-function layoutKnowledgeNodes(nodes: readonly KbNode[]): GraphPosition[] {
-  const count = nodes.length;
-  const centerX = GRAPH_WIDTH / 2;
-  const centerY = GRAPH_HEIGHT / 2;
-  const radius = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) / 2 - GRAPH_PADDING - 6;
-  const positions = nodes.map((_, index) => {
-    const angle = (2 * Math.PI * index) / count - Math.PI / 2;
-    return { x: centerX + radius * Math.cos(angle), y: centerY + radius * Math.sin(angle) };
-  });
-  if (count < 2) {
-    if (count === 1) positions[0] = { x: centerX, y: centerY };
-    return positions;
-  }
-
-  const idealSpacing = Math.max(30, Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) / Math.sqrt(count));
-  const iterations = 160;
-  for (let iteration = 0; iteration < iterations; iteration += 1) {
-    const temperature = 1 - iteration / iterations;
-    const displacement = positions.map(() => ({ x: 0, y: 0 }));
-    for (let left = 0; left < count; left += 1) {
-      for (let right = left + 1; right < count; right += 1) {
-        const dx = positions[left]!.x - positions[right]!.x;
-        const dy = positions[left]!.y - positions[right]!.y;
-        const distance = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        const force = (idealSpacing * idealSpacing) / distance;
-        const ux = dx / distance;
-        const uy = dy / distance;
-        displacement[left]!.x += ux * force;
-        displacement[left]!.y += uy * force;
-        displacement[right]!.x -= ux * force;
-        displacement[right]!.y -= uy * force;
-      }
-    }
-    for (let edge = 0; edge < count - 1; edge += 1) {
-      const dx = positions[edge]!.x - positions[edge + 1]!.x;
-      const dy = positions[edge]!.y - positions[edge + 1]!.y;
-      const distance = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      const force = (distance * distance) / idealSpacing;
-      const ux = dx / distance;
-      const uy = dy / distance;
-      displacement[edge]!.x -= ux * force;
-      displacement[edge]!.y -= uy * force;
-      displacement[edge + 1]!.x += ux * force;
-      displacement[edge + 1]!.y += uy * force;
-    }
-    for (let index = 0; index < count; index += 1) {
-      const node = positions[index]!;
-      const force = displacement[index]!;
-      force.x += (centerX - node.x) * 0.03;
-      force.y += (centerY - node.y) * 0.03;
-      const distance = Math.sqrt(force.x * force.x + force.y * force.y) || 0.01;
-      const step = Math.min(distance, 8 * temperature + 0.5);
-      node.x = Math.max(GRAPH_PADDING, Math.min(GRAPH_WIDTH - GRAPH_PADDING, node.x + (force.x / distance) * step));
-      node.y = Math.max(GRAPH_PADDING, Math.min(GRAPH_HEIGHT - GRAPH_PADDING, node.y + (force.y / distance) * step));
-    }
-  }
-  return positions;
-}
-
-function knowledgeNodeLayout(nodes: readonly KbNode[]): GraphPosition[] {
-  const key = JSON.stringify(nodes.map((node) => [node.name, node.status, node.questions, node.confidence_score]));
-  if (key !== cachedLayoutKey) {
-    cachedLayoutKey = key;
-    cachedLayoutPositions = layoutKnowledgeNodes(nodes);
-  }
-  return cachedLayoutPositions;
-}
+import { getConceptMapStatus, subscribeConceptMapStatus } from '../../tutor/conceptMap.ts';
+import { practiceKnowledgeNode } from '../../tutor/knowledgePractice.ts';
 
 function normalizedStatus(status: string | undefined): 'internalized' | 'fuzzy' | 'blank' {
   return status === 'internalized' || status === 'fuzzy' ? status : 'blank';
@@ -124,239 +47,84 @@ function useLanguageRevision(): number {
   return revision;
 }
 
-function KnowledgeGraph({
-  onSelect,
-  languageRevision,
-}: {
-  onSelect: (index: number) => void;
-  languageRevision: number;
-}) {
-  const nodes = useKbStore((snapshot) => snapshot.kbNodes);
-  const currentNode = useKbStore((snapshot) => snapshot.currentNode);
-  const positions = knowledgeNodeLayout(nodes);
-  void languageRevision;
-  if (nodes.length === 0) return null;
-
-  return (
-    <div className="kb-graph-wrap">
-      <div className="kb-graph-caption">
-        {getCurrentLanguage() === 'zh'
-          ? '知识图谱 · 颜色=掌握度 · 大小=提问数'
-          : 'Knowledge map · color = mastery · size = questions'}
-      </div>
-      <svg
-        className="kb-graph"
-        viewBox={`0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}`}
-        preserveAspectRatio="xMidYMid meet"
-        role="img"
-        aria-label={getCurrentLanguage() === 'zh' ? '知识点力导向图' : 'Force-directed knowledge graph'}
-      >
-        <g className="kb-graph-edges">
-          {nodes.slice(0, -1).map((_, index) => (
-            <line
-              key={index}
-              x1={positions[index]!.x.toFixed(1)}
-              y1={positions[index]!.y.toFixed(1)}
-              x2={positions[index + 1]!.x.toFixed(1)}
-              y2={positions[index + 1]!.y.toFixed(1)}
-            />
-          ))}
-        </g>
-        <g className="kb-graph-nodes">
-          {nodes.map((node, index) => {
-            const status = normalizedStatus(node.status);
-            const questionCount = typeof node.questions === 'number' ? node.questions : 0;
-            const radius = Math.max(7, Math.min(22, 7 + Math.sqrt(questionCount) * 4));
-            const confidence = typeof node.confidence_score === 'number'
-              ? Math.max(0, Math.min(5, node.confidence_score)) : 0;
-            const name = node.name || `Node ${index + 1}`;
-            const displayName = name.length > 10 ? `${name.slice(0, 9)}…` : name;
-            const position = positions[index]!;
-            return (
-              <g
-                className={`kb-graph-node kb-graph-node-${status}${index === currentNode ? ' kb-graph-node-active' : ''}`}
-                data-node-idx={index}
-                key={`${index}-${name}`}
-                tabIndex={0}
-                role="button"
-                aria-label={name}
-                onClick={() => onSelect(index)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    onSelect(index);
-                  }
-                }}
-              >
-                <circle
-                  cx={position.x.toFixed(1)}
-                  cy={position.y.toFixed(1)}
-                  r={radius.toFixed(1)}
-                  fillOpacity={0.35 + 0.13 * confidence}
-                />
-                <text x={position.x.toFixed(1)} y={(position.y + radius + 9).toFixed(1)} textAnchor="middle">{displayName}</text>
-              </g>
-            );
-          })}
-        </g>
-      </svg>
-    </div>
-  );
+function knowledgeStrings(): KnowledgeStrings {
+  const d = defaultKnowledgeStrings;
+  return {
+    title: i18n('tutor.kbFileTitle', '知识边界'),
+    lastUpdated: i18n('tutor.kbLastUpdated', '最后更新'),
+    snapshot: i18n('tutor.kbSnapshot', '存档当前版本'),
+    graphLabel: i18n('kb.graphLabel', d.graphLabel),
+    caption: i18n('kb.caption', d.caption),
+    captionConcepts: i18n('kb.captionConcepts', d.captionConcepts),
+    updating: i18n('kb.updating', d.updating),
+    updateFailed: i18n('kb.updateFailed', d.updateFailed),
+    status: { internalized: statusLabel('internalized'), fuzzy: statusLabel('fuzzy'), blank: statusLabel('blank') },
+    section: {
+      internalized: i18n('tutor.kbSectionInternalized', '已内化'),
+      fuzzy: i18n('tutor.kbSectionFuzzy', '模糊'),
+      blank: i18n('tutor.kbSectionBlank', '未探测'),
+    },
+    zoomIn: i18n('kb.zoomIn', d.zoomIn),
+    zoomOut: i18n('kb.zoomOut', d.zoomOut),
+    zoomFit: i18n('kb.zoomFit', d.zoomFit),
+    verifiedTag: `${i18n('tutor.kbVerifiedTag', '验证 x')}{n}`,
+    questions: i18n('kb.questions', d.questions),
+    systemTag: i18n('kb.systemTag', d.systemTag),
+    userTag: i18n('kb.userTag', d.userTag),
+    history: i18n('tutor.kbHistory', '存档历史'),
+    empty: i18n('tutor.kbTopicFirst', d.empty),
+    detail: {
+      close: i18n('kb.close', d.detail.close),
+      go: i18n('kb.go', d.detail.go),
+      goTitle: i18n('kb.goTitle', d.detail.goTitle),
+      confidence: i18n('kb.confidence', d.detail.confidence),
+      confidenceSet: i18n('kb.confidenceSet', d.detail.confidenceSet),
+      definition: i18n('kb.definition', d.detail.definition),
+      practice: i18n('kb.practice', d.detail.practice),
+      practiceTitle: i18n('kb.practiceTitle', d.detail.practiceTitle),
+      systemNote: i18n('kb.systemNote', d.detail.systemNote),
+      noSystemNote: i18n('kb.noSystemNote', d.detail.noSystemNote),
+      yourNote: i18n('kb.yourNote', d.detail.yourNote),
+      notePlaceholder: i18n('kb.placeholderNote', d.detail.notePlaceholder),
+      history: i18n('kb.history', d.detail.history),
+      noHistory: i18n('kb.noHistory', d.detail.noHistory),
+      connections: i18n('kb.connections', d.detail.connections),
+      noConnections: i18n('kb.noConnections', d.detail.noConnections),
+      before: i18n('kb.before', d.detail.before),
+      after: i18n('kb.after', d.detail.after),
+      whyBefore: i18n('kb.whyBefore', d.detail.whyBefore),
+      whyAfter: i18n('kb.whyAfter', d.detail.whyAfter),
+      open: i18n('kb.open', d.detail.open),
+    },
+  };
 }
 
-function KnowledgeNodeRow({
-  node,
-  index,
-  onSelect,
-}: {
-  node: KbNode;
-  index: number;
-  onSelect: (index: number) => void;
-}) {
-  const status = normalizedStatus(node.status);
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className={`kb-node kb-node-${status}`}
-      data-node-idx={index}
-      onClick={() => onSelect(index)}
-    >
-      <span className={`kb-dot ${status}`} />
-      <span className="kb-name">{node.name || `Node ${index + 1}`}</span>
-      {status === 'internalized' ? (
-        <span className="kb-verify-tag">{i18n('tutor.kbVerifiedTag', '验证 x')}{String(node.verifiedCount || node.questions || 0)}</span>
-      ) : null}
-      {node.questions ? <span className="kb-count">{i18n('kb.questions', `${node.questions} questions`).replace('{n}', String(node.questions))}</span> : null}
-    </Button>
-  );
-}
-
-function KnowledgeSections({ onSelect, languageRevision }: { onSelect: (index: number) => void; languageRevision: number }) {
-  const nodes = useKbStore((snapshot) => snapshot.kbNodes);
-  void languageRevision;
-  const groups = [
-    { key: 'internalized', title: i18n('tutor.kbSectionInternalized', '已内化') },
-    { key: 'fuzzy', title: i18n('tutor.kbSectionFuzzy', '模糊') },
-    { key: 'blank', title: i18n('tutor.kbSectionBlank', '未探测') },
-  ] as const;
-  return (
-    <>
-      {groups.map((group) => {
-        const entries = nodes.flatMap((node, index) => normalizedStatus(node.status) === group.key ? [{ node, index }] : []);
-        if (entries.length === 0) return null;
-        return (
-          <section key={group.key}>
-            <div className="kb-section-title">
-              {group.title} <span className="kb-section-count">{entries.length}</span>
-            </div>
-            {entries.map(({ node, index }) => (
-              <div key={`${index}-${node.name}`}>
-                <KnowledgeNodeRow node={node} index={index} onSelect={onSelect} />
-                {group.key === 'fuzzy' && node.system_note ? (
-                  <div className="kb-node-system-note"><span className="kb-tag-system">[系统]</span> {node.system_note}</div>
-                ) : null}
-                {group.key === 'fuzzy' && node.user_note ? (
-                  <div className="kb-node-user-note"><span className="kb-tag-user">[我]</span> {node.user_note}</div>
-                ) : null}
-              </div>
-            ))}
-          </section>
-        );
-      })}
-    </>
-  );
-}
-
-function formatBoundaryDate(item: BoundarySnapshot): string {
-  if (item.date) return String(item.date);
-  if (typeof item.at !== 'number') return '';
-  try { return new Date(item.at).toISOString().slice(0, 10); }
-  catch (error) {
-    reportSwallow(error, 'react/tutor/KnowledgePanel.formatBoundaryDate');
-    return '';
-  }
-}
-
-function boundaryHistoryItems(history: BoundarySnapshot[]): KnowledgeHistoryItem[] {
-  return history.slice(-8).reverse().map((item) => {
-    return { date: formatBoundaryDate(item), summary: String(item.summary || '') };
-  });
-}
-
+/** RN-5: the map, list and node detail are the shared RN panel
+ * (packages/ui/src/study); this adapter wires the KB store and commands. */
 export function KnowledgeMapPanel() {
   const nodes = useKbStore((snapshot) => snapshot.kbNodes);
+  const currentNode = useKbStore((snapshot) => snapshot.currentNode);
   const history = useKbStore((snapshot) => snapshot.boundariesHistory);
   const sessionId = useSessionStore((snapshot) => snapshot.currentSessionId);
-  const languageRevision = useLanguageRevision();
-  const [selection, setSelection] = useState<{ index: number; sessionId: string | null } | null>(null);
-  void languageRevision;
-
-  const selectedIndex = selection?.sessionId === sessionId ? selection.index : null;
-  const activeNode = selectedIndex !== null ? nodes[selectedIndex] : undefined;
-  if (nodes.length === 0) {
-    return <div className="kb-empty">{i18n('tutor.kbTopicFirst', 'Set a topic to build your knowledge map.')}</div>;
-  }
-
-  const chooseNode = (index: number) => {
-    setSelection((current) => current?.sessionId === sessionId && current.index === index
-      ? null
-      : { index, sessionId });
-  };
-  const detailHistory = boundaryHistoryItems(history);
+  const conceptStatus = useSyncExternalStore(subscribeConceptMapStatus, getConceptMapStatus);
+  useLocaleRefresh();
   return (
-    <>
-      <div className="kb-file-header">
-        <div className="kb-file-title">{i18n('tutor.kbFileTitle', '知识边界')}</div>
-        <div className="kb-file-meta">{i18n('tutor.kbLastUpdated', '最后更新')}: {new Date().toISOString().slice(0, 10)}</div>
-        <TutorSnapshotAction label={i18n('tutor.kbSnapshot', '存档当前版本')} onClick={saveKnowledgeBoundarySnapshot} />
-      </div>
-      <KnowledgeGraph onSelect={chooseNode} languageRevision={languageRevision} />
-      {activeNode && selectedIndex !== null ? (
-        <div className="kb-node-detail" data-node-idx={selectedIndex}>
-          <KnowledgeNodeDetail
-            index={selectedIndex}
-            status={normalizedStatus(activeNode.status)}
-            statusLabel={statusLabel(activeNode.status)}
-            goLabel={t('kb.go')}
-            goTitle={t('kb.goTitle')}
-            confidenceLabel={t('kb.confidence')}
-            confidenceSetLabel={(value) => t('kb.confidenceSet').replace('{n}', String(value))}
-            confidenceScore={typeof activeNode.confidence_score === 'number' ? activeNode.confidence_score : 0}
-            systemNoteLabel={t('kb.systemNote')}
-            systemNote={activeNode.system_note || ''}
-            noSystemNote={t('kb.noSystemNote')}
-            userNoteLabel={t('kb.yourNote')}
-            userNote={activeNode.user_note || ''}
-            userNotePlaceholder={t('kb.placeholderNote')}
-            historyLabel={t('kb.history')}
-            history={detailHistory}
-            noHistory={t('kb.noHistory')}
-            onGo={() => { void jumpToKnowledgeNode(selectedIndex); }}
-            onConfidenceChange={(value) => patchKnowledgeNode(selectedIndex, { confidence_score: value })}
-            onUserNoteChange={(value) => updateKnowledgeNodeNote(selectedIndex, value)}
-          />
-        </div>
-      ) : null}
-      <KnowledgeSections onSelect={chooseNode} languageRevision={languageRevision} />
-      {history.length ? (
-        <>
-          <div className="kb-section-title kb-section-title-secondary">{i18n('tutor.kbHistory', '存档历史')}</div>
-          <ul className="kb-history-list">
-            {history.slice(-8).reverse().map((item, index) => {
-              const date = formatBoundaryDate(item);
-              return (
-                <li className="kb-history-item" key={`${date}-${index}`}>
-                  <span className="kb-history-date">{date}</span>
-                  <span className="kb-history-summary">{item.summary || ''}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      ) : null}
-    </>
+    <WebUiTheme>
+      <KnowledgeMap
+        key={sessionId ?? 'none'}
+        nodes={nodes}
+        currentNode={currentNode}
+        history={history}
+        updatedLabel={new Date().toISOString().slice(0, 10)}
+        strings={knowledgeStrings()}
+        onSnapshot={saveKnowledgeBoundarySnapshot}
+        onGo={(index) => { void jumpToKnowledgeNode(index); }}
+        onConfidence={(index, value) => patchKnowledgeNode(index, { confidence_score: value })}
+        onNote={(index, value) => updateKnowledgeNodeNote(index, value)}
+        onPractice={(index) => { void practiceKnowledgeNode(index); }}
+        conceptStatus={conceptStatus}
+      />
+    </WebUiTheme>
   );
 }
 

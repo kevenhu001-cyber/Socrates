@@ -174,3 +174,15 @@ test('scaffold definition tags become slots via the pipeline', () => {
   const html = buildAssistantHtml('<definition><term>Entropy</term><body>Disorder.</body></definition>');
   assert.match(html, /data-definition-id="/);
 });
+
+test('a proof nested in a theorem folds into the theorem slot instead of vanishing', async () => {
+  const { extractScaffoldWidgets } = await import('../src/render/scaffoldPipeline.ts');
+  const out = extractScaffoldWidgets(
+    '<theorem><title>T</title><statement>S</statement><proof><body>Because.</body></proof></theorem>',
+    { t: (key) => key, esc: (value) => String(value) },
+  );
+  assert.equal(out.theoremPH.length, 1);
+  assert.equal(out.theoremPH[0].parsed.proofBody, 'Because.');
+  assert.equal(out.proofPH.length, 0, 'the hoisted proof no longer waits for a slot that was replaced');
+  assert.doesNotMatch(out.text, /proof-slot/);
+});

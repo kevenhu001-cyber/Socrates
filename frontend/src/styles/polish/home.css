@@ -81,3 +81,20 @@
   #appShell .home-quick-actions,
   body[data-app-mode="tutor"] #appShell .home-tutor-starters { margin-bottom: 6px; }
 }
+
+/* RN-4 — learning modes under the landing composer (above it on phones,
+   like the other entry points). The control draws itself; this only places
+   the host. */
+#appShell .home-learning-modes {
+  display: block;
+  width: min(100%, var(--ui-content-chat));
+  margin: 16px auto 0;
+}
+
+@media (max-width: 768px) {
+  #appShell .home-learning-modes {
+    order: -1;
+    width: 100%;
+    margin: 0 0 12px;
+  }
+}

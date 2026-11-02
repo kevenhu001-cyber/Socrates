@@ -19,6 +19,7 @@ interface MistakeEntry {
   quizSlotId: string | null;
   resolved?: boolean;
   isResolved?: boolean;
+  analysis?: { whyWrong: string | null; correctApproach: string | null };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -48,7 +49,16 @@ function parseMistakeEntry(value: unknown): MistakeEntry | null {
     quizSlotId: typeof value.quizSlotId === 'string' ? value.quizSlotId : null,
     resolved: value.resolved === true,
     isResolved: value.isResolved === true,
+    ...parseAnalysis(value.analysis),
   };
+}
+
+/* RN-6: keep the AI analysis when entries are re-read and re-written. */
+function parseAnalysis(value: unknown): { analysis?: { whyWrong: string | null; correctApproach: string | null } } {
+  if (!isRecord(value)) return {};
+  const whyWrong = typeof value.whyWrong === 'string' && value.whyWrong.trim() ? value.whyWrong : null;
+  const correctApproach = typeof value.correctApproach === 'string' && value.correctApproach.trim() ? value.correctApproach : null;
+  return whyWrong || correctApproach ? { analysis: { whyWrong, correctApproach } } : {};
 }
 
 function readMistakes(stateStore: MistakeStore): MistakeEntry[] {
@@ -239,6 +249,10 @@ export function createMistakeBook({
       source: mistake.type === 'practice' ? 'practice' : 'quiz',
     });
     saveCurrentSession();
+    /* RN-6: the model writes "where it went wrong" and "the right way". */
+    void import('../tutor/mistakeAnalysis.ts')
+      .then(({ analyzeMistake }) => analyzeMistake(mistake.id))
+      .catch((error) => reportSwallow(error, 'ui/mistakeBook.analyze'));
   }
 
   function removeMistakeForQuizSlot(slotId: string) {

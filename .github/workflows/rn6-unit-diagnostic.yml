@@ -1,0 +1,72 @@
+name: RN-6 unit diagnostics
+
+on:
+  push:
+    branches: [hark/rn-6]
+
+permissions:
+  contents: read
+
+jobs:
+  changed-unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --include=dev --prefer-offline --no-audit --no-fund
+      - name: assistantHtml.test.mjs
+        id: assistant_html
+        continue-on-error: true
+        run: npx tsx --tsconfig tsconfig.test.json --test test/assistantHtml.test.mjs
+      - name: learningContent.test.mjs
+        id: learning_content
+        continue-on-error: true
+        run: npx tsx --tsconfig tsconfig.test.json --test test/learningContent.test.mjs
+      - name: markdownScaffolds.test.mjs
+        id: markdown_scaffolds
+        continue-on-error: true
+        run: npx tsx --tsconfig tsconfig.test.json --test test/markdownScaffolds.test.mjs
+      - name: streaming.test.mjs
+        id: streaming
+        continue-on-error: true
+        run: npx tsx --tsconfig tsconfig.test.json --test test/streaming.test.mjs
+      - name: teachingModules.test.mjs
+        id: teaching_modules
+        continue-on-error: true
+        run: npx tsx --tsconfig tsconfig.test.json --test test/teachingModules.test.mjs
+      - name: widgetRuntime.test.mjs
+        id: widget_runtime
+        continue-on-error: true
+        run: npx tsx --tsconfig tsconfig.test.json --test test/widgetRuntime.test.mjs
+      - name: Fail if any diagnostic test failed
+        if: always()
+        env:
+          ASSISTANT_HTML: ${{ steps.assistant_html.outcome }}
+          LEARNING_CONTENT: ${{ steps.learning_content.outcome }}
+          MARKDOWN_SCAFFOLDS: ${{ steps.markdown_scaffolds.outcome }}
+          STREAMING: ${{ steps.streaming.outcome }}
+          TEACHING_MODULES: ${{ steps.teaching_modules.outcome }}
+          WIDGET_RUNTIME: ${{ steps.widget_runtime.outcome }}
+        run: |
+          printf '%s\n' \
+            "assistantHtml=$ASSISTANT_HTML" \
+            "learningContent=$LEARNING_CONTENT" \
+            "markdownScaffolds=$MARKDOWN_SCAFFOLDS" \
+            "streaming=$STREAMING" \
+            "teachingModules=$TEACHING_MODULES" \
+            "widgetRuntime=$WIDGET_RUNTIME"
+          [[ "$ASSISTANT_HTML" == success && \
+             "$LEARNING_CONTENT" == success && \
+             "$MARKDOWN_SCAFFOLDS" == success && \
+             "$STREAMING" == success && \
+             "$TEACHING_MODULES" == success && \
+             "$WIDGET_RUNTIME" == success ]]
