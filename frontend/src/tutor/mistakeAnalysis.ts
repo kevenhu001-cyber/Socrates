@@ -55,7 +55,7 @@ export async function analyzeMistake(id: string): Promise<void> {
       'You are a tutor writing a mistake-book entry for a learner who answered a question wrong.\n' +
       'whyWrong: in one or two sentences, name the specific misconception or slip the learner\'s answer reveals (not just that it is wrong). ' +
       'correctApproach: in two or three sentences, show the line of reasoning that reaches the correct answer, so the learner could redo it alone.\n' +
-      'Write in ' + languageName(getCurrentLanguage()) + ', matching the language of the question. Use $...$ for any math.\n' +
+      'Write in ' + languageName(getCurrentLanguage()) + ', matching the language of the question. The mistake card shows plain text, so write math in plain notation (x², 2x, (xⁿ)′ = n·xⁿ⁻¹), never LaTeX or $ delimiters.\n' +
       'Output ONLY one JSON object, no code fences: {"whyWrong":"...","correctApproach":"..."}\n' + STRING_RULE;
     const msgs: ChatRequestMessage[] = [{ role: 'system', content: prompt }, { role: 'user', content: describeMistake(entry) }];
     const resp = await callAPI(msgs, 1500);
