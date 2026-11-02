@@ -32,9 +32,7 @@
               color var(--ui-duration-fast) var(--ui-ease-apple, ease);
 }
 @media (max-width: 768px) {
-#appShell .top-bar .icon-btn,
-#appShell .top-bar .find-btn,
-#appShell .top-bar .share-btn {
+#appShell .top-bar .icon-btn {
   color: var(--ui-text-tertiary);
   transition: background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
               color var(--ui-duration-fast) var(--ui-ease-apple, ease);
@@ -45,9 +43,7 @@
   color: var(--foreground);
 }
 @media (max-width: 768px) {
-#appShell .top-bar .icon-btn:hover,
-#appShell .top-bar .find-btn:hover,
-#appShell .top-bar .share-btn:hover {
+#appShell .top-bar .icon-btn:hover {
   background: var(--accent);
   color: var(--foreground);
 }
@@ -95,6 +91,3 @@ body.plugins-active #appShell .mobile-newchat-btn {
 }
 
 /* In-chat affordances (share/find/model) keep the same quiet skin. */
-@media (max-width: 768px) {
-#appShell .top-bar-right .share-btn .share-btn-label { font-weight: var(--ui-font-weight-medium); }
-}

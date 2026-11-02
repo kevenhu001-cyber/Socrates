@@ -431,6 +431,7 @@ export const en = {
     "tutor.mastery.step2":"2. Examining",
     "tutor.mastery.step3":"3. Insight",
     "tutor.mastery.step4":"4. Mastery",
+    "tutor.mastery.progress":"Step {n} of {total}",
     "tutor.suggestion.prefix":"Suggested follow-ups:",
     "sidebar.more.shortcuts":"Keyboard shortcuts",
     "sidebar.more.signOut":"Sign out",

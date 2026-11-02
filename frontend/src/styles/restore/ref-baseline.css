@@ -642,31 +642,16 @@ body.workspace-active #appShell .main-page {
   /* Mobile header controls: the hardcoded dark-on-light palette only
      works on the black phone canvas. In light mode invert the circle
      buttons and give the icon-only actions a dark glyph. */
-  [data-mode="light"] #appShell #sidebarOpenBtn,
-  [data-mode="light"] #appShell #mobileIncognitoBtn {
+  [data-mode="light"] #appShell #sidebarOpenBtn {
     border-color: rgb(0 0 0 / 10%) !important;
     background: hsl(0 0% 100% / 96%) !important;
     color: hsl(0 0% 14%) !important;
     box-shadow: 0 1px 3px rgb(0 0 0 / 8%) !important;
   }
 
-  [data-mode="light"] #appShell #sidebarOpenBtn:hover,
-  [data-mode="light"] #appShell #mobileIncognitoBtn:hover {
+  [data-mode="light"] #appShell #sidebarOpenBtn:hover {
     background: hsl(0 0% 93%) !important;
     color: hsl(0 0% 4%) !important;
-  }
-
-  [data-mode="light"] #appShell #findBtn,
-  [data-mode="light"] #appShell #shareBtn {
-    color: hsl(0 0% 22%) !important;
-  }
-
-  [data-mode="light"] #appShell #findBtn:hover,
-  [data-mode="light"] #appShell #shareBtn:hover,
-  [data-mode="light"] #appShell #findBtn:focus-visible,
-  [data-mode="light"] #appShell #shareBtn:focus-visible {
-    background: rgb(0 0 0 / 6%) !important;
-    color: hsl(0 0% 6%) !important;
   }
 }
 

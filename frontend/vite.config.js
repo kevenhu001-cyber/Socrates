@@ -426,6 +426,7 @@ export default defineConfig({
       '@socrates/ui/think': fileURLToPath(new URL('../packages/ui/src/think/index.ts', import.meta.url)),
       '@socrates/ui/study': fileURLToPath(new URL('../packages/ui/src/study/index.ts', import.meta.url)),
       '@socrates/ui/composer': fileURLToPath(new URL('../packages/ui/src/composer/index.ts', import.meta.url)),
+      '@socrates/ui/shell': fileURLToPath(new URL('../packages/ui/src/shell/index.ts', import.meta.url)),
       'react-native': 'react-native-web',
     },
     /* packages/ have no node_modules of their own: resolve their bare React

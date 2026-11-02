@@ -108,8 +108,7 @@ test('mobile conversation home matches the compact dark reference layout', async
      without invoking a networked share action so this remains visual QA. */
   const headerVisual = await page.evaluate(() => {
     document.body.dataset.conversationActive = 'true';
-    document.getElementById('findBtn')?.classList.remove('hidden');
-    document.getElementById('shareBtn')?.classList.remove('hidden');
+    window.__testShowConversationActions(true);
     const measure = (selector) => {
       const el = document.querySelector(selector);
       const rect = el?.getBoundingClientRect();

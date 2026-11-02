@@ -412,6 +412,7 @@ export const zh = {
     "tutor.mastery.step2":"2. 反思辨析",
     "tutor.mastery.step3":"3. 归纳洞察",
     "tutor.mastery.step4":"4. 融会贯通",
+    "tutor.mastery.progress":"第 {n} 步 / 共 {total} 步",
     "tutor.suggestion.prefix":"启发式追问：",
     "sidebar.more.shortcuts":"键盘快捷键",
     "sidebar.more.signOut":"退出登录",

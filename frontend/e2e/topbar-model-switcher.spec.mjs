@@ -28,7 +28,7 @@ test('header is a 52px bar with the switcher at the top-left', async ({ page }) 
   expect(Math.round(g.swH)).toBe(36);
   expect(Math.round(g.swCy)).toBe(26);
   expect(g.swLeft).toBeLessThanOrEqual(12);
-  await expect(page.locator('#topModelSwitcher .top-model-switcher-name')).toHaveText('Socrates');
+  await expect(page.locator('#topModelSwitcher [data-part="model-brand"]')).toHaveText('Socrates');
 });
 
 test('switcher toggles the configuration menu below it and closes on outside click', async ({ page }) => {
@@ -71,10 +71,10 @@ test('phones name the model in a chip instead of an unlabelled settings glyph', 
   await expect(page.locator('#topModelSwitcher')).toBeVisible();
   /* The chip carries the resolved model name; the brand lockup and the
      settings glyph are desktop/empty-state fallbacks. */
-  await expect(page.locator('#topModelSwitcher .top-model-switcher-model')).toBeVisible();
-  await expect(page.locator('#topModelSwitcher .top-model-switcher-model')).toHaveText(/\S/);
-  await expect(page.locator('#topModelSwitcher .top-model-switcher-name')).toBeHidden();
-  await expect(page.locator('#topModelSwitcher .top-model-switcher-settings')).toBeHidden();
+  await expect(page.locator('#topModelSwitcher [data-part="model-name"]')).toBeVisible();
+  await expect(page.locator('#topModelSwitcher [data-part="model-name"]')).toHaveText(/\S/);
+  await expect(page.locator('#topModelSwitcher [data-part="model-brand"]')).toBeHidden();
+  await expect(page.locator('#topModelSwitcher [data-part="model-settings"]')).toBeHidden();
   await expect(page.locator('#topModeSwitch')).toBeVisible();
   /* The chip must clear the centred mode switch rather than run under it. */
   const gap = await page.evaluate(() => {

@@ -244,11 +244,6 @@
   /* The legacy mobile pass forces session-only actions visible with
      ID selectors, which outrank `.hidden`. Re-assert hidden here so
      workspace pages don't show find/share before a chat starts. */
-  #appShell #findBtn.hidden,
-  #appShell #shareBtn.hidden,
-  #appShell #mobileIncognitoBtn.hidden {
-    display: none !important;
-  }
 
   #appShell .top-mode-tabs {
     width: 174px;

@@ -385,62 +385,8 @@
 /* =========================================================================
  * Socratic Mastery Pill & Proactive Cognitive Scaffolding Chips
  * ======================================================================= */
-.tutor-mastery-pill.hidden,
 .socratic-suggestions.hidden {
   display: none;
-}
-
-.tutor-mastery-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-panel);
-  border: 1px solid var(--ui-border-subtle);
-  font-size: var(--ui-font-size-xs);
-  color: var(--foreground);
-  flex: 0 0 auto;
-  user-select: none;
-}
-
-.tutor-mastery-stage-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ui-accent-action);
-  box-shadow: 0 0 6px var(--ui-accent-action);
-}
-
-.tutor-mastery-stage-label {
-  font-weight: var(--ui-font-weight-medium);
-  color: var(--foreground);
-}
-
-.tutor-mastery-stage-steps {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.tutor-mastery-stage-steps .step-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--ui-border-strong);
-  transition: background var(--ui-duration-hover), transform var(--ui-duration-hover);
-}
-
-.tutor-mastery-stage-steps .step-dot.active {
-  background: var(--ui-accent-action);
-  transform: scale(1.25);
-}
-
-@media (max-width: 768px) {
-  .tutor-mastery-stage-steps {
-    display: none;
-  }
 }
 
 /* RN-4 — the question chain (packages/ui/src/think) draws itself; the

@@ -81,8 +81,7 @@ body,
 }
 }
 
-#appShell#appShell #sidebarOpenBtn,
-#appShell#appShell #mobileIncognitoBtn {
+#appShell#appShell #sidebarOpenBtn {
   width: 40px !important;
   min-width: 40px !important;
   height: 40px !important;
@@ -93,30 +92,9 @@ body,
   box-shadow: none !important;
 }
 
-@media (max-width: 768px) {
-
-#appShell#appShell #findBtn,
-#appShell#appShell #shareBtn {
-  border-radius: 50%;
-  background: transparent !important;
-  color: var(--conversation-text-secondary, var(--conversation-text-muted)) !important;
-  box-shadow: none;
-}
-}
-
-#appShell#appShell #sidebarOpenBtn:hover,
-#appShell#appShell #mobileIncognitoBtn:hover {
+#appShell#appShell #sidebarOpenBtn:hover {
   background: var(--conversation-control) !important;
   color: var(--conversation-text) !important;
-}
-
-@media (max-width: 768px) {
-
-#appShell#appShell #findBtn:hover,
-#appShell#appShell #shareBtn:hover {
-  background: var(--conversation-control) !important;
-  color: var(--conversation-text) !important;
-}
 }
 
 /* Landing ---------------------------------------------------------------- */
@@ -391,14 +369,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
      here — forcing the editor host into row 2 collapsed the editor row
      and painted the placeholder underneath the controls. */
 
-
-
-  #appShell#appShell #findBtn svg,
-  #appShell#appShell #shareBtn svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
   /* The composer fade must land on the active page colour in either mode. */
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar {
     background: linear-gradient(to bottom, transparent, var(--conversation-page) 24px) !important;
@@ -624,9 +594,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
      with no !important, so leaving it out of this list rendered the two
      header actions at different sizes (44 vs 40) and different weights on
      the phone landing. e2e/mobile-home-visual.spec.mjs asserts both at 44. */
-  body:not([data-conversation-active="true"]) #appShell#appShell #sidebarOpenBtn,
-  body:not([data-conversation-active="true"]) #appShell#appShell #mobileIncognitoBtn,
-  body:not([data-conversation-active="true"]) #appShell#appShell #mobileNewChatBtn {
+  body:not([data-conversation-active="true"]) #appShell#appShell #sidebarOpenBtn {
     width: 44px !important;
     min-width: 44px !important;
     height: 44px !important;

@@ -133,26 +133,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 /* §8.5 — practice progress chip. Now an inline span inside
  * the chat header (sits next to the mode chip when the exercise
  * stage is active). Tiny, glanceable, no emoji. */
-.practice-progress-chip{
-  display:inline-flex;align-items:center;gap:6px;
-  margin-left:6px;
-  font-size:calc(10px * var(--app-font-scale, 1));
-  color:hsl(var(--text-500));
-  flex-shrink:0;
-}
-.practice-progress-chip-phase{
-  background:hsl(var(--accent-000)/0.10);
-  color:hsl(var(--accent-000));
-  padding:0 6px;
-  border-radius:3px;
-  font-weight:var(--ui-font-weight-medium);
-  letter-spacing:.02em;
-}
-.practice-progress-chip-attempts{
-  color:hsl(var(--text-500));
-  font-variant-numeric:tabular-nums;
-  font-size:calc(10px * var(--app-font-scale, 1));
-}
 
 /* §9.4 — resolved mistake cards are visually muted. The user
  * still sees them (the audit noted they should be retained as

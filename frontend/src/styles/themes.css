@@ -654,8 +654,7 @@ html[data-theme="philosophy"] .greeting,
 html[data-theme="philosophy"] .topic-title,
 html[data-theme="philosophy"] .auth-brand span,
 html[data-theme="philosophy"] .sidebar-logo span,
-html[data-theme="philosophy"] .home-tutor-starters h2,
-html[data-theme="philosophy"] .tutor-mastery-stage-label {
+html[data-theme="philosophy"] .home-tutor-starters h2 {
   font-family: var(--font-display);
   letter-spacing: -0.015em;
 }

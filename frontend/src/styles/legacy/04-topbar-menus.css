@@ -205,18 +205,11 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .top-bar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s;flex-shrink:0}
 .toggle-sidebar:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}.toggle-sidebar svg{width:16px;height:16px}
-.share-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:background-color .18s var(--ease-out),color .18s var(--ease-out),border-color .18s var(--ease-out);cursor:pointer;line-height:1;flex-shrink:0}
-.share-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
-.share-btn svg{stroke:currentColor}
 /* P0.2 — in-session Find button (top bar, next to Share). Square icon
    button; mirrors the .share-btn accent-on-hover treatment. */
-.find-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border-radius:6px;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);transition:background-color .18s var(--ease-out),color .18s var(--ease-out),border-color .18s var(--ease-out);cursor:pointer;flex-shrink:0}
-.find-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
-.find-btn svg{width:14px;height:14px;stroke:currentColor}
 /* Share is icon-only at every viewport: the conversation top bar frames
    it as a 40px circle, and the text label would squeeze the 14px glyph
    to zero width (flex-shrink) on desktop, leaving a bare "Share" text. */
-.share-btn .share-btn-label{display:none}
 
 /* P1.4 — "↓ new reply" pill shown when the user has scrolled up
    during a stream. Tapping it scrolls back to the bottom and

@@ -191,14 +191,6 @@
     min-height: 26px;
   }
 
-  #appShell#appShell#appShell #findBtn,
-#appShell#appShell#appShell #shareBtn {
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-  }
-
   /* P_has-invalidation — see ui/layoutStateMirror.js. */
   :where(:root[data-topic-setup-open]) #appShell#appShell #mainInner:not(#_n):not(._n) {
     padding-bottom: 0 !important;

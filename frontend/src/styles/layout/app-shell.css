@@ -16,9 +16,7 @@
 #appShell .top-bar-right { z-index: 2; }
 }
 
-#appShell #sidebarOpenBtn,
-#appShell #mobileIncognitoBtn,
-#appShell #mobileNewChatBtn {
+#appShell #sidebarOpenBtn {
   width: var(--ui-control-touch);
   min-width: var(--ui-control-touch);
   height: var(--ui-control-touch);
@@ -30,47 +28,12 @@
   box-shadow: none;
 }
 
-@media (max-width: 768px) {
-
-#appShell #findBtn,
-#appShell #shareBtn {
-  width: var(--ui-control-touch);
-  min-width: var(--ui-control-touch);
-  height: var(--ui-control-touch);
-  min-height: var(--ui-control-touch);
-  border: 0;
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--muted-foreground);
-  box-shadow: none;
-}
-}
-
-#appShell #sidebarOpenBtn:hover,
-#appShell #mobileIncognitoBtn:hover,
-#appShell #mobileNewChatBtn:hover {
+#appShell #sidebarOpenBtn:hover {
   background: var(--accent);
   color: var(--foreground);
 }
 
-@media (max-width: 768px) {
-
-#appShell #findBtn:hover,
-#appShell #shareBtn:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
-}
-
-#appShell #sidebarOpenBtn svg,
-#appShell #mobileIncognitoBtn svg,
-#appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
-
-@media (max-width: 768px) {
-
-#appShell #findBtn svg,
-#appShell #shareBtn svg { width: 24px; height: 24px; }
-}
+#appShell #sidebarOpenBtn svg { width: 24px; height: 24px; }
 
 #appShell .mobile-newchat-btn { display: none; }
 #appShell .toggle-sidebar .glyph-hamburger { display: none; }
