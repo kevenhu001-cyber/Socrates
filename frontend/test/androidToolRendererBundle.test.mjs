@@ -6,18 +6,23 @@ import { build } from 'esbuild';
 
 // Mirrors `bundleToolRenderer` in apps/socrates-android/app/build.gradle.kts.
 // The native Android build bundles the visualization renderer with plain
-// esbuild. Keep Vite-only asset semantics that enter the shared graph explicit
-// here so a frontend change cannot silently break the Android build.
+// esbuild. Keep Vite-only asset and module-resolution semantics explicit here
+// so a frontend change cannot silently break the Android build.
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
+const frontendNodeModules = fileURLToPath(new URL('../node_modules/', import.meta.url));
 const gradle = readFileSync(new URL('../../apps/socrates-android/app/build.gradle.kts', import.meta.url), 'utf8');
 const externals = [...gradle.matchAll(/"--external:([^"]+)"/g)].map((match) => match[1]);
 const loader = {
   '.svg': 'text',
   '.png': 'dataurl',
 };
+const resolveExtensions = ['.web.tsx', '.web.ts', '.web.mjs', '.web.js', '.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'];
 
-test('Android tool renderer bundles with esbuild and leaves tldraw out', async () => {
+test('Android tool renderer bundles with frontend web resolution and leaves tldraw out', async () => {
   assert.ok(externals.includes('./visualizationWhiteboard.ts'), 'gradle keeps the whiteboard module external');
+  assert.match(gradle, /environment\("NODE_PATH", repositoryRoot\.resolve\("frontend\/node_modules"\)/, 'gradle resolves shared-package dependencies from frontend');
+  assert.match(gradle, /"--alias:react-native=react-native-web"/, 'gradle compiles shared RN components through RN Web');
+  assert.match(gradle, /"--resolve-extensions=\.web\.tsx,\.web\.ts,\.web\.mjs,\.web\.js,\.mjs,\.js,\.mts,\.ts,\.jsx,\.tsx,\.json"/, 'gradle prefers web platform files');
   assert.match(gradle, /"--loader:\.svg=text"/, 'gradle preserves Vite ?raw SVG semantics');
   assert.match(gradle, /"--loader:\.png=dataurl"/, 'gradle keeps connector PNGs self-contained');
   const result = await build({
@@ -28,6 +33,9 @@ test('Android tool renderer bundles with esbuild and leaves tldraw out', async (
     platform: 'browser',
     target: 'es2020',
     define: { 'process.env.NODE_ENV': '"production"' },
+    alias: { 'react-native': 'react-native-web' },
+    nodePaths: [frontendNodeModules],
+    resolveExtensions,
     external: externals,
     loader,
     write: false,
