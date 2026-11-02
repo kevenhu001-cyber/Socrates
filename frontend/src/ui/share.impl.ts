@@ -23,6 +23,7 @@ import { publishShareState, type ShareVisibility } from './shareState.ts';
 import type { MessageEntry } from './messageActions.ts';
 import { getCurrentUser } from '../app/lifecycle.ts';
 import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
+import { readTopbarState, setTopbarState } from '../react/topbar/topbarStore.ts';
 import { hideGate } from '../auth/index.ts';
 import { dispatchExam, dispatchUi } from '../store/index.ts';
 import type { ExamQuestion } from '../exam/types.ts';
@@ -123,22 +124,11 @@ function _publishShareState() {
    state mutations still update the React subscriber via `_publishShareState`. */
 
 function toggleShareBtn() {
-  const btn = document.getElementById("shareBtn");
-  if (!btn) return;
-  /* P_share-btn-hidden — the .share-btn starts with class
-     "share-btn hidden" (index.html:388). The .hidden utility class
-     is `.hidden { display: none !important }` (styles.css:1979),
-     which beats any inline `style.display` we set. We must toggle
-     the class itself, not the style attribute. */
+  /* RN-7 — share and find share one visibility rule (only useful while a
+     conversation or exam is on screen). The top bar renders from the
+     header store; nothing here touches the buttons. */
   const show = !!(getCurrentUser() && (stateStore.read("currentSessionId") || stateStore.read("_examInView")));
-  btn.classList.toggle("hidden", !show);
-  /* P0.2 — the in-session Find button lives next to Share in the
-     top bar and shares the exact same visibility rule (only useful
-     when a conversation is on screen). Toggle it in lock-step here
-     so we don't need a second lifecycle hook. When hidden, also make
-     sure the find bar itself is dismissed. */
-  const findBtn = document.getElementById("findBtn");
-  if (findBtn) findBtn.classList.toggle("hidden", !show);
+  setTopbarState({ conversationActions: show });
   if (!show) {
     try { closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:75'); }
   }
@@ -257,8 +247,7 @@ function createSharedViewRestorer(
     inputBarWasHidden: boolean;
     topBar: HTMLElement | null;
     topBarDisplay: string;
-    shareBtn: HTMLElement | null;
-    shareButtonDisplay: string;
+    sharedViewWas: boolean;
     composer: HTMLElement | null;
     composerAriaDisabled: string | null;
     recentsPane: HTMLElement | null;
@@ -272,7 +261,7 @@ function createSharedViewRestorer(
     }
     saved.inputBar?.classList.toggle('hidden', saved.inputBarWasHidden);
     if (saved.topBar) saved.topBar.style.display = saved.topBarDisplay;
-    if (saved.shareBtn) saved.shareBtn.style.display = saved.shareButtonDisplay;
+    setTopbarState({ sharedView: saved.sharedViewWas });
     if (saved.composer) {
       if (saved.composerAriaDisabled === null) saved.composer.removeAttribute('aria-disabled');
       else saved.composer.setAttribute('aria-disabled', saved.composerAriaDisabled);
@@ -285,7 +274,6 @@ function createSharedViewRestorer(
 function captureSharedViewShell(
   inputBar: HTMLElement | null,
   topBar: HTMLElement | null,
-  shareBtn: HTMLElement | null,
   composer: HTMLElement | null,
   recentsPane: HTMLElement | null,
 ) {
@@ -294,8 +282,7 @@ function captureSharedViewShell(
     inputBarWasHidden: Boolean(inputBar?.classList.contains('hidden')),
     topBar,
     topBarDisplay: topBar?.style.display ?? '',
-    shareBtn,
-    shareButtonDisplay: shareBtn?.style.display ?? '',
+    sharedViewWas: readTopbarState().sharedView,
     composer,
     composerAriaDisabled: composer?.getAttribute('aria-disabled') ?? null,
     recentsPane,
@@ -306,13 +293,12 @@ function captureSharedViewShell(
 function applySharedViewOverrides(
   inputBar: HTMLElement | null,
   topBar: HTMLElement | null,
-  shareBtn: HTMLElement | null,
   composer: HTMLElement | null,
   recentsPane: HTMLElement | null,
 ) {
   inputBar?.classList.add("hidden");
   if (topBar) topBar.style.display = "none";
-  if (shareBtn) shareBtn.style.display = "none";
+  setTopbarState({ sharedView: true });
   composer?.setAttribute("aria-disabled", "true");
   recentsPane?.classList.add("hidden");
 }
@@ -324,14 +310,13 @@ function _switchToSharedChatView() {
   const bannerNextSibling = banner?.nextSibling || null;
   const inputBar = document.getElementById("chatInputBar");
   const topBar = document.querySelector(".chat-top-bar") as HTMLElement | null;
-  const shareBtn = document.getElementById("shareBtn");
   const composer = document.getElementById("composerRoot");
   const recentsPane = document.getElementById("recentsPane");
 
-  const saved = captureSharedViewShell(inputBar, topBar, shareBtn, composer, recentsPane);
+  const saved = captureSharedViewShell(inputBar, topBar, composer, recentsPane);
   activateMainView("chatView", document);
   displayReadOnlyBanner(banner);
-  applySharedViewOverrides(inputBar, topBar, shareBtn, composer, recentsPane);
+  applySharedViewOverrides(inputBar, topBar, composer, recentsPane);
 
   sharedShellRestore = createSharedViewRestorer(banner, bannerParent, bannerNextSibling, saved);
   hideAuthGate();

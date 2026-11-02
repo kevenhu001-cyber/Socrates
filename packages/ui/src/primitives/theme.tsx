@@ -8,6 +8,7 @@
  */
 import { createContext, useContext, type ReactNode } from 'react';
 import { uiColors, uiFont, type UiColors } from '@socrates/theme';
+import type { UiIconRenderer } from './UiIcon';
 
 export interface UiThemeValue {
   readonly colors: UiColors;
@@ -15,20 +16,23 @@ export interface UiThemeValue {
   readonly fontFamily: string;
   /** Multiplier on the type ladder (the web shell's text-size preference). */
   readonly typeScale: number;
+  /** Draws `UiIcon` glyph data (web: inline svg). Null draws a blank box. */
+  readonly iconRenderer: UiIconRenderer | null;
 }
 
-const defaultTheme: UiThemeValue = { colors: uiColors.light, fontFamily: uiFont.sans, typeScale: 1 };
+const defaultTheme: UiThemeValue = { colors: uiColors.light, fontFamily: uiFont.sans, typeScale: 1, iconRenderer: null };
 
 const UiThemeContext = createContext<UiThemeValue>(defaultTheme);
 
-export function UiThemeProvider({ colors, fontFamily, typeScale, children }: {
+export function UiThemeProvider({ colors, fontFamily, typeScale, iconRenderer, children }: {
   colors: UiColors;
   fontFamily?: string;
   typeScale?: number;
+  iconRenderer?: UiIconRenderer | null;
   children: ReactNode;
 }) {
   return (
-    <UiThemeContext.Provider value={{ colors, fontFamily: fontFamily ?? uiFont.sans, typeScale: typeScale ?? 1 }}>
+    <UiThemeContext.Provider value={{ colors, fontFamily: fontFamily ?? uiFont.sans, typeScale: typeScale ?? 1, iconRenderer: iconRenderer ?? null }}>
       {children}
     </UiThemeContext.Provider>
   );

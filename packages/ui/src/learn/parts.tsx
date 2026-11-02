@@ -5,12 +5,12 @@
  * and nothing here draws a dot.
  */
 import { type ReactNode } from 'react';
-import { Animated, Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
-import { uiRadius, uiSpace } from '@socrates/theme';
+import { Animated, Pressable, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { Chevron, useReveal } from '../turn/parts';
+import { Chevron, useReducedMotion, useReveal } from '../turn/parts';
+import { H, R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useLearnHost } from './host';
 
 /** react-native-web turns `dataSet` into `data-*` attributes; native ignores it. */
@@ -20,8 +20,21 @@ export function dataSet(values: Record<string, string | number | undefined>): ob
   return { dataSet: clean };
 }
 
-export const CARD_PAD = uiSpace[4];
+export const CARD_PAD = S[300];
+/** Phones: the card keeps 16px of air so the reply column stays readable. */
+export const CARD_PAD_COMPACT = S[200];
+export const CARD_COMPACT_WIDTH = 769;
 
+export function useCardPad(): number {
+  const { width } = useWindowDimensions();
+  return width < CARD_COMPACT_WIDTH ? CARD_PAD_COMPACT : CARD_PAD;
+}
+
+/**
+ * The site's product-preview card (`.demo-app`): a white sheet with the
+ * hairline-ring lift (`--site-shadow-1`), a 44px head carrying the kind as a
+ * quiet title and an optional tag, then the body on a 24px inset.
+ */
 export function ScaffoldCard({ kind, label, trailing, children, testID, accessibilityLabel }: {
   kind: string;
   label: string;
@@ -31,6 +44,7 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
   accessibilityLabel?: string;
 }) {
   const { colors } = useUiTheme();
+  const pad = useCardPad();
   return (
     <View
       testID={testID ?? `scaffold-${kind}`}
@@ -38,10 +52,9 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
       aria-label={accessibilityLabel ?? label}
       {...dataSet({ scaffold: kind })}
       style={{
-        borderRadius: uiRadius.lg,
-        borderWidth: 1,
-        borderColor: colors.hairline,
+        borderRadius: R.card,
         backgroundColor: colors.card,
+        boxShadow: shadow(colors, 'raised'),
         overflow: 'hidden',
       }}
     >
@@ -50,18 +63,73 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: uiSpace[2],
-          minHeight: 36,
-          paddingHorizontal: CARD_PAD,
-          paddingVertical: uiSpace[2],
+          gap: S[100],
+          minHeight: H.head,
+          paddingHorizontal: pad,
+          paddingVertical: S[75],
           borderBottomWidth: 1,
           borderBottomColor: colors.hairline,
         }}
       >
-        <UiText variant="labelSm" tone="tertiary" numberOfLines={1} style={{ flexShrink: 1 }}>{label}</UiText>
+        <UiText variant="labelSm" tone="ink" numberOfLines={1} style={{ flexShrink: 1 }}>{label}</UiText>
         {trailing ?? null}
       </View>
-      <View style={{ padding: CARD_PAD, gap: uiSpace[3] }}>{children}</View>
+      <View style={{ paddingHorizontal: pad, paddingTop: pad, paddingBottom: pad, gap: S[200] }}>{children}</View>
+    </View>
+  );
+}
+
+/** Site `.ui-tag`: a 24px capsule, pale fill, quiet caption. `line` is the white, ringed variant. */
+export function Tag({ label, tone = 'fill', testID }: { label: string; tone?: 'fill' | 'line' | 'ink'; testID?: string }) {
+  const { colors } = useUiTheme();
+  return (
+    <View
+      testID={testID}
+      style={{
+        alignSelf: 'flex-start',
+        flexShrink: 0,
+        height: H.tag,
+        justifyContent: 'center',
+        paddingHorizontal: 10,
+        borderRadius: R.pill,
+        backgroundColor: tone === 'ink' ? colors.ink : tone === 'line' ? colors.card : colors.fill,
+        boxShadow: tone === 'line' ? insetRing(colors.hairlineStrong) : undefined,
+      }}
+    >
+      <UiText variant="labelSm" tone={tone === 'ink' ? 'onInk' : 'secondary'} numberOfLines={1} style={{ fontWeight: '400' }}>{label}</UiText>
+    </View>
+  );
+}
+
+/**
+ * Site `.rc-face`: the tinted inner sheet (#f9f9f9 + 6% hairline ring) that
+ * holds a prompt, a hint or an explanation inside a card.
+ */
+export function Sheet({ children, label, testID, live, style, emphasis }: {
+  children: ReactNode;
+  label?: string;
+  testID?: string;
+  live?: boolean;
+  style?: StyleProp<ViewStyle>;
+  /** Ink ring: the sheet that carries the right answer / the key idea. */
+  emphasis?: boolean;
+}) {
+  const { colors } = useUiTheme();
+  const { subtle } = sheets(colors);
+  return (
+    <View
+      testID={testID}
+      aria-live={live ? 'polite' : undefined}
+      style={[{
+        gap: S[75],
+        padding: S[200],
+        borderRadius: R.row,
+        backgroundColor: emphasis ? colors.card : subtle,
+        boxShadow: insetRing(emphasis ? colors.ink : colors.hairline, emphasis ? 1.5 : 1),
+      }, style]}
+    >
+      {label ? <SectionLabel>{label}</SectionLabel> : null}
+      {children}
     </View>
   );
 }
@@ -78,28 +146,29 @@ export function SectionLabel({ children }: { children: string }) {
   return <UiText variant="labelSm" tone="tertiary">{children}</UiText>;
 }
 
-/** Hairline-ruled sub-section inside a card (hints, solutions, explanation). */
-export function Section({ label, children, testID, live }: { label?: string; children: ReactNode; testID?: string; live?: boolean }) {
-  const { colors } = useUiTheme();
+/**
+ * Sub-section inside a card (hints, solutions, explanation): a tinted
+ * `.rc-face` sheet that fades in once when it opens.
+ */
+export function Section({ label, children, testID, live, emphasis }: { label?: string; children: ReactNode; testID?: string; live?: boolean; emphasis?: boolean }) {
   const reveal = useReveal(true, 4);
   return (
-    <Animated.View
-      testID={testID}
-      aria-live={live ? 'polite' : undefined}
-      style={[{ borderTopWidth: 1, borderTopColor: colors.hairline, paddingTop: uiSpace[3], gap: uiSpace[2] }, reveal]}
-    >
-      {label ? <SectionLabel>{label}</SectionLabel> : null}
-      {children}
+    <Animated.View style={reveal}>
+      <Sheet label={label} testID={testID} live={live} emphasis={emphasis}>{children}</Sheet>
     </Animated.View>
   );
 }
 
 /**
- * Small capsule action. `quiet` is a text-weight pill (pale fill on hover),
- * `solid` the black capsule, `soft` the grey capsule. `chevron` shows a
- * disclosure chevron and wires `aria-expanded`.
+ * Capsule action, the site's 36px button (`.rc-flip` / `.rc-grade`):
+ *   quiet  white with an inset 12% ring, `#f9f9f9` on hover;
+ *          `selected` deepens the ring to 1.5px ink (`[aria-pressed]`);
+ *   soft   the 4% grey capsule (`.home-text-link`);
+ *   solid  the black capsule.
+ * `chevron` shows a disclosure chevron and wires `aria-expanded`.
+ * `size="sm"` is the 32px variant for dense rows (card heads, tool rows).
  */
-export function PillAction({ label, onPress, tone = 'quiet', disabled, expanded, chevron, selected, testID, accessibilityLabel, controls, data }: {
+export function PillAction({ label, onPress, tone = 'quiet', disabled, expanded, chevron, selected, testID, accessibilityLabel, controls, data, size = 'md', leading }: {
   label: string;
   onPress?: () => void;
   tone?: 'quiet' | 'soft' | 'solid';
@@ -111,15 +180,23 @@ export function PillAction({ label, onPress, tone = 'quiet', disabled, expanded,
   accessibilityLabel?: string;
   controls?: string;
   data?: Record<string, string | number | undefined>;
+  size?: 'sm' | 'md';
+  leading?: ReactNode;
 }) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
   const { scale, hovered, focused, handlers } = usePressFeedback();
-  const inked = tone === 'solid' || selected === true;
-  const background = inked
-    ? (hovered && !disabled ? colors.inkHover : colors.ink)
+  const live = hovered && !disabled;
+  const { subtle } = sheets(colors);
+  const background = tone === 'solid'
+    ? (live ? colors.inkHover : colors.ink)
     : tone === 'soft'
-      ? (hovered && !disabled ? colors.fillHover : colors.fill)
-      : (hovered && !disabled ? colors.fill : 'transparent');
+      ? (live ? colors.fillHover : colors.fill)
+      : (live ? subtle : colors.card);
+  const ring = tone === 'quiet'
+    ? insetRing(selected ? colors.ink : colors.hairlineStrong, selected ? 1.5 : 1)
+    : (tone === 'soft' && selected ? insetRing(colors.ink, 1.5) : undefined);
+  const pad = size === 'sm' ? S[100] : S[200];
   return (
     <Pressable
       role="button"
@@ -139,35 +216,37 @@ export function PillAction({ label, onPress, tone = 'quiet', disabled, expanded,
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: uiSpace[1],
-          height: 32,
-          paddingLeft: tone === 'quiet' ? uiSpace[2] : uiSpace[3],
-          paddingRight: chevron ? uiSpace[2] : (tone === 'quiet' ? uiSpace[2] : uiSpace[3]),
-          borderRadius: uiRadius.pill,
-          borderWidth: tone === 'quiet' && !inked ? 1 : 0,
-          borderColor: colors.hairline,
+          gap: S[50],
+          height: size === 'sm' ? 32 : H.action,
+          paddingLeft: leading ? pad - 2 : pad,
+          paddingRight: chevron ? pad - 4 : pad,
+          borderRadius: R.pill,
           backgroundColor: background,
-          opacity: disabled ? 0.45 : 1,
-          outlineStyle: focused ? 'solid' : undefined,
-          outlineWidth: focused ? 2 : 0,
-          outlineColor: colors.ink,
-          outlineOffset: 2,
+          boxShadow: ring,
+          opacity: disabled ? 0.4 : 1,
+          ...focusRing(colors, focused),
+          ...transition('background-color, box-shadow', reduced),
           transform: [{ scale }],
         }}
       >
-        <UiText variant="labelSm" tone={inked ? 'onInk' : 'ink'} numberOfLines={1}>{label}</UiText>
-        {chevron ? <Chevron open={Boolean(expanded)} size={6} tone="secondary" /> : null}
+        {leading ?? null}
+        <UiText variant="labelSm" tone={tone === 'solid' ? 'onInk' : 'ink'} numberOfLines={1}>{label}</UiText>
+        {chevron ? <Chevron open={Boolean(expanded)} size={6} tone={tone === 'solid' ? 'ink' : 'secondary'} /> : null}
       </Animated.View>
     </Pressable>
   );
 }
 
-export function ActionRow({ children }: { children: ReactNode }) {
-  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: uiSpace[2] }}>{children}</View>;
+export function ActionRow({ children, end }: { children: ReactNode; end?: boolean }) {
+  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: end ? 'flex-end' : 'flex-start', gap: S[75] }}>{children}</View>;
 }
 
-/** ✓ / ✕ glyph in a hairline square: the verdict mark next to feedback. */
-export function VerdictGlyph({ verdict, size = 18 }: { verdict: 'correct' | 'incorrect'; size?: number }) {
+/**
+ * ✓ / ✕ verdict mark (site `.ui-check`): a filled ink disc with a white
+ * tick for right, a ringed disc with a grey cross for wrong. It carries a
+ * glyph, so it reads as a mark, not as a dot.
+ */
+export function VerdictGlyph({ verdict, size = 20 }: { verdict: 'correct' | 'incorrect'; size?: number }) {
   const { colors } = useUiTheme();
   const right = verdict === 'correct';
   return (
@@ -176,15 +255,14 @@ export function VerdictGlyph({ verdict, size = 18 }: { verdict: 'correct' | 'inc
       style={{
         width: size,
         height: size,
-        borderRadius: 6,
+        borderRadius: R.pill,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: right ? colors.ink : 'transparent',
-        borderWidth: right ? 0 : 1,
-        borderColor: colors.hairlineStrong,
+        backgroundColor: right ? colors.ink : colors.card,
+        boxShadow: right ? undefined : insetRing(colors.hairlineStrong, 1.5),
       }}
     >
-      <UiText variant="labelSm" tone={right ? 'onInk' : 'secondary'} style={{ fontSize: size * 0.62, lineHeight: size }}>{right ? '✓' : '✕'}</UiText>
+      <UiText variant="labelSm" tone={right ? 'onInk' : 'secondary'} style={{ fontSize: 11, lineHeight: size }}>{right ? '✓' : '✕'}</UiText>
     </View>
   );
 }

@@ -431,6 +431,7 @@ export const en = {
     "tutor.mastery.step2":"2. Examining",
     "tutor.mastery.step3":"3. Insight",
     "tutor.mastery.step4":"4. Mastery",
+    "tutor.mastery.progress":"Step {n} of {total}",
     "tutor.suggestion.prefix":"Suggested follow-ups:",
     "sidebar.more.shortcuts":"Keyboard shortcuts",
     "sidebar.more.signOut":"Sign out",
@@ -1023,9 +1024,9 @@ export const en = {
     "tutor.practiceSelfCorrect":"Correct!",
     "tutor.practiceSelfWrong":"Not quite. The correct answer is:",
     "tutor.practiceSent":"Sent for review.",
-    "tutor.quizCorrect":"Correct ({answer}).",
+    "tutor.quizCorrect":"Correct (option {answer}).",
     "tutor.quizRecorded":"Recorded: {letter}.",
-    "tutor.quizWrong":"Not quite. The correct answer is {answer}.",
+    "tutor.quizWrong":"Not quite. The correct answer is option {answer}.",
     "tutor.revealAnswer":"Reveal answer",
     "tutor.showHint":"Show hint",
     "tutor.showSolution":"Show solution",
@@ -1656,7 +1657,8 @@ export const en = {
     "learnMode.mistakes.hint":"Turn questions you missed into the next step on the chain.",
     /* RN-5 knowledge map, diagnostic, mistakes */
     "kb.graphLabel":"Knowledge map — drag to pan",
-    "kb.caption":"Darker = better mastered · lines follow your learning path",
+    "kb.captionMastery":"Darker = better mastered",
+    "kb.caption":"Lines follow your learning path",
     "kb.zoomIn":"Zoom in",
     "kb.zoomOut":"Zoom out",
     "kb.zoomFit":"Fit to view",
@@ -1687,7 +1689,7 @@ export const en = {
     "diag.allFamiliar":"Every dimension has some footing; keep the pace brisk.",
     "diag.rank":"#{n}",
     /* RN-6 AI-written learning content */
-    "kb.captionConcepts":"Darker = better mastered · lines are how the ideas relate",
+    "kb.captionConcepts":"Lines are how the ideas relate",
     "kb.updating":"Updating definitions and connections…",
     "kb.updateFailed":"Could not update the map this time.",
     "kb.definition":"Definition",
@@ -1697,7 +1699,11 @@ export const en = {
     "mistakes.answerGiven":"Your answer",
     "mistakes.answerKeyed":"Correct answer",
     "mistakes.toNextQuestion":"Make it the next question",
-    "mistakes.toNextQuestionBusy":"Writing the question…"
+    "mistakes.toNextQuestionBusy":"Writing the question…",
+    "recents.group.today":"Today",
+    "recents.group.yesterday":"Yesterday",
+    "recents.group.previous7":"Previous 7 days",
+    "recents.group.previous30":"Previous 30 days"
 };
 
 export default en;

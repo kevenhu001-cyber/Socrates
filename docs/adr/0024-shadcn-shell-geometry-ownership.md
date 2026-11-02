@@ -34,7 +34,7 @@ React 表面是两套心智模型。
 ### C. 照搬 shadcn 默认尺寸
 
 组件自带 32/36/40 的默认档。但仓库已经用 `docs/ref/mobile-reference-2026-10-04.md` 与 8 张
-composer 快照钉死了像素值（composer 85、plus/send 36、tools 菜单 244–260 × 300–368），
+composer 快照钉死了像素值（composer 90、plus/send 36、tools 菜单 244–260 × 300–368），
 照搬默认值等于重做全部视觉基线。否决。
 
 ## 决策

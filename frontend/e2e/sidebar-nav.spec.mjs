@@ -144,7 +144,7 @@ test('desktop share control renders its svg, not the text label', async ({ page 
      read as bare "Share" text instead of the icon. */
   await page.evaluate(() => {
     document.body.dataset.conversationActive = 'true';
-    document.getElementById('shareBtn')?.classList.remove('hidden');
+    window.__testShowConversationActions(true);
   });
   const share = await page.locator('#shareBtn').evaluate((el) => {
     const svg = el.querySelector('svg');
@@ -157,7 +157,8 @@ test('desktop share control renders its svg, not the text label', async ({ page 
   });
   expect(share.svgWidth).toBeGreaterThan(0);
   expect(share.svgHeight).toBeGreaterThan(0);
-  expect(share.labelDisplay).toBe('none');
+  /* RN-7: desktop share is icon-only; there is no label node at all. */
+  expect(share.labelDisplay ?? 'none').toBe('none');
 });
 
 test('Exam is a direct sidebar destination', async ({ page }) => {
@@ -299,11 +300,7 @@ test('Admin console is a standalone /admin page with no sidebar entry', async ({
 test('Admin page hides the conversation top-bar controls', async ({ page }) => {
   // Simulate an active session: the chat runtime unhides the share /
   // find actions, while React keeps the model switcher in the shell.
-  await page.evaluate(() => {
-    for (const id of ['shareBtn', 'findBtn']) {
-      document.getElementById(id)?.classList.remove('hidden');
-    }
-  });
+  await page.evaluate(() => window.__testShowConversationActions(true));
   await page.evaluate(() => window.__socratesLegacy.navigation.openNav('admin'));
   await expect(page.locator('#adminPanel')).toBeVisible();
   const displays = await page.locator('#shareBtn, #findBtn, #topModelSwitcher').evaluateAll((els) =>

@@ -20,15 +20,6 @@
 }
 
 @media (min-width: 769px) {
-  html[data-theme="socrates"] body,
-  html[data-theme="socrates"] #appShell,
-  html[data-theme="socrates"] #appShell .main,
-  html[data-theme="socrates"] #appShell .main-content,
-  html[data-theme="socrates"] #appShell .main-bg {
-    background: var(--background) !important;
-    background-color: var(--background) !important;
-  }
-
   #appShell#appShell #topicSetup {
     padding-top: 0 !important;
     padding-inline: 24px !important;

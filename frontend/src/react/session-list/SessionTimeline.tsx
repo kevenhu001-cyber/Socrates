@@ -19,6 +19,32 @@ type SessionTimelineProps = Pick<
   currentSessionId: string | null;
 };
 
+/* Bucket names come out of the model in English (they double as stable
+   keys); the heading the user reads is localized here. */
+const TIME_GROUP_KEYS: Record<string, string> = {
+  Pinned: 'sidebar.organize.pinned',
+  Today: 'recents.group.today',
+  Yesterday: 'recents.group.yesterday',
+  'Previous 7 days': 'recents.group.previous7',
+  'Previous 30 days': 'recents.group.previous30',
+};
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function localizeTimeGroup(group: string): string {
+  const key = TIME_GROUP_KEYS[group];
+  if (key) return i18n(key, group);
+  const month = MONTHS.indexOf(group);
+  if (month >= 0) {
+    const lang = document.documentElement.lang || undefined;
+    try {
+      return new Intl.DateTimeFormat(lang, { month: 'long' }).format(new Date(2000, month, 1));
+    } catch (_) {
+      return group;
+    }
+  }
+  return group;
+}
+
 export function SessionTimeline({
   sessions,
   currentSessionId,
@@ -56,7 +82,7 @@ export function SessionTimeline({
       for (const session of section.sessions) {
         const group = timeGroupLabel(session, today);
         if (organization === 'list' && group !== previousGroup) {
-          result.push({ key: 'group-' + group + '-' + session.id, heading: group });
+          result.push({ key: 'group-' + group + '-' + session.id, heading: localizeTimeGroup(group) });
         }
         previousGroup = group;
         result.push({ key: session.id, session });

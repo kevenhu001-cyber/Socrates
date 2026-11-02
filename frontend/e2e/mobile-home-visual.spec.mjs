@@ -46,12 +46,12 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.left?.width).toBe(44);
   expect(geometry.left?.height).toBe(44);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Empty-home mobile composer uses the reference's two-row 85px stack
+  /* Empty-home mobile composer uses the reference's two-row 90px stack
      (editor on row 1, add/dictation/send controls on row 2). The height
      follows the owner's padding/row-gap/editor metrics — see
      docs/ref/mobile-reference-2026-10-04.md and the arithmetic in
      e2e/mobile-composer-reference.spec.mjs. */
-  expect(geometry.composer?.height).toBe(85);
+  expect(geometry.composer?.height).toBe(90);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   /* The empty-state capsule pins to the bottom action band: its foot rests
      on the safe-area inset above the viewport bottom, not in the old
@@ -106,10 +106,16 @@ test('mobile conversation home matches the compact dark reference layout', async
   /* The active-chat header uses the reference's one tactile navigation
      control plus two unframed utilities. Expose the session-only controls
      without invoking a networked share action so this remains visual QA. */
-  const headerVisual = await page.evaluate(() => {
+  await page.evaluate(() => {
     document.body.dataset.conversationActive = 'true';
-    document.getElementById('findBtn')?.classList.remove('hidden');
-    document.getElementById('shareBtn')?.classList.remove('hidden');
+    window.__testShowConversationActions(true);
+  });
+  /* 顶栏由 store 驱动，React 异步提交后查找/分享按钮才出现；等它们渲染完成再测量。 */
+  await expect.poll(() => page.evaluate(() => [
+    document.querySelector('#findBtn')?.getBoundingClientRect().width ?? 0,
+    document.querySelector('#shareBtn')?.getBoundingClientRect().width ?? 0,
+  ].every((width) => width > 0))).toBe(true);
+  const headerVisual = await page.evaluate(() => {
     const measure = (selector) => {
       const el = document.querySelector(selector);
       const rect = el?.getBoundingClientRect();
@@ -189,7 +195,7 @@ test('mobile conversation home matches the compact dark reference layout', async
     localStorage.setItem('socrates-reasoning-effort', 'high');
     window.dispatchEvent(new CustomEvent('socrates:chat-preferences', { detail: { effort: 'high', speed: 'standard' } }));
   });
-  await expect(composer.locator('.effort-picker')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
   /* Focus is geometry-neutral; the second row appears only after the draft
      actually renders on more than one line. */
@@ -199,18 +205,18 @@ test('mobile conversation home matches the compact dark reference layout', async
   const afterFocus = (await composer.boundingBox())?.height ?? 0;
   expect(Math.abs(afterFocus - beforeFocus)).toBeLessThanOrEqual(2);
   /* The pill stays visible inside the idle capsule, like the reference. */
-  await expect(composer.locator('.effort-picker')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
   await editor.fill('This topic is deliberately long enough to wrap onto a second rendered line in the compact mobile field.');
   await expect.poll(async () => (await composer.boundingBox())?.height ?? 0)
     .toBeGreaterThan(beforeFocus + 36);
-  await expect(composer.locator('.effort-picker')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
   /* The landing composer mirrors the reference controls row: a dedicated
      dictation mic sits beside the voice/send primary. */
-  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(1);
-  await expect(composer.locator('.mobile-mic-btn')).toBeVisible();
-  await expect(composer.locator('.composer-primary-btn')).toBeVisible();
-  await expect(composer.locator('.composer-primary-btn')).toHaveAttribute('aria-label', 'Send');
+  await expect(composer.locator('#composerMicBtn')).toHaveCount(1);
+  await expect(composer.locator('#composerMicBtn')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=send]')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=send]')).toHaveAttribute('aria-label', 'Send');
 
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
@@ -241,5 +247,5 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.locator('#composerToolsBtn').click();
   const activeThinking = menu.getByRole('menuitemcheckbox', { name: 'Think deeper' });
   await expect(activeThinking).toHaveClass(/is-active/);
-  await expect(activeThinking.locator('.composer-tools-active-dot')).toBeVisible();
+  await expect(activeThinking.locator('.composer-tools-active-check')).toBeVisible();
 });

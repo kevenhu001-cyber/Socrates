@@ -5,7 +5,8 @@
  */
 import { useRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
-import { uiRadius, uiSpace, uiType } from '@socrates/theme';
+import { uiType } from '@socrates/theme';
+import { H, R, S, insetRing, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { useLearnHost } from './host';
@@ -70,6 +71,7 @@ function HintLevels({ hints, reveal, setReveal }: { hints: readonly string[]; re
 function AnswerBox({ onSubmitAnswer, onRevealAnswer, hasAnswerKey }: Pick<ProblemCardProps, 'onSubmitAnswer' | 'onRevealAnswer' | 'hasAnswerKey'>) {
   const { strings } = useLearnHost();
   const { colors, fontFamily, typeScale } = useUiTheme();
+  const { subtle } = sheets(colors);
   const [value, setValue] = useState('');
   const [focused, setFocused] = useState(false);
   const [done, setDone] = useState(false);
@@ -89,7 +91,7 @@ function AnswerBox({ onSubmitAnswer, onRevealAnswer, hasAnswerKey }: Pick<Proble
     setDone(true);
   };
   return (
-    <View style={{ gap: uiSpace[2] }}>
+    <View style={{ gap: S[100] }}>
       <TextInput
         multiline
         numberOfLines={3}
@@ -104,12 +106,16 @@ function AnswerBox({ onSubmitAnswer, onRevealAnswer, hasAnswerKey }: Pick<Proble
         onBlur={() => setFocused(false)}
         style={{
           minHeight: 84,
-          paddingHorizontal: uiSpace[3],
-          paddingVertical: 10,
-          borderRadius: uiRadius.md,
-          borderWidth: 1,
-          borderColor: focused ? colors.ink : colors.hairline,
-          backgroundColor: done ? colors.fill : colors.card,
+          paddingHorizontal: S[200],
+          paddingVertical: S[100],
+          borderRadius: R.row,
+          borderWidth: 0,
+          /* Site question box: hairline ring at rest, a deeper ring plus a
+             4px halo on focus — never a colour. */
+          boxShadow: focused
+            ? `${insetRing(colors.inkTertiary)}, 0 0 0 4px ${colors.fill}`
+            : insetRing(colors.hairlineStrong),
+          backgroundColor: done ? subtle : colors.card,
           color: colors.ink,
           fontFamily,
           fontSize: uiType.bodySm.size * typeScale,
@@ -118,13 +124,13 @@ function AnswerBox({ onSubmitAnswer, onRevealAnswer, hasAnswerKey }: Pick<Proble
           outlineStyle: 'none',
         } as object}
       />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: uiSpace[2], minHeight: 32 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: S[75], minHeight: H.action }}>
         <View
           testID="practice-feedback"
           role="status"
           aria-live="polite"
           {...dataSet({ state: feedback.state })}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: uiSpace[2], flexShrink: 1, flexGrow: 1 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: S[75], flexShrink: 1, flexGrow: 1 }}
         >
           {feedback.state === 'ok' || (feedback.state === 'bad' && done) ? <VerdictGlyph verdict={feedback.state === 'ok' ? 'correct' : 'incorrect'} /> : null}
           {feedback.rich ? <Rich source={feedback.rich} part="practice-answer" style={{ flexShrink: 1 }} /> : null}

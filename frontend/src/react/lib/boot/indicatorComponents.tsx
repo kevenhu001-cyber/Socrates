@@ -1,4 +1,3 @@
-import { Icon } from '../../../ui/Icon';
 /**
  * Indicator components — small React roots registered by the boot registry.
  *
@@ -10,15 +9,8 @@ import { Icon } from '../../../ui/Icon';
 
 import { useEffect, useRef } from 'react';
 import { useUiStore } from '../../../store/index.ts';
-import { useChatStreamStatus, useIsChatStreaming } from '../../useChatRuntime';
-import { useSendGlyphStore } from '../../../ui/sendGlyph.store.ts';
+import { useIsChatStreaming } from '../../useChatRuntime';
 
-const ICON_PROPS = {
-  fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
-} as const;
-
-function SendArrowIcon() { return <Icon name="arrowUp" strokeWidth={2.25} className="icon-arrow" />; }
-function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2" className="icon-stop"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
 /* The pill's visibility is part of the sticky-bottom contract: while an
    answer streams, a reader who scrolls away gets the "↓ New reply"
    affordance and clicking it re-pins. `_userScrolledAway` is owned by the
@@ -47,26 +39,5 @@ export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
   return <>↓ New reply</>;
 }
 
-/* One primary action: the send arrow, or the stop square while a turn
-   streams. P_composer-primary-split retired the idle voice waveform — the
-   microphone is the only dictation control, so the primary never changes
-   identity with the draft. The .active class is mirrored by the existing
-   composer state controller. */
-export function PrimaryButton() {
-  const streamStatus = useChatStreamStatus();
-  /* ui/sendGlyph.js holds `.is-sending` for one short beat after a
-     composer submit: render the departing arrow over the arriving stop
-     glyph so the swap reads as one motion instead of arrow → stop flicker
-     while the draft clears and the stream starts. */
-  const sending = useSendGlyphStore((state) => state.isSending);
-  if (sending) {
-    return (
-      <>
-        <span className="send-glyph send-glyph-out"><SendArrowIcon /></span>
-        <span className="send-glyph send-glyph-in"><StopSquareIcon /></span>
-      </>
-    );
-  }
-  if (streamStatus === 'streaming') return <StopSquareIcon />;
-  return <SendArrowIcon />;
-}
+/* The composer's primary send / stop control moved to the shared React
+   Native rail in RN-7 (packages/ui/src/composer/ComposerControls.tsx). */

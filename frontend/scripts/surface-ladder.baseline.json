@@ -42,6 +42,7 @@
       }
     },
     "socrates": {
+      "paperCanvas": true,
       "scale": "geist",
       "shared": true,
       "legacyTolerance": 0.05,
@@ -65,16 +66,16 @@
       },
       "light": {
         "page": {
+          "step": "background-100",
+          "value": "#ffffff"
+        },
+        "rail": {
           "step": "background-200",
           "value": "#fafafa"
         },
-        "rail": {
+        "panel": {
           "step": "gray-100",
           "value": "#f2f2f2"
-        },
-        "panel": {
-          "step": "gray-200",
-          "value": "#ebebeb"
         },
         "elevated": {
           "step": "background-100",

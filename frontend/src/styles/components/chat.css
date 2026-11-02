@@ -286,6 +286,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .msg-toolbar-btn.is-speaking{color:var(--primary-foreground);background:var(--primary);animation:readAloudPulse 1.4s ease-in-out infinite}
 .msg-toolbar-btn.is-speaking:hover{background:var(--primary)}
 .msg-toolbar-btn svg{width:16px;height:16px}
+/* 消息工具栏的所有图标（复制、编辑、重新生成、赞/踩、分享、分支、朗读、换个角度、「更多」、版本切换箭头）
+   统一画成屏幕上的 1.5px 线：non-scaling-stroke 让线宽按渲染像素算，
+   不随 18px（桌面）/16px（手机）的缩放或 2.5 的箭头描边变化。 */
+.msg-toolbar-btn svg :is(path,line,polyline,polygon,rect,circle,ellipse){vector-effect:non-scaling-stroke;stroke-width:1.5px}
 @keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
 #appShell#appShell .msg-toolbar {
   color: var(--ui-text-tertiary);

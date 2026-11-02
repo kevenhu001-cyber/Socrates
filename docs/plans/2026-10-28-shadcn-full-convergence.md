@@ -37,7 +37,7 @@ React 组件树。
 - 表单语义：原生 `<form>` + `FormData` 的提交路径不变；文件/颜色/范围输入保留原生
   元素与其 ref、事件契约。
 - 密度基线：`docs/ref/mobile-reference-2026-10-04.md` 与 composer 快照钉死的像素
-  （composer 85、plus/send 36、tools 菜单 244–260 × 300–368）不得漂移；移动端密度
+  （composer 90、plus/send 36、tools 菜单 244–260 × 300–368）不得漂移；移动端密度
   是独立参考，不与桌面对齐。
 - 守卫：`check-surface-ownership`、`check-css-debt`、`check-button-sizes`、
   `check-z-index`、`check-focus-ring`、`check-surface-ladder` 继续有效，且基线只降不升。

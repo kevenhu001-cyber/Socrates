@@ -29,10 +29,10 @@ async function composerSignature(page, selector) {
       border: style.borderColor,
       radius: style.borderRadius,
       editor: childRect('.rich-composer-editor'),
-      attach: childRect('.attach-btn'),
-      effort: childRect('.effort-picker'),
-      mic: childRect('.mobile-mic-btn'),
-      send: childRect('.composer-primary-btn,.composer-primary-btn'),
+      attach: childRect('#composerToolsBtn'),
+      effort: childRect('[data-composer-control=effort]'),
+      mic: childRect('#composerMicBtn'),
+      send: childRect('[data-composer-control=send]'),
     };
   });
 }
@@ -48,7 +48,7 @@ test('typing into topic input enables the Start button; clicking does not throw'
   await expect(topicInput).toBeAttached({ timeout: 5_000 });
   await expect(topicInput).toBeVisible({ timeout: 5_000 });
 
-  const startBtn = page.locator('button.composer-primary-btn, .composer-primary-btn').first();
+  const startBtn = page.locator('[data-composer-control=send]').first();
   await expect(startBtn).toBeAttached();
 
   // Capture console errors during the click.
@@ -168,8 +168,11 @@ test('canceling Tutor topic analysis prevents the pending start from entering ch
   expect(diagnosticState, `unexpected Tutor state; model requests: ${modelRequests.join(', ')}`)
     .toMatchObject({ mode: 'tutor', mainView: 'diagnosticView' });
   expect(modelRequests, 'Tutor topic analysis should be waiting on the mocked model response').not.toHaveLength(0);
-  await expect(page.locator('#diagnosticView .diag-cancel-btn')).toBeVisible();
-  await page.locator('#diagnosticView .diag-cancel-btn').click();
+  /* The diagnostic is the RN panel (packages/ui/src/study); its cancel pill
+     carries `data-diag-command`, the legacy `.diag-cancel-btn` class is gone. */
+  const cancelDiagnostic = page.locator('#diagnosticView [data-diag-command="cancel"]');
+  await expect(cancelDiagnostic).toBeVisible();
+  await cancelDiagnostic.click();
   await expect(page.locator('#topicSetup')).toBeVisible();
 
   releaseModelResponse();
@@ -340,7 +343,7 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
   await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('deepResearch');
   expect(await page.evaluate(() => typeof window.deepResearchOn)).toBe('undefined');
 
-  await page.locator('button.composer-primary-btn, .composer-primary-btn').first().click();
+  await page.locator('[data-composer-control=send]').first().click();
 
   await expect(page.locator('#topicSetup')).toBeHidden();
   await expect(page.locator('#chatView')).toBeVisible();

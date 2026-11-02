@@ -112,7 +112,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     letter-spacing: -0.015em;
     white-space: nowrap;
   }
-  #appShell #sidebarHeader .sidebar-logo-img { width: var(--ui-space-xl); height: var(--ui-space-xl); border-radius: var(--ui-radius-sm); }
+  #appShell #sidebarHeader .sidebar-logo-img { width: var(--ui-space-xl); height: var(--ui-space-xl); border-radius: var(--ui-radius-sm); filter: grayscale(1) contrast(1.05); }
   #appShell #sidebarHeader .sidebar-logo > span { font: inherit; }
   #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader > div:last-child,
@@ -509,8 +509,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
   #appShell #sidebar.collapsed .sidebar-resize-handle { display: none; }
   #appShell #sidebar.collapsed #sidebarNav .nav-new-badge { display: none; }
   /* Labels stay in the accessibility tree so each icon keeps its name. */
-  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > span[data-i18n-key],
-  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
+  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > [data-part="nav-label"] {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -712,3 +711,86 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
 /* Window slots preserve measured row heights; spacers must not flex-shrink. */
 #appShell #sidebar .recents-window-row { display: flow-root; flex-shrink: 0; }
 #appShell #sidebar .recents-window-row[data-timeline-index="0"] > .recents-time-label { padding-top: 0; }
+
+/* RN-7 — one line weight for every outline glyph on this surface. The
+   icons come from several sources (viewBox 16/20/24, stroke 1.6–2.2), so the
+   width is set in screen pixels with a non-scaling stroke: every glyph draws
+   the same 1.5px line whatever its viewBox or rendered size. */
+#appShell #sidebar svg[stroke="currentColor"] :is(path, line, polyline, polygon, rect, circle, ellipse) {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5px;
+}
+
+/* ── RN-7 — site shell: a grey frame with the white canvas as a card ─────
+   The marketing site sets white cards on a grey sheet (public.css
+   --site-color-surface behind --site-color-raised, shadow-1). The app
+   takes the same frame on desktop: the rail sits on the grey, and the
+   conversation is one white 16px card inset 8px, its edge a hairline
+   folded into the soft shadow. Rows round to 12; the current row is a
+   small white card of its own, hover is the 4% fill. */
+@media (min-width: 769px) {
+  body #appShell { background: var(--ui-surface); }
+  body #appShell .main { background: transparent; padding-top: var(--ui-step-75); padding-right: var(--ui-step-75); padding-bottom: var(--ui-step-75); }
+  /* The card stays opaque on the empty home too: layoutStateMirror's
+     topic-setup rule dims `.main-bg` to 0.1 at (1,3,0) specificity. */
+  body #appShell .main:not(#_n) .main-bg {
+    inset: var(--ui-step-75) var(--ui-step-75) var(--ui-step-75) var(--app-sidebar-width, 260px);
+    border-radius: var(--ui-round-lg);
+    background: var(--ui-canvas);
+    background-image: none;
+    opacity: 1;
+    box-shadow: var(--ui-elevation-raised);
+  }
+  body #appShell .main-content { background: transparent; border-radius: 0 0 var(--ui-round-lg) var(--ui-round-lg); }
+
+  #appShell #sidebar { background: transparent; border-right: 0; }
+
+  #appShell #sidebar .recent-item,
+  #appShell #sidebarNav .sidebar-nav-btn { border-radius: var(--ui-round-md); }
+  #appShell #sidebar .recent-item:hover,
+  #appShell #sidebar .recent-item:focus-within,
+  #appShell #sidebarNav .sidebar-nav-btn:hover { background: var(--ui-fill); }
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current="true"],
+  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"],
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell #sidebarNav #navNew.sidebar-nav-btn {
+    background: var(--ui-card);
+    box-shadow: var(--ui-elevation-raised);
+    color: var(--ui-ink);
+  }
+
+  /* Search: a white pill with a hairline ring, deepening on focus. */
+  #appShell #sidebar .sidebar-search,
+  #appShell #sidebar .sidebar-search:hover {
+    border: 0;
+    background: var(--ui-card);
+    box-shadow: var(--ui-elevation-ring);
+  }
+  #appShell #sidebar .sidebar-search:focus-within { border: 0; background: var(--ui-card); box-shadow: 0 0 0 1px var(--ui-hairline-focus); }
+
+  /* Header icon controls: 4% fill on hover, pill-round. */
+  #appShell #newChatBtn,
+  #appShell #sidebarCloseBtn { border-radius: var(--ui-round-pill); }
+  #appShell #newChatBtn:hover,
+  #appShell #sidebarCloseBtn:hover { background: var(--ui-fill); }
+}
+
+/* Phones: the drawer is the grey sheet; rows keep the same 12 / white-card language. */
+@media (max-width: 768px) {
+  #appShell #sidebar .recent-item { border-radius: var(--ui-round-md); }
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current="true"] { background: var(--ui-card); box-shadow: var(--ui-elevation-raised); }
+}
+
+/* RN-7 — header icon actions are RN Pressables (packages/ui/src/shell).
+   react-native-web resets every view to `align-content: flex-start`, which
+   pins the glyph to the top of the phone's 40px `.btn-icon` grid; centre the
+   track instead. Display stays with the existing owners. */
+#appShell #sidebarHeader [data-sidebar-action] {
+  align-content: center;
+  justify-content: center;
+}
+/* Same reset on the nav rows: the phone drawer lays them out as a grid,
+   whose single track would otherwise sit at the top of the 48px row. */
+#appShell #sidebarNav .sidebar-nav-btn { align-content: center; }

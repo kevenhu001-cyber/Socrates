@@ -20,7 +20,7 @@ test('reference home keeps its bottom composer and phone configuration usable', 
      so compare the resolved channels: only the tone and notation changed. */
   const composerBackground = await composer.evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(rgbChannels(composerBackground)).toEqual([41, 41, 41]);
-  await expect(page.locator('#composerPrimaryBtn .icon-arrow')).toBeVisible();
+  await expect(page.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toBeVisible();
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);
   expect(rect.width).toBe(358);

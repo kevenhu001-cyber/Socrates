@@ -8,6 +8,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { uiColorsCssVars } from '@socrates/theme';
 import { UiThemeProvider } from '@socrates/ui/primitives';
 import { DISPLAY_PREFS_CHANGE_EVENT, displayPrefs } from '../../displayPrefs.ts';
+import { WebIconRenderer } from './WebIconRenderer';
 
 /* The shell's text-size preference is stored as 1.125 = 100%. */
 const BASE_FONT_PREF = 1.125;
@@ -34,5 +35,5 @@ export function useLocaleRefresh(): void {
 
 export function WebUiTheme({ children }: { children: ReactNode }) {
   const typeScale = useTypeScale();
-  return <UiThemeProvider colors={uiColorsCssVars} typeScale={typeScale}>{children}</UiThemeProvider>;
+  return <UiThemeProvider colors={uiColorsCssVars} typeScale={typeScale} iconRenderer={WebIconRenderer}>{children}</UiThemeProvider>;
 }

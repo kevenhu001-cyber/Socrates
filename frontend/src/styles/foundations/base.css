@@ -106,6 +106,21 @@ button { -webkit-tap-highlight-color: transparent; }
   box-shadow: none;
 }
 
+/* RN-7 — the brand mark renders in greyscale everywhere in the app shell
+   (sidebar, auth card, boot shell). The bitmap stays byte-identical to the
+   favicon; only its paint is neutralised so ink stays the only accent. */
+img.logo-img,
+img[src="/logo.png"],
+img[src="/logo-256.png"] {
+  filter: grayscale(1) contrast(1.05);
+}
+
+/* RN-7 — the boot shell keeps the shimmering wordmark only; its three-dot
+   loader was the last dotted decoration outside the streaming cue. */
+.boot-loading-dots {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;

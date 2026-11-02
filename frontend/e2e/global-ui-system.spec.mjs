@@ -59,7 +59,7 @@ for (const theme of ['light', 'dark']) {
 
 test('a long model name does not overlap mode controls when the sidebar narrows the header', async ({ page }) => {
   await openApp(page, 'light', 1010);
-  await page.locator('#topModelSwitcher .top-model-switcher-model').evaluate((node) => { node.textContent = 'A model with a deliberately long name for comparison'; });
+  await page.locator('#topModelSwitcher [data-part="model-name"]').evaluate((node) => { node.textContent = 'A model with a deliberately long name for comparison'; });
   for (const width of [1010, 820]) {
     await page.setViewportSize({ width, height: 900 });
     const model = page.locator('#topModelSwitcher');

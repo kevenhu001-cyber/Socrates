@@ -22,9 +22,9 @@ function t(key: string, fallback: string): string {
 }
 
 const QUICK_ACTIONS = [
-  { action: 'upload', label: 'home.quick.upload', fallback: 'Add images or files' },
-  { action: 'write', label: 'home.quick.write', fallback: 'Write or edit' },
-  { action: 'research', label: 'home.quick.research', fallback: 'Search the web' },
+  { action: 'upload', label: 'home.quick.upload', fallback: 'Add images or files', icon: 'paperclip' },
+  { action: 'write', label: 'home.quick.write', fallback: 'Write or edit', icon: 'pen' },
+  { action: 'research', label: 'home.quick.research', fallback: 'Search the web', icon: 'globe' },
 ] as const;
 
 const TUTOR_PROMPTS = ['understand', 'practice', 'plan'] as const;
@@ -88,9 +88,10 @@ export function HomeQuickActions({ host }: { host: HTMLElement }) {
 
   const items: HomeShortcut[] = QUICK_ACTIONS
     .filter(({ action }) => !dismissed.has(action))
-    .map(({ action, label, fallback }) => ({
+    .map(({ action, label, fallback, icon }) => ({
       id: action,
       label: t(label, fallback),
+      icon,
       pressed: action === 'research' ? searchEnabled : undefined,
     }));
 

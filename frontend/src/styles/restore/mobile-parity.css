@@ -18,16 +18,14 @@
    * ───────────────────────────────────────────────────────────── */
 
 
-  #appShell#appShell #sidebarOpenBtn,
-  #appShell#appShell #mobileIncognitoBtn {
+  #appShell#appShell #sidebarOpenBtn {
     border: 0 !important;
     background: transparent !important;
     color: var(--cg-text) !important;
     box-shadow: none !important;
   }
 
-  #appShell#appShell #sidebarOpenBtn:hover,
-  #appShell#appShell #mobileIncognitoBtn:hover {
+  #appShell#appShell #sidebarOpenBtn:hover {
     background: var(--cg-surface-hover) !important;
     color: var(--cg-text) !important;
   }
@@ -50,11 +48,6 @@
     color: var(--cg-text) !important;
     background: var(--cg-surface) !important;
     box-shadow: 0 1px 2px rgb(0 0 0 / 12%) !important;
-  }
-
-  #appShell#appShell #findBtn,
-  #appShell#appShell #shareBtn {
-    color: var(--cg-text-secondary) !important;
   }
 
   /* In-flow surfaces need no paint compensation: the visual-viewport pan
@@ -88,10 +81,6 @@
   /* Flatten the footer wrappers so the controls become grid items. */
 
   /* Attachment chips (when present) own the first row. */
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active) .attachment-chips {
-    grid-column: 1 / -1 !important;
-    grid-row: 1 !important;
-  }
 
   /* Editor — full-width top row. */
 
@@ -235,22 +224,7 @@
 
 
 
-  #appShell#appShell #findBtn svg,
-#appShell#appShell #shareBtn svg {
-    width: 24px !important;
-    height: 24px !important;
-    stroke-linecap: round !important;
-    stroke-linejoin: round !important;
-  }
-
-
-
-
-
-
-
-  #appShell#appShell #sidebarOpenBtn svg,
-#appShell#appShell #mobileIncognitoBtn svg {
+  #appShell#appShell #sidebarOpenBtn svg {
     stroke-linecap: round !important;
     stroke-linejoin: round !important;
   }

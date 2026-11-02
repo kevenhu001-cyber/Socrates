@@ -39,7 +39,7 @@ test('mobile composer groups tools and reflects the active tool', async ({ page 
     .toHaveAttribute('aria-checked', 'true');
   await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]'))
     .toHaveAttribute('role', 'menuitemcheckbox');
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"] .composer-tools-active-dot'))
+  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"] .composer-tools-active-check'))
     .toBeVisible();
   await menu.screenshot({ path: 'test-results/visual-qa/mobile-composer-tools.png' });
 

@@ -15,8 +15,7 @@
 
   /* Top bar icons keep 40px touch targets, quieter color. */
   #appShell .top-bar .toggle-sidebar,
-  #appShell .top-bar .mobile-newchat-btn,
-  #appShell .top-bar .mobile-incognito-btn {
+  #appShell .top-bar .mobile-newchat-btn {
     color: var(--muted-foreground);
   }
 

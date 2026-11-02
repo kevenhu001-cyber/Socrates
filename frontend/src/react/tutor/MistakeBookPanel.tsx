@@ -11,6 +11,7 @@ import { requestMistakeRedo } from '../../ui/mistakeBookCommands.ts';
 import { getPendingNextQuestion, subscribePendingNextQuestion, turnMistakeIntoNextQuestion } from '../../tutor/mistakeAnalysis.ts';
 import { i18n } from '../legacy/gateway';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
+import { useInlineMath } from '../rn/useInlineMath';
 
 function mistakeStrings(): MistakeStrings {
   const d = defaultMistakeStrings;
@@ -50,6 +51,7 @@ export function MistakeBookPanel() {
   const mistakes = useKbStore((snapshot) => snapshot.mistakes);
   const filter = useKbStore((snapshot) => snapshot.mistakeFilter);
   const pendingNextId = useSyncExternalStore(subscribePendingNextQuestion, getPendingNextQuestion);
+  const renderText = useInlineMath();
   useLocaleRefresh();
   return (
     <div className="mistake-book-rn" id="mistakesList">
@@ -62,6 +64,7 @@ export function MistakeBookPanel() {
           onRedo={requestMistakeRedo}
           onNextQuestion={(id) => { void turnMistakeIntoNextQuestion(id); }}
           pendingNextId={pendingNextId}
+          renderText={renderText}
         />
       </WebUiTheme>
     </div>

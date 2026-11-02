@@ -6,7 +6,8 @@
  */
 import { useEffect, useReducer, useRef } from 'react';
 import { Animated, Easing, Pressable, View } from 'react-native';
-import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
+import { uiMotion } from '@socrates/theme';
+import { H, R, S, focusRing, insetRing, sheets, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
@@ -26,6 +27,7 @@ export interface FlashcardCardProps {
 export function FlashcardCard({ front, back, onRate, testID }: FlashcardCardProps) {
   const { strings } = useLearnHost();
   const { colors } = useUiTheme();
+  const { subtle } = sheets(colors);
   const reduced = useReducedMotion();
   const [state, dispatch] = useReducer(flashcardReducer, initialFlashcardState);
   /* `shown` lags `state.face` by half a turn so the content swaps edge-on. */
@@ -71,17 +73,14 @@ export function FlashcardCard({ front, back, onRate, testID }: FlashcardCardProp
       >
         <Animated.View
           style={{
-            minHeight: 96,
-            padding: uiSpace[4],
-            gap: uiSpace[2],
-            borderRadius: uiRadius.md,
-            borderWidth: 1,
-            borderColor: hovered ? colors.hairlineStrong : colors.hairline,
-            backgroundColor: onBack ? colors.card : colors.fill,
-            outlineStyle: focused ? 'solid' : undefined,
-            outlineWidth: focused ? 2 : 0,
-            outlineColor: colors.ink,
-            outlineOffset: 2,
+            minHeight: 112,
+            padding: S[300],
+            gap: S[75],
+            borderRadius: R.row,
+            backgroundColor: subtle,
+            boxShadow: insetRing(hovered ? colors.hairlineStrong : colors.hairline),
+            ...focusRing(colors, focused),
+            ...transition('box-shadow', reduced),
             opacity: fade,
             transform: [{ perspective: 900 }, { rotateY }],
           }}
@@ -92,9 +91,9 @@ export function FlashcardCard({ front, back, onRate, testID }: FlashcardCardProp
             : <Rich source={front} part="flashcard-front" />}
         </Animated.View>
       </Pressable>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: uiSpace[2], minHeight: 32 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: S[75], minHeight: H.action }}>
         {onBack ? (
-          <View role="group" aria-label={strings.flashcardRate} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: uiSpace[2] }}>
+          <View role="group" aria-label={strings.flashcardRate} style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: S[75] }}>
             <UiText variant="labelSm" tone="secondary">{strings.flashcardRate}</UiText>
             {RECALL_RATINGS.map((rating) => (
               <PillAction

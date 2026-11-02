@@ -248,7 +248,7 @@ function composerReturnSnapshot() {
       };
     }).filter(Boolean);
   };
-  const activeTrigger = document.querySelector(".composer-tools-trigger[aria-expanded='true']");
+  const activeTrigger = document.querySelector("[data-composer-control='tools'][aria-expanded='true']");
   return {
     topic: serialisePlugins(snapshot.topic),
     chat: serialisePlugins(snapshot.chat),

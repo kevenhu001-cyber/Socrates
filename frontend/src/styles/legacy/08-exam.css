@@ -196,7 +196,8 @@
 .exam-nav-btn{flex-shrink:0}
 .exam-nav-counter{flex:1;text-align:center;font-size:var(--ui-font-size-xs);color:var(--muted-foreground);display:flex;align-items:baseline;justify-content:center;gap:4px;font-variant-numeric:tabular-nums}
 .exam-nav-current{font-weight:var(--ui-font-weight-semibold);color:var(--foreground);font-size:var(--ui-font-size-sm)}
-.exam-nav-progress{color:var(--muted-foreground);font-size:var(--ui-font-size-xs);margin-left:4px}
+/* 进度与题号之间用一条细竖发丝线分隔（不用「·」）。 */
+.exam-nav-progress{color:var(--muted-foreground);font-size:var(--ui-font-size-xs);margin-left:4px;padding-left:8px;border-left:1px solid var(--border)}
 .exam-nav-pills{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px}
 .exam-nav-pill{min-width:var(--ui-control-sm);padding-inline:7px;font-variant-numeric:tabular-nums}
 .exam-nav-pill[data-answered="true"]:not([data-current="true"]){color:var(--ui-success)}

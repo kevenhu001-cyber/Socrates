@@ -28,6 +28,8 @@
       "@socrates/ui/think": ["../packages/ui/src/think/index.ts"],
       "@socrates/ui/think-model": ["../packages/ui/src/think/model.ts"],
       "@socrates/ui/study": ["../packages/ui/src/study/index.ts"],
+      "@socrates/ui/composer": ["../packages/ui/src/composer/index.ts"],
+      "@socrates/ui/shell": ["../packages/ui/src/shell/index.ts"],
       "react": ["./node_modules/@types/react"],
       "react/*": ["./node_modules/@types/react/*"],
       "react-native": ["./node_modules/react-native"]

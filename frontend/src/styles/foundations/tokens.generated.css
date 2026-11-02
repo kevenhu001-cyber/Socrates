@@ -53,9 +53,11 @@
   --ui-type-eyebrow-line: 16px;
   --ui-type-eyebrow-weight: 500;
   --ui-type-eyebrow-tracking: 0.6px;
+  --ui-round-xs: 4px;
   --ui-round-sm: 8px;
   --ui-round-md: 12px;
   --ui-round-lg: 16px;
+  --ui-round-xl: 20px;
   --ui-radius-card: 24px;
   --ui-round-pill: 999px;
   --ui-gap-1: 4px;
@@ -67,14 +69,36 @@
   --ui-gap-7: 48px;
   --ui-gap-8: 64px;
   --ui-gap-9: 96px;
+  --ui-step-25: 2px;
+  --ui-step-50: 4px;
+  --ui-step-75: 8px;
+  --ui-step-100: 12px;
+  --ui-step-200: 16px;
+  --ui-step-300: 24px;
+  --ui-step-400: 32px;
+  --ui-step-500: 40px;
+  --ui-step-600: 48px;
+  --ui-step-700: 64px;
+  --ui-step-800: 80px;
+  --ui-step-900: 96px;
+  --ui-ctl-pill: 36px;
+  --ui-ctl-button: 40px;
+  --ui-ctl-hit: 44px;
+  --ui-ctl-row: 36px;
+  --ui-ctl-composer-min: 52px;
+  --ui-ctl-composer-disc: 36px;
+  --ui-ctl-pad-nav: 12px;
+  --ui-ctl-pad-button: 16px;
+  --ui-ctl-pad-chip: 14px;
   --ui-motion-fast: 150ms;
-  --ui-motion-medium: 220ms;
-  --ui-motion-enter: 420ms;
+  --ui-motion-medium: 200ms;
+  --ui-motion-slow: 400ms;
+  --ui-motion-enter: 500ms;
   --ui-motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 [data-mode="light"] {
-  --ui-canvas: #fafafa;
+  --ui-canvas: #ffffff;
   --ui-card: #ffffff;
   --ui-fill: rgba(0, 0, 0, 0.04);
   --ui-fill-hover: rgba(0, 0, 0, 0.07);
@@ -86,9 +110,17 @@
   --ui-ink-tertiary: #767676;
   --ui-ink-hover: #303030;
   --ui-on-ink: #ffffff;
+  --ui-copy: #303030;
+  --ui-subtle: #f9f9f9;
+  --ui-surface: #f3f3f3;
+  --ui-hairline-focus: rgba(0, 0, 0, 0.28);
   --ui-elevation-ring: 0 0 0 1px rgb(0 0 0 / 8%);
   --ui-elevation-raised: 0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 4px 12px -4px rgb(0 0 0 / 5%);
   --ui-elevation-overlay: 0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 12%);
+  --ui-elevation-dialog: 0 0 0 1px rgb(0 0 0 / 6%), 0 2px 4px rgb(0 0 0 / 4%), 0 24px 56px -20px rgb(0 0 0 / 18%);
+  --ui-elevation-field: 0 0 0 1px rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 40px -12px rgb(0 0 0 / 14%);
+  --ui-elevation-field-hover: 0 0 0 1px rgb(0 0 0 / 12%), 0 1px 2px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%);
+  --ui-elevation-field-focus: 0 0 0 1px rgb(0 0 0 / 28%), 0 0 0 4px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%);
 }
 
 [data-mode="dark"] {
@@ -104,7 +136,15 @@
   --ui-ink-tertiary: #8f8f8f;
   --ui-ink-hover: #ffffff;
   --ui-on-ink: #0a0a0a;
+  --ui-copy: #d6d6d6;
+  --ui-subtle: #141414;
+  --ui-surface: #1a1a1a;
+  --ui-hairline-focus: rgba(255, 255, 255, 0.32);
   --ui-elevation-ring: 0 0 0 1px rgb(255 255 255 / 10%);
   --ui-elevation-raised: 0 0 0 1px rgb(255 255 255 / 8%), 0 1px 2px rgb(0 0 0 / 40%);
   --ui-elevation-overlay: 0 0 0 1px rgb(255 255 255 / 8%), 0 12px 32px -4px rgb(0 0 0 / 45%);
+  --ui-elevation-dialog: 0 0 0 1px rgb(255 255 255 / 10%), 0 24px 56px -20px rgb(0 0 0 / 60%);
+  --ui-elevation-field: 0 0 0 1px rgb(255 255 255 / 10%), 0 12px 40px -12px rgb(0 0 0 / 50%);
+  --ui-elevation-field-hover: 0 0 0 1px rgb(255 255 255 / 16%), 0 16px 48px -14px rgb(0 0 0 / 55%);
+  --ui-elevation-field-focus: 0 0 0 1px rgb(255 255 255 / 32%), 0 0 0 4px rgb(255 255 255 / 6%), 0 16px 48px -14px rgb(0 0 0 / 55%);
 }

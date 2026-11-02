@@ -20,8 +20,10 @@ import { AccessibilityInfo, Animated, Platform, Pressable, ScrollView, View, use
 import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
-import { UiButton } from '../primitives/UiButton';
-import { UiPressableCard } from '../primitives/UiCard';
+import { UiButton, usePressFeedback } from '../primitives/UiButton';
+import { UiIcon, type UiGlyphName } from '../primitives/UiIcon';
+import { useReducedMotion } from '../turn/parts';
+import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 
 /** Below this width the layout switches to the phone composition. */
 export const HOME_COMPACT_WIDTH = 769;
@@ -65,6 +67,8 @@ export interface HomeShortcut {
   label: string;
   /** Toggle shortcuts (web search) report their state. */
   pressed?: boolean;
+  /** Leading line glyph (RN-7: every shortcut carries one). */
+  icon?: UiGlyphName;
 }
 
 export interface HomeStarter {
@@ -155,6 +159,7 @@ export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label 
             label={item.label}
             variant={item.pressed ? 'primary' : 'ghost'}
             size={compact ? 'sm' : 'md'}
+            leading={item.icon ? <UiIcon name={item.icon} size={compact ? 16 : 18} color={item.pressed ? colors.onInk : colors.inkSecondary} /> : undefined}
             {...(item.pressed === undefined ? {} : { 'aria-pressed': item.pressed })}
             onPress={() => onSelect(item.id)}
           />
@@ -166,7 +171,7 @@ export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label 
             accessibilityLabel={dismissLabel}
             onPress={() => onDismiss(item.id)}
             hitSlop={6}
-            style={({ pressed }) => ({
+            style={({ pressed, hovered, focused }: { pressed: boolean; hovered?: boolean; focused?: boolean }) => ({
               width: 24,
               height: 24,
               marginRight: uiSpace[2],
@@ -174,10 +179,16 @@ export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label 
               borderRadius: uiRadius.pill,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: pressed ? colors.fillPressed : 'transparent',
+              backgroundColor: pressed ? colors.fillPressed : hovered ? colors.fillHover : 'transparent',
+              outlineStyle: focused ? 'solid' : undefined,
+              outlineWidth: focused ? 2 : 0,
+              outlineColor: colors.ink,
+              outlineOffset: 1,
             })}
           >
-            <UiText variant="labelSm" tone={item.pressed ? 'onInk' : 'tertiary'} aria-hidden>×</UiText>
+            {/* A real 14px line glyph: the bare "×" character rendered at
+                label size read as a dot. */}
+            <UiIcon name="close" size={14} color={item.pressed ? colors.onInk : colors.inkSecondary} />
           </Pressable>}
         </Animated.View>
       ))}
@@ -199,8 +210,8 @@ export function HomeStarters({ heading, headingId, items, onSelect }: HomeStarte
   const enter = useEntrance(items.length, 'starters');
   return (
     <View style={{ gap: compact ? uiSpace[3] : uiSpace[4] }}>
-      <UiText nativeID={headingId} role="heading" {...headingLevel(2)} variant="eyebrow" tone="tertiary" align={compact ? 'left' : 'center'}>
-        {heading.toUpperCase()}
+      <UiText nativeID={headingId} role="heading" {...headingLevel(2)} variant="labelSm" tone="tertiary" align={compact ? 'left' : 'center'}>
+        {heading}
       </UiText>
       {compact ? (
         /* Phones scroll the cards sideways: three stacked cards would bury
@@ -225,36 +236,60 @@ export function HomeStarters({ heading, headingId, items, onSelect }: HomeStarte
   );
 }
 
+/**
+ * Starter card (site `.story-step` / `.m-card`): a #f9f9f9 sheet on a
+ * hairline ring with a 24px radius, the index in a white ringed disc, the
+ * title and one line of hint. Hover lifts it onto white with the site's
+ * second shadow (`.news-item:hover`); reduced motion keeps it in place.
+ */
 function StarterCard({ item, index, compact, onSelect }: { item: HomeStarter; index: number; compact: boolean; onSelect: (id: string) => void }) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
+  const { subtle } = sheets(colors);
+  const { scale, hovered, focused, handlers } = usePressFeedback();
+  const lift = hovered && !reduced;
   return (
-    <UiPressableCard
+    <Pressable
       testID={`home-starter-${item.id}`}
+      accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.hint}`}
       onPress={() => onSelect(item.id)}
+      {...handlers}
       style={{ flexGrow: 1 }}
     >
-      <View style={{ gap: compact ? uiSpace[3] : uiSpace[6], flexGrow: 1 }}>
+      <Animated.View
+        style={{
+          flexGrow: 1,
+          gap: compact ? S[200] : S[400],
+          padding: compact ? S[200] : S[300],
+          borderRadius: R.stage,
+          backgroundColor: hovered ? colors.card : subtle,
+          boxShadow: hovered ? shadow(colors, 'overlay') : insetRing(colors.hairline),
+          ...focusRing(colors, focused),
+          ...transition('background-color, box-shadow, transform', reduced, 300),
+          transform: [{ translateY: lift ? -2 : 0 }, { scale }],
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{
-            minWidth: 32,
+            width: 32,
             height: 32,
-            paddingHorizontal: uiSpace[2],
-            borderRadius: uiRadius.pill,
-            backgroundColor: colors.fill,
+            borderRadius: R.pill,
+            backgroundColor: colors.card,
+            boxShadow: insetRing(colors.hairline),
             alignItems: 'center',
             justifyContent: 'center',
           }}
           >
-            <UiText variant="labelSm">{String(index + 1).padStart(2, '0')}</UiText>
+            <UiText variant="labelSm" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>{String(index + 1).padStart(2, '0')}</UiText>
           </View>
-          <UiText variant="label" tone="tertiary" aria-hidden>→</UiText>
+          <UiText variant="label" tone={hovered ? 'ink' : 'tertiary'} aria-hidden>→</UiText>
         </View>
-        <View style={{ gap: uiSpace[1] }}>
+        <View style={{ gap: S[50] }}>
           <UiText variant="titleSm">{item.title}</UiText>
           <UiText variant="bodySm" tone="secondary" numberOfLines={2}>{item.hint}</UiText>
         </View>
-      </View>
-    </UiPressableCard>
+      </Animated.View>
+    </Pressable>
   );
 }

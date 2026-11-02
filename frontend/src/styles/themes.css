@@ -234,7 +234,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 [data-mode="light"] {
   color-scheme: light;
 
-  --background: var(--geist-background-200);
+  --background: var(--geist-background-100);
   --foreground: var(--geist-gray-1000);
   --card: var(--geist-background-100);
   --card-foreground: var(--foreground);
@@ -242,7 +242,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --popover-foreground: var(--foreground);
   --primary: var(--geist-gray-1000);
   --primary-foreground: var(--geist-background-100);
-  --secondary: var(--geist-gray-200);
+  --secondary: var(--geist-gray-100);
   --secondary-foreground: var(--foreground);
   --muted: var(--geist-gray-100);
   --muted-foreground: var(--geist-gray-900);
@@ -253,7 +253,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --border: var(--geist-gray-400);
   --input: var(--border);
   --ring: var(--geist-gray-900);
-  --sidebar: var(--geist-gray-100);
+  --sidebar: var(--geist-background-200);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
@@ -299,19 +299,19 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 
   /* Marketing-site paper/ink foundation, projected through the existing API.
    *
-   * The same four-step ladder as dark mode, running the other way — but the
-   * canvas is no longer the paper. It sits one rung below it, so a raised
-   * surface can be *lighter* than the page it stands on instead of relying on
-   * a shadow alone to tell the two apart. The paper (L1, #ffffff) is what the
-   * composer, the menus and the dialogs are cut from; the canvas (L2) is the
-   * page they sit on; the rail and the recessed wells take the two rungs
-   * below.
+   * RN-7: the canvas IS the paper (#ffffff), as on the marketing site. The
+   * page and the elevated rung (composer, menus, dialogs) share that white;
+   * what lifts a raised surface off the page is a 1px hairline plus a very
+   * soft shadow, not a tone step. Hierarchy otherwise runs on two layers:
+   * white, and the pale greys below it — the rail (background-200) and the
+   * recessed wells / controls (gray-100).
    *
-   * The rungs are four consecutive steps of the Geist ramp, in the same order
-   * as dark mode: background-100 → background-200 → gray-100 → gray-200. */
+   * The distinct rungs are three consecutive steps of the Geist ramp:
+   * background-100 → background-200 → gray-100. The surface-ladder guard
+   * accepts the shared paper through the baseline's `paperCanvas` policy. */
   --ui-bg-page: var(--background);
   --ui-bg-rail: var(--sidebar);
-  --ui-bg-panel: var(--geist-gray-200);
+  --ui-bg-panel: var(--geist-gray-100);
   --ui-bg-elevated: var(--geist-background-100);
 
   /* Role aliases onto the ladder.
@@ -613,9 +613,9 @@ html[data-theme="socrates"][data-mode="light"] {
    * `scripts/surface-ladder.baseline.json`; the values below are the rungs
    * that mapping points at, so the canvas move left them untouched. */
   --bg-000: 0 0% 100%;     /* the paper (elevated) */
-  --bg-100: 0 0% 98.04%;  /* the canvas (page) */
-  --bg-200: 0 0% 94.9%;   /* the rail (geist gray-100) */
-  --bg-300: 0 0% 92.16%;  /* the panel: controls, chips, wells (geist gray-200) */
+  --bg-100: 0 0% 100%;     /* the canvas (page) — RN-7: the canvas is the paper */
+  --bg-200: 0 0% 98.04%;  /* the rail (geist background-200) */
+  --bg-300: 0 0% 94.9%;   /* the panel: controls, chips, wells (geist gray-100) */
   --text-000: 0 0% 0%;
   --text-100: 0 0% 12%;
   --text-200: 0 0% 40%;
@@ -654,8 +654,7 @@ html[data-theme="philosophy"] .greeting,
 html[data-theme="philosophy"] .topic-title,
 html[data-theme="philosophy"] .auth-brand span,
 html[data-theme="philosophy"] .sidebar-logo span,
-html[data-theme="philosophy"] .home-tutor-starters h2,
-html[data-theme="philosophy"] .tutor-mastery-stage-label {
+html[data-theme="philosophy"] .home-tutor-starters h2 {
   font-family: var(--font-display);
   letter-spacing: -0.015em;
 }

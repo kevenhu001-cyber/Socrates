@@ -412,6 +412,7 @@ export const zh = {
     "tutor.mastery.step2":"2. 反思辨析",
     "tutor.mastery.step3":"3. 归纳洞察",
     "tutor.mastery.step4":"4. 融会贯通",
+    "tutor.mastery.progress":"第 {n} 步 / 共 {total} 步",
     "tutor.suggestion.prefix":"启发式追问：",
     "sidebar.more.shortcuts":"键盘快捷键",
     "sidebar.more.signOut":"退出登录",
@@ -997,9 +998,9 @@ export const zh = {
     "tutor.practiceSelfCorrect":"答对了！",
     "tutor.practiceSelfWrong":"不太对，正确答案是：",
     "tutor.practiceSent":"已发送，等待 AI 点评。",
-    "tutor.quizCorrect":"答对了（{answer}）。",
+    "tutor.quizCorrect":"答对了（选项 {answer}）。",
     "tutor.quizRecorded":"已记录：{letter}。",
-    "tutor.quizWrong":"不太对，正确答案是 {answer}。",
+    "tutor.quizWrong":"不太对，正确答案是选项 {answer}。",
     "tutor.revealAnswer":"查看答案",
     "tutor.showHint":"显示提示",
     "tutor.showSolution":"显示答案",
@@ -1613,7 +1614,8 @@ export const zh = {
     "learnMode.mistakes.hint":"把没做对的题变成问题链上的下一问。",
     /* RN-5 knowledge map, diagnostic, mistakes */
     "kb.graphLabel":"知识图谱，可拖动平移",
-    "kb.caption":"颜色越深掌握越好 · 连线是你的学习路径",
+    "kb.captionMastery":"颜色越深掌握越好",
+    "kb.caption":"连线是你的学习路径",
     "kb.zoomIn":"放大",
     "kb.zoomOut":"缩小",
     "kb.zoomFit":"适应视图",
@@ -1644,7 +1646,7 @@ export const zh = {
     "diag.allFamiliar":"每个维度都有一定基础，可以保持较快节奏。",
     "diag.rank":"第 {n} 位",
     /* RN-6 由 AI 生成的学习内容 */
-    "kb.captionConcepts":"颜色越深掌握越好 · 连线是概念之间的关系",
+    "kb.captionConcepts":"连线是概念之间的关系",
     "kb.updating":"正在更新定义和概念之间的联系…",
     "kb.updateFailed":"这次没能更新图谱。",
     "kb.definition":"定义",
@@ -1654,5 +1656,9 @@ export const zh = {
     "mistakes.answerGiven":"你的答案",
     "mistakes.answerKeyed":"正确答案",
     "mistakes.toNextQuestion":"变成下一问",
-    "mistakes.toNextQuestionBusy":"正在生成追问…"
+    "mistakes.toNextQuestionBusy":"正在生成追问…",
+    "recents.group.today":"今天",
+    "recents.group.yesterday":"昨天",
+    "recents.group.previous7":"过去 7 天",
+    "recents.group.previous30":"过去 30 天"
 };

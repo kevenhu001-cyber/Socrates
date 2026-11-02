@@ -6,11 +6,11 @@
  */
 import { useReducer, type ReactNode } from 'react';
 import { Animated, Pressable, View } from 'react-native';
-import { uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { UiPill } from '../primitives/UiPill';
+import { useReducedMotion } from '../turn/parts';
+import { H, R, S, focusRing, insetRing, sheets, transition } from '../look';
 import { useLearnHost } from './host';
 import {
   fillTemplate,
@@ -23,7 +23,7 @@ import {
   type QuizOptionMark,
   type QuizVerdict,
 } from './model';
-import { ActionRow, PillAction, Rich, ScaffoldCard, Section, VerdictGlyph, dataSet } from './parts';
+import { ActionRow, PillAction, Rich, ScaffoldCard, Section, Tag, VerdictGlyph, dataSet } from './parts';
 
 export interface QuizResult {
   verdict: QuizVerdict;
@@ -47,6 +47,14 @@ function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
   return !!value && typeof value === 'object' && typeof (value as Promise<T>).then === 'function';
 }
 
+/**
+ * Site `.ui-option`: a 44px row on a 12px radius with an inset hairline;
+ * the chosen row takes the `#f9f9f9` sheet and a 1.5px ink ring. The letter
+ * sits in a 24px ring (a circle for one answer, a rounded square for many)
+ * that fills with ink when chosen. Once graded the letter stays, so the
+ * feedback line ("the correct answer is option B") can point at it, and the
+ * verdict sits at the row end as a ✓ / ✕ glyph.
+ */
 function OptionRow({ option, mark, multi, disabled, onPress }: {
   option: QuizOption;
   mark: QuizOptionMark;
@@ -55,11 +63,18 @@ function OptionRow({ option, mark, multi, disabled, onPress }: {
   onPress: () => void;
 }) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
+  const { subtle } = sheets(colors);
   const { scale, hovered, focused, handlers } = usePressFeedback();
-  const strong = mark === 'selected' || mark === 'correct' || mark === 'missed';
-  const borderColor = strong ? colors.ink : (mark === 'incorrect' ? colors.hairlineStrong : (hovered && !disabled ? colors.hairlineStrong : colors.hairline));
+  const live = hovered && !disabled && mark === 'idle';
+  const strong = mark === 'selected' || mark === 'correct';
+  const ring = strong
+    ? insetRing(colors.ink, 1.5)
+    : mark === 'missed'
+      ? insetRing(colors.ink, 1)
+      : insetRing(live ? colors.hairlineStrong : colors.hairline, 1);
   const tileInk = mark === 'selected' || mark === 'correct';
-  const glyph = mark === 'correct' || mark === 'missed' ? '✓' : mark === 'incorrect' ? '✕' : option.letter;
+  const verdict = mark === 'correct' || mark === 'missed' ? 'correct' : mark === 'incorrect' ? 'incorrect' : null;
   const checked = mark === 'selected' || mark === 'correct' || mark === 'incorrect';
   return (
     <Pressable
@@ -77,18 +92,17 @@ function OptionRow({ option, mark, multi, disabled, onPress }: {
         style={{
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: uiSpace[3],
+          gap: S[100],
+          minHeight: H.option,
           paddingVertical: 10,
-          paddingHorizontal: uiSpace[3],
-          borderRadius: uiRadius.md,
-          borderWidth: 1,
-          borderColor,
-          backgroundColor: mark === 'incorrect' ? colors.fill : (hovered && !disabled && mark === 'idle' ? colors.fill : 'transparent'),
-          opacity: mark === 'muted' ? 0.55 : 1,
-          outlineStyle: focused ? 'solid' : undefined,
-          outlineWidth: focused ? 2 : 0,
-          outlineColor: colors.ink,
-          outlineOffset: 2,
+          paddingLeft: S[100],
+          paddingRight: S[200],
+          borderRadius: R.row,
+          backgroundColor: strong || live || mark === 'incorrect' ? subtle : colors.card,
+          boxShadow: ring,
+          opacity: mark === 'muted' ? 0.5 : 1,
+          ...focusRing(colors, focused),
+          ...transition('background-color, box-shadow, opacity', reduced),
           transform: [{ scale }],
         }}
       >
@@ -97,18 +111,17 @@ function OptionRow({ option, mark, multi, disabled, onPress }: {
           style={{
             width: 24,
             height: 24,
-            marginTop: 1,
-            borderRadius: multi ? 6 : uiRadius.sm,
+            borderRadius: multi ? 7 : R.pill,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: tileInk ? colors.ink : 'transparent',
-            borderWidth: tileInk ? 0 : 1,
-            borderColor: mark === 'missed' ? colors.ink : colors.hairlineStrong,
+            backgroundColor: tileInk ? colors.ink : colors.card,
+            boxShadow: tileInk ? undefined : insetRing(mark === 'missed' ? colors.ink : colors.hairlineStrong, mark === 'missed' ? 1.5 : 1),
           }}
         >
-          <UiText variant="labelSm" tone={tileInk ? 'onInk' : (mark === 'incorrect' ? 'secondary' : 'ink')}>{glyph}</UiText>
+          <UiText variant="labelSm" tone={tileInk ? 'onInk' : (mark === 'incorrect' ? 'tertiary' : 'secondary')} style={{ fontVariant: ['tabular-nums'] }}>{option.letter}</UiText>
         </View>
-        <Rich source={option.text} part="quiz-option" style={{ flex: 1, paddingTop: 1 }} />
+        <Rich source={option.text} part="quiz-option" style={{ flex: 1, paddingTop: 1, opacity: mark === 'incorrect' ? 0.7 : 1 }} />
+        {verdict ? <View style={{ paddingTop: 2 }}><VerdictGlyph verdict={verdict} /></View> : null}
       </Animated.View>
     </Pressable>
   );
@@ -160,10 +173,10 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
       kind="quiz"
       label={strings.label.quiz}
       testID={testID}
-      trailing={multi ? <UiPill label={strings.quizMulti} tone="outline" /> : (readOnly ? <UiPill label={strings.readOnly} tone="outline" /> : undefined)}
+      trailing={multi ? <Tag label={strings.quizMulti} /> : (readOnly ? <Tag label={strings.readOnly} /> : undefined)}
     >
       <Rich source={question} part="quiz-q" />
-      <View role={multi ? 'group' : 'radiogroup'} aria-label={question} style={{ gap: uiSpace[2] }}>
+      <View role={multi ? 'group' : 'radiogroup'} aria-label={question} style={{ gap: S[75] }}>
         {options.map((option) => (
           <OptionRow
             key={option.letter}
@@ -176,13 +189,13 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
         ))}
       </View>
       {readOnly ? null : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: uiSpace[2], minHeight: 32 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: S[75], minHeight: H.action }}>
           <View
             testID="quiz-feedback"
             role="status"
             aria-live="polite"
             {...dataSet({ verdict: state.verdict ?? '' })}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: uiSpace[2], flexShrink: 1 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: S[75], flexShrink: 1 }}
           >
             {answered && state.verdict !== 'recorded' && answerKey.length ? <VerdictGlyph verdict={state.verdict === 'correct' ? 'correct' : 'incorrect'} /> : null}
             {answered && state.feedback ? (

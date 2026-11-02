@@ -1,113 +1,89 @@
-import { Button } from '../ui/shadcn/button';
-import { Icon } from '../../ui/Icon';
+import { useLayoutEffect } from 'react';
+import type { ImageStyle } from 'react-native';
 import { t } from '../legacy/gateway.ts';
-import { sidebarIcons } from '../../sidebar/sidebarIcons';
 import { useUserInfo } from './sidebarChrome.store';
-import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
+import { setSidebarSearchOpen, useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from './useMobileViewport.ts';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
 import { startNewChat } from '../../app/lifecycle.ts';
+import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
+import { useDomTitle, webClass } from '../rn/webHost';
+import { SidebarBrand, SidebarHeaderActions, SidebarIconAction } from '@socrates/ui/shell';
 
-const NEW_CHAT_ICON = sidebarIcons.newChat;
+const LOGO = { uri: '/logo.png' };
+/* The mark stays monochrome next to the grey rail (marketing site lockup). */
+const LOGO_STYLE = { filter: 'grayscale(1) contrast(1.05)' } as unknown as ImageStyle;
 
-/* Desktop shows chatgpt.com's panel glyph (the button toggles the rail);
-   the phone drawer keeps the ×. styles/parity/sidebar.css picks one. */
-const CLOSE_ICON =
-  sidebarIcons.panel.replace('<svg ', '<svg class="sidebar-toggle-panel" ')
-  + sidebarIcons.close.replace('<svg ', '<svg class="sidebar-toggle-close" ');
-
-const SEARCH_ICON = sidebarIcons.search;
-
-/*
- * `btn-icon` is the phone-specific tap-target marker. Desktop size and radius
- * come from shadcn's icon-sm size and the shell radius token; the phone owner
- * may still expand the target to its reference-pinned 40px.
+/**
+ * RN-7 — the sidebar header is the shared RN shell part
+ * (packages/ui/src/shell/Sidebar.tsx). This host supplies ids, copy and
+ * callbacks, and keeps the structural class hooks the drawer CSS keys on
+ * (`.sidebar-logo`, `.sidebar-header-actions`, and `.btn-icon`, the phone
+ * tap-target marker; desktop keeps the RN part's own 32px pill).
+ *
+ * Desktop draws the panel glyph on the collapse control (it toggles the
+ * rail); the phone drawer draws the ×.
  */
-const ICON_BUTTON = 'btn-icon rounded-[var(--ui-radius-sm)] border-0 active:not-aria-[haspopup]:translate-y-0';
-
 export function SidebarHeader() {
+  useLocaleRefresh();
   const sidebarOpen = useSidebarStore((snapshot) => snapshot.isOpen);
+  const searchOpen = useSidebarStore((snapshot) => snapshot.searchOpen);
+  /* The fold is store state; the `#sidebar` host (outside React) only
+     mirrors it as a class for the drawer's grid transition. */
+  useLayoutEffect(() => {
+    document.getElementById('sidebar')?.classList.toggle('search-open', searchOpen);
+    if (searchOpen) window.requestAnimationFrame(() => document.getElementById('sidebarSearch')?.focus());
+  }, [searchOpen]);
   const isMobile = useMobileViewport();
   const closeButtonHidden = isMobile && !sidebarOpen;
   const closeSidebarKey = sidebarOpen ? 'chrome.closeSidebar' : 'chrome.openSidebar';
   const closeSidebarLabel = t(closeSidebarKey);
-  // Subscribe to the chrome bridge so the header re-renders on user change
-  // (even though the header itself doesn't display user info, the bridge
-  //  is the single React-side subscription for the chrome).
+  const searchLabel = t('sidebar.searchPlaceholder');
+  const newChatLabel = t('sidebar.startNewChat');
+  useDomTitle('sidebarSearchBtn', searchLabel);
+  useDomTitle('newChatBtn', newChatLabel);
+  useDomTitle('sidebarCloseBtn', closeSidebarLabel);
+  // Subscribe to the chrome bridge so the header re-renders on user change.
   useUserInfo();
+  const iconSize = isMobile ? 24 : 20;
 
   return (
-    <>
-      <div className="sidebar-logo">
-        <img
-          className="sidebar-logo-img"
-          src="/logo.png"
-          alt=""
-          aria-hidden="true"
-          width={20}
-          height={20}
-        />
-        <span>Socrates</span>
-        <Icon name="chevronDown" className="cg-sidebar-caret" />
-      </div>
-      <div className="sidebar-header-actions">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={`${ICON_BUTTON} sidebar-search-btn`}
+    <WebUiTheme>
+      <SidebarBrand name="Socrates" logo={LOGO} compact={isMobile} hostStyle={webClass('sidebar-logo')} logoStyle={LOGO_STYLE} />
+      <SidebarHeaderActions hostStyle={webClass('sidebar-header-actions')}>
+        <SidebarIconAction
           id="sidebarSearchBtn"
-          type="button"
-          title={t('sidebar.searchPlaceholder')}
-          aria-label={t('sidebar.searchPlaceholder')}
-          data-i18n-title="sidebar.searchPlaceholder"
-          data-i18n-aria="sidebar.searchPlaceholder"
-          aria-controls="sidebarSearch"
-          aria-expanded="false"
-          onClick={(event) => {
-            const button = event.currentTarget;
-            const sidebar = document.getElementById('sidebar');
-            const input = document.getElementById('sidebarSearch') as HTMLInputElement | null;
-            const open = !sidebar?.classList.contains('search-open');
-            sidebar?.classList.toggle('search-open', open);
-            button.setAttribute('aria-expanded', String(open));
-            if (open) window.requestAnimationFrame(() => input?.focus());
-          }}
-          dangerouslySetInnerHTML={{ __html: SEARCH_ICON }}
+          icon="search"
+          label={searchLabel}
+          i18nKey="sidebar.searchPlaceholder"
+          controls="sidebarSearch"
+          expanded={searchOpen}
+          iconSize={iconSize}
+          hostStyle={webClass(isMobile && 'btn-icon', 'sidebar-search-btn')}
+          onPress={() => setSidebarSearchOpen(!searchOpen)}
         />
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={`${ICON_BUTTON} compose-btn`}
+        <SidebarIconAction
           id="newChatBtn"
-          title={t('sidebar.startNewChat')}
-          aria-label={t('sidebar.startNewChat')}
-          data-i18n-title="sidebar.startNewChat"
-          data-i18n-aria="sidebar.startNewChat"
-          onClick={(e) => {
-            e.preventDefault();
-            void startNewChat();
-          }}
-          dangerouslySetInnerHTML={{ __html: NEW_CHAT_ICON }}
+          icon="compose"
+          label={newChatLabel}
+          i18nKey="sidebar.startNewChat"
+          iconSize={iconSize}
+          hostStyle={webClass(isMobile && 'btn-icon', 'compose-btn')}
+          onPress={() => { void startNewChat(); }}
         />
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={ICON_BUTTON}
+        <SidebarIconAction
           id="sidebarCloseBtn"
-          title={closeSidebarLabel}
-          aria-label={closeSidebarLabel}
-          data-i18n-title={closeSidebarKey}
-          data-i18n-aria={closeSidebarKey}
-          aria-controls="sidebar"
-          aria-expanded={sidebarOpen}
-          aria-hidden={closeButtonHidden}
-          style={{ display: closeButtonHidden ? 'none' : undefined }}
-          onClick={() => {
-            toggleSidebar();
-          }}
-          dangerouslySetInnerHTML={{ __html: CLOSE_ICON }}
+          icon={isMobile ? 'close' : 'panel'}
+          label={closeSidebarLabel}
+          i18nKey={closeSidebarKey}
+          controls="sidebar"
+          expanded={sidebarOpen}
+          visible={!closeButtonHidden}
+          iconSize={iconSize}
+          hostStyle={webClass(isMobile && 'btn-icon')}
+          onPress={() => { toggleSidebar(); }}
         />
-      </div>
-    </>
+      </SidebarHeaderActions>
+    </WebUiTheme>
   );
 }

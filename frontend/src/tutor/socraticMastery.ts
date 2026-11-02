@@ -1,62 +1,20 @@
-import { stateStore } from '../state/store.ts';
 import { setComposerMarkdown } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { getAppMode } from '../config/providers.ts';
 import type { ChainCandidate } from '@socrates/ui/think-model';
 import { followQuestionChain, syncQuestionChain } from './questionChain.ts';
 import { requestMistakeRedo } from '../ui/mistakeBookCommands.ts';
 import { extractNextQuestions } from '@socrates/core/learningBlocks';
 
-function translate(key: string, fallback: string): string {
-  if (typeof (window as unknown as { t?: (k: string) => string }).t === 'function') {
-    const val = (window as unknown as { t: (k: string) => string }).t(key);
-    if (val && val !== key) return val;
-  }
-  return fallback;
-}
-
-const STAGES = [
-  { step: 1, labelKey: 'tutor.mastery.step1', defaultLabel: '1. 探索提问' },
-  { step: 2, labelKey: 'tutor.mastery.step2', defaultLabel: '2. 反思辨析' },
-  { step: 3, labelKey: 'tutor.mastery.step3', defaultLabel: '3. 归纳洞察' },
-  { step: 4, labelKey: 'tutor.mastery.step4', defaultLabel: '4. 融会贯通' },
-];
-
-export function getActiveSocraticStage(turnCount: number): typeof STAGES[number] {
-  if (turnCount <= 2) return STAGES[0];
-  if (turnCount <= 4) return STAGES[1];
-  if (turnCount <= 6) return STAGES[2];
-  return STAGES[3];
+/* RN-7 — the tutor mode is read from the typed mode preference, never from
+   a header button's class; the stage pill itself is rendered by the React
+   top bar from the session store (react/topbar/TopBar.tsx). */
+function isTutorSurface(): boolean {
+  return document.documentElement.dataset.mainView === 'tutor' || getAppMode() === 'tutor';
 }
 
 export function syncSocraticMasteryUI(): void {
-  const isTutor = document.documentElement.dataset.mainView === 'tutor'
-    || document.getElementById('topModeTutor')?.classList.contains('is-active')
-    || document.getElementById('topModeTutor')?.getAttribute('aria-selected') === 'true';
-
-  const pill = document.getElementById('tutorMasteryPill');
-  if (!pill) return;
-
-  if (!isTutor) {
-    pill.classList.add('hidden');
-    clearSocraticSuggestions();
-    return;
-  }
-
-  pill.classList.remove('hidden');
-
-  const messages = stateStore.read('messages');
-  const count = messages.filter((message) => message.role === 'user').length;
-  const activeStage = getActiveSocraticStage(count);
-
-  const labelEl = document.getElementById('tutorMasteryStageLabel');
-  if (labelEl) {
-    labelEl.textContent = translate(activeStage.labelKey, activeStage.defaultLabel);
-  }
-
-  const dots = pill.querySelectorAll('.step-dot');
-  dots.forEach((dot, index) => {
-    dot.classList.toggle('active', index < activeStage.step);
-  });
+  if (!isTutorSurface()) clearSocraticSuggestions();
 }
 
 /**
@@ -87,9 +45,7 @@ export function followChainCandidate(candidate: ChainCandidate): void {
  * mode) still shows.
  */
 export function showSocraticSuggestions(replyText?: string | null): void {
-  const isTutor = document.documentElement.dataset.mainView === 'tutor'
-    || document.getElementById('topModeTutor')?.classList.contains('is-active')
-    || document.getElementById('topModeTutor')?.getAttribute('aria-selected') === 'true';
+  const isTutor = isTutorSurface();
 
   const container = document.getElementById('socraticSuggestions');
   if (!container || !isTutor) return;

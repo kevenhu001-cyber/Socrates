@@ -5,6 +5,7 @@ import { animateSurfaceEntrance } from './motion/surface.ts';
 import { closeDetailSurface } from './detailSurface.ts';
 import { CORE_VIEW_IDS, MAIN_PAGE_IDS } from '../sidebar/navigation.destinations.ts';
 import { dispatchUi, uiStore } from '../store/index.ts';
+import { setTopbarState } from '../react/topbar/topbarStore.ts';
 
 
 export { CORE_VIEW_IDS, MAIN_PAGE_IDS };
@@ -106,4 +107,6 @@ export function activateMainView(viewId: string, doc?: Document | null) {
 /* Test hook — e2e drives the production view and composer transition. */
 if (typeof window !== 'undefined') {
   (window as unknown as { __testActivateMainView?: (viewId: string) => boolean }).__testActivateMainView = (viewId: string) => activateMainView(viewId, document);
+  /* RN-7 — the header renders share / find from its store, not a class. */
+  (window as unknown as { __testShowConversationActions?: (show: boolean) => void }).__testShowConversationActions = (show: boolean) => setTopbarState({ conversationActions: show });
 }

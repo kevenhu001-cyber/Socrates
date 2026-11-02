@@ -3,7 +3,7 @@ import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button as BaseButton } from '../ui/Button';
 import { LazyOpenUiBlock } from './LazyOpenUiBlock';
-import { Ellipsis } from 'lucide-react';
+import { Icon } from '../../ui/Icon';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { i18n } from '../legacy/gateway';
 import { useExpandedSurfaceState } from './IntelligentSurface';
@@ -62,7 +62,7 @@ function UiPanel({ node, context }: { node: IntelligenceUiNode; context: RenderC
         {visibleActions.map((child) => <UiNode key={child.id} node={child} context={context} />)}
         {overflowActions.length ? <DeferredMenu open={moreOpen} onOpenChange={setMoreOpen} className="intui-surface-menu"
           label={i18n('session.moreActions', 'More actions')}
-          trigger={<BaseButton type="button" className="intui-panel-more" aria-label={i18n('session.moreActions', 'More actions')}><Ellipsis size={18} aria-hidden /></BaseButton>}>
+          trigger={<BaseButton type="button" className="intui-panel-more" aria-label={i18n('session.moreActions', 'More actions')}><Icon name="more" size={18} /></BaseButton>}>
           {({ FoundationMenuItem }) => overflowActions.map((child) => <FoundationMenuItem key={child.id}
             disabled={context.readOnly && (child.action as UiAction).type === 'prompt'}
             onClick={(event) => executeAction(child.action as UiAction, context, event)}>{asProse(resolve(child.label, context))}</FoundationMenuItem>)}

@@ -6,11 +6,12 @@
  */
 import { useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, View, type LayoutChangeEvent } from 'react-native';
-import { uiRadius, uiSpace } from '@socrates/theme';
+import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
+import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { PillAction, dataSet } from '../learn/parts';
+import { dataSet } from '../learn/parts';
 import {
   GRAPH_ZOOM_STEP,
   buildKnowledgeGraph,
@@ -26,21 +27,25 @@ export function MasterySwatch({ status, label }: { status: KnowledgeStatus; labe
   const { colors } = useUiTheme();
   const look = pillLook(status, colors);
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: uiSpace[1] }}>
-      <View aria-hidden style={{ width: 16, height: 10, borderRadius: uiRadius.pill, backgroundColor: look.background, borderWidth: look.borderWidth, borderColor: look.borderColor }} />
-      <UiText variant="eyebrow" tone="tertiary" style={{ letterSpacing: 0 }}>{label}</UiText>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[75] }}>
+      <View aria-hidden style={{ width: 18, height: 10, borderRadius: R.pill, backgroundColor: look.background, boxShadow: look.ring }} />
+      <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>{label}</UiText>
     </View>
   );
 }
 
 function pillLook(status: KnowledgeStatus, colors: ReturnType<typeof useUiTheme>['colors']) {
-  if (status === 'internalized') return { background: colors.ink, borderColor: colors.ink, borderWidth: 1, tone: 'onInk' as const };
-  if (status === 'fuzzy') return { background: colors.card, borderColor: colors.ink, borderWidth: 1.5, tone: 'ink' as const };
-  return { background: colors.card, borderColor: colors.hairlineStrong, borderWidth: 1, tone: 'tertiary' as const };
+  /* Site `.demo-node`: white capsule on an inset 12% ring; the kept idea is
+     the filled ink capsule. Fuzzy deepens the ring to 1.5px ink. */
+  if (status === 'internalized') return { background: colors.ink, ring: undefined, tone: 'onInk' as const };
+  if (status === 'fuzzy') return { background: colors.card, ring: insetRing(colors.ink, 1.5), tone: 'ink' as const };
+  return { background: colors.card, ring: insetRing(colors.hairlineStrong), tone: 'secondary' as const };
 }
 
 function GraphPill({ box, strings, onPress }: { box: GraphNodeBox; strings: KnowledgeStrings; onPress: (index: number) => void }) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
+  const { subtle } = sheets(colors);
   const { hovered, focused, handlers } = usePressFeedback();
   const look = pillLook(box.status, colors);
   const description = `${box.name}, ${strings.status[box.status]}${box.questions ? `, ${fill(strings.questions, { n: box.questions })}` : ''}`;
@@ -58,20 +63,47 @@ function GraphPill({ box, strings, onPress }: { box: GraphNodeBox; strings: Know
         top: box.y,
         width: box.width,
         height: box.height,
-        borderRadius: uiRadius.pill,
-        backgroundColor: hovered && box.status !== 'internalized' ? colors.fill : look.background,
-        borderWidth: look.borderWidth,
-        borderColor: look.borderColor,
+        borderRadius: R.pill,
+        backgroundColor: hovered && box.status !== 'internalized' ? subtle : look.background,
+        boxShadow: [look.ring, box.status === 'internalized' ? undefined : '0 1px 2px rgb(0 0 0 / 4%)'].filter(Boolean).join(', ') || undefined,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: uiSpace[2],
+        paddingHorizontal: S[75],
         outlineStyle: focused || box.active ? 'solid' : undefined,
         outlineWidth: focused ? 2 : box.active ? 1 : 0,
         outlineColor: colors.ink,
         outlineOffset: 3,
+        ...transition('background-color', reduced),
       }}
     >
       <UiText variant="eyebrow" tone={look.tone} numberOfLines={1} style={{ letterSpacing: 0 }}>{box.label}</UiText>
+    </Pressable>
+  );
+}
+
+/** One segment of the zoom capsule: 28px, quiet until hovered. */
+function ZoomButton({ label, accessibilityLabel, onPress, data, wide }: { label: string; accessibilityLabel: string; onPress: () => void; data: Record<string, string>; wide?: boolean }) {
+  const { colors } = useUiTheme();
+  const { hovered, focused, handlers } = usePressFeedback();
+  return (
+    <Pressable
+      role="button"
+      aria-label={accessibilityLabel}
+      onPress={onPress}
+      {...handlers}
+      {...dataSet(data)}
+      style={{
+        minWidth: 28,
+        height: 28,
+        paddingHorizontal: wide ? S[75] : 0,
+        borderRadius: R.pill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: hovered ? colors.fill : 'transparent',
+        ...focusRing(colors, focused),
+      }}
+    >
+      <UiText variant="labelSm" tone={wide ? 'secondary' : 'ink'} style={{ fontVariant: ['tabular-nums'] }}>{label}</UiText>
     </Pressable>
   );
 }
@@ -115,7 +147,7 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
 
   if (!graph.nodes.length) return null;
   return (
-    <View style={{ gap: uiSpace[2] }} {...dataSet({ kbGraph: '1' })}>
+    <View style={{ gap: S[100] }} {...dataSet({ kbGraph: '1' })}>
       <View
         onLayout={onLayout}
         role="group"
@@ -123,10 +155,10 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
         {...responder.panHandlers}
         style={{
           height,
-          borderRadius: uiRadius.lg,
-          borderWidth: 1,
-          borderColor: colors.hairline,
-          backgroundColor: colors.card,
+          /* Site `.m-graph-stage`: the graph sits on a #f9f9f9 stage. */
+          borderRadius: R.sheet,
+          backgroundColor: sheets(colors).subtle,
+          boxShadow: insetRing(colors.hairline),
           overflow: 'hidden',
         }}
       >
@@ -155,7 +187,7 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
                     width: edge.length,
                     height: 1,
                     backgroundColor: lit ? colors.ink : colors.inkTertiary,
-                    opacity: lit ? 1 : 0.55,
+                    opacity: lit ? 1 : 0.4,
                     transform: [{ rotate: `${edge.angle}deg` }],
                   }}
                 />
@@ -164,18 +196,23 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
             {graph.nodes.map((box) => <GraphPill key={`${box.index}-${box.name}`} box={box} strings={strings} onPress={onSelect} />)}
           </Animated.View>
         ) : null}
-        <View style={{ position: 'absolute', right: uiSpace[2], bottom: uiSpace[2], flexDirection: 'row', gap: uiSpace[1] }}>
-          <PillAction tone="soft" label="−" accessibilityLabel={strings.zoomOut} onPress={() => setZoom(clampZoom(scale / GRAPH_ZOOM_STEP))} data={{ kbZoom: 'out' }} />
-          <PillAction tone="soft" label={`${Math.round(scale * 100)}%`} accessibilityLabel={strings.zoomFit} onPress={resetView} data={{ kbZoom: 'fit' }} />
-          <PillAction tone="soft" label="+" accessibilityLabel={strings.zoomIn} onPress={() => setZoom(clampZoom(scale * GRAPH_ZOOM_STEP))} data={{ kbZoom: 'in' }} />
+        {/* Zoom: one white capsule on the stage (site `.ui-seg` on white). */}
+        <View style={{ position: 'absolute', right: S[75], bottom: S[75], flexDirection: 'row', alignItems: 'center', gap: 2, padding: 2, borderRadius: R.pill, backgroundColor: colors.card, boxShadow: shadow(colors, 'raised') }}>
+          <ZoomButton label="−" accessibilityLabel={strings.zoomOut} onPress={() => setZoom(clampZoom(scale / GRAPH_ZOOM_STEP))} data={{ kbZoom: 'out' }} />
+          <ZoomButton label={`${Math.round(scale * 100)}%`} accessibilityLabel={strings.zoomFit} onPress={resetView} data={{ kbZoom: 'fit' }} wide />
+          <ZoomButton label="+" accessibilityLabel={strings.zoomIn} onPress={() => setZoom(clampZoom(scale * GRAPH_ZOOM_STEP))} data={{ kbZoom: 'in' }} />
         </View>
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: uiSpace[3], rowGap: uiSpace[1] }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: S[200], rowGap: S[50], paddingHorizontal: S[50] }}>
         <MasterySwatch status="internalized" label={strings.status.internalized} />
         <MasterySwatch status="fuzzy" label={strings.status.fuzzy} />
         <MasterySwatch status="blank" label={strings.status.blank} />
       </View>
-      <UiText variant="eyebrow" tone="tertiary" style={{ letterSpacing: 0 }} {...dataSet({ kbEdgeKind: graph.edgeKind })}>{graph.edgeKind === 'concept' ? strings.captionConcepts : strings.caption}</UiText>
+      {/* 两段说明只用间距分开（不用「·」）。 */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: S[100], paddingHorizontal: S[50] }} {...dataSet({ kbEdgeKind: graph.edgeKind })}>
+        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>{strings.captionMastery}</UiText>
+        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>{graph.edgeKind === 'concept' ? strings.captionConcepts : strings.caption}</UiText>
+      </View>
     </View>
   );
 }

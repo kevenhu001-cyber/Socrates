@@ -36,7 +36,8 @@ export function MenuItem({
         {description ? <small>{description}</small> : null}
       </span>
       {spec.shortcut ? <kbd>{spec.shortcut}</kbd> : null}
-      {active ? <span className="composer-tools-active-dot" aria-hidden="true" /> : null}
+      {/* RN-7: an active tool reads as a check, like a selected plugin — never a dot. */}
+      {active ? <Icon name="check" className="composer-tools-check composer-tools-active-check" /> : null}
     </Button>
   );
 }

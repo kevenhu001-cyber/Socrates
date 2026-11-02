@@ -24,6 +24,7 @@ async function boot(page, { width, height, theme }) {
   await mockAuthedApp(page, { lang: 'en' });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  await page.locator('#composerInputWrap [data-composer-frame]').waitFor();
 }
 
 async function enterChat(page) {
@@ -81,22 +82,25 @@ function describe(page, sel) {
     const wr = wrap.getBoundingClientRect();
     const editor = wrap.querySelector('.rich-composer-editor');
     const es = editor ? getComputedStyle(editor) : null;
-    const tracks = ws.gridTemplateColumns.split(' ').filter(Boolean);
+    /* RN-7: the sheet is the shared RN frame inside the moving host. */
+    const frame = wrap.querySelector('[data-composer-frame]');
+    const fs = frame ? getComputedStyle(frame) : null;
+    const fr = frame ? frame.getBoundingClientRect() : null;
     return {
       shape,
       shell: {
         h: Math.round(wr.height), w: Math.round(wr.width),
-        padding: ws.padding, border: `${ws.borderTopWidth} ${ws.borderTopStyle} ${ws.borderTopColor}`,
-        radius: ws.borderTopLeftRadius, bg: ws.backgroundColor, shadow: ws.boxShadow,
-        display: ws.display, areas: ws.gridTemplateAreas, trackCount: tracks.length,
-        // All tracks except the flexible editor column.
-        fixedTracks: tracks.filter((_, i) => i !== 1).map(px),
+        padding: ws.padding, display: ws.display,
       },
+      frame: fs ? {
+        h: Math.round(fr.height), w: Math.round(fr.width), padding: fs.padding,
+        radius: fs.borderTopLeftRadius, bg: fs.backgroundColor, shadow: fs.boxShadow,
+      } : null,
       editor: es ? { fontSize: es.fontSize, lineHeight: es.lineHeight, padding: es.padding, color: es.color } : null,
-      plus: box(wrap.querySelector('.composer-tools-trigger')),
-      effort: box(wrap.querySelector('.effort-trigger')),
-      mic: box(wrap.querySelector('.mobile-mic-btn')),
-      primary: box(wrap.querySelector('#startBtn, #sendBtn')),
+      plus: box(wrap.querySelector('#composerToolsBtn')),
+      effort: box(wrap.querySelector('#effortTrigger')),
+      mic: box(wrap.querySelector('#composerMicBtn')),
+      primary: box(wrap.querySelector('#composerPrimaryBtn')),
     };
   }, { sel, skip: [...SURFACE_OR_STATE] });
 }

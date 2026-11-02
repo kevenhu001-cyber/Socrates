@@ -1,4 +1,5 @@
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import '../rn/rnwGlobal';
 import { Button } from '../ui/shadcn/button';
 import { i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
@@ -7,41 +8,67 @@ import { openChatConfiguration, useChatConfigurationSnapshot } from '../chat-con
 import { useActiveModelLabel, useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
-import { startNewChat, toggleIncognito } from '../../app/lifecycle.ts';
+import { startNewChat } from '../../app/lifecycle.ts';
 import { toggleAppMode } from '../../app/lifecycle/mode.ts';
 import { openFindInSession } from '../find-in-session/findInSession.actions.ts';
 import { openShareModal } from '../../ui/share.ts';
 import { useAppMode } from '../app-mode/useAppMode.ts';
-import { useIncognito } from '../app-mode/useIncognito.ts';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from '../sidebar-chrome/useMobileViewport.ts';
+import { WebUiTheme } from '../rn/WebUiTheme';
+import { TopBarAction, TopBarModelSwitcher, TopBarModeSwitch, TopBarPracticeProgress, TopBarStageProgress } from '@socrates/ui/shell';
+import { getActiveSocraticStage, stageName, SOCRATIC_STAGES } from '../../tutor/socraticStages.ts';
 import { useConversationActive } from './useConversationActive.ts';
+import { useTopbarState } from './topbarStore.ts';
 
 /**
- * TopBar — the React-owned header chrome.
+ * TopBar — the header chrome. RN-7: the controls are the shared React
+ * Native shell parts (packages/ui/src/shell), drawn in the marketing site's
+ * chrome language; this host keeps the web layout groups (`.top-bar-left`,
+ * `.top-mode-switch`, `.top-bar-right`) that the shell's page-level CSS
+ * places and hides per surface, and renders everything from stores:
  *
- * index.html keeps `<div class="top-bar" id="topBar">` as the host; every
- * control inside it is rendered here. The ids are part of the shell contract
- * (`#topModelSwitcher`, `#findBtn`, `#shareBtn`, `#topModeSwitch`, …): the
- * legacy runtime still toggles a few shell visibility classes. The visible
- * model name and its accessible copy are derived from provider and preference
- * snapshots; React owns those values with the button itself.
+ *   share / find      topbarStore (published by ui/share.impl.ts)
+ *   tutor stage       app mode + the session's user-turn count
+ *   practice          session store
+ *   mode switch       app mode, hidden while a conversation runs
  *
- * Shell layout and custom model/action geometry stay in parity/topbar.css;
- * the mode option buttons own their 36px control geometry through shadcn
- * variants and token classes (docs/adr/0024-shadcn-shell-geometry-ownership.md).
+ * Ids are the shell contract (`#topModelSwitcher`, `#findBtn`, `#shareBtn`,
+ * `#topModeChat`, `#topModeTutor`, …) and stay on the interactive elements.
+ * The sidebar toggle, the exam title and the plugin tabs stay web nodes:
+ * the sidebar and workspace surfaces own them.
  */
 
-/** Controls keep the shell's own rules as their surface marker. */
 const CHROME_BUTTON = 'active:not-aria-[haspopup]:translate-y-0';
-const MODE_OPTION = [
-  'top-mode-switch-option min-w-[104px] rounded-full border-0 bg-transparent px-[var(--ui-space-md)]',
-  'text-muted-foreground leading-[var(--ui-text-ui-line)] cursor-pointer transition-colors',
-  'duration-(--ui-duration-hover) hover:bg-transparent hover:text-foreground aria-selected:text-foreground',
-].join(' ');
 
 function t(key: string, fallback: string): string {
   return i18n(key, fallback);
+}
+
+function subscribeReducedMotion(listener: () => void): () => void {
+  const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+  query.addEventListener('change', listener);
+  return () => query.removeEventListener('change', listener);
+}
+function readReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function useReducedMotion(): boolean {
+  return useSyncExternalStore(subscribeReducedMotion, readReducedMotion, () => false);
+}
+
+function subscribeNarrow(listener: () => void): () => void {
+  const query = window.matchMedia('(max-width: 359px)');
+  query.addEventListener('change', listener);
+  return () => query.removeEventListener('change', listener);
+}
+/** Phones under 360px leave only ~76px beside the centred mode track. */
+function useNarrowPhone(): boolean {
+  return useSyncExternalStore(subscribeNarrow, () => window.matchMedia('(max-width: 359px)').matches, () => false);
+}
+
+function anchor(id: string): HTMLElement | null {
+  return document.getElementById(id);
 }
 
 /* ── Left: sidebar toggle · model switcher · tutor pill · exam title ───── */
@@ -81,48 +108,67 @@ function SidebarToggle() {
 
 /**
  * The top-left model switcher opens the shared chat-configuration popover
- * (model · reasoning effort · speed). React includes the visible model name
- * in the accessible name to satisfy WCAG 2.5.3 (label in name).
+ * (model · reasoning effort · speed). The visible model name is part of the
+ * accessible name (WCAG 2.5.3). Phones show a chip with the model only, and
+ * none at all once a conversation runs (the composer's effort pill opens
+ * the same popover there).
  */
-function ModelSwitcher() {
+function ModelSwitcher({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
   const snapshot = useChatConfigurationSnapshot();
   const modelLabel = useActiveModelLabel();
   const effort = useStoredReasoningEffort();
   const purpose = t('topbar.modelSwitcher', 'Model and reasoning');
   const visibleLabel = ['Socrates', modelLabel].filter(Boolean).join(' ');
-  const title = modelLabel ? `${modelLabel} · ${effortLabel(effort)}` : effortLabel(effort);
+  const narrow = useNarrowPhone();
   return (
-    <Button
-      variant="ghost"
-      className={`top-model-switcher ${CHROME_BUTTON}`}
-      id="topModelSwitcher"
-      data-chat-config-trigger=""
-      aria-haspopup="dialog"
-      aria-expanded={snapshot.open && snapshot.triggerId === 'topModelSwitcher'}
-      aria-label={`${visibleLabel} — ${purpose}`}
-      title={title}
-      onClick={(event) => openChatConfiguration(event.currentTarget)}
-    >
-      <svg className="top-model-switcher-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h7m4 0h5M4 17h3m4 0h9" /><circle cx="13" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></svg>
-      <span className="top-model-switcher-name">Socrates</span>
-      <span className="top-model-switcher-model" id="topModelSwitcherModel">{modelLabel}</span>
-      <svg className="top-model-switcher-caret" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5" /></svg>
-    </Button>
+    <TopBarModelSwitcher
+      narrow={phone && narrow}
+      brand="Socrates"
+      model={modelLabel}
+      accessibilityLabel={`${visibleLabel} — ${purpose}${modelLabel ? '' : ` · ${effortLabel(effort)}`}`}
+      expanded={snapshot.open && snapshot.triggerId === 'topModelSwitcher'}
+      compact={phone}
+      visible={!(phone && conversationActive)}
+      onPress={() => {
+        const trigger = anchor('topModelSwitcher');
+        if (trigger) openChatConfiguration(trigger);
+      }}
+    />
   );
 }
 
-function PracticeProgress() {
+/** Practice progress belongs to a tutor conversation (it was a `tutor-only` chip). */
+function PracticeProgress({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+  const mode = useAppMode();
   const phase = useSessionStore((snapshot) => snapshot.practicePhase);
   const attempts = useSessionStore((snapshot) => snapshot.practiceAttempts);
-  if (!phase) return null;
+  if (!phase || mode !== 'tutor' || phone || !conversationActive) return null;
   const phaseLabel = phase === 'foundation'
     ? i18n('tutor.practiceFoundation', '基础')
     : i18n('tutor.practiceTransfer', '变式');
   return (
-    <span className="practice-progress-chip tutor-only" id="practiceProgressChip" role="status">
-      <span className="practice-progress-chip-phase">{phaseLabel}</span>
-      <span className="practice-progress-chip-attempts">·{attempts || 0}</span>
-    </span>
+    <TopBarPracticeProgress
+      phase={phaseLabel}
+      attempts={i18n('tutor.practiceAttempts', '{n} attempt(s)').replace('{n}', String(attempts || 0))}
+    />
+  );
+}
+
+/** Tutor stage, derived from the session (no DOM writes). Phones leave it to the conversation. */
+function StageProgress({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+  const mode = useAppMode();
+  const turns = useSessionStore((snapshot) => snapshot.messages.filter((message) => message.role === 'user').length);
+  if (mode !== 'tutor' || phone || !conversationActive) return null;
+  const stage = getActiveSocraticStage(turns);
+  const total = SOCRATIC_STAGES.length;
+  return (
+    <TopBarStageProgress
+      stage={stageName(t(stage.labelKey, stage.defaultLabel))}
+      step={stage.step}
+      total={total}
+      progressLabel={t('tutor.mastery.progress', 'Step {n} of {total}').replace('{n}', String(stage.step)).replace('{total}', String(total))}
+      title={t('tutor.mastery.title', 'Socratic Stage')}
+    />
   );
 }
 
@@ -142,24 +188,20 @@ function ExamTitle() {
   return <span className={`exam-title-bar${isInView ? '' : ' hidden'}`} id="examTitleBar" data-exam-only="true" data-locale-revision={localeRevision}>{label}</span>;
 }
 
-function TopBarLeft() {
+function TopBarLeft({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
   return (
     <div className="top-bar-left">
       <SidebarToggle />
-      <ModelSwitcher />
-      <PracticeProgress />
-      {/* Tutor-mode progress indicator; visibility is a `tutor-only` class
-          toggle owned by app/lifecycle/mode.ts. */}
-      <div className="tutor-mastery-pill tutor-only hidden" id="tutorMasteryPill" role="status" aria-label="Socratic learning stage" data-i18n-aria="tutor.mastery.title" data-i18n-title="tutor.mastery.title" title="Socratic Stage">
-        <span className="tutor-mastery-stage-dot" aria-hidden="true" />
-        <span className="tutor-mastery-stage-label" id="tutorMasteryStageLabel" data-i18n-key="tutor.mastery.step1">{t('tutor.mastery.step1', '探索提问')}</span>
-        <span className="tutor-mastery-stage-steps" aria-hidden="true">
-          <span className="step-dot active" data-step="1" />
-          <span className="step-dot" data-step="2" />
-          <span className="step-dot" data-step="3" />
-          <span className="step-dot" data-step="4" />
+      <WebUiTheme>
+        {/* 手机对话中不显示模型 chip。槽位让页面按
+            body[data-conversation-active] 同步隐藏（与 RN-7 前一致），
+            不必等 store 推导后的下一次渲染。 */}
+        <span className="top-model-slot" data-topbar-slot="model">
+          <ModelSwitcher phone={phone} conversationActive={conversationActive} />
         </span>
-      </div>
+        <PracticeProgress phone={phone} conversationActive={conversationActive} />
+        <StageProgress phone={phone} conversationActive={conversationActive} />
+      </WebUiTheme>
       <ExamTitle />
     </div>
   );
@@ -168,86 +210,83 @@ function TopBarLeft() {
 /* ── Center: the 聊天 / 辅导 segmented control ─────────────────────────── */
 
 /**
- * A two-position pill centered in the header track. The thumb is one element
- * that slides between the positions (`data-active` on the track), so the
- * options are plain buttons rather than a ToggleGroup: Base UI's Toggle would
- * pull its runtime into the entry chunk, and the product thumb is what paints
- * the selection here, not a per-option background.
- *
- * Selecting a mode mid-conversation asks for confirmation first
- * (app/lifecycle/mode.ts), which is why each option stays a button.
+ * The 聊天 / 辅导 segmented control, centred in the header by its web
+ * wrapper (`.top-mode-switch`). Selecting a mode mid-conversation asks for
+ * confirmation first (app/lifecycle/mode.ts); the control is hidden while a
+ * conversation runs. Arrow keys move between the two tabs.
  */
-function ModeSwitch() {
+function ModeSwitch({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
   const mode = useAppMode();
-  const conversationActive = useConversationActive();
+  const reducedMotion = useReducedMotion();
+  const narrow = useNarrowPhone();
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-    const current = (event.target as HTMLElement).closest<HTMLButtonElement>('.top-mode-switch-option');
-    if (!current || !event.currentTarget.contains(current)) return;
-    const options = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('.top-mode-switch-option'));
-    const index = options.indexOf(current);
-    if (index < 0 || options.length === 0) return;
+    const options = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]'));
+    const index = options.findIndex((option) => option.contains(event.target as Node));
+    if (index < 0) return;
     event.preventDefault();
-    const nextIndex = (index + (event.key === 'ArrowRight' ? 1 : options.length - 1)) % options.length;
-    const next = options[nextIndex];
+    const next = options[(index + (event.key === 'ArrowRight' ? 1 : options.length - 1)) % options.length];
     next?.focus();
     const targetMode = next?.dataset.mode;
     if (targetMode) void toggleAppMode(targetMode);
   };
   return (
-    <div className="top-mode-switch" id="topModeSwitch" role="tablist" data-active={mode} data-i18n-aria="chrome.sessionMode" aria-label="Session mode" aria-hidden={conversationActive} hidden={conversationActive} style={conversationActive ? { display: 'none' } : undefined} onKeyDown={onKeyDown}>
-      <span className="top-mode-switch-thumb" id="topModeSwitchThumb" aria-hidden="true" />
-      <Button variant="ghost" className={`${MODE_OPTION}${mode === 'chat' ? ' is-active' : ''} ${CHROME_BUTTON}`} id="topModeChat" role="tab" aria-selected={mode === 'chat'} tabIndex={mode === 'chat' ? 0 : -1} data-mode="chat" data-i18n-key="tutor.modeChat" onClick={() => { void toggleAppMode('chat'); }}>{t('tutor.modeChat', '聊天')}</Button>
-      <Button variant="ghost" className={`${MODE_OPTION}${mode === 'tutor' ? ' is-active' : ''} ${CHROME_BUTTON}`} id="topModeTutor" role="tab" aria-selected={mode === 'tutor'} tabIndex={mode === 'tutor' ? 0 : -1} data-mode="tutor" data-i18n-key="tutor.modeTutor" onClick={() => { void toggleAppMode('tutor'); }}>{t('tutor.modeTutor', '辅导')}</Button>
+    <div className="top-mode-switch" data-active={mode} hidden={conversationActive} style={conversationActive ? { display: 'none' } : undefined} onKeyDown={onKeyDown}>
+      <WebUiTheme>
+        <TopBarModeSwitch
+          value={mode}
+          options={[
+            { id: 'topModeChat', mode: 'chat', label: t('tutor.modeChat', '聊天') },
+            { id: 'topModeTutor', mode: 'tutor', label: t('tutor.modeTutor', '辅导') },
+          ]}
+          accessibilityLabel={t('chrome.sessionMode', 'Session mode')}
+          visible={!conversationActive}
+          compact={phone}
+          narrow={phone && narrow}
+          reducedMotion={reducedMotion}
+          thumbShadow="var(--ui-elevation-raised)"
+          onSelect={(next) => { void toggleAppMode(next); }}
+        />
+      </WebUiTheme>
     </div>
   );
 }
 
-/* ── Right: mobile actions · model picker · find · share ───────────────── */
+/* ── Right: new chat (phones) · find · share ───────────────────────────── */
 
-function MobileActions() {
-  const incognito = useIncognito();
-  const incognitoLabel = incognito ? "Incognito on — this chat won't be saved" : 'Incognito chat';
+function TopBarRight({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+  const { conversationActions, sharedView } = useTopbarState();
   return (
-    <>
-      <Button variant="ghost" className={`mobile-newchat-btn ${CHROME_BUTTON}`} id="mobileNewChatBtn"
-        data-i18n-title="sidebar.nav.new" data-i18n-aria="sidebar.nav.new" title={t('sidebar.nav.new', 'New chat')} aria-label={t('sidebar.nav.new', 'New chat')}
-        onClick={() => { void startNewChat(); }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4" /><path d="m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z" /></svg>
-      </Button>
-      <Button variant="ghost" className={`mobile-incognito-btn ${CHROME_BUTTON}`} id="mobileIncognitoBtn" aria-pressed={incognito}
-        aria-label={incognitoLabel} title={incognitoLabel}
-        data-i18n-aria="sidebar.nav.incognito" data-i18n-title="sidebar.nav.incognito"
-        onClick={() => { void toggleIncognito(); }}>
-        <svg className="incognito-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M6.5 10.5 8.3 6c.2-.6.9-.9 1.5-.7l2.2.7 2.2-.7c.6-.2 1.3.1 1.5.7l1.8 4.5" />
-          <path d="M4 10.5h16" />
-          <circle cx="8.5" cy="15.5" r="2.7" />
-          <circle cx="15.5" cy="15.5" r="2.7" />
-          <path d="M11.2 15.5h1.6" />
-        </svg>
-      </Button>
-    </>
-  );
-}
-
-function ConversationActions() {
-  return (
-    <>
-      <Button variant="ghost" className={`find-btn hidden ${CHROME_BUTTON}`} id="findBtn"
-        data-i18n-title="find.title" data-i18n-aria="find.title"
-        title={t('find.title', 'Find in conversation')} aria-label={t('find.title', 'Find in conversation')}
-        onClick={openFindInSession}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><circle cx="10.75" cy="10.75" r="6.75" /><path d="m16 16 4.5 4.5" /></svg>
-      </Button>
-      <Button variant="ghost" className={`share-btn hidden ${CHROME_BUTTON}`} id="shareBtn"
-        title={t('chrome.shareConversation', 'Share this conversation')} aria-label={t('chrome.shareConversation', 'Share this conversation')}
-        data-i18n-title="chrome.shareConversation" data-i18n-aria="chrome.shareConversation"
-        onClick={() => openShareModal()}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M4.5 13v4.5a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3V13M12 15V3.5m-4 4 4-4 4 4" /></svg>
-        <span className="share-btn-label" data-i18n-key="sidebar.share">{t('sidebar.share', 'Share')}</span>
-      </Button>
-    </>
+    <div className="top-bar-right">
+      <WebUiTheme>
+        <span className="mobile-newchat-btn" data-topbar-slot="new-chat">
+          <TopBarAction
+            id="mobileNewChatBtn"
+            icon="new-chat"
+            label={t('sidebar.nav.new', 'New chat')}
+            touch
+            visible={phone && conversationActive}
+            onPress={() => { void startNewChat(); }}
+          />
+        </span>
+        <TopBarAction
+          id="findBtn"
+          icon="search"
+          label={t('find.title', 'Find in conversation')}
+          touch={phone}
+          visible={conversationActions}
+          onPress={openFindInSession}
+        />
+        <TopBarAction
+          id="shareBtn"
+          icon="share"
+          label={t('chrome.shareConversation', 'Share this conversation')}
+          touch={phone}
+          visible={conversationActions && !sharedView}
+          onPress={() => openShareModal()}
+        />
+      </WebUiTheme>
+    </div>
   );
 }
 
@@ -267,15 +306,14 @@ function PluginWorkspaceTabs() {
    second `.top-bar` (which would become one opaque flex item and collapse
    the left/right groups to zero width). */
 export function TopBar() {
+  const phone = useMobileViewport();
+  const conversationActive = useConversationActive();
   return (
     <>
       <PluginWorkspaceTabs />
-      <TopBarLeft />
-      <ModeSwitch />
-      <div className="top-bar-right">
-        <MobileActions />
-        <ConversationActions />
-      </div>
+      <TopBarLeft phone={phone} conversationActive={conversationActive} />
+      <ModeSwitch phone={phone} conversationActive={conversationActive} />
+      <TopBarRight phone={phone} conversationActive={conversationActive} />
     </>
   );
 }

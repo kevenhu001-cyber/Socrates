@@ -332,7 +332,7 @@ export function transitionComposerShape(
   /* Capture initial visual positions of controls for FLIP morphing before state cancellation. */
   const controls = shouldAnimate
     ? Array.from(wrap.querySelectorAll<HTMLElement>(
-        '.composer-tools-trigger, .effort-picker, .mobile-mic-btn, .composer-primary-btn, .composer-plugin-chips'
+        '[data-composer-control], .composer-plugin-chips'
       )).filter((el) => el.offsetParent !== null)
     : [];
   const firstRects = new Map<HTMLElement, DOMRect>();

@@ -1,33 +1,19 @@
 /*
- * parity/topbar.css — the desktop (>= 769px) header, aligned with
- * chatgpt.com (docs/ref/chatgpt-parity.md): a borderless 52px bar on the
- * page color with the model switcher at the top-left ("Socrates <model> ▾",
- * opening the chat-configuration popover) and ghost actions (find, share)
- * on the right. Socrates' Chat/Tutor mode tabs stay, restyled as a quiet
- * centered segmented control.
+ * parity/topbar.css — the header's web layout (RN-7).
  *
- * Older header rules were moved behind @media (max-width: 768px) by
- * scripts/migrate-surface-css.mjs (surface "topbar"); phone-only controls
- * keep their legacy desktop display:none.
+ * The controls are the shared React Native shell parts
+ * (packages/ui/src/shell/TopBar.tsx): the model switcher, the 聊天 / 辅导
+ * segmented track, the tutor stage and practice capsules, find, share and
+ * the phone new-chat action paint themselves from the site tokens. This
+ * owner keeps what only the page can do: the 52px bar with its hairline,
+ * the left / centre / right groups, the centred mode track, phone
+ * placement, and hiding chat chrome on surfaces that are not the chat.
  */
 
-#appShell #topModelSwitcher { display: none; }
-
-/* ── Centered mode switch ────────────────────────────────────────────────
-   P_mode-segment-top — a two-position pill centered in the header track,
-   matching the reference's 聊天/工作 control. The thumb is a single element
-   that slides between the two positions rather than a per-option background:
-   two independently-tinted buttons cannot animate the transition between
-   them, so the control snaps instead of sliding.
-
-   The bar is a three-part flex row (left · center · right). The control is
-   absolutely centered rather than a third flex child: the two groups either
-   side are variable-width (the left one carries the model switcher, whose
-   label changes with the active model), so a centered flex child would sit
-   wherever the leftovers put it. The same control serves phones and desktop,
-   and it is hidden once a conversation is running because picking
-   a mode mid-answer can only destroy the answer in progress. React derives
-   the conversation state from the session stores and hides this control. */
+/* ── Centred mode switch ─────────────────────────────────────────────────
+   Absolutely centred rather than a third flex child: the groups either side
+   are variable-width, so a centred flex child would sit wherever the
+   leftovers put it. The RN track inside paints itself. */
 #appShell .top-mode-switch {
   position: absolute;
   left: 50%;
@@ -36,46 +22,9 @@
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 0;
-  padding: 2px;
-  border-radius: var(--ui-radius-pill);
-  /* Geist segmented control: the track is the quiet chip fill (5–6% ink
-     over the page), the thumb is the raised surface. A hairline ring on
-     the track as well would read as a field, not as a group. */
-  background: var(--ui-bg-chip);
-  isolation: isolate;
+  padding: 0;
+  background: none;
 }
-
-#appShell .top-mode-switch-thumb {
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: 2px;
-  width: calc(50% - 2px);
-  border-radius: var(--ui-radius-pill);
-  /* Geist thumb: the raised surface of the ladder with the control shadow.
-     The reference draws the active segment as a plain white shape lifted
-     off the track — a hairline ring around it read as a second, smaller
-     pill inside the first one and made the control look busy. */
-  background: var(--ui-bg-surface);
-  box-shadow: var(--ui-shadow-control);
-  transform: translateX(0);
-  transition: transform var(--ui-duration-normal) var(--ui-ease-out);
-  z-index: -1;
-}
-/* The thumb tracks the selected option rather than the other way round: it
-   slides one option-width to the right. Driven by a class, not a CSS
-   variable, so the two positions can differ if the labels ever do. */
-#appShell .top-mode-switch[data-active="tutor"] .top-mode-switch-thumb {
-  transform: translateX(100%);
-}
-
-/* The old light-mode override painted every segment in primary ink, which
-   left the switch with no state cue: the thumb still moved, but the label
-   did not say which side was selected. Geist states the selection in type
-   (active = primary, idle = secondary) on both modes. */
-
-.top-model-switcher-settings { display: none; }
 
 /* P_mode-segment-top — the chat header owns this control, and workspace /
    exam / admin views own their own. Hide the pill outside the chat surface or it
@@ -91,59 +40,6 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   body[data-conversation-active="true"] #appShell .top-bar-left {
     flex: 1 1 0 !important;
     min-width: 0 !important;
-  }
-  body[data-conversation-active="true"] #appShell #topModelSwitcher {
-    position: relative;
-    left: auto;
-    top: auto;
-    transform: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-start;
-    flex: 1 1 0;
-    gap: 4px;
-    min-width: 0;
-    max-width: 100%;
-    height: var(--ui-control-desktop);
-    margin: 0;
-    padding: 0 4px;
-    overflow: hidden;
-    border: 0;
-    border-radius: var(--ui-radius-row, 10px);
-    background: transparent;
-    color: var(--foreground);
-    font: inherit;
-    font-size: 15px;
-    line-height: 24px;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease, opacity var(--ui-duration-hover) ease;
-  }
-  body[data-conversation-active="true"] #appShell #topModelSwitcher:hover {
-    background: var(--accent);
-  }
-  body[data-conversation-active="true"] #appShell #topModelSwitcher:active {
-    background: var(--accent);
-    opacity: var(--press-opacity, var(--ui-press-opacity, 0.82));
-  }
-  body[data-conversation-active="true"] #appShell .top-model-switcher-name {
-    font-weight: var(--ui-font-weight-semibold);
-    font-size: 15px;
-  }
-  body[data-conversation-active="true"] #appShell .top-model-switcher-model {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--ui-text-tertiary);
-    font-weight: var(--ui-font-weight-regular);
-    font-size: var(--ui-font-size-xs);
-    text-overflow: ellipsis;
-  }
-  body[data-conversation-active="true"] #appShell .top-model-switcher-model:empty { display: none; }
-  body[data-conversation-active="true"] #appShell .top-model-switcher-caret {
-    flex: 0 0 14px;
-    width: 14px;
-    height: 14px;
-    color: var(--ui-text-tertiary);
   }
 }
 
@@ -166,9 +62,8 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     margin: 0;
     padding: 0 var(--ui-space-md);
     border: 0;
-    /* Geist header edge: the default 1px hairline (gray-400), the same
-       border the input, button and card outlines use. */
-    border-bottom: 1px solid var(--border);
+    /* Site header edge: one hairline (--ui-hairline, 8% ink). */
+    border-bottom: 1px solid var(--ui-hairline);
     background: var(--ui-bg-header-glass);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
@@ -198,7 +93,6 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
      the centered mode switch. Reflow based on the available header width. */
   @container app-topbar (max-width: 64rem) {
     #appShell .top-bar-left { flex: 1 1 0; }
-    #appShell .top-bar-left #topModelSwitcher { max-width: 100%; }
     #appShell .top-mode-switch {
       position: relative;
       left: auto;
@@ -207,112 +101,14 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
       transform: none;
       margin-inline-start: 0;
     }
-    #appShell .top-mode-switch-option { min-width: 76px; }
     #appShell .top-bar-right { flex: 1 1 0; justify-content: flex-end; margin-left: 0; }
   }
 
   /* ── Model switcher ──────────────────────────────────────────────────── */
-  #appShell #topModelSwitcher {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    box-sizing: border-box;
-    /* The primitive ships `shrink-0`; the label has to be able to give way
-       or a long model name pushes the control under the centered switch. */
-    flex-shrink: 1;
-    max-width: 360px;
-    height: var(--ui-control-desktop);
-    margin: 0;
-    padding: 0 8px 0 10px;
-    /* Geist outline control: the model picker is a bordered button cut from
-       the raised surface, not a ghost label. border-box keeps the 1px edge
-       inside the 36px control rung. */
-    border: 1px solid var(--border);
-    /* P_roundness (2nd pass) — the model picker is the widest filled control
-       in the chrome, so its corner is what the eye reads as "square" first.
-       A 12px radius on a 36px-tall box still read as a rounded rectangle, so
-       it became a pill: the two ends are half-circles and the control now
-       speaks the same language as the mode switch next to it (both are
-       --ui-radius-pill). */
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-surface);
-    color: var(--foreground);
-    font: inherit;
-    font-size: var(--ui-font-size-lg);
-    line-height: 28px;
-    white-space: nowrap;
-    cursor: pointer;
-    /* The focus ring is painted from a transparent baseline so it fades in
-       instead of snapping on. A ring that pops on a control this small
-       reads as a jump rather than as focus.
-       The baseline shares the ring's own geometry — two inset layers at 2px
-       and 3px — so the ring appears in place: nothing about the control's
-       box, paint order or surrounding space changes, only the two layer
-       colours do. An outward baseline would have been clipped by any
-       overflow-hidden ancestor and would have grown the control on focus. */
-    box-shadow: inset 0 0 0 2px transparent, inset 0 0 0 3px transparent;
-    transition: background-color var(--ui-duration-hover) ease,
-                border-color var(--ui-duration-hover) ease,
-                box-shadow var(--ui-duration-hover) ease;
-  }
   /* The baseline above outranks the global :focus-visible contract, so the
      ring is re-declared here against the same token. */
-  #appShell #topModelSwitcher:focus-visible {
-    box-shadow: var(--ui-focus-shadow);
-  }
-  #appShell #topModelSwitcher:hover,
-  #appShell #topModelSwitcher[aria-expanded="true"] {
-    background: var(--accent);
-    border-color: var(--ui-border-strong);
-  }
-  #appShell .top-model-switcher-name { font-weight: var(--ui-font-weight-semibold); }
-  #appShell .top-model-switcher-model {
-    min-width: 0;
-    overflow: hidden;
-    /* Brand and current value share a baseline; weight separates their roles. */
-    color: var(--muted-foreground);
-    font-weight: var(--ui-font-weight-medium);
-    text-overflow: ellipsis;
-  }
-  #appShell .top-model-switcher-model:empty { display: none; }
-  #appShell .top-model-switcher-caret {
-    flex: 0 0 16px;
-    width: 16px;
-    height: 16px;
-    color: var(--ui-text-tertiary);
-  }
   /* ── Right actions ───────────────────────────────────────────────────── */
-  #appShell #shareBtn,
-  #appShell #findBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    height: var(--ui-control-desktop);
-    margin: 0;
-    border: 0;
-    /* Geist icon button: the shared control radius, not a circle. The circle
-       read as a second kind of control in a row that is otherwise all
-       squared-off buttons. */
-    border-radius: var(--ui-radius-control);
-    background: transparent;
-    color: var(--foreground);
-    font: inherit;
-    font-size: var(--ui-text-ui);
-    font-weight: var(--ui-font-weight-medium);
-    line-height: var(--ui-text-ui-line);
-    cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease;
-  }
-  #appShell #findBtn { width: var(--ui-control-desktop); padding: 0; }
-  #appShell #shareBtn:hover,
-  #appShell #findBtn:hover { background: var(--accent); }
-  #appShell #shareBtn svg,
-  #appShell #findBtn svg { width: 16px; height: 16px; }
-  #appShell #shareBtn.hidden,
-  #appShell #findBtn.hidden { display: none; }
   /* Icon-only on desktop (sidebar-nav.spec contract). */
-  #appShell #shareBtn { width: var(--ui-control-desktop); padding: 0; }
 
   /* Every directory page carries its own head, so the shared bar only needs
      to host the --ui-control-desktop tabs pill. Library and Plugins already
@@ -333,14 +129,54 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   }
 }
 
+/* RN-7 — desktop: the bar is the top of the white canvas card
+   (parity/sidebar.css draws the card); no glass, no fill of its own. */
+@media (min-width: 769px) {
+  body #appShell .top-bar {
+    border-radius: var(--ui-round-lg) var(--ui-round-lg) 0 0;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Workspace pages own their context; the chat model selector stays in chat. */
+
+/* RN-7 — desktop: the bar is the top of the white canvas card
+   (parity/sidebar.css draws the card); no glass, no fill of its own. */
+@media (min-width: 769px) {
+  body #appShell .top-bar {
+    border-radius: var(--ui-round-lg) var(--ui-round-lg) 0 0;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Workspace pages own their context; the chat model selector stays in chat. */
 html[data-main-view$="Panel"] #appShell #topModelSwitcher,
-html[data-main-view$="Panel"] #appShell #mobileIncognitoBtn,
-html[data-main-view$="Panel"] #appShell #mobileNewChatBtn {
+html[data-main-view$="Panel"] #appShell .mobile-newchat-btn {
   display: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  #appShell .top-mode-switch-thumb,
-  #appShell .top-mode-switch-option { transition: none; }
+/* Phones: the model chip sits at the trailing edge of the landing header
+   (the centred mode track leaves ~119px either side). The RN chip sizes
+   itself; only its placement is the page's. */
+@media (max-width: 768px) {
+  #appShell #topModelSwitcher {
+    position: absolute;
+    right: 8px;
+    top: calc(50% + env(safe-area-inset-top, 0px) / 2);
+    transform: translateY(-50%);
+  }
+  #appShell .top-mode-switch { top: calc(50% + env(safe-area-inset-top, 0px) / 2); }
+}
+
+/* RN-7 — one line weight for every outline glyph on this surface. The
+   icons come from several sources (viewBox 16/20/24, stroke 1.6–2.2), so the
+   width is set in screen pixels with a non-scaling stroke: every glyph draws
+   the same 1.5px line whatever its viewBox or rendered size. */
+#appShell #topBar svg[stroke="currentColor"] :is(path, line, polyline, polygon, rect, circle, ellipse) {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5px;
 }

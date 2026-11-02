@@ -73,6 +73,16 @@
  * → hover) is its own convention and does not follow the ladder's role
  * order, so the correspondence is stated rather than assumed.
  *
+ * PAPER CANVAS (RN-7)
+ * -------------------
+ * A theme whose baseline sets `paperCanvas: true` paints its light canvas on
+ * the paper itself: the page and the elevated rung share one white, and a
+ * raised surface is lifted by a hairline plus a soft shadow rather than by a
+ * tone step (the marketing-site look). For that theme, in light mode only,
+ * the page rung must EQUAL the elevated rung; the remaining checks run on
+ * the three distinct tones (consecutive Geist slice, role order, step band).
+ * Every other theme and mode keeps four distinct rungs.
+ *
  * Usage:  node scripts/check-surface-ladder.mjs [--update]
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -478,11 +488,20 @@ function main() {
     for (const mode of ['dark', 'light']) {
       const ladder = ladders[theme]?.[mode];
       if (!ladder) continue;
-      const rungs = RUNGS.map((rung) => ladder.rungHex[rung]).filter(Boolean);
-      if (rungs.length !== RUNGS.length) continue;
+      const allRungs = RUNGS.map((rung) => ladder.rungHex[rung]).filter(Boolean);
+      if (allRungs.length !== RUNGS.length) continue;
 
-      if (new Set(rungs).size !== RUNGS.length) {
-        failures.push(`themes.css: theme "${theme}" ${mode} ladder has duplicate rungs — ${rungs.join(', ')}`);
+      /* Paper canvas: the light page shares the elevated rung's white. */
+      const paperCanvas = mode === 'light' && policy.paperCanvas === true;
+      if (paperCanvas && ladder.rungHex.page !== ladder.rungHex.elevated) {
+        failures.push(
+          `themes.css: theme "${theme}" light ladder declares paperCanvas but page (${ladder.rungHex.page}) is not the elevated paper (${ladder.rungHex.elevated})`,
+        );
+      }
+      const rungs = paperCanvas ? [...new Set(allRungs)] : allRungs;
+      const expectedDistinct = paperCanvas ? RUNGS.length - 1 : RUNGS.length;
+      if (new Set(rungs).size !== expectedDistinct || rungs.length !== expectedDistinct) {
+        failures.push(`themes.css: theme "${theme}" ${mode} ladder has duplicate rungs — ${allRungs.join(', ')}`);
       }
       if (rungs.includes('#000000')) {
         failures.push(`themes.css: theme "${theme}" ${mode} ladder uses pure black #000000 — the canvas must be a near-black`);
@@ -518,7 +537,9 @@ function main() {
        * lightest, and the canvas is the darkest in dark mode. In light mode
        * the paper (the elevated rung) deliberately sits *above* the canvas,
        * so a raised surface reads as lighter than the page it stands on. */
-      const order = LIGHTNESS_ORDER[mode];
+      const order = paperCanvas
+        ? LIGHTNESS_ORDER[mode].filter((role) => role !== 'page')
+        : LIGHTNESS_ORDER[mode];
       for (let i = 1; i < order.length; i += 1) {
         const lower = ladder.rungHex[order[i - 1]];
         const higher = ladder.rungHex[order[i]];
@@ -683,6 +704,7 @@ function main() {
         );
       }
       next.themes[theme] = {
+        ...(previous?.paperCanvas ? { paperCanvas: true } : {}),
         scale: previous?.scale ?? null,
         shared: previous?.shared ?? false,
         legacyTolerance: previous?.legacyTolerance ?? 0.5,

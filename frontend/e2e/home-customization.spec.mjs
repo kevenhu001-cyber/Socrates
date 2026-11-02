@@ -108,7 +108,7 @@ test('light conversation is readable and find opens at the upper right', async (
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    document.getElementById('findBtn')?.classList.remove('hidden');
+    window.__testShowConversationActions(true);
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Readability check' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'light-conversation-test' });

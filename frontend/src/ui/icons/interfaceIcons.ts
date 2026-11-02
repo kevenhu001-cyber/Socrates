@@ -9,7 +9,6 @@ export type IconShape = readonly [ShapeTag, Readonly<Record<string, string | num
 const path = (d: string, attrs: Record<string, string | number> = {}): IconShape => ['path', { d, ...attrs }];
 const rect = (x: number, y: number, width: number, height: number, rx: number): IconShape => ['rect', { x, y, width, height, rx }];
 const circle = (cx: number, cy: number, r: number): IconShape => ['circle', { cx, cy, r }];
-const dot = (cx: number, cy: number, r = 1): IconShape => ['circle', { cx, cy, r, fill: 'currentColor', stroke: 'none' }];
 
 const PENCIL = [path('m14.5 5.5 4 4M5 19l3.6-.9L19.2 7.5a2.8 2.8 0 0 0-4-4L4.6 14.1 3.7 18a.8.8 0 0 0 1 1Z')];
 const DOCUMENT = [
@@ -26,11 +25,13 @@ const GLYPHS = {
   clock: [circle(12, 12, 8.25), path('M12 7.5V12l3 2')],
   puzzle: [path('M9 4.5H6.5a2 2 0 0 0-2 2V10H6a2 2 0 0 1 0 4H4.5v3.5a2 2 0 0 0 2 2H10V18a2 2 0 0 1 4 0v1.5h3.5a2 2 0 0 0 2-2V14H18a2 2 0 0 1 0-4h1.5V6.5a2 2 0 0 0-2-2H14V4a2.5 2.5 0 0 0-5 0v.5Z')],
   image: [rect(3.5, 3.5, 17, 17, 4), circle(8.5, 8.5, 1.5), path('M4 17.5 8 13a2 2 0 0 1 3 0l2 2 1.5-1.5a2 2 0 0 1 3 0l3 3.5')],
-  assistant: [rect(3.5, 3.5, 17, 17, 6), dot(8.5, 10), dot(15.5, 10), path('M9 14.5c1.7 1.5 4.3 1.5 6 0')],
-  site: [rect(3.5, 4.5, 17, 15, 3), path('M3.5 9.5h17M9 9.5v10'), dot(6.75, 7, .65), dot(9.5, 7, .65)],
+  assistant: [rect(3.5, 3.5, 17, 17, 6), path('M8.5 9v2M15.5 9v2'), path('M9 14.5c1.7 1.5 4.3 1.5 6 0')],
+  site: [rect(3.5, 4.5, 17, 15, 3), path('M3.5 9.5h17M9 9.5v10')],
   exam: [rect(5, 4.5, 14, 16, 3), rect(9, 2.5, 6, 4, 1.5), path('m8.5 13 2.5 2.5 4.5-5')],
   skills: [rect(4, 4, 6, 6, 2), rect(14, 4, 6, 6, 2), rect(4, 14, 6, 6, 2), path('M17 13c.4 2.3 1.7 3.6 4 4-2.3.4-3.6 1.7-4 4-.4-2.3-1.7-3.6-4-4 2.3-.4 3.6-1.7 4-4Z')],
-  more: [dot(5, 12, 1.5), dot(12, 12, 1.5), dot(19, 12, 1.5)],
+  /* Three short horizontal strokes rather than the ⋯ dots: nothing in the
+     app reads as a dot except the streaming cursor. */
+  more: [path('M3.5 12h4M10 12h4M16.5 12h4')],
   search: [circle(10.75, 10.75, 6.75), path('m16 16 4.5 4.5')],
   panel: [rect(3.5, 4.5, 17, 15, 3), path('M9 4.5v15')],
   close: [path('m7 7 10 10M17 7 7 17')],
@@ -40,7 +41,7 @@ const GLYPHS = {
   chevronLeft: [path('m15 7-5 5 5 5')],
   chevronDown: [path('m7 9.5 5 5 5-5')],
   chevronUp: [path('m7 14.5 5-5 5 5')],
-  list: [dot(4.5, 6, 0.9), dot(4.5, 12, 0.9), dot(4.5, 18, 0.9), path('M9 6h11M9 12h11M9 18h11')],
+  list: [path('M4 6h3M4 12h3M4 18h3'), path('M10 6h10M10 12h10M10 18h10')],
   user: [circle(12, 8, 3.25), path('M5.5 20v-1a6.5 6.5 0 0 1 13 0v1')],
   lifeBuoy: [circle(12, 12, 8.5), circle(12, 12, 3.25), path('m6 6 3.7 3.7m4.6 4.6L18 18M18 6l-3.7 3.7m-4.6 4.6L6 18')],
   logOut: [path('M10 17l5-5-5-5M15 12H3M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7')],
@@ -51,7 +52,7 @@ const GLYPHS = {
   moon: [path('M20.2 13.7A8.5 8.5 0 0 1 10.3 3.8a8.5 8.5 0 1 0 9.9 9.9Z')],
   sliders: [path('M4 7h7m4 0h5M4 17h3m4 0h9'), circle(13, 7, 2), circle(9, 17, 2)],
   gear: [path('m9.5 4 .5-1h4l.5 1 .6 1.8 1.9.5 1.8-.4 2 3.4-1.3 1.3-.5 1.4.5 1.4 1.3 1.3-2 3.4-1.8-.4-1.9.5-.6 1.8-.5 1h-4l-.5-1-.6-1.8-1.9-.5-1.8.4-2-3.4 1.3-1.3.5-1.4-.5-1.4-1.3-1.3 2-3.4 1.8.4 1.9-.5.6-1.8Z'), circle(12, 12, 3)],
-  tag: [path('M4 6.5V11a2 2 0 0 0 .6 1.4l7 7a2 2 0 0 0 2.8 0l5-5a2 2 0 0 0 0-2.8l-7-7A2 2 0 0 0 11 4H6.5A2.5 2.5 0 0 0 4 6.5Z'), dot(8, 8)],
+  tag: [path('M4 6.5V11a2 2 0 0 0 .6 1.4l7 7a2 2 0 0 0 2.8 0l5-5a2 2 0 0 0 0-2.8l-7-7A2 2 0 0 0 11 4H6.5A2.5 2.5 0 0 0 4 6.5Z')],
   pin: [path('m14 3 7 7-2.5.5-3.8 3.8.3 3.7-9-9 3.7.3L13.5 5.5 14 3ZM10.5 13.5 4 20')],
   globe: [circle(12, 12, 8.5), path('M3.5 12h17M12 3.5c4.5 4.7 4.5 12.3 0 17-4.5-4.7-4.5-12.3 0-17Z')],
   compass: [circle(12, 12, 8.5), path('m15.9 8.1-2.2 5.6-5.6 2.2 2.2-5.6 5.6-2.2Z')],
@@ -75,7 +76,7 @@ const GLYPHS = {
   document: DOCUMENT,
   read: [...DOCUMENT, path('M8.5 13.5h7M8.5 17h4')],
   code: [path('m8 8-4 4 4 4m8-8 4 4-4 4M14 5l-4 14')],
-  agent: [rect(4, 7, 16, 13, 5), path('M12 7V3.5M2 13.5h2M20 13.5h2'), dot(8.5, 12.5), dot(15.5, 12.5), path('M9 16h6')],
+  agent: [rect(4, 7, 16, 13, 5), path('M12 7V3.5M2 13.5h2M20 13.5h2'), path('M8.5 11.5v2M15.5 11.5v2'), path('M9 16h6')],
 } satisfies Record<string, readonly IconShape[]>;
 
 export type InterfaceIconName = keyof typeof GLYPHS;
