@@ -36,7 +36,7 @@
     "@opentelemetry/instrumentation-pg": "^0.77.0",
     "@opentelemetry/sdk-metrics": "^3.0.0",
     "@opentelemetry/sdk-node": "^0.300.0",
-    "@openuidev/lang-core": "1.0.1",
+    "@openuidev/lang-core": "1.0.2",
     "@socrates/core": "file:../packages/core",
     "bcryptjs": "^3.0.2",
     "compression": "^1.8.2",
