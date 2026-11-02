@@ -154,7 +154,8 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
                     top: (edge.y1 + edge.y2) / 2 - 0.5,
                     width: edge.length,
                     height: 1,
-                    backgroundColor: lit ? colors.ink : colors.hairlineStrong,
+                    backgroundColor: lit ? colors.ink : colors.inkTertiary,
+                    opacity: lit ? 1 : 0.55,
                     transform: [{ rotate: `${edge.angle}deg` }],
                   }}
                 />
