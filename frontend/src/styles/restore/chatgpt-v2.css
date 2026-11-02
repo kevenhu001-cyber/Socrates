@@ -302,13 +302,15 @@ html[data-mode="light"] #appShell {
   --cowork-muted: 0 0% 44%;
 }
 
+/* RN-7 — phones only: on desktop parity/sidebar.css owns the shell frame
+   (grey rail, white canvas card), which a same-colour !important fill here
+   would flatten. */
+@media (max-width: 768px) {
 #appShell .main,
-#appShell .main-content {
-  background-color: var(--cg-page) !important;
-}
-
+#appShell .main-content,
 #appShell .main-bg {
   background-color: var(--cg-page) !important;
+}
 }
 
 @media (max-width: 768px) {

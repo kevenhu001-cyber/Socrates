@@ -760,9 +760,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   --ref-muted: #a7a7a7;
 }
 
+/* RN-7 — phones only: on desktop parity/sidebar.css owns the shell frame
+   (grey rail, white canvas card), which a same-colour !important fill here
+   would flatten. */
+@media (max-width: 768px) {
 #appShell .main-content,
 #appShell .main-bg {
   background: var(--cg-page) !important;
+}
 }
 
 @media (max-width: 768px) {

@@ -18,33 +18,23 @@
   --conversation-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
 
-/* Desktop dark-canvas parity. This file is loaded after the legacy shell
-   layers, so the desktop override also wins the intentional !important
-   surface rules below. The compact <=768px shell keeps the layered palette
-   and mobile drawer treatment. */
-@media (min-width: 769px) {
-  html[data-theme="socrates"][data-mode="dark"] {
-    --cowork-page: 0 0% 0%;
-    --cowork-sidebar: 0 0% 10%;
-  }
-
-  html[data-theme="socrates"][data-mode="dark"] body,
-  html[data-theme="socrates"][data-mode="dark"] #appShell,
-  html[data-theme="socrates"][data-mode="dark"] #appShell .main,
-  html[data-theme="socrates"][data-mode="dark"] #appShell .main-content,
-  html[data-theme="socrates"][data-mode="dark"] #appShell .main-bg {
-    background: var(--ui-bg-page) !important;
-    background-color: var(--ui-bg-page) !important;
-  }
+/* RN-7 — on desktop the shell frame (grey rail, white canvas card) is owned
+   by parity/sidebar.css; the old same-colour `!important` fills here and in
+   chatgpt-parity.css flattened that frame and were removed. The compact
+   <=768px shell keeps one page fill for body, shell and main. */
+body,
+#appShell#appShell {
+  color: var(--conversation-text);
 }
 
+@media (max-width: 768px) {
 body,
 #appShell#appShell,
 #appShell#appShell .main,
 #appShell#appShell .main-bg,
 #appShell#appShell .main-content {
   background: var(--conversation-page) !important;
-  color: var(--conversation-text);
+}
 }
 
 @media (max-width: 768px) {
