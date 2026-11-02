@@ -36,17 +36,13 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const landing = await measure('#composerInputWrap', [
     '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
   ]);
-  /* The phone capsule is the reference's two-row stack: 85px tall,
-     28px corners, 12px/8px/8px padding, editor on row 1 (full width),
-     36px circular controls on row 2, 12px page insets on both sides.
-     85 = 12 top + 24 editor + 3 row-gap + 36 control row + 8 bottom
-     + 1px border top and bottom. docs/ref/mobile-reference-2026-10-04.md
-     records the composer contract as "two rows, 36px controls, 28px
-     corners"; 8912121c retuned row-gap 6→3, padding 11/12/8→12/8/8 and
-     the editor 26→24px, which is what moved the capsule off the 89px this
-     assertion used to pin. */
-  expect(landing.wrap?.height).toBe(85);
-  expect(landing.radius).toBe('28px');
+  /* RN-7: the phone question box is the site ask-box (ComposerFrame,
+     compact): one white sheet with 24px corners, the editor storey on top
+     and the 36px control rail beneath it. 90 = 12 top + 26 editor line
+     + 8 gap + 36 rail + 8 bottom; the edge is a hairline drawn in the
+     shadow, so there is no border to add. */
+  expect(landing.wrap?.height).toBe(90);
+  expect(landing.radius).toBe('24px');
   /* + and the primary control are 36px circles; the mic is the same size
      and all three sit on the one control row, left to right. */
   expect(landing.controls[0]?.width).toBe(36);
@@ -148,7 +144,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
   /* Keyboard open keeps the same two-row capsule; only actual
      multiline content increases its height. */
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(85);
+  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(90);
   const rows = await page.evaluate(() => {
     const rect = (selector) => {
       const node = document.querySelector(selector);

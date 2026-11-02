@@ -10,9 +10,9 @@
  * `effortTrigger`, `composerMicBtn`, `composerPrimaryBtn`) and carries
  * `data-composer-control` so the host grid can place it.
  *
- * Look: 36px pill controls, quiet until touched — a pale fill on hover, a
- * slightly deeper one while a menu it owns is open — and one ink disc for
- * the primary action. Focus is drawn by the host's focus ring.
+ * Look (site chrome): 36px pill controls, quiet until touched — a 4% fill
+ * on hover, 8% while a menu it owns is open — and the send disc, grey when
+ * empty and ink once there is something to send. Focus is drawn by the host's focus ring.
  */
 import type { ReactNode } from 'react';
 import { Pressable, View, type PressableStateCallbackType } from 'react-native';
@@ -102,8 +102,9 @@ function RoundControl({ id, control, label, expanded, pressed: ariaPressed, hasp
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: pressed ? colors.fillPressed
-          : hovered || active ? colors.fillHover
-            : filled ? colors.fill : 'transparent',
+          : active ? colors.fillHover
+            : hovered ? (filled ? colors.fillHover : colors.fill)
+              : filled ? colors.fill : 'transparent',
       })}
     >
       {children}
@@ -128,6 +129,8 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
       >
         <UiIcon name="plus" size={20} color={tools.expanded ? colors.ink : colors.inkSecondary} />
       </RoundControl>
+
+      <View style={{ flex: 1, minWidth: 0 }} {...dataSet({ composerSpacer: '' })} />
 
       <View
         {...dataSet({ composerControl: 'effort', effort: effort.level, visible: effort.visible ? 'true' : 'false' })}
@@ -195,12 +198,16 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
           borderRadius: uiRadius.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: hovered && enabled ? colors.inkHover : colors.ink,
-          opacity: !enabled ? 0.3 : pressed ? 0.72 : 1,
+          /* Site send disc: a quiet grey disc while there is nothing to
+             send, the ink disc once there is (and while it means Stop). */
+          backgroundColor: enabled
+            ? (hovered ? colors.inkHover : colors.ink)
+            : colors.fill,
+          transform: [{ scale: pressed && enabled ? 0.94 : 1 }],
         })}
       >
         <View nativeID="composerPrimaryBtnContent">
-          <UiIcon name={stop ? 'stop' : 'arrow-up'} size={20} color={colors.onInk} />
+          <UiIcon name={stop ? 'stop' : 'arrow-up'} size={18} color={enabled ? colors.onInk : colors.inkTertiary} />
         </View>
       </Pressable>
     </>

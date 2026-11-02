@@ -437,12 +437,6 @@ body.workspace-active #appShell .main-page {
     left: 0;
   }
 
-  #appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips) .rich-composer > div {
-    display: flex !important;
-    align-items: center !important;
-    width: 100% !important;
-    height: 100% !important;
-  }
 
   /* The two edge actions are one optical pair: equal circles on the same
      52px midline. The attach action uses a quiet raised surface while the

@@ -88,10 +88,6 @@
   /* Flatten the footer wrappers so the controls become grid items. */
 
   /* Attachment chips (when present) own the first row. */
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active) .attachment-chips {
-    grid-column: 1 / -1 !important;
-    grid-row: 1 !important;
-  }
 
   /* Editor — full-width top row. */
 

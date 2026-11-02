@@ -42,6 +42,14 @@ export interface UiColors {
   readonly inkHover: string;
   /** Foreground on an `ink` fill (primary button label). */
   readonly onInk: string;
+  /** RN-7 (site `--site-color-copy`): long-form body copy, one step under ink. */
+  readonly copy: string;
+  /** RN-7 (site `--site-color-subtle`): the quietest tinted sheet (rail, insight). */
+  readonly subtle: string;
+  /** RN-7 (site `--site-color-surface`): grey sheet behind white cards. */
+  readonly surface: string;
+  /** RN-7 (site ask-box focus ring): the deepened hairline of a focused field. */
+  readonly hairlineFocus: string;
 }
 
 export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
@@ -58,6 +66,10 @@ export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
     inkTertiary: '#767676',
     inkHover: '#303030',
     onInk: '#ffffff',
+    copy: '#303030',
+    subtle: '#f9f9f9',
+    surface: '#f3f3f3',
+    hairlineFocus: 'rgba(0, 0, 0, 0.28)',
   },
   dark: {
     canvas: '#0a0a0a',
@@ -72,6 +84,10 @@ export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
     inkTertiary: '#8f8f8f',
     inkHover: '#ffffff',
     onInk: '#0a0a0a',
+    copy: '#d6d6d6',
+    subtle: '#141414',
+    surface: '#1a1a1a',
+    hairlineFocus: 'rgba(255, 255, 255, 0.32)',
   },
 };
 
@@ -89,6 +105,10 @@ export const uiColorVar: Readonly<Record<keyof UiColors, string>> = {
   inkTertiary: '--ui-ink-tertiary',
   inkHover: '--ui-ink-hover',
   onInk: '--ui-on-ink',
+  copy: '--ui-copy',
+  subtle: '--ui-subtle',
+  surface: '--ui-surface',
+  hairlineFocus: '--ui-hairline-focus',
 };
 
 /**
@@ -138,11 +158,17 @@ export const uiType = {
 
 export type UiTypeToken = keyof typeof uiType;
 
-/** Corner radii. Controls are pills; cards are generously rounded. */
+/**
+ * Corner radii — the marketing site's 4 / 8 / 12 / 16 / 20 / 24 scale
+ * (site public.css `--radius-*`). Controls are pills; list rows and inset
+ * panels take 12; cards 16; the composer and large sheets 24.
+ */
 export const uiRadius = {
+  xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
+  xl: 20,
   card: 24,
   pill: 999,
 } as const;
@@ -162,24 +188,97 @@ export const uiSpace = {
 
 export type UiSpaceToken = keyof typeof uiSpace;
 
-/** Shadows: a hairline ring plus a soft, low-contrast lift. */
-export const uiShadow: Readonly<Record<ThemeMode, { readonly ring: string; readonly raised: string; readonly overlay: string }>> = {
+/**
+ * RN-7 — the site's named spacing ladder (public.css `--space-25 … 900`),
+ * kept under its own names so chrome written against the site reads 1:1.
+ */
+export const uiStep = {
+  25: 2,
+  50: 4,
+  75: 8,
+  100: 12,
+  200: 16,
+  300: 24,
+  400: 32,
+  500: 40,
+  600: 48,
+  700: 64,
+  800: 80,
+  900: 96,
+} as const;
+
+/**
+ * RN-7 — control geometry from the site (chrome.css / home-refresh.css):
+ * nav pills and header buttons are 36px tall inside a 44px hit area, page
+ * buttons 40px, the question box sits at 52px minimum with a 36px send disc
+ * inset 8px. Horizontal padding: nav pill 12, button 16, chip 14.
+ */
+export const uiControl = {
+  pill: 36,
+  button: 40,
+  hit: 44,
+  row: 36,
+  composerMin: 52,
+  composerDisc: 36,
+  padNav: 12,
+  padButton: 16,
+  padChip: 14,
+} as const;
+
+/**
+ * Shadows — the site's elevation recipe (public.css `--site-shadow-1/2/3`,
+ * home-refresh.css `.ask-box`): every lift is a 1px hairline ring plus a
+ * contact shadow plus a wide, very soft ambient one. Never a colour.
+ *   ring      hairline only (inputs, quiet cards)
+ *   raised    shadow-1: cards, the white canvas sheet
+ *   overlay   shadow-2: menus, popovers
+ *   dialog    shadow-3: dialogs, drawers
+ *   field / fieldHover / fieldFocus   the question box at rest / hover / focus
+ */
+export interface UiShadowSet {
+  readonly ring: string;
+  readonly raised: string;
+  readonly overlay: string;
+  readonly dialog: string;
+  readonly field: string;
+  readonly fieldHover: string;
+  readonly fieldFocus: string;
+}
+
+export const uiShadow: Readonly<Record<ThemeMode, UiShadowSet>> = {
   light: {
     ring: '0 0 0 1px rgb(0 0 0 / 8%)',
     raised: '0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 4px 12px -4px rgb(0 0 0 / 5%)',
     overlay: '0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 12%)',
+    dialog: '0 0 0 1px rgb(0 0 0 / 6%), 0 2px 4px rgb(0 0 0 / 4%), 0 24px 56px -20px rgb(0 0 0 / 18%)',
+    field: '0 0 0 1px rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 40px -12px rgb(0 0 0 / 14%)',
+    fieldHover: '0 0 0 1px rgb(0 0 0 / 12%), 0 1px 2px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
+    fieldFocus: '0 0 0 1px rgb(0 0 0 / 28%), 0 0 0 4px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
   },
   dark: {
     ring: '0 0 0 1px rgb(255 255 255 / 10%)',
     raised: '0 0 0 1px rgb(255 255 255 / 8%), 0 1px 2px rgb(0 0 0 / 40%)',
     overlay: '0 0 0 1px rgb(255 255 255 / 8%), 0 12px 32px -4px rgb(0 0 0 / 45%)',
+    dialog: '0 0 0 1px rgb(255 255 255 / 10%), 0 24px 56px -20px rgb(0 0 0 / 60%)',
+    field: '0 0 0 1px rgb(255 255 255 / 10%), 0 12px 40px -12px rgb(0 0 0 / 50%)',
+    fieldHover: '0 0 0 1px rgb(255 255 255 / 16%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
+    fieldFocus: '0 0 0 1px rgb(255 255 255 / 32%), 0 0 0 4px rgb(255 255 255 / 6%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
   },
 };
 
-/** Motion: short, purposeful. Used for press feedback and the entrance only. */
+/** Focus: the site's 2px ink outline, offset 2px on pills (chrome.css). */
+export const uiFocus = { width: 2, offset: 2 } as const;
+
+/**
+ * Motion (site public.css): colour changes 150ms, small moves 200ms, slow
+ * 400ms, entrances ~500ms; one ease. Press feedback is a 0.98 scale.
+ * Everything collapses to 0 under reduced motion.
+ */
 export const uiMotion = {
   fast: 150,
-  medium: 220,
-  enter: 420,
+  medium: 200,
+  slow: 400,
+  enter: 500,
+  press: 0.98,
   easeOut: 'cubic-bezier(0.22, 1, 0.36, 1)',
 } as const;

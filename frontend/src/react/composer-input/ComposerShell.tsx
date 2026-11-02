@@ -1,8 +1,8 @@
 /* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
 import '../rn/rnwGlobal';
-import { useEffect, useLayoutEffect, useReducer, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useReducer, useRef, useState, useSyncExternalStore } from 'react';
 import { NativeControl } from '../ui/NativeControl';
-import { ComposerControls } from '@socrates/ui/composer';
+import { ComposerFrame } from '@socrates/ui/composer';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { i18n } from '../legacy/gateway';
 import { ComposerAttachmentChips } from '../attachments/AttachmentChipsRow';
@@ -50,6 +50,30 @@ function useComposerPhone(): boolean {
   return useSyncExternalStore(subscribePhone, readPhone, () => false);
 }
 
+const FIELD_SHADOWS = {
+  field: 'var(--ui-elevation-field)',
+  fieldHover: 'var(--ui-elevation-field-hover)',
+  fieldFocus: 'var(--ui-elevation-field-focus)',
+};
+
+/* Focus inside the editor deepens the sheet's hairline (site ask-box). */
+function useEditorFocus(): boolean {
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    const host = document.getElementById('composerInputWrap');
+    if (!host) return undefined;
+    const sync = () => setFocused(Boolean(host.querySelector('.rich-composer-editor:focus')));
+    const later = () => requestAnimationFrame(sync);
+    host.addEventListener('focusin', sync);
+    host.addEventListener('focusout', later);
+    return () => {
+      host.removeEventListener('focusin', sync);
+      host.removeEventListener('focusout', later);
+    };
+  }, []);
+  return focused;
+}
+
 function anchor(id: string): HTMLElement | null {
   return document.getElementById(id);
 }
@@ -68,9 +92,9 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   const attachments = useAttachments();
   const streaming = useIsChatStreaming();
   const sending = useSendGlyphStore((state) => state.isSending);
-  const voicePhase = useVoiceInputStore((state) => state.phase);
-  const voiceActive = voicePhase !== 'idle';
+  const voiceActive = useVoiceInputStore((state) => state.phase) !== 'idle';
   const phone = useComposerPhone();
+  const focused = useEditorFocus();
   const configuration = useChatConfigurationSnapshot();
   const modelLabel = useActiveModelLabel();
   const effort = useStoredReasoningEffort();
@@ -124,30 +148,36 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   return (
     <>
       <VoiceRecordingBar />
-      <div className="attachment-chips hidden" id="composerAttachmentChips">
-        <ComposerAttachmentChips />
-      </div>
-      <div id="composerRoot" className="composer-editor-root" aria-label={composerLabel}>
-        <RichComposer placeholder={placeholder} onSubmit={onSubmit} onEscape={onEscape} />
-      </div>
-      <div className="composer-footer">
-        <NativeControl type="file" id="composerAttachInput" multiple accept={FILE_ACCEPT} hidden />
-        {/* RN-7: the control rail is a shared React Native component
-            (packages/ui/src/composer); the rich editor above stays the web
-            editor. Ids and aria are unchanged, so the legacy controllers
-            and the tools / configuration popovers anchor exactly as before. */}
-        <WebUiTheme>
-          <ComposerControls
-            compact={phone}
-            tools={{
+      {/* RN-7: the question box is the shared RN frame (packages/ui/src/composer).
+          The web supplies two slots — the attachment row and the rich editor
+          (paste, shortcuts, IME, tokens unchanged); the frame draws the rest. */}
+      <WebUiTheme>
+        <ComposerFrame
+          focused={focused}
+          compact={phone}
+          shadows={FIELD_SHADOWS}
+          topVisible={attachments.length > 0}
+          top={(
+            <div className="attachment-chips hidden" id="composerAttachmentChips">
+              <ComposerAttachmentChips />
+            </div>
+          )}
+          body={(
+            <div id="composerRoot" className="composer-editor-root" aria-label={composerLabel}>
+              <RichComposer placeholder={placeholder} onSubmit={onSubmit} onEscape={onEscape} />
+            </div>
+          )}
+          hidden={<NativeControl type="file" id="composerAttachInput" multiple accept={FILE_ACCEPT} hidden />}
+          controls={{
+            tools: {
               label: toolsLabel,
               expanded: composerTools.isOpen && composerTools.triggerId === 'composerToolsBtn',
               onPress: () => {
                 const trigger = anchor('composerToolsBtn');
                 if (trigger) toggleComposerTools(trigger, readComposerSurface());
               },
-            }}
-            effort={{
+            },
+            effort: {
               visible: phone && effort !== 'medium',
               caption: i18n('effort.label', 'Effort'),
               value: effortValue,
@@ -158,8 +188,8 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
                 const trigger = anchor('effortTrigger');
                 if (trigger) openChatConfiguration(trigger);
               },
-            }}
-            mic={{
+            },
+            mic: {
               label: voiceLabel,
               listening: voiceActive,
               onPress: () => {
@@ -168,17 +198,17 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
                   .then(({ toggleSpeechInput }) => toggleSpeechInput(target))
                   .catch((error) => reportSwallow(error, 'react/composer-input.voiceInput'));
               },
-            }}
-            primary={{
+            },
+            primary: {
               mode: streaming ? 'stop' : 'send',
               label: primaryLabel,
               ready: canSend,
               sending,
               onPress: handlePrimaryClick,
-            }}
-          />
-        </WebUiTheme>
-      </div>
+            },
+          }}
+        />
+      </WebUiTheme>
     </>
   );
 }

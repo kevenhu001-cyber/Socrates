@@ -1,163 +1,61 @@
 /*
- * parity/composer-unified.css — THE composer stylesheet.
+ * parity/composer-unified.css — THE composer stylesheet (RN-7 rewrite).
  *
- * One composer shell (#composerInputWrap) parked in exactly one slot at a
- * time: #topicComposerSlot on landing, #chatComposerSlot in conversation
- * (P_composer-single — the shell moves, never rebuilds). Both slots are
- * display:contents (see below), so the shell lays out exactly as if it
- * were the slot's parent's direct child. The landing look is the
- * reference; the shell simply is the same component everywhere.
- * scripts/check-composer-css.mjs
- * (part of `npm run lint`) fails if any other stylesheet styles the shell,
- * its controls or its editor again.
+ * The question box is the shared React Native frame
+ * (packages/ui/src/composer/ComposerFrame.tsx): it paints the white sheet,
+ * the 24px radius, the hairline-in-shadow at rest / hover / focus, the
+ * two-storey rhythm and the 36px control rail, all from the site tokens in
+ * packages/theme/src/ui.ts. This owner is left with what only the web can
+ * style: the moving host, the rich editor's text, the chip strip inside the
+ * editor slot, the attachment cards and the recording bar.
  *
- *   .composer-shell
- *     .attachment-chips          (own component — styled elsewhere)
- *     .composer-editor-root > .rich-composer > [chips] .rich-composer-editor
- *     .composer-footer           (+ hidden file input)
- *       RN-7 control rail (packages/ui/src/composer), placed by
- *       [data-composer-control]:
- *         tools  #composerToolsBtn
- *         effort > #effortTrigger (phones, non-default level only)
- *         mic    #composerMicBtn  (dictation — the only voice entry point)
- *         send   #composerPrimaryBtn (send / stop; 0.3 when empty)
- *
- * The wrappers between the shell and its controls are `display: contents`,
- * so the editor, the chip row and every control are grid items of the shell.
- *
- *   desktop, single row   [+] [editor ··········] [effort] [mic] [send]
- *   desktop, expanded     [editor ····································]
- *   (multiline / chips)   [+] [chips ·········]   [effort] [mic] [send]
- *   phone (always two)    [editor ····································]
- *                         [+] [chips ·········]   [effort] [mic] [send]
- *   attachments           an extra full-width row above the editor.
- *
- * Outer placement (landing column, sticky conversation bar) belongs to the
- * page containers (.topic-setup, .chat-input-bar), not to this file.
+ *   #composerInputWrap.composer-shell       moving host, no paint
+ *     [data-composer-frame]                 RN sheet
+ *       [data-composer-slot=top]            #composerAttachmentChips
+ *       [data-composer-slot=body]           #composerRoot > .rich-composer
+ *                                             queue · editor · chip strip
+ *       [data-composer-slot=rail]           + ······ effort  mic  send
  */
 
-#appShell .composer-shell {
-  --composer-control: 36px;
-}
+/* P_composer-single — parking slots for the moving shell. */
+#appShell .composer-slot { display: contents; }
 
-#appShell .composer-shell .composer-footer,
-#appShell .composer-shell .footer-left-group,
-#appShell .composer-shell .composer-editor-root,
-#appShell .composer-shell .rich-composer {
-  display: contents;
-}
-
-/* P_composer-single — parking slots for the moving shell. display:contents
-   keeps them out of layout entirely, so the shell measures exactly as if
-   it were still a direct child of the landing column / chat bar. */
-#appShell .composer-slot {
-  display: contents;
-}
-
-/* ── Shell ─────────────────────────────────────────────────────────────── */
+/* ── Host ──────────────────────────────────────────────────────────────── */
 #appShell .composer-shell:not(.voice-recording-active) {
   position: relative;
   box-sizing: border-box;
-  display: grid;
-  grid-template-columns: var(--composer-control) minmax(0, 1fr) auto var(--composer-control) var(--composer-control);
-  grid-template-rows: auto;
-  grid-template-areas: "plus editor effort mic send";
-  align-items: center;
-  column-gap: 4px;
-  row-gap: 0;
+  display: block;
   width: min(100%, var(--ui-content-chat));
   max-width: var(--ui-content-chat);
-  height: auto;
-  min-height: 52px;
   margin: 0 auto;
-  padding: 7px 10px 7px 8px;
-  overflow: visible;
-  border: 1px solid var(--ui-composer-border);
-  border-radius: var(--ui-radius-composer-desktop);
-  background: var(--ui-bg-composer-glass);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  background-clip: padding-box;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-card);
+  background: transparent;
+  box-shadow: none;
   color: var(--foreground);
-  box-shadow: var(--ui-composer-shadow);
-  transform: none;
-  /* Paint-only feedback; geometry changes are animated by RichComposer. */
-  transition: border-color var(--ui-duration-overlay) var(--ui-ease-out),
-              background-color var(--ui-duration-overlay) var(--ui-ease-out),
-              box-shadow var(--ui-duration-overlay) var(--ui-ease-out);
 }
-
-/* A quiet focus cue keeps the capsule readable without a bright outer glow.
- *
- * The capsule is a container, not a control: it reacts to focus with
- * :focus-within, so it cannot carry the shared ring (an outline painted
- * around a 768px capsule read as a frame, and an outward ring grew the
- * capsule by a pixel on every side, moving its top and bottom edges the
- * moment the editor took focus). The cue is therefore the border colour
- * alone, and the elevation shadow is kept as it is — a focus state that
- * drops the resting shadow makes the capsule look like it collapsed. */
-#appShell .composer-shell:not(.voice-recording-active):focus-within {
-  border-color: var(--ui-border-strong);
-  box-shadow: var(--ui-composer-shadow);
-}
-
-/* Two-row layout: a real multi-line draft, or any tool / plugin chip.
-   Shape flags are JS-owned (ui/composerShape.js toggles .has-plugin-chips /
-   .has-attachments); no :has() on the hot path. */
-#appShell .composer-shell.composer-multiline:not(.voice-recording-active),
-#appShell .composer-shell.has-plugin-chips:not(.voice-recording-active) {
-  grid-template-areas:
-    "editor editor editor editor editor"
-    "plus   chips  effort mic    send";
-  padding: 10px 10px 7px 8px;
-}
-
-/* Attachments add a full-width row on top. */
-#appShell .composer-shell.has-attachments:not(.voice-recording-active) {
-  grid-template-areas:
-    "files  files  files  files  files"
-    "editor editor editor editor editor"
-    "plus   chips  effort mic    send";
-  padding-top: 10px;
-}
-#appShell .composer-shell.has-queue:not(.voice-recording-active) {
-  grid-template-areas:
-    "queue  queue  queue  queue  queue"
-    "editor editor editor editor editor"
-    "plus   chips  effort mic    send";
-  padding-top: 10px;
-}
-#appShell .composer-shell.has-queue.has-attachments:not(.voice-recording-active) {
-  grid-template-areas:
-    "files  files  files  files  files"
-    "queue  queue  queue  queue  queue"
-    "editor editor editor editor editor"
-    "plus   chips  effort mic    send";
-  padding-top: 10px;
-}
-#appShell .composer-shell > .attachment-chips {
-  grid-area: files;
-  min-width: 0;
-  margin: 0 0 4px 2px;
-  /* Card chips carry a floating remove disc 7px above their top edge —
-     this padding keeps it inside the composer card. */
-  padding: 8px 2px 0;
-}
-
-/* ── Editor ────────────────────────────────────────────────────────────── */
-#appShell .composer-shell .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar):not(.composer-queue-banner) {
-  grid-area: editor;
-  align-self: center;
+#appShell .composer-shell .composer-editor-root { display: block; min-width: 0; }
+#appShell .composer-shell .rich-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-step-75);
   min-width: 0;
 }
+#appShell .composer-shell .composer-queue-banner { order: 0; }
+#appShell .composer-shell .rich-composer > .tiptap,
+#appShell .composer-shell .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar):not(.composer-queue-banner) { order: 1; min-width: 0; }
+#appShell .composer-shell .composer-plugin-chips { order: 2; }
 #appShell .composer-shell .rich-composer-toolbar { display: none; }
+
+/* ── Editor: site body-3 rhythm (16 / 26), quiet placeholder ───────────── */
 #appShell .composer-shell .rich-composer-editor {
   box-sizing: border-box;
   width: 100%;
-  min-height: 24px;
+  min-height: 26px;
   max-height: min(40dvh, 336px);
   margin: 0;
-  padding: 6px 8px;
+  padding: 0;
   overflow-y: auto;
   border: 0;
   outline: none;
@@ -166,13 +64,9 @@
   font-family: var(--font-sans);
   font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-regular);
-  line-height: 24px;
+  line-height: 26px;
   text-align: left;
   scrollbar-width: thin;
-}
-#appShell .composer-shell.composer-multiline .rich-composer-editor,
-#appShell .composer-shell.has-plugin-chips .rich-composer-editor {
-  padding: 4px 12px 10px;
 }
 #appShell .composer-shell .rich-composer-editor[contenteditable="false"] { opacity: 0.65; cursor: not-allowed; }
 #appShell .composer-shell :is(.rich-composer-editor, textarea, input):focus,
@@ -217,26 +111,24 @@
   top: 0;
   float: none;
   height: 0;
-  color: var(--ui-text-placeholder);
+  color: var(--ui-ink-tertiary);
   opacity: 1;
   white-space: nowrap;
   pointer-events: none;
 }
 
-/* ── Chip row (web search, connectors) ─────────────────────────────────── */
+/* ── Chip strip (web search, connectors) — under the editor ───────────── */
 #appShell .composer-shell .composer-plugin-chips {
-  grid-area: chips;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: var(--ui-step-50);
   min-width: 0;
-  width: auto;
-  margin: 0;
+  margin: 0 0 0 calc(var(--ui-step-50) * -1);
   padding: 0;
-  overflow: hidden;
   background: none;
 }
+#appShell .composer-shell .composer-plugin-chips:empty { display: none; }
 /* Chip internals: the badge and its remove button are shadcn `Badge` /
    `Button` (secondary + ghost) in `ComposerPluginChips.tsx`, so only the
    glyph plumbing and the phone overrides are left here. */
@@ -254,109 +146,19 @@
 #appShell .composer-tool-chip:hover .composer-tool-chip-close,
 #appShell .composer-tool-chip:focus-visible .composer-tool-chip-close { opacity: 1; }
 
-/* ── Controls ──────────────────────────────────────────────────────────── */
-/* RN-7: the four controls are the shared React Native rail
-   (packages/ui/src/composer/ComposerControls.tsx). The component paints
-   itself — size, pill radius, fills, ink disc, glyphs; this owner only
-   places each control in the shell grid and draws the focus ring. */
-#appShell .composer-shell [data-composer-control="tools"] { grid-area: plus; }
-#appShell .composer-shell [data-composer-control="effort"] { grid-area: effort; }
-#appShell .composer-shell [data-composer-control="mic"] { grid-area: mic; }
-#appShell .composer-shell [data-composer-control="send"] { grid-area: send; }
-
-#appShell .composer-shell [data-composer-control] {
-  align-self: end;
-  margin: 0;
-}
-/* In single-row desktop layout, keep controls centered on the editor's text line
-   so buttons never jump vertically as text approaches the single-line margin. */
-#appShell .composer-shell:not(.composer-multiline):not(.has-plugin-chips) [data-composer-control] {
-  align-self: center;
-}
+/* ── Control rail focus: the shared double ring (ink + paper gap) ─────── */
 #appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"], #effortTrigger):focus-visible {
-  outline: none;
   box-shadow: var(--ui-focus-shadow);
 }
-/* Desktop keeps the reasoning level in the header configuration menu. */
-#appShell .composer-shell [data-composer-control="effort"] { display: none; }
 
-/* ── Phone (<= 768px) ──────────────────────────────────────────────────────
-   Always two storeys: the editor gets the whole first row, the controls sit
-   on a rail beneath it. Borderless card with a soft drop shadow. */
+/* ── Phone: same sheet, full width, 44px hit areas ──────────────────────── */
 @media (max-width: 768px) {
-  #appShell .composer-shell [data-composer-control="effort"][data-visible="true"] { display: flex; }
-  #appShell .composer-shell:not(.voice-recording-active),
-  #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
-  /* P_composer-single — the landing and conversation shells are one node
-     with one grid. A landing-only 4-track grid that hid .effort-picker
-     landed in a983ed9f and broke e2e/composer-parity.spec.mjs on both phone
-     themes: the contract is that the shell keeps the same DOM shape and the
-     same computed styles across the landing → chat flip.
-
-     It was also a capability gap, not a layout necessity. There is exactly
-     one .effort-picker in index.html and no alternate affordance, so a phone
-     user could set reasoning effort from chat but not before their first
-     message, while the desktop landing could. The 4-track row fit fine
-     anyway: 36 + 36 + 36 fixed controls leave ~160px for the chip strip. */
-  #appShell .composer-shell.has-plugin-chips:not(.voice-recording-active) {
-    grid-template-areas:
-      "editor editor editor editor editor"
-      "plus   chips  effort mic    send";
-    row-gap: 3px;
-    width: 100%;
-    max-width: none;
-    padding: 12px 8px 8px;
-    border: 1px solid var(--ui-composer-border);
-    border-radius: var(--ui-radius-composer-desktop);
-    box-shadow: var(--ui-composer-shadow);
-  }
-  #appShell .composer-shell.has-attachments:not(.voice-recording-active) {
-    padding-top: 12px;
-  }
-  #appShell .composer-shell.has-queue:not(.voice-recording-active) {
-    grid-template-areas:
-      "queue  queue  queue  queue  queue"
-      "editor editor editor editor editor"
-      "plus   chips  effort mic    send";
-    padding-top: 10px;
-  }
-  #appShell .composer-shell.has-queue.has-attachments:not(.voice-recording-active) {
-    grid-template-areas:
-      "files  files  files  files  files"
-      "queue  queue  queue  queue  queue"
-      "editor editor editor editor editor"
-      "plus   chips  effort mic    send";
-    padding-top: 12px;
-  }
-  #appShell .composer-shell .rich-composer-editor,
-  #appShell .composer-shell.composer-multiline .rich-composer-editor,
-  #appShell .composer-shell.has-plugin-chips .rich-composer-editor {
-    min-height: 24px;
-    max-height: 220px;
-    padding: 0 8px;
-    line-height: 24px;
-  }
-  /* The chips track is ~1fr of a narrow row — several selected plugins
-     would crush each chip to icon width under flex-shrink. Keep chips at
-     full size and let the strip scroll horizontally instead, as the
-     pre-unification mobile sheet did. */
-  #appShell .composer-shell .composer-plugin-chips {
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-  }
+  #appShell .composer-shell:not(.voice-recording-active) { width: 100%; max-width: none; }
+  #appShell .composer-shell .rich-composer-editor { max-height: 220px; }
+  #appShell .composer-shell .composer-plugin-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   #appShell .composer-shell .composer-plugin-chips::-webkit-scrollbar { display: none; }
-  #appShell .composer-shell .composer-plugin-chip,
-  #appShell .composer-shell .composer-tool-chip { flex: 0 0 auto; }
-  #appShell .composer-shell [data-composer-control] {
-    align-self: center;
-  }
-  /* Hit-area wrapper: keep the 36×36 visual (chatgpt reference) but
-     extend the tap surface to 44×44 via ::before so iOS-precision taps
-     don't miss the round button. */
-  #appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"]) {
-    position: relative;
-  }
+  #appShell .composer-shell :is(.composer-plugin-chip, .composer-tool-chip) { flex: 0 0 auto; }
+  #appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"]) { position: relative; }
   #appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"])::before {
     content: "";
     position: absolute;
@@ -378,32 +180,35 @@
   max-width: var(--ui-content-chat);
   min-height: 104px;
   margin: 0 auto;
-  padding: 10px;
+  padding: var(--ui-step-75);
   overflow: hidden;
-  border: 1px solid var(--ui-composer-border);
-  border-radius: var(--ui-radius-composer-desktop);
-  background: var(--ui-bg-composer);
+  border: 0;
+  border-radius: var(--ui-radius-card);
+  background: var(--ui-card);
   color: var(--foreground);
-  box-shadow: none;
+  box-shadow: var(--ui-elevation-field-focus);
 }
 #appShell .composer-shell.voice-recording-active > :not(.voice-recording-bar) { display: none; }
 @media (max-width: 768px) {
-  #appShell .composer-shell.voice-recording-active { width: 100%; max-width: none; border-radius: 26px; }
+  #appShell .composer-shell.voice-recording-active { width: 100%; max-width: none; }
 }
 
-/* Composer attachments: horizontal image tiles and document cards (ChatGPT-style). */
+/* Composer attachments: a strip of image tiles and document cards in the
+   frame's top slot. The slot owns the outer rhythm (inset, gap to the
+   editor); the strip only scrolls. The 6px top padding keeps each card's
+   floating remove disc inside the sheet. */
 .composer-shell .attachment-chips {
   display: flex;
   flex-wrap: nowrap;
-  gap: 8px;
+  gap: var(--ui-step-75);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scroll-snap-type: x proximity;
-  padding: 8px 12px 6px 12px;
+  padding: 0;
 }
-#appShell .composer-shell > .attachment-chips {
-  padding: 8px 12px 6px 12px;
+#appShell .composer-shell [data-composer-slot="top"] > .attachment-chips {
+  padding: 0 0 2px;
 }
 
 .composer-shell .attachment-chip {
@@ -415,19 +220,18 @@
   height: 56px;
   padding: 8px 30px 8px 10px;
   gap: 10px;
-  border-radius: var(--ui-radius-xl);
-  background: var(--ui-bg-surface);
-  border: 1px solid var(--ui-border-subtle);
-  box-shadow: 0 1px 2px hsl(0 0% 0% / 0.04);
+  border: 0;
+  border-radius: var(--ui-round-md);
+  background: var(--ui-card);
+  box-shadow: var(--ui-elevation-ring);
   scroll-snap-align: start;
   display: flex;
   align-items: center;
-  transition: border-color var(--ui-duration-fast) ease, box-shadow var(--ui-duration-fast) ease;
+  transition: box-shadow var(--ui-motion-fast) var(--ui-motion-ease-out);
 }
 
 .composer-shell .attachment-chip:hover {
-  border-color: var(--border);
-  box-shadow: 0 2px 6px hsl(0 0% 0% / 0.06);
+  box-shadow: 0 0 0 1px var(--ui-hairline-strong);
 }
 
 .composer-shell .attachment-chip-visual {

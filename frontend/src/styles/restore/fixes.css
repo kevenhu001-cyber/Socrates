@@ -297,10 +297,6 @@
      components/composer.css, so it overflowed the 36px editor root by 4px
      top and bottom — the placeholder line sat 4px above the capsule's
      optical centre. Pin the whole chain to the same 36px row. */
-  #appShell#appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root .rich-composer > div {
-    height: 36px !important;
-    min-height: 36px !important;
-  }
 
   /* Attach + dictation controls — 36px circles, matching the reference's
      composer-btn hit areas (the send control already is 36px). These apply
@@ -404,10 +400,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
   /* The reference keeps 12px of page inset on both sides of the capsule. */
 
-  #appShell#appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips) .attachment-chips {
-    grid-column: 1 / -1 !important;
-    grid-row: 1 !important;
-  }
 
   /* Control sizing applies in every state, including the multiline card.
      The selector carries the composer id as well: a two-id rule in
