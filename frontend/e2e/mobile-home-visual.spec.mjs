@@ -106,9 +106,16 @@ test('mobile conversation home matches the compact dark reference layout', async
   /* The active-chat header uses the reference's one tactile navigation
      control plus two unframed utilities. Expose the session-only controls
      without invoking a networked share action so this remains visual QA. */
-  const headerVisual = await page.evaluate(() => {
+  await page.evaluate(() => {
     document.body.dataset.conversationActive = 'true';
     window.__testShowConversationActions(true);
+  });
+  /* 顶栏由 store 驱动，React 异步提交后查找/分享按钮才出现；等它们渲染完成再测量。 */
+  await expect.poll(() => page.evaluate(() => [
+    document.querySelector('#findBtn')?.getBoundingClientRect().width ?? 0,
+    document.querySelector('#shareBtn')?.getBoundingClientRect().width ?? 0,
+  ].every((width) => width > 0))).toBe(true);
+  const headerVisual = await page.evaluate(() => {
     const measure = (selector) => {
       const el = document.querySelector(selector);
       const rect = el?.getBoundingClientRect();

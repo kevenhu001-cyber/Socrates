@@ -49,28 +49,23 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
     };
   });
   expect(rows.navH).toBe(36);
-  /* --ui-radius-row (10px), the chatgpt.com row radius (docs/ref/
-     chatgpt-parity.md, captured over CDP from chatgpt.com at 1440×900:
-     "Sidebar item | 36px, radius 10, pad 6/10, icon 20"). */
-  expect(rows.navRadius).toBe('10px');
+  /* RN-7 侧栏：导航行用 uiRadius.md（12px），这是新设计规定的行圆角。 */
+  expect(rows.navRadius).toBe('12px');
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.modeBadgeVisible).toBe(false);
-  /* The rail is one rung below the canvas on the light ladder. */
-  expect(rows.sidebarBg).toBe('rgb(242, 242, 242)');
-  /* --ui-sidebar-border → --ui-border-default (#eaeaea): the Geist default
-     hairline, the same 1px the inputs and cards draw. */
-  expect(rows.sidebarBorder).toBe('1px rgb(234, 234, 234)');
+  /* RN-7：侧栏本身透明，灰色由外层画布承担（白色画布卡片浮在灰底上）。 */
+  expect(rows.sidebarBg).toBe('rgba(0, 0, 0, 0)');
+  /* RN-7：侧栏不画右边框，分界由白色画布卡片的发丝外框给出。 */
+  expect(rows.sidebarBorder.split(' ')[0]).toBe('0px');
   expect(rows.headerH).toBe(52);
   expect(rows.logoFontSize).toBe('18px');
   expect(rows.footerBorderTop).toBe('0px');
   expect(rows.avatarSize).toBe(28);
 
-  /* Keep the shared translucent hover wash over the navigation rail. The
-     wash is now Geist's own alpha step (gray-alpha-100 = 5% ink), not the
-     3% the old palette mixed by hand. */
+  /* 导航行悬停用 RN-7 的 fill token（4% ink），与顶栏、提问框控件的悬停一致。 */
   await page.locator('#navProjects').hover();
-  await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.05)');
+  await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.04)');
 });
 
 test('collapsing keeps a 52px icon rail with named buttons and reopens from it', async ({ page }) => {
