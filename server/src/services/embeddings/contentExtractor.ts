@@ -168,7 +168,10 @@ class WorkerSlot {
       if (this._inflightReject) {
         const r = this._inflightReject;
         this._inflightReject = null;
-        r(err);
+        const workerError = err instanceof Error
+          ? err
+          : new Error(`content_extractor_worker_error: ${String(err)}`);
+        r(workerError);
       }
       if (this._nextRelease) {
         const r = this._nextRelease;
