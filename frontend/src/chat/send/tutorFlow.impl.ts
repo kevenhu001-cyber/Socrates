@@ -117,8 +117,8 @@ async function runTutorFollowUp(
     }
     if (response != null) {
       streamController.finish();
-      /* RN-4: the reply is in, so the question chain offers the next questions. */
-      showSocraticSuggestions();
+      /* RN-4 / RN-6: the reply is in; the chain offers its own next questions. */
+      showSocraticSuggestions(typeof response === 'string' ? response : null);
     } else if (stateStore.read('lastCallError')) {
       streamController.replaceWithError(
         'No response: ' + stateStore.read('lastCallError'),

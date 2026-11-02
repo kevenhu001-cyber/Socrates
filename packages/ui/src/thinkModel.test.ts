@@ -57,8 +57,12 @@ test('chainView folds the middle of long chains', () => {
 test('learning modes map to host actions', () => {
   assert.deepEqual(LEARNING_MODES.map((m) => m.id), ['think', 'recall', 'connect', 'diagnose', 'mistakes']);
   assert.deepEqual(learningModeAction('think', 'session'), { kind: 'chain' });
-  assert.equal(learningModeAction('recall', 'home').kind, 'prompt');
-  assert.deepEqual(learningModeAction('connect', 'session'), { kind: 'panel', panel: 'knowledge' });
+  /* RN-6: no mode pre-fills copy; the server-owned prompt does the work. */
+  assert.deepEqual(learningModeAction('recall', 'home'), { kind: 'chain' });
+  assert.deepEqual(learningModeAction('recall', 'session'), { kind: 'turn' });
+  assert.deepEqual(learningModeAction('connect', 'session'), { kind: 'panel', panel: 'knowledge', refresh: 'concepts' });
+  assert.deepEqual(learningModeAction('diagnose', 'session'), { kind: 'diagnostic' });
+  assert.ok(LEARNING_MODES.every((mode) => !('promptKey' in mode.homeAction) && !('promptKey' in mode.sessionAction)));
   assert.deepEqual(learningModeAction('mistakes', 'home'), { kind: 'panel', panel: 'mistakes' });
   assert.equal(isLearningModeId('recall'), true);
   assert.equal(isLearningModeId('chat'), false);

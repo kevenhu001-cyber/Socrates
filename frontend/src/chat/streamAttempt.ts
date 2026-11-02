@@ -107,6 +107,11 @@ function buildRequestBody(context: StreamAttemptContext) {
       body.clientTurn = context.opts.clientTurn;
     }
   } catch (error) { reportSwallow(error, 'chat/streamAttempt.attachTurn'); }
+  /* RN-6: a tutor turn names its learning mode; the server owns what it means. */
+  const learningMode = context.opts?.learningMode;
+  if (typeof learningMode === 'string' && learningMode) body.learningMode = learningMode;
+  const learningFocus = context.opts?.learningFocus;
+  if (typeof learningFocus === 'string' && learningFocus) body.learningFocus = learningFocus;
   return body;
 }
 

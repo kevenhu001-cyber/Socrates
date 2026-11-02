@@ -43,3 +43,8 @@ export async function askNextQuestion(...args: Parameters<FeatureRuntime["askNex
   const runtime = await loadRuntime();
   return runtime.askNextQuestion(...args);
 }
+
+export async function runLearningModeTurn(...args: Parameters<FeatureRuntime["runLearningModeTurn"]>) {
+  const runtime = await loadRuntime();
+  return runtime.runLearningModeTurn(...args);
+}

@@ -93,16 +93,21 @@ export function chainNodeLabel(index: number): string {
 export type LearningModeId = 'think' | 'recall' | 'connect' | 'diagnose' | 'mistakes';
 
 /**
- * What a mode does in the host, as data so every host wires it the same way:
- *  - `chain`   keeps the question chain under the reply (no extra request);
- *  - `prompt`  pre-fills a guiding request in the composer;
- *  - `panel`   opens a tutor side panel (knowledge map / mistake book).
+ * What a mode does in the host, as data so every host wires it the same way.
+ * No action carries copy: the mode id rides on every tutor turn and the
+ * server-owned prompt for it decides what the model writes (RN-6).
+ *  - `chain`       keeps the question chain under the reply (no extra request);
+ *  - `turn`        runs one tutor turn in this mode right away (recall cards);
+ *  - `panel`       opens a tutor side panel; `refresh: 'concepts'` also asks
+ *                  the model to add or update the map's definitions and links;
+ *  - `diagnostic`  runs a fresh formal diagnostic inside the session.
  * On the landing page there is no session yet, so `homeAction` can differ.
  */
 export type LearningModeAction =
   | { kind: 'chain' }
-  | { kind: 'prompt'; promptKey: string }
-  | { kind: 'panel'; panel: 'knowledge' | 'mistakes' };
+  | { kind: 'turn' }
+  | { kind: 'panel'; panel: 'knowledge' | 'mistakes'; refresh?: 'concepts' }
+  | { kind: 'diagnostic' };
 
 export interface LearningModeSpec {
   id: LearningModeId;
@@ -127,24 +132,24 @@ export const LEARNING_MODES: readonly LearningModeSpec[] = Object.freeze([
     id: 'recall',
     labelKey: 'learnMode.recall.label',
     hintKey: 'learnMode.recall.hint',
-    homeAction: { kind: 'prompt', promptKey: 'learnMode.recall.prompt' },
-    sessionAction: { kind: 'prompt', promptKey: 'learnMode.recall.sessionPrompt' },
+    homeAction: { kind: 'chain' },
+    sessionAction: { kind: 'turn' },
     candidatesFromMistakes: false,
   },
   {
     id: 'connect',
     labelKey: 'learnMode.connect.label',
     hintKey: 'learnMode.connect.hint',
-    homeAction: { kind: 'prompt', promptKey: 'learnMode.connect.prompt' },
-    sessionAction: { kind: 'panel', panel: 'knowledge' },
+    homeAction: { kind: 'chain' },
+    sessionAction: { kind: 'panel', panel: 'knowledge', refresh: 'concepts' },
     candidatesFromMistakes: false,
   },
   {
     id: 'diagnose',
     labelKey: 'learnMode.diagnose.label',
     hintKey: 'learnMode.diagnose.hint',
-    homeAction: { kind: 'prompt', promptKey: 'learnMode.diagnose.prompt' },
-    sessionAction: { kind: 'prompt', promptKey: 'learnMode.diagnose.sessionPrompt' },
+    homeAction: { kind: 'chain' },
+    sessionAction: { kind: 'diagnostic' },
     candidatesFromMistakes: false,
   },
   {

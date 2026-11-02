@@ -10,7 +10,8 @@ import type { PromptMessage } from '../chat/promptSuffixes.ts';
 import type { ChatRequestMessage } from '../chat/api/requestBody.ts';
 import { callAPI } from '../chat/api.ts';
 import { callAPIStream, StreamThinkingHandler, StreamDeltaHandler, StreamCallOptions } from '../chat/stream.ts';
-import { buildSocraticMessages, buildFollowUpMessages, buildSocraticPrompt, TutorNode } from './flow.ts';
+import { buildSocraticMessages, buildFollowUpMessages, buildLearningModeMessages, buildSocraticPrompt, TutorNode } from './flow.ts';
+import { learningTurnOptions, type LearningTurnOptions } from './learningModeState.ts';
 import { BASELINE_LEVEL, fromBasicsDirective } from '../chat/socraticDirectives.ts';
 import { appendClientContextMessages } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
@@ -20,7 +21,7 @@ import { addMessage as _addMessage } from '../chat/messages.ts';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.ts';
 import { addStreamingMessage } from '../chat/streamingTurn.ts';
-import { showSocraticSuggestions } from './socraticMastery.ts';
+import { clearSocraticSuggestions, showSocraticSuggestions } from './socraticMastery.ts';
 
 
 /* omit entirely; backend passes through */
@@ -57,7 +58,7 @@ export async function generateSocraticQuestionStream(node: TutorNode, domain: st
     const history = promptHistory(extractHistory());
     const isFirst = history.length === 0;
     const msgs = buildSocraticMessages(node, domain, history, isFirst);
-    const result = await callAPIStream(msgs, MAX_TOKENS_CHAT, onDelta, onThinking, streamOpts);
+    const result = await callAPIStream(msgs, MAX_TOKENS_CHAT, onDelta, onThinking, { ...streamOpts, ...learningTurnOptions() });
     if (result && result.cancelled) return result;
     if (result && result.text && result.text.trim()) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
@@ -112,7 +113,7 @@ export async function generateFollowUpStream(answer: string, node: TutorNode, do
   if (hasUsableActive()) {
     const history = promptHistory(extractHistory());
     const msgs = buildFollowUpMessages(answer, node, domain, history);
-    const result = await callAPIStream(msgs, MAX_TOKENS_CHAT, onDelta, onThinking, streamOpts);
+    const result = await callAPIStream(msgs, MAX_TOKENS_CHAT, onDelta, onThinking, { ...streamOpts, ...learningTurnOptions() });
     if (result && result.cancelled) return result;
     if (result && result.text && result.text.trim()) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
@@ -161,8 +162,8 @@ export async function askNextQuestion(){
     if(result!=null){
       ctl.finish();
       stateStore.dispatch({type:"state/batch",patch:{stuckCount:0,totalQ:stateStore.read("totalQ")+1}});
-      /* RN-4: offer the question chain under the new tutor question. */
-      showSocraticSuggestions();
+      /* RN-4 / RN-6: the chain offers the model's own next questions. */
+      showSocraticSuggestions(result.text);
       return;
     }
     /* Distinguish upstream error (show retry) from "API returned null
@@ -180,4 +181,36 @@ export async function askNextQuestion(){
   const q=await generateSocraticQuestion(node,stateStore.read("domain") || '');
   _addAnchoredAssistant(q.text);
   stateStore.dispatch({type:"state/batch",patch:{stuckCount:0,totalQ:stateStore.read("totalQ")+1}});
+}
+
+/**
+ * RN-6 — one tutor turn in a given learning mode, started by the learner's
+ * choice rather than by a message (recall cards from the mode menu, practice
+ * on a knowledge-map node). The server-owned prompt for the mode decides
+ * the reply; `learningFocus` names what it acts on.
+ */
+export async function runLearningModeTurn(opts: LearningTurnOptions): Promise<void> {
+  const nodes = stateStore.read("kbNodes") as TutorNode[];
+  const node = nodes[stateStore.read("currentNode")] || nodes[0];
+  if (!node || !hasUsableActive()) return;
+  clearSocraticSuggestions();
+  const ctl = await _addStreamingMessage({ onRetry: function () { void runLearningModeTurn(opts); } });
+  const history = promptHistory(extractHistory());
+  const msgs = buildLearningModeMessages(node, stateStore.read("domain") || '', history, opts);
+  const result = await callAPIStream(
+    msgs,
+    MAX_TOKENS_CHAT,
+    function (delta: string) { ctl.append(delta); },
+    function (t: string) { ctl.appendThinking(t); },
+    { ..._toolCallbacksForStream(ctl), ...learningTurnOptions(opts) },
+  );
+  if (result && result.cancelled) { ctl.abort(); return; }
+  if (result && result.text && result.text.trim()) {
+    stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
+    ctl.finish();
+    showSocraticSuggestions(result.text);
+    return;
+  }
+  const error = stateStore.read("lastCallError") || 'Stream returned no content';
+  ctl.replaceWithError("No response: " + error, function () { void runLearningModeTurn(opts); });
 }

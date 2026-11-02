@@ -4,6 +4,7 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import type { ChainCandidate } from '@socrates/ui/think-model';
 import { followQuestionChain, syncQuestionChain } from './questionChain.ts';
 import { requestMistakeRedo } from '../ui/mistakeBookCommands.ts';
+import { extractNextQuestions } from '@socrates/core/learningBlocks';
 
 function translate(key: string, fallback: string): string {
   if (typeof (window as unknown as { t?: (k: string) => string }).t === 'function') {
@@ -77,7 +78,15 @@ export function followChainCandidate(candidate: ChainCandidate): void {
     });
 }
 
-export function showSocraticSuggestions(customSuggestions?: string[]): void {
+/**
+ * Show the question chain under the reply that just finished. The next
+ * questions are the ones the model wrote for this reply (RN-6
+ * `<next-questions>` block, parsed by the shared normalizer). A reply
+ * without a usable block offers no ask questions: there is no fixed
+ * fallback copy. The chain itself (and mistake candidates in the mistakes
+ * mode) still shows.
+ */
+export function showSocraticSuggestions(replyText?: string | null): void {
   const isTutor = document.documentElement.dataset.mainView === 'tutor'
     || document.getElementById('topModeTutor')?.classList.contains('is-active')
     || document.getElementById('topModeTutor')?.getAttribute('aria-selected') === 'true';
@@ -85,13 +94,8 @@ export function showSocraticSuggestions(customSuggestions?: string[]): void {
   const container = document.getElementById('socraticSuggestions');
   if (!container || !isTutor) return;
 
-  const defaultPrompts = [
-    '为什么会有这个前提？',
-    '如果换一个条件会怎样？',
-    '能举出一个反例吗？',
-  ];
-
-  const prompts = (customSuggestions && customSuggestions.length > 0) ? customSuggestions : defaultPrompts;
+  const parsed = extractNextQuestions(replyText ?? '');
+  const prompts = parsed.status === 'ok' ? parsed.questions : [];
   syncQuestionChain();
   void import('../react/tutor/socraticSuggestionsHost').then(({ renderSocraticSuggestions }) => {
     if (!container.isConnected || container.classList.contains('hidden')) return;

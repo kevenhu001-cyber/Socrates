@@ -15,6 +15,7 @@ import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { syncSocraticMasteryUI, showSocraticSuggestions } from '../tutor/socraticMastery.ts';
+import { learningTurnOptions } from '../tutor/learningModeState.ts';
 import { buildChatTurnMessages } from './turnPrompt.ts';
 import { prepareTurnPageContext } from './turnPageContext.ts';
 
@@ -176,6 +177,8 @@ function runChatTurnStream(
       onRetry: (notice) => controller.setRetryStatus?.(notice),
       clientTurn: pending.clientTurn,
       onTurnBound: pending.onTurnBound,
+      /* RN-6: in Tutor mode a free-form turn carries the learning mode too. */
+      ...learningTurnOptions(),
     },
   );
 }
@@ -201,7 +204,7 @@ function finishTurnFeedback(result: StreamResult | null): void {
   publishActiveWorkflowFinish(Boolean(result && result.text && String(result.text).trim()));
   try {
     syncSocraticMasteryUI();
-    if (result && result.text && !result.cancelled) showSocraticSuggestions();
+    if (result && result.text && !result.cancelled) showSocraticSuggestions(String(result.text));
   } catch {
     /* empty-catch: intentional — Socratic feedback must not fail the chat turn. */
   }
