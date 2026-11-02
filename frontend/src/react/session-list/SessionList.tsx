@@ -50,12 +50,13 @@ function SessionListInner() {
     getLegacyActions().sessions.deleteSession(id, event.nativeEvent);
   }, []);
 
-  const handleDragStart = useCallback((event: React.DragEvent, id: string) => {
-    getLegacyActions().sessions.onSessionDragStart(event.nativeEvent, id);
+  /* Native drag events: the row is a react-native-web view (see SessionRow). */
+  const handleDragStart = useCallback((event: DragEvent, id: string) => {
+    getLegacyActions().sessions.onSessionDragStart(event, id);
   }, []);
 
-  const handleDragEnd = useCallback((event: React.DragEvent) => {
-    getLegacyActions().sessions.onSessionDragEnd(event.nativeEvent);
+  const handleDragEnd = useCallback((event: DragEvent) => {
+    getLegacyActions().sessions.onSessionDragEnd(event);
   }, []);
 
   if (!sessions.length) {

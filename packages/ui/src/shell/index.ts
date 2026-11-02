@@ -11,3 +11,8 @@ export {
   SidebarBrand, SidebarIconAction, SidebarHeaderActions, SidebarNavRow,
   type SidebarBrandProps, type SidebarIconActionProps, type SidebarNavRowProps,
 } from './Sidebar';
+export {
+  ConversationRow, ConversationGroupHeading,
+  type ConversationRowProps, type ConversationRowPart, type ConversationRowParts, type ConversationGroupHeadingProps,
+} from './ConversationRow';
+export { conversationRowPaint, isRowActivationKey, type ConversationRowState, type ConversationRowPaint } from './conversationRowModel';
