@@ -5,7 +5,8 @@
  * blocks, and grading / reporting stays in render/widgetRuntime.ts.
  */
 import { recordRecallRating } from '../../tutor/recallRatings.ts';
-import { useMemo, type ReactNode } from 'react';
+import { daysUntilReview, flashcardUiState, recordReview, rememberFlashcardUiState, reviewCardFor } from '../../tutor/reviewDeck.ts';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   DefinitionCard,
   FlashcardCard,
@@ -19,8 +20,11 @@ import {
   hintLevels,
   parseAnswerKey,
   splitDerivationSteps,
+  type FlashcardState,
   type LearnStrings,
   type QuizResult,
+  type RecallRating,
+  type ReviewCard,
 } from '@socrates/ui/learn';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { reportSwallow } from '../../util/reportSwallow.ts';
@@ -180,9 +184,29 @@ export function ExampleScaffold({ parsed }: { parsed: ParsedExample }) {
   );
 }
 
+/** RN-14: when a rated card comes back, in the interface language. */
+export function reviewScheduleNote(card: ReviewCard | null, now = Date.now()): string | null {
+  if (!card) return null;
+  const days = daysUntilReview(card, now);
+  if (days <= 0) return tr('review.laterToday', 'Back again later today');
+  if (days === 1) return tr('review.tomorrow', 'Next review tomorrow');
+  return tr('review.inDays', 'Next review in {n} days').replace('{n}', String(days));
+}
+
 export function FlashcardScaffold({ parsed }: { parsed: ParsedFlashcard }) {
-  /* RN-6: the self-rating goes back to the tutor as next-turn context. */
-  return <FlashcardCard front={parsed.front || ''} back={parsed.back || ''} onRate={(rating) => recordRecallRating(parsed.front || '', rating)} />;
+  const front = parsed.front || '';
+  const back = parsed.back || '';
+  /* RN-14: a re-render remounts this card; it resumes where it was. */
+  const [initial] = useState(() => flashcardUiState(front));
+  const [note, setNote] = useState<string | null>(() => (initial?.rating ? reviewScheduleNote(reviewCardFor(front)) : null));
+  const onStateChange = useCallback((state: FlashcardState) => rememberFlashcardUiState(front, state), [front]);
+  const onRate = (rating: RecallRating) => {
+    /* RN-6: the self-rating goes back to the tutor as next-turn context. */
+    recordRecallRating(front, rating);
+    /* RN-14: and schedules the card for spaced review. */
+    setNote(reviewScheduleNote(recordReview(front, back, rating)));
+  };
+  return <FlashcardCard front={front} back={back} onRate={onRate} initialState={initial} onStateChange={onStateChange} note={note} />;
 }
 
 export function DefinitionScaffold({ parsed }: { parsed: ParsedDefinition }) {

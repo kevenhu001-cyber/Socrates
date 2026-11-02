@@ -5,6 +5,7 @@
  * - confirmDeleteAccount: full account deletion via /api/auth/account
  */
 
+import { learnerStorageKeys } from '../tutor/learnerStorage.ts';
 import { resetState, stateStore } from '../state/store.ts';
 import { showConfirm } from './confirm.ts';
 import { clearProviderConfig } from '../config/providerConfig.service.ts';
@@ -39,6 +40,8 @@ function clearDeletedAccountStorage(): void {
     'socrates-api',
     'socrates-provider-keys',
     'socrates-websearch',
+    /* RN-14: the deleted account's review deck and cross-session mistake book. */
+    ...learnerStorageKeys(),
   ];
   for (const key of keys) {
     try { localStorage.removeItem(key); } catch { /* empty-catch: intentional — wipe best effort */ }

@@ -13,7 +13,7 @@ import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
 import { nativeDriver, useReducedMotion } from '../turn/parts';
 import { useLearnHost } from './host';
-import { RECALL_RATINGS, flashcardReducer, initialFlashcardState, type RecallRating } from './model';
+import { RECALL_RATINGS, flashcardReducer, resumeFlashcardState, type FlashcardState, type RecallRating } from './model';
 import { ActionRow, PillAction, Rich, ScaffoldCard, dataSet } from './parts';
 
 export interface FlashcardCardProps {
@@ -21,17 +21,31 @@ export interface FlashcardCardProps {
   back: string;
   /** Optional reporting hook for the self-rating. */
   onRate?: (rating: RecallRating) => void;
+  /**
+   * RN-14: where the card was before a re-render remounted it (face and
+   * rating). Read once on mount; the host keeps it from `onStateChange`.
+   */
+  initialState?: Partial<FlashcardState> | null;
+  onStateChange?: (state: FlashcardState) => void;
+  /** RN-14: an extra line under the rating (the review schedule). */
+  note?: string | null;
   testID?: string;
 }
 
-export function FlashcardCard({ front, back, onRate, testID }: FlashcardCardProps) {
+export function FlashcardCard({ front, back, onRate, initialState, onStateChange, note, testID }: FlashcardCardProps) {
   const { strings } = useLearnHost();
   const { colors } = useUiTheme();
   const { subtle } = sheets(colors);
   const reduced = useReducedMotion();
-  const [state, dispatch] = useReducer(flashcardReducer, initialFlashcardState);
+  const [state, dispatch] = useReducer(flashcardReducer, initialState, resumeFlashcardState);
   /* `shown` lags `state.face` by half a turn so the content swaps edge-on. */
-  const [shown, setShown] = useReducer((_: 'front' | 'back', next: 'front' | 'back') => next, 'front');
+  const [shown, setShown] = useReducer((_: 'front' | 'back', next: 'front' | 'back') => next, state.face);
+  const reported = useRef(state);
+  useEffect(() => {
+    if (reported.current === state) return;
+    reported.current = state;
+    onStateChange?.(state);
+  }, [state, onStateChange]);
   const turn = useRef(new Animated.Value(0)).current;
   const fade = useRef(new Animated.Value(1)).current;
   const { hovered, focused, handlers } = usePressFeedback();
@@ -116,6 +130,9 @@ export function FlashcardCard({ front, back, onRate, testID }: FlashcardCardProp
       </View>
       {onBack && state.rating ? (
         <UiText variant="labelSm" tone="secondary" testID="flashcard-note" aria-live="polite">{strings.ratingNote[state.rating]}</UiText>
+      ) : null}
+      {onBack && state.rating && note ? (
+        <UiText variant="labelSm" tone="tertiary" testID="flashcard-schedule">{note}</UiText>
       ) : null}
     </ScaffoldCard>
   );

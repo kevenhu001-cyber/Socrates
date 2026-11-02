@@ -6,4 +6,5 @@
  */
 export { QuestionChain, type QuestionChainProps, type QuestionChainStrings } from './QuestionChain';
 export { LearningModeSwitch, type LearningModeOption, type LearningModeSwitchProps } from './LearningModeSwitch';
+export { ReviewDueEntry, type ReviewDueEntryProps } from './ReviewDueEntry';
 export * from './model';
