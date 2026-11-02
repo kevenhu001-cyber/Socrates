@@ -11,7 +11,7 @@ import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
 import { Chevron, useReducedMotion } from '../turn/parts';
-import { PillAction, dataSet } from '../learn/parts';
+import { PillAction, VerdictGlyph, dataSet } from '../learn/parts';
 import {
   filterMistakeViews,
   groupMistakesByTopic,
@@ -144,14 +144,17 @@ function AnswerLine({ label, value, strong, data }: { label: string; value: stri
   );
 }
 
-/** Option letter in a 22px disc: ink with ✓ for the key, an ink ring with ✕ for the learner's pick. */
+/**
+ * Option letter in a 22px disc, as on QuizCard: the letter always stays (ink
+ * fill for the key, a hairline ring otherwise) and the verdict moves to the
+ * row end as a ✓ / ✕ `VerdictGlyph`.
+ */
 function OptionMark({ letter, tag }: { letter: string; tag?: string | null }) {
   const { colors } = useUiTheme();
   const right = tag === 'correct';
-  const wrong = tag === 'wrong';
   return (
-    <View aria-hidden style={{ width: 22, height: 22, marginTop: 0, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: right ? colors.ink : colors.card, boxShadow: right ? undefined : insetRing(wrong ? colors.ink : colors.hairlineStrong, wrong ? 1.5 : 1) }}>
-      <UiText variant="labelSm" tone={right ? 'onInk' : wrong ? 'ink' : 'tertiary'} style={{ fontSize: right || wrong ? 11 : undefined, lineHeight: 22 }}>{right ? '✓' : wrong ? '✕' : letter}</UiText>
+    <View aria-hidden style={{ width: 22, height: 22, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: right ? colors.ink : colors.card, boxShadow: right ? undefined : insetRing(colors.hairlineStrong, 1) }}>
+      <UiText variant="labelSm" tone={right ? 'onInk' : 'tertiary'} style={{ fontVariant: ['tabular-nums'], lineHeight: 22 }}>{letter}</UiText>
     </View>
   );
 }
@@ -220,6 +223,9 @@ function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion,
                   <UiText variant="bodySm" tone={option.tag === 'correct' ? 'ink' : option.tag === 'wrong' ? 'secondary' : 'tertiary'} style={{ flex: 1, textDecorationLine: option.tag === 'wrong' ? 'line-through' : 'none' }}>
                     {renderText(option.text, 'mistake-option')}
                   </UiText>
+                  {option.tag === 'correct' || option.tag === 'wrong' ? (
+                    <View style={{ paddingTop: 1 }}><VerdictGlyph verdict={option.tag === 'correct' ? 'correct' : 'incorrect'} /></View>
+                  ) : null}
                 </View>
               ))}
             </View>
