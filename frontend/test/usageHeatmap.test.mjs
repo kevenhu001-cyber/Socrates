@@ -24,7 +24,7 @@ test('usage model preserves totals, heatmap levels, limits, and monthly breakdow
     used: 800,
     limit: 1000,
     percent: 80,
-    color: 'hsl(35 80% 55%)',
+    color: 'var(--ui-ink-secondary)',
     message: 'approaching',
   });
   assert.deepEqual(monthlyUsageSummaries(entries), [

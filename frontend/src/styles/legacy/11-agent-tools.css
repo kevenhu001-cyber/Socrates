@@ -37,7 +37,7 @@
    a compact, collapsible summary line. */
 .agent-tool-card{font-size:calc(12px * var(--app-font-scale, 1))}
 .agent-tool-card:hover{background:var(--tool-card-bg-hover)}
-.agent-tool-card.open{box-shadow:0 2px 10px hsl(220 30% 50%/0.05)}
+.agent-tool-card.open{box-shadow:0 2px 10px hsl(0 0% 0%/0.05)}
 .agent-tool-head{display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s ease}
 .agent-tool-head:hover{background:var(--tool-card-bg-hover)}
 .agent-tool-head:focus-visible{outline:2px solid transparent;outline-offset:-2px;border-radius:var(--tool-card-radius)}
@@ -275,7 +275,7 @@
   box-shadow:none;
 }
 .agent-tool-card:hover{background:var(--tool-card-bg-hover);box-shadow:none}
-.agent-tool-card.open{box-shadow:0 4px 14px hsl(220 30% 50%/0.05)}
+.agent-tool-card.open{box-shadow:0 4px 14px hsl(0 0% 0%/0.05)}
 .agent-tool-head{min-height:36px;gap:8px;background:transparent;border-radius:var(--tool-card-radius-sm) var(--tool-card-radius-sm) 0 0}
 .agent-tool-head:hover{background:var(--tool-card-bg-hover)}
 .agent-tool-card .agent-tool-body::before{display:none}

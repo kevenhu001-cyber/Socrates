@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
-import { fontStyle, getThemePaletteHex } from '@socrates/theme';
+import { fontStyle, getThemePaletteHex, uiColors } from '@socrates/theme';
 import type { UiLanguage } from './strings';
 import { uiStrings } from './strings';
 import { KNOWLEDGE_GRAPH_HEIGHT, KNOWLEDGE_GRAPH_WIDTH, knowledgeNodeRadius, layoutKnowledgeGraph } from './knowledgeGraph';
@@ -55,11 +55,11 @@ function normalizedStatus(status?: string): KnowledgeStatus {
   return status === 'internalized' || status === 'fuzzy' ? status : 'blank';
 }
 
-function statusColor(status: KnowledgeStatus, muted: string): string {
-  /* Exact measured SPA computed fills (`hsl(145 50% 50%)` /
-   * `hsl(43 77% 62%)`); blank falls back to the muted step. */
-  if (status === 'internalized') return '#40BF75';
-  if (status === 'fuzzy') return '#E9BE53';
+function statusColor(status: KnowledgeStatus, muted: string, mode: UiMode): string {
+  /* RN-14: mastery reads in ink depth, not hue — internalized is full ink,
+   * fuzzy the secondary ink, blank the muted step. */
+  if (status === 'internalized') return uiColors[mode].ink;
+  if (status === 'fuzzy') return uiColors[mode].inkSecondary;
   return muted;
 }
 
@@ -138,7 +138,7 @@ function Graph({
                   cx={graphCoord(point.x)}
                   cy={graphCoord(point.y)}
                   r={radius}
-                  fill={statusColor(status, legacy.text.muted)}
+                  fill={statusColor(status, legacy.text.muted, mode)}
                   fillOpacity={0.35 + 0.13 * confidence}
                   stroke={active ? legacy.accent : legacy.bg.card}
                   strokeWidth={active ? 2.5 : 1.5}
@@ -271,7 +271,7 @@ export function KnowledgeBoundaryPanel({
                   <View key={`${index}:${node.name || ''}`} testID={`socrates-kb-node-${index}`} style={styles.fileNode}>
                     <View style={styles.fileNodeName}>
                       <Text style={[styles.fileNodeNameText, { color: legacy.text.primary, fontSize: 12 * WEB_SIDEBAR_TUTOR_SCALE, lineHeight: fileRowLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{node.name || t.knowledgeNodeFallback(index + 1)}</Text>
-                      {status === 'internalized' ? <Text style={[styles.verifiedTag, { color: '#53C683', backgroundColor: 'rgba(57,172,105,0.12)', fontSize: 10 * WEB_APP_TUTOR_SCALE, lineHeight: detailTextLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{t.verifiedCount(node.verifiedCount || node.questions || 0)}</Text> : null}
+                      {status === 'internalized' ? <Text style={[styles.verifiedTag, { color: uiColors[mode].ink, backgroundColor: uiColors[mode].fill, fontSize: 10 * WEB_APP_TUTOR_SCALE, lineHeight: detailTextLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{t.verifiedCount(node.verifiedCount || node.questions || 0)}</Text> : null}
                     </View>
                     {status === 'fuzzy' && node.system_note ? (
                       <Text style={[styles.fileNodeNote, { color: legacy.text.tertiary, borderLeftColor: tutorRgba(legacy.border, 0.2), fontSize: 12 * WEB_APP_TUTOR_SCALE, lineHeight: 12 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('regular', language, Platform.OS === 'web')]}>
@@ -311,7 +311,7 @@ export function KnowledgeBoundaryPanel({
           {selectedNode && expandedIndex !== null ? (
             <View testID="socrates-kb-detail" style={[styles.detail, { backgroundColor: `${legacy.bg.card}99`, borderColor: tutorRgba(legacy.border, 0.18) }]}>
               <View style={styles.detailHead}>
-                <Text style={[styles.statusBadge, { color: detailStatus === 'internalized' ? '#79D29E' : detailStatus === 'fuzzy' ? '#EDCC78' : legacy.text.caption, backgroundColor: detailStatus === 'internalized' ? 'rgba(64,191,117,0.18)' : detailStatus === 'fuzzy' ? 'rgba(233,190,83,0.18)' : p.bg.hover, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.08, lineHeight: detailTextLineHeight(compact) }, fontStyle('semibold', language, Platform.OS === 'web')]}>{statusLabel(detailStatus)}</Text>
+                <Text style={[styles.statusBadge, { color: detailStatus === 'internalized' ? uiColors[mode].onInk : detailStatus === 'fuzzy' ? uiColors[mode].ink : legacy.text.caption, backgroundColor: detailStatus === 'internalized' ? uiColors[mode].ink : detailStatus === 'fuzzy' ? uiColors[mode].fillPressed : p.bg.hover, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.08, lineHeight: detailTextLineHeight(compact) }, fontStyle('semibold', language, Platform.OS === 'web')]}>{statusLabel(detailStatus)}</Text>
                 <Pressable accessibilityRole="button" accessibilityLabel={t.goToNode} onPress={() => onJumpToNode(expandedIndex)} style={[styles.goButton, { backgroundColor: `${legacy.accent}1f`, borderColor: `${legacy.accent}4d` }]}>
                   <Text style={[styles.goText, { color: legacy.accent, fontSize: 11 * WEB_APP_TUTOR_SCALE }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.go}</Text>
                 </Pressable>

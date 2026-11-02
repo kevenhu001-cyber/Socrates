@@ -225,7 +225,7 @@ function BeagleUsage({ limits }: { limits: ReturnType<typeof beagleUsageSummary>
         </div>
       )}
       {limits.message === 'approaching' && (
-        <div style={{ marginTop: 6, fontSize: 'calc(11px * var(--app-font-scale, 1))', color: 'hsl(35 80% 55%)' }}>
+        <div style={{ marginTop: 6, fontSize: 'calc(11px * var(--app-font-scale, 1))', color: 'var(--ui-ink-secondary)' }}>
           Approaching monthly limit ({limits.percent}% used).
         </div>
       )}

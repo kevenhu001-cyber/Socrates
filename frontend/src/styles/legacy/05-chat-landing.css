@@ -90,7 +90,7 @@
 .teaching-plan-subtopic.done{color:hsl(var(--text-500))}
 .teaching-plan-marker{flex-shrink:0;width:38px;font-size:calc(10px * var(--sidebar-font-scale));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-500));font-family:var(--font-mono)}
 .teaching-plan-subtopic.current .teaching-plan-marker{color:hsl(var(--accent-000))}
-.teaching-plan-subtopic.done .teaching-plan-marker{color:hsl(145 50% 50%)}
+.teaching-plan-subtopic.done .teaching-plan-marker{color:var(--ui-ink)}
 .teaching-plan-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .teaching-plan-stage{font-size:calc(9px * var(--sidebar-font-scale));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12);padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
 /* U-M1 — substantive-answer depth counter (n/3) next to the stage pill. */

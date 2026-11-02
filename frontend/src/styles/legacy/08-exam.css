@@ -175,11 +175,11 @@
 .exam-q-opt-letter{width:18px;height:18px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:var(--ui-font-size-xs);font-weight:var(--ui-font-weight-medium);color:var(--muted-foreground);flex-shrink:0;transition:background .12s,color .12s,border-color .12s;margin-top:1px}
 .exam-q-opt-text{flex:1;min-width:0}
 .exam-q-opt.selected .exam-q-opt-letter{border-color:var(--primary);background:var(--primary);color:var(--primary-foreground);border-width:0}
-.exam-q-opt.correct .exam-q-opt-letter{border-color:var(--ui-success);background:var(--ui-success);color:#fff;border-width:0}
+.exam-q-opt.correct .exam-q-opt-letter{border-color:var(--ui-ink);background:var(--ui-ink);color:var(--ui-on-ink);border-width:0}
 .exam-q-opt.wrong .exam-q-opt-letter{border-color:var(--destructive);background:var(--destructive);color:#fff;border-width:0}
 .exam-q-fill-input{width:100%;min-height:var(--ui-control-desktop);padding:0 12px;border:1px solid var(--input);border-radius:var(--radius-md);background:transparent;color:var(--foreground);font-size:var(--ui-font-size-sm);font-family:inherit;outline:none;transition:border-color .12s,box-shadow .12s;box-sizing:border-box}
 .exam-q-fill-input:focus{border-color:var(--ring);box-shadow:var(--ui-focus-shadow)}
-.exam-q-fill-input.correct{border-color:var(--ui-success)}
+.exam-q-fill-input.correct{border-color:var(--ui-ink)}
 .exam-q-fill-input.wrong{border-color:var(--destructive)}
 .exam-q-fill-display{width:100%;min-height:var(--ui-control-desktop);padding:8px 12px;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--background);color:var(--foreground);font-size:var(--ui-font-size-sm);line-height:1.5;box-sizing:border-box;white-space:pre-wrap}
 .exam-q-fill-display-multiline{min-height:60px}
@@ -231,7 +231,7 @@
 .share-link-input:focus{border-color:var(--ring);box-shadow:var(--ui-focus-shadow)}
 .share-copy-btn{min-height:var(--ui-control-desktop);padding:0 10px;border:1px solid transparent;border-radius:var(--radius-lg);font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);background:var(--primary);color:var(--primary-foreground);cursor:pointer;transition:background-color .1s;white-space:nowrap}
 .share-copy-btn:hover{background:color-mix(in oklab, var(--primary), transparent 20%)}
-.share-copy-btn.copied{background:var(--ui-success);border-color:var(--ui-success)}
+.share-copy-btn.copied{background:var(--ui-ink-hover);border-color:var(--ui-ink-hover)}
 .share-revoke{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:var(--ui-font-size-sm);color:var(--destructive);cursor:pointer;transition:color .1s;padding:4px 0}
 .share-revoke:hover{color:color-mix(in oklab, var(--destructive), var(--foreground) 25%)}
 /* .share-btn is defined in the top-bar section above */

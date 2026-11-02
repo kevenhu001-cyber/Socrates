@@ -441,7 +441,7 @@ body.composer-tools-open.composer-tools-open::after {
   font-size: var(--ui-font-size-xs);
   text-align: right;
 }
-.settings-choice-value.is-yes { color: var(--ui-success); }
+.settings-choice-value.is-yes { color: var(--ui-ink); }
 .settings-mono {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: var(--ui-font-size-xxs);
