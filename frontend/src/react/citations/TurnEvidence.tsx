@@ -114,7 +114,7 @@ export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntim
       </div>)}
     </aside>, document.body) : null}
     {citedSources.length ? <details className="turn-sources" data-source-count={citedSources.length}>
-      <summary aria-label={`${i18n('citation.sources', 'Sources')} · ${citedSources.length}`}>
+      <summary aria-label={i18n('citation.sourcesCount', 'Sources, {n}').replace('{n}', String(citedSources.length))}>
         <svg className="turn-sources-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M4 2.5h5.5L12 5v8.5H4z" />
           <path d="M9.5 2.5V5H12M6 8h4M6 10.5h4" />

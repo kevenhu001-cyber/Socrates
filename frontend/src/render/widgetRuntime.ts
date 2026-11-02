@@ -91,8 +91,10 @@ export function handleQuizPick(picked: PickedQuizOption, parsed: QuizMountData):
     persistQuizOutcome(services);
     return { feedbackText, feedbackClass, verdict };
   }
-  let text = `I chose ${picked.letter}. ${picked.text}`;
-  if (correct) text += ` (Result: ${isRight ? 'correct' : `incorrect, correct is ${correct}`}.)`;
+  /* RN-10: the synthetic user turn follows the interface language, like the
+     card's own feedback line (zh: 「我选了 B。…（结果：错误，正确答案是 A。）」). */
+  let text = services.t('tutor.quizChose').replace('{letter}', picked.letter).replace('{text}', picked.text);
+  if (correct) text += services.t(isRight ? 'tutor.quizChoseResultCorrect' : 'tutor.quizChoseResultWrong').replace('{answer}', correct);
   services.submitChatMessage?.(text, { origin: 'quiz' });
   return { feedbackText, feedbackClass, verdict };
 }

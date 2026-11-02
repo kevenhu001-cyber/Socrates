@@ -16,7 +16,7 @@
  *   - text button: capsule (`--ui-radius-pill`)
  *   - square icon: `--ui-radius-control`
  *   - circle icon: pill (`--ui-radius-pill`)
- *   - sidebar row: 10px (`--ui-radius-row`)
+ *   - sidebar row: 12px (`--ui-radius-row`)
  *   - colour feedback: `--ui-duration-hover` (100 ms)
  *   - press feedback: handled by polish/press.css (`scale` property, not
  *     `transform`, so it composes with the controls' own transitions)

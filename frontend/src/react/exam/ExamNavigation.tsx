@@ -74,7 +74,7 @@ function ExamNavigation({ snapshot, onStep, onJump }: ExamNavigationProps) {
               aria-current={isCurrent ? 'step' : undefined}
               aria-label={`${index + 1}${isAnswered ? `, ${snapshot.labels.answered}` : ''}`}
             >
-              {/* 已答由 data-answered 的颜色和 aria-label 表达，不再加「·」。 */}
+              {/* 已答：data-answered 驱动墨色描边（features/surfaces.css），并写进 aria-label；不用圆点。 */}
               {index + 1}
             </Button>
           );

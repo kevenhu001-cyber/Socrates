@@ -14,6 +14,15 @@ const translations = {
   'tutor.quizWrong': 'Wrong: {answer}',
   'tutor.quizRecorded': 'Recorded: {letter}',
   'tutor.practicePrefix': 'My answer: ',
+  'tutor.quizChose': 'I chose {letter}. {text}',
+  'tutor.quizChoseResultCorrect': ' (Result: correct.)',
+  'tutor.quizChoseResultWrong': ' (Result: incorrect, correct is {answer}.)',
+};
+const zhTranslations = {
+  ...translations,
+  'tutor.quizChose': '我选了 {letter}。{text}',
+  'tutor.quizChoseResultCorrect': '（结果：正确。）',
+  'tutor.quizChoseResultWrong': '（结果：错误，正确答案是 {answer}。）',
 };
 
 beforeEach(() => {
@@ -89,6 +98,21 @@ test('tutor follow-up submits grading context and leaves persistence to the turn
   pick('B');
   assert.deepEqual(submitted, [['I chose B. 5 (Result: incorrect, correct is A.)', { origin: 'quiz' }]]);
   assert.deepEqual(persisted, []);
+});
+
+test('tutor follow-up is written in the interface language', () => {
+  const submitted = [];
+  configureWidgetRuntime({
+    t: (key) => zhTranslations[key] || key,
+    shouldRequestTutorAfterQuiz: () => true,
+    submitChatMessage: (...args) => submitted.push(args),
+  });
+  pick('B');
+  pick('A');
+  assert.deepEqual(submitted, [
+    ['我选了 B。5（结果：错误，正确答案是 A。）', { origin: 'quiz' }],
+    ['我选了 A。4（结果：正确。）', { origin: 'quiz' }],
+  ]);
 });
 
 test('quiz without an answer records the selection without inventing a correct answer', () => {

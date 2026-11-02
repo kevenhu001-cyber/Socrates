@@ -56,6 +56,8 @@ export const UI_GLYPHS = {
   exam: [['r', 5, 4.5, 14, 16, 3], ['r', 9, 2.5, 6, 4, 1.5], ['p', 'm8.5 13 2.5 2.5 4.5-5']],
   skills: [['r', 4, 4, 6, 6, 2], ['r', 14, 4, 6, 6, 2], ['r', 4, 14, 6, 6, 2], ['p', 'M17 13c.4 2.3 1.7 3.6 4 4-2.3.4-3.6 1.7-4 4-.4-2.3-1.7-3.6-4-4 2.3-.4 3.6-1.7 4-4Z']],
   more: [['p', 'M5 8h14M5 12h14M5 16h9']],
+  /* RN-10 — the pinned-chat mark in the history rows; an outline pushpin. */
+  pin: [['p', 'M9.5 3.5h5M10.5 3.5v5L7.5 12v1.5h9V12l-3-3.5v-5M12 13.5v7']],
 } as const satisfies Record<string, readonly UiGlyphShape[]>;
 
 export type UiGlyphName = keyof typeof UI_GLYPHS;

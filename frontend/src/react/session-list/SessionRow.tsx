@@ -1,10 +1,14 @@
 import { Button as UiButton } from '../ui/Button';
-import React, { memo, useCallback, useState, useEffect } from 'react';
+import { memo, useCallback, useState, useEffect } from 'react';
+import type React from 'react';
+import { ConversationRow } from '@socrates/ui/shell';
 import { t } from '../legacy/gateway.ts';
 import { detailCache } from '../../session/detailCache.ts';
 import type { SessionItem } from '../../ui/sessionListState.ts';
-import { safeId } from './sessionListModel';
-import { SessionRowDetails } from './SessionRowDetails';
+import { Icon } from '../../ui/Icon';
+import { useDomRowHost, webClass } from '../rn/webHost';
+import { buildMeta, modeLabel, safeId } from './sessionListModel';
+import { SessionRenameField, SessionTagPills } from './SessionRowDetails';
 import { SessionRowMenu } from './SessionRowMenu';
 import { useSessionRowActions } from './useSessionRowActions';
 import type { SessionRowMenuProps } from './types';
@@ -19,9 +23,23 @@ export interface SessionRowProps {
   onTag: (id: string, event: React.MouseEvent) => void;
   onArchive: (id: string, event: React.MouseEvent) => void;
   onDelete: (id: string, event: React.MouseEvent) => void;
-  onDragStart: (event: React.DragEvent, id: string) => void;
-  onDragEnd: (event: React.DragEvent) => void;
+  /* Native events: the row is a react-native-web view, wired by useDomRowHost. */
+  onDragStart: (event: DragEvent, id: string) => void;
+  onDragEnd: (event: DragEvent) => void;
 }
+
+/* Structural hooks the shell CSS and e2e key off; the shared row names none itself. */
+const PARTS = {
+  badge: (cls: string) => webClass('recent-mode-badge', cls),
+  main: webClass('recent-item-main'),
+  titleRow: webClass('recent-item-title-row'),
+  title: webClass('recent-item-text'),
+  pin: webClass('recent-item-pin-icon'),
+  label: webClass('recent-item-label'),
+  meta: webClass('recent-item-meta'),
+  tags: webClass('recent-item-tags'),
+  actions: webClass('recent-item-actions'),
+};
 
 function SessionRowActionMenu(props: Omit<SessionRowMenuProps, 'trigger'>) {
   return (
@@ -38,11 +56,8 @@ function SessionRowActionMenu(props: Omit<SessionRowMenuProps, 'trigger'>) {
         data-i18n-aria="session.moreActions"
         onClick={(event) => event.stopPropagation()}
       >
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <circle cx="5" cy="12" r="2.1" />
-          <circle cx="12" cy="12" r="2.1" />
-          <circle cx="19" cy="12" r="2.1" />
-        </svg>
+        {/* RN-9 「更多」：三条横向短线，不用圆点。 */}
+        <Icon name="more" size={16} />
       </UiButton>}
     />
   );
@@ -86,85 +101,90 @@ function SessionRowBase({
     else closeMenu();
   }, [closeMenu]);
 
+  /* The row opens a session, so it has to be reachable without a mouse. It
+     cannot be a real button element: the overflow trigger inside it is one,
+     and nesting them is invalid. `role="button"` plus the Enter/Space
+     contract (in the shared row) gives the same behaviour. While renaming,
+     the row drops the role so the inline input is not a focusable child of
+     a button. Drag stays native: react-native-web forwards no drag events. */
+  const rowRef = useDomRowHost({
+    role: renaming ? undefined : 'button',
+    draggable: true,
+    onDragStart: (event) => { setDragging(true); onDragStart(event, session.id); },
+    onDragEnd: (event) => { setDragging(false); onDragEnd(event); },
+  });
+
+  const mode = modeLabel(session);
+  const prefetch = useCallback(() => { void detailCache.prefetch(session.id); }, [session.id]);
+
   return (
-    <div
-      className={'btn btn-ghost btn-touch recent-item'
-        + (isActive ? ' active' : '')
-        + (session.pinned ? ' pinned' : '')
-        + (actionsOpen ? ' actions-open' : '')}
-      data-recent-id={safeId(session.id)}
-      data-recent-actual={session.id}
-      /* The row opens a session, so it has to be reachable without a mouse.
-         It cannot be a real button element: the overflow trigger inside it
-         is one, and nesting them is invalid. `role="button"` plus the
-         Enter/Space contract gives the same behaviour; the guard on
-         `event.target` keeps the inner trigger's own keys from opening the
-         session too. While renaming, the row drops the role so the inline
-         input is not a focusable child of a button. */
-      role={renaming ? undefined : 'button'}
-      tabIndex={renaming ? -1 : 0}
-      aria-current={isActive ? 'true' : undefined}
-      onKeyDown={(event) => {
-        if (renaming) return;
-        if (event.target !== event.currentTarget) return;
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        onPick(session.id);
+    <ConversationRow
+      rowRef={rowRef}
+      rowId={safeId(session.id)}
+      conversationId={session.id}
+      title={session.title || session.topic || '(untitled)'}
+      active={isActive}
+      pinned={Boolean(session.pinned)}
+      pinnedLabel={t('session.pinned')}
+      pinnedI18nKey="session.pinned"
+      mode={{ label: t(mode.key), i18nKey: mode.key }}
+      label={session.label || undefined}
+      meta={buildMeta(session, timeLabel)}
+      error={error || undefined}
+      menuOpen={actionsOpen}
+      dragging={dragging}
+      renaming={renaming}
+      activeShadow="var(--ui-elevation-raised)"
+      parts={{
+        ...PARTS,
+        row: webClass('btn btn-ghost btn-touch recent-item', isActive && 'active', session.pinned && 'pinned', actionsOpen && 'actions-open', dragging && 'dragging'),
+        badge: PARTS.badge(mode.cls),
       }}
-      draggable
-      onDragStart={(event) => { setDragging(true); onDragStart(event, session.id); }}
-      onDragEnd={(event) => { setDragging(false); onDragEnd(event); }}
-      onPointerEnter={() => { void detailCache.prefetch(session.id); }}
-      onTouchStart={() => { void detailCache.prefetch(session.id); }}
-      onClick={() => onPick(session.id)}
-    >
-      <SessionRowDetails
+      onPress={() => onPick(session.id)}
+      onIntent={prefetch}
+      renameSlot={<SessionRenameField
         session={session}
-        timeLabel={timeLabel}
-        renaming={renaming}
         saving={saving}
-        error={error}
         onSaveTitle={(title) => void update({ title })}
         onCancelRename={() => setRenaming(false)}
-      />
-      <div className="recent-item-actions">
-        <SessionRowActionMenu
-          session={session}
-          open={actionsOpen}
-          onOpenChange={setMenuOpen}
-          projects={projects}
-          loadingProjects={loadingProjects}
-          projectError={projectError}
-          saveError={error}
-          saving={saving}
-          onClose={closeMenu}
-          onBack={resetProjects}
-          onChooseProject={(projectId) => void update({ projectId })}
-          onRename={(event) => {
-            closeMenu();
-            event.stopPropagation();
-            setRenaming(true);
-          }}
-          onTag={(event) => {
-            closeMenu();
-            onTag(session.id, event);
-          }}
-          onPin={() => {
-            closeMenu();
-            void update({ pinned: !session.pinned });
-          }}
-          onArchive={(event) => {
-            closeMenu();
-            onArchive(session.id, event);
-          }}
-          onDelete={(event) => {
-            closeMenu();
-            onDelete(session.id, event);
-          }}
-          onMoveToProject={loadProjects}
-        />
-      </div>
-    </div>
+      />}
+      tags={session.tags && session.tags.length > 0 ? <SessionTagPills tags={session.tags} /> : undefined}
+      actions={<SessionRowActionMenu
+        session={session}
+        open={actionsOpen}
+        onOpenChange={setMenuOpen}
+        projects={projects}
+        loadingProjects={loadingProjects}
+        projectError={projectError}
+        saveError={error}
+        saving={saving}
+        onClose={closeMenu}
+        onBack={resetProjects}
+        onChooseProject={(projectId) => void update({ projectId })}
+        onRename={(event) => {
+          closeMenu();
+          event.stopPropagation();
+          setRenaming(true);
+        }}
+        onTag={(event) => {
+          closeMenu();
+          onTag(session.id, event);
+        }}
+        onPin={() => {
+          closeMenu();
+          void update({ pinned: !session.pinned });
+        }}
+        onArchive={(event) => {
+          closeMenu();
+          onArchive(session.id, event);
+        }}
+        onDelete={(event) => {
+          closeMenu();
+          onDelete(session.id, event);
+        }}
+        onMoveToProject={loadProjects}
+      />}
+    />
   );
 }
 

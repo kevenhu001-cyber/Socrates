@@ -9,6 +9,8 @@ import { useSessionOrganization } from '../../sidebar/organization.store';
 import { getCachedProjects, subscribeToProjectCache } from '../../projects/projectCache';
 import { VirtualSessionTimeline, type TimelineEntry } from './VirtualSessionTimeline';
 import { i18n } from '../legacy/gateway';
+import { WebUiTheme } from '../rn/WebUiTheme';
+import { SessionGroupHeading } from './SessionGroupHeading';
 
 type SessionTimelineProps = Pick<
   SessionRowProps,
@@ -102,10 +104,11 @@ export function SessionTimeline({
     onDragEnd={onDragEnd}
     onRetentionChange={onRetentionChange}
   />;
-  if (entries.length > 80) return <VirtualSessionTimeline entries={entries} renderSession={renderSession} />;
-  return <div className="recents-list-content">
+  /* RN-10: rows and headings are shared RN shell parts; they read the web theme. */
+  if (entries.length > 80) return <WebUiTheme><VirtualSessionTimeline entries={entries} renderSession={renderSession} /></WebUiTheme>;
+  return <WebUiTheme><div className="recents-list-content">
     {entries.map((entry) => <React.Fragment key={entry.key}>
-      {entry.session ? renderSession(entry.session) : <div className={entry.project ? 'recents-project-label' : 'recents-time-label'} role="heading" aria-level={3}>{entry.heading}</div>}
+      {entry.session ? renderSession(entry.session) : <SessionGroupHeading label={entry.heading ?? ''} project={entry.project} />}
     </React.Fragment>)}
-  </div>;
+  </div></WebUiTheme>;
 }

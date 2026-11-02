@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { SessionItem } from '../../ui/sessionListState.ts';
+import { SessionGroupHeading } from './SessionGroupHeading';
 
 export type TimelineEntry = { key: string; session?: SessionItem; heading?: string; project?: boolean };
 const OVERSCAN = 8;
@@ -111,7 +112,7 @@ export function VirtualSessionTimeline({ entries, renderSession }: {
       return <Fragment key={entry.key}>
         {gap > 0 ? <div aria-hidden="true" style={{ height: gap, flexShrink: 0 }} /> : null}
         <div data-timeline-index={index} data-timeline-key={entry.key} className="recents-window-row">
-          {entry.session ? renderSession(entry.session, retain) : <div className={entry.project ? 'recents-project-label' : 'recents-time-label'} role="heading" aria-level={3}>{entry.heading}</div>}
+          {entry.session ? renderSession(entry.session, retain) : <SessionGroupHeading label={entry.heading ?? ''} project={entry.project} />}
         </div>
       </Fragment>;
     })}
