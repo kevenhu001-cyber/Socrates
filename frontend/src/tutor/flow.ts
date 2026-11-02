@@ -23,6 +23,13 @@ import {
   type PromptMessage,
 } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
+import { takeRecallContext } from './recallRatings.ts';
+
+/** RN-6: add the learner's flashcard self-ratings (if any) as turn context. */
+function withRecallContext(msgs: PromptMessage[]): PromptMessage[] {
+  const recall = takeRecallContext();
+  return recall ? msgs.concat([recall]) : msgs;
+}
 
 /** Teaching sub-topic node as read from the knowledge graph. */
 export interface TutorNode {
@@ -155,7 +162,7 @@ export function buildSocraticMessages(
       '\n\n' +
       turnScope,
   );
-  const msgs = appendClientContextMessages([{ role: 'system', content: prompt }], true).concat(
+  const msgs = withRecallContext(appendClientContextMessages([{ role: 'system', content: prompt }], true)).concat(
     history,
   );
   msgs.push({
@@ -234,7 +241,7 @@ export function buildFollowUpMessages(
       'Do NOT restart the entire topic from scratch on every turn; instead, advance the lesson while keeping the foundation as the persistent anchor for any new material.',
   );
   return injectTemplateSystemPrompt(
-    appendClientContextMessages([{ role: 'system', content: prompt }], true)
+    withRecallContext(appendClientContextMessages([{ role: 'system', content: prompt }], true))
       .concat(history)
       .concat([{ role: 'user', content: answer }]),
   );
@@ -264,7 +271,7 @@ export function buildLearningModeMessages(
   const mode = opts.learningMode || 'think';
   const focus = opts.learningFocus ? ' Focus: ' + opts.learningFocus : '';
   return injectTemplateSystemPrompt(
-    appendClientContextMessages([{ role: 'system', content: prompt }], true)
+    withRecallContext(appendClientContextMessages([{ role: 'system', content: prompt }], true))
       .concat(history)
       .concat([{ role: 'user', content: '[Learning mode: ' + mode + ']' + focus }]),
   );

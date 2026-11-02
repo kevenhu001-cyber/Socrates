@@ -4,6 +4,7 @@
  * are rendered by the shell's markdown + KaTeX pipeline into `.sc-rich`
  * blocks, and grading / reporting stays in render/widgetRuntime.ts.
  */
+import { recordRecallRating } from '../../tutor/recallRatings.ts';
 import { useMemo, type ReactNode } from 'react';
 import {
   DefinitionCard,
@@ -180,7 +181,8 @@ export function ExampleScaffold({ parsed }: { parsed: ParsedExample }) {
 }
 
 export function FlashcardScaffold({ parsed }: { parsed: ParsedFlashcard }) {
-  return <FlashcardCard front={parsed.front || ''} back={parsed.back || ''} />;
+  /* RN-6: the self-rating goes back to the tutor as next-turn context. */
+  return <FlashcardCard front={parsed.front || ''} back={parsed.back || ''} onRate={(rating) => recordRecallRating(parsed.front || '', rating)} />;
 }
 
 export function DefinitionScaffold({ parsed }: { parsed: ParsedDefinition }) {
