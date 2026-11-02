@@ -1658,7 +1658,39 @@ export const en = {
     "learnMode.diagnose.prompt":"Start with a few diagnostic questions to find the gaps in my understanding. The topic is: ",
     "learnMode.diagnose.sessionPrompt":"Give me a few diagnostic questions to find the gaps in my understanding of this part.",
     "learnMode.mistakes.label":"Mistakes to next question",
-    "learnMode.mistakes.hint":"Turn questions you missed into the next step on the chain."
-  };
+    "learnMode.mistakes.hint":"Turn questions you missed into the next step on the chain.",
+    /* RN-5 knowledge map, diagnostic, mistakes */
+    "kb.graphLabel":"Knowledge map — drag to pan",
+    "kb.caption":"Darker = better mastered · lines follow your learning path",
+    "kb.zoomIn":"Zoom in",
+    "kb.zoomOut":"Zoom out",
+    "kb.zoomFit":"Fit to view",
+    "kb.close":"Close",
+    "kb.connections":"Connections",
+    "kb.noConnections":"This is the only idea on the map so far.",
+    "kb.before":"Comes before",
+    "kb.after":"Comes next",
+    "kb.whyBefore":"“{a}” comes right before “{b}” on your learning path, so it is the ground “{b}” stands on.",
+    "kb.whyAfter":"“{b}” comes right after “{a}” on your learning path; it builds on what you settle here.",
+    "kb.open":"Open {name}",
+    "kb.systemTag":"System",
+    "kb.userTag":"Me",
+    "mistakes.filterLabel":"Filter mistakes",
+    "mistakes.yourAnswer":"Where it went wrong",
+    "mistakes.correctAnswer":"The right way",
+    "mistakes.noAnswer":"No answer recorded",
+    "mistakes.showDetail":"Show answers",
+    "mistakes.hideDetail":"Hide answers",
+    "mistakes.options":"Options",
+    "mistakes.otherTopic":"Other",
+    "diag.coverage":"Coverage",
+    "diag.coverageOf":"{n} of {total} with some familiarity",
+    "diag.gaps":"Gaps, weakest first",
+    "diag.nextStep":"Suggested next step",
+    "diag.startsWith":"Learning starts from the core definition of “{name}”.",
+    "diag.focus":"Give extra time to: {names}.",
+    "diag.allFamiliar":"Every dimension has some footing; keep the pace brisk.",
+    "diag.rank":"#{n}"
+};
 
 export default en;

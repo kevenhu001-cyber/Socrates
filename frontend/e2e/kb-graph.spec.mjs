@@ -2,10 +2,11 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-// P1.2 — force-directed knowledge graph. The KB panel renders state.kbNodes
-// as an SVG force-directed graph: node COLOR = mastery (internalized / fuzzy
-// / blank), node SIZE = questions asked. Clicking a node opens the same
-// detail panel. Data is read straight from the KB store — no backend changes.
+// P1.2 / RN-5 — knowledge graph. The KB panel renders state.kbNodes as a
+// pill-node graph (shared RN panel): ink weight = mastery (internalized /
+// fuzzy / blank), hairline edges = learning path, question count in the
+// accessible name. Clicking a node opens the detail drawer. Data is read
+// straight from the KB store — no backend changes.
 
 const KB_NODES = [
   { name: 'Limits', status: 'internalized', questions: 9, confidence_score: 5 },
@@ -40,46 +41,69 @@ async function renderGraph(page, { currentNode = -1 } = {}) {
   }, { nodes: KB_NODES, currentNode });
 }
 
-test('KB panel renders a force-directed SVG graph with one node per kbNode', async ({ page }) => {
+const NODE = '#kbContent [data-kb-graph-node]';
+
+test('KB panel renders a pill graph with one node per kbNode', async ({ page }) => {
   await renderGraph(page);
-  const svg = page.locator('#kbContent svg.kb-graph');
-  await expect(svg).toBeVisible();
-  // One <g class="kb-graph-node"> per node.
-  await expect(page.locator('#kbContent .kb-graph-node')).toHaveCount(KB_NODES.length);
-  // Sequential learning-path edges: N-1 lines.
-  await expect(page.locator('#kbContent .kb-graph-edges line')).toHaveCount(KB_NODES.length - 1);
+  await expect(page.locator('#kbContent [data-kb-graph]')).toBeVisible();
+  await expect(page.locator(NODE)).toHaveCount(KB_NODES.length);
+  // Sequential learning-path edges: N-1 hairlines.
+  await expect(page.locator('#kbContent [data-kb-graph-edge]')).toHaveCount(KB_NODES.length - 1);
 });
 
-test('node color encodes mastery via status class', async ({ page }) => {
+test('mastery is encoded per node and long names are truncated', async ({ page }) => {
   await renderGraph(page);
-  await expect(page.locator('#kbContent .kb-graph-node-internalized')).toHaveCount(2);
-  await expect(page.locator('#kbContent .kb-graph-node-fuzzy')).toHaveCount(2);
-  await expect(page.locator('#kbContent .kb-graph-node-blank')).toHaveCount(1);
+  await expect(page.locator(`${NODE}[data-kb-status="internalized"]`)).toHaveCount(2);
+  await expect(page.locator(`${NODE}[data-kb-status="fuzzy"]`)).toHaveCount(2);
+  await expect(page.locator(`${NODE}[data-kb-status="blank"]`)).toHaveCount(1);
+  const long = page.locator(`${NODE}[data-kb-graph-node="4"]`);
+  await expect(long).toContainText('…');
+  await expect(long).toHaveAttribute('aria-label', /A very long node name that should be truncated/);
+  await expect(long).toHaveAttribute('data-kb-questions', '16');
 });
 
-test('node size encodes questions asked (more questions -> larger radius)', async ({ page }) => {
+test('pills do not overlap', async ({ page }) => {
   await renderGraph(page);
-  const radii = await page.evaluate(() => {
-    const nodes = Array.from(document.querySelectorAll('#kbContent .kb-graph-node'));
-    return nodes.map((g) => parseFloat(g.querySelector('circle').getAttribute('r')));
-  });
-  // Node 4 (16 questions) is the busiest -> largest; node 3 (0 questions) -> smallest.
-  const max = Math.max(...radii), min = Math.min(...radii);
-  expect(radii[4]).toBeCloseTo(max, 5);
-  expect(radii[3]).toBeCloseTo(min, 5);
-  expect(radii[4]).toBeGreaterThan(radii[3]);
+  const boxes = await page.locator(NODE).evaluateAll((nodes) => nodes.map((node) => {
+    const rect = node.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
+  }));
+  for (let a = 0; a < boxes.length; a += 1) {
+    for (let b = a + 1; b < boxes.length; b += 1) {
+      const p = boxes[a]; const q = boxes[b];
+      const overlap = p.x < q.x + q.w - 0.5 && q.x < p.x + p.w - 0.5 && p.y < q.y + q.h - 0.5 && q.y < p.y + p.h - 0.5;
+      expect(overlap, `node ${a} overlaps node ${b}`).toBe(false);
+    }
+  }
 });
 
-test('the active node gets the active class', async ({ page }) => {
+test('the active node is marked', async ({ page }) => {
   await renderGraph(page, { currentNode: 1 });
-  const active = page.locator('#kbContent .kb-graph-node-active');
+  const active = page.locator(`${NODE}[data-kb-active="1"]`);
   await expect(active).toHaveCount(1);
-  await expect(active).toHaveAttribute('data-node-idx', '1');
+  await expect(active).toHaveAttribute('data-kb-graph-node', '1');
 });
 
-test('clicking a graph node opens the shared detail panel', async ({ page }) => {
+test('zoom controls scale the graph and fit resets it', async ({ page }) => {
   await renderGraph(page);
-  await expect(page.locator('#kbContent .kb-node-detail')).toHaveCount(0);
-  await page.locator('#kbContent .kb-graph-node[data-node-idx="1"]').click();
-  await expect(page.locator('#kbContent .kb-node-detail')).toHaveCount(1);
+  await expect(page.locator(NODE).first()).toBeVisible();
+  const fit = page.locator('#kbContent [data-kb-zoom="fit"]');
+  const before = await fit.textContent();
+  await page.locator('#kbContent [data-kb-zoom="in"]').click();
+  await expect(fit).not.toHaveText(before ?? '');
+  await fit.click();
+  await expect(fit).toHaveText(before ?? '');
+});
+
+test('clicking a graph node opens the detail drawer', async ({ page }) => {
+  await renderGraph(page);
+  await expect(page.locator('[data-kb-node-detail]')).toHaveCount(0);
+  await page.locator(`${NODE}[data-kb-graph-node="1"]`).click();
+  const detail = page.locator('[data-kb-node-detail="1"]');
+  await expect(detail).toHaveCount(1);
+  await expect(detail).toHaveAttribute('role', 'dialog');
+  await expect(detail.locator('[data-kb-relation="before"]')).toContainText('Limits');
+  await expect(detail.locator('[data-kb-relation="after"]')).toContainText('Chain Rule');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-kb-node-detail]')).toHaveCount(0);
 });

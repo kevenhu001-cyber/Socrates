@@ -36,55 +36,57 @@ async function openPanel(page) {
   }, NODES);
 }
 
+const NODE = '#kbContent [data-kb-graph-node]';
+const DETAIL = '[data-kb-node-detail]';
+
 test('React knowledge panel follows KB store updates', async ({ page }) => {
   await openPanel(page);
-  await expect(page.locator('#kbContent svg.kb-graph')).toBeVisible();
-  await expect(page.locator('#kbContent .kb-graph-node')).toHaveCount(NODES.length);
+  await expect(page.locator('#kbContent [data-kb-graph]')).toBeVisible();
+  await expect(page.locator(NODE)).toHaveCount(NODES.length);
+  await expect(page.locator('#kbContent [data-kb-section="fuzzy"] [data-kb-node]')).toHaveCount(2);
 });
 
 test('the detail panel is localized and does not echo the status enum', async ({ page }) => {
   await openPanel(page);
 
-  await page.locator('#kbContent .kb-graph-node').first().click();
-  const detail = page.locator('#kbContent .kb-node-detail');
+  await page.locator(NODE).first().click();
+  const detail = page.locator(DETAIL);
   await expect(detail).toHaveCount(1);
+  /* Desktop: right-hand drawer. */
+  await expect(detail).toHaveAttribute('data-kb-presentation', 'drawer');
 
   /* Every label here used to be a hardcoded English literal. */
-  await expect(detail.locator('.kb-detail-label').first()).toHaveText('掌握置信度');
+  await expect(detail.getByText('掌握置信度')).toBeVisible();
   await expect(detail.getByText('系统笔记')).toBeVisible();
   await expect(detail.getByText('我的笔记')).toBeVisible();
   await expect(detail.getByText('存档历史')).toBeVisible();
-  await expect(detail.locator('.kb-go-btn')).toHaveText('→ 进入');
+  await expect(detail.getByText('相关知识点')).toBeVisible();
+  await expect(detail.locator('[data-kb-go]')).toHaveText('→ 进入');
 
-  /* The backend emits internalized / fuzzy / blank; the panel showed that
-     raw enum as the badge text. It now reuses tutor.status* — the same
-     vocabulary the teaching-plan sidebar uses — so one node never reads
-     已内化 in the sidebar and a different word in its own detail panel. */
-  const badge = detail.locator('.kb-detail-status');
+  /* The badge reuses tutor.status*, the teaching-plan vocabulary. */
+  const badge = detail.locator('[data-kb-detail-status]');
   await expect(badge).toHaveText('已内化');
   await expect(badge).not.toHaveText(/internalized/);
 });
 
-test('confidence dot tooltips interpolate their ordinal', async ({ page }) => {
+test('confidence steps carry their ordinal and toggle', async ({ page }) => {
   await openPanel(page);
-  await page.locator('#kbContent .kb-graph-node').first().click();
-  const dots = page.locator('#kbContent .kb-node-detail .kb-conf-dot');
-  await expect(dots).toHaveCount(5);
-  /* kb.confidenceSet carries a {n} placeholder and i18n.ts's t() does not
-     substitute, so an unimplemented interpolator would show a literal
-     "{n}" in every tooltip. */
-  await expect(dots.nth(2)).toHaveAttribute('title', '将置信度设为 3');
-  await expect(dots.nth(2)).not.toHaveAttribute('title', /\{n\}/);
+  await page.locator(NODE).nth(1).click();
+  const steps = page.locator(`${DETAIL} [data-kb-conf]`);
+  await expect(steps).toHaveCount(5);
+  /* kb.confidenceSet carries a {n} placeholder. */
+  await expect(steps.nth(2)).toHaveAttribute('aria-label', '将置信度设为 3');
+  await expect(steps.nth(2)).toHaveAttribute('aria-pressed', 'true');
+  await steps.nth(3).click();
+  await expect.poll(() => page.evaluate(() => window.stateStore.read('kbNodes')[1].confidence_score)).toBe(4);
 });
 
 test('snapshot history renders the shape the writer actually produces', async ({ page }) => {
   await openPanel(page);
 
-  await page.locator('#kbContent .kb-graph-node').first().click();
-  const rows = page.locator('#kbContent .kb-node-detail .kb-history li');
+  await page.locator(NODE).first().click();
+  const rows = page.locator(`${DETAIL} [data-kb-history-row]`);
   await expect(rows).toHaveCount(1);
-  /* The old code read h.from / h.to, fields saveBoundarySnapshot never
-     wrote, so every row rendered as "<date> ? → ?". */
   await expect(rows.first()).toContainText('2026-09-20');
   await expect(rows.first()).toContainText('I 1 · F 2 · B 2');
   await expect(rows.first()).not.toContainText('?');
@@ -93,7 +95,15 @@ test('snapshot history renders the shape the writer actually produces', async ({
 test('graph nodes are keyboard reachable', async ({ page }) => {
   await openPanel(page);
 
-  await page.locator('#kbContent .kb-graph-node').first().focus();
+  await page.locator(NODE).first().focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#kbContent .kb-node-detail')).toHaveCount(1);
+  await expect(page.locator(DETAIL)).toHaveCount(1);
+});
+
+test('narrow screens get a bottom sheet', async ({ page }) => {
+  await openPanel(page);
+  await page.locator('#kbContent [data-kb-node]').first().click();
+  await expect(page.locator(DETAIL)).toHaveAttribute('data-kb-presentation', 'drawer');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(DETAIL)).toHaveAttribute('data-kb-presentation', 'sheet');
 });
