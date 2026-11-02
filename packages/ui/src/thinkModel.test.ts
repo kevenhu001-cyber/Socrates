@@ -76,3 +76,9 @@ test('candidates: unresolved mistakes newest first, prompts deduplicated', () =>
   assert.deepEqual(mistakes.map((c) => [c.id, c.text, c.kind]), [['mistake:c', 'new', 'mistake'], ['mistake:a', 'old', 'mistake']]);
   assert.deepEqual(askCandidates(['Why?', 'Why?', '', 'How?']).map((c) => c.text), ['Why?', 'How?']);
 });
+
+test('askCandidates skips questions already on the chain, falling back to all', () => {
+  const walked = [{ id: 'root', text: 'Root' }, { id: 's1', text: 'Why?' }];
+  assert.deepEqual(askCandidates(['Why?', 'How?'], walked).map((c) => c.text), ['How?']);
+  assert.deepEqual(askCandidates(['Why?'], walked).map((c) => c.text), ['Why?']);
+});

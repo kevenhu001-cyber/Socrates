@@ -47,7 +47,7 @@ export interface QuestionChainProps {
   testID?: string;
 }
 
-const NODE = 22;
+const NODE = 24;
 const RAIL = 32;
 
 type NodeTone = 'walked' | 'current' | 'next';
@@ -64,11 +64,11 @@ function ChainNode({ label, tone }: { label: string; tone: NodeTone }) {
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: tone === 'current' ? colors.ink : tone === 'walked' ? colors.fill : colors.card,
-        borderWidth: tone === 'next' ? 1 : 0,
-        borderColor: colors.hairlineStrong,
+        borderWidth: tone === 'current' ? 0 : 1,
+        borderColor: tone === 'next' ? colors.hairlineStrong : colors.hairline,
       }}
     >
-      <UiText variant="eyebrow" tone={tone === 'current' ? 'onInk' : 'secondary'} style={{ letterSpacing: 0 }}>{label}</UiText>
+      <UiText variant="eyebrow" tone={tone === 'current' ? 'onInk' : 'secondary'} style={{ letterSpacing: 0, fontVariant: ['tabular-nums'] }}>{label}</UiText>
     </View>
   );
 }

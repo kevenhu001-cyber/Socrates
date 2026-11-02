@@ -65,7 +65,7 @@ export function QuestionChainRoot({ prompts, onFollow }: QuestionChainRootProps)
   const fromMistakes = learningModeSpec(mode).candidatesFromMistakes ? mistakeCandidates(mistakes) : [];
   /* While a reply streams there is nothing to choose yet: the chain shows
      where the learner is, and the next questions return with the reply. */
-  const candidates = streaming ? [] : (fromMistakes.length > 0 ? fromMistakes : askCandidates(prompts));
+  const candidates = streaming ? [] : (fromMistakes.length > 0 ? fromMistakes : askCandidates(prompts, chain.steps));
   return (
     <WebUiTheme>
       <QuestionChain steps={chain.steps} candidates={candidates} strings={chainStrings()} onSelect={onFollow} busy={streaming} />

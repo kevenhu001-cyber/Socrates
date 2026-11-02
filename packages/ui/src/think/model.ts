@@ -192,7 +192,17 @@ export function mistakeCandidates(
     .map((mistake) => ({ id: `mistake:${mistake.id}`, text: normalizeChainText(mistake.q), kind: 'mistake' as const }));
 }
 
-export function askCandidates(prompts: readonly string[]): ChainCandidate[] {
+/**
+ * Prompts as next questions, minus any already on the chain. When every
+ * prompt has been followed, they are all offered again rather than none.
+ */
+export function askCandidates(prompts: readonly string[], walked: readonly ChainStep[] = []): ChainCandidate[] {
+  const onChain = new Set(walked.map((step) => step.text));
+  const fresh = prompts.filter((prompt) => !onChain.has(normalizeChainText(prompt)));
+  return dedupeAsk(fresh.length > 0 ? fresh : prompts);
+}
+
+function dedupeAsk(prompts: readonly string[]): ChainCandidate[] {
   const seen = new Set<string>();
   const out: ChainCandidate[] = [];
   for (const prompt of prompts) {

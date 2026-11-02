@@ -43,7 +43,7 @@ export interface LearningModeSwitchProps {
   testID?: string;
 }
 
-function ModeOption({ option, selected, tabStop, nodeRef, onPress, onArrow }: { option: LearningModeOption; selected: boolean; tabStop: boolean; nodeRef: (node: View | null) => void; onPress: () => void; onArrow: (delta: 1 | -1) => void }) {
+function ModeOption({ option, selected, tabStop, compact, nodeRef, onPress, onArrow }: { option: LearningModeOption; selected: boolean; tabStop: boolean; compact: boolean; nodeRef: (node: View | null) => void; onPress: () => void; onArrow: (delta: 1 | -1) => void }) {
   const { colors } = useUiTheme();
   const { scale, hovered, focused, handlers } = usePressFeedback();
   return (
@@ -68,7 +68,8 @@ function ModeOption({ option, selected, tabStop, nodeRef, onPress, onArrow }: { 
       <Animated.View
         style={{
           height: 32,
-          paddingHorizontal: uiSpace[3],
+          /* Phones: tighter capsules so all five fit a 390px row. */
+          paddingHorizontal: compact ? 9 : uiSpace[3],
           borderRadius: uiRadius.pill,
           alignItems: 'center',
           justifyContent: 'center',
@@ -116,6 +117,7 @@ function ModeTrack({ options, value, onChange, label, centered }: { options: rea
           option={option}
           selected={option.id === value}
           tabStop={value === null ? index === 0 : option.id === value}
+          compact={compact}
           nodeRef={(node) => {
             if (node) optionRefs.current.set(option.id, node);
             else optionRefs.current.delete(option.id);
