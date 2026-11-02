@@ -71,7 +71,7 @@ test('graph stays legible for a large map', () => {
   const graph = buildKnowledgeGraph(many);
   assert.equal(graph.nodes.length, 24);
   assert.equal(graph.edges.length, 23);
-  assert.ok(graph.width > 360);
+  assert.ok(graph.width > 280);
 });
 
 test('separateBoxes pushes stacked pills apart', () => {
@@ -83,7 +83,9 @@ test('separateBoxes pushes stacked pills apart', () => {
 test('zoom clamps and fits', () => {
   assert.equal(clampZoom(10), 2.5);
   assert.equal(clampZoom(0.1), 0.5);
-  assert.equal(fitZoom({ width: 600, height: 400 }, { width: 300, height: 400 }), 0.5);
+  assert.equal(fitZoom({ width: 600, height: 400 }, { width: 300, height: 400 }), 0.75);
+  assert.equal(fitZoom({ width: 600, height: 400 }, { width: 300, height: 400 }, 0.5), 0.5);
+  assert.equal(fitZoom({ width: 400, height: 200 }, { width: 320, height: 280 }), 0.8);
   assert.equal(fitZoom({ width: 200, height: 100 }, { width: 300, height: 400 }), 1);
   assert.equal(fitZoom({ width: 0, height: 0 }, { width: 300, height: 400 }), 1);
 });

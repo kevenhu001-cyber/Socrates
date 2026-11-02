@@ -100,9 +100,10 @@ test('graph nodes are keyboard reachable', async ({ page }) => {
   await expect(page.locator(DETAIL)).toHaveCount(1);
 });
 
-test('phones get a bottom sheet', async ({ page }) => {
+test('narrow screens get a bottom sheet', async ({ page }) => {
   await openPanel(page);
-  await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#kbContent [data-kb-node]').first().click();
+  await expect(page.locator(DETAIL)).toHaveAttribute('data-kb-presentation', 'drawer');
+  await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(DETAIL)).toHaveAttribute('data-kb-presentation', 'sheet');
 });

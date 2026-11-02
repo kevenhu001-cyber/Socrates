@@ -86,6 +86,7 @@ test('the active node is marked', async ({ page }) => {
 
 test('zoom controls scale the graph and fit resets it', async ({ page }) => {
   await renderGraph(page);
+  await expect(page.locator(NODE).first()).toBeVisible();
   const fit = page.locator('#kbContent [data-kb-zoom="fit"]');
   const before = await fit.textContent();
   await page.locator('#kbContent [data-kb-zoom="in"]').click();

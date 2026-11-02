@@ -213,7 +213,7 @@ function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, on
   onConfidence: (value: number) => void;
   onNote: (value: string) => void;
 }) {
-  const { colors } = useUiTheme();
+  const { colors, fontFamily } = useUiTheme();
   const screen = useWindowDimensions();
   const wide = screen.width >= wideBreakpoint;
   const node = nodes[index]!;
@@ -226,7 +226,7 @@ function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, on
     ? { position: 'absolute' as const, top: uiSpace[3], right: uiSpace[3], bottom: uiSpace[3], width: Math.min(420, screen.width - 48), borderRadius: uiRadius.card }
     : { position: 'absolute' as const, left: 0, right: 0, bottom: 0, maxHeight: Math.round(screen.height * 0.86), borderTopLeftRadius: uiRadius.card, borderTopRightRadius: uiRadius.card };
   return (
-    <Modal transparent visible animationType={wide ? 'fade' : 'slide'} onRequestClose={onClose}>
+    <Modal transparent visible animationType="none" onRequestClose={onClose}>
       <View style={{ flex: 1 }}>
         <Pressable aria-label={d.close} onPress={onClose} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.16)' }} />
         <View
@@ -284,7 +284,7 @@ function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, on
                 defaultValue={node.user_note || ''}
                 onChangeText={onNote}
                 {...dataSet({ kbUserNote: index })}
-                style={{ minHeight: 72, borderWidth: 1, borderColor: colors.hairlineStrong, borderRadius: uiRadius.md, paddingHorizontal: uiSpace[3], paddingVertical: uiSpace[2], color: colors.ink, fontSize: 14, lineHeight: 22, textAlignVertical: 'top' }}
+                style={{ minHeight: 72, borderWidth: 1, borderColor: colors.hairlineStrong, borderRadius: uiRadius.md, paddingHorizontal: uiSpace[3], paddingVertical: uiSpace[2], color: colors.ink, fontFamily, fontSize: 14, lineHeight: 22, textAlignVertical: 'top' }}
               />
             </DetailSection>
             <DetailSection label={d.history}>

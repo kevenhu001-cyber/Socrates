@@ -32,7 +32,7 @@ export function truncateLabel(name: string, max = 10): string {
 }
 
 /** Rough pill width for a label: CJK glyphs are about a full em, Latin half. */
-export function estimateLabelWidth(label: string, fontSize = 13, padX = 12): number {
+export function estimateLabelWidth(label: string, fontSize = 12, padX = 14): number {
   let width = 0;
   for (const char of Array.from(label)) {
     const code = char.codePointAt(0) ?? 0;
@@ -41,7 +41,7 @@ export function estimateLabelWidth(label: string, fontSize = 13, padX = 12): num
   return Math.ceil(width + padX * 2);
 }
 
-export const GRAPH_NODE_HEIGHT = 28;
+export const GRAPH_NODE_HEIGHT = 26;
 const GRAPH_GAP = 10;
 const GRAPH_MARGIN = 20;
 
@@ -128,12 +128,12 @@ export function separateBoxes(boxes: GraphNodeBox[], rounds = 60): GraphNodeBox[
 export function buildKnowledgeGraph(nodes: readonly KnowledgeNodeInput[], activeIndex = -1): KnowledgeGraphModel {
   if (!nodes.length) return { nodes: [], edges: [], width: 0, height: 0 };
   const count = nodes.length;
-  const canvasWidth = Math.max(360, Math.round(150 * Math.sqrt(count) + 120));
-  const canvasHeight = Math.max(240, Math.round(canvasWidth * 0.68));
+  const canvasWidth = Math.max(240, Math.round(80 * Math.sqrt(count) + 50));
+  const canvasHeight = Math.max(240, Math.round(canvasWidth * 0.9));
   const points = layoutKnowledgeGraph(nodes, canvasWidth, canvasHeight);
   let boxes: GraphNodeBox[] = nodes.map((node, index) => {
     const name = knowledgeNodeName(node, index);
-    const label = truncateLabel(name);
+    const label = truncateLabel(name, 8);
     const width = estimateLabelWidth(label);
     const point = points[index]!;
     return {
@@ -177,15 +177,18 @@ export function buildKnowledgeGraph(nodes: readonly KnowledgeNodeInput[], active
 export const GRAPH_ZOOM_MIN = 0.5;
 export const GRAPH_ZOOM_MAX = 2.5;
 export const GRAPH_ZOOM_STEP = 1.25;
+/** Fitting never shrinks labels below this; past it the learner pans. */
+export const GRAPH_FIT_MIN = 0.75;
 
 export function clampZoom(value: number): number {
   return Math.max(GRAPH_ZOOM_MIN, Math.min(GRAPH_ZOOM_MAX, Math.round(value * 1000) / 1000));
 }
 
-/** Scale that fits the whole canvas into the viewport, never enlarging past 1. */
-export function fitZoom(canvas: { width: number; height: number }, viewport: { width: number; height: number }): number {
+/** Scale that fits the whole canvas into the viewport, never enlarging past 1
+ * and never shrinking labels below `floor` (large maps pan instead). */
+export function fitZoom(canvas: { width: number; height: number }, viewport: { width: number; height: number }, floor = GRAPH_FIT_MIN): number {
   if (!canvas.width || !canvas.height || !viewport.width || !viewport.height) return 1;
-  return clampZoom(Math.min(1, viewport.width / canvas.width, viewport.height / canvas.height));
+  return clampZoom(Math.max(floor, Math.min(1, viewport.width / canvas.width, viewport.height / canvas.height)));
 }
 
 export interface KnowledgeRelation {

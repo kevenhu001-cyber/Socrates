@@ -220,7 +220,7 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
 
       <View style={{ padding: uiSpace[4], borderRadius: uiRadius.lg, backgroundColor: colors.fill }}>{renderRich(screen.noticeHtml, 'diag-notice')}</View>
 
-      <View style={{ alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
         <PillAction tone="solid" label={screen.continueLabel} onPress={() => onCommand('proceed')} data={{ diagCommand: 'proceed' }} />
       </View>
     </View>

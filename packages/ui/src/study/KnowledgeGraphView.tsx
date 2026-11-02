@@ -64,14 +64,14 @@ function GraphPill({ box, strings, onPress }: { box: GraphNodeBox; strings: Know
         borderColor: look.borderColor,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: uiSpace[3],
+        paddingHorizontal: uiSpace[2],
         outlineStyle: focused || box.active ? 'solid' : undefined,
         outlineWidth: focused ? 2 : box.active ? 1 : 0,
         outlineColor: colors.ink,
         outlineOffset: 3,
       }}
     >
-      <UiText variant="labelSm" tone={look.tone} numberOfLines={1}>{box.label}</UiText>
+      <UiText variant="eyebrow" tone={look.tone} numberOfLines={1} style={{ letterSpacing: 0 }}>{box.label}</UiText>
     </Pressable>
   );
 }

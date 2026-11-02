@@ -30,7 +30,7 @@ const renderRich: RenderDiagnosticRich = (html, part) => (
 
 export function DiagnosticView({ screen, onCommand }: { screen: DiagnosticScreen; onCommand: DiagnosticCommandHandler }) {
   return (
-    <div className={`diag-rn diag-${screen.kind}`}>
+    <div className={`diag-rn diag-${screen.kind}`} style={{ paddingInline: 12 }}>
       <WebUiTheme>
         <DiagnosticPanel screen={screen} onCommand={onCommand} renderRich={renderRich} />
       </WebUiTheme>
