@@ -421,6 +421,8 @@ export default defineConfig({
       '@socrates/ui/turn': fileURLToPath(new URL('../packages/ui/src/turn/index.ts', import.meta.url)),
       '@socrates/ui/learn-model': fileURLToPath(new URL('../packages/ui/src/learn/model.ts', import.meta.url)),
       '@socrates/ui/learn': fileURLToPath(new URL('../packages/ui/src/learn/index.ts', import.meta.url)),
+      '@socrates/ui/think-model': fileURLToPath(new URL('../packages/ui/src/think/model.ts', import.meta.url)),
+      '@socrates/ui/think': fileURLToPath(new URL('../packages/ui/src/think/index.ts', import.meta.url)),
       'react-native': 'react-native-web',
     },
     /* packages/ have no node_modules of their own: resolve their bare React

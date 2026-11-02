@@ -443,20 +443,14 @@
   }
 }
 
+/* RN-4 — the question chain (packages/ui/src/think) draws itself; the
+   host only spaces it from the composer. */
 .socratic-suggestions {
-  display: flex;
-  align-items: center;
-  gap: var(--ui-space-xs);
-  padding: 4px 0 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  display: block;
+  padding: 4px 0 12px;
 }
 
-.socratic-suggestions::-webkit-scrollbar {
-  display: none;
-}
-
-.socratic-chip-icon {
-  color: var(--ui-accent-action);
+.learning-mode-bar {
+  display: block;
+  padding: 0 0 8px;
 }

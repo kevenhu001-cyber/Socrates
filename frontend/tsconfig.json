@@ -25,6 +25,8 @@
       "@socrates/ui/turn": ["../packages/ui/src/turn/index.ts"],
       "@socrates/ui/learn-model": ["../packages/ui/src/learn/model.ts"],
       "@socrates/ui/learn": ["../packages/ui/src/learn/index.ts"],
+      "@socrates/ui/think": ["../packages/ui/src/think/index.ts"],
+      "@socrates/ui/think-model": ["../packages/ui/src/think/model.ts"],
       "react": ["./node_modules/@types/react"],
       "react/*": ["./node_modules/@types/react/*"],
       "react-native": ["./node_modules/react-native"]

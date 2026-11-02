@@ -1,6 +1,9 @@
 import { stateStore } from '../state/store.ts';
 import { setComposerMarkdown } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import type { ChainCandidate } from '@socrates/ui/think-model';
+import { followQuestionChain, syncQuestionChain } from './questionChain.ts';
+import { requestMistakeRedo } from '../ui/mistakeBookCommands.ts';
 
 function translate(key: string, fallback: string): string {
   if (typeof (window as unknown as { t?: (k: string) => string }).t === 'function') {
@@ -55,6 +58,25 @@ export function syncSocraticMasteryUI(): void {
   });
 }
 
+/**
+ * Follow one question down the chain. Ask candidates go out as the next
+ * turn through the normal send path; mistake candidates open the existing
+ * mistake-book redo flow. Either way the question joins the chain.
+ */
+export function followChainCandidate(candidate: ChainCandidate): void {
+  followQuestionChain(candidate.text);
+  if (candidate.kind === 'mistake') {
+    requestMistakeRedo(candidate.id.replace(/^mistake:/, ''));
+    return;
+  }
+  void import('../chat/sendPipeline.ts').then(({ submitChatMessage }) => submitChatMessage(candidate.text))
+    .catch((error) => {
+      reportSwallow(error, 'tutor/socraticMastery:followChain');
+      /* Sending failed to load: leave the question in the composer instead. */
+      setComposerMarkdown('chat', candidate.text);
+    });
+}
+
 export function showSocraticSuggestions(customSuggestions?: string[]): void {
   const isTutor = document.documentElement.dataset.mainView === 'tutor'
     || document.getElementById('topModeTutor')?.classList.contains('is-active')
@@ -70,16 +92,10 @@ export function showSocraticSuggestions(customSuggestions?: string[]): void {
   ];
 
   const prompts = (customSuggestions && customSuggestions.length > 0) ? customSuggestions : defaultPrompts;
+  syncQuestionChain();
   void import('../react/tutor/socraticSuggestionsHost').then(({ renderSocraticSuggestions }) => {
     if (!container.isConnected || container.classList.contains('hidden')) return;
-    renderSocraticSuggestions(container, prompts, (promptText) => {
-    try {
-      setComposerMarkdown('chat', promptText);
-      const editor = document.querySelector<HTMLElement>('#composerRoot [contenteditable="true"]');
-      if (editor) editor.focus();
-      clearSocraticSuggestions();
-    } catch (_) { /* empty-catch: intentional — focus composer from chip click is best-effort */ }
-    });
+    renderSocraticSuggestions(container, prompts, followChainCandidate);
   }).catch((error) => reportSwallow(error, 'tutor/socraticMastery:renderSuggestions'));
 
   container.classList.remove('hidden');
