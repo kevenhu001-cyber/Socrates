@@ -169,10 +169,11 @@
 .exam-q-text{font-size:var(--ui-font-size-sm);line-height:1.6;color:var(--foreground);margin-bottom:14px}
 .exam-q-text p{margin-bottom:6px}.exam-q-text p:last-child{margin-bottom:0}
 .exam-q-opts{display:flex;flex-direction:column;gap:8px;margin-top:6px;width:100%}
-.exam-q-opt{display:flex;height:auto;min-height:var(--ui-control-md);align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--input);border-radius:var(--radius-md);background:transparent;font-size:var(--ui-font-size-sm);color:var(--foreground);cursor:pointer;transition:color .1s,background .1s,border-color .1s;text-align:left;width:100%;font-family:inherit;line-height:1.5}
+.exam-q-opt{display:flex;height:auto;min-height:var(--ui-control-md);align-items:flex-start;justify-content:flex-start;white-space:normal;gap:10px;padding:10px 12px;border:1px solid var(--input);border-radius:var(--radius-md);background:transparent;font-size:var(--ui-font-size-sm);color:var(--foreground);cursor:pointer;transition:color .1s,background .1s,border-color .1s;text-align:left;width:100%;font-family:inherit;line-height:1.5}
 .exam-q-opt:hover{background:var(--muted);border-color:var(--border)}
 .exam-q-opt.selected{background:var(--accent);border-color:var(--ring);color:var(--accent-foreground)}
 .exam-q-opt-letter{width:18px;height:18px;border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:var(--ui-font-size-xs);font-weight:var(--ui-font-weight-medium);color:var(--muted-foreground);flex-shrink:0;transition:background .12s,color .12s,border-color .12s;margin-top:1px}
+.exam-q-opt-text{flex:1;min-width:0}
 .exam-q-opt.selected .exam-q-opt-letter{border-color:var(--primary);background:var(--primary);color:var(--primary-foreground);border-width:0}
 .exam-q-opt.correct .exam-q-opt-letter{border-color:var(--ui-success);background:var(--ui-success);color:#fff;border-width:0}
 .exam-q-opt.wrong .exam-q-opt-letter{border-color:var(--destructive);background:var(--destructive);color:#fff;border-width:0}
