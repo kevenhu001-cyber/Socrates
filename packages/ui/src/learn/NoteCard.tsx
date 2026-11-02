@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { View } from 'react-native';
-import { uiSpace } from '@socrates/theme';
+import { S } from '../look';
 import { UiText } from '../primitives/UiText';
 import { useLearnHost } from './host';
 import { proofNeedsQed } from './model';
@@ -23,7 +23,7 @@ function ProofBody({ title, body, part }: { title?: string; body: string; part: 
   const { strings } = useLearnHost();
   if (title && title.trim() === strings.label.proof) title = '';
   return (
-    <View style={{ gap: uiSpace[2] }}>
+    <View style={{ gap: S[75] }}>
       {title ? <Rich source={title} part={`${part}-title`} /> : null}
       <Rich source={body} part={`${part}-body`} />
       {proofNeedsQed(body) ? <Qed /> : null}
@@ -99,6 +99,7 @@ export function ProofCard({ title, body, testID }: { title?: string; body: strin
         <PillAction
           label={open ? strings.proofHide : strings.proofShow}
           tone="quiet"
+          size="sm"
           chevron
           expanded={open}
           testID="proof-toggle"
