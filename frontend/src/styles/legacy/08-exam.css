@@ -200,7 +200,6 @@
 .exam-nav-progress{color:var(--muted-foreground);font-size:var(--ui-font-size-xs);margin-left:4px;padding-left:8px;border-left:1px solid var(--border)}
 .exam-nav-pills{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 16px}
 .exam-nav-pill{min-width:var(--ui-control-sm);padding-inline:7px;font-variant-numeric:tabular-nums}
-.exam-nav-pill[data-answered="true"]:not([data-current="true"]){color:var(--ui-success)}
 .exam-nav-total{color:var(--muted-foreground)}
 
 .exam-results{display:flex;flex-direction:column;gap:16px;width:100%}
