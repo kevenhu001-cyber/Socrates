@@ -97,6 +97,14 @@ function lazyPortalSpecs(): MountSpec[] {
   ];
 }
 
+/** Resolve once the main thread is idle (bounded), for roots off the first-paint path. */
+function whenIdle(timeout = 1200): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(() => resolve(), { timeout });
+    else window.setTimeout(resolve, 200);
+  });
+}
+
 export function mountRegistryList(): MountSpec[] {
   const legacyComposer = getLegacyActions().composer;
   return [
@@ -145,12 +153,13 @@ export function mountRegistryList(): MountSpec[] {
        under the landing composer and the capsule menu by the conversation
        composer. */
     { hostId: 'homeLearningModes', label: 'home-learning-modes', mount: (host) => {
-      return import('../../home/HomeLearningModes').then(({ HomeLearningModes }) => {
+      /* Not first-paint: let the composer's chunk load and mount first. */
+      return whenIdle().then(() => import('../../home/HomeLearningModes')).then(({ HomeLearningModes }) => {
         mountOwnedRoot(host, 'home-learning-modes', <HomeLearningModes />);
       });
     } },
     { hostId: 'learningModeBar', label: 'learning-mode-bar', mount: (host) => {
-      return import('../../tutor/QuestionChainRoot').then(({ SessionLearningModes }) => {
+      return whenIdle().then(() => import('../../tutor/QuestionChainRoot')).then(({ SessionLearningModes }) => {
         mountOwnedRoot(host, 'learning-mode-bar', <SessionLearningModes />);
       });
     } },

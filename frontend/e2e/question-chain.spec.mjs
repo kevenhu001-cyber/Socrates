@@ -64,6 +64,14 @@ async function startLesson(page) {
   await expect(page.locator('#chatView')).toBeVisible();
 }
 
+/* Tiptap ignores fill('') now and then; clear it the way a person would. */
+async function clearEditor(editor) {
+  await editor.click();
+  await editor.press('ControlOrMeta+a');
+  await editor.press('Backspace');
+  await expect(editor).toHaveText('');
+}
+
 const chain = (page) => page.locator('[data-testid="question-chain"]');
 const nextQuestions = (page) => page.locator('[data-testid^="question-chain-next-"]');
 
@@ -93,17 +101,17 @@ test('home learning modes: nothing selected in chat, choosing one switches to tu
   await expect(page.locator('[data-testid="learning-mode-connect"]')).toBeFocused();
   await expect(page.locator('[data-testid="learning-mode-recall"]')).toHaveAttribute('aria-checked', 'true');
 
-  await editor.fill('');
+  await clearEditor(editor);
   await page.locator('[data-testid="learning-mode-connect"]').click();
   await expect(editor).toContainText('联系');
   await shot(setup, 'home-mode-connect');
 
-  await editor.fill('');
+  await clearEditor(editor);
   await page.locator('[data-testid="learning-mode-diagnose"]').click();
   await expect(editor).toContainText('诊断');
   await shot(setup, 'home-mode-diagnose');
 
-  await editor.fill('');
+  await clearEditor(editor);
   await page.locator('[data-testid="learning-mode-think"]').click();
   await expect(editor).toHaveText('');
   await shot(setup, 'home-mode-think');
