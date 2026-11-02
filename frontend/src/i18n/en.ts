@@ -1648,15 +1648,10 @@ export const en = {
     "learnMode.think.hint":"Follow the question chain one step at a time, out loud.",
     "learnMode.recall.label":"Recall",
     "learnMode.recall.hint":"Recall with flashcards first, then turn them to check.",
-    "learnMode.recall.prompt":"Help me recall the key points of this topic with a few flashcards: let me try first, then turn them to check. The topic is: ",
-    "learnMode.recall.sessionPrompt":"Help me recall what we just covered with a few flashcards: let me try first, then turn them to check.",
     "learnMode.connect.label":"See connections",
     "learnMode.connect.hint":"See how the concepts connect in the knowledge map.",
-    "learnMode.connect.prompt":"I want to see how the concepts in this topic connect. The topic is: ",
     "learnMode.diagnose.label":"Find gaps",
     "learnMode.diagnose.hint":"Answer a few diagnostic questions to find the gaps.",
-    "learnMode.diagnose.prompt":"Start with a few diagnostic questions to find the gaps in my understanding. The topic is: ",
-    "learnMode.diagnose.sessionPrompt":"Give me a few diagnostic questions to find the gaps in my understanding of this part.",
     "learnMode.mistakes.label":"Mistakes to next question",
     "learnMode.mistakes.hint":"Turn questions you missed into the next step on the chain.",
     /* RN-5 knowledge map, diagnostic, mistakes */
@@ -1690,7 +1685,19 @@ export const en = {
     "diag.startsWith":"Learning starts from the core definition of “{name}”.",
     "diag.focus":"Give extra time to: {names}.",
     "diag.allFamiliar":"Every dimension has some footing; keep the pace brisk.",
-    "diag.rank":"#{n}"
+    "diag.rank":"#{n}",
+    /* RN-6 AI-written learning content */
+    "kb.captionConcepts":"Darker = better mastered · lines are how the ideas relate",
+    "kb.updating":"Updating definitions and connections…",
+    "kb.updateFailed":"Could not update the map this time.",
+    "kb.definition":"Definition",
+    "kb.practice":"Practice",
+    "kb.practiceTitle":"Get a practice question on this idea",
+    "diag.analyzing":"Reading your answers…",
+    "mistakes.answerGiven":"Your answer",
+    "mistakes.answerKeyed":"Correct answer",
+    "mistakes.toNextQuestion":"Make it the next question",
+    "mistakes.toNextQuestionBusy":"Writing the question…"
 };
 
 export default en;

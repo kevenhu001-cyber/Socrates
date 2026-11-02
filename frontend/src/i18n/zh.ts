@@ -1605,15 +1605,10 @@ export const zh = {
     "learnMode.think.hint":"沿着问题链一问一问往下走，把思路说出来。",
     "learnMode.recall.label":"回忆",
     "learnMode.recall.hint":"用知识卡片先回想，再翻面核对。",
-    "learnMode.recall.prompt":"用几张知识卡片帮我回忆这个主题的要点：先让我自己回想，再翻面核对。主题是：",
-    "learnMode.recall.sessionPrompt":"用几张知识卡片帮我回忆刚才讲过的要点：先让我自己回想，再翻面核对。",
     "learnMode.connect.label":"看联系",
     "learnMode.connect.hint":"在知识图谱里看概念之间怎么连起来。",
-    "learnMode.connect.prompt":"我想看清这个主题里各个概念之间的联系。主题是：",
     "learnMode.diagnose.label":"找漏洞",
     "learnMode.diagnose.hint":"先做几道诊断题，找出理解上的漏洞。",
-    "learnMode.diagnose.prompt":"先用几道诊断题找出我在这个主题上的漏洞。主题是：",
-    "learnMode.diagnose.sessionPrompt":"出几道诊断题，帮我找出我对这部分理解上的漏洞。",
     "learnMode.mistakes.label":"错题变下一问",
     "learnMode.mistakes.hint":"把没做对的题变成问题链上的下一问。",
     /* RN-5 knowledge map, diagnostic, mistakes */
@@ -1647,5 +1642,17 @@ export const zh = {
     "diag.startsWith":"系统学习会从「{name}」的核心定义开始。",
     "diag.focus":"多花些时间在：{names}。",
     "diag.allFamiliar":"每个维度都有一定基础，可以保持较快节奏。",
-    "diag.rank":"第 {n} 位"
+    "diag.rank":"第 {n} 位",
+    /* RN-6 由 AI 生成的学习内容 */
+    "kb.captionConcepts":"颜色越深掌握越好 · 连线是概念之间的关系",
+    "kb.updating":"正在更新定义和概念之间的联系…",
+    "kb.updateFailed":"这次没能更新图谱。",
+    "kb.definition":"定义",
+    "kb.practice":"练习",
+    "kb.practiceTitle":"针对这个知识点出一道练习",
+    "diag.analyzing":"正在分析你的作答…",
+    "mistakes.answerGiven":"你的答案",
+    "mistakes.answerKeyed":"正确答案",
+    "mistakes.toNextQuestion":"变成下一问",
+    "mistakes.toNextQuestionBusy":"正在生成追问…"
 };

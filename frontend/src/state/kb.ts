@@ -31,6 +31,8 @@ export interface MistakeStateEntry {
   quizSlotId?: string | null;
   resolved?: boolean;
   isResolved?: boolean;
+  /** RN-6: AI-written analysis, added after the mistake is recorded. */
+  analysis?: { whyWrong?: string | null; correctApproach?: string | null };
 }
 
 export function createInitialKbState() {

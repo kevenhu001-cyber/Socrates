@@ -13,6 +13,7 @@ import { usePressFeedback } from '../primitives/UiButton';
 import { PillAction, dataSet } from '../learn/parts';
 import { KnowledgeGraphView, MasterySwatch } from './KnowledgeGraphView';
 import {
+  conceptRelations,
   knowledgeNodeName,
   knowledgeRelations,
   knowledgeSections,
@@ -37,6 +38,10 @@ export interface KnowledgeMapProps {
   onGo: (index: number) => void;
   onConfidence: (index: number, value: number) => void;
   onNote: (index: number, value: string) => void;
+  /** RN-6: ask the tutor for a practice question on this node. */
+  onPractice?: (index: number) => void;
+  /** RN-6: state of an on-demand definitions/links update. */
+  conceptStatus?: 'idle' | 'loading' | 'error';
 }
 
 export function KnowledgeMap(props: KnowledgeMapProps) {
@@ -65,6 +70,11 @@ export function KnowledgeMap(props: KnowledgeMapProps) {
         </View>
         <PillAction label={strings.snapshot} onPress={props.onSnapshot} data={{ kbSnapshot: '1' }} />
       </View>
+      {props.conceptStatus === 'loading' || props.conceptStatus === 'error' ? (
+        <UiText variant="labelSm" tone="tertiary" aria-live="polite" {...dataSet({ kbConceptStatus: props.conceptStatus })}>
+          {props.conceptStatus === 'loading' ? strings.updating : strings.updateFailed}
+        </UiText>
+      ) : null}
       <KnowledgeGraphView nodes={nodes} activeIndex={props.currentNode} selectedIndex={selected} strings={strings} onSelect={choose} />
       <KnowledgeList nodes={nodes} strings={strings} onSelect={choose} />
       {history.length ? (
@@ -83,6 +93,7 @@ export function KnowledgeMap(props: KnowledgeMapProps) {
           onClose={() => setSelected(null)}
           onSelect={setSelected}
           onGo={() => props.onGo(selected)}
+          onPractice={props.onPractice ? () => props.onPractice!(selected) : undefined}
           onConfidence={(value) => props.onConfidence(selected, value)}
           onNote={(value) => props.onNote(selected, value)}
         />
@@ -201,7 +212,7 @@ function ConfidenceSteps({ value, strings, onChange }: { value: number; strings:
   );
 }
 
-function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, onClose, onSelect, onGo, onConfidence, onNote }: {
+function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, onClose, onSelect, onGo, onPractice, onConfidence, onNote }: {
   index: number;
   nodes: readonly KnowledgeNodeInput[];
   history: Array<{ date: string; summary: string }>;
@@ -210,6 +221,7 @@ function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, on
   onClose: () => void;
   onSelect: (index: number) => void;
   onGo: () => void;
+  onPractice?: () => void;
   onConfidence: (value: number) => void;
   onNote: (value: string) => void;
 }) {
@@ -220,6 +232,10 @@ function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, on
   const name = knowledgeNodeName(node, index);
   const status = normalizeKnowledgeStatus(node.status);
   const relations = knowledgeRelations(nodes, index);
+  /* RN-6: the model's own concept links win; the learning path is the
+     fallback for sessions that have none. */
+  const concepts = conceptRelations(nodes, index);
+  const definition = typeof node.definition === 'string' ? node.definition.trim() : '';
   const confidence = typeof node.confidence_score === 'number' ? node.confidence_score : 0;
   const d = strings.detail;
   const panelStyle = wide
@@ -251,7 +267,13 @@ function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, on
           <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ paddingHorizontal: uiSpace[5], paddingBottom: uiSpace[5], gap: uiSpace[4] }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiSpace[2] }}>
               <PillAction tone="solid" label={d.go} accessibilityLabel={d.goTitle} onPress={onGo} data={{ kbGo: index }} />
+              {onPractice ? <PillAction label={d.practice} accessibilityLabel={d.practiceTitle} onPress={onPractice} data={{ kbPractice: index }} /> : null}
             </View>
+            {definition ? (
+              <DetailSection label={d.definition} data={{ kbDefinitionSection: '1' }}>
+                <UiText variant="bodySm" {...dataSet({ kbDefinition: '1' })}>{definition}</UiText>
+              </DetailSection>
+            ) : null}
             <DetailSection label={d.systemNote}>
               <UiText variant="bodySm" tone={node.system_note ? 'ink' : 'tertiary'} {...dataSet({ kbSystemNote: '1' })}>{node.system_note || d.noSystemNote}</UiText>
             </DetailSection>
@@ -259,7 +281,15 @@ function KnowledgeNodeSheet({ index, nodes, history, strings, wideBreakpoint, on
               <ConfidenceSteps value={confidence} strings={strings} onChange={onConfidence} />
             </DetailSection>
             <DetailSection label={d.connections}>
-              {relations.length ? relations.map((relation) => (
+              {concepts.length ? concepts.map((relation) => (
+                <View key={`c-${relation.index}`} style={{ gap: uiSpace[1] }} {...dataSet({ kbRelation: 'concept', kbRelationTo: relation.index })}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: uiSpace[2] }}>
+                    {relation.relation ? <UiText variant="eyebrow" tone="tertiary" style={{ letterSpacing: 0 }}>{relation.relation}</UiText> : null}
+                    <PillAction label={relation.name} accessibilityLabel={fill(d.open, { name: relation.name })} onPress={() => onSelect(relation.index)} chevron={false} />
+                  </View>
+                  <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400' }} {...dataSet({ kbRelationWhy: '1' })}>{relation.why}</UiText>
+                </View>
+              )) : relations.length ? relations.map((relation) => (
                 <View key={relation.role} style={{ gap: uiSpace[1] }} {...dataSet({ kbRelation: relation.role })}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: uiSpace[2] }}>
                     <UiText variant="eyebrow" tone="tertiary" style={{ letterSpacing: 0 }}>{relation.role === 'before' ? d.before : d.after}</UiText>

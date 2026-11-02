@@ -11,6 +11,11 @@ export interface KnowledgeStrings {
   snapshot: string;
   graphLabel: string;
   caption: string;
+  /** Caption when the lines are the AI-written concept links (RN-6). */
+  captionConcepts: string;
+  /** Shown while the model adds or updates definitions and links. */
+  updating: string;
+  updateFailed: string;
   status: Record<KnowledgeStatus, string>;
   section: Record<KnowledgeStatus, string>;
   zoomIn: string;
@@ -28,6 +33,9 @@ export interface KnowledgeStrings {
     goTitle: string;
     confidence: string;
     confidenceSet: string;
+    definition: string;
+    practice: string;
+    practiceTitle: string;
     systemNote: string;
     noSystemNote: string;
     yourNote: string;
@@ -50,6 +58,9 @@ export const defaultKnowledgeStrings: KnowledgeStrings = {
   snapshot: 'Save this version',
   graphLabel: 'Knowledge map',
   caption: 'Darker = better mastered · lines follow your learning path',
+  captionConcepts: 'Darker = better mastered · lines are how the ideas relate',
+  updating: 'Updating definitions and connections…',
+  updateFailed: 'Could not update the map this time.',
   status: { internalized: 'Internalized', fuzzy: 'Fuzzy', blank: 'Blank' },
   section: { internalized: 'Internalized', fuzzy: 'Fuzzy', blank: 'Not probed' },
   zoomIn: 'Zoom in',
@@ -67,6 +78,9 @@ export const defaultKnowledgeStrings: KnowledgeStrings = {
     goTitle: 'Jump to this node and continue',
     confidence: 'Confidence',
     confidenceSet: 'Set confidence to {n}',
+    definition: 'Definition',
+    practice: 'Practice',
+    practiceTitle: 'Get a practice question on this idea',
     systemNote: 'System note',
     noSystemNote: 'No system note yet',
     yourNote: 'My note',
@@ -97,6 +111,13 @@ export interface MistakeStrings {
   redoneMany: string;
   yourAnswer: string;
   correctAnswer: string;
+  /** RN-6: labels for the plain answers once the AI analysis takes the
+   * "where it went wrong / the right way" lines. */
+  answerGiven: string;
+  answerKeyed: string;
+  /** RN-6: turn this mistake into the chain's next question. */
+  toNextQuestion: string;
+  toNextQuestionBusy: string;
   noAnswer: string;
   showDetail: string;
   hideDetail: string;
@@ -120,6 +141,10 @@ export const defaultMistakeStrings: MistakeStrings = {
   redoneMany: 'Redone {n} times',
   yourAnswer: 'Why it went wrong',
   correctAnswer: 'The right way',
+  answerGiven: 'Your answer',
+  answerKeyed: 'Correct answer',
+  toNextQuestion: 'Make it the next question',
+  toNextQuestionBusy: 'Writing the question…',
   noAnswer: 'No answer recorded',
   showDetail: 'Show answers',
   hideDetail: 'Hide answers',

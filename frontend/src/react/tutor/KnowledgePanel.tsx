@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { KnowledgeMap, defaultKnowledgeStrings, type KnowledgeStrings } from '@socrates/ui/study';
 import { useKbStore, useSessionStore } from '../../store/index.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
@@ -10,6 +10,8 @@ import {
   saveKnowledgeBoundarySnapshot,
   updateKnowledgeNodeNote,
 } from '../../ui/knowledgePanelCommands.ts';
+import { getConceptMapStatus, subscribeConceptMapStatus } from '../../tutor/conceptMap.ts';
+import { practiceKnowledgeNode } from '../../tutor/knowledgePractice.ts';
 
 function normalizedStatus(status: string | undefined): 'internalized' | 'fuzzy' | 'blank' {
   return status === 'internalized' || status === 'fuzzy' ? status : 'blank';
@@ -53,6 +55,9 @@ function knowledgeStrings(): KnowledgeStrings {
     snapshot: i18n('tutor.kbSnapshot', '存档当前版本'),
     graphLabel: i18n('kb.graphLabel', d.graphLabel),
     caption: i18n('kb.caption', d.caption),
+    captionConcepts: i18n('kb.captionConcepts', d.captionConcepts),
+    updating: i18n('kb.updating', d.updating),
+    updateFailed: i18n('kb.updateFailed', d.updateFailed),
     status: { internalized: statusLabel('internalized'), fuzzy: statusLabel('fuzzy'), blank: statusLabel('blank') },
     section: {
       internalized: i18n('tutor.kbSectionInternalized', '已内化'),
@@ -74,6 +79,9 @@ function knowledgeStrings(): KnowledgeStrings {
       goTitle: i18n('kb.goTitle', d.detail.goTitle),
       confidence: i18n('kb.confidence', d.detail.confidence),
       confidenceSet: i18n('kb.confidenceSet', d.detail.confidenceSet),
+      definition: i18n('kb.definition', d.detail.definition),
+      practice: i18n('kb.practice', d.detail.practice),
+      practiceTitle: i18n('kb.practiceTitle', d.detail.practiceTitle),
       systemNote: i18n('kb.systemNote', d.detail.systemNote),
       noSystemNote: i18n('kb.noSystemNote', d.detail.noSystemNote),
       yourNote: i18n('kb.yourNote', d.detail.yourNote),
@@ -98,6 +106,7 @@ export function KnowledgeMapPanel() {
   const currentNode = useKbStore((snapshot) => snapshot.currentNode);
   const history = useKbStore((snapshot) => snapshot.boundariesHistory);
   const sessionId = useSessionStore((snapshot) => snapshot.currentSessionId);
+  const conceptStatus = useSyncExternalStore(subscribeConceptMapStatus, getConceptMapStatus);
   useLocaleRefresh();
   return (
     <WebUiTheme>
@@ -112,6 +121,8 @@ export function KnowledgeMapPanel() {
         onGo={(index) => { void jumpToKnowledgeNode(index); }}
         onConfidence={(index, value) => patchKnowledgeNode(index, { confidence_score: value })}
         onNote={(index, value) => updateKnowledgeNodeNote(index, value)}
+        onPractice={(index) => { void practiceKnowledgeNode(index); }}
+        conceptStatus={conceptStatus}
       />
     </WebUiTheme>
   );

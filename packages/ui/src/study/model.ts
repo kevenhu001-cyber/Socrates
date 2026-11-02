@@ -15,6 +15,10 @@ export interface KnowledgeNodeInput {
   system_note?: string;
   user_note?: string;
   verifiedCount?: number;
+  /** RN-6: AI-written definition (absent on older sessions). */
+  definition?: string;
+  /** RN-6: AI-written links that start at this node. */
+  links?: ReadonlyArray<{ target?: string; relation?: string; why?: string }>;
 }
 
 export function normalizeKnowledgeStatus(status: string | undefined | null): KnowledgeStatus {
@@ -76,6 +80,9 @@ export interface GraphEdge {
 export interface KnowledgeGraphModel {
   nodes: GraphNodeBox[];
   edges: GraphEdge[];
+  /** `concept` when the edges are the AI-written concept links, `path` when
+   * they fall back to the learning order (older sessions). */
+  edgeKind: 'concept' | 'path';
   width: number;
   height: number;
 }
@@ -126,7 +133,7 @@ export function separateBoxes(boxes: GraphNodeBox[], rounds = 60): GraphNodeBox[
  * de-overlap pass for the label pills, then normalised to start at the margin.
  */
 export function buildKnowledgeGraph(nodes: readonly KnowledgeNodeInput[], activeIndex = -1): KnowledgeGraphModel {
-  if (!nodes.length) return { nodes: [], edges: [], width: 0, height: 0 };
+  if (!nodes.length) return { nodes: [], edges: [], edgeKind: 'path', width: 0, height: 0 };
   const count = nodes.length;
   const canvasWidth = Math.max(240, Math.round(80 * Math.sqrt(count) + 50));
   const canvasHeight = Math.max(240, Math.round(canvasWidth * 0.9));
@@ -160,18 +167,21 @@ export function buildKnowledgeGraph(nodes: readonly KnowledgeNodeInput[], active
   }));
   const width = Math.ceil(Math.max(...boxes.map((box) => box.x + box.width)) + GRAPH_MARGIN);
   const height = Math.ceil(Math.max(...boxes.map((box) => box.y + box.height)) + GRAPH_MARGIN);
-  const edges: GraphEdge[] = [];
-  for (let index = 0; index < boxes.length - 1; index += 1) {
-    const a = boxes[index]!;
-    const b = boxes[index + 1]!;
+  const concept = conceptEdgePairs(nodes);
+  const pairs = concept.length
+    ? concept
+    : boxes.slice(0, -1).map((_, index) => [index, index + 1] as [number, number]);
+  const edges: GraphEdge[] = pairs.map(([from, to]) => {
+    const a = boxes[from]!;
+    const b = boxes[to]!;
     const x1 = a.x + a.width / 2;
     const y1 = a.y + a.height / 2;
     const x2 = b.x + b.width / 2;
     const y2 = b.y + b.height / 2;
     const length = Math.hypot(x2 - x1, y2 - y1);
-    edges.push({ from: index, to: index + 1, x1, y1, x2, y2, length, angle: (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI });
-  }
-  return { nodes: boxes, edges, width, height };
+    return { from, to, x1, y1, x2, y2, length, angle: (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI };
+  });
+  return { nodes: boxes, edges, edgeKind: concept.length ? 'concept' : 'path', width, height };
 }
 
 export const GRAPH_ZOOM_MIN = 0.5;
@@ -211,6 +221,63 @@ export function knowledgeRelations(nodes: readonly KnowledgeNodeInput[], index: 
   if (index >= 0 && index < nodes.length - 1 && nodes[index + 1]) {
     out.push({ index: index + 1, name: knowledgeNodeName(nodes[index + 1]!, index + 1), status: normalizeKnowledgeStatus(nodes[index + 1]!.status), role: 'after' });
   }
+  return out;
+}
+
+export interface ConceptRelation {
+  index: number;
+  name: string;
+  status: KnowledgeStatus;
+  /** `out`: written on this node; `in`: written on the other node. */
+  direction: 'out' | 'in';
+  relation: string | null;
+  why: string;
+}
+
+function linkTargetIndex(nodes: readonly KnowledgeNodeInput[], target: string | undefined): number {
+  if (!target) return -1;
+  const key = target.trim().toLowerCase();
+  return nodes.findIndex((node) => (node.name || '').trim().toLowerCase() === key);
+}
+
+/** Valid AI concept links as unique node-index pairs (unknown targets dropped). */
+export function conceptEdgePairs(nodes: readonly KnowledgeNodeInput[]): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  const seen = new Set<string>();
+  nodes.forEach((node, from) => {
+    for (const link of Array.isArray(node.links) ? node.links : []) {
+      const to = linkTargetIndex(nodes, link?.target);
+      if (to < 0 || to === from || !link?.why) continue;
+      const key = from < to ? `${from}-${to}` : `${to}-${from}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push([from, to]);
+    }
+  });
+  return out;
+}
+
+/**
+ * The AI-written relations around one node, with the model's reason for
+ * each. Empty for sessions that have no concept links; the detail then
+ * falls back to `knowledgeRelations` (the learning path).
+ */
+export function conceptRelations(nodes: readonly KnowledgeNodeInput[], index: number): ConceptRelation[] {
+  const out: ConceptRelation[] = [];
+  const seen = new Set<number>();
+  const push = (other: number, direction: 'out' | 'in', link: { relation?: string; why?: string }) => {
+    if (other < 0 || other === index || seen.has(other) || !link.why || !nodes[other]) return;
+    seen.add(other);
+    out.push({ index: other, name: knowledgeNodeName(nodes[other]!, other), status: normalizeKnowledgeStatus(nodes[other]!.status), direction, relation: link.relation || null, why: link.why });
+  };
+  const self = nodes[index];
+  if (!self) return out;
+  for (const link of Array.isArray(self.links) ? self.links : []) push(linkTargetIndex(nodes, link?.target), 'out', link ?? {});
+  nodes.forEach((node, other) => {
+    for (const link of Array.isArray(node.links) ? node.links : []) {
+      if (linkTargetIndex(nodes, link?.target) === index) push(other, 'in', link ?? {});
+    }
+  });
   return out;
 }
 
@@ -314,6 +381,8 @@ export interface MistakeRowInput {
   redoCount?: number;
   resolved?: boolean;
   isResolved?: boolean;
+  /** RN-6: AI analysis written when the mistake was recorded. */
+  analysis?: { whyWrong?: string | null; correctApproach?: string | null } | null;
 }
 
 export interface MistakeOptionView {
@@ -335,6 +404,10 @@ export interface MistakeView {
   yourAnswer: string | null;
   /** The keyed answer, as shown text. */
   correctAnswer: string | null;
+  /** RN-6: the model's account of what went wrong (null on older entries). */
+  whyWrong: string | null;
+  /** RN-6: the model's account of the right way to think it through. */
+  rightWay: string | null;
 }
 
 export function mistakeOptionsOf(row: MistakeRowInput): Array<{ letter: string; text: string }> {
@@ -353,6 +426,10 @@ function answerText(options: Array<{ letter: string; text: string }>, value: str
   return option ? (option.text ? `${option.letter} · ${option.text}` : option.letter) : value;
 }
 
+function analysisText(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 export function mistakeView(row: MistakeRowInput): MistakeView {
   const options = mistakeOptionsOf(row);
   return {
@@ -369,6 +446,8 @@ export function mistakeView(row: MistakeRowInput): MistakeView {
     })),
     yourAnswer: answerText(options, row.userAnswer),
     correctAnswer: answerText(options, row.correct ?? row.judgedAnswer ?? null),
+    whyWrong: analysisText(row.analysis?.whyWrong),
+    rightWay: analysisText(row.analysis?.correctApproach),
   };
 }
 

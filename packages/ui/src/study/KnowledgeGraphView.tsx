@@ -175,7 +175,7 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
         <MasterySwatch status="fuzzy" label={strings.status.fuzzy} />
         <MasterySwatch status="blank" label={strings.status.blank} />
       </View>
-      <UiText variant="eyebrow" tone="tertiary" style={{ letterSpacing: 0 }}>{strings.caption}</UiText>
+      <UiText variant="eyebrow" tone="tertiary" style={{ letterSpacing: 0 }} {...dataSet({ kbEdgeKind: graph.edgeKind })}>{graph.edgeKind === 'concept' ? strings.captionConcepts : strings.caption}</UiText>
     </View>
   );
 }

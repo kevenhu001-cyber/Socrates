@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildKnowledgeGraph,
+  conceptRelations,
   clampZoom,
   diagnosticReport,
   estimateLabelWidth,
@@ -63,7 +64,7 @@ test('graph: one pill per node, sequential edges, no overlaps, active flag', () 
     }
   }
   assert.deepEqual(buildKnowledgeGraph(NODES, 1), graph, 'layout is deterministic');
-  assert.deepEqual(buildKnowledgeGraph([]), { nodes: [], edges: [], width: 0, height: 0 });
+  assert.deepEqual(buildKnowledgeGraph([]), { nodes: [], edges: [], edgeKind: 'path', width: 0, height: 0 });
 });
 
 test('graph stays legible for a large map', () => {
@@ -174,4 +175,36 @@ test('mistake filter, empty states and topic groups', () => {
   assert.equal(mistakeEmptyKind(2, 0, 'unresolved'), 'filterOther');
   assert.equal(mistakeEmptyKind(2, 1, 'all'), null);
   assert.deepEqual(groupMistakesByTopic(rows).map((g) => [g.topic, g.items.map((r) => r.id)]), [['导数', ['1', '4']], ['积分', ['2']], ['', ['3']]]);
+});
+
+/* RN-6: AI-written concept links, definitions and mistake analysis. */
+test('concept links replace the learning path as graph edges and carry their reason', () => {
+  const nodes = [
+    { name: 'Prior', links: [{ target: 'Posterior', relation: 'feeds into', why: 'The posterior is the prior reweighted by the evidence.' }] },
+    { name: 'Likelihood', links: [{ target: 'posterior', why: 'It measures how well each hypothesis explains the data.' }, { target: 'Nowhere', why: 'x' }] },
+    { name: 'Posterior', definition: 'Belief after the evidence.' },
+  ];
+  const graph = buildKnowledgeGraph(nodes);
+  assert.equal(graph.edgeKind, 'concept');
+  assert.deepEqual(graph.edges.map((edge) => [edge.from, edge.to]), [[0, 2], [1, 2]]);
+  const relations = conceptRelations(nodes, 2);
+  assert.deepEqual(relations.map((relation) => [relation.index, relation.direction, relation.relation]), [[0, 'in', 'feeds into'], [1, 'in', null]]);
+  assert.match(relations[1]!.why, /explains the data/);
+  assert.deepEqual(conceptRelations(nodes, 0).map((relation) => relation.index), [2]);
+});
+
+test('nodes without concept links keep the learning-path edges (older sessions)', () => {
+  const graph = buildKnowledgeGraph([{ name: 'A' }, { name: 'B' }, { name: 'C' }]);
+  assert.equal(graph.edgeKind, 'path');
+  assert.deepEqual(graph.edges.map((edge) => [edge.from, edge.to]), [[0, 1], [1, 2]]);
+  assert.deepEqual(conceptRelations([{ name: 'A' }, { name: 'B' }], 0), []);
+});
+
+test('mistake analysis surfaces only what the model wrote', () => {
+  const withAnalysis = mistakeView({ id: 'a', q: 'Q', analysis: { whyWrong: ' Confused P(A|B) with P(B|A). ', correctApproach: '' } });
+  assert.equal(withAnalysis.whyWrong, 'Confused P(A|B) with P(B|A).');
+  assert.equal(withAnalysis.rightWay, null);
+  const legacy = mistakeView({ id: 'b', q: 'Q' });
+  assert.equal(legacy.whyWrong, null);
+  assert.equal(legacy.rightWay, null);
 });
