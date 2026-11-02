@@ -584,7 +584,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
 }
 
 @media (min-width: 769px) {
-  /* Row radius is declared once, above, as --ui-radius-row (10px). It used to
+  /* Row radius is declared once, above, as --ui-radius-row (12px). It used to
      be re-stated here as --ui-radius-lg (12px) for the same selectors, which
      silently won by order and made the desktop rail a different shape from
      the phone drawer (polish/mobile-sidebar.css keeps the 10px row). */

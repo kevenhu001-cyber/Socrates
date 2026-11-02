@@ -91,7 +91,7 @@
   /* Desktop composer capsule (chatgpt.com: 28px on a 52px single row). */
   --ui-radius-composer-desktop: 28px;
   /* chatgpt.com row radius: sidebar rows, menu items. */
-  --ui-radius-row: 10px;
+  --ui-radius-row: 12px;
   --ui-radius-bubble: 20px;
   --ui-radius-pill: 999px;
   /* R1 restyle: menus and popovers share the 16px card corner of the
