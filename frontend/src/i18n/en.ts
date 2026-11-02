@@ -1697,7 +1697,11 @@ export const en = {
     "mistakes.answerGiven":"Your answer",
     "mistakes.answerKeyed":"Correct answer",
     "mistakes.toNextQuestion":"Make it the next question",
-    "mistakes.toNextQuestionBusy":"Writing the question…"
+    "mistakes.toNextQuestionBusy":"Writing the question…",
+    "recents.group.today":"Today",
+    "recents.group.yesterday":"Yesterday",
+    "recents.group.previous7":"Previous 7 days",
+    "recents.group.previous30":"Previous 30 days"
 };
 
 export default en;

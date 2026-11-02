@@ -22,6 +22,7 @@ import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { UiButton } from '../primitives/UiButton';
 import { UiPressableCard } from '../primitives/UiCard';
+import { UiIcon, type UiGlyphName } from '../primitives/UiIcon';
 
 /** Below this width the layout switches to the phone composition. */
 export const HOME_COMPACT_WIDTH = 769;
@@ -65,6 +66,8 @@ export interface HomeShortcut {
   label: string;
   /** Toggle shortcuts (web search) report their state. */
   pressed?: boolean;
+  /** Leading line glyph (RN-7: every shortcut carries one). */
+  icon?: UiGlyphName;
 }
 
 export interface HomeStarter {
@@ -155,6 +158,7 @@ export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label 
             label={item.label}
             variant={item.pressed ? 'primary' : 'ghost'}
             size={compact ? 'sm' : 'md'}
+            leading={item.icon ? <UiIcon name={item.icon} size={compact ? 16 : 18} color={item.pressed ? colors.onInk : colors.inkSecondary} /> : undefined}
             {...(item.pressed === undefined ? {} : { 'aria-pressed': item.pressed })}
             onPress={() => onSelect(item.id)}
           />
@@ -166,7 +170,7 @@ export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label 
             accessibilityLabel={dismissLabel}
             onPress={() => onDismiss(item.id)}
             hitSlop={6}
-            style={({ pressed }) => ({
+            style={({ pressed, hovered, focused }: { pressed: boolean; hovered?: boolean; focused?: boolean }) => ({
               width: 24,
               height: 24,
               marginRight: uiSpace[2],
@@ -174,10 +178,16 @@ export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label 
               borderRadius: uiRadius.pill,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: pressed ? colors.fillPressed : 'transparent',
+              backgroundColor: pressed ? colors.fillPressed : hovered ? colors.fillHover : 'transparent',
+              outlineStyle: focused ? 'solid' : undefined,
+              outlineWidth: focused ? 2 : 0,
+              outlineColor: colors.ink,
+              outlineOffset: 1,
             })}
           >
-            <UiText variant="labelSm" tone={item.pressed ? 'onInk' : 'tertiary'} aria-hidden>×</UiText>
+            {/* A real 14px line glyph: the bare "×" character rendered at
+                label size read as a dot. */}
+            <UiIcon name="close" size={14} color={item.pressed ? colors.onInk : colors.inkSecondary} />
           </Pressable>}
         </Animated.View>
       ))}

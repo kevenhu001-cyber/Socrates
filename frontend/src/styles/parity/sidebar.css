@@ -112,7 +112,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     letter-spacing: -0.015em;
     white-space: nowrap;
   }
-  #appShell #sidebarHeader .sidebar-logo-img { width: var(--ui-space-xl); height: var(--ui-space-xl); border-radius: var(--ui-radius-sm); }
+  #appShell #sidebarHeader .sidebar-logo-img { width: var(--ui-space-xl); height: var(--ui-space-xl); border-radius: var(--ui-radius-sm); filter: grayscale(1) contrast(1.05); }
   #appShell #sidebarHeader .sidebar-logo > span { font: inherit; }
   #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader > div:last-child,
@@ -712,3 +712,12 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
 /* Window slots preserve measured row heights; spacers must not flex-shrink. */
 #appShell #sidebar .recents-window-row { display: flow-root; flex-shrink: 0; }
 #appShell #sidebar .recents-window-row[data-timeline-index="0"] > .recents-time-label { padding-top: 0; }
+
+/* RN-7 — one line weight for every outline glyph on this surface. The
+   icons come from several sources (viewBox 16/20/24, stroke 1.6–2.2), so the
+   width is set in screen pixels with a non-scaling stroke: every glyph draws
+   the same 1.5px line whatever its viewBox or rendered size. */
+#appShell #sidebar svg[stroke="currentColor"] :is(path, line, polyline, polygon, rect, circle, ellipse) {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5px;
+}

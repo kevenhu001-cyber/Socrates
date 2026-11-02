@@ -74,7 +74,7 @@
 }
 
 [data-mode="light"] {
-  --ui-canvas: #fafafa;
+  --ui-canvas: #ffffff;
   --ui-card: #ffffff;
   --ui-fill: rgba(0, 0, 0, 0.04);
   --ui-fill-hover: rgba(0, 0, 0, 0.07);

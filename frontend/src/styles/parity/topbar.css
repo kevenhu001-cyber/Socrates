@@ -344,3 +344,12 @@ html[data-main-view$="Panel"] #appShell #mobileNewChatBtn {
   #appShell .top-mode-switch-thumb,
   #appShell .top-mode-switch-option { transition: none; }
 }
+
+/* RN-7 — one line weight for every outline glyph on this surface. The
+   icons come from several sources (viewBox 16/20/24, stroke 1.6–2.2), so the
+   width is set in screen pixels with a non-scaling stroke: every glyph draws
+   the same 1.5px line whatever its viewBox or rendered size. */
+#appShell #topBar svg[stroke="currentColor"] :is(path, line, polyline, polygon, rect, circle, ellipse) {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5px;
+}

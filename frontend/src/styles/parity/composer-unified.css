@@ -749,9 +749,11 @@
   z-index: 2;
 }
 
-/* Error state & retry */
+/* Error state & retry. RN-7: status colour is kept to the message line;
+   the chip edge and the retry control stay neutral so one failed upload
+   does not paint a red frame inside the composer. */
 .composer-shell .attachment-chip.error {
-  border-color: var(--destructive);
+  border-color: var(--ui-border-strong);
 }
 .composer-shell .attachment-chip.error .attachment-chip-meta {
   color: var(--destructive);
@@ -764,8 +766,8 @@
   height: var(--ui-control-badge);
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-surface);
-  color: var(--destructive);
-  border: 1px solid var(--destructive);
+  color: var(--ui-text-primary);
+  border: 1px solid var(--ui-border-default);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -783,3 +785,11 @@
    `ComposerQueueBanner.tsx`; only its grid slot is the shell's business. */
 #appShell .composer-shell .composer-queue-banner { grid-area: queue; }
 
+/* RN-7 — one line weight for every outline glyph on this surface. The
+   icons come from several sources (viewBox 16/20/24, stroke 1.6–2.2), so the
+   width is set in screen pixels with a non-scaling stroke: every glyph draws
+   the same 1.5px line whatever its viewBox or rendered size. */
+#appShell #composerInputWrap svg[stroke="currentColor"] :is(path, line, polyline, polygon, rect, circle, ellipse) {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5px;
+}

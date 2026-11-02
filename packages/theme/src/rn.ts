@@ -84,15 +84,14 @@ const lightHex: ThemePaletteHex = {
     surface: '#ebebeb',
   },
   bg: {
-    /* Same four-step ladder as dark mode, running the other way:
-     * L1 #ffffff → L2 #fafafa → L3 #f2f2f2 → L4 #ebebeb. The canvas is
-     * L2; the paper (L1) is what raised and overlay surfaces are cut from,
-     * so they read as lighter than the page they stand on. */
-    page: '#fafafa',
+    /* RN-7 paper canvas: the canvas is the paper (#ffffff), shared with
+     * raised and overlay surfaces (lifted by hairline + soft shadow); the
+     * rail is #fafafa and inset wells #f2f2f2. */
+    page: '#ffffff',
     raised: '#ffffff',
     overlay: '#ffffff',
     hover: '#e0e0e0',
-    sunken: '#ebebeb',
+    sunken: '#f2f2f2',
   },
   text: {
     primary: '#171717',
@@ -158,14 +157,14 @@ const darkSurfaces: UiSurfaceHex = {
 };
 
 const lightSurfaces: UiSurfaceHex = {
-  sidebar: '#f2f2f2',
+  sidebar: '#fafafa',
   bubble: '#ebebeb',
   bubbleStrong: '#e6e6e6',
   composer: '#ffffff',
   composerBorder: '#c9c9c9',
   composerBorderCompact: '#c9c9c9',
-  control: '#ebebeb',
-  controlCompact: '#ebebeb',
+  control: '#f2f2f2',
+  controlCompact: '#f2f2f2',
   surface: '#ffffff',
   hoverGhost: 'rgba(0, 0, 0, 0.05)',
   chip: 'rgba(0, 0, 0, 0.05)',

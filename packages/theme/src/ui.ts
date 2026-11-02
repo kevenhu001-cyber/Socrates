@@ -11,6 +11,9 @@
  * exported objects below and writes CSS custom properties. Never hand-edit
  * the generated CSS; change the values here and re-run the generator.
  *
+ * RN-7: the light canvas is pure white (the paper); cards and overlays are
+ * separated from it by a 1px hairline plus a very soft shadow.
+ *
  * The background ladder (page / rail / panel / elevated) is not redefined
  * here: canvas and card reuse the ladder rungs in `rn.ts` / `tokens.ts`, so
  * the surface-ladder guard keeps holding the web palette and the shared
@@ -43,7 +46,7 @@ export interface UiColors {
 
 export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
   light: {
-    canvas: '#fafafa',
+    canvas: '#ffffff',
     card: '#ffffff',
     fill: 'rgba(0, 0, 0, 0.04)',
     fillHover: 'rgba(0, 0, 0, 0.07)',

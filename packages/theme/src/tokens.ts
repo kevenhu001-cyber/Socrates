@@ -242,17 +242,15 @@ export const lightPalette: ThemePalette = {
     surface: '0 0% 92.16%',
   },
   bg: {
-    /* Same four-step ladder, running the other way, and again four
-     * consecutive Geist steps: background-100 → background-200 → gray-100 →
-     * gray-200. The canvas is L2 — the paper (L1) is what raised and
-     * overlay surfaces are cut from, so they read as *lighter* than the
-     * page they stand on instead of relying on a shadow alone.
-     * The lower rungs spend themselves on recess and control. */
-    page: '0 0% 98.04%',    // #fafafa  L2 — the canvas
-    raised: '0 0% 100%',    // #ffffff  L1 — cards on the canvas
-    overlay: '0 0% 100%',   // #ffffff  L1 — floating bars, menus
+    /* RN-7 paper canvas: the canvas is the paper (#ffffff) and raised /
+     * overlay surfaces share it, lifted by a hairline and a soft shadow.
+     * The pale greys below carry the rail (background-200) and the inset
+     * wells (gray-100): background-100 → background-200 → gray-100. */
+    page: '0 0% 100%',      // #ffffff  the canvas is the paper
+    raised: '0 0% 100%',    // #ffffff  cards on the canvas
+    overlay: '0 0% 100%',   // #ffffff  floating bars, menus
     hover: '0 0% 87.84%',   // #e0e0e0  selected/hover tint (off-ladder)
-    sunken: '0 0% 92.16%',  // #ebebeb  L4 — inset wells
+    sunken: '0 0% 94.9%',   // #f2f2f2  inset wells
   },
   text: {
     primary: '0 0% 9.02%',

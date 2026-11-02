@@ -1654,5 +1654,9 @@ export const zh = {
     "mistakes.answerGiven":"你的答案",
     "mistakes.answerKeyed":"正确答案",
     "mistakes.toNextQuestion":"变成下一问",
-    "mistakes.toNextQuestionBusy":"正在生成追问…"
+    "mistakes.toNextQuestionBusy":"正在生成追问…",
+    "recents.group.today":"今天",
+    "recents.group.yesterday":"昨天",
+    "recents.group.previous7":"过去 7 天",
+    "recents.group.previous30":"过去 30 天"
 };

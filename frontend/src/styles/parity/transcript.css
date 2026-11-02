@@ -294,3 +294,27 @@
 #appShell .new-reply-pill:focus-visible {
   box-shadow: var(--ui-shadow-menu), var(--ui-focus-shadow);
 }
+
+/* ── Syntax: greyscale (RN-7, every width) ─────────────────────────────
+   The bundled atom-one-dark palette painted purple/green/orange tokens on
+   a white page. Code now reads in the ink ramp only: keywords and
+   functions carry weight, literals sit on the primary ink, strings and
+   attributes step to secondary, comments to tertiary italic. */
+#appShell .msg-body :is(pre code.hljs, code.hljs) {
+  background: transparent;
+  color: var(--ui-text-primary);
+}
+#appShell .msg-body .hljs :is(.hljs-keyword, .hljs-doctag, .hljs-formula, .hljs-selector-tag, .hljs-built_in, .hljs-title, .hljs-section, .hljs-name) {
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-semibold);
+}
+#appShell .msg-body .hljs :is(.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet, .hljs-type, .hljs-variable, .hljs-template-variable, .hljs-subst, .hljs-deletion, .hljs-addition) {
+  color: var(--ui-text-primary);
+}
+#appShell .msg-body .hljs :is(.hljs-string, .hljs-regexp, .hljs-attr, .hljs-attribute, .hljs-meta, .hljs-link, .hljs-selector-id, .hljs-selector-class, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-params) {
+  color: var(--ui-text-secondary);
+}
+#appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote) {
+  color: var(--ui-text-tertiary);
+  font-style: italic;
+}
