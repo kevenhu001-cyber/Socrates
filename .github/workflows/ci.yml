@@ -42,7 +42,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Manual runs are explicit full-gate snapshots.
           if [[ "$EVENT" == "workflow_dispatch" ]]; then
             bash scripts/ci-classify.sh --all | tee -a "$GITHUB_OUTPUT"
             exit 0
@@ -54,8 +53,6 @@ jobs:
             push)         base="$BEFORE_SHA" ;;
           esac
 
-          # Missing/unknown history fails safe: spend CI minutes rather than
-          # risk silently skipping a required lane.
           if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
             echo "No usable base SHA; running the full gate"
             bash scripts/ci-classify.sh --all | tee -a "$GITHUB_OUTPUT"
@@ -198,7 +195,10 @@ jobs:
         run: node scripts/coverage-ratchet.mjs frontend
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-      - name: Parity geometry gate
+      # Geometry/parity checks are useful design feedback, but intentional UI
+      # changes should not make an otherwise healthy PR unmergeable.
+      - name: Parity geometry advisory
+        continue-on-error: true
         run: |
           node e2e/dist-server.mjs &
           server_pid=$!

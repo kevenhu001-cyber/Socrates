@@ -12,10 +12,29 @@ val prepareToolRendererAssets by tasks.registering(Copy::class) {
 val bundleToolRenderer by tasks.registering(Exec::class) {
     val output = toolRendererAssets.get().file("render/tool-renderer.js").asFile
     workingDir(repositoryRoot)
-    commandLine(repositoryRoot.resolve("frontend/node_modules/.bin/esbuild").absolutePath,
+    // packages/ui intentionally has no node_modules. Match frontend/vite.config.js
+    // by resolving bare React dependencies from the frontend install and by
+    // compiling shared React Native components through react-native-web.
+    environment("NODE_PATH", repositoryRoot.resolve("frontend/node_modules").absolutePath)
+    // Vite 8/Rolldown no longer guarantees a top-level frontend/.bin/esbuild.
+    // Pin the renderer bundler explicitly so Android builds do not depend on
+    // Vite's private dependency graph. npx reuses the npm cache on CI/local.
+    commandLine("npx", "--yes", "esbuild@0.25.12",
         "apps/socrates-android/renderer/toolRendererEntry.ts",
         "--bundle", "--minify", "--format=esm", "--platform=browser", "--target=es2020",
         "--define:process.env.NODE_ENV=\"production\"",
+        "--alias:react-native=react-native-web",
+        "--resolve-extensions=.web.tsx,.web.ts,.web.mjs,.web.js,.mjs,.js,.mts,.ts,.jsx,.tsx,.json",
+        // The shared frontend graph now contains connector brand assets. Vite's
+        // `?raw` SVG imports evaluate to source text; esbuild's text loader is
+        // the equivalent contract. PNG marks are self-contained as data URLs so
+        // the Android WebView never depends on Vite-emitted hashed asset files.
+        "--loader:.svg=text", "--loader:.png=dataurl",
+        // Android does not package frontend/wasm. socratesWasm.ts is explicitly
+        // designed to fall back to the pure-TS implementation when its lazy
+        // import fails, matching the RN client path and avoiding a duplicate Rust
+        // build just for this WebView renderer.
+        "--external:../../wasm/socrates_wasm.js",
         // tldraw ships Vite-only `?url` asset imports; the whiteboard adapter is
         // never mounted on Android, so leave its module out of the bundle.
         "--external:./visualizationWhiteboard.ts", "--outfile=${output.absolutePath}")
