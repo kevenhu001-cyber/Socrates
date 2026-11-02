@@ -3119,6 +3119,13 @@ paths:
         call rather than silently resuming thinking. Reasoning-effort levels are
         translated into the provider's own vocabulary, and are not sent at all
         to a model that documents no such levels.
+        In Tutor mode (`mode: tutor`) a request may name a `learningMode`
+        (`think`, `recall`, `connect`, `diagnose`, `mistakes`, `practice`);
+        the server injects that mode's server-owned instructions from
+        `prompts/learning-modes.md` for the current turn only. An optional
+        `learningFocus` (at most 2000 characters, such as a concept or a
+        mistake) is passed to the model as untrusted context. Both are
+        ignored in chat mode, and an unknown mode is rejected with 400.
   /api/chat/stream:
     post:
       tags: [users]
