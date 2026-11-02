@@ -11,6 +11,7 @@ export {
   type DiagnosticCommandHandler,
   type DiagnosticOption,
   type DiagnosticResultsCopy,
+  type DiagnosticInsight,
   type DiagnosticScreen,
   type RenderDiagnosticRich,
 } from './DiagnosticPanel';

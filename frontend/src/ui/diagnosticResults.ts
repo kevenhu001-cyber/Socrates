@@ -1,6 +1,7 @@
 import { scrollContainer } from './scroll.js';
 import { t } from '../i18n.ts';
 import { renderDiagnostic } from '../react/tutor/diagnosticHost.tsx';
+import type { DiagnosticInsight } from '@socrates/ui/study';
 
 function resultsNotice(isZh: boolean) {
   return isZh
@@ -15,7 +16,7 @@ function tr(key: string, fallback: string): string {
   return value && value !== key ? value : fallback;
 }
 
-export function renderDiagResultsScreen(state: { kbNodes: { name: string; status: string }[] }, isZh: boolean) {
+export function renderDiagResultsScreen(state: { kbNodes: { name: string; status: string }[] }, isZh: boolean, insight?: DiagnosticInsight) {
   const summary = { internalized: 0, fuzzy: 0, blank: 0 };
   state.kbNodes.forEach(function (node) {
     const status = node.status === "fuzzy" ? "fuzzy" : "blank";
@@ -47,9 +48,13 @@ export function renderDiagResultsScreen(state: { kbNodes: { name: string; status
       allFamiliar: tr('diag.allFamiliar', 'Every dimension has some footing; keep the pace brisk.'),
       rankLabel: tr('diag.rank', '#{n}'),
       separator: isZh ? '、' : ', ',
+      analyzing: tr('diag.analyzing', 'Reading your answers…'),
     },
+    insight,
   });
 
+  /* RN-6: re-rendering with the AI insight keeps the reader where they are. */
+  if (insight && insight.status !== 'loading') return;
   const container = scrollContainer();
   if (container) container.scrollTop = 0;
 }

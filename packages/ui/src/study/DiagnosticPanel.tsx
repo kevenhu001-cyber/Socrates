@@ -38,6 +38,20 @@ export interface DiagnosticResultsCopy {
   rankLabel: string;
   /** Joins the focus names ("、" in zh, ", " in en). */
   separator: string;
+  /** RN-6: shown while the AI analysis of the answers is being written. */
+  analyzing?: string;
+}
+
+/**
+ * RN-6: the AI-written part of the results. `reasons` is keyed by the
+ * node's position in `nodes`. Absent (older hosts) or `none` means the
+ * computed copy stands alone; `loading` keeps it and adds a quiet line.
+ */
+export interface DiagnosticInsight {
+  status: 'loading' | 'ready' | 'none';
+  summary?: string | null;
+  nextStep?: string | null;
+  reasons?: Record<number, string>;
 }
 
 export type DiagnosticScreen =
@@ -61,6 +75,7 @@ export type DiagnosticScreen =
       continueLabel: string;
       statusLabels: { fuzzy: string; blank: string };
       copy: DiagnosticResultsCopy;
+      insight?: DiagnosticInsight;
     }
   | { kind: 'error'; title: string; reason: string; retryLabel: string; builtinLabel: string };
 
@@ -173,6 +188,9 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
   const { colors } = useUiTheme();
   const report = diagnosticReport(screen.nodes);
   const copy = screen.copy;
+  const insight = screen.insight?.status === 'ready' ? screen.insight : null;
+  const aiNext = insight?.nextStep?.trim() || '';
+  const aiSummary = insight?.summary?.trim() || '';
   return (
     <View {...dataSet({ diagScreen: 'results' })} style={{ alignSelf: 'center', width: '100%', maxWidth: 640, gap: uiSpace[4] }}>
       <UiText variant="title" align="center" role="heading" aria-level={2}>{screen.title}</UiText>
@@ -188,8 +206,20 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
         </View>
         <View {...dataSet({ diagNext: '1' })} style={{ flexGrow: 1, flexBasis: 240, gap: uiSpace[2], padding: uiSpace[4], borderRadius: uiRadius.lg, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.card }}>
           <UiText variant="labelSm" tone="tertiary">{copy.next}</UiText>
-          {report.startsWith ? <UiText variant="bodySm">{fill(copy.startsWith, { name: report.startsWith })}</UiText> : null}
-          <UiText variant="bodySm" tone="secondary">{report.focus.length ? fill(copy.focus, { names: report.focus.join(copy.separator) }) : copy.allFamiliar}</UiText>
+          {aiNext ? (
+            <>
+              <UiText variant="bodySm" {...dataSet({ diagAiNext: '1' })}>{aiNext}</UiText>
+              {aiSummary ? <UiText variant="bodySm" tone="secondary" {...dataSet({ diagAiSummary: '1' })}>{aiSummary}</UiText> : null}
+            </>
+          ) : (
+            <>
+              {report.startsWith ? <UiText variant="bodySm">{fill(copy.startsWith, { name: report.startsWith })}</UiText> : null}
+              <UiText variant="bodySm" tone="secondary">{report.focus.length ? fill(copy.focus, { names: report.focus.join(copy.separator) }) : copy.allFamiliar}</UiText>
+              {screen.insight?.status === 'loading' && copy.analyzing ? (
+                <UiText variant="labelSm" tone="tertiary" aria-live="polite" {...dataSet({ diagAnalyzing: '1' })}>{copy.analyzing}</UiText>
+              ) : null}
+            </>
+          )}
         </View>
       </View>
 
@@ -198,6 +228,7 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
         <View role="list" aria-label={copy.gaps} style={{ borderRadius: uiRadius.lg, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.card, overflow: 'hidden' }}>
           {report.ranked.map((node, index) => {
             const familiar = node.status === 'fuzzy';
+            const reason = insight?.reasons?.[node.order]?.trim() || '';
             return (
               <View
                 key={`${node.name}-${node.order}`}
@@ -207,7 +238,10 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
                 style={{ flexDirection: 'row', alignItems: 'center', gap: uiSpace[3], paddingHorizontal: uiSpace[4], paddingVertical: uiSpace[3], borderTopWidth: index ? 1 : 0, borderTopColor: colors.hairline }}
               >
                 <UiText variant="labelSm" tone="tertiary" style={{ width: 22, fontVariant: ['tabular-nums'] }}>{String(node.rank).padStart(2, '0')}</UiText>
-                <UiText variant="label" style={{ flex: 1, minWidth: 0 }}>{node.name}</UiText>
+                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                  <UiText variant="label">{node.name}</UiText>
+                  {reason ? <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400' }} {...dataSet({ diagReason: node.order })}>{reason}</UiText> : null}
+                </View>
                 <View style={{ paddingHorizontal: uiSpace[3], paddingVertical: 2, borderRadius: uiRadius.pill, borderWidth: familiar ? 1.5 : 1, borderColor: familiar ? colors.ink : colors.hairlineStrong }}>
                   <UiText variant="eyebrow" tone={familiar ? 'ink' : 'tertiary'} style={{ letterSpacing: 0 }}>{familiar ? screen.statusLabels.fuzzy : screen.statusLabels.blank}</UiText>
                 </View>
