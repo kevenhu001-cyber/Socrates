@@ -6,8 +6,9 @@
  * (`renderRich`), so math and links keep the shell's renderer.
  */
 import { type ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
-import { uiRadius, uiSpace } from '@socrates/theme';
+import { Pressable, View, useWindowDimensions } from 'react-native';
+import { H, R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
+import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
@@ -88,12 +89,15 @@ export function DiagnosticPanel({ screen, onCommand, renderRich }: { screen: Dia
   return <Failure screen={screen} onCommand={onCommand} />;
 }
 
+/** Site pricing / feature card: white, 24px radius, hairline ring + soft lift, 32px inset. */
 function Card({ children, maxWidth = 720, data }: { children: ReactNode; maxWidth?: number; data?: Record<string, string> }) {
   const { colors } = useUiTheme();
+  const { width } = useWindowDimensions();
+  const pad = width < 769 ? S[300] : S[400];
   return (
     <View
       {...dataSet(data ?? {})}
-      style={{ alignSelf: 'center', width: '100%', maxWidth, gap: uiSpace[5], padding: uiSpace[5], borderRadius: uiRadius.card, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.card }}
+      style={{ alignSelf: 'center', width: '100%', maxWidth, gap: S[300], padding: pad, borderRadius: R.stage, backgroundColor: colors.card, boxShadow: shadow(colors, 'raised') }}
     >
       {children}
     </View>
@@ -104,8 +108,8 @@ function Bar({ percent, label }: { percent: number; label?: string }) {
   const { colors } = useUiTheme();
   const value = Math.max(0, Math.min(100, Math.round(percent)));
   return (
-    <View role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} style={{ height: 4, width: '100%', borderRadius: uiRadius.pill, backgroundColor: colors.fill, overflow: 'hidden' }}>
-      <View style={{ height: 4, width: `${value}%`, borderRadius: uiRadius.pill, backgroundColor: colors.ink }} />
+    <View role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} style={{ height: 4, width: '100%', borderRadius: R.pill, backgroundColor: colors.fill, overflow: 'hidden' }}>
+      <View style={{ height: 4, width: `${value}%`, borderRadius: R.pill, backgroundColor: colors.ink }} />
     </View>
   );
 }
@@ -113,9 +117,9 @@ function Bar({ percent, label }: { percent: number; label?: string }) {
 function Loading({ screen, onCommand }: { screen: Extract<DiagnosticScreen, { kind: 'loading' }>; onCommand: DiagnosticCommandHandler }) {
   return (
     <Card data={{ diagScreen: 'loading' }}>
-      <View style={{ alignItems: 'center', gap: uiSpace[3], paddingVertical: uiSpace[5] }}>
+      <View style={{ alignItems: 'center', gap: S[200], paddingVertical: S[300] }}>
         <UiText variant="bodySm" tone="secondary" align="center" aria-live="polite">{screen.loadingText}</UiText>
-        <View style={{ width: '100%', maxWidth: 300, gap: uiSpace[2] }}>
+        <View style={{ width: '100%', maxWidth: 300, gap: S[75] }}>
           <Bar percent={screen.percent} label={screen.loadingText} />
           <UiText variant="labelSm" tone="tertiary" align="center">{screen.step}</UiText>
         </View>
@@ -125,8 +129,11 @@ function Loading({ screen, onCommand }: { screen: Extract<DiagnosticScreen, { ki
   );
 }
 
+/** Same row as the quiz (site `.ui-option`): 12px radius, inset hairline, ink ring and #f9f9f9 when chosen. */
 function OptionRow({ option, index, selected, onCommand, renderRich }: { option: DiagnosticOption; index: number; selected: boolean; onCommand: DiagnosticCommandHandler; renderRich: RenderDiagnosticRich }) {
   const { colors } = useUiTheme();
+  const reduced = useReducedMotion();
+  const { subtle } = sheets(colors);
   const { hovered, focused, handlers } = usePressFeedback();
   return (
     <Pressable
@@ -138,45 +145,47 @@ function OptionRow({ option, index, selected, onCommand, renderRich }: { option:
       style={{
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: uiSpace[3],
-        paddingHorizontal: uiSpace[4],
-        paddingVertical: uiSpace[3],
-        borderRadius: uiRadius.lg,
-        borderWidth: selected ? 1.5 : 1,
-        borderColor: selected ? colors.ink : colors.hairline,
-        backgroundColor: selected ? colors.fill : hovered ? colors.fill : 'transparent',
-        outlineStyle: focused ? 'solid' : undefined,
-        outlineWidth: focused ? 2 : 0,
-        outlineColor: colors.ink,
-        outlineOffset: 2,
+        gap: S[100],
+        minHeight: H.option + 4,
+        paddingLeft: S[100],
+        paddingRight: S[200],
+        paddingVertical: S[100],
+        borderRadius: R.row,
+        backgroundColor: selected || hovered ? subtle : colors.card,
+        boxShadow: insetRing(selected ? colors.ink : hovered ? colors.hairlineStrong : colors.hairline, selected ? 1.5 : 1),
+        ...focusRing(colors, focused),
+        ...transition('background-color, box-shadow', reduced),
       }}
     >
-      <View aria-hidden style={{ minWidth: 28, height: 22, paddingHorizontal: uiSpace[2], borderRadius: uiRadius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: selected ? colors.ink : 'transparent', borderWidth: selected ? 0 : 1, borderColor: colors.hairlineStrong }}>
-        <UiText variant="eyebrow" tone={selected ? 'onInk' : 'secondary'} style={{ letterSpacing: 0 }}>{option.letter}</UiText>
+      <View aria-hidden style={{ width: 24, height: 24, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: selected ? colors.ink : colors.card, boxShadow: selected ? undefined : insetRing(colors.hairlineStrong) }}>
+        <UiText variant="labelSm" tone={selected ? 'onInk' : 'secondary'}>{option.letter}</UiText>
       </View>
-      <View style={{ flex: 1, minWidth: 0 }}>{renderRich(option.text, 'diag-option')}</View>
+      <View style={{ flex: 1, minWidth: 0, paddingTop: 1 }}>{renderRich(option.text, 'diag-option')}</View>
     </Pressable>
   );
 }
 
 function Question({ screen, onCommand, renderRich }: { screen: Extract<DiagnosticScreen, { kind: 'question' }>; onCommand: DiagnosticCommandHandler; renderRich: RenderDiagnosticRich }) {
+  const { colors } = useUiTheme();
   const answered = screen.selected !== null && screen.selected >= 0;
   const advance = screen.isLast ? 'finish' : 'next';
   return (
     <Card data={{ diagScreen: 'question' }}>
-      <UiText variant="labelSm" tone="tertiary">{screen.numberLabel}</UiText>
+      <View style={{ alignSelf: 'flex-start', height: H.tag, justifyContent: 'center', paddingHorizontal: 10, borderRadius: R.pill, backgroundColor: colors.fill }}>
+        <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400', fontVariant: ['tabular-nums'] }}>{screen.numberLabel}</UiText>
+      </View>
       <View>{renderRich(screen.questionHtml, 'diag-question')}</View>
-      <View role="radiogroup" aria-label={screen.numberLabel} style={{ gap: uiSpace[2] }}>
+      <View role="radiogroup" aria-label={screen.numberLabel} style={{ gap: S[75] }}>
         {screen.options.map((option, index) => (
           <OptionRow key={`${option.letter}-${index}`} option={option} index={index} selected={screen.selected === index} onCommand={onCommand} renderRich={renderRich} />
         ))}
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: uiSpace[2] }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S[75], paddingTop: S[200], borderTopWidth: 1, borderTopColor: colors.hairline }}>
         <View style={{ opacity: screen.isFirst ? 0 : 1 }} pointerEvents={screen.isFirst ? 'none' : 'auto'} aria-hidden={screen.isFirst || undefined}>
           <PillAction label={screen.labels.back} onPress={() => onCommand('previous')} data={{ diagCommand: 'previous' }} />
         </View>
-        <View style={{ flexDirection: 'row', gap: uiSpace[2] }}>
-          <PillAction label={screen.labels.skip} onPress={() => onCommand('skip')} data={{ diagCommand: 'skip' }} />
+        <View style={{ flexDirection: 'row', gap: S[75] }}>
+          <PillAction tone="soft" label={screen.labels.skip} onPress={() => onCommand('skip')} data={{ diagCommand: 'skip' }} />
           <PillAction tone="solid" label={screen.isLast ? screen.labels.begin : screen.labels.next} disabled={!answered} onPress={() => onCommand(advance)} data={{ diagCommand: advance }} />
         </View>
       </View>
@@ -186,25 +195,26 @@ function Question({ screen, onCommand, renderRich }: { screen: Extract<Diagnosti
 
 function Results({ screen, onCommand, renderRich }: { screen: Extract<DiagnosticScreen, { kind: 'results' }>; onCommand: DiagnosticCommandHandler; renderRich: RenderDiagnosticRich }) {
   const { colors } = useUiTheme();
+  const { subtle } = sheets(colors);
   const report = diagnosticReport(screen.nodes);
   const copy = screen.copy;
   const insight = screen.insight?.status === 'ready' ? screen.insight : null;
   const aiNext = insight?.nextStep?.trim() || '';
   const aiSummary = insight?.summary?.trim() || '';
   return (
-    <View {...dataSet({ diagScreen: 'results' })} style={{ alignSelf: 'center', width: '100%', maxWidth: 640, gap: uiSpace[4] }}>
+    <View {...dataSet({ diagScreen: 'results' })} style={{ alignSelf: 'center', width: '100%', maxWidth: 640, gap: S[300] }}>
       <UiText variant="title" align="center" role="heading" aria-level={2}>{screen.title}</UiText>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: uiSpace[3] }}>
-        <View {...dataSet({ diagCoverage: report.coverage })} style={{ flexGrow: 1, flexBasis: 240, gap: uiSpace[3], padding: uiSpace[4], borderRadius: uiRadius.lg, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.card }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S[100] }}>
+        <View {...dataSet({ diagCoverage: report.coverage })} style={{ flexGrow: 1, flexBasis: 240, gap: S[100], padding: S[300], borderRadius: R.sheet, backgroundColor: subtle, boxShadow: insetRing(colors.hairline) }}>
           <UiText variant="labelSm" tone="tertiary">{copy.coverage}</UiText>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: uiSpace[2] }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: S[75], marginTop: 'auto' }}>
             <UiText variant="title" style={{ fontVariant: ['tabular-nums'] }}>{`${report.coverage}%`}</UiText>
             <UiText variant="labelSm" tone="secondary">{fill(copy.coverageOf, { n: report.familiar, total: report.total })}</UiText>
           </View>
           <Bar percent={report.coverage} label={copy.coverage} />
         </View>
-        <View {...dataSet({ diagNext: '1' })} style={{ flexGrow: 1, flexBasis: 240, gap: uiSpace[2], padding: uiSpace[4], borderRadius: uiRadius.lg, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.card }}>
+        <View {...dataSet({ diagNext: '1' })} style={{ flexGrow: 1, flexBasis: 240, gap: S[75], padding: S[300], borderRadius: R.sheet, backgroundColor: subtle, boxShadow: insetRing(colors.hairline) }}>
           <UiText variant="labelSm" tone="tertiary">{copy.next}</UiText>
           {aiNext ? (
             <>
@@ -223,9 +233,9 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
         </View>
       </View>
 
-      <View style={{ gap: uiSpace[2] }}>
-        <UiText variant="labelSm" tone="tertiary">{copy.gaps}</UiText>
-        <View role="list" aria-label={copy.gaps} style={{ borderRadius: uiRadius.lg, borderWidth: 1, borderColor: colors.hairline, backgroundColor: colors.card, overflow: 'hidden' }}>
+      <View style={{ gap: S[100] }}>
+        <UiText variant="labelSm" tone="secondary" style={{ paddingHorizontal: S[50] }}>{copy.gaps}</UiText>
+        <View role="list" aria-label={copy.gaps} style={{ borderRadius: R.card, backgroundColor: colors.card, boxShadow: shadow(colors, 'raised'), overflow: 'hidden' }}>
           {report.ranked.map((node, index) => {
             const familiar = node.status === 'fuzzy';
             const reason = insight?.reasons?.[node.order]?.trim() || '';
@@ -235,14 +245,16 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
                 role="listitem"
                 aria-label={`${fill(copy.rankLabel, { n: node.rank })} ${node.name}, ${familiar ? screen.statusLabels.fuzzy : screen.statusLabels.blank}`}
                 {...dataSet({ diagRank: node.rank, diagStatus: node.status })}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: uiSpace[3], paddingHorizontal: uiSpace[4], paddingVertical: uiSpace[3], borderTopWidth: index ? 1 : 0, borderTopColor: colors.hairline }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: S[100], minHeight: 56, paddingHorizontal: S[200], paddingVertical: S[100], borderTopWidth: index ? 1 : 0, borderTopColor: colors.hairline }}
               >
-                <UiText variant="labelSm" tone="tertiary" style={{ width: 22, fontVariant: ['tabular-nums'] }}>{String(node.rank).padStart(2, '0')}</UiText>
+                <View aria-hidden style={{ minWidth: 32, height: 24, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, boxShadow: insetRing(colors.hairlineStrong) }}>
+                  <UiText variant="labelSm" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>{String(node.rank).padStart(2, '0')}</UiText>
+                </View>
                 <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                   <UiText variant="label">{node.name}</UiText>
                   {reason ? <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400' }} {...dataSet({ diagReason: node.order })}>{reason}</UiText> : null}
                 </View>
-                <View style={{ paddingHorizontal: uiSpace[3], paddingVertical: 2, borderRadius: uiRadius.pill, borderWidth: familiar ? 1.5 : 1, borderColor: familiar ? colors.ink : colors.hairlineStrong }}>
+                <View style={{ height: H.tag, justifyContent: 'center', paddingHorizontal: 10, borderRadius: R.pill, backgroundColor: familiar ? colors.card : colors.fill, boxShadow: familiar ? insetRing(colors.ink, 1.5) : undefined }}>
                   <UiText variant="eyebrow" tone={familiar ? 'ink' : 'tertiary'} style={{ letterSpacing: 0 }}>{familiar ? screen.statusLabels.fuzzy : screen.statusLabels.blank}</UiText>
                 </View>
               </View>
@@ -252,7 +264,7 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
         <UiText variant="labelSm" tone="tertiary" align="center">{screen.summary}</UiText>
       </View>
 
-      <View style={{ padding: uiSpace[4], borderRadius: uiRadius.lg, backgroundColor: colors.fill }}>{renderRich(screen.noticeHtml, 'diag-notice')}</View>
+      <View style={{ padding: S[200], borderRadius: R.card, backgroundColor: subtle, boxShadow: insetRing(colors.hairline) }}>{renderRich(screen.noticeHtml, 'diag-notice')}</View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
         <PillAction tone="solid" label={screen.continueLabel} onPress={() => onCommand('proceed')} data={{ diagCommand: 'proceed' }} />
@@ -264,10 +276,10 @@ function Results({ screen, onCommand, renderRich }: { screen: Extract<Diagnostic
 function Failure({ screen, onCommand }: { screen: Extract<DiagnosticScreen, { kind: 'error' }>; onCommand: DiagnosticCommandHandler }) {
   return (
     <Card maxWidth={520} data={{ diagScreen: 'error' }}>
-      <View style={{ alignItems: 'center', gap: uiSpace[3], paddingVertical: uiSpace[4] }} role="alert">
+      <View style={{ alignItems: 'center', gap: S[100], paddingVertical: S[300] }} role="alert">
         <UiText variant="titleSm" align="center">{screen.title}</UiText>
         {screen.reason ? <UiText variant="labelSm" tone="tertiary" align="center" style={{ maxWidth: 340 }}>{screen.reason}</UiText> : null}
-        <View style={{ flexDirection: 'row', gap: uiSpace[2], marginTop: uiSpace[1] }}>
+        <View style={{ flexDirection: 'row', gap: S[75], marginTop: S[75] }}>
           <PillAction tone="solid" label={screen.retryLabel} onPress={() => onCommand('retry')} data={{ diagCommand: 'retry' }} />
           <PillAction label={screen.builtinLabel} onPress={() => onCommand('builtin')} data={{ diagCommand: 'builtin' }} />
         </View>
