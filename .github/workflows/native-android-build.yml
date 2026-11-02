@@ -44,11 +44,7 @@ jobs:
         working-directory: frontend
         run: npm ci --include=dev --prefer-offline --no-audit --no-fund
       - name: Verify renderer toolchain
-        working-directory: frontend
-        run: |
-          npm rebuild esbuild
-          test -x node_modules/.bin/esbuild || chmod +x node_modules/.bin/esbuild
-          node_modules/.bin/esbuild --version
+        run: npx --yes esbuild@0.25.12 --version
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
       - name: Install Android SDK 35
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
