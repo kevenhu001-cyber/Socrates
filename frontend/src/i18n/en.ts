@@ -1174,6 +1174,7 @@ export const en = {
     "tool.doneCite":"Added references",
     "tool.donePatchUi":"Updated the visual",
     "citation.sources":"Sources",
+    "citation.sourcesCount":"Sources, {n}",
     "citation.preview":"Source preview",
     "think.summary":"Thought summary",
     "think.summaryTools":"Tools used: {n}.",

@@ -1148,6 +1148,7 @@ export const zh = {
     "tool.doneCite":"已添加引用",
     "tool.donePatchUi":"已更新图形界面",
     "citation.sources":"来源",
+    "citation.sourcesCount":"来源，{n} 条",
     "citation.preview":"来源预览",
     "think.summary":"思路总结",
     "think.summaryTools":"使用了 {n} 个工具。",
