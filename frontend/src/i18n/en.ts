@@ -1707,7 +1707,8 @@ export const en = {
     "recents.group.today":"Today",
     "recents.group.yesterday":"Yesterday",
     "recents.group.previous7":"Previous 7 days",
-    "recents.group.previous30":"Previous 30 days"
+    "recents.group.previous30":"Previous 30 days",
+    "chain.own":"You asked"
 };
 
 export default en;

@@ -37,6 +37,7 @@ export function chainStrings(): QuestionChainStrings {
     collapse: i18n('chain.collapse', 'Fold'),
     folded: i18n('chain.folded', '{n} more questions'),
     current: i18n('chain.current', 'Current question'),
+    own: i18n('chain.own', 'You asked'),
   };
 }
 

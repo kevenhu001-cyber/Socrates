@@ -1664,5 +1664,6 @@ export const zh = {
     "recents.group.today":"今天",
     "recents.group.yesterday":"昨天",
     "recents.group.previous7":"过去 7 天",
-    "recents.group.previous30":"过去 30 天"
+    "recents.group.previous30":"过去 30 天",
+    "chain.own":"自己问的"
 };

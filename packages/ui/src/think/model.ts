@@ -8,6 +8,12 @@
 export interface ChainStep {
   id: string;
   text: string;
+  /**
+   * RN-14: `own` marks a question the learner typed themselves (shown as
+   * "You asked"); absent means the root or a question followed from the
+   * chain's suggestions.
+   */
+  origin?: 'own';
 }
 
 /** A question the learner can follow next. `mistake` candidates come from the mistake book. */
@@ -51,6 +57,34 @@ export function appendChainStep(state: ChainState, text: string): ChainState {
   const last = state.steps[state.steps.length - 1];
   if (last && last.text === clean) return state;
   return { sessionKey: state.sessionKey, steps: [...state.steps, { id: `s${state.steps.length}`, text: clean }] };
+}
+
+/**
+ * RN-14: whether a message the learner typed reads as a question. In tutor
+ * mode most learner messages are answers to the tutor, so only text that
+ * asks something joins the chain: a question mark (either width), a
+ * leading interrogative, or a Chinese sentence-final question particle.
+ */
+const ZH_LEADING = /^(为什么|为何|怎么|怎样|如何|什么|哪|是否|能否|可否|能不能|可不可以|是不是|有没有|会不会|要不要|该不该)/;
+const ZH_TRAILING = /[吗呢么][。.!！~～\s]*$/;
+const EN_LEADING = /^(why|how|what|when|where|which|who|whom|whose|is|are|was|were|can|could|does|do|did|should|would|will|shall|may|might|isn't|aren't|doesn't|don't|didn't)\b/i;
+
+export function looksLikeQuestion(text: string): boolean {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  if (Array.from(flat).length < 2) return false;
+  if (/[?？]/.test(flat)) return true;
+  return ZH_LEADING.test(flat) || ZH_TRAILING.test(flat) || EN_LEADING.test(flat);
+}
+
+/**
+ * RN-14: a question the learner typed joins the chain as an `own` step.
+ * Anything already on the chain (the root is often the first message)
+ * is not added twice.
+ */
+export function appendOwnQuestion(state: ChainState, text: string): ChainState {
+  const clean = normalizeChainText(text);
+  if (!clean || state.steps.some((step) => step.text === clean)) return state;
+  return { sessionKey: state.sessionKey, steps: [...state.steps, { id: `s${state.steps.length}`, text: clean, origin: 'own' }] };
 }
 
 export interface ChainView {
