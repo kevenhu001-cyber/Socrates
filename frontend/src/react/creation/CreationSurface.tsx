@@ -1,13 +1,12 @@
 import { useState, type FormEvent, type Ref } from 'react';
 import {
   LayoutGrid,
-  List,
-  MoreHorizontal,
   PanelsTopLeft,
   Search,
   Trash2,
   X,
 } from 'lucide-react';
+import { Icon } from '../../ui/Icon';
 import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
 import { Empty, EmptyDescription, EmptyHeader } from '../ui/shadcn/empty';
@@ -78,7 +77,7 @@ function CreationHeader({ name, query, siteView, onQueryChange, onNew, onSiteVie
             }}
           >
             <ToggleGroupItem value="grid" aria-label={text.gridView}><LayoutGrid data-icon="inline-start" /></ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label={text.listView}><List data-icon="inline-start" /></ToggleGroupItem>
+            <ToggleGroupItem value="list" aria-label={text.listView}><Icon name="list" size={16} data-icon="inline-start" /></ToggleGroupItem>
           </ToggleGroup>
         </div>
         <div className="creation-site-banner">
@@ -164,7 +163,7 @@ function CreationList({ name, items, loading, error, query, siteView, onRetry, o
               <Badge variant="outline" className="creation-site-visibility">{visibility}</Badge>
               <div className="creation-row-actions">
                 <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`${text.name}: ${item.title || ''}`}><MoreHorizontal data-icon="inline-start" /></Button>} />
+                  <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`${text.name}: ${item.title || ''}`}><Icon name="more" size={16} data-icon="inline-start" /></Button>} />
                   <DropdownMenuContent align="end" className="w-36">
                     <DropdownMenuGroup>
                       <DropdownMenuItem nativeButton onClick={() => onAction('preview', item.id)}>{text.preview}</DropdownMenuItem>

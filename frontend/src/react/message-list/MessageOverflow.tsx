@@ -28,7 +28,7 @@ export function MessageOverflow({ actions }: { actions: OverflowAction[] }) {
   const mobile = useSyncExternalStore(open ? subscribeMobile : subscribeClosed, readMobile);
   const label = i18n('message.moreActions', 'More actions');
   return <DeferredMenu open={open} onOpenChange={setOpen} className="msg-action-menu" label={label} align="start"
-    trigger={<ToolButton ref={trigger} label={label}><Icon name="more" size={18} shapeRendering="geometricPrecision" /></ToolButton>}>
+    trigger={<ToolButton ref={trigger} label={label}><Icon name="more" size={18} className="msg-more-glyph" shapeRendering="geometricPrecision" /></ToolButton>}>
     {({ FoundationMenuItem }) => actions.filter((action) => mobile || !action.mobileOnly).map((action) =>
       <FoundationMenuItem key={action.label} className={action.mobileOnly ? 'msg-action-mobile-only' : undefined}
         onClick={(event) => {

@@ -91,17 +91,10 @@ export const GLYPHS = {
     ['r', 3, 14, 7, 7, 1.5],
     ['r', 14, 14, 7, 7, 1.5],
   ]),
-  more: box(24, 1.75, [
-    ['c', 5, 12, 1.4],
-    ['c', 12, 12, 1.4],
-    ['c', 19, 12, 1.4],
-  ]),
-  /** Recent-session overflow action; the SPA uses slightly larger dots here. */
-  'session-more': box(24, 1.75, [
-    ['c', 5, 12, 1.5],
-    ['c', 12, 12, 1.5],
-    ['c', 19, 12, 1.5],
-  ]),
+  /* Three short strokes, never the ⋯ dots (only the streaming cursor is a dot). */
+  more: box(24, 1.75, [['p', 'M3.5 12h4M10 12h4M16.5 12h4']]),
+  /** Recent-session overflow action: the same three strokes as `more`. */
+  'session-more': box(24, 1.75, [['p', 'M3.5 12h4M10 12h4M16.5 12h4']]),
 
   /* ── Sidebar footer ─────────────────────────────────────────────────── */
   sun: box(24, 2, [
@@ -139,8 +132,8 @@ export const GLYPHS = {
     ['l', 12, 2, 12, 15],
   ]),
   summary: box(24, 1.8, [
-    ['c', 4, 6, 1],
-    ['p', 'M9 6h11M4 12h1m4 0h11M4 18h1m4 0h11'],
+    ['p', 'M4 6h2.5M4 12h2.5M4 18h2.5'],
+    ['p', 'M9 6h11M9 12h11M9 18h11'],
   ], true, false),
   caret: box(24, 2, [['p', 'M6 9l6 6 6-6']]),
   'model-caret': box(16, 1.6, [['p', 'm4.5 6.5 3.5 3.5 3.5-3.5']]),
@@ -217,7 +210,7 @@ export const GLYPHS = {
     ['p', 'M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'],
     ['p', 'M20 2v4'],
     ['p', 'M22 4h-4'],
-    ['c', 4, 20, 2],
+    ['p', 'M4 18v4M2 20h4'],
   ]),
   /** lucide `sliders-horizontal` — Personalization. */
   'sliders-horizontal': box(24, 2, [

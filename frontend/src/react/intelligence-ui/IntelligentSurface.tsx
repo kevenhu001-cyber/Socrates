@@ -1,6 +1,7 @@
 import { Button as UiButton } from '../ui/Button';
 import { createContext, useCallback, useContext, useId, useRef, useState, type ReactNode } from 'react';
-import { Check, Ellipsis, Maximize2, X } from 'lucide-react';
+import { Check, Maximize2, X } from 'lucide-react';
+import { Icon } from '../../ui/Icon';
 import { i18n } from '../legacy/gateway';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { INTERFACE_ICON_STROKE } from '../../ui/icons/interfaceIcons';
@@ -51,7 +52,7 @@ export function IntelligentSurface({ children, title, description, displayMode =
       </UiButton>
       {!expanded ? <DeferredMenu open={menuOpen} onOpenChange={setMenuOpen}
         className="intui-surface-menu" label={i18n('intui.displayMode', 'Display mode')}
-        trigger={<UiButton type="button" className="intui-surface-options" aria-label={i18n('intui.displayMode', 'Display mode')} title={i18n('intui.displayMode', 'Display mode')}><Ellipsis size={16} aria-hidden /></UiButton>}>
+        trigger={<UiButton type="button" className="intui-surface-options" aria-label={i18n('intui.displayMode', 'Display mode')} title={i18n('intui.displayMode', 'Display mode')}><Icon name="more" size={16} /></UiButton>}>
         {({ FoundationMenuRadioGroup, FoundationMenuRadioItem }) => <FoundationMenuRadioGroup value={mode} onValueChange={(value) => setChoice(value as IntelligentDisplayMode)}>
           {(['inline', 'compact', 'carousel', 'pip'] as const).map((value) => <FoundationMenuRadioItem key={value} value={value}>
             <span>{i18n(`intui.${value}`, { inline: 'Inline', compact: 'Compact', carousel: 'Carousel', pip: 'Floating' }[value])}</span>

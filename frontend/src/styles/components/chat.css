@@ -286,6 +286,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .msg-toolbar-btn.is-speaking{color:var(--primary-foreground);background:var(--primary);animation:readAloudPulse 1.4s ease-in-out infinite}
 .msg-toolbar-btn.is-speaking:hover{background:var(--primary)}
 .msg-toolbar-btn svg{width:16px;height:16px}
+/* "More" is three short strokes (no ⋯ dots), drawn at the shared 1.5px line
+   on screen whatever the glyph's rendered size. */
+.msg-toolbar-btn .msg-more-glyph path{vector-effect:non-scaling-stroke;stroke-width:1.5px}
 @keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
 #appShell#appShell .msg-toolbar {
   color: var(--ui-text-tertiary);
