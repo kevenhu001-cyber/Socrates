@@ -177,11 +177,7 @@
   font:var(--ui-font-weight-regular) 10px/1.2 var(--font-mono);
   background:var(--tool-card-bg);
 }
-.composer-tools-active-dot{
-  width:6px;height:6px;flex:0 0 auto;border-radius:50%;
-  background:hsl(var(--accent-000));
-  box-shadow:0 0 0 3px hsl(var(--accent-000)/.12);
-}
+.composer-tools-active-check{flex:0 0 auto;width:16px;height:16px;color:var(--ui-ink)}
 @media(min-width:769px){
   .composer-tools-menu{width:min(340px,calc(100vw - 24px));max-height:min(50vh,520px);overflow-y:auto}
 }

@@ -6,6 +6,8 @@ interface SidebarState {
   recentsFilter: string | null;
   recentsFilterLoaded: boolean;
   recentsVersion: number;
+  /** Phone drawer: the search row is folded away until asked for. */
+  searchOpen: boolean;
 }
 
 export type SidebarPanelView = 'recents' | 'knowledge' | 'mistakes';
@@ -16,6 +18,7 @@ export const useSidebarStore = create<SidebarState>(() => ({
   recentsFilter: null,
   recentsFilterLoaded: false,
   recentsVersion: 0,
+  searchOpen: false,
 }));
 
 export function setSidebarOpen(isOpen: boolean): void {
@@ -40,4 +43,9 @@ export function setSidebarRecentsFilter(filter: string | null): void {
 
 export function bumpRecentsVersion(): void {
   useSidebarStore.setState((state) => ({ recentsVersion: state.recentsVersion + 1 }));
+}
+
+export function setSidebarSearchOpen(searchOpen: boolean): void {
+  if (useSidebarStore.getState().searchOpen === searchOpen) return;
+  useSidebarStore.setState({ searchOpen });
 }

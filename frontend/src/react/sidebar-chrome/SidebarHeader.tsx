@@ -3,7 +3,8 @@ import { Icon } from '../../ui/Icon';
 import { t } from '../legacy/gateway.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
 import { useUserInfo } from './sidebarChrome.store';
-import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
+import { useLayoutEffect } from 'react';
+import { setSidebarSearchOpen, useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from './useMobileViewport.ts';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
 import { startNewChat } from '../../app/lifecycle.ts';
@@ -27,6 +28,13 @@ const ICON_BUTTON = 'btn-icon rounded-[var(--ui-radius-sm)] border-0 active:not-
 
 export function SidebarHeader() {
   const sidebarOpen = useSidebarStore((snapshot) => snapshot.isOpen);
+  const searchOpen = useSidebarStore((snapshot) => snapshot.searchOpen);
+  /* RN-7 — the fold is store state; the `#sidebar` host (outside React)
+     only mirrors it as a class for the drawer's grid transition. */
+  useLayoutEffect(() => {
+    document.getElementById('sidebar')?.classList.toggle('search-open', searchOpen);
+    if (searchOpen) window.requestAnimationFrame(() => document.getElementById('sidebarSearch')?.focus());
+  }, [searchOpen]);
   const isMobile = useMobileViewport();
   const closeButtonHidden = isMobile && !sidebarOpen;
   const closeSidebarKey = sidebarOpen ? 'chrome.closeSidebar' : 'chrome.openSidebar';
@@ -62,16 +70,8 @@ export function SidebarHeader() {
           data-i18n-title="sidebar.searchPlaceholder"
           data-i18n-aria="sidebar.searchPlaceholder"
           aria-controls="sidebarSearch"
-          aria-expanded="false"
-          onClick={(event) => {
-            const button = event.currentTarget;
-            const sidebar = document.getElementById('sidebar');
-            const input = document.getElementById('sidebarSearch') as HTMLInputElement | null;
-            const open = !sidebar?.classList.contains('search-open');
-            sidebar?.classList.toggle('search-open', open);
-            button.setAttribute('aria-expanded', String(open));
-            if (open) window.requestAnimationFrame(() => input?.focus());
-          }}
+          aria-expanded={searchOpen}
+          onClick={() => setSidebarSearchOpen(!searchOpen)}
           dangerouslySetInnerHTML={{ __html: SEARCH_ICON }}
         />
         <Button

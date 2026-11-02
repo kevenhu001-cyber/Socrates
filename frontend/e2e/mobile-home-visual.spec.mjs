@@ -240,5 +240,5 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.locator('#composerToolsBtn').click();
   const activeThinking = menu.getByRole('menuitemcheckbox', { name: 'Think deeper' });
   await expect(activeThinking).toHaveClass(/is-active/);
-  await expect(activeThinking.locator('.composer-tools-active-dot')).toBeVisible();
+  await expect(activeThinking.locator('.composer-tools-active-check')).toBeVisible();
 });

@@ -721,3 +721,61 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
 }
+
+/* ── RN-7 — site shell: a grey frame with the white canvas as a card ─────
+   The marketing site sets white cards on a grey sheet (public.css
+   --site-color-surface behind --site-color-raised, shadow-1). The app
+   takes the same frame on desktop: the rail sits on the grey, and the
+   conversation is one white 16px card inset 8px, its edge a hairline
+   folded into the soft shadow. Rows round to 12; the current row is a
+   small white card of its own, hover is the 4% fill. */
+@media (min-width: 769px) {
+  body #appShell { background: var(--ui-surface); }
+  body #appShell .main { background: transparent; padding-top: var(--ui-step-75); padding-right: var(--ui-step-75); padding-bottom: var(--ui-step-75); }
+  body #appShell .main-bg {
+    inset: var(--ui-step-75) var(--ui-step-75) var(--ui-step-75) var(--app-sidebar-width, 260px);
+    border-radius: var(--ui-round-lg);
+    background: var(--ui-canvas);
+    box-shadow: var(--ui-elevation-raised);
+  }
+  body #appShell .main-content { background: transparent; border-radius: 0 0 var(--ui-round-lg) var(--ui-round-lg); }
+
+  #appShell #sidebar { background: transparent; border-right: 0; }
+
+  #appShell #sidebar .recent-item,
+  #appShell #sidebarNav .sidebar-nav-btn { border-radius: var(--ui-round-md); }
+  #appShell #sidebar .recent-item:hover,
+  #appShell #sidebar .recent-item:focus-within,
+  #appShell #sidebarNav .sidebar-nav-btn:hover { background: var(--ui-fill); }
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current="true"],
+  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"],
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell #sidebarNav #navNew.sidebar-nav-btn {
+    background: var(--ui-card);
+    box-shadow: var(--ui-elevation-raised);
+    color: var(--ui-ink);
+  }
+
+  /* Search: a white pill with a hairline ring, deepening on focus. */
+  #appShell #sidebar .sidebar-search,
+  #appShell #sidebar .sidebar-search:hover {
+    border: 0;
+    background: var(--ui-card);
+    box-shadow: var(--ui-elevation-ring);
+  }
+  #appShell #sidebar .sidebar-search:focus-within { border: 0; background: var(--ui-card); box-shadow: 0 0 0 1px var(--ui-hairline-focus); }
+
+  /* Header icon controls: 4% fill on hover, pill-round. */
+  #appShell #newChatBtn,
+  #appShell #sidebarCloseBtn { border-radius: var(--ui-round-pill); }
+  #appShell #newChatBtn:hover,
+  #appShell #sidebarCloseBtn:hover { background: var(--ui-fill); }
+}
+
+/* Phones: the drawer is the grey sheet; rows keep the same 12 / white-card language. */
+@media (max-width: 768px) {
+  #appShell #sidebar .recent-item { border-radius: var(--ui-round-md); }
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current="true"] { background: var(--ui-card); box-shadow: var(--ui-elevation-raised); }
+}
