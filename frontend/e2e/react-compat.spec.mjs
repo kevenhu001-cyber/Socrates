@@ -16,7 +16,7 @@ test('React compatibility mode preserves the legacy application shell', async ({
   await expect(compatibilityRoot).toHaveText('↓ New reply');
   /* P_composer-primary-split — the primary is submit-only: it always shows
      the send arrow, and the microphone is the dictation control. */
-  await expect(page.locator('#composerPrimaryBtnContent .icon-arrow')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent [data-ui-icon=arrow-up]')).toHaveCount(1);
 
   await expect(page.locator('#msgList')).not.toHaveAttribute('data-mounted-by', /.+/);
 
@@ -27,7 +27,7 @@ test('React compatibility mode preserves the legacy application shell', async ({
     window.__testActivateMainView('chatView');
   });
   await page.locator('#composerRoot .rich-composer-editor').first().fill('compat arrow');
-  await expect(page.locator('#composerPrimaryBtnContent .icon-arrow')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent [data-ui-icon=arrow-up]')).toHaveCount(1);
 
   await page.evaluate(() => {
     window.setChatStopState(true);
@@ -52,7 +52,7 @@ test('React compatibility mode always loads (no ?react=1 flag needed)', async ({
   await waitForAppShell(page);
 
   await expect(page.locator('#newReplyPill')).toHaveText('↓ New reply');
-  await expect(page.locator('#composerPrimaryBtnContent .icon-arrow')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent [data-ui-icon=arrow-up]')).toHaveCount(1);
   await expect(page.locator('#sidebarUserRow')).toBeAttached();
 });
 
@@ -103,7 +103,7 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
   await page.evaluate(() => window.__reactChatStreamPromise);
 
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '0');
-  await expect(page.locator('#composerPrimaryBtnContent .icon-arrow')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent [data-ui-icon=arrow-up]')).toHaveCount(1);
   await expect(page.locator('#composerPrimaryBtnContent rect')).toHaveCount(0);
 
   const result = await page.evaluate(() => {

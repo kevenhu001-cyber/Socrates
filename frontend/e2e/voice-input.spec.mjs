@@ -152,7 +152,7 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   const wrap = page.locator('#composerInputWrap');
   const primary = page.locator('#composerPrimaryBtn');
   const editor = page.locator('#composerRoot .rich-composer-editor');
-  const mic = wrap.locator('.mobile-mic-btn');
+  const mic = wrap.locator('#composerMicBtn');
   await expect(mic).toHaveCount(1);
   await expect(mic).toBeVisible();
   // P_composer-primary-split — the microphone is the one and only dictation
@@ -161,7 +161,7 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   await expect(mic).toHaveAttribute('aria-label', 'Voice input');
   await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
+  await expect(primary.locator('[data-ui-icon=arrow-up]')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
   await expect(primary).toBeDisabled();
 
@@ -188,16 +188,16 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   await page.screenshot({ path: 'test-results/socrates-composer-empty-focused.png', fullPage: true });
 
   await editor.pressSequentially('typed');
-  await expect(primary).toHaveClass(/active/);
-  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
+  await expect(primary).toHaveAttribute('data-ready', 'true');
+  await expect(primary.locator('[data-ui-icon=arrow-up]')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
   await expect(primary).toBeEnabled();
   await page.screenshot({ path: 'test-results/socrates-composer-with-text.png', fullPage: true });
   await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
   await editor.press('Backspace');
-  expect(await primary.evaluate((button) => button.classList.contains('active'))).toBe(false);
+  expect(await primary.evaluate((button) => button.dataset.ready === 'true')).toBe(false);
   // Clearing the draft disables the primary again; dictation stays on the mic.
-  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
+  await expect(primary.locator('[data-ui-icon=arrow-up]')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
   await expect(primary).toBeDisabled();
 
@@ -249,7 +249,7 @@ test('the chat mic uses the same recording bar', async ({ page }) => {
   const primary = page.locator('#composerPrimaryBtn');
   const editor = page.locator('#composerRoot .rich-composer-editor');
   await expect(wrap).toBeVisible();
-  const mic = wrap.locator('.mobile-mic-btn');
+  const mic = wrap.locator('#composerMicBtn');
   await expect(mic).toHaveCount(1);
   /* P_composer-primary-split — this case used to be titled "the empty chat
      primary action uses the same recording bar" and clicked the primary.
@@ -257,7 +257,7 @@ test('the chat mic uses the same recording bar', async ({ page }) => {
   await expect(mic).toHaveAttribute('aria-label', 'Voice input');
   await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
+  await expect(primary.locator('[data-ui-icon=arrow-up]')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
   await expect(primary).toBeDisabled();
 
@@ -279,7 +279,7 @@ test('canceling the React recording bar discards the transcript and releases the
   await bootVoiceFixture(page, { width: 390, height: 844 });
   const wrap = page.locator('#composerInputWrap');
   const editor = page.locator('#composerRoot .rich-composer-editor');
-  const mic = wrap.locator('.mobile-mic-btn');
+  const mic = wrap.locator('#composerMicBtn');
 
   await mic.click();
   const bar = wrap.locator('.voice-recording-bar');

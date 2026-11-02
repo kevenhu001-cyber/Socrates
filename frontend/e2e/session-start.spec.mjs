@@ -29,10 +29,10 @@ async function composerSignature(page, selector) {
       border: style.borderColor,
       radius: style.borderRadius,
       editor: childRect('.rich-composer-editor'),
-      attach: childRect('.attach-btn'),
-      effort: childRect('.effort-picker'),
-      mic: childRect('.mobile-mic-btn'),
-      send: childRect('.composer-primary-btn,.composer-primary-btn'),
+      attach: childRect('#composerToolsBtn'),
+      effort: childRect('[data-composer-control=effort]'),
+      mic: childRect('#composerMicBtn'),
+      send: childRect('[data-composer-control=send]'),
     };
   });
 }
@@ -48,7 +48,7 @@ test('typing into topic input enables the Start button; clicking does not throw'
   await expect(topicInput).toBeAttached({ timeout: 5_000 });
   await expect(topicInput).toBeVisible({ timeout: 5_000 });
 
-  const startBtn = page.locator('button.composer-primary-btn, .composer-primary-btn').first();
+  const startBtn = page.locator('[data-composer-control=send]').first();
   await expect(startBtn).toBeAttached();
 
   // Capture console errors during the click.
@@ -340,7 +340,7 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
   await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('deepResearch');
   expect(await page.evaluate(() => typeof window.deepResearchOn)).toBe('undefined');
 
-  await page.locator('button.composer-primary-btn, .composer-primary-btn').first().click();
+  await page.locator('[data-composer-control=send]').first().click();
 
   await expect(page.locator('#topicSetup')).toBeHidden();
   await expect(page.locator('#chatView')).toBeVisible();

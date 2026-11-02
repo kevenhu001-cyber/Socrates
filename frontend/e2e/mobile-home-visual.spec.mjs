@@ -189,7 +189,7 @@ test('mobile conversation home matches the compact dark reference layout', async
     localStorage.setItem('socrates-reasoning-effort', 'high');
     window.dispatchEvent(new CustomEvent('socrates:chat-preferences', { detail: { effort: 'high', speed: 'standard' } }));
   });
-  await expect(composer.locator('.effort-picker')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
   /* Focus is geometry-neutral; the second row appears only after the draft
      actually renders on more than one line. */
@@ -199,18 +199,18 @@ test('mobile conversation home matches the compact dark reference layout', async
   const afterFocus = (await composer.boundingBox())?.height ?? 0;
   expect(Math.abs(afterFocus - beforeFocus)).toBeLessThanOrEqual(2);
   /* The pill stays visible inside the idle capsule, like the reference. */
-  await expect(composer.locator('.effort-picker')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
   await editor.fill('This topic is deliberately long enough to wrap onto a second rendered line in the compact mobile field.');
   await expect.poll(async () => (await composer.boundingBox())?.height ?? 0)
     .toBeGreaterThan(beforeFocus + 36);
-  await expect(composer.locator('.effort-picker')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
   /* The landing composer mirrors the reference controls row: a dedicated
      dictation mic sits beside the voice/send primary. */
-  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(1);
-  await expect(composer.locator('.mobile-mic-btn')).toBeVisible();
-  await expect(composer.locator('.composer-primary-btn')).toBeVisible();
-  await expect(composer.locator('.composer-primary-btn')).toHaveAttribute('aria-label', 'Send');
+  await expect(composer.locator('#composerMicBtn')).toHaveCount(1);
+  await expect(composer.locator('#composerMicBtn')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=send]')).toBeVisible();
+  await expect(composer.locator('[data-composer-control=send]')).toHaveAttribute('aria-label', 'Send');
 
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');

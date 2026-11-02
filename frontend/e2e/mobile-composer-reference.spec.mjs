@@ -113,7 +113,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
 
   const composer = page.locator('#composerInputWrap');
   const editor = page.locator('#composerRoot .rich-composer-editor');
-  const effort = composer.locator('.effort-picker');
+  const effort = composer.locator('[data-composer-control=effort]');
 
   /* The React Chat/Tutor control is shared with desktop and hidden during a
      conversation by the body[data-conversation-active] contract. */
@@ -126,11 +126,11 @@ test('mobile composer keeps model selector and reference controls discoverable',
      reader meets two clearly different buttons. "发送" is the zh rendering
      of the "Send" label that e2e/voice-input.spec.mjs pins in English. */
   await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '发送');
-  await expect(composer.locator('#composerPrimaryBtn .icon-arrow')).toHaveCount(1);
+  await expect(composer.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toHaveCount(1);
   /* The reference pill reads the current level (高/中/低), not the
      section label. The phone rail deliberately does not chip the default:
      parity/composer-unified.css hides
-     .effort-picker[data-effort="medium"] because the default stays
+     [data-composer-control=effort][data-effort="medium"] because the default stays
      reachable from the header configuration menu, so a non-default level
      is what brings the chip back. Assert both halves of that contract. */
   await expect(effort).toBeHidden();
@@ -139,7 +139,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
     window.dispatchEvent(new CustomEvent('socrates:chat-preferences', { detail: { effort: 'high', speed: 'standard' } }));
   });
   await expect(effort).toBeVisible();
-  await expect(effort.locator('.effort-value')).toHaveText('高');
+  await expect(effort.locator('[data-effort-value]')).toHaveText('高');
 
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
@@ -159,7 +159,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
       composer: rect('#composerInputWrap'),
       editor: rect('#composerRoot'),
       attach: rect('#composerToolsBtn'),
-      model: rect('#composerInputWrap .effort-picker'),
+      model: rect('#composerInputWrap [data-composer-control=effort]'),
       mic: rect('#composerMicBtn'),
       send: rect('#composerPrimaryBtn'),
     };
@@ -172,7 +172,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
   expect(Math.min(...controlTops)).toBeGreaterThanOrEqual((rows.composer?.top ?? 0) - 1);
   expect(Math.max(...controlTops)).toBeLessThanOrEqual((rows.composer?.bottom ?? 0) + 1);
 
-  await effort.locator('.effort-trigger').click();
+  await effort.locator('#effortTrigger').click();
   const pop = page.locator('.chat-config-pop');
   await expect(pop).toBeVisible();
   await expect(pop).toContainText('5.6 Luna');
@@ -180,7 +180,7 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(pop).toContainText('速度');
   /* The popover is anchored above the pill, not a sheet/dialog. */
   const popBox = await pop.boundingBox();
-  const triggerBox = await effort.locator('.effort-trigger').boundingBox();
+  const triggerBox = await effort.locator('#effortTrigger').boundingBox();
   expect(popBox?.y ?? 0).toBeLessThan(triggerBox?.y ?? 0);
   await page.screenshot({ path: 'test-results/socrates-mobile-composer-reference.png', fullPage: true });
 });

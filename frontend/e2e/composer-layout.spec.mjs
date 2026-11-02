@@ -16,7 +16,7 @@ function measure(page, wrapSel) {
   return page.evaluate((wrapSel) => {
     const wrap = document.querySelector(wrapSel);
     const box = (n) => { const r = n.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: r.height, w: r.width, cy: r.top + r.height / 2 }; };
-    const controls = [...wrap.querySelectorAll('.composer-tools-trigger, .effort-trigger, .mobile-mic-btn, #composerPrimaryBtn, #composerPrimaryBtn')]
+    const controls = [...wrap.querySelectorAll('#composerToolsBtn, #effortTrigger, #composerMicBtn, #composerPrimaryBtn, #composerPrimaryBtn')]
       .filter((n) => n.getClientRects().length);
     const range = document.createRange();
     const lineCount = (n) => {

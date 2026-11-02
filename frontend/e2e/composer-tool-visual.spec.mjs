@@ -46,7 +46,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   /* Desktop keeps the primary rail quiet: + → prompt → mic → send. Model and
      reasoning stay one click away in the existing top-bar configuration
      trigger rather than occupying a permanent composer slot. */
-  await expect(chatComposer.locator('.effort-picker')).toBeHidden();
+  await expect(chatComposer.locator('[data-composer-control=effort]')).toBeHidden();
   await expect(page.locator('#topModelSwitcher')).toBeVisible();
   const desktopControlBoxes = await page.evaluate(() => {
     const box = (selector) => {
@@ -56,9 +56,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       return rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } : null;
     };
     return {
-      attach: box('#composerInputWrap .attach-btn'),
+      attach: box('#composerInputWrap #composerToolsBtn'),
       editor: box('#composerRoot .rich-composer-editor'),
-      effort: box('#composerInputWrap .effort-picker'),
+      effort: box('#composerInputWrap [data-composer-control=effort]'),
       mic: box('#composerMicBtn'),
       send: box('#composerPrimaryBtn'),
     };
@@ -88,7 +88,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const mobileEditor = page.locator('#composerRoot .rich-composer-editor');
   await expect(mobileComposer.locator('.rich-composer-toolbar')).toBeHidden();
   /* Non-default reasoning stays directly visible on phones. */
-  await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
+  await expect(mobileComposer.locator('[data-composer-control=effort]')).toBeVisible();
   const collapsedBox = await mobileComposer.boundingBox();
   expect(collapsedBox?.height).toBeLessThanOrEqual(112);
   const collapsedGeometry = await page.evaluate(() => {
@@ -99,7 +99,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
     };
     return {
-      left: rect('#composerInputWrap .footer-left-group'),
+      left: rect('#composerInputWrap #composerToolsBtn'),
       editor: rect('#composerInputWrap .rich-composer-editor'),
       send: rect('#composerPrimaryBtn'),
       bodyDisplay: getComputedStyle(document.querySelector('#composerInputWrap .composer-footer')).display,
@@ -112,7 +112,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png', fullPage: true });
 
   await mobileEditor.click();
-  await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
+  await expect(mobileComposer.locator('[data-composer-control=effort]')).toBeVisible();
   await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual((collapsedBox?.height ?? 0) - 1);
   const focusedBox = await mobileComposer.boundingBox();
   const focusedEditorBox = await page.locator('#composerInputWrap .rich-composer-editor').boundingBox();
@@ -124,6 +124,6 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
-  await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
+  await expect(mobileComposer.locator('[data-composer-control=effort]')).toBeVisible();
   await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(112);
 });

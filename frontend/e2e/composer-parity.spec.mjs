@@ -93,9 +93,9 @@ function describe(page, sel) {
         fixedTracks: tracks.filter((_, i) => i !== 1).map(px),
       },
       editor: es ? { fontSize: es.fontSize, lineHeight: es.lineHeight, padding: es.padding, color: es.color } : null,
-      plus: box(wrap.querySelector('.composer-tools-trigger')),
-      effort: box(wrap.querySelector('.effort-trigger')),
-      mic: box(wrap.querySelector('.mobile-mic-btn')),
+      plus: box(wrap.querySelector('#composerToolsBtn')),
+      effort: box(wrap.querySelector('#effortTrigger')),
+      mic: box(wrap.querySelector('#composerMicBtn')),
       primary: box(wrap.querySelector('#startBtn, #sendBtn')),
     };
   }, { sel, skip: [...SURFACE_OR_STATE] });

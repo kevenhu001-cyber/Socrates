@@ -19,8 +19,8 @@ for (const [label, model, viewport, lang] of [
     await waitForAppShell(page);
     const openEffort = async () => {
       if (label === 'desktop') await page.locator('#topModelSwitcher').click();
-      else if (await page.locator('.effort-trigger:visible').count()) {
-        await page.locator('.effort-trigger:visible').first().click();
+      else if (await page.locator('#effortTrigger:visible').count()) {
+        await page.locator('#effortTrigger:visible').first().click();
       } else {
         await page.locator('#topModelSwitcher').click();
       }

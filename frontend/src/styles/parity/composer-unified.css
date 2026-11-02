@@ -14,11 +14,13 @@
  *   .composer-shell
  *     .attachment-chips          (own component — styled elsewhere)
  *     .composer-editor-root > .rich-composer > [chips] .rich-composer-editor
- *     .composer-footer
- *       .footer-left-group > .composer-tools-trigger (+ file input)
- *       .effort-picker > .effort-trigger
- *       .mobile-mic-btn        (dictation — the only voice entry point)
- *       .composer-primary-btn  (send / stop; disabled at 0.3 when empty)
+ *     .composer-footer           (+ hidden file input)
+ *       RN-7 control rail (packages/ui/src/composer), placed by
+ *       [data-composer-control]:
+ *         tools  #composerToolsBtn
+ *         effort > #effortTrigger (phones, non-default level only)
+ *         mic    #composerMicBtn  (dictation — the only voice entry point)
+ *         send   #composerPrimaryBtn (send / stop; 0.3 when empty)
  *
  * The wrappers between the shell and its controls are `display: contents`,
  * so the editor, the chip row and every control are grid items of the shell.
@@ -253,153 +255,36 @@
 #appShell .composer-tool-chip:focus-visible .composer-tool-chip-close { opacity: 1; }
 
 /* ── Controls ──────────────────────────────────────────────────────────── */
-#appShell .composer-shell .composer-tools-trigger { grid-area: plus; }
-#appShell .composer-shell .effort-picker { grid-area: effort; }
-#appShell .composer-shell .mobile-mic-btn { grid-area: mic; }
-#appShell .composer-shell .composer-primary-btn { grid-area: send; }
+/* RN-7: the four controls are the shared React Native rail
+   (packages/ui/src/composer/ComposerControls.tsx). The component paints
+   itself — size, pill radius, fills, ink disc, glyphs; this owner only
+   places each control in the shell grid and draws the focus ring. */
+#appShell .composer-shell [data-composer-control="tools"] { grid-area: plus; }
+#appShell .composer-shell [data-composer-control="effort"] { grid-area: effort; }
+#appShell .composer-shell [data-composer-control="mic"] { grid-area: mic; }
+#appShell .composer-shell [data-composer-control="send"] { grid-area: send; }
 
-#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
-  position: static;
-  display: inline-grid;
-  place-items: center;
+#appShell .composer-shell [data-composer-control] {
   align-self: end;
-  box-sizing: border-box;
-  width: var(--composer-control);
-  min-width: var(--composer-control);
-  height: var(--composer-control);
-  min-height: var(--composer-control);
   margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  box-shadow: none;
-  transform: none;
-  opacity: 1;
-  cursor: pointer;
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
 }
 /* In single-row desktop layout, keep controls centered on the editor's text line
    so buttons never jump vertically as text approaches the single-line margin. */
-#appShell .composer-shell:not(.composer-multiline):not(.has-plugin-chips) :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-picker) {
+#appShell .composer-shell:not(.composer-multiline):not(.has-plugin-chips) [data-composer-control] {
   align-self: center;
 }
-/* The resting shadow is reset above because these are flat discs, but the
-   focus contract is a box-shadow too — without this the send and tools
-   buttons would carry no focus indicator at all. */
-#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):focus-visible {
+#appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"], #effortTrigger):focus-visible {
+  outline: none;
   box-shadow: var(--ui-focus-shadow);
 }
-#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
-  background: transparent;
-  color: var(--muted-foreground);
-}
-#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn):hover,
-#appShell .composer-shell .composer-tools-trigger[aria-expanded="true"] {
-  background: var(--accent);
-  color: var(--foreground);
-}
-#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) svg { display: block; width: 20px; height: 20px; }
-
-/* Primary action: send when there is a draft, stop while a turn streams —
-   one filled circle, like chatgpt.com. The fill is the accent role, not a
-   text token: the dark theme's --ui-text-primary is #e6e6e6, which reads as
-   a greyed-out control rather than the inverted disc the reference ships. */
-#appShell .composer-shell .composer-primary-btn {
-  /* The send button is the ink disc (R1 restyle): black with a white arrow
-     in light mode, inverted in dark. --ui-accent-action resolves to the
-     primary ink in themes.css; the product carries no hue. */
-  background: var(--ui-accent-action);
-  color: var(--ui-on-action);
-  font-weight: var(--ui-font-weight-medium);
-}
-#appShell .composer-shell .composer-primary-btn:hover:not(:disabled) { opacity: var(--ui-press-opacity); }
-/* Paint-only feedback for compact composer controls; polish/press.css keeps
-   their circles and SVG geometry fixed throughout the press. They dim a
-   step further than wide buttons so the 36px disc still reads as pressed. */
-#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
-  --press-opacity: var(--ui-press-opacity-sm);
-}
-/* The controls' resting opacity is pinned by this owner. Mirror the pressed
-   paint here too so the generic press rule is not lost to that specificity. */
-#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):not(:disabled):is(:active, .is-pressed) {
-  opacity: var(--press-opacity);
-}
-#appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.3; cursor: default; }
-#appShell .composer-shell .composer-primary-btn > span { display: grid; place-items: center; }
-#appShell .composer-shell .composer-primary-btn svg { display: block; width: 20px; height: 20px; }
-
-/* One simultaneous fade in a fixed grid cell; no delayed second entrance. */
-#appShell .composer-shell .composer-primary-btn .send-glyph {
-  grid-area: 1 / 1;
-  display: grid;
-  place-items: center;
-}
-#appShell .composer-shell .composer-primary-btn .send-glyph-out {
-  animation: send-glyph-out var(--ui-duration-fast) var(--ui-ease-out) forwards;
-}
-#appShell .composer-shell .composer-primary-btn .send-glyph-in {
-  opacity: 0;
-  animation: send-glyph-in var(--ui-duration-fast) var(--ui-ease-out) forwards;
-}
-#appShell .composer-shell .composer-primary-btn .icon-stop {
-  animation: send-glyph-in var(--ui-duration-fast) var(--ui-ease-out);
-}
-#appShell .composer-shell .composer-primary-btn .send-glyph-in .icon-stop { animation: none; }
-@keyframes send-glyph-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes send-glyph-in { from { opacity: 0; } to { opacity: 1; } }
-
-/* Reasoning effort: a compact ghost pill that never wraps. Shown on both
-   surfaces — the conversation composer is the landing composer. */
-#appShell .composer-shell .effort-picker {
-  position: relative;
-  display: none;
-  align-self: end;
-  width: auto;
-  min-width: 0;
-  margin: 0;
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-}
-#appShell .composer-shell .effort-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  box-sizing: border-box;
-  width: auto;
-  height: var(--composer-control);
-  min-height: var(--composer-control);
-  margin: 0;
-  padding: 0 10px 0 12px;
-  border: 0;
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--muted-foreground);
-}
-[data-mode="light"] #appShell .composer-shell .effort-trigger {
-  color: var(--foreground);
-  font-size: var(--ui-font-size-sm);
-  font-weight: var(--ui-font-weight-regular);
-  line-height: 20px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color var(--ui-duration-fast) ease;
-}
-#appShell .composer-shell .effort-trigger:hover,
-#appShell .composer-shell .effort-trigger[aria-expanded="true"] {
-  background: var(--accent);
-  color: var(--foreground);
-}
-#appShell .composer-shell :is(.effort-label, .effort-value) { display: inline; font: inherit; color: inherit; }
-#appShell .composer-shell .effort-value:empty { display: none; }
-#appShell .composer-shell .effort-caret { flex: 0 0 16px; width: 16px; height: 16px; color: var(--ui-text-muted); }
+/* Desktop keeps the reasoning level in the header configuration menu. */
+#appShell .composer-shell [data-composer-control="effort"] { display: none; }
 
 /* ── Phone (<= 768px) ──────────────────────────────────────────────────────
    Always two storeys: the editor gets the whole first row, the controls sit
    on a rail beneath it. Borderless card with a soft drop shadow. */
 @media (max-width: 768px) {
-  #appShell .composer-shell .effort-picker { display: inline-flex; }
+  #appShell .composer-shell [data-composer-control="effort"][data-visible="true"] { display: flex; }
   #appShell .composer-shell:not(.voice-recording-active),
   #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
   /* P_composer-single — the landing and conversation shells are one node
@@ -463,42 +348,16 @@
   #appShell .composer-shell .composer-plugin-chips::-webkit-scrollbar { display: none; }
   #appShell .composer-shell .composer-plugin-chip,
   #appShell .composer-shell .composer-tool-chip { flex: 0 0 auto; }
-  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-picker) {
+  #appShell .composer-shell [data-composer-control] {
     align-self: center;
   }
-  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
-    background: var(--secondary);
-    color: var(--foreground);
-  }
-  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn):hover,
-  #appShell .composer-shell .composer-tools-trigger[aria-expanded="true"] {
-    background: var(--accent);
-  }
-  #appShell .composer-shell .effort-trigger {
-    padding: 0 10px;
-    background: var(--ui-bg-raised);
-    font-size: 15px;
-    line-height: 18px;
-  }
-  html[data-mode="dark"] #appShell .composer-shell .effort-trigger { background: var(--secondary); }
-  /* The default effort remains accessible from the header configuration
-     menu; only explicitly selected levels need a chip on the phone rail. */
-  #appShell .composer-shell .effort-picker[data-effort="medium"] { display: none; }
-  /* Phones show the level only ("Medium"), not "Thinking Medium". */
-  #appShell .composer-shell .effort-label:has(+ .effort-value:not(:empty)) { display: none; }
-
   /* Hit-area wrapper: keep the 36×36 visual (chatgpt reference) but
      extend the tap surface to 44×44 via ::before so iOS-precision taps
-     don't miss the round button. See polish/mobile-controls.css for the
-     same pattern applied to msg-toolbar-btn. */
-  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
+     don't miss the round button. */
+  #appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"]) {
     position: relative;
-    transition: background-color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
   }
-  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):active {
-    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
-  }
-  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn)::before {
+  #appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"])::before {
     content: "";
     position: absolute;
     inset: -4px;

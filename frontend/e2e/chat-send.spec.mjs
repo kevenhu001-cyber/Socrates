@@ -15,7 +15,7 @@ test('clicking send mounts a streaming bubble or surfaces a notice without throw
   await page.waitForTimeout(400);
 
   const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
-  const sendBtn = page.locator('#composerPrimaryBtn, .composer-primary-btn').first();
+  const sendBtn = page.locator('#composerPrimaryBtn').first();
 
   if (!(await chatInput.isVisible().catch(() => false))) {
     // Pre-chat-screen path: just verify the function exists.
@@ -615,7 +615,7 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
   );
 });
 
-test('send button plays the sent glyph, then settles on the stop state', async ({ page }) => {
+test('send button marks the sending beat, then settles on the stop state', async ({ page }) => {
   await mockAuthedApp(page);
   /* Hold the stream open so the button stays in its stop state. */
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
@@ -630,20 +630,14 @@ test('send button plays the sent glyph, then settles on the stop state', async (
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '33333333-3333-4333-8333-333333333333' });
     window.__testActivateMainView('chatView');
-    /* Record every class flip on the button and whether the glyph pair was
-       rendered while it lasted. */
+    /* RN-7: the primary is the shared RN control; it reports the short
+       sending beat as data-sending and swaps arrow → stop without a
+       decorative cross-fade. Record every flip of that flag. */
     const btn = document.getElementById('composerPrimaryBtn');
     window.__glyphLog = [];
     new MutationObserver(() => {
-      window.__glyphLog.push({
-        t: performance.now(),
-        sending: btn.classList.contains('is-sending'),
-      });
-    }).observe(btn, { attributes: true, attributeFilter: ['class'] });
-    window.__glyphPairSeen = false;
-    new MutationObserver(() => {
-      if (btn.querySelector('.send-glyph-out') && btn.querySelector('.send-glyph-in')) window.__glyphPairSeen = true;
-    }).observe(btn, { childList: true, subtree: true });
+      window.__glyphLog.push({ t: performance.now(), sending: btn.dataset.sending === 'true' });
+    }).observe(btn, { attributes: true, attributeFilter: ['data-sending'] });
   });
 
   const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
@@ -651,16 +645,9 @@ test('send button plays the sent glyph, then settles on the stop state', async (
   await page.locator('#composerPrimaryBtn').click();
 
   await expect.poll(() => page.evaluate(() => window.__glyphLog.some((e) => e.sending))).toBe(true);
-  await expect.poll(() => page.evaluate(() => document.getElementById('composerPrimaryBtn').classList.contains('is-sending'))).toBe(false);
-  const { log, pairSeen } = await page.evaluate(() => ({ log: window.__glyphLog, pairSeen: window.__glyphPairSeen }));
-  const on = log.find((e) => e.sending);
-  const off = log.find((e) => e.t > on.t && !e.sending);
-  expect(off, JSON.stringify(log)).toBeTruthy();
-  expect(off.t - on.t).toBeGreaterThanOrEqual(150);
-  expect(pairSeen, 'departing arrow + arriving stop glyph rendered together').toBe(true);
+  await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-sending', 'false');
 
   /* After the beat, the button shows the stop glyph while the turn streams. */
-  await expect(page.locator('#composerPrimaryBtn[data-stop="1"] #composerPrimaryBtnContent .icon-stop')).toHaveCount(1);
-  await expect(page.locator('#composerPrimaryBtnContent .send-glyph')).toHaveCount(0);
+  await expect(page.locator('#composerPrimaryBtn[data-stop="1"] #composerPrimaryBtnContent [data-ui-icon=stop]')).toHaveCount(1);
   expect(pageErrors).toEqual([]);
 });
