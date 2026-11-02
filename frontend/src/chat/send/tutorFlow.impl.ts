@@ -4,6 +4,7 @@ import { _origGenerateFollowUp } from '../mocks.ts';
 import { notifyMockFallbackOnce } from '../mockFallbackNotice.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { generateFollowUpStream } from '../../tutor/socraticTurn.ts';
+import { showSocraticSuggestions } from '../../tutor/socraticMastery.ts';
 import { toolCallbacksForStream } from '../toolCallbacks.ts';
 import { isExpectedTurnAbort } from '../turnUi.ts';
 import { getTutorSocratic, addAnchoredAssistant, addStreamingMessage, askChatTurn, translate, reportTurnFailure } from './runtime.ts';
@@ -116,6 +117,8 @@ async function runTutorFollowUp(
     }
     if (response != null) {
       streamController.finish();
+      /* RN-4: the reply is in, so the question chain offers the next questions. */
+      showSocraticSuggestions();
     } else if (stateStore.read('lastCallError')) {
       streamController.replaceWithError(
         'No response: ' + stateStore.read('lastCallError'),

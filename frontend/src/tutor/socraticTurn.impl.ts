@@ -20,6 +20,7 @@ import { addMessage as _addMessage } from '../chat/messages.ts';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.ts';
 import { addStreamingMessage } from '../chat/streamingTurn.ts';
+import { showSocraticSuggestions } from './socraticMastery.ts';
 
 
 /* omit entirely; backend passes through */
@@ -160,6 +161,8 @@ export async function askNextQuestion(){
     if(result!=null){
       ctl.finish();
       stateStore.dispatch({type:"state/batch",patch:{stuckCount:0,totalQ:stateStore.read("totalQ")+1}});
+      /* RN-4: offer the question chain under the new tutor question. */
+      showSocraticSuggestions();
       return;
     }
     /* Distinguish upstream error (show retry) from "API returned null
