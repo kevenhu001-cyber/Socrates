@@ -2,7 +2,7 @@ import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
-import type { MouseEvent as ReactMouseEvent } from 'react';
+import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { openNav } from '../../sidebar/navigation.service';
@@ -12,11 +12,12 @@ import { BUTTONS, NAV_ID } from './sidebarNav.items';
 import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
 
 function SidebarNav() {
+  useLocaleRefresh();
   const active = useNavigationStore((state) => state.activeDestination);
   const moreOpen = useMorePopoverStore((state) => state.isOpen);
 
   return (
-    <>
+    <WebUiTheme>
       {BUTTONS.map((button) => {
         const isActive = button.key !== 'new' && button.key !== 'skills' && active === button.key;
         const navigation = (
@@ -25,14 +26,8 @@ function SidebarNav() {
             item={button}
             active={isActive}
             expanded={button.key === 'more' ? moreOpen : undefined}
-            onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+            onClick={() => {
               if (button.key === 'new') {
-                /* The ⌘K badge names the command palette shortcut, so a
-                   click there must open the palette instead of resetting. */
-                if (event.target instanceof Element && event.target.closest('.nav-kbd')) {
-                  getLegacyActions().cmdK.openCmdK();
-                  return;
-                }
                 getLegacyActions().navigation.startNewChat();
               } else if (button.key === 'skills') {
                 getLegacyActions().navigation.openPromptTemplatesModal();
@@ -53,7 +48,7 @@ function SidebarNav() {
             }}><Icon name="plus" /></Button>
         </div>;
       })}
-    </>
+    </WebUiTheme>
   );
 }
 

@@ -1,6 +1,7 @@
-import type { MouseEvent } from 'react';
 import { t as translate } from '../legacy/gateway.ts';
-import { Button } from '../ui/shadcn/button';
+import { SidebarNavRow } from '@socrates/ui/shell';
+import type { UiGlyphName } from '@socrates/ui/primitives';
+import { webClass } from '../rn/webHost';
 import { navButtonId, type NavButtonSpec } from './sidebarNav.items';
 
 function i18n(key: string, fallback: string): string {
@@ -8,32 +9,28 @@ function i18n(key: string, fallback: string): string {
   return value !== key ? value : fallback;
 }
 
+/* The shared shell draws glyphs from its own dot-free line set. */
+const GLYPHS: Record<NavButtonSpec['key'], UiGlyphName> = {
+  new: 'compose',
+  library: 'library',
+  projects: 'folder',
+  scheduled: 'clock',
+  plugins: 'puzzle',
+  images: 'image',
+  assistants: 'assistant',
+  sites: 'site',
+  exam: 'exam',
+  skills: 'skills',
+  more: 'more',
+} as Record<NavButtonSpec['key'], UiGlyphName>;
+
 /*
- * Geometry comes from the control ladder, not from shadcn's defaults:
- * a --ui-control-desktop row, the chatgpt.com 6/10 padding rhythm, the
- * --ui-radius-row radius and the 14px interface size (R1 restyle). The
- * current destination sits on the selected rung (bg-secondary), one step
- * firmer than the hover wash. Everything else is the ghost variant's own paint.
- * `sidebar-nav-btn` survives only as the row marker the shell's structural
- * rules (collapsed rail, press tint, per-destination order) key off.
+ * RN-7 — one primary destination, drawn by the shared RN shell row
+ * (packages/ui/src/shell/Sidebar.tsx). `sidebar-nav-btn` / `active` stay as
+ * class hooks: the shell CSS keys the collapsed rail, the phone drawer and
+ * the per-destination order off them, and e2e reads `active` as the
+ * selected-state marker.
  */
-const ROW_CLASS = [
-  'sidebar-nav-btn',
-  'relative flex w-full shrink-0 items-center justify-start max-[768px]:justify-center',
-  'h-(--ui-control-desktop) min-h-(--ui-control-desktop)',
-  'gap-1.5 border-0 rounded-[var(--ui-radius-row)] bg-transparent px-2.5 py-1.5',
-  'text-[length:var(--ui-text-ui)] font-normal leading-[var(--ui-text-ui-line)] text-foreground text-start',
-  'whitespace-nowrap cursor-pointer select-none',
-  'transition-colors duration-(--ui-duration-hover)',
-  'hover:bg-accent focus-visible:bg-accent',
-  'aria-[current=page]:bg-secondary [&[aria-current=page]]:[font-weight:var(--ui-font-weight-medium)]',
-  'active:not-aria-[haspopup]:translate-y-0',
-  "[&_svg:not([class*='size-'])]:size-5",
-].join(' ');
-
-const GLYPH_CLASS = 'grid size-5 basis-5 shrink-0 place-items-center';
-const LABEL_CLASS = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap';
-
 export function SidebarNavButton({
   item,
   active,
@@ -43,33 +40,24 @@ export function SidebarNavButton({
   item: NavButtonSpec;
   active: boolean;
   expanded?: boolean;
-  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
+  onClick: () => void;
 }) {
   const label = i18n(item.i18nKey, item.label);
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      className={`${ROW_CLASS}${active ? ' active' : ''}`}
-      data-nav={item.key}
+    <SidebarNavRow
       id={navButtonId(item.key)}
-      data-i18n-title={item.i18nKey}
-      aria-current={active ? 'page' : undefined}
-      aria-haspopup={item.key === 'more' ? 'menu' : undefined}
-      aria-expanded={item.key === 'more' ? Boolean(expanded) : undefined}
-      aria-controls={item.key === 'more' ? 'moreNavPopover' : undefined}
-      onClick={onClick}
-    >
-      <span className={GLYPH_CLASS} dangerouslySetInnerHTML={{ __html: item.icon }} />
-      {item.badgeKey ? (
-        <span className={`nav-label-wrap ${LABEL_CLASS}`}>
-          <span data-i18n-key={item.i18nKey}>{label}</span>
-          <span className="nav-new-badge" data-i18n-key={item.badgeKey}>{i18n(item.badgeKey, 'New')}</span>
-        </span>
-      ) : (
-        <span className={LABEL_CLASS} data-i18n-key={item.i18nKey}>{label}</span>
-      )}
-      {item.key === 'new' ? <span className="nav-kbd hidden">{i18n('sidebar.nav.kbd', '⌘K')}</span> : null}
-    </Button>
+      navKey={item.key}
+      icon={GLYPHS[item.key] ?? 'compose'}
+      label={label}
+      i18nKey={item.i18nKey}
+      badge={item.badgeKey ? i18n(item.badgeKey, 'New') : undefined}
+      badgeI18nKey={item.badgeKey}
+      active={active}
+      menu={item.key === 'more' ? { expanded: Boolean(expanded), controls: 'moreNavPopover' } : undefined}
+      activeShadow="var(--ui-elevation-raised)"
+      hostStyle={webClass('sidebar-nav-btn', active && 'active')}
+      badgeStyle={webClass('nav-new-badge')}
+      onPress={onClick}
+    />
   );
 }

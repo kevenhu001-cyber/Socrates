@@ -167,7 +167,7 @@
 }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav .sidebar-nav-btn > span:first-child {
+#appShell #sidebarNav .sidebar-nav-btn > [data-part="nav-glyph"] {
   display: grid;
   place-items: center;
   width: 22px;
@@ -177,7 +177,7 @@
 }
 @media (max-width: 768px) {
 #appShell #sidebarNav .sidebar-nav-btn > svg,
-#appShell #sidebarNav .sidebar-nav-btn > span:first-child svg {
+#appShell #sidebarNav .sidebar-nav-btn > [data-part="nav-glyph"] svg {
   display: block;
   width: 20px;
   height: 20px;
@@ -187,8 +187,7 @@
 }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav .sidebar-nav-btn > span[data-i18n-key] {
-  display: block;
+#appShell #sidebarNav .sidebar-nav-btn > [data-part="nav-label"] {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

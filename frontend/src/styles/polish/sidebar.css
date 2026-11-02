@@ -417,11 +417,9 @@
    header. */
 @media (max-width: 768px) {
 /* label+badge share one grid cell so the "新" pill hugs the text. */
-#appShell #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
-  display: block;
+#appShell #sidebarNav .sidebar-nav-btn > [data-part="nav-label"] {
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 }
