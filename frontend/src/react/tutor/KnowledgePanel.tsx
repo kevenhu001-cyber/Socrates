@@ -54,6 +54,7 @@ function knowledgeStrings(): KnowledgeStrings {
     lastUpdated: i18n('tutor.kbLastUpdated', '最后更新'),
     snapshot: i18n('tutor.kbSnapshot', '存档当前版本'),
     graphLabel: i18n('kb.graphLabel', d.graphLabel),
+    captionMastery: i18n('kb.captionMastery', d.captionMastery),
     caption: i18n('kb.caption', d.caption),
     captionConcepts: i18n('kb.captionConcepts', d.captionConcepts),
     updating: i18n('kb.updating', d.updating),

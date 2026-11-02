@@ -10,6 +10,9 @@ export interface KnowledgeStrings {
   lastUpdated: string;
   snapshot: string;
   graphLabel: string;
+  /** 图谱说明的第一段（颜色含义）；与连线说明用间距分开，不用「·」。 */
+  captionMastery: string;
+  /** 连线说明（学习路径）。 */
   caption: string;
   /** Caption when the lines are the AI-written concept links (RN-6). */
   captionConcepts: string;
@@ -57,8 +60,9 @@ export const defaultKnowledgeStrings: KnowledgeStrings = {
   lastUpdated: 'Last updated',
   snapshot: 'Save this version',
   graphLabel: 'Knowledge map',
-  caption: 'Darker = better mastered · lines follow your learning path',
-  captionConcepts: 'Darker = better mastered · lines are how the ideas relate',
+  captionMastery: 'Darker = better mastered',
+  caption: 'Lines follow your learning path',
+  captionConcepts: 'Lines are how the ideas relate',
   updating: 'Updating definitions and connections…',
   updateFailed: 'Could not update the map this time.',
   status: { internalized: 'Internalized', fuzzy: 'Fuzzy', blank: 'Blank' },

@@ -82,8 +82,8 @@
   background: var(--accent);
 }
 .turn-sources-icon { flex: 0 0 auto; opacity: .78; }
-.turn-sources-divider { color: var(--ui-text-tertiary); }
-.turn-sources-count { font-variant-numeric: tabular-nums; }
+/* 「来源」与数量之间只留间距，不用「·」分隔。 */
+.turn-sources-count { margin-inline-start: var(--ui-space-xs); font-variant-numeric: tabular-nums; }
 .turn-sources-chevron {
   flex: 0 0 auto;
   margin-inline-start: var(--ui-space-xs);

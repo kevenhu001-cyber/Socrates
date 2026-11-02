@@ -1614,7 +1614,8 @@ export const zh = {
     "learnMode.mistakes.hint":"把没做对的题变成问题链上的下一问。",
     /* RN-5 knowledge map, diagnostic, mistakes */
     "kb.graphLabel":"知识图谱，可拖动平移",
-    "kb.caption":"颜色越深掌握越好 · 连线是你的学习路径",
+    "kb.captionMastery":"颜色越深掌握越好",
+    "kb.caption":"连线是你的学习路径",
     "kb.zoomIn":"放大",
     "kb.zoomOut":"缩小",
     "kb.zoomFit":"适应视图",
@@ -1645,7 +1646,7 @@ export const zh = {
     "diag.allFamiliar":"每个维度都有一定基础，可以保持较快节奏。",
     "diag.rank":"第 {n} 位",
     /* RN-6 由 AI 生成的学习内容 */
-    "kb.captionConcepts":"颜色越深掌握越好 · 连线是概念之间的关系",
+    "kb.captionConcepts":"连线是概念之间的关系",
     "kb.updating":"正在更新定义和概念之间的联系…",
     "kb.updateFailed":"这次没能更新图谱。",
     "kb.definition":"定义",

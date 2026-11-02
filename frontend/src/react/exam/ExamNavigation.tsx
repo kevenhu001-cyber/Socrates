@@ -42,7 +42,7 @@ function ExamNavigation({ snapshot, onStep, onJump }: ExamNavigationProps) {
           <span className="exam-nav-total">{snapshot.total}</span>
           {!snapshot.isSubmitted && (
             <span className="exam-nav-progress" id="examNavProgress">
-              · {answered.size} {snapshot.labels.answered}
+              {answered.size} {snapshot.labels.answered}
             </span>
           )}
         </div>
@@ -74,7 +74,8 @@ function ExamNavigation({ snapshot, onStep, onJump }: ExamNavigationProps) {
               aria-current={isCurrent ? 'step' : undefined}
               aria-label={`${index + 1}${isAnswered ? `, ${snapshot.labels.answered}` : ''}`}
             >
-              {index + 1}{isAnswered ? ' ·' : ''}
+              {/* 已答由 data-answered 的颜色和 aria-label 表达，不再加「·」。 */}
+              {index + 1}
             </Button>
           );
         })}

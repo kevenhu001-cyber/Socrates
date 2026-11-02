@@ -208,7 +208,11 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
         <MasterySwatch status="fuzzy" label={strings.status.fuzzy} />
         <MasterySwatch status="blank" label={strings.status.blank} />
       </View>
-      <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400', paddingHorizontal: S[50] }} {...dataSet({ kbEdgeKind: graph.edgeKind })}>{graph.edgeKind === 'concept' ? strings.captionConcepts : strings.caption}</UiText>
+      {/* 两段说明只用间距分开（不用「·」）。 */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: S[100], paddingHorizontal: S[50] }} {...dataSet({ kbEdgeKind: graph.edgeKind })}>
+        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>{strings.captionMastery}</UiText>
+        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>{graph.edgeKind === 'concept' ? strings.captionConcepts : strings.caption}</UiText>
+      </View>
     </View>
   );
 }

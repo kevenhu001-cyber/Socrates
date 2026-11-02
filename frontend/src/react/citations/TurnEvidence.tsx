@@ -120,7 +120,6 @@ export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntim
           <path d="M9.5 2.5V5H12M6 8h4M6 10.5h4" />
         </svg>
         <span className="turn-sources-label">{i18n('citation.sources', 'Sources')}</span>
-        <span className="turn-sources-divider" aria-hidden="true">·</span>
         <span className="turn-sources-count" aria-hidden="true">{citedSources.length}</span>
         <svg className="turn-sources-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="m4 6 4 4 4-4" />

@@ -1657,7 +1657,8 @@ export const en = {
     "learnMode.mistakes.hint":"Turn questions you missed into the next step on the chain.",
     /* RN-5 knowledge map, diagnostic, mistakes */
     "kb.graphLabel":"Knowledge map — drag to pan",
-    "kb.caption":"Darker = better mastered · lines follow your learning path",
+    "kb.captionMastery":"Darker = better mastered",
+    "kb.caption":"Lines follow your learning path",
     "kb.zoomIn":"Zoom in",
     "kb.zoomOut":"Zoom out",
     "kb.zoomFit":"Fit to view",
@@ -1688,7 +1689,7 @@ export const en = {
     "diag.allFamiliar":"Every dimension has some footing; keep the pace brisk.",
     "diag.rank":"#{n}",
     /* RN-6 AI-written learning content */
-    "kb.captionConcepts":"Darker = better mastered · lines are how the ideas relate",
+    "kb.captionConcepts":"Lines are how the ideas relate",
     "kb.updating":"Updating definitions and connections…",
     "kb.updateFailed":"Could not update the map this time.",
     "kb.definition":"Definition",
