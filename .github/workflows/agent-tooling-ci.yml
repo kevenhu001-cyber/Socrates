@@ -100,24 +100,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
-
-      - name: TypeScript check
-        run: npm run lint
-
-      - name: Agent UI unit tests
-        run: |
-          node --import tsx --test \
-            test/agentSteps.test.mjs \
-            test/agentMode.test.mjs \
-            test/toolRuntime.test.mjs \
-            test/toolInlineErrors.test.mjs \
-            test/toolRunState.test.mjs
-
-      # Full WASM build + browser E2E are intentionally not duplicated on PRs;
-      # CI/Frontend already covers the integrated build and smoke suites.
       - name: Restore Rust WASM cache
-        if: github.event_name != 'pull_request'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
@@ -131,8 +114,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-rust-wasm-v1-
 
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
+
+      # The frontend typecheck imports the generated WASM entry, so this is a
+      # real prerequisite even for focused PR checks. Keep only this prerequisite
+      # and leave the duplicate full build/browser E2E to the main CI workflow.
       - name: Build Rust WASM support
-        if: github.event_name != 'pull_request'
         run: |
           rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
@@ -140,6 +127,18 @@ jobs:
             cargo install wasm-bindgen-cli --version 0.2.126 --locked
           fi
           npm run build:wasm
+
+      - name: TypeScript check
+        run: npm run lint
+
+      - name: Agent UI unit tests
+        run: |
+          node --import tsx --test \
+            test/agentSteps.test.mjs \
+            test/agentMode.test.mjs \
+            test/toolRuntime.test.mjs \
+            test/toolInlineErrors.test.mjs \
+            test/toolRunState.test.mjs
 
       - name: Full unit suite (manual diagnostic)
         if: github.event_name == 'workflow_dispatch'
