@@ -1649,4 +1649,3 @@ export const zh = {
     "diag.allFamiliar":"每个维度都有一定基础，可以保持较快节奏。",
     "diag.rank":"第 {n} 位"
 };
-};
