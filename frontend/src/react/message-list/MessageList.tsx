@@ -1,6 +1,6 @@
 import type { Root } from 'react-dom/client';
 import { createRootSlot } from '../lib/boot/ownedRoot';
-import { useEffect, useSyncExternalStore } from 'react';
+import { lazy, Suspense, useEffect, useSyncExternalStore } from 'react';
 
 import { subscribeToChatRuntime } from '../../ui/chatRuntimeStore';
 import { ErrorBoundary } from '../ErrorBoundary';
@@ -8,11 +8,31 @@ import type { LegacyChatMessage } from '../types/domain';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { claimReactMessageList, isMsgListMounted, isSharedMessageList, registerSharedMessageListRestorer, takeOverSharedMessageList } from '../../ui/msgListMount.ts';
 import { entryId } from './messageIdentity';
-import { MessageItem } from './MessageItem';
 import { updateScrollFadeMask } from './messageScroll';
 import { useProgressiveMessageMount } from './useProgressiveMessageMount';
 import { getVisibleMessagesSnapshot } from './visibleMessages';
 import { getMathRenderRevision } from '../../render/mathRevision.ts';
+
+/* RN-13 — the row renderer (toolbar, attachments, edit form, tool-run models,
+   assistant turn boundary) is only needed once a transcript has messages, so
+   it is not part of the entry closure. Mounting the list starts the fetch
+   right away, in parallel with auth and session loading, so a restored
+   conversation normally finds it ready. */
+let itemModule: Promise<typeof import('./MessageItem')> | null = null;
+
+function preloadMessageItem(): Promise<typeof import('./MessageItem')> {
+  itemModule ??= import('./MessageItem').catch((error: unknown) => {
+    itemModule = null;
+    throw error;
+  });
+  return itemModule;
+}
+
+const MessageItem = lazy(() => preloadMessageItem().then(({ MessageItem: Item }) => ({ default: Item })));
+
+function warmMessageItem(): void {
+  preloadMessageItem().catch((error: unknown) => reportSwallow(error, 'MessageList.preload'));
+}
 
 const MSG_LIST_ID = 'msgList';
 
@@ -46,7 +66,7 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
   }
 
   return (
-    <>
+    <Suspense fallback={null}>
       {mounted.map((entry, index) => {
         const id = entryId(entry, `idx-${index + start}`);
         const isLatest = index + start === visibleMessages.length - 1;
@@ -60,7 +80,7 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
           />
         );
       })}
-    </>
+    </Suspense>
   );
 }
 
@@ -72,6 +92,7 @@ export function mountMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
   if (!container) { rootSlot.destroy(); return { root: null }; }
   if (isMsgListMounted() || isSharedMessageList(container)) return { root: null };
+  warmMessageItem();
   const handle = rootSlot.mount(container, <ErrorBoundary><MessageList /></ErrorBoundary>, () =>
     claimReactMessageList(container, releaseMessageList));
   return { root: handle.root };
@@ -83,6 +104,7 @@ export function mountSharedMessageList(): { root: Root | null } {
   if (!container) { sharedRootSlot.destroy(); return { root: null }; }
   takeOverSharedMessageList(container);
   if (!isSharedMessageList(container)) return { root: null };
+  warmMessageItem();
   const handle = sharedRootSlot.mount(container, <ErrorBoundary><MessageList readOnly /></ErrorBoundary>);
   return { root: handle.root };
 }

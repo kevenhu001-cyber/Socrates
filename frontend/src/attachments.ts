@@ -37,7 +37,6 @@ import { apiFetch, getCsrfToken } from './util/api.ts';
 import { getActiveProvider as getActiveProviderConfig } from './config/providerConfig.service.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { AttachmentClassification, classifyAttachmentFile, docKindFromFile } from './attachments/fileTypes.ts';
-import { compressImageFile, readFileAsDataUrl } from './attachments/imageCompression.ts';
 import { createBuildMessageContent } from './attachments/messageContent.ts';
 import { ATTACHMENT_READY_TIMEOUT_MS, MAX_CONCURRENT_UPLOADS, MAX_FILE_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_DATAURL_CHARS, MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL, MAX_TOTAL_ATTACHMENTS, XHR_TIMEOUT_MS, UPLOAD_IDLE_TIMEOUT_MS } from './attachments/limits.ts';
 import { publishAttachmentsState } from './ui/attachmentsState.ts';
@@ -306,6 +305,9 @@ function abortHandleForXhr(entry: PendingAttachment, xhr: XMLHttpRequest) {
 async function loadInlineImageData(file: File) {
   const progress = () => { /* noop: network progress owns the displayed percentage */ };
   try {
+    /* RN-13 — image re-encoding only runs when an image is attached, so it
+       is fetched then instead of riding in the entry closure. */
+    const { compressImageFile, readFileAsDataUrl } = await import('./attachments/imageCompression.ts');
     if (file.size > MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL) {
       return await compressImageFile(file, progress);
     }

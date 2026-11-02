@@ -1,7 +1,7 @@
 import { useMemo, type MouseEvent, type RefObject } from 'react';
 
 import { CanvasBlock } from '../canvas';
-import { AssistantTurn } from '../tool-run/AssistantTurn';
+import { LazyAssistantTurn } from '../tool-run/LazyAssistantTurn';
 import type { LegacyChatMessage } from '../types/domain';
 import { openArtifactPreview } from '../../ui/artifactPreview.ts';
 import { LinkPreviews } from './LinkPreviews';
@@ -62,7 +62,7 @@ export function MessageBody({
         ref={bodyRef}
         onClick={handlePreviewClick}
       >
-        <AssistantTurn message={message} html={html} live={isLive} readOnly={readOnly} />
+        <LazyAssistantTurn message={message} html={html} live={isLive} readOnly={readOnly} />
       </div>
     );
   }

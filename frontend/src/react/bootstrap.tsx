@@ -5,6 +5,8 @@ import { registerAssistantTurnRenderer } from '../ui/assistantTurnRenderer';
 import { publishReactChatRuntime } from '../ui/reactBridge';
 import { showMountRecovery } from './ui/mountRecovery';
 import { i18n } from './legacy/gateway';
+import { preloadAssistantTurn } from './tool-run/LazyAssistantTurn';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 const RECOVERY_MESSAGES: Record<string, [string, string]> = {
   'sidebar-nav': ['boot.navigationUnavailable', 'The navigation could not load.'],
@@ -41,5 +43,11 @@ export function bootstrapReactCompatibilityRuntime(): void {
   };
   runtime.__socratesMountReactCompatibility = () => {
     runMountRegistry(document, mountOptions);
+    /* RN-13 — the assistant turn renderer left the entry closure; fetch it
+       once the authenticated shell is up so the first answer (or a restored
+       session) does not wait on it. */
+    const warm = () => { preloadAssistantTurn().catch((error: unknown) => reportSwallow(error, 'react:preload-assistant-turn')); };
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(warm, { timeout: 1500 });
+    else window.setTimeout(warm, 1);
   };
 }
