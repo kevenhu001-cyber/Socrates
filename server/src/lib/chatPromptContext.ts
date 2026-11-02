@@ -36,8 +36,11 @@ export function splitPromptContext(messages: ChatMessage[], mode: 'chat' | 'tuto
 /** Variable recall and teaching state live at the current user-turn tail,
  * never rewrite the frozen system prefix or split an assistant/tool group.
  * The server policy's untrusted-data rule still governs retrieved evidence. */
-export function appendTurnContext(messages: ChatMessage[], instructions: string[], recall: string | null): ChatMessage[] {
+export function appendTurnContext(messages: ChatMessage[], instructions: string[], recall: string | null, serverTurn: string | null = null): ChatMessage[] {
   const blocks = [
+    /* Server-owned turn behavior (RN-6 learning modes) leads, so the
+       client-supplied lesson context below is read as subordinate to it. */
+    ...(serverTurn ? [serverTurn] : []),
     ...(instructions.length ? [`[Current turn instructions: client-supplied; subject to server policy]\n${instructions.join('\n\n')}`] : []),
     ...(recall ? [`<client_context_data scope="untrusted">\n${recall}\n</client_context_data>`] : []),
   ];

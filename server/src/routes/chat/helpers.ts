@@ -35,7 +35,7 @@ import {MAX_VISUALIZATION_POINTS, visualizationTemplateGuide} from '../../servic
    src/lib/prompts.js (mtime-keyed cache, placeholder substitution).
    We re-export it from here so the call sites inside this route
    family (`prependTeacherModePrompt`) keep a single import path. */
-import {getCodeInterpreterPrompt, getTeacherModePrompt, getBeagleSystemPrompt} from '../../lib/prompts.js';
+import {getCodeInterpreterPrompt, getTeacherModePrompt, getBeagleSystemPrompt, getLearningModePrompt, LEARNING_MODE_IDS} from '../../lib/prompts.js';
 import { withTimeBudget } from '../../lib/timeBudget.js';
 import { splitPromptContext, appendTurnContext } from '../../lib/chatPromptContext.js';
 import { resolveSessionPromptOrAssemble } from '../../services/core/sessionPromptSnapshot.js';
@@ -629,6 +629,13 @@ export const ChatPayloadSchema = z.object({
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().positive().max(32000).optional(),
   mode: z.enum(['tutor', 'chat']).optional().default('chat'),
+  /* RN-6 — the learning mode picked in Tutor mode. The client sends only
+     the id; the behavior is the server-owned prompts/learning-modes.md
+     section, injected for this turn. `learningFocus` is the short subject
+     some modes act on (a concept for practice, a mistake for mistakes); it
+     is learner data and travels as untrusted context. Ignored in chat mode. */
+  learningMode: z.enum(LEARNING_MODE_IDS).optional(),
+  learningFocus: z.string().max(2000).optional(),
   systemContext: z.string().max(50000).optional(),
   /* P_rag-context — optional session id. When present, the last user
      message is used as the retrieval query against the session's
@@ -876,6 +883,19 @@ export function endSseWithError(res: import('express').Response, err: unknown, l
  * the browser then replays as a whole turn. A typed rejection lets the SSE
  * path emit a structured `event: error` frame with the real status/code and
  * the JSON path return the same status through the error middleware. */
+/** RN-6 — the server-owned learning-mode block for one tutor turn, with the
+ * learner's focus (a concept, a mistake) attached as untrusted data. */
+export async function buildLearningModeTurn(
+  learningMode: typeof LEARNING_MODE_IDS[number],
+  focus: string | undefined,
+): Promise<string | null> {
+  const prompt = await getLearningModePrompt(learningMode);
+  if (!prompt) return null;
+  const focusText = typeof focus === 'string' ? focus.trim() : '';
+  return `[Learning mode: ${learningMode}; server-owned]\n${prompt}`
+    + (focusText ? `\n\n<client_context_data scope="untrusted">\nLearning focus: ${focusText}\n</client_context_data>` : '');
+}
+
 export async function prepareChatRequest(
   req: Request,
   res: Response,
@@ -918,6 +938,9 @@ export async function prepareChatRequest(
   const context = splitPromptContext(messages, mode);
   const providerPromise = getActiveApiKey(req.userId);
   const ragPromise = resolveRagContext(messages, parsed.ragSessionId, req.userId ?? undefined, options.signal);
+  const learningPromise = mode === 'tutor' && parsed.learningMode
+    ? buildLearningModeTurn(parsed.learningMode, parsed.learningFocus)
+    : Promise.resolve(null);
   // Only the first request reads and injects persona, user context and saved
   // memories. Existing sessions hydrate lazily once after this release. The
   // server-owned snapshot survives browser reloads and process restarts.
@@ -935,9 +958,9 @@ export async function prepareChatRequest(
     initialized = appendFinalOutputConstraints(initialized);
     return initialized[0].content as string;
   });
-  for (const p of [providerPromise, ragPromise, promptPromise]) p.catch(() => {});
-  const [systemPrompt, ragBlock] = await Promise.all([promptPromise, ragPromise]);
-  let conversation = appendTurnContext(context.conversation, context.turnInstructions, ragBlock?.prompt ?? null);
+  for (const p of [providerPromise, ragPromise, promptPromise, learningPromise]) p.catch(() => {});
+  const [systemPrompt, ragBlock, learningTurn] = await Promise.all([promptPromise, ragPromise, learningPromise.catch(() => null)]);
+  let conversation = appendTurnContext(context.conversation, context.turnInstructions, ragBlock?.prompt ?? null, learningTurn);
   let finalMessages: ChatMessage[] = [{ role: 'system', content: insertResponseTypography(systemPrompt) }, ...conversation];
 
   // Windowing can replace old conversation with a rolling summary, never

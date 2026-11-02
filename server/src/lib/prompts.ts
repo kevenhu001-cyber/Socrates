@@ -33,6 +33,13 @@ const TEACHER_MODE_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/teacher-mode.m
  * hot-reloaded; the loader reads mtime on every call and re-caches
  * when it changes. */
 const CODE_INTERPRETER_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/code-interpreter.md');
+/* RN-6 — per-turn learning-mode behavior for Tutor mode. One markdown file,
+ * one `## mode: <id>` section per mode plus a `## shared` section that every
+ * mode gets (the next-questions contract). Hot-reloaded like the others. */
+const LEARNING_MODES_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/learning-modes.md');
+
+export const LEARNING_MODE_IDS = ['think', 'recall', 'connect', 'diagnose', 'mistakes', 'practice'] as const;
+export type LearningModeId = typeof LEARNING_MODE_IDS[number];
 
 interface PromptFiles {
   stat(path: string): Promise<{ mtimeMs: number; size: number }>;
@@ -126,6 +133,36 @@ export async function getTeacherModePrompt() {
  */
 export async function getCodeInterpreterPrompt() {
   return loadPrompt(CODE_INTERPRETER_PROMPT_PATH);
+}
+
+/** Split the learning-modes file into its `## shared` and `## mode: id` sections. */
+export function parseLearningModeSections(raw: string): { shared: string; modes: Record<string, string> } {
+  const modes: Record<string, string> = {};
+  let shared = '';
+  const parts = raw.split(/^## +/m).slice(1);
+  for (const part of parts) {
+    const newline = part.indexOf('\n');
+    const heading = (newline < 0 ? part : part.slice(0, newline)).trim();
+    const body = newline < 0 ? '' : part.slice(newline + 1).trim();
+    if (heading === 'shared') shared = body;
+    const match = heading.match(/^mode:\s*([a-z-]+)$/);
+    if (match) modes[match[1]] = body;
+  }
+  return { shared, modes };
+}
+
+/**
+ * The server-owned instructions for one learning mode: the shared contract
+ * followed by the mode's own section. Null when the file is unreadable or
+ * the mode has no section, so the turn simply runs without mode behavior.
+ */
+export async function getLearningModePrompt(mode: LearningModeId): Promise<string | null> {
+  const raw = await loadPrompt(LEARNING_MODES_PROMPT_PATH);
+  if (!raw) return null;
+  const { shared, modes } = parseLearningModeSections(raw);
+  const own = modes[mode];
+  if (!own) return null;
+  return [own, shared].filter(Boolean).join('\n\n');
 }
 
 /* Test hook — wipe the in-memory cache so tests can simulate file edits
