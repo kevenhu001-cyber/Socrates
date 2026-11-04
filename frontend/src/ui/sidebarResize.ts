@@ -15,7 +15,9 @@
 
 import { createSpring, Spring, SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { setSidebarOpen } from '../sidebar/sidebar.store.ts';
+import { useSidebarStore } from '../sidebar/sidebar.store.ts';
+import { projectSidebarOpen } from '../sidebar/sidebar.service.ts';
+import { isMobileViewport } from '../sidebar/breakpoints.ts';
 
 
 const SIDEBAR_MIN_PX = 200;
@@ -99,7 +101,7 @@ export function initSidebarDrag(){
   loadSidebarWidth();
 
   function onDown(e: { clientX: number; preventDefault?: () => void }){
-    if(window.innerWidth <= 768) return; /* mobile: no resize */
+    if(isMobileViewport()) return; /* mobile: no resize */
     dragging = true;
     startX = e.clientX;
     startW = sidebarWidthPx;
@@ -198,15 +200,14 @@ export function onViewportResize(){
      (e.g. keyboard open/close on Android). Do not touch the sidebar. */
   if(sameWidth) return;
   const bd = document.getElementById("sidebarBackdrop");
-  const s = document.getElementById("sidebar");
-  const open = s && !s.classList.contains("collapsed");
-  if(w < 768 && open){
-    if(s) s.classList.add("collapsed");
-    setSidebarOpen(false);
+  /* The store is the open-state truth; the projection writes the class and
+     the persisted preference from one place (sidebar.service.projectSidebarOpen). */
+  if(isMobileViewport()){
+    if(useSidebarStore.getState().isOpen){
+      projectSidebarOpen(false, { persist: true });
+    }
     if(bd) bd.classList.remove("show");
-    // Persist so a mobile refresh restores the collapsed state.
-    try{ localStorage.setItem("socrates-sb", "0"); }catch (error) { reportSwallow(error, 'ui/sidebarResize.ts:207', 'expected'); }
-  } else if(w >= 768 && bd){
+  } else if(bd){
     bd.classList.remove("show");
   }
 }

@@ -11,7 +11,9 @@ import { saveSessionBeforeReset } from '../../session/persistence.ts';
 import { renderGreeting } from '../../ui/greeting.js';
 import { activateMainView } from '../../ui/mainViewController.ts';
 import { setActiveNav } from '../../sidebar/navigation.service.ts';
-import { setSidebarOpen } from '../../sidebar/sidebar.store.ts';
+import { projectSidebarOpen } from '../../sidebar/sidebar.service.ts';
+import { isMobileViewport } from '../../sidebar/breakpoints.ts';
+import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { translateLifecycleText } from './helpers.ts';
 import { shouldConfirmReset } from './resetDecision.ts';
@@ -101,15 +103,12 @@ function renderListsAfterReset() {
 }
 
 function closeMobileSidebarAfterReset() {
-  if (typeof window !== 'undefined' && !(window.innerWidth < 768)) return;
-  const sidebar = document.getElementById('sidebar');
+  if (typeof window !== 'undefined' && !isMobileViewport()) return;
+  /* The store is the open-state truth; skip when the drawer is already closed. */
+  if (!useSidebarStore.getState().isOpen) return;
+  projectSidebarOpen(false, { persist: true });
   const backdrop = document.getElementById('sidebarBackdrop');
-  if (!sidebar || sidebar.classList.contains('collapsed')) return;
-  sidebar.classList.add('collapsed');
-  setSidebarOpen(false);
   if (backdrop) backdrop.classList.remove('show');
-  try { localStorage.setItem('socrates-sb', '0'); }
-  catch (error) { reportSwallow(error, 'app/lifecycle.resetApp'); }
 }
 
 function publishResetState() {

@@ -1,8 +1,9 @@
 import { bumpRecentsVersion, setSidebarOpen, setSidebarRecentsFilter, useSidebarStore } from './sidebar.store';
+import { DESKTOP_VIEWPORT_MIN_PX, isMobileViewport } from './breakpoints.ts';
+import { renderRecents } from '../ui/recentsView.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 const RECENTS_FILTER_KEY = 'socrates-recents-filter';
-const DESKTOP_SIDEBAR_BREAKPOINT = 769;
 const SIDEBAR_SPATIAL_DURATION_MS = 180;
 const SIDEBAR_SPATIAL_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
 
@@ -102,8 +103,7 @@ export function setRecentsFilter(value: string | null): void {
     /* storage is optional in private and embedded contexts */
   }
   setSidebarRecentsFilter(filter);
-  const legacyWindow = window as Window & { renderRecents?: () => void };
-  legacyWindow.renderRecents?.();
+  renderRecents();
 }
 
 export function clearRecentsFilter(): void {
@@ -119,11 +119,33 @@ export function refreshRecentsFilterChipData(): void {
   bumpRecentsVersion();
 }
 
+/**
+ * Project the sidebar's open state onto the DOM.
+ *
+ * The zustand store is the single source of truth (S1 in
+ * docs/plans/2026-11-04-sidebar-ui-consistency.md): every runtime mutator
+ * dispatches here, and the `collapsed` class plus the `socrates-sb`
+ * preference are written back from this one place. Boot hydration, viewport
+ * transitions and sign-out reset use this directly; toggleSidebar() adds the
+ * desktop FLIP on top. The mobile backdrop stays with the callers — each has
+ * its own nuance about when the overlay may appear.
+ */
+export function projectSidebarOpen(open: boolean, opts: { persist?: boolean } = {}): void {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.classList.toggle('collapsed', !open);
+  setSidebarOpen(open);
+  if (opts.persist) {
+    try { localStorage.setItem('socrates-sb', open ? '1' : '0'); } catch (error) {
+      reportEmptyCatch(error, 'empty catch: sidebar/sidebar.service.ts:projectSidebarOpen', 'expected');
+      /* storage is optional */
+    }
+  }
+}
+
 export function toggleSidebar(): void {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
-  const backdrop = document.getElementById('sidebarBackdrop');
-  const desktop = window.innerWidth >= DESKTOP_SIDEBAR_BREAKPOINT;
+  const desktop = window.innerWidth >= DESKTOP_VIEWPORT_MIN_PX;
   const main = desktop ? document.querySelector<HTMLElement>('#appShell .main') : null;
 
   /* Read the visible position BEFORE cancelling. On a rapid reversal the
@@ -134,24 +156,15 @@ export function toggleSidebar(): void {
   const beforeInset = main ? mainSidebarInset(main) + visibleOffset : 0;
   cancelDesktopSidebarMotion();
 
-  const wasCollapsed = sidebar.classList.contains('collapsed');
-  if (wasCollapsed) {
-    sidebar.classList.remove('collapsed');
-    if (backdrop && window.innerWidth < 768) backdrop.classList.add('show');
-  } else {
-    sidebar.classList.add('collapsed');
-    backdrop?.classList.remove('show');
-  }
-  const open = !sidebar.classList.contains('collapsed');
-  setSidebarOpen(open);
+  /* The store decides; class, backdrop and the persisted preference follow. */
+  const open = !useSidebarStore.getState().isOpen;
+  projectSidebarOpen(open, { persist: true });
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if (isMobileViewport() && open) backdrop?.classList.add('show');
+  else backdrop?.classList.remove('show');
 
   if (desktop && main) {
     animateDesktopSidebarMotion(sidebar, main, beforeInset, open);
-  }
-
-  try { localStorage.setItem('socrates-sb', open ? '1' : '0'); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: sidebar/sidebar.service.ts:150', 'expected');
-    /* storage is optional */
   }
 }
 
@@ -163,9 +176,8 @@ export function toggleSidebar(): void {
  * alone. Returns whether the drawer was actually open.
  */
 export function closeSidebarOnMobile(): boolean {
-  if (window.innerWidth >= DESKTOP_SIDEBAR_BREAKPOINT) return false;
-  const sidebar = document.getElementById('sidebar');
-  if (!sidebar || sidebar.classList.contains('collapsed')) return false;
+  if (window.innerWidth >= DESKTOP_VIEWPORT_MIN_PX) return false;
+  if (!useSidebarStore.getState().isOpen) return false;
   toggleSidebar();
   return true;
 }

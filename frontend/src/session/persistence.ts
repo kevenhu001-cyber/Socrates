@@ -102,11 +102,6 @@ interface SaveResponse {
   [key: string]: unknown;
 }
 
-/** Window surfaces the save pipeline reads at call time. */
-interface PersistenceWindow extends Window {
-  renderRecents?: () => void;
-}
-
 function _t(key: string, fallback?: string): string {
   try {
     if (typeof window !== 'undefined' && typeof window.t === 'function') {
@@ -135,14 +130,8 @@ function _applySavedRow(
   }
 }
 function _renderRecents(): void {
-  try {
-    const win = window as PersistenceWindow;
-    if (typeof window !== 'undefined' && typeof win.renderRecents === 'function') {
-      win.renderRecents();
-    } else {
-      renderRecents();
-    }
-  } catch {
+  try { renderRecents(); }
+  catch {
     /* empty-catch: intentional — rendering is best-effort */
   }
 }

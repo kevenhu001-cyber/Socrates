@@ -64,14 +64,8 @@ function _t(key: string, fallback?: string): string {
   return fallback != null ? fallback : key;
 }
 function _renderRecents(): void {
-  try {
-    const win = window as RecentsWindow;
-    if (typeof win.renderRecents === 'function') {
-      win.renderRecents();
-    } else {
-      renderRecents();
-    }
-  } catch (e) { reportSwallow(e, 'session/recents._renderRecents'); }
+  try { renderRecents(); }
+  catch (e) { reportSwallow(e, 'session/recents._renderRecents'); }
 }
 function _renderArchivedList(): void {
   try {

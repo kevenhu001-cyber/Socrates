@@ -2,21 +2,15 @@
  * Sidebar chrome: mobile drawer dismissal and the native view-switch adapter.
  * React owns the search row, panel selection, and panel visibility.
  */
-import { toggleSidebar } from '../sidebar/sidebar.service.ts';
-import {
-  setSidebarOpen,
-  toggleSidebarPanelView,
-  useSidebarStore,
-} from '../sidebar/sidebar.store.ts';
+import { toggleSidebar, projectSidebarOpen } from '../sidebar/sidebar.service.ts';
+import { isMobileViewport } from '../sidebar/breakpoints.ts';
+import { toggleSidebarPanelView } from '../sidebar/sidebar.store.ts';
 import { renderRecents } from './recentsView.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
-/* Mobile only: tap anywhere outside the sidebar (and outside the toggle
-   button) to close it. On desktop the user controls the sidebar with the
-   toggle button / ⌘B, and closing it on a click-outside would be
-   unexpected. The backdrop is a sibling of the sidebar in the DOM and
-   z-index 25; tapping it always closes the drawer on mobile. */
-export function isMobileViewport() { return typeof window !== 'undefined' && window.innerWidth < 768; }
+/* Mobile viewport predicate lives in sidebar/breakpoints.ts so the drawer
+   dismissal, the resize auto-collapse and the React chrome all share the
+   shell's one breakpoint encoding (max-width: 768px, inclusive). */
 
 /* Native web session bridge compatibility action. React owns the selected
    panel and its visibility; this adapter only updates the shared store. */
@@ -46,12 +40,11 @@ export function initSidebarChrome() {
        509px conversation column. Default them to the 52px rail so the
        content keeps the width, and keep honouring an explicit preference. */
     const wantsCollapsed = sbPref === '0' || (sbPref === null && (typeof window !== 'undefined' ? window.innerWidth : 1024) < 1025);
-    if (wantsCollapsed) {
-      sidebar?.classList.add('collapsed');
-    }
+    /* Store-first hydration: the projection writes the collapsed class and
+       syncs the zustand store from the same value, so boot cannot leave the
+       two truths disagreeing. */
+    projectSidebarOpen(!wantsCollapsed);
   } catch (error) { reportSwallow(error, 'ui/sidebarChrome.ts:111', 'expected'); }
-  const open = sidebar ? !sidebar.classList.contains('collapsed') : useSidebarStore.getState().isOpen;
-  setSidebarOpen(open);
 
   document.addEventListener('click', function (e) {
     const sbEl = sidebar ?? document.getElementById('sidebar');

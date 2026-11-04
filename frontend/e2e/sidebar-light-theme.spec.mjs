@@ -31,7 +31,7 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
   // Read computed styles of sidebar elements in desktop light mode
   const styles = await page.evaluate(() => {
     const navItem = document.querySelector('#sidebarNav .sidebar-nav-btn');
-    const navText = navItem ? navItem.querySelector('span[data-i18n-key]') || navItem.querySelector('span') : null;
+    const navText = navItem ? navItem.querySelector('[data-i18n-key]') || navItem.querySelector('span') : null;
     const navSvg = navItem ? navItem.querySelector('svg') : null;
     const recentItem = document.querySelector('.recent-item');
     const recentText = document.querySelector('.recent-item-text');
@@ -57,7 +57,7 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
   console.log('DESKTOP LIGHT STYLES:', JSON.stringify(styles, null, 2));
 
   // Assert desktop light styles
-  expect(styles.navTextColor).toBe('rgb(23, 23, 23)');
+  expect(styles.navTextColor).toBe('rgb(13, 13, 13)');
   expect(styles.recentTextColor).toBe('rgb(23, 23, 23)');
 
   await page.screenshot({ path: 'test-results/sidebar-desktop-light.png' });
@@ -69,7 +69,7 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
 
   const mobileStyles = await page.evaluate(() => {
     const navItem = document.querySelector('#sidebarNav .sidebar-nav-btn');
-    const navText = navItem ? navItem.querySelector('span[data-i18n-key]') || navItem.querySelector('span') : null;
+    const navText = navItem ? navItem.querySelector('[data-i18n-key]') || navItem.querySelector('span') : null;
     const recentItem = document.querySelector('.recent-item');
     const recentText = document.querySelector('.recent-item-text');
     const cs = (el) => el ? getComputedStyle(el) : null;
@@ -83,7 +83,7 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
   console.log('MOBILE LIGHT STYLES:', JSON.stringify(mobileStyles, null, 2));
 
   // Assert mobile light styles
-  expect(mobileStyles.navTextColor).toBe('rgb(23, 23, 23)');
+  expect(mobileStyles.navTextColor).toBe('rgb(13, 13, 13)');
   expect(mobileStyles.recentTextColor).toBe('rgb(23, 23, 23)');
 
   await page.screenshot({ path: 'test-results/sidebar-mobile-light.png' });

@@ -1,4 +1,461 @@
 /* Phone drawer geometry. Desktop ownership stays in parity/sidebar.css. */
+/* ─── Pass-2 merge (docs/plans/2026-11-04-sidebar-ui-consistency.md) ───
+   Mobile rules relocated from components/sidebar.css then polish/sidebar.css
+   in cascade old→new order, so every historical tie keeps its winner. */
+@media (max-width: 768px) {#appShell .sidebar {
+  background: var(--sidebar);
+  color: var(--foreground);
+  box-shadow: none;
+}
+}
+
+@media (max-width: 768px) {
+
+#appShell .sidebar-inner { background: transparent; }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-header-actions { gap: 2px; }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-header .icon-btn:hover { background: var(--accent); }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn {
+  color: var(--foreground);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn svg { color: inherit; }
+}
+
+/* The old components badge rule (4px / 1px 6px 2px / 16px) was deleted with
+   the merge: parity/sidebar.css:569 carries the badge unconditionally and
+   loads after components, so those values never shipped on mobile — the
+   parity rule (6px / 2px 6px / 14px) was and is the live mobile winner. */
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn:hover,
+#appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--foreground); }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn.active { font-weight: var(--ui-font-weight-regular); }
+}
+
+@media (max-width: 768px) {
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-active):not(.exam-active)
+  #appShell .sidebar-nav-btn[data-nav="new"] {
+  background: var(--ui-bg-raised);
+  color: var(--foreground);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .nav-kbd { display: none; }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn[data-nav="exam"] { display: none; }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-search {
+  background: var(--ui-bg-raised);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-search input { color: var(--foreground); font-size: var(--ui-font-size-sm); }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
+}
+
+@media (max-width: 768px) {
+#appShell .recents-title {
+  color: var(--ui-text-muted);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .recent-item {
+  color: var(--foreground);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .recent-item:hover,
+#appShell .recent-item.active { color: var(--foreground); }
+}
+
+@media (max-width: 768px) {
+  #appShell .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    transform: translateX(0);
+    transition: transform var(--ui-duration-normal) var(--ui-ease-out), box-shadow var(--ui-duration-normal) ease;
+    box-shadow: 1px 0 0 var(--ui-border-subtle), 4px 0 24px -4px rgb(0 0 0 / 14%), 12px 0 36px -8px rgb(0 0 0 / 10%);
+    z-index: var(--ui-z-drawer);
+    background: var(--sidebar);
+    border-right: 1px solid var(--ui-border-subtle);
+  }
+  [data-mode="dark"] #appShell .sidebar {
+    box-shadow: 1px 0 0 var(--ui-border-subtle), 4px 0 28px -4px rgb(0 0 0 / 55%);
+  }
+  #appShell .sidebar.collapsed { transform: translateX(-100%); box-shadow: none; }
+  #appShell .sidebar-backdrop {
+    background: var(--ui-backdrop);
+    z-index: var(--ui-z-backdrop, 80);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    transition: opacity var(--ui-duration-normal) ease;
+  }
+  #appShell .sidebar-header .compose-btn { display: none; }
+  /* The mobile drawer collapses the search row on grid-template-rows; the
+     old 54px max-height was a guess at the content height. The clip margin
+     drops to zero while the row is closed so the closing content does not
+     spill past the shrinking track, and the closed row leaves the
+     accessibility tree — the search field inside it used to stay focusable
+     while invisible. */
+  #appShell .sidebar-search-row {
+    --sidebar-search-rows: 0fr;
+    --sidebar-search-clip-margin: 0px;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: grid-template-rows var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-fast) ease, padding var(--ui-duration-normal) ease, visibility 0s linear var(--ui-duration-normal);
+  }
+  #appShell .sidebar.search-open .sidebar-search-row {
+    --sidebar-search-rows: 1fr;
+    --sidebar-search-clip-margin: 6px;
+    padding-bottom: 8px;
+    opacity: 1;
+    visibility: visible;
+    transition: grid-template-rows var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-fast) ease, padding var(--ui-duration-normal) ease, visibility 0s;
+  }
+  #appShell .sidebar:not(.search-open) .sidebar-search-row { pointer-events: none; }
+  #appShell .sidebar-nav { padding-top: 4px; }
+  /* Mobile drawer footer keeps footer action buttons reachable. */
+  #appShell .sidebar-footer-actions > .icon-btn { display: inline-flex; }
+
+  /* The reference drawer keeps only the logo glyph in the header and a
+     flat recent-session list — no mode bullets, meta rows, tag pills or
+     time-group separators on phones. */
+  #appShell .sidebar-logo .cg-sidebar-caret { display: none; }
+  #appShell .recents-filter-chips,
+  #appShell .recents-time-label { display: none; }
+  #appShell .recent-mode-badge { display: none; }
+  #appShell .recent-item-meta,
+  #appShell .recent-item-tags { display: none; }
+
+
+  /* ⋯ overflow is persistent on phones; the dropdown menu itself is now
+     a universal rule above (same trigger → menu contract as the reference
+     drawer on every width). */
+  #appShell .recent-item-actions { opacity: 1; }
+  #appShell .recent-item-overflow {
+    border: 0;
+    background: transparent;
+  }
+  #appShell .recent-item-overflow svg { width: 18px; height: 18px; }
+  #appShell .recent-item-overflow:hover { background: var(--accent); color: var(--foreground); }
+}
+
+@media (max-width: 768px) {
+
+/* Reference drawer gutters: ~6px outside the row backgrounds on the left,
+   ~4px on the right — everything inside (nav glyph, session title, label)
+   then lands ~16px from the drawer edge via the rows' own 10px padding. */
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn {
+  /* Reference drawer renders nav labels and glyphs at primary brightness,
+     same as the session titles below them. */
+  color: var(--foreground);
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+}
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn:hover { background: var(--accent); color: var(--foreground); }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--foreground); }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-nav-btn .nav-kbd {
+  color: var(--ui-text-muted);
+  font-size: 11px;
+}
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-search-row {
+  padding: 0 0 6px;
+  gap: 4px;
+}
+}
+
+@media (max-width: 768px) {
+#appShell#appShell .sidebar-search {
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-raised);
+  transition: border-color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
+}
+}
+
+@media (max-width: 768px) {
+#appShell#appShell .sidebar-search:focus-within {
+  background: var(--ui-bg-surface);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-search .sidebar-search-icon { width: 15px; height: 15px; color: var(--ui-text-muted); }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-search input {
+  font-size: var(--ui-font-size-xs);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 1%, transparent);
+  transform: translateZ(0);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
+}
+
+@media (max-width: 768px) {
+/* Phones: the drawer is the grey sheet; rows keep the same 12 / white-card language. */
+#appShell #sidebar .recent-item { border-radius: var(--ui-round-md); }
+#appShell #sidebar .recent-item.active,
+#appShell #sidebar .recent-item[aria-current="true"] {
+  background: var(--ui-card);
+  box-shadow: var(--ui-elevation-raised);
+}
+}
+
+@media (max-width: 768px) {
+/* restore/chatgpt-v2 insets the panel 3px — collapse it so rows own the
+   full inner width and their 10px padding lands content at ~16px. */
+}
+
+@media (max-width: 768px) {
+/* label+badge share one grid cell so the "新" pill hugs the text. */
+#appShell #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+}
+
+@media (max-width: 768px) {
+#appShell .recents-header-actions { display: inline-flex; align-items: center; gap: 2px; }
+#appShell .recents-head-btn {
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-tertiary);
+}
+#appShell .recents-head-btn:hover { background: var(--accent); color: var(--foreground); }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-footer-actions > .icon-btn { display: none; }
+}
+
+@media (max-width: 768px) {
+#appShell .recents-time-label {
+  /* Matches parity/sidebar.css: small labels use the secondary step so they
+     clear WCAG AA on the light sidebar rail, and keep its 12px size. The phone
+     drawer used to drop to 11px here while the desktop rail stayed at 12px,
+     so the same "Today" group header changed size with the viewport. */
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: 0.04em;
+}
+#appShell .recents-title {
+  /* Matches parity/sidebar.css: small labels use the secondary step so they
+     clear WCAG AA on the light sidebar rail. */
+  color: var(--muted-foreground);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .recents-time-label { padding: 12px 10px 4px; }
+}
+
+@media (max-width: 768px) {
+#appShell .recents-time-label:first-child { padding-top: 2px; }
+}
+
+@media (max-width: 768px) {
+
+/* The row carries the generic .btn class, whose base is `display:
+   inline-flex; justify-content: center; min-width: 40px` — on the drawer
+   that shrink-wraps every session row to its title, leaves the ···
+   floating mid-row, and adds a ~6px inline line-box gap under each row.
+   Re-pin it to a full-width block-level flex row: title on the left, ···
+   pushed to the right edge by .recent-item-main's flex:1. */
+#appShell #sidebar .recent-item {
+  border: 0;
+}
+#appShell .recent-item {
+  color: var(--foreground);
+  transition: background-color var(--ui-duration-fast) ease;
+}
+/* Reference drawer titles sit at primary brightness; keep the pinned
+   accent intact by scoping the raise to non-pinned rows. */
+#appShell .recent-item:not(.pinned) .recent-item-text {
+  color: var(--foreground);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .recent-item.active {
+  box-shadow: none;
+}
+}
+
+@media (max-width: 768px) {
+/* ~14px row type, matching the reference drawer's session titles against
+   the 15px nav rows (a stale restore/ rule previously forced 12px). */
+}
+
+@media (max-width: 768px) {
+#appShell .recent-item-meta {
+  font-size: 11px;
+  color: var(--ui-text-muted);
+}
+}
+
+@media (max-width: 768px) {
+#appShell #sidebarUserRow.user-row {
+  cursor: default;
+}
+}
+
+@media (max-width: 768px) {
+#appShell #sidebarUserRow.user-row:hover {
+  background: transparent;
+}
+}
+
+@media (max-width: 768px) {
+#appShell #sidebarUserRow.user-row:active {
+  transform: none;
+}
+}
+
+@media (max-width: 768px) {
+/* mobile-parity.css pins the drawer footer padding/border with
+   !important; this layer owns only the min-height and flat background. */
+#appShell .sidebar-footer {
+  background: transparent;
+}
+}
+
+@media (max-width: 768px) {
+#appShell .user-row { gap: 10px; }
+}
+
+@media (max-width: 768px) {
+#appShell .user-plan { color: var(--ui-text-muted); }
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-footer .icon-btn {
+  border-radius: var(--ui-radius-control, 8px);
+  color: var(--ui-text-tertiary);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .sidebar-footer .icon-btn:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+}
+
+@media (max-width: 768px) {
+#appShell #navAssistants,
+#appShell #navSites,
+#appShell #navExam,
+#appShell #navSkills {
+  display: none;
+}
+#appShell .sidebar-nav-btn[data-nav="new"] {
+  background: var(--ui-bg-surface);
+  color: var(--foreground);
+  border-radius: var(--ui-radius-row);
+}
+}
+
+@media (max-width: 768px) {
+#appShell .recents-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 36px 24px;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 13.5px;
+  line-height: 20px;
+}
+#appShell .recents-empty-text a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* The search field is its own focus surface: `.sidebar-search:focus-within`
+   already shifts its border, background and glow, so the forced app-wide
+   focus ring would draw a second rectangle inside it. See the focus contract
+   in components/input.css; the rule lives here because the sidebar surface is
+   owned by this file per check-surface-ownership.mjs.
+   The ring lives in a box-shadow now, so that is what has to be cleared.
+   The outline needs no `!important`: the transparent one restore/fixes.css
+   already applies paints nothing either, so the result is the same and the
+   forced-colours fallback there stays in charge of the outline. */
+#appShell#appShell#appShell .sidebar-search input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+}
+@media (max-width: 768px) {
+  /* Drawer: same surface as desktop rail + hairline edge (the border-right
+     rule lived in polish/mobile.css until the pass-2 merge; equal value, so
+     this position keeps its historical cascade slot). */
+  #appShell .sidebar {
+    border-right: 1px solid var(--ui-border-subtle);
+  }
+}
+/* ─── end of pass-2 merge; original polish/mobile-sidebar.css content below ─── */
 @media (max-width: 768px) {
   /* Match the supplied phone drawer's ~65% width while leaving the main
      pane visible. Touch rows retain the shipped 48px density. */
@@ -264,4 +721,9 @@
     .user-plan,
     .tier-badge
   ) { color: var(--ui-sidebar-glyph); }
+
+  /* The phone drawer is narrow (~237px): keep the identity row tight so the
+     name and plan line stay inside it. (Moved here from parity/sidebar.css —
+     the desktop owner must not carry mobile rules.) */
+  #appShell #sidebarUserRow .sidebar-account-static { gap: 6px; padding: 4px 0; }
 }

@@ -1,12 +1,8 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { appMode, webSearchOn } from '../../config/providers.ts';
 import { t } from '../../i18n.ts';
-import { renderRecents as doRenderRecents } from '../../ui/recentsView.ts';
 
-/** Session-start bridges published by the legacy shell. */
-interface SessionBootstrapWindow extends Window {
-  renderRecents?: () => void;
-}
+export { renderRecents } from '../../ui/recentsView.ts';
 
 export function translate(key: string, fallback?: string): string {
   try {
@@ -26,15 +22,4 @@ export function getAppMode(): string {
 
 export function isWebSearchOn(): boolean {
   return webSearchOn;
-}
-
-export function renderRecents(): void {
-  try {
-    const win = window as SessionBootstrapWindow;
-    if (typeof window !== 'undefined' && typeof win.renderRecents === 'function') {
-      win.renderRecents();
-    } else {
-      doRenderRecents();
-    }
-  } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.renderRecents'); }
 }

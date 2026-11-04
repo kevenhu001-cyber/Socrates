@@ -103,7 +103,7 @@ test('collapsing keeps a 52px icon rail with named buttons and reopens from it',
   );
   expect(railIds.length).toBeGreaterThan(0);
   for (const id of railIds) {
-    await expect(page.locator(`#${id}`)).toHaveAttribute('title', /\S+/);
+    await expect(page.locator(`#${id}`)).toHaveAttribute('aria-label', /\S+/);
   }
 
   const toggle = page.locator('#sidebarCloseBtn');

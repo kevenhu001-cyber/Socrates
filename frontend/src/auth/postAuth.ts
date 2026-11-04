@@ -13,11 +13,11 @@ import { clearPerUserClientState, isInAuthGraceWindow } from '../app/lifecycle.t
 import { saveCurrentSession } from '../session/persistence.ts';
 import { fetchWithAuthGraceRetry, restoreRoutedSession } from './postAuth/flow.ts';
 import { migrateLegacyStorage } from './postAuth/migration.ts';
+import { renderRecents } from '../ui/recentsView.ts';
 
 /** Legacy boot hooks still published on the window by main.js. */
 interface PostAuthLegacyWindow extends Window {
   refreshServerSessions?: () => Promise<unknown>;
-  renderRecents?: () => void;
   initialLoad?: () => void;
 }
 
@@ -48,11 +48,10 @@ async function fetchBootstrapData(): Promise<void> {
 }
 
 function refreshAuthenticatedUi(): void {
-  const win = window as PostAuthLegacyWindow;
   publishSidebarChrome();
   try { renderGreeting(); }
   catch (error) { reportSwallow(error, 'auth/postAuth.greeting'); }
-  if (typeof win.renderRecents === 'function') win.renderRecents();
+  renderRecents();
   syncAppModeUI();
   syncSidebarForMode();
 }
@@ -83,7 +82,7 @@ function triggerInitialLoad(): void {
     win.initialLoad();
     return;
   }
-  if (typeof win.renderRecents === 'function') win.renderRecents();
+  renderRecents();
 }
 
 /** Load user-owned data and restore any chat/exam route after authentication. */

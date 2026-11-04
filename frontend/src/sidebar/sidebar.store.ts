@@ -2,29 +2,31 @@ import { create } from 'zustand';
 
 interface SidebarState {
   isOpen: boolean;
+  /** Drawer search-row visibility. The `#sidebar.search-open` class is the
+     DOM projection of this field (see SidebarHeader.tsx). */
+  searchOpen: boolean;
   activePanel: SidebarPanelView;
   recentsFilter: string | null;
   recentsFilterLoaded: boolean;
   recentsVersion: number;
-  /** Phone drawer: the search row is folded away until asked for. */
-  searchOpen: boolean;
 }
 
 export type SidebarPanelView = 'recents' | 'knowledge' | 'mistakes';
 
 export const useSidebarStore = create<SidebarState>(() => ({
   isOpen: true,
+  searchOpen: false,
   activePanel: 'recents',
   recentsFilter: null,
   recentsFilterLoaded: false,
   recentsVersion: 0,
-  searchOpen: false,
 }));
 
 export function setSidebarOpen(isOpen: boolean): void {
   if (useSidebarStore.getState().isOpen === isOpen) return;
   useSidebarStore.setState({ isOpen });
 }
+
 
 export function setSidebarPanelView(activePanel: SidebarPanelView): void {
   if (useSidebarStore.getState().activePanel === activePanel) return;

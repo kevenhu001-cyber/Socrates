@@ -3,22 +3,36 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { setCurrentSessionId, useSessionListSnapshot } from './sessionList.store';
+import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { detailCache } from '../../session/detailCache.ts';
 import { SessionListEmptyState } from './SessionListEmptyState';
 import { SessionTimeline } from './SessionTimeline';
 
-function useMinuteTick(): number {
+/**
+ * Minute heartbeat that keeps the relative time labels ("5m ago") current.
+ * Gated by `enabled` (the sidebar is visible) and skips fires while the tab
+ * is hidden: the list re-rendered every 60s even with the rail collapsed or
+ * the tab in the background. Re-enabling refreshes once so labels are never
+ * stale right after reopening the sidebar.
+ */
+function useMinuteTick(enabled: boolean): number {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick((value) => value + 1), 60000);
+    if (!enabled) return;
+    setTick((value) => value + 1);
+    const id = setInterval(() => {
+      if (document.visibilityState === 'hidden') return;
+      setTick((value) => value + 1);
+    }, 60000);
     return () => clearInterval(id);
-  }, []);
+  }, [enabled]);
   return tick;
 }
 
 function SessionListInner() {
   const { sessions, currentSessionId, searchQuery, filter, fetchFailed } = useSessionListSnapshot();
-  const nowTick = useMinuteTick();
+  const sidebarOpen = useSidebarStore((snapshot) => snapshot.isOpen);
+  const nowTick = useMinuteTick(sidebarOpen);
 
   useEffect(() => {
     if (sessions.length > 0) {

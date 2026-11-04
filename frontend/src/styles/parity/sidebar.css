@@ -133,7 +133,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
   }
   #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover {
-    background: var(--accent);
+    background: var(--ui-fill);
     color: var(--foreground);
   }
   #appShell #newChatBtn svg,
@@ -208,7 +208,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
   }
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within {
-    background: var(--accent);
+    background: var(--ui-fill);
     color: var(--foreground);
   }
   /* Selected is a solid step of the ladder, not the hover wash, so the
@@ -271,19 +271,19 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     min-width: 0;
     height: var(--sidebar-row);
     padding: 0 10px;
-    border: 1px solid var(--border);
+    border: 0;
     border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-surface);
+    background: var(--ui-card);
     transition: background-color var(--ui-duration-hover) ease,
                 border-color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .sidebar-search:hover {
     border-color: var(--ui-border-strong);
-    background: var(--ui-bg-surface);
+    background: var(--ui-card);
   }
   #appShell #sidebar .sidebar-search:focus-within {
     border-color: var(--ui-border-strong);
-    background: var(--ui-bg-surface);
+    background: var(--ui-card);
   }
   #appShell #sidebar .sidebar-search svg {
     flex: 0 0 20px;
@@ -693,11 +693,6 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
 #appShell #sidebar.collapsed #sidebarUserRow { justify-content: center; }
 #appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-static { flex: 0 0 auto; padding: 4px; }
 #appShell #sidebar.collapsed #sidebarUserRow .user-identity { display: none; }
-/* The phone drawer is narrow (~237px): keep the identity row tight so the
-   name and plan line stay inside it. */
-@media (max-width: 768px) {
-  #appShell #sidebarUserRow .sidebar-account-static { gap: 6px; padding: 4px 0; }
-}
 
 #appShell .recent-item input[name="title"] { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-control); background: var(--secondary); color: var(--foreground); font: inherit; padding: 4px; }
 
@@ -774,13 +769,6 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
   #appShell #sidebarCloseBtn { border-radius: var(--ui-round-pill); }
   #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover { background: var(--ui-fill); }
-}
-
-/* Phones: the drawer is the grey sheet; rows keep the same 12 / white-card language. */
-@media (max-width: 768px) {
-  #appShell #sidebar .recent-item { border-radius: var(--ui-round-md); }
-  #appShell #sidebar .recent-item.active,
-  #appShell #sidebar .recent-item[aria-current="true"] { background: var(--ui-card); box-shadow: var(--ui-elevation-raised); }
 }
 
 /* RN-7 — header icon actions are RN Pressables (packages/ui/src/shell).

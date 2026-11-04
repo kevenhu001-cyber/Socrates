@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
+import { isMobileViewport } from '../../sidebar/breakpoints.ts';
+
 const listeners = new Set<() => void>();
 let listening = false;
 
@@ -23,14 +25,15 @@ function subscribe(listener: () => void): () => void {
 }
 
 function getSnapshot(): boolean {
-  return window.innerWidth < 768;
+  return isMobileViewport();
 }
 
 function getServerSnapshot(): boolean {
   return false;
 }
 
-/** Keep responsive React chrome aligned with the shell's 768px breakpoint. */
+/** Keep responsive React chrome aligned with the shell's 768px breakpoint
+    (sidebar/breakpoints.ts is the single encoding). */
 export function useMobileViewport(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

@@ -5,13 +5,11 @@
  */
 
 @media (max-width: 768px) {
-  /* Drawer: same surface as desktop rail + hairline edge. The backdrop is a
-     flat --ui-backdrop dim with no blur: blur is the most expensive effect
-     on low-end phones and runs on every open while the drawer slides in
-     (see P_perf-mobile-backdrop in legacy/15). */
-  #appShell .sidebar {
-    border-right: 1px solid var(--ui-border-subtle);
-  }
+  /* Drawer: hairline edge. The border-right rule moved to
+     polish/mobile-sidebar.css (pass-2 merge) — this file keeps no sidebar
+     rules. The backdrop is a flat --ui-backdrop dim with no blur: blur is
+     the most expensive effect on low-end phones and runs on every open
+     while the drawer slides in (see P_perf-mobile-backdrop in legacy/15). */
 
   /* Top bar icons keep 40px touch targets, quieter color. */
   #appShell .top-bar .toggle-sidebar,

@@ -13,11 +13,6 @@ import type { TagEditorLabels, TagEditorPopoverProps } from '../react/session-ta
 import { t } from '../i18n.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 
-/** Window surfaces this module reads or writes. */
-interface OrganizeWindow extends Window {
-  renderRecents?: () => void;
-}
-
 /** The subset of an event the tag popover consumes. */
 interface TagEditorEvent {
   stopPropagation(): void;
@@ -43,14 +38,8 @@ function _t(key: string, fallback?: string): string {
   return fallback != null ? fallback : key;
 }
 function _renderRecents(): void {
-  try {
-    const win = window as OrganizeWindow;
-    if (typeof win.renderRecents === 'function') {
-      win.renderRecents();
-    } else {
-      renderRecents();
-    }
-  } catch {
+  try { renderRecents(); }
+  catch {
     /* empty-catch: intentional — rendering is best-effort */
   }
 }
@@ -242,6 +231,6 @@ export function cycleActiveProject(): void {
       .catch(function (err) { console.warn('[projects] failed to move session to project:', (err as { message?: string } | null)?.message || err); });
   }
   flushRecentsReconcile();
-  if (typeof (window as OrganizeWindow).renderRecents === 'function') _renderRecents();
+  _renderRecents();
   if (typeof showToast === 'function') showToast(_t('toast.projectSwitched').replace('{name}', next.name));
 }

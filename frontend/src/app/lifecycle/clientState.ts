@@ -26,13 +26,8 @@ function clearExamSaveState() {
 }
 
 function renderUserLists() {
-  try {
-    if (typeof window !== 'undefined' && typeof (window as unknown as { renderRecents?: () => void }).renderRecents === 'function') {
-      (window as unknown as { renderRecents?: () => void }).renderRecents!();
-    } else {
-      renderRecents();
-    }
-  } catch (error) { reportSwallow(error, 'app/lifecycle.clearPerUser.renderRecents'); }
+  try { renderRecents(); }
+  catch (error) { reportSwallow(error, 'app/lifecycle.clearPerUser.renderRecents'); }
 }
 
 /** Clear user-owned caches before a new user can see the application shell. */

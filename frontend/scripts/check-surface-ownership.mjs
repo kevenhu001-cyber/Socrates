@@ -140,6 +140,45 @@ for (const file of walk(STYLES)) {
 const duplicatePairs = [
   ['.tier-badge', 'font-size'],
   ['.recents-time-label', 'font-size'],
+  /*
+   * Sidebar owner agreement (2026-11-04 pass, docs/plans/2026-11-04-sidebar-ui-consistency.md).
+   * parity/sidebar.css and polish/sidebar.css are the two sanctioned desktop
+   * owners, so ~20 selectors are deliberately declared in both files. These
+   * pairs verified value-identical across every live desktop declaration;
+   * registering them turns a silent cascade-order flip into a lint failure.
+   * Computed by scanning all non-frozen sheets with the same lastSimple tail
+   * rule this script uses — pairs whose values already disagreed
+   * (`.sidebar-logo` gap/height, `#sidebarHeader` height/padding, nav
+   * transitions, …) are NOT registered and remain pass-2 consolidation work.
+   */
+  ['.sidebar-logo', 'font-weight'],
+  ['#newChatBtn:hover', 'background'],
+  ['#newChatBtn:hover', 'color'],
+  ['#sidebarCloseBtn:hover', 'background'],
+  ['#sidebarCloseBtn:hover', 'color'],
+  ['.recent-item', 'color'],
+  ['.recent-item:hover', 'background'],
+  ['.recent-item:hover', 'color'],
+  ['.recent-item:focus-within', 'background'],
+  ['.recent-item:focus-within', 'color'],
+  ['.sidebar-search', 'border'],
+  ['.sidebar-search', 'border-radius'],
+  ['.sidebar-search', 'background'],
+  ['.sidebar-search:hover', 'border-color'],
+  ['.sidebar-search:focus-within', 'border-color'],
+  ['.sidebar-search:focus-within', 'background'],
+  ['#sidebarSearch', 'color'],
+  ['#sidebarSearch:focus::placeholder', 'color'],
+  ['#recentsPanel', 'scrollbar-width'],
+  ['.recents-time-label', 'color'],
+  ['.recents-time-label', 'font-weight'],
+  ['.recent-item-text', 'color'],
+  ['.recent-item-text', 'font-size'],
+  ['.recent-item-text', 'line-height'],
+  ['.recent-item-overflow:hover', 'background'],
+  ['.recent-item-overflow:hover', 'color'],
+  ['.user-avatar', 'border-radius'],
+  ['.user-name', 'font-size'],
 ];
 
 /* Last simple selector of a compound: "#appShell .a .b" -> ".b". */

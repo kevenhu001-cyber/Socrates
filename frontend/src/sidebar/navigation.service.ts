@@ -3,6 +3,7 @@ import { activateMainView, getVisibleCoreView } from '../ui/mainViewController.t
 import { getActiveDestination, setActiveDestination } from './navigation.store.ts';
 import { DESTINATIONS, isPageDestination } from './navigation.destinations';
 import { toggleSidebar } from './sidebar.service';
+import { isMobileViewport } from './breakpoints.ts';
 import type { SidebarNavKey } from '../react/sidebar/types';
 
 type NavigationDestination = Exclude<SidebarNavKey, null>;
@@ -17,7 +18,7 @@ let routeListenersInstalled = false;
 let homeReturnView = 'topicSetup';
 
 function closeMobileSidebarAfterNavigation(destination: NavigationTarget): void {
-  if (destination === 'more' || window.innerWidth >= 768) return;
+  if (destination === 'more' || !isMobileViewport()) return;
   const sidebar = document.getElementById('sidebar');
   if (sidebar && !sidebar.classList.contains('collapsed')) toggleSidebar();
 }
