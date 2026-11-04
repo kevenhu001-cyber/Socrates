@@ -31,6 +31,9 @@ type ModalElement = HTMLElement & {
   __onEsc?: (event: KeyboardEvent) => void;
   __handleOpen?: () => void;
   __handleClose?: () => void;
+  /** Stored so a re-install (HMR, future callers) disconnects the previous
+     class observer instead of stacking a second one on the same overlay. */
+  __classObserver?: MutationObserver;
 };
 
 function updateAppShellInert() {
@@ -185,10 +188,14 @@ export function installModalA11y(opts: { overlayId: string; closeFn: () => void;
   }
 
   let prevOpen = !overlay.classList.contains('hidden');
-  new MutationObserver(function () {
+  const modalEl = overlay as ModalElement;
+  modalEl.__classObserver?.disconnect();
+  const classObserver = new MutationObserver(function () {
     const open = !overlay.classList.contains('hidden');
     if (open === prevOpen) return;
     prevOpen = open;
     if (open) handleOpen(); else handleClose();
-  }).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+  });
+  modalEl.__classObserver = classObserver;
+  classObserver.observe(overlay, { attributes: true, attributeFilter: ['class'] });
 }

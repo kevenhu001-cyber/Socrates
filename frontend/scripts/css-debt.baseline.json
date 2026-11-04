@@ -5,16 +5,18 @@
       "hexColor": 32,
       "literalRadius": 2,
       "stackedId": 41,
-      "literalFontSize": 60,
-      "legacyChannel": 0
+      "literalFontSize": 59,
+      "legacyChannel": 0,
+      "shadcnVarReads": 779
     },
     "frozen": {
-      "important": 589,
+      "important": 586,
       "hexColor": 50,
-      "literalRadius": 214,
+      "literalRadius": 210,
       "stackedId": 59,
-      "literalFontSize": 414,
-      "legacyChannel": 969
+      "literalFontSize": 406,
+      "legacyChannel": 928,
+      "shadcnVarReads": 224
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

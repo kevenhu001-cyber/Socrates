@@ -1,6 +1,5 @@
 /* Mount and release React controls for Markdown code-block headers. */
 import { createElement } from 'react';
-import { flushSync } from 'react-dom';
 import { createRootGroup } from '../react/lib/boot/ownedRoot';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -26,8 +25,9 @@ function addCodeBlockActions(header: Element): void {
   void import('../react/render/CodeBlockActions.tsx').then(({ CodeBlockActions }) => {
     if (!host.isConnected || renderRequests.get(host) !== request) return;
     const content = createElement(CodeBlockActions, { codeElement: pre as HTMLElement, language: lang });
-    const root = codeActionRoots.render(host, content);
-    flushSync(() => root.render(content));
+    /* createRootGroup.render() commits the element; a second render() here
+       (the old flushSync dance) mounted every code block twice. */
+    codeActionRoots.render(host, content);
   }).catch((error) => {
     reportSwallow(error, 'render/markdownCodeCopy.ts:addCodeBlockActions');
   });

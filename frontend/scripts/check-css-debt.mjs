@@ -291,6 +291,22 @@ const METRICS = {
    * historical geometry, not something to migrate in this pass.
    */
   legacyChannel: /var\(--(?:text|bg|border|accent|brand|oncolor|surface)-\d+/g,
+  /*
+   * Reads of the shadcn semantic palette (--foreground, --muted-foreground,
+   * --accent, …) in live stylesheets.
+   *
+   * Two token vocabularies are read side by side today: the --ui-* roles and
+   * the shadcn semantic families. They agree value-for-value only because
+   * themes.css aliases both onto the same Geist projection, so either read
+   * renders the chosen colour — but every shadcn read is a second spelling
+   * of a role that already exists, and a future projection change would have
+   * to be mirrored in two vocabularies to stay consistent. The migration
+   * direction is the --ui-* role (e.g. --foreground → --ui-text-primary);
+   * themes.css keeps its reads permanently: it is the sanctioned bridge that
+   * publishes one family in terms of the other. Baseline records the 2026-11-04
+   * starting count (see docs/plans/2026-11-04-sidebar-ui-consistency.md, Pass 3).
+   */
+  shadcnVarReads: /var\(--(?:card-foreground|card|popover-foreground|popover|primary-foreground|secondary-foreground|muted-foreground|accent-foreground|destructive-foreground|background|foreground|primary|secondary|muted|accent|destructive|border|input|ring)(?![\w-])/g,
 };
 
 /* ---------- 1. cascade order ---------- */

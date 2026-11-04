@@ -5,7 +5,7 @@
 import { TurnEvidence } from '../citations/TurnEvidence';
 import { TurnActivitySurface } from './TurnActivitySurface';
 import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildTurnLayout,
   groupOutputCalls,
@@ -191,18 +191,25 @@ function settledProseFor(status: ReturnType<typeof deriveTurnPresentationState>[
 
 export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnProps) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
-  const calls = callsForMessage(message);
+  /* callsForMessage derives purely from the message snapshot: reconcile keeps
+     unchanged rows at a stable identity and snapshots changed rows into fresh
+     frozen objects, so memoizing on the row gives "rebuild only when the row
+     actually changed" instead of on every parent re-render. */
+  const calls = useMemo(() => callsForMessage(message), [message]);
   const storedHtml = typeof html === 'string' ? html : '';
   const isLive = Boolean(live);
   const isSettling = useStreamSettling(isLive);
 
-  /* Tool-call records mutate in place as rows settle; rebuild this pure layout
-     on each published render so states and sentence-safe offsets stay current. */
-  const segments = buildTurnLayout(rawText, calls, {
-    inlineThink: false,
-    deferOpenParagraph: isLive,
-    restoredFromHistory: Boolean(message.restoredFromHistory),
-  });
+  /* Tool-call states ride on the message snapshot (see above); the layout is
+     pure, so it only needs recomputing when the row or its liveness flips. */
+  const segments = useMemo(
+    () => buildTurnLayout(rawText, calls, {
+      inlineThink: false,
+      deferOpenParagraph: isLive,
+      restoredFromHistory: Boolean(message.restoredFromHistory),
+    }),
+    [rawText, calls, isLive, message.restoredFromHistory],
+  );
   const storedProse = storedProseFor(rawText, storedHtml, calls);
   // Keep the renderer and its block cache for the lifetime of a streamed turn.
   // Finishing only changes chrome; it must not repaint prose with another parser.

@@ -1,6 +1,6 @@
-import { getChatRuntimeSnapshot } from '../../ui/chatRuntimeStore';
+import { getChatRuntimeSnapshot } from '../../ui/chatRuntimeStore.ts';
 import type { LegacyChatMessage } from '../types/domain';
-import { entryId } from './messageIdentity';
+import { entryId } from './messageIdentity.ts';
 
 function isRenderable(entry: LegacyChatMessage): boolean {
   if (entry.type === 'streaming') return true;
@@ -11,25 +11,96 @@ function isRenderable(entry: LegacyChatMessage): boolean {
   return Array.isArray(entry.attachments) && entry.attachments.length > 0;
 }
 
-let visibleMessagesCache: ReadonlyArray<LegacyChatMessage> = Object.freeze([]);
-let sourceMessages: ReadonlyArray<LegacyChatMessage> | null = null;
+export interface VisibleMessagesCache {
+  source: ReadonlyArray<LegacyChatMessage>;
+  visible: ReadonlyArray<LegacyChatMessage>;
+  /** ids[i] = entryId of source[i] when renderable, else null. */
+  ids: ReadonlyArray<string | null>;
+  /** counts[i] = number of visible entries among source[0..i]. */
+  counts: ReadonlyArray<number>;
+}
 
-export function getVisibleMessagesSnapshot(): ReadonlyArray<LegacyChatMessage> {
-  const snapshot = getChatRuntimeSnapshot();
-  /* The list/filter result is scoped to the canonical message array. Individual message objects are
-     immutable and keep stable identity when that row did not change. */
-  if (sourceMessages === snapshot.messages) return visibleMessagesCache;
-
+function computeFull(messages: ReadonlyArray<LegacyChatMessage>): VisibleMessagesCache {
   const seen = new Set<string>();
   const next: LegacyChatMessage[] = [];
-  snapshot.messages.forEach((entry, index) => {
-    const id = entryId(entry, `idx-${index}`);
-    if (!isRenderable(entry) || seen.has(id)) return;
+  const ids: (string | null)[] = new Array(messages.length);
+  const counts: number[] = new Array(messages.length);
+  messages.forEach((entry, index) => {
+    const id = isRenderable(entry) ? entryId(entry, `idx-${index}`) : null;
+    ids[index] = id;
+    if (id === null || seen.has(id)) {
+      counts[index] = next.length;
+      return;
+    }
     seen.add(id);
     next.push(entry);
+    counts[index] = next.length;
   });
+  return { source: messages, visible: Object.freeze(next), ids, counts };
+}
 
-  sourceMessages = snapshot.messages;
-  visibleMessagesCache = Object.freeze(next);
-  return visibleMessagesCache;
+/**
+ * Incremental filter + dedupe over the canonical message array.
+ *
+ * reconcileMessageSnapshots reuses the previous message objects for unchanged
+ * rows, so during a stream each commit produces a fresh array whose HEAD is
+ * element-wise identical and only the tail differs. The identity walk finds
+ * that split point; everything before it inherits its ids, renderability and
+ * dedupe outcome verbatim, so the per-commit cost collapses from a full
+ * filter + dedupe + entryId pass (audit R6) to a pointer walk plus O(tail)
+ * real work. Mid-array mutations simply shorten the prefix; pure appends and
+ * element-wise-identical arrays (a reconcile map with no row changed) keep
+ * the previous visible list without rework.
+ */
+export function visibleFromMessages(
+  messages: ReadonlyArray<LegacyChatMessage>,
+  prev: VisibleMessagesCache | null,
+): VisibleMessagesCache {
+  if (!prev) return computeFull(messages);
+
+  const shared = Math.min(prev.source.length, messages.length);
+  let prefix = 0;
+  while (prefix < shared && messages[prefix] === prev.source[prefix]) prefix++;
+
+  if (prefix === messages.length && prefix === prev.source.length) {
+    /* Same rows in the same order behind a new array reference. */
+    return { source: messages, visible: prev.visible, ids: prev.ids, counts: prev.counts };
+  }
+
+  const ids: (string | null)[] = new Array(messages.length);
+  const counts: number[] = new Array(messages.length);
+  const next: LegacyChatMessage[] = [];
+  const seen = new Set<string>();
+  if (prefix > 0) {
+    for (let i = 0; i < prefix; i++) {
+      const id = prev.ids[i] ?? null;
+      ids[i] = id;
+      counts[i] = prev.counts[i];
+      if (id !== null) seen.add(id);
+    }
+    const keep = prev.counts[prefix - 1];
+    for (let i = 0; i < keep; i++) next.push(prev.visible[i]);
+  }
+  for (let i = prefix; i < messages.length; i++) {
+    const entry = messages[i];
+    const id = isRenderable(entry) ? entryId(entry, `idx-${i}`) : null;
+    ids[i] = id;
+    if (id === null || seen.has(id)) {
+      counts[i] = next.length;
+      continue;
+    }
+    seen.add(id);
+    next.push(entry);
+    counts[i] = next.length;
+  }
+  return { source: messages, visible: Object.freeze(next), ids, counts };
+}
+
+let cache: VisibleMessagesCache | null = null;
+
+export function getVisibleMessagesSnapshot(): ReadonlyArray<LegacyChatMessage> {
+  const messages = getChatRuntimeSnapshot().messages;
+  if (cache?.source === messages) return cache.visible;
+  cache = visibleFromMessages(messages, cache);
+  return cache.visible;
 }

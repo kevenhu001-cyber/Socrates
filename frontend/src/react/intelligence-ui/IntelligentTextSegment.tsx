@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 
 import { LiveTextSegment } from '../tool-run/LiveTextSegment';
 import type { ProseRenderer } from '../tool-run/proseRenderer';
@@ -44,7 +44,9 @@ export function IntelligentTextSegment({
   tools,
   readOnly,
 }: IntelligentTextSegmentProps) {
-  const segments = splitIntelligenceUiText(text);
+  /* The split is O(text length); memoizing keeps tool/prose identity churn
+     from re-scanning the whole accumulated segment on every render. */
+  const segments = useMemo(() => splitIntelligenceUiText(text), [text]);
   const hasUi = segments.some((segment) => segment.kind === 'ui');
 
   /* Preserve the exact pre-Intelligent-UI streaming path for ordinary prose.
