@@ -26,18 +26,6 @@
    SVGs stay in the DOM (a11y / future use) and are hidden visually so the
    change is presentation-only and instantly reversible.
    -------------------------------------------------------------------------- */
-@media (max-width: 768px) {
-#appShell .sidebar-nav-btn .nav-kbd {
-  display: none;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn {
-  color: var(--cg-text-secondary);
-}
-}
 
 @media (max-width: 768px) {
 
@@ -134,18 +122,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 
 /* Recents section header + history rows follow the reference's quiet list. */
-@media (max-width: 768px) {
-#appShell .recents-title {
-  color: var(--cg-text-muted);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .recent-item-text {
-  color: var(--cg-text-secondary);
-}
-}
 
 /* --------------------------------------------------------------------------
    2. Top bar — centered segmented 聊天 / 辅导 control.
@@ -153,20 +129,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    from chatgpt-ui.css; this only guarantees the track/segment contrast reads
    in both themes without touching chat/tutor switching behavior.
    -------------------------------------------------------------------------- */
-@media (max-width: 768px) {
-#appShell .top-mode-tabs {
-  background: var(--cg-surface-raised);
-  border-color: transparent;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle.active {
-  background: var(--cg-surface);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
-}
-}
 
 /* --------------------------------------------------------------------------
    3. Home surface — greeting, composer, suggestion rows.
@@ -184,7 +146,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      default wrapping, which is acceptable — the heading still wraps
      cleanly because the container width is fixed. */
   overflow-wrap: break-word;
-  text-wrap: wrap;
   text-wrap: balance;
 }
 }
@@ -315,11 +276,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 body.workspace-active #appShell .main-page {
   width: min(100%, 1100px);
   margin-inline: auto;
-}
-
-#appShell .workspace-page-head h1,
-#appShell .plugin-directory-heading h2 {
-  letter-spacing: -0.01em;
 }
 
 
@@ -454,14 +410,6 @@ body.workspace-active #appShell .main-page {
   body.workspace-active #appShell .main-page:not(#sitesPanel) {
     position: relative;
     left: 0;
-    width: min(768px, calc(100% - 64px)) !important;
-    max-width: 768px !important;
-    margin-inline: auto !important;
-    padding: 30px 0 72px !important;
-  }
-
-  #appShell #libraryPanel .workspace-page-head {
-    margin-bottom: 47px !important;
   }
 
   #appShell #libraryPanel .workspace-page-head p {
@@ -483,15 +431,11 @@ body.workspace-active #appShell .main-page {
 
   #appShell .plugin-directory-head {
     align-items: flex-start;
-    margin-bottom: 40px !important;
   }
 
   #appShell .workspace-page-head h1,
   #appShell .plugin-directory-heading h2 {
     margin: 0;
-    font-weight: var(--ui-font-weight-medium) !important;
-    line-height: 36px !important;
-    letter-spacing: -0.01em !important;
   }
 
   #appShell .workspace-page-head p,
@@ -635,9 +579,6 @@ body.workspace-active #appShell .main-page {
      .chat-input-bar into the canvas colour. Land the fade on the active
      --cg-page so the safe-area strip below the composer matches the page
      in both modes. */
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar {
-    background: linear-gradient(to bottom, transparent, var(--cg-page) 24px) !important;
-  }
 
   /* Mobile header controls: the hardcoded dark-on-light palette only
      works on the black phone canvas. In light mode invert the circle
@@ -736,15 +677,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .projects-directory .workspace-page-head p {
   font-size: 14px;
   line-height: 1.6;
-}
-
-#appShell .project-row .workspace-row-copy strong {
-  font-size: 16px;
-}
-
-#appShell .project-row .workspace-row-copy span {
-  font-size: 14px;
-  line-height: 1.55;
 }
 
 /* --------------------------------------------------------------------------

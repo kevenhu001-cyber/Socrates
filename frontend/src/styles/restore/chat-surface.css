@@ -65,7 +65,6 @@ body,
 @media (max-width: 768px) {
 
 #appShell#appShell .top-mode-tabs .app-mode-toggle.active {
-  background: var(--conversation-control) !important;
   color: var(--conversation-text) !important;
   box-shadow: none !important;
 }
@@ -95,8 +94,6 @@ body,
   position: relative;
   isolation: isolate;
   min-height: calc(100dvh - 56px) !important;
-  padding-top: 0 !important;
-  padding-inline: 24px !important;
   /* Bottom inset stays plain so the canonical hero-lift padding-bottom in
      polish/composer.css wins by specificity, not !important bidding. On
      phones the bottom-band rules (keyboard inset) still pin it anyway. */
@@ -120,7 +117,6 @@ body,
   position: static !important;
   display: block !important;
   max-width: min(100%, 620px);
-  color: var(--conversation-text) !important;
   text-align: center !important;
 }
 }
@@ -309,11 +305,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
 /* Sidebar surface stays one neutral step above the charcoal page. */
 @media (max-width: 768px) {
-[data-mode="dark"] #appShell#appShell .sidebar {
-  background: var(--ui-bg-sidebar) !important;
-}
-}
-@media (max-width: 768px) {
 [data-mode="light"] #appShell#appShell .sidebar {
   background: var(--ui-bg-sidebar) !important;
 }
@@ -388,14 +379,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 [data-mode="light"] {
-  --chat-page: #fff;
-  --chat-surface: #f3f3f3;
-  --chat-control: #e7e7e7;
-  --chat-control-hover: #dcdcdc;
-  --chat-line: rgb(0 0 0 / 11%);
-  --chat-text: #171717;
-  --chat-muted: #747474;
-  --chat-overlay: rgb(0 0 0 / 28%);
   --chat-accent: #3b82f6;
 }
 
@@ -444,32 +427,18 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   max-height: min(60dvh, 460px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 8px;
   border: 1px solid var(--chat-line);
-  border-radius: 22px;
-  background: var(--chat-control);
-  color: var(--chat-text);
-  box-shadow: var(--ui-shadow-popover);
-  animation: chat-config-pop-in 160ms ease both;
 }
 
 .chat-config-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
   width: 100%;
-  min-height: 46px;
-  padding: 10px 12px;
   border-radius: 14px;
-  color: var(--chat-text);
-  font-size: 15px;
   text-align: left;
   transition: background-color 140ms ease;
 }
-
-.chat-config-row:hover,
-.chat-config-row:focus-visible { background: color-mix(in srgb, var(--chat-text) 8%, transparent); }
 
 .chat-config-row > span:first-child {
   display: flex;
@@ -480,35 +449,29 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
 .chat-config-row strong {
   overflow: hidden;
-  font-size: 15px;
   font-weight: var(--ui-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .chat-config-row small {
-  color: var(--chat-muted);
-  font-size: 12px;
   font-weight: var(--ui-font-weight-regular);
 }
 
-.chat-config-row > svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.chat-config-row > svg { flex: 0 0 auto; }
 
 .chat-config-value {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--chat-muted);
 }
 
-.chat-config-value svg { width: 18px; height: 18px; }
-
-.chat-config-divider { height: 1px; margin: 4px 10px; background: var(--chat-line); }
-.chat-config-empty { padding: 20px 14px; color: var(--chat-muted); font-size: 14px; text-align: center; }
+.chat-config-divider { height: 1px; }
+.chat-config-empty { color: var(--chat-muted); text-align: center; }
 
 /* Effort sub-view — 3-stop slider mirroring the reference (blue track,
    stop dots, white thumb). */
-.chat-config-slider { position: relative; padding: 6px 8px 12px; }
+.chat-config-slider { position: relative; }
 
 .chat-config-slider input[type="range"] {
   width: 100%;

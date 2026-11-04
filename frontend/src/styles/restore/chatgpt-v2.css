@@ -36,9 +36,7 @@
   body.workspace-active #appShell #mainInner { width: 100%; max-width: none; }
   body.workspace-active #appShell .main-page {
     box-sizing: border-box;
-    width: min(732px, calc(100% - 64px));
     max-width: 732px;
-    margin-inline: auto;
     padding: 60px 0 72px;
   }
 }
@@ -92,21 +90,7 @@
 
 #appShell .sidebar {
   border-right: 1px solid var(--cgv-border) !important;
-  background: var(--cg-rail) !important;
 }
-}
-
-
-
-@media (max-width: 768px) {
-
-#appShell .sidebar.collapsed ~ .main {
-  padding-left: 0 !important;
-}
-}
-
-#appShell #apiSettingsBtn {
-  display: none !important;
 }
 
 @media (max-width: 768px) {
@@ -132,13 +116,6 @@
 }
 }
 
-@media (max-width: 768px) {
-
-#appShell .top-bar {
-  background: transparent !important;
-}
-}
-
 /* P_topbar-sidebar-toggle — the collapse above hides both side groups at
    every viewport, which removes the sidebar open button on desktop once
    the sidebar is closed. Restore the three-zone rhythm on desktop (the
@@ -148,24 +125,6 @@
 
 #appShell .top-mode-tabs {
   box-sizing: border-box;
-  width: 206px;
-  transform: translateX(10px);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle {
-  border-radius: 999px;
-  color: var(--cgv-text-3);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle.active {
-  color: var(--cgv-text) !important;
-  background: var(--cg-surface-hover) !important;
 }
 }
 
@@ -247,7 +206,6 @@
 
   #appShell .top-mode-tabs {
     width: 174px;
-    transform: translate(-50%, -50%) !important;
   }
 }
 
@@ -325,24 +283,9 @@ html[data-mode="light"] #appShell {
 
 @media (max-width: 768px) {
 
-#appShell .top-bar {
-  background: var(--cg-page) !important;
-}
-}
-
-@media (max-width: 768px) {
-
 #appShell .top-mode-tabs {
   border-color: var(--cg-border-strong) !important;
   background: var(--cg-surface) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle.active {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface-hover) !important;
 }
 }
 

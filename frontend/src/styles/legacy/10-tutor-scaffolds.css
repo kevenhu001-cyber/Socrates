@@ -140,7 +140,6 @@
    The visual box lives on the inner child so the closed state has no padding
    or border left behind. */
 .inline-theorem-proof{margin-top:0;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1))}
-.inline-theorem-proof{margin-top:0;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1))}
 .inline-theorem-proof>.ui-collapse-inner{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0}
 
 /* Key Point — pops out: thicker accent border, soft accent wash. */

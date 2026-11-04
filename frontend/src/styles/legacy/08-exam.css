@@ -219,9 +219,9 @@
 .exam-q-error{color:var(--destructive)}
 
 /* Share modal */
-.share-overlay{position:fixed;inset:0;background:var(--ui-backdrop);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.share-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center}
 .share-overlay.hidden{display:none}
-.share-modal{background:var(--card);color:var(--card-foreground);width:90%;max-width:400px;padding:24px 20px 20px;border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--ui-shadow-popover)}
+.share-modal{background:var(--card);color:var(--card-foreground);width:90%;max-width:400px;padding:24px 20px 20px}
 .share-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .share-title{font-size:var(--ui-font-size-md);font-weight:var(--ui-font-weight-semibold);color:var(--foreground)}
 .share-close{width:var(--ui-control-sm);height:var(--ui-control-sm);display:flex;align-items:center;justify-content:center;border-radius:var(--radius-md);color:var(--muted-foreground);cursor:pointer;transition:color .1s,background .1s}
@@ -229,7 +229,7 @@
 .share-link-area{display:flex;gap:8px;margin-top:12px;align-items:center}
 .share-link-input{flex:1;min-height:var(--ui-control-desktop);padding:0 10px;border-radius:var(--radius-md);border:1px solid var(--input);background:transparent;color:var(--foreground);font-size:var(--ui-font-size-sm);font-family:var(--font-mono);outline:none}
 .share-link-input:focus{border-color:var(--ring);box-shadow:var(--ui-focus-shadow)}
-.share-copy-btn{min-height:var(--ui-control-desktop);padding:0 10px;border:1px solid transparent;border-radius:var(--radius-lg);font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);background:var(--primary);color:var(--primary-foreground);cursor:pointer;transition:background-color .1s;white-space:nowrap}
+.share-copy-btn{min-height:var(--ui-control-desktop);padding:0 10px;border:1px solid transparent;font-size:var(--ui-font-size-sm);font-weight:var(--ui-font-weight-medium);background:var(--primary);color:var(--primary-foreground);cursor:pointer;transition:background-color .1s;white-space:nowrap}
 .share-copy-btn:hover{background:color-mix(in oklab, var(--primary), transparent 20%)}
 .share-copy-btn.copied{background:var(--ui-ink-hover);border-color:var(--ui-ink-hover)}
 .share-revoke{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:var(--ui-font-size-sm);color:var(--destructive);cursor:pointer;transition:color .1s;padding:4px 0}

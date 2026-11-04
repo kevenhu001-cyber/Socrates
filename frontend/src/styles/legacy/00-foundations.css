@@ -63,32 +63,6 @@ html.vt-scoped-swap::view-transition-group(*){animation-duration:.18s;animation-
    tool card (share/history), sources card, skill row, and storage
    row. Every card reads from these tokens so a design tweak lands
    in one place rather than six. */
-:root{
-  --tool-card-bg:hsla(0,0%,100%,.062);
-  --tool-card-bg-hover:hsla(0,0%,100%,.1);
-  --tool-card-bg-sunken:hsla(0,0%,100%,.04);
-  --tool-card-border:hsla(0,0%,100%,.095);
-  --tool-card-border-strong:hsla(0,0%,100%,.15);
-  --tool-card-text:hsl(var(--text-200));
-  --tool-card-text-muted:hsl(var(--text-350,var(--text-400)));
-  --tool-card-text-subtle:hsl(var(--text-500));
-  --tool-card-icon:hsl(var(--text-350,var(--text-300)));
-  --tool-card-icon-hover:hsl(var(--text-100));
-  --tool-card-radius:14px;
-  --tool-card-radius-sm:11px;
-  --tool-card-pad-y:10px;
-  --tool-card-pad-x:13px;
-  --tool-card-title-size:14px;
-  --tool-card-title-weight:var(--ui-font-weight-semibold);
-  --tool-card-desc-size:12.5px;
-  --tool-card-desc-weight:var(--ui-font-weight-regular);
-  --tool-card-meta-size:11px;
-  --tool-card-meta-weight:var(--ui-font-weight-regular);
-  --tool-card-danger:hsl(0,60%,62%);
-  --tool-card-danger-soft:hsla(0,60%,62%,.12);
-  --tool-card-danger-soft-strong:hsla(0,60%,62%,.22);
-  --tool-card-focus:hsla(0,0%,100%,.35)
-}
 
 [data-theme=socrates][data-mode=light]{
   --tool-card-bg:hsla(222,10%,16%,.05);
@@ -124,10 +98,9 @@ html.vt-scoped-swap::view-transition-group(*){animation-duration:.18s;animation-
   --inline-sunken-bg:hsla(222,10%,16%,.04);
   --inline-hover-bg:hsla(222,10%,16%,.06)
 }
-body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));background:hsl(var(--bg-100));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
 /* Native defaults sit below component variants and retained surface owners. */
 @layer base {
-  button,input,textarea{font-family:inherit;font-size:inherit;color:inherit;letter-spacing:inherit}
+  button,input,textarea{font-size:inherit;letter-spacing:inherit}
   button{border:none;background:none;cursor:pointer;outline:none;font-weight:inherit}
   a{color:inherit;text-decoration:none}
 }
@@ -150,7 +123,6 @@ body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1)
 /* P_a11y-visually-hidden — screen-reader-only text. The 1px size and
    clip-path trick keep the element in the accessibility tree without
    taking layout space. Used for icon-only buttons that need a label. */
-.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 /* P_reduced-motion — honour the OS-level "reduce motion" preference.
    Scope: animations, transitions, view transitions. Layout-affecting
    transforms (sidebar drag) are kept so resize still feels responsive.
@@ -165,12 +137,9 @@ body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1)
 /* The thumb comes from a mode-aware token (themes.css): a fixed white alpha
    painted an invisible thumb on every light surface. */
 /* WebKit (Chrome, Edge, Safari) */
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--ui-scrollbar-thumb);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--ui-scrollbar-thumb-hover)}
 /* Firefox — supported since FF 64. WebKit fallback above. */
 @supports (scrollbar-width:thin){*{scrollbar-width:thin;scrollbar-color:var(--ui-scrollbar-thumb) transparent}}
-.app{display:flex;height:100vh;height:100dvh;
+.app{display:flex;height:100dvh;
   /* The dynamic viewport is allowed to follow the browser's native resize.
      ui/keyboard/index.ts adds only the measured overlay inset when a browser
      keeps the layout viewport unchanged. */

@@ -1,6 +1,6 @@
 # 2026-11-04 — 侧边栏统一与 UI 动态渲染一致性
 
-状态：**Pass 1 + Pass 2 + Pass 3（第一批）已落地并通过合并验证（2026-11-04）** · 范围：`frontend/` · 前置分析：2026-11-04 会话（graphify + 三路代码探索，证据均带 file:line）
+状态：**Pass 1 + Pass 2 + Pass 3 全部落地并通过合并验证（2026-11-04）** · 范围：`frontend/` · 前置分析：2026-11-04 会话（graphify + 三路代码探索，证据均带 file:line）
 
 ## Pass 3 落地记录（第一批）
 
@@ -16,10 +16,16 @@
 
 1. ~~**观察器收窄**~~ **✅ 第二批完成**：`composerShape.ts` 改为直接观察静态 composer 壳（`#composerInputWrap` 是 index.html 静态 chrome，壳内 chip 挂载/`.hidden` 切换全覆盖；流式 token 变异不再唤醒它——旧 body 级观察每 token 醒一次、每记录付一次 closest 祖先遍历；无壳时的 body 兜底观察在首次发现壳后自断）；`markdownCodeCopy.ts` 观察范围 body → `#msgList`（`.msg-body`/`.think-content` 只出自 React 消息组件，历史恢复同宿主；body 兜底保留）；`sidebar/nav.ts` 的 body 级子树观察 → 双作用域（模态根 `promptTemplatesReactRoot` + 标签容器 `#pluginWorkspaceTabs`，各自带元素替换重挂逻辑）。`linkFavicons.ts` 已有增量缓冲+rAF，维持现状。验证：DOM 级 3114 节点 × 6 场景 0 差异（stash 舞步隔离 CSS 清扫）+ composer 四规格等 32 项通过；`composer-blur-verify` 的 vision 用例经 stash 对照确认为 HEAD 既有失败。
 2. **合并文件死声明清扫 ✅ 第二批完成**：重建级联清扫工具（单 parse 保证 postcss 节点身份可比——初版双 parse 导致 386 条误报，已修正），对 `polish/mobile-sidebar.css` 全量求值：删除 33 条非胜者声明（14 死 + 19 冗余，含被 restore 层 `!important` 压制的 10 条），717→650 行，复验 0 残留，shadcnVarReads 779→769 顺势收缩。DOM diff 0 差异实证中性。
-3. **冻结 CSS 消化**：`restore/chatgpt-ui.css`（1292 行）为下一批；用同套"旧/新位置双解胜者 + 单 parse 节点身份"方法逐块验证（碰撞检测必须覆盖所有前置层，含 parity 的无条件规则）。
+3. **冻结 CSS 消化**：`restore/chatgpt-ui.css`（1292 行）为下一批；用同套"旧/新位置双解胜者 + 单 parse 节点身份"方法逐块验证（碰撞检测必须覆盖所有前置层，含 parity 的无条件规则）。~~✅ 已完成~~ → **✅ 第三批完成并经第四批修复重做（见积压 7）**。
 4. **移动端字面量换 token**：`polish/mobile-*` 裸 px → 既有阶梯 token（同值替换，reference-ui-visual 钉住）。
 5. **backdrop-filter 29 处合并**（P6.4）。
 6. **R7（审计 R9）历史游标分页**：1000 行冷启动 357ms 长任务的根因解。
+7. ~~**冻结 CSS 消化后续批次**~~ **✅ 第四批完成并整体重做（restore + legacy 全部到不动点）**。三连 bug 与修复过程：
+   - **① 嵌套导入解析错误**：扁平化把 `legacy/index.css` 等嵌套清单的导入一律解析到 styles 根目录，导致 restore/parity/polish 全部落入字母序兜底。chatgpt-ui 批次侥幸无害（字母序打败者同时也是真实序后者，只造成假保留）；本批会真误删，靠反直觉判定抽查揪出。修复：嵌套导入相对导入者目录解析，72 文件正确定位。
+   - **② 空 infos 误判（最严重）**：`partitionsOf.other = []` 使 reduced-motion / forced-colors / **min-width:1200 等其他宽度**上下文的声明 infos 为空数组，`every()` 对空数组为真 → 全部被误判"冗余"删除。**第一版 restore + legacy 消化（两个已提交批次 + 未提交批次）均带此 bug**；DOM diff 在 legacy 批次抓到真实回归（`#mainInner` padding 的 `@media(min-width:1200px)` 胜者被删），恢复方案：`git reset` 回滚两个已提交消化批次 → checkout 恢复全部原始 CSS → 修复工具（'other' 上下文永不作为候选 + 空 infos 一律保留）→ 全部重做。
+   - **③ 恢复过程中服务重启**中断应用循环——已应用文件靠不动点复验识别（0/0），续跑剩余 11 个 legacy 文件。
+   - **最终结果**：22 个文件全部到不动点（复验 0/0），共删 **766** 条非胜者声明（restore 168 + legacy 598），restore 4585→4152、legacy 5969→5432 行；frozen ratchet：important 589→499、legacyChannel 969→808、literalFontSize 414→345、literalRadius 214→178、hexColor 50→44、stackedId 59→55（`--update` 固化）。DOM diff 3114 节点 × 6 场景 **0 差异**；65 项聚焦规格全绿；lint 全链 exit 0。
+8. ~~**legacy/ 层消化**~~ **✅ 已并入第四批完成**（见积压 7）：17 个切片全部到不动点，共删 598 条非胜者声明。
 
 ## Pass 2 落地记录
 

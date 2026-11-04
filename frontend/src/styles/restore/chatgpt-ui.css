@@ -45,15 +45,6 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .sidebar {
-  background: var(--cg-rail) !important;
-  background-image: none !important;
-  box-shadow: none !important;
-}
-}
-
-@media (max-width: 768px) {
-
 #appShell .sidebar::after {
   display: none !important;
 }
@@ -68,23 +59,13 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-header-actions {
-  gap: 2px;
-}
-}
-
-@media (max-width: 768px) {
-
 #appShell .sidebar-header .icon-btn:hover {
   width: 32px;
   height: 32px;
   border-radius: var(--ui-radius-sm);
-  color: var(--cg-text-secondary);
-  background: transparent;
 }
 
 #appShell .sidebar-header .icon-btn {
-  color: var(--cg-text-secondary);
   background: transparent;
 }
 }
@@ -93,46 +74,13 @@ body,
 
 #appShell .sidebar-header .icon-btn:hover {
   color: var(--cg-text);
-  background: var(--cg-surface-hover);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn {
-  color: var(--cg-text-secondary);
 }
 }
 
 @media (max-width: 768px) {
 
 #appShell .sidebar-nav-btn svg {
-  color: currentColor;
   opacity: 0.92;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn:hover,
-#appShell .sidebar-nav-btn:focus-visible {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-  outline: none;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn.active,
-#appShell .sidebar-nav-btn[aria-current="page"] {
-  color: var(--cg-text);
-  background: var(--cg-surface);
-}
-
-#appShell #navNew.sidebar-nav-btn {
-  color: var(--cg-text);
-  background: var(--cg-surface);
 }
 }
 
@@ -145,55 +93,22 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-search {
-  background: var(--cg-surface);
-  background: color-mix(in srgb, var(--cg-surface) 72%, transparent);
-}
-}
-
-@media (max-width: 768px) {
-
 #appShell .sidebar-search:focus-within {
   border-color: var(--cg-border-strong);
   background: var(--cg-surface);
-  box-shadow: 0 0 0 3px var(--cg-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 14%, transparent);
 }
 }
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-search input {
-  color: var(--cg-text);
-  font-size: 13px;
-}
-}
-
-@media (max-width: 768px) {
-
 #appShell .recents-title {
-  color: var(--cg-text-muted);
   text-transform: none;
 }
 }
 
 #appShell .recents-filter-chips {
   padding: 0 6px 6px;
-}
-
-@media (max-width: 768px) {
-
-#appShell .recent-item-text {
-  color: var(--ui-text-primary);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .recent-item.active,
-#appShell .recent-item:hover {
-  background: var(--cg-surface);
-}
 }
 
 @media (max-width: 768px) {
@@ -235,24 +150,7 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .user-plan {
-  color: var(--cg-text-muted);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-footer-actions {
-  gap: 2px;
-}
-}
-
-@media (max-width: 768px) {
-
 #appShell .sidebar-footer-actions > .icon-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--ui-radius-sm);
   color: var(--cg-text-muted);
 }
 }
@@ -267,23 +165,10 @@ body,
 
 /* Top bar and landing */
 
-
-
-@media (max-width: 768px) {
-
-#appShell .sidebar.collapsed ~ .main {
-  padding-left: 0 !important;
-}
-}
-
 @media (max-width: 768px) {
 
 #appShell .top-mode-tabs .app-mode-toggle {
   padding: 7px 20px;
-  border-radius: var(--cg-radius-pill);
-  color: var(--cg-text-muted);
-  font-size: 14px;
-  font-weight: var(--ui-font-weight-semibold);
 }
 }
 
@@ -294,20 +179,10 @@ body,
 }
 }
 
-@media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle.active {
-  color: var(--cg-text);
-  background: var(--cg-surface-raised) !important;
-  box-shadow: none !important;
-}
-}
-
 #appShell .top-bar .toggle-sidebar {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  color: var(--cg-text-secondary);
 }
 
 @media (max-width: 768px) {
@@ -319,11 +194,6 @@ body,
   border-radius: 10px;
   color: var(--cg-text-secondary);
 }
-}
-
-#appShell .top-bar .toggle-sidebar:hover {
-  color: var(--cg-text);
-  background: var(--cg-surface);
 }
 
 @media (max-width: 768px) {
@@ -357,7 +227,6 @@ body,
 
 #appShell .topic-title.greeting {
   max-width: 680px;
-  color: var(--cg-text) !important;
 }
 }
 
@@ -617,11 +486,6 @@ body,
 
 /* Workspace pages */
 
-body.workspace-active #appShell #mainInner {
-  width: min(100%, var(--cg-content-width));
-  max-width: var(--cg-content-width);
-}
-
 body.workspace-active #appShell .main-page {
   box-sizing: border-box;
   overflow-y: auto;
@@ -824,7 +688,6 @@ body.workspace-active #appShell .workspace-row {
 }
 
 body.workspace-active #appShell .workspace-row:hover {
-  background: var(--cg-surface);
   background: color-mix(in srgb, var(--cg-surface) 60%, transparent);
 }
 
@@ -901,13 +764,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
 
 
-  #appShell .main,
-  #appShell .sidebar.collapsed ~ .main {
-    padding-left: 0 !important;
-  }
-
-
-
   #appShell .top-mode-tabs {
     min-width: 166px;
   }
@@ -929,12 +785,6 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 
   /* P_mic-dedup — topic send fills the old mic track's neighbour slot. */
-
-  #composerToolsMenu {
-    width: calc(100vw - 20px) !important;
-    max-height: min(72vh, 580px) !important;
-    border-radius: 20px 20px 0 0 !important;
-  }
 
   .composer-tools-plugin-list,
   .scheduled-recommendations {
@@ -1062,7 +912,6 @@ body.workspace-active #appShell .workspace-row:hover {
 @media (max-width: 768px) {
 
 [data-mode="light"] #appShell .sidebar {
-  background: var(--cg-rail) !important;
   background-image: none !important;
   border-right-color: var(--cg-border) !important;
   box-shadow: none !important;
@@ -1095,8 +944,6 @@ body.workspace-active #appShell #mainInner {
 .plugin-directory-head h2 {
   margin: 0;
   color: var(--cg-text);
-  font-size: 32px;
-  font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -.035em;
   line-height: 1.15;
 }
@@ -1124,7 +971,6 @@ body.workspace-active #appShell #mainInner {
 
 .workspace-search-field:focus-within,
 .plugin-directory-search:focus-within {
-  border-color: var(--cg-text);
   border-color: color-mix(in srgb, var(--cg-text) 36%, transparent);
   /* The bare input inside this field carries no ring of its own (see the
      focus contract in components/input.css), so the FIELD is the indicator.
@@ -1175,7 +1021,7 @@ body.workspace-active #appShell #mainInner {
 }
 
 .workspace-create-button:hover { opacity: .88; }
-.workspace-create-button:focus-visible { outline: 2px solid transparent; outline: 2px solid transparent; outline-offset: 2px; }
+.workspace-create-button:focus-visible { outline: 2px solid transparent; outline-offset: 2px; }
 .workspace-create-button svg { width: 18px; height: 18px; }
 
 .workspace-toolbar {
@@ -1254,7 +1100,7 @@ body.workspace-active #appShell .project-row {
   border-bottom: 1px solid var(--cg-border);
 }
 .project-main { gap: 16px; }
-.project-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--cg-surface-hover); background: color-mix(in srgb, currentColor 13%, transparent); }
+.project-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: color-mix(in srgb, currentColor 13%, transparent); }
 .project-icon svg { width: 24px; height: 24px; }
 .project-row .workspace-row-copy { gap: 5px; }
 .project-row .workspace-row-copy strong { color: var(--cg-text); font-size: 15px; font-weight: var(--ui-font-weight-semibold); }

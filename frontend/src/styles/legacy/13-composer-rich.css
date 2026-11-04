@@ -162,7 +162,7 @@
 
 /* Greeting — Newsreader serif, large, like ChatGPT */
 @media (min-width: 769px){
-.topic-title.greeting{font-family:var(--font-display);font-weight:var(--ui-font-weight-regular);font-size:calc(clamp(2rem, 1.5rem + 2vw, 2.75rem) * var(--app-font-scale, 1));color:hsl(var(--text-100));letter-spacing:-.02em;line-height:1.15;margin:0 0 24px}}
+.topic-title.greeting{font-family:var(--font-display);font-weight:var(--ui-font-weight-regular);font-size:calc(clamp(2rem, 1.5rem + 2vw, 2.75rem) * var(--app-font-scale, 1));color:hsl(var(--text-100));line-height:1.15}}
 
 /* Suggestion chips under the input (removed 2026-07-20 per user request) */
 

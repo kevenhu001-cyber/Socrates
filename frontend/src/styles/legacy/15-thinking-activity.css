@@ -318,7 +318,6 @@ body.composer-tools-open::after{
    surface selectors above being mirrored here. */
 .msg.assistant .msg-body:has(.agent-run-host){
   box-sizing:border-box;
-  color:var(--tool-activity-text);
 }
 .agent-run-host{display:block;margin:2px 0 0}
 .agent-run{
@@ -361,12 +360,9 @@ body.composer-tools-open::after{
 .agent-step-head{
   display:flex;
   align-items:center;
-  gap:9px;
-  min-height:26px;
   padding:1px 0;
   list-style:none;
   cursor:pointer;
-  color:var(--tool-activity-row);
   transition:color .16s ease;
 }
 .agent-step-head::-webkit-details-marker{display:none}
@@ -376,14 +372,12 @@ body.composer-tools-open::after{
 .agent-step.is-flat > .agent-step-head{cursor:default}
 .agent-step-icon{
   display:inline-flex;align-items:center;justify-content:center;
-  flex:0 0 17px;width:17px;height:17px;
+  flex:0 0 17px;
   color:currentColor;opacity:.9;
 }
 .agent-step-icon svg{width:16px;height:16px;stroke-width:1.5}
 .agent-step-label{
   flex:0 0 auto;
-  font-size:13.5px;
-  font-weight:var(--ui-font-weight-medium);
   line-height:1.45;
   white-space:nowrap;
   overflow:hidden;

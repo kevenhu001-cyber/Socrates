@@ -207,7 +207,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-inline-tool-icon{
   display:inline-flex; align-items:center; justify-content:center;
   width:var(--inline-icon-size); height:var(--inline-icon-size); flex:0 0 auto;
-  color:hsl(var(--text-400));
   transition:color var(--crossfade-duration) ease;
 }
 .tool-inline-tool-icon svg{width:var(--inline-icon-glyph);height:var(--inline-icon-glyph);display:block}
