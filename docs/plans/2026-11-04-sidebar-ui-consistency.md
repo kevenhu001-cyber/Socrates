@@ -14,9 +14,9 @@
 
 ### Pass 3 剩余积压（各自独立立项，按优先级）
 
-1. **观察器收窄**（R3 残余）：`composerShape.ts`（attributes 记录的 closest 祖先遍历）、`markdownCodeCopy.ts`（document.body 子树 → 消息容器）、`sidebar/nav.ts`、`linkFavicons.ts`。
-2. **冻结 CSS 消化**：`restore/chatgpt-ui.css`（1292 行）为下一批；用 Pass 2 的"旧/新位置双解胜者"级联校验法逐块验证（注意碰撞检测必须覆盖所有前置层，含 parity 的无条件规则）。
-3. **合并文件死声明清扫**：`polish/mobile-sidebar.css` 内已知的死声明（如被 `#sidebarNav` 特异性压制的 `.sidebar-nav-btn.active` 背景），用同法验证。
+1. ~~**观察器收窄**~~ **✅ 第二批完成**：`composerShape.ts` 改为直接观察静态 composer 壳（`#composerInputWrap` 是 index.html 静态 chrome，壳内 chip 挂载/`.hidden` 切换全覆盖；流式 token 变异不再唤醒它——旧 body 级观察每 token 醒一次、每记录付一次 closest 祖先遍历；无壳时的 body 兜底观察在首次发现壳后自断）；`markdownCodeCopy.ts` 观察范围 body → `#msgList`（`.msg-body`/`.think-content` 只出自 React 消息组件，历史恢复同宿主；body 兜底保留）；`sidebar/nav.ts` 的 body 级子树观察 → 双作用域（模态根 `promptTemplatesReactRoot` + 标签容器 `#pluginWorkspaceTabs`，各自带元素替换重挂逻辑）。`linkFavicons.ts` 已有增量缓冲+rAF，维持现状。验证：DOM 级 3114 节点 × 6 场景 0 差异（stash 舞步隔离 CSS 清扫）+ composer 四规格等 32 项通过；`composer-blur-verify` 的 vision 用例经 stash 对照确认为 HEAD 既有失败。
+2. **合并文件死声明清扫 ✅ 第二批完成**：重建级联清扫工具（单 parse 保证 postcss 节点身份可比——初版双 parse 导致 386 条误报，已修正），对 `polish/mobile-sidebar.css` 全量求值：删除 33 条非胜者声明（14 死 + 19 冗余，含被 restore 层 `!important` 压制的 10 条），717→650 行，复验 0 残留，shadcnVarReads 779→769 顺势收缩。DOM diff 0 差异实证中性。
+3. **冻结 CSS 消化**：`restore/chatgpt-ui.css`（1292 行）为下一批；用同套"旧/新位置双解胜者 + 单 parse 节点身份"方法逐块验证（碰撞检测必须覆盖所有前置层，含 parity 的无条件规则）。
 4. **移动端字面量换 token**：`polish/mobile-*` 裸 px → 既有阶梯 token（同值替换，reference-ui-visual 钉住）。
 5. **backdrop-filter 29 处合并**（P6.4）。
 6. **R7（审计 R9）历史游标分页**：1000 行冷启动 357ms 长任务的根因解。

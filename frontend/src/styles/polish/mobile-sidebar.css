@@ -3,9 +3,7 @@
    Mobile rules relocated from components/sidebar.css then polish/sidebar.css
    in cascade old→new order, so every historical tie keeps its winner. */
 @media (max-width: 768px) {#appShell .sidebar {
-  background: var(--sidebar);
   color: var(--foreground);
-  box-shadow: none;
 }
 }
 
@@ -23,12 +21,6 @@
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn {
-  color: var(--foreground);
-}
-}
-
-@media (max-width: 768px) {
 #appShell .sidebar-nav-btn svg { color: inherit; }
 }
 
@@ -36,11 +28,6 @@
    the merge: parity/sidebar.css:569 carries the badge unconditionally and
    loads after components, so those values never shipped on mobile — the
    parity rule (6px / 2px 6px / 14px) was and is the live mobile winner. */
-
-@media (max-width: 768px) {
-#appShell .sidebar-nav-btn:hover,
-#appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--foreground); }
-}
 
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn.active { font-weight: var(--ui-font-weight-regular); }
@@ -69,26 +56,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-search input { color: var(--foreground); font-size: var(--ui-font-size-sm); }
-}
-
-@media (max-width: 768px) {
-#appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
-}
-
-@media (max-width: 768px) {
-#appShell .recents-title {
-  color: var(--ui-text-muted);
-}
-}
-
-@media (max-width: 768px) {
-#appShell .recent-item {
-  color: var(--foreground);
-}
-}
-
-@media (max-width: 768px) {
 #appShell .recent-item:hover,
 #appShell .recent-item.active { color: var(--foreground); }
 }
@@ -99,10 +66,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     inset: 0 auto 0 0;
     transform: translateX(0);
     transition: transform var(--ui-duration-normal) var(--ui-ease-out), box-shadow var(--ui-duration-normal) ease;
-    box-shadow: 1px 0 0 var(--ui-border-subtle), 4px 0 24px -4px rgb(0 0 0 / 14%), 12px 0 36px -8px rgb(0 0 0 / 10%);
     z-index: var(--ui-z-drawer);
-    background: var(--sidebar);
-    border-right: 1px solid var(--ui-border-subtle);
   }
   [data-mode="dark"] #appShell .sidebar {
     box-shadow: 1px 0 0 var(--ui-border-subtle), 4px 0 28px -4px rgb(0 0 0 / 55%);
@@ -142,12 +106,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .sidebar:not(.search-open) .sidebar-search-row { pointer-events: none; }
   #appShell .sidebar-nav { padding-top: 4px; }
   /* Mobile drawer footer keeps footer action buttons reachable. */
-  #appShell .sidebar-footer-actions > .icon-btn { display: inline-flex; }
 
   /* The reference drawer keeps only the logo glyph in the header and a
      flat recent-session list — no mode bullets, meta rows, tag pills or
      time-group separators on phones. */
-  #appShell .sidebar-logo .cg-sidebar-caret { display: none; }
   #appShell .recents-filter-chips,
   #appShell .recents-time-label { display: none; }
   #appShell .recent-mode-badge { display: none; }
@@ -159,12 +121,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
      a universal rule above (same trigger → menu contract as the reference
      drawer on every width). */
   #appShell .recent-item-actions { opacity: 1; }
-  #appShell .recent-item-overflow {
-    border: 0;
-    background: transparent;
-  }
   #appShell .recent-item-overflow svg { width: 18px; height: 18px; }
-  #appShell .recent-item-overflow:hover { background: var(--accent); color: var(--foreground); }
 }
 
 @media (max-width: 768px) {
@@ -235,7 +192,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 
 @media (max-width: 768px) {
 #appShell .sidebar-search input {
-  font-size: var(--ui-font-size-xs);
   color: var(--foreground);
   background: color-mix(in srgb, var(--foreground) 1%, transparent);
   transform: translateZ(0);
@@ -274,17 +230,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 
 @media (max-width: 768px) {
 #appShell .recents-header-actions { display: inline-flex; align-items: center; gap: 2px; }
-#appShell .recents-head-btn {
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: var(--ui-text-tertiary);
-}
-#appShell .recents-head-btn:hover { background: var(--accent); color: var(--foreground); }
-}
-
-@media (max-width: 768px) {
-#appShell .sidebar-footer-actions > .icon-btn { display: none; }
 }
 
 @media (max-width: 768px) {
@@ -301,7 +246,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 #appShell .recents-title {
   /* Matches parity/sidebar.css: small labels use the secondary step so they
      clear WCAG AA on the light sidebar rail. */
-  color: var(--muted-foreground);
 }
 }
 
@@ -324,20 +268,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 #appShell #sidebar .recent-item {
   border: 0;
 }
-#appShell .recent-item {
-  color: var(--foreground);
-  transition: background-color var(--ui-duration-fast) ease;
-}
 /* Reference drawer titles sit at primary brightness; keep the pinned
    accent intact by scoping the raise to non-pinned rows. */
 #appShell .recent-item:not(.pinned) .recent-item-text {
   color: var(--foreground);
-}
-}
-
-@media (max-width: 768px) {
-#appShell .recent-item.active {
-  box-shadow: none;
 }
 }
 
@@ -451,9 +385,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   /* Drawer: same surface as desktop rail + hairline edge (the border-right
      rule lived in polish/mobile.css until the pass-2 merge; equal value, so
      this position keeps its historical cascade slot). */
-  #appShell .sidebar {
-    border-right: 1px solid var(--ui-border-subtle);
-  }
 }
 /* ─── end of pass-2 merge; original polish/mobile-sidebar.css content below ─── */
 @media (max-width: 768px) {
@@ -584,7 +515,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: var(--ui-radius-pill);
   }
   #appShell .recents-header { display: flex; align-items: center; justify-content: space-between; height: 30px; min-height: 30px; margin-top: 0; padding: 0 4px 0 10px; }
-  #appShell .recents-title { font-size: calc(14px * var(--app-type-scale)); font-weight: var(--ui-font-weight-medium); line-height: 20px; letter-spacing: 0; color: var(--ui-text-muted); }
+  #appShell .recents-title { font-size: calc(14px * var(--app-type-scale)); font-weight: var(--ui-font-weight-medium); line-height: 20px; letter-spacing: 0; }
   /* 32px, not 22px: the drawer row holds two of these side by side, and a
      22px-wide button fell under the WCAG 2.2 SC 2.5.8 24×24 floor for
      pointer targets. 32px matches the session-row overflow button in the

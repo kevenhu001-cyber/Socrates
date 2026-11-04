@@ -78,7 +78,16 @@ export function installCodeBlockCopy(): void {
 
   const start = () => {
     if (!document.body) return;
-    observer.observe(document.body, { childList: true, subtree: true });
+    /* Code headers only ever mount inside the transcript: MessageItem and
+       MessageBody render .msg-body/.think-content under #msgList, and the
+       history/restore passes target the same host. Watching that container
+       instead of the whole document body keeps streamed tokens elsewhere
+       from waking this observer (audit R3) — the old body-wide watch ran a
+       querySelectorAll per added node. The document-wide pass below stays
+       as the one-time initial wire for restored history. The body fallback
+       preserves the old behavior if the host is ever absent. */
+    const host = document.getElementById('msgList');
+    observer.observe(host ?? document.body, { childList: true, subtree: true });
     wireCodeBlockActions(document);
   };
 

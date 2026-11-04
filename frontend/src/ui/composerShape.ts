@@ -90,41 +90,60 @@ export function installComposerShapeMirror() {
       syncComposerShellFlags(document);
     });
   }
-  const observer = new MutationObserver(function (mutations) {
-    for (let i = 0; i < mutations.length; i++) {
-      const m = mutations[i];
-      const t = m.target;
-      if (!(t instanceof Element)) continue;
-      if (t.closest && (t.closest('.composer-shell') || t.classList.contains('composer-shell'))) {
-        schedule();
-        return;
-      }
-      if (m.addedNodes && m.addedNodes.length) {
-        for (let j = 0; j < m.addedNodes.length; j++) {
-          const n = m.addedNodes[j];
-          if (n instanceof Element && n.closest && n.closest('.composer-shell')) {
-            schedule();
-            return;
-          }
-        }
-      }
-    }
+  const observer = new MutationObserver(function () {
+    schedule();
   });
-  try {
-    observer.observe(document.body || document.documentElement, {
+  const observed = new Set<Element>();
+  function observeShell(shell: Element) {
+    if (observed.has(shell)) return;
+    observed.add(shell);
+    observer.observe(shell, {
       childList: true,
       subtree: true,
       attributes: true,
       attributeFilter: ['class'],
     });
-  } catch (_) {
-    reportSwallow(_, 'empty catch: ui/composerShape.ts:116');
-    /* observe failed */
+  }
+  function observeKnownShells(): boolean {
+    let found = false;
+    for (const shell of findComposerShells(document)) {
+      observeShell(shell);
+      found = true;
+    }
+    // Document scope: also cover the singleton by id (fast path, no query).
+    const single = document.getElementById('composerInputWrap');
+    if (single) {
+      observeShell(single);
+      found = true;
+    }
+    return found;
+  }
+  /* The shells are static app chrome (index.html: .composer-shell on
+     #composerInputWrap), so observing them directly covers every chip
+     mount/unmount and .hidden toggle. Streaming mutations elsewhere (the
+     message list) no longer reach this observer at all — the old
+     document-wide watch woke for every streamed token and paid a closest()
+     ancestor walk per record (audit R3). syncShellFlags uses
+     classList.toggle(name, force), which no-ops on a matching class, so the
+     shell's own attribute mutations cannot feed back into a loop.
+     If no shell exists yet (deferred mount), keep a document watch only
+     until the first sync finds one, then drop it. */
+  let bodyWatch: MutationObserver | null = null;
+  if (!observeKnownShells()) {
+    bodyWatch = new MutationObserver(function () {
+      schedule();
+      if (observeKnownShells() && bodyWatch) {
+        bodyWatch.disconnect();
+        bodyWatch = null;
+      }
+    });
+    bodyWatch.observe(document.body || document.documentElement, { childList: true, subtree: true });
   }
   // Initial paint: stamp flags before first frame so no :has fallback flash.
   syncComposerShellFlags(document);
   return function () {
     try { observer.disconnect(); } catch (error) { reportSwallow(error, 'ui/composerShape.ts:109', 'expected'); }
+    if (bodyWatch) bodyWatch.disconnect();
     _installed = false;
   };
 }

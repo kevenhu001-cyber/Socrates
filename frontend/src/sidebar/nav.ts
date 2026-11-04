@@ -187,9 +187,7 @@ function bindPluginWorkspaceTabs() {
     const skillsTab = byId("pluginWorkspaceSkillsTab");
     if (!pluginsTab || !skillsTab) return;
     const skillsOpen = !!document.getElementById("promptTemplatesOverlay");
-    /* P_nav-observer-cheap — the observer below fires for every DOM change
-       anywhere in the document (each streamed token, each history row).
-       Only touch the tabs when the answer actually changed; rewriting the
+    /* Only touch the tabs when the answer actually changed; rewriting the
        same classes/attributes on every frame kept restyling them. */
     if (skillsOpen === lastSkillsOpen) return;
     lastSkillsOpen = skillsOpen;
@@ -212,7 +210,36 @@ function bindPluginWorkspaceTabs() {
     openPromptTemplatesModal();
     requestAnimationFrame(syncSelection);
   });
-  new MutationObserver(syncSelection).observe(document.body, { childList: true, subtree: true });
+  /* The only two signals syncSelection needs are structurally local:
+     the modal root is a direct body child (ensureBodyChild) and the tab
+     buttons are React-owned chrome under #pluginWorkspaceTabs. Watching
+     those two scopes replaces the document-wide subtree observer that used
+     to wake for every streamed token and every history row (audit R3).
+     syncSelection itself still early-returns when nothing changed. */
+  const overlayWatch = new MutationObserver(function () {
+    ensureOverlayWatch();
+    syncSelection();
+  });
+  function ensureOverlayWatch() {
+    const root = document.getElementById("promptTemplatesReactRoot");
+    if (root) overlayWatch.observe(root, { childList: true, subtree: true });
+  }
+  overlayWatch.observe(document.body, { childList: true });
+  ensureOverlayWatch();
+
+  let tabsEl: HTMLElement | null = null;
+  const tabsWatch = new MutationObserver(function () {
+    ensureTabsWatch();
+    syncSelection();
+  });
+  function ensureTabsWatch() {
+    const tabs = byId("pluginWorkspaceTabs");
+    if (tabs && tabs !== tabsEl) {
+      tabsEl = tabs;
+      tabsWatch.observe(tabs, { childList: true, subtree: true });
+    }
+  }
+  ensureTabsWatch();
   syncSelection();
 }
 bindPluginWorkspaceTabs();
