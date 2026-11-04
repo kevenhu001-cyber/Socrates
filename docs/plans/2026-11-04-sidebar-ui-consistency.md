@@ -19,11 +19,7 @@
 3. **冻结 CSS 消化**：`restore/chatgpt-ui.css`（1292 行）为下一批；用同套"旧/新位置双解胜者 + 单 parse 节点身份"方法逐块验证（碰撞检测必须覆盖所有前置层，含 parity 的无条件规则）。~~✅ 已完成~~ → **✅ 第三批完成并经第四批修复重做（见积压 7）**。
 4. ~~**移动端字面量换 token**~~ **✅ 第五批完成**：`polish/mobile-*` 中 38 处控制尺寸字面量（32/36/40/44px 的 width/height）换为同值 token（`--ui-control-sm/desktop/md/touch`），计算等价经 DOM dump 3114 节点 0 差异证实；两处 `line-height` 误换已回退为字面量（行高属字阶不属于控制档）。`reference-ui-visual`（钉住移动端 36/40）通过（1 failed 为 HEAD 既有）。`mobile-directories` 标题的 26px 等非档位字面量保留（属于 literalFontSize 积压，另行消化）。
 5. ~~**backdrop-filter 29 处合并**~~ **✅ 复评：已消解**。清点现状：实际 blur 仅 4 处（research-jobs 10px、detail 4px、viz 4px、transcript 12px），其余全部是刻意的 `none` 性能守卫（P_perf-mobile-backdrop 等）；且经第三、四批消化，现存 27 条声明均为各自 (selector, partition) 键的胜者——原审计"多层互相打架"的前提已不存在。剩余合并属跨层搬移 live 规则的所有权重划（违反冻结层只减不增约定），不再作为清理项执行。
-6. **R7（审计 R9）历史游标分页** —— 设计定稿，实施独立立项（预估 2-3 天）：
-   - **服务端**：`GET /api/sessions/:id/messages` 增加游标参数 `?before=<seq>&limit=N`，返回 `{ messages, nextCursor, hasMore }`；排序键用稳定 seq（服务端需保证消息行有序号）。无参数时保持现行为（全量返回）向后兼容。响应走 `packages/contracts` 类型，兼顾 `apps/socrates`。
-   - **客户端**：`chat/history.ts` + `session/loader.ts` 首屏取 100 条；向上滚动触发 `loadOlder()` 追加。R6 的增量 visibleMessages（追加数组 O(tail)）与 progressive mount 窗口直接为此铺路。
-   - **边界**：直播回合只追加尾部不受影响；离页消息编辑/删除依赖 seq 稳定 + 服务端墓碑语义；find-in-session 仅搜索已加载页（明示取舍）；"跳到最旧"需骨架屏 + 惰性挂载。
-   - **测试**：服务端分页单测（DB-backed）+ 客户端 loader 单测 + 长会话 e2e（历史恢复 357ms 长任务为验收基线）。
+6. **R7（审计 R9）历史游标分页** —— **✅ 阶段 1（服务端）已交付**：`GET /api/sessions/:id/messages?limit=N&before=<ISO>&beforeId=<uuid>`，(created_at, id) 复合游标使同毫秒并列全序化（页间精确划分、不重不漏），limit 钳制 1..200，无参数返回最新尾页，响应 `{ messages（升序、与 GET /:id 同投影）, hasMore, cursor|null }`。11 个服务端用例（尾页默认/游标行走/并列分块/钳制/校验/归属/投影一致性）+ 全量 123 套件对 `socrates_test` 实跑通过。**阶段 2（客户端）待立项**：loader 尾页切换（meta + 尾页两请求，detailCache 缓存形状随之调整）+ 滚动到顶"加载更早"affordance + historyRestore 分页语义——设计约束已记录：LLM 上下文服务端自 DB 重建（messages.ts:219），客户端分页纯属渲染/传输关注点；find-in-session 只搜已加载页为明示取舍。
 7. ~~**冻结 CSS 消化后续批次**~~ **✅ 第四批完成并整体重做（restore + legacy 全部到不动点）**。三连 bug 与修复过程：
    - **① 嵌套导入解析错误**：扁平化把 `legacy/index.css` 等嵌套清单的导入一律解析到 styles 根目录，导致 restore/parity/polish 全部落入字母序兜底。chatgpt-ui 批次侥幸无害（字母序打败者同时也是真实序后者，只造成假保留）；本批会真误删，靠反直觉判定抽查揪出。修复：嵌套导入相对导入者目录解析，72 文件正确定位。
    - **② 空 infos 误判（最严重）**：`partitionsOf.other = []` 使 reduced-motion / forced-colors / **min-width:1200 等其他宽度**上下文的声明 infos 为空数组，`every()` 对空数组为真 → 全部被误判"冗余"删除。**第一版 restore + legacy 消化（两个已提交批次 + 未提交批次）均带此 bug**；DOM diff 在 legacy 批次抓到真实回归（`#mainInner` padding 的 `@media(min-width:1200px)` 胜者被删），恢复方案：`git reset` 回滚两个已提交消化批次 → checkout 恢复全部原始 CSS → 修复工具（'other' 上下文永不作为候选 + 空 infos 一律保留）→ 全部重做。

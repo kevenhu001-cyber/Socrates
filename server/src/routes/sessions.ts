@@ -958,6 +958,30 @@ router.post('/', writeLimiter, async (req, res, next) => {
 });
 
 /* ─── Get session detail ─── */
+const messageDetailColumns = {
+  id: messages.id,
+  sessionId: messages.sessionId,
+  role: messages.role,
+  rawText: messages.rawText,
+  html: messages.html,
+  type: messages.type,
+  sources: messages.sources,
+  parentId: messages.parentId,
+  model: messages.model,
+  tokenCount: messages.tokenCount,
+  clientId: messages.clientId,
+  reasoningContent: messages.reasoningContent,
+  /* P_turn-summary — the model's retrospective, so a reloaded session
+     shows the same Summary sheet the live turn produced. */
+  summary: messages.summary,
+  turnRuntime: messages.turnRuntime,
+  attachments: messages.attachments,
+  toolCalls: messages.toolCalls,
+  agentRunId: messages.agentRunId,
+  editedAt: messages.editedAt,
+  createdAt: messages.createdAt,
+};
+
 router.get('/:id', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
@@ -978,34 +1002,75 @@ router.get('/:id', async (req, res, next) => {
      * consumers are unaffected. Session-level heavy columns (kbNodes,
      * mistakes, teachingPlan, boundariesHistory) ARE consumed by the loader and
      * stay. */
-    const msgs = await db.select({
-      id: messages.id,
-      sessionId: messages.sessionId,
-      role: messages.role,
-      rawText: messages.rawText,
-      html: messages.html,
-      type: messages.type,
-      sources: messages.sources,
-      parentId: messages.parentId,
-      model: messages.model,
-      tokenCount: messages.tokenCount,
-      clientId: messages.clientId,
-      reasoningContent: messages.reasoningContent,
-      /* P_turn-summary — the model's retrospective, so a reloaded session
-         shows the same Summary sheet the live turn produced. */
-      summary: messages.summary,
-      turnRuntime: messages.turnRuntime,
-      attachments: messages.attachments,
-      toolCalls: messages.toolCalls,
-      agentRunId: messages.agentRunId,
-      editedAt: messages.editedAt,
-      createdAt: messages.createdAt,
-    })
+    const msgs = await db.select(messageDetailColumns)
       .from(messages)
       .where(eq(messages.sessionId, session.id))
       .orderBy(messages.createdAt);
 
     return res.json({ ...session, messages: msgs });
+  } catch (err) { next(err); }
+});
+
+/* ─── Session message page (cursor pagination) ───
+ * R7 (audit R9; docs/plans/2026-11-04-sidebar-ui-consistency.md §6) —
+ * GET /:id ships the whole transcript, so a 1000-row session pays the full
+ * payload on every open even though the reader starts at the bottom and the
+ * LLM context is rebuilt server-side from the table. This endpoint returns
+ * one bounded page, newest-last:
+ *
+ *   ?limit=N                     page size, clamped to 1..200, default 100
+ *   ?before=<ISO>&beforeId=<uuid> exclusive upper bound: everything strictly
+ *                                older than the (created_at, id) pair. Omit
+ *                                both for the newest page.
+ *
+ * Ties on created_at are total-ordered by id, matching the (created_at, id)
+ * order the client uses to stitch pages. Response:
+ *   { messages: [...ascending, same projection as GET /:id...],
+ *     hasMore, cursor: { createdAt, id } | null }
+ * `cursor` is the oldest row of the returned page and null once the
+ * transcript is exhausted, so a client walks pages by feeding it back as
+ * before/beforeId. */
+router.get('/:id/messages', async (req, res, next) => {
+  try {
+    if (!isUuid(req.params.id)) throw new NotFound('Session not found');
+    const db = getDb();
+    const [session] = await db.select({ id: sessions.id })
+      .from(sessions)
+      .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
+      .limit(1);
+    if (!session) throw new NotFound('Session not found');
+
+    const limitRaw = parseInt((req.query.limit as string) || '100', 10);
+    const limit = Math.min(Math.max(Number.isFinite(limitRaw) ? limitRaw : 100, 1), 200);
+    const before = typeof req.query.before === 'string' && req.query.before ? req.query.before : null;
+    const beforeId = typeof req.query.beforeId === 'string' && req.query.beforeId ? req.query.beforeId : null;
+    if (Boolean(before) !== Boolean(beforeId)) throw new BadRequest('before and beforeId must be given together');
+    if (before && Number.isNaN(Date.parse(before))) throw new BadRequest('Invalid before timestamp');
+    if (beforeId && !isUuid(beforeId)) throw new BadRequest('Invalid beforeId');
+
+    const conditions = [eq(messages.sessionId, session.id)];
+    if (before && beforeId) {
+      /* Postgres row comparison: lexicographic (created_at, id), so pages
+         partition the transcript exactly even when timestamps collide. */
+      conditions.push(sql`(${messages.createdAt}, ${messages.id}) < (${before}::timestamptz, ${beforeId}::uuid)`);
+    }
+
+    const rows = await db.select(messageDetailColumns)
+      .from(messages)
+      .where(and(...conditions))
+      .orderBy(desc(messages.createdAt), desc(messages.id))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const page = (hasMore ? rows.slice(0, limit) : rows).slice().reverse();
+    const oldest = page.length > 0 ? page[0] : null;
+    return res.json({
+      messages: page,
+      hasMore,
+      cursor: hasMore && oldest
+        ? { createdAt: oldest.createdAt.toISOString(), id: oldest.id }
+        : null,
+    });
   } catch (err) { next(err); }
 });
 

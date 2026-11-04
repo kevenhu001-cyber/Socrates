@@ -159,3 +159,78 @@ test('session purge removes related content and bulk clear preserves archived an
   assert.equal(preserved.length, 2);
   assert.deepEqual((await f.request('/api/sessions', { method: 'DELETE' })).body, { ok: true, deleted: 0 });
 });
+
+/* ─── R7: GET /api/sessions/:id/messages cursor pagination ─── */
+
+test('message page returns the newest tail by default, oldest-last, with a stitching cursor', async () => {
+  const s = await session(f.owner, { title: 'Paged' });
+  const base = Date.UTC(2026, 0, 1, 12, 0, 0);
+  const rows = [];
+  for (let i = 0; i < 5; i++) {
+    rows.push(await message(s, { rawText: 'm' + i, content: 'm' + i, createdAt: new Date(base + i * 1000) }));
+  }
+  assert.equal((await f.request(`/api/sessions/${s.id}/messages`, { as: f.other })).status, 404);
+  assert.equal((await f.request('/api/sessions/not-a-uuid/messages')).status, 404);
+
+  const page1 = await f.request(`/api/sessions/${s.id}/messages?limit=3`);
+  assert.equal(page1.status, 200);
+  assert.deepEqual(page1.body.messages.map((m) => m.rawText), ['m2', 'm3', 'm4']);
+  assert.equal(page1.body.hasMore, true);
+  assert.equal(page1.body.cursor.createdAt, new Date(base + 2000).toISOString());
+  assert.equal(page1.body.cursor.id, rows[2].id);
+  /* Shape parity with GET /:id: same projection (no `content` column). */
+  assert.equal(page1.body.messages[0].id, rows[2].id);
+  assert.equal('content' in page1.body.messages[0], false);
+
+  const page2 = await f.request(`/api/sessions/${s.id}/messages?limit=3&before=${encodeURIComponent(page1.body.cursor.createdAt)}&beforeId=${page1.body.cursor.id}`);
+  assert.equal(page2.status, 200);
+  assert.deepEqual(page2.body.messages.map((m) => m.rawText), ['m0', 'm1']);
+  assert.equal(page2.body.hasMore, false);
+  assert.equal(page2.body.cursor, null);
+});
+
+test('message page total-orders created_at ties by id so pages partition exactly', async () => {
+  const s = await session(f.owner, { title: 'Ties' });
+  const stamp = new Date(Date.UTC(2026, 0, 1, 12, 0, 0));
+  /* Four rows sharing one timestamp: page boundaries must never skip or
+     duplicate a tie-mate (the created_at-only cursor would). */
+  const tieRows = [];
+  for (let i = 0; i < 4; i++) {
+    tieRows.push(await message(s, { rawText: 't' + i, content: 't' + i, createdAt: stamp }));
+  }
+  const collected = [];
+  let cursor = null;
+  for (let guard = 0; guard < 10; guard++) {
+    const url = cursor
+      ? `/api/sessions/${s.id}/messages?limit=2&before=${encodeURIComponent(cursor.createdAt)}&beforeId=${cursor.id}`
+      : `/api/sessions/${s.id}/messages?limit=2`;
+    const page = await f.request(url);
+    assert.equal(page.status, 200);
+    collected.push(...page.body.messages.map((m) => m.rawText));
+    if (!page.body.hasMore) break;
+    cursor = page.body.cursor;
+  }
+  /* Newest-first walk collects ids descending within the tie; the set must
+     partition exactly. */
+  assert.deepEqual(collected.slice().sort(), ['t0', 't1', 't2', 't3']);
+  assert.equal(new Set(collected).size, 4, 'no tie-mate skipped or duplicated');
+});
+
+test('message page clamps limit and validates cursor params', async () => {
+  const s = await session(f.owner, { title: 'Clamp' });
+  for (let i = 0; i < 3; i++) await message(s, { rawText: 'c' + i, content: 'c' + i, createdAt: new Date(Date.UTC(2026, 0, 1, 12, 0, 0) + i * 1000) });
+  const clamped = await f.request(`/api/sessions/${s.id}/messages?limit=1000`);
+  assert.equal(clamped.status, 200);
+  assert.equal(clamped.body.messages.length, 3);
+  assert.equal((await f.request(`/api/sessions/${s.id}/messages?before=${encodeURIComponent('2026-01-01T00:00:00Z')}`)).status, 400);
+  assert.equal((await f.request(`/api/sessions/${s.id}/messages?beforeId=${f.owner.id}`)).status, 400);
+  assert.equal((await f.request(`/api/sessions/${s.id}/messages?before=not-a-date&beforeId=${f.owner.id}`)).status, 400);
+  assert.equal((await f.request(`/api/sessions/${s.id}/messages?before=${encodeURIComponent('2026-01-01T00:00:00Z')}&beforeId=not-a-uuid`)).status, 400);
+  /* A syntactically valid uuid that references no row is fine: the cursor is
+     only compared, never joined — the page is simply empty. */
+  const empty = await f.request(`/api/sessions/${s.id}/messages?limit=1&before=${encodeURIComponent('2020-01-01T00:00:00Z')}&beforeId=${f.owner.id}`);
+  assert.equal(empty.status, 200);
+  assert.deepEqual(empty.body.messages, []);
+  assert.equal(empty.body.hasMore, false);
+  assert.equal(empty.body.cursor, null);
+});
