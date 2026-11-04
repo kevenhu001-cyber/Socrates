@@ -260,7 +260,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 @media (max-width: 768px) {
 
 /* The row carries the generic .btn class, whose base is `display:
-   inline-flex; justify-content: center; min-width: 40px` — on the drawer
+   inline-flex; justify-content: center; min-width: var(--ui-control-md)` — on the drawer
    that shrink-wraps every session row to its title, leaves the ···
    floating mid-row, and adds a ~6px inline line-box gap under each row.
    Re-pin it to a full-width block-level flex row: title on the left, ···
@@ -418,10 +418,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     position: relative;
     display: grid;
     place-items: center;
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: var(--ui-control-md);
+    min-width: var(--ui-control-md);
+    height: var(--ui-control-md);
+    min-height: var(--ui-control-md);
     padding: 0;
     border: 0;
     border-radius: var(--ui-radius-control);
@@ -523,8 +523,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recents-head-btn {
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
     padding: 0;
     border: 0;
     border-radius: var(--ui-radius-control);
@@ -569,9 +569,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recent-item-overflow {
     display: grid;
     place-items: center;
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
+    width: var(--ui-control-sm);
+    min-width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
     padding: 0;
     margin-inline-start: 4px;
     border: 0;
@@ -619,8 +619,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell #sidebarUserRow .user-name { font-size: var(--ui-font-size-md); line-height: 22px; font-weight: var(--ui-font-weight-regular); }
   #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: var(--ui-font-size-sm); line-height: 18px; color: var(--ui-text-muted); }
   #appShell .sidebar-account-menu { width: min(242px, calc(var(--ui-sidebar-mobile) - 12px)); padding: 12px; }
-  #appShell .sidebar-account-menu :is(button, a) { height: 40px; min-height: 40px; font-size: var(--ui-font-size-sm); }
-  #appShell .sidebar-account-menu .account-menu-identity { height: 44px; gap: 8px; }
+  #appShell .sidebar-account-menu :is(button, a) { height: var(--ui-control-md); min-height: var(--ui-control-md); font-size: var(--ui-font-size-sm); }
+  #appShell .sidebar-account-menu .account-menu-identity { height: var(--ui-control-touch); gap: 8px; }
   #appShell .sidebar-account-menu .user-avatar { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; font-size: 10px; border-radius: 50%; background: var(--ui-avatar-bg); color: var(--primary-foreground); }
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
   #appShell .sidebar-account-menu .user-name { font-size: 15px; font-weight: var(--ui-font-weight-regular); }

@@ -106,7 +106,7 @@
      The 32px box, radius and ghost hover come from the primitive's
      --ui-* utilities (src/react/message-list/ToolButton.tsx); only the
      invisible tap extension and the phone glyph rung live here. */
-  #appShell .msg-toolbar { gap: 4px; height: 32px; }
+  #appShell .msg-toolbar { gap: 4px; height: var(--ui-control-sm); }
   #appShell .msg-toolbar-btn::before {
     content: "";
     position: absolute;
@@ -243,8 +243,8 @@
 /* Mobile toolbar density retained from transcript compatibility rules. */
 @media (max-width: 768px) {
 #appShell .msg-toolbar {
-  height: 32px;
-  min-height: 32px;
+  height: var(--ui-control-sm);
+  min-height: var(--ui-control-sm);
   display: flex;
   align-items: center;
   overflow-x: auto;

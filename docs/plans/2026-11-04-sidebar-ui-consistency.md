@@ -17,9 +17,13 @@
 1. ~~**观察器收窄**~~ **✅ 第二批完成**：`composerShape.ts` 改为直接观察静态 composer 壳（`#composerInputWrap` 是 index.html 静态 chrome，壳内 chip 挂载/`.hidden` 切换全覆盖；流式 token 变异不再唤醒它——旧 body 级观察每 token 醒一次、每记录付一次 closest 祖先遍历；无壳时的 body 兜底观察在首次发现壳后自断）；`markdownCodeCopy.ts` 观察范围 body → `#msgList`（`.msg-body`/`.think-content` 只出自 React 消息组件，历史恢复同宿主；body 兜底保留）；`sidebar/nav.ts` 的 body 级子树观察 → 双作用域（模态根 `promptTemplatesReactRoot` + 标签容器 `#pluginWorkspaceTabs`，各自带元素替换重挂逻辑）。`linkFavicons.ts` 已有增量缓冲+rAF，维持现状。验证：DOM 级 3114 节点 × 6 场景 0 差异（stash 舞步隔离 CSS 清扫）+ composer 四规格等 32 项通过；`composer-blur-verify` 的 vision 用例经 stash 对照确认为 HEAD 既有失败。
 2. **合并文件死声明清扫 ✅ 第二批完成**：重建级联清扫工具（单 parse 保证 postcss 节点身份可比——初版双 parse 导致 386 条误报，已修正），对 `polish/mobile-sidebar.css` 全量求值：删除 33 条非胜者声明（14 死 + 19 冗余，含被 restore 层 `!important` 压制的 10 条），717→650 行，复验 0 残留，shadcnVarReads 779→769 顺势收缩。DOM diff 0 差异实证中性。
 3. **冻结 CSS 消化**：`restore/chatgpt-ui.css`（1292 行）为下一批；用同套"旧/新位置双解胜者 + 单 parse 节点身份"方法逐块验证（碰撞检测必须覆盖所有前置层，含 parity 的无条件规则）。~~✅ 已完成~~ → **✅ 第三批完成并经第四批修复重做（见积压 7）**。
-4. **移动端字面量换 token**：`polish/mobile-*` 裸 px → 既有阶梯 token（同值替换，reference-ui-visual 钉住）。
-5. **backdrop-filter 29 处合并**（P6.4）。
-6. **R7（审计 R9）历史游标分页**：1000 行冷启动 357ms 长任务的根因解。
+4. ~~**移动端字面量换 token**~~ **✅ 第五批完成**：`polish/mobile-*` 中 38 处控制尺寸字面量（32/36/40/44px 的 width/height）换为同值 token（`--ui-control-sm/desktop/md/touch`），计算等价经 DOM dump 3114 节点 0 差异证实；两处 `line-height` 误换已回退为字面量（行高属字阶不属于控制档）。`reference-ui-visual`（钉住移动端 36/40）通过（1 failed 为 HEAD 既有）。`mobile-directories` 标题的 26px 等非档位字面量保留（属于 literalFontSize 积压，另行消化）。
+5. ~~**backdrop-filter 29 处合并**~~ **✅ 复评：已消解**。清点现状：实际 blur 仅 4 处（research-jobs 10px、detail 4px、viz 4px、transcript 12px），其余全部是刻意的 `none` 性能守卫（P_perf-mobile-backdrop 等）；且经第三、四批消化，现存 27 条声明均为各自 (selector, partition) 键的胜者——原审计"多层互相打架"的前提已不存在。剩余合并属跨层搬移 live 规则的所有权重划（违反冻结层只减不增约定），不再作为清理项执行。
+6. **R7（审计 R9）历史游标分页** —— 设计定稿，实施独立立项（预估 2-3 天）：
+   - **服务端**：`GET /api/sessions/:id/messages` 增加游标参数 `?before=<seq>&limit=N`，返回 `{ messages, nextCursor, hasMore }`；排序键用稳定 seq（服务端需保证消息行有序号）。无参数时保持现行为（全量返回）向后兼容。响应走 `packages/contracts` 类型，兼顾 `apps/socrates`。
+   - **客户端**：`chat/history.ts` + `session/loader.ts` 首屏取 100 条；向上滚动触发 `loadOlder()` 追加。R6 的增量 visibleMessages（追加数组 O(tail)）与 progressive mount 窗口直接为此铺路。
+   - **边界**：直播回合只追加尾部不受影响；离页消息编辑/删除依赖 seq 稳定 + 服务端墓碑语义；find-in-session 仅搜索已加载页（明示取舍）；"跳到最旧"需骨架屏 + 惰性挂载。
+   - **测试**：服务端分页单测（DB-backed）+ 客户端 loader 单测 + 长会话 e2e（历史恢复 357ms 长任务为验收基线）。
 7. ~~**冻结 CSS 消化后续批次**~~ **✅ 第四批完成并整体重做（restore + legacy 全部到不动点）**。三连 bug 与修复过程：
    - **① 嵌套导入解析错误**：扁平化把 `legacy/index.css` 等嵌套清单的导入一律解析到 styles 根目录，导致 restore/parity/polish 全部落入字母序兜底。chatgpt-ui 批次侥幸无害（字母序打败者同时也是真实序后者，只造成假保留）；本批会真误删，靠反直觉判定抽查揪出。修复：嵌套导入相对导入者目录解析，72 文件正确定位。
    - **② 空 infos 误判（最严重）**：`partitionsOf.other = []` 使 reduced-motion / forced-colors / **min-width:1200 等其他宽度**上下文的声明 infos 为空数组，`every()` 对空数组为真 → 全部被误判"冗余"删除。**第一版 restore + legacy 消化（两个已提交批次 + 未提交批次）均带此 bug**；DOM diff 在 legacy 批次抓到真实回归（`#mainInner` padding 的 `@media(min-width:1200px)` 胜者被删），恢复方案：`git reset` 回滚两个已提交消化批次 → checkout 恢复全部原始 CSS → 修复工具（'other' 上下文永不作为候选 + 空 infos 一律保留）→ 全部重做。

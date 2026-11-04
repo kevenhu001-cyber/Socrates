@@ -11,10 +11,10 @@
   }
   #appShell .top-bar-left, #appShell .top-bar-right { gap: 8px; }
   #appShell #sidebarOpenBtn {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: var(--ui-control-md);
+    min-width: var(--ui-control-md);
+    height: var(--ui-control-md);
+    min-height: var(--ui-control-md);
     border: 0;
     background: transparent;
     box-shadow: none;
