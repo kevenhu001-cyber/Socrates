@@ -201,12 +201,15 @@ export function WorkbenchDrawer(): React.ReactElement | null {
 
   const handleAskAboutArtifact = () => {
     const prompt = i18n('workbench.askPrompt', 'About “{title}”: ').replace('{title}', title);
+    const reference = i18n('workbench.artifactReference', '[Current artifact: {id}, version {version}]')
+      .replace('{id}', artifact.id)
+      .replace('{version}', String(artifact.version || 1));
     const draft = getComposerMarkdown('chat');
     const separator = draft.trim() ? (/\n\s*$/.test(draft) ? '\n' : '\n\n') : '';
     /* Insert at the existing selection rather than replacing the user's
        unsent draft. The controller also keeps the saved draft if the editor
        is between surfaces or temporarily unavailable. */
-    insertComposerText('chat', `${separator}${prompt}`);
+    insertComposerText('chat', `${separator}${prompt}\n${reference}`);
     focusComposer('chat', 'end');
   };
 

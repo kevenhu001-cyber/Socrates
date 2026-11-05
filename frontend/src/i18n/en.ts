@@ -427,6 +427,7 @@ export const en = {
     "workbench.viewModes":"Workbench view modes",
     "workbench.live":"Live workbench",
     "workbench.askPrompt":"About “{title}”: ",
+    "workbench.artifactReference":"[Current artifact: {id}, version {version}]",
     "workbench.codeTitle":"Code",
     "workbench.codeTitleLanguage":"{language} code",
     "workbench.chartTitle":"Visualization",

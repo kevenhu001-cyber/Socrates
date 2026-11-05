@@ -408,6 +408,7 @@ export const zh = {
     "workbench.viewModes":"工作台视图模式",
     "workbench.live":"实时工作台",
     "workbench.askPrompt":"关于“{title}”：",
+    "workbench.artifactReference":"[当前产物：{id}，版本 {version}]",
     "workbench.codeTitle":"代码实现",
     "workbench.codeTitleLanguage":"{language} 代码",
     "workbench.chartTitle":"数据可视化",
