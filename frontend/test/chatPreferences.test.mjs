@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://app.example.test/' });
 globalThis.window = dom.window;
+globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
 const preferences = await import('../src/config/chatPreferences.ts');

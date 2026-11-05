@@ -403,7 +403,8 @@ function onComposerReady(){
   try { autoWire(); }
   catch (error) { reportSwallow(error, 'attachments/render.ts:composerready'); }
 }
-if(typeof window !== "undefined" && typeof window.addEventListener === "function"){
+if(typeof window !== "undefined" && typeof window.addEventListener === "function"
+  && typeof document !== "undefined" && typeof document.addEventListener === "function"){
   window.addEventListener("DOMContentLoaded", dcl);
   document.addEventListener("socrates:composerready", onComposerReady);
   /* If the script runs after DOMContentLoaded (rare — Vite HMR,

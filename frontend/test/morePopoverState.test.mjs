@@ -1,23 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { useMorePopoverStore } from '../src/sidebar/morePopover.store.ts';
 
-const { morePopoverState, publishMorePopoverState } = await import('../src/ui/morePopoverState.ts');
-
-test('More popover publisher shares open state and notifies React subscribers', () => {
-  morePopoverState.__resetForTests();
+test('More popover owner shares open state and notifies React subscribers', () => {
+  useMorePopoverStore.getState().setOpen(false);
   let notifications = 0;
-  const unsubscribe = morePopoverState.subscribe(() => { notifications += 1; });
-
-  publishMorePopoverState(true);
-  morePopoverState.flush();
-  assert.equal(morePopoverState.getSnapshot().isOpen, true);
-  assert.equal(notifications, 1);
-
-  publishMorePopoverState(false);
-  morePopoverState.flush();
-  assert.equal(morePopoverState.getSnapshot().isOpen, false);
-  assert.equal(notifications, 2);
-
-  unsubscribe();
-  morePopoverState.__resetForTests();
+  const unsubscribe = useMorePopoverStore.subscribe(() => { notifications += 1; });
+  try {
+    useMorePopoverStore.getState().setOpen(true);
+    assert.equal(useMorePopoverStore.getState().isOpen, true);
+    assert.equal(notifications, 1);
+    useMorePopoverStore.getState().toggle();
+    assert.equal(useMorePopoverStore.getState().isOpen, false);
+    assert.equal(notifications, 2);
+  } finally {
+    unsubscribe();
+    useMorePopoverStore.getState().setOpen(false);
+  }
 });

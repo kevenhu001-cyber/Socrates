@@ -25,14 +25,13 @@ import {
   buildMessageContent,
 } from '../src/attachments.ts';
 import { buildUserContentParts } from '../src/chat/history.ts';
+import { getProviderConfigSnapshot, publishProviderConfig } from '../src/config/providerConfig.store.ts';
 
 async function withProvider(provider, fn) {
-  const prev = globalThis.window;
-  globalThis.window = provider === undefined
-    ? undefined
-    : { getActiveProvider: () => provider };
+  const previous = getProviderConfigSnapshot();
+  publishProviderConfig({ providers: provider ? [{ id: 'test', ...provider }] : [], activeId: provider ? 'test' : null });
   try { return await fn(); }
-  finally { globalThis.window = prev; }
+  finally { publishProviderConfig(previous); }
 }
 
 const FILE = {

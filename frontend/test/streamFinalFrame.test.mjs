@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { installTestProvider } from './providerFixture.mjs';
+test.beforeEach(installTestProvider);
 import assert from 'node:assert/strict';
 
 /* P_final_frame_flush regression — an upstream that closes the SSE

@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { stateStore } from '../src/state/store.ts';
 
 function makeHarness({ away = false, turnHold = false, turnSettling = false, retry = false } = {}) {
+  const previousAway = stateStore.read('_userScrolledAway');
+  stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: away });
   const frames = [];
   const observers = [];
   const scrollListeners = new Set();
@@ -51,6 +54,7 @@ function makeHarness({ away = false, turnHold = false, turnSettling = false, ret
   globalThis.window = { stateStore: { read(key) { return key === '_userScrolledAway' && away; } } };
 
   function restore() {
+    stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: previousAway });
     for (const key of Object.keys(previous)) {
       if (previous[key] === undefined) delete globalThis[key];
       else globalThis[key] = previous[key];

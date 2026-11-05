@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { installTestProvider } from './providerFixture.mjs';
+test.beforeEach(installTestProvider);
 import { callAPIStream } from '../src/chat/stream.ts';
 import { turnState } from '../src/chat/turnState.ts';
 

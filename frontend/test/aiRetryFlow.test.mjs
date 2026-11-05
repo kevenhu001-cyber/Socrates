@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { installTestProvider } from './providerFixture.mjs';
+test.beforeEach(installTestProvider);
 
 const encoder = new TextEncoder();
 
@@ -85,7 +87,8 @@ test('HTTP and SSE cooldowns reach the error UI without a second request', async
     await runStream();
     assert.equal(env.calls(), 1);
     const { stateStore } = await import('../src/state/store.ts');
-    assert.match(stateStore.read('lastCallError'), /31s/);
+    // Cooldown copy follows the active locale (English or Chinese).
+    assert.match(stateStore.read('lastCallError'), /31\s*(?:s|秒)/);
   }
 });
 

@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { installTestProvider } from './providerFixture.mjs';
+test.beforeEach(installTestProvider);
 import assert from 'node:assert/strict';
 
 /* Regression tests for the inline-<think> scanner in chat/stream.js.
