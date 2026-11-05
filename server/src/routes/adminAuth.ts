@@ -27,6 +27,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
+import { rateLimitIpKey } from '../lib/rateLimitKey.js';
 import {
   verifyAdminPassword,
   adminPasswordConfigured,
@@ -51,7 +52,7 @@ const ADMIN_COOKIE = 'socrates_admin_session';
 const adminLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => `admin-login:${req.ip}`,
+  keyGenerator: (req) => `admin-login:${rateLimitIpKey(req)}`,
   standardHeaders: true,
   legacyHeaders: false,
   message: { code: 'TOO_MANY_REQUESTS', message: 'Too many admin login attempts; try again later.' },

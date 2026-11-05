@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { rateLimitIpKey } from '../lib/rateLimitKey.js';
 import type { Request, Response } from 'express';
 
 /**
@@ -98,7 +99,7 @@ export const authLimiter = rateLimit({
      between attempts per account, but multiple IPs attacking the same
      account all hit the same bucket. Falls back to IP-only for
      endpoints that don't carry an email (e.g. logout). */
-  keyGenerator: (req) => combineKeys(emailKey(req), `ip:${req.ip}`) || `ip:${req.ip}`,
+  keyGenerator: (req) => combineKeys(emailKey(req), `ip:${rateLimitIpKey(req)}`)!,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many auth attempts; try again later.'),
@@ -116,7 +117,7 @@ export const authLimiter = rateLimit({
 export const codeLoginLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => combineKeys(emailKey(req), `ip:${req.ip}`) || `ip:${req.ip}`,
+  keyGenerator: (req) => combineKeys(emailKey(req), `ip:${rateLimitIpKey(req)}`)!,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many code attempts; try again later.'),
@@ -135,7 +136,7 @@ export const codeLoginLimiter = rateLimit({
 export const resetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
-  keyGenerator: (req) => combineKeys(emailKey(req), `ip:${req.ip}`) || `ip:${req.ip}`,
+  keyGenerator: (req) => combineKeys(emailKey(req), `ip:${rateLimitIpKey(req)}`)!,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many reset attempts; try again later.'),
@@ -148,7 +149,7 @@ export const chatLimiter = rateLimit({
      used as the absolute hard ceiling for unknown tiers / fallback. */
   max: CHAT_BASE_LIMIT * 8,           // 1920/h absolute ceiling (Euclid)
   limit: (req) => chatLimitForTier(req.user && req.user.tier),
-  keyGenerator: (req) => req.userId || req.ip!,
+  keyGenerator: (req) => req.userId || rateLimitIpKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Chat rate limit exceeded.'),
@@ -164,7 +165,7 @@ export const tutorChatLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: TUTOR_BASE_LIMIT * 8,          // 4800/h absolute ceiling (Euclid)
   limit: (req) => tutorLimitForTier(req.user && req.user.tier),
-  keyGenerator: (req) => `tutor:${req.userId || req.ip}`,
+  keyGenerator: (req) => `tutor:${req.userId || rateLimitIpKey(req)}`,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Tutor rate limit exceeded.'),
@@ -206,7 +207,7 @@ export function pickChatLimiterFor(req: Request) {
 export const searchLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
-  keyGenerator: (req) => req.userId || req.ip!,
+  keyGenerator: (req) => req.userId || rateLimitIpKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Search rate limit exceeded.'),
@@ -218,7 +219,7 @@ export const searchLimiter = rateLimit({
 export const connectorAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  keyGenerator: (req) => req.userId || req.ip!,
+  keyGenerator: (req) => req.userId || rateLimitIpKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many connection attempts; try again later.'),
@@ -230,7 +231,7 @@ export const fetchLimiter = rateLimit({
   /* /api/fetch-batch requires auth, so we key on userId when available
      (fall back to IP for the off-chance an unauthenticated request reaches
      the limiter before requireAuth rejects it). */
-  keyGenerator: (req) => req.userId || req.ip!,
+  keyGenerator: (req) => req.userId || rateLimitIpKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Fetch rate limit exceeded.'),
@@ -239,7 +240,7 @@ export const fetchLimiter = rateLimit({
 export const writeLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
-  keyGenerator: (req) => req.userId || req.ip!,
+  keyGenerator: (req) => req.userId || rateLimitIpKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Write rate limit exceeded.'),
@@ -252,7 +253,7 @@ export const writeLimiter = rateLimit({
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
-  keyGenerator: (req) => req.userId || req.ip!,
+  keyGenerator: (req) => req.userId || rateLimitIpKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Upload rate limit exceeded.'),
@@ -269,7 +270,7 @@ export const uploadLimiter = rateLimit({
 export const visionLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 60,
-  keyGenerator: (req) => req.userId || req.ip!,
+  keyGenerator: (req) => req.userId || rateLimitIpKey(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Vision description rate limit exceeded.'),
@@ -282,7 +283,7 @@ export const visionLimiter = rateLimit({
 export const clientErrorLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
-  keyGenerator: (req) => `ip:${req.ip}`,
+  keyGenerator: (req) => `ip:${rateLimitIpKey(req)}`,
   standardHeaders: false,
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many error reports.'),
@@ -298,7 +299,7 @@ export const clientErrorLimiter = rateLimit({
 export const apiDefaultLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 600,
-  keyGenerator: (req) => `ip:${req.ip}`,
+  keyGenerator: (req) => `ip:${rateLimitIpKey(req)}`,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'API rate limit exceeded.'),
@@ -312,7 +313,7 @@ export const apiDefaultLimiter = rateLimit({
 export const webhookLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
-  keyGenerator: (req) => `ip:${req.ip}`,
+  keyGenerator: (req) => `ip:${rateLimitIpKey(req)}`,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Webhook rate limit exceeded.'),
@@ -325,7 +326,7 @@ export const webhookLimiter = rateLimit({
 export const oauthRegisterLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
-  keyGenerator: (req) => `ip:${req.ip}`,
+  keyGenerator: (req) => `ip:${rateLimitIpKey(req)}`,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many client registrations.'),
@@ -347,7 +348,7 @@ export const oauthRegisterLimiter = rateLimit({
 export const oauthTokenLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
-  keyGenerator: (req) => `ip:${req.ip}`,
+  keyGenerator: (req) => `ip:${rateLimitIpKey(req)}`,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many token requests; try again later.'),
@@ -356,7 +357,7 @@ export const oauthTokenLimiter = rateLimit({
 export const oauthRevokeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
-  keyGenerator: (req) => `ip:${req.ip}`,
+  keyGenerator: (req) => `ip:${rateLimitIpKey(req)}`,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many revocation requests; try again later.'),

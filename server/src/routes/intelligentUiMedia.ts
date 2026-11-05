@@ -1,5 +1,6 @@
 import { Router, type RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
+import { rateLimitIpKey } from '../lib/rateLimitKey.js';
 import { requireAuth } from '../middleware/auth.js';
 import * as media from '../services/intelligentUiMedia.js';
 import { ApiError } from '../lib/errors.js';
@@ -7,8 +8,8 @@ import { ApiError } from '../lib/errors.js';
 export function createIntelligentUiMediaRouter(authenticate: RequestHandler = requireAuth, services = media) {
   const router = Router();
   router.use(authenticate);
-  router.use(rateLimit({ windowMs: 60_000, max: 360, standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => req.userId || req.ip || 'anonymous' }));
-  const search = rateLimit({ windowMs: 60_000, max: 40, standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => req.userId || req.ip || 'anonymous' });
+  router.use(rateLimit({ windowMs: 60_000, max: 360, standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => req.userId || rateLimitIpKey(req) }));
+  const search = rateLimit({ windowMs: 60_000, max: 40, standardHeaders: true, legacyHeaders: false, keyGenerator: (req) => req.userId || rateLimitIpKey(req) });
   const handle = (action: RequestHandler): RequestHandler => async (req, res, next) => {
     try { await action(req, res, next); }
     catch (error) {
