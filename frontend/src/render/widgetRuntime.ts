@@ -3,7 +3,7 @@
  * widgets.ts so the behaviour stays unit-testable without a renderer. */
 import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { formatAnswerKey, parseAnswerKey, type ParsedQuiz, type ParsedPractice } from '@socrates/ui/learn-model';
+import { evaluatePracticeAnswer, formatAnswerKey, parseAnswerKey, type ParsedQuiz, type ParsedPractice } from '@socrates/ui/learn-model';
 
 export interface WidgetRuntime {
   formatMsg: typeof import('./markdown.ts')['formatMsg'];
@@ -102,14 +102,16 @@ export function handleQuizPick(picked: PickedQuizOption, parsed: QuizMountData):
 export type PracticeFeedbackState = '' | 'bad' | 'recorded' | 'ok';
 export interface PracticeFeedback { state: PracticeFeedbackState; text: string; rich?: string }
 
+/** @deprecated Use the shared tri-state evaluator; normalization alone cannot grade math safely. */
 export function normalizePracticeAnswer(value: string) {
   return value.toLowerCase().replace(/[\s.,;:!?()[\]'"]+/g, '').trim();
 }
 
 /**
- * Practice submission: empty answers are refused locally; otherwise the
- * answer goes to the tutor once, and a declared key self-grades it
- * (attempts reset on a match, mistake recorded on a miss).
+ * Practice submission: empty answers are refused locally and every non-empty
+ * answer goes to the tutor. Only numbers and simple assignments are self-
+ * graded; unsupported expression forms are left unverified and never become
+ * local mistakes just because their notation differs from the answer key.
  */
 export function submitPracticeAnswer(parsed: PracticeMountData, answer: string): PracticeFeedback {
   const { t, submitChatMessage, stateStore, recordMistake } = runtime;
@@ -118,16 +120,18 @@ export function submitPracticeAnswer(parsed: PracticeMountData, answer: string):
   submitChatMessage?.(t('tutor.practicePrefix') + submitted, { origin: 'practice' });
   const correct = parsed.correct || '';
   if (!correct) return { state: 'recorded', text: t('tutor.practiceSent') };
-  const isCorrect = normalizePracticeAnswer(submitted) === normalizePracticeAnswer(correct);
-  if (isCorrect) {
+  const assessment = evaluatePracticeAnswer(submitted, correct);
+  if (assessment === 'correct') {
     stateStore.dispatch?.({ type: 'state/set', key: 'practiceAttempts', value: 0 });
-  } else {
-    recordMistake?.({ type: 'practice', q: parsed.problem, options: [], correct, userAnswer: submitted, judgedAnswer: correct, practiceSlotId: parsed.slotId || null });
+    return { state: 'ok', text: t('tutor.practiceSelfCorrect') };
   }
-  return {
-    state: isCorrect ? 'ok' : 'bad',
-    text: isCorrect ? t('tutor.practiceSelfCorrect') : `${t('tutor.practiceSelfWrong')} ${correct}`,
-  };
+  if (assessment === 'incorrect') {
+    recordMistake?.({ type: 'practice', q: parsed.problem, options: [], correct, userAnswer: submitted, judgedAnswer: correct, practiceSlotId: parsed.slotId || null });
+    return { state: 'bad', text: `${t('tutor.practiceSelfWrong')} ${correct}` };
+  }
+  /* An unsupported algebraic form is not proof of a wrong answer. It has
+     already been sent to the tutor for a contextual review. */
+  return { state: 'recorded', text: t('tutor.practiceSent') };
 }
 
 /** Reveal the declared answer: shown as markdown, nothing is sent or recorded. */

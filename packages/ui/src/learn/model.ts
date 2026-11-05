@@ -14,6 +14,7 @@
  * them directly, and the host owns every side effect (grading, reporting).
  */
 import { decodeEntities, stripTags } from '../scaffolds.ts';
+export { evaluatePracticeAnswer, type PracticeAnswerAssessment } from './practiceAnswer.ts';
 
 export const SCAFFOLD_KINDS = [
   'quiz', 'flashcard', 'practice', 'example', 'step',

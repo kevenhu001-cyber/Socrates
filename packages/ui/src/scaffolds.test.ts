@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { parsePracticeInner, parseQuizInner, practiceAnswerMatches, splitTutorScaffolds } from './scaffolds.ts';
+import { evaluatePracticeAnswer } from './learn/practiceAnswer.ts';
 
 test('quiz inner parses question, options and the declared answer', () => {
   const quiz = parseQuizInner('<q>What is 2+2?</q><o letter="A">3</o><o letter="B">4</o><correct>B</correct>')!;
@@ -20,9 +21,17 @@ test('practice inner keeps markdown fields and defaults the title', () => {
   assert.equal(parsePracticeInner('<hint>only a hint</hint>'), null);
 });
 
-test('self-check normalization ignores case, spacing and punctuation', () => {
-  assert.equal(practiceAnswerMatches(' X = 2. ', 'x=2'), true);
+test('practice self-check accepts numeric equivalents and only rejects comparable mismatches', () => {
+  assert.equal(evaluatePracticeAnswer(' X = 2. ', 'x=2'), 'correct');
+  assert.equal(evaluatePracticeAnswer('1/2', '0.5'), 'correct');
+  assert.equal(evaluatePracticeAnswer('50%', '1/2'), 'correct');
+  assert.equal(evaluatePracticeAnswer('5', 'x=5'), 'correct');
+  assert.equal(evaluatePracticeAnswer('1,5', '15'), 'unverified');
+  assert.equal(evaluatePracticeAnswer('x=3', 'x=2'), 'incorrect');
+  assert.equal(evaluatePracticeAnswer('41', '42'), 'incorrect');
+  assert.equal(evaluatePracticeAnswer('x² = 4', 'x = 2'), 'unverified');
   assert.equal(practiceAnswerMatches('x=3', 'x=2'), false);
+  assert.equal(practiceAnswerMatches('1/2', '0.5'), true);
 });
 
 test('first quiz and practice become widgets; extras degrade to prose', () => {

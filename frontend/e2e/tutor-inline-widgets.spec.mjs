@@ -81,3 +81,40 @@ for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light'
     await page.screenshot({ path: `test-results/warning-cleanup-2/${encodeURIComponent(width)}-${encodeURIComponent(mode)}-tutor.png` });
   });
 }
+
+test('an unsupported algebraic form is sent for tutor review, not locally marked wrong', async ({ page }) => {
+  const streams = [];
+  page.on('request', (request) => {
+    if (/\/chat\/stream$/.test(new URL(request.url()).pathname)) streams.push(request.url());
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.addInitScript(() => localStorage.setItem('socrates-theme', 'light'));
+  await mockAuthedApp(page, { lang: 'zh' });
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await route.fulfill({ contentType: 'text/event-stream', body: streamBody('我们再检查方程的解集。') });
+  });
+  await gotoAndSettle(page);
+  await waitForAppShell(page);
+  await page.locator('#topModeTutor').click();
+  await page.evaluate(() => {
+    const message = {
+      clientId: 'ambiguous-practice-answer', role: 'assistant', type: 'assistant', _streamSettled: true,
+      rawText: '<practice correct="x=2"><problem>方程 $x^2=4$ 的解集是什么？</problem></practice>',
+    };
+    window.stateStore.dispatch({ type: 'state/batch', patch: {
+      phase: 'chat', currentSessionId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      teachingStage: 'exercise', currentNode: 0, kbNodes: [{ name: 'Quadratic equations', status: 'fuzzy' }],
+      messages: [message], mistakes: [],
+    } });
+    window.__testActivateMainView('chatView');
+    document.body.dataset.conversationActive = 'true';
+  });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'practice-unverified-fixture' });
+  const practice = page.locator('.msg.assistant .sc-host[data-scaffold="practice"]');
+  await practice.locator('textarea').fill('x^2=4');
+  await practice.getByTestId('practice-submit').click();
+  await expect(practice.getByTestId('practice-feedback')).toHaveAttribute('data-state', 'recorded');
+  await expect(practice.getByTestId('practice-feedback')).toContainText('已发送，等待 AI 点评。');
+  await expect.poll(() => streams.length).toBe(1);
+  expect(await page.evaluate(() => window.stateStore.read('mistakes'))).toEqual([]);
+});

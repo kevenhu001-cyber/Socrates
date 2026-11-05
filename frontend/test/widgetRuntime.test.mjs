@@ -168,6 +168,29 @@ test('correct practice answer is normalized, sent once, and clears attempts', ()
   assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 0 }]);
 });
 
+test('equivalent fraction and decimal answers self-check as correct', () => {
+  const submitted = [], dispatches = [];
+  configureWidgetRuntime({ submitChatMessage: (...args) => submitted.push(args), stateStore: teachingStore('exercise', 3, dispatches) });
+  const feedback = submitPracticeAnswer(PRACTICE('0.5'), '1/2');
+  assert.deepEqual(feedback, { state: 'ok', text: 'tutor.practiceSelfCorrect' });
+  assert.deepEqual(submitted, [['My answer: 1/2', { origin: 'practice' }]]);
+  assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 0 }]);
+});
+
+test('unsupported algebra is sent for review rather than recorded as a mistake', () => {
+  const submitted = [], mistakes = [], dispatches = [];
+  configureWidgetRuntime({
+    submitChatMessage: (...args) => submitted.push(args),
+    recordMistake: (entry) => mistakes.push(entry),
+    stateStore: teachingStore('exercise', 2, dispatches),
+  });
+  const feedback = submitPracticeAnswer(PRACTICE('x=2'), 'x^2=4');
+  assert.deepEqual(feedback, { state: 'recorded', text: 'tutor.practiceSent' });
+  assert.deepEqual(submitted, [['My answer: x^2=4', { origin: 'practice' }]]);
+  assert.deepEqual(mistakes, []);
+  assert.deepEqual(dispatches, []);
+});
+
 test('wrong practice answer records the mounted slot', () => {
   const mistakes = [];
   configureWidgetRuntime({ recordMistake: (entry) => mistakes.push(entry) });

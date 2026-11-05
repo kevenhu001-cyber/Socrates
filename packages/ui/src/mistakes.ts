@@ -90,9 +90,9 @@ export function quizMistakeFor(pick: { q: string; options: BookMistakeOption[]; 
   return createMistake({ type: 'quiz', q: pick.q, options: pick.options, correct: pick.correct, userAnswer: pick.picked, quizSlotId: pick.slotId || null }, ctx);
 }
 
-/** Self-checked wrong practice attempt → a row (baseline
- * `mountPracticeWidget`: only when `correct` is declared and the check
- * fails; undeclared answers are never judged). */
+/** Reliably self-checked wrong practice attempt → a row. Unverified
+ * algebraic forms (`isRight: null`) are sent to the tutor but not recorded as
+ * mistakes merely because their formatting differs from the key. */
 export function practiceMistakeFor(attempt: { problem: string; answer: string; correct: string | null; isRight: boolean | null }, ctx: RecordMistakeContext = {}): BookMistake | null {
   if (!attempt.correct || attempt.isRight !== false) return null;
   return createMistake({ type: 'practice', q: attempt.problem, options: [], correct: attempt.correct, userAnswer: attempt.answer, judgedAnswer: attempt.correct }, ctx);

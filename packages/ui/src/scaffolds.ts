@@ -1,3 +1,5 @@
+import { evaluatePracticeAnswer } from './learn/practiceAnswer.ts';
+
 /* scaffolds — DOM-free parser for the tutor's interactive scaffold blocks
  * (`<quiz>` / `<practice>`), ported from the web baseline's
  * `render/widgetParsers.ts` + the replacement passes in
@@ -109,10 +111,11 @@ export function parsePracticeInner(inner: string, correct?: string | null): Pars
   };
 }
 
-/** Baseline self-check comparison: lowercase, drop whitespace + punctuation. */
+/** Compatibility boolean API; ambiguous comparisons are not self-certified. */
 export function practiceAnswerMatches(answer: string, correct: string): boolean {
   const normalize = (value: string) => String(value).toLowerCase().replace(/[\s.,;:!?()[\]'"]+/g, '').trim();
-  return normalize(answer) === normalize(correct);
+  const hasContent = normalize(answer).length > 0 && normalize(correct).length > 0;
+  return hasContent && evaluatePracticeAnswer(answer, correct) === 'correct';
 }
 
 interface Block {
