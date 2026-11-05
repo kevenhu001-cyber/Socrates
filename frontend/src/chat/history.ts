@@ -1,5 +1,6 @@
 import { loadLocalMemory } from '../storage/localMemory.ts';
 import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments.ts';
+import { stripHtmlTags } from '../util/stripHtml.ts';
 
 type HistoryRole = 'system' | 'user' | 'assistant';
 type ContentPart =
@@ -18,6 +19,7 @@ interface StoredAttachment {
 interface StoredMessage {
   role?: string;
   rawText?: unknown;
+  editedText?: unknown;
   content?: unknown;
   attachments?: unknown;
   reasoningContent?: unknown;
@@ -164,26 +166,59 @@ function cleanTurnText(value: unknown): string{
   return String(value||"").replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
 }
 
-function historyMessageFromStore(message: StoredMessage | null | undefined): HistoryEntry | null{
-  if(!message)return null;
-  const attachments=message.role==="user"&&Array.isArray(message.attachments)&&message.attachments.length
-    ?message.attachments as Array<StoredAttachment | null | undefined>
-    :[];
-  if(!message.rawText&&!attachments.length)return null;
+function canvasEditedText(html: string): string {
+  const structured = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<(?:br|hr)\b[^>]*\/?\s*>/gi, '\n')
+    .replace(/<\/(?:p|div|li|h[1-6]|pre|blockquote|tr|table)\s*>/gi, '\n');
+  return stripHtmlTags(structured)
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
-  let text=cleanTurnText(message.rawText);
+function historyTextOf(message: StoredMessage): string {
+  const hasEditedContent = message.role === 'assistant' && typeof message.editedText === 'string';
+  const source = hasEditedContent
+    ? `[User-edited artifact content]\n${canvasEditedText(message.editedText as string)}`
+    : message.rawText;
+  let text = cleanTurnText(source);
   /* Reasoning can also be embedded inline in older assistant snapshots.
      Its canonical value stays in reasoningContent below. */
-  if(message.role==="assistant"||message.role==="system"){
-    text=text.replace(/<think>[\s\S]*?<\/think>/g,"").replace(/<\/?think>/g,"").trim();
+  if (message.role === 'assistant' || message.role === 'system') {
+    text = text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<\/?think>/g, '').trim();
   }
-  if(!text&&!attachments.length)return null;
+  return text;
+}
 
-  const content=attachments.length
-    ?partsForStoredAttachments(text,attachments,{truncate:true})||truncateHistoryText(text,true)
-    :truncateHistoryText(text,true);
-  const output: HistoryEntry={role:message.role==="user"?"user":"assistant",content};
-  if(message.reasoningContent)output.reasoning_content=message.reasoningContent;
+function historyAttachmentsOf(message: StoredMessage): Array<StoredAttachment | null | undefined> {
+  if (message.role !== 'user' || !Array.isArray(message.attachments) || !message.attachments.length) return [];
+  return message.attachments as Array<StoredAttachment | null | undefined>;
+}
+
+function historyContentOf(text: string, attachments: Array<StoredAttachment | null | undefined>): string | ContentPart[] {
+  if (!attachments.length) return truncateHistoryText(text, true);
+  return partsForStoredAttachments(text, attachments, { truncate: true }) || truncateHistoryText(text, true);
+}
+
+function historyMessageFromStore(message: StoredMessage | null | undefined): HistoryEntry | null {
+  if (!message) return null;
+  const attachments = historyAttachmentsOf(message);
+  const text = historyTextOf(message);
+  if (!text && !attachments.length) return null;
+
+  const output: HistoryEntry = {
+    role: message.role === 'user' ? 'user' : 'assistant',
+    content: historyContentOf(text, attachments),
+  };
+  if (message.reasoningContent) output.reasoning_content = message.reasoningContent;
   return output;
 }
 

@@ -25,6 +25,29 @@ test('history uses in-memory messages, removes transient thinking, and preserves
   }
 });
 
+test('history prefers the currently edited Canvas version over its original answer', () => {
+  const previousWindow = globalThis.window;
+  const messages = [
+    { role: 'user', rawText: 'Revise this note.' },
+    {
+      role: 'assistant',
+      rawText: 'Original content that should no longer stand in for the edited artifact.',
+      editedText: '<h1>Edited title</h1><p>New copy &amp; revised.</p><p>Second paragraph.</p>',
+    },
+  ];
+  globalThis.window = { stateStore: { read: (key) => key === 'messages' ? messages : null } };
+  try {
+    assert.deepEqual(extractHistory(), [
+      { role: 'user', content: 'Revise this note.' },
+      { role: 'assistant', content: '[User-edited artifact content]\nEdited title\nNew copy & revised.\nSecond paragraph.' }
+    ]);
+    assert.doesNotMatch(String(extractHistory()[1].content), /Original content/);
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  }
+});
+
 test('long in-memory history summarizes overflow and keeps the newest 60 messages', () => {
   const previousWindow = globalThis.window;
   const messages = Array.from({ length: 62 }, (_, index) => ({
