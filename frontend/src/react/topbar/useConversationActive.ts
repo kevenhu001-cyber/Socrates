@@ -1,6 +1,5 @@
-import { useEffect, useLayoutEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { useKbStore, useSessionStore } from '../../store/index.ts';
-import { reportSwallow } from '../../util/reportSwallow.ts';
 
 /** Derive conversation chrome directly from the app's typed domain stores. */
 export function useConversationActive(): boolean {
@@ -12,12 +11,6 @@ export function useConversationActive(): boolean {
 
   useLayoutEffect(() => {
     document.body.setAttribute('data-conversation-active', String(active));
-  }, [active]);
-
-  useEffect(() => {
-    void import('../../tutor/socraticMastery.ts')
-      .then(({ syncSocraticMasteryUI }) => syncSocraticMasteryUI())
-      .catch((error) => reportSwallow(error, 'react/topbar.syncSocraticMastery'));
   }, [active]);
 
   return active;

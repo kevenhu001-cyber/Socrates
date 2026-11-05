@@ -1,6 +1,6 @@
 /**
  * RN-5 knowledge map panel: header + snapshot action, the pill graph, the
- * mastery-grouped list and the snapshot history. Picking a node opens its
+ * confidence-grouped list and the snapshot history. Picking a node opens its
  * detail in a right-hand drawer on wide screens and a bottom sheet on phones.
  * Commands (go, confidence, note, snapshot) belong to the host.
  */
@@ -160,7 +160,7 @@ function KnowledgeList({ nodes, strings, onSelect }: { nodes: readonly Knowledge
           </View>
           {section.entries.map(({ node, index, name }) => {
             const parts: string[] = [];
-            if (section.status === 'internalized') parts.push(fill(strings.verifiedTag, { n: node.verifiedCount || node.questions || 0 }));
+            if (section.status === 'internalized') parts.push(fill(strings.recordedTag, { n: node.verifiedCount || node.questions || 0 }));
             else if (node.questions) parts.push(fill(strings.questions, { n: node.questions }));
             return (
               <View key={`${index}-${name}`}>

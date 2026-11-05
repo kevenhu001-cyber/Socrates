@@ -128,7 +128,7 @@ function finiteOr(value: number | undefined): number {
 
 export interface ThinkingHeader {
   phase: 'live' | 'done';
-  /** 「第 N 步」 while live, 「N 步」 when done. Never below 1 while live. */
+  /** Public-summary count supplied by the host; not a verified reasoning-step count. */
   steps: number;
   /** Whole seconds, at least 1, or null when the duration is unknown. */
   durationSec: number | null;
@@ -142,15 +142,15 @@ export function thinkingHeaderOf(input: { live: boolean; stepCount: number; dura
 }
 
 export interface ThinkingLabels {
-  /** e.g. 「思考中 · 第 {n} 步」 */
+  /** Observed live status, e.g. "Processing…"; no inferred step count. */
   live: string;
-  /** e.g. 「思考 {sec}s · {n} 步」 */
+  /** Neutral activity copy with an optional duration. */
   done: string;
-  /** e.g. 「思考 {sec}s」 — done, no steps to count */
+  /** Neutral activity copy when no public summary is available. */
   doneNoSteps: string;
-  /** e.g. 「{n} 步」 — done, duration unknown */
+  /** Neutral activity copy when duration is unknown. */
   doneNoTime: string;
-  /** e.g. 「思路总结」 — done, neither known */
+  /** Fallback when neither activity nor duration is available. */
   fallback: string;
 }
 

@@ -110,8 +110,12 @@ test('opening the workbench keeps the model switcher usable above the chat pane'
   await expect(page.locator('.chat-config-pop')).toBeVisible();
   await page.locator('#topModelSwitcher').click();
   await expect(page.locator('.chat-config-pop')).toHaveCount(0);
+  const editor = page.locator('#composerRoot .rich-composer-editor');
+  await editor.fill('Keep this unsent note');
   await workbench.getByRole('button', { name: 'Ask about this artifact' }).click();
-  await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText('About “Conversation”:');
+  await expect(editor).toContainText('Keep this unsent note');
+  await expect(editor).toContainText('About “Conversation”:');
+  await expect(editor).toBeFocused();
   await workbench.locator('.workbench-close-btn').click();
   await expect(workbench).toBeHidden();
   await expect(page.locator('#topModelSwitcher')).toBeVisible();

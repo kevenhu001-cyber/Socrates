@@ -19,8 +19,8 @@ function normalizedStatus(status: string | undefined): 'internalized' | 'fuzzy' 
 
 function statusLabel(status: string | undefined): string {
   const normalized = normalizedStatus(status);
-  const fallback = normalized === 'internalized' ? '已内化'
-    : normalized === 'fuzzy' ? '模糊' : '空白';
+  const fallback = normalized === 'internalized' ? '自评较熟悉'
+    : normalized === 'fuzzy' ? '尚有疑问' : '未评估';
   return i18n(`tutor.status${normalized[0]!.toUpperCase()}${normalized.slice(1)}`, fallback);
 }
 
@@ -61,14 +61,14 @@ function knowledgeStrings(): KnowledgeStrings {
     updateFailed: i18n('kb.updateFailed', d.updateFailed),
     status: { internalized: statusLabel('internalized'), fuzzy: statusLabel('fuzzy'), blank: statusLabel('blank') },
     section: {
-      internalized: i18n('tutor.kbSectionInternalized', '已内化'),
-      fuzzy: i18n('tutor.kbSectionFuzzy', '模糊'),
-      blank: i18n('tutor.kbSectionBlank', '未探测'),
+      internalized: i18n('tutor.kbSectionInternalized', '自评较熟悉'),
+      fuzzy: i18n('tutor.kbSectionFuzzy', '尚有疑问'),
+      blank: i18n('tutor.kbSectionBlank', '未评估'),
     },
     zoomIn: i18n('kb.zoomIn', d.zoomIn),
     zoomOut: i18n('kb.zoomOut', d.zoomOut),
     zoomFit: i18n('kb.zoomFit', d.zoomFit),
-    verifiedTag: `${i18n('tutor.kbVerifiedTag', '验证 x')}{n}`,
+    recordedTag: `${i18n('tutor.kbRecordedTag', '记录 ×')}{n}`,
     questions: i18n('kb.questions', d.questions),
     systemTag: i18n('kb.systemTag', d.systemTag),
     userTag: i18n('kb.userTag', d.userTag),
@@ -138,9 +138,13 @@ export function TeachingPlanPanel() {
   if (!plan?.subtopics.length) return null;
 
   const currentIndex = plan.currentSubtopicIdx || 0;
-  const doneCount = plan.subtopics.filter((subtopic) => subtopic.status === 'internalized').length;
   const totalCount = plan.subtopics.length;
-  const percent = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+  /* The path tracks which topic is active; discussion count is not a mastery
+     percentage. Self-reported familiarity remains a separate status below. */
+  const currentCount = totalCount ? Math.min(totalCount, Math.max(1, currentIndex + 1)) : 0;
+  const percent = totalCount ? Math.round((currentCount / totalCount) * 100) : 0;
+  const progressText = i18n('tutor.planProgress', 'Topic {current} of {total}')
+    .replace('{current}', String(currentCount)).replace('{total}', String(totalCount));
   return (
     <div className="teaching-plan">
       <div className="teaching-plan-title">{i18n('tutor.planTitle', '教学计划')}</div>
@@ -148,7 +152,7 @@ export function TeachingPlanPanel() {
         <div className="teaching-plan-progress-bar">
           <div className="teaching-plan-progress-fill" style={{ width: `${percent}%` }} />
         </div>
-        <div className="teaching-plan-progress-text">{doneCount} / {totalCount} ({percent}%)</div>
+        <div className="teaching-plan-progress-text" aria-label={progressText}>{progressText}</div>
       </div>
       {plan.subtopics.map((subtopic, index) => {
         const isCurrent = index === currentIndex && subtopic.status !== 'internalized';

@@ -411,12 +411,8 @@ export const zh = {
     "workbench.codeTitle":"代码实现",
     "workbench.codeTitleLanguage":"{language} 代码",
     "workbench.chartTitle":"数据可视化",
-    "tutor.mastery.title":"苏格拉底认知进阶",
-    "tutor.mastery.step1":"1. 探索提问",
-    "tutor.mastery.step2":"2. 反思辨析",
-    "tutor.mastery.step3":"3. 归纳洞察",
-    "tutor.mastery.step4":"4. 融会贯通",
-    "tutor.mastery.progress":"第 {n} 步 / 共 {total} 步",
+    "tutor.mastery.title":"本节教学阶段",
+    "tutor.mastery.progress":"第 {n} 阶段 / 共 {total} 阶段",
     "tutor.suggestion.prefix":"启发式追问：",
     "sidebar.more.shortcuts":"键盘快捷键",
     "sidebar.more.signOut":"退出登录",
@@ -861,19 +857,20 @@ export const zh = {
     "tutor.kbLastUpdated":"最后更新",
     "tutor.kbSnapshot":"存档当前版本",
     "tutor.kbHistory":"存档历史",
-    "tutor.kbSectionInternalized":"已内化",
-    "tutor.kbSectionFuzzy":"模糊",
-    "tutor.kbSectionBlank":"未探测",
-    "tutor.kbVerifiedTag":"验证 x",
+    "tutor.kbSectionInternalized":"自评较熟悉",
+    "tutor.kbSectionFuzzy":"尚有疑问",
+    "tutor.kbSectionBlank":"未评估",
+    "tutor.kbRecordedTag":"记录 ×",
     "tutor.kbTopicFirst":"设置学习主题后，这里会显示知识地图。",
     /* v3.0 design — §10 long-term plan (zh) */
     "tutor.planTitle":"教学计划",
+    "tutor.planProgress":"第 {current} / {total} 个主题",
     /* v3.0 design — mode banner (zh). Keys tutor.modeChat /
        tutor.modeTutor live further down (聊天/辅导); the differently
        worded duplicates that used to sit here were shadowed at runtime
        and have been removed. */
     "tutor.modeChatDesc":"普通对话，无教学引导",
-    "tutor.modeTutorDesc":"AI 主动提问并跟踪你的学习",
+    "tutor.modeTutorDesc":"通过提问引导思考，并记录当前学习路径",
     "tutor.modeSwitchToTutor":"切换到引导模式",
     "tutor.modeSwitchToChat":"切换到对话模式",
     /* Composer quick actions + reasoning effort + read-aloud (zh) */
@@ -984,14 +981,14 @@ export const zh = {
     "tutor.stageIllustrate":"应用示例",
     "tutor.stageExercise":"动手练习",
     "tutor.stageCheck":"阶段检查",
-    "tutor.done":"[已完成]",
+    "tutor.done":"[自评熟悉]",
     /* U-H1 / U-H2 — session mode segmented control + header badge (zh). */
     "tutor.modeTutor":"辅导",
     "tutor.modeChat":"聊天",
-    /* U-H4 — teaching-plan sub-topic mastery status labels (zh). */
-    "tutor.statusBlank":"空白",
-    "tutor.statusFuzzy":"模糊",
-    "tutor.statusInternalized":"已内化",
+    /* U-H4 — teaching-plan self-assessment status labels (zh). */
+    "tutor.statusBlank":"未评估",
+    "tutor.statusFuzzy":"尚有疑问",
+    "tutor.statusInternalized":"自评较熟悉",
     /* Scaffold widget strings — buttons, placeholders, feedback. */
     "tutor.flashcardAria":"闪卡 — 点击翻转",
     "tutor.hideHint":"隐藏提示",
@@ -1154,12 +1151,12 @@ export const zh = {
     "citation.sources":"来源",
     "citation.sourcesCount":"来源，{n} 条",
     "citation.preview":"来源预览",
-    "think.summary":"思路总结",
+    "think.summary":"活动摘要",
     "think.summaryTools":"使用了 {n} 个工具。",
-    "think.rn.live":"思考中 · 第 {n} 步",
-    "think.rn.done":"思考 {sec}s · {n} 步",
-    "think.rn.doneNoSteps":"思考 {sec}s",
-    "think.rn.doneNoTime":"{n} 步",
+    "think.rn.live":"正在处理…",
+    "think.rn.done":"活动记录 · {sec} 秒",
+    "think.rn.doneNoSteps":"活动记录 · {sec} 秒",
+    "think.rn.doneNoTime":"活动详情",
     "think.summaryToolsTitle":"使用了 {n} 个工具",
     "tool.verb.search":"搜索网页",
     "tool.verb.fetch":"读取网页",
@@ -1219,9 +1216,8 @@ export const zh = {
     "tag.done":"完成",
     "tag.remove":"移除",
     "kb.placeholderNote":"写下你对本主题想记住的任何内容……",
-    /* P_kb-i18n — see matching en block. 状态标签复用 tutor.status*，
-       不另起一套译法：同一个 internalized 节点不能在教学面板里叫
-       「已内化」、在自己的详情里又叫「已掌握」。 */
+    /* P_kb-i18n — see matching en block. Reuse the conservative tutor status
+       labels; a diagnostic self-report is not presented as verified mastery. */
     "kb.questions":"{n} 问",
     "kb.go":"→ 进入",
     "kb.goTitle":"把对话跳到这个知识点",
@@ -1620,9 +1616,19 @@ export const zh = {
     "learnMode.diagnose.hint":"先做几道诊断题，找出理解上的漏洞。",
     "learnMode.mistakes.label":"错题变下一问",
     "learnMode.mistakes.hint":"把没做对的题变成问题链上的下一问。",
+    "learnMode.session.think.label":"沿问题链继续",
+    "learnMode.session.think.hint":"只使用回答里的后续问题，不会立即发起新回合。",
+    "learnMode.session.recall.label":"生成回忆卡",
+    "learnMode.session.recall.hint":"立即生成闪卡；后续追问仍使用回忆模式。",
+    "learnMode.session.connect.label":"查看知识联系",
+    "learnMode.session.connect.hint":"立即打开知识面板并刷新概念联系。",
+    "learnMode.session.diagnose.label":"开始理解检查",
+    "learnMode.session.diagnose.hint":"立即开始新一轮诊断；取消即可回到课程。",
+    "learnMode.session.mistakes.label":"复习错题",
+    "learnMode.session.mistakes.hint":"打开错题本；选择错题会开始重做。",
     /* RN-5 knowledge map, diagnostic, mistakes */
     "kb.graphLabel":"知识图谱，可拖动平移",
-    "kb.captionMastery":"颜色越深掌握越好",
+    "kb.captionMastery":"颜色越深表示自评越熟悉",
     "kb.caption":"连线是你的学习路径",
     "kb.zoomIn":"放大",
     "kb.zoomOut":"缩小",

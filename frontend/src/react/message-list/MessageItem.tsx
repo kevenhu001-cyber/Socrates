@@ -1,4 +1,4 @@
-import { memo, useRef, useState, type RefObject } from 'react';
+import { lazy, memo, Suspense, useRef, useState, type ReactNode, type RefObject } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import type { LegacyChatMessage } from '../types/domain';
@@ -8,6 +8,7 @@ import { MessageAttachments } from './MessageAttachments';
 import { MessageBody } from './MessageBody';
 import { MessageEditForm } from './MessageEditForm';
 import { TutorMessageActions } from './TutorMessageActions';
+import { useAppMode } from '../app-mode/useAppMode.ts';
 import { areMessageItemsEqual } from './messageItemMemo';
 import type { MessageItemProps } from './types';
 import { useMessagePostRender } from './useMessagePostRender';
@@ -152,6 +153,11 @@ function shouldShowToolbar(role: string, showSettledToolbar: boolean, isLive: bo
   return !readOnly && !editing && (role === 'user' || showSettledToolbar || isLive);
 }
 
+function tutorQuestionText(message: LegacyChatMessage, role: string, isLatest: boolean, isLive: boolean, readOnly: boolean): string | null {
+  if (readOnly || !isLatest || role !== 'assistant' || isLive || typeof message.rawText !== 'string') return null;
+  return message.rawText;
+}
+
 function userEditHandler(role: string, setEditing: (editing: boolean) => void): (() => void) | undefined {
   return role === 'user' ? () => setEditing(true) : undefined;
 }
@@ -175,6 +181,7 @@ function MessageItemBase({ message, isLatest, readOnly = false }: MessageItemPro
   const declarative = usesDeclarativeBody(role);
   const onEdit = userEditHandler(role, setEditing);
   const showToolbar = shouldShowToolbar(role, presentation.showToolbar, isLive, readOnly, editing);
+  const questionText = tutorQuestionText(message, role, Boolean(isLatest), isLive, readOnly);
 
   useMessagePostRender(message, html, clientId, isLive, bodyRef);
 
@@ -213,6 +220,7 @@ function MessageItemBase({ message, isLatest, readOnly = false }: MessageItemPro
           commitUserMessageEdit(clientId, text);
         }}
       />
+      {renderTutorQuestionChain(questionText)}
       {!readOnly ? <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} /> : null}
       {showToolbar ? (
         <MessageToolbar
@@ -225,6 +233,24 @@ function MessageItemBase({ message, isLatest, readOnly = false }: MessageItemPro
       ) : null}
     </div>
   );
+}
+
+const LazyLatestTutorQuestionChain = lazy(() => import('../tutor/QuestionChainRoot').then((module) => ({
+  default: module.LatestTutorQuestionChain,
+})));
+
+function TutorQuestionChainSlot({ rawText }: { rawText: string }) {
+  const appMode = useAppMode();
+  if (appMode !== 'tutor') return null;
+  return (
+    <Suspense fallback={null}>
+      <LazyLatestTutorQuestionChain rawText={rawText} />
+    </Suspense>
+  );
+}
+
+function renderTutorQuestionChain(rawText: string | null): ReactNode {
+  return rawText === null ? null : <TutorQuestionChainSlot rawText={rawText} />;
 }
 
 const MessageItem = memo(MessageItemBase, areMessageItemsEqual);

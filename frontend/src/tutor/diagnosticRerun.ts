@@ -12,7 +12,6 @@ import { registerDiagnosticActions } from './diagnosticRegistry.ts';
 import { renderDiagQuestion } from './diagnosticFlow.ts';
 import { buildFallbackDiagnosticQuestions } from './policy.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
-import { clearSocraticSuggestions } from './socraticMastery.ts';
 import { t } from '../i18n.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -69,7 +68,6 @@ export async function rerunDiagnostic(): Promise<void> {
   const topic = String(stateStore.read('domain') || stateStore.read('topic') || '').trim();
   if (!sessionId || !topic || stateStore.read('phase') !== 'chat') return;
   const token = ++runToken;
-  clearSocraticSuggestions();
   stateStore.dispatch({ type: 'state/batch', patch: { phase: 'diagnostic', diagCancel: false, diagQuestions: [], diagAnswers: [], diagIndex: 0 } });
   activateMainView('diagnosticView', document);
   registerDiagnosticActions({

@@ -157,9 +157,9 @@ function PracticeProgress({ phone, conversationActive }: { phone: boolean; conve
 /** Tutor stage, derived from the session (no DOM writes). Phones leave it to the conversation. */
 function StageProgress({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
   const mode = useAppMode();
-  const turns = useSessionStore((snapshot) => snapshot.messages.filter((message) => message.role === 'user').length);
+  const teachingStage = useSessionStore((snapshot) => snapshot.teachingStage);
   if (mode !== 'tutor' || phone || !conversationActive) return null;
-  const stage = getActiveSocraticStage(turns);
+  const stage = getActiveSocraticStage(teachingStage);
   const total = SOCRATIC_STAGES.length;
   return (
     <TopBarStageProgress

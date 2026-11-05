@@ -63,9 +63,9 @@ test('the detail panel is localized and does not echo the status enum', async ({
   await expect(detail.getByText('相关知识点')).toBeVisible();
   await expect(detail.locator('[data-kb-go]')).toHaveText('→ 进入');
 
-  /* The badge reuses tutor.status*, the teaching-plan vocabulary. */
+  /* Knowledge status describes the learner's self-report, not verified mastery. */
   const badge = detail.locator('[data-kb-detail-status]');
-  await expect(badge).toHaveText('已内化');
+  await expect(badge).toHaveText('自评较熟悉');
   await expect(badge).not.toHaveText(/internalized/);
 });
 

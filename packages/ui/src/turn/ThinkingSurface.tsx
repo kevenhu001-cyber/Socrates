@@ -2,8 +2,8 @@
  * ThinkingSurface — the one-line thinking header and its expandable
  * vertical timeline (RN-2, design R3).
  *
- * Live:  「思考中 · 第 N 步」 over a travelling progress hairline.
- * Done:  「思考 Xs · N 步」 with a chevron; expanding reveals the timeline.
+ * The host supplies an observed live status and neutral settled activity
+ * copy. Expanding reveals public summaries and tool records.
  * The host passes already-public copy only (see thinkingModel).
  */
 import { type ReactNode } from 'react';
@@ -17,6 +17,8 @@ import { Chevron, ProgressHairline, useBreathing, useReducedMotion, useReveal } 
 export interface ThinkingSurfaceProps {
   label: string;
   live: boolean;
+  /** False while waiting for a response: waiting is not visible work progress. */
+  showProgress?: boolean;
   /** Quiet trailing facts, e.g. elapsed seconds or 「回答已开始」. */
   meta?: ReadonlyArray<string>;
   /** Leading glyph (the running tool's icon); optional. */
@@ -29,7 +31,7 @@ export interface ThinkingSurfaceProps {
   children?: ReactNode;
 }
 
-export function ThinkingSurface({ label, live, meta = [], icon, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
+export function ThinkingSurface({ label, live, showProgress = live, meta = [], icon, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
@@ -79,7 +81,7 @@ export function ThinkingSurface({ label, live, meta = [], icon, expandable, open
         ))}
         {expandable ? <Chevron open={open} /> : null}
       </Pressable>
-      {live ? <View style={{ maxWidth: 220, marginTop: 2 }}><ProgressHairline active testID="turn-activity-progress" /></View> : null}
+      {showProgress ? <View style={{ maxWidth: 220, marginTop: 2 }}><ProgressHairline active testID="turn-activity-progress" /></View> : null}
       <Animated.View
         testID="turn-activity-body"
         nativeID={bodyId}

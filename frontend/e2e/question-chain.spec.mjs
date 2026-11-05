@@ -129,12 +129,14 @@ for (const width of [1440, 390]) {
     const streams = await setupTutor(page, width);
     await startLesson(page);
     await expect(chain(page)).toBeVisible();
+    await expect(page.locator('#msgList .msg.assistant').last().locator('[data-testid="question-chain"]')).toBeVisible();
+    await expect(page.locator('#chatInputBar [data-testid="question-chain"]')).toHaveCount(0);
     await expect(page.locator('[data-testid="question-chain-current"]')).toContainText('为什么导数能表示变化率');
     await expect(nextQuestions(page)).toHaveCount(3);
     await expect(nextQuestions(page).first()).toContainText(NEXT[0]);
     expect(streams.at(-1).learningMode).toBe('think');
-    const bar = page.locator('#chatInputBar');
-    if (width === 1440) await shot(bar, 'chain-initial');
+    const latestReply = page.locator('#msgList .msg.assistant').last();
+    if (width === 1440) await shot(latestReply, 'chain-initial');
 
     const first = await nextQuestions(page).first().innerText();
     const before = streams.length;
@@ -151,7 +153,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('[data-testid="question-chain-walked-1"]')).toBeVisible();
     await expect(page.locator('[data-testid="question-chain-walked-2"]')).toBeVisible();
     await expect(nextQuestions(page)).toHaveCount(1);
-    await shot(bar, width === 1440 ? 'chain-two-steps' : 'mobile-390-chain-two-steps');
+    await shot(latestReply, width === 1440 ? 'chain-two-steps' : 'mobile-390-chain-two-steps');
     expect(errors).toEqual([]);
   });
 }
@@ -206,6 +208,8 @@ test('conversation learning-mode menu opens inline and keeps the chain', async (
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('#learningModeBar [role="radio"]')).toHaveCount(5);
+  await expect(page.locator('#learningModeBar [data-testid="learning-mode-recall"]')).toContainText('生成回忆卡');
+  await expect(page.locator('#learningModeBar [data-testid="learning-mode-diagnose"]')).toContainText('开始理解检查');
   await shot(page.locator('#chatInputBar'), 'session-modes-open');
   await page.locator('#learningModeBar [data-testid="learning-mode-think"]').click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');

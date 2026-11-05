@@ -8,7 +8,7 @@ import {
 } from './workbenchStore';
 import type { WorkbenchArtifact, WorkbenchArtifactType, WorkbenchTab } from './workbenchStore';
 import { copyToClipboard } from '../canvas/clipboard';
-import { setComposerMarkdown } from '../../composer/controller.ts';
+import { focusComposer, getComposerMarkdown, insertComposerText } from '../../composer/controller.ts';
 import { sanitizeHtml } from '../../render/sanitizeHtml.ts';
 import { i18n } from '../legacy/gateway';
 
@@ -201,13 +201,13 @@ export function WorkbenchDrawer(): React.ReactElement | null {
 
   const handleAskAboutArtifact = () => {
     const prompt = i18n('workbench.askPrompt', 'About “{title}”: ').replace('{title}', title);
-    try {
-      setComposerMarkdown('chat', prompt);
-      const editor = document.querySelector<HTMLElement>('#composerRoot [contenteditable="true"]');
-      if (editor) {
-        editor.focus();
-      }
-    } catch (_) { /* empty-catch: intentional — focus composer on artifact ask is best-effort */ }
+    const draft = getComposerMarkdown('chat');
+    const separator = draft.trim() ? (/\n\s*$/.test(draft) ? '\n' : '\n\n') : '';
+    /* Insert at the existing selection rather than replacing the user's
+       unsent draft. The controller also keeps the saved draft if the editor
+       is between surfaces or temporarily unavailable. */
+    insertComposerText('chat', `${separator}${prompt}`);
+    focusComposer('chat', 'end');
   };
 
   return (

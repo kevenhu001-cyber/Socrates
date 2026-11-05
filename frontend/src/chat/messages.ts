@@ -35,11 +35,6 @@ interface MessageEntry {
   attachments: unknown[];
 }
 
-interface KnowledgeNodeSnapshot {
-  status?: string;
-  questions?: number;
-}
-
 function prepareUserMessageFollow(role: string): void {
   if (role !== 'user') return;
   streamRetryViewport.clearPendingViewport();
@@ -100,17 +95,9 @@ function createMessageBatchActions(role: string, entry: MessageEntry): {
 } {
   const actions: Array<Record<string, unknown>> = [{ type: 'session/append-message', payload: entry }];
   if (role === 'user') {
+    /* A message is not evidence that the learner knows more. KB confidence
+       changes belong to an explicit diagnostic or confidence control. */
     actions.push({ type: 'state/set', key: '_userScrolledAway', value: false });
-    const currentIndex = stateStore.read('currentNode') as number;
-    const nodes = stateStore.read('kbNodes');
-    const currentNode = nodes && nodes[currentIndex] as KnowledgeNodeSnapshot | undefined;
-    if (currentNode && currentNode.status === 'blank') {
-      actions.push({
-        type: 'kb/patch-node',
-        index: currentIndex,
-        patch: { status: 'fuzzy', questions: (currentNode.questions || 0) + 1 },
-      });
-    }
   }
   return { actions };
 }
@@ -151,12 +138,9 @@ export function addMessage(
      is just a downstream view. */
   const clientId = 'msg-' + generateId();
   const entry = createMessageEntry(role, text, type, actions, attachmentsArg, clientId);
-  /* P_send-batch-actions — the click frame used to fire 2–3 separate
-     stateStore.dispatch calls (state/set _userScrolledAway,
-     session/append-message, tutor kb/patch-node). Each one paid a
-     notify() walk over every React subscriber. Route them through
-     state/batch-actions so the listener walk happens once at the end of
-     the batch and React commits a single coherent snapshot. */
+  /* P_send-batch-actions — append the message and update scroll intent in
+     one notification walk. Knowledge confidence is deliberately not inferred
+     from the fact that a user sent a message. */
   const batch = createMessageBatchActions(role, entry);
   stateStore.dispatch({ type: 'state/batch-actions', actions: batch.actions });
   publishReactChatRuntime({ type: 'message-added', messageId: clientId });

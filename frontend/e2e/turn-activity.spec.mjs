@@ -25,8 +25,8 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
   const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveCount(1);
-  await expect(status.getByTestId('turn-activity-label')).toHaveText('Thinking · step 1');
-  await expect(status.getByTestId('turn-activity-progress')).toHaveCount(1);
+  await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
+  await expect(status.getByTestId('turn-activity-progress')).toHaveCount(0);
   const before = await status.boundingBox();
 
   await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
@@ -56,11 +56,14 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   const message = page.locator('#msgList .msg.assistant').last();
   const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveAttribute('data-phase', 'waiting');
+  await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
+  await expect(status.getByTestId('turn-activity-progress')).toHaveCount(0);
   await page.evaluate(() => window.__advanceReasoningClock());
   await expect(status.getByTestId('turn-activity-meta')).toContainText(/[5-9]s/);
   await page.screenshot({ path: 'test-results/waiting-response.png' });
   await page.evaluate(() => window.__waitingController.appendThinking('PRIVATE REASONING'));
   await expect(status).toHaveAttribute('data-phase', 'thinking');
+  await expect(status.getByTestId('turn-activity-progress')).toHaveCount(1);
   await expect(status.getByTestId('turn-activity-meta')).toHaveCount(0);
   const duration = await page.evaluate(() => window.stateStore.read('messages').at(-1).reasoningDurationSec);
   expect(duration).toBe(0);
@@ -104,7 +107,7 @@ test('streaming actions are absent and running tools own the activity surface', 
   await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity')).toHaveCount(1);
-  await expect(message.getByTestId('turn-activity-label')).toHaveText(/^Thinking · step \d+$/);
+  await expect(message.getByTestId('turn-activity-label')).toHaveText('Searching "React Context rendering"…');
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 

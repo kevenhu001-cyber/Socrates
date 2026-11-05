@@ -21,7 +21,6 @@ import { addMessage as _addMessage } from '../chat/messages.ts';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.ts';
 import { addStreamingMessage } from '../chat/streamingTurn.ts';
-import { clearSocraticSuggestions, showSocraticSuggestions } from './socraticMastery.ts';
 
 
 /* omit entirely; backend passes through */
@@ -162,8 +161,6 @@ export async function askNextQuestion(){
     if(result!=null){
       ctl.finish();
       stateStore.dispatch({type:"state/batch",patch:{stuckCount:0,totalQ:stateStore.read("totalQ")+1}});
-      /* RN-4 / RN-6: the chain offers the model's own next questions. */
-      showSocraticSuggestions(result.text);
       return;
     }
     /* Distinguish upstream error (show retry) from "API returned null
@@ -193,7 +190,6 @@ export async function runLearningModeTurn(opts: LearningTurnOptions): Promise<vo
   const nodes = stateStore.read("kbNodes") as TutorNode[];
   const node = nodes[stateStore.read("currentNode")] || nodes[0];
   if (!node || !hasUsableActive()) return;
-  clearSocraticSuggestions();
   const ctl = await _addStreamingMessage({ onRetry: function () { void runLearningModeTurn(opts); } });
   const history = promptHistory(extractHistory());
   const msgs = buildLearningModeMessages(node, stateStore.read("domain") || '', history, opts);
@@ -208,7 +204,6 @@ export async function runLearningModeTurn(opts: LearningTurnOptions): Promise<vo
   if (result && result.text && result.text.trim()) {
     stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
     ctl.finish();
-    showSocraticSuggestions(result.text);
     return;
   }
   const error = stateStore.read("lastCallError") || 'Stream returned no content';

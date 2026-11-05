@@ -14,7 +14,6 @@ import { addMessage } from './messages.ts';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { syncSocraticMasteryUI, showSocraticSuggestions } from '../tutor/socraticMastery.ts';
 import { learningTurnOptions } from '../tutor/learningModeState.ts';
 import { buildChatTurnMessages } from './turnPrompt.ts';
 import { prepareTurnPageContext } from './turnPageContext.ts';
@@ -202,12 +201,6 @@ function finishChatTurn(
 
 function finishTurnFeedback(result: StreamResult | null): void {
   publishActiveWorkflowFinish(Boolean(result && result.text && String(result.text).trim()));
-  try {
-    syncSocraticMasteryUI();
-    if (result && result.text && !result.cancelled) showSocraticSuggestions(String(result.text));
-  } catch {
-    /* empty-catch: intentional — Socratic feedback must not fail the chat turn. */
-  }
 }
 
 function saveSessionAfterTurn(controller: StreamingTurnController): void {

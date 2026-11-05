@@ -24,7 +24,7 @@ export interface KnowledgeStrings {
   zoomIn: string;
   zoomOut: string;
   zoomFit: string;
-  verifiedTag: string;
+  recordedTag: string;
   questions: string;
   systemTag: string;
   userTag: string;
@@ -60,17 +60,17 @@ export const defaultKnowledgeStrings: KnowledgeStrings = {
   lastUpdated: 'Last updated',
   snapshot: 'Save this version',
   graphLabel: 'Knowledge map',
-  captionMastery: 'Darker = better mastered',
+  captionMastery: 'Darker = higher self-reported familiarity',
   caption: 'Lines follow your learning path',
   captionConcepts: 'Lines are how the ideas relate',
   updating: 'Updating definitions and connections…',
   updateFailed: 'Could not update the map this time.',
-  status: { internalized: 'Internalized', fuzzy: 'Fuzzy', blank: 'Blank' },
-  section: { internalized: 'Internalized', fuzzy: 'Fuzzy', blank: 'Not probed' },
+  status: { internalized: 'Familiar (self-reported)', fuzzy: 'Some gaps', blank: 'Not assessed' },
+  section: { internalized: 'Self-reported familiarity', fuzzy: 'Needs checking', blank: 'Not assessed' },
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
   zoomFit: 'Fit to view',
-  verifiedTag: 'Verified ×{n}',
+  recordedTag: 'Recorded ×{n}',
   questions: '{n} questions',
   systemTag: 'System',
   userTag: 'Me',

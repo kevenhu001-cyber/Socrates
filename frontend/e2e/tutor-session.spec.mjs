@@ -59,7 +59,13 @@ for (const width of [1440, 390]) {
     await page.locator('.tutor-explore-skip').click();
     await expect(page.locator('#chatView')).toBeVisible();
     await expect(page.locator('#msgList .msg.assistant .msg-body').last()).toContainText(LESSON);
+    if (width > 768) {
+      const stageProgress = page.locator('#tutorMasteryPill [data-part="stage-bar"]');
+      await expect(stageProgress).toHaveAttribute('data-step', '1');
+      await expect(stageProgress).toHaveAttribute('data-total', '6');
+    }
     const snapshot = await page.evaluate(() => ({
+
       nodes: window.stateStore.read('kbNodes'),
       plan: window.stateStore.read('teachingPlan'),
       currentNode: window.stateStore.read('currentNode'),
@@ -76,10 +82,36 @@ for (const width of [1440, 390]) {
     await page.locator('#composerPrimaryBtn').click();
     await expect.poll(() => streams.length).toBe(2);
     await expect.poll(() => page.evaluate(() => window.stateStore.read('teachingStage'))).toBe('define');
+    if (width > 768) {
+      await expect(page.locator('#tutorMasteryPill [data-part="stage-bar"]')).toHaveAttribute('data-step', '2');
+    }
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/tutor-session-${encodeURIComponent(width)}.png`, fullPage: true });
   });
 }
+
+test('discussion progress advances the lesson without claiming mastery', async ({ page }) => {
+  await setupTutor(page);
+  await openTutor(page);
+  await page.locator('.tutor-explore-skip').click();
+  await expect(page.locator('#chatView')).toBeVisible();
+  const initialStatus = await page.evaluate(() => window.stateStore.read('kbNodes')[0]?.status);
+  expect(initialStatus).not.toBe('internalized');
+
+  /* Exercise-stage conversation count is only a navigation threshold. */
+  await page.evaluate(() => window.stateStore.dispatch({ type: 'state/batch', patch: {
+    teachingStage: 'exercise', substantiveCount: 2,
+  } }));
+  await page.locator('#composerRoot .rich-composer-editor').fill(
+    'I can explain the definition, connect it to the example, and describe why the limit matters in a new situation.',
+  );
+  await page.locator('#composerPrimaryBtn').click();
+  await expect.poll(() => page.evaluate(() => window.stateStore.read('currentNode'))).toBe(1);
+  const finalStatus = await page.evaluate(() => window.stateStore.read('kbNodes')[0]?.status);
+  expect(finalStatus).toBe(initialStatus);
+  expect(finalStatus).not.toBe('internalized');
+  await expect(page.locator('#tutorMasteryPill [data-part="stage-bar"]')).toHaveAttribute('data-step', '1');
+});
 
 test('seven-question diagnostics retain four choices and build a teaching plan', async ({ page }) => {
   const streams = await setupTutor(page);

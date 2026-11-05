@@ -382,20 +382,8 @@
   background: var(--accent);
 }
 
-/* =========================================================================
- * Socratic Mastery Pill & Proactive Cognitive Scaffolding Chips
- * ======================================================================= */
-.socratic-suggestions.hidden {
-  display: none;
-}
-
-/* RN-4 — the question chain (packages/ui/src/think) draws itself; the
-   host only spaces it from the composer. */
-.socratic-suggestions {
-  display: block;
-  padding: 4px 0 12px;
-}
-
+/* The question chain now follows its tutor reply inside the transcript.
+   Only the compact learning-mode trigger stays beside the composer. */
 .learning-mode-bar {
   display: block;
   padding: 0 0 8px;

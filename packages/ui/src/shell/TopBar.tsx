@@ -7,8 +7,8 @@
  * raised thumb) for 聊天 / 辅导.
  *
  * Progress reads as words and a hairline bar, never as dots: the tutor
- * stage is a capsule "探索提问 ▬▬▭▭" whose accessible name is
- * "第 1 步 / 共 4 步", and practice reads "基础题 已尝试 2 次".
+ * capsule follows the live teaching stage, and practice reads
+ * "基础题 已尝试 2 次".
  *
  * DOM-free: the web host passes ids (`nativeID`), labels and handlers and
  * decides visibility from its own stores; nothing here reads the document.
@@ -286,7 +286,7 @@ export interface TopBarStageProgressProps {
   stage: string;
   step: number;
   total: number;
-  /** "第 1 步 / 共 4 步" — the accessible name and hover text. */
+  /** The current teaching stage and total, used in the accessible name. */
   progressLabel: string;
   /** "苏格拉底认知进阶" */
   title: string;

@@ -23,8 +23,11 @@ export const LEARNING_MODE_COMPACT_WIDTH = 769;
 
 export interface LearningModeOption {
   id: LearningModeId;
+  /** What choosing this option does on the current surface. */
   label: string;
   hint: string;
+  /** Short persistent-mode name used by the menu trigger after selection. */
+  triggerLabel?: string;
 }
 
 export interface LearningModeSwitchProps {
@@ -142,6 +145,7 @@ function ModeTrack({ options, value, onChange, label, centered }: { options: rea
 export function LearningModeSwitch({ options, value, onChange, label, variant = 'row', triggerLabel = '{mode}', showHint = true, defaultOpen = false, testID = 'learning-mode-switch' }: LearningModeSwitchProps) {
   const [open, setOpen] = useState(defaultOpen);
   const selected = options.find((option) => option.id === value) ?? null;
+  const selectedLabel = selected?.triggerLabel ?? selected?.label;
   const hint = showHint && selected ? (
     <UiText testID="learning-mode-hint" variant="bodySm" tone="tertiary" align={variant === 'row' ? 'center' : 'left'} numberOfLines={2}>
       {selected.hint}
@@ -162,8 +166,8 @@ export function LearningModeSwitch({ options, value, onChange, label, variant = 
       <PillAction
         size="sm"
         testID="learning-mode-trigger"
-        label={selected ? triggerLabel.replace('{mode}', selected.label) : label}
-        accessibilityLabel={selected ? `${label}, ${selected.label}` : label}
+        label={selectedLabel ? triggerLabel.replace('{mode}', selectedLabel) : label}
+        accessibilityLabel={selectedLabel ? `${label}, ${selectedLabel}` : label}
         expanded={open}
         chevron
         onPress={() => setOpen((value) => !value)}

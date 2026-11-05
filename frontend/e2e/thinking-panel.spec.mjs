@@ -98,8 +98,8 @@ test('tool status owns live progress without a duplicate activity list', async (
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  /* The live caption counts steps; the running tool's icon leads it. */
-  await expect(bubble.locator(TURN.label)).toHaveText(/^Thinking · step \d+$/);
+  /* The live caption names the running tool instead of inventing reasoning steps. */
+  await expect(bubble.locator(TURN.label)).toHaveText('Searching "public query"…');
   await expect(bubble.locator(`${TURN.toggle} .tool-inline-tool-icon svg`)).toBeVisible();
   await openActivity(bubble);
   await expect(row.locator(TURN.verb)).toHaveText('Search the web');

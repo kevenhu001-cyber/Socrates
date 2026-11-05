@@ -97,21 +97,16 @@ export function advanceTutorNodeIfReady(node: KbNode | null, origin?: string | n
     origin,
   })) return false;
 
-  const updatedNode = Object.assign({}, node, {
-    status: 'internalized',
-    questions: (typeof node.questions === 'number' ? node.questions : 0) + 1,
-  });
-  const currentIndex = stateStore.read('currentNode') as number;
-  const updatedNodes = (stateStore.read('kbNodes') as KbNode[]).slice();
-  updatedNodes[currentIndex] = updatedNode;
-  stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: updatedNodes });
+  /* This threshold advances the lesson sequence; message length and turn
+     count are not evidence of mastery. Leave the KB status and assessed
+     question count unchanged until a learning check records that evidence. */
   stateStore.dispatch({ type: 'state/set', key: 'substantiveCount', value: 0 });
 
-  const nextNodeIndex = findNextNodeIndex(updatedNode);
+  const nextNodeIndex = findNextNodeIndex(node);
   if (nextNodeIndex < 0) {
     addAnchoredAssistant(
-      "Nice work — you've explored all the key areas of " + stateStore.read('domain')
-        + '. Feel free to revisit any node on the left, or start a new topic.',
+      "Nice work — you've worked through the current learning path for " + stateStore.read('domain')
+        + '. Revisit any idea or use a practice check to see what you can recall independently.',
     );
   } else {
     stateStore.dispatch({
@@ -125,7 +120,7 @@ export function advanceTutorNodeIfReady(node: KbNode | null, origin?: string | n
       },
     });
     const nextNode = (stateStore.read('kbNodes') as KbNode[])[nextNodeIndex]!;
-    addAnchoredAssistant('Good depth on **' + updatedNode.name + '**. Let\'s move to the next area: **' + nextNode.name + '**.');
+    addAnchoredAssistant('Good work on **' + node.name + '**. Let\'s move to the next area: **' + nextNode.name + '**.');
     setTimeout(() => askNextQuestion(), 900);
   }
   saveCurrentSession();

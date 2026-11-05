@@ -117,7 +117,7 @@ export async function turnMistakeIntoNextQuestion(id: string): Promise<boolean> 
   try {
     const question = await writeMistakeFollowUp(entry);
     if (!question || stateStore.read('currentSessionId') !== sessionId) return false;
-    const { followChainCandidate } = await import('./socraticMastery.ts');
+    const { followChainCandidate } = await import('./questionChainActions.ts');
     followChainCandidate({ id: `ask:mistake:${id}`, text: question, kind: 'ask' });
     return true;
   } catch (error) {

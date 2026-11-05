@@ -1,29 +1,30 @@
 /**
- * The four Socratic stages the tutor header reports. Pure data, so the top
- * bar can derive the stage from the session store without loading the
- * tutor runtime (socraticMastery.ts) into the first paint.
+ * The six live teaching stages the tutor header reports. Pure data keeps
+ * the top bar aligned with the session state machine without loading the
+ * lesson runtime into the first paint.
  */
 export interface SocraticStage {
+  readonly id: string;
   readonly step: number;
   readonly labelKey: string;
   readonly defaultLabel: string;
 }
 
 export const SOCRATIC_STAGES: readonly SocraticStage[] = [
-  { step: 1, labelKey: 'tutor.mastery.step1', defaultLabel: '1. 探索提问' },
-  { step: 2, labelKey: 'tutor.mastery.step2', defaultLabel: '2. 反思辨析' },
-  { step: 3, labelKey: 'tutor.mastery.step3', defaultLabel: '3. 归纳洞察' },
-  { step: 4, labelKey: 'tutor.mastery.step4', defaultLabel: '4. 融会贯通' },
+  { id: 'motivate', step: 1, labelKey: 'tutor.stageMotivate', defaultLabel: '建立直觉' },
+  { id: 'define', step: 2, labelKey: 'tutor.stageDefine', defaultLabel: '精确定义' },
+  { id: 'develop', step: 3, labelKey: 'tutor.stageDevelop', defaultLabel: '深入推导' },
+  { id: 'illustrate', step: 4, labelKey: 'tutor.stageIllustrate', defaultLabel: '应用示例' },
+  { id: 'exercise', step: 5, labelKey: 'tutor.stageExercise', defaultLabel: '动手练习' },
+  { id: 'check', step: 6, labelKey: 'tutor.stageCheck', defaultLabel: '阶段检查' },
 ];
 
-export function getActiveSocraticStage(turnCount: number): SocraticStage {
-  if (turnCount <= 2) return SOCRATIC_STAGES[0];
-  if (turnCount <= 4) return SOCRATIC_STAGES[1];
-  if (turnCount <= 6) return SOCRATIC_STAGES[2];
-  return SOCRATIC_STAGES[3];
+/** Read the live teaching state; turn count is not evidence of lesson progress. */
+export function getActiveSocraticStage(teachingStage: string | null | undefined): SocraticStage {
+  return SOCRATIC_STAGES.find((stage) => stage.id === teachingStage) || SOCRATIC_STAGES[0];
 }
 
-/** "1. 探索提问" → "探索提问": the header states the number separately. */
+/** Remove an optional numeric prefix when the progress counter states the step. */
 export function stageName(label: string): string {
   return label.replace(/^\s*\d+\s*[.、．]\s*/, '');
 }

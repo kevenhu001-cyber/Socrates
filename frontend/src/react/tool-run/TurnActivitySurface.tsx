@@ -2,8 +2,8 @@
  * The turn's activity surface (RN-2): the thinking line plus its timeline of
  * public summaries and tool calls, drawn with @socrates/ui/turn.
  *
- * Live:      「思考中 · 第 N 步」 over a travelling hairline.
- * Settled:   「思考 Xs · N 步」 ▸ — expands into the vertical timeline.
+ * Live:      show the observed transport/tool status over a progress hairline.
+ * Settled:   show neutral activity copy — never a fabricated step counter.
  * Tools:     consecutive calls merge into 「使用了 N 个工具」, expandable.
  *
  * Only public provider summaries reach this file; raw reasoning never does.
@@ -53,11 +53,11 @@ export interface TurnActivitySurfaceProps {
 
 function thinkingLabels() {
   return {
-    live: i18n('think.rn.live', 'Thinking · step {n}'),
-    done: i18n('think.rn.done', 'Thought {sec}s · {n} steps'),
-    doneNoSteps: i18n('think.rn.doneNoSteps', 'Thought {sec}s'),
-    doneNoTime: i18n('think.rn.doneNoTime', '{n} steps'),
-    fallback: i18n('think.summary', 'Thought summary'),
+    live: i18n('think.rn.live', 'Processing…'),
+    done: i18n('think.rn.done', 'Activity · {sec}s'),
+    doneNoSteps: i18n('think.rn.doneNoSteps', 'Activity · {sec}s'),
+    doneNoTime: i18n('think.rn.doneNoTime', 'Activity details'),
+    fallback: i18n('think.summary', 'Activity summary'),
   };
 }
 
@@ -121,6 +121,20 @@ function timelineEntries(input: {
   return entries;
 }
 
+function activityLabelFor(
+  isLive: boolean,
+  statusLabel: string | undefined,
+  header: ReturnType<typeof thinkingHeaderOf>,
+  labels: ReturnType<typeof thinkingLabels>,
+): string {
+  if (isLive && statusLabel) return statusLabel;
+  return thinkingLabelOf(header, labels);
+}
+
+function showProgressFor(isLive: boolean, status?: LiveTurnStatus): boolean {
+  return isLive && status?.phase !== 'waiting';
+}
+
 function surfaceDataAttrs(input: { isLive: boolean; showActivityCue: boolean; status?: LiveTurnStatus; answerStarted: boolean; isOpen: boolean; hasTimeline: boolean }) {
   return {
     'data-turn-surface-part': 'activity',
@@ -141,6 +155,7 @@ function surfaceContent(activities: ReadonlyArray<TurnActivityEntry>, publicSumm
 
 export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const { activities = [], isLive = false, elapsedSec, status, calls = [], messageId, readOnly } = props;
+  const statusLabel = props.statusLabel?.trim();
   const answerStarted = Boolean(props.answerStarted);
   const [isOpen, setIsOpen] = useState(false);
   const bodyId = useId();
@@ -149,15 +164,22 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const { timelineSteps, steps, intent, hasDetails } = surfaceContent(activities, props.publicSummary, props.intentSummary, calls.length);
   if (!hasDetails && !isLive) return null;
 
-  const header = thinkingHeaderOf({ live: isLive, stepCount: steps.length + calls.length, durationSec: elapsedSec });
+  /* Tool calls are activity records, not model reasoning steps. Only public
+     summaries contribute to the optional summary count, and the visible copy
+     never invents a step number while the provider is still responding. */
+  const header = thinkingHeaderOf({ live: isLive, stepCount: steps.length, durationSec: elapsedSec });
+  const labels = thinkingLabels();
+  const label = activityLabelFor(isLive, statusLabel, header, labels);
+  const showProgress = showProgressFor(isLive, status);
   const attrs = surfaceDataAttrs({ isLive, showActivityCue: props.showActivityCue !== false, status, answerStarted, isOpen, hasTimeline: timelineSteps.length > 0 });
 
   return (
     <div className={`rn-turn-activity${isLive ? ' is-live' : ''}`} {...attrs}>
       <WebUiTheme>
         <ThinkingSurface
-          label={thinkingLabelOf(header, thinkingLabels())}
+          label={label}
           live={isLive}
+          showProgress={showProgress}
           meta={liveMeta(isLive, answerStarted, status)}
           icon={isLive && status?.toolName ? <ToolActivityIcon name={status.toolName} /> : undefined}
           expandable={hasDetails}

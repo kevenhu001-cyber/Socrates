@@ -23,11 +23,11 @@ import {
 } from './turn/toolCardModel.ts';
 
 const ZH: ThinkingLabels = {
-  live: '思考中 · 第 {n} 步',
-  done: '思考 {sec}s · {n} 步',
-  doneNoSteps: '思考 {sec}s',
-  doneNoTime: '{n} 步',
-  fallback: '思路总结',
+  live: '正在处理…',
+  done: '活动记录 · {sec} 秒',
+  doneNoSteps: '活动记录 · {sec} 秒',
+  doneNoTime: '活动详情',
+  fallback: '活动摘要',
 };
 
 test('splitSummary reads bold, heading, line and sentence shapes', () => {
@@ -82,15 +82,16 @@ test('timeline interleaves by time and merges consecutive tools into one group',
   assert.deepEqual(history.map((entry) => entry.kind), ['step', 'step', 'tools']);
 });
 
-test('header counts steps and rounds duration; labels pick the right template', () => {
+test('activity labels report observed status and duration without claiming reasoning steps', () => {
   const live = thinkingHeaderOf({ live: true, stepCount: 0 });
-  assert.equal(thinkingLabelOf(live, ZH), '思考中 · 第 1 步');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: true, stepCount: 3 }), ZH), '思考中 · 第 3 步');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 6, durationSec: 11.4 }), ZH), '思考 11s · 6 步');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 2, durationSec: 0.2 }), ZH), '思考 1s · 2 步');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 0, durationSec: 4 }), ZH), '思考 4s');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 2 }), ZH), '2 步');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 0, durationSec: Number.NaN }), ZH), '思路总结');
+  assert.equal(live.steps, 1, 'the compatibility view model still guarantees a live count internally');
+  assert.equal(thinkingLabelOf(live, ZH), '正在处理…');
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: true, stepCount: 3 }), ZH), '正在处理…');
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 6, durationSec: 11.4 }), ZH), '活动记录 · 11 秒');
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 2, durationSec: 0.2 }), ZH), '活动记录 · 1 秒');
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 0, durationSec: 4 }), ZH), '活动记录 · 4 秒');
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 2 }), ZH), '活动详情');
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, stepCount: 0, durationSec: Number.NaN }), ZH), '活动摘要');
 });
 
 test('verbs map tool names to one action vocabulary', () => {

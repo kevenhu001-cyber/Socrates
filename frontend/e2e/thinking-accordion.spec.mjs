@@ -10,8 +10,8 @@ test('thinking disclosure supports keyboard control and preserves intent through
   const accordion = page.locator('.rn-turn-activity');
   const toggle = accordion.getByTestId('turn-activity-toggle');
   const body = accordion.getByTestId('turn-activity-body');
-  // Live: 「思考中 · 第 N 步」 with a progress hairline, never a dot.
-  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking · step 1');
+  // Live copy reflects the observed state, not a fabricated step counter.
+  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking…');
   await expect(accordion.getByTestId('turn-activity-progress')).toHaveCount(1);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.focus();
@@ -42,8 +42,8 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await expect(accordion.getByTestId('turn-activity-progress')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await setLang(page, 'zh');
-  // One public step, duration unknown: 「1 步」.
-  await expect(toggle).toContainText('1 步');
+  // Settled activity details do not imply a count of reasoning steps.
+  await expect(toggle).toContainText('活动详情');
   await page.screenshot({ path: 'test-results/thinking-disclosure-desktop.png', animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'test-results/thinking-disclosure-mobile.png', animations: 'disabled' });
