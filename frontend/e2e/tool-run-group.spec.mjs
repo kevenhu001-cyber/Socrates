@@ -79,14 +79,14 @@ const FIXTURE_CALLS = [
    `localStorage['socrates-theme']` at boot, so a screenshot pass has to pin it
    before navigation rather than poke an attribute afterwards. Later init
    scripts run later, so calling this again on the same page re-themes it. */
-async function loadFixtureSession(page, { theme = 'dark', html = null, toolCalls = FIXTURE_CALLS } = {}) {
+async function loadFixtureSession(page, { theme = 'dark', html = null, toolCalls = FIXTURE_CALLS, language = 'en' } = {}) {
   await mockAuthedApp(page);
-  await page.addInitScript((name) => {
+  await page.addInitScript(({ name, appLanguage }) => {
     try {
-      localStorage.setItem('socrates-lang-app', 'en');
+      localStorage.setItem('socrates-lang-app', appLanguage);
       localStorage.setItem('socrates-theme', name);
     } catch (_) {}
-  }, theme);
+  }, { name: theme, appLanguage: language });
   await page.route(new RegExp('/api/(?:v2/)?sessions/' + SESSION_ID + '(?:\\?.*)?$'), async (route) => {
     await route.fulfill({
       status: 200,
@@ -312,6 +312,72 @@ test('a narrow viewport opens the detail as a bottom sheet', async ({ page }) =>
   await detail.getByTestId('tool-detail-close').click();
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
   await expect(body.getByTestId('tool-row-s2')).toBeVisible();
+});
+
+test('mobile tool activity titles stay horizontal and open in a contained touch-friendly sheet', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  const body = await loadFixtureSession(page, { theme: 'light', language: 'zh' });
+
+  const activity = body.getByTestId('turn-activity-toggle');
+  const activityLayout = await activity.evaluate((element) => ({
+    direction: getComputedStyle(element).flexDirection,
+    width: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    height: element.getBoundingClientRect().height,
+  }));
+  expect(activityLayout.direction).toBe('row');
+  expect(activityLayout.scrollWidth).toBeLessThanOrEqual(activityLayout.width + 1);
+  expect(activityLayout.height).toBeGreaterThanOrEqual(44);
+  const retry = body.getByTestId('tool-error-retry');
+  await expect(retry).toBeVisible();
+  expect((await retry.boundingBox()).height).toBeGreaterThanOrEqual(44);
+
+  const toggle = body.getByTestId('tool-group-toggle');
+  const title = body.getByTestId('tool-group-title');
+  const groupLayout = await toggle.evaluate((element) => ({
+    direction: getComputedStyle(element).flexDirection,
+    wrap: getComputedStyle(element).flexWrap,
+    width: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  const titleLayout = await title.evaluate((element) => ({
+    writingMode: getComputedStyle(element).writingMode,
+    height: element.getBoundingClientRect().height,
+    lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight),
+  }));
+  expect(groupLayout.direction).toBe('row');
+  expect(groupLayout.wrap).toBe('nowrap');
+  expect(groupLayout.scrollWidth).toBeLessThanOrEqual(groupLayout.width + 1);
+  expect(titleLayout.writingMode).toBe('horizontal-tb');
+  expect(titleLayout.height).toBeLessThanOrEqual(titleLayout.lineHeight * 1.5);
+
+  await openGroup(body);
+  const row = body.getByTestId('tool-row-s1');
+  const rowLayout = await row.evaluate((element) => ({
+    direction: getComputedStyle(element).flexDirection,
+    wrap: getComputedStyle(element).flexWrap,
+    width: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+    height: element.getBoundingClientRect().height,
+  }));
+  expect(rowLayout.direction).toBe('row');
+  expect(rowLayout.wrap).toBe('nowrap');
+  expect(rowLayout.scrollWidth).toBeLessThanOrEqual(rowLayout.width + 1);
+  expect(rowLayout.height).toBeGreaterThanOrEqual(44);
+  await body.scrollIntoViewIfNeeded();
+  await body.screenshot({ path: 'test-results/tool-run-group-mobile-320-open.png' });
+
+  const detail = await openDetail(page, body, 's1');
+  await expect(detail).toHaveAttribute('data-layout', 'sheet');
+  const detailLayout = await detail.evaluate((element) => ({
+    width: element.getBoundingClientRect().width,
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+  }));
+  expect(detailLayout.width).toBeLessThanOrEqual(320);
+  expect(detailLayout.scrollWidth).toBeLessThanOrEqual(detailLayout.clientWidth + 1);
+  const closeBox = await detail.getByTestId('tool-detail-close').boundingBox();
+  expect(closeBox.height).toBeGreaterThanOrEqual(44);
 });
 
 test('rows share one icon column and the prose column', async ({ page }) => {

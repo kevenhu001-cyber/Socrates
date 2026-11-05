@@ -6,6 +6,7 @@ import { ensureSidebarOpen } from './_universal-helpers.mjs';
 // output/stderr, stored-file artifacts (image stays inline, HTML opens in the
 // island, generic files open in the viewer) and failed tools.
 test('universal tool cards render search results, output and stored artifacts', async ({ page }, testInfo) => {
+  if (testInfo.project.name === 'mobile') await page.setViewportSize({ width: 320, height: 800 });
   const a = '11111111-1111-4111-8111-111111111111';
   const img = '66666666-6666-4666-8666-666666666666';
   const html = '77777777-7777-4777-8777-777777777777';
@@ -86,11 +87,26 @@ test('universal tool cards render search results, output and stored artifacts', 
     const target = page.getByRole('button', { name: 'Tool conversation', exact: true });
     await target.click();
 
-    // Search card: label, preview, status + duration, results when expanded.
+    // Search card: a single horizontal header stays inside the transcript on
+    // both desktop and narrow phones; one tap exposes the inline results.
+    const searchHeader = page.getByRole('button', { name: 'Toggle web_search details' });
+    const headerLayout = await searchHeader.evaluate((element) => ({
+      direction: getComputedStyle(element).flexDirection,
+      wrap: getComputedStyle(element).flexWrap,
+      width: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      titleHeight: element.firstElementChild?.getBoundingClientRect().height || 0,
+    }));
+    expect(headerLayout.direction).toBe('row');
+    expect(headerLayout.wrap).toBe('nowrap');
+    expect(headerLayout.scrollWidth).toBeLessThanOrEqual(headerLayout.width + 1);
+    expect(headerLayout.titleHeight).toBeLessThan(24);
+    await expect(searchHeader).toHaveAttribute('aria-expanded', 'false');
     await expect(page.getByText('Search', { exact: true })).toBeVisible();
     await expect(page.getByText('linear algebra', { exact: true })).toBeVisible();
     await expect(page.getByText('Completed · 820 ms')).toBeVisible();
-    await page.getByRole('button', { name: 'Toggle web_search details' }).click();
+    await searchHeader.click();
+    await expect(searchHeader).toHaveAttribute('aria-expanded', 'true');
     await expect(page.getByText('Linear algebra - Wikipedia', { exact: true })).toBeVisible();
     await expect(page.getByText('en.wikipedia.org')).toBeVisible();
     await expect(page.getByText(/branch of mathematics/)).toBeVisible();

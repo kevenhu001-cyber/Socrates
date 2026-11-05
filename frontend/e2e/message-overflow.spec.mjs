@@ -83,6 +83,7 @@ test('branch and read-aloud dispatch exactly once to the selected message with a
 
 test('opening the workbench keeps the model switcher usable above the chat pane', async ({ page }) => {
   await boot(page);
+  const artifactId = await messageId(page);
   await triggerOf(page).click();
   await menuOf(page).getByRole('menuitem', { name: 'Open in Workbench' }).click();
   const workbench = page.locator('#artifactsWorkbench');
@@ -115,6 +116,7 @@ test('opening the workbench keeps the model switcher usable above the chat pane'
   await workbench.getByRole('button', { name: 'Ask about this artifact' }).click();
   await expect(editor).toContainText('Keep this unsent note');
   await expect(editor).toContainText('About “Conversation”:');
+  await expect(editor).toContainText(`[Current artifact: ${artifactId}, version 1]`);
   await expect(editor).toBeFocused();
   await workbench.locator('.workbench-close-btn').click();
   await expect(workbench).toBeHidden();

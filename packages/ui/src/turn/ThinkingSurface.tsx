@@ -7,7 +7,7 @@
  * The host passes already-public copy only (see thinkingModel).
  */
 import { type ReactNode } from 'react';
-import { Animated, Pressable, View } from 'react-native';
+import { Animated, Pressable, View, useWindowDimensions } from 'react-native';
 import { R, S, focusRing, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
@@ -33,6 +33,7 @@ export interface ThinkingSurfaceProps {
 
 export function ThinkingSurface({ label, live, showProgress = live, meta = [], icon, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
+  const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
   const breathing = useBreathing(live);
@@ -49,11 +50,13 @@ export function ThinkingSurface({ label, live, showProgress = live, meta = [], i
         onPress={onToggle}
         {...handlers}
         style={{
-          alignSelf: 'flex-start',
+          alignSelf: 'stretch',
+          minWidth: 0,
           flexDirection: 'row',
+          flexWrap: 'nowrap',
           alignItems: 'center',
           gap: S[75],
-          minHeight: 32,
+          minHeight: width < 768 ? 44 : 32,
           paddingLeft: S[100],
           paddingRight: expandable ? S[50] : S[100],
           marginLeft: -S[100],
@@ -64,20 +67,22 @@ export function ThinkingSurface({ label, live, showProgress = live, meta = [], i
           cursor: expandable ? 'pointer' : 'auto',
         }}
       >
-        {icon ? <View aria-hidden style={{ width: 16, alignItems: 'center' }}>{icon}</View> : null}
-        <Animated.View style={{ opacity: breathing }}>
+        {icon ? <View aria-hidden style={{ width: 16, flexShrink: 0, alignItems: 'center' }}>{icon}</View> : null}
+        <Animated.View style={{ opacity: breathing, flexShrink: 1, minWidth: 0 }}>
           <UiText
             testID="turn-activity-label"
             variant="labelSm"
             tone={live ? 'ink' : 'secondary'}
             role={live ? 'status' : undefined}
             numberOfLines={1}
+            ellipsizeMode="tail"
+            style={{ flexShrink: 1, minWidth: 0 }}
           >
             {label}
           </UiText>
         </Animated.View>
         {meta.filter(Boolean).map((part) => (
-          <UiText key={part} testID="turn-activity-meta" variant="labelSm" tone="tertiary" numberOfLines={1}>{part}</UiText>
+          <UiText key={part} testID="turn-activity-meta" variant="labelSm" tone="tertiary" numberOfLines={1} ellipsizeMode="tail" style={{ flexShrink: 1, minWidth: 0, maxWidth: '36%' }}>{part}</UiText>
         ))}
         {expandable ? <Chevron open={open} /> : null}
       </Pressable>

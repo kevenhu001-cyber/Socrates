@@ -83,7 +83,7 @@ export function ToolDetailSheet({ visible, onClose, title, subtitle, status, clo
                 </UiText>
               ) : null}
             </View>
-            <UiButton testID="tool-detail-close" label={closeLabel} variant="secondary" size="sm" onPress={onClose} />
+            <UiButton testID="tool-detail-close" label={closeLabel} variant="secondary" size={mode === 'sheet' ? 'lg' : 'sm'} onPress={onClose} style={{ flexShrink: 0 }} />
           </View>
           <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ padding: S[300], gap: S[300] }}>
             {children}
@@ -121,6 +121,7 @@ export interface CodeBlockProps {
 /** Monospace output block with a copy pill. */
 export function CodeBlock({ text, onCopy, copyLabel, copiedLabel, failedLabel, extra, tone = 'plain', maxHeight = 360, testID }: CodeBlockProps) {
   const { colors } = useUiTheme();
+  const { width } = useWindowDimensions();
   const { subtle } = sheets(colors);
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -143,14 +144,14 @@ export function CodeBlock({ text, onCopy, copyLabel, copiedLabel, failedLabel, e
       >
         <MonoText testID="tool-code-output" style={{ fontFamily: monoFamily, lineHeight: 20 }}>{text}</MonoText>
       </ScrollView>
-      <View style={{ flexDirection: 'row', gap: S[75] }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: S[75] }}>
         {extra}
         {onCopy ? (
           <UiButton
             testID="tool-code-copy"
             label={state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : copyLabel}
             variant="secondary"
-            size="sm"
+            size={width < SHEET_BREAKPOINT ? 'lg' : 'sm'}
             aria-live="polite"
             onPress={() => { void copy(); }}
           />

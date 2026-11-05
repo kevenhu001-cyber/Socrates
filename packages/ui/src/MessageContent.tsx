@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from 'react';
-import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { fontStyle, getThemePaletteHex, type FontWeight, type ThemeMode } from '@socrates/theme';
 import type { Attachment, Message, ToolCall } from '@socrates/contracts';
 import type { Token, Tokens } from 'marked';
@@ -8,7 +8,8 @@ import { paletteForDocument } from './visualization';
 import { buildMathDocument } from './artifactDocument';
 import { artifactFromFence, artifactsFromToolCalls, type ArtifactDescriptor } from './artifacts';
 import { fileKindLabel, formatFileSize } from './fileMeta';
-import { practiceAnswerMatches, type ParsedPractice, type ParsedQuiz, type QuizOption } from './scaffolds';
+import { type ParsedPractice, type ParsedQuiz, type QuizOption } from './scaffolds';
+import { evaluatePracticeAnswer } from './learn/practiceAnswer.ts';
 import { toolArtifacts, toolDurationLabel, toolFailureText, toolInputPreview, toolInputText, toolLabel, toolOutputText, toolSearchResults, toolState } from './toolModel';
 import { uiStrings, type UiLanguage, type UiStrings } from './strings';
 import { getTutorLegacyPalette } from './tutorTheme';
@@ -31,9 +32,9 @@ export type QuizPick = {
    * slot conquers the mistake (baseline `quizSlotId`). */
   slotId?: string | null;
 };
-/** One practice submission: mirrors the baseline — a synthetic
- * `[Practice attempt]` turn always goes out; hosts may also reset the
- * attempt counter on a self-check hit. */
+/** One practice submission: the turn always goes out; `isRight: null` means
+ * the answer key did not support a reliable local comparison. Hosts must not
+ * turn an unverified answer into a recorded mistake. */
 export type PracticeSubmission = {
   problem: string;
   answer: string;
@@ -257,8 +258,8 @@ function TutorQuizCard({ quiz, slotId = null, p, t, mode, onQuizPick }: { quiz: 
 }
 
 /** Interactive practice proxy (baseline `mountPracticeWidget`): optional
- * hint, optional Reveal (when `correct` is declared), submit always sends
- * the `[Practice attempt]` turn; self-check feedback stays local. */
+ * hint and Reveal. Submit always sends the attempt; only unambiguous keys are
+ * self-graded locally, while unsupported answer forms wait for tutor review. */
 function TutorPracticeCard({ practice, p, t, mode, onPracticeSubmit }: { practice: ParsedPractice; p: Palette; t: UiStrings; mode: ThemeMode } & MessageActions) {
   const [answer, setAnswer] = useState('');
   const [hintOpen, setHintOpen] = useState(false);
@@ -269,10 +270,12 @@ function TutorPracticeCard({ practice, p, t, mode, onPracticeSubmit }: { practic
     if (!value) { setFeedback({ bad: true, text: t.practiceEmpty }); return; }
     if (sent) return;
     setSent(true);
-    const isRight = practice.correct ? practiceAnswerMatches(value, practice.correct) : null;
+    const assessment = practice.correct ? evaluatePracticeAnswer(value, practice.correct) : 'unverified';
+    const isRight = assessment === 'correct' ? true : assessment === 'incorrect' ? false : null;
     onPracticeSubmit?.({ problem: practice.problem, answer: value, correct: practice.correct, isRight });
-    if (!practice.correct) { setFeedback({ bad: false, text: t.practiceSent }); return; }
-    setFeedback({ bad: !isRight, text: isRight ? t.practiceSelfCorrect : t.practiceSelfWrong(practice.correct) });
+    if (assessment === 'correct') { setFeedback({ bad: false, text: t.practiceSelfCorrect }); return; }
+    if (assessment === 'incorrect') { setFeedback({ bad: true, text: t.practiceSelfWrong(practice.correct || '') }); return; }
+    setFeedback({ bad: false, text: t.practiceSent });
   };
   const reveal = () => {
     if (sent || !practice.correct) return;
@@ -312,6 +315,7 @@ function TutorPracticeCard({ practice, p, t, mode, onPracticeSubmit }: { practic
 
 function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }: { tool: ToolCall; p: Palette; t: UiStrings } & MessageActions) {
   const [expanded, setExpanded] = useState(false);
+  const { width } = useWindowDimensions();
   const state = toolState(tool);
   const status = state === 'failed' ? t.toolFailed : state === 'completed' ? t.toolCompleted : t.toolRunning;
   const duration = toolDurationLabel(tool.durationMs);
@@ -326,10 +330,11 @@ function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }
     mime: artifact.mimeType || (artifact.kind === 'image' ? 'image/*' : 'application/octet-stream'), size: 0, fileId: artifact.id,
   });
   return <View style={[styles.tool, { borderColor: p.border.default }]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={t.toggleToolDetails(tool.name)} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.toolHeader}>
-      <Text style={{ color: p.text.primary, fontWeight: '600' }}>{toolLabel(tool.name)}</Text>
-      {preview ? <Text numberOfLines={1} style={{ color: p.text.muted, flex: 1 }}>{preview}</Text> : <View style={{ flex: 1 }} />}
-      <Text style={{ color: state === 'failed' ? p.danger : p.text.muted }}>{status}{duration ? ` · ${duration}` : ''} {expanded ? '⌃' : '⌄'}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t.toggleToolDetails(tool.name)} accessibilityState={{ expanded }} aria-expanded={expanded} onPress={() => setExpanded(!expanded)} style={[styles.toolHeader, { minHeight: width < 768 ? 44 : 40 }]}>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: p.text.primary, fontWeight: '600', flexShrink: 1, minWidth: 0, maxWidth: '42%' }}>{toolLabel(tool.name)}</Text>
+      {preview ? <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: p.text.muted, flex: 1, minWidth: 0 }}>{preview}</Text> : <View style={{ flex: 1, minWidth: 0 }} />}
+      <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: state === 'failed' ? p.danger : p.text.muted, flexShrink: 0, maxWidth: '42%' }}>{status}{duration ? ` · ${duration}` : ''}</Text>
+      <Text accessible={false} style={{ color: p.text.muted, fontSize: 16, lineHeight: 18, flexShrink: 0 }}>{expanded ? '⌃' : '⌄'}</Text>
     </Pressable>
     {expanded ? <View style={{ gap: 8, marginTop: 8 }}>
       {inputText ? <Text selectable style={[styles.mono, styles.toolInput, { color: p.text.muted, borderColor: p.border.default }]}>{inputText}</Text> : null}
@@ -464,7 +469,7 @@ const styles = StyleSheet.create({
   quote: { paddingLeft: 12, borderLeftWidth: 3, marginVertical: 8 },
   list: { marginVertical: 4 }, listRow: { flexDirection: 'row', gap: 6 },
   tableRow: { flexDirection: 'row' }, tableCell: { width: 160, padding: 8, borderWidth: StyleSheet.hairlineWidth },
-  tool: { padding: 12, borderWidth: 1, borderRadius: 12 }, toolHeader: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  tool: { width: '100%', minWidth: 0, padding: 12, borderWidth: 1, borderRadius: 12 }, toolHeader: { width: '100%', minWidth: 0, flexDirection: 'row', flexWrap: 'nowrap', gap: 8, alignItems: 'center' },
   toolInput: { borderWidth: 1, borderRadius: 8, padding: 8, maxHeight: 160 },
   toolOutput: { borderWidth: 1, borderRadius: 8, padding: 8, maxHeight: 260 },
   resultRow: { flexDirection: 'row', gap: 6 },

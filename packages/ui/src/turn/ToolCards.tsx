@@ -6,7 +6,7 @@
  * Status is spoken as a word (进行中 / 完成 / 失败 / 待审批) — never a dot.
  */
 import { Children, createContext, useContext, type ReactNode } from 'react';
-import { Animated, Pressable, View } from 'react-native';
+import { Animated, Pressable, View, useWindowDimensions } from 'react-native';
 import { uiFont } from '@socrates/theme';
 import { H, R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
@@ -26,8 +26,8 @@ function StatusWord({ status, label, testID }: { status: ToolCardStatus; label: 
   const breathing = useBreathing(status === 'running');
   const tone = status === 'error' || status === 'awaiting' ? 'ink' : 'tertiary';
   return (
-    <Animated.View style={{ opacity: breathing }}>
-      <UiText testID={testID} role="status" variant="labelSm" tone={tone} numberOfLines={1} style={status === 'error' || status === 'awaiting' ? { fontWeight: '500' } : undefined}>
+    <Animated.View style={{ opacity: breathing, flexShrink: 0 }}>
+      <UiText testID={testID} role="status" variant="labelSm" tone={tone} numberOfLines={1} style={{ flexShrink: 0, minWidth: 0, ...(status === 'error' || status === 'awaiting' ? { fontWeight: '500' } : {}) }}>
         {label}
       </UiText>
     </Animated.View>
@@ -59,6 +59,7 @@ function IconTile({ children }: { children?: ReactNode }) {
       style={{
         width: 24,
         height: 24,
+        flexShrink: 0,
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
@@ -73,6 +74,7 @@ function IconTile({ children }: { children?: ReactNode }) {
 
 export function ToolCallRow({ id, icon, verb, target, status, statusLabel, duration, onPress, dataSet }: ToolCallRowProps) {
   const { colors } = useUiTheme();
+  const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const grouped = useContext(InGroup);
   const { subtle, surface } = sheets(colors);
@@ -90,10 +92,13 @@ export function ToolCallRow({ id, icon, verb, target, status, statusLabel, durat
       {...handlers}
       {...dataProps(dataSet)}
       style={{
+        alignSelf: 'stretch',
+        minWidth: 0,
         flexDirection: 'row',
+        flexWrap: 'nowrap',
         alignItems: 'center',
         gap: S[100],
-        minHeight: H.row,
+        minHeight: width < 768 ? H.head : H.row,
         paddingHorizontal: grouped ? S[200] : S[75],
         marginHorizontal: grouped ? 0 : -S[75],
         borderRadius: grouped ? 0 : R.row,
@@ -104,15 +109,14 @@ export function ToolCallRow({ id, icon, verb, target, status, statusLabel, durat
       }}
     >
       <IconTile>{icon}</IconTile>
-      <UiText testID="tool-row-verb" variant="labelSm" tone="ink" numberOfLines={1} style={{ flexShrink: 0 }}>{verb}</UiText>
+      <UiText testID="tool-row-verb" variant="labelSm" tone="ink" numberOfLines={1} ellipsizeMode="tail" style={{ flexShrink: 1, minWidth: 0, maxWidth: '48%' }}>{verb}</UiText>
       {target ? (
-        <UiText testID="tool-row-target" variant="labelSm" tone="secondary" numberOfLines={1} style={{ flexShrink: 1, minWidth: 0, fontWeight: '400' }}>
+        <UiText testID="tool-row-target" variant="labelSm" tone="secondary" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1, minWidth: 0, fontWeight: '400' }}>
           {target}
         </UiText>
-      ) : null}
-      <View style={{ flex: 1 }} />
+      ) : <View style={{ flex: 1, minWidth: 0 }} />}
       <StatusWord status={status} label={statusLabel} testID="tool-row-status" />
-      {duration ? <UiText testID="tool-row-duration" variant="labelSm" tone="tertiary" style={{ fontWeight: '400', fontVariant: ['tabular-nums'] }}>{duration}</UiText> : null}
+      {duration ? <UiText testID="tool-row-duration" variant="labelSm" tone="tertiary" numberOfLines={1} style={{ flexShrink: 0, fontWeight: '400', fontVariant: ['tabular-nums'] }}>{duration}</UiText> : null}
       {interactive ? <Chevron /> : null}
     </Pressable>
   );
@@ -138,6 +142,7 @@ export interface ToolCallGroupProps {
  */
 export function ToolCallGroup({ id, icon, title, status, statusLabel, duration, open, onToggle, bodyId, children }: ToolCallGroupProps) {
   const { colors } = useUiTheme();
+  const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const { subtle, surface } = sheets(colors);
   const { hovered, focused, handlers } = usePressFeedback();
@@ -145,17 +150,22 @@ export function ToolCallGroup({ id, icon, title, status, statusLabel, duration, 
   return (
     <View
       testID={`tool-group-${id}`}
-      style={{ borderRadius: R.card, backgroundColor: subtle, boxShadow: insetRing(colors.hairline), overflow: 'hidden' }}
+      style={{ width: '100%', minWidth: 0, borderRadius: R.card, backgroundColor: subtle, boxShadow: insetRing(colors.hairline), overflow: 'hidden' }}
     >
       <Pressable
         testID="tool-group-toggle"
         role="button"
         aria-expanded={open}
         aria-controls={bodyId}
+        accessibilityLabel={[title, statusLabel, duration].filter(Boolean).join(' · ')}
         onPress={onToggle}
         {...handlers}
         style={{
+          alignSelf: 'stretch',
+          width: '100%',
+          minWidth: 0,
           flexDirection: 'row',
+          flexWrap: 'nowrap',
           alignItems: 'center',
           gap: S[100],
           minHeight: H.head,
@@ -167,10 +177,9 @@ export function ToolCallGroup({ id, icon, title, status, statusLabel, duration, 
         }}
       >
         <IconTile>{icon}</IconTile>
-        <UiText testID="tool-group-title" variant="labelSm" tone="ink" numberOfLines={1}>{title}</UiText>
-        <View style={{ flex: 1 }} />
+        <UiText testID="tool-group-title" variant="labelSm" tone="ink" numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1, minWidth: 0 }}>{title}</UiText>
         <StatusWord status={status} label={statusLabel} testID="tool-group-status" />
-        {duration ? <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400', fontVariant: ['tabular-nums'] }}>{duration}</UiText> : null}
+        {duration && width >= 360 ? <UiText variant="labelSm" tone="tertiary" numberOfLines={1} style={{ flexShrink: 0, fontWeight: '400', fontVariant: ['tabular-nums'] }}>{duration}</UiText> : null}
         <Chevron open={open} />
       </Pressable>
       <Animated.View
@@ -182,11 +191,13 @@ export function ToolCallGroup({ id, icon, title, status, statusLabel, duration, 
           borderTopWidth: 1,
           borderTopColor: colors.hairline,
           backgroundColor: colors.card,
+          width: '100%',
+          minWidth: 0,
         }, reveal]}
       >
         <InGroup.Provider value>
           {Children.map(children, (child, index) => (
-            <View style={{ borderTopWidth: index ? 1 : 0, borderTopColor: colors.hairline }}>{child}</View>
+            <View style={{ width: '100%', minWidth: 0, borderTopWidth: index ? 1 : 0, borderTopColor: colors.hairline }}>{child}</View>
           ))}
         </InGroup.Provider>
       </Animated.View>
@@ -218,6 +229,7 @@ export interface ToolApprovalCardProps {
  */
 export function ToolApprovalCard({ title, description, badge, facts, status, decisions, showControls, onDecide }: ToolApprovalCardProps) {
   const { colors } = useUiTheme();
+  const { width } = useWindowDimensions();
   const { subtle } = sheets(colors);
   return (
     <View
@@ -256,7 +268,7 @@ export function ToolApprovalCard({ title, description, badge, facts, status, dec
               testID={`tool-approval-${decision.id}`}
               label={decision.label}
               variant={decision.variant}
-              size="sm"
+              size={width < 768 ? 'lg' : 'sm'}
               onPress={() => onDecide(decision.id)}
               {...dataProps({ approvalAction: decision.id })}
             />
@@ -270,6 +282,7 @@ export function ToolApprovalCard({ title, description, badge, facts, status, dec
 /** Failed call: a tinted sheet with a ringed ✕ mark, the message and a retry capsule. */
 export function ToolErrorNotice({ message, retryLabel, onRetry }: { message: string; retryLabel?: string; onRetry?: () => void }) {
   const { colors } = useUiTheme();
+  const { width } = useWindowDimensions();
   const { subtle } = sheets(colors);
   return (
     <View
@@ -293,7 +306,7 @@ export function ToolErrorNotice({ message, retryLabel, onRetry }: { message: str
         <UiText variant="labelSm" tone="secondary" style={{ fontSize: 11, lineHeight: 20 }}>✕</UiText>
       </View>
       <UiText testID="tool-error-message" variant="bodySm" tone="ink" style={{ flex: 1, minWidth: 160 }}>{message}</UiText>
-      {retryLabel && onRetry ? <UiButton testID="tool-error-retry" label={retryLabel} variant="secondary" size="sm" onPress={onRetry} /> : null}
+      {retryLabel && onRetry ? <UiButton testID="tool-error-retry" label={retryLabel} variant="secondary" size={width < 768 ? 'lg' : 'sm'} onPress={onRetry} /> : null}
     </View>
   );
 }

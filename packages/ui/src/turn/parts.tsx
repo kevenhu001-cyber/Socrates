@@ -58,11 +58,12 @@ export function Chevron({ open = false, size = 7, tone = 'tertiary' }: { open?: 
   const color = tone === 'ink' ? colors.ink : tone === 'secondary' ? colors.inkSecondary : colors.inkTertiary;
   const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['-45deg', '45deg'] });
   return (
-    <View aria-hidden style={{ width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
+    <View aria-hidden style={{ width: 16, height: 16, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}>
       <Animated.View
         style={{
           width: size,
           height: size,
+          flexShrink: 0,
           borderRightWidth: 1.5,
           borderBottomWidth: 1.5,
           borderColor: color,

@@ -6,6 +6,7 @@
  * with error codes and retry hints as a quiet technical footnote.
  */
 import { useState } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { CodeBlock, DetailSection, ImageOutput, PlainDetail, SourceList, sourceCardsOf } from '@socrates/ui/turn';
 import { UiButton } from '@socrates/ui/primitives';
 import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
@@ -31,6 +32,7 @@ function copyLabels() {
 
 function TextSection({ section }: { section: Extract<Section, { kind: 'output' | 'error' }> }) {
   const [expanded, setExpanded] = useState(false);
+  const { width } = useWindowDimensions();
   const expandable = Boolean(section.fullText) && section.fullText !== section.text;
   const shown = expanded && section.fullText ? section.fullText : section.text;
   return (
@@ -44,7 +46,7 @@ function TextSection({ section }: { section: Extract<Section, { kind: 'output' |
           <UiButton
             testID="tool-output-expand"
             variant="ghost"
-            size="sm"
+            size={width < 768 ? 'lg' : 'sm'}
             aria-expanded={expanded}
             label={expanded
               ? translate('tool.showLess', 'Show less')
