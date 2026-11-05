@@ -48,7 +48,7 @@ export function submitExam() {
     if ((q.type === "fill-blank" || q.type === "short-answer") && (!ans[i] || String(ans[i]).trim() === "")) missing.push(i + 1);
   });
   if (missing.length) {
-    const el = document.querySelector('.exam-q-card#examQ' + (missing[0] - 1));
+    const el = document.querySelector('#examQ' + (missing[0] - 1) + ', [data-exam-q="' + (missing[0] - 1) + '"]');
     if (el) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
     return;
   }

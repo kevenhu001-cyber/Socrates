@@ -1,13 +1,8 @@
+import type { ExamDraft } from '@socrates/ui/exam-model';
+import { createExamDraft } from '@socrates/ui/exam-model';
 import type { ExamQuestion } from '../exam/types.ts';
 
-export type ExamFormDraft = {
-  topic: string;
-  instructions: string;
-  count: number;
-  model: string;
-  difficulty: string;
-  selectedTypes: { mc: boolean; fb: boolean; sa: boolean };
-};
+export type ExamFormDraft = ExamDraft;
 
 export type ExamViewMode = 'form' | 'loading' | 'provider-required' | 'error' | 'cancelled' | 'questions';
 
@@ -18,19 +13,7 @@ export type ExamProgress = {
 };
 
 export function createExamFormDraft(overrides: Partial<ExamFormDraft> = {}): ExamFormDraft {
-  const defaults: ExamFormDraft = {
-    topic: '',
-    instructions: '',
-    count: 5,
-    model: '',
-    difficulty: 'intermediate',
-    selectedTypes: { mc: true, fb: true, sa: false },
-  };
-  return {
-    ...defaults,
-    ...overrides,
-    selectedTypes: { ...defaults.selectedTypes, ...overrides.selectedTypes },
-  };
+  return createExamDraft(overrides);
 }
 
 export function createInitialExamState() {

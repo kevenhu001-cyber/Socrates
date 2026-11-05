@@ -58,26 +58,37 @@ function optionsOf(value: JsonValue | undefined): ExamOption[] {
   }));
 }
 
+/** Tolerant parse of one stored question. Returns null for generation-error
+ * placeholders and empty prompts; `index` is the caller's answer key. */
+export function examQuestionFromRaw(raw: unknown, index: number): ExamQuestion | null {
+  if (!isRecord(raw)) return null;
+  if (raw.type === 'error') return null;
+  const prompt = text(raw.q) || text(raw.question);
+  if (!prompt) return null;
+  return {
+    index,
+    type: questionType(raw.type),
+    prompt,
+    options: optionsOf(raw.opts),
+    answer: text(raw.answer),
+    answers: Array.isArray(raw.answers) ? raw.answers.map((entry) => text(entry)).filter(Boolean) : [],
+    explanation: text(raw.explanation),
+  };
+}
+
+export function examQuestionsFromRaw(raws: readonly unknown[]): ExamQuestion[] {
+  const out: ExamQuestion[] = [];
+  raws.forEach((raw, index) => {
+    const question = examQuestionFromRaw(raw, index);
+    if (question) out.push(question);
+  });
+  return out;
+}
+
 /** Tolerant parse: drops generation-error placeholders and empty prompts. */
 export function parseExamQuestions(data: ExamData | null | undefined): ExamQuestion[] {
   const questions = data && Array.isArray(data.questions) ? data.questions : [];
-  const out: ExamQuestion[] = [];
-  questions.forEach((raw, index) => {
-    if (!isRecord(raw)) return;
-    if (raw.type === 'error') return;
-    const prompt = text(raw.q) || text(raw.question);
-    if (!prompt) return;
-    out.push({
-      index,
-      type: questionType(raw.type),
-      prompt,
-      options: optionsOf(raw.opts),
-      answer: text(raw.answer),
-      answers: Array.isArray(raw.answers) ? raw.answers.map((entry) => text(entry)).filter(Boolean) : [],
-      explanation: text(raw.explanation),
-    });
-  });
-  return out;
+  return examQuestionsFromRaw(questions);
 }
 
 export function examAnswersOf(data: ExamData | null | undefined): ExamAnswers {
@@ -145,6 +156,138 @@ export function examAnswerValue(question: ExamQuestion, value: ExamAnswerValue |
   if (value === undefined) return undefined;
   if (question.type === 'multiple-choice') return selectedOptionIndex(question, value) ?? undefined;
   return typeof value === 'string' ? value : String(value);
+}
+
+/** Indices of answered questions, in question order (nav pills). */
+export function examAnsweredIndices(questions: ExamQuestion[], answers: ExamAnswers): number[] {
+  return questions.filter((question) => isAnswered(question, answers[question.index])).map((question) => question.index);
+}
+
+/* ── results ────────────────────────────────────────────────────────────── */
+
+export interface ExamResultOption {
+  letter: string;
+  text: string;
+  isCorrect: boolean;
+  isSelected: boolean;
+}
+
+export interface ExamResultQuestion {
+  type: ExamQuestionType;
+  typeLabel: string;
+  questionLabel: string;
+  questionText: string;
+  answer: string;
+  options: ExamResultOption[];
+  isCorrect: boolean;
+  statusLabel: string;
+  expectedLabel: string;
+  expectedAnswer: string;
+  explanationLabel: string;
+  explanationText: string;
+}
+
+export interface ExamResults {
+  correct: number;
+  total: number;
+  percent: number;
+  correctLabel: string;
+  questions: ExamResultQuestion[];
+}
+
+export type ExamCopy = (en: string, zh: string) => string;
+
+function resultTypeLabel(type: ExamQuestionType, copy: ExamCopy): string {
+  if (type === 'multiple-choice') return copy('Multiple choice', '选择题');
+  if (type === 'fill-blank') return copy('Fill blank', '填空题');
+  return copy('Short answer', '简答题');
+}
+
+/** Results page data: graded rows plus the labels the host already translated.
+ * Mirrors the web baseline's `buildExamResultsSnapshot`. */
+export function examResults(questions: ExamQuestion[], answers: ExamAnswers, copy: ExamCopy): ExamResults {
+  const grade = gradeExam(questions, answers);
+  const rows: ExamResultQuestion[] = questions.map((question) => {
+    const value = answers[question.index];
+    const isCorrect = grade.results[question.index] === true;
+    const selected = question.type === 'multiple-choice' ? selectedOptionIndex(question, value) : null;
+    return {
+      type: question.type,
+      typeLabel: resultTypeLabel(question.type, copy),
+      questionLabel: copy('Question', '题目'),
+      questionText: question.prompt.trim(),
+      answer: typeof value === 'string' ? value : '',
+      options: question.options.map((option, index) => ({
+        letter: option.letter,
+        text: option.text.trim(),
+        isCorrect: option.letter === question.answer,
+        isSelected: selected === index,
+      })),
+      isCorrect,
+      statusLabel: isCorrect ? copy('Correct', '正确') : copy('Incorrect', '错误'),
+      expectedLabel: question.type === 'fill-blank' ? copy('Correct answer', '正确答案') : copy('Expected', '期望答案'),
+      expectedAnswer: question.type === 'fill-blank' ? question.answers.join(', ') : question.answer,
+      explanationLabel: copy('Explanation', '解释'),
+      explanationText: question.explanation.trim(),
+    };
+  });
+  return {
+    correct: grade.correct,
+    total: rows.length,
+    percent: rows.length > 0 ? Math.round((grade.correct / rows.length) * 100) : 0,
+    correctLabel: copy('correct', '正确'),
+    questions: rows,
+  };
+}
+
+/* ── setup draft ────────────────────────────────────────────────────────── */
+
+export const EXAM_DIFFICULTIES = ['beginner', 'intermediate', 'hard', 'expert'] as const;
+export type ExamDifficulty = typeof EXAM_DIFFICULTIES[number];
+
+export interface ExamQuestionTypeSelection {
+  mc: boolean;
+  fb: boolean;
+  sa: boolean;
+}
+
+export interface ExamDraft {
+  topic: string;
+  instructions: string;
+  count: number;
+  model: string;
+  difficulty: string;
+  selectedTypes: ExamQuestionTypeSelection;
+}
+
+export type ExamDraftPatch = Partial<Omit<ExamDraft, 'selectedTypes'>> & {
+  selectedTypes?: Partial<ExamQuestionTypeSelection>;
+};
+
+export function createExamDraft(overrides: ExamDraftPatch = {}): ExamDraft {
+  const defaults: ExamDraft = {
+    topic: '',
+    instructions: '',
+    count: 5,
+    model: '',
+    difficulty: 'intermediate',
+    selectedTypes: { mc: true, fb: true, sa: false },
+  };
+  return {
+    ...defaults,
+    ...overrides,
+    selectedTypes: { ...defaults.selectedTypes, ...overrides.selectedTypes },
+  };
+}
+
+/** Enabled question types in canonical order; an empty selection means all. */
+export function examTypesOf(selection: ExamQuestionTypeSelection | undefined): ExamQuestionType[] {
+  if (!selection) return [...EXAM_QUESTION_TYPES];
+  const enabled: ExamQuestionType[] = [];
+  if (selection.mc) enabled.push('multiple-choice');
+  if (selection.fb) enabled.push('fill-blank');
+  if (selection.sa) enabled.push('short-answer');
+  return enabled.length ? enabled : [...EXAM_QUESTION_TYPES];
 }
 
 /* ── generation ─────────────────────────────────────────────────────────── */

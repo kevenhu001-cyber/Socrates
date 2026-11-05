@@ -4,7 +4,7 @@ import { stateStore } from '../state/store.ts';
 export function examNavCurrentIdx() {
   const container = document.getElementById('examQuestionsContainer');
   if (!container) return 0;
-  const cards = container.querySelectorAll(".exam-q-card[id^='examQ']");
+  const cards = container.querySelectorAll("[data-exam-q]");
   if (!cards.length) return 0;
   let closest = 0;
   let bestDistance = Infinity;
@@ -20,7 +20,7 @@ export function examNavCurrentIdx() {
 }
 
 export function examNavJump(index: string|number) {
-  const card = document.getElementById('examQ' + index);
+  const card = document.getElementById('examQ' + index) || document.querySelector('[data-exam-q="' + index + '"]');
   if (!card) return;
   card.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
 }

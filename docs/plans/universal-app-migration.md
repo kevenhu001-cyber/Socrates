@@ -1,8 +1,10 @@
 # Universal App 迁移路线（2026-10-06 生效）
 
-> 当前结构与剩余债务见 [UI 结构与迁移边界](../architecture/ui-structure.md)（2026-10-26）。
+> 当前结构与剩余债务见 [UI 结构与迁移边界](../architecture/ui-structure.md)（2026-11-05）。
 > 第 9 节起为历史进展，保留当时的验证结果；已删除目录和工作流以当前结构为准。
 > 2026-11-02 边界澄清：SPA 已通过 RN Web 接入部分 `packages/ui` 模块，见上述当前结构文档的 RN-1。
+> 2026-11-05：RN-2～RN-14 的主题、落点与未完成项（transcript、富文本输入、Universal App
+> 仍走 barrel）整理在 [UI 结构与迁移边界 · RN 轮次现状](../architecture/ui-structure.md)。
 > 这不替代逐模块行为签收；未明确移交的宿主、移动参考和样式优先级仍保持现有契约。
 >
 > 核心原则：共享业务逻辑 + 共享 React Native UI，平台差异只留在最底层。
@@ -31,7 +33,7 @@
 | `@socrates/settings` | theme/language/haptics Zustand + storage hydrate | 已有 |
 | `@socrates/platform` | `KeyValueStore` + `PlatformServices` 接口 + memory 实现 | 已有 |
 | `@socrates/theme` | tokens + RN hex 映射（`palettesHex`），前后端同源 `frontend/src/ui/tokens.ts` | 已有 |
-| `@socrates/ui` | `Sidebar` / `ChatMessageList` / `Composer`（RN + Reanimated，light/dark） | 已有，按模块验证基准 |
+| `@socrates/ui` | 两套入口并存（2026-11-05）：barrel 的 `Sidebar` / `ChatMessageList` / `Composer` 只服务 Universal App；`shell` / `composer` / `turn` / `learn` / `think` / `study` 子模块由 SPA 经 RN Web 使用 | 已有，待定是否收敛 |
 
 禁止这些包依赖 DOM、`react-dom`、`localStorage`、`window`/`document`。
 平台差异只允许在 `apps/socrates/src/*.web.ts`、`*.android.ts`、

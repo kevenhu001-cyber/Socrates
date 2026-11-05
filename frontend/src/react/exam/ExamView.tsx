@@ -1,181 +1,41 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ExamActionFooter, type ExamAction } from './ExamActionFooter';
-import { ExamNavigation, type ExamNavigationSnapshot } from './ExamNavigation';
-import { ExamQuestionCard } from './ExamQuestionCard';
-import { ExamResults } from './ExamResults';
-import { ExamSetupBody, ExamSetupFooter, type ExamSetupSnapshot } from './ExamSetup';
-import { ExamStatus } from './ExamStatus';
+/* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
+import '../rn/rnwGlobal';
+import { useCallback, useEffect, useState } from 'react';
+import { ExamFooter, ExamNavigation, ExamPanel, type ExamCommand } from '@socrates/ui/exam';
+import type { ExamDraftPatch } from '@socrates/ui/exam-model';
 import { dispatchExam, useExamStore, useUiStore } from '../../store/index.ts';
-import { getCurrentLanguage } from '../../i18n/languageState.ts';
-import { i18n } from '../legacy/gateway.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.service.ts';
-import { buildExamResultsSnapshot } from '../../exam/results.ts';
 import { examNavCurrentIdx, examNavJump, examNavStep } from '../../exam/navigation.ts';
 import { cancelExamGeneration, runExamGeneration, selectExamOpt } from '../../exam/generation.ts';
 import { closeExamView, renderExamForm } from '../../exam.ts';
 import { scheduleExamAnswerSave, setExamAnswer, submitExam } from '../../exam/persistence.ts';
-import type { ExamQuestion } from '../../exam/types.ts';
-import type { ExamFormDraft, ExamProgress } from '../../state/exam.ts';
+import { buildExamChrome, buildExamStrings } from '../../exam/copy.ts';
+import { examActionsOf, examModeOf, examScreenOf, examTitleOf, type ExamSnapshot } from '../../exam/screen.ts';
+import { useInlineMath } from '../rn/useInlineMath';
+import { WebUiTheme } from '../rn/WebUiTheme';
 
-function L(en: string, zh: string) {
-  return getCurrentLanguage() === 'zh' ? zh : en;
+/* Host ids kept from the DOM baseline: navigation.ts / persistence.ts query
+ * them, and the Playwright specs address the same nodes. */
+const EXAM_IDS = {
+  topic: 'examTopic',
+  instructions: 'examInstructions',
+  count: 'examCountDisplay',
+  modelTrigger: 'examModelTrigger',
+  questionsContainer: 'examQuestionsContainer',
+  questionCardPrefix: 'examQ',
+};
+
+function getExamProviders(): { id: string; label: string }[] {
+  const snapshot = getProviderConfigSnapshot();
+  return Array.isArray(snapshot.providers)
+    ? snapshot.providers.filter((provider) => provider?.id).map((provider) => ({
+      id: provider.id,
+      label: provider.label || provider.model || provider.id,
+    }))
+    : [];
 }
 
-function buildSetupText(): ExamSetupSnapshot['text'] {
-  return {
-    eyebrow: L('Assessment studio', '测评工作室'),
-    heroTitle: L('Build a focused practice exam', '创建一份专注的练习考卷'),
-    heroDescription: L('Choose the scope and challenge. Socrates will compose a balanced paper you can complete at your own pace.', '确定范围与难度，Socrates 会生成一份结构均衡、可按自己节奏完成的考卷。'),
-    topic: i18n('exam.topic', 'Topic'),
-    topicHelp: L('Name the subject or learning objective', '填写学科、章节或学习目标'),
-    topicPlaceholder: L('e.g. Linear Algebra, World War II...', '如：线性代数、量子力学、二战…'),
-    settings: L('Paper settings', '考卷设置'),
-    settingsHelp: L('Select the model, difficulty, and length', '选择生成模型、难度与题量'),
-    model: L('Model', '生成模型'),
-    modelPlaceholder: L('Select a model', '选择模型'),
-    noModels: L('No models available', '无可用模型'),
-    difficulty: i18n('exam.difficulty', 'Difficulty'),
-    count: i18n('exam.count', 'Questions'),
-    fewer: L('Fewer', '减少'),
-    more: L('More', '增加'),
-    types: i18n('exam.types', 'Question types'),
-    typesHelp: L('Keep at least one response format', '至少保留一种作答形式'),
-    multipleChoice: L('Multiple choice', '选择题'),
-    multipleChoiceHelp: L('Choose one answer', '从选项中选择答案'),
-    fillBlank: L('Fill blank', '填空题'),
-    fillBlankHelp: L('Recall key terms', '回忆关键概念或结果'),
-    shortAnswer: L('Short answer', '简答题'),
-    shortAnswerHelp: L('Explain your reasoning', '用自己的语言说明推理'),
-    instructions: i18n('exam.instructions', 'Instructions'),
-    instructionsHelp: L('Optional constraints for the examiner', '可选，补充覆盖范围或出题偏好'),
-    instructionsPlaceholder: L('Specific topics to cover, or leave blank...', '具体说明要覆盖的知识点，留空则由 AI 决定…'),
-    cancel: i18n('common.cancel', 'Cancel'),
-    generate: i18n('exam.generate', 'Generate exam'),
-    beginner: L('Beginner', '入门'),
-    intermediate: L('Intermediate', '中级'),
-    hard: L('Hard', '困难'),
-    expert: L('Expert', '专家'),
-  };
-}
-
-function buildQuestionCardData(question: ExamQuestion, index: number, total: number, savedAnswer: string | number | undefined) {
-  const typeLabels: Record<string, string> = {
-    'multiple-choice': L('Multiple choice', '选择题'),
-    'fill-blank': L('Fill blank', '填空题'),
-    'short-answer': L('Short answer', '简答题'),
-    error: L('Failed', '生成失败'),
-  };
-  return {
-    index,
-    total,
-    type: question.type,
-    questionLabel: L('Question', '题目'),
-    typeLabel: typeLabels[question.type] || question.type,
-    questionText: String(question.q ?? '').trim(),
-    options: Array.isArray(question.opts) ? question.opts.map((option) => ({
-      letter: option.letter || '',
-      text: String(option.text ?? '').trim(),
-    })) : [],
-    savedAnswer: savedAnswer == null ? null : savedAnswer,
-    answerLabel: L('Answer for question ', '第 ') + (index + 1) + L('', ' 题答案'),
-    placeholder: L('Type your answer…', '输入你的答案…'),
-  };
-}
-
-function ExamQuestionList({
-  questions,
-  answers,
-  readOnly,
-}: {
-  questions: ExamQuestion[];
-  answers: Record<string, string | number | undefined>;
-  readOnly: boolean;
-}) {
-  function updateOption(index: number, value: number) {
-    if (readOnly) return;
-    selectExamOpt(index, value);
-  }
-
-  function updateText(index: number, value: string) {
-    if (readOnly) return;
-    setExamAnswer(index, value);
-    scheduleExamAnswerSave();
-  }
-
-  return (
-    <div id="examQuestionsContainer">
-      {questions.map((question, index) => (
-        <div className="exam-q-card" id={`examQ${index}`} data-idx={index} key={`${index}-${question.type}-${question.q}`}>
-          <ExamQuestionCard
-            {...buildQuestionCardData(question, index, questions.length, answers[index])}
-            readOnly={readOnly}
-            onOptionChange={updateOption}
-            onTextChange={updateText}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function progressSnapshot(progress: { index: number; total: number; step: string }) {
-  const step = progress.step === 'generating'
-    ? L(`Generating question ${progress.index + 1}…`, `正在生成第 ${progress.index + 1} 题…`)
-    : progress.step === 'failed'
-      ? L('Failed', '生成失败')
-      : progress.step === 'parse-failed'
-        ? L('Parse failed', '解析失败')
-        : progress.step === 'finishing'
-          ? L('Finishing your exam…', '正在完成考卷…')
-          : L('Preparing…', '准备出题…');
-  return {
-    kind: 'loading' as const,
-    progress: progress.total > 0 ? Math.round(92 * progress.index / progress.total) : 0,
-    message: L('Generating your exam…', '正在生成考卷…'),
-    step,
-    subtitle: progress.index >= progress.total
-      ? L('Finishing your exam…', '正在完成考卷…')
-      : L(`Generating question ${progress.index + 1} of ${progress.total}…`, `正在生成第 ${progress.index + 1} / ${progress.total} 题…`),
-  };
-}
-
-function actionList(mode: string, submitted: boolean, readOnly: boolean, questionCount: number): ExamAction[] {
-  if (readOnly) return [{ command: 'close', label: i18n('common.close', L('Close', '关闭')), variant: 'outline' }];
-  if (submitted) {
-    return [
-      { command: 'form', label: L('New Exam', '新考试') },
-      { command: 'close', label: i18n('common.close', L('Close', '关闭')), variant: 'outline' },
-    ];
-  }
-  if (mode === 'form') {
-    return [
-      { command: 'close', label: i18n('common.cancel', L('Cancel', '取消')), variant: 'outline' },
-      { command: 'generate', label: i18n('exam.generate', L('Generate exam', '生成考卷')) },
-    ];
-  }
-  if (mode === 'loading') {
-    return [{ command: 'cancel', label: i18n('common.cancel', L('Cancel', '取消')), variant: 'outline' }];
-  }
-  if (mode === 'provider-required') {
-    return [{ command: 'form', label: L('Back', '返回') }];
-  }
-  if (mode === 'cancelled' || mode === 'error' || questionCount === 0) {
-    return [
-      { command: 'form', label: L('Try again', '重新出题') },
-      { command: 'close', label: i18n('common.close', L('Close', '关闭')), variant: 'outline' },
-    ];
-  }
-  return [
-    { command: 'submit', label: i18n('exam.submit', L('Submit for Grading', '提交批改')) },
-    { command: 'close', label: i18n('common.close', L('Close', '关闭')), variant: 'outline' },
-  ];
-}
-
-function useExamScrollSync(
-  isInView: boolean,
-  questions: ExamQuestion[],
-  setCurrentIndex: (index: number) => void,
-) {
+function useExamScrollSync(isInView: boolean, questions: unknown[], setCurrentIndex: (index: number) => void) {
   useEffect(() => {
     if (!isInView) return;
     let frame = 0;
@@ -198,122 +58,6 @@ function useExamScrollSync(
   }, [isInView, questions, setCurrentIndex]);
 }
 
-function updateDraftField(
-  draft: ExamFormDraft,
-  key: 'topic' | 'instructions' | 'count' | 'model' | 'difficulty' | 'selectedTypes',
-  value: string | number | ExamFormDraft['selectedTypes'],
-) {
-  if (key === 'topic' && typeof value === 'string') dispatchExam({ type: 'exam/patch', patch: { examFormDraft: { ...draft, topic: value } } });
-  else if (key === 'instructions' && typeof value === 'string') dispatchExam({ type: 'exam/patch', patch: { examFormDraft: { ...draft, instructions: value } } });
-  else if (key === 'model' && typeof value === 'string') dispatchExam({ type: 'exam/patch', patch: { examFormDraft: { ...draft, model: value } } });
-  else if (key === 'difficulty' && typeof value === 'string') dispatchExam({ type: 'exam/patch', patch: { examFormDraft: { ...draft, difficulty: value } } });
-  else if (key === 'count' && typeof value === 'number') dispatchExam({ type: 'exam/patch', patch: { examFormDraft: { ...draft, count: value } } });
-  else if (key === 'selectedTypes' && typeof value === 'object') dispatchExam({ type: 'exam/patch', patch: { examFormDraft: { ...draft, selectedTypes: value } } });
-}
-
-interface ExamContentProps {
-  mode: string;
-  isResults: boolean;
-  setupSnapshot: ExamSetupSnapshot;
-  onDraftChange: (key: 'topic' | 'instructions' | 'count' | 'model' | 'difficulty' | 'selectedTypes', value: string | number | ExamFormDraft['selectedTypes']) => void;
-  topicInputRef: React.RefObject<HTMLInputElement | null>;
-  progress: ExamProgress;
-  message: string | null;
-  detail: string | null;
-  questions: ExamQuestion[];
-  answers: Record<string | number, string | number | undefined>;
-  readOnly: boolean;
-}
-
-function ExamContent({
-  mode,
-  isResults,
-  setupSnapshot,
-  onDraftChange,
-  topicInputRef,
-  progress,
-  message,
-  detail,
-  questions,
-  answers,
-  readOnly,
-}: ExamContentProps) {
-  if (mode === 'form') {
-    return <ExamSetupBody snapshot={setupSnapshot} onDraftChange={onDraftChange} topicInputRef={topicInputRef} />;
-  }
-  if (mode === 'loading') {
-    return <ExamStatus snapshot={progressSnapshot(progress)} />;
-  }
-  if (mode === 'provider-required') {
-    return <ExamStatus snapshot={{ kind: 'empty', message: message || L('Add and select a model in Settings first', '请先在设置中添加并选择一个模型') }} />;
-  }
-  if (mode === 'error') {
-    return <ExamStatus snapshot={{ kind: 'error', message: message || L('Generation failed — no questions', '生成失败：没有成功生成任何题目'), detail: detail || undefined }} />;
-  }
-  if (mode === 'cancelled') {
-    return <ExamStatus snapshot={{ kind: 'empty', message: message || `${L('Generation cancelled', '已取消出题')}.` }} />;
-  }
-  if (isResults) {
-    return <ExamResults snapshot={buildExamResultsSnapshot(questions, answers, L)} />;
-  }
-  return <ExamQuestionList questions={questions} answers={answers} readOnly={readOnly} />;
-}
-
-function resolveExamViewMode(submitted: boolean, readOnly: boolean, questionsLength: number, rawMode: string): string {
-  if (submitted && !readOnly) return 'results';
-  if (questionsLength > 0 || rawMode === 'questions') return 'questions';
-  return rawMode;
-}
-
-function resolveExamViewTitle(submitted: boolean, mode: string, topic: string): string {
-  if (submitted) return `${L('Exam Results: ', '考试结果：')}${topic}`;
-  if (mode === 'cancelled') return L('Cancelled', '已取消');
-  if (mode === 'form' || mode === 'provider-required') return L('Generate Exam', '生成考卷');
-  return topic || L('Generate Exam', '生成考卷');
-}
-
-function buildNavigationSnapshot(
-  currentIndex: number,
-  questionsLength: number,
-  answers: Record<string | number, string | number | undefined>,
-  isSubmitted: boolean,
-): ExamNavigationSnapshot {
-  return {
-    current: currentIndex,
-    total: questionsLength,
-    answered: Object.keys(answers).filter((key) => {
-      const value = answers[key];
-      return value !== undefined && value !== null && (typeof value !== 'string' || value.trim().length > 0);
-    }).map(Number),
-    isSubmitted,
-    labels: {
-      previous: L('Previous question', '上一题'),
-      next: L('Next question', '下一题'),
-      answered: L('answered', '已答'),
-    },
-  };
-}
-
-function getExamProviders() {
-  const providerSnapshot = getProviderConfigSnapshot();
-  return Array.isArray(providerSnapshot.providers)
-    ? providerSnapshot.providers.filter((provider) => provider?.id).map((provider) => ({
-      id: provider.id,
-      label: provider.label || provider.model || provider.id,
-    }))
-    : [];
-}
-
-function executeExamAction(command: string, onGenerate: () => void) {
-  switch (command) {
-    case 'close': closeExamView(); break;
-    case 'form': renderExamForm(); break;
-    case 'generate': onGenerate(); break;
-    case 'cancel': cancelExamGeneration(); break;
-    case 'submit': submitExam(); break;
-  }
-}
-
 export function ExamView() {
   const exam = useExamStore((snapshot) => ({
     questions: snapshot.examQuestions,
@@ -329,83 +73,138 @@ export function ExamView() {
     localeRevision: snapshot.examLocaleRevision,
   }));
   const isInView = useUiStore((snapshot) => snapshot._examInView);
-  const topicInputRef = useRef<HTMLInputElement>(null);
-  const [navigationPosition, setNavigationPosition] = useState<{ questions: ExamQuestion[]; index: number }>({ questions: [], index: 0 });
+  const [navigationPosition, setNavigationPosition] = useState<{ questions: typeof exam.questions; index: number }>({ questions: [], index: 0 });
   const currentIndex = navigationPosition.questions === exam.questions ? navigationPosition.index : 0;
   const setCurrentIndex = useCallback((index: number) => setNavigationPosition({ questions: exam.questions, index }), [exam.questions]);
+  const renderText = useInlineMath();
 
   useExamScrollSync(isInView, exam.questions, setCurrentIndex);
 
   if (!isInView) return null;
 
-  const isResults = exam.submitted && !exam.readOnly;
-  const mode = resolveExamViewMode(exam.submitted, exam.readOnly, exam.questions.length, exam.mode);
-  const title = resolveExamViewTitle(exam.submitted, mode, exam.topic);
-
-  const setupSnapshot: ExamSetupSnapshot = {
-    ...exam.draft,
-    count: String(exam.draft.count),
+  const snapshot: ExamSnapshot = {
+    mode: exam.mode,
+    questions: exam.questions,
+    answers: exam.answers,
+    submitted: exam.submitted,
+    readOnly: exam.readOnly,
+    topic: exam.topic,
+    draft: exam.draft,
+    progress: exam.progress,
+    message: exam.message,
+    detail: exam.detail,
     providers: getExamProviders(),
-    text: buildSetupText(),
+    current: currentIndex,
   };
-
-  const changeDraft = (key: 'topic' | 'instructions' | 'count' | 'model' | 'difficulty' | 'selectedTypes', value: string | number | ExamFormDraft['selectedTypes']) => {
-    updateDraftField(exam.draft, key, value);
-  };
+  const strings = buildExamStrings();
+  const chrome = buildExamChrome();
+  const screen = examScreenOf(snapshot, chrome);
+  const actions = examActionsOf(snapshot, chrome);
+  const title = examTitleOf(snapshot, chrome);
+  const showNav = examModeOf(snapshot) === 'questions' && !exam.submitted && !exam.readOnly && exam.questions.length > 0;
 
   function generateFromDraft() {
     if (!exam.draft.topic.trim()) {
-      topicInputRef.current?.focus();
+      (document.getElementById('examTopic') as HTMLElement | null)?.focus();
       return;
     }
     void runExamGeneration(exam.draft);
   }
 
-  const navigationSnapshot = buildNavigationSnapshot(currentIndex, exam.questions.length, exam.answers, exam.submitted);
-  const actions = actionList(mode, exam.submitted, exam.readOnly, exam.questions.length);
+  function onCommand(command: ExamCommand, index?: number) {
+    switch (command) {
+      case 'close':
+        closeExamView();
+        break;
+      case 'form':
+        renderExamForm();
+        break;
+      case 'generate':
+        generateFromDraft();
+        break;
+      case 'cancel':
+        cancelExamGeneration();
+        break;
+      case 'submit':
+        /* `submitExam` owns the gate: it scrolls the first unanswered card
+         * into view instead of submitting. */
+        submitExam();
+        break;
+      case 'previous': {
+        const next = examNavStep(-1, currentIndex);
+        if (next !== null) setCurrentIndex(next);
+        break;
+      }
+      case 'next': {
+        const next = examNavStep(1, currentIndex);
+        if (next !== null) setCurrentIndex(next);
+        break;
+      }
+      case 'jump':
+        if (typeof index === 'number') {
+          examNavJump(index);
+          setCurrentIndex(index);
+        }
+        break;
+    }
+  }
+
+  function onAnswer(index: number, value: string | number) {
+    if (exam.readOnly) return;
+    if (typeof value === 'number') {
+      selectExamOpt(index, value);
+    } else {
+      setExamAnswer(index, value);
+      scheduleExamAnswerSave();
+    }
+  }
+
+  function onDraftChange(patch: ExamDraftPatch) {
+    dispatchExam({
+      type: 'exam/patch',
+      patch: {
+        examFormDraft: {
+          ...exam.draft,
+          ...patch,
+          selectedTypes: { ...exam.draft.selectedTypes, ...patch.selectedTypes },
+        },
+      },
+    });
+  }
 
   return (
-    <>
+    <WebUiTheme>
       <h2 className="sr-only" id="examViewTitle">{title}</h2>
       <div className="exam-view-body" id="examViewBody">
-        {mode === 'questions' && exam.questions.length > 0 && !exam.submitted && (
+        {showNav && screen.kind === 'questions' ? (
           <div className="exam-root-slot" id="examViewReactNav">
             <ExamNavigation
-              snapshot={navigationSnapshot}
-              onStep={(direction) => {
-                const next = examNavStep(direction, currentIndex);
-                if (next !== null) setCurrentIndex(next);
-              }}
-              onJump={(index) => {
-                examNavJump(index);
-                setCurrentIndex(index);
-              }}
+              current={screen.current}
+              total={screen.questions.length}
+              answered={screen.answered}
+              isSubmitted={exam.submitted}
+              strings={strings}
+              onCommand={onCommand}
             />
           </div>
-        )}
+        ) : null}
         <div className="exam-root-slot" id="examViewReactBody">
-          <ExamContent
-            mode={mode}
-            isResults={isResults}
-            setupSnapshot={setupSnapshot}
-            onDraftChange={changeDraft}
-            topicInputRef={topicInputRef}
-            progress={exam.progress}
-            message={exam.message}
-            detail={exam.detail}
-            questions={exam.questions}
-            answers={exam.answers}
-            readOnly={exam.readOnly}
+          <ExamPanel
+            screen={screen}
+            strings={strings}
+            onCommand={onCommand}
+            onAnswer={onAnswer}
+            onDraftChange={onDraftChange}
+            renderText={renderText}
+            ids={EXAM_IDS}
           />
         </div>
       </div>
       <div className="exam-view-footer" id="examViewFooter">
         <div className="exam-root-slot" id="examViewReactFooter">
-          {mode === 'form'
-            ? <ExamSetupFooter snapshot={setupSnapshot} onCancel={() => closeExamView()} onGenerate={generateFromDraft} />
-            : <ExamActionFooter actions={actions} onCommand={(cmd) => executeExamAction(cmd, generateFromDraft)} />}
+          <ExamFooter actions={actions} onCommand={onCommand} />
         </div>
       </div>
-    </>
+    </WebUiTheme>
   );
 }

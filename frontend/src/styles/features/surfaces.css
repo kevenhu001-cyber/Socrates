@@ -576,19 +576,3 @@
   #appShell .scheduled-recommendation-copy strong { font-size: var(--ui-font-size-md); }
 }
 
-/* RN-10 — exam navigation: an answered number carries an ink outline, so
-   "done" reads at a glance without a dot or a colour hue. The current
-   number keeps its grey fill; current + answered shows both. Unanswered
-   numbers stay quiet. */
-#appShell .exam-nav-pill[data-answered="true"] {
-  border-color: var(--ui-ink);
-  color: var(--ui-ink);
-}
-
-/* RN-11 — exam stems and explanations are raw model text now (inline KaTeX,
-   prose escaped), no longer markdown paragraphs: keep the model's line
-   breaks the way markdown `breaks: true` did. */
-#appShell .exam-q-text,
-#appShell .exam-q-result .explain {
-  white-space: pre-line;
-}

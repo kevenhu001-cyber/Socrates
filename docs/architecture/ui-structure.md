@@ -1,6 +1,6 @@
 # UI 结构与迁移边界
 
-更新：2026-11-02。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
+更新：2026-11-05。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
 历史迁移计划中的旧目录 / 旧工作流不能作为当前入口清单。
 前端 JavaScript → TypeScript 迁移已完成；窗口桥接和旧 DOM 写入者仍按领域逐步退役。
 
@@ -265,3 +265,76 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
 - 验证：完整 frontend lint（仅保留原有 3 条 complexity warning）、生产构建、bundle-size 预算通过；45 项相关单测通过；最终统一执行的 60 项 Chromium 回归全部通过，涵盖 storage、预算、菜单/白板、导航、诊断、发送/停止/重试、流式滚动、分享、兼容挂载和局部失败恢复。已检查浅色桌面、深色中文手机的恢复截图。
 
 未改变 API / SSE / 持久化键、宿主 ID、设计令牌值、样式导入顺序或移动参考密度。下一阶段再按表面与属性推进 token 映射和覆盖清理，不将其与启动依赖改造混成一次视觉重写。
+
+## RN 轮次现状（2026-11-05 整理）
+
+RN-2～RN-14 此前只存在于 commit / PR 标题，本节把它们落成可查的现状；RN-1 见上一节。
+轮次号来自分支 `hark/rn-*`，不是连续发布序列：RN-9 是 RN-7 与 RN-8 的合并点，
+RN-13 的优化在 RN-14 合入后又做过一次 reconcile（`afb52980`）。
+
+| 轮次 | 主题 | 主要落点 | 现状 |
+|---|---|---|---|
+| RN-1（#120，11-01） | react-native-web 接入、新 UI tokens、首页空状态 | `frontend/vite.config.js`、`packages/theme/src/ui.ts`、`packages/ui/src/home` | 已签收，见上一节 |
+| RN-2（#122，11-01） | 思考展示与工具卡改为 RN | `packages/ui/src/turn`；SPA `react/tool-run/*` | SPA 在用 |
+| RN-3（11-01） | 十种学习脚手架 | `packages/ui/src/learn`；SPA `react/tutor-widgets/LearnScaffolds.tsx` | SPA 在用 |
+| RN-4（11-02） | 问题链与学习方式胶囊 | `packages/ui/src/think` | SPA 在用 |
+| RN-5（11-02） | 知识图谱、诊断、错题本 | `packages/ui/src/study` | SPA 在用 |
+| RN-6（#127，11-02） | 学习内容改为 AI 生成、按上下文定制 | `prompts/learning-modes.md`、`server/src/lib/prompts.ts`、`packages/core/src/learningBlocks.ts` | 服务端提示词 + 共享模型，SPA 在用 |
+| RN-7（11-02） | 外壳与 tokens：侧栏、顶栏、提问框外壳 | `packages/ui/src/shell`、`/composer`、`look.ts` | SPA 在用 |
+| RN-8（11-02） | 内容区视觉：营销站表面 | `packages/ui/src/{learn,turn,study,think,home}` | 并入 RN-9 |
+| RN-9（#130，11-02） | 合并 RN-7 / RN-8，统一新 tokens 与图标 | 同上 + `frontend/src/styles/*` | 已签收 |
+| RN-10（#131，11-03） | 会话行与分组标题改 RN | `packages/ui/src/shell/ConversationRow.tsx`；SPA `react/session-list/*` | SPA 在用 |
+| RN-11（#132，11-03） | 考试、诊断、错题本公式接 KaTeX | `packages/ui/src/study`；SPA `react/exam/*` | SPA 在用 |
+| RN-12（#133，11-03） | 诊断行内公式、考试粗体与行内代码、选择题左对齐 | `react/tutor/*`、`render/*` | 修正轮 |
+| RN-13（#134，11-03） | 首屏包体 589,909 → 358,308 B gzip | `app/widgetSetup.ts`、`react/message-list/*`、`LazyAssistantTurn` | 后续启动收敛再降至 318,997 B，见上一节 |
+| RN-14（#136，11-03） | 自问入链、闪卡间隔复习、跨会话错题、状态色灰阶 | `packages/ui/src/{learn,think,study}`、`react/tutor/*` | SPA 在用 |
+
+接入面（2026-11-05 统计）：`frontend/src` 有 41 个文件、52 处 `@socrates/ui/*` 子路径引用，
+分布为 learn-model 10、exam-model 8、turn 6、think-model 5、shell 5、study 4、primitives 4、
+exam 3、think 2、learn 2、study-model 1、home 1、composer 1。Web 宿主适配集中在
+`frontend/src/react/rn/`：`rnwGlobal` 先于任何 RNW 模块求值，`WebUiTheme` 用 `var(--ui-*)`
+让 `[data-mode]` 切主题不触发 React 渲染，`webHost.ts` 把宿主的结构 class、`title`、
+行级 ARIA / 拖拽挂到 RNW 元素上。共享包自己不写 Web class。
+
+**已迁移的整块表面（2026-11-05）**：考试。`packages/ui/src/exam/` 下 8 个文件
+（`ExamPanel`、`ExamSetup`、`ExamQuestionList`、`ExamResults`、`ExamStatus`、`ExamNavigation`、
+`ExamFooter` 与内部 `controls`），SPA 侧只剩 `react/exam/ExamView.tsx` 适配层和
+`src/exam/{screen,copy,adapt}.ts` 纯函数：适配层读 store、把命令转给 `src/exam/*` 的既有
+副作用，共享组件不碰 DOM 与 store。旧 6 个 DOM 组件与 `test/harness-exam.mjs` 已删，
+`styles/legacy/08-exam.css` 只保留页面外壳与滚动偏移，e2e 断言改用 `data-exam-*` 语义钩子。
+
+**仍未迁移的部分（按体量）**
+
+1. **Transcript**：`frontend/src/react/message-list/*` 仍是 DOM + HTML 渲染；`packages/ui` 里的
+   `ChatMessageList` 只服务 Universal App。两套消息列表并存，是剩余工作里最大的一块，
+   牵动工具栏、流式渲染和分享只读链路。
+2. **富文本输入**：SPA 的编辑器仍是 TipTap（`react/composer-input/RichComposer.tsx`），
+   只有外壳与控件栏换成了 RN；`packages/ui` 的 `Composer` 是纯 `TextInput`，只服务 Universal App。
+3. **原生岛**：TipTap、tldraw、HTML/Viz、Mermaid、Three.js 保持 Web / WebView，不在迁移范围。
+
+**Universal App 的漂移**
+
+`apps/socrates/` 只从 barrel `@socrates/ui` 取值（`ChatWorkspace.tsx` 的 `ChatMessageList` /
+`Composer`、`AppSidebarLayer.tsx` 的 `Sidebar`），拿不到 `shell/`、`composer/`、`turn/`
+等新模块，因此没有 RN-7 之后的外壳与表面语言。该目录最后一次提交是 2026-10-30，
+而 `packages/ui` 与 SPA 到 11-05 仍在改。结果是同一个包里并存两套实现：barrel 的
+`Sidebar`（`packages/ui/src/index.tsx:303`）、`ChatMessageList`、`Composer`，与
+`shell/`、`turn/`、`composer/` 里的新组成件。按 [SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)，
+根入口冻结、只服务 Universal，不再接收视觉改动；SPA 的新 UI 只进子模块。
+
+**验证边界**
+
+- `ci.yml` 的 `universal-app` 任务在 changes 命中时跑 `npm run typecheck`、`npm run test:shared`、
+  `scripts/check-packages-dom.mjs` 和 `npm run test:universal`（Playwright web smoke）。
+- `universal-app-build.yml` 只有 `workflow_dispatch` / `workflow_call`，产出 Web 导出与
+  Android release APK，不在合并门禁里。
+- 仓库没有 `apps/socrates/ios/`，也没有 Android / iOS 真机签收记录；Safari 与移动浏览器未覆盖。
+- 共享包测试：`packages/ui/src` 下 23 个 `*.test.ts`，由
+  `apps/socrates/scripts/run-shared-tests.mjs` 逐文件起独立进程执行。
+
+**下一步顺序**
+
+1. 方向已定：[SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。
+   改造对象是 SPA；根入口冻结，只服务 Universal，不做纯搬迁；SPA 继续只走子路径。
+2. 按该方案的表面清单逐个替换，旧 DOM 实现签收后再删。
+3. 补 iOS 工程与真机签收之前，只按"Web 已验证"描述 Universal App 的状态。

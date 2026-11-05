@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { detectExamLanguage, examAnswersOf, examAnswerValue, examGenerationPrompt, examProgress, examPromptTypes, gradeExam, missingExamAnswers, parseExamQuestionResponse, parseExamQuestions } from './examModel.ts';
+import {
+  createExamDraft, detectExamLanguage, examAnsweredIndices, examAnswersOf, examAnswerValue,
+  examGenerationPrompt, examProgress, examPromptTypes, examQuestionFromRaw, examQuestionsFromRaw,
+  examResults, examTypesOf, gradeExam, missingExamAnswers, parseExamQuestionResponse, parseExamQuestions,
+} from './examModel.ts';
 
 const data = {
   questions: [
@@ -95,3 +99,47 @@ test('model answers parse through fences, thinking and prose', () => {
   assert.equal(parseExamQuestionResponse('no json here', 0), null);
   assert.equal(parseExamQuestionResponse('{"q":"","type":"fill-blank"}', 0), null);
 });
+
+test('raw questions keep the caller index and drop error placeholders', () => {
+  const question = examQuestionFromRaw({ q: 'Q', type: 'fill-blank', answers: ['a'] }, 7);
+  assert.equal(question?.index, 7);
+  assert.equal(examQuestionFromRaw({ q: '[failed]', type: 'error' }, 0), null);
+  assert.equal(examQuestionFromRaw({ q: '', type: 'fill-blank' }, 0), null);
+  assert.equal(examQuestionFromRaw(null, 0), null);
+  const questions = examQuestionsFromRaw([{ q: 'A', type: 'fill-blank' }, { q: 'B', type: 'error' }, { q: 'C', type: 'fill-blank' }]);
+  assert.deepEqual(questions.map((entry) => entry.index), [0, 2]);
+});
+
+test('answered indices follow question order', () => {
+  const questions = parseExamQuestions(data);
+  assert.deepEqual(examAnsweredIndices(questions, { 0: 1, 2: 'x' }), [0, 2]);
+  assert.deepEqual(examAnsweredIndices(questions, { 0: '' }), []);
+});
+
+test('results rows carry the host labels and grading verdicts', () => {
+  const questions = parseExamQuestions(data);
+  const copy = (en: string) => en;
+  const results = examResults(questions, { 0: 1, 1: 'Paris', 2: 'no idea' }, copy);
+  assert.equal(results.correct, 2);
+  assert.equal(results.total, 3);
+  assert.equal(results.percent, 67);
+  assert.equal(results.correctLabel, 'correct');
+  assert.equal(results.questions[0].statusLabel, 'Correct');
+  assert.equal(results.questions[0].options[1].isSelected, true);
+  assert.equal(results.questions[0].options[1].isCorrect, true);
+  assert.equal(results.questions[1].expectedAnswer, 'Paris');
+  assert.equal(results.questions[2].statusLabel, 'Incorrect');
+  assert.equal(results.questions[2].explanationLabel, 'Explanation');
+});
+
+test('draft defaults merge partial overrides and map to prompt types', () => {
+  const draft = createExamDraft();
+  assert.equal(draft.count, 5);
+  assert.deepEqual(draft.selectedTypes, { mc: true, fb: true, sa: false });
+  const patched = createExamDraft({ topic: 'Algebra', selectedTypes: { sa: true } });
+  assert.equal(patched.topic, 'Algebra');
+  assert.deepEqual(patched.selectedTypes, { mc: true, fb: true, sa: true });
+  assert.deepEqual(examTypesOf(draft.selectedTypes), ['multiple-choice', 'fill-blank']);
+  assert.deepEqual(examTypesOf({ mc: false, fb: false, sa: false }), ['multiple-choice', 'fill-blank', 'short-answer']);
+});
+
