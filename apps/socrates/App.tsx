@@ -7,8 +7,8 @@ import type { Message, Session } from '@socrates/contracts';
 import { useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
-import { getThemePaletteHex } from '@socrates/theme';
-import { IconRendererProvider, activeProviderOf, uiStrings, type ArtifactDescriptor, type BoundarySnapshot, type KnowledgeBoundaryNode, type SidebarView, type TeachingPlan } from '@socrates/ui';
+import { getThemePaletteHex, uiColors, WEB_FONT_FAMILY, fontFamily as uiFontFamily } from '@socrates/theme';
+import { IconRendererProvider, UiThemeProvider, activeProviderOf, uiStrings, type ArtifactDescriptor, type BoundarySnapshot, type KnowledgeBoundaryNode, type SidebarView, type TeachingPlan } from '@socrates/ui';
 import { api } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
@@ -697,12 +697,39 @@ function SocratesApp() {
     />
   </SafeAreaView>;
 }
+/**
+ * The shared UI theme for the whole app.
+ *
+ * The web shell hands the primitives CSS variables so a theme switch costs
+ * no React render; the app has concrete palettes, so it hands `uiColors`.
+ * Native registers one static face per weight, so the ladder gets a face
+ * map; the web export keeps the CSS stack and lets CSS pick the weight.
+ */
+function AppTheme({ children }: { children: React.ReactNode }) {
+  const theme = useSettingsStore((state) => state.theme);
+  const language = useSettingsStore((state) => state.language);
+  const web = Platform.OS === 'web';
+  return (
+    <UiThemeProvider
+      colors={uiColors[theme]}
+      fontFamily={web ? WEB_FONT_FAMILY : uiFontFamily('regular', language)}
+      fontFamilies={web ? undefined : {
+        '400': uiFontFamily('regular', language),
+        '500': uiFontFamily('medium', language),
+        '600': uiFontFamily('semibold', language),
+        '700': uiFontFamily('bold', language),
+      }}
+    >
+      {children}
+    </UiThemeProvider>
+  );
+}
 export default function App() {
   // Baseline typography: the SPA ships Inter (+ Noto Sans SC for CJK) from
   // @fontsource; the app loads the same faces before the first paint so
   // every text node measures identically.
   const [fontsLoaded, fontsError] = useFonts(FONTS);
-  return <SafeAreaProvider><IconRendererProvider renderer={webIconRenderer}>{fontsLoaded || fontsError ? <SocratesApp /> : <SafeAreaView style={styles.safe}><View style={styles.center}><Text accessibilityRole="progressbar">Loading Socrates…</Text></View></SafeAreaView>}</IconRendererProvider></SafeAreaProvider>;
+  return <SafeAreaProvider><IconRendererProvider renderer={webIconRenderer}><AppTheme>{fontsLoaded || fontsError ? <SocratesApp /> : <SafeAreaView style={styles.safe}><View style={styles.center}><Text accessibilityRole="progressbar">Loading Socrates…</Text></View></SafeAreaView>}</AppTheme></IconRendererProvider></SafeAreaProvider>;
 }
 
 /** Baseline `SidebarFooter.tsx` upgrade link. */

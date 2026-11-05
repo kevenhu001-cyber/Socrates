@@ -10,7 +10,7 @@ import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
 import { Chevron, useReducedMotion, useReveal } from '../turn/parts';
-import { H, R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
+import { H, R, S, focusRing, insetRing, sheets, transition } from '../look';
 import { useLearnHost } from './host';
 
 /** react-native-web turns `dataSet` into `data-*` attributes; native ignores it. */
@@ -31,9 +31,11 @@ export function useCardPad(): number {
 }
 
 /**
- * The site's product-preview card (`.demo-app`): a white sheet with the
- * hairline-ring lift (`--site-shadow-1`), a 44px head carrying the kind as a
- * quiet title and an optional tag, then the body on a 24px inset.
+ * The site's learning scaffold card.
+ *
+ * The card is a zone inside the reply, not a box on top of it: no hairline
+ * ring, no lift, no divider under the label. The content reads as part of
+ * the answer, and the label plus the inner sheets carry the structure.
  */
 export function ScaffoldCard({ kind, label, trailing, children, testID, accessibilityLabel }: {
   kind: string;
@@ -43,7 +45,6 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
   testID?: string;
   accessibilityLabel?: string;
 }) {
-  const { colors } = useUiTheme();
   const pad = useCardPad();
   return (
     <View
@@ -53,8 +54,7 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
       {...dataSet({ scaffold: kind })}
       style={{
         borderRadius: R.card,
-        backgroundColor: colors.card,
-        boxShadow: shadow(colors, 'raised'),
+        backgroundColor: 'transparent',
         overflow: 'hidden',
       }}
     >
@@ -67,8 +67,6 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
           minHeight: H.head,
           paddingHorizontal: pad,
           paddingVertical: S[75],
-          borderBottomWidth: 1,
-          borderBottomColor: colors.hairline,
         }}
       >
         <UiText variant="labelSm" tone="ink" numberOfLines={1} style={{ flexShrink: 1 }}>{label}</UiText>
@@ -79,7 +77,7 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
   );
 }
 
-/** Site `.ui-tag`: a 24px capsule, pale fill, quiet caption. `line` is the white, ringed variant. */
+/** Site `.ui-tag`: a 24px capsule, pale fill, quiet caption. `line` is the white variant. */
 export function Tag({ label, tone = 'fill', testID }: { label: string; tone?: 'fill' | 'line' | 'ink'; testID?: string }) {
   const { colors } = useUiTheme();
   return (
@@ -93,7 +91,6 @@ export function Tag({ label, tone = 'fill', testID }: { label: string; tone?: 'f
         paddingHorizontal: 10,
         borderRadius: R.pill,
         backgroundColor: tone === 'ink' ? colors.ink : tone === 'line' ? colors.card : colors.fill,
-        boxShadow: tone === 'line' ? insetRing(colors.hairlineStrong) : undefined,
       }}
     >
       <UiText variant="labelSm" tone={tone === 'ink' ? 'onInk' : 'secondary'} numberOfLines={1} style={{ fontWeight: '400' }}>{label}</UiText>
@@ -102,8 +99,9 @@ export function Tag({ label, tone = 'fill', testID }: { label: string; tone?: 'f
 }
 
 /**
- * Site `.rc-face`: the tinted inner sheet (#f9f9f9 + 6% hairline ring) that
- * holds a prompt, a hint or an explanation inside a card.
+ * The tinted sheet that holds a prompt, a hint or an explanation inside a
+ * card. The tint separates it from the reply; it carries no ring of its
+ * own, so nothing inside the card reads as a nested box.
  */
 export function Sheet({ children, label, testID, live, style, emphasis }: {
   children: ReactNode;
@@ -125,7 +123,6 @@ export function Sheet({ children, label, testID, live, style, emphasis }: {
         padding: S[200],
         borderRadius: R.row,
         backgroundColor: emphasis ? colors.card : subtle,
-        boxShadow: insetRing(emphasis ? colors.ink : colors.hairline, emphasis ? 1.5 : 1),
       }, style]}
     >
       {label ? <SectionLabel>{label}</SectionLabel> : null}

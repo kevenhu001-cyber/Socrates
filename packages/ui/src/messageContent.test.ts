@@ -19,9 +19,10 @@ test('untrusted links and image schemes are rejected', () => {
 });
 test('assistant segments lift tutor scaffolds between prose runs', () => {
   const segments = parseAssistantSegments('Intro\n<quiz><q>Q?</q><o letter="A">a</o><o letter="B">b</o><correct>B</correct></quiz>Outro');
-  assert.deepEqual(segments.map((s) => s.kind), ['prose', 'quiz', 'prose']);
+  assert.deepEqual(segments.map((s) => s.kind), ['prose', 'scaffold', 'prose']);
   const quiz = segments[1];
-  assert.equal(quiz.kind === 'quiz' ? quiz.quiz.correct : null, 'B');
+  assert.equal(quiz.kind === 'scaffold' && quiz.block.kind === 'quiz' ? quiz.block.parsed.correct : null, 'B');
   const segments2 = parseAssistantSegments('<practice><problem>Solve $x$</problem></practice>');
-  assert.deepEqual(segments2.map((s) => s.kind), ['practice']);
+  assert.deepEqual(segments2.map((s) => s.kind), ['scaffold']);
+  assert.equal(segments2[0].kind === 'scaffold' && segments2[0].block.kind === 'practice' ? segments2[0].block.parsed.problem : null, 'Solve $x$');
 });

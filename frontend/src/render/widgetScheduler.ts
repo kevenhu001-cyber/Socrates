@@ -99,6 +99,9 @@ const _raf: (cb: () => void) => void = typeof requestAnimationFrame === 'functio
   ? function (cb) { requestAnimationFrame(cb); }
   : function (cb) { setTimeout(cb, 0); };
 
+/** How long the scheduler keeps looking for a slot that never entered the DOM. */
+const MOUNT_TIMEOUT_MS = 10_000;
+
 /**
  * Mount interactive widgets after their rendered HTML has entered the DOM.
  *
@@ -108,8 +111,13 @@ const _raf: (cb: () => void) => void = typeof requestAnimationFrame === 'functio
  * Mounting runs on the next animation frame rather than setTimeout(0): the
  * React commit that inserts the slot divs lands before the frame's paint, so
  * the widget mounts in the same frame the slot becomes visible — no empty
- * "slot for a beat, widget pops in later" flash at stream finish. If the
- * commit is delayed past the first frame, a bounded retry catches it.
+ * "slot for a beat, widget pops in later" flash at stream finish.
+ *
+ * The transcript mounts its prose lazily, so the commit that carries the slot
+ * divs can land a few hundred milliseconds later. A fixed frame budget lost
+ * the card in that race (the slot stayed an empty div forever), so the
+ * scheduler watches the document until every placeholder is mounted and only
+ * gives up after a bounded timeout.
  */
 export function scheduleWidgetMounts({
   quizPH = [],
@@ -128,8 +136,34 @@ export function scheduleWidgetMounts({
     + proofPH.length + theoremPH.length + keyPointPH.length;
   if (!total) return;
 
-  let tries = 0;
+  let mounted = 0;
+  let observer: MutationObserver | null = null;
+  let deadline: ReturnType<typeof setTimeout> | null = null;
+  let pending = false;
+  let stopped = false;
+
+  function stop(): void {
+    stopped = true;
+    observer?.disconnect();
+    observer = null;
+    if (deadline !== null) {
+      clearTimeout(deadline);
+      deadline = null;
+    }
+  }
+
+  /** One attempt per frame, no matter how many mutations the observer saw. */
+  function scheduleAttempt(): void {
+    if (pending || stopped) return;
+    pending = true;
+    _raf(function () {
+      pending = false;
+      attempt();
+    });
+  }
+
   function attempt(): void {
+    if (stopped) return;
     const widgets = _widgetsModule;
     if (!widgets) {
       /* Don't burn retries while the chunk is on the wire — retry once it lands. */
@@ -137,8 +171,6 @@ export function scheduleWidgetMounts({
       loadWidgets().then(attempt, () => undefined);
       return;
     }
-    tries += 1;
-    let mounted = 0;
     mounted += mountSlots(quizPH, 'data-quiz-id', widgets.mountQuizWidget);
     mounted += mountSlots(examplePH, 'data-example-id', widgets.mountExampleWidget);
     mounted += mountSlots(practicePH, 'data-practice-id', widgets.mountPracticeWidget);
@@ -167,7 +199,19 @@ export function scheduleWidgetMounts({
     try { processPendingViz(); } catch { /* empty-catch: intentional — best-effort drain */ }
     try { processPendingVizActions(); } catch { /* empty-catch: intentional — best-effort drain */ }
 
-    if (mounted < total && tries < 4) _raf(attempt);
+    if (mounted >= total) {
+      stop();
+      return;
+    }
+    /* The slot has not entered the DOM yet. Watch for it instead of polling:
+       the observer fires only when the document actually changes. */
+    if (!observer && typeof MutationObserver === 'function') {
+      observer = new MutationObserver(function () { scheduleAttempt(); });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    } else if (!observer) {
+      scheduleAttempt();
+    }
+    if (deadline === null) deadline = setTimeout(stop, MOUNT_TIMEOUT_MS);
   }
-  _raf(attempt);
+  scheduleAttempt();
 }

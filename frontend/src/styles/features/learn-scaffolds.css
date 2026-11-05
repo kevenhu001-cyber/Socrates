@@ -7,9 +7,11 @@
  *   .sc-host  — the owned-root host that replaces a scaffold slot;
  *   .sc-rich  — host-rendered markdown + KaTeX fields inside a card;
  *   .sc-live  — the static streaming preview, built to the card's metrics
- *               (16px radius, ring + lift, 44px label header, 24px body,
- *               36px control rows) so the mount at stream end does not move.
- * White / grey, hairlines, black as the only accent; no dotted decoration.
+ *               (16px radius, 44px label header, 24px body, 36px control
+ *               rows) so the mount at stream end does not move.
+ * The scaffold carries no frame: the preview and the mounted card are both
+ * a zone inside the reply — no ring, no lift, no divider under the label.
+ * The controls inside (options, inputs, pills) keep their own hairline.
  */
 
 .sc-host,
@@ -76,14 +78,15 @@
 .sc-rich[data-part$="-step"] .katex-display { margin: 0; }
 
 /* ---- streaming preview ------------------------------------------------ */
-/* RN-8: the card is the site's product-preview sheet (16px radius, hairline
-   ring + soft lift, 44px head, 24px inset; 16px on phones). */
+/* RN-8: the preview is the card's own geometry (16px radius, 44px head,
+   24px inset) so the mount at stream end does not move. Like the mounted
+   card it carries no frame: no ring, no lift, no divider under the label —
+   the scaffold reads as a zone inside the reply. */
 
 .sc-live {
   --sc-pad: var(--ui-gap-5);
   border-radius: var(--ui-round-lg);
-  background: var(--ui-card);
-  box-shadow: var(--ui-elevation-raised);
+  background: transparent;
   overflow: hidden;
 }
 
@@ -99,7 +102,6 @@
   gap: var(--ui-gap-3);
   min-height: 44px;
   padding: var(--ui-gap-2) var(--sc-pad);
-  border-bottom: 1px solid var(--ui-hairline);
 }
 
 .sc-live-label,
@@ -204,7 +206,6 @@
   padding: var(--ui-gap-5);
   border-radius: var(--ui-round-md);
   background: var(--ui-subtle);
-  box-shadow: inset 0 0 0 1px var(--ui-hairline);
 }
 
 /* Numbered capsules on a thin rail (same geometry as StepsCard). */

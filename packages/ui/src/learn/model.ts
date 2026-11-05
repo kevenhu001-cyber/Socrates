@@ -13,7 +13,7 @@
  * The reducers are pure: components keep them in `useReducer`, tests drive
  * them directly, and the host owns every side effect (grading, reporting).
  */
-import { decodeEntities, stripTags } from '../scaffolds.ts';
+import { decodeEntities, stripTags } from '../scaffoldText.ts';
 export { evaluatePracticeAnswer, type PracticeAnswerAssessment } from './practiceAnswer.ts';
 
 export const SCAFFOLD_KINDS = [
@@ -153,9 +153,11 @@ export interface ParsedPractice {
   hints?: string[];
   /** Optional worked solution, raw markdown. */
   solution?: string;
+  /** The answer key, when the opening tag declares `correct="…"`. */
+  correct?: string | null;
 }
 
-export function parsePracticeInner(inner: string): ParsedPractice | null {
+export function parsePracticeInner(inner: string, correct?: string | null): ParsedPractice | null {
   const problem = fieldOf(inner, 'problem');
   if (problem === null) return null;
   const hints = fieldsOf(inner, 'hint');
@@ -167,6 +169,7 @@ export function parsePracticeInner(inner: string): ParsedPractice | null {
   if (hints.length > 1) parsed.hints = hints;
   const solution = fieldOf(inner, 'solution');
   if (solution) parsed.solution = solution;
+  if (correct) parsed.correct = correct;
   return parsed;
 }
 
@@ -194,7 +197,13 @@ export function parseFlashcardInner(inner: string): ParsedFlashcard | null {
   return { front: front ?? '', back: back ?? '' };
 }
 
-export interface ParsedTheorem { title: string; statement: string }
+export interface ParsedTheorem {
+  title: string;
+  statement: string;
+  /** A proof written inside the theorem, folded into the theorem card. */
+  proofTitle?: string;
+  proofBody?: string;
+}
 
 export function parseTheoremInner(inner: string): ParsedTheorem | null {
   const statement = fieldOf(inner, 'statement');

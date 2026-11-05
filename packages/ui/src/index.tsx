@@ -28,7 +28,6 @@ export { ModelPicker } from './ModelPicker.tsx';
 export { AssistantPicker } from './AssistantPicker.tsx';
 export { activeProviderOf, filterProviders, providerRowLabel, sortProvidersBuiltInFirst, type ProviderRowLabel } from './modelPicker';
 export { activeAssistantOf, assistantConfigOf, assistantRowLabel, filterAssistants, type AssistantRowLabel } from './assistantPicker';
-export { decodeEntities, parsePracticeInner, parseQuizInner, practiceAnswerMatches, splitTutorScaffolds, stripTags, type ParsedPractice, type ParsedQuiz, type QuizOption, type ScaffoldSegment } from './scaffolds';
 export {
   applyDiagnosticResults, BASELINE_LEVEL, buildColdStartNodes, buildDiagPrompt, buildTeachingPlanFromKB,
   buildTutorVoice, cleanTopicDomain, DIAG_ASPECTS, diagError, diagnosticPointsForNode,

@@ -18,15 +18,16 @@ import {
   StepsCard,
   TheoremCard,
   hintLevels,
+  learnStrings,
   parseAnswerKey,
   splitDerivationSteps,
   type FlashcardState,
-  type LearnStrings,
   type QuizResult,
   type RecallRating,
   type ReviewCard,
 } from '@socrates/ui/learn';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
+import { getCurrentLang } from '../legacy/gateway';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import {
   revealPracticeAnswer,
@@ -39,65 +40,10 @@ import {
 } from '../../render/widgetRuntime.ts';
 import type { ParsedDefinition, ParsedDerivation, ParsedExample, ParsedFlashcard, ParsedKeyPoint, ParsedProof } from '@socrates/ui/learn-model';
 
+/** The shell's i18n lookup for the few labels the shared cards do not own. */
 function tr(key: string, fallback: string): string {
   const value = widgetRuntime().t(key);
   return value && value !== key ? value : fallback;
-}
-
-function learnStrings(): LearnStrings {
-  return {
-    label: {
-      quiz: tr('learn.label.quiz', 'Quiz'),
-      flashcard: tr('learn.label.flashcard', 'Flashcard'),
-      practice: tr('learn.label.practice', 'Practice'),
-      example: tr('learn.label.example', 'Example'),
-      step: tr('learn.label.step', 'Steps'),
-      definition: tr('learn.label.definition', 'Definition'),
-      theorem: tr('learn.label.theorem', 'Theorem'),
-      proof: tr('learn.label.proof', 'Proof'),
-      derivation: tr('learn.label.derivation', 'Derivation'),
-      keyPoint: tr('tutor.keyPointLabel', 'Key point'),
-    },
-    quizMulti: tr('learn.quiz.multi', 'Select all that apply'),
-    quizSubmit: tr('learn.quiz.submit', 'Check answer'),
-    quizRetry: tr('learn.quiz.retry', 'Try again'),
-    quizExplanation: tr('learn.quiz.explanation', 'Explanation'),
-    quizAnswerIs: tr('learn.quiz.answerIs', 'Answer: {answer}'),
-    quizCorrect: tr('tutor.practiceSelfCorrect', 'Correct'),
-    quizIncorrect: tr('learn.quiz.incorrect', 'Not quite'),
-    readOnly: tr('learn.readOnly', 'View only'),
-    flashcardAria: tr('tutor.flashcardAria', 'Flashcard — press to turn'),
-    flashcardFront: tr('learn.flashcard.front', 'Question'),
-    flashcardBack: tr('learn.flashcard.back', 'Answer'),
-    flashcardFlip: tr('learn.flashcard.flip', 'Turn the card'),
-    flashcardFlipBack: tr('learn.flashcard.flipBack', 'Back to question'),
-    flashcardPrompt: tr('learn.flashcard.prompt', 'Answer it in your head first, then turn the card.'),
-    flashcardRate: tr('learn.flashcard.rate', 'Did you remember it?'),
-    rating: {
-      good: tr('learn.flashcard.good', 'Remembered'),
-      fuzzy: tr('learn.flashcard.fuzzy', 'Fuzzy'),
-      forgot: tr('learn.flashcard.forgot', 'Forgot'),
-    },
-    ratingNote: {
-      good: tr('learn.flashcard.noteGood', 'Remembered. Leave it a little longer next time.'),
-      fuzzy: tr('learn.flashcard.noteFuzzy', 'A bit fuzzy. Come back sooner and explain it again.'),
-      forgot: tr('learn.flashcard.noteForgot', 'That is fine. Read the answer, then try again soon.'),
-    },
-    hintShow: tr('tutor.showHint', 'Show hint'),
-    hintNext: tr('learn.hint.next', 'Next hint ({n}/{total})'),
-    hintHide: tr('tutor.hideHint', 'Hide hints'),
-    hintLevel: tr('learn.hint.level', 'Hint {n}'),
-    solutionShow: tr('tutor.showSolution', 'Show solution'),
-    solutionHide: tr('tutor.hideSolution', 'Hide solution'),
-    answerPlaceholder: tr('tutor.practicePlaceholder', 'Type your answer…'),
-    answerSubmit: tr('tutor.submitAnswer', 'Submit'),
-    answerReveal: tr('tutor.revealAnswer', 'Reveal answer'),
-    stepsStepMode: tr('learn.steps.stepMode', 'Step through'),
-    stepsNext: tr('learn.steps.next', 'Next step ({n}/{total})'),
-    stepsAll: tr('learn.steps.all', 'Show all'),
-    proofShow: tr('tutor.showProof', 'Show proof'),
-    proofHide: tr('tutor.hideProof', 'Hide proof'),
-  };
 }
 
 function RichHtml({ source, part }: { source: string; part: string }) {
@@ -117,7 +63,7 @@ const renderRich = (source: string, part: string): ReactNode => <RichHtml source
 /** Theme + host context for one mounted scaffold. Re-renders on language change. */
 export function LearnMount({ readOnly, children }: { readOnly: boolean; children?: ReactNode }) {
   useLocaleRefresh();
-  const strings = learnStrings();
+  const strings = learnStrings(getCurrentLang());
   return (
     <WebUiTheme>
       <LearnHostProvider value={{ strings, renderRich, readOnly }}>{children}</LearnHostProvider>

@@ -1,7 +1,7 @@
 import { marked, type Token } from 'marked';
 import type { Message } from '@socrates/contracts';
 import { extractFootnoteDefinitions, splitMathSegments, stripCitationMarkers, type Footnote } from './math.ts';
-import { splitTutorScaffolds, type ParsedPractice, type ParsedQuiz } from './scaffolds.ts';
+import { splitScaffolds, type ScaffoldBlock } from './learn/split.ts';
 
 export { plainText, safeImage, safeLink } from './urlSafety';
 
@@ -18,8 +18,7 @@ export type RichSegment =
   | { kind: 'prose'; tokens: Token[] }
   | { kind: 'math'; tex: string }
   | { kind: 'notes'; notes: Footnote[] }
-  | { kind: 'quiz'; quiz: ParsedQuiz }
-  | { kind: 'practice'; practice: ParsedPractice }
+  | { kind: 'scaffold'; block: ScaffoldBlock }
   | { kind: 'scaffoldFallback'; text: string };
 
 /* Inline math stays inside the prose flow: `$x$` becomes a codespan so
@@ -31,9 +30,9 @@ function inlineMathAsCode(tex: string): string {
 }
 
 /** Assistant pipeline: strip `[1]` citation noise (sources live in the
- * tool card), lift footnote definitions into Notes, split tutor
- * quiz/practice scaffolds into widget segments, split display math into
- * island cards. User messages keep whatever was typed. */
+ * tool card), lift footnote definitions into Notes, split the tutor
+ * scaffolds into card segments, split display math into island cards.
+ * User messages keep whatever was typed. */
 export function parseAssistantSegments(rawText: string): RichSegment[] {
   const { body, notes } = extractFootnoteDefinitions(stripCitationMarkers(rawText));
   const out: RichSegment[] = [];
@@ -56,9 +55,8 @@ export function parseAssistantSegments(rawText: string): RichSegment[] {
       }
     }
   };
-  for (const part of splitTutorScaffolds(body)) {
-    if (part.kind === 'quiz') { flushProse(); out.push({ kind: 'quiz', quiz: part.quiz }); }
-    else if (part.kind === 'practice') { flushProse(); out.push({ kind: 'practice', practice: part.practice }); }
+  for (const part of splitScaffolds(body)) {
+    if (part.kind === 'scaffold') { flushProse(); out.push({ kind: 'scaffold', block: part.block }); }
     else if (part.kind === 'fallback') { flushProse(); out.push({ kind: 'scaffoldFallback', text: part.text }); }
     else pushText(part.text);
   }

@@ -14,6 +14,11 @@ const SOURCE = [
   '<practice correct="42"><problem>6 × 7 = ?</problem><hint>可以分解为 6 × (5 + 2)。</hint></practice>',
 ].join('\n\n');
 
+/** One streamed assistant turn, as the chat endpoint delivers it. */
+function streamBody(text) {
+  return `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\ndata: [DONE]\n\n`;
+}
+
 for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light' }, { width: 390, height: 844, mode: 'dark' }]) {
   test(`inline tutor widgets retain feedback and reveal state at ${width} ${mode}`, async ({ page }) => {
     const errors = [], modelRequests = [];

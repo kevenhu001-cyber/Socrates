@@ -1,18 +1,32 @@
-import { decodeEntities, stripTags } from './helpers.ts';
-import {
-  parseDefinitionInner,
-  parseDerivationInner,
-  parseFlashcardInner,
-  parseKeyPointInner,
-  parseProofInner,
-  parseTheoremInner,
-  type ParsedDefinition,
-  type ParsedDerivation,
-  type ParsedFlashcard,
-  type ParsedKeyPoint,
-  type ParsedProof,
-  type ParsedTheorem,
+/**
+ * render/scaffoldPipeline.ts — the web shell's adapter for the shared
+ * scaffold system.
+ *
+ * The decision of what a scaffold block becomes (which one is interactive,
+ * which one degrades to prose, which one is a malformed fallback) lives in
+ * `@socrates/ui/learn-split`, so the web shell and the universal app apply
+ * the same rules. This module only turns the shared segments into the DOM
+ * the web shell mounts:
+ *
+ *   - a scaffold becomes an empty `<div class="…-slot">` placeholder plus a
+ *     `{ id, parsed }` entry the widget scheduler mounts later;
+ *   - a malformed block becomes the labelled plain-text fallback;
+ *   - prose runs are passed through untouched.
+ *
+ * The slot ids stay with the web shell: the mistake book pins a quiz or
+ * practice slot through `data-quiz-id` / `data-practice-id`, everything else
+ * gets a generated id.
+ */
+import { splitScaffolds, type ScaffoldBlock, type ScaffoldTag } from '@socrates/ui/learn-split';
+import type {
+  ParsedDefinition,
+  ParsedDerivation,
+  ParsedExample,
+  ParsedFlashcard,
+  ParsedKeyPoint,
+  ParsedProof,
 } from '@socrates/ui/learn-model';
+import type { PracticeMountData, QuizMountData, TheoremMountData } from './widgetRuntime.ts';
 
 export interface ScaffoldPlaceholder<Parsed = unknown> {
   id: string;
@@ -24,16 +38,37 @@ export interface ScaffoldDeps {
   esc: (value: unknown) => string;
 }
 
-/** A slot renderer that also carries the id prefix used for its placeholders. */
-interface SlotFactory {
-  (id: string): string;
-  prefix: string;
+/** The placeholder lists the widget scheduler mounts, one per kind. */
+export interface ScaffoldWidgets {
+  text: string;
+  quizPH: ScaffoldPlaceholder<QuizMountData>[];
+  examplePH: ScaffoldPlaceholder<ParsedExample>[];
+  practicePH: ScaffoldPlaceholder<PracticeMountData>[];
+  definitionPH: ScaffoldPlaceholder<ParsedDefinition>[];
+  stepPH: ScaffoldPlaceholder<{ n: number; body: string }>[];
+  flashcardPH: ScaffoldPlaceholder<ParsedFlashcard>[];
+  derivationPH: ScaffoldPlaceholder<ParsedDerivation>[];
+  proofPH: ScaffoldPlaceholder<ParsedProof>[];
+  theoremPH: ScaffoldPlaceholder<TheoremMountData>[];
+  keyPointPH: ScaffoldPlaceholder<ParsedKeyPoint>[];
 }
 
-/** `parseTheoremInner` omits the hoisted <proof>; the caller reattaches it. */
-interface ParsedTheoremWithProof extends ParsedTheorem {
-  proofTitle?: string;
-  proofBody?: string;
+/** The slot class, the id attribute and the id prefix of every kind. */
+const SLOT_SHAPE: Record<ScaffoldTag, { className: string; attr: string; prefix: string }> = {
+  quiz: { className: 'quiz-slot', attr: 'data-quiz-id', prefix: 'quiz' },
+  example: { className: 'example-slot', attr: 'data-example-id', prefix: 'ex' },
+  practice: { className: 'practice-slot', attr: 'data-practice-id', prefix: 'pr' },
+  definition: { className: 'definition-slot', attr: 'data-definition-id', prefix: 'def' },
+  step: { className: 'step-slot', attr: 'data-step-id', prefix: 'step' },
+  flashcard: { className: 'flashcard-slot', attr: 'data-flashcard-id', prefix: 'fc' },
+  derivation: { className: 'derivation-slot', attr: 'data-derivation-id', prefix: 'der' },
+  proof: { className: 'proof-slot', attr: 'data-proof-id', prefix: 'prf' },
+  theorem: { className: 'theorem-slot', attr: 'data-theorem-id', prefix: 'thm' },
+  'key-point': { className: 'key-point-slot', attr: 'data-key-point-id', prefix: 'kp' },
+};
+
+function randomSuffix(): string {
+  return Math.random().toString(36).slice(2, 7);
 }
 
 function fallback(inner: string, t: ScaffoldDeps['t'], esc: ScaffoldDeps['esc']): string {
@@ -44,159 +79,91 @@ function fallback(inner: string, t: ScaffoldDeps['t'], esc: ScaffoldDeps['esc'])
     + '</pre></div>';
 }
 
-function replaceBlocks<Parsed>(
-  text: string,
-  expression: RegExp,
-  parse: (inner: string) => Parsed | null,
-  makeSlot: SlotFactory,
-  placeholders: ScaffoldPlaceholder<Parsed>[],
-  t: ScaffoldDeps['t'],
-  esc: ScaffoldDeps['esc'],
-): string {
-  let match: RegExpExecArray | null;
-  let index = 0;
-  while ((match = expression.exec(text)) !== null) {
-    const parsed = parse(match[1]);
-    if (!parsed) {
-      const replacement = fallback(match[1], t, esc);
-      text = text.slice(0, match.index) + '\n\n' + replacement + '\n\n' + text.slice(expression.lastIndex);
-      expression.lastIndex = match.index + replacement.length + 4;
-      continue;
-    }
-    const id = `${makeSlot.prefix}-${++index}-${Math.random().toString(36).slice(2, 7)}`;
-    const slot = makeSlot(id);
-    text = text.slice(0, match.index) + '\n\n' + slot + '\n\n' + text.slice(expression.lastIndex);
-    expression.lastIndex = match.index + slot.length + 4;
-    placeholders.push({ id, parsed });
-  }
-  return text;
+/** The placeholder element a mounted card replaces. */
+function slotHtml(tag: ScaffoldTag, id: string): string {
+  const shape = SLOT_SHAPE[tag];
+  return `<div class="${shape.className}" ${shape.attr}="${id}"></div>`;
 }
 
-/** Extract the non-interactive scaffold tags from assistant markdown. */
-export function extractScaffoldWidgets(
-  source: string,
-  { t, esc }: ScaffoldDeps,
-): {
-  text: string;
-  definitionPH: ScaffoldPlaceholder<ParsedDefinition>[];
-  stepPH: ScaffoldPlaceholder<{ n: number; body: string }>[];
-  flashcardPH: ScaffoldPlaceholder<ParsedFlashcard>[];
-  derivationPH: ScaffoldPlaceholder<ParsedDerivation>[];
-  proofPH: ScaffoldPlaceholder<ParsedProof>[];
-  theoremPH: ScaffoldPlaceholder<ParsedTheoremWithProof>[];
-  keyPointPH: ScaffoldPlaceholder<ParsedKeyPoint>[];
-} {
-  let text = source;
-  const definitionPH: ScaffoldPlaceholder<ParsedDefinition>[] = [];
-  const stepPH: ScaffoldPlaceholder<{ n: number; body: string }>[] = [];
-  const flashcardPH: ScaffoldPlaceholder<ParsedFlashcard>[] = [];
-  const derivationPH: ScaffoldPlaceholder<ParsedDerivation>[] = [];
-  const proofPH: ScaffoldPlaceholder<ParsedProof>[] = [];
-  const theoremPH: ScaffoldPlaceholder<ParsedTheoremWithProof>[] = [];
-  const keyPointPH: ScaffoldPlaceholder<ParsedKeyPoint>[] = [];
+/** Add one scaffold to the placeholder list the widget scheduler mounts. */
+function addPlaceholder(widgets: ScaffoldWidgets, block: ScaffoldBlock, id: string): void {
+  const parsed = block.parsed;
+  switch (block.kind) {
+    case 'quiz':
+      widgets.quizPH.push({ id, parsed: { ...(parsed as { slotId?: string | null }), slotId: id } as QuizMountData });
+      break;
+    case 'example':
+      widgets.examplePH.push({ id, parsed: parsed as ParsedExample });
+      break;
+    case 'practice':
+      widgets.practicePH.push({ id, parsed: { ...(parsed as { slotId?: string | null }), slotId: id } as PracticeMountData });
+      break;
+    case 'definition':
+      widgets.definitionPH.push({ id, parsed: parsed as ParsedDefinition });
+      break;
+    case 'step':
+      widgets.stepPH.push({ id, parsed: parsed as { n: number; body: string } });
+      break;
+    case 'flashcard':
+      widgets.flashcardPH.push({ id, parsed: parsed as ParsedFlashcard });
+      break;
+    case 'derivation':
+      widgets.derivationPH.push({ id, parsed: parsed as ParsedDerivation });
+      break;
+    case 'proof':
+      widgets.proofPH.push({ id, parsed: parsed as ParsedProof });
+      break;
+    case 'theorem':
+      widgets.theoremPH.push({ id, parsed: parsed as TheoremMountData });
+      break;
+    case 'key-point':
+      widgets.keyPointPH.push({ id, parsed: parsed as ParsedKeyPoint });
+      break;
+    default:
+      break;
+  }
+}
 
-  text = replaceBlocks(
-    text,
-    /<definition\b[^>]*>([\s\S]*?)<\/definition>/gi,
-    parseDefinitionInner,
-    Object.assign((id: string) => `<div class="definition-slot" data-definition-id="${id}"></div>`, { prefix: 'def' }),
-    definitionPH,
-    t,
-    esc,
-  );
+/**
+ * Extract every scaffold of an assistant message and leave the prose.
+ *
+ * The returned `text` carries one empty slot div per scaffold, separated by
+ * blank lines so the markdown renderer keeps them as their own blocks.
+ */
+export function extractScaffoldWidgets(source: string, { t, esc }: ScaffoldDeps): ScaffoldWidgets {
+  const widgets: ScaffoldWidgets = {
+    text: '',
+    quizPH: [],
+    examplePH: [],
+    practicePH: [],
+    definitionPH: [],
+    stepPH: [],
+    flashcardPH: [],
+    derivationPH: [],
+    proofPH: [],
+    theoremPH: [],
+    keyPointPH: [],
+  };
+  const counts: Record<string, number> = {};
+  const parts: string[] = [];
 
-  const stepRe = /<step\b([^>]*?)>([\s\S]*?)<\/step>/gi;
-  let stepMatch: RegExpExecArray | null;
-  let stepIndex = 0;
-  while ((stepMatch = stepRe.exec(text)) !== null) {
-    const attrs = stepMatch[1] || '';
-    const numberMatch = attrs.match(/n="([^"]+)"/i);
-    let n = numberMatch ? Number.parseInt(numberMatch[1], 10) : stepIndex + 1;
-    const body = stripTags(decodeEntities(stepMatch[2].trim()));
-    if (!Number.isFinite(n) || n < 1) n = stepIndex + 1;
-    if (!body) {
-      const replacement = fallback(stepMatch[2], t, esc);
-      text = text.slice(0, stepMatch.index) + '\n\n' + replacement + '\n\n' + text.slice(stepRe.lastIndex);
-      stepRe.lastIndex = stepMatch.index + replacement.length + 4;
+  for (const segment of splitScaffolds(source)) {
+    if (segment.kind === 'text') {
+      parts.push(segment.text);
       continue;
     }
-    const id = `step-${++stepIndex}-${Math.random().toString(36).slice(2, 7)}`;
-    const slot = `<div class="step-slot" data-step-id="${id}"></div>`;
-    text = text.slice(0, stepMatch.index) + '\n\n' + slot + '\n\n' + text.slice(stepRe.lastIndex);
-    stepRe.lastIndex = stepMatch.index + slot.length + 4;
-    stepPH.push({ id, parsed: { n, body } });
-  }
-
-  text = replaceBlocks(
-    text,
-    /<flashcard\b[^>]*>([\s\S]*?)<\/flashcard>/gi,
-    parseFlashcardInner,
-    Object.assign((id: string) => `<div class="flashcard-slot" data-flashcard-id="${id}"></div>`, { prefix: 'fc' }),
-    flashcardPH,
-    t,
-    esc,
-  );
-  text = replaceBlocks(
-    text,
-    /<derivation\b[^>]*>([\s\S]*?)<\/derivation>/gi,
-    parseDerivationInner,
-    Object.assign((id: string) => `<div class="derivation-slot" data-derivation-id="${id}"></div>`, { prefix: 'der' }),
-    derivationPH,
-    t,
-    esc,
-  );
-  text = replaceBlocks(
-    text,
-    /<proof\b[^>]*>([\s\S]*?)<\/proof>/gi,
-    parseProofInner,
-    Object.assign((id: string) => `<div class="proof-slot" data-proof-id="${id}"></div>`, { prefix: 'prf' }),
-    proofPH,
-    t,
-    esc,
-  );
-
-  const theoremRe = /<theorem\b[^>]*>([\s\S]*?)<\/theorem>/gi;
-  let theoremMatch: RegExpExecArray | null;
-  let theoremIndex = 0;
-  while ((theoremMatch = theoremRe.exec(text)) !== null) {
-    const inner = theoremMatch[1];
-    const proofMatch = inner.match(/<proof\b[^>]*>([\s\S]*?)<\/proof>/i);
-    let proof = proofMatch ? parseProofInner(proofMatch[1]) : null;
-    /* The proof pass above already turned a nested <proof> into a slot; the
-       theorem replacement would drop that slot, so the proof never mounted.
-       Take it back from proofPH and fold it into the theorem card. */
-    const hoisted = inner.match(/data-proof-id="([^"]+)"/);
-    if (!proof && hoisted) {
-      const at = proofPH.findIndex((entry) => entry.id === hoisted[1]);
-      if (at !== -1) proof = proofPH.splice(at, 1)[0].parsed;
-    }
-    const parsed = parseTheoremInner(inner.replace(/<proof\b[^>]*>[\s\S]*?<\/proof>/gi, '')) as ParsedTheoremWithProof | null;
-    if (!parsed) {
-      const replacement = fallback(inner, t, esc);
-      text = text.slice(0, theoremMatch.index) + '\n\n' + replacement + '\n\n' + text.slice(theoremRe.lastIndex);
-      theoremRe.lastIndex = theoremMatch.index + replacement.length + 4;
+    if (segment.kind === 'fallback') {
+      parts.push(fallback(segment.text, t, esc));
       continue;
     }
-    if (proof) {
-      parsed.proofTitle = proof.title;
-      parsed.proofBody = proof.body;
-    }
-    const id = `thm-${++theoremIndex}-${Math.random().toString(36).slice(2, 7)}`;
-    const slot = `<div class="theorem-slot" data-theorem-id="${id}"></div>`;
-    text = text.slice(0, theoremMatch.index) + '\n\n' + slot + '\n\n' + text.slice(theoremRe.lastIndex);
-    theoremRe.lastIndex = theoremMatch.index + slot.length + 4;
-    theoremPH.push({ id, parsed });
+    const block = segment.block;
+    const shape = SLOT_SHAPE[block.kind];
+    const index = (counts[block.kind] = (counts[block.kind] ?? 0) + 1);
+    const id = block.slotId ?? `${shape.prefix}-${index}-${randomSuffix()}`;
+    parts.push(slotHtml(block.kind, id));
+    addPlaceholder(widgets, block, id);
   }
 
-  text = replaceBlocks(
-    text,
-    /<key-point\b[^>]*>([\s\S]*?)<\/key-point>/gi,
-    parseKeyPointInner,
-    Object.assign((id: string) => `<div class="key-point-slot" data-key-point-id="${id}"></div>`, { prefix: 'kp' }),
-    keyPointPH,
-    t,
-    esc,
-  );
-
-  return { text, definitionPH, stepPH, flashcardPH, derivationPH, proofPH, theoremPH, keyPointPH };
+  widgets.text = parts.filter(Boolean).join('\n\n');
+  return widgets;
 }

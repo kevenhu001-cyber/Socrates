@@ -139,7 +139,9 @@ test('next questions are the ones the reply wrote; none without a block', async 
   await expect(nextQuestions(page).nth(0)).toContainText(NEXT[0]);
   await expect(nextQuestions(page).nth(1)).toContainText(NEXT[1]);
   await expect(page.locator('.msg.assistant').last()).not.toContainText('next-questions');
-  await expect(page.locator('.msg.assistant').last()).not.toContainText(NEXT[0]);
+  /* The block feeds the question chain, which is a surface of its own next to
+     the answer. The answer body itself must not repeat the candidates. */
+  await expect(page.locator('.msg.assistant').last().locator('.msg-body')).not.toContainText(NEXT[0]);
   await shot(page.locator('#chatInputBar'), 'next-questions');
 
   /* A reply without the block offers no questions: no fixed fallback. */

@@ -154,10 +154,11 @@
 
 /* Streaming scaffold previews — emitted by formatMsgProgressive.
    These existed as DOM but had no CSS, so they rendered as default
-   block children of the prose. Give them a quiet bordered treatment
+   block children of the prose. Give them a quiet tinted treatment
    with a small uppercase label so the reader can tell "this is a
-   scaffold, the final widget will replace it momentarily". */
-.scaffold-stream{margin:10px 0;padding:8px 10px 9px;border:0.5px dashed hsl(var(--border-300)/0.4);border-radius:6px;background:hsl(var(--bg-200)/0.25);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
+   scaffold, the final widget will replace it momentarily". The label
+   is a caption, not a frame: the scaffold carries no border. */
+.scaffold-stream{margin:10px 0;padding:8px 10px 9px;border-radius:6px;background:hsl(var(--bg-200)/0.25);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
 .scaffold-stream-label{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:4px;background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-400));font-size:calc(10.5px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-semibold);letter-spacing:0.04em;text-transform:uppercase;vertical-align:1px}
 .scaffold-stream-unclosed{font-style:italic;color:hsl(var(--text-400))}
 .scaffold-stream-live{border-style:solid;color:hsl(var(--text-200))}

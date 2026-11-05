@@ -421,6 +421,7 @@ export default defineConfig({
       '@socrates/ui/home': fileURLToPath(new URL('../packages/ui/src/home/index.ts', import.meta.url)),
       '@socrates/ui/turn': fileURLToPath(new URL('../packages/ui/src/turn/index.ts', import.meta.url)),
       '@socrates/ui/learn-model': fileURLToPath(new URL('../packages/ui/src/learn/model.ts', import.meta.url)),
+      '@socrates/ui/learn-split': fileURLToPath(new URL('../packages/ui/src/learn/split.ts', import.meta.url)),
       '@socrates/ui/learn': fileURLToPath(new URL('../packages/ui/src/learn/index.ts', import.meta.url)),
       '@socrates/ui/think-model': fileURLToPath(new URL('../packages/ui/src/think/model.ts', import.meta.url)),
       '@socrates/ui/think': fileURLToPath(new URL('../packages/ui/src/think/index.ts', import.meta.url)),

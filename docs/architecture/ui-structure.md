@@ -276,7 +276,7 @@ RN-13 的优化在 RN-14 合入后又做过一次 reconcile（`afb52980`）。
 |---|---|---|---|
 | RN-1（#120，11-01） | react-native-web 接入、新 UI tokens、首页空状态 | `frontend/vite.config.js`、`packages/theme/src/ui.ts`、`packages/ui/src/home` | 已签收，见上一节 |
 | RN-2（#122，11-01） | 思考展示与工具卡改为 RN | `packages/ui/src/turn`；SPA `react/tool-run/*` | SPA 在用 |
-| RN-3（11-01） | 十种学习脚手架 | `packages/ui/src/learn`；SPA `react/tutor-widgets/LearnScaffolds.tsx` | SPA 在用 |
+| RN-3（11-01） | 十种学习脚手架 | `packages/ui/src/learn`；SPA `react/tutor-widgets/LearnScaffolds.tsx` | SPA + Universal App 在用 |
 | RN-4（11-02） | 问题链与学习方式胶囊 | `packages/ui/src/think` | SPA 在用 |
 | RN-5（11-02） | 知识图谱、诊断、错题本 | `packages/ui/src/study` | SPA 在用 |
 | RN-6（#127，11-02） | 学习内容改为 AI 生成、按上下文定制 | `prompts/learning-modes.md`、`server/src/lib/prompts.ts`、`packages/core/src/learningBlocks.ts` | 服务端提示词 + 共享模型，SPA 在用 |
@@ -302,6 +302,24 @@ exam 3、think 2、learn 2、study-model 1、home 1、composer 1。Web 宿主适
 `src/exam/{screen,copy,adapt}.ts` 纯函数：适配层读 store、把命令转给 `src/exam/*` 的既有
 副作用，共享组件不碰 DOM 与 store。旧 6 个 DOM 组件与 `test/harness-exam.mjs` 已删，
 `styles/legacy/08-exam.css` 只保留页面外壳与滚动偏移，e2e 断言改用 `data-exam-*` 语义钩子。
+**脚手架统一（2026-11-06）**：学习脚手架（十种 scaffold）此前有两套实现——SPA 走
+`frontend/src/render/{assistantHtml,scaffoldPipeline}.ts`，Universal App 走自带的
+`packages/ui/src/scaffolds.ts` 与 `MessageContent.tsx` 里的本地卡片，两边的"哪一块变成卡片、
+哪一块退化成正文、哪一块是坏块"各写了一份。现在只剩一套：
+- `packages/ui/src/learn/split.ts` 是唯一的分段与判定（DOM-free），两端共用；
+- `packages/ui/src/learn/model.ts` 是唯一的解析，`packages/ui/src/learn/strings.ts` 是唯一的文案；
+- `packages/ui/src/learn/` 的 RN 卡片是唯一的呈现：SPA 仍走 slot div + 挂载
+  （`frontend/src/render/scaffoldPipeline.ts` + `react/tutor-widgets/LearnScaffolds.tsx`），
+  Universal App 直接内联渲染同一批卡片（`packages/ui/src/MessageContent.tsx`）。
+- 宿主各自的副作用不合并：判分、错题本、向导师追问仍在宿主（SPA `render/widgetRuntime.ts`，
+  Universal App `apps/socrates/src/useTutorProgress.ts`）。
+- SPA 的挂载由 `frontend/src/render/widgetScheduler.ts` 负责：转录本是懒挂载的，slot 可能比
+  正文晚几百毫秒才进 DOM，所以调度器观察文档直到每个 slot 都挂上（超时 10 秒后放弃），
+  而不是按固定帧数重试。
+卡片不再画框：外框、发丝线、抬升与标题下的分隔线都去掉，脚手架像正文的一段而不是压在
+正文上的盒子；控件（选项行、输入框、胶囊）保留自己的描边，因为那是可交互与状态的提示。
+Universal App 已在根部挂 `UiThemeProvider`（`apps/socrates/App.tsx`），共享卡片因此跟随
+应用的浅色 / 深色与字体，而不是固定浅色。
 
 **仍未迁移的部分（按体量）**
 

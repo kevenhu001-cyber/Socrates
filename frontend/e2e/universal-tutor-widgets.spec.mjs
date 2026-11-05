@@ -123,6 +123,10 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
       await more.click();
     }
 
+    // The app mounts the shared quiz card: one card per scaffold, addressed
+    // by the question it carries.
+    const quizCard = (question) => page.locator('[data-scaffold="quiz"]').filter({ hasText: question });
+
     await openMore();
     const newTutor = page.getByRole('button', { name: 'New tutor', exact: true });
     await expect(newTutor).toBeVisible();
@@ -173,8 +177,10 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
 
     // Quiz proxy: a wrong pick with a declared answer locks the card, shows
-    // the baseline feedback and sends the synthetic "I chose …" turn.
-    await page.getByRole('button', { name: 'Answer A for What is 2+2?' }).click();
+    // the baseline feedback and sends the synthetic "I chose …" turn. The
+    // shared card picks first and checks second.
+    await quizCard('What is 2+2?').locator('[data-letter="A"]').click();
+    await quizCard('What is 2+2?').getByTestId('quiz-submit').click();
     await expect(page.getByText('Not quite. The correct answer is option B.')).toBeVisible();
     await expect(page.getByText('I chose A. 3 (Result: incorrect, correct is B.)')).toBeVisible();
     await expect(page.getByText('What is 3+3?', { exact: true })).toBeVisible();
@@ -192,8 +198,8 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     // Practice proxy: hint toggle, submit sends the "[Practice attempt]"
     // turn and a self-check miss shows the local feedback line (and lands
     // in the mistake book; the redo below covers the self-check hit). The
-    // parsed <title> is never rendered, matching the baseline card.
-    await expect(page.getByText('Try it', { exact: true })).toHaveCount(0);
+    // shared card shows the block's own title.
+    await expect(page.getByText('Try it', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Show hint' }).click();
     await expect(page.getByText('Subtract 1.')).toBeVisible();
     await page.getByLabel('Type your answer…').fill('x=4');
@@ -209,8 +215,9 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     // motivate, and the wrong/practice-origin turns below do not advance
     // it back to exercise before the second quiz pick fires.
     const streamCount = chatStreams.length;
-    await page.getByRole('button', { name: 'Answer A for What is 3+3?' }).click();
-    await expect(page.getByText('Correct (A).')).toBeVisible();
+    await quizCard('What is 3+3?').locator('[data-letter="A"]').click();
+    await quizCard('What is 3+3?').getByTestId('quiz-submit').click();
+    await expect(page.getByText('Correct (option A).')).toBeVisible();
     expect(chatStreams.length).toBe(streamCount);
 
     // Mistake book actions: the badge counts unresolved rows, the filters
@@ -262,7 +269,8 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
     await expect(page.getByText('Not quite. The correct answer is option B.')).toHaveCount(0);
     const conquerStreams = chatStreams.length;
-    await page.getByRole('button', { name: 'Answer B for What is 2+2?' }).click();
+    await quizCard('What is 2+2?').locator('[data-letter="B"]').click();
+    await quizCard('What is 2+2?').getByTestId('quiz-submit').click();
     await expect(page.getByText('Correct (option B).')).toBeVisible();
     expect(chatStreams.length).toBe(conquerStreams);
     await reopenMistakes();

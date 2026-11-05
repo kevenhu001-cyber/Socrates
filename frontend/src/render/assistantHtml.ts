@@ -22,16 +22,8 @@ import { stateStore } from '../state/store.ts';
 import { wrapForCanvas } from './canvasWrap.ts';
 import { decodeEntities, esc, stripCitationMarkers, stripTags } from './helpers.ts';
 import { formatMsg } from './markdown.ts';
-import { extractScaffoldWidgets } from './scaffoldPipeline.ts';
+import { extractScaffoldWidgets, type ScaffoldWidgets } from './scaffoldPipeline.ts';
 import { scheduleWidgetMounts } from './widgetScheduler.ts';
-import {
-  parseExampleInner,
-  parsePracticeInner,
-  parseQuizInner,
-  type ParsedExample,
-  type ParsedPractice,
-  type ParsedQuiz,
-} from '@socrates/ui/learn-model';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 import { ensureKatex } from '../vendor/lazy.ts';
 
@@ -61,27 +53,6 @@ export function configureAssistantHtml(next: AssistantHtmlDeps): void {
 function t(key: string): string {
   const g = globalThis as unknown as { t: (key: string) => string };
   return g.t(key);
-}
-
-interface SlotEntry<Parsed> {
-  id: string;
-  parsed: Parsed;
-}
-
-type PracticeParsed = ParsedPractice & { correct?: string; slotId?: string | null };
-
-function fallbackBlock(inner: string): string {
-  return (
-    '<div class="inline-block-fallback"><div class="inline-block-fallback-label">' +
-    t('tutor.fallbackWarn') +
-    '</div><pre class="inline-block-fallback-content">' +
-    esc(inner) +
-    '</pre></div>'
-  );
-}
-
-function randomSuffix(): string {
-  return Math.random().toString(36).slice(2, 7);
 }
 
 /* A "Sources:" marker opening a line, Chinese variants included. */
@@ -115,45 +86,8 @@ export function stripTrailingSources(text: string): string {
   return text;
 }
 
-function replaceQuizSlots(text: string, slots: SlotEntry<ParsedQuiz>[]): string {
-  return text.replace(/<quiz\b([^>]*)>([\s\S]*?)<\/quiz>/gi, (raw: string, attrs: string, inner: string) => {
-    const parsed = parseQuizInner(inner, attrs);
-    if (slots.length) return '\n\n' + esc(parsed?.q || raw) + '\n\n';
-    if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
-    const requestedId = attrs.match(/\bdata-quiz-id\s*=\s*["']([\w-]{1,120})["']/i)?.[1];
-    const id = requestedId || 'quiz-' + (slots.length + 1) + '-' + randomSuffix();
-    parsed.slotId = id;
-    slots.push({ id, parsed });
-    return '\n\n<div class="quiz-slot" data-quiz-id="' + id + '"></div>\n\n';
-  });
-}
-
-function replaceExampleSlots(text: string, slots: SlotEntry<ParsedExample>[]): string {
-  return text.replace(/<example\b[^>]*>([\s\S]*?)<\/example>/gi, (_raw: string, inner: string) => {
-    const parsed = parseExampleInner(inner);
-    if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
-    const id = 'ex-' + (slots.length + 1) + '-' + randomSuffix();
-    slots.push({ id, parsed });
-    return '\n\n<div class="example-slot" data-example-id="' + id + '"></div>\n\n';
-  });
-}
-
-function replacePracticeSlots(text: string, slots: SlotEntry<PracticeParsed>[]): string {
-  return text.replace(/<practice\b([^>]*)>([\s\S]*?)<\/practice>/gi, (raw: string, attrs: string, inner: string) => {
-    const parsed: PracticeParsed | null = parsePracticeInner(inner);
-    if (slots.length) return '\n\n' + esc(parsed?.problem || raw) + '\n\n';
-    if (!parsed) return '\n\n' + fallbackBlock(inner) + '\n\n';
-    const correct = attrs.match(/correct="([^"]+)"/i);
-    if (correct) parsed.correct = decodeEntities(correct[1]);
-    const requestedId = attrs.match(/\bdata-practice-id\s*=\s*["']([\w-]{1,120})["']/i)?.[1];
-    const id = requestedId || 'pr-' + (slots.length + 1) + '-' + randomSuffix();
-    parsed.slotId = id;
-    slots.push({ id, parsed });
-    return '\n\n<div class="practice-slot" data-practice-id="' + id + '"></div>\n\n';
-  });
-}
-
-function recordInlineMistakes(text: string, practices: SlotEntry<PracticeParsed>[]): string {
+function recordInlineMistakes(text: string, widgets: ScaffoldWidgets): string {
+  const practices = widgets.practicePH;
   return text.replace(/<mistake\b([^>]*)>([\s\S]*?)<\/mistake>/gi, (_raw: string, attrs: string, inner: string) => {
     const type = attrs.match(/type="([^"]+)"/i)?.[1] || 'practice';
     const correct = attrs.match(/correct="([^"]+)"/i)?.[1] || '';
@@ -191,27 +125,11 @@ export function buildAssistantHtml(rawText: unknown): string {
      markers despite the prompt, so the renderer removes them (code and
      math spans are protected inside the helper). */
   text = stripCitationMarkers(text);
-  /* All placeholder lists — collected during the scan, mounted at the end. */
-  const quizPH: SlotEntry<ParsedQuiz>[] = [];
-  const examplePH: SlotEntry<ParsedExample>[] = [];
-  const practicePH: SlotEntry<PracticeParsed>[] = [];
-
-  // Preserve pass order and one interactive question of each kind per turn.
-  // Malformed blocks stay readable; later questions become escaped prose.
-  text = replaceQuizSlots(text, quizPH);
-  text = replaceExampleSlots(text, examplePH);
-  text = replacePracticeSlots(text, practicePH);
-  text = recordInlineMistakes(text, practicePH);
-
+  /* One pass over the shared scaffold system: every kind becomes a slot,
+     the first quiz and the first practice become the interactive cards and
+     malformed blocks stay readable. */
   const scaffoldPH = extractScaffoldWidgets(text, { t, esc });
-  text = scaffoldPH.text as string;
-  const definitionPH = scaffoldPH.definitionPH;
-  const stepPH = scaffoldPH.stepPH;
-  const flashcardPH = scaffoldPH.flashcardPH;
-  const derivationPH = scaffoldPH.derivationPH;
-  const proofPH = scaffoldPH.proofPH;
-  const theoremPH = scaffoldPH.theoremPH;
-  const keyPointPH = scaffoldPH.keyPointPH;
+  text = recordInlineMistakes(scaffoldPH.text, scaffoldPH);
 
   /* formatMsg uses marked.parse, which passes raw <div> blocks through
      untouched. The slots will land in the final HTML intact. */
@@ -222,25 +140,16 @@ export function buildAssistantHtml(rawText: unknown): string {
      KaTeX on interaction — and KaTeX arriving repaints the message, which
      remounts the card and drops its state (a turned flashcard flips back).
      Ask for KaTeX now so that one repaint lands before anyone interacts. */
-  const scaffoldCount = quizPH.length + examplePH.length + practicePH.length + definitionPH.length + stepPH.length
-    + flashcardPH.length + derivationPH.length + proofPH.length + theoremPH.length + keyPointPH.length;
+  const scaffoldCount = scaffoldPH.quizPH.length + scaffoldPH.examplePH.length + scaffoldPH.practicePH.length
+    + scaffoldPH.definitionPH.length + scaffoldPH.stepPH.length + scaffoldPH.flashcardPH.length
+    + scaffoldPH.derivationPH.length + scaffoldPH.proofPH.length + scaffoldPH.theoremPH.length
+    + scaffoldPH.keyPointPH.length;
   if (scaffoldCount && /\$|\\\(|\\\[/.test(String(rawText || ''))) {
     void ensureKatex().catch(() => { /* text stays readable; a later render can retry */ });
   }
 
   /* Widget mounting is deferred until the rendered HTML is in the DOM. */
-  scheduleWidgetMounts({
-    quizPH,
-    examplePH,
-    practicePH,
-    definitionPH,
-    stepPH,
-    flashcardPH,
-    derivationPH,
-    proofPH,
-    theoremPH,
-    keyPointPH,
-  });
+  scheduleWidgetMounts(scaffoldPH);
   /* P_canvas-mode — write (and any future canvas-mode extension) wraps the
      finalized HTML in a <div class="canvas-block"> so React can mount an
      editable surface from data-canvas-id. The id is read from the message

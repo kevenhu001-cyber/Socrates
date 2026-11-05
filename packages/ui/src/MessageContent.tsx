@@ -1,5 +1,5 @@
-import React, { memo, useMemo, useState } from 'react';
-import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { fontStyle, getThemePaletteHex, type FontWeight, type ThemeMode } from '@socrates/theme';
 import type { Attachment, Message, ToolCall } from '@socrates/contracts';
 import type { Token, Tokens } from 'marked';
@@ -8,8 +8,27 @@ import { paletteForDocument } from './visualization';
 import { buildMathDocument } from './artifactDocument';
 import { artifactFromFence, artifactsFromToolCalls, type ArtifactDescriptor } from './artifacts';
 import { fileKindLabel, formatFileSize } from './fileMeta';
-import { type ParsedPractice, type ParsedQuiz, type QuizOption } from './scaffolds';
+import {
+  DefinitionCard,
+  FlashcardCard,
+  KeyPointCard,
+  LearnHostProvider,
+  ProblemCard,
+  ProofCard,
+  QuizCard,
+  StepsCard,
+  TheoremCard,
+  hintLevels,
+  learnStrings,
+  parseAnswerKey,
+  splitDerivationSteps,
+  type AnswerFeedback,
+  type QuizResult,
+  type QuizVerdict,
+} from './learn';
+import { type ParsedPractice, type ParsedQuiz, type QuizOption } from './learn/model';
 import { evaluatePracticeAnswer } from './learn/practiceAnswer.ts';
+import { type ScaffoldBlock } from './learn/split';
 import { toolArtifacts, toolDurationLabel, toolFailureText, toolInputPreview, toolInputText, toolLabel, toolOutputText, toolSearchResults, toolState } from './toolModel';
 import { uiStrings, type UiLanguage, type UiStrings } from './strings';
 import { getTutorLegacyPalette } from './tutorTheme';
@@ -210,107 +229,140 @@ function Blocks({ tokens, p, t, mode, onCopyText, onOpenArtifact, resolveImage, 
 /** Field text for tutor widgets: markdown + the same math transform the
  * transcript pipeline applies (inline TeX as codespan, display TeX as an
  * island card). */
-function RichText({ text, mode, p, t, resolveImage, onOpenArtifact, font }: { text: string; mode: ThemeMode; p: Palette; t: UiStrings; font?: { fontFamily: string } } & MessageActions) {
+function RichText({ text, mode, p, t, resolveImage, onOpenArtifact, font, lang = 'en' }: { text: string; mode: ThemeMode; p: Palette; t: UiStrings; resolveImage?: (src: string) => ResolvedImageSource | null; font?: { fontFamily: string }; lang?: UiLanguage } & MessageActions) {
   const parts = useMemo(() => parseRichText(text), [text]);
   return <>{parts.map((part, i) => part.kind === 'math'
     ? <MathCard key={i} tex={part.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />
-    : <Blocks key={i} tokens={part.tokens} p={p} t={t} mode={mode} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} />)}</>;
+    : <Blocks key={i} tokens={part.tokens} p={p} t={t} mode={mode} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={lang} />)}</>;
 }
 
-/** Interactive quiz proxy (baseline `mountQuizWidget` + `handleQuizPick`):
- * first pick locks the card, marks the selection, shows the feedback line,
- * and hands the pick to the host for stage effects / a synthetic turn. */
-function TutorQuizCard({ quiz, slotId = null, p, t, mode, onQuizPick }: { quiz: ParsedQuiz; slotId?: string | null; p: Palette; t: UiStrings; mode: ThemeMode } & MessageActions) {
-  const [picked, setPicked] = useState<string | null>(null);
-  const isRight = !!quiz.correct && picked === quiz.correct;
-  const feedback = picked === null ? null
-    : quiz.correct
-      ? (isRight ? t.quizCorrect(quiz.correct) : t.quizWrong(quiz.correct))
+/** The shared quiz card, wired to the host's pick handler: the card owns the
+ * selection and the verdict, the host applies the stage transitions, records
+ * a mistake and sends the tutor a follow-up. */
+function TutorQuizCard({ quiz, slotId = null, language, onQuizPick }: {
+  quiz: ParsedQuiz;
+  slotId?: string | null;
+  language: UiLanguage;
+  onQuizPick?: (pick: QuizPick) => void;
+}) {
+  const t = uiStrings(language);
+  const answerKey = parseAnswerKey(quiz.correct);
+  const onSubmit = (letters: string[]): QuizResult => {
+    const picked = letters.join('');
+    const chosen = quiz.options.filter((option) => letters.includes(option.letter));
+    const isRight = answerKey.length > 0 && answerKey.join('') === picked;
+    onQuizPick?.({
+      q: quiz.q,
+      options: quiz.options,
+      picked,
+      pickedText: chosen.map((option) => option.text).join('; '),
+      correct: quiz.correct,
+      isRight,
+      slotId,
+    });
+    const verdict: QuizVerdict = answerKey.length ? (isRight ? 'correct' : 'incorrect') : 'recorded';
+    const feedback = answerKey.length
+      ? (isRight ? t.quizCorrect(answerKey.join('')) : t.quizWrong(answerKey.join('')))
       : t.quizRecorded(picked);
-  const pick = (option: QuizOption) => {
-    if (picked !== null) return;
-    setPicked(option.letter);
-    onQuizPick?.({ q: quiz.q, options: quiz.options, picked: option.letter, pickedText: option.text, correct: quiz.correct, isRight: !!quiz.correct && option.letter === quiz.correct, slotId });
+    return { verdict, feedback };
   };
-  return <View style={[styles.scaffold, { borderColor: p.border.default, backgroundColor: p.bg.sunken }]}>
-    <View style={{ gap: 4 }}><RichText text={quiz.q} mode={mode} p={p} t={t} /></View>
-    <View style={{ gap: 6 }}>
-      {quiz.options.map((option) => {
-        const selected = picked === option.letter;
-        const showCorrect = picked !== null && !!quiz.correct && option.letter === quiz.correct;
-        return <Pressable
-          key={option.letter}
-          accessibilityRole="button"
-          accessibilityLabel={t.quizPick(option.letter, quiz.q)}
-          accessibilityState={{ selected, disabled: picked !== null }}
-          disabled={picked !== null}
-          onPress={() => pick(option)}
-          style={[styles.quizOption, { borderColor: showCorrect ? p.accent.strong : selected ? p.danger : p.border.default }, selected && { backgroundColor: p.bg.hover }]}
-        >
-          <Text style={{ color: p.text.muted, fontWeight: '700' }}>{option.letter}.</Text>
-          <View style={{ flex: 1 }}><RichText text={option.text} mode={mode} p={p} t={t} /></View>
-          {selected ? <Text style={{ color: isRight ? p.accent.strong : p.danger }}>{isRight ? '✓' : '✗'}</Text> : null}
-        </Pressable>;
-      })}
-    </View>
-    {feedback ? <Text style={{ color: picked !== null && quiz.correct && !isRight ? p.danger : p.text.secondary }}>{feedback}</Text> : null}
-  </View>;
+  return (
+    <QuizCard
+      question={quiz.q}
+      options={quiz.options}
+      answerKey={answerKey}
+      multi={Boolean(quiz.multi)}
+      explanation={quiz.explanation}
+      onSubmit={onSubmit}
+    />
+  );
 }
 
-/** Interactive practice proxy (baseline `mountPracticeWidget`): optional
- * hint and Reveal. Submit always sends the attempt; only unambiguous keys are
- * self-graded locally, while unsupported answer forms wait for tutor review. */
-function TutorPracticeCard({ practice, p, t, mode, onPracticeSubmit }: { practice: ParsedPractice; p: Palette; t: UiStrings; mode: ThemeMode } & MessageActions) {
-  const [answer, setAnswer] = useState('');
-  const [hintOpen, setHintOpen] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [feedback, setFeedback] = useState<{ bad: boolean; text: string } | null>(null);
-  const submit = () => {
-    const value = answer.trim();
-    if (!value) { setFeedback({ bad: true, text: t.practiceEmpty }); return; }
-    if (sent) return;
-    setSent(true);
-    const assessment = practice.correct ? evaluatePracticeAnswer(value, practice.correct) : 'unverified';
+/** The shared practice card: the typed answer always reaches the tutor; only
+ * an answer the key can compare is graded locally. */
+function TutorPracticeCard({ practice, language, onPracticeSubmit }: {
+  practice: ParsedPractice;
+  language: UiLanguage;
+  onPracticeSubmit?: (submission: PracticeSubmission) => void;
+}) {
+  const t = uiStrings(language);
+  const correct = practice.correct ?? null;
+  const onSubmitAnswer = (answer: string): AnswerFeedback => {
+    const assessment = correct ? evaluatePracticeAnswer(answer, correct) : 'unverified';
     const isRight = assessment === 'correct' ? true : assessment === 'incorrect' ? false : null;
-    onPracticeSubmit?.({ problem: practice.problem, answer: value, correct: practice.correct, isRight });
-    if (assessment === 'correct') { setFeedback({ bad: false, text: t.practiceSelfCorrect }); return; }
-    if (assessment === 'incorrect') { setFeedback({ bad: true, text: t.practiceSelfWrong(practice.correct || '') }); return; }
-    setFeedback({ bad: false, text: t.practiceSent });
+    onPracticeSubmit?.({ problem: practice.problem, answer, correct, isRight });
+    if (assessment === 'correct') return { state: 'ok', text: t.practiceSelfCorrect };
+    if (assessment === 'incorrect') return { state: 'bad', text: t.practiceSelfWrong(correct || '') };
+    return { state: 'recorded', text: t.practiceSent };
   };
-  const reveal = () => {
-    if (sent || !practice.correct) return;
-    setSent(true);
-    setFeedback({ bad: false, text: practice.correct });
-  };
-  return <View style={[styles.scaffold, { borderColor: p.border.default, backgroundColor: p.bg.sunken }]}>
-    {/* No title row: the baseline (render/widgets.ts mountPracticeWidget and
-        the streaming card in render/markdown.ts) parses <title> but never
-        renders it, so the default "Practice" heading never appears there. */}
-    <View style={{ gap: 4 }}><RichText text={practice.problem} mode={mode} p={p} t={t} /></View>
-    {practice.hint ? <Pressable accessibilityRole="button" accessibilityLabel={hintOpen ? t.hideHint : t.showHint} accessibilityState={{ expanded: hintOpen }} onPress={() => setHintOpen(!hintOpen)}>
-      <Text style={{ color: p.accent.strong }}>{hintOpen ? t.hideHint : t.showHint}</Text>
-    </Pressable> : null}
-    {hintOpen && practice.hint ? <View style={{ gap: 4 }}><RichText text={practice.hint} mode={mode} p={p} t={t} /></View> : null}
-    <TextInput
-      accessibilityLabel={t.practicePlaceholder}
-      multiline
-      editable={!sent}
-      value={answer}
-      onChangeText={setAnswer}
-      placeholder={t.practicePlaceholder}
-      placeholderTextColor={p.text.muted}
-      style={[styles.practiceInput, { borderColor: p.border.default, color: p.text.primary }]}
+  const onRevealAnswer = (): AnswerFeedback => ({ state: 'recorded', text: '', rich: correct || '' });
+  return (
+    <ProblemCard
+      kind="practice"
+      title={practice.title}
+      problem={practice.problem}
+      hints={hintLevels(practice)}
+      solution={practice.solution}
+      hasAnswerKey={Boolean(correct)}
+      onSubmitAnswer={onSubmitAnswer}
+      onRevealAnswer={onRevealAnswer}
     />
-    <View style={styles.practiceActions}>
-      {practice.correct ? <Pressable accessibilityRole="button" accessibilityLabel={t.revealAnswer} disabled={sent} onPress={reveal} style={[styles.scaffoldBtn, { borderColor: p.border.default, opacity: sent ? 0.4 : 1 }]}>
-        <Text style={{ color: p.text.secondary }}>{t.revealAnswer}</Text>
-      </Pressable> : null}
-      <Pressable accessibilityRole="button" accessibilityLabel={t.submitAnswer} disabled={sent} onPress={submit} style={[styles.scaffoldBtn, { borderColor: p.border.strong, opacity: sent ? 0.4 : 1 }]}>
-        <Text style={{ color: p.accent.strong, fontWeight: '600' }}>{t.submitAnswer}</Text>
-      </Pressable>
-    </View>
-    {feedback ? <Text style={{ color: feedback.bad ? p.danger : p.text.secondary }}>{feedback.text}</Text> : null}
-  </View>;
+  );
+}
+
+/** One scaffold block, drawn with the shared cards the web shell mounts. */
+function ScaffoldView({ block, language, slotId, onQuizPick, onPracticeSubmit }: {
+  block: ScaffoldBlock;
+  language: UiLanguage;
+  slotId?: string | null;
+  onQuizPick?: (pick: QuizPick) => void;
+  onPracticeSubmit?: (submission: PracticeSubmission) => void;
+}) {
+  switch (block.kind) {
+    case 'quiz':
+      return <TutorQuizCard quiz={block.parsed} slotId={slotId ?? block.slotId} language={language} onQuizPick={onQuizPick} />;
+    case 'practice':
+      return <TutorPracticeCard practice={block.parsed} language={language} onPracticeSubmit={onPracticeSubmit} />;
+    case 'example':
+      return (
+        <ProblemCard
+          kind="example"
+          title={block.parsed.title}
+          problem={block.parsed.problem}
+          hints={hintLevels(block.parsed)}
+          solution={block.parsed.solution}
+        />
+      );
+    case 'flashcard':
+      return <FlashcardCard front={block.parsed.front} back={block.parsed.back} />;
+    case 'definition':
+      return <DefinitionCard term={block.parsed.term} body={block.parsed.body} />;
+    case 'key-point':
+      return <KeyPointCard body={block.parsed.body} />;
+    case 'theorem':
+      return (
+        <TheoremCard
+          title={block.parsed.title}
+          statement={block.parsed.statement}
+          proofTitle={block.parsed.proofTitle}
+          proofBody={block.parsed.proofBody}
+        />
+      );
+    case 'proof':
+      return <ProofCard title={block.parsed.title} body={block.parsed.body} />;
+    case 'derivation':
+      return (
+        <StepsCard
+          kind="derivation"
+          title={block.parsed.title}
+          steps={splitDerivationSteps(block.parsed.body).map((body, index) => ({ n: index + 1, body }))}
+        />
+      );
+    case 'step':
+      return <StepsCard kind="step" steps={[{ n: block.parsed.n, body: block.parsed.body }]} />;
+    default:
+      return null;
+  }
 }
 
 function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }: { tool: ToolCall; p: Palette; t: UiStrings } & MessageActions) {
@@ -379,14 +431,18 @@ export type MistakeRedoItem =
   | { id: string; kind: 'practice'; problem: string; correct: string | null };
 
 export function MistakeRedoCard({ item, mode, language = 'en', onQuizPick, onPracticeSubmit }: { item: MistakeRedoItem; mode: ThemeMode; language?: UiLanguage } & MessageActions) {
-  const p = getThemePaletteHex(mode);
   const t = uiStrings(language);
   const scale = Platform.OS === 'web' ? 1.125 : 1;
+  const renderRich = useCallback((source: string, _part: string): React.ReactNode => (
+    <RichText text={source} mode={mode} p={getThemePaletteHex(mode)} t={t} font={fontStyle('regular', language, Platform.OS === 'web')} lang={language} />
+  ), [mode, t, language]);
   return <View testID={`socrates-mistake-redo-card-${item.id}`} style={styles.redoCard}>
     <Text style={[{ color: getTutorLegacyPalette(mode).text.muted, fontSize: 12 * scale, marginBottom: 6 }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.mistakeRedoBanner}</Text>
-    {item.kind === 'quiz'
-      ? <TutorQuizCard quiz={{ q: item.q, options: item.options, correct: item.correct }} slotId={item.slotId} mode={mode} p={p} t={t} onQuizPick={onQuizPick} />
-      : <TutorPracticeCard practice={{ title: '', problem: item.problem, hint: '', correct: item.correct }} mode={mode} p={p} t={t} onPracticeSubmit={onPracticeSubmit} />}
+    <LearnHostProvider value={{ strings: learnStrings(language), renderRich }}>
+      {item.kind === 'quiz'
+        ? <TutorQuizCard quiz={{ q: item.q, options: item.options, correct: item.correct }} slotId={item.slotId} language={language} onQuizPick={onQuizPick} />
+        : <TutorPracticeCard practice={{ title: '', problem: item.problem, hint: '', correct: item.correct }} language={language} onPracticeSubmit={onPracticeSubmit} />}
+    </LearnHostProvider>
   </View>;
 }
 
@@ -404,6 +460,9 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
   );
   const [showReasoning, setShowReasoning] = useState(false);
   const font = fontStyle('regular', language, Platform.OS === 'web');
+  const renderRich = useCallback((source: string, _part: string): React.ReactNode => (
+    <RichText text={source} mode={mode} p={p} t={t} resolveImage={resolveImage} onOpenArtifact={onOpenArtifact} font={font} lang={language} />
+  ), [mode, p, t, resolveImage, onOpenArtifact, font, language]);
   const messageId = (message.clientId || message.id || 'message').replace(/[^A-Za-z0-9_-]/g, '-');
   const nativeIdPrefix = `socrates-message-assistant-${messageId}`;
   const normalizedFindQuery = findQuery.trim();
@@ -413,20 +472,19 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
       <Pressable accessibilityRole="button" accessibilityLabel={t.toggleReasoning} accessibilityState={{ expanded: showReasoning }} onPress={() => setShowReasoning(!showReasoning)}><Text style={{ color: p.text.muted }}>{t.reasoning} {showReasoning ? '⌃' : '⌄'}</Text></Pressable>
       {showReasoning ? <Text selectable style={[styles.text, { color: p.text.secondary }]}>{content.reasoning}</Text> : null}
     </View> : null}
-    {message.role === 'user' ? <Text nativeID={`socrates-message-user-${messageId}`} selectable style={[styles.text, styles.userText, compact && styles.userTextCompact, { color: userTextColor }, font]}>{findText(content.text, find)}</Text> : segments && segments.length ? <>{segments.map((segment, i) => {
+    {message.role === 'user' ? <Text nativeID={`socrates-message-user-${messageId}`} selectable style={[styles.text, styles.userText, compact && styles.userTextCompact, { color: userTextColor }, font]}>{findText(content.text, find)}</Text> : segments && segments.length ? <LearnHostProvider value={{ strings: learnStrings(language), renderRich }}>{segments.map((segment, i) => {
       if (segment.kind === 'math') return <MathCard key={i} tex={segment.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />;
       if (segment.kind === 'notes') return <NotesSection key={i} notes={segment.notes} p={p} t={t} find={find} />;
-      if (segment.kind === 'quiz') {
+      if (segment.kind === 'scaffold') {
         const slotId = messageQuizSlotId(message);
-        return <TutorQuizCard key={`${i}:${quizSlotResets?.[slotId] || 0}`} quiz={segment.quiz} slotId={slotId} mode={mode} p={p} t={t} onQuizPick={onQuizPick} />;
+        return <ScaffoldView key={`${i}:${quizSlotResets?.[slotId] || 0}`} block={segment.block} language={language} slotId={slotId} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />;
       }
-      if (segment.kind === 'practice') return <TutorPracticeCard key={i} practice={segment.practice} mode={mode} p={p} t={t} onPracticeSubmit={onPracticeSubmit} />;
-      if (segment.kind === 'scaffoldFallback') return <View key={i} style={[styles.scaffold, { borderColor: p.border.default }]}>
+      if (segment.kind === 'scaffoldFallback') return <View key={i} style={styles.scaffold}>
         <Text style={{ color: p.text.muted, fontWeight: '600' }}>{t.scaffoldFallback}</Text>
         <Text selectable style={[styles.mono, { color: p.text.secondary }]}>{findText(segment.text, find)}</Text>
       </View>;
       return <Blocks key={i} tokens={segment.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} find={find} nativeIdPrefix={`${nativeIdPrefix}-segment-${i}`} />;
-    })}</> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} find={find} nativeIdPrefix={nativeIdPrefix} /> : <Text nativeID={`${nativeIdPrefix}-thinking`} style={[styles.text, { color: p.text.muted }, font, compact && styles.textCompact]}>{t.thinking}</Text>}
+    })}</LearnHostProvider> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} find={find} nativeIdPrefix={nativeIdPrefix} /> : <Text nativeID={`${nativeIdPrefix}-thinking`} style={[styles.text, { color: p.text.muted }, font, compact && styles.textCompact]}>{t.thinking}</Text>}
     {message.attachments?.map((attachment) => {
       const inline = attachment.kind === 'image' && attachment.dataUrl ? safeImage(attachment.dataUrl) : null;
       const rawSrc = attachment.fileId ? `/api/files/${attachment.fileId}/raw` : '';
@@ -484,10 +542,6 @@ const styles = StyleSheet.create({
   attachmentImage: { width: '100%', maxHeight: 220, borderRadius: 8 },
   attachmentRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   image: { width: 260, maxWidth: '100%', height: 180 },
-  scaffold: { padding: 12, borderWidth: 1, borderRadius: 12, gap: 10, marginVertical: 6 },
+  scaffold: { padding: 12, borderRadius: 12, gap: 10, marginVertical: 6 },
   redoCard: { marginTop: 20 },
-  quizOption: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  practiceInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, minHeight: 64, fontSize: 15, textAlignVertical: 'top' },
-  practiceActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
-  scaffoldBtn: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
 });
