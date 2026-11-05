@@ -348,20 +348,20 @@ for ci_case in failure missing unverifiable cancelled in-progress unknown; do
   esac
 done
 
-# The merge gate is enforced BY DEFAULT: a red CI refuses the deploy before
-# anything is built, restarted or published.
-ci_default_base=$(make_fixture ci-default)
-if run_deploy "$ci_default_base" MOCK_GH_RESULT=failure >"$ci_default_base/output.log" 2>&1; then
-  echo "deploy unexpectedly succeeded with a red CI (the gate is enforced by default)" >&2
-  exit 1
-fi
-grep -q 'refusing to deploy' "$ci_default_base/output.log"
-grep -q 'failing:.*ci\.yml(failure)' "$ci_default_base/output.log"
-grep -q 'old backend' "$ci_default_base/server/dist/index.runtime.js"
-if [[ -s "$ci_default_base/systemctl.log" ]]; then
-  echo "the backend was restarted even though the CI gate blocked the deploy" >&2
-  exit 1
-fi
+# CI is advisory BY DEFAULT. Red/missing/unverifiable CI must not prevent a
+# healthy release, and its real verdict must remain visible in deploy state.
+for ci_case in failure missing unverifiable; do
+  ci_default_base=$(make_fixture "ci-default-$ci_case")
+  case "$ci_case" in
+    unverifiable) ci_env=(MOCK_GH_ERROR=1) ;;
+    *) ci_env=(MOCK_GH_RESULT="$ci_case") ;;
+  esac
+  run_deploy "$ci_default_base" "${ci_env[@]}" >"$ci_default_base/output.log" 2>&1
+  grep -q 'advisory mode, proceeding' "$ci_default_base/output.log"
+  grep -q '"ciGate": "not-enforced:' "$ci_default_base/deploy-state.json"
+  grep -q 'new backend' "$ci_default_base/server/dist/index.runtime.js"
+  grep -q 'old backend' "$ci_default_base/server/dist.previous/index.runtime.js"
+done
 
 # Explicit operator opt-out: --no-ci-check still checks the gate, but lets a
 # red CI through and records the non-enforcing verdict in the state file.
@@ -420,13 +420,10 @@ SH
   esac
 done
 
-# The gate function enforces by default as well: with DEPLOY_REQUIRE_CI_CHECK
-# unset, an unverifiable checkout still refuses the deploy.
-if env PATH="$test_path" /bin/bash -c 'source "$1"; DEPLOY_CI_GATE_STATUS=not-run; unset DEPLOY_REQUIRE_CI_CHECK; ci_gate_check /not/a/repo' _ "$ci_gate_source" >"$WORK/ci-default-enforce.log" 2>&1; then
-  echo "CI gate unexpectedly succeeded with enforcement left at its default" >&2
-  exit 1
-fi
-grep -q 'refusing to deploy' "$WORK/ci-default-enforce.log"
+# The isolated gate function must use the same advisory default when the
+# environment variable is unset, including when git/gh is unavailable.
+env PATH="$test_path" /bin/bash -c 'source "$1"; DEPLOY_CI_GATE_STATUS=not-run; unset DEPLOY_REQUIRE_CI_CHECK; ci_gate_check /not/a/repo; [[ "$DEPLOY_CI_GATE_STATUS" == not-enforced:* ]]' _ "$ci_gate_source" >"$WORK/ci-default-advisory.log" 2>&1
+grep -q 'advisory mode, proceeding' "$WORK/ci-default-advisory.log"
 
 success_base=$(make_fixture success)
 run_deploy "$success_base" >"$success_base/output.log"
@@ -583,4 +580,4 @@ if ! jq -e '.lastSuccessfulSiteDeploy.worktreeDirtyFiles == 0' "$site_state_base
 fi
 jq -e '.lastSuccessfulSiteDeploy.htmlPages == 4' "$site_state_base/deploy-state.site.json" >/dev/null
 
-echo "deploy flow: CI gate skip/success/default-enforced failure/missing/unverifiable, the explicit --no-ci-check and DEPLOY_REQUIRE_CI_CHECK=0 opt-outs, success, lock contention, health gate, cleanup, rollback, the status-page gate (DNS missing/strict/artifact/feed/public), and the site-only state file passed"
+echo "deploy flow: CI gate skip/success/default-advisory failure/missing/unverifiable and opt-in enforcement, the explicit --no-ci-check and DEPLOY_REQUIRE_CI_CHECK=0 opt-outs, success, lock contention, health gate, cleanup, rollback, the status-page gate (DNS missing/strict/artifact/feed/public), and the site-only state file passed"

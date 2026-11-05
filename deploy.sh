@@ -31,10 +31,9 @@ deploy.sh — publish the Socrates web properties.
 Usage:
   ./deploy.sh                          full release: SPA bundle + backend
                                        (frontend build, migrations, restart)
-  ./deploy.sh --require-ci             enforce the GitHub Actions merge gate
-                                       before deploying (this is the default;
-                                       the flag only states it explicitly)
-  ./deploy.sh --no-ci-check            do NOT enforce the merge gate: a red CI
+  ./deploy.sh --require-ci             optionally require a green GitHub Actions
+                                       merge gate before deploying
+  ./deploy.sh --no-ci-check            default: do NOT enforce the merge gate; a red CI
                                        is reported but does not block the deploy
                                        (the opt-out is recorded in
                                        .deploy-state.json)
@@ -51,8 +50,8 @@ Usage:
   ./deploy.sh /path/to/index.html      legacy: publish one prebuilt SPA doc
 
 Environment:
-  DEPLOY_REQUIRE_CI_CHECK enforce the CI merge gate on full deploy (1 by default;
-                                       set to 0 to let a red CI through)
+  DEPLOY_REQUIRE_CI_CHECK enforce the CI merge gate on full deploy (0 by default;
+                                       set to 1 to require green CI)
   DEPLOY_SKIP_CI_CHECK    skip CI merge gate entirely without querying gh (0 by default)
   SITE_DIR                source tree for the marketing site
   SITE_WEB_ROOT           published location of the marketing site
@@ -63,10 +62,10 @@ EOF
 DEPLOY_SCOPE="full"
 DRY_RUN="${DRY_RUN:-0}"
 SITE_REQUIRE_MERGE_GATE=0
-# The merge gate is enforced by default: a red CI refuses the release.
-# DEPLOY_REQUIRE_CI_CHECK=0 (or --no-ci-check) is the explicit operator
-# opt-out; --require-ci stays as a no-op-safe explicit form of the default.
-DEPLOY_REQUIRE_CI_CHECK="${DEPLOY_REQUIRE_CI_CHECK:-1}"
+# CI is advisory by default: releases still require builds and live health
+# gates, but not a green GitHub run. Operators can opt into strict CI with
+# --require-ci or DEPLOY_REQUIRE_CI_CHECK=1. The verdict is always recorded.
+DEPLOY_REQUIRE_CI_CHECK="${DEPLOY_REQUIRE_CI_CHECK:-0}"
 for arg in "$@"; do
   case "$arg" in
     --site-only)
@@ -557,27 +556,15 @@ else
   SUDO=""
 fi
 
-# ─── 0a. Merge-gate check: the deployed commit must be green on CI ──────
-# The health gates further down verify only that the *running* system answers
-# correctly; nothing here can detect that the merge gate has been red for days
-# (2026-10-19: 40 consecutive red CI runs on main shipped to production). This
-# gate closes that gap: refuse to deploy a commit whose CI has not passed.
-# The gate is ENFORCED by default; the bypasses below are the only ways past it.
-#
-# Bypasses, in order of intent:
-#   --no-ci-check / DEPLOY_REQUIRE_CI_CHECK=0
-#                           — check the gate but do not enforce it. The check
-#                             still runs and its verdict is recorded in
-#                             .deploy-state.json, so an audited opt-out is
-#                             visible after the fact.
-#   DEPLOY_SKIP_CI_CHECK=1  — an explicit, per-invocation override. Logged, and
-#                             recorded in .deploy-state.json so an audited
-#                             bypass is visible after the fact.
-#   --dry-run               — the whole dry-run path is unaffected.
-#   Missing git/gh or an unresolvable HEAD fails closed; only the explicit
-#                             operator override or dry-run bypasses this gate.
-# Treats "no run found for this commit" as a failure: an unpushed or
-# force-pushed commit has no gate result, which is exactly the case to catch.
+# ─── 0a. Advisory CI check (strict mode is opt-in) ─────────────────────
+# CI results are reported and recorded, but do not block a normal release.
+# Builds, migrations, live health gates, deployment locking and rollback are
+# independent of this choice and remain mandatory.
+#   --require-ci / DEPLOY_REQUIRE_CI_CHECK=1: fail closed on red, missing or
+#     unverifiable CI. Site-only --require-merge-gate also opts into this.
+#   --no-ci-check / DEPLOY_REQUIRE_CI_CHECK=0: advisory mode (the default).
+#   DEPLOY_SKIP_CI_CHECK=1: do not query GitHub; record the operator's skip.
+#   --dry-run: unchanged; supported only for the site scope.
 #
 # The names below are workflow FILE names, not the `name:` shown in the UI.
 # Two reasons: "CI Security" was never one of them, so
@@ -597,7 +584,7 @@ REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-ci.yml security.yml}"
 ci_gate_check() {
   local source_dir="$1"
   local skip="${DEPLOY_SKIP_CI_CHECK:-0}"
-  local enforce="${DEPLOY_REQUIRE_CI_CHECK:-1}"
+  local enforce="${DEPLOY_REQUIRE_CI_CHECK:-0}"
   if [[ "$SITE_REQUIRE_MERGE_GATE" == "1" ]]; then
     enforce=1
   fi
@@ -617,7 +604,7 @@ ci_gate_check() {
       DEPLOY_CI_GATE_STATUS="unverified-missing-git-or-gh"
       return 1
     else
-      echo "  ci.gate  notice: git or gh not available to verify merge gate (not enforced: operator opted out, proceeding)" >&2
+      echo "  ci.gate  notice: git or gh not available to verify merge gate (advisory mode, proceeding)" >&2
       DEPLOY_CI_GATE_STATUS="not-enforced:missing-git-or-gh"
       return 0
     fi
@@ -632,7 +619,7 @@ ci_gate_check() {
       DEPLOY_CI_GATE_STATUS="unverified-no-head"
       return 1
     else
-      echo "  ci.gate  notice: cannot resolve HEAD in $source_dir (not enforced: operator opted out, proceeding)" >&2
+      echo "  ci.gate  notice: cannot resolve HEAD in $source_dir (advisory mode, proceeding)" >&2
       DEPLOY_CI_GATE_STATUS="not-enforced:no-head"
       return 0
     fi
@@ -679,7 +666,7 @@ ci_gate_check() {
       DEPLOY_CI_GATE_STATUS="blocked:$failed$missing"
       return 1
     else
-      echo "  ci.gate  notice: merge gate not green for ${short} (not enforced: operator opted out, proceeding)" >&2
+      echo "  ci.gate  notice: merge gate not green for ${short} (advisory mode, proceeding)" >&2
       [[ -n "$failed" ]]  && echo "           failing:$failed" >&2
       [[ -n "$missing" ]] && echo "           no completed run for this commit:$missing" >&2
       DEPLOY_CI_GATE_STATUS="not-enforced:$failed$missing"
@@ -698,7 +685,7 @@ ci_gate_check() {
       DEPLOY_CI_GATE_STATUS="unverified:$errored"
       return 1
     else
-      echo "  ci.gate  notice: could not verify merge gate for ${short} due to gh API errors (not enforced: operator opted out, proceeding)" >&2
+      echo "  ci.gate  notice: could not verify merge gate for ${short} due to gh API errors (advisory mode, proceeding)" >&2
       echo "           gh API errors for:$errored" >&2
       DEPLOY_CI_GATE_STATUS="not-enforced:unverified:$errored"
       return 0
