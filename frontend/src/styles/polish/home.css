@@ -43,13 +43,9 @@
 
 @media (max-width: 768px) {
   #appShell .home-quick-actions {
-    display: block;
-    order: -1;
-    box-sizing: border-box;
-    width: 100%;
-    margin: 0 0 12px;
-    overflow-x: auto;
-    scrollbar-width: none;
+    /* Phone chat starts with a quiet canvas. The same actions remain in
+       the composer's + menu; desktop keeps its discoverable shortcuts. */
+    display: none;
   }
   #appShell .home-quick-actions::-webkit-scrollbar { display: none; }
 }
@@ -92,6 +88,7 @@
 }
 
 @media (max-width: 768px) {
+  body:not([data-app-mode="tutor"]) #appShell .home-learning-modes { display: none; }
   #appShell .home-learning-modes {
     order: -1;
     width: 100%;

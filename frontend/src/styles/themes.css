@@ -12,6 +12,9 @@
 /* RN-1 — new UI vocabulary generated from packages/theme/src/ui.ts. */
 @import './foundations/tokens.generated.css';
 
+/* Shared RN action role follows the active web theme's canonical accent. */
+html[data-mode] { --ui-action: var(--ui-accent-action); }
+
 html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {
   --font-sans: "Geist Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
@@ -53,7 +56,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --destructive-foreground: var(--background);
   --border: var(--geist-gray-400);
   --input: var(--border);
-  --ring: var(--geist-gray-900);
+  --ring: var(--geist-blue-900);
   --sidebar: var(--geist-gray-100);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
@@ -175,11 +178,9 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   /* Geist's monochrome primary + semantic status colors. */
   --ui-on-accent: var(--primary-foreground);
   --ui-accent-strong: var(--primary);
-  /* The action colour is ink, not a hue (R1 restyle, 2026-11-01): the
-   * product is monochrome and black is its one accent, as on the marketing
-   * site. In dark mode the disc inverts to the light ink with dark glyphs. */
-  --ui-accent-action: var(--primary);
-  --ui-on-action: var(--primary-foreground);
+  /* Restore the pre-R1 blue action and teal identity; geometry stays neutral. */
+  --ui-accent-action: rgb(57 126 247);
+  --ui-on-action: rgb(255 255 255);
   /* The danger tone is a *text* colour, so it has to clear AA on the
      lightest dark rung as well as on the canvas. The old Lobe value
      (rgb(233 83 80)) cleared the near-black page but sat at 4.03:1 on
@@ -190,15 +191,12 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-thinking-accent: rgb(255 190 69);
   --ui-info: rgb(76 179 255);
   --ui-warning: var(--ui-thinking-accent);
-  --ui-link: var(--ui-text-primary);
+  --ui-link: var(--ui-info);
 
-  /* The focus indicator is a neutral ink ring (gray-900), not a hue: the
-   * product carries no colour, and the ring still clears 3:1 on every rung. */
+  /* Blue focus remains distinct from neutral hover fills. */
   --ui-focus-ring: var(--ring);
 
-  /* The brand accent is ink. The avatar disc is the primary fill with the
-   * primary-foreground initials, so it flips cleanly with the mode. */
-  --ui-brand-accent: var(--primary);
+  --ui-brand-accent: rgb(31 199 168);
 
   /* Socrates product roles projected from the foundation. */
   --ui-avatar-bg: var(--ui-brand-accent);
@@ -252,7 +250,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --destructive-foreground: var(--geist-background-100);
   --border: var(--geist-gray-400);
   --input: var(--border);
-  --ring: var(--geist-gray-900);
+  --ring: var(--geist-blue-700);
   --sidebar: var(--geist-background-200);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
@@ -368,18 +366,17 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * The thinking accent stays a vivid chart/accent colour and is never used
    * as body text; warning no longer aliases it. */
   --ui-on-accent: var(--primary-foreground);
-  /* The action colour — the composer's send button — is ink (see dark). */
-  --ui-accent-action: var(--primary);
-  --ui-on-action: var(--primary-foreground);
+  --ui-accent-action: rgb(57 126 247);
+  --ui-on-action: rgb(255 255 255);
   --ui-accent-strong: var(--primary);
   --ui-danger: rgb(176 45 28);
   --ui-success: rgb(12 110 51);
   --ui-thinking-accent: rgb(254 180 0);
   --ui-info: rgb(0 92 184);
   --ui-warning: rgb(125 82 0);
-  --ui-link: var(--ui-text-primary);
+  --ui-link: rgb(0 96 204);
 
-  /* Neutral focus ring — see the dark-mode note. */
+  /* Blue focus remains distinct from neutral hover fills. */
   --ui-focus-ring: var(--ring);
 
   /* Socrates product roles projected from the foundation.
@@ -388,8 +385,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * lightness gap does the separating and the border only finishes the edge.
    * The dark composer sits on L4 for the same reason — there the paper is
    * the darkest tone and the elevated rung is the lighter one. */
-  /* The brand accent is ink — see the dark-mode note. */
-  --ui-brand-accent: var(--primary);
+  --ui-brand-accent: rgb(15 127 107);
 
   --ui-avatar-bg: var(--ui-brand-accent);
   --ui-bg-composer: var(--ui-bg-elevated);

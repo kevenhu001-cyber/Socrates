@@ -89,6 +89,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .sidebar-search-row {
     --sidebar-search-rows: 0fr;
     --sidebar-search-clip-margin: 0px;
+    grid-template-rows: var(--sidebar-search-rows);
     padding-top: 0;
     padding-bottom: 0;
     opacity: 0;
@@ -157,7 +158,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 
 @media (max-width: 768px) {
 #appShell .sidebar-search-row {
-  padding: 0 0 6px;
+  padding: 0;
   gap: 4px;
 }
 }
@@ -388,10 +389,12 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 /* ─── end of pass-2 merge; original polish/mobile-sidebar.css content below ─── */
 @media (max-width: 768px) {
-  /* Match the supplied phone drawer's ~65% width while leaving the main
-     pane visible. Touch rows retain the shipped 48px density. */
+  /* Reference: ~65% width, 40px navigation/history pitch at 390px.
+     Do not inherit the desktop rail's card paint or 48px touch density. */
   #appShell #sidebar {
-    --ui-mobile-row: 48px;
+    --ui-mobile-row: var(--ui-control-md);
+    --ui-card: var(--ui-bg-panel);
+    --ui-elevation-raised: none;
     background: var(--background);
   }
   #appShell .sidebar-inner { padding: 0 6px 6px; }
@@ -405,6 +408,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   }
   #appShell .sidebar-logo { display: flex; align-items: center; padding: 0 4px; gap: 8px; min-width: 0; }
   #appShell .sidebar-logo-img { display: block; width: 24px; height: 24px; }
+  #appShell .sidebar-logo [data-part="brand-name"] { display: none; }
   #appShell .sidebar-logo > span {
     display: inline-block;
     color: var(--foreground);
@@ -448,9 +452,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     width: 100%;
     min-height: var(--ui-mobile-row);
     height: var(--ui-mobile-row);
-    padding: 0 16px;
+    padding: 0 10px;
     border-radius: var(--ui-radius-row);
-    font-size: calc(16px * var(--app-type-scale));
+    font-size: var(--ui-font-size-sm);
     font-weight: var(--ui-font-weight-regular);
     line-height: 24px;
     color: var(--foreground);
@@ -465,11 +469,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell #sidebarNav .sidebar-nav-btn svg { width: 24px; height: 24px; }
   #appShell #sidebarNav .nav-label { line-height: 24px; }
   #appShell #sidebarNav #navNew { order: 0; }
-  #appShell #sidebarNav #navImages { order: 5; }
-  #appShell #sidebarNav #navLibrary { order: 1; }
+  #appShell #sidebarNav #navImages { order: 1; }
+  #appShell #sidebarNav #navLibrary { order: 2; }
   #appShell #sidebarNav #navScheduled { order: 3; }
   #appShell #sidebarNav #navPlugins { order: 4; }
-  #appShell #sidebarNav .sidebar-project-nav { order: 2; display: grid; grid-template-columns: minmax(0, 1fr) var(--ui-control-md); align-items: center; border-radius: var(--ui-radius-row); }
+  #appShell #sidebarNav .sidebar-project-nav { order: 5; display: grid; grid-template-columns: minmax(0, 1fr) var(--ui-control-md); align-items: center; border-radius: var(--ui-radius-row); }
   #appShell #sidebarNav #navProjects { order: 0; padding-right: 0; }
   #appShell .sidebar-project-create {
     order: 1;
@@ -497,7 +501,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navImages { display: none; }
   :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navSites { display: grid; order: 6; }
   #appShell #sidebarHeader #newChatBtn { display: none; }
-  #appShell #sidebarNav #navNew, #appShell #sidebarNav .sidebar-nav-btn.active { background: var(--ui-bg-selected); }
+  #appShell #sidebarNav #navNew, #appShell #sidebarNav .sidebar-nav-btn.active { background: var(--ui-bg-panel); }
   #appShell .recents-panel {
     padding: 0;
     margin-top: 0;
@@ -543,19 +547,19 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recents-head-btn svg { width: 20px; height: 20px; }
   #appShell .sidebar-nav-sep {
     display: block;
-    height: 1px;
-    margin: 8px 16px 4px;
+    height: 0;
+    margin: 12px 0 0;
     border: 0;
-    background: var(--ui-border-subtle);
+    background: transparent;
   }
   #appShell .recent-item {
     display: flex;
     align-items: center;
     height: var(--ui-mobile-row);
     min-height: var(--ui-mobile-row);
-    padding: 0 6px 0 16px;
+    padding: 0 6px 0 10px;
     border-radius: var(--ui-radius-row);
-    font-size: calc(16px * var(--app-type-scale));
+    font-size: var(--ui-font-size-sm);
     color: var(--foreground);
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
@@ -641,16 +645,13 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     .recent-item,
     .recent-item-text,
     .sidebar-logo,
-    .recents-title,
     .nav-new-badge,
     #sidebarSearch,
     #sidebarSearch::placeholder
   ),
   [data-mode="dark"] #appShell #sidebarUserRow :is(
     .sidebar-account-trigger,
-    .user-name,
-    .user-plan,
-    .tier-badge
+    .user-name
   ) { color: var(--ui-sidebar-glyph); }
 
   /* The phone drawer is narrow (~237px): keep the identity row tight so the

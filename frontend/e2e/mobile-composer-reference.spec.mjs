@@ -37,11 +37,12 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
     '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
   ]);
   /* RN-7: the phone question box is the site ask-box (ComposerFrame,
-     compact): one white sheet with 24px corners, the editor storey on top
-     and the 36px control rail beneath it. 90 = 12 top + 26 editor line
-     + 8 gap + 36 rail + 8 bottom; the edge is a hairline drawn in the
-     shadow, so there is no border to add. */
-  expect(landing.wrap?.height).toBe(90);
+     compact): one white sheet with 28px corners on the inner frame, the
+     editor storey on top and the 36px control rail beneath it. 86 = 8 top
+     + 26 editor line + 8 gap + 36 rail + 8 bottom; the edge is a hairline
+     drawn in the shadow, so there is no border to add. The outer host keeps
+     its own 24px layout radius; it is a transparent moving container. */
+  expect(landing.wrap?.height).toBe(86);
   expect(landing.radius).toBe('24px');
   /* + and the primary control are 36px circles; the mic is the same size
      and all three sit on the one control row, left to right. */

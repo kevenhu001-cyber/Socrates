@@ -43,6 +43,7 @@ body,
 
 /* Shell / rail */
 
+
 @media (max-width: 768px) {
 
 #appShell .sidebar::after {
@@ -909,14 +910,6 @@ body.workspace-active #appShell .workspace-row:hover {
 /* The --cg-* palette names that used to be pinned here are owned by the
    themes.css bridge — removed 2026-10-10. */
 
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell .sidebar {
-  background-image: none !important;
-  border-right-color: var(--cg-border) !important;
-  box-shadow: none !important;
-}
-}
 
 
 body.workspace-active #appShell #mainInner {

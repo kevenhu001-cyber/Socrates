@@ -99,8 +99,8 @@ function SidebarToggle() {
       onClick={() => toggleSidebar()}
     >
       <svg className="glyph-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M9 4.5v15" /></svg>
-      {/* The phone drawer shows the reference's three-line hamburger. */}
-      <svg className="glyph-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M5 7h14" /><path d="M5 12h14" /><path d="M5 17h14" /></svg>
+      {/* Phone navigation uses the reference's quiet, two-line menu glyph. */}
+      <svg className="glyph-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M4 8h16" /><path d="M4 15h11" /></svg>
       <span className="mobile-sidebar-status" aria-hidden="true" />
     </Button>
   );

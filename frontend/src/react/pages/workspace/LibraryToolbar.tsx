@@ -53,7 +53,7 @@ export function LibraryToolbar({
         </div>
         <div className="library-head-actions">
           <div className="library-new-wrap">
-            <Button type="button" variant="secondary" className="library-new-pill rounded-full" onClick={() => onNewMenuOpenChange(!newMenuOpen)}>
+            <Button type="button" className="library-new-pill rounded-full" aria-haspopup="menu" aria-expanded={newMenuOpen} onClick={() => onNewMenuOpenChange(!newMenuOpen)}>
               <span>{i18n('library.new', '新建')}</span>
               <ChevronDownIcon />
             </Button>

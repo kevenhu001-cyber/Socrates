@@ -199,7 +199,7 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
         disabled={!enabled}
         onPress={primary.onPress}
         {...dataSet({ composerControl: 'send', stop: stop ? '1' : '0', ready: primary.ready ? 'true' : 'false', sending: primary.sending ? 'true' : 'false' })}
-        style={({ pressed, hovered }: PressState) => ({
+        style={({ pressed }: PressState) => ({
           width: COMPOSER_CONTROL_SIZE,
           height: COMPOSER_CONTROL_SIZE,
           borderRadius: uiRadius.pill,
@@ -208,13 +208,13 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
           /* Site send disc: a quiet grey disc while there is nothing to
              send, the ink disc once there is (and while it means Stop). */
           backgroundColor: enabled
-            ? (hovered ? colors.inkHover : colors.ink)
+            ? colors.action
             : colors.fill,
           transform: [{ scale: pressed && enabled ? 0.94 : 1 }],
         })}
       >
         <View nativeID="composerPrimaryBtnContent">
-          <UiIcon name={stop ? 'stop' : 'arrow-up'} size={18} color={enabled ? colors.onInk : colors.inkTertiary} />
+          <UiIcon name={stop ? 'stop' : 'arrow-up'} size={18} color={enabled ? colors.onAction : colors.inkTertiary} />
         </View>
       </Pressable>
     </>

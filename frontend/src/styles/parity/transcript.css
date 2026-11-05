@@ -295,26 +295,39 @@
   box-shadow: var(--ui-shadow-menu), var(--ui-focus-shadow);
 }
 
-/* ── Syntax: greyscale (RN-7, every width) ─────────────────────────────
-   The bundled atom-one-dark palette painted purple/green/orange tokens on
-   a white page. Code now reads in the ink ramp only: keywords and
-   functions carry weight, literals sit on the primary ink, strings and
-   attributes step to secondary, comments to tertiary italic. */
-#appShell .msg-body :is(pre code.hljs, code.hljs) {
+/* ── Syntax: light-mode legibility (every width) ─────────────────────────
+   highlight.js ships atom-one-dark for both modes. On the light paper its
+   pastel tokens measure 1.9–3.0:1, so light mode re-maps the token classes
+   onto the active palette's semantic roles. Dark mode keeps the bundled
+   theme; neither branch flattens syntax to ink. */
+html[data-mode="light"] #appShell .msg-body :is(pre code.hljs, code.hljs) {
   background: transparent;
   color: var(--ui-text-primary);
 }
-#appShell .msg-body .hljs :is(.hljs-keyword, .hljs-doctag, .hljs-formula, .hljs-selector-tag, .hljs-built_in, .hljs-title, .hljs-section, .hljs-name) {
-  color: var(--ui-text-primary);
+html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-keyword, .hljs-doctag, .hljs-formula, .hljs-selector-tag, .hljs-template-tag, .hljs-template-variable) {
+  color: var(--ui-info);
   font-weight: var(--ui-font-weight-semibold);
 }
-#appShell .msg-body .hljs :is(.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet, .hljs-type, .hljs-variable, .hljs-template-variable, .hljs-subst, .hljs-deletion, .hljs-addition) {
-  color: var(--ui-text-primary);
+html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-string, .hljs-regexp, .hljs-symbol, .hljs-bullet, .hljs-addition, .hljs-attribute) {
+  color: var(--ui-success);
 }
-#appShell .msg-body .hljs :is(.hljs-string, .hljs-regexp, .hljs-attr, .hljs-attribute, .hljs-meta, .hljs-link, .hljs-selector-id, .hljs-selector-class, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-params) {
-  color: var(--ui-text-secondary);
+html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-number, .hljs-literal, .hljs-type, .hljs-built_in, .hljs-variable, .hljs-attr, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-selector-pseudo) {
+  color: var(--ui-warning);
 }
-#appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote) {
+html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-title, .hljs-section, .hljs-name, .hljs-function, .hljs-params) {
+  color: var(--ui-brand-accent);
+}
+html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote, .hljs-meta) {
+  color: var(--ui-text-tertiary);
+  font-style: italic;
+}
+html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-deletion, .hljs-tag) {
+  color: var(--ui-danger);
+}
+/* atom-one-dark's comment grey (#5c6370) drops to 2.7:1 on the app's
+   #1f1f1f code sheet; keep the bundled palette but lift comments onto the
+   theme's tertiary ink, as the pre-R1 ramp did. */
+html[data-mode="dark"] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote) {
   color: var(--ui-text-tertiary);
   font-style: italic;
 }

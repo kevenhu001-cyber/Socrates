@@ -51,6 +51,7 @@ export function HomeHero({ title, subtitle, titleId }: HomeHeroProps) {
         role="heading"
         {...headingLevel(1)}
         variant={compact ? 'greetingCompact' : 'greeting'}
+        style={compact ? { fontWeight: '400' } : undefined}
         align="center"
       >
         {title}

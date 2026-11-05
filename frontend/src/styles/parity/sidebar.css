@@ -112,7 +112,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     letter-spacing: -0.015em;
     white-space: nowrap;
   }
-  #appShell #sidebarHeader .sidebar-logo-img { width: var(--ui-space-xl); height: var(--ui-space-xl); border-radius: var(--ui-radius-sm); filter: grayscale(1) contrast(1.05); }
+  #appShell #sidebarHeader .sidebar-logo-img { width: var(--ui-space-xl); height: var(--ui-space-xl); border-radius: var(--ui-radius-sm); }
   #appShell #sidebarHeader .sidebar-logo > span { font: inherit; }
   #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader > div:last-child,

@@ -47,13 +47,13 @@ export function ComposerFrame({ focused, compact = false, shadows, top, topVisib
       onPointerLeave={() => setHovered(false)}
       style={{
         width: '100%',
-        borderRadius: uiRadius.card,
+        borderRadius: compact ? uiRadius.card + uiStep[50] : uiRadius.card,
         backgroundColor: colors.card,
         boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
         transitionProperty: 'box-shadow',
         transitionDuration: `${uiMotion.slow - 100}ms`,
         transitionTimingFunction: uiMotion.easeOut,
-        paddingTop: compact ? uiStep[100] : uiStep[200],
+        paddingTop: compact ? uiStep[75] : uiStep[200],
         paddingBottom: uiStep[75],
         paddingHorizontal: uiStep[75],
       } as object}

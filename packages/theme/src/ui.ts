@@ -4,8 +4,8 @@
  * shell (`frontend/src/styles/foundations/tokens.generated.css`).
  *
  * Direction (RN-1): white canvas, pale grey fills, hairline borders, pill
- * buttons, rounded cards, Geist + Noto Sans SC, black as the only accent.
- * No colour accents, no dotted or stippled decoration.
+ * buttons, rounded cards, Geist + Noto Sans SC. Blue actions and teal
+ * identity accents sit on neutral surfaces; no dotted decoration.
  *
  * This file is the single source: `scripts/gen-ui-tokens.mjs` reads the
  * exported objects below and writes CSS custom properties. Never hand-edit
@@ -42,6 +42,9 @@ export interface UiColors {
   readonly inkHover: string;
   /** Foreground on an `ink` fill (primary button label). */
   readonly onInk: string;
+  /** Primary composer action; independent from neutral text ink. */
+  readonly action: string;
+  readonly onAction: string;
   /** RN-7 (site `--site-color-copy`): long-form body copy, one step under ink. */
   readonly copy: string;
   /** RN-7 (site `--site-color-subtle`): the quietest tinted sheet (rail, insight). */
@@ -66,6 +69,8 @@ export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
     inkTertiary: '#767676',
     inkHover: '#303030',
     onInk: '#ffffff',
+    action: '#397ef7',
+    onAction: '#ffffff',
     copy: '#303030',
     subtle: '#f9f9f9',
     surface: '#f3f3f3',
@@ -84,6 +89,8 @@ export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
     inkTertiary: '#8f8f8f',
     inkHover: '#ffffff',
     onInk: '#0a0a0a',
+    action: '#397ef7',
+    onAction: '#ffffff',
     copy: '#d6d6d6',
     subtle: '#141414',
     surface: '#1a1a1a',
@@ -105,6 +112,8 @@ export const uiColorVar: Readonly<Record<keyof UiColors, string>> = {
   inkTertiary: '--ui-ink-tertiary',
   inkHover: '--ui-ink-hover',
   onInk: '--ui-on-ink',
+  action: '--ui-action',
+  onAction: '--ui-on-action',
   copy: '--ui-copy',
   subtle: '--ui-subtle',
   surface: '--ui-surface',

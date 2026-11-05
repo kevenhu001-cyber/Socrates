@@ -2,6 +2,13 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+/* The production build minifies #ffffff to #fff; compare expanded hex so the
+   assertion is about the colour, not the build's serialization. */
+function hex6(value) {
+  const short = /^#([0-9a-f]{3})$/i.exec(value);
+  return short ? `#${short[1].split('').map((channel) => channel + channel).join('')}` : value;
+}
+
 test('theme selector follows the operating system and persists explicit modes', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => {
@@ -42,18 +49,18 @@ test('theme selector follows the operating system and persists explicit modes', 
   // The dark canvas is a near-black, never pure #000 — see the surface
   // ladder in styles/themes.css. The four rungs are four consecutive steps
   // of the Geist scale.
-  expect(darkPalette.page).toBe('#0a0a0a');
-  expect(darkPalette.sidebar).toBe('#1a1a1a');
-  expect(darkPalette.raised).toBe('#1f1f1f');
-  expect(darkPalette.surface).toBe('#292929');
+  expect(hex6(darkPalette.page)).toBe('#0a0a0a');
+  expect(hex6(darkPalette.sidebar)).toBe('#1a1a1a');
+  expect(hex6(darkPalette.raised)).toBe('#1f1f1f');
+  expect(hex6(darkPalette.surface)).toBe('#292929');
   // Computed custom properties resolve var() aliases to the canonical value.
-  expect(darkPalette.cgPage).toBe(darkPalette.page);
-  expect(darkPalette.chatgptPage).toBe(darkPalette.page);
-  expect(darkPalette.conversationPage).toBe(darkPalette.page);
+  expect(hex6(darkPalette.cgPage)).toBe(hex6(darkPalette.page));
+  expect(hex6(darkPalette.chatgptPage)).toBe(hex6(darkPalette.page));
+  expect(hex6(darkPalette.conversationPage)).toBe(hex6(darkPalette.page));
   expect(darkPalette.legacyPage).toBe('0 0% 3.92%');
-  expect(darkPalette.lobeLayout).toBe(darkPalette.page);
-  expect(darkPalette.lobeContainer).toBe(darkPalette.raised);
-  expect(darkPalette.lobeElevated).toBe(darkPalette.surface);
+  expect(hex6(darkPalette.lobeLayout)).toBe(hex6(darkPalette.page));
+  expect(hex6(darkPalette.lobeContainer)).toBe(hex6(darkPalette.raised));
+  expect(hex6(darkPalette.lobeElevated)).toBe(hex6(darkPalette.surface));
 
   await themeSegs.locator('[data-theme-option="system"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
@@ -69,11 +76,17 @@ test('theme selector follows the operating system and persists explicit modes', 
       border: styles.getPropertyValue('--ui-border-default').trim(),
     };
   });
-  /* The light ladder: the canvas is L2 (#fafafa) and the paper (L1,
-     #ffffff) is what raised and overlay surfaces are cut from — so the
-     composer and the menus read as lighter than the page they stand on. */
-  expect(lightPalette).toEqual({
-    page: '#fafafa',
+  /* Paper-canvas policy (surface-ladder.baseline.json): the light canvas IS
+     the paper, so page, raised and elevated share #ffffff; the rail
+     (#fafafa) and panel (#f2f2f2) carry the separation. */
+  expect({
+    page: hex6(lightPalette.page),
+    raised: hex6(lightPalette.raised),
+    elevated: hex6(lightPalette.elevated),
+    text: hex6(lightPalette.text),
+    border: hex6(lightPalette.border),
+  }).toEqual({
+    page: '#ffffff',
     raised: '#ffffff',
     elevated: '#ffffff',
     text: '#171717',

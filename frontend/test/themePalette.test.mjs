@@ -148,14 +148,17 @@ test('primary, secondary, and readable muted text meet WCAG AA for normal text',
   }
 });
 
-test('the background ladder is four rungs, evenly stepped, and never pure black', () => {
+test('the background ladder follows the explicit paper-canvas policy and never uses pure black', () => {
   for (const mode of ['dark', 'light']) {
     const rungs = RUNGS[mode].map((rung) => sharedRungHex(mode, rung));
 
-    assert.equal(new Set(rungs).size, 4, `${mode} ladder must have four distinct rungs`);
+    // Matches surface-ladder.baseline.json: light shares its white paper
+    // between page and elevated; dark retains four distinct surface tones.
+    assert.equal(new Set(rungs).size, mode === 'light' ? 3 : 4, `${mode} unique surface count`);
+    if (mode === 'light') assert.equal(rungs[0], rungs[3], 'paper canvas and elevated share white');
     assert.ok(!rungs.includes('#000000'), `${mode} ladder must not use pure black`);
 
-    const sorted = [...rungs].sort((a, b) => lightnessPercent(a) - lightnessPercent(b));
+    const sorted = [...new Set(rungs)].sort((a, b) => lightnessPercent(a) - lightnessPercent(b));
     for (let i = 1; i < sorted.length; i += 1) {
       const step = Math.abs(lightnessPercent(sorted[i]) - lightnessPercent(sorted[i - 1]));
       assert.ok(

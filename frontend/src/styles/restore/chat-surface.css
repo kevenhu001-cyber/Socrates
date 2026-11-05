@@ -303,13 +303,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   }
 }
 
-/* Sidebar surface stays one neutral step above the charcoal page. */
-@media (max-width: 768px) {
-[data-mode="light"] #appShell#appShell .sidebar {
-  background: var(--ui-bg-sidebar) !important;
-}
-}
-
 /* ===========================================================================
  * Reference convergence — final geometry the visual specs pin.
  *

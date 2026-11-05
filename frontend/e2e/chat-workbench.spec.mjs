@@ -24,9 +24,12 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
 
   const geometry = await snapshotWorkbenchGeometry(page);
   expect(geometry.app).not.toBeNull();
+  expect(geometry.content).not.toBeNull();
   expect(geometry.app.height).toBe(WORKBENCH_VIEWPORTS.desktop.height);
   expect(geometry.transcript.bottom).toBeLessThanOrEqual(geometry.composer.top + 2);
-  expect(Math.abs(geometry.transcript.right - geometry.app.right)).toBeLessThanOrEqual(1);
+  /* The shell insets its rounded main card by 8px; the transcript fills that
+     card, so it aligns with the card's right edge, not the shell's. */
+  expect(Math.abs(geometry.transcript.right - geometry.content.right)).toBeLessThanOrEqual(1);
   expect(geometry.composer.width).toBeLessThanOrEqual(930);
   expect(geometry.overflow).toBeLessThanOrEqual(0);
 
@@ -40,6 +43,7 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
       page: shellStyle.getPropertyValue('--ui-bg-page').trim(),
       surface: shellStyle.getPropertyValue('--ui-bg-surface').trim(),
       mainBackgroundImage: mainBackgroundStyle.backgroundImage,
+      mainBackground: mainBackgroundStyle.backgroundColor,
       pageBackground: shellStyle.backgroundColor,
       sidebarBackground: sidebarStyle.backgroundColor,
       sidebarBorder: sidebarStyle.borderRightWidth,
@@ -49,11 +53,14 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(contract.page).not.toBe('');
   expect(contract.surface).not.toBe('');
   expect(contract.mainBackgroundImage).toBe('none');
-  /* The Lobe-aligned page and slightly brighter sidebar are adjacent
-     neutral foundation steps separated by a hairline. */
-  expect(contract.pageBackground).toBe('rgb(10, 10, 10)');
-  expect(contract.sidebarBackground).toBe('rgb(26, 26, 26)');
-  expect(contract.sidebarBorder).not.toBe('0px');
+  /* Card-on-canvas shell: the shell paints the surface rung (#1a1a1a) and
+     the transcript card is the page rung (#0a0a0a). The sidebar is
+     transparent, so the surface shows through; separation is the card's
+     8px inset, not a hairline. */
+  expect(contract.pageBackground).toBe('rgb(26, 26, 26)');
+  expect(contract.mainBackground).toBe('rgb(10, 10, 10)');
+  expect(contract.sidebarBackground).toBe('rgba(0, 0, 0, 0)');
+  expect(contract.sidebarBorder).toBe('0px');
   expect(contract.topbarHeight).toBeGreaterThanOrEqual(50);
 
   const messageLayout = await page.evaluate(() => {
@@ -137,11 +144,13 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.activeEditor).toBe(true);
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
-  /* Multiline keeps the chatgpt.com capsule (28px radius, 1px hairline —
-     docs/ref/chatgpt-parity.md) while the plus and primary actions retain
-     their independent hit targets. */
-  expect(composed.wrapRadius).toBe(28);
-  expect(composed.wrapBorder).toBe('1px');
+  /* Multiline keeps the ask-box sheet (24px radius on desktop, 1px
+     hairline folded into the shadow) while the plus and primary actions
+     retain their independent hit targets. */
+  expect(composed.wrapRadius).toBe(24);
+  /* The hairline is folded into the frame's shadow, so the box itself has
+     no border. */
+  expect(composed.wrapBorder).toBe('0px');
   expect(composed.sendSize).toBe(36);
   expect(composed.attachSize).toBe(36);
   expect(composed.messageCount).toBe(initial.messageCount);
@@ -171,20 +180,22 @@ test('desktop idle composer keeps its edge controls circular and optically align
     };
   });
 
-  expect(geometry.wrap?.height).toBe(52);
-  expect(geometry.wrap?.radius).toBe('28px');
+  /* Two-storey ask-box: 16px top padding + 26px editor line + 8px gap +
+     36px control rail + 8px bottom = 94px. */
+  expect(geometry.wrap?.height).toBe(94);
+  expect(geometry.wrap?.radius).toBe('24px');
   /* The reference's composer controls are 36px circles; the plus and the
      primary action share one optical row with the dictation control. */
   expect(geometry.attach?.width).toBe(36);
   expect(geometry.attach?.height).toBe(36);
-  expect(geometry.attach?.radius).toBe('50%');
+  expect(geometry.attach?.radius).toBe('999px');
   expect(geometry.attach?.background).toBe('rgba(0, 0, 0, 0)');
   expect(geometry.send?.width).toBe(36);
   expect(geometry.send?.height).toBe(36);
-  expect(geometry.send?.radius).toBe('50%');
+  expect(geometry.send?.radius).toBe('999px');
   /* All three controls share the capsule's one control row. The ±2px
      tolerance (instead of sub-pixel) covers the fractional grid-row height
-     Chrome reports for the 52px capsule: two 36px circles centred in the
+     Chrome reports for the 36px rail: two 36px circles centred in the
      same row can land 1px apart after rounding. A control that actually
      moved to another row is off by tens of pixels, so the check still
      catches real misalignment. */

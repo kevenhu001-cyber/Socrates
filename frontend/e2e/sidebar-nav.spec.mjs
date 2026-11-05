@@ -271,9 +271,8 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   }));
   expect(rows).toHaveLength(7);
   for (const row of rows) {
-    // Keep the full 48px phone touch target declared by the mobile sidebar
-    // owner; the older 40px assertion no longer matches the drawer geometry.
-    expect(row.height).toBe(48);
+    // Reference drawer density: 40px navigation/history pitch at 390px.
+    expect(row.height).toBe(40);
     expect(Math.abs(row.glyphCenter - row.labelCenter)).toBeLessThanOrEqual(2);
   }
   // Portaled account menus stay inside the phone viewport.

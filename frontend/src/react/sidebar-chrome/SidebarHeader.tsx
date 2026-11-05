@@ -1,5 +1,4 @@
 import { useLayoutEffect } from 'react';
-import type { ImageStyle } from 'react-native';
 import { t } from '../legacy/gateway.ts';
 import { useUserInfo } from './sidebarChrome.store';
 import { setSidebarSearchOpen, useSidebarStore } from '../../sidebar/sidebar.store.ts';
@@ -11,8 +10,6 @@ import { useDomTitle, webClass } from '../rn/webHost';
 import { SidebarBrand, SidebarHeaderActions, SidebarIconAction } from '@socrates/ui/shell';
 
 const LOGO = { uri: '/logo.png' };
-/* The mark stays monochrome next to the grey rail (marketing site lockup). */
-const LOGO_STYLE = { filter: 'grayscale(1) contrast(1.05)' } as unknown as ImageStyle;
 
 /**
  * RN-7 — the sidebar header is the shared RN shell part
@@ -49,7 +46,7 @@ export function SidebarHeader() {
 
   return (
     <WebUiTheme>
-      <SidebarBrand name="Socrates" logo={LOGO} compact={isMobile} hostStyle={webClass('sidebar-logo')} logoStyle={LOGO_STYLE} />
+      <SidebarBrand name="Socrates" logo={LOGO} compact={isMobile} hostStyle={webClass('sidebar-logo')} />
       <SidebarHeaderActions hostStyle={webClass('sidebar-header-actions')}>
         <SidebarIconAction
           id="sidebarSearchBtn"

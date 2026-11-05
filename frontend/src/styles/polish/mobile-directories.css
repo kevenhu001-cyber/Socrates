@@ -51,9 +51,11 @@
   body.workspace-active #appShell .library-tool-btn, body.workspace-active #appShell .library-view-btn { display: grid; place-items: center; width: var(--ui-control-desktop); height: var(--ui-control-desktop); padding: 0; }
   body.workspace-active #appShell .library-toolbar-divider { width: 1px; height: 20px; background: var(--border); }
   body.workspace-active #appShell .library-view-switcher { display: flex; gap: 4px; }
+  body.workspace-active #appShell .library-view-btn { border-radius: var(--ui-radius-pill); }
+  body.workspace-active #appShell .library-view-btn[aria-pressed="true"] { background: var(--ui-bg-pill-selected); color: var(--foreground); box-shadow: none; }
   body.workspace-active #appShell .library-search-pill { flex: 1; min-width: 0; height: var(--ui-control-desktop); min-height: var(--ui-control-desktop); padding: 0 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-pill); background: var(--ui-bg-surface); }
   body.workspace-active #appShell .library-search-pill input { width: 100%; min-width: 0; font-size: 15px; }
-  body.workspace-active #appShell .library-chips-bar { display: flex; gap: 0; justify-content: space-between; margin: 0 0 24px; }
+  body.workspace-active #appShell .library-chips-bar { display: flex; width: 100%; height: auto; gap: 0; justify-content: space-between; margin: 0 0 24px; padding: 0; border: 0; background: transparent; }
   body.workspace-active #appShell .library-chip { min-height: var(--ui-control-md); padding: 0 16px; border: 0; background: transparent; font-size: var(--ui-font-size-sm); }
   body.workspace-active #appShell .library-chip:not(.active) { padding-inline: 10px; }
   body.workspace-active #appShell .library-chip.active { border: 0; background: var(--ui-bg-pill-selected); }
@@ -70,4 +72,14 @@
   body.workspace-active #appShell .library-row .library-updated, body.workspace-active #appShell .library-row .library-size { display: none; }
   body.workspace-active #appShell .library-row-actions { display: block; grid-column: 3; }
   body.workspace-active #appShell .library-row-more-btn { display: grid; place-items: center; width: var(--ui-control-sm); height: var(--ui-control-md); padding: 0; border: 0; background: transparent; color: var(--ui-text-muted); }
+}
+
+@media (max-width: 359px) {
+  /* Keep search usable beside all three toolbar actions at 320px. Do not
+     shrink the type or remove the view switch to make the row fit. */
+  body.workspace-active #appShell .library-toolbar,
+  body.workspace-active #appShell .library-toolbar-controls { gap: 8px; }
+  body.workspace-active #appShell .library-view-switcher { gap: 0; }
+  body.workspace-active #appShell .library-chip { padding-inline: 12px; }
+  body.workspace-active #appShell .library-chip:not(.active) { padding-inline: 6px; }
 }

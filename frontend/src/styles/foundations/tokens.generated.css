@@ -110,6 +110,8 @@
   --ui-ink-tertiary: #767676;
   --ui-ink-hover: #303030;
   --ui-on-ink: #ffffff;
+  --ui-action: #397ef7;
+  --ui-on-action: #ffffff;
   --ui-copy: #303030;
   --ui-subtle: #f9f9f9;
   --ui-surface: #f3f3f3;
@@ -136,6 +138,8 @@
   --ui-ink-tertiary: #8f8f8f;
   --ui-ink-hover: #ffffff;
   --ui-on-ink: #0a0a0a;
+  --ui-action: #397ef7;
+  --ui-on-action: #ffffff;
   --ui-copy: #d6d6d6;
   --ui-subtle: #141414;
   --ui-surface: #1a1a1a;

@@ -92,6 +92,12 @@ export async function prepareChatWorkbench(page, options = {}) {
     messages: options.messages || [],
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'workbench-fixture' });
+  /* Messages are dispatched into the store above and rendered by a React
+     root; wait for the first row so a spec's first measurement never sees
+     an empty transcript. */
+  if (Array.isArray(options.messages) && options.messages.length > 0) {
+    await expect(page.locator('#msgList .msg').first()).toBeVisible();
+  }
   if (!options.allowGlobalErrors) await expectNoGlobalError(page);
 }
 
@@ -128,6 +134,7 @@ export async function snapshotWorkbenchGeometry(page) {
     };
     return {
       app: rect('#appShell'),
+      content: rect('#mainContent'),
       sidebar: rect('#sidebar'),
       topbar: rect('.top-bar'),
       transcript: rect('#msgList'),

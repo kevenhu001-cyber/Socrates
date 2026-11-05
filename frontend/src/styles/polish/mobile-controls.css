@@ -6,7 +6,7 @@
 
 @media (max-width: 768px) {
 
-  /* The drawer width comes from mobile-sidebar.css (80vw, capped at 330px);
+  /* The drawer width comes from tokens.css (254px at the reference width);
      retain a hard viewport bound here for very narrow devices. */
   #appShell .sidebar {
     max-width: min(var(--ui-sidebar-mobile), 90vw);
@@ -198,7 +198,7 @@
 #appShell #sidebarNav #navNew { order: 0; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navImages { order: 1; display: none; }
+#appShell #sidebarNav #navImages { order: 1; }
 }
 @media (max-width: 768px) {
 #appShell #sidebarNav #navLibrary { order: 2; }
@@ -206,13 +206,13 @@
 /* Reference drawer order: New chat · Images · Library · Scheduled · Plugins ·
    Projects(+) · More — exactly matching ChatGPT mobile screenshot. */
 @media (max-width: 768px) {
-#appShell #sidebarNav #navScheduled { order: 4; }
+#appShell #sidebarNav #navScheduled { order: 3; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navPlugins { order: 5; }
+#appShell #sidebarNav #navPlugins { order: 4; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navProjects { order: 3; }
+#appShell #sidebarNav .sidebar-project-nav { order: 5; }
 }
 @media (max-width: 768px) {
 #appShell #sidebarNav #navMore { order: 7; }

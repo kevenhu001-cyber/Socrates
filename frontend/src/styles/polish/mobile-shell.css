@@ -21,6 +21,11 @@
     color: var(--foreground);
   }
   #appShell #sidebarOpenBtn svg { width: 24px; height: 24px; }
+  #appShell #sidebarOpenBtn .glyph-panel { display: none; }
+  #appShell #sidebarOpenBtn .glyph-hamburger { display: block; }
+  /* Directories own their heading/actions; chat configuration has no
+     context here, even before the main-view attribute catches up. */
+  body.workspace-active #appShell .top-model-slot { display: none; }
   #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
   /* The same React mode control serves desktop and phone. Model settings
      remain available as a separate, labelled action at the trailing edge. */

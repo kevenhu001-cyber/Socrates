@@ -30,9 +30,9 @@ test('light conversation home has a neutral readable palette and balanced compos
       title: rect('#topicTitle'),
       composer: rect('#composerInputWrap'),
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
-      pageBackground: rgb('.main-content'),
-      sidebarBackground: rgb('#sidebar'),
-      composerBackground: rgb('#composerInputWrap'),
+      pageBackground: rgb('.main-bg'),
+      sidebarBackground: rgb('#appShell'),
+      composerBackground: rgb('#composerInputWrap [data-composer-frame]'),
       titleColor: rgb('#topicTitle', 'color'),
       titleSize: getComputedStyle(document.querySelector('#topicTitle')).fontSize,
       fontFamily: getComputedStyle(document.querySelector('#topicTitle')).fontFamily,
@@ -53,12 +53,13 @@ test('light conversation home has a neutral readable palette and balanced compos
 
   expect(geometry.title).not.toBeNull();
   expect(geometry.composer).not.toBeNull();
-  /* ChatGPT.html measures 768 x 52 with a 16px editor at 1440x900. */
-  expect(geometry.composer?.height).toBe(52);
+  /* The ask-box is two storeys: 16px top + 26px editor + 8px gap + 36px
+     control rail + 8px bottom = 94px at the desktop width. */
+  expect(geometry.composer?.height).toBe(94);
   expect(geometry.topicFontSize).toBe(16);
   /* RN-1 (2026-11-01): the greeting is the React Native hero, set on the
      greeting step of packages/theme uiType (28px Geist medium), with a 40px
-     pause before the 768×52 composer (the #homeHero host margin). */
+     pause before the 768×94 ask-box (the #homeHero host margin). */
   expect(geometry.titleSize).toBe('28px');
   expect(geometry.fontFamily).toContain('Geist Sans');
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(38);
@@ -66,11 +67,12 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
-  // The light ladder runs paper → canvas: the page sits on L2 (#fafafa) and
-  // the quiet navigation rail one rung below it (#f2f2f2). The composer is
-  // the paper itself (#ffffff), so it reads as raised against the page.
-  expect(geometry.pageBackground).toBe('rgb(250, 250, 250)');
-  expect(geometry.sidebarBackground).toBe('rgb(242, 242, 242)');
+  /* Paper-canvas policy: the main card IS the paper (#ffffff), and the
+     shell paints the rail surface one step down (#f3f3f3) around it. The
+     composer is the same paper as the card, so it reads as raised because
+     of its shadow, not its fill. */
+  expect(geometry.pageBackground).toBe('rgb(255, 255, 255)');
+  expect(geometry.sidebarBackground).toBe('rgb(243, 243, 243)');
   expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
   expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);

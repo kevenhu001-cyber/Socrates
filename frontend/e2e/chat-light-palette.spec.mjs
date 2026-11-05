@@ -3,10 +3,9 @@
 // Pins the readability contract for the conversation surface:
 //   - user bubble must be a light card with dark text (the workbench's
 //     dark override used to leak into light mode);
-//   - the sidebar identity avatar is the ink disc with legible initials;
+//   - the sidebar identity avatar keeps its teal brand and legible initials;
 //   - the in-session composer keeps a visible outline;
-//   - the send control is the ink disc with a legible arrow, inverted in
-//     dark mode (R1 monochrome restyle).
+//   - the enabled send control is blue with a legible white arrow in both modes.
 
 import { test, expect } from '@playwright/test';
 import { WORKBENCH_VIEWPORTS, prepareChatWorkbench } from './_chat-workbench.mjs';
@@ -46,24 +45,36 @@ async function snapshotPalette(page) {
         color: computed.color,
         borderWidth: computed.borderTopWidth,
         borderColor: computed.borderTopColor,
+        shadow: computed.boxShadow,
+        stroke: computed.stroke,
       };
     };
     return {
       bubble: style('#msgList .msg.user .msg-body'),
       avatar: style('#appShell .user-avatar'),
-      composer: style('#composerInputWrap'),
-      send: style('#composerPrimaryBtn'),
+      composer: style('#composerInputWrap [data-composer-frame]'),
+      send: { ...style('#composerPrimaryBtn'), color: style('#composerPrimaryBtn svg').stroke },
     };
   });
 }
 
-test('light conversation surface stays readable and neutral', async ({ page }) => {
+test('light conversation surface keeps readable brand and action colours', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => {
     try { localStorage.setItem('socrates-theme', 'light'); } catch (_) {}
   });
   await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
+  await expect(page.locator('#msgList .msg.user .msg-body')).toBeVisible();
+  await page.locator('#composerRoot .rich-composer-editor').fill('Check send colour');
+  /* The send disc only takes the action colour once the draft has committed
+     through React; a raw fill followed by an immediate read sees the
+     disabled `fill` role instead. */
+  await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-ready', 'true');
+  /* The disc cross-fades from the disabled fill role to the action colour;
+     poll until the transition settles so the snapshot is not mid-blend. */
+  await expect.poll(async () => parseRgb(await page.locator('#composerPrimaryBtn').evaluate((el) => getComputedStyle(el).backgroundColor)))
+    .toEqual([57, 126, 247]);
 
   const palette = await snapshotPalette(page);
   expect(palette.bubble).not.toBeNull();
@@ -79,36 +90,36 @@ test('light conversation surface stays readable and neutral', async ({ page }) =
   expect(luminance(bubbleBg)).toBeGreaterThan(0.8);
   expect(contrast(bubbleFg, bubbleBg)).toBeGreaterThanOrEqual(4.5);
 
-  // The identity avatar is the ink disc (R1 restyle): a neutral, solid mark
-  // — not a grey placeholder and not a hue — with legible initials.
+  // Restore the original teal identity rather than greyscaling the brand.
   const avatarBg = parseRgb(palette.avatar.background);
   const avatarFg = parseRgb(palette.avatar.color);
   expect(avatarBg).not.toBeNull();
-  expect(Math.max(...avatarBg) - Math.min(...avatarBg)).toBeLessThanOrEqual(8);
-  expect(luminance(avatarBg)).toBeLessThan(0.05);
+  expect(avatarBg).toEqual([15, 127, 107]);
   expect(contrast(avatarFg, avatarBg)).toBeGreaterThanOrEqual(4.5);
 
   // Composer hairline is actually painted in light mode.
-  expect(parseFloat(palette.composer.borderWidth)).toBeGreaterThanOrEqual(1);
+  expect(palette.composer.shadow).not.toBe('none');
 
-  // The send control is the ink disc with a light up-arrow (R1 restyle:
-  // black is the product's only accent). The arrow is a control glyph, so it
-  // is held to WCAG's 3:1 non-text contrast.
+  // A control glyph must clear WCAG's 3:1 non-text contrast on blue.
   const sendBg = parseRgb(palette.send.background);
   const sendFg = parseRgb(palette.send.color);
   expect(sendBg).not.toBeNull();
-  expect(Math.max(...sendBg) - Math.min(...sendBg)).toBeLessThanOrEqual(8);
-  expect(luminance(sendBg)).toBeLessThan(0.05);
+  expect(sendBg).toEqual([57, 126, 247]);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 
-test('dark conversation surface inverts the ink send control', async ({ page }) => {
+test('dark conversation surface retains the blue send control', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.addInitScript(() => {
     try { localStorage.setItem('socrates-theme', 'dark'); } catch (_) {}
   });
   await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
+  await expect(page.locator('#msgList .msg.user .msg-body')).toBeVisible();
+  await page.locator('#composerRoot .rich-composer-editor').fill('Check send colour');
+  await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-ready', 'true');
+  await expect.poll(async () => parseRgb(await page.locator('#composerPrimaryBtn').evaluate((el) => getComputedStyle(el).backgroundColor)))
+    .toEqual([57, 126, 247]);
 
   const palette = await snapshotPalette(page);
   const bubbleBg = parseRgb(palette.bubble.background);
@@ -116,12 +127,11 @@ test('dark conversation surface inverts the ink send control', async ({ page }) 
   expect(luminance(bubbleBg)).toBeLessThan(0.2);
   expect(contrast(bubbleFg, bubbleBg)).toBeGreaterThanOrEqual(4.5);
 
-  // Dark mode inverts the ink disc: a light neutral fill with a dark arrow.
+  // Blue actions remain stable across mode changes.
   const sendBg = parseRgb(palette.send.background);
   const sendFg = parseRgb(palette.send.color);
   expect(sendBg).not.toBeNull();
-  expect(Math.max(...sendBg) - Math.min(...sendBg)).toBeLessThanOrEqual(8);
-  expect(luminance(sendBg)).toBeGreaterThan(0.6);
+  expect(sendBg).toEqual([57, 126, 247]);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 

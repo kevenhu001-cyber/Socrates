@@ -16,15 +16,14 @@ test('reference home keeps its bottom composer and phone configuration usable', 
      moved the whole ladder onto the Geist scale, so the pinned value moved
      with it (#181818 → #292929); the composer is still one rung above the
      phone canvas, which is the contract this reference actually pins. The
-     layered palette expresses the surface as a translucent `color(srgb …)`,
-     so compare the resolved channels: only the tone and notation changed. */
-  const composerBackground = await composer.evaluate((el) => getComputedStyle(el).backgroundColor);
+     outer host is a transparent moving container; the RN frame paints. */
+  const composerBackground = await composer.locator('[data-composer-frame]').evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(rgbChannels(composerBackground)).toEqual([41, 41, 41]);
   await expect(page.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toBeVisible();
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);
   expect(rect.width).toBe(358);
-  expect(rect.height).toBe(85);
+  expect(rect.height).toBe(86);
   expect(769 - rect.y - rect.height).toBe(24);
   const greeting = await page.locator('#topicTitle').boundingBox();
   expect(Math.abs(greeting.y + greeting.height / 2 - 344.765)).toBeLessThan(1);

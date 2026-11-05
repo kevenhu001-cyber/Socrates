@@ -159,7 +159,7 @@
   text-overflow: ellipsis;
 }
 @media (max-width: 768px) {
-  #appShell .recent-item-menu { min-width: 158px; width: 158px; gap: 0; padding: 14px; border-radius: var(--ui-radius-popover); background: var(--popover); }
+  #appShell .recent-item-menu { min-width: 158px; width: max-content; max-width: calc(100vw - 16px); gap: 0; padding: 14px; border-radius: var(--ui-radius-xl); background: var(--popover); }
   #appShell .recent-item-menu .recent-item-menu-row { min-height: 40px; height: 40px; padding: 0 6px; font-size: var(--ui-font-size-sm); }
   #appShell .recent-item-menu .recent-item-action-icon, #appShell .recent-item-menu .recent-item-action-icon svg { width: 18px; height: 18px; flex-basis: 18px; }
 }

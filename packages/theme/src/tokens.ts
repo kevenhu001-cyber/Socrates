@@ -285,5 +285,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
 
 /** Background color used for first paint by each theme mode. */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#fafafa' : '#0a0a0a';
+  return mode === 'light' ? '#ffffff' : '#0a0a0a';
 }

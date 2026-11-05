@@ -46,12 +46,12 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.left?.width).toBe(44);
   expect(geometry.left?.height).toBe(44);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Empty-home mobile composer uses the reference's two-row 90px stack
+  /* Empty-home mobile composer uses the reference's two-row 86px stack
      (editor on row 1, add/dictation/send controls on row 2). The height
      follows the owner's padding/row-gap/editor metrics — see
      docs/ref/mobile-reference-2026-10-04.md and the arithmetic in
      e2e/mobile-composer-reference.spec.mjs. */
-  expect(geometry.composer?.height).toBe(90);
+  expect(geometry.composer?.height).toBe(86);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   /* The empty-state capsule pins to the bottom action band: its foot rests
      on the safe-area inset above the viewport bottom, not in the old
