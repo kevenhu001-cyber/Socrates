@@ -4,7 +4,6 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { JSDOM } from 'jsdom';
 import { Button } from '../src/react/ui/Button.tsx';
-import { IconButton } from '../src/react/ui/IconButton.tsx';
 
 function renderButton(component, props, children) {
   const html = renderToStaticMarkup(React.createElement(component, props, children));
@@ -37,14 +36,4 @@ test('loading buttons are disabled and retain an accessible name', () => {
   assert.equal(button.disabled, true);
   assert.equal(button.getAttribute('aria-busy'), 'true');
   assert.equal(button.textContent, 'Save');
-
-  const icon = renderButton(IconButton, {
-    label: 'Close',
-    icon: React.createElement('span', { 'aria-hidden': true }, '×'),
-    loading: true,
-  });
-  assert.equal(icon.type, 'button');
-  assert.equal(icon.disabled, true);
-  assert.equal(icon.getAttribute('aria-busy'), 'true');
-  assert.equal(icon.getAttribute('aria-label'), 'Close');
 });

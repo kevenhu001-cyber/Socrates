@@ -25,6 +25,18 @@ function nextMutation() {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/* The actions are mounted from a dynamically imported React module and then
+   committed by createRoot().render(), so one macrotask is not enough: poll
+   until the control appears instead of guessing at a delay. */
+async function waitFor(check, timeoutMs = 4000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const value = check();
+    if (value || Date.now() >= deadline) return value;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
 test('an inserted code-block header gets the copy control', async () => {
   installCodeBlockCopy();
   const pre = document.querySelector('.msg-body pre');
@@ -33,9 +45,8 @@ test('an inserted code-block header gets the copy control', async () => {
   const header = document.createElement('div');
   header.className = 'code-block-header';
   pre.parentNode.insertBefore(header, pre);
-  await nextMutation();
 
-  assert.ok(header.querySelector('.code-block-copy'), 'shadcn copy button was not mounted');
+  assert.ok(await waitFor(() => header.querySelector('.code-block-copy')), 'shadcn copy button was not mounted');
   assert.ok(header.querySelector('.code-block-expand'), 'shadcn expand button was not mounted');
 });
 
