@@ -25,6 +25,7 @@ import {
 } from './progressiveMount';
 import type { LegacyChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity';
+import { setOffscreenMount } from './nearViewport';
 import { canLoadOlderHistory, registerBeforeOlderRows, requestOlderHistory } from '../../session/historyPagingState.ts';
 
 function sameWindow(track: MountTrack, next: MountWindowState): boolean {
@@ -115,6 +116,9 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
   const liveTail = hasLiveTail(items);
 
   useLayoutEffect(() => {
+    /* Children's layout effects ran first: rows mounted by a window shift
+       have already read the off-screen flag. */
+    setOffscreenMount(false);
     trackRef.current = { items, floor, ceiling, full };
     const anchor = anchorRef.current;
     anchorRef.current = null;
@@ -139,8 +143,10 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
         anchorRef.current = host ? captureScrollAnchor(host) : null;
         const next = fullMountWindow();
         trackRef.current = { ...track, ...next };
+        setOffscreenMount(true);
         rerender();
       });
+      setOffscreenMount(false);
     },
     () => {
       const track = trackRef.current;
@@ -182,6 +188,10 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
       anchorRef.current = captureScrollAnchor(host);
       trackRef.current = { ...track, ...next };
       cancelled = true;
+      /* Rows revealed by a shift sit outside the viewport (above it while
+         scrolling up, below it while scrolling down): their heavy wiring
+         waits until they come within reach. */
+      setOffscreenMount(true);
       rerender();
     };
 
