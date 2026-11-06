@@ -253,6 +253,9 @@ export const en = {
     "chat.placeholder":"Type your thinking...",
     "chat.inputPlaceholder":"Ask Socrates",
     "chat.hint":"Shift+Enter for new line",
+    "chat.history.loadingEarlier":"Loading earlier messages",
+    "chat.history.loadFailed":"Couldn’t load earlier messages. Scroll up to try again.",
+    "chat.history.start":"Beginning of conversation",
     "chat.send":"Send",
     /* P_composer-primary-split — the composer primary button is submit-only
      * and announces the live-turn action while a turn streams. */

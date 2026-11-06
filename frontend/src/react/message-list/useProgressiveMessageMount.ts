@@ -1,5 +1,5 @@
 import { flushSync } from 'react-dom';
-import { useEffect, useLayoutEffect, useReducer, useRef } from 'react';
+import { useEffect, useLayoutEffect, useReducer, useRef, type RefObject } from 'react';
 
 import { registerDeferredMessageRowsFlusher } from './deferredRows';
 import {
@@ -24,6 +24,8 @@ import {
   type ScrollAnchor,
 } from './progressiveMount';
 import type { LegacyChatMessage } from '../types/domain';
+import { entryId } from './messageIdentity';
+import { canLoadOlderHistory, registerBeforeOlderRows, requestOlderHistory } from '../../session/historyPagingState.ts';
 
 function sameWindow(track: MountTrack, next: MountWindowState): boolean {
   return track.floor === next.floor
@@ -34,6 +36,66 @@ function sameWindow(track: MountTrack, next: MountWindowState): boolean {
 export function turnOwnsMountViewport(host: Pick<HTMLElement, 'dataset'>): boolean {
   return host.dataset.turnAnchorSettling === 'true'
     || host.dataset.turnViewportOwner === 'turn';
+}
+
+/* R7 phase 2 — older history pages are prepended to the store. Right before
+   they publish, capture the scroll anchor against the pre-prepend DOM and pin
+   the window to its current first row, so the prepend mounts nothing new and
+   the reader's row stays put; later scrolling reveals the new rows through
+   the ordinary 'older' shifts. A full mount (find) keeps mounting everything,
+   with the anchor still held. */
+function useHistoryPrepend(
+  trackRef: RefObject<MountTrack>,
+  anchorRef: RefObject<ScrollAnchor | null>,
+): void {
+  useEffect(() => registerBeforeOlderRows(() => {
+    const track = trackRef.current;
+    const host = scrollHost();
+    anchorRef.current = host ? captureScrollAnchor(host) : null;
+    if (!track.full && track.floor === null && track.items.length) {
+      trackRef.current = { ...track, floor: entryId(track.items[0], 'idx-0') };
+    }
+  }), [anchorRef, trackRef]);
+}
+
+/* R7 phase 2 — once the oldest loaded row is mounted (and the transcript is
+   not in a full mount), reaching the top asks the server for the previous
+   page. At scrollTop 0 an upward wheel or touch gesture emits no scroll
+   event, so those gestures retry a failed page too; a transcript too short to
+   scroll fetches the previous page once the browser is idle. */
+function useOlderHistoryTrigger(atOldestRow: boolean, itemCount: number): void {
+  useEffect(() => {
+    const host = atOldestRow ? scrollHost() : null;
+    if (!host) return undefined;
+    const loadOlder = () => {
+      if (turnOwnsMountViewport(host) || !canLoadOlderHistory()) return;
+      void requestOlderHistory();
+    };
+    const onScroll = () => {
+      if (host.scrollTop < NEAR_TOP_PX) loadOlder();
+    };
+    const onUpwardIntent = (event: Event) => {
+      if (host.scrollTop >= NEAR_TOP_PX) return;
+      if (event.type === 'wheel' && (event as WheelEvent).deltaY >= 0) return;
+      loadOlder();
+    };
+    host.addEventListener('scroll', onScroll, { passive: true });
+    host.addEventListener('wheel', onUpwardIntent, { passive: true });
+    host.addEventListener('touchmove', onUpwardIntent, { passive: true });
+    const idle = (window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number }).requestIdleCallback;
+    const fillTimer = host.scrollHeight <= host.clientHeight + NEAR_TOP_PX
+      ? window.setTimeout(() => {
+        if (typeof idle === 'function') idle.call(window, loadOlder, { timeout: 200 });
+        else loadOlder();
+      }, 0)
+      : null;
+    return () => {
+      if (fillTimer !== null) window.clearTimeout(fillTimer);
+      host.removeEventListener('scroll', onScroll);
+      host.removeEventListener('wheel', onUpwardIntent);
+      host.removeEventListener('touchmove', onUpwardIntent);
+    };
+  }, [atOldestRow, itemCount]);
 }
 
 export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessage>): {
@@ -96,6 +158,9 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
       });
     },
   ), []);
+
+  useHistoryPrepend(trackRef, anchorRef);
+  useOlderHistoryTrigger(start === 0 && !full, items.length);
 
   useEffect(() => {
     if (full) return undefined;

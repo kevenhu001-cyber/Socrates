@@ -224,12 +224,16 @@ export function restoreSessionMessage(m: PersistedMessage): RestoredMessage {
 
 /* The server save can lag behind a refresh. Restore assistant messages that
    were already mirrored locally but have not reached the session response. */
-export function restoreLocalAssistantFallback(session: RestorableSession): void {
+export function restoreLocalAssistantFallback(session: RestorableSession, olderServerRows = 0): void {
   try {
     const localRecord = loadLocalMemory(session.id);
     const serverMessages = Array.isArray(session.messages) ? session.messages : [];
-    if (!localRecord || !Array.isArray(localRecord.messages) || localRecord.messages.length <= serverMessages.length) return;
-    const extras = localRecord.messages.slice(serverMessages.length);
+    /* A paginated response carries only the newest rows; count the ones the
+       server holds beyond them too, or every long session would look like
+       its local mirror had unsaved extras. */
+    const serverCount = serverMessages.length + Math.max(0, olderServerRows);
+    if (!localRecord || !Array.isArray(localRecord.messages) || localRecord.messages.length <= serverCount) return;
+    const extras = localRecord.messages.slice(serverCount);
     for (let i = 0; i < extras.length; i++) {
       const message = extras[i];
       if (!message || !message.content || message.role !== 'assistant') continue;

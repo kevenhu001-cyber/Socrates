@@ -29,6 +29,8 @@ import {
   type PersistedMessage,
 } from './historyRestore.ts';
 import { reattachPendingTurn } from './pendingTurnRestore.ts';
+import { beginHistoryPaging, endHistoryPaging } from './historyPaging.ts';
+import { normalizeDetailPage, olderRowCount, sessionDetailPath } from './historyPagingState.ts';
 import { seedSyncedMessages } from './persistence.ts';
 import { toggleShareBtn } from '../ui/share.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
@@ -209,9 +211,10 @@ function revalidateCachedSession(
   if (!cachedDetail || session.kind === 'exam' || detailCache.isFresh(cachedDetail)) return;
   const paintedSignature = cachedDetail.sig;
   Promise.resolve().then(function () {
-    return apiFetch<LoadedSession>('/api/sessions/' + encodeURIComponent(id), { signal: abortController.signal });
+    return apiFetch<LoadedSession>(sessionDetailPath(id), { signal: abortController.signal });
   }).then(function (fresh) {
     if (!fresh || abortController.signal.aborted || saveState.loadSessionId !== id) return;
+    normalizeDetailPage(fresh);
     if (stateStore.read('currentSessionId') !== id) return;
     detailCache.store(id, fresh);
     if (detailCache.signature(fresh) !== paintedSignature) {
@@ -259,6 +262,7 @@ function clearMissingSessionUrl(): void {
 
 function resetMissingSessionView(): void {
   try {
+    endHistoryPaging();
     clearLegacyMsgListChildren();
     stateStore.dispatch({ type: 'state/batch', patch: {
       currentSessionId: null, topic: '', kbNodes: [], phase: 'topic',
@@ -348,11 +352,12 @@ async function fetchSessionSnapshot(
   const inflight = detailCache.getInflight(id);
   let session = inflight
     ? await inflight as LoadedSession
-    : await apiFetch<LoadedSession>('/api/sessions/' + encodeURIComponent(id), { signal: controller.signal });
+    : await apiFetch<LoadedSession>(sessionDetailPath(id), { signal: controller.signal });
   if (!session) {
-    session = await apiFetch<LoadedSession>('/api/sessions/' + encodeURIComponent(id), { signal: controller.signal });
+    session = await apiFetch<LoadedSession>(sessionDetailPath(id), { signal: controller.signal });
   }
   if (controller.signal.aborted || saveState.loadSessionId !== id) return null;
+  normalizeDetailPage(session);
   detailCache.store(id, session);
   return session;
 }
@@ -433,9 +438,12 @@ function restoreLoadedChat(
   clearLegacyMsgListChildren();
 
   const restoredMessages = (session.messages || []).map(restoreSessionMessage);
+  /* R7 phase 2 — open the paging walk before the rows publish, so the list's
+     first render already knows whether older pages exist. */
+  beginHistoryPaging(session.id, session);
   stateStore.dispatch({ type: 'session/replace-messages', payload: restoredMessages });
   seedSyncedMessages(session.id, restoredMessages);
-  restoreLocalAssistantFallback(session);
+  restoreLocalAssistantFallback(session, olderRowCount(session));
   const restorePartialFallback = (): void => {
     try { restoreInterruptedResponse(session); }
     catch (error) { reportSwallow(error, 'session/loader.restorePartialFallback'); }
@@ -482,6 +490,7 @@ export async function loadSession(id: string): Promise<void> {
 
     hydrateSessionFields(session);
     if (session.kind === 'exam' && session.examData) {
+      endHistoryPaging();
       await loadExamSession(session);
       return;
     }
