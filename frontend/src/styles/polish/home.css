@@ -97,7 +97,7 @@
 }
 
 /* Phone chat landing — one suggestion above the composer, as in the
-   reference: an emoji on the left, one muted line that truncates. Desktop
+   reference: a leading mark on the left, one muted line that truncates. Desktop
    keeps its shortcut rail; tutor mode shows its starters instead. */
 #appShell .home-suggestion { display: none; }
 
@@ -122,12 +122,9 @@
     font-size: var(--ui-mobile-font-meta);
     text-align: start;
   }
-  #appShell .home-suggestion-emoji {
+  #appShell .home-suggestion-icon {
     flex: 0 0 auto;
-    width: 22px;
-    font-size: var(--ui-font-size-xl);
-    line-height: 1;
-    text-align: center;
+    color: var(--ui-text-secondary);
   }
   #appShell .home-suggestion-text {
     min-width: 0;

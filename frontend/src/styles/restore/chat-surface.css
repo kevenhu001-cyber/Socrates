@@ -513,7 +513,8 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
    sits on that stop. */
 .chat-config-slider-dots {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;

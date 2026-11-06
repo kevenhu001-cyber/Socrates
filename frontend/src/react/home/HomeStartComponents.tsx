@@ -11,6 +11,7 @@ import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { HomeHero, HomeShortcuts, HomeStarters, type HomeShortcut } from '@socrates/ui/home';
 import { i18n } from '../legacy/gateway.ts';
 import { Button } from '../ui';
+import { Icon } from '../../ui/Icon';
 import { focusComposer, getComposerMarkdown, setComposerMarkdown } from '../../composer/controller.ts';
 import { composeAction } from '../../extensions/index.ts';
 import { toggleWebSearch } from '../../chat/webSearchToggle.ts';
@@ -110,9 +111,11 @@ export function HomeQuickActions({ host }: { host: HTMLElement }) {
 }
 
 /* Phone chat landing: the reference shows one suggestion above the composer,
-   an emoji and a single muted line that truncates. It reuses the first tutor
-   starter's prompt, so no new copy; tapping it fills the composer. */
-const SUGGESTION = { prompt: 'understand', emoji: '💡' } as const;
+   a leading mark and a single muted line that truncates. It reuses the first
+   tutor starter's prompt, so no new copy; tapping it fills the composer. The
+   mark is the shared assistant glyph rather than an emoji, so it renders the
+   same on devices without a colour emoji font. */
+const SUGGESTION = { prompt: 'understand', icon: 'assistant' } as const;
 
 export function HomeSuggestion() {
   useLocaleRefresh();
@@ -121,7 +124,7 @@ export function HomeSuggestion() {
   return (
     <Button type="button" className="home-suggestion-item" data-testid="home-suggestion"
       onClick={() => applyTutorPrompt(SUGGESTION.prompt)}>
-      <span className="home-suggestion-emoji" aria-hidden="true">{SUGGESTION.emoji}</span>
+      <Icon name={SUGGESTION.icon} size={22} className="home-suggestion-icon" aria-hidden="true" />
       <span className="home-suggestion-text">{text}</span>
     </Button>
   );
