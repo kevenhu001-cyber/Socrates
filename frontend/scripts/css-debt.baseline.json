@@ -7,16 +7,16 @@
       "stackedId": 32,
       "literalFontSize": 53,
       "legacyChannel": 0,
-      "shadcnVarReads": 660
+      "shadcnVarReads": 658
     },
     "frozen": {
-      "important": 456,
-      "hexColor": 40,
-      "literalRadius": 175,
-      "stackedId": 42,
-      "literalFontSize": 342,
-      "legacyChannel": 770,
-      "shadcnVarReads": 222
+      "important": 409,
+      "hexColor": 39,
+      "literalRadius": 169,
+      "stackedId": 41,
+      "literalFontSize": 339,
+      "legacyChannel": 769,
+      "shadcnVarReads": 123
     }
   },
   "generatedBy": "check-css-debt.mjs --update"
