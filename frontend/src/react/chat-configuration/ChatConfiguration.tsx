@@ -60,10 +60,13 @@ export function ChatConfiguration() {
 
   useEffect(() => {
     if (!snapshot.open) return;
-    setView('main');
+    /* The composer's effort pill opens straight onto the effort slider, as the
+       reference's "Medium ⌄" does; its "中 ›" row leads on to the model list.
+       The header's model chip keeps opening the model list. */
+    setView(snapshot.triggerId === 'effortTrigger' ? 'effort' : 'main');
     setEffort(effectiveEffort);
     setSpeed(snapshot.speed);
-  }, [snapshot.open, snapshot.revision, effectiveEffort, snapshot.speed]);
+  }, [snapshot.open, snapshot.revision, snapshot.triggerId, effectiveEffort, snapshot.speed]);
 
   useEffect(() => {
     if (!snapshot.open) return;

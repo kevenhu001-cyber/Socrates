@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button as UiButton } from '../ui/Button';
 import type { ReasoningEffort, ResponseSpeed } from '../../config/chatPreferences';
@@ -99,7 +100,7 @@ export function EffortPanel({ effort, speed, supportsInstant = true, onBack, onC
         </span>
         {effort === 'instant' ? <CheckIcon /> : null}
       </UiButton>
-      <div className="chat-config-slider">
+      <div className="chat-config-slider" style={{ '--chat-config-fill': `${stops.length > 1 ? (Math.max(0, sliderIndex < 0 ? 1 : sliderIndex) / (stops.length - 1)) * 100 : 0}%` } as CSSProperties}>
         <ShadcnNativeControl
           type="range"
           min={0}
