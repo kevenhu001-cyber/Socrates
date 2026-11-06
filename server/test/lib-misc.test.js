@@ -24,7 +24,7 @@ import {
 
 import { isMultimodalProvider } from '../src/lib/multimodal.js';
 
-import { safeUrl, stripQuery } from '../src/lib/log.js';
+import { safeUrl, sanitizeLogValue, stripQuery } from '../src/lib/log.js';
 
 /* ── cookieEnv ────────────────────────────────────────────────── */
 
@@ -191,6 +191,19 @@ describe('safeUrl', () => {
     /* Malformed encoding should be tolerated. */
     const out = safeUrl('/api/x?%ZZ=value');
     assert.match(out, /^.+%/);
+  });
+});
+
+describe('sanitizeLogValue', () => {
+  test('escapes line separators and control characters without changing line structure', () => {
+    const value = sanitizeLogValue('ok\r\nforged\u0085next\u2028line\u2029\t\u0000');
+    assert.equal(value, 'ok\\r\\nforged\\u0085next\\u2028line\\u2029\\t\\u0000');
+    assert.doesNotMatch(value, /[\r\n\u0085\u2028\u2029]/u);
+  });
+
+  test('caps the encoded output length', () => {
+    assert.equal(sanitizeLogValue('a\r\nb', 4), 'a\\r');
+    assert.equal(sanitizeLogValue('anything', 0), '');
   });
 });
 

@@ -40,7 +40,7 @@
  *
  * Usage:  node scripts/check-bundle-size.mjs [--update]
  */
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -51,8 +51,14 @@ const DIST_ASSETS = join(ROOT, 'frontend', 'dist', 'assets');
 const UPDATE = process.argv.includes('--update');
 
 function listByExtension(ext) {
-  if (!existsSync(DIST_ASSETS)) return [];
-  return readdirSync(DIST_ASSETS).filter((name) => name.endsWith(ext) && !name.endsWith('.gz') && !name.endsWith('.br'));
+  try {
+    return readdirSync(DIST_ASSETS, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(ext) && !entry.name.endsWith('.gz') && !entry.name.endsWith('.br'))
+      .map((entry) => entry.name);
+  } catch (error) {
+    if (error?.code === 'ENOENT') return [];
+    throw error;
+  }
 }
 
 function measure() {
@@ -68,23 +74,25 @@ function measure() {
 
   for (const name of jsFiles) {
     const path = join(DIST_ASSETS, name);
-    const bytes = statSync(path).size;
-    totalJsBytes += bytes;
-    if (bytes > largestChunkBytes) {
-      largestChunkBytes = bytes;
+    /* Read each asset once so the size and gzip measurements refer to the
+       same file contents rather than a path that could change between calls. */
+    const content = readFileSync(path);
+    totalJsBytes += content.length;
+    if (content.length > largestChunkBytes) {
+      largestChunkBytes = content.length;
       largestChunkName = name;
     }
     /* The entry chunk is what the browser downloads before the app can
      * render. Vite names it `index-<hash>.js`. */
     if (/^index-[^/]+\.js$/.test(name)) {
-      entryJsBytes += bytes;
-      entryJsGzipBytes += gzipSync(readFileSync(path)).length;
+      entryJsBytes += content.length;
+      entryJsGzipBytes += gzipSync(content).length;
     }
   }
 
   let totalCssBytes = 0;
   for (const name of cssFiles) {
-    totalCssBytes += statSync(join(DIST_ASSETS, name)).size;
+    totalCssBytes += readFileSync(join(DIST_ASSETS, name)).length;
   }
 
   return {
@@ -106,7 +114,12 @@ if (!measurement) {
   process.exit(0);
 }
 
-const budget = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
+let budget = null;
+try {
+  budget = JSON.parse(readFileSync(BASELINE, 'utf8'));
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
+}
 
 function writeBudget(next) {
   writeFileSync(BASELINE, JSON.stringify(next, null, 2) + '\n');

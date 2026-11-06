@@ -25,6 +25,10 @@ import { isMmxCliAvailable, runMmx } from '../../lib/spawnMmx.js';
 
 const MAX_BYTES = 8 * 1024 * 1024;          // 8 MB
 const REQUEST_TIMEOUT = 30_000;             // VLM calls are slower than text
+const IMAGE_MIME_TYPES = new Set([
+  'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif',
+  'image/heic', 'image/avif', 'image/bmp',
+]);
 
 /* `data:image/png;base64,…` → { mimeType, buffer }
    Returns `null` on malformed input. The caller (describeImage)
@@ -34,14 +38,14 @@ const REQUEST_TIMEOUT = 30_000;             // VLM calls are slower than text
 function parseDataUrl(dataUrl?: string) {
   const m = /^data:([^;,]+)(;base64)?,(.*)$/s.exec(dataUrl || '');
   if (!m) return null;
-  const mimeType = m[1];
+  const mimeType = m[1]!.toLowerCase();
   const isBase64 = !!m[2];
   const payload = m[3];
   try {
     const buffer = isBase64
       ? Buffer.from(payload, 'base64')
       : Buffer.from(decodeURIComponent(payload), 'utf8');
-    return { mimeType, buffer };
+    return isValidImagePayload(mimeType, buffer) ? { mimeType, buffer } : null;
   } catch (_) {
     return null;
   }
@@ -55,9 +59,46 @@ function extForMime(mimeType: string) {
     'image/webp': 'webp',
     'image/gif': 'gif',
     'image/heic': 'heic',
+    'image/avif': 'avif',
     'image/bmp': 'bmp',
   };
   return map[(mimeType || '').toLowerCase()] || 'bin';
+}
+
+/** Check the declared raster type against its actual file signature. */
+export function isValidImagePayload(mimeType: string, buffer: Buffer): boolean {
+  const mime = String(mimeType || '').toLowerCase();
+  if (!IMAGE_MIME_TYPES.has(mime) || buffer.length < 8) return false;
+  switch (mime) {
+    case 'image/png':
+      return buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    case 'image/jpeg':
+    case 'image/jpg':
+      return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    case 'image/webp':
+      return buffer.toString('ascii', 0, 4) === 'RIFF'
+        && buffer.toString('ascii', 8, 12) === 'WEBP';
+    case 'image/gif':
+      return buffer.toString('ascii', 0, 6) === 'GIF87a'
+        || buffer.toString('ascii', 0, 6) === 'GIF89a';
+    case 'image/bmp':
+      return buffer.toString('ascii', 0, 2) === 'BM';
+    case 'image/heic':
+      return hasIsoBmffBrand(buffer, ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1']);
+    case 'image/avif':
+      return hasIsoBmffBrand(buffer, ['avif', 'avis']);
+    default:
+      return false;
+  }
+}
+
+function hasIsoBmffBrand(buffer: Buffer, allowed: readonly string[]): boolean {
+  if (buffer.length < 16 || buffer.toString('ascii', 4, 8) !== 'ftyp') return false;
+  if (allowed.includes(buffer.toString('ascii', 8, 12))) return true;
+  for (let offset = 16; offset + 4 <= buffer.length; offset += 4) {
+    if (allowed.includes(buffer.toString('ascii', offset, offset + 4))) return true;
+  }
+  return false;
 }
 
 function reject(status: number, message: string) {
@@ -96,6 +137,7 @@ export async function describeImage({ dataUrl, prompt }: { dataUrl?: string; pro
      plant or read it. */
   const tmpDir = await mkdtemp(nodePath.join(tmpdir(), 'mmx-vision-'));
   const tmpPath = nodePath.join(tmpDir, `image.${extForMime(parsed.mimeType)}`);
+  // lgtm[js/http-to-file-access] -- A validated raster image is intentionally staged in a private 0700 directory and 0600 file for the local vision CLI.
   await writeFile(tmpPath, parsed.buffer, { mode: 0o600 });
 
   /* Atomic cleanup — the temp file MUST be unlinked on every exit

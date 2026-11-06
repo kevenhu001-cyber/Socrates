@@ -50,10 +50,20 @@ test('bounded caches coalesce concurrent misses, evict entries and retry failure
 
 test('upstream reads are byte bounded and disallow automatic redirect following', async (t) => {
   let options;
-  t.mock.method(globalThis, 'fetch', async (_url, opts) => { options = opts; return new Response('12345', { headers: { 'content-type': 'image/png' } }); });
+  let requestedUrl;
+  t.mock.method(globalThis, 'fetch', async (url, opts) => {
+    requestedUrl = String(url);
+    options = opts;
+    return new Response('12345', { headers: { 'content-type': 'image/png' } });
+  });
   await assert.rejects(remoteBytes('https://tiles.openfreemap.org/planet', 4));
   assert.equal(options.redirect, 'error');
   assert.ok(options.signal instanceof AbortSignal);
+  assert.equal(requestedUrl, 'https://tiles.openfreemap.org/planet');
+  await assert.rejects(remoteBytes('https://tiles.openfreemap.org:8443/planet'));
+  assert.equal(requestedUrl, 'https://tiles.openfreemap.org/planet');
+  await remoteBytes('https://tiles.openfreemap.org//evil.test/path');
+  assert.equal(requestedUrl, 'https://tiles.openfreemap.org//evil.test/path');
 });
 
 test('Bing parser handles HTML entity and URL encoded metadata without substituting unrelated URLs', () => {

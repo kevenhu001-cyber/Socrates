@@ -96,13 +96,20 @@ export function stripQuery(rawUrl: unknown): string {
  * `grep`-based alerting and lets an attacker plant "audit passed" entries.
  * Every raw string that reaches `console.*` goes through here first.
  *
- * Line separators are replaced with a single space so the substituted text
- * stays readable; other control characters are dropped outright. The
- * optional length cap keeps a 10 MB header from filling the log stream.
+ * JSON string escaping keeps user-controlled content on one physical log
+ * line while preserving readable ordinary text. The optional length cap
+ * limits the encoded output, including when an input contains many controls.
  */
 export function sanitizeLogValue(value: unknown, maxLength = 300): string {
-  return String(value ?? '')
-    .replace(/[\r\n\u2028\u2029]+/g, ' ')
-    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')
-    .slice(0, maxLength);
+  const limit = Number.isFinite(maxLength) ? Math.max(0, Math.floor(maxLength)) : 300;
+  let escaped = '';
+  for (const character of String(value ?? '')) {
+    const codePoint = character.codePointAt(0)!;
+    const encoded = codePoint === 0x85 || codePoint === 0x2028 || codePoint === 0x2029
+      ? `\\u${codePoint.toString(16).padStart(4, '0')}`
+      : JSON.stringify(character)!.slice(1, -1);
+    if (escaped.length + encoded.length > limit) break;
+    escaped += encoded;
+  }
+  return escaped;
 }

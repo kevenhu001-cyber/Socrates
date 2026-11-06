@@ -22,13 +22,7 @@ import {
 } from '../services/embeddings/attachmentReader.js';
 import { isUuid } from '../lib/validate.js';
 import { resolveInsideRoot } from '../lib/pathSafety.js';
-
-import os from 'node:os';
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR
-  || (process.env.NODE_ENV === 'production'
-    ? '/var/lib/socrates/uploads'
-    : path.join(os.tmpdir(), 'socrates-uploads'));
+import { ensureUploadDirectory, UPLOAD_DIR } from '../lib/uploadStorage.js';
 const MAX_SIZE = 25 * 1024 * 1024; // 25 MB
 // Per-user total storage quota. Defaults to 250 MB which is enough
 // for ~10 mid-size PDFs at the 25 MB cap, with headroom for images
@@ -43,9 +37,6 @@ const PLAIN_TEXT_MIMES = new Set([
   'application/json',
   'text/plain', 'text/csv', 'text/markdown',
 ]);
-
-// Ensure upload dir exists
-fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(() => {});
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
@@ -273,7 +264,13 @@ async function getUserStorageBytes(userId: string, tx?: unknown) {
  *     multer saves the file (multer can't pre-check quota), but we
  *     delete the on-disk file and roll back if the user is over.
  */
-router.post('/', uploadLimiter, (req, res, next) => {
+router.post('/', uploadLimiter, async (req, res, next) => {
+  try {
+    await ensureUploadDirectory();
+  } catch (error) {
+    next(error);
+    return;
+  }
   upload.single('file')(req, res, async (multerErr: (Error & { code?: string }) | null) => {
   try {
     if (multerErr) {
@@ -295,6 +292,7 @@ router.post('/', uploadLimiter, (req, res, next) => {
     // and active-content sniffing are enforced here.
     const uploadPath = resolveInsideRoot(UPLOAD_DIR, String(file.path || ''));
     try {
+      await fs.chmod(uploadPath, 0o600);
       await assertSafeContent(uploadPath, String(file.mimetype || ''), String(file.originalname || ''));
     } catch (sigErr) {
       await fs.unlink(uploadPath).catch(() => {});

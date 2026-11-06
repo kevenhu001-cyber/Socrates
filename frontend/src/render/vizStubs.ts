@@ -257,7 +257,7 @@ export function renderVizLoading(opts: { streaming?: boolean; stableId?: string 
   '</div>';
 }
 
-function guardUserScripts(html: string, vizId: string) {
+export function guardUserScripts(html: string, vizId: string) {
   /* P_viz-safety — wrap EVERY inline <script> in a try/catch so any
      synchronous error (not just explicit `throw`) posts a viz-error
      back to the parent. The previous version only wrapped scripts
@@ -267,7 +267,7 @@ function guardUserScripts(html: string, vizId: string) {
      until the 5s max-timer fired. The wrapper is self-contained —
      no external globals — so it works under sandbox="allow-scripts". */
   const idJson = JSON.stringify(vizId);
-  return String(html || '').replace(/<script(\s[^>]*)?>([\s\S]*?)<\/script\s*>/gi, function (_, attrs, code) {
+  return String(html || '').replace(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi, function (_, attrs, code) {
     const safe = '(function(){' +
       'try{' + code + '}catch(e){' +
       'window.__vizErr=String((e&&e.message)||e).slice(0,300);' +

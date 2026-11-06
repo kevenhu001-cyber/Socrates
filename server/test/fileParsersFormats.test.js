@@ -33,6 +33,10 @@ test('dispatcher maps the new formats and still leaves legacy .ppt unmapped', as
     extractText('application/vnd.ms-powerpoint', '/nonexistent'),
     /unsupported_mime/,
   );
+  await assert.rejects(
+    extractText('constructor', '/nonexistent'),
+    (error) => error.code === 'UNSUPPORTED_MIME',
+  );
 });
 
 test('legacy .xls (BIFF8) extracts sheets as tab-separated text', async () => {

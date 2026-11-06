@@ -61,13 +61,38 @@ export const PARSERS = new Map<string, Parser>([
  * or throws on unsupported / parse failure.
  */
 export async function extractText(mimeType: string, filepath: string) {
-  const fn = PARSERS.get(mimeType);
-  if (!fn) {
-    const err = new Error(`unsupported_mime:${mimeType}`) as Error & { code: string };
-    err.code = 'UNSUPPORTED_MIME';
-    throw err;
+  /* Keep dispatch as direct calls instead of invoking a function retrieved
+     from a user-selected map key. PARSERS remains exported for capability
+     reporting; this switch makes executable targets explicit to reviewers
+     and static analysis. */
+  switch (mimeType) {
+    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      return await docxExtract(filepath);
+    case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+      return await xlsxExtract(filepath);
+    case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+      return await pptxExtract(filepath);
+    case 'application/epub+zip':
+      return await epubExtract(filepath);
+    case 'application/rtf':
+    case 'text/rtf':
+      return await rtfExtract(filepath);
+    case 'application/msword':
+      return await legacyDocExtract(filepath);
+    case 'application/vnd.ms-excel':
+      return await legacyXlsExtract(filepath);
+    case 'application/vnd.oasis.opendocument.text':
+      return await extractOdt(filepath);
+    case 'application/vnd.oasis.opendocument.spreadsheet':
+      return await extractOds(filepath);
+    case 'application/vnd.oasis.opendocument.presentation':
+      return await extractOdp(filepath);
+    default: {
+      const err = new Error(`unsupported_mime:${mimeType}`) as Error & { code: string };
+      err.code = 'UNSUPPORTED_MIME';
+      throw err;
+    }
   }
-  return await fn(filepath);
 }
 
 export const SUPPORTED_MIMES = [...PARSERS.keys()];

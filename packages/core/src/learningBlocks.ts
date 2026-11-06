@@ -51,12 +51,32 @@ function firstText(record: Record<string, unknown>, keys: readonly string[], max
 }
 
 function stripWrappers(text: string): string {
-  return String(text ?? '')
-    .replace(/<think>[\s\S]*?<\/think>/gi, '')
-    .replace(/<think>[\s\S]*$/gi, '')
+  const source = String(text ?? '');
+  const parts: string[] = [];
+  let cursor = 0;
+  for (;;) {
+    const start = indexOfAsciiTag(source, '<think>', cursor);
+    if (start < 0) {
+      parts.push(source.slice(cursor));
+      break;
+    }
+    parts.push(source.slice(cursor, start));
+    const close = indexOfAsciiTag(source, '</think>', start + '<think>'.length);
+    if (close < 0) break;
+    cursor = close + '</think>'.length;
+  }
+  return parts.join('')
     .replace(/```(?:json|JSON)?\s*/g, '')
     .replace(/```/g, '')
     .trim();
+}
+
+function indexOfAsciiTag(text: string, tag: string, fromIndex: number): number {
+  const foldedTag = tag.toLowerCase();
+  for (let index = text.indexOf('<', fromIndex); index >= 0; index = text.indexOf('<', index + 1)) {
+    if (text.slice(index, index + tag.length).toLowerCase() === foldedTag) return index;
+  }
+  return -1;
 }
 
 /** Every balanced `{…}` at any depth that closes, in document order of their end. */

@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { getDb } from '../db/index.js';
 import { artifacts, artifactVersions, files } from '../db/schema/index.js';
@@ -10,6 +9,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { getActiveApiKey } from '../services/core/apiKey.js';
 import { callChatCompletion } from '../services/core/llm.js';
 import { BadRequest, NotFound } from '../lib/errors.js';
+import { ensureUploadDirectory, UPLOAD_DIR } from '../lib/uploadStorage.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -21,12 +21,12 @@ const maxUserBytes = Number(process.env.FILES_USER_QUOTA_BYTES) || 250 * 1024 * 
 async function storeGeneratedImage(userId: string, prompt: string, encoded: string) {
   const bytes = Buffer.from(encoded, 'base64');
   if (bytes.length < 8 || bytes.length > 25 * 1024 * 1024 || !bytes.subarray(0, 8).equals(imageSignature)) throw new BadRequest('Invalid PNG image response');
-  const dir = process.env.UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/uploads' : path.join(os.tmpdir(), 'socrates-uploads'));
-  await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+  await ensureUploadDirectory();
   /* The filename is server-generated (randomUUID) and never derived from
      request input; `wx` refuses to follow a pre-planted symlink and 0600
      keeps the bytes readable only by this process. */
-  const storagePath = path.join(dir, `${crypto.randomUUID()}.png`);
+  const storagePath = path.join(UPLOAD_DIR, `${crypto.randomUUID()}.png`);
+  // lgtm[js/http-to-file-access] -- Provider output is signature-checked, size-bounded, and written under the private upload root with a server-generated filename.
   await fs.writeFile(storagePath, bytes, { flag: 'wx', mode: 0o600 });
   try {
     const row = await getDb().transaction(async (tx) => {

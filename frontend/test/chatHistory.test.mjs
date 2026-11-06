@@ -25,14 +25,21 @@ test('history uses in-memory messages, removes transient thinking, and preserves
   }
 });
 
-test('history prefers the currently edited Canvas version over its original answer', () => {
+test('history prefers the currently edited Canvas version over its original answer', async () => {
+  const { JSDOM } = await import('jsdom');
+  const createDOMPurify = (await import('dompurify')).default;
   const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  const previousPurify = globalThis.DOMPurify;
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://socrates.test/' });
+  globalThis.document = dom.window.document;
+  globalThis.DOMPurify = createDOMPurify(dom.window);
   const messages = [
     { role: 'user', rawText: 'Revise this note.' },
     {
       role: 'assistant',
       rawText: 'Original content that should no longer stand in for the edited artifact.',
-      editedText: '<h1>Edited title</h1><p>New copy &amp; revised.</p><p>Second paragraph.</p>',
+      editedText: '<h1>Edited title</h1><p>New copy &amp; revised.</p><script>alert(1)</script><style>.secret{display:none}</style><p>Second paragraph.</p>',
     },
   ];
   globalThis.window = { stateStore: { read: (key) => key === 'messages' ? messages : null } };
@@ -45,6 +52,11 @@ test('history prefers the currently edited Canvas version over its original answ
   } finally {
     if (previousWindow === undefined) delete globalThis.window;
     else globalThis.window = previousWindow;
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+    if (previousPurify === undefined) delete globalThis.DOMPurify;
+    else globalThis.DOMPurify = previousPurify;
+    dom.window.close();
   }
 });
 

@@ -1,7 +1,7 @@
 // @ts-check
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -35,6 +35,12 @@ test('file routes require authentication and isolate lists and metadata by owner
   assert.equal(uploaded.body.name, 'notes.txt');
   assert.equal(uploaded.body.kind, 'text');
   assert.match(uploaded.body.sha256, /^[a-f0-9]{64}$/);
+  const uploadDir = await stat(process.env.UPLOAD_DIR);
+  assert.equal(uploadDir.mode & 0o777, 0o700);
+  const [storedName] = await readdir(process.env.UPLOAD_DIR);
+  assert.ok(storedName);
+  const storedFile = await stat(path.join(process.env.UPLOAD_DIR, storedName));
+  assert.equal(storedFile.mode & 0o777, 0o600);
   const id = uploaded.body.id;
   assert.equal((await f.request(`${endpoint}/${id}`, { as: null })).status, 401);
   assert.equal((await f.request(`${endpoint}/${id}`, { as: f.other })).status, 404);

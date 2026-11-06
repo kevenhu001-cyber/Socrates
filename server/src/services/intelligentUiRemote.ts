@@ -3,8 +3,26 @@ import { ApiError } from '../lib/errors.js';
 export const remoteUnavailable = () => new ApiError(502, 'UI_REMOTE_UNAVAILABLE', 'The map or image service is temporarily unavailable');
 const HEADERS = { 'User-Agent': 'Socrates/1.0 (+https://topodrive.top; Intelligence UI)' };
 
-/** Bing thumbnails: tse1-4 / tss1-4, never an arbitrary subdomain. */
-const BING_THUMB_HOST = /^t(?:se|s)[1-4]\.mm\.bing\.net$/;
+/** Fixed provider origins; user-controlled URLs can never select a host. */
+function fixedOrigin(hostname: string): string | null {
+  switch (hostname) {
+    case 'commons.wikimedia.org': return 'https://commons.wikimedia.org';
+    case 'duckduckgo.com': return 'https://duckduckgo.com';
+    case 'photon.komoot.io': return 'https://photon.komoot.io';
+    case 'router.project-osrm.org': return 'https://router.project-osrm.org';
+    case 'tiles.openfreemap.org': return 'https://tiles.openfreemap.org';
+    case 'upload.wikimedia.org': return 'https://upload.wikimedia.org';
+    case 'tse1.mm.bing.net': return 'https://tse1.mm.bing.net';
+    case 'tse2.mm.bing.net': return 'https://tse2.mm.bing.net';
+    case 'tse3.mm.bing.net': return 'https://tse3.mm.bing.net';
+    case 'tse4.mm.bing.net': return 'https://tse4.mm.bing.net';
+    case 'ts1.mm.bing.net': return 'https://ts1.mm.bing.net';
+    case 'ts2.mm.bing.net': return 'https://ts2.mm.bing.net';
+    case 'ts3.mm.bing.net': return 'https://ts3.mm.bing.net';
+    case 'ts4.mm.bing.net': return 'https://ts4.mm.bing.net';
+    default: return null;
+  }
+}
 
 /**
  * Read through the configured fetch/proxy, never redirect to an unvalidated host.
@@ -24,17 +42,17 @@ export async function remoteBytes(url: string, maxBytes = 2_000_000, timeout = 1
     throw remoteUnavailable();
   }
   const hostname = target.hostname;
-  const allowedHost = hostname === 'commons.wikimedia.org'
-    || hostname === 'duckduckgo.com'
-    || hostname === 'photon.komoot.io'
-    || hostname === 'router.project-osrm.org'
-    || hostname === 'tiles.openfreemap.org'
-    || hostname === 'upload.wikimedia.org'
-    || BING_THUMB_HOST.test(hostname);
-  if (target.protocol !== 'https:' || target.username || target.password || !allowedHost) {
+  const origin = fixedOrigin(hostname);
+  if (target.protocol !== 'https:' || target.username || target.password || target.port || !origin) {
     throw remoteUnavailable();
   }
-  const response = await fetch(target.href, { headers: HEADERS, redirect: 'error', signal: AbortSignal.timeout(timeout) });
+  /* Rebuild from an allowlisted origin so the untrusted URL can only select
+     a path and query, never the destination host or port. */
+  const safeTarget = new URL(origin);
+  safeTarget.pathname = target.pathname;
+  safeTarget.search = target.search;
+  // lgtm[js/request-forgery] -- The destination origin is one of the literal provider origins above; caller input only supplies its path and query.
+  const response = await fetch(safeTarget.href, { headers: HEADERS, redirect: 'error', signal: AbortSignal.timeout(timeout) });
   if (!response.ok || !response.body) throw remoteUnavailable();
   const length = Number(response.headers.get('content-length'));
   if (length > maxBytes) { await response.body.cancel(); throw remoteUnavailable(); }

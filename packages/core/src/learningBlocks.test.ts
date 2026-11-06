@@ -17,6 +17,9 @@ describe('parseLooseJson', () => {
     assert.deepEqual(out.value, { a: 1 });
     assert.equal(out.truncated, false);
   });
+  it('preserves source offsets when Unicode precedes a think block', () => {
+    assert.deepEqual(parseLooseJson('İ<think>private</think>{"a":1}').value, { a: 1 });
+  });
   it('repairs curly-quote delimiters and trailing commas', () => {
     assert.deepEqual(parseLooseJson('{“a”: [1, 2,],}').value, { a: [1, 2] });
   });
@@ -28,6 +31,10 @@ describe('parseLooseJson', () => {
   });
   it('returns nothing for text without JSON', () => {
     assert.deepEqual(parseLooseJson('no json here'), { value: undefined, truncated: false, salvaged: [] });
+  });
+  it('strips many unclosed think blocks in linear time', () => {
+    const out = parseLooseJson('<think>'.repeat(20_000) + 'unfinished');
+    assert.deepEqual(out, { value: undefined, truncated: false, salvaged: [] });
   });
 });
 

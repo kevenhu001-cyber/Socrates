@@ -1,6 +1,6 @@
 import { loadLocalMemory } from '../storage/localMemory.ts';
 import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments.ts';
-import { stripHtmlTags } from '../util/stripHtml.ts';
+import { sanitizeHtml } from '../render/sanitizeHtml.ts';
 
 type HistoryRole = 'system' | 'user' | 'assistant';
 type ContentPart =
@@ -167,18 +167,35 @@ function cleanTurnText(value: unknown): string{
 }
 
 function canvasEditedText(html: string): string {
-  const structured = html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<(?:br|hr)\b[^>]*\/?\s*>/gi, '\n')
-    .replace(/<\/(?:p|div|li|h[1-6]|pre|blockquote|tr|table)\s*>/gi, '\n');
-  return stripHtmlTags(structured)
-    .replace(/&nbsp;|&#160;/gi, ' ')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&amp;/gi, '&')
+  /* Parse only the sanitized fragment in an inert template. Reading text
+     nodes avoids regex-based HTML filtering, which can leave a malformed
+     multi-character tag active in the history sent back to the model. */
+  const template = document.createElement('template');
+  template.innerHTML = sanitizeHtml(String(html ?? ''), { keepContent: false });
+  const blockTags = new Set([
+    'ADDRESS', 'ARTICLE', 'BLOCKQUOTE', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+    'LI', 'OL', 'P', 'PRE', 'TABLE', 'TR', 'UL',
+  ]);
+  const parts: string[] = [];
+  const visit = (node: Node): void => {
+    if (node.nodeType === 3) {
+      parts.push(node.nodeValue ?? '');
+      return;
+    }
+    if (node.nodeType === 1) {
+      const element = node as Element;
+      if (element.tagName === 'BR' || element.tagName === 'HR') {
+        parts.push('\n');
+        return;
+      }
+      for (const child of Array.from(element.childNodes)) visit(child);
+      if (blockTags.has(element.tagName)) parts.push('\n');
+      return;
+    }
+    for (const child of Array.from(node.childNodes)) visit(child);
+  };
+  for (const child of Array.from(template.content.childNodes)) visit(child);
+  return parts.join('')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

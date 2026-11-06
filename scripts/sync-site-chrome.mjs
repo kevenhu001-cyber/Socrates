@@ -164,9 +164,10 @@ async function zhConsentText() {
   return consentCopy;
 }
 async function cjkPreloads(html) {
+  // lgtm[js/incomplete-multi-character-sanitization] -- This is not an HTML sanitizer; it scans repository-owned pages only to choose CJK font subsets, and the result is never emitted as markup.
   const visible = html
-    .replace(/<head\b[\s\S]*?<\/head>/, '')
-    .replace(/<(script|style|svg|template|noscript)\b[\s\S]*?<\/\1>/g, '')
+    .replace(/<head\b[^>]*>[\s\S]*?(?:<\/head\b[^>]*>|$)/gi, '')
+    .replace(/<(script|style|svg|template|noscript)\b[^>]*>[\s\S]*?(?:<\/\1\b[^>]*>|$)/gi, '')
     .replace(/<[^>]+>/g, '');
   const text = (await zhConsentText()) + visible;
   const chars = [];

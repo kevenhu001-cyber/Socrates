@@ -10,7 +10,7 @@
  *
  * Usage: node scripts/check-state-ownership.mjs [--update]
  */
-import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -62,9 +62,12 @@ function collect() {
 
 function main() {
   const directDispatches = collect();
-  const baseline = existsSync(BASELINE)
-    ? JSON.parse(readFileSync(BASELINE, 'utf8'))
-    : null;
+  let baseline = null;
+  try {
+    baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
   const previous = baseline?.directDispatches;
   const limit = typeof previous === 'number'
     ? Math.min(previous, directDispatches.length)

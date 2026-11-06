@@ -16,6 +16,8 @@ const NUMBER_RE = new RegExp(`^${DECIMAL}$`);
 const FRACTION_RE = new RegExp(`^(${DECIMAL})/(${DECIMAL})$`);
 const LEFT_EQUATION_RE = new RegExp(`^([a-z][a-z0-9_]*)=(${DECIMAL}(?:/(${DECIMAL}))?%?)$`, 'i');
 const RIGHT_EQUATION_RE = new RegExp(`^(${DECIMAL}(?:/(${DECIMAL}))?%?)=([a-z][a-z0-9_]*)$`, 'i');
+const TRAILING_PUNCTUATION = new Set(Array.from('.,;:!?。；：！？'));
+const EDGE_QUOTES = new Set(Array.from(`"'“”‘’「」『』`));
 
 function finiteNumber(value: number): number | null {
   return Number.isFinite(value) ? value : null;
@@ -64,10 +66,14 @@ function numericallyEqual(left: number, right: number): boolean {
 
 /** Remove presentation-only punctuation for exact textual self-checks. */
 function normalizedText(value: string): string {
-  return String(value ?? '').toLowerCase().trim()
-    .replace(/[\s\u00a0]+/gu, '')
-    .replace(/[.,;:!?。；：！？]+$/gu, '')
-    .replace(/^["'“”‘’「」『』]+|["'“”‘’「」『』]+$/gu, '');
+  const text = String(value ?? '').toLowerCase().replace(/\s/gu, '');
+  let end = text.length;
+  while (end > 0 && TRAILING_PUNCTUATION.has(text[end - 1]!)) end -= 1;
+
+  let start = 0;
+  while (start < end && EDGE_QUOTES.has(text[start]!)) start += 1;
+  while (end > start && EDGE_QUOTES.has(text[end - 1]!)) end -= 1;
+  return text.slice(start, end);
 }
 
 /**

@@ -38,18 +38,30 @@ interface DomPurifyLike {
   sanitize: (html: string, config?: unknown) => string | DocumentFragment;
 }
 
+interface SanitizeHtmlOptions {
+  chineseProse?: boolean;
+  keepContent?: boolean;
+}
+
+function purifyConfig(options: SanitizeHtmlOptions) {
+  return options.keepContent === false
+    ? { ...PURIFY_CONFIG, KEEP_CONTENT: false }
+    : PURIFY_CONFIG;
+}
+
 /* Try the shared global and bundled copy. If neither can sanitize, fail
    closed by returning escaped text: sanitizeUrls only rewrites URL
    attributes and is not an HTML/XSS sanitizer. */
-export function sanitizeHtml(html: string, options: { chineseProse?: boolean } = {}): string {
+export function sanitizeHtml(html: string, options: SanitizeHtmlOptions = {}): string {
   const bundled = bundledDomPurify as unknown as DomPurifyLike;
   const globalPurify = (globalThis as { DOMPurify?: DomPurifyLike }).DOMPurify;
   const candidates = globalPurify === bundled ? [bundled] : [globalPurify, bundled];
+  const config = purifyConfig(options);
   for (const dp of candidates) {
     if (!dp || typeof dp.sanitize !== 'function') continue;
     try {
       const normalize = options.chineseProse && /\p{Script=Han}/u.test(html) && typeof document !== 'undefined';
-      const clean = dp.sanitize(html, normalize ? { ...PURIFY_CONFIG, RETURN_DOM_FRAGMENT: true } : PURIFY_CONFIG);
+      const clean = dp.sanitize(html, normalize ? { ...config, RETURN_DOM_FRAGMENT: true } : config);
       if (!normalize && typeof clean === 'string') return clean;
       const host = document.createElement('template');
       if (typeof clean === 'string') host.innerHTML = clean;
