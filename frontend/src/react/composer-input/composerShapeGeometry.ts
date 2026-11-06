@@ -136,11 +136,16 @@ export function shouldExpandComposer(
   surface: ComposerSurface,
   collapsedMeasureRef: MutableRef<CollapsedComposerMeasure | null>,
 ): boolean {
+  const hasEditorText = Boolean((editorDom.textContent || '').replace(/\u200b/g, '').trim());
+  const hasStructuralBreak = Boolean(editorDom.querySelector('br:not(.ProseMirror-trailingBreak), p + p, li + li'));
+  /* Fast-path: empty editor without structural breaks can never expand.
+     Bypasses computed styles, probe DOM insertion, and scrollHeight reflows. */
+  if (!hasEditorText && !hasStructuralBreak) return false;
+
   const style = getComputedStyle(editorDom);
   const lineHeight = Number.parseFloat(style.lineHeight) || 24;
   const isMultiline = wrap.classList.contains('composer-multiline');
   const wrapWidth = wrap.getBoundingClientRect().width;
-  const hasEditorText = Boolean((editorDom.textContent || '').replace(/\u200b/g, '').trim());
 
   /* Keep the smallest settled one-line measurement. The browser can grow the
      intrinsic box before an explicit line break is reflected in layout. */
@@ -148,7 +153,7 @@ export function shouldExpandComposer(
 
   // Structural line breaks prove expansion without cloning or measuring a
   // second DOM tree. Only a wrapped single paragraph needs the narrow probe.
-  if (editorDom.querySelector('br:not(.ProseMirror-trailingBreak), p + p, li + li')) return true;
+  if (hasStructuralBreak) return true;
   let measureDom = editorDom;
   if (isMultiline && collapsedMeasureRef.current) {
     const probe = createCollapsedMeasureProbe(

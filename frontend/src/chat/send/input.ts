@@ -4,7 +4,6 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showToast } from '../../ui/toast.js';
 import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.ts';
 import { clearComposer, focusComposer, getComposerMarkdown } from '../../composer/controller.ts';
-import type { ComposerSurface } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
 import { attachments, buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.ts';
@@ -107,15 +106,8 @@ export function commitSendInput(input: SendInput, options: CommitSendOptions): C
   if (input.isComposerSubmit) {
     playSendGlyph();
     userClientId = addMessage('user', input.text, null, null, input.immediateAttachments);
-    /* P_composer-defer-clear — clearComposer() walks the TipTap doc
-       and re-paints the chips; on a populated composer this can take
-       5–10ms. Defer the destructive part to idle time so the click
-       handler returns with the user bubble already committed. The
-       addMessage() call above is what drives the visible transition
-       (user bubble + stop button); the composer text is the only
-       thing that changes here, and it does not block the
-       transcript update. */
-    scheduleIdleClearComposer('chat');
+    /* Immediate clear releases the draft right away so the user sees instant feedback. */
+    clearComposer('chat');
   } else {
     userClientId = addMessage('user', input.text, null, null, input.immediateAttachments);
   }
@@ -129,38 +121,6 @@ export function commitSendInput(input: SendInput, options: CommitSendOptions): C
   // Release the submitted draft before lazy loading or attachment preparation.
   // Attachments added while those tasks run belong to the next turn.
   return { userClientId, precreatedTurn: createPrecreatedTurn(input) };
-}
-
-/* P_composer-defer-clear — schedule `clearComposer` for the next
-   idle slot so the click handler can return without paying for a
-   TipTap document walk. Falls back through rIC → setTimeout so Safari
-   (which has rIC since 16.4 but not on all surfaces) and the test
-   harness (no rIC) still clear.
-
-   The clear is deferred, so by the time it runs the composer may already
-   hold the next message — on a busy main thread the idle slot arrives
-   late, and an unconditional clear wiped whatever the user had typed in
-   the meantime. Compare against what was sent: clear only while the
-   composer still holds it. */
-function scheduleIdleClearComposer(scope: ComposerSurface): void {
-  const sent = getComposerMarkdown(scope);
-  const clearIfUnchanged = () => {
-    try {
-      if (getComposerMarkdown(scope) === sent) clearComposer(scope);
-    } catch (error) { reportSwallow(error, 'send/input.scheduleIdleClearComposer'); }
-  };
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(function idleClear() { clearIfUnchanged(); }, { timeout: 0 });
-    return;
-  }
-  const raf = typeof requestAnimationFrame === 'function'
-    ? requestAnimationFrame
-    : null;
-  if (raf) {
-    raf(function rafClear() { clearIfUnchanged(); });
-    return;
-  }
-  setTimeout(function () { clearIfUnchanged(); }, 0);
 }
 
 function patchCommittedAttachments(userClientId: string | null, attachments: unknown[]): void {

@@ -173,25 +173,43 @@ export interface ParsedQuiz {
 
 /** Parse the inner XML of a <quiz> block. `attrs` is the opening tag's attribute text. */
 export function parseQuizInner(inner: string, attrs = ''): ParsedQuiz | null {
-  const question = fieldOf(inner, 'q');
+  const question = fieldOf(inner, 'q') ?? fieldOf(inner, 'question');
   if (question === null) {
     const q = plainScaffoldBody(inner);
     return q ? { q, options: [], correct: null } : null;
   }
   const q = stripTags(question.trim());
-  const options = fieldMatches(inner, 'o').flatMap((match): QuizOption[] => {
-    const letter = match.attrs.match(/\bletter\s*=\s*["']([A-Ha-h])["']/i)?.[1];
+  const oMatches = fieldMatches(inner, 'o');
+  const optionMatches = oMatches.length >= 2 ? oMatches : fieldMatches(inner, 'option');
+  const targetMatches = optionMatches.length >= oMatches.length ? optionMatches : oMatches;
+  let autoIndex = 0;
+  const options = targetMatches.flatMap((match): QuizOption[] => {
+    let letter = match.attrs.match(/\bletter\s*=\s*["'“”‘’]?([A-Ha-h])["'“”‘’]?/i)?.[1];
+    let text = stripTags(decodeEntities(match.inner.trim()));
+    if (!letter) {
+      const leadingMatch = text.match(/^\s*(?:[\(\[]\s*)?([A-Ha-h])\s*(?:[\)\]\.\、\:\：\-])\s*(.*)$/s);
+      if (leadingMatch) {
+        letter = leadingMatch[1];
+        text = leadingMatch[2].trim();
+      } else if (autoIndex < 8) {
+        letter = String.fromCharCode(65 + autoIndex);
+      }
+    }
+    autoIndex += 1;
     if (!letter) return [];
-    const explanation = match.attrs.match(/\bexplanation\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+    const explanation = match.attrs.match(/\bexplanation\s*=\s*(?:["“]([^"”]*)[”"]|['‘]([^'’]*)['’]|"([^"]*)"|'([^']*)'|([^>\s]+))/i);
+    const explanationText = explanation ? (explanation[1] ?? explanation[2] ?? explanation[3] ?? explanation[4] ?? explanation[5] ?? '') : '';
     return [{
       letter: letter.toUpperCase(),
-      text: stripTags(decodeEntities(match.inner.trim())),
-      ...(explanation ? { explanation: stripTags(decodeEntities(explanation[1] ?? explanation[2] ?? '')) } : {}),
+      text,
+      ...(explanationText ? { explanation: stripTags(decodeEntities(explanationText)) } : {}),
     }];
   });
   if (options.length < 2) return null;
   const letters = new Set(options.map((option) => option.letter));
-  const key = fieldsOf(inner, 'correct').flatMap((value) => parseAnswerKey(value)).filter((letter) => letters.has(letter));
+  const correctRaw = fieldsOf(inner, 'correct');
+  const keySource = correctRaw.length ? correctRaw : fieldsOf(inner, 'answer').concat(fieldsOf(inner, 'ans'));
+  const key = keySource.flatMap((value) => parseAnswerKey(value)).filter((letter) => letters.has(letter));
   const unique = Array.from(new Set(key)).sort();
   const parsed: ParsedQuiz = { q, options, correct: unique.length ? unique.join('') : null };
   if (unique.length > 1 || /\b(?:multi|multiple)\b|\btype\s*=\s*["'](?:multi|multiple)["']/i.test(attrs)) parsed.multi = true;
@@ -211,8 +229,8 @@ export interface ParsedExample {
 
 export function parseExampleInner(inner: string): ParsedExample | null {
   const title = fieldOf(inner, 'title');
-  const problem = fieldOf(inner, 'problem');
-  const solution = fieldOf(inner, 'solution');
+  const problem = fieldOf(inner, 'problem') ?? fieldOf(inner, 'question');
+  const solution = fieldOf(inner, 'solution') ?? fieldOf(inner, 'answer');
   if (problem === null && solution === null) {
     const plain = plainScaffoldBody(inner);
     return plain ? { title: 'Example', problem: plain, solution: '' } : null;
@@ -237,7 +255,7 @@ export interface ParsedPractice {
 }
 
 export function parsePracticeInner(inner: string, correct?: string | null): ParsedPractice | null {
-  const problem = fieldOf(inner, 'problem') ?? plainScaffoldBody(inner);
+  const problem = fieldOf(inner, 'problem') ?? fieldOf(inner, 'question') ?? plainScaffoldBody(inner);
   if (problem === null) return null;
   const hints = fieldsOf(inner, 'hint');
   const parsed: ParsedPractice = {
@@ -246,7 +264,7 @@ export function parsePracticeInner(inner: string, correct?: string | null): Pars
     hint: hints[0] ?? (fieldOf(inner, 'hint') ?? ''),
   };
   if (hints.length > 1) parsed.hints = hints;
-  const solution = fieldOf(inner, 'solution');
+  const solution = fieldOf(inner, 'solution') ?? fieldOf(inner, 'answer');
   if (solution) parsed.solution = solution;
   if (correct) parsed.correct = correct;
   return parsed;
@@ -261,8 +279,8 @@ export function hintLevels(parsed: { hint?: string; hints?: string[] }): string[
 export interface ParsedDefinition { term: string; body: string }
 
 export function parseDefinitionInner(inner: string): ParsedDefinition | null {
-  const term = fieldOf(inner, 'term');
-  const body = fieldOf(inner, 'body');
+  const term = fieldOf(inner, 'term') ?? fieldOf(inner, 'concept') ?? fieldOf(inner, 'title');
+  const body = fieldOf(inner, 'body') ?? fieldOf(inner, 'content') ?? fieldOf(inner, 'statement') ?? fieldOf(inner, 'explanation');
   if (term === null && body === null) {
     const plain = plainScaffoldBody(inner);
     return plain ? { term: '', body: plain } : null;
@@ -273,8 +291,8 @@ export function parseDefinitionInner(inner: string): ParsedDefinition | null {
 export interface ParsedFlashcard { front: string; back: string }
 
 export function parseFlashcardInner(inner: string): ParsedFlashcard | null {
-  const front = fieldOf(inner, 'front');
-  const back = fieldOf(inner, 'back');
+  const front = fieldOf(inner, 'front') ?? fieldOf(inner, 'question') ?? fieldOf(inner, 'q');
+  const back = fieldOf(inner, 'back') ?? fieldOf(inner, 'answer') ?? fieldOf(inner, 'a');
   if (front === null && back === null) return null;
   return { front: front ?? '', back: back ?? '' };
 }
@@ -288,7 +306,7 @@ export interface ParsedTheorem {
 }
 
 export function parseTheoremInner(inner: string): ParsedTheorem | null {
-  const statement = fieldOf(inner, 'statement') ?? plainScaffoldBody(inner);
+  const statement = fieldOf(inner, 'statement') ?? fieldOf(inner, 'content') ?? fieldOf(inner, 'body') ?? plainScaffoldBody(inner);
   if (statement === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', statement };
 }
@@ -296,7 +314,7 @@ export function parseTheoremInner(inner: string): ParsedTheorem | null {
 export interface ParsedProof { title: string; body: string }
 
 export function parseProofInner(inner: string): ParsedProof | null {
-  const body = fieldOf(inner, 'body') ?? plainScaffoldBody(inner);
+  const body = fieldOf(inner, 'body') ?? fieldOf(inner, 'content') ?? fieldOf(inner, 'solution') ?? plainScaffoldBody(inner);
   if (body === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', body };
 }
@@ -304,7 +322,7 @@ export function parseProofInner(inner: string): ParsedProof | null {
 export interface ParsedDerivation { title: string; body: string }
 
 export function parseDerivationInner(inner: string): ParsedDerivation | null {
-  const body = fieldOf(inner, 'body') ?? plainScaffoldBody(inner);
+  const body = fieldOf(inner, 'body') ?? fieldOf(inner, 'steps') ?? fieldOf(inner, 'content') ?? plainScaffoldBody(inner);
   if (body === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', body };
 }

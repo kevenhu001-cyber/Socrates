@@ -28,17 +28,22 @@ export interface LocalMemoryRecord {
 
 export const LOCAL_MEMORY_MAX = 200;
 
+const memoryCache = new Map<string, LocalMemoryRecord>();
+
 export function _memKey(sid: string | null | undefined): string {
   return "socrates-memory-" + (sid || "default");
 }
 
 export function loadLocalMemory(sid: string | null | undefined): LocalMemoryRecord | null {
   if (!sid) return null;
+  const cached = memoryCache.get(sid);
+  if (cached) return cached;
   try {
     const raw = localStorage.getItem(_memKey(sid));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as LocalMemoryRecord | null;
     if (!parsed || !Array.isArray(parsed.messages)) return null;
+    memoryCache.set(sid, parsed);
     return parsed;
   } catch {
     return null;
@@ -61,6 +66,7 @@ export function appendLocalMemory(role: string, content: string | null | undefin
          avoid trimming on every single message. */
       rec.messages = rec.messages.slice(-LOCAL_MEMORY_MAX);
     }
+    memoryCache.set(sid, rec);
     /* P_context-race — re-read the session ID right before writing to
        localStorage. If the user switched sessions between the initial
        `sid` read and this write, we'd be appending to the OLD session's
@@ -77,5 +83,6 @@ export function appendLocalMemory(role: string, content: string | null | undefin
 
 export function clearLocalMemory(sid: string | null | undefined): void {
   if (!sid) return;
+  memoryCache.delete(sid);
   try { localStorage.removeItem(_memKey(sid)); } catch { /* empty-catch: intentional — storage unavailable */ }
 }

@@ -222,3 +222,31 @@ test('quiz option explanations are decoded separately from visible choices', () 
     { letter: 'B', text: '5', explanation: 'One too many.' },
   ]);
 });
+
+test('scaffold parsers tolerate Chinese quotation marks, unquoted attributes, and tag synonyms', () => {
+  // Quiz with Chinese quotes and <question>/<answer>
+  const chineseQuotes = parseQuizInner('<question>测试题</question><o letter=“A” explanation=“解析A”>选项1</o><o letter=“B” explanation=“解析B”>选项2</o><answer>A</answer>');
+  assert.equal(chineseQuotes?.q, '测试题');
+  assert.equal(chineseQuotes?.correct, 'A');
+  assert.equal(chineseQuotes?.options[0].letter, 'A');
+  assert.equal(chineseQuotes?.options[0].explanation, '解析A');
+
+  // Quiz with <option> tags and text-based letter extraction
+  const textLetters = parseQuizInner('<q>选择</q><option>A. 苹果</option><option>B. 香蕉</option><correct>B</correct>');
+  assert.equal(textLetters?.options[0].letter, 'A');
+  assert.equal(textLetters?.options[0].text, '苹果');
+  assert.equal(textLetters?.options[1].letter, 'B');
+  assert.equal(textLetters?.correct, 'B');
+
+  // Definition with <concept> and <explanation>
+  const def = parseDefinitionInner('<concept>导数</concept><explanation>切线斜率</explanation>');
+  assert.deepEqual(def, { term: '导数', body: '切线斜率' });
+
+  // Theorem with <content>
+  const thm = parseTheoremInner('<title>费马小定理</title><content>a^p ≡ a (mod p)</content>');
+  assert.deepEqual(thm, { title: '费马小定理', statement: 'a^p ≡ a (mod p)' });
+
+  // Example with <question> and <answer>
+  const ex = parseExampleInner('<title>例1</title><question>求积分</question><answer>结果为 x^2/2</answer>');
+  assert.deepEqual(ex, { title: '例1', problem: '求积分', solution: '结果为 x^2/2' });
+});

@@ -82,7 +82,6 @@ export function useComposerController(
         editor.chain().focus().insertContent(value, { contentType: 'markdown' }).run();
       },
       clear() {
-        captureShapeHeight(editor.view.dom as HTMLElement);
         editor.commands.clearContent(true);
       },
       setExtensionToken,
