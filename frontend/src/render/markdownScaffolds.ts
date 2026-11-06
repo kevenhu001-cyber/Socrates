@@ -212,10 +212,22 @@ function renderFlashcardPreview(inner: string, markdown: StreamMarkdownRenderer)
     + actionsRow('', skeletonPill('soft', 88)));
 }
 
+/* A proof nested in a theorem, closed or still streaming. */
+const NESTED_PROOF_RE = /<proof\b[^>]*>[\s\S]*?(?:<\/proof\s*>|$)/gi;
+
 function renderTheoremPreview(inner: string, markdown: StreamMarkdownRenderer): string {
-  const title = streamField(inner, 'title');
-  const statement = streamField(inner, 'statement');
-  return streamCard('theorem', (title ? markdown(title, 'theorem-title') : '') + markdown(statement, 'theorem-statement'));
+  /* A proof written inside the theorem folds into the mounted card behind a
+     "show proof" button. The preview reserves that button's row as soon as
+     the proof opens, so the finish swap does not push the reply down, and
+     the proof's own <title> never stands in for the theorem's. */
+  const statementInner = inner.replace(NESTED_PROOF_RE, '');
+  const hasProof = statementInner.length !== inner.length;
+  const title = streamField(statementInner, 'title');
+  const statement = streamField(statementInner, 'statement');
+  return streamCard('theorem',
+    (title ? markdown(title, 'theorem-title') : '')
+    + markdown(statement, 'theorem-statement')
+    + (hasProof ? actionsRow(skeletonPill('quiet', 104), '') : ''));
 }
 
 function renderProofPreview(inner: string, markdown: StreamMarkdownRenderer): string {
