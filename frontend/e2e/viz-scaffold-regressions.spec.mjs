@@ -60,3 +60,21 @@ test('on a phone the chart title keeps its line and the actions wrap under it', 
   expect(geometry.titleHeight).toBeLessThan(40);
   expect(geometry.actionsTop).toBeGreaterThanOrEqual(geometry.titleBottom - 1);
 });
+
+test('a chart written as an openui fence has no frame and no header band in dark mode', async ({ page }) => {
+  await open(page, [msg('bar', '图：\n\n' + BAR)], { colorScheme: 'dark' });
+  const card = row(page, 'bar').locator('.visualization-card').first();
+  await expect(card).toBeVisible();
+  const frame = await card.evaluate((element) => {
+    const header = element.querySelector('.visualization-header');
+    const style = getComputedStyle(element);
+    const headerStyle = getComputedStyle(header);
+    return {
+      border: style.borderTopWidth,
+      background: style.backgroundColor,
+      headerBackground: headerStyle.backgroundColor,
+      headerDivider: headerStyle.borderBottomWidth,
+    };
+  });
+  expect(frame).toEqual({ border: '0px', background: 'rgba(0, 0, 0, 0)', headerBackground: 'rgba(0, 0, 0, 0)', headerDivider: '0px' });
+});
