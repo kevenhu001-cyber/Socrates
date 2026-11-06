@@ -21,21 +21,67 @@
   word-break: keep-all;
   overflow-wrap: break-word;
 }
-.viz-state-stage {
+/* Streaming / loading skeleton. It mirrors the finished card's geometry
+   (02-modals-library.css + surfaces.css: header row, stage heights per
+   engine, the 520px phone stage, the caption row) so the card that replaces
+   it lands on the same pixels. Static: the arriving text is the progress. */
+.viz-state-skeleton {
+  margin: 0;
+  min-width: 0;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+.viz-skeleton-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+}
+.viz-skeleton-title {
+  margin: 0;
+  color: var(--foreground);
+  font: var(--ui-font-weight-medium) var(--ui-font-size-sm) / 1.35 var(--font-sans);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.viz-skeleton-stage {
   position: relative;
-  height: 11rem;
-  border-bottom: 1px solid var(--ui-border-subtle);
+  box-sizing: border-box;
+  height: 350px;
+  padding: 4px 4px 0;
   display: grid;
   align-content: space-evenly;
 }
-.viz-state-gridline {
+.viz-state-skeleton[data-renderer="tldraw"] .viz-skeleton-stage { height: 520px; padding: 0; }
+.viz-state-skeleton[data-renderer="geogebra"] .viz-skeleton-stage { height: 480px; padding: 0; }
+.viz-state-skeleton[data-renderer="three"] .viz-skeleton-stage { height: 430px; }
+.viz-state-skeleton[data-renderer="mermaid"] .viz-skeleton-stage { height: auto; min-height: 300px; padding: 22px; }
+.viz-skeleton-gridline {
   display: block;
   height: 0;
   border-top: 1px solid var(--ui-border-subtle);
-  opacity: 0.6;
 }
-.viz-state-baseline { display: none; }
-.viz-state-progress,
+.viz-skeleton-progress {
+  position: absolute;
+  inset: 0 auto auto 0;
+  margin: 0;
+  padding: var(--ui-space-md);
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.5;
+}
+.viz-skeleton-caption {
+  margin: 0;
+  padding: 10px 0 12px;
+  border-top: 1px solid hsl(var(--border-100) / .6);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.45;
+}
+@media (max-width: 520px) {
+  .viz-skeleton-stage { height: 292px; padding: 2px; }
+}
+/* The engine's card is in the host: it owns the footprint from here on. */
+.openui-visualization:has(> .openui-visualization-host > .visualization-card) > .viz-state-skeleton { display: none; }
 .viz-state-reason,
 .viz-state-note {
   margin: 0;

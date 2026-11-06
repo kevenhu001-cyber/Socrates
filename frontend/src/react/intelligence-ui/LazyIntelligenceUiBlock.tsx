@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ComponentProps } from 'react';
 
 import { ErrorBoundary } from '../ErrorBoundary';
-import { i18n } from '../legacy/gateway';
+import { BlockSkeletonShell } from './BlockSkeleton';
 
 const IntelligenceUiBlock = lazy(() => import('./IntelligenceUi'));
 
@@ -9,7 +9,7 @@ const IntelligenceUiBlock = lazy(() => import('./IntelligenceUi'));
 export function LazyIntelligenceUiBlock(props: ComponentProps<typeof IntelligenceUiBlock>) {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div className="intui" role="status">{i18n('common.loading', 'Loading…')}</div>}>
+      <Suspense fallback={<BlockSkeletonShell />}>
         <IntelligenceUiBlock {...props} />
       </Suspense>
     </ErrorBoundary>

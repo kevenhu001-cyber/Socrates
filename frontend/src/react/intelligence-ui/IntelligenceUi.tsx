@@ -8,6 +8,7 @@ import {
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { IntelligentSurface, type IntelligentDisplayMode } from './IntelligentSurface';
 import { UiNode } from './IntelligenceUiNodes';
+import { PendingBlock } from './BlockSkeleton';
 import { asProse, childMap, mergeDefaults, resolve, type RenderContext } from './renderRuntime';
 
 interface IntelligenceUiBlockProps {
@@ -30,7 +31,8 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
   }, [defaults]);
 
   const roots = nodes.filter((node) => !node.parent);
-  if (!roots.length) return null;
+  /* Keep the loading footprint until the first record names a root. */
+  if (!roots.length) return <PendingBlock open={open} />;
 
   const context: RenderContext = {
     state,
