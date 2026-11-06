@@ -261,3 +261,72 @@ test('correcting an initially invalid input clears diagnostics and never display
   await expect(ui.locator('.iui-program')).toHaveAttribute('data-invalid-result', 'true');
   await expect(ui.locator('.iui-text')).toBeHidden();
 });
+
+const AVERAGES = 'Visualization("bar", "Midterm averages", {"categories":["Class A","Class B","Class C"],"series":[{"name":"Average","data":[82,76,88]}]}, "Average score by class")';
+
+for (const viewport of ['desktop', 'mobile']) {
+  test(`a streamed chart keeps its card footprint from the first token to the drawn card (${viewport})`, async ({ page }) => {
+    await prepareChatWorkbench(page, { viewport: WORKBENCH_VIEWPORTS[viewport] });
+    await page.evaluate(async (chart) => {
+      window.__openuiTurn = await window.addStreamingMessage({ userPrompt: 'Chart the averages.' });
+      window.__openuiTurn.append(`Scores:\n\n\`\`\`openui\nroot = Col([title, chart])\ntitle = Title("Midterm review", "lg")\nchart = ${chart}\n`);
+    }, AVERAGES);
+    const viz = page.locator('.intui-openui [data-openui-visualization]').last();
+    await expect(viz.locator('.viz-state-skeleton')).toBeVisible();
+    const box = () => viz.evaluate((el) => {
+      const shown = [...el.querySelectorAll('h3')].find((h) => h.getClientRects().length);
+      const rect = el.getBoundingClientRect();
+      return { height: Math.round(rect.height), titleLeft: Math.round(shown.getBoundingClientRect().left - rect.left) };
+    });
+    const streaming = await box();
+    /* Sample every frame across the end of the stream and the renderer load:
+       the block must never collapse while the engine card replaces the skeleton. */
+    await page.evaluate(() => {
+      const el = document.querySelectorAll('.intui-openui [data-openui-visualization]');
+      const target = el[el.length - 1];
+      window.__vizHeights = [];
+      const tick = () => { window.__vizHeights.push(Math.round(target.getBoundingClientRect().height)); window.__vizRaf = requestAnimationFrame(tick); };
+      tick();
+      window.__openuiTurn.append('```\nDone.');
+      window.__openuiTurn.finish();
+    });
+    await expect(viz).toHaveAttribute('data-viz-phase', 'ready');
+    await expect(viz.locator('.visualization-card')).toBeVisible();
+    await expect(viz.locator('.viz-state-skeleton')).toHaveCount(0);
+    const drawn = await box();
+    const heights = await page.evaluate(() => { cancelAnimationFrame(window.__vizRaf); return window.__vizHeights; });
+    expect(drawn.height).toBe(streaming.height);
+    expect(Math.min(...heights)).toBe(streaming.height);
+    /* The chart title shares the answer's left edge in both states. */
+    expect(streaming.titleLeft).toBe(0);
+    expect(drawn.titleLeft).toBe(0);
+  });
+}
+
+test('a small heatmap is drawn as SVG, not as a canvas bitmap', async ({ page }) => {
+  const heat = 'Visualization("heatmap", "Practice by slot", {"xCategories":["Mon","Tue","Wed"],"yCategories":["AM","PM"],"values":[[1,3,2],[4,2,5]]}, "Practice sessions per slot")';
+  await prepareChatWorkbench(page, { messages: [message(`root = Col([heat])\nheat = ${heat}`, 'openui-heatmap')] });
+  const card = page.locator('.intui-openui .visualization-card').first();
+  await expect(card).toHaveAttribute('data-visualization-renderer', 'echarts');
+  await expect(card.locator('.visualization-stage svg').first()).toBeVisible();
+  await expect(card.locator('canvas')).toHaveCount(0);
+});
+
+test('an OpenUI chart waits for complete rows before drawing, inside a stable frame', async ({ page }) => {
+  await prepareChatWorkbench(page);
+  await page.evaluate(async () => {
+    window.__openuiTurn = await window.addStreamingMessage({ userPrompt: 'Plot practice hours.' });
+    window.__openuiTurn.append('Hours:\n\n```openui\nroot = Col([chart])\nchart = Chart("bar", [{day:"Mon",hours:2},{day:"Tue",hours:3}');
+  });
+  const figure = page.locator('.intui-openui .iui-chart').last();
+  await expect(figure.locator('.iui-chart-pending')).toBeVisible();
+  await expect(figure.locator('svg')).toHaveCount(0);
+  const pending = await figure.evaluate((el) => Math.round(el.getBoundingClientRect().height));
+  await page.evaluate(() => {
+    window.__openuiTurn.append(',{day:"Wed",hours:4}], "day", ["hours"])\n```\nDone.');
+    window.__openuiTurn.finish();
+  });
+  await expect(figure.getByRole('img', { name: 'bar chart of hours by day' })).toBeVisible();
+  const drawn = await figure.evaluate((el) => Math.round(el.getBoundingClientRect().height));
+  expect(drawn).toBe(pending);
+});
