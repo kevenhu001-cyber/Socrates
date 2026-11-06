@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { formatToolResultContent } from '../src/routes/chat/pipeline/toolFeedback.js';
+import {
+  normalizeToolResultRetryability,
+  recordToolResultAndBoundRetryability,
+} from '../src/routes/chat/pipeline/toolResultPolicy.js';
+import { executeProjectConnector } from '../src/routes/chat/pipeline/executors/connectors.js';
+import { PROJECT_CONNECTOR_TOOL_NAMES } from '../src/services/integrations/projectConnectorTools.js';
+import { createToolTurnPolicy } from '../src/services/tools/toolTurnPolicy.js';
 
 test('image artifact feedback offers an optional fixed markdown reference', () => {
   const content = formatToolResultContent('code_interpreter', {
@@ -123,10 +130,67 @@ test('workspace, search, fetch and connector failures explain the next action', 
     detail: 'unavailable',
   });
   assert.match(connector, /Do not fabricate results/);
+
+  const openConnector = formatToolResultContent('oc_googlecalendar_find_event', {
+    status: 'failed',
+    errorCode: 'provider_rejected_query',
+    retryable: false,
+    detail: 'The provider rejected this query.',
+  });
+  assert.match(openConnector, /Do not blindly repeat the same call/);
+  assert.match(openConnector, /continue without this source or use another tool/);
+
+  const uncertainImageTask = formatToolResultContent('oc_jimeng_ai_submit_image_generation_4_6', {
+    status: 'failed',
+    errorCode: 'connector_error',
+    retryable: true,
+  });
+  assert.match(uncertainImageTask, /\[retryable: no\]/);
+  assert.match(uncertainImageTask, /Do not submit it again automatically/);
 });
 
 test('generic correction and terminal results retain their original payload', () => {
   assert.equal(formatToolResultContent('some_tool', { correction: 'schema feedback' }), 'schema feedback');
   assert.equal(formatToolResultContent('some_tool', { status: 'completed', output: 'result' }), 'result');
-  assert.equal(formatToolResultContent('some_tool', { status: 'failed', error: 'failed' }), '[error] failed');
+  assert.match(formatToolResultContent('some_tool', { status: 'failed', error: 'failed' }), /\[retryable: no\]/);
+});
+
+test('tool failures expose the same explicit retryability to connector events and model feedback', async () => {
+  const missingRetryability = normalizeToolResultRetryability({ status: 'failed', errorCode: 'app_not_connected' });
+  assert.equal(missingRetryability.retryable, false);
+  assert.match(formatToolResultContent('some_tool', missingRetryability), /\[retryable: no\]/);
+
+  const transient = normalizeToolResultRetryability({ status: 'failed', errorCode: 'provider_down', retryable: true });
+  assert.equal(transient.retryable, true);
+  assert.match(formatToolResultContent('some_tool', transient), /\[retryable: yes\]/);
+
+  const events = [];
+  const call = {
+    id: 'connector-call',
+    type: 'function',
+    function: { name: PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY, arguments: '' },
+  };
+  const outcome = await executeProjectConnector({}, call, {
+    emitter: { event: (_type, payload) => events.push(payload) },
+    req: { userId: 'test-user' },
+    projectConnectorConnectionsByProvider: { github: null },
+    toolPolicy: createToolTurnPolicy(),
+  });
+  assert.equal(events[0].retryable, outcome.result.retryable);
+  assert.equal(outcome.outcomeRecorded, true);
+  assert.equal(outcome.result.retryable, false);
+  assert.match(formatToolResultContent(call.function.name, outcome.result), /\[retryable: no\]/);
+});
+
+test('transient connector retries stop when the per-tool failure budget is exhausted', () => {
+  const policy = createToolTurnPolicy({ perToolFailureLimit: 1 });
+  const result = recordToolResultAndBoundRetryability('oomol_gmail_search_threads', {
+    status: 'failed',
+    errorCode: 'rate_limited',
+    retryable: true,
+  }, policy);
+
+  assert.equal(result.retryable, false);
+  assert.equal(policy.remainingRetries('oomol_gmail_search_threads'), 0);
+  assert.match(formatToolResultContent('oomol_gmail_search_threads', result), /\[retryable: no\]/);
 });

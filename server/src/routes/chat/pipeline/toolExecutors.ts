@@ -27,9 +27,10 @@ const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
 import {hashToolArguments, type ToolTurnPolicy} from '../../../services/tools/toolTurnPolicy.js';
 import {SseEmitter} from './sseEmitter.js';
 import {formatToolResultContent} from './toolFeedback.js';
+import {normalizeToolResultRetryability} from './toolResultPolicy.js';
 import {createToolExecutorRegistry} from './executors/registry.js';
 import type {ToolExecutorContext} from './executors/types.js';
-import type {PreparedCall, StreamMessage,} from './types.js';
+import type {PreparedCall, StreamMessage, ToolResult,} from './types.js';
 
 export interface ToolRunnerDeps {
   publicRuntime?: ToolExecutorContext['publicRuntime'];
@@ -165,14 +166,20 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
         // Tool execution itself threw — never let this bubble out
         // and crash the SSE stream. Tell the model so it can pivot.
         const msg = String(err && (err as Error).message || err);
-        deps.emitter.event('tool_result', {
-          id: tc.id, ok: false, status: 'failed',
-          output: '', stderr: '', artifacts: [],
+        const result = normalizeToolResultRetryability({
+          status: 'failed',
           error: msg,
-          errorCode: 'tool_execution_failed', retryable: false,
+          errorCode: 'tool_execution_failed',
+          retryable: false,
+        });
+        deps.emitter.event('tool_result', {
+          id: tc.id, name: toolName, ok: false, status: result.status,
+          output: '', stderr: '', artifacts: [],
+          error: result.error,
+          errorCode: result.errorCode, retryable: result.retryable,
           userMessage: '工具执行失败。', detail: msg,
         });
-        outcome = { result: { status: 'failed', error: msg } };
+        outcome = { result };
       }
     } else {
       /* A tool that exists in the registry but has no executor here
@@ -194,7 +201,7 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
       outcome = { result: { status: 'failed', error: 'unknown_tool', errorCode: 'unknown_tool', correction: feedback.modelMessage } };
     }
 
-    const result = outcome.result;
+    const result: ToolResult = normalizeToolResultRetryability(outcome.result);
     deps.onResult?.(tc.id, result);
 
     /* Per-tool outcome accounting for every executor that did not need

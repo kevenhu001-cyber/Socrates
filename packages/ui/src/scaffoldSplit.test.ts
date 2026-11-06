@@ -74,3 +74,60 @@ test('a host-pinned slot id is read from the opening tag', () => {
   const block = blocks('<quiz data-quiz-id="redo-quiz-1"><q>Q</q><o letter="A">a</o><o letter="B">b</o></quiz>')[0];
   assert.equal(block.slotId, 'redo-quiz-1');
 });
+
+test('scaffold-looking markup in inline and fenced code stays prose', () => {
+  const example = '<example><problem>P</problem><solution>S</solution></example>';
+  const source = `Inline \`${example}\`.\n\n\`\`\`xml\n${example}\n\`\`\`\n\nReal example:\n${example}`;
+  const segments = splitScaffolds(source);
+
+  assert.deepEqual(kinds(source), ['text', 'scaffold']);
+  assert.equal(segments[0].kind === 'text' ? segments[0].text : '', source.slice(0, source.lastIndexOf(example)));
+  assert.equal(blocks(source).length, 1);
+});
+
+test('scaffold blocks can contain fenced examples with literal scaffold tags', () => {
+  const source = [
+    '<definition><term>Markup</term><body>Literal example:',
+    '```xml',
+    '<definition><term>Fake</term><body>Not a card</body></definition>',
+    '```',
+    '</body></definition>',
+  ].join('\n');
+  const segments = splitScaffolds(source);
+  const block = blocks(source)[0];
+
+  assert.deepEqual(kinds(source), ['scaffold']);
+  assert.equal(blocks(source).length, 1);
+  assert.equal(block.kind, 'definition');
+  assert.match(block.raw, /<definition><term>Fake<\/term><body>Not a card<\/body><\/definition>/);
+  assert.match(block.raw, /<\/body>$/);
+  if (block.kind === 'definition') {
+    assert.equal(block.parsed.term, 'Markup');
+    assert.match(block.parsed.body, /<body>Not a card<\/body>/);
+  }
+  assert.equal(segments[0].kind, 'scaffold');
+});
+
+test('quiz field tags inside Markdown code do not replace real fields', () => {
+  const source = [
+    '<quiz><q>Choose the correct answer:',
+    '```xml',
+    '<q>Fake question</q><o letter="C">Fake option</o>',
+    '```',
+    '</q><o letter="A">One</o><o letter="B">Two</o><correct>B</correct></quiz>',
+  ].join('\n');
+  const block = blocks(source)[0];
+
+  assert.equal(block.kind, 'quiz');
+  if (block.kind !== 'quiz') return;
+  assert.deepEqual(block.parsed.options.map((option) => option.letter), ['A', 'B']);
+  assert.match(block.parsed.q, /<q>Fake question<\/q>/);
+});
+
+test('an unclosed scaffold opener does not hide a later complete card', () => {
+  const example = '<example><problem>Problem</problem><solution>Solution</solution></example>';
+  const source = `<quiz>unfinished answer\n${example}`;
+
+  assert.deepEqual(kinds(source), ['text', 'scaffold']);
+  assert.equal(blocks(source)[0].kind, 'example');
+});

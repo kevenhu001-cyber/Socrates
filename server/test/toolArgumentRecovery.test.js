@@ -33,6 +33,7 @@ import { VISUALIZATION_TOOL, executeVisualization, validateVisualizationSpec } f
 import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/core/planning.js';
 import { CREATE_SITE_TOOL } from '../src/services/siteCreation.js';
 import { buildToolErrorFeedback } from '../src/services/tools/toolErrorFeedback.js';
+import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from '../src/services/integrations/projectConnectorTools.js';
 
 const VIZ_SCHEMA = VISUALIZATION_TOOL.function.parameters;
 const PLAN_SCHEMA = PLAN_TOOL.function.parameters;
@@ -40,7 +41,7 @@ const PLAN_SCHEMA = PLAN_TOOL.function.parameters;
 /** What the pipeline does with one streamed argument string. */
 function prepareArguments(toolName, raw, schema) {
   const selfNormalizing = SELF_NORMALIZING_TOOLS.has(toolName);
-  const repaired = repairToolArguments(raw, schema, { dropUnknown: !selfNormalizing });
+  const repaired = repairToolArguments(raw, schema, { dropUnknown: !selfNormalizing, toolName });
   if (!repaired.ok) return { ok: false, code: repaired.error, args: null };
   if (!selfNormalizing) {
     const validation = validateToolArguments(repaired.value, schema);
@@ -99,6 +100,68 @@ test('repairToolArguments keeps unknown keys when the executor normalizes them',
   const kept = repairToolArguments('{"query":"safe","extra":1}', schema, { dropUnknown: false });
   assert.deepEqual(kept.value, { query: 'safe', extra: 1 });
   assert.deepEqual(kept.repairs, []);
+});
+
+test('executor-supported aliases are normalized before schema pruning', () => {
+  const querySchema = {
+    type: 'object',
+    required: ['query'],
+    properties: { query: { type: 'string' } },
+    additionalProperties: false,
+  };
+  for (const alias of ['q', 'search_query', 'keyword']) {
+    const prepared = prepareArguments('web_search', JSON.stringify({ [alias]: 'reliable query' }), querySchema);
+    assert.equal(prepared.ok, true);
+    assert.deepEqual(prepared.args, { query: 'reliable query' });
+  }
+  const wrapped = prepareArguments('web_search', '{"input":{"q":"wrapped query"}}', querySchema);
+  assert.equal(wrapped.ok, true);
+  assert.deepEqual(wrapped.args, { query: 'wrapped query' });
+
+  const attachment = prepareArguments('read_attachment', '{"file_id":"file-1"}', {
+    type: 'object',
+    required: ['fileId'],
+    properties: { fileId: { type: 'string' } },
+    additionalProperties: false,
+  });
+  assert.equal(attachment.ok, true);
+  assert.deepEqual(attachment.args, { fileId: 'file-1' });
+
+  for (const alias of ['script', 'python', 'source']) {
+    const code = prepareArguments('code_interpreter', JSON.stringify({ [alias]: 'print(1)' }), {
+      type: 'object',
+      required: ['code'],
+      properties: { code: { type: 'string' } },
+      additionalProperties: false,
+    });
+    assert.equal(code.ok, true);
+    assert.deepEqual(code.args, { code: 'print(1)' });
+  }
+});
+
+test('empty arguments are accepted only for tools with no required fields', () => {
+  const identityTool = PROJECT_CONNECTOR_TOOLS.find(
+    (tool) => tool.function.name === PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY,
+  );
+  assert.ok(identityTool);
+  for (const raw of ['', null, undefined]) {
+    const identity = prepareArguments(
+      PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY,
+      raw,
+      identityTool.function.parameters,
+    );
+    assert.equal(identity.ok, true);
+    assert.deepEqual(identity.args, {});
+  }
+
+  const required = prepareArguments('web_search', '', {
+    type: 'object',
+    required: ['query'],
+    properties: { query: { type: 'string' } },
+    additionalProperties: false,
+  });
+  assert.equal(required.ok, false);
+  assert.equal(required.code, TOOL_ARGUMENT_ERRORS.parse);
 });
 
 /* ── the calls that used to fail ──────────────────────────────────── */
@@ -165,7 +228,7 @@ test('tools without their own normalizer are still pre-validated', () => {
     properties: { query: { type: 'string', minLength: 1 } },
     additionalProperties: false,
   };
-  const prepared = prepareArguments('web_search', '{"q":"missing the required name"}', schema);
+  const prepared = prepareArguments('web_search', '{"unexpected":"missing the required name"}', schema);
   assert.equal(prepared.ok, false);
   assert.equal(prepared.code, TOOL_ARGUMENT_ERRORS.schema);
   assert.match(prepared.fieldErrors.join('; '), /query: missing required field/);

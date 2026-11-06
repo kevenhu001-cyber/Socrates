@@ -5,8 +5,20 @@ import {
   CHAT_CONCISE_PROMPT,
   CHAT_SYSTEM_PROMPT,
   HIGH_EFFORT_OUTPUT_GUIDANCE,
+  LEARNING_SCAFFOLD_GUIDANCE,
   PYTHON_RUNNABLE_RULES,
 } from '../src/chat/systemPrompts.ts';
+import { SOCRATIC_SYSTEM_PROMPT } from '../src/prompts/socratic.ts';
+
+test('Chat and Tutor share one optional learning scaffold contract', () => {
+  for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT, SOCRATIC_SYSTEM_PROMPT]) {
+    assert.ok(prompt.includes(LEARNING_SCAFFOLD_GUIDANCE));
+  }
+  assert.match(LEARNING_SCAFFOLD_GUIDANCE, /never place scaffold tags inside fenced or inline code/);
+  assert.match(LEARNING_SCAFFOLD_GUIDANCE, /ordinary conversation stays in prose/i);
+  assert.match(LEARNING_SCAFFOLD_GUIDANCE, /<theorem>/);
+  assert.match(LEARNING_SCAFFOLD_GUIDANCE, /never wraps the whole answer/);
+});
 
 test('chat prompts do not duplicate the server-owned untrusted-data rule', () => {
   /* untrusted-data handling is owned once by SERVER_SYSTEM_POLICY in

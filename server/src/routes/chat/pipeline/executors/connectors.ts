@@ -10,6 +10,7 @@ import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../../../services
 import { executeProjectConnectorTool, PROJECT_CONNECTOR_TOOL_NAMES } from '../../../../services/integrations/projectConnectorTools.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
+import { normalizeToolResultRetryability, recordToolResultAndBoundRetryability } from '../toolResultPolicy.js';
 
 export const executePersonalConnector: ToolExecutor = async (
   args,
@@ -17,6 +18,7 @@ export const executePersonalConnector: ToolExecutor = async (
   ctx,
 ): Promise<ToolExecutionResult> => {
   const { emitter, connectorConnectionsByProvider } = ctx;
+  const { toolPolicy } = ctx;
   const toolName = call.function?.name || '';
   const TOOL_TO_PROVIDER: Record<string, string> = {
     [CONNECTOR_TOOL_NAMES.ZOTERO]: 'zotero',
@@ -26,18 +28,21 @@ export const executePersonalConnector: ToolExecutor = async (
   };
   const provider = TOOL_TO_PROVIDER[toolName];
   const connection = provider ? (connectorConnectionsByProvider?.[provider] || null) : null;
-  const toolResult = await executeConnectorTool(toolName, args, connection) as ToolResult;
-  const ok = toolResult.status === 'completed';
+  const rawResult = await executeConnectorTool(toolName, args, connection) as ToolResult;
+  const result = toolPolicy
+    ? recordToolResultAndBoundRetryability(toolName, rawResult, toolPolicy)
+    : normalizeToolResultRetryability(rawResult);
+  const ok = result.status === 'completed';
   emitter.event('tool_result', {
-    id: call.id, ok, status: toolResult.status,
-    output: toolResult.output || '',
-    error: toolResult.error || null,
-    errorCode: toolResult.errorCode || null,
-    retryable: false,
-    userMessage: ok ? null : (toolResult.userMessage || '该工具暂不可用。'),
-    detail: toolResult.error || null,
+    id: call.id, ok, status: result.status,
+    output: result.output || '',
+    error: result.error || null,
+    errorCode: result.errorCode || null,
+    retryable: result.retryable,
+    userMessage: ok ? null : (result.userMessage || '该工具暂不可用。'),
+    detail: result.error || null,
   });
-  return { result: toolResult };
+  return { result, outcomeRecorded: Boolean(toolPolicy) };
 };
 
 export const executeProjectConnector: ToolExecutor = async (
@@ -45,7 +50,7 @@ export const executeProjectConnector: ToolExecutor = async (
   call,
   ctx,
 ): Promise<ToolExecutionResult> => {
-  const { emitter, req, projectConnectorConnectionsByProvider } = ctx;
+  const { emitter, req, projectConnectorConnectionsByProvider, toolPolicy } = ctx;
   const toolName = call.function?.name || '';
   const PROJECT_TOOL_TO_PROVIDER: Record<string, unknown> = {
     [PROJECT_CONNECTOR_TOOL_NAMES.GITHUB_IDENTITY]:             projectConnectorConnectionsByProvider.github,
@@ -61,19 +66,22 @@ export const executeProjectConnector: ToolExecutor = async (
     req.userId!,
     PROJECT_TOOL_TO_PROVIDER[toolName] ?? null,
   );
-  const ok = projectToolResult.status === 'completed';
+  const result = toolPolicy
+    ? recordToolResultAndBoundRetryability(toolName, projectToolResult as ToolResult, toolPolicy)
+    : normalizeToolResultRetryability(projectToolResult as ToolResult);
+  const ok = result.status === 'completed';
   emitter.event('tool_result', {
     id: call.id,
     ok,
-    status: projectToolResult.status,
-    output: projectToolResult.output || '',
-    error: projectToolResult.error || null,
-    errorCode: projectToolResult.errorCode || null,
-    retryable: false,
-    userMessage: projectToolResult.userMessage || null,
+    status: result.status,
+    output: result.output || '',
+    error: result.error || null,
+    errorCode: result.errorCode || null,
+    retryable: result.retryable,
+    userMessage: result.userMessage || null,
     // Keep the model-facing correction detail and the mobile card
     // aligned for rejected connector argument objects.
-    detail: projectToolResult.error || null,
+    detail: result.error || null,
   });
-  return { result: projectToolResult as ToolResult };
+  return { result, outcomeRecorded: Boolean(toolPolicy) };
 };

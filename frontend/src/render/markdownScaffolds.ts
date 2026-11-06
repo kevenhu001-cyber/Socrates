@@ -1,7 +1,14 @@
 /* Incremental previews and plugin registry for Tutor scaffolds during streaming. */
-import { decodeEntities, escAttr, escHTML, stripTags } from './helpers.ts';
-import { stripHtmlTags } from '../util/stripHtml.ts';
-import { splitDerivationSteps } from '@socrates/ui/learn-model';
+import { decodeEntities, escAttr, escHTML } from './helpers.ts';
+import {
+  fieldMatches,
+  fieldOf,
+  fieldsOf,
+  parseAnswerKey,
+  splitDerivationSteps,
+  stripTags,
+} from '@socrates/ui/learn-model';
+import { hasScaffoldMarkup, SCAFFOLD_TAGS, type ScaffoldTag } from '@socrates/ui/learn-split';
 
 /* Stream-time scaffold plugins. */
 interface StreamScaffoldPlugin {
@@ -11,7 +18,7 @@ interface StreamScaffoldPlugin {
 }
 let STREAM_SCAFFOLD_PLUGINS: StreamScaffoldPlugin[] = [];
 
-const STREAM_SCAFFOLD_FALLBACK: Record<string, string> = {
+const STREAM_SCAFFOLD_FALLBACK: Record<ScaffoldTag, string> = {
   quiz: '[Quick Check]',
   example: '[Example]',
   practice: '[Practice]',
@@ -49,21 +56,17 @@ export function findStreamScaffold(name: string): StreamScaffoldPlugin | null {
 /* ------------------------------------------------------------------
  * Built-in scaffold previews (RN-3)
  *
- * While a scaffold streams, the transcript shows a static preview built from
- * the same box as the mounted React Native card: `.sc-live` has the card's
- * outer margin, radius, hairline, label header and body padding, and reserves
- * the controls' row height with quiet skeleton capsules. Fields render through
- * the progressive markdown + KaTeX renderer as `.sc-rich`, exactly like the
- * mounted card's host-rendered fields, so the finish() swap does not move the
- * content. Interactive widgets mount only once the block is complete
- * (scheduleWidgetMounts after the final render); until then nothing here is
- * focusable or clickable.
+ * While a scaffold streams, the transcript shows a static preview aligned
+ * with the mounted React Native card: `.sc-live` keeps the same field spacing
+ * and reserves the controls' row height with quiet skeleton capsules, but
+ * draws no outer frame. Fields render through the progressive markdown +
+ * KaTeX renderer as `.sc-rich`, like the mounted card's host-rendered fields,
+ * so the finish() swap does not move the content. Interactive widgets mount
+ * only once the block is complete (scheduleWidgetMounts after the final
+ * render); until then nothing here is focusable or clickable.
  * ------------------------------------------------------------------ */
 
-const STREAM_SCAFFOLD_TAGS = new Set(Object.keys(STREAM_SCAFFOLD_FALLBACK));
-const COMPLETE_SCAFFOLD_RE = new RegExp(
-  '<(' + Object.keys(STREAM_SCAFFOLD_FALLBACK).join('|') + ')\\b[^>]*>[\\s\\S]*?</\\1>', 'i',
-);
+const STREAM_SCAFFOLD_TAGS = new Set<string>(SCAFFOLD_TAGS);
 
 /**
  * True when the text holds at least one closed scaffold block. The streaming
@@ -71,7 +74,7 @@ const COMPLETE_SCAFFOLD_RE = new RegExp(
  * one must be painted by the final renderer for its card to mount.
  */
 export function hasCompleteScaffold(text: string): boolean {
-  return COMPLETE_SCAFFOLD_RE.test(String(text || ''));
+  return hasScaffoldMarkup(String(text || ''));
 }
 
 const STREAM_LABEL_KEYS: Record<string, [string, string]> = {
@@ -103,11 +106,7 @@ function streamLabel(tag: string): string {
 }
 
 function streamField(inner: string, name: string): string {
-  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = String(inner || '').match(
-    new RegExp('<' + escapedName + '\\b[^>]*>([\\s\\S]*?)(?:</' + escapedName + '>|$)', 'i'),
-  );
-  return match ? decodeEntities(match[1].trim()) : '';
+  return fieldOf(inner, name, true) ?? '';
 }
 
 function streamAttr(attrs: string, name: string): string {
@@ -131,11 +130,12 @@ function streamPlainPreview(inner: string): string {
 }
 
 export function streamScaffoldFallbackLabel(tag: string): string {
-  return STREAM_SCAFFOLD_FALLBACK[tag] || '[' + tag + ']';
+  const scaffoldTag = SCAFFOLD_TAGS.find((candidate) => candidate === tag);
+  return scaffoldTag ? STREAM_SCAFFOLD_FALLBACK[scaffoldTag] : '[' + tag + ']';
 }
 
 export function streamScaffoldFallbackText(content: string): string {
-  const text = stripHtmlTags(content).trim();
+  const text = stripTags(content).trim();
   return text.length > 200 ? text.slice(0, 200) + '…' : text;
 }
 
@@ -251,15 +251,16 @@ function renderStepPreview(inner: string, markdown: StreamMarkdownRenderer, attr
 
 function renderQuizPreview(inner: string, markdown: StreamMarkdownRenderer, attrs: string): string {
   const question = streamField(inner, 'q');
-  const options: string[] = [];
-  const optionRe = /<o\s+letter=["']([A-Ha-h])["'][^>]*>([\s\S]*?)(?:<\/o>|$)/gi;
-  let match: RegExpExecArray | null;
-  while ((match = optionRe.exec(inner)) !== null) {
-    options.push('<div class="sc-live-option" aria-hidden="true">'
-      + '<span class="sc-live-letter">' + escHTML(match[1].toUpperCase()) + '</span>'
-      + markdown(stripTags(decodeEntities(match[2].trim())), 'quiz-option') + '</div>');
-  }
-  const multi = /\b(?:multi|multiple)\b/i.test(attrs) || /<correct>\s*[A-Ha-h]\s*[,，、]?\s*[A-Ha-h]/i.test(inner);
+  const options = fieldMatches(inner, 'o', true).flatMap((match) => {
+    const letter = match.attrs.match(/\bletter\s*=\s*["']([A-Ha-h])["']/i)?.[1];
+    return letter
+      ? ['<div class="sc-live-option" aria-hidden="true">'
+        + '<span class="sc-live-letter">' + escHTML(letter.toUpperCase()) + '</span>'
+        + markdown(stripTags(decodeEntities(match.inner.trim())), 'quiz-option') + '</div>']
+      : [];
+  });
+  const multi = /\b(?:multi|multiple)\b/i.test(attrs)
+    || fieldsOf(inner, 'correct').some((answer) => parseAnswerKey(answer).length > 1);
   return streamCard('quiz',
     markdown(question, 'quiz-q')
     + (options.length ? '<div class="sc-live-options">' + options.join('') + '</div>' : '')

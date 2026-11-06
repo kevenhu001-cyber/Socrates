@@ -28,6 +28,8 @@ export interface OpenConnectorChatTool {
   actionId: string;
   description: string;
   parameters: Record<string, unknown>;
+  /** Some actions have non-idempotent side effects and must never be retried automatically. */
+  retryableOnTransientError?: boolean;
 }
 
 export const OPEN_CONNECTOR_CHAT_TOOLS: OpenConnectorChatTool[] = [
@@ -1493,6 +1495,7 @@ export const OPEN_CONNECTOR_CHAT_TOOLS: OpenConnectorChatTool[] = [
     actionId: 'jimeng_ai.submit_image_generation_4_6',
     description: "Submit a user-requested image-generation prompt to Jimeng AI 4.6. This action creates a new image task; use it only after the user has submitted a prompt in image-creation mode.",
     parameters: {"type":"object","properties":{"prompt":{"type":"string","minLength":1,"maxLength":800,"description":"The user's image-generation prompt, up to 800 characters."}},"additionalProperties":false,"required":["prompt"],"description":"Submit one text prompt to Jimeng AI Image Generation 4.6."},
+    retryableOnTransientError: false,
   },
   {
     tool: 'oc_jimeng_ai_get_image_generation_4_6_result',
@@ -2283,6 +2286,12 @@ export function getOpenConnectorChatTool(toolName: unknown): OpenConnectorChatTo
  * schema afterwards.
  */
 
+/** Unknown actions are not safe to retry because their side effects are unknown. */
+export function isOpenConnectorActionRetryable(toolName: unknown): boolean {
+  const spec = getOpenConnectorChatTool(toolName);
+  return Boolean(spec) && spec?.retryableOnTransientError !== false;
+}
+
 const MAX_ARG_JSON_BYTES = 16_384;
 const MAX_STRING_VALUE_LENGTH = 2000;
 const MAX_ARG_DEPTH = 4;
@@ -2382,6 +2391,9 @@ export async function executeOpenConnectorTool(
     const data = await project.execute(externalUserId(userId), spec.actionId, validated.args, {
       connectionName: connection.connectionName || 'socrates',
       connectedAccountId: connection.connectedAccountId || undefined,
+      // Retryability is classified by the chat pipeline; the SDK's default
+      // retries could duplicate non-idempotent actions.
+      retries: 0,
     });
     const output = JSON.stringify(data);
     return {
@@ -2390,6 +2402,12 @@ export async function executeOpenConnectorTool(
     };
   } catch (error) {
     const payload = connectorErrorPayload(error);
-    return { status: 'failed', errorCode: payload.code, error: payload.message, userMessage: 'The connected app could not complete that request.' };
+    return {
+      status: 'failed',
+      errorCode: payload.code,
+      error: payload.message,
+      retryable: spec.retryableOnTransientError !== false && payload.retryable,
+      userMessage: 'The connected app could not complete that request.',
+    };
   }
 }

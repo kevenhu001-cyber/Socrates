@@ -14,6 +14,8 @@
  * them directly, and the host owns every side effect (grading, reporting).
  */
 import { decodeEntities, stripTags } from '../scaffoldText.ts';
+import { markdownCodeRanges } from './markdownCode.ts';
+export { stripTags };
 export { evaluatePracticeAnswer, type PracticeAnswerAssessment } from './practiceAnswer.ts';
 
 export const SCAFFOLD_KINDS = [
@@ -34,19 +36,84 @@ function escapeTag(tag: string): string {
   return tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Body of the first complete `<tag>…</tag>`, entities decoded, or null. */
-export function fieldOf(inner: string, tag: string): string | null {
-  const match = String(inner || '').match(new RegExp('<' + escapeTag(tag) + '\\b[^>]*>([\\s\\S]*?)</' + escapeTag(tag) + '>', 'i'));
-  return match ? decodeEntities(match[1].trim()) : null;
+export interface ScaffoldFieldMatch {
+  attrs: string;
+  inner: string;
+  start: number;
+  end: number;
+}
+
+/** Same-tag fields outside Markdown code, in source order. */
+export function fieldMatches(
+  inner: string,
+  tag: string,
+  includeTrailingPartial = false,
+): ScaffoldFieldMatch[] {
+  const source = String(inner || '');
+  const pattern = new RegExp('<(/?)' + escapeTag(tag) + '\\b([^>]*)>', 'gi');
+  const codeRanges = markdownCodeRanges(source);
+  const stack: Array<{ attrs: string; start: number; contentStart: number }> = [];
+  const candidates: ScaffoldFieldMatch[] = [];
+  let codeIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(source)) !== null) {
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    const codeRange = codeRanges[codeIndex];
+    if (codeRange && codeRange.start <= match.index && codeRange.end > match.index) continue;
+
+    if (!match[1]) {
+      stack.push({
+        attrs: match[2],
+        start: match.index,
+        contentStart: pattern.lastIndex,
+      });
+      continue;
+    }
+
+    const open = stack.pop();
+    if (!open) continue;
+    candidates.push({
+      attrs: open.attrs,
+      inner: source.slice(open.contentStart, match.index),
+      start: open.start,
+      end: pattern.lastIndex,
+    });
+  }
+
+  if (includeTrailingPartial) {
+    for (const open of stack) {
+      candidates.push({
+        attrs: open.attrs,
+        inner: source.slice(open.contentStart),
+        start: open.start,
+        end: source.length,
+      });
+    }
+  }
+
+  candidates.sort((left, right) => left.start - right.start);
+  const fields: ScaffoldFieldMatch[] = [];
+  let consumedUntil = -1;
+  for (const candidate of candidates) {
+    if (candidate.start < consumedUntil) continue;
+    fields.push(candidate);
+    consumedUntil = candidate.end;
+  }
+  return fields;
+}
+
+/** Body of the first complete field (or a trailing partial field when requested). */
+export function fieldOf(inner: string, tag: string, includeTrailingPartial = false): string | null {
+  const match = fieldMatches(inner, tag, includeTrailingPartial)[0];
+  return match ? decodeEntities(match.inner.trim()) : null;
 }
 
 /** Bodies of every complete `<tag>…</tag>`, in order. Empty bodies are skipped. */
 export function fieldsOf(inner: string, tag: string): string[] {
   const out: string[] = [];
-  const re = new RegExp('<' + escapeTag(tag) + '\\b[^>]*>([\\s\\S]*?)</' + escapeTag(tag) + '>', 'gi');
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(String(inner || ''))) !== null) {
-    const value = decodeEntities(match[1].trim());
+  for (const match of fieldMatches(inner, tag)) {
+    const value = decodeEntities(match.inner.trim());
     if (value) out.push(value);
   }
   return out;
@@ -104,15 +171,15 @@ export interface ParsedQuiz {
 
 /** Parse the inner XML of a <quiz> block. `attrs` is the opening tag's attribute text. */
 export function parseQuizInner(inner: string, attrs = ''): ParsedQuiz | null {
-  const qMatch = inner.match(/<q>([\s\S]*?)<\/q>/i);
-  if (!qMatch) return null;
-  const q = stripTags(decodeEntities(qMatch[1].trim()));
-  const optRe = /<o\s+letter="([A-Ha-h])"[^>]*>([\s\S]*?)<\/o>/gi;
-  const options: QuizOption[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = optRe.exec(inner)) !== null) {
-    options.push({ letter: match[1].toUpperCase(), text: stripTags(decodeEntities(match[2].trim())) });
-  }
+  const question = fieldOf(inner, 'q');
+  if (question === null) return null;
+  const q = stripTags(question.trim());
+  const options = fieldMatches(inner, 'o').flatMap((match): QuizOption[] => {
+    const letter = match.attrs.match(/\bletter\s*=\s*["']([A-Ha-h])["']/i)?.[1];
+    return letter
+      ? [{ letter: letter.toUpperCase(), text: stripTags(decodeEntities(match.inner.trim())) }]
+      : [];
+  });
   if (options.length < 2) return null;
   const letters = new Set(options.map((option) => option.letter));
   const key = fieldsOf(inner, 'correct').flatMap((value) => parseAnswerKey(value)).filter((letter) => letters.has(letter));

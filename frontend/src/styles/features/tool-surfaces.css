@@ -145,6 +145,24 @@
   color:var(--primary);
 }
 
+/* Tool charts and their status states sit in the answer flow, not inside a
+   second dashboard card. Their data, controls, and chart grid remain intact. */
+#appShell .tool-inline-attachments .visualization-card{
+  border:0;
+  background:transparent;
+}
+#appShell .tool-inline-attachments .visualization-header{
+  border-bottom:0;
+  background:transparent;
+}
+#appShell .tool-inline-attachments .viz-state,
+#appShell .intui-openui [data-openui-visualization] .viz-state{
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+
 /* ── RN-2 hosts ──────────────────────────────────────────────────────────
    DOM hosts around the shared React Native turn components
    (@socrates/ui/turn). The components draw themselves; these rules only

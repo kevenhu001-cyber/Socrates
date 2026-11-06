@@ -1,4 +1,7 @@
 import { ConnectorError, ProjectConnector } from '@oomol-lab/connector';
+import { isRetryableConnectorFailure } from './connectorRetryPolicy.js';
+
+export { isRetryableConnectorStatus } from './connectorRetryPolicy.js';
 
 /* A deliberately small, product-owned catalogue. The gateway owns OAuth,
  * credentials and the action schemas. Socrates owns which apps it exposes and
@@ -112,11 +115,18 @@ export function connectorErrorPayload(error: unknown) {
     const nested = typeof data.error === 'object' && data.error !== null ? data.error : null;
     const code = data.errorCode || nested?.code || error.code;
     const message = data.errorMessage || (typeof data.error === 'string' ? data.error : nested?.message) || error.message;
+    const status = error.status || 502;
     return {
-      status: error.status || 502,
+      status,
+      retryable: isRetryableConnectorFailure(error),
       code: typeof code === 'string' && code ? code : 'connector_error',
       message: typeof message === 'string' && message ? message : 'Connector request failed',
     };
   }
-  return { status: 502, code: 'connector_error', message: (error as { message?: string })?.message || 'Connector request failed' };
+  return {
+    status: 502,
+    retryable: isRetryableConnectorFailure(error),
+    code: 'connector_error',
+    message: (error as { message?: string })?.message || 'Connector request failed',
+  };
 }

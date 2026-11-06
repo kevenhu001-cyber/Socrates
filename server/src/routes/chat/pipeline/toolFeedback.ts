@@ -8,9 +8,14 @@
  */
 
 import { CONNECTOR_TOOL_NAMES } from '../../../services/integrations/connectorTools.js';
+import { isOpenConnectorActionRetryable } from '../../../services/integrations/openConnectorChatTools.js';
 import type { ToolResult } from './types.js';
 
+const CONNECTOR_TOOL_NAME_SET = new Set(Object.values(CONNECTOR_TOOL_NAMES));
+
 export function formatToolResultContent(toolName: string, result: ToolResult): string {
+  const retryable = result.retryable === true
+    && (!toolName.startsWith('oc_') || isOpenConnectorActionRetryable(toolName));
   if (toolName === 'code_interpreter') {
     const lines = [];
     lines.push(`[status: ${result.status || 'unknown'}]`);
@@ -26,12 +31,10 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     }
     if (result.status !== 'completed') {
       lines.push(`[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`);
-      lines.push(`[retryable: ${result.retryable === false ? 'no' : 'yes'}]`);
+      lines.push(`[retryable: ${retryable ? 'yes' : 'no'}]`);
       lines.push(`[error: ${result.errorMessage || result.error || result.status}]`);
-      if (result.retryable === false) {
-        // P_exec-retry-cap — after 3 consecutive failures the model
-        // must stop re-emitting the same code and switch to prose.
-        lines.push('This code failed 3 consecutive times. STOP retrying this exact code — explain the error to the user and propose a corrected approach in prose instead of executing again.');
+      if (!retryable) {
+        lines.push('This call is not retryable. STOP retrying this exact code — explain the error to the user and propose a corrected approach in prose instead of executing again.');
       }
       // P_exec-remediation-preamble — the structured header
       // tells the model WHAT failed; this preamble tells it
@@ -75,7 +78,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     if (result.status === 'completed' && result.visualization) {
       return `[status: completed]\n[visualization: ${result.visualization.template}]\n[title: ${result.visualization.title}]\nThe visual card is now rendered in the conversation. Refer to it briefly in prose and do not output a legacy viz/html/plot fence.`;
     }
-    return `${result.correction || `[error] ${result.errorCode || 'visual_spec_invalid'}`}\n${result.retryable ? 'Do not fall back to Python or a legacy fenced visualization.' : 'Explain the issue concisely without using Python or a legacy fenced visualization.'}`;
+    return `${result.correction || `[error] ${result.errorCode || 'visual_spec_invalid'}`}\n${retryable ? 'Do not fall back to Python or a legacy fenced visualization.' : 'Explain the issue concisely without using Python or a legacy fenced visualization.'}`;
   }
 
   if (toolName === 'create_plan' || toolName === 'create_spec') {
@@ -100,7 +103,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
   }
 
   if (result.status !== 'completed' && toolName === 'web_search') {
-    return `[status: failed]\n[error_code: ${result.errorCode || 'web_search_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe search engines are unavailable or rate-limited. If retryable, wait a moment and retry with the same or a rephrased query; otherwise answer from your own knowledge and note that live results could not be fetched.`;
+    return `[status: failed]\n[error_code: ${result.errorCode || 'web_search_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n${result.detail || result.error || ''}\nThe search engines are unavailable or rate-limited. If retryable, wait a moment and retry with the same or a rephrased query; otherwise answer from your own knowledge and note that live results could not be fetched.`;
   }
 
   if (result.status !== 'completed' && toolName === 'web_fetch') {
@@ -113,14 +116,31 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     if (result.errorCode === 'invalid_paging_arguments') {
       return '[status: failed]\n[error_code: invalid_paging_arguments]\nUse an integer offset from 0 to 1000000 and max_chars from 1 to 30000.';
     }
-    return `[status: failed]\n[error_code: ${result.errorCode || 'web_fetch_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe page could not be fetched (blocked, private IP, HTTP error, or timeout). Try a different URL, or fall back to web_search and rely on the snippets.`;
+    return `[status: failed]\n[error_code: ${result.errorCode || 'web_fetch_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n${result.detail || result.error || ''}\nThe page could not be fetched (blocked, private IP, HTTP error, or timeout). Try a different URL, or fall back to web_search and rely on the snippets.`;
   }
 
-  if (result.status !== 'completed' && (toolName === 'arxiv_search' || toolName === 'zotero_search' || toolName === 'notion_search_pages' || toolName === 'github_list_repos' || toolName === 'gitee_list_repos' || Object.values(CONNECTOR_TOOL_NAMES).includes(toolName as (typeof CONNECTOR_TOOL_NAMES)[keyof typeof CONNECTOR_TOOL_NAMES]))) {
-    return `[status: failed]\n[error_code: ${result.errorCode || 'connector_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe external provider returned an error. Do not fabricate results — tell the user the connection or provider failed and suggest they verify it, then answer what you can.`;
+  if (result.status !== 'completed' && (
+    CONNECTOR_TOOL_NAME_SET.has(toolName)
+    || toolName.startsWith('oc_')
+    || toolName.startsWith('oomol_')
+  )) {
+    const nonIdempotentOpenConnectorAction = toolName.startsWith('oc_')
+      && !isOpenConnectorActionRetryable(toolName);
+    const isImageSubmission = toolName === 'oc_jimeng_ai_submit_image_generation_4_6';
+    const context = nonIdempotentOpenConnectorAction
+      ? 'The action has an uncertain outcome. Do not claim it completed or that the provider did nothing.'
+      : 'The connector could not provide results. Do not fabricate results. Explain the error and answer what you can.';
+    const nextStep = nonIdempotentOpenConnectorAction
+      ? isImageSubmission
+        ? 'This request may have created an image task even though its response failed. Do not submit it again automatically; explain the uncertain status and ask before creating another task.'
+        : 'This action may have taken effect even though its response failed. Do not repeat it automatically; explain the uncertain status and ask before repeating.'
+      : retryable
+        ? 'Wait briefly and retry this read once. If it fails again, stop and explain the provider error.'
+        : 'Do not blindly repeat the same call. If the error points to a missing or rejected connection, ask the user to verify it; otherwise continue without this source or use another tool.';
+    return `[status: failed]\n[error_code: ${result.errorCode || 'connector_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n${result.detail || result.error || ''}\n${context} ${nextStep}`;
   }
 
   return result.status === 'completed'
     ? (result.output || result.stdout || '(no output)')
-    : `[error] ${result.error || result.status}`;
+    : `[status: ${result.status || 'failed'}]\n[error_code: ${result.errorCode || 'tool_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n[error: ${result.errorMessage || result.error || result.status || 'Tool failed.'}]`;
 }

@@ -26,6 +26,30 @@ test('stream scaffold previews use the injected markdown renderer', () => {
   assert.match(preview, /<p>Choose & continue<\/p>/);
 });
 
+test('stream field parsing ignores scaffold-field tags inside code examples', () => {
+  const definition = [
+    '<term>Markup</term><body>Literal example:',
+    '```xml',
+    '<definition><term>Fake</term><body>Not a card</body></definition>',
+    '```',
+    '</body>',
+  ].join('\n');
+  const definitionPreview = renderStreamScaffoldPreview('definition', definition, '', (value) => value);
+  assert.match(definitionPreview, /<body>Not a card<\/body>/);
+
+  const quiz = [
+    '<q>Choose:',
+    '```xml',
+    '<q>Fake question</q><o letter="C">Fake option</o>',
+    '```',
+    'Which one?</q><o letter="A">One</o><o letter="B">Two</o>',
+  ].join('\n');
+  const quizPreview = renderStreamScaffoldPreview('quiz', quiz, '', (value) => value);
+  assert.equal((quizPreview.match(/class="sc-live-letter"/g) || []).length, 2);
+  assert.match(quizPreview, /Fake question/);
+  assert.doesNotMatch(quizPreview, /sc-live-letter">C<\/span>/);
+});
+
 test('stream previews split derivations and reserve control rows like the mounted cards', () => {
   const derivation = renderStreamScaffoldPreview('derivation', '<body>x + 1\n= 2</body>', '', (value) => value);
   assert.equal((derivation.match(/class="sc-live-step"/g) || []).length, 2);
@@ -60,4 +84,11 @@ test('a settled turn needs the final renderer only when it holds a closed scaffo
   assert.equal(hasCompleteScaffold('<quiz><q>half typed'), false);
   assert.equal(hasCompleteScaffold('plain prose with <b>bold</b>'), false);
   assert.equal(hasCompleteScaffold(''), false);
+});
+
+test('scaffold detection ignores complete tags inside Markdown code', () => {
+  const quiz = '<quiz><q>Q</q><o letter="A">1</o></quiz>';
+  assert.equal(hasCompleteScaffold(`\`${quiz}\``), false);
+  assert.equal(hasCompleteScaffold(`\`\`\`xml\n${quiz}\n\`\`\``), false);
+  assert.equal(hasCompleteScaffold(`\`\`\`xml\n${quiz}\n\`\`\`\n${quiz}`), true);
 });

@@ -120,10 +120,13 @@ export async function executeProjectConnectorTool(toolName: string, args: Record
     const data = await project.execute(externalUserId(userId), spec.actionId, validated.args, {
       connectionName: connection.connectionName || 'socrates',
       connectedAccountId: connection.connectedAccountId || undefined,
+      // The chat tool policy owns retry decisions so UI events and model
+      // feedback agree; the SDK's default retries could duplicate side effects.
+      retries: 0,
     });
     return { status: 'completed', output: JSON.stringify(data) };
   } catch (error) {
     const payload = connectorErrorPayload(error);
-    return { status: 'failed', errorCode: payload.code, error: payload.message, userMessage: 'The connected app could not complete that request.' };
+    return { status: 'failed', errorCode: payload.code, error: payload.message, retryable: payload.retryable, userMessage: 'The connected app could not complete that request.' };
   }
 }

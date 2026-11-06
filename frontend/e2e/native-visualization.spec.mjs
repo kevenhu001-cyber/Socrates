@@ -41,10 +41,17 @@ async function renderLn(page) {
 
 test('native function card renders an actual SVG curve for ln(x)', async ({ page }) => {
   await renderLn(page);
-  const card = page.locator('.visualization-card').last();
+  const card = page.locator('.tool-inline-attachments .visualization-card').last();
   await expect(card).toBeVisible();
   await expect(card.locator('svg path')).not.toHaveCount(0);
   await expect(card).toContainText('y = ln(x)');
+  const frame = await card.evaluate((element) => ({
+    border: getComputedStyle(element).borderTopWidth,
+    background: getComputedStyle(element).backgroundColor,
+    headerDivider: getComputedStyle(element.querySelector('.visualization-header')).borderBottomWidth,
+  }));
+  expect(frame).toEqual({ border: '0px', background: 'rgba(0, 0, 0, 0)', headerDivider: '0px' });
+  await page.screenshot({ path: 'test-results/tool-visualization-unboxed.png', fullPage: true });
   await card.locator('[data-viz-action="table"]').click();
   await expect(card.locator('.visualization-table')).toBeVisible();
   await card.locator('[data-viz-action="reset"]').click();

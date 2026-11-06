@@ -27,6 +27,7 @@
  */
 import { decodeEntities, escapeHtml, stripTags } from '../scaffoldText.ts';
 import {
+  fieldMatches,
   parseDefinitionInner,
   parseDerivationInner,
   parseExampleInner,
@@ -46,6 +47,9 @@ import {
   type ParsedQuiz,
   type ParsedTheorem,
 } from './model.ts';
+import { markdownCodeRanges, type MarkdownCodeRange } from './markdownCode.ts';
+export { markdownCodeRanges };
+export type { MarkdownCodeRange };
 
 /** The ten scaffold tags a reply may carry. */
 export const SCAFFOLD_TAGS = [
@@ -53,6 +57,81 @@ export const SCAFFOLD_TAGS = [
   'definition', 'theorem', 'proof', 'derivation', 'key-point',
 ] as const;
 export type ScaffoldTag = typeof SCAFFOLD_TAGS[number];
+
+export interface ScaffoldMarkupMatch extends MarkdownCodeRange {
+  tag: ScaffoldTag;
+  attrs: string;
+  inner: string;
+  raw: string;
+}
+
+interface OpenScaffoldTag {
+  attrs: string;
+  start: number;
+  contentStart: number;
+}
+
+/**
+ * Find complete outermost scaffold blocks without treating code examples as
+ * markup. A block may itself contain fenced or inline code, so only the tag
+ * tokens inside code are ignored, not a complete match merely because its
+ * body contains a code range.
+ */
+export function scaffoldMarkupMatches(source: string): ScaffoldMarkupMatch[] {
+  if (source.indexOf('<') === -1) return [];
+  const pattern = new RegExp('<(/?)(' + SCAFFOLD_TAGS.join('|') + ')\\b([^>]*)>', 'gi');
+  const codeRanges = markdownCodeRanges(source);
+  let codeIndex = 0;
+  const openings = new Map<ScaffoldTag, OpenScaffoldTag[]>();
+  const candidates: ScaffoldMarkupMatch[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(source)) !== null) {
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    const codeRange = codeRanges[codeIndex];
+    if (codeRange && codeRange.start <= match.index && codeRange.end > match.index) continue;
+
+    const tag = match[2].toLowerCase() as ScaffoldTag;
+    if (!match[1]) {
+      const stack = openings.get(tag) ?? [];
+      stack.push({
+        attrs: match[3],
+        start: match.index,
+        contentStart: pattern.lastIndex,
+      });
+      openings.set(tag, stack);
+      continue;
+    }
+
+    const stack = openings.get(tag);
+    const open = stack?.pop();
+    if (!open) continue;
+    candidates.push({
+      tag,
+      attrs: open.attrs,
+      inner: source.slice(open.contentStart, match.index),
+      raw: source.slice(open.start, pattern.lastIndex),
+      start: open.start,
+      end: pattern.lastIndex,
+    });
+  }
+  /* An unmatched outer opener must not hide a later, complete scaffold.
+     Among overlapping complete matches, the earliest opening tag wins, which
+     keeps the outermost complete block as the only card. */
+  candidates.sort((left, right) => left.start - right.start);
+  const matches: ScaffoldMarkupMatch[] = [];
+  let consumedUntil = -1;
+  for (const candidate of candidates) {
+    if (candidate.start < consumedUntil) continue;
+    matches.push(candidate);
+    consumedUntil = candidate.end;
+  }
+  return matches;
+}
+
+/** True when a complete scaffold block appears outside Markdown code. */
+export function hasScaffoldMarkup(text: string): boolean {
+  return scaffoldMarkupMatches(String(text || '')).length > 0;
+}
 
 /** The kinds that become an interactive card only once per turn. */
 const SINGLETON_TAGS: readonly string[] = ['quiz', 'practice'];
@@ -157,9 +236,16 @@ function parseBlock(tag: ScaffoldTag, attrs: string, inner: string, stepIndex: n
       /* A proof written inside a theorem belongs to that theorem: it is
          folded into the card instead of waiting for a slot the theorem
          replacement would drop. */
-      const proofMatch = inner.match(/<proof\b[^>]*>([\s\S]*?)<\/proof>/i);
-      const proof = proofMatch ? parseProofInner(proofMatch[1]) : null;
-      const statementInner = inner.replace(/<proof\b[^>]*>[\s\S]*?<\/proof>/gi, '');
+      const proofMatches = fieldMatches(inner, 'proof');
+      const proof = proofMatches.length ? parseProofInner(proofMatches[0].inner) : null;
+      let cursor = 0;
+      const statementParts: string[] = [];
+      for (const proofMatch of proofMatches) {
+        statementParts.push(inner.slice(cursor, proofMatch.start));
+        cursor = proofMatch.end;
+      }
+      statementParts.push(inner.slice(cursor));
+      const statementInner = statementParts.join('');
       const parsed = parseTheoremInner(statementInner);
       if (!parsed) return null;
       if (proof) {
@@ -185,20 +271,16 @@ function parseBlock(tag: ScaffoldTag, attrs: string, inner: string, stepIndex: n
  */
 export function splitScaffolds(text: string): ScaffoldSegment[] {
   const source = String(text || '');
-  const pattern = new RegExp('<(' + SCAFFOLD_TAGS.join('|') + ')\\b([^>]*)>([\\s\\S]*?)<\\/\\1>', 'gi');
-  if (!pattern.test(source)) return [{ kind: 'text', text: source }];
-
   const out: ScaffoldSegment[] = [];
   const taken = new Set<string>();
   let stepIndex = 0;
   let cursor = 0;
-  let match: RegExpExecArray | null;
-  pattern.lastIndex = 0;
-  while ((match = pattern.exec(source)) !== null) {
-    const [full, rawTag, attrs, inner] = match;
-    const tag = rawTag.toLowerCase() as ScaffoldTag;
-    if (match.index > cursor) out.push({ kind: 'text', text: source.slice(cursor, match.index) });
-    cursor = match.index + full.length;
+  let found = false;
+  for (const match of scaffoldMarkupMatches(source)) {
+    found = true;
+    const { tag, attrs, inner } = match;
+    if (match.start > cursor) out.push({ kind: 'text', text: source.slice(cursor, match.start) });
+    cursor = match.end;
     const block = parseBlock(tag, attrs, inner, stepIndex);
     if (!block) {
       out.push({ kind: 'fallback', text: inner, scaffold: tag });
@@ -216,6 +298,7 @@ export function splitScaffolds(text: string): ScaffoldSegment[] {
     }
     out.push({ kind: 'scaffold', block });
   }
+  if (!found) return [{ kind: 'text', text: source }];
   if (cursor < source.length) out.push({ kind: 'text', text: source.slice(cursor) });
   return out;
 }

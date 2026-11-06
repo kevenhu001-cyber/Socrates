@@ -22,6 +22,9 @@ export const INTELLIGENT_UI_GUIDANCE = `
 
 Follow the server policy for visualization choices and the supplied tool schemas.`;
 
+/** Same optional learning-card contract in Chat and Tutor. */
+export const LEARNING_SCAFFOLD_GUIDANCE = `Use the shared learning scaffold tags in Chat and Tutor when a structured card materially improves the answer: <definition>, <example>, <proof>, <theorem>, <derivation>, <key-point>, <step>, <quiz>, <practice>, and <flashcard>. Place each card beside its relevant prose; a card supplements prose and never wraps the whole answer. Ordinary conversation stays in prose. Emit complete tags, never place scaffold tags inside fenced or inline code, and use no more than one quiz or practice block unless the request or tutor stage explicitly calls for more. Do not reveal an unattempted practice answer unless the user has tried it or asks for the solution.`;
+
 /* HIGH_EFFORT_OUTPUT_GUIDANCE carries only the depth directive. Response
  * formatting and math delimiters are owned by SERVER_SYSTEM_POLICY. The depth
  * directive distinguishes verifiable public derivations from private scratch
@@ -32,6 +35,10 @@ export const CHAT_SYSTEM_PROMPT = `You are a rigorous assistant helping a capabl
 
 ${HIGH_EFFORT_OUTPUT_GUIDANCE}
 
-Challenge a false premise politely and explain the correction when relevant to the request.${INTELLIGENT_UI_GUIDANCE}`;
+Challenge a false premise politely and explain the correction when relevant to the request.
 
-export const CHAT_CONCISE_PROMPT = `You are a clear, reliable assistant. Follow the server policy for response depth and format. Be direct and remove filler while preserving the explanation and practical detail needed to fulfill the request.${INTELLIGENT_UI_GUIDANCE}`;
+${LEARNING_SCAFFOLD_GUIDANCE}${INTELLIGENT_UI_GUIDANCE}`;
+
+export const CHAT_CONCISE_PROMPT = `You are a clear, reliable assistant. Follow the server policy for response depth and format. Be direct and remove filler while preserving the explanation and practical detail needed to fulfill the request.
+
+${LEARNING_SCAFFOLD_GUIDANCE}${INTELLIGENT_UI_GUIDANCE}`;

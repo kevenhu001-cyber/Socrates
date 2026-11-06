@@ -4,6 +4,7 @@
  * per network chunk. Fast models can deliver dozens of tiny deltas in a frame;
  * coalescing them keeps input, scrolling, and code-block painting responsive.
  */
+import { markdownCodeRanges, SCAFFOLD_TAGS as LEARNING_SCAFFOLD_TAGS } from '@socrates/ui/learn-split';
 
 /* Streaming-render cadence. Tuned against a measured paint-interval harness:
  * a continuous ~3.7k chars/s supply revealed settled blocks (cached) but the
@@ -39,12 +40,33 @@ function countOccurrences(s: string, needle: string): number {
    enough here because these tags are XML-like and the live renderer can
    safely keep the whole open block in its tail. Hoisted to module scope:
    this set was previously rebuilt on every streaming frame. */
-const SCAFFOLD_TAGS = new Set([
-  'quiz', 'example', 'practice', 'definition', 'step', 'flashcard',
-  'proof', 'theorem', 'key-point', 'derivation', 'q', 'o', 'title',
-  'problem', 'solution', 'hint', 'front', 'back', 'statement', 'body',
-  'term', 'correct',
+const STREAM_GUARDED_TAGS = new Set<string>([
+  ...LEARNING_SCAFFOLD_TAGS,
+  'think', 'q', 'o', 'title', 'problem', 'solution', 'hint', 'front',
+  'back', 'statement', 'body', 'term', 'correct',
 ]);
+
+function hasUnmatchedGuardedTags(source: string): boolean {
+  const codeRanges = markdownCodeRanges(source);
+  let codeIndex = 0;
+  const stack: string[] = [];
+  const tagRe = /<\/?([a-z][\w-]*)(?:\s[^>]*)?\/?>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = tagRe.exec(source)) !== null) {
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    const codeRange = codeRanges[codeIndex];
+    if (codeRange && codeRange.start < tagRe.lastIndex && codeRange.end > match.index) continue;
+    const tag = match[1].toLowerCase();
+    if (!STREAM_GUARDED_TAGS.has(tag)) continue;
+    const raw = match[0];
+    if (raw.charAt(1) === '/') {
+      if (stack.pop() !== tag) return true;
+    } else if (!/\/\s*>$/.test(raw)) {
+      stack.push(tag);
+    }
+  }
+  return stack.length > 0;
+}
 
 export function isStableMarkdownPrefix(text: string): boolean {
   const s = String(text || '');
@@ -56,22 +78,7 @@ export function isStableMarkdownPrefix(text: string): boolean {
   /* No '<' means no <think> and no scaffold tags, so the remaining checks
      cannot fail. Skips the tag scan for ordinary prose, the common case. */
   if (s.indexOf('<') === -1) return true;
-  if (countOccurrences(s, '<think>') !== countOccurrences(s, '</think>')) return false;
-  const stack: string[] = [];
-  const tagRe = /<\/?([a-z][\w-]*)(?:\s[^>]*)?\/?>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = tagRe.exec(s)) !== null) {
-    const tag = match[1].toLowerCase();
-    if (!SCAFFOLD_TAGS.has(tag)) continue;
-    const raw = match[0];
-    if (raw.charAt(1) === '/') {
-      if (stack.pop() !== tag) return false;
-    } else if (!/\/\s*>$/.test(raw)) {
-      stack.push(tag);
-    }
-  }
-  if (stack.length > 0) return false;
-  return true;
+  return !hasUnmatchedGuardedTags(s);
 }
 
 export interface StreamingSplit {

@@ -1,4 +1,5 @@
 import { decrypt, deriveEncryptionKey, encrypt, sessionSecret } from '../../lib/crypto.js';
+import { connectorHttpError } from './connectorRetryPolicy.js';
 
 const NOTION_API = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2026-03-11';
@@ -53,7 +54,9 @@ async function notionJson(url: string, options: RequestInit): Promise<Record<str
   const response = await fetch(url, options);
   let body: Record<string, unknown> | null = null;
   try { body = await response.json() as Record<string, unknown>; } catch (_) { /* handled below */ }
-  if (!response.ok || !body || body.error) throw new Error(`Notion request failed (${response.status || 0})`);
+  if (!response.ok || !body || body.error) {
+    throw connectorHttpError(`Notion request failed (${response.status || 0})`, response.status || 0);
+  }
   return body;
 }
 

@@ -1,4 +1,5 @@
 import { decrypt, deriveEncryptionKey, encrypt, sessionSecret } from '../../lib/crypto.js';
+import { isRetryableConnectorFailure, isRetryableConnectorStatus } from './connectorRetryPolicy.js';
 
 const ZOTERO_API = 'https://api.zotero.org';
 const ZOTERO_API_VERSION = '3';
@@ -7,9 +8,11 @@ function encryptionKey() { return deriveEncryptionKey(sessionSecret()); }
 
 export class ZoteroConnectorError extends Error {
   code: string;
-  constructor(code: string, message: string) {
+  retryable: boolean;
+  constructor(code: string, message: string, retryable = false) {
     super(message);
     this.code = code;
+    this.retryable = retryable;
   }
 }
 
@@ -27,8 +30,12 @@ async function zoteroJson(path: string, apiKey: string): Promise<unknown> {
         'Zotero-API-Version': ZOTERO_API_VERSION,
       },
     });
-  } catch (_) {
-    throw new ZoteroConnectorError('ZOTERO_UNAVAILABLE', 'Zotero could not be reached. Try again shortly.');
+  } catch (error) {
+    throw new ZoteroConnectorError(
+      'ZOTERO_UNAVAILABLE',
+      'Zotero could not be reached. Try again shortly.',
+      isRetryableConnectorFailure(error),
+    );
   }
   let body: unknown = null;
   try { body = await response.json(); } catch (_) { /* error is normalized below */ }
@@ -36,7 +43,11 @@ async function zoteroJson(path: string, apiKey: string): Promise<unknown> {
     throw new ZoteroConnectorError('ZOTERO_KEY_REJECTED', 'Zotero rejected this API Key or its library permission.');
   }
   if (!response.ok || body === null) {
-    throw new ZoteroConnectorError('ZOTERO_REQUEST_FAILED', 'Zotero could not complete the request. Try again shortly.');
+    throw new ZoteroConnectorError(
+      'ZOTERO_REQUEST_FAILED',
+      'Zotero could not complete the request. Try again shortly.',
+      isRetryableConnectorStatus(response.status),
+    );
   }
   return body;
 }

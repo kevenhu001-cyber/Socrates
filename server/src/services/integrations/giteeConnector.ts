@@ -1,4 +1,5 @@
 import { decrypt, deriveEncryptionKey, encrypt, sessionSecret } from '../../lib/crypto.js';
+import { connectorHttpError } from './connectorRetryPolicy.js';
 
 const GITEE = 'https://gitee.com';
 const GITEE_SCOPES = 'user_info projects issues pull_requests';
@@ -51,7 +52,7 @@ async function giteeJson<T = unknown>(url: string, options?: RequestInit): Promi
   let body: Record<string, unknown> | null = null;
   try { body = await response.json() as Record<string, unknown>; } catch (_) { /* handled below */ }
   if (!response.ok || !body || body.error || body.message === '401 Unauthorized') {
-    throw new Error(`Gitee request failed (${response.status || 0})`);
+    throw connectorHttpError(`Gitee request failed (${response.status || 0})`, response.status || 0);
   }
   return body as unknown as T;
 }

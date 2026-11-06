@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { deriveEncryptionKey, encrypt, sessionSecret } from '../../lib/crypto.js';
+import { connectorHttpError } from './connectorRetryPolicy.js';
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_API_VERSION = '2022-11-28';
@@ -85,7 +86,7 @@ function githubHeaders(token: string) {
 
 async function githubJson<T = unknown>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options);
-  if (!response.ok) throw new Error(`GitHub request failed (${response.status})`);
+  if (!response.ok) throw connectorHttpError(`GitHub request failed (${response.status})`, response.status);
   return response.json() as Promise<T>;
 }
 

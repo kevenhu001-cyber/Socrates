@@ -13,8 +13,15 @@ import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPrepr
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { sanitizeUrls } from '../util/safe.ts';
 import { sanitizeHtml } from './sanitizeHtml.ts';
-import { stripHtmlTags } from '../util/stripHtml.ts';
 import { installCodeBlockCopy } from './markdownCodeCopy.ts';
+import { stripTags } from '@socrates/ui/learn-model';
+import {
+  markdownCodeRanges,
+  scaffoldMarkupMatches,
+  SCAFFOLD_TAGS,
+  type ScaffoldMarkupMatch,
+  type ScaffoldTag,
+} from '@socrates/ui/learn-split';
 import {
   findStreamScaffold, renderStreamScaffoldPreview,
   streamScaffoldFallbackLabel, streamScaffoldFallbackText,
@@ -72,6 +79,7 @@ interface PlaceholderBank {
   vizBlocks: string[];
   save(html: string): string;
   saveViz(html: string): string;
+  containsBlockPlaceholder(value: string): boolean;
   restoreBlocks(html: string): string;
   restoreViz(html: string): string;
 }
@@ -82,6 +90,7 @@ function createPlaceholderBank(): PlaceholderBank {
   const blockPrefix = '§SCRTB' + nonce;
   const vizPrefix = '§SCRTV' + nonce;
   const blockRe = new RegExp(blockPrefix + '(\\d+)§', 'g');
+  const blockTokenRe = new RegExp(blockPrefix + '\\d+§');
   const vizRe = new RegExp(vizPrefix + '(\\d+)§', 'g');
   const blocks: string[] = [];
   const vizBlocks: string[] = [];
@@ -96,6 +105,9 @@ function createPlaceholderBank(): PlaceholderBank {
       const id = vizBlocks.push(html) - 1;
       return vizPrefix + id + '§';
     },
+    containsBlockPlaceholder(value) {
+      return blockTokenRe.test(value);
+    },
     restoreBlocks(html) {
       return html.replace(blockRe, (_match, id: string) => blocks[parseInt(id)]);
     },
@@ -103,6 +115,89 @@ function createPlaceholderBank(): PlaceholderBank {
       return html.replace(vizRe, (_match, id: string) => vizBlocks[parseInt(id)]);
     },
   };
+}
+
+function replaceDanglingScaffoldOutsideMarkdownCode(
+  source: string,
+  pattern: RegExp,
+  replace: (match: RegExpExecArray) => string,
+): string {
+  const codeRanges = markdownCodeRanges(source);
+  let codeIndex = 0;
+  let cursor = 0;
+  let output = '';
+  let replaced = false;
+  pattern.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(source)) !== null) {
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    const codeRange = codeRanges[codeIndex];
+    if (codeRange && codeRange.start <= match.index && codeRange.end > match.index) continue;
+    if (codeRange && codeRange.start < pattern.lastIndex && codeRange.end > match.index) {
+      /* An unclosed tag must not capture a later Markdown code block as its
+         preview. Escape only the dangling opener, then let Markdown render
+         the rest of the answer normally. */
+      const openingTagEnd = source.indexOf('>', match.index);
+      if (openingTagEnd !== -1 && openingTagEnd < codeRange.start) {
+        output += source.slice(cursor, match.index) + escHTML(source.slice(match.index, openingTagEnd + 1));
+        cursor = openingTagEnd + 1;
+        replaced = true;
+      }
+      continue;
+    }
+    output += source.slice(cursor, match.index) + replace(match);
+    cursor = pattern.lastIndex;
+    replaced = true;
+  }
+  return replaced ? output + source.slice(cursor) : source;
+}
+
+function stripThinkingBlocks(source: string): string {
+  const pattern = /<(\/?)think\b[^>]*>/gi;
+  const codeRanges = markdownCodeRanges(source);
+  const stack: number[] = [];
+  const ranges: Array<{ start: number; end: number }> = [];
+  let codeIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(source)) !== null) {
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    const codeRange = codeRanges[codeIndex];
+    if (codeRange && codeRange.start <= match.index && codeRange.end > match.index) continue;
+    if (!match[1]) {
+      stack.push(match.index);
+      continue;
+    }
+    const start = stack.pop();
+    if (start !== undefined) ranges.push({ start, end: pattern.lastIndex });
+  }
+
+  for (const start of stack) ranges.push({ start, end: source.length });
+  ranges.sort((left, right) => left.start - right.start);
+
+  let cursor = 0;
+  let output = '';
+  for (const range of ranges) {
+    if (range.start < cursor) continue;
+    output += source.slice(cursor, range.start);
+    cursor = range.end;
+  }
+  return cursor ? output + source.slice(cursor) : source;
+}
+
+function replaceScaffoldMarkup(
+  source: string,
+  replace: (match: ScaffoldMarkupMatch) => string,
+): string {
+  const matches = scaffoldMarkupMatches(source);
+  if (!matches.length) return source;
+  let cursor = 0;
+  let output = '';
+  for (const match of matches) {
+    output += source.slice(cursor, match.start) + replace(match);
+    cursor = match.end;
+  }
+  return output + source.slice(cursor);
 }
 
 function renderProgressiveScaffold(
@@ -144,12 +239,19 @@ function renderProgressiveScaffold(
 function replaceProgressiveScaffolds(source: string, bank: PlaceholderBank): string {
   source = source.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
   /* Thinking text is shown in the live status line, not in the transcript. */
-  source = source.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  source = source.replace(/<think>[\s\S]*$/gi, '');
-  source = source.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b([^>]*)>([\s\S]*?)<\/\1>/gi,
-    (_match, tag: string, attrs: string, content: string) => renderProgressiveScaffold(tag, content, attrs, bank));
-  return source.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b([^>]*)>([\s\S]*?)$/gi,
-    (_match, tag: string, attrs: string, content: string) => renderProgressiveScaffold(tag, content, attrs, bank));
+  source = stripThinkingBlocks(source);
+  const tags = SCAFFOLD_TAGS.join('|');
+  source = replaceScaffoldMarkup(
+    source,
+    (match) => renderProgressiveScaffold(match.tag, match.inner, match.attrs, bank),
+  );
+  return replaceDanglingScaffoldOutsideMarkdownCode(
+    source,
+    new RegExp('<(' + tags + ')\\b([^>]*)>([\\s\\S]*?)$', 'gi'),
+    (match) => bank.containsBlockPlaceholder(match[0])
+      ? escHTML(match[0])
+      : renderProgressiveScaffold(match[1], match[3], match[2], bank),
+  );
 }
 
 /* Only an explicit ```html / ```viz / ```svg fence, or an UNLABELED fence
@@ -350,7 +452,7 @@ function formatWithoutMarked(t: string): string {
     const id = fallbackViz.push(html) - 1;
     return 'XVIZFALLBACK' + id + 'X';
   };
-  let raw = preprocessMarkdown(t);
+  let raw = stripThinkingBlocks(preprocessMarkdown(t));
   raw = raw.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/gi, (_match, lang: string, content: string) => {
     const trimmed = content.trim();
     return trimmed ? saveFallbackViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
@@ -375,7 +477,7 @@ function formatWithoutMarked(t: string): string {
 }
 
 function boundedScaffoldText(content: string): string {
-  const text = stripHtmlTags(content).trim();
+  const text = stripTags(content).trim();
   return text.length > 300 ? text.slice(0, 300) + '…' : text;
 }
 
@@ -384,58 +486,60 @@ function replaceSettledScaffolds(
   katex: ReturnType<typeof getKatex>,
   bank: PlaceholderBank,
 ): string {
-  source = source.replace(/<(quiz|example|practice|definition|flashcard)\b[^>]*>([\s\S]*?)<\/\1>/gi,
-    (_match, tag: string, content: string) => {
-      const labels: Record<string, string> = {
-        quiz: 'Quiz', example: 'Example', practice: 'Practice',
-        definition: 'Definition', flashcard: 'Flashcard',
-      };
-      const label = '[' + (labels[tag] || 'Flashcard') + ']';
-      return bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
-        + label + '</span>' + esc(boundedScaffoldText(content)) + '</div>');
-    });
-  source = source.replace(/<step\b[^>]*>([\s\S]*?)<\/step>/gi, (_match, content: string) => (
-    bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">[Step]</span>'
-      + esc(boundedScaffoldText(content)) + '</div>')
-  ));
-  source = source.replace(/<(proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)<\/\1>/gi,
-    (_match, tag: string, content: string) => {
-      const labels: Record<string, string> = {
-        proof: 'Proof', theorem: 'Theorem', 'key-point': 'Key Point', derivation: 'Derivation',
-      };
-      let text = boundedScaffoldText(content);
-      if (typeof katex !== 'undefined') {
-        text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_mathMatch, math: string) => {
-          try {
-            return bank.save(katex.renderToString(math.trim(), {
-              displayMode: true, throwOnError: false, macros: KATEX_MACROS,
-            }));
-          } catch {
-            return bank.save('<pre>' + esc('$$' + math + '$$') + '</pre>');
-          }
-        });
-        text = replaceInlineDollarMath(text, false, (math: string) => {
-          try {
-            return bank.save(katex.renderToString(math.trim(), {
-              displayMode: false, throwOnError: false, macros: KATEX_MACROS,
-            }));
-          } catch {
-            return bank.save('<code>' + esc('$' + math + '$') + '</code>');
-          }
-        });
-      }
-      return bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">['
-        + (labels[tag] || 'Derivation') + ']</span>' + esc(text) + '</div>');
-    });
-  return source.replace(/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b[^>]*>([\s\S]*?)$/gi,
-    (_match, tag: string) => bank.save('<span class="scaffold-stream scaffold-stream-unclosed">…' + esc(tag) + '…</span>'));
+  const labels: Record<ScaffoldTag, string> = {
+    quiz: 'Quiz',
+    example: 'Example',
+    practice: 'Practice',
+    definition: 'Definition',
+    step: 'Step',
+    flashcard: 'Flashcard',
+    proof: 'Proof',
+    theorem: 'Theorem',
+    derivation: 'Derivation',
+    'key-point': 'Key Point',
+  };
+  const mathScaffolds = new Set<ScaffoldTag>(['proof', 'theorem', 'key-point', 'derivation']);
+  const tags = SCAFFOLD_TAGS.join('|');
+  source = stripThinkingBlocks(source);
+  source = replaceScaffoldMarkup(source, (match) => {
+    const tag = match.tag;
+    let text = boundedScaffoldText(match.inner);
+    if (mathScaffolds.has(tag) && typeof katex !== 'undefined') {
+      text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_mathMatch, math: string) => {
+        try {
+          return bank.save(katex.renderToString(math.trim(), {
+            displayMode: true, throwOnError: false, macros: KATEX_MACROS,
+          }));
+        } catch {
+          return bank.save('<pre>' + esc('$$' + math + '$$') + '</pre>');
+        }
+      });
+      text = replaceInlineDollarMath(text, false, (math: string) => {
+        try {
+          return bank.save(katex.renderToString(math.trim(), {
+            displayMode: false, throwOnError: false, macros: KATEX_MACROS,
+          }));
+        } catch {
+          return bank.save('<code>' + esc('$' + math + '$') + '</code>');
+        }
+      });
+    }
+    const label = '[' + labels[tag] + ']';
+    return bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
+      + label + '</span>' + esc(text) + '</div>');
+  });
+  return replaceDanglingScaffoldOutsideMarkdownCode(
+    source,
+    new RegExp('<(' + tags + ')\\b[^>]*>([\\s\\S]*?)$', 'gi'),
+    (match) => bank.containsBlockPlaceholder(match[0])
+      ? escHTML(match[0])
+      : bank.save('<span class="scaffold-stream scaffold-stream-unclosed">…'
+        + esc(match[1].toLowerCase()) + '…</span>'),
+  );
 }
 
 function replaceSettledCodeBlocks(source: string, bank: PlaceholderBank): string {
   source = source.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
-  /* Settled messages and reloaded history omit collapsible thinking blocks. */
-  source = source.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  source = source.replace(/<think>[\s\S]*$/gi, '');
   source = source.replace(/```mermaid\s*\n?([\s\S]*?)```/g, (_match, code: string) => {
     const trimmed = code.trim();
     return trimmed ? bank.saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })) : '';

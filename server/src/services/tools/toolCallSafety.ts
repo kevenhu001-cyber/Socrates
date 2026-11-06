@@ -230,6 +230,11 @@ export function parseToolArguments(raw: unknown):
 const WRAPPER_KEYS = ['input', 'arguments', 'args', 'parameters', 'params', 'tool_input', 'payload'];
 const MAX_UNWRAP_DEPTH = 3;
 const MAX_SCHEMA_DEPTH = 8;
+const TOOL_ARGUMENT_ALIASES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  web_search: { q: 'query', search_query: 'query', keyword: 'query' },
+  read_attachment: { file_id: 'fileId' },
+  code_interpreter: { script: 'code', python: 'code', source: 'code' },
+};
 
 export interface JsonSchemaNode {
   type?: string | string[];
@@ -257,6 +262,8 @@ export interface RepairToolArgumentsOptions {
    * into "missing required field".
    */
   dropUnknown?: boolean;
+  /** Canonical tool name, used to normalize aliases before schema pruning. */
+  toolName?: string;
 }
 
 /**
@@ -279,6 +286,16 @@ export function repairToolArguments(
   const strict = parseToolArguments(raw);
   if (strict.ok) {
     candidate = strict.value;
+  } else if (
+    (raw === null || raw === undefined || (typeof raw === 'string' && raw.trim() === ''))
+    && schema
+    && !schema.required?.length
+  ) {
+    /* OpenAI-compatible providers often encode a no-argument function call
+       as an empty string or omit the value. `{}` is valid only when the
+       schema requires no fields; required tools still fail closed. */
+    candidate = {};
+    repairs.push('empty_arguments');
   } else if (typeof raw === 'string') {
     const loose = parseLooseObjectLiteral(raw);
     if (loose) {
@@ -293,11 +310,50 @@ export function repairToolArguments(
     return { ok: false, error, repairs };
   }
 
+  candidate = normalizeToolArgumentAliases(candidate, options.toolName, repairs);
   candidate = unwrapArgumentWrapper(candidate, schema, repairs);
   if (schema && schema.properties) {
     candidate = coerceObjectToSchema(candidate, schema, repairs, '', 0, dropUnknown) as Record<string, unknown>;
   }
   return { ok: true, value: candidate, repairs };
+}
+
+function normalizeToolArgumentAliases(
+  value: Record<string, unknown>,
+  toolName: string | undefined,
+  repairs: string[],
+  depth = 0,
+): Record<string, unknown> {
+  const aliases = toolName ? TOOL_ARGUMENT_ALIASES[toolName] : undefined;
+  let normalized: Record<string, unknown> | null = null;
+  if (aliases) {
+    for (const [alias, canonical] of Object.entries(aliases)) {
+      if (!Object.prototype.hasOwnProperty.call(value, alias)) continue;
+      normalized ??= { ...value };
+      if (!Object.prototype.hasOwnProperty.call(normalized, canonical)) {
+        normalized[canonical] = normalized[alias];
+        repairs.push(`normalized_alias:${alias}->${canonical}`);
+      } else {
+        repairs.push(`dropped_alias_conflict:${alias}`);
+      }
+      delete normalized[alias];
+    }
+  }
+
+  const current = normalized ?? value;
+  if (depth >= MAX_UNWRAP_DEPTH) return current;
+  const keys = Object.keys(current);
+  if (keys.length !== 1 || !WRAPPER_KEYS.includes(keys[0])) return current;
+  const wrapperValue = current[keys[0]];
+  if (!wrapperValue || typeof wrapperValue !== 'object' || Array.isArray(wrapperValue)) return current;
+  const nested = normalizeToolArgumentAliases(
+    wrapperValue as Record<string, unknown>,
+    toolName,
+    repairs,
+    depth + 1,
+  );
+  if (nested === wrapperValue) return current;
+  return { ...current, [keys[0]]: nested };
 }
 
 /** Unwrap `{"input": {...}}` style envelopes the schema does not define. */

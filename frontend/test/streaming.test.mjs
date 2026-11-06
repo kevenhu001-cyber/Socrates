@@ -95,6 +95,77 @@ test('stream splitting keeps an open Tutor scaffold in the live tail', () => {
   assert.equal(isStableMarkdownPrefix(complete), true);
 });
 
+test('scaffold-looking tags inside Markdown code do not block stable streaming', () => {
+  const quiz = '<quiz><q>Example markup</q><o letter="A">not a card</o></quiz>';
+  const fenced = `Example source:\n\n\`\`\`xml\n${quiz}\n\`\`\``;
+  const inline = `Literal tag: \`${quiz}\``;
+
+  assert.equal(isStableMarkdownPrefix(fenced), true);
+  assert.equal(isStableMarkdownPrefix(inline), true);
+});
+
+test('final and progressive Markdown keep scaffold-like code literal', () => {
+  const quiz = '<quiz><q>Example markup</q><o letter="A">not a card</o></quiz>';
+  const sources = [
+    `Example source:\n\n\`\`\`xml\n${quiz}\n\`\`\``,
+    `Literal tag: \`${quiz}\``,
+  ];
+  const previousMarked = globalThis.marked;
+  globalThis.marked = marked;
+  try {
+    for (const source of sources) {
+      for (const html of [formatMsg(source), renderProgressive(source)]) {
+        assert.doesNotMatch(html, /scaffold-stream|data-scaffold-live|data-quiz-id/);
+        assert.match(html, /&lt;quiz&gt;/);
+      }
+    }
+  } finally {
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+  }
+});
+
+test('a dangling scaffold opener does not capture following Markdown code', () => {
+  const source = [
+    'A literal <example> mention.',
+    '',
+    '```js',
+    'const markup = "<quiz><q>literal</q></quiz>";',
+    '```',
+  ].join('\n');
+  const previousMarked = globalThis.marked;
+  globalThis.marked = marked;
+  try {
+    for (const html of [formatMsg(source), renderProgressive(source)]) {
+      assert.match(html, /&lt;example&gt;/);
+      assert.match(html, /const markup =/);
+      assert.match(html, /&lt;quiz&gt;/);
+      assert.doesNotMatch(html, /scaffold-stream|data-scaffold-live/);
+    }
+  } finally {
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+  }
+});
+
+test('an incomplete outer scaffold does not swallow a completed inner card', () => {
+  const source = '<quiz>unfinished\n<example><problem>Problem</problem><solution>Worked</solution></example>';
+  const html = renderProgressive(source);
+
+  assert.match(html, /data-scaffold-live="example"/);
+  assert.match(html, /Problem/);
+  assert.doesNotMatch(html, /data-scaffold-live="quiz"/);
+});
+
+test('a think close inside a code fence does not expose hidden reasoning', () => {
+  const source = 'Visible <think>private\n```xml\n</think>\n```\nstill private</think> answer';
+  for (const html of [formatMsg(source), renderProgressive(source)]) {
+    assert.doesNotMatch(html, /private/);
+    assert.match(html, /Visible/);
+    assert.match(html, /answer/);
+  }
+});
+
 test('Tutor scaffolds render as typed live cards before the closing tag arrives', () => {
   const partial = renderProgressive('<key-point>核心结论：$x=1');
   assert.match(partial, /class="sc-live"/);

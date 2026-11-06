@@ -7,6 +7,7 @@
  * (`learn/model.ts`) and the splitter (`learn/split.ts`) can share them
  * without an import cycle.
  */
+import { markdownCodeRanges } from './learn/markdownCode.ts';
 
 const ENTITIES: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'", '&amp;': '&' };
 
@@ -16,7 +17,23 @@ export function decodeEntities(value: string): string {
 
 export function stripTags(value: string): string {
   /* Repeated until stable: one pass over "<<script>" leaves "<script". */
-  let text = String(value ?? '');
+  const text = String(value ?? '');
+  const codeRanges = markdownCodeRanges(text);
+  if (!codeRanges.length) return stripMarkupTags(text);
+
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const range of codeRanges) {
+    parts.push(stripMarkupTags(text.slice(cursor, range.start)));
+    parts.push(text.slice(range.start, range.end));
+    cursor = range.end;
+  }
+  parts.push(stripMarkupTags(text.slice(cursor)));
+  return parts.join('');
+}
+
+function stripMarkupTags(value: string): string {
+  let text = value;
   for (let pass = 0; pass < 8; pass += 1) {
     const next = text.replace(/<[^>]*>/g, '');
     if (next === text) break;

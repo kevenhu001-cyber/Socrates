@@ -866,7 +866,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       const repaired = repairToolArguments(
         call.function?.arguments,
         schema || undefined,
-        { dropUnknown: !selfNormalizing },
+        { dropUnknown: !selfNormalizing, toolName: resolved.name || undefined },
       );
       if (repaired.ok && repaired.repairs.length > 0) {
         /* Log the repair kinds only — never the argument values. */

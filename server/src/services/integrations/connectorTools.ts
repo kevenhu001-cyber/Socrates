@@ -17,6 +17,7 @@ import { listZoteroItems, ZoteroConnectorError } from './zoteroConnector.js';
 import { searchNotionPages } from './notionConnector.js';
 import { listGithubInstallationRepositories } from './githubConnector.js';
 import { listGiteeRepositories } from './giteeConnector.js';
+import { isRetryableConnectorFailure } from './connectorRetryPolicy.js';
 
 interface ConnectorConnection {
   accessTokenCiphertext: string;
@@ -254,7 +255,10 @@ export async function executeConnectorTool(toolName: string, args: Record<string
         return { status: 'completed', output: blocks.join('\n\n') };
       } catch (err) {
         const msg = (err instanceof ArxivConnectorError) ? err.message : 'arXiv search failed. Try again shortly.';
-        return { status: 'failed', output: '', error: msg, errorCode: 'arxiv_search_failed' };
+        return {
+          status: 'failed', output: '', error: msg, errorCode: 'arxiv_search_failed',
+          retryable: isRetryableConnectorFailure(err),
+        };
       }
     }
 
@@ -278,7 +282,7 @@ export async function executeConnectorTool(toolName: string, args: Record<string
       } catch (err) {
         const code = (err instanceof ZoteroConnectorError) ? err.code : 'zotero_search_failed';
         const msg = (err instanceof ZoteroConnectorError) ? err.message : 'Zotero search failed. Try again shortly.';
-        return { status: 'failed', output: '', error: msg, errorCode: code };
+        return { status: 'failed', output: '', error: msg, errorCode: code, retryable: isRetryableConnectorFailure(err) };
       }
     }
 
@@ -301,7 +305,10 @@ export async function executeConnectorTool(toolName: string, args: Record<string
         );
         return { status: 'completed', output: blocks.join('\n\n') };
       } catch (err) {
-        return { status: 'failed', output: '', error: (err as Error).message || 'Notion search failed. Try again shortly.', errorCode: 'notion_search_failed' };
+        return {
+          status: 'failed', output: '', error: (err as Error).message || 'Notion search failed. Try again shortly.',
+          errorCode: 'notion_search_failed', retryable: isRetryableConnectorFailure(err),
+        };
       }
     }
 
@@ -328,7 +335,10 @@ export async function executeConnectorTool(toolName: string, args: Record<string
         const footer = filtered.length > 50 ? `\n\n(Showing 50 of ${filtered.length} repositories.)` : '';
         return { status: 'completed', output: blocks.join('\n\n') + footer };
       } catch (err) {
-        return { status: 'failed', output: '', error: (err as Error).message || 'GitHub request failed. Try again shortly.', errorCode: 'github_request_failed' };
+        return {
+          status: 'failed', output: '', error: (err as Error).message || 'GitHub request failed. Try again shortly.',
+          errorCode: 'github_request_failed', retryable: isRetryableConnectorFailure(err),
+        };
       }
     }
 
@@ -353,7 +363,10 @@ export async function executeConnectorTool(toolName: string, args: Record<string
         const footer = filtered.length > 50 ? `\n\n(Showing 50 of ${filtered.length} repositories.)` : '';
         return { status: 'completed', output: blocks.join('\n\n') + footer };
       } catch (err) {
-        return { status: 'failed', output: '', error: (err as Error).message || 'Gitee request failed. Try again shortly.', errorCode: 'gitee_request_failed' };
+        return {
+          status: 'failed', output: '', error: (err as Error).message || 'Gitee request failed. Try again shortly.',
+          errorCode: 'gitee_request_failed', retryable: isRetryableConnectorFailure(err),
+        };
       }
     }
 

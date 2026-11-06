@@ -100,6 +100,26 @@ test('first quiz becomes a slot, extra quizzes degrade to text', () => {
   assert.match(html, /Pick\?/);
 });
 
+test('Chat and Tutor render the same shared scaffold blocks', () => {
+  const definition = '<definition><term>Entropy</term><body>Disorder.</body></definition>';
+  for (const mode of ['chat', 'tutor']) {
+    setAppMode(mode);
+    try {
+      assert.match(buildAssistantHtml(definition), /data-definition-id="/);
+    } finally {
+      setAppMode('chat');
+    }
+  }
+});
+
+test('scaffold-looking markup in Markdown code stays literal in the final answer', () => {
+  const quiz = '<quiz><q>Example markup</q><o letter="A">not a card</o></quiz>';
+  const html = buildAssistantHtml(`Fenced:\n\n\`\`\`xml\n${quiz}\n\`\`\`\n\nInline: \`${quiz}\``);
+
+  assert.doesNotMatch(html, /data-quiz-id|inline-block-fallback|sc-live/);
+  assert.match(html, /&lt;quiz&gt;/);
+});
+
 test('unparseable quiz renders the fallback card', () => {
   const html = buildAssistantHtml('<quiz>no question here</quiz>');
   assert.match(html, /inline-block-fallback/);

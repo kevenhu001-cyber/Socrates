@@ -1,4 +1,5 @@
 import { parseStringPromise } from 'xml2js';
+import { isRetryableConnectorFailure, isRetryableConnectorStatus } from './connectorRetryPolicy.js';
 
 const ARXIV_API = 'https://export.arxiv.org/api/query';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -28,9 +29,11 @@ let nextRequestAt = 0;
 
 export class ArxivConnectorError extends Error {
   code: string;
-  constructor(message: string) {
+  retryable: boolean;
+  constructor(message: string, retryable = false) {
     super(message);
     this.code = 'ARXIV_REQUEST_FAILED';
+    this.retryable = retryable;
   }
 }
 
@@ -118,9 +121,17 @@ export async function searchArxivPapers(value: unknown) {
   try { response = await pacedFetch(`${ARXIV_API}?${params.toString()}`); }
   catch (e) {
     const reason = (e as { cause?: { code?: string } }).cause?.code || (e as Error).name || 'unknown';
-    throw new ArxivConnectorError(`arXiv network error (${reason}): ${(e as Error).message}`);
+    throw new ArxivConnectorError(
+      `arXiv network error (${reason}): ${(e as Error).message}`,
+      isRetryableConnectorFailure(e),
+    );
   }
-  if (!response.ok) throw new ArxivConnectorError(`arXiv HTTP ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`);
+  if (!response.ok) {
+    throw new ArxivConnectorError(
+      `arXiv HTTP ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`,
+      isRetryableConnectorStatus(response.status),
+    );
+  }
   let parsed: unknown;
   try {
     parsed = await parseStringPromise(await response.text(), { explicitArray: false, trim: true, normalize: true });

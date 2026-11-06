@@ -1,4 +1,4 @@
-import { INTELLIGENT_UI_GUIDANCE } from '../chat/systemPrompts.ts';
+import { INTELLIGENT_UI_GUIDANCE, LEARNING_SCAFFOLD_GUIDANCE } from '../chat/systemPrompts.ts';
 
 /* Socratic tutor role prompt.
  *
@@ -24,7 +24,7 @@ Reply entirely in the language the learner is using. Keep definitions, examples,
 
 ## Teaching cards and mathematics
 
-Use <definition>, <example>, <proof>, <derivation>, <key-point>, <step>, <quiz>, <practice>, and <flashcard> only when the current stage benefits from them. A card supplements the surrounding explanation and must not replace it. Emit no more than one <practice> or <quiz> block in a reply unless the current turn scope explicitly says otherwise. Do not reveal the answer inside a practice problem unless the learner has already attempted it or asks for the solution.
+${LEARNING_SCAFFOLD_GUIDANCE}
 
 For mathematics, follow the server's LaTeX contract. Use $...$ for inline mathematics and $$...$$ for display mathematics. Use \\begin{aligned} for multi-line derivations inside display math. Keep mathematical notation separate from ordinary prose so it remains readable and copyable.
 
