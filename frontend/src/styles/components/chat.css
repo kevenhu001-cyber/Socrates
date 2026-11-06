@@ -61,11 +61,13 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   font-family: var(--font-sans);
   font-size: var(--ui-text-body);
   font-weight: var(--ui-font-weight-regular);
-  line-height: var(--ui-text-body-line);
+  /* Phone reference prose: 16px on a 25.3–26px line pitch (desktop keeps 28). */
+  line-height: calc(26px * var(--app-type-scale));
   letter-spacing: normal;
 }
 
-/* Headings keep the same semantic weight as the desktop reading column. */
+/* Headings keep the same semantic weight as the desktop reading column.
+   Phone reference: h1 20px, h2 18px (glyph advance 19.5 / 17.6). */
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body :is(h1, h2, h3, h4) {
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -74,17 +76,17 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h1 {
-  font-size: var(--ui-font-size-xxl);
-  line-height: 1.33;
-  margin: var(--ui-space-xl) 0 var(--ui-space-md);
-}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h2 {
   font-size: var(--ui-font-size-xl);
   line-height: 1.4;
   margin: var(--ui-space-xl) 0 var(--ui-space-md);
 }
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h3 {
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h2 {
   font-size: var(--ui-font-size-lg);
+  line-height: 1.45;
+  margin: var(--ui-space-xl) 0 var(--ui-space-md);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h3 {
+  font-size: var(--ui-text-body);
   line-height: 1.55;
   margin: var(--ui-space-xl) 0 var(--ui-space-sm);
 }

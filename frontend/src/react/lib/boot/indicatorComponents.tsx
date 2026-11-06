@@ -36,7 +36,14 @@ export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
     host.classList.toggle('visible', scrolledAway && (streaming || unseen.current));
     return undefined;
   }, [host, streaming, scrolledAway]);
-  return <>↓ New reply</>;
+  /* Reference: a 36px circle carrying a down arrow. The old label stays as
+     visually hidden text (the host's aria-label names the control). */
+  return (
+    <>
+      <svg className="new-reply-pill-glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14" /><path d="m6 13 6 6 6-6" /></svg>
+      <span className="visually-hidden">↓ New reply</span>
+    </>
+  );
 }
 
 /* The composer's primary send / stop control moved to the shared React

@@ -106,14 +106,17 @@
      The 32px box, radius and ghost hover come from the primitive's
      --ui-* utilities (src/react/message-list/ToolButton.tsx); only the
      invisible tap extension and the phone glyph rung live here. */
-  #appShell .msg-toolbar { gap: 4px; height: var(--ui-control-sm); }
+  /* Reference action row (copy · share · edit): 32px buttons set edge to
+     edge (a 32px pitch) with 20px glyphs. The tap extension grows only
+     vertically so neighbours never overlap. */
+  #appShell .msg-toolbar { gap: 0; height: var(--ui-control-sm); }
   #appShell .msg-toolbar-btn::before {
     content: "";
     position: absolute;
-    inset: -4px;
+    inset: -4px 0;
     pointer-events: auto;
   }
-  #appShell .msg-toolbar-btn svg { width: 16px; height: 16px; }
+  #appShell .msg-toolbar-btn svg { width: 20px; height: 20px; }
 
   /* ── Composer controls hit area ─────────────────────────────────────────
      The hit-area ::before wrapper lives in
@@ -254,7 +257,8 @@
 }
 @media (max-width: 768px) {
 #appShell .msg-toolbar-btn {
-  color: var(--ui-text-muted);
+  /* Reference: the quiet chrome-glyph grey (#b0b0b0 dark / #8f8f8f light). */
+  color: var(--ui-icon-secondary, var(--ui-text-muted));
   transition: background-color var(--ui-duration-fast) ease,
               color var(--ui-duration-fast) ease,
               opacity var(--ui-duration-fast) ease;
@@ -268,7 +272,7 @@
 }
 }
 @media (max-width: 768px) {
-#appShell .msg-toolbar-btn svg { width: 16px; height: 16px; }
+#appShell .msg-toolbar-btn svg { width: 20px; height: 20px; }
 }
 @media (max-width: 768px) {
 #appShell .msg-toolbar-btn::after {
