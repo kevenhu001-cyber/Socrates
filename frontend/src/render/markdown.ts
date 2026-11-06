@@ -29,7 +29,7 @@ import {
 export { clearStreamScaffolds, registerStreamScaffold } from './markdownScaffolds.ts';
 import {
   _looksLikeInlineMathTail, _looksLikeNumericMath, _stashInlineCode,
-  getKatex, renderStreamMath, replaceInlineDollarMath,
+  getKatex, hasMathDelimiters, renderStreamMath, replaceInlineDollarMath,
 } from './markdownMath.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
@@ -332,6 +332,32 @@ function replaceProgressiveDisplayMath(source: string, complete: boolean, bank: 
   return source.replace(/\\\[([\s\S]+)$/g, replaceOpen);
 }
 
+const PENDING_DISPLAY_MATH = '<div class="katex-display math-stream-placeholder" style="min-height:2em;opacity:0.5;"><span class="scaffold-stream-placeholder shimmer-text">…</span></div>';
+const PENDING_INLINE_MATH = '<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>';
+
+/* KaTeX loads on demand, when the first formula arrives. For the frames
+   until it lands, the live tail holds the formulas' places with the same
+   quiet placeholder an unfinished formula uses, instead of painting their
+   LaTeX source (with marked eating `\(` and turning `_` into emphasis).
+   Only the live tail does this: a settled block keeps its source, so the
+   text stays readable if KaTeX never loads; the KaTeX-ready repaint then
+   typesets every block. */
+function replacePendingMath(source: string, bank: PlaceholderBank): string {
+  if (!hasMathDelimiters(source)) return source;
+  const display = () => bank.save(PENDING_DISPLAY_MATH);
+  const inline = () => bank.save(PENDING_INLINE_MATH);
+  source = source.replace(/\$\$([\s\S]+?)\$\$/g, display);
+  source = source.replace(/\\\[([\s\S]+?)\\\]/g, display);
+  source = source.replace(/\$\$([\s\S]+)$/g, display);
+  source = source.replace(/\\\[([\s\S]+)$/g, display);
+  source = replaceInlineDollarMath(source, false, inline);
+  source = source.replace(/\\\((.+?)\\\)/g, inline);
+  source = source.replace(/\$([^\n$]+)$/g, (match, math: string) => (
+    _looksLikeInlineMathTail(math.trim()) ? inline() : match
+  ));
+  return source.replace(/\\\(([^\n]+)$/g, inline);
+}
+
 function replaceProgressiveInlineMath(source: string, complete: boolean, bank: PlaceholderBank): string {
   source = replaceInlineDollarMath(source, false, (math: string) => {
     const html = renderStreamMath(math, false, false);
@@ -347,7 +373,12 @@ function replaceProgressiveInlineMath(source: string, complete: boolean, bank: P
     if (html !== null) return bank.save(html);
     return bank.save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
   });
-  return source.replace(/\\\(([^\n\\]+)$/g, (match, math: string) => {
+  /* The open `\(` tail: closed `\(…\)` spans were already converted, so
+     everything up to the end of the line is the formula being typed. Its
+     body almost always holds backslashes (`\frac{1}{z-`); excluding them
+     left the source on screen, with marked eating the `\(`, until the
+     closing `\)` arrived. */
+  return source.replace(/\\\(((?:(?!\\\))[^\n])+)$/g, (match, math: string) => {
     const html = renderStreamMath(math, false, true);
     if (html !== null) return bank.save(html);
     return complete ? match : bank.save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
@@ -423,6 +454,8 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
   if (typeof katex !== 'undefined') {
     s = replaceProgressiveDisplayMath(s, !!opts?.complete, bank);
     s = replaceProgressiveInlineMath(s, !!opts?.complete, bank);
+  } else if (!opts?.complete) {
+    s = replacePendingMath(s, bank);
   }
 
   s = inlineCodeGuard.restore(s);

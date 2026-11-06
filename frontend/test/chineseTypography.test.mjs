@@ -78,7 +78,14 @@ for (const [name, render] of [
     assert.equal(root.querySelector('a').getAttribute('href'), 'https://example.test/%E4%B8%AD%E6%96%87?q=1,2');
     assert.equal(root.querySelector('code').textContent, 'print("你好,世界.")');
     assert.match(root.querySelector('pre code').textContent, /\{"提示":"你好,世界\.","值":1\.5\}/);
-    assert.match(root.textContent, /\$f\(x\)=1\.5,\\text\{你好,世界\.\}\$/);
+    if (name === 'streaming') {
+      /* Without KaTeX the live tail holds the formula's place until KaTeX
+         loads, so no half-typeset LaTeX (or rewritten punctuation) shows. */
+      assert.equal(root.querySelectorAll('.math-stream-placeholder').length, 1);
+      assert.doesNotMatch(root.textContent, /\\text/);
+    } else {
+      assert.match(root.textContent, /\$f\(x\)=1\.5,\\text\{你好,世界\.\}\$/);
+    }
   });
 }
 

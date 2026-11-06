@@ -81,6 +81,44 @@ export function normalizeMathSource(math: string, displayMode: boolean): string 
   return source;
 }
 
+/* Close what a still-typing formula leaves open: braces, `\left`, and
+   environments (in that order, so a `\right.` lands before `\end{…}`). */
+function balanceStreamingMath(src: string): string {
+  let depth = 0;
+  for (let i = 0; i < src.length; i += 1) {
+    const c = src.charAt(i);
+    if (c === '\\') { i += 1; continue; }
+    if (c === '{') depth += 1;
+    else if (c === '}' && depth > 0) depth -= 1;
+  }
+  let out = src + '}'.repeat(depth);
+  const lefts = (src.match(/\\left(?![A-Za-z])/g) || []).length;
+  const rights = (src.match(/\\right(?![A-Za-z])/g) || []).length;
+  for (let k = rights; k < lefts; k += 1) out += '\\right.';
+  return closeUnclosedEnvironments(out);
+}
+
+/* The half-typed token at the end of a streaming formula: a partial
+   command name, a lone backslash, a sub/superscript or alignment marker
+   still waiting for its argument, an opening brace, or trailing space. */
+const STREAMING_MATH_TAIL_RE = /(?:\\[A-Za-z]*|\\.|[_^&{]|\s+)$/;
+const STREAMING_MATH_ATTEMPTS = 8;
+
+/** Prefixes of an unfinished formula, longest first, each balanced so it
+ *  can render on its own. Bounded: a stream frame never pays for more than
+ *  a handful of KaTeX parses, and results are cached by the caller. */
+export function streamingMathPrefixes(src: string): string[] {
+  const out: string[] = [];
+  let current = String(src);
+  for (let attempt = 0; attempt < STREAMING_MATH_ATTEMPTS && current.trim(); attempt += 1) {
+    const balanced = balanceStreamingMath(current);
+    if (!out.includes(balanced)) out.push(balanced);
+    const trimmed = current.replace(STREAMING_MATH_TAIL_RE, '');
+    current = trimmed === current ? current.slice(0, -1) : trimmed;
+  }
+  return out;
+}
+
 function neutralizeKatexErrors(html: string): string {
   if (html.indexOf('katex-error') === -1) return html;
   return html.replace(/<span class="katex-error"([^>]*)>([\s\S]*?)<\/span>/g,
@@ -413,6 +451,22 @@ function _renderStreamMath(math: string, displayMode: boolean, unclosed: boolean
     source = closed;
   } else if (unclosed) {
     source = closed;
+  }
+
+  /* A formula still being typed (`\oint_`, `\frac{1}{z-`, `\fr`) cannot
+     render as written, and KaTeX's tolerant mode turns the WHOLE formula
+     into one error span, so the reader saw the raw LaTeX source until the
+     closing delimiter arrived. Render the longest typed prefix that does
+     parse instead: close the open groups, and drop the half-typed token at
+     the end. The finished formula then simply extends what is on screen. */
+  if (unclosed) {
+    for (const candidate of streamingMathPrefixes(source)) {
+      try {
+        return render(candidate, false);
+      } catch {
+        /* empty-catch: intentional — try a shorter prefix */
+      }
+    }
   }
 
   /* Tolerant pass: KaTeX recovers by marking the broken tail with
