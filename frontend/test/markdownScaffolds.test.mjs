@@ -92,3 +92,16 @@ test('scaffold detection ignores complete tags inside Markdown code', () => {
   assert.equal(hasCompleteScaffold(`\`\`\`xml\n${quiz}\n\`\`\``), false);
   assert.equal(hasCompleteScaffold(`\`\`\`xml\n${quiz}\n\`\`\`\n${quiz}`), true);
 });
+
+test('theorem preview reserves the proof toggle row once a nested proof opens', () => {
+  const md = (value) => '<p>' + value + '</p>';
+  const plain = renderStreamScaffoldPreview('theorem', '<title>T</title><statement>S</statement>', '', md);
+  assert.doesNotMatch(plain, /sc-live-actions/);
+  const open = renderStreamScaffoldPreview('theorem', '<statement>S</statement><proof><title>证明</title><body>半截', '', md);
+  assert.match(open, /sc-live-actions/);
+  assert.match(open, /sc-live-pill--quiet/);
+  assert.doesNotMatch(open, /证明|半截/);
+  const closed = renderStreamScaffoldPreview('theorem', '<title>T</title><statement>S</statement><proof><body>B</body></proof>', '', md);
+  assert.match(closed, /<p>T<\/p>/);
+  assert.equal((closed.match(/sc-live-actions"/g) || []).length, 1);
+});

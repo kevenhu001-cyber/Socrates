@@ -288,13 +288,18 @@ function scatterChartOption(
         + escapeTooltip(payload.yLabel || 'y') + ': ' + escapeTooltip(params.value[1]) }, tooltipBase),
     legend: legendOptions(scatterSeries, colors, fontFamily),
     grid: { left: 62, right: 22, top: scatterSeries.length > 1 ? 44 : 18, bottom: 52, containLabel: true },
+    /* Axis names sit centred along their axis. At the default end position
+       the x name ran past the 22px right margin and the y name above the
+       18px top margin, so a phone-width card clipped both. */
     xAxis: {
-      type: 'value', name: payload.xLabel || '', nameTextStyle: { color: colors.text, fontFamily },
+      type: 'value', name: payload.xLabel || '', nameLocation: 'middle', nameGap: 30,
+      nameTextStyle: { color: colors.text, fontFamily },
       axisLabel: { color: colors.text, fontFamily }, axisLine: { lineStyle: { color: colors.line } },
       splitLine: { lineStyle: { color: colors.grid } },
     },
     yAxis: {
-      type: 'value', name: payload.yLabel || '', nameTextStyle: { color: colors.text, fontFamily },
+      type: 'value', name: payload.yLabel || '', nameLocation: 'middle', nameGap: 40,
+      nameTextStyle: { color: colors.text, fontFamily },
       axisLabel: { color: colors.text, fontFamily }, axisLine: { lineStyle: { color: colors.line } },
       splitLine: { lineStyle: { color: colors.grid } },
     },

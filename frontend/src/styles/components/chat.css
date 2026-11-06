@@ -484,3 +484,33 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   color: var(--muted-foreground);
   white-space: nowrap;
 }
+
+/* A formula that cannot be typeset yet keeps its height with blank space.
+   A display formula shows one quiet shimmer bar; an inline formula a blank
+   slot. The project bans dot ornaments, so no ellipsis. */
+.katex-display.math-stream-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2em;
+}
+.math-pending-bar {
+  display: block;
+  width: min(12em, 60%);
+  height: .5em;
+  border-radius: var(--ui-round-pill);
+  background: linear-gradient(90deg, var(--ui-fill) 0%, var(--ui-fill-pressed) 50%, var(--ui-fill) 100%);
+  background-size: 200% 100%;
+  animation: mathPendingShimmer 1.6s ease-in-out infinite;
+}
+.math-stream-placeholder[data-math-pending="inline"] {
+  display: inline-block;
+  width: 1.2em;
+}
+@keyframes mathPendingShimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .math-pending-bar { animation: none; }
+}

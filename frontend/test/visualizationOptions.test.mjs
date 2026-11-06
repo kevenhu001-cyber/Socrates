@@ -63,3 +63,14 @@ test('function chart surfaces invalid expressions to the repair affordance', () 
     payload: { functions: [{ expression: 'window.alert(1)' }] },
   }, colors), /Unsupported|Expected/);
 });
+
+test('scatter axis names sit centred along their axes so a narrow card does not clip them', () => {
+  const option = optionForChart({
+    template: 'scatter', accessibilitySummary: 'Hours and score',
+    payload: { xLabel: '小时', yLabel: '分数', series: [{ name: '样本', data: [[1, 60], [2, 70]] }] },
+  }, colors);
+  assert.equal(option.xAxis.nameLocation, 'middle');
+  assert.equal(option.yAxis.nameLocation, 'middle');
+  assert.ok(option.xAxis.nameGap < option.grid.bottom);
+  assert.ok(option.yAxis.nameGap < option.grid.left);
+});

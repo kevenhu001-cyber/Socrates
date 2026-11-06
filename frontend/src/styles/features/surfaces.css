@@ -482,10 +482,15 @@
   overflow: hidden;
 }
 
+/* The title and the action row share one line while both fit. On a phone the
+   five labelled actions are wider than the card, so the row wraps under the
+   title instead of squeezing the title to one character per line. */
 #appShell .visualization-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 6px 12px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   background: var(--ui-bg-raised);
@@ -499,10 +504,19 @@
   margin: 0;
 }
 
+#appShell .visualization-header > div:first-child {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
 #appShell .visualization-actions {
   display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 4px;
+  margin-left: auto;
 }
 
 @media (max-width: 768px) {

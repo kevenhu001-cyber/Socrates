@@ -22,6 +22,7 @@ import {
   learnStrings,
   parseAnswerKey,
   splitDerivationSteps,
+  derivationStepSource,
   type AnswerFeedback,
   type QuizResult,
   type QuizVerdict,
@@ -355,7 +356,7 @@ function ScaffoldView({ block, language, slotId, onQuizPick, onPracticeSubmit }:
         <StepsCard
           kind="derivation"
           title={block.parsed.title}
-          steps={splitDerivationSteps(block.parsed.body).map((body, index) => ({ n: index + 1, body }))}
+          steps={splitDerivationSteps(block.parsed.body).map((body, index) => ({ n: index + 1, body: derivationStepSource(body) }))}
         />
       );
     case 'step':

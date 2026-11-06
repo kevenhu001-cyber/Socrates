@@ -11,7 +11,7 @@ import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.ts';
 import { asVisualizationSpec, VizSpec } from './visualizationSpec.ts';
 import { normalizeVisualizationSpec } from '@socrates/core/visualizationNormalize';
-import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.ts';
+import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable, semanticLayoutWidth, SEMANTIC_LAYOUT_WIDTH } from './visualizationStatic.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { openWorkbench } from '../react/workbench/workbenchStore';
 import { createElement, ReactNode } from 'react';
@@ -471,7 +471,14 @@ function mountExtensionRenderer(spec: VizSpec, card: VisualizationCard, stage: H
 }
 
 function mountSemanticRenderer(spec: VizSpec, stage: HTMLElement) {
-  const semanticSvg = renderSemanticVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
+  /* Lay the diagram out at the stage's width on a phone, so labels keep
+     their size instead of a 760-wide drawing being scaled down. */
+  const layoutWidth = semanticLayoutWidth(stage.clientWidth);
+  const semanticSvg = renderSemanticVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel, layoutWidth);
+  /* A narrow layout is drawn 1:1, so the stage takes the drawing's height
+     instead of the fixed chart height that would shrink a tall one again. */
+  if (layoutWidth < SEMANTIC_LAYOUT_WIDTH && ['timeline', 'process', 'number_line'].includes(spec.template)) stage.dataset.semanticLayout = 'narrow';
+  else delete stage.dataset.semanticLayout;
   stage.innerHTML = semanticSvg || renderStructureVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
   return svgStageChart(stage);
 }

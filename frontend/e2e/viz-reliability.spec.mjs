@@ -57,3 +57,25 @@ test('labelled JSX fences stay code and never run in the preview iframe', async 
   await expect(page.locator('#msgList pre code').first()).toContainText('export function Card');
   await expect(page.locator('#msgList iframe')).toHaveCount(0);
 });
+
+test('graph diagrams keep their natural size under reduced motion', async ({ page }) => {
+  /* The reduced-motion reset gives every element a 0.01ms transition; Mermaid
+     measured its labels mid-transition and laid a 3-node flowchart out on a
+     ~2000px canvas, which the stage then shrank into its top-left corner. */
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const payload = { nodes: [{ id: 'a', label: 'Find poles' }, { id: 'b', label: 'Residues' }, { id: 'c', label: 'Sum' }], edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }] };
+  const source = `root = Col([v])\nv = Visualization("flowchart", "Residue steps", ${JSON.stringify(payload)}, "s")`;
+  const markdown = 'Also as Markdown:\n\n```mermaid\ngraph TD\n  A[Find poles] --> B[Residues] --> C[Sum]\n```';
+  await prepareChatWorkbench(page, { messages: [
+    { clientId: 'flow', role: 'assistant', type: 'assistant', rawText: fence(source), html: '' },
+    { clientId: 'md', role: 'assistant', type: 'assistant', rawText: markdown, html: '' },
+  ] });
+  for (const id of ['flow', 'md']) {
+    const svg = page.locator(`[data-client-id="${id}"] svg[id*="mermaid"]`).first();
+    await expect(svg).toBeVisible({ timeout: 15000 });
+    const viewBox = await svg.getAttribute('viewBox');
+    const [, , width, height] = viewBox.split(/\s+/).map(Number);
+    expect(width, `${id} viewBox ${viewBox}`).toBeLessThan(600);
+    expect(height, `${id} viewBox ${viewBox}`).toBeLessThan(600);
+  }
+});

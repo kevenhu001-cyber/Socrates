@@ -146,12 +146,17 @@
 }
 
 /* Tool charts and their status states sit in the answer flow, not inside a
-   second dashboard card. Their data, controls, and chart grid remain intact. */
-#appShell .tool-inline-attachments .visualization-card{
+   second dashboard card. Their data, controls, and chart grid remain intact.
+   A chart the tutor writes as an ```openui fence in the prose follows the
+   same rule: no frame, and no header band (the dark theme painted one). */
+#appShell .tool-inline-attachments .visualization-card,
+#appShell .intui-openui [data-openui-visualization] .visualization-card{
   border:0;
+  box-shadow:none;
   background:transparent;
 }
-#appShell .tool-inline-attachments .visualization-header{
+#appShell .tool-inline-attachments .visualization-header,
+#appShell .intui-openui [data-openui-visualization] .visualization-header{
   border-bottom:0;
   background:transparent;
 }

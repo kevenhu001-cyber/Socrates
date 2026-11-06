@@ -16,8 +16,15 @@ function fencedCodeRanges(source: string): MarkdownCodeRange[] {
     const line = source.slice(lineStart, lineEnd).replace(/\r$/, '');
     if (fence) {
       const closing = /^ {0,3}(`+|~+)[ \t]*$/.exec(line);
-      if (closing && closing[1][0] === fence.marker && closing[1].length >= fence.length) {
-        ranges.push({ start: fence.start, end: newline === -1 ? source.length : newline + 1 });
+      /* The tutor often closes a fence and its scaffold field on one line:
+         "```</problem>". CommonMark would keep the fence open, swallow the
+         closing tag into code and leave the whole card unmounted. A closing
+         tag right after the fence ends the code at the backticks. */
+      const glued = closing ? null : /^ {0,3}(`+|~+)[ \t]*(?=<\/[a-z][\w-]*>)/i.exec(line);
+      const close = closing ?? glued;
+      if (close && close[1][0] === fence.marker && close[1].length >= fence.length) {
+        const end = glued ? lineStart + glued[0].length : (newline === -1 ? source.length : newline + 1);
+        ranges.push({ start: fence.start, end });
         fence = null;
       }
     } else {

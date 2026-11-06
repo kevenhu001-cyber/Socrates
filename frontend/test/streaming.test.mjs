@@ -203,13 +203,13 @@ test('unclosed display math renders live instead of waiting for the closing $$',
   });
 });
 
-test('a structurally incomplete formula renders as calm pending text, never red', () => {
+test('a structurally incomplete formula renders its typed prefix, never red or raw', () => {
   withKatex(() => {
-    /* \frac{1}{ cannot parse as-is; the tolerant pass neutralizes KaTeX's
-       red error spans into .math-stream-pending (the partial source stays
-       visible) and the frame still carries no raw $$. */
+    /* \frac{1}{ cannot parse as-is; the live frame renders the typed prefix
+       with its open group closed, so no LaTeX source and no raw $$ show. */
     const broken = renderProgressive('$$\\frac{1}{');
-    assert.match(broken, /math-stream-pending/);
+    assert.match(broken, /class="katex/);
+    assert.doesNotMatch(broken, /math-stream-pending/);
     assert.doesNotMatch(broken, /katex-error/);
     assert.doesNotMatch(broken, /color:#cc0000/);
     assert.doesNotMatch(broken, /\$\$/);
@@ -638,11 +638,14 @@ test('heading repair leaves display math untouched', () => {
   }
 });
 
-test('math stays as raw source when KaTeX has not loaded yet', () => {
+test('before KaTeX loads, the live tail holds formula places and settled text keeps its source', () => {
   const previousKatex = globalThis.katex;
   delete globalThis.katex;
   try {
-    const html = renderProgressive('$$\\frac{1}{2}$$');
+    const live = renderProgressive('$$\\frac{1}{2}$$');
+    assert.match(live, /math-stream-placeholder/);
+    assert.doesNotMatch(live, /\\frac|class="katex"/);
+    const html = renderProgressive('$$\\frac{1}{2}$$', { complete: true });
     assert.match(html, /\$\$/);
     assert.doesNotMatch(html, /class="katex/);
   } finally {

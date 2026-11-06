@@ -352,6 +352,39 @@ export function splitDerivationSteps(body: string): string[] {
   return steps.filter(Boolean);
 }
 
+/* A run of East Asian text (CJK ideographs, kana, hangul, full-width forms). */
+const EAST_ASIAN_RUN = /([\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFFEF]+)/;
+const LATEX_COMMAND = /\\[a-zA-Z]+/;
+const MATH_DELIMITER = /\$|\\\(|\\\[|\\begin\{/;
+
+function wrapInlineMath(piece: string): string {
+  const lead = piece.match(/^\s*/)?.[0] ?? '';
+  const trail = piece.match(/\s*$/)?.[0] ?? '';
+  const core = piece.trim().replace(/\s*\n\s*/g, ' ');
+  return core ? lead + '$' + core + '$' + trail : piece;
+}
+
+/**
+ * Render-side tolerance for a derivation step the model wrote as bare LaTeX
+ * (`\lim_{z\to 0} z\cdot\frac{e^z}{z}` without `$`). Markdown would show the
+ * source and eat its underscores as emphasis. A step that already carries a
+ * math delimiter is returned as is. Otherwise every non-CJK run that holds a
+ * LaTeX command becomes inline math; CJK prose around it stays prose.
+ */
+export function derivationStepSource(step: string): string {
+  const text = String(step || '');
+  if (!LATEX_COMMAND.test(text) || MATH_DELIMITER.test(text)) return text;
+  /* A step that is all formula is display math, written as `$$…$$` so the
+     streaming preview and the mounted card typeset it the same way (a lone
+     `$…$` line is promoted to display only once it is final, which made the
+     card taller than its preview). */
+  if (!EAST_ASIAN_RUN.test(text)) return '$$' + text.trim().replace(/\s*\n\s*/g, ' ') + '$$';
+  return text
+    .split(EAST_ASIAN_RUN)
+    .map((piece, index) => (index % 2 === 0 && LATEX_COMMAND.test(piece) ? wrapInlineMath(piece) : piece))
+    .join('');
+}
+
 const QED = /(?:∎|□|■|\\blacksquare|\\square|\\qed|\bQ\.?E\.?D\.?)\s*\$*\s*$/i;
 
 /** True when a proof body does not already close with a QED mark. */
