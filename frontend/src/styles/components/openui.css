@@ -29,6 +29,12 @@
   --iui-radius-md: var(--ui-radius-md);
   --iui-radius-lg: var(--ui-radius-lg);
   --iui-radius-xl: var(--ui-radius-xl);
+  /* Data-ink tokens shared by every generated chart and diagram: one
+     hairline weight, a quieter grid than the axis, and an 11px label floor. */
+  --iui-hairline: 1px;
+  --iui-grid: color-mix(in srgb, var(--iui-border) 72%, transparent);
+  --iui-axis: var(--iui-border);
+  --iui-label-size: 11px;
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--iui-ink);
@@ -110,10 +116,19 @@
 .intui-openui .iui-chart { margin: 0; min-width: 0; }
 .intui-openui .iui-chart-plot { position: relative; }
 .intui-openui :is(.iui-chart-plot svg, .iui-pie svg) { max-width: 100%; overflow: visible; }
-.intui-openui .iui-chart-grid { stroke: var(--iui-border); }
-.intui-openui :is(.iui-chart-tick, .iui-chart-category) { fill: var(--iui-muted); font-size: 11px; }
+/* crispEdges snaps horizontal rules to device pixels at every ratio. */
+.intui-openui :is(.iui-chart-grid, .iui-chart-baseline) { stroke-width: var(--iui-hairline); shape-rendering: crispEdges; }
+.intui-openui .iui-chart-grid { stroke: var(--iui-grid); }
+.intui-openui .iui-chart-baseline { stroke: var(--iui-axis); }
+.intui-openui .iui-chart-guide { stroke: var(--iui-axis); stroke-width: var(--iui-hairline); }
+.intui-openui :is(.iui-chart-tick, .iui-chart-category) { fill: var(--iui-muted); font-size: var(--iui-label-size); font-variant-numeric: tabular-nums; }
 .intui-openui .iui-chart-hover { fill: var(--iui-surface); }
-.intui-openui .iui-chart-tooltip { position: absolute; top: 0; padding: var(--ui-space-sm); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-md); background: var(--iui-canvas); pointer-events: none; font-size: var(--ui-font-size-xs); }
+.intui-openui .iui-chart-tooltip { position: absolute; top: 0; display: grid; gap: var(--ui-space-xxs); padding: var(--ui-space-xs) var(--ui-space-sm); border: var(--iui-hairline) solid var(--iui-border); border-radius: var(--ui-radius-md); background: var(--popover, var(--iui-canvas)); color: var(--popover-foreground, var(--iui-ink)); pointer-events: none; font-size: var(--ui-font-size-xs); font-variant-numeric: tabular-nums; }
+.intui-openui .iui-chart-tooltip b { font-weight: var(--ui-font-weight-medium); }
+/* The plot's footprint while its rows stream: four quiet rules, no motion. */
+.intui-openui .iui-chart-pending { display: grid; align-content: space-between; padding: 10px 4px 26px 0; }
+.intui-openui .iui-chart-pending span { display: block; height: 0; border-top: var(--iui-hairline) solid var(--iui-grid); }
+.intui-openui .iui-chart-pending span:last-child { border-top-color: var(--iui-axis); }
 .intui-openui :is(.iui-chart-legend, .iui-chart-legend span, .iui-pie-legend > div) { display: flex; align-items: center; gap: var(--ui-space-sm); }
 .intui-openui .iui-chart-legend { justify-content: center; flex-wrap: wrap; }
 .intui-openui :is(.iui-chart-legend i, .iui-pie-legend i) { width: .65em; height: .65em; border-radius: var(--ui-radius-xs); }
