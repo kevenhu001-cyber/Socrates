@@ -104,3 +104,25 @@ test('derivation steps written as bare LaTeX are typeset', async ({ page }) => {
   });
   expect(raw).toBe(false);
 });
+
+test('on a phone process, timeline and number line labels keep a readable size', async ({ page }) => {
+  const templates = [
+    ['process', '解题步骤', { items: [{ label: '找奇点' }, { label: '判类型' }, { label: '算留数' }, { label: '求和' }] }],
+    ['timeline', '复分析发展', { items: [{ label: '柯西', value: '1825' }, { label: '黎曼', value: '1851' }, { label: '魏尔斯特拉斯', value: '1870' }] }],
+    ['number_line', '数轴', { items: [{ label: '-2', value: -2 }, { label: '0', value: 0 }, { label: '3', value: 3 }] }],
+  ];
+  await open(page, templates.map(([template, title, payload]) => msg('viz-' + template, title + '：\n\n' + openui(viz(template, title, payload)))), { viewport: { width: 390, height: 844 } });
+  for (const [template] of templates) {
+    const stage = row(page, 'viz-' + template).locator('.visualization-stage').first();
+    await stage.scrollIntoViewIfNeeded();
+    await expect(stage.locator('svg text').first()).toBeVisible();
+    const sizes = await stage.evaluate((element) => {
+      const svg = element.querySelector('svg');
+      const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
+      const label = svg.querySelector('.visualization-node text');
+      return { scale, fontPx: parseFloat(getComputedStyle(label).fontSize) * scale, overflow: svg.getBoundingClientRect().right - element.getBoundingClientRect().right };
+    });
+    expect(sizes.fontPx, template).toBeGreaterThanOrEqual(10);
+    expect(sizes.overflow, template).toBeLessThanOrEqual(1);
+  }
+});
