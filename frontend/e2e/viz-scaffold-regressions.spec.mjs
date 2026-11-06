@@ -46,3 +46,17 @@ test('a code fence closed on the same line as </problem> still mounts the card',
   await expect(card.locator('pre code')).toContainText('print(sum(range(4)))');
   await expect(row(page, 'glued')).not.toContainText('</problem>');
 });
+
+test('on a phone the chart title keeps its line and the actions wrap under it', async ({ page }) => {
+  await open(page, [msg('bar', '图：\n\n' + BAR)], { viewport: { width: 390, height: 844 } });
+  const card = row(page, 'bar').locator('.visualization-card').first();
+  await expect(card).toBeVisible();
+  const geometry = await card.evaluate((element) => {
+    const title = element.querySelector('.visualization-header h3').getBoundingClientRect();
+    const actions = element.querySelector('.visualization-actions').getBoundingClientRect();
+    return { titleWidth: title.width, titleHeight: title.height, actionsTop: actions.top, titleBottom: title.bottom };
+  });
+  expect(geometry.titleWidth).toBeGreaterThan(150);
+  expect(geometry.titleHeight).toBeLessThan(40);
+  expect(geometry.actionsTop).toBeGreaterThanOrEqual(geometry.titleBottom - 1);
+});
