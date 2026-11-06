@@ -3,6 +3,7 @@ import { VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { ensureMermaid, ensurePlotly } from '../vendor/lazy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import type { VizSpec } from './visualizationSpec.ts';
+import { STRUCTURE_TEMPLATES } from './visualizationRendererKind.ts';
 import type { GeoGebraApi } from '../types/vendorRuntime.ts';
 
 export interface SpecializedVisualizationResult {
@@ -21,7 +22,6 @@ interface GeoGebraWindow {
 }
 let geogebraPromise: Promise<GeoGebraAppletConstructor> | undefined;
 
-const STRUCTURE_TEMPLATES = new Set(['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map']);
 
 export function usesSpecializedRenderer(template: string) {
   return template === 'function'
