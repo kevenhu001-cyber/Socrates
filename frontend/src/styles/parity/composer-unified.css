@@ -160,6 +160,10 @@
     --ui-fill: var(--ui-bg-control);
     --ui-ink-secondary: var(--ui-text-primary);
   }
+  /* Reference (dark): the question box sits one step above the canvas and a
+     step below its popovers (+ menu, effort), so it takes the panel rung;
+     menus keep the elevated one. Light keeps the paper box and its hairline. */
+  [data-mode="dark"] #appShell .composer-shell { --ui-card: var(--ui-bg-panel); }
   #appShell .composer-shell:not(.voice-recording-active) { width: 100%; max-width: none; }
   #appShell .composer-shell .rich-composer-editor { max-height: 220px; }
   #appShell .composer-shell .composer-plugin-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }

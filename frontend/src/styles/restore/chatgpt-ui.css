@@ -820,45 +820,10 @@ body.workspace-active #appShell .workspace-row:hover {
   /* P_mic-dedup — topic chips send shifts into the vacated mic track. */
 }
 
-/* Keep the mobile add menu as a true bottom sheet. The legacy stylesheet has
-   an older anchored-card rule later in the migration history; this final
-   declaration makes the responsive behavior match the current composer
-   bridge and gives the sheet a predictable touch target. */
-@media (max-width: 768px) {
-  #composerToolsMenu {
-    left: 0 !important;
-    right: 0 !important;
-    top: auto;
-    bottom: 0 !important;
-    width: 100vw !important;
-    max-width: none !important;
-    max-height: min(72vh, 580px) !important;
-    padding: 8px 12px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
-    border: 0 !important;
-    border-top: 1px solid var(--cg-border-strong) !important;
-    border-radius: 20px 20px 0 0 !important;
-    box-shadow: var(--ui-shadow-popover) !important;
-  }
-
-  #composerToolsMenu::before {
-    content: "";
-    display: block;
-    width: 36px;
-    height: 4px;
-    margin: 2px auto 10px;
-    border-radius: 999px;
-    background: var(--cg-border-strong);
-  }
-
-  body.composer-tools-open::after {
-    content: "";
-    position: fixed;
-    z-index: 1299;
-    inset: 0;
-    background: rgb(0 0 0 / 38%);
-    pointer-events: auto;
-  }
-}
+/* The phone add menu's bottom-sheet pins (full-width, grabber, scrim) were
+   removed in the ui-ref pass: the menu is now a popover anchored over the
+   composer, placed by react/composer/composerTools.position.ts and shaped
+   by components/menu.css. */
 
 /* ─── Kimi-style landing polish ──────────────────────────────────────────
    Appended last so it beats the one-row idle-composer cascade guard above.

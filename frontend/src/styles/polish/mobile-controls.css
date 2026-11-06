@@ -138,9 +138,6 @@
   body #composerToolsMenu.composer-tools-menu {
     background-color: var(--ui-bg-surface);   /* was #1f1f1f */
   }
-  body #composerToolsMenu .composer-tools-icon {
-    background-color: var(--secondary);   /* was #3a3a3a */
-  }
   [data-mode="dark"] body #composerToolsMenu.composer-tools-menu {
     background-color: var(--ui-bg-surface);   /* was #1b1b1b */
   }

@@ -121,28 +121,6 @@
      is retired — it covered the composer's own trigger and cut its last
      visible row in half. What stays is the row rhythm below. */
 
-  /* Reference rows are full-height touch targets with a 44px chip, not the
-     denser 44px/36px desktop leftovers from menu.css. */
-  body #composerToolsMenu .composer-tools-item,
-  body #composerToolsMenu .composer-tools-mobile-item,
-  body #composerToolsMenu .composer-tools-plugin-item {
-    min-height: 56px;
-    padding: 6px 10px;
-  }
-
-  body #composerToolsMenu .composer-tools-icon,
-  body #composerToolsMenu .composer-plugin-mark {
-    flex: 0 0 44px !important;
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
-  }
-
-  body #composerToolsMenu .composer-tools-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
 
   /* The restored parity layer grows the phone top bar to 72px while no
      mobile rule re-centres the mode pill, so it inherited the modular
@@ -153,9 +131,6 @@
     transform: translate(-50%, -50%) !important;
   }
 
-  #composerToolsMenu .composer-tools-mobile-items .composer-tools-item .composer-tools-copy small {
-    display: none !important;
-  }
 
   #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
     padding-top: 8px;

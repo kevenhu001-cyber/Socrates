@@ -141,35 +141,60 @@ body #composerToolsMenu.composer-tools-menu {
 @media (max-width: 768px) {
   .composer-tools-desktop-items { display: none; }
   .composer-tools-mobile-items { display: block; }
-  /* Phone sheet. The React menu controller pins it to the bottom edge; this owns
-     its shape. It replaces the 236px floating card, which covered the
-     composer's own `+` trigger and cut a row in half at its bottom edge while
-     leaving ten of thirteen actions behind an invisible internal scroll. */
+  /* Phone popover (reference 1000038090). The React menu controller anchors
+     it over the composer — same left edge and width as the question box, its
+     bottom 8px above the control row — and this owns its shape: a flat list
+     of 40px rows, plain 20px line glyphs, and each tool's own description as
+     a quiet second phrase on the same line. No grabber, no scrim. */
   body #composerToolsMenu.composer-tools-menu {
-    width: 100%;
     min-width: 0;
     height: auto;
-    max-height: min(78dvh, calc(100dvh - 56px));
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
-    border-radius: var(--ui-radius-xl) var(--ui-radius-xl) 0 0;
+    padding: 6px;
+    border-radius: var(--ui-radius-popover);
     overflow-y: auto;
     overscroll-behavior: contain;
-    animation: composer-tools-sheet-in var(--ui-duration-overlay) var(--ui-ease-out);
   }
-  [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: var(--ui-bg-surface); }
+  body #composerToolsMenu.composer-tools-menu::before { content: none; }
   #composerToolsMenu .composer-tools-item,
   #composerToolsMenu .composer-tools-mobile-item,
   #composerToolsMenu .composer-tools-plugin-item {
-    min-height: 44px;
-    padding: 4px 8px;
+    min-height: var(--ui-control-md);
+    padding: 4px 10px;
     gap: 12px;
+    border-radius: var(--ui-radius-row);
   }
-  #composerToolsMenu .composer-tools-icon {
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
+  #composerToolsMenu .composer-tools-icon,
+  #composerToolsMenu .composer-plugin-mark {
+    flex: 0 0 20px;
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    min-height: 20px;
+    border-radius: 0;
+    background: none;
+    color: var(--ui-text-primary);
   }
-  [data-mode="dark"] #composerToolsMenu .composer-tools-icon { background: var(--secondary); }
-  #composerToolsMenu .composer-tools-icon svg { width: 22px; height: 22px; }
-  #composerToolsMenu .composer-tools-copy > span { font-size: var(--ui-font-size-md); }
+  #composerToolsMenu .composer-tools-icon svg { width: 20px; height: 20px; }
+  #composerToolsMenu .composer-tools-copy {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  #composerToolsMenu .composer-tools-copy > span { flex: 0 0 auto; color: var(--ui-text-primary); font-size: var(--ui-font-size-md); }
+  /* Slash shortcuts are a keyboard affordance; the phone list drops them. */
+  #composerToolsMenu .composer-tools-item kbd { display: none; }
+  #composerToolsMenu .composer-tools-copy small {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ui-text-muted);
+    font-size: var(--ui-font-size-md);
+    font-weight: var(--ui-font-weight-regular);
+  }
 }

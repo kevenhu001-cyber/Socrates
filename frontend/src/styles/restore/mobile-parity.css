@@ -153,10 +153,6 @@
    *    shape to components/menu.css. Only the row metrics stay, because
    *    they are what the reference measurements pin.
    * ───────────────────────────────────────────────────────────── */
-  body #composerToolsMenu .composer-tools-mobile-item {
-    min-height: 56px !important;
-    border-radius: 12px !important;
-  }
 
   /* Reference menu is one flat, scrollable list on phones: the desktop twin
      list stays hidden, but connected plugins now stay visible below the tool
@@ -165,37 +161,6 @@
     display: none !important;
   }
 
-  /* The mobile-item icons keep `flex: 0 0 26px` from styles.css; override
-     the basis too or the 40px chip collapses to a 26x40 ellipse while the
-     workflow rows (no flex basis) stay circular. */
-  body #composerToolsMenu .composer-tools-icon,
-  body #composerToolsMenu .composer-plugin-mark {
-    flex: 0 0 40px !important;
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    border-radius: 50% !important;
-    background: var(--cg-surface-raised) !important;
-    color: var(--cg-text) !important;
-  }
-
-  body #composerToolsMenu .composer-plugin-mark svg {
-    width: 22px !important;
-    height: 22px !important;
-  }
-
-  body #composerToolsMenu .composer-tools-plugin-item {
-    min-height: 56px !important;
-    border-radius: 12px !important;
-  }
-
-  body #composerToolsMenu .composer-tools-plugin-name {
-    font-size: 16px !important;
-  }
-
-  body #composerToolsMenu .composer-tools-copy span {
-    font-size: 16px !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
@@ -224,31 +189,6 @@
     stroke-linejoin: round !important;
   }
 
-  /* The tools menu is a bottom sheet now: placement lives in
-     React menu controller and the shape in components/menu.css. Only the row
-     metrics stay here, because the reference measurements pin the 56px row
-     and the 40px glyph chip. */
-  body #composerToolsMenu .composer-tools-item {
-    min-height: 56px !important;
-  }
-
-  body #composerToolsMenu .composer-tools-icon,
-  body #composerToolsMenu .composer-plugin-mark {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    border-radius: 50% !important;
-    background: var(--conversation-control-hover) !important;
-    color: var(--ui-text-primary) !important;
-  }
-
-  body #composerToolsMenu .composer-tools-copy span,
-  body #composerToolsMenu .composer-tools-plugin-name {
-    color: var(--ui-text-primary) !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-  }
 
   body.workspace-active #appShell .main-page,
   body.workspace-active #appShell .scheduled-directory {
@@ -314,17 +254,6 @@
   color: var(--cg-text) !important;
 }
 
-/* The phone sheet above pins dark #2a2a2a chips with a white glyph; in light
-   mode they read as black holes in a white menu. Same chip, light ramp — the
-   translucent chip token (matches the composer's own round buttons) so it
-   still composites a step darker on the hovered row's wash. */
-@media (max-width: 768px) {
-  [data-mode="light"] body #composerToolsMenu .composer-tools-icon,
-  [data-mode="light"] body #composerToolsMenu .composer-plugin-mark {
-    background: var(--ui-bg-chip) !important;
-    color: var(--ui-text-primary) !important;
-  }
-}
 
 /* The legacy workbench layer has a more specific 108px multiline rule. Keep
    the screenshot-sized two-tier draft authoritative at the end of the phone
