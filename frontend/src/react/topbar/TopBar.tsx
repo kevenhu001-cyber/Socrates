@@ -99,7 +99,8 @@ function SidebarToggle() {
       style={{ display: isMobile ? (isOpen ? 'none' : undefined) : 'none' }}
       onClick={() => toggleSidebar()}
     >
-      <svg className="glyph-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M9 4.5v15" /></svg>
+      {/* Reference phone glyph: a soft frame with a short rail stroke, drawn at 20px. */}
+      <svg className="glyph-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="2.75" y="4.25" width="18.5" height="15.5" rx="4.5" /><path d="M8 9v6" /></svg>
       {/* Phone navigation uses the reference's quiet, two-line menu glyph. */}
       <svg className="glyph-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M4 8h16" /><path d="M4 15h11" /></svg>
       <span className="mobile-sidebar-status" aria-hidden="true" />
@@ -211,6 +212,8 @@ function TopBarLeft({ phone, conversationActive }: { phone: boolean; conversatio
             icon="compose"
             label={t('sidebar.nav.new', 'New chat')}
             touch
+            /* Reference: the compose glyph is a size smaller than the drawer glyph. */
+            iconSize={18}
             visible={phone && conversationActive}
             onPress={() => { void startNewChat(); }}
           />
@@ -267,7 +270,7 @@ function ModeSwitch({ phone, conversationActive }: { phone: boolean; conversatio
           compact={phone}
           narrow={phone && narrow}
           reducedMotion={reducedMotion}
-          thumbShadow="var(--ui-elevation-raised)"
+          thumbShadow={phone ? 'var(--ui-segment-thumb-shadow)' : 'var(--ui-elevation-raised)'}
           onSelect={(next) => { void toggleAppMode(next); }}
         />
       </WebUiTheme>

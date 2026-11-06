@@ -35,10 +35,11 @@ for (const mode of ['dark', 'light']) {
       const css = getComputedStyle(el);
       return { background: css.backgroundColor, radius: css.borderTopLeftRadius };
     });
-    /* Dark: the reference question box sits one rung above the pure-black
-       canvas (panel rung #1f1f1f, reference ≈ #1b1b1b); menus keep #292929. */
-    expect(rgbChannels(frameStyle.background)).toEqual(mode === 'dark' ? [31, 31, 31] : [255, 255, 255]);
-    expect(frameStyle.radius).toBe('28px');
+    /* Dark: the reference question box is the #1b1b1b field tone between
+       the pure-black canvas and the panel rung; menus keep #292929. Light:
+       the white paper on the #fcfcfc canvas. Corner: 26px (circle fit). */
+    expect(rgbChannels(frameStyle.background)).toEqual(mode === 'dark' ? [27, 27, 27] : [255, 255, 255]);
+    expect(frameStyle.radius).toBe('26px');
     const composerBox = await page.locator('#composerInputWrap').boundingBox();
     expect(composerBox.x).toBe(16);
     expect(composerBox.width).toBe(358);
@@ -63,14 +64,14 @@ for (const mode of ['dark', 'light']) {
     const editor = page.locator('#composerRoot .rich-composer-editor');
     await editor.fill('恢复彩色主操作');
     await expect.poll(async () => rgbChannels(await page.locator('#composerPrimaryBtn').evaluate(el => getComputedStyle(el).backgroundColor)))
-      .toEqual([57, 126, 247]);
+      .toEqual([61, 102, 192]);
     await page.screenshot({ path: `test-results/reference-alignment-${encodeURIComponent(mode)}-color-action.png` });
     await editor.fill('');
 
     await page.locator('#sidebarOpenBtn').click();
     await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).x)).toBe(0);
     expect(rgbChannels(await page.locator('#sidebar').evaluate(el => getComputedStyle(el).backgroundColor)))
-      .toEqual(mode === 'dark' ? [0, 0, 0] : [255, 255, 255]);
+      .toEqual(mode === 'dark' ? [0, 0, 0] : [252, 252, 252]);
     const searchRow = page.locator('#sidebarSearchRow');
     expect((await searchRow.boundingBox()).height).toBe(0);
     await page.locator('#sidebarSearchBtn').click();
@@ -82,7 +83,8 @@ for (const mode of ['dark', 'light']) {
     const geometry = await rows.evaluateAll(nodes => nodes.map(node => ({
       id: node.id, height: node.getBoundingClientRect().height, y: node.getBoundingClientRect().y,
     })));
-    for (const row of geometry) expect(row.height).toBe(40);
+    /* Reference drawer: 36px rows at 14px. */
+    for (const row of geometry) expect(row.height).toBe(36);
     const actualOrder = [...geometry].sort((a, b) => a.y - b.y).map(row => row.id);
     expect(actualOrder.indexOf('navLibrary')).toBeLessThan(actualOrder.indexOf('navScheduled'));
     expect(actualOrder.indexOf('navScheduled')).toBeLessThan(actualOrder.indexOf('navPlugins'));
@@ -90,7 +92,7 @@ for (const mode of ['dark', 'light']) {
     if (actualOrder.includes('navImages')) expect(actualOrder.indexOf('navImages')).toBeLessThan(actualOrder.indexOf('navLibrary'));
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });
     await expect(recent).toBeVisible();
-    expect((await recent.boundingBox()).height).toBe(40);
+    expect((await recent.boundingBox()).height).toBe(36);
     /* Reference drawer lockup: wordmark + ⌄ on the left, search and the
        sidebar glyph (not ×) on the right. */
     await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();

@@ -389,10 +389,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 /* ─── end of pass-2 merge; original polish/mobile-sidebar.css content below ─── */
 @media (max-width: 768px) {
-  /* Reference: ~65% width, 40px navigation/history pitch at 390px.
+  /* Reference: ~65% width, 36px navigation/history pitch at 390px, row copy
+     one quiet step under the ink (#cacaca on black).
      Do not inherit the desktop rail's card paint or 48px touch density. */
   #appShell #sidebar {
-    --ui-mobile-row: var(--ui-control-md);
+    --ui-ink: var(--ui-text-nav);
     --ui-card: var(--ui-bg-panel);
     --ui-elevation-raised: none;
     background: var(--background);
@@ -441,18 +442,19 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell #sidebarHeader .btn-icon:active {
     background: var(--ui-bg-active);
   }
-  #appShell #sidebarHeader .btn-icon svg { width: 24px; height: 24px; }
+  #appShell #sidebarHeader .btn-icon svg { width: 20px; height: 20px; }
   #appShell #sidebarHeader #sidebarSearchBtn { border: 0; border-radius: var(--ui-radius-control); background: transparent; }
   #appShell .sidebar-search input { font-size: calc(16px * var(--app-type-scale)); line-height: 24px; }
   #appShell #sidebarNav { display: flex; flex-direction: column; gap: 0; padding: 0; }
-  /* The nav label is a shared UiText (bodySm, 14px) whose size reads this
-     role (SidebarNavButton); on the phone it takes the reference's 17px. */
+  /* The nav label is a shared UiText (bodySm) whose size reads this role
+     (SidebarNavButton); on the phone it takes the reference's 14px step. */
   #appShell #sidebarNav { --nav-label-size: var(--ui-mobile-font-nav); }
   #appShell #sidebarNav .sidebar-nav-btn {
     display: grid;
-    grid-template-columns: 24px minmax(0, 1fr) auto;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
     align-items: center;
-    column-gap: 12px;
+    /* Reference: 20px glyph at x 16, label at x 42. */
+    column-gap: 6px;
     width: 100%;
     min-height: var(--ui-mobile-row);
     height: var(--ui-mobile-row);
@@ -461,7 +463,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     font-size: var(--ui-mobile-font-nav);
     font-weight: var(--ui-font-weight-regular);
     line-height: 24px;
-    color: var(--foreground);
+    color: var(--ui-text-nav);
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
   #appShell #sidebarNav .sidebar-nav-btn:hover {
@@ -470,7 +472,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell #sidebarNav .sidebar-nav-btn:active {
     background: var(--ui-bg-active);
   }
-  #appShell #sidebarNav .sidebar-nav-btn svg { width: 24px; height: 24px; }
+  #appShell #sidebarNav .sidebar-nav-btn svg { width: 20px; height: 20px; }
   #appShell #sidebarNav .nav-label { line-height: 24px; }
   #appShell #sidebarNav #navNew { order: 0; }
   #appShell #sidebarNav #navImages { order: 1; }
@@ -523,7 +525,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: var(--ui-radius-pill);
   }
   #appShell .recents-header { display: flex; align-items: center; justify-content: space-between; height: 30px; min-height: 30px; margin-top: 0; padding: 0 4px 0 10px; }
-  #appShell .recents-title { font-size: var(--ui-mobile-font-nav); font-weight: var(--ui-font-weight-medium); line-height: 20px; letter-spacing: 0; }
+  #appShell .recents-title { font-size: var(--ui-mobile-font-nav); font-weight: var(--ui-font-weight-regular); line-height: 20px; letter-spacing: 0; color: var(--muted-foreground); }
   /* 32px, not 22px: the drawer row holds two of these side by side, and a
      22px-wide button fell under the WCAG 2.2 SC 2.5.8 24×24 floor for
      pointer targets. 32px matches the session-row overflow button in the
@@ -564,7 +566,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     padding: 0 6px 0 10px;
     border-radius: var(--ui-radius-row);
     font-size: var(--ui-mobile-font-nav);
-    color: var(--foreground);
+    color: var(--ui-text-nav);
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
   #appShell .recent-item:hover {
@@ -573,7 +575,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recent-item:active {
     background: var(--ui-bg-active);
   }
-  #appShell .recent-item-text { font-size: inherit; line-height: 24px; font-weight: var(--ui-font-weight-regular); color: var(--foreground); }
+  #appShell .recent-item-text { font-size: inherit; line-height: 24px; font-weight: var(--ui-font-weight-regular); color: var(--ui-text-nav); }
   #appShell .recent-item-overflow {
     display: grid;
     place-items: center;
@@ -619,7 +621,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell #sidebarFooter {
     flex: 0 0 auto;
     padding: 8px 8px max(8px, env(safe-area-inset-bottom, 8px));
-    border-top: 1px solid var(--ui-border-subtle);
+    /* Reference: a one-device-pixel line barely above the canvas. */
+    border-top: 1px solid var(--ui-hairline-faint);
     gap: 0;
   }
   #appShell #sidebarFooter .sidebar-footer-actions { display: none; }
@@ -643,8 +646,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     background: var(--accent);
   }
   #appShell #sidebarUserRow .user-avatar { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; }
-  #appShell #sidebarUserRow .user-name { font-size: var(--ui-mobile-font-nav); line-height: 22px; font-weight: var(--ui-font-weight-regular); }
-  #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: var(--ui-mobile-font-meta); line-height: 18px; color: var(--ui-text-muted); }
+  /* Reference account lockup: name 15px, plan 13px. */
+  #appShell #sidebarUserRow .user-name { font-size: var(--ui-mobile-font-account); line-height: 20px; font-weight: var(--ui-font-weight-regular); }
+  #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: var(--ui-mobile-font-meta); line-height: 18px; color: var(--ui-text-nav); }
   /* Reference: the account menu is wider than the drawer (~305 of 390px) and
      overhangs its edge; it stays 16px clear of the viewport's right side. */
   #appShell .sidebar-account-menu { width: min(304px, calc(100vw - 24px)); max-width: calc(100vw - 24px); padding: 12px; }
@@ -655,25 +659,27 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .sidebar-account-menu .user-name { font-size: var(--ui-mobile-font-nav); font-weight: var(--ui-font-weight-regular); }
   #appShell .sidebar-account-menu .user-plan { font-size: var(--ui-mobile-font-meta); color: var(--ui-text-muted); }
 
-  /* Match the dark reference's true-white drawer glyphs and labels. The
-     ancestor pair is written once and reused via :is() — repeating
-     "#appShell #sidebar" on every line is the stacked-id debt the css-debt
-     ratchet tracks. */
+  /* Dark reference drawer tones: row glyphs and labels #cacaca, the header's
+     search / collapse glyphs the secondary #b0b0b0, the wordmark and the
+     account name the ink. The ancestor pair is written once and reused via
+     :is() — repeating "#appShell #sidebar" on every line is the stacked-id
+     debt the css-debt ratchet tracks. */
   [data-mode="dark"] #appShell #sidebar svg {
-    color: var(--ui-sidebar-glyph);
+    color: var(--ui-text-nav);
 
     stroke-linecap: round;
     stroke-linejoin: round;
   }
+  [data-mode="dark"] #appShell #sidebarHeader .btn-icon svg { color: var(--muted-foreground); }
   [data-mode="dark"] #appShell :is(#sidebar) :is(
     #sidebarNav .sidebar-nav-btn,
     .recent-item,
     .recent-item-text,
-    .sidebar-logo,
     .nav-new-badge,
     #sidebarSearch,
     #sidebarSearch::placeholder
-  ),
+  ) { color: var(--ui-text-nav); }
+  [data-mode="dark"] #appShell :is(#sidebar) .sidebar-logo,
   [data-mode="dark"] #appShell #sidebarUserRow :is(
     .sidebar-account-trigger,
     .user-name

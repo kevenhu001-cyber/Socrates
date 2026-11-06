@@ -26,7 +26,7 @@ const GLYPHS: Record<NavButtonSpec['key'], UiGlyphName> = {
 } as Record<NavButtonSpec['key'], UiGlyphName>;
 
 /* The label size is a CSS role so the phone drawer can take the reference's
-   17px step (polish/mobile-sidebar.css sets --nav-label-size under
+   phone step (polish/mobile-sidebar.css sets --nav-label-size under
    768px); everywhere else it resolves to the shared 14px body-sm step. */
 const LABEL_STYLE = {
   fontSize: 'var(--nav-label-size, var(--ui-font-size-sm))',

@@ -37,11 +37,13 @@ export interface TopBarActionProps {
   visible?: boolean;
   /** Phones: the 44px touch rung instead of the 36px pill. */
   touch?: boolean;
+  /** Glyph size; defaults to the reference's 20px on phones, 18px otherwise. */
+  iconSize?: number;
   part?: string;
   onPress: () => void;
 }
 
-export function TopBarAction({ id, icon, label, caption, pressed, visible = true, touch = false, part, onPress }: TopBarActionProps) {
+export function TopBarAction({ id, icon, label, caption, pressed, visible = true, touch = false, iconSize, part, onPress }: TopBarActionProps) {
   const { colors } = useUiTheme();
   const size = touch ? uiControl.hit : PILL;
   return (
@@ -67,7 +69,7 @@ export function TopBarAction({ id, icon, label, caption, pressed, visible = true
         transitionDuration: `${uiMotion.fast}ms`,
       } as object)}
     >
-      <UiIcon name={icon} size={touch ? 24 : 18} color={pressed ? colors.ink : colors.inkSecondary} />
+      <UiIcon name={icon} size={iconSize ?? (touch ? 20 : 18)} color={pressed ? colors.ink : colors.inkSecondary} />
       {caption ? <UiText variant="bodySm" numberOfLines={1}>{caption}</UiText> : null}
     </Pressable>
   );
@@ -180,9 +182,11 @@ export interface TopBarModeSwitchProps {
 export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, compact, narrow = false, reducedMotion, thumbShadow, onSelect }: TopBarModeSwitchProps) {
   const { colors } = useUiTheme();
   const index = Math.max(0, options.findIndex((option) => option.mode === value));
-  /* Phones: the reference's segments are ~90px; 88 keeps the 320px gutter. */
-  const optionWidth = narrow ? 64 : compact ? 88 : 96;
-  const inset = uiStep[50] - 1;
+  /* Phones (reference): a 186×36 control whose thumb is the full 36px height
+     and sits flush on a track drawn 1.5px shorter top and bottom. */
+  const optionWidth = narrow ? 64 : compact ? 93 : 96;
+  const inset = compact ? 0 : uiStep[50] - 1;
+  const trackInset = compact ? 1.5 : 0;
   const height = PILL;
   return (
     <View
@@ -198,10 +202,17 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
         padding: inset,
         height,
         borderRadius: uiRadius.pill,
-        backgroundColor: colors.fill,
+        backgroundColor: compact ? 'transparent' : colors.fill,
         position: 'relative',
       }}
     >
+      {compact ? (
+        <View
+          aria-hidden
+          {...dataSet({ part: 'mode-track' })}
+          style={{ position: 'absolute', left: 0, right: 0, top: trackInset, bottom: trackInset, borderRadius: uiRadius.pill, backgroundColor: colors.fill }}
+        />
+      ) : null}
       <View
         aria-hidden
         {...dataSet({ part: 'mode-thumb' })}
@@ -213,8 +224,7 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
           width: optionWidth,
           borderRadius: uiRadius.pill,
           backgroundColor: colors.card,
-          /* Phones draw the thumb as a flat step, as the reference does. */
-          boxShadow: compact ? 'none' : thumbShadow ?? uiShadow.light.raised,
+          boxShadow: thumbShadow ?? uiShadow.light.raised,
           transform: [{ translateX: index * optionWidth }],
           transitionProperty: reducedMotion ? 'none' : 'transform',
           transitionDuration: reducedMotion ? '0ms' : `${uiMotion.medium}ms`,
@@ -242,8 +252,8 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
           >
             {({ hovered }: PressState) => (
               <UiText
-                /* Phones set the segments at the reference's 16px; desktop keeps 14px. */
-                variant={compact ? 'body' : 'bodySm'}
+                /* The reference sets the segments at 14px (glyph advance 13.7). */
+                variant="bodySm"
                 tone={selected || hovered ? 'ink' : 'secondary'}
                 numberOfLines={1}
                 style={{ fontWeight: selected ? '500' : '400', transitionProperty: 'color', transitionDuration: `${uiMotion.fast}ms` } as object}

@@ -18,9 +18,13 @@
     border: 0;
     background: transparent;
     box-shadow: none;
-    color: var(--foreground);
+    color: var(--ui-icon-secondary);
   }
-  #appShell #sidebarOpenBtn svg { width: 24px; height: 24px; }
+  /* Reference header glyphs: 20px, the drawer toggle and new chat in the
+     secondary grey (#b0b0b0 dark / #8f8f8f light), trailing actions in ink. */
+  #appShell #sidebarOpenBtn svg { width: 20px; height: 20px; }
+  #appShell .top-bar-left { --ui-ink-secondary: var(--ui-icon-secondary); }
+  #appShell .top-bar-right { --ui-ink-secondary: var(--ui-text-primary); }
   /* Reference: the sidebar glyph (rounded frame + rail line), not a hamburger. */
   #appShell #sidebarOpenBtn .glyph-panel { display: block; }
   #appShell #sidebarOpenBtn .glyph-hamburger { display: none; }
@@ -33,7 +37,12 @@
   #appShell .top-mode-switch {
     display: inline-flex;
     top: calc(50% + env(safe-area-inset-top, 0px) / 2);
+    /* Reference mode switch tones: track / thumb are the field steps, the
+       idle label #5c5c5c (light) / #cecece (dark). */
+    --ui-fill: var(--ui-bg-segment);
+    --ui-card: var(--ui-bg-field);
   }
+  [data-mode="dark"] #appShell .top-mode-switch { --ui-ink-secondary: var(--ui-text-nav); }
   body:not([data-conversation-active="true"]) #appShell .mobile-newchat-btn { display: none; }
   /* 手机对话中不显示模型 chip（RN-7 前的行为）；模型设置仍可从提问框的强度胶囊打开。 */
   body[data-conversation-active="true"] #appShell .top-model-slot { display: none; }
@@ -92,7 +101,9 @@
   #appShell .top-conversation-title {
     flex: 1 1 auto;
     min-width: 0;
-    padding: 0 8px;
+    /* Reference title starts at x 114, 22px after the new-chat target. */
+    margin-inline-start: 10px;
+    padding: 0 12px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -119,9 +130,11 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     text-align: center;
-    color: var(--ui-text-muted);
+    /* Reference: 12px in the secondary grey (#b0b0b0 dark), no tracking. */
+    color: var(--muted-foreground);
     font-size: var(--ui-font-size-xxs);
     line-height: var(--ui-line-height-normal);
+    letter-spacing: 0;
     pointer-events: none;
   }
   :root:is([data-keyboard-open="true"], [data-keyboard-phase="opening"], [data-keyboard-phase="open"], [data-keyboard-phase="closing"]) #appShell #chatDisclaimer { display: none; }

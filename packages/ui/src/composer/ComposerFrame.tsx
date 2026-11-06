@@ -47,7 +47,8 @@ export function ComposerFrame({ focused, compact = false, shadows, top, topVisib
       onPointerLeave={() => setHovered(false)}
       style={{
         width: '100%',
-        borderRadius: compact ? uiRadius.card + uiStep[50] : uiRadius.card,
+        /* Phones: the reference box's corner measures 26px (circle fit). */
+        borderRadius: compact ? uiRadius.card + uiStep[25] : uiRadius.card,
         backgroundColor: colors.card,
         boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
         transitionProperty: 'box-shadow',
