@@ -102,6 +102,29 @@
   }
   body.workspace-active #appShell .top-conversation-title { display: none; }
 }
+
+/* Conversation disclaimer (reference 1000038092): one quiet centred line
+   between the transcript and the composer. Desktop keeps its own footer
+   (#topicDisclaimer), so the twin is phone-only. It drops out while the soft
+   keyboard is up, the same moments #topicDisclaimer goes quiet on the
+   landing page, so the composer never has to share the lifted strip. */
+#appShell #chatDisclaimer { display: none; }
+@media (max-width: 768px) {
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #chatDisclaimer {
+    display: block;
+    margin: 0 0 var(--ui-space-sm);
+    padding: 0 var(--ui-space-lg);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: center;
+    color: var(--ui-text-muted);
+    font-size: var(--ui-font-size-xxs);
+    line-height: var(--ui-line-height-normal);
+    pointer-events: none;
+  }
+  :root:is([data-keyboard-open="true"], [data-keyboard-phase="opening"], [data-keyboard-phase="open"], [data-keyboard-phase="closing"]) #appShell #chatDisclaimer { display: none; }
+}
 @media (max-width: 359px) {
   /* 320px leaves a 76px gutter beside the mode switch: the caret goes first
      so the model name still fits. The selector repeats the state prefix so it

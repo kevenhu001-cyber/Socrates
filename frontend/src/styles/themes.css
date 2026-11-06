@@ -575,6 +575,9 @@ html[data-theme="socrates"][data-mode="light"] {
 }
 
 html[data-theme="socrates"][data-mode="dark"] {
+  /* Reference user bubble: a deep tint of the blue action colour under the
+     same primary ink (#ededed on it is ≈ 10:1). Assistant turns stay bare. */
+  --conversation-user: color-mix(in srgb, var(--ui-accent-action) 42%, var(--ui-bg-page));
   --cg-surface-raised: var(--ui-bg-control);
   /* Legacy HSL channels project the same four-step ladder the `--ui-*`
    * roles use. They stay HSL triplets because the frozen legacy tree
@@ -599,6 +602,9 @@ html[data-theme="socrates"][data-mode="dark"] {
 }
 
 html[data-theme="socrates"][data-mode="light"] {
+  /* Light twin of the blue user bubble: a pale action tint on the paper, the
+     primary ink on top. */
+  --conversation-user: color-mix(in srgb, var(--ui-accent-action) 12%, var(--ui-bg-page));
   --cg-surface-raised: var(--ui-bg-raised);
   /* Same four-step ladder as dark mode, running the other way.
    *
