@@ -241,22 +241,9 @@ export function _looksLikeNumericMath(raw: string, next: string): boolean {
   return !NUMERIC_MATH_BAD_EDGE_RE.test(raw);
 }
 
-/* Closed `$…$` acceptance shared by the streaming and final passes. `next`
-   is the character right after the closing `$`. */
-function _acceptInlineMath(raw: string, next: string): boolean {
-  return _looksLikeInlineMath(String(raw).trim()) || _looksLikeNumericMath(raw, next);
-}
-
-/* Closed inline `$…$` replacement, shared by the streaming and final passes.
-
-   A lazy `/\$(.+?)\$/` pairs dollars strictly left to right and consumes
-   BOTH delimiters even when the candidate is rejected, so one currency
-   amount swallowed the next formula's opening `$` (`花了 $5，概率 $1/2$`
-   paired `$5，概率 $` and left `1/2$` as text). This scanner hands back only
-   the opening `$` on a rejection and retries from the next character.
-   `$$` runs are display-math delimiters and never open or close inline
-   math; an escaped `\$` never opens. `multiline` (the final pass) lets a
-   formula wrap a single newline but never cross a blank line. */
+/* Explicit paired dollar delimiters always request math. Escaped dollars
+   remain literal; doubled dollars belong to the display-math pass.
+   Streaming still limits unclosed fragments separately. */
 export function replaceInlineDollarMath(
   s: string,
   multiline: boolean,
@@ -291,13 +278,14 @@ export function replaceInlineDollarMath(
         if (/^[ \t]*(?:[#＃]|(?:\*\*|__)[ \t]*[#＃])/.test(s.slice(j + 1))) break;
       }
       if (c === '$') {
+        if (isEscaped(j)) continue;
         if (s.charAt(j + 1) !== '$') close = j;
         break;
       }
     }
     if (close > open + 1) {
       const math = s.slice(open + 1, close);
-      const html = _acceptInlineMath(math, s.charAt(close + 1)) ? render(math) : null;
+      const html = math.trim() ? render(math) : null;
       if (html !== null) {
         out += s.slice(i, open) + html;
         i = close + 1;

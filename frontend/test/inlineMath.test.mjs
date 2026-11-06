@@ -85,3 +85,11 @@ test('before KaTeX loads, marks paint and a formula keeps its escaped source', (
   assert.equal(renderInlineMathHtml('$a<b$ 只有公式'), null);
   assert.equal(renderInlineMathHtml('**粗** 和 $a**b<c$'), '<strong>粗</strong> 和 $a**b&lt;c$');
 });
+
+
+test('explicit dollars accept words and spaces', () => {
+  installKatex();
+  for (const source of ['$hello world$', '$ 123 $', '$USD$']) {
+    assert.match(renderInlineMathHtml(source), /katex/);
+  }
+});

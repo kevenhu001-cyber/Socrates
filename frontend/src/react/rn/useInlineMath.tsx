@@ -22,3 +22,9 @@ export function useInlineMath(): InlineTextRenderer {
     return <span className="math-inline" data-part={part} data-math-rev={revision} dangerouslySetInnerHTML={{ __html: html }} />;
   }, [revision]);
 }
+
+/** Shared rich inline text for DOM cards, including lazy KaTeX refresh. */
+export function MathText({ text }: { text: string }) {
+  const render = useInlineMath();
+  return <>{render(text, 'content')}</>;
+}

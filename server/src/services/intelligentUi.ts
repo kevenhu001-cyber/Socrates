@@ -1,3 +1,4 @@
+import { visualizationTemplateGuide } from './visualization.js';
 import { validateIntelligentUi as validateEnvelope } from '../../../packages/core/src/intelligentUiValidation.js';
 import { inspectOpenUiProgram } from './openUiProgram.js';
 import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
@@ -20,7 +21,7 @@ export const INTELLIGENT_UI_TOOL = {
               id: { type: 'string', minLength: 1, maxLength: 80, pattern: '^[A-Za-z0-9._:-]+$' },
               type: { type: 'string', enum: TYPES },
               parent: { type: 'string', maxLength: 80, pattern: '^[A-Za-z0-9._:-]+$' },
-              source: { type: 'string', maxLength: 50000, description: OPENUI_TOOL_GUIDANCE },
+              source: { type: 'string', maxLength: 50000, description: OPENUI_TOOL_GUIDANCE + '\nSupported Visualization templates and exact payload contracts:\n' + visualizationTemplateGuide() },
               title: { description: 'Plain text or local value expression.' },
               description: { description: 'Plain text or local value expression.' },
               text: { description: 'Text node or callout content, plain text or expression.' },

@@ -79,6 +79,8 @@ test('a chart written as an openui fence has no frame and no header band in dark
       headerDivider: headerStyle.borderBottomWidth,
     };
   });
+  await expect(card.locator('[data-viz-action]')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/inline-visualization-dark.png' });
   expect(frame).toEqual({ border: '0px', background: 'rgba(0, 0, 0, 0)', headerBackground: 'rgba(0, 0, 0, 0)', headerDivider: '0px' });
 });
 
@@ -128,4 +130,15 @@ test('on a phone process, timeline and number line labels keep a readable size',
     expect(sizes.fontPx, template).toBeGreaterThanOrEqual(10);
     expect(sizes.overflow, template).toBeLessThanOrEqual(1);
   }
+});
+
+
+test('OpenUI headings, definitions, flashcards and tables typeset explicit dollars', async ({ page }) => {
+  const source = '```openui\nroot = Col([Title("$hello$"), Text("定义：$ 123 $"), Flashcard("$USD$", "$x+1$"), Table([{key:"v",label:"$x$"}],[{v:"$y$"}])])\n```';
+  await open(page, [msg('math-fields', source)]);
+  const body = row(page, 'math-fields');
+  await expect(body.locator('.katex')).toHaveCount(5);
+  await body.locator('.iui-flashcard').click();
+  await expect(body.locator('.iui-flashcard .katex')).toHaveCount(1);
+  await page.screenshot({ path: 'test-results/inline-math-fields.png' });
 });

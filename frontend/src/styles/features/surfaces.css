@@ -475,9 +475,9 @@
 }
 
 #appShell .visualization-card {
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-lg);
-  background: var(--ui-bg-raised);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
   overflow: hidden;
 }
@@ -590,3 +590,7 @@
   #appShell .scheduled-recommendation-copy strong { font-size: var(--ui-font-size-md); }
 }
 
+
+/* Visual artifacts sit directly in the transcript. */
+#appShell .viz { border: 0; box-shadow: none; background: transparent; }
+#appShell .viz-actions { display: none; }

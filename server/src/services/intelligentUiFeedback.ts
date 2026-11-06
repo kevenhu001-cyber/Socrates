@@ -91,7 +91,7 @@ export function intelligentUiFeedback(error: string, failure: IntelligentUiFailu
     if (line) lines.push(`A valid call: ${line}`);
   }
   if (failure.failures.some((item) => item.stage === 'payload_shape' || item.stage === 'semantic')) lines.push(NUMBER_HINT);
-  if (failure.stage === 'openui_syntax') {
+  if (failure.stage === 'openui_syntax' || failure.stage === 'openui_program') {
     lines.push('Write one statement per line as name = Component(...), define root = Col([...]) first, close every string, bracket and parenthesis, and pass Visualization arguments in order: template, title, payload, accessibilitySummary.');
   }
   return {

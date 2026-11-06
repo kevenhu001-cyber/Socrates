@@ -1,6 +1,6 @@
 import { Button as UiButton } from '../ui/Button';
 import { Renderer, type ActionEvent, type OpenUIError, type ParseResult } from '@openuidev/react-lang';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Component, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { i18n } from '../legacy/gateway';
 import { IntelligentSurface } from './IntelligentSurface';
 import { runOpenUiAction } from './openui/actionBridge';
@@ -27,6 +27,17 @@ interface OpenUiProgramProps {
   onError(errors: OpenUIError[]): void;
   onParseResult(result: ParseResult | null): void;
   onStateUpdate(state: Record<string, unknown>): void;
+}
+
+/** A malformed program must not take down the surrounding conversation. */
+class OpenUiRenderBoundary extends Component<{ source: string; children: ReactNode; onFailure(message: string): void }, { source: string; failed: boolean }> {
+  state = { source: this.props.source, failed: false };
+  static getDerivedStateFromProps(props: { source: string }, state: { source: string }) {
+    return props.source !== state.source ? { source: props.source, failed: false } : null;
+  }
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error) { this.props.onFailure(error.message); }
+  render() { return this.state.failed ? null : this.props.children; }
 }
 
 function OpenUiProgram({
@@ -85,35 +96,36 @@ function OpenUiUnavailableNotice({
 /** OpenUI is loaded only when a response actually contains an OpenUI program. */
 export default function OpenUiBlock({ source, open = false, readOnly = false, embedded = false }: OpenUiBlockProps) {
   const host = useRef<HTMLDivElement>(null);
-  const [currentState, setCurrentState] = useState<Record<string, unknown>>({});
+  const [currentState, setCurrentState] = useState<{ source: string; value: Record<string, unknown> }>({ source, value: {} });
   const onStateUpdate = useCallback((state: Record<string, unknown>) => {
-    setCurrentState(state);
-  }, []);
-  const [runtimeErrors, setRuntimeErrors] = useState<string[]>([]);
-  const [hasRoot, setHasRoot] = useState<boolean | null>(null);
+    setCurrentState({ source, value: state });
+  }, [source]);
+  const [runtimeErrors, setRuntimeErrors] = useState<{ source: string; messages: string[] }>({ source, messages: [] });
+  const [hasRoot, setHasRoot] = useState<{ source: string; present: boolean } | null>(null);
   const onParseResult = useCallback((result: ParseResult | null) => {
-    setHasRoot(result ? Boolean(result.root || result.rootExpression) : null);
-  }, []);
+    setHasRoot(result ? { source, present: Boolean(result.root || result.rootExpression) } : null);
+  }, [source]);
   const onError = useCallback((errors: OpenUIError[]) => {
-    setRuntimeErrors(errors.filter((error) => error.severity !== 'warning' || error.source === 'runtime').map((error) => error.message));
-  }, []);
+    setRuntimeErrors({ source, messages: errors.filter((error) => error.severity !== 'warning' || error.source === 'runtime').map((error) => error.message) });
+  }, [source]);
   const onAction = useCallback((event: ActionEvent) => {
     if (!open) runOpenUiAction(event, host.current, readOnly);
   }, [open, readOnly]);
   const labels = Object.fromEntries(Object.entries(remoteLabelDefaults).map(([key, fallback]) => [key, i18n(`intui.${key}`, fallback)])) as typeof remoteLabelDefaults;
-  const tooLarge = source.length > 60000;
-  const issues = useMemo(() => open || source.length > 60000 ? [] : programIssues(source), [source, open]);
-  const stateIssue = useMemo(() => open || tooLarge ? null : runtimeProgramIssues(source, currentState)[0] ?? null, [source, open, tooLarge, currentState]);
-  const unavailable = Boolean(tooLarge || (!open && (stateIssue || runtimeErrors.length > 0 || hasRoot === false || issues.length > 0)));
+  const tooLarge = source.length > 50000;
+  const issues = useMemo(() => open || source.length > 50000 ? [] : programIssues(source), [source, open]);
+  const stateIssue = useMemo(() => open || tooLarge ? null : runtimeProgramIssues(source, currentState.source === source ? currentState.value : {})[0] ?? null, [source, open, tooLarge, currentState]);
+  const unavailable = Boolean(tooLarge || (!open && (stateIssue || (runtimeErrors.source === source && runtimeErrors.messages.length > 0) || (hasRoot?.source === source && !hasRoot.present) || issues.length > 0)));
   const repair = () => {
     if (readOnly || open) return;
     host.current?.dispatchEvent(new CustomEvent('tool-retry', { bubbles: true, detail: {
       tool: 'intelligent_ui',
-      prompt: `Repair this OpenUI view with render_intelligent_ui. Problems: ${[...issues, ...runtimeErrors, stateIssue].filter(Boolean).join('; ') || 'Client runtime error'}. Every enabled Button needs an explicit action, inputs bind to declared $state, and outputs must update locally. Preserve the requested tool and connect its inputs, actions and results. Use local actions for deterministic calculations, filtering and list edits; use @ToAssistant only for explicitly requesting assistant work.\n\n${source}\n\nCurrent local state: ${JSON.stringify(currentState, (_, value: unknown) => typeof value === 'number' && !Number.isFinite(value) ? String(value) : value).slice(0, 10000)}`,
+      prompt: `Repair this OpenUI view with render_intelligent_ui. Problems: ${[...issues, ...(runtimeErrors.source === source ? runtimeErrors.messages : []), stateIssue].filter(Boolean).join('; ') || 'Client runtime error'}. Every enabled Button needs an explicit action, inputs bind to declared $state, and outputs must update locally. Preserve the requested tool and connect its inputs, actions and results. Use local actions for deterministic calculations, filtering and list edits; use @ToAssistant only for explicitly requesting assistant work.\n\n${source}\n\nCurrent local state: ${JSON.stringify(currentState.source === source ? currentState.value : {}, (_, value: unknown) => typeof value === 'number' && !Number.isFinite(value) ? String(value) : value).slice(0, 10000)}`,
     } }));
   };
   const content = <div className="intui-openui" ref={host} data-openui-streaming={open ? 'true' : 'false'}>
     <div className="iui-program" data-invalid-result={stateIssue ? 'true' : undefined}>
+      <OpenUiRenderBoundary source={source} onFailure={(message) => setRuntimeErrors({ source, messages: [message] })}>
       <OpenUiProgram
         source={source}
         open={open}
@@ -124,6 +136,7 @@ export default function OpenUiBlock({ source, open = false, readOnly = false, em
         onParseResult={onParseResult}
         onStateUpdate={onStateUpdate}
       />
+      </OpenUiRenderBoundary>
     </div>
     <OpenUiUnavailableNotice
       visible={unavailable}

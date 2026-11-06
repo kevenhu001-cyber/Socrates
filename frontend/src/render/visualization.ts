@@ -1,4 +1,4 @@
-import type { VisualizationCard, VisualizationMountOptions, LiveChart, VisualizationRenderState, ExportableChart } from './visualizationRuntime.ts';
+import type { VisualizationCard, VisualizationMountOptions, LiveChart, VisualizationRenderState } from './visualizationRuntime.ts';
 import type { ChartInstance } from '../types/vendorRuntime.ts';
 /* Native visual cards. The model provides semantic data only; this module
  * owns Socrates styling, responsive layout, interaction, and export. */
@@ -13,11 +13,10 @@ import { asVisualizationSpec, VizSpec } from './visualizationSpec.ts';
 import { normalizeVisualizationSpec } from '@socrates/core/visualizationNormalize';
 import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable, semanticLayoutWidth, SEMANTIC_LAYOUT_WIDTH } from './visualizationStatic.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { openWorkbench } from '../react/workbench/workbenchStore';
 import { createElement, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
-import { VisualizationActions, VisualizationFallbackActions } from '../react/visualization/VisualizationActions.tsx';
+import { VisualizationFallbackActions } from '../react/visualization/VisualizationActions.tsx';
 import { Button } from '../react/ui/shadcn/button';
 import { t } from '../i18n.ts';
 
@@ -142,15 +141,6 @@ function remountVisualization(spec: VizSpec, host: HTMLElement, options: Visuali
   return mountVisualization(spec, host, opts);
 }
 
-function downloadDataUrl(name: string, dataUrl: string) {
-  const link = document.createElement('a'); link.href = dataUrl; link.download = name; document.body.appendChild(link); link.click(); link.remove();
-}
-
-function dataUrlExtension(dataUrl: string) {
-  const mime = /^data:([^;,]+)/.exec(String(dataUrl || ''));
-  return mime && mime[1] === 'image/svg+xml' ? '.svg' : '.png';
-}
-
 /* Structure diagrams are plain inline SVG; expose the same download contract
    the chart renderers provide so the Download button is never a dead end. */
 function svgStageChart(stage: HTMLElement) {
@@ -169,60 +159,6 @@ function renderCardMath(card: Element) {
       if (typeof renderMath === 'function') renderMath(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
     }
   } catch (error) { reportSwallow(error, 'visualization.renderCardMath'); }
-}
-
-function bindCard(card: VisualizationCard, spec: VizSpec, chart: ExportableChart | null, opts: VisualizationMountOptions = {}) {
-  opts = opts || {};
-  const table = card.querySelector('.visualization-data');
-  const requestFs = card.requestFullscreen || card.webkitRequestFullscreen;
-  const labels = {
-    workbench: vizT('workbench.title', 'Workbench'),
-    table: vizT('viz.action.table', 'Data'),
-    reset: vizT('viz.action.reset', 'Reset view'),
-    download: vizT('viz.action.download', 'Download PNG'),
-    fullscreen: vizT('viz.action.fullscreen', 'Fullscreen'),
-  };
-  const content = createElement(VisualizationActions, {
-    labels: labels,
-    tableAvailable: !!(table && table.querySelector('table')),
-    resetAvailable: !opts.noReset && (!!opts.onReset || typeof chart?.dispatchAction === 'function'),
-    downloadAvailable: !!chart,
-    fullscreenAvailable: !!requestFs,
-    onWorkbench: function () {
-      const preview = card.cloneNode(true) as HTMLElement;
-      (preview as Element).querySelector('[data-viz-actions-root]')?.remove();
-      openWorkbench({
-        id: card.dataset.visualizationId || ('viz-' + Date.now()),
-        title: spec.title || vizT('workbench.chartTitle', 'Visualization'),
-        titleKey: spec.title ? undefined : 'workbench.chartTitle',
-        type: 'chart',
-        code: JSON.stringify(spec, null, 2),
-        language: 'json',
-        previewHtml: preview.outerHTML,
-      }, 'preview');
-    },
-    onReset: function () {
-      if (opts.onReset) { opts.onReset(); return; }
-      chart?.dispatchAction?.({ type: 'restore' });
-    },
-    onDownload: function () {
-      if (!chart) return;
-      const dataUrl = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: token('--bg-100', '#fff') });
-      Promise.resolve(dataUrl).then(function (resolved) {
-        if (resolved) downloadDataUrl((spec.title || 'visualization').replace(/[^\w-]+/g, '-') + dataUrlExtension(resolved), resolved);
-      });
-    },
-    onFullscreen: function () {
-      if (!card.requestFullscreen) {
-        if (card.webkitRequestFullscreen) card.webkitRequestFullscreen();
-        return;
-      }
-      Promise.resolve(card.requestFullscreen()).catch(function (error) {
-        reportSwallow(error, 'visualization.fullscreen');
-      });
-    },
-  });
-  mountCardReactSurface(card, card.querySelector<HTMLElement>('[data-viz-actions-root]')!, 'actions', content);
 }
 
 function mountFallbackActions(card: VisualizationCard, host: HTMLElement, spec: VizSpec, options: VisualizationMountOptions, error: unknown) {
@@ -264,7 +200,7 @@ function createVisualizationCard(spec: VizSpec, host: HTMLElement, cardId: strin
   card.dataset.visualizationId = cardId;
   card.setAttribute('aria-label', spec.title + '. ' + spec.accessibilitySummary);
   mounting.set(cardId, card);
-  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions" data-viz-actions-root></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"><p class="visualization-stage-progress" role="status">' + esc(vizT('viz.state.loadingRenderer', 'Loading the chart renderer…')) + '</p></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
+  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"><p class="visualization-stage-progress" role="status">' + esc(vizT('viz.state.loadingRenderer', 'Loading the chart renderer…')) + '</p></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
   host.appendChild(card);
   mounting.delete(cardId);
   renderCardMath(card);
@@ -524,11 +460,6 @@ function chartRuntimeForCard(spec: VizSpec, card: VisualizationCard, renderState
   return runtime;
 }
 
-function cardSkipsChartReset(spec: VizSpec, card: VisualizationCard) {
-  return card.dataset.visualizationRenderer === 'mermaid'
-    || !usesSpecializedRenderer(spec.template) && !CHART_TEMPLATES.includes(spec.template);
-}
-
 function createChartRuntime(card: VisualizationCard, chart: ChartInstance, initialSpec: VizSpec, liveEntry: LiveChart | null) {
   let currentSpec = initialSpec;
   function update(rawNext: VizSpec) {
@@ -590,7 +521,6 @@ function handleVisualizationMountFailure(error: unknown, spec: VizSpec, host: HT
   }
   reportSwallow(error, 'visualization/' + spec.template + '/render_failure', 'recoverable');
   renderVisualizationFailure(spec, host, options, card, stage, error);
-  bindCard(card, spec, null, { noReset: true });
   return card;
 }
 
@@ -622,15 +552,7 @@ export async function mountVisualization(rawSpec: unknown, host: HTMLElement | n
     const cancelled = await mountTemplateRenderer(spec, host, options, card, stage, cardId, renderState, isCancelled);
     if (stopCancelledMount(cancelled, card, isCancelled)) return null;
     clearStageProgress(stage);
-    const chart = renderState.chart;
-    const chartRuntime = chartRuntimeForCard(spec, card, renderState);
-    bindCard(card, spec, chart, {
-      /* ECharts' toolbox `restore` action crashes some series types
-         (radar: "reading 'childAt'"); re-applying the option is the
-         reliable way to return to the initial view. */
-      onReset: chartRuntime ? chartRuntime.reset : null,
-      noReset: cardSkipsChartReset(spec, card),
-    });
+    chartRuntimeForCard(spec, card, renderState);
   } catch (error) {
     clearStageProgress(stage);
     return handleVisualizationMountFailure(error, spec, host, options, card, stage, renderState, isCancelled);

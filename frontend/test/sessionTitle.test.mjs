@@ -35,3 +35,8 @@ test('a first prompt gets a compact fallback before provider availability is che
     setCurrentLanguage(previousLanguage);
   }
 });
+
+
+test('a single long English token cannot overflow the title limit', () => {
+  assert.equal(normalizeSessionTitle('a'.repeat(200)).length, 48);
+});

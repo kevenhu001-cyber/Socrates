@@ -60,6 +60,9 @@ export const Visualization = defineComponent({
       if (streaming) return;
       const container = host.current;
       if (!container) return;
+      // Retry can start while React still marks the previous failure hidden.
+      // Engines must measure a visible host before initializing their canvas.
+      container.hidden = false;
       const bridge = getLegacyActions().postRender;
       const spec = asVisualizationSpec(JSON.parse(specKey));
       if (!spec) {

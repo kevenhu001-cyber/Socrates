@@ -28,23 +28,11 @@ async function mount() {
   return mountVisualization(spec, host);
 }
 
-test('static SVG cards expose data and export, with no inert reset control', async (context) => {
-  const downloads = [];
-  context.mock.method(dom.window.HTMLAnchorElement.prototype, 'click', function () {
-    downloads.push({ url: this.href, name: this.download });
-  });
+test('static SVG cards embed without an action toolbar', async () => {
   const card = await mount();
   assert.ok(card.querySelector('svg'));
-  assert.equal(card.querySelector('[data-viz-action="reset"]').hidden, true);
-  assert.equal(card.querySelector('[data-viz-action="reset"]').getAttribute('aria-hidden'), 'true');
-  const table = card.querySelector('.visualization-data');
-  card.querySelector('[data-viz-action="table"]').click();
-  assert.equal(table.hidden, false);
-  card.querySelector('[data-viz-action="download"]').click();
-  await Promise.resolve();
-  assert.equal(downloads.length, 1);
-  assert.equal(downloads[0].name, 'A-circle.svg');
-  assert.match(downloads[0].url, /^data:image\/svg\+xml/);
+  assert.equal(card.querySelector('[data-viz-action]'), null);
+  assert.equal(card.querySelector('.visualization-data').hidden, true);
 });
 
 test('cleanup failure is reported once and does not block card removal', async (context) => {
@@ -60,7 +48,7 @@ test('cleanup failure is reported once and does not block card removal', async (
   assert.deepEqual(diagnostics.map((entry) => entry[1]), ['visualization.cleanupCard']);
 });
 
-test('math enhancement failure preserves the SVG and its action controls', async (context) => {
+test('math enhancement failure preserves the inline SVG', async (context) => {
   const diagnostics = [];
   context.mock.method(console, 'warn', (...args) => diagnostics.push(args));
   /* renderCardMath reads the KaTeX auto-render hook from `window`, which in
@@ -68,20 +56,6 @@ test('math enhancement failure preserves the SVG and its action controls', async
   window.renderMathInElement = () => { throw new Error('Math renderer failed'); };
   const card = await mount();
   assert.ok(card.querySelector('svg'));
-  assert.equal(card.querySelector('[data-viz-action="download"]').hidden, false);
+  assert.equal(card.querySelector('[data-viz-action]'), null);
   assert.deepEqual(diagnostics.map((entry) => entry[1]), ['visualization.renderCardMath']);
-});
-
-test('action labels follow the active locale through the imported translator', async () => {
-  /* The card used to read a global window.t that tests could replace; it now
-     imports `t` from i18n.ts and only falls back to English when a key is
-     missing, so the locale itself decides the label. */
-  setCurrentLanguage('en');
-  let card = await mount();
-  assert.equal(card.querySelector('[data-viz-action="download"]').textContent, 'Download PNG');
-  disposeVisualizations(document.body);
-  document.body.replaceChildren();
-  setCurrentLanguage('zh');
-  card = await mount();
-  assert.equal(card.querySelector('[data-viz-action="download"]').textContent, '下载 PNG');
 });

@@ -41,7 +41,7 @@ function compactTitle(value: unknown): string {
   let sentence=clean.split(isZh ? /[。！？!?;\n]/ : /[.!?\n]/)[0].trim();
   if(!sentence)sentence=clean;
   if(isZh)return Array.from(sentence).slice(0,8).join("").replace(/[\s，。！？；：、]+$/g,"");
-  return sentence.split(/\s+/).slice(0,6).join(" ").replace(/[\s.,;:!?]+$/g,"");
+  return sentence.split(/\s+/).slice(0,6).join(" ").slice(0,48).replace(/[\s.,;:!?]+$/g,"");
 }
 
 export function fallbackTitle(topic: unknown): string {
@@ -101,7 +101,7 @@ function createTitlePrompt(topic: string): { prompt: string; sysContent: string 
   }
   return {
     prompt: "Based on the user's first message below, generate a SHORT "+
-      "declarative title (3-8 words) in a statement tone that names what the "+
+      "declarative title (3-6 words, at most 48 characters) in a statement tone that names what the "+
       "session is about. Examples: \"Exploring quantum computing\", "+
       "\"Understanding machine learning basics\", \"Writing better essays\". "+
       "Do NOT use a question or a label — it must read as a statement. "+

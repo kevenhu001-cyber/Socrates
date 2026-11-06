@@ -40,6 +40,7 @@ export interface QuizCardProps {
   explanation?: string;
   /** Grade + report. May be async. Absent: graded locally, nothing reported. */
   onSubmit?: (letters: string[]) => QuizResult | Promise<QuizResult>;
+  initialAnswer?: { letters: string[]; result: QuizResult };
   testID?: string;
 }
 
@@ -127,9 +128,9 @@ function OptionRow({ option, mark, multi, disabled, onPress }: {
   );
 }
 
-export function QuizCard({ question, options, answerKey, multi = false, explanation, onSubmit, testID }: QuizCardProps) {
+export function QuizCard({ question, options, answerKey, multi = false, explanation, onSubmit, initialAnswer, testID }: QuizCardProps) {
   const { strings, readOnly } = useLearnHost();
-  const [state, dispatch] = useReducer(quizReducer, initialQuizState);
+  const [state, dispatch] = useReducer(quizReducer, initialAnswer ? { ...initialQuizState, selected: initialAnswer.letters, phase: 'answered', verdict: initialAnswer.result.verdict, feedback: initialAnswer.result.feedback } : initialQuizState);
   const answered = state.phase === 'answered';
   const locked = readOnly || state.phase !== 'choosing';
 

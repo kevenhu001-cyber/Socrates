@@ -1,3 +1,4 @@
+import { stateStore } from '../../state/store.ts';
 /**
  * RN-3 web adapters for the shared learning scaffolds (packages/ui/src/learn).
  * Every surface mounts through WebUiTheme (rnwGlobal first); content fields
@@ -55,7 +56,8 @@ function RichHtml({ source, part }: { source: string; part: string }) {
      turn-level KaTeX repaint only re-renders prose; repaint the field once. */
   const [katexTick, setKatexTick] = useState(0);
   useEffect(() => {
-    if ((window as { katex?: unknown }).katex || !hasMathDelimiters(source)) return undefined;
+    if (!hasMathDelimiters(source)) return undefined;
+    // Subscribe even if KaTeX completed between render and this effect.
     return onKatexReady(() => setKatexTick((value) => value + 1));
   }, [source]);
   const html = useMemo(() => {
@@ -83,8 +85,12 @@ export function LearnMount({ readOnly, children }: { readOnly: boolean; children
   );
 }
 
+// Retain the submitted answer when the tutor follow-up rebuilds the transcript.
+const submittedQuizzes = new Map<string, { letters: string[]; result: QuizResult }>();
+
 export function QuizScaffold({ parsed }: { parsed: QuizMountData }) {
   const answerKey = parseAnswerKey(parsed.correct);
+  const answerId = JSON.stringify([stateStore.read('currentSessionId'), parsed.q, parsed.options, answerKey]);
   const onSubmit = (letters: string[]): QuizResult | Promise<QuizResult> => {
     const pick = widgetRuntime().handleQuizPick;
     const chosen = parsed.options.filter((option) => letters.includes(option.letter));
@@ -98,11 +104,15 @@ export function QuizScaffold({ parsed }: { parsed: QuizMountData }) {
       verdict: feedback.verdict ?? (/\bok\b/.test(feedback.feedbackClass) ? 'correct' : /\bbad\b/.test(feedback.feedbackClass) ? 'incorrect' : 'recorded'),
       feedback: feedback.feedbackText,
     });
+    const right = answerKey.join('') === picked.letter;
+    submittedQuizzes.set(answerId, { letters, result: { verdict: answerKey.length ? (right ? 'correct' : 'incorrect') : 'recorded', feedback: '' } });
+    if (submittedQuizzes.size > 100) submittedQuizzes.delete(submittedQuizzes.keys().next().value!);
     const outcome = pick(picked, parsed);
     return outcome instanceof Promise ? outcome.then(toResult) : toResult(outcome);
   };
   return (
     <QuizCard
+      initialAnswer={submittedQuizzes.get(answerId)}
       question={parsed.q || ''}
       options={parsed.options || []}
       answerKey={answerKey}
