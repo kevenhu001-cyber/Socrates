@@ -72,9 +72,9 @@
     transform: translateY(-50%);
     animation: none;
     font-family: var(--font-sans);
-    font-size: calc(23px * var(--app-type-scale));
-    font-weight: var(--ui-font-weight-medium);
-    line-height: 30px;
+    font-size: var(--ui-mobile-font-greeting);
+    font-weight: var(--ui-font-weight-regular);
+    line-height: 28px;
     letter-spacing: -0.01em;
     color: var(--foreground);
     text-align: center;

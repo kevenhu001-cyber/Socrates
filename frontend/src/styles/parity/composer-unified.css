@@ -165,7 +165,8 @@
      menus keep the elevated one. Light keeps the paper box and its hairline. */
   [data-mode="dark"] #appShell .composer-shell { --ui-card: var(--ui-bg-panel); }
   #appShell .composer-shell:not(.voice-recording-active) { width: 100%; max-width: none; }
-  #appShell .composer-shell .rich-composer-editor { max-height: 220px; }
+  /* Reference phone question box sets its text and placeholder at 17px. */
+  #appShell .composer-shell .rich-composer-editor { max-height: 220px; font-size: var(--ui-mobile-font-nav); }
   #appShell .composer-shell .composer-plugin-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   #appShell .composer-shell .composer-plugin-chips::-webkit-scrollbar { display: none; }
   #appShell .composer-shell :is(.composer-plugin-chip, .composer-tool-chip) { flex: 0 0 auto; }

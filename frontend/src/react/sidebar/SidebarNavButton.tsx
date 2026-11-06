@@ -1,6 +1,7 @@
 import { t as translate } from '../legacy/gateway.ts';
 import { SidebarNavRow } from '@socrates/ui/shell';
 import type { UiGlyphName } from '@socrates/ui/primitives';
+import type { TextStyle } from 'react-native';
 import { webClass } from '../rn/webHost';
 import { navButtonId, type NavButtonSpec } from './sidebarNav.items';
 
@@ -23,6 +24,13 @@ const GLYPHS: Record<NavButtonSpec['key'], UiGlyphName> = {
   skills: 'skills',
   more: 'more',
 } as Record<NavButtonSpec['key'], UiGlyphName>;
+
+/* The label size is a CSS role so the phone drawer can take the reference's
+   17px step (polish/mobile-sidebar.css sets --nav-label-size under
+   768px); everywhere else it resolves to the shared 14px body-sm step. */
+const LABEL_STYLE = {
+  fontSize: 'var(--nav-label-size, var(--ui-font-size-sm))',
+} as unknown as TextStyle;
 
 /*
  * RN-7 — one primary destination, drawn by the shared RN shell row
@@ -57,6 +65,7 @@ export function SidebarNavButton({
       activeShadow="var(--ui-elevation-raised)"
       hostStyle={webClass('sidebar-nav-btn', active && 'active')}
       badgeStyle={webClass('nav-new-badge')}
+      labelStyle={LABEL_STYLE}
       onPress={onClick}
     />
   );

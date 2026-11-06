@@ -184,7 +184,7 @@ body #composerToolsMenu.composer-tools-menu {
     min-width: 0;
     white-space: nowrap;
   }
-  #composerToolsMenu .composer-tools-copy > span { flex: 0 0 auto; color: var(--ui-text-primary); font-size: var(--ui-font-size-md); }
+  #composerToolsMenu .composer-tools-copy > span { flex: 0 0 auto; color: var(--ui-text-primary); font-size: var(--ui-mobile-font-nav); }
   /* Slash shortcuts are a keyboard affordance; the phone list drops them. */
   #composerToolsMenu .composer-tools-item kbd { display: none; }
   #composerToolsMenu .composer-tools-copy small {
@@ -194,7 +194,7 @@ body #composerToolsMenu.composer-tools-menu {
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--ui-text-muted);
-    font-size: var(--ui-font-size-md);
+    font-size: var(--ui-mobile-font-nav);
     font-weight: var(--ui-font-weight-regular);
   }
 }

@@ -444,6 +444,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell #sidebarHeader #sidebarSearchBtn { border: 0; border-radius: var(--ui-radius-control); background: transparent; }
   #appShell .sidebar-search input { font-size: calc(16px * var(--app-type-scale)); line-height: 24px; }
   #appShell #sidebarNav { display: flex; flex-direction: column; gap: 0; padding: 0; }
+  /* The nav label is a shared UiText (bodySm, 14px) whose size reads this
+     role (SidebarNavButton); on the phone it takes the reference's 17px. */
+  #appShell #sidebarNav { --nav-label-size: var(--ui-mobile-font-nav); }
   #appShell #sidebarNav .sidebar-nav-btn {
     display: grid;
     grid-template-columns: 24px minmax(0, 1fr) auto;
@@ -454,7 +457,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     height: var(--ui-mobile-row);
     padding: 0 10px;
     border-radius: var(--ui-radius-row);
-    font-size: var(--ui-font-size-sm);
+    font-size: var(--ui-mobile-font-nav);
     font-weight: var(--ui-font-weight-regular);
     line-height: 24px;
     color: var(--foreground);
@@ -519,7 +522,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: var(--ui-radius-pill);
   }
   #appShell .recents-header { display: flex; align-items: center; justify-content: space-between; height: 30px; min-height: 30px; margin-top: 0; padding: 0 4px 0 10px; }
-  #appShell .recents-title { font-size: calc(14px * var(--app-type-scale)); font-weight: var(--ui-font-weight-medium); line-height: 20px; letter-spacing: 0; }
+  #appShell .recents-title { font-size: var(--ui-mobile-font-nav); font-weight: var(--ui-font-weight-medium); line-height: 20px; letter-spacing: 0; }
   /* 32px, not 22px: the drawer row holds two of these side by side, and a
      22px-wide button fell under the WCAG 2.2 SC 2.5.8 24×24 floor for
      pointer targets. 32px matches the session-row overflow button in the
@@ -559,7 +562,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     min-height: var(--ui-mobile-row);
     padding: 0 6px 0 10px;
     border-radius: var(--ui-radius-row);
-    font-size: var(--ui-font-size-sm);
+    font-size: var(--ui-mobile-font-nav);
     color: var(--foreground);
     transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
   }
@@ -639,17 +642,17 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     background: var(--accent);
   }
   #appShell #sidebarUserRow .user-avatar { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; }
-  #appShell #sidebarUserRow .user-name { font-size: var(--ui-font-size-md); line-height: 22px; font-weight: var(--ui-font-weight-regular); }
-  #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: var(--ui-font-size-sm); line-height: 18px; color: var(--ui-text-muted); }
+  #appShell #sidebarUserRow .user-name { font-size: var(--ui-mobile-font-nav); line-height: 22px; font-weight: var(--ui-font-weight-regular); }
+  #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: var(--ui-mobile-font-meta); line-height: 18px; color: var(--ui-text-muted); }
   /* Reference: the account menu is wider than the drawer (~305 of 390px) and
      overhangs its edge; it stays 16px clear of the viewport's right side. */
   #appShell .sidebar-account-menu { width: min(304px, calc(100vw - 24px)); max-width: calc(100vw - 24px); padding: 12px; }
-  #appShell .sidebar-account-menu :is(button, a) { height: var(--ui-control-md); min-height: var(--ui-control-md); font-size: var(--ui-font-size-sm); }
+  #appShell .sidebar-account-menu :is(button, a) { height: var(--ui-control-md); min-height: var(--ui-control-md); font-size: var(--ui-mobile-font-nav); }
   #appShell .sidebar-account-menu .account-menu-identity { height: var(--ui-control-touch); gap: 8px; }
   #appShell .sidebar-account-menu .user-avatar { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; font-size: 10px; border-radius: 50%; background: var(--ui-avatar-bg); color: var(--primary-foreground); }
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
-  #appShell .sidebar-account-menu .user-name { font-size: 15px; font-weight: var(--ui-font-weight-regular); }
-  #appShell .sidebar-account-menu .user-plan { font-size: var(--ui-font-size-xs); color: var(--ui-text-muted); }
+  #appShell .sidebar-account-menu .user-name { font-size: var(--ui-mobile-font-nav); font-weight: var(--ui-font-weight-regular); }
+  #appShell .sidebar-account-menu .user-plan { font-size: var(--ui-mobile-font-meta); color: var(--ui-text-muted); }
 
   /* Match the dark reference's true-white drawer glyphs and labels. The
      ancestor pair is written once and reused via :is() — repeating

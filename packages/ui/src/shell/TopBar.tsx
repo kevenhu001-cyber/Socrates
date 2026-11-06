@@ -242,7 +242,8 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
           >
             {({ hovered }: PressState) => (
               <UiText
-                variant="bodySm"
+                /* Phones set the segments at the reference's 16px; desktop keeps 14px. */
+                variant={compact ? 'body' : 'bodySm'}
                 tone={selected || hovered ? 'ink' : 'secondary'}
                 numberOfLines={1}
                 style={{ fontWeight: selected ? '500' : '400', transitionProperty: 'color', transitionDuration: `${uiMotion.fast}ms` } as object}
