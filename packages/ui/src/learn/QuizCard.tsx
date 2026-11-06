@@ -165,7 +165,9 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
   let explanationBody: ReactNode = null;
   if (answered && explanation) explanationBody = <Rich source={explanation} part="quiz-explanation" />;
   else if (answered && state.verdict === 'incorrect' && keyText) {
-    explanationBody = <UiText variant="bodySm" tone="secondary">{fillTemplate(strings.quizAnswerIs, { answer: keyText })}</UiText>;
+    /* Option text is Markdown with math, like the option rows above; plain
+       text printed "$0$" literally. */
+    explanationBody = <Rich source={fillTemplate(strings.quizAnswerIs, { answer: keyText })} part="quiz-explanation" />;
   }
 
   return (

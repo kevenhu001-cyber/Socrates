@@ -78,3 +78,15 @@ test('a chart written as an openui fence has no frame and no header band in dark
   });
   expect(frame).toEqual({ border: '0px', background: 'rgba(0, 0, 0, 0)', headerBackground: 'rgba(0, 0, 0, 0)', headerDivider: '0px' });
 });
+
+test('a wrong quiz answer shows the answer key with typeset math', async ({ page }) => {
+  const text = '<quiz><q>$f(z)=\\dfrac{1}{z^2}$ 在 $z=0$ 的留数是？</q><o letter="A">$0$</o><o letter="B">$1$</o><correct>A</correct></quiz>';
+  await open(page, [msg('quiz', text)]);
+  const quiz = row(page, 'quiz').locator('.sc-host[data-scaffold="quiz"]');
+  await quiz.locator('[data-letter="B"]').click();
+  await quiz.getByTestId('quiz-submit').click();
+  const explanation = quiz.getByTestId('quiz-explanation');
+  await expect(explanation).toBeVisible();
+  await expect(explanation.locator('.katex')).toHaveCount(1);
+  await expect(explanation).not.toContainText('$');
+});
