@@ -49,6 +49,35 @@ function purifyConfig(options: SanitizeHtmlOptions) {
     : PURIFY_CONFIG;
 }
 
+/* Rendered answers can carry many images (markdown images, illustration
+   cards). Lazy loading and async decoding keep off-screen history from
+   competing with the first screen for the network and the main thread;
+   neither changes layout or appearance. Runs on sanitizer output only, so the
+   two attributes are the sole additions and an author-set value wins. */
+function withLazyImages(html: string): string {
+  if (html.indexOf('<img') === -1) return html;
+  let out = '';
+  let from = 0;
+  for (let at = html.indexOf('<img', from); at !== -1; at = html.indexOf('<img', from)) {
+    const after = at + 4;
+    const next = html.charCodeAt(after);
+    /* Only a real <img> tag: the next character ends the tag name. */
+    if (!(next === 32 || next === 9 || next === 10 || next === 13 || next === 47 || next === 62)) {
+      out += html.slice(from, after);
+      from = after;
+      continue;
+    }
+    const close = html.indexOf('>', after);
+    const tag = html.slice(after, close === -1 ? html.length : close);
+    let extra = '';
+    if (!/\sloading=/i.test(tag)) extra += ' loading="lazy"';
+    if (!/\sdecoding=/i.test(tag)) extra += ' decoding="async"';
+    out += html.slice(from, after) + extra;
+    from = after;
+  }
+  return out + html.slice(from);
+}
+
 /* Try the shared global and bundled copy. If neither can sanitize, fail
    closed by returning escaped text: sanitizeUrls only rewrites URL
    attributes and is not an HTML/XSS sanitizer. */
@@ -62,12 +91,12 @@ export function sanitizeHtml(html: string, options: SanitizeHtmlOptions = {}): s
     try {
       const normalize = options.chineseProse && /\p{Script=Han}/u.test(html) && typeof document !== 'undefined';
       const clean = dp.sanitize(html, normalize ? { ...config, RETURN_DOM_FRAGMENT: true } : config);
-      if (!normalize && typeof clean === 'string') return clean;
+      if (!normalize && typeof clean === 'string') return withLazyImages(clean);
       const host = document.createElement('template');
       if (typeof clean === 'string') host.innerHTML = clean;
       else host.content.appendChild(clean);
       if (normalize) normalizeChineseFragment(host.content);
-      return host.innerHTML;
+      return withLazyImages(host.innerHTML);
     } catch (e) {
       console.warn('[sanitizeHtml] DOMPurify instance failed:', e && (e as Error).message);
     }
