@@ -202,7 +202,10 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
               },
             },
             effort: {
-              visible: phone && effort !== 'medium',
+              /* Phones always show the level ("中 ⌄"), as the reference does:
+                 the header no longer carries a model chip there, so this pill
+                 is the phone's way into model and reasoning settings. */
+              visible: phone,
               caption: i18n('effort.label', 'Effort'),
               value: effortValue,
               level: effort,

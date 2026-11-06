@@ -59,6 +59,9 @@ export const UI_GLYPHS = {
   more: [['p', 'M5 8h14M5 12h14M5 16h9']],
   /* RN-10 — the pinned-chat mark in the history rows; an outline pushpin. */
   pin: [['p', 'M9.5 3.5h5M10.5 3.5v5L7.5 12v1.5h9V12l-3-3.5v-5M12 13.5v7']],
+  /* Incognito (temporary) chat — hat brim and two lenses, all outlines. The
+     phone header carries it where the reference keeps its temporary chat. */
+  incognito: [['p', 'M6.5 10.5 8.3 6c.2-.6.9-.9 1.5-.7l2.2.7 2.2-.7c.6-.2 1.3.1 1.5.7l1.8 4.5'], ['p', 'M4 10.5h16'], ['c', 8.5, 15.5, 2.7], ['c', 15.5, 15.5, 2.7], ['p', 'M11.2 15.5h1.6']],
 } as const satisfies Record<string, readonly UiGlyphShape[]>;
 
 export type UiGlyphName = keyof typeof UI_GLYPHS;

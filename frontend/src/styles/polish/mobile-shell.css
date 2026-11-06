@@ -84,6 +84,23 @@
      the switch. The tutor stage is still announced by the pill's status role
      on wider screens and by the conversation itself on phones. */
   body.workspace-active #appShell .mobile-newchat-btn { display: none; }
+  /* Reference conversation header: drawer · new chat · title, actions on
+     the trailing edge. The left group takes the free width so the title
+     can ellipsize instead of pushing find / share off the bar. */
+  body[data-conversation-active="true"] #appShell .top-bar-left { flex: 1 1 auto; min-width: 0; gap: 0; }
+  #appShell .top-conversation-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--ui-text-primary);
+    font-size: var(--ui-font-size-md);
+    font-weight: var(--ui-font-weight-semibold);
+    line-height: 24px;
+  }
+  body.workspace-active #appShell .top-conversation-title { display: none; }
 }
 @media (max-width: 359px) {
   /* 320px leaves a 76px gutter beside the mode switch: the caret goes first
