@@ -113,7 +113,7 @@ test('display modes preserve node identity, edited values and tabs across fullsc
   await expect(count).toContainText('3');
 });
 
-test('a live turn has one text highlight and reduced motion disables it', async ({ page }) => {
+test('a live turn shows one spark glyph and reduced motion freezes it', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check assumptions.' });
@@ -124,14 +124,23 @@ test('a live turn has one text highlight and reduced motion disables it', async 
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  /* The live caption breathes (RN Animated opacity on its wrapper). */
+  /* The working cue is a vector spark ahead of a still caption: one inline
+     SVG path, turning and swelling; no sweeping hairline, no breathing text. */
+  const spark = activity.locator(`${TURN.indicator} svg.thinking-spark`);
+  await expect(spark).toHaveCount(1);
+  await expect(spark.locator('path')).toHaveCount(1);
+  await expect(spark.locator('.thinking-spark-turn')).toHaveCSS('animation-name', 'thinking-spark-turn');
+  await expect(spark.locator('.thinking-spark-rays')).toHaveCSS('animation-name', 'thinking-spark-swell');
   const captionOpacity = () => activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node.parentElement).opacity));
-  await expect.poll(captionOpacity, { timeout: 4000, intervals: [100] }).toBeLessThan(0.95);
+  await page.waitForTimeout(800);
+  expect(await captionOpacity()).toBe(1);
   await activity.locator(TURN.toggle).click();
   await expect(toolRow(activity, 'search').locator('.tool-inline-tool-icon')).toHaveCSS('animation-name', 'none');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect.poll(captionOpacity).toBe(1);
-  await page.waitForTimeout(800);
+  /* Reduced motion keeps the glyph and drops every animation on it. */
+  await expect(spark).toBeVisible();
+  await expect(spark.locator('.thinking-spark-turn')).toHaveCSS('animation-name', 'none');
+  await expect(spark.locator('.thinking-spark-rays')).toHaveCSS('animation-name', 'none');
   expect(await captionOpacity()).toBe(1);
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
@@ -139,7 +148,7 @@ test('a live turn has one text highlight and reduced motion disables it', async 
     ctl.append('The answer.');
     ctl.finish();
   });
-  await expect(activity.locator(TURN.progress)).toHaveCount(0);
+  await expect(activity.locator(TURN.indicator)).toHaveCount(0);
   expect(await captionOpacity()).toBe(1);
   await expect(activity.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
 });

@@ -2,7 +2,7 @@
  * The turn's activity surface (RN-2): the thinking line plus its timeline of
  * public summaries and tool calls, drawn with @socrates/ui/turn.
  *
- * Live:      show the observed transport/tool status over a progress hairline.
+ * Live:      a turning spark glyph leads the observed transport/tool status.
  * Settled:   show neutral activity copy — never a fabricated step counter.
  * Tools:     consecutive calls merge into 「使用了 N 个工具」, expandable.
  *
@@ -30,6 +30,7 @@ import type { LiveTurnStatus } from '../types/domain';
 import { i18n } from '../legacy/gateway';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon } from './ToolActivityIcon';
+import { ThinkingSpark } from './ThinkingSpark';
 import { ToolRunRow, callDurationMs, statusLabelOf } from './ToolRunRow';
 import { runStartedAt, toolRunStateOf, toolRunView, type ToolCallRecord } from './toolRunModel';
 
@@ -131,10 +132,6 @@ function activityLabelFor(
   return thinkingLabelOf(header, labels);
 }
 
-function showProgressFor(isLive: boolean, status?: LiveTurnStatus): boolean {
-  return isLive && status?.phase !== 'waiting';
-}
-
 function surfaceDataAttrs(input: { isLive: boolean; showActivityCue: boolean; status?: LiveTurnStatus; answerStarted: boolean; isOpen: boolean; hasTimeline: boolean }) {
   return {
     'data-turn-surface-part': 'activity',
@@ -170,7 +167,6 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const header = thinkingHeaderOf({ live: isLive, stepCount: steps.length, durationSec: elapsedSec });
   const labels = thinkingLabels();
   const label = activityLabelFor(isLive, statusLabel, header, labels);
-  const showProgress = showProgressFor(isLive, status);
   const attrs = surfaceDataAttrs({ isLive, showActivityCue: props.showActivityCue !== false, status, answerStarted, isOpen, hasTimeline: timelineSteps.length > 0 });
 
   return (
@@ -179,7 +175,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         <ThinkingSurface
           label={label}
           live={isLive}
-          showProgress={showProgress}
+          indicator={isLive ? <ThinkingSpark /> : undefined}
           meta={liveMeta(isLive, answerStarted, status)}
           icon={isLive && status?.toolName ? <ToolActivityIcon name={status.toolName} /> : undefined}
           expandable={hasDetails}

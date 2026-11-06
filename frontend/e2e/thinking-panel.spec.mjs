@@ -71,7 +71,7 @@ test('intent stays in the unified activity and completed observations do not dup
   const bubble = await startTurn(page);
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   await expect(bubble.locator(TURN.label)).toHaveAttribute('role', 'status');
-  await expect(bubble.locator(TURN.progress)).toHaveCount(1);
+  await expect(bubble.locator(TURN.indicator)).toHaveCount(1);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
   const toggle = bubble.locator(TURN.toggle);
   await expect(toggle).toBeEnabled();
@@ -84,7 +84,7 @@ test('intent stays in the unified activity and completed observations do not dup
   await page.evaluate(() => window.__finishThinking());
   await expect(bubble).toContainText('The final answer.');
   /* Settled: no live caption, no travelling hairline. */
-  await expect(bubble.locator(TURN.progress)).toHaveCount(0);
+  await expect(bubble.locator(TURN.indicator)).toHaveCount(0);
   await expect(bubble.locator(`${TURN.label}[role="status"]`)).toHaveCount(0);
   await expect(bubble.locator(`${TURN.wrapper}[data-live="true"]`)).toHaveCount(0);
   await expect(bubble).not.toContainText('private');

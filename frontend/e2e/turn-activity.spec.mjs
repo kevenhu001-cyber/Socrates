@@ -26,7 +26,7 @@ test('activity hands the same message body to the first answer token', async ({ 
   const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveCount(1);
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
-  await expect(status.getByTestId('turn-activity-progress')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
   const before = await status.boundingBox();
 
   await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
@@ -57,13 +57,13 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveAttribute('data-phase', 'waiting');
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
-  await expect(status.getByTestId('turn-activity-progress')).toHaveCount(0);
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
   await page.evaluate(() => window.__advanceReasoningClock());
   await expect(status.getByTestId('turn-activity-meta')).toContainText(/[5-9]s/);
   await page.screenshot({ path: 'test-results/waiting-response.png' });
   await page.evaluate(() => window.__waitingController.appendThinking('PRIVATE REASONING'));
   await expect(status).toHaveAttribute('data-phase', 'thinking');
-  await expect(status.getByTestId('turn-activity-progress')).toHaveCount(1);
+  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
   await expect(status.getByTestId('turn-activity-meta')).toHaveCount(0);
   const duration = await page.evaluate(() => window.stateStore.read('messages').at(-1).reasoningDurationSec);
   expect(duration).toBe(0);

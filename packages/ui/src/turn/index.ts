@@ -16,6 +16,6 @@ export {
   type ToolCallRowProps,
 } from './ToolCards';
 export { ToolDetailSheet, DetailSection, CodeBlock, SourceList, ImageOutput, PlainDetail, SHEET_BREAKPOINT } from './ToolDetailSheet';
-export { Chevron, ProgressHairline } from './parts';
+export { Chevron } from './parts';
 export * from './thinkingModel';
 export * from './toolCardModel';

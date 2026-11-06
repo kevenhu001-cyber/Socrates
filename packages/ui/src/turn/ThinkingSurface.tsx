@@ -3,7 +3,9 @@
  * vertical timeline (RN-2, design R3).
  *
  * The host supplies an observed live status and neutral settled activity
- * copy. Expanding reveals public summaries and tool records.
+ * copy. Expanding reveals public summaries and tool records. While a turn
+ * is live the host also supplies the working indicator (the web passes an
+ * inline-SVG spark); the caption itself stays still.
  * The host passes already-public copy only (see thinkingModel).
  */
 import { type ReactNode } from 'react';
@@ -12,13 +14,13 @@ import { R, S, focusRing, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { Chevron, ProgressHairline, useBreathing, useReducedMotion, useReveal } from './parts';
+import { Chevron, useReducedMotion, useReveal } from './parts';
 
 export interface ThinkingSurfaceProps {
   label: string;
   live: boolean;
-  /** False while waiting for a response: waiting is not visible work progress. */
-  showProgress?: boolean;
+  /** Live working indicator, drawn ahead of the caption (host-rendered glyph). */
+  indicator?: ReactNode;
   /** Quiet trailing facts, e.g. elapsed seconds or 「回答已开始」. */
   meta?: ReadonlyArray<string>;
   /** Leading glyph (the running tool's icon); optional. */
@@ -31,12 +33,11 @@ export interface ThinkingSurfaceProps {
   children?: ReactNode;
 }
 
-export function ThinkingSurface({ label, live, showProgress = live, meta = [], icon, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
+export function ThinkingSurface({ label, live, indicator, meta = [], icon, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
-  const breathing = useBreathing(live);
   const reveal = useReveal(open);
   return (
     <View testID="turn-activity" style={{ alignSelf: 'stretch' }}>
@@ -67,8 +68,9 @@ export function ThinkingSurface({ label, live, showProgress = live, meta = [], i
           cursor: expandable ? 'pointer' : 'auto',
         }}
       >
+        {live && indicator ? <View testID="turn-activity-indicator" aria-hidden style={{ width: 18, height: 18, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}>{indicator}</View> : null}
         {icon ? <View aria-hidden style={{ width: 16, flexShrink: 0, alignItems: 'center' }}>{icon}</View> : null}
-        <Animated.View style={{ opacity: breathing, flexShrink: 1, minWidth: 0 }}>
+        <View style={{ flexShrink: 1, minWidth: 0 }}>
           <UiText
             testID="turn-activity-label"
             variant="labelSm"
@@ -80,13 +82,12 @@ export function ThinkingSurface({ label, live, showProgress = live, meta = [], i
           >
             {label}
           </UiText>
-        </Animated.View>
+        </View>
         {meta.filter(Boolean).map((part) => (
           <UiText key={part} testID="turn-activity-meta" variant="labelSm" tone="tertiary" numberOfLines={1} ellipsizeMode="tail" style={{ flexShrink: 1, minWidth: 0, maxWidth: '36%' }}>{part}</UiText>
         ))}
         {expandable ? <Chevron open={open} /> : null}
       </Pressable>
-      {showProgress ? <View style={{ maxWidth: 220, marginTop: 2 }}><ProgressHairline active testID="turn-activity-progress" /></View> : null}
       <Animated.View
         testID="turn-activity-body"
         nativeID={bodyId}

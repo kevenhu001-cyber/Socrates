@@ -1,10 +1,10 @@
 /**
  * Small shared pieces for the RN-2 turn components: a hairline chevron,
- * a reduced-motion hook and the indeterminate progress hairline.
+ * a reduced-motion hook, status breathing and the reveal fade.
  * Nothing here draws a dot; state is carried by text, lines and glyphs.
  */
-import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Platform, View, type LayoutChangeEvent } from 'react-native';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Easing, Platform, View } from 'react-native';
 import { uiMotion } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 
@@ -75,47 +75,6 @@ export function Chevron({ open = false, size = 7, tone = 'tertiary' }: { open?: 
   );
 }
 
-/**
- * Indeterminate progress hairline: a short ink segment travels along a
- * 1px track while work is in flight. It is the only live motion on the
- * thinking line and stops (track only) under reduced motion.
- */
-export function ProgressHairline({ active, testID }: { active: boolean; testID?: string }) {
-  const { colors } = useUiTheme();
-  const reduced = useReducedMotion();
-  const [width, setWidth] = useState(0);
-  const travel = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (!active || reduced || width <= 0) {
-      travel.stopAnimation();
-      travel.setValue(0);
-      return;
-    }
-    const loop = Animated.loop(Animated.timing(travel, {
-      toValue: 1,
-      duration: 1600,
-      easing: Easing.inOut(Easing.cubic),
-      useNativeDriver: nativeDriver,
-    }));
-    loop.start();
-    return () => loop.stop();
-  }, [active, reduced, width, travel]);
-  const segment = Math.max(24, width * 0.28);
-  const translateX = travel.interpolate({ inputRange: [0, 1], outputRange: [-segment, width] });
-  return (
-    <View
-      testID={testID}
-      aria-hidden
-      onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
-      style={{ height: 1, overflow: 'hidden', backgroundColor: active ? colors.hairline : 'transparent', borderRadius: 1 }}
-    >
-      {active && !reduced ? (
-        <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, width: segment, backgroundColor: colors.inkSecondary, transform: [{ translateX }] }} />
-      ) : null}
-    </View>
-  );
-}
-
 /** Opacity breathing for an in-flight status word (e.g. 「进行中」). */
 export function useBreathing(active: boolean): Animated.Value {
   const reduced = useReducedMotion();
@@ -136,11 +95,14 @@ export function useBreathing(active: boolean): Animated.Value {
   return value;
 }
 
-/** Fades content in when it first appears (an expanded body, a sheet). */
+/** Fades content in when it first appears (an expanded body, a sheet).
+ *  A layout effect, so under reduced motion the body is already at full
+ *  opacity in the frame the toggle commits (a passive effect landed one
+ *  frame later and the body flashed in from 0). */
 export function useReveal(visible: boolean, distance = 4) {
   const reduced = useReducedMotion();
   const value = useRef(new Animated.Value(visible ? 1 : 0)).current;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (reduced) {
       value.setValue(visible ? 1 : 0);
       return;
