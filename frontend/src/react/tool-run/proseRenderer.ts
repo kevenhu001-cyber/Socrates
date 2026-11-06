@@ -1,5 +1,6 @@
 import { createProseCache, sharedFinalProseCache, clearSharedProseCache } from '../../render/proseCache.ts';
 import { useMemo } from 'react';
+import { applyScaffoldTurnPlan, scaffoldTurnPlan, type ScaffoldTurnPlan } from '@socrates/ui/learn-split';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { stripLegacyToolHtml } from './toolRunModel.js';
 import { getMathRenderRevision } from '../../render/mathRevision.ts';
@@ -81,4 +82,34 @@ export function useProseRenderer(live: boolean): ProseRenderer {
     };
     return { settled, tail };
   }, [live, mathRevision]);
+}
+
+/**
+ * Apply the turn's quiz/practice plan to every piece the renderer paints.
+ *
+ * The turn is painted in pieces (settled markdown blocks, the live tail, the
+ * prose runs between tool rows), so the "one interactive quiz and one
+ * practice per turn" rule is decided once over the whole turn text and each
+ * piece only rewrites the blocks that lost. With no singleton scaffold in the
+ * turn the renderer is returned as is, so ordinary prose keeps its identity.
+ */
+export function withScaffoldTurnPlan(prose: ProseRenderer, plan: ScaffoldTurnPlan): ProseRenderer {
+  if (!plan.quiz && !plan.practice) return prose;
+  return {
+    settled: (text: string) => prose.settled(applyScaffoldTurnPlan(text, plan)),
+    tail: (text: string) => prose.tail(applyScaffoldTurnPlan(text, plan)),
+  };
+}
+
+/** The turn plan keyed by its content, so a streamed turn keeps one renderer
+ *  identity until a new winner appears. */
+export function useScaffoldTurnProse(prose: ProseRenderer, rawText: string): ProseRenderer {
+  const planKey = useMemo(() => {
+    const plan = scaffoldTurnPlan(rawText);
+    return plan.quiz || plan.practice ? JSON.stringify(plan) : '';
+  }, [rawText]);
+  return useMemo(
+    () => (planKey ? withScaffoldTurnPlan(prose, JSON.parse(planKey) as ScaffoldTurnPlan) : prose),
+    [prose, planKey],
+  );
 }

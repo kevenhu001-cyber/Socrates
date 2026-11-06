@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { splitScaffolds, type ScaffoldBlock } from './learn/split.ts';
+import { applyScaffoldTurnPlan, scaffoldTurnPlan, splitScaffolds, type ScaffoldBlock } from './learn/split.ts';
 
 const QUIZ = '<quiz><q>Pick?</q><o letter="A">a</o><o letter="B">b</o><correct>B</correct></quiz>';
 
@@ -23,7 +23,7 @@ test('the first quiz becomes the card and a later one degrades to its question',
   const segments = splitScaffolds(`Intro\n${QUIZ}\nmid\n${QUIZ}\noutro`);
   assert.deepEqual(kinds(`Intro\n${QUIZ}\nmid\n${QUIZ}\noutro`), ['text', 'scaffold', 'text', 'text', 'text']);
   const degraded = segments[3];
-  assert.equal(degraded.kind === 'text' ? degraded.text : '', 'Pick?');
+  assert.equal(degraded.kind === 'text' ? degraded.text : '', 'Pick?\n\n- A. a\n- B. b');
   assert.equal(blocks(`Intro\n${QUIZ}`).length, 1);
 });
 
@@ -130,4 +130,43 @@ test('an unclosed scaffold opener does not hide a later complete card', () => {
 
   assert.deepEqual(kinds(source), ['text', 'scaffold']);
   assert.equal(blocks(source)[0].kind, 'example');
+});
+
+test('a degraded quiz keeps its options and their math', () => {
+  const second = '<quiz><q>Which is $x^2$?</q><o letter="A"><b>a</b></o><o letter="B">$2x$</o><correct>B</correct></quiz>';
+  const segments = splitScaffolds(QUIZ + second);
+  const degraded = segments[1];
+  assert.equal(degraded.kind === 'text' ? degraded.text : '', 'Which is $x^2$?\n\n- A. a\n- B. $2x$');
+});
+
+test('the turn plan keeps one quiz across pieces rendered separately', () => {
+  const quizB = QUIZ.replace('Pick?', 'Pick again?');
+  const pieceA = `Intro\n\n${QUIZ}`;
+  const pieceB = `More\n\n${quizB}`;
+  const plan = scaffoldTurnPlan(pieceA + '\n\n' + pieceB);
+  assert.equal(plan.quiz, QUIZ);
+  assert.equal(applyScaffoldTurnPlan(pieceA, plan), pieceA);
+  const rewritten = applyScaffoldTurnPlan(pieceB, plan);
+  assert.equal(blocks(rewritten).length, 0);
+  assert.match(rewritten, /Pick again\?\n\n- A\. a\n- B\. b/);
+  const mounted = [pieceA, pieceB].flatMap((piece) => blocks(applyScaffoldTurnPlan(piece, plan)));
+  assert.deepEqual(mounted.map((block) => block.kind), ['quiz']);
+});
+
+test('the turn plan skips a malformed first quiz and leaves prose untouched', () => {
+  const plan = scaffoldTurnPlan(`<quiz>no options</quiz>\n\n${QUIZ}`);
+  assert.equal(plan.quiz, QUIZ);
+  assert.deepEqual(scaffoldTurnPlan('no scaffolds here'), {});
+  const prose = 'plain <b>text</b>';
+  assert.equal(applyScaffoldTurnPlan(prose, plan), prose);
+});
+
+test('the turn plan tracks practice separately from quiz', () => {
+  const p1 = '<practice><title>T1</title><problem>P1</problem></practice>';
+  const p2 = '<practice><title>T2</title><problem>P2</problem></practice>';
+  const plan = scaffoldTurnPlan(`${QUIZ}\n\n${p1}\n\n${p2}`);
+  assert.equal(plan.practice, p1);
+  const rewritten = applyScaffoldTurnPlan(p2, plan);
+  assert.equal(rewritten.trim(), '**T2**\n\nP2');
+  assert.equal(applyScaffoldTurnPlan(QUIZ, plan), QUIZ);
 });

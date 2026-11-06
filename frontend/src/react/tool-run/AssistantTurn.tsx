@@ -18,7 +18,7 @@ import {
 import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSegmentContent } from './TurnSegmentContent';
-import { useProseRenderer } from './proseRenderer';
+import { useProseRenderer, useScaffoldTurnProse } from './proseRenderer';
 import { hasCompleteScaffold } from '../../render/markdownScaffolds.ts';
 import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
 import type { LegacyChatMessage } from '../types/domain';
@@ -220,7 +220,10 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const streamedRef = useRef(isLive);
   if (isLive) streamedRef.current = true;
   const mountScaffolds = !isLive && hasCompleteScaffold(rawText);
-  const prose = useProseRenderer(streamedRef.current && !mountScaffolds);
+  /* Quiz and practice are single-shot per turn. The turn is painted block by
+     block, so the winner is decided over the whole text first. */
+  const turnProse = useProseRenderer(streamedRef.current && !mountScaffolds);
+  const prose = useScaffoldTurnProse(turnProse, rawText);
   const textIdx = lastTextIndex(segments);
   const growingIndex = isLive ? (textIdx !== -1 ? textIdx : segments.findIndex((s) => s.kind === 'think')) : -1;
   const hasRunningRow = hasRunningToolRow(segments);

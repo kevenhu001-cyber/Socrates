@@ -183,10 +183,24 @@ function slotIdOf(tag: ScaffoldTag, attrs: string): string | null {
 }
 
 /** The text a later block of the same kind degrades to. Model-authored text
- *  is escaped so it reads as words, not as markup. */
+ *  is escaped so it reads as words, not as markup. A quiz keeps its options
+ *  as a list, so the reader can still answer it on their own; a practice
+ *  keeps its title. */
 function degradeText(block: ScaffoldBlock): string {
-  if (block.kind === 'quiz') return escapeHtml(block.parsed.q);
-  if (block.kind === 'practice') return escapeHtml(block.parsed.problem);
+  if (block.kind === 'quiz') {
+    const question = escapeHtml(block.parsed.q);
+    const options = block.parsed.options
+      .map((option) => '- ' + escapeHtml(option.letter) + '. ' + escapeHtml(option.text).replace(/\n+/g, ' '))
+      .join('\n');
+    return options ? question + '\n\n' + options : question;
+  }
+  if (block.kind === 'practice') {
+    /* The parser fills an English "Practice" when no <title> is written;
+       only a title the model wrote is kept. */
+    const title = /<title\b/i.test(block.raw) ? block.parsed.title.trim() : '';
+    const problem = escapeHtml(block.parsed.problem);
+    return title ? '**' + escapeHtml(title) + '**\n\n' + problem : problem;
+  }
   return escapeHtml(block.raw);
 }
 
@@ -308,4 +322,67 @@ export function scaffoldBlocks(text: string): ScaffoldBlock[] {
   return splitScaffolds(text)
     .filter((segment): segment is { kind: 'scaffold'; block: ScaffoldBlock } => segment.kind === 'scaffold')
     .map((segment) => segment.block);
+}
+
+/** The single-shot kinds a turn plan tracks. */
+export type SingletonScaffoldTag = 'quiz' | 'practice';
+
+/**
+ * Which quiz and which practice own the interactive slot of a whole turn.
+ *
+ * Hosts render a turn in pieces (one markdown block at a time while it
+ * streams, one prose run between tool rows), so the "first valid one wins"
+ * rule cannot be applied inside one piece: every piece would find its own
+ * "first" quiz. The plan is computed once over the turn's full text and maps
+ * each kind to the raw markup of its winning block.
+ */
+export type ScaffoldTurnPlan = Partial<Record<SingletonScaffoldTag, string>>;
+
+const SINGLETON_HINT = /<(quiz|practice)\b/i;
+
+export function scaffoldTurnPlan(text: string): ScaffoldTurnPlan {
+  const source = String(text || '');
+  const plan: ScaffoldTurnPlan = {};
+  if (!SINGLETON_HINT.test(source)) return plan;
+  for (const match of scaffoldMarkupMatches(source)) {
+    if (!SINGLETON_TAGS.includes(match.tag)) continue;
+    const tag = match.tag as SingletonScaffoldTag;
+    if (plan[tag] !== undefined) continue;
+    if (parseBlock(match.tag, match.attrs, match.inner, 0)) plan[tag] = match.raw;
+  }
+  return plan;
+}
+
+/**
+ * Rewrite one piece of a turn so it follows the turn plan: a valid quiz or
+ * practice that is not the turn's winner is replaced by its degraded prose
+ * before the piece reaches the per-piece splitter. The winner keeps its
+ * markup; a second copy of the winner inside the same piece degrades too.
+ * Returns the same string when nothing changes.
+ */
+export function applyScaffoldTurnPlan(text: string, plan: ScaffoldTurnPlan): string {
+  const source = String(text || '');
+  if (!plan.quiz && !plan.practice) return source;
+  if (!SINGLETON_HINT.test(source)) return source;
+  const kept = new Set<string>();
+  let out = '';
+  let cursor = 0;
+  let changed = false;
+  for (const match of scaffoldMarkupMatches(source)) {
+    if (!SINGLETON_TAGS.includes(match.tag)) continue;
+    const tag = match.tag as SingletonScaffoldTag;
+    const winner = plan[tag];
+    if (winner === undefined) continue;
+    if (match.raw === winner && !kept.has(tag)) {
+      kept.add(tag);
+      continue;
+    }
+    const block = parseBlock(match.tag, match.attrs, match.inner, 0);
+    if (!block) continue;
+    out += source.slice(cursor, match.start) + '\n\n' + degradeText(block) + '\n\n';
+    cursor = match.end;
+    changed = true;
+  }
+  if (!changed) return source;
+  return out + source.slice(cursor);
 }
