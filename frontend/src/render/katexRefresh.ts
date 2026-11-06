@@ -36,11 +36,27 @@ function _renderAssistantHtml(rawText: unknown): string {
   return String(rawText || '');
 }
 
-function collectMathRepaintTargets(messages: RepaintableMessage[], revision: number): MathRepaintTarget[] {
+/* Rows currently in the DOM. The transcript mounts a bounded window, and a
+   row that mounts later renders from rawText under the bumped math revision
+   on its own, so only mounted rows need the snapshot repaint. Repainting the
+   whole transcript cost two markdown renders, a store update and a runtime
+   publish per frame for seconds on a long conversation — right while the
+   reader starts typing — and marked every off-screen row's html dirty for
+   the next save. */
+function mountedClientIds(list: HTMLElement): Set<string> {
+  const ids = new Set<string>();
+  list.querySelectorAll<HTMLElement>('[data-client-id]').forEach((row) => {
+    if (row.dataset.clientId) ids.add(row.dataset.clientId);
+  });
+  return ids;
+}
+
+function collectMathRepaintTargets(messages: RepaintableMessage[], revision: number, mounted: Set<string>): MathRepaintTarget[] {
   const targets: MathRepaintTarget[] = [];
   for (let index = messages.length - 1; index >= 0; index--) {
     const message = messages[index];
     if (!message || message.role !== 'assistant' || typeof message.rawText !== 'string') continue;
+    if (!mounted.has(String(message.clientId || message.id || ''))) continue;
     if (!/\$|\\\(|\\\[/.test(message.rawText)) continue;
     if (message._katexRenderedRev === revision) continue;
     targets.push({ index, clientId: message.clientId });
@@ -98,7 +114,7 @@ export function rerenderMathAfterKatex(): void {
        one pass is a main-thread long task AND makes every formula on the
        page flip in the same frame. Newest first — that is the answer the
        reader is most likely looking at. */
-    const targets = collectMathRepaintTargets(msgs, rev);
+    const targets = collectMathRepaintTargets(msgs, rev, mountedClientIds(list));
     if (!targets.length) return;
     const raf: (cb: () => void) => void = typeof requestAnimationFrame === "function"
       ? function (cb) { requestAnimationFrame(cb); }

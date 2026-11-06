@@ -12,6 +12,8 @@ import { updateScrollFadeMask } from './messageScroll';
 import { useProgressiveMessageMount } from './useProgressiveMessageMount';
 import { getVisibleMessagesSnapshot } from './visibleMessages';
 import { getMathRenderRevision } from '../../render/mathRevision.ts';
+import { getHistoryPagingSnapshot, subscribeHistoryPaging, type HistoryPagingSnapshot } from '../../session/historyPagingState.ts';
+import { i18n } from '../legacy/gateway';
 
 /* RN-13 — the row renderer (toolbar, attachments, edit form, tool-run models,
    assistant turn boundary) is only needed once a transcript has messages, so
@@ -36,6 +38,36 @@ function warmMessageItem(): void {
 
 const MSG_LIST_ID = 'msgList';
 
+/* R7 phase 2 — status row above the oldest loaded message of a paginated
+   transcript. It is present for the whole walk (not only while a page is in
+   flight) so its height never appears or disappears above the reader:
+   #msgList disables native scroll anchoring. Text only, no animated dots. */
+function historyStatusText(paging: HistoryPagingSnapshot): string {
+  if (paging.failed) return i18n('chat.history.loadFailed', 'Couldn’t load earlier messages. Scroll up to try again.');
+  if (paging.hasMore) return paging.loading ? i18n('chat.history.loadingEarlier', 'Loading earlier messages') : '';
+  return i18n('chat.history.start', 'Beginning of conversation');
+}
+
+function HistoryPageStatus({ paging }: { paging: HistoryPagingSnapshot }) {
+  const text = historyStatusText(paging);
+  return (
+    <div
+      className="history-page-status"
+      role="status"
+      aria-live="polite"
+      aria-busy={paging.loading ? 'true' : undefined}
+      data-history-loading={paging.loading ? 'true' : undefined}
+      data-history-start={!paging.hasMore && !paging.failed ? 'true' : undefined}
+    >
+      {text}
+    </div>
+  );
+}
+
+function showsHistoryStatus(paging: HistoryPagingSnapshot, start: number, readOnly: boolean): boolean {
+  return !readOnly && start === 0 && (paging.hasMore || paging.pagedBack);
+}
+
 function MessageList({ readOnly = false }: { readOnly?: boolean }) {
   const visibleMessages = useSyncExternalStore(
     subscribeToChatRuntime,
@@ -43,6 +75,7 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
     getVisibleMessagesSnapshot,
   );
   const { mounted, start } = useProgressiveMessageMount(visibleMessages);
+  const paging = useSyncExternalStore(subscribeHistoryPaging, getHistoryPagingSnapshot, getHistoryPagingSnapshot);
 
   useEffect(() => {
     const list = document.getElementById(MSG_LIST_ID);
@@ -67,6 +100,7 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
 
   return (
     <Suspense fallback={null}>
+      {showsHistoryStatus(paging, start, readOnly) ? <HistoryPageStatus paging={paging} /> : null}
       {mounted.map((entry, index) => {
         const id = entryId(entry, `idx-${index + start}`);
         const isLatest = index + start === visibleMessages.length - 1;

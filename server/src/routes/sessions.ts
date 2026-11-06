@@ -982,6 +982,51 @@ const messageDetailColumns = {
   createdAt: messages.createdAt,
 };
 
+/* R7 phase 2 — one bounded, newest-last page of a session transcript.
+ * `before`/`beforeId` is an exclusive (created_at, id) upper bound; pass
+ * neither for the newest page. Ties on created_at are total-ordered by id via
+ * a Postgres row comparison, so consecutive pages partition the transcript
+ * exactly. The cursor is the page's oldest row, null once exhausted. */
+async function sessionMessagePage(
+  db: ReturnType<typeof getDb>,
+  sessionId: string,
+  limit: number,
+  before: string | null,
+  beforeId: string | null,
+) {
+  const conditions = [eq(messages.sessionId, sessionId)];
+  if (before && beforeId) {
+    conditions.push(sql`(${messages.createdAt}, ${messages.id}) < (${before}::timestamptz, ${beforeId}::uuid)`);
+  }
+  const rows = await db.select({
+    ...messageDetailColumns,
+    /* created_at keeps microseconds; a JS Date (and toISOString) keeps only
+       milliseconds. A millisecond cursor would skip every older row that
+       shares the oldest row's millisecond, so the cursor carries the exact
+       stored instant as an ISO string with six fractional digits. */
+    cursorAt: sql<string>`to_char(${messages.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+  })
+    .from(messages)
+    .where(and(...conditions))
+    .orderBy(desc(messages.createdAt), desc(messages.id))
+    .limit(limit + 1);
+  const hasMore = rows.length > limit;
+  const page = (hasMore ? rows.slice(0, limit) : rows).slice().reverse();
+  const oldest = page.length > 0 ? page[0] : null;
+  return {
+    messages: page.map(({ cursorAt: _cursorAt, ...row }) => row),
+    hasMore,
+    cursor: hasMore && oldest
+      ? { createdAt: oldest.cursorAt, id: oldest.id }
+      : null,
+  };
+}
+
+function clampPageLimit(raw: unknown): number {
+  const parsed = parseInt(typeof raw === 'string' && raw ? raw : '100', 10);
+  return Math.min(Math.max(Number.isFinite(parsed) ? parsed : 100, 1), 200);
+}
+
 router.get('/:id', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
@@ -990,6 +1035,25 @@ router.get('/:id', async (req, res, next) => {
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
       .limit(1);
     if (!session) throw new NotFound('Session not found');
+
+    /* R7 phase 2 — `?tail=N` (1..200) returns only the newest N messages
+     * plus `messagesPage: { hasMore, cursor, total }`, so opening a long
+     * conversation pays for one screen of history instead of the whole
+     * transcript. The client walks older pages through GET /:id/messages
+     * with the returned cursor. Without `tail` the response is unchanged
+     * (full transcript, no messagesPage) for share/export/mobile callers. */
+    if (typeof req.query.tail === 'string' && req.query.tail) {
+      const limit = clampPageLimit(req.query.tail);
+      const [page, [total]] = await Promise.all([
+        sessionMessagePage(db, session.id, limit, null, null),
+        db.select({ value: count() }).from(messages).where(eq(messages.sessionId, session.id)),
+      ]);
+      return res.json({
+        ...session,
+        messages: page.messages,
+        messagesPage: { hasMore: page.hasMore, cursor: page.cursor, total: Number(total?.value ?? page.messages.length) },
+      });
+    }
 
     /* P-H1 (2026-09-27 session-switch profile) — explicit column select that
      * drops `content`. On the write path (POST, sessions.ts:575-577) `content`
@@ -1040,37 +1104,14 @@ router.get('/:id/messages', async (req, res, next) => {
       .limit(1);
     if (!session) throw new NotFound('Session not found');
 
-    const limitRaw = parseInt((req.query.limit as string) || '100', 10);
-    const limit = Math.min(Math.max(Number.isFinite(limitRaw) ? limitRaw : 100, 1), 200);
+    const limit = clampPageLimit(req.query.limit);
     const before = typeof req.query.before === 'string' && req.query.before ? req.query.before : null;
     const beforeId = typeof req.query.beforeId === 'string' && req.query.beforeId ? req.query.beforeId : null;
     if (Boolean(before) !== Boolean(beforeId)) throw new BadRequest('before and beforeId must be given together');
     if (before && Number.isNaN(Date.parse(before))) throw new BadRequest('Invalid before timestamp');
     if (beforeId && !isUuid(beforeId)) throw new BadRequest('Invalid beforeId');
 
-    const conditions = [eq(messages.sessionId, session.id)];
-    if (before && beforeId) {
-      /* Postgres row comparison: lexicographic (created_at, id), so pages
-         partition the transcript exactly even when timestamps collide. */
-      conditions.push(sql`(${messages.createdAt}, ${messages.id}) < (${before}::timestamptz, ${beforeId}::uuid)`);
-    }
-
-    const rows = await db.select(messageDetailColumns)
-      .from(messages)
-      .where(and(...conditions))
-      .orderBy(desc(messages.createdAt), desc(messages.id))
-      .limit(limit + 1);
-
-    const hasMore = rows.length > limit;
-    const page = (hasMore ? rows.slice(0, limit) : rows).slice().reverse();
-    const oldest = page.length > 0 ? page[0] : null;
-    return res.json({
-      messages: page,
-      hasMore,
-      cursor: hasMore && oldest
-        ? { createdAt: oldest.createdAt.toISOString(), id: oldest.id }
-        : null,
-    });
+    return res.json(await sessionMessagePage(db, session.id, limit, before, beforeId));
   } catch (err) { next(err); }
 });
 

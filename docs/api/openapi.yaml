@@ -3013,9 +3013,32 @@ paths:
     get:
       tags: [archive]
       summary: EXISTING — get session detail
+      description: >-
+        Without query parameters the response carries the whole transcript in
+        `messages`. With `tail=N` (clamped to 1..200) it carries only the newest
+        N messages, oldest first, plus `messagesPage: { hasMore, cursor, total }`;
+        older pages are read from GET /api/sessions/{id}/messages by feeding
+        `cursor.createdAt` / `cursor.id` back as `before` / `beforeId`.
+      parameters:
+        - { name: tail, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200 } }
     patch:
       tags: [archive]
       summary: EXISTING — update session
+  /api/sessions/{id}/messages:
+    get:
+      tags: [archive]
+      summary: One cursor page of a session transcript (R7)
+      description: >-
+        Returns `{ messages, hasMore, cursor }`: up to `limit` (1..200, default
+        100) messages strictly older than the (`before`, `beforeId`) pair,
+        oldest first, in the same projection as GET /api/sessions/{id}. Omit
+        both cursor parameters for the newest page. `cursor` is the oldest row
+        of the page with a microsecond-precision ISO timestamp, and null once
+        the transcript is exhausted.
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200 } }
+        - { name: before, in: query, required: false, schema: { type: string, format: date-time } }
+        - { name: beforeId, in: query, required: false, schema: { type: string, format: uuid } }
   /api/sessions/{id}/share:
     get:
       tags: [archive]

@@ -23,6 +23,7 @@
  */
 
 import { apiFetch } from '../util/api.ts';
+import { normalizeDetailPage, sessionDetailPath } from './historyPagingState.ts';
 
 const MAX_ENTRIES = 8;
 const MAX_ENTRY_BYTES = 3_000_000;   // 3 MB serialized cap per session
@@ -193,8 +194,9 @@ function pumpPrefetches(): void {
   while (activePrefetches.size < MAX_PREFETCHES && prefetchQueue.length) {
     const task = prefetchQueue.shift()!;
     activePrefetches.add(task);
-    void apiFetch<CachedDetailResponse>('/api/sessions/' + encodeURIComponent(task.id), { signal: task.controller.signal })
+    void apiFetch<CachedDetailResponse>(sessionDetailPath(task.id), { signal: task.controller.signal })
       .then((response) => {
+        normalizeDetailPage(response);
         if (task.generation !== generation || task.controller.signal.aborted) return null;
         if (response && typeof response === 'object') store(task.id, response);
         return response;
@@ -272,6 +274,9 @@ const SCALAR_KEYS = [
   'boundariesHistory', 'mistakeFilter', 'branchedFrom', 'currentNode',
   'teachingStage', 'currentExampleIdx', 'practiceAttempts', 'practicePhase',
   'streamingText', 'streamingReasoning', 'createdAt', 'updatedAt', 'userId',
+  /* R7 phase 2 — the cached tail page's paging metadata. A save never
+     carries it, so the cached value survives the fold. */
+  'messagesPage',
 ];
 
 function copySavedScalars(

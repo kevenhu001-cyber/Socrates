@@ -487,6 +487,15 @@ export function seedSyncedMessages(sessionId: string | null | undefined, message
   seedSynced(_syncedFor(sessionId), messages, _fingerprints);
 }
 
+/* R7 phase 2 — an older history page arrives straight from the server, so
+   its rows are already held there. Add them to the watermark without
+   clearing it (seedSyncedMessages replaces the whole map), or the next save
+   would re-upload every page the reader scrolled through. */
+export function markMessagesSynced(sessionId: string | null | undefined, messages: unknown): void {
+  if (!sessionId) return;
+  commitSynced(_syncedFor(sessionId), messages, _fingerprints);
+}
+
 /* Keep the watermark when a brand-new session is adopted under a
    server-minted UUID, so the next save is still a delta. */
 function _rekeySynced(fromId: string | null | undefined, toId: string | null | undefined): void {

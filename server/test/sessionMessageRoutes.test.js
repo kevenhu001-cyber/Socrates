@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { appRouteFixture } from './_appRouteFixture.js';
 import { sessions, messages, artifacts, artifactVersions, feedback, mistakes, usageEvents, sessionPromptSnapshots } from '../src/db/schema/index.js';
 
@@ -176,7 +176,8 @@ test('message page returns the newest tail by default, oldest-last, with a stitc
   assert.equal(page1.status, 200);
   assert.deepEqual(page1.body.messages.map((m) => m.rawText), ['m2', 'm3', 'm4']);
   assert.equal(page1.body.hasMore, true);
-  assert.equal(page1.body.cursor.createdAt, new Date(base + 2000).toISOString());
+  assert.equal(Date.parse(page1.body.cursor.createdAt), base + 2000);
+  assert.match(page1.body.cursor.createdAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/);
   assert.equal(page1.body.cursor.id, rows[2].id);
   /* Shape parity with GET /:id: same projection (no `content` column). */
   assert.equal(page1.body.messages[0].id, rows[2].id);
@@ -233,4 +234,56 @@ test('message page clamps limit and validates cursor params', async () => {
   assert.deepEqual(empty.body.messages, []);
   assert.equal(empty.body.hasMore, false);
   assert.equal(empty.body.cursor, null);
+});
+
+test('message page cursor keeps microseconds so rows sharing a millisecond are not skipped', async () => {
+  const s = await session(f.owner, { title: 'Microseconds' });
+  /* JS Dates stop at milliseconds; created_at keeps microseconds. Three rows
+     inside one millisecond: a millisecond-truncated cursor would compare the
+     older two as "not before" the oldest row of page 1 and drop them. */
+  const stamps = ['2026-01-01T12:00:00.123100Z', '2026-01-01T12:00:00.123400Z', '2026-01-01T12:00:00.123700Z', '2026-01-01T12:00:01.000000Z'];
+  for (let i = 0; i < stamps.length; i++) {
+    await message(s, { rawText: 'u' + i, content: 'u' + i, createdAt: sql`${stamps[i]}::timestamptz` });
+  }
+  const page1 = await f.request(`/api/sessions/${s.id}/messages?limit=2`);
+  assert.deepEqual(page1.body.messages.map((m) => m.rawText), ['u2', 'u3']);
+  assert.equal(page1.body.cursor.createdAt, '2026-01-01T12:00:00.123700Z');
+  const page2 = await f.request(`/api/sessions/${s.id}/messages?limit=2&before=${encodeURIComponent(page1.body.cursor.createdAt)}&beforeId=${page1.body.cursor.id}`);
+  assert.deepEqual(page2.body.messages.map((m) => m.rawText), ['u0', 'u1']);
+  assert.equal(page2.body.hasMore, false);
+});
+
+/* ─── R7 phase 2: GET /api/sessions/:id?tail=N ─── */
+
+test('session detail ?tail=N returns the newest page plus page metadata; without tail it is unchanged', async () => {
+  const s = await session(f.owner, { title: 'Tail', topic: 'Tail topic' });
+  const base = Date.UTC(2026, 0, 1, 12, 0, 0);
+  const rows = [];
+  for (let i = 0; i < 5; i++) {
+    rows.push(await message(s, { rawText: 'r' + i, content: 'r' + i, createdAt: new Date(base + i * 1000) }));
+  }
+  const tail = await f.request(`/api/sessions/${s.id}?tail=2`);
+  assert.equal(tail.status, 200);
+  assert.equal(tail.body.id, s.id);
+  assert.equal(tail.body.topic, 'Tail topic');
+  assert.deepEqual(tail.body.messages.map((m) => m.rawText), ['r3', 'r4']);
+  assert.equal(tail.body.messagesPage.hasMore, true);
+  assert.equal(tail.body.messagesPage.total, 5);
+  assert.equal(tail.body.messagesPage.cursor.id, rows[3].id);
+  assert.equal('content' in tail.body.messages[0], false);
+  assert.equal('cursorAt' in tail.body.messages[0], false);
+
+  const rest = await f.request(`/api/sessions/${s.id}/messages?limit=200&before=${encodeURIComponent(tail.body.messagesPage.cursor.createdAt)}&beforeId=${tail.body.messagesPage.cursor.id}`);
+  assert.deepEqual(rest.body.messages.map((m) => m.rawText), ['r0', 'r1', 'r2']);
+
+  const all = await f.request(`/api/sessions/${s.id}?tail=50`);
+  assert.equal(all.body.messages.length, 5);
+  assert.equal(all.body.messagesPage.hasMore, false);
+  assert.equal(all.body.messagesPage.cursor, null);
+  assert.equal((await f.request(`/api/sessions/${s.id}?tail=0`)).body.messages.length, 1);
+
+  const full = await f.request(`/api/sessions/${s.id}`);
+  assert.equal(full.body.messages.length, 5);
+  assert.equal('messagesPage' in full.body, false);
+  assert.equal((await f.request(`/api/sessions/${s.id}?tail=2`, { as: f.other })).status, 404);
 });

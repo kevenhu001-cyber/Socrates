@@ -251,6 +251,9 @@ export const zh = {
     "chat.placeholder":"输入你的想法……",
     "chat.inputPlaceholder":"有问题，随便问",
     "chat.hint":"Shift+Enter 换行",
+    "chat.history.loadingEarlier":"正在加载更早的消息",
+    "chat.history.loadFailed":"更早的消息加载失败，向上滚动可重试。",
+    "chat.history.start":"已到对话开头",
     "chat.send":"发送",
     /* P_composer-primary-split — see matching en block. */
     "chat.stop":"停止生成",

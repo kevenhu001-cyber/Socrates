@@ -188,6 +188,23 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   flex-shrink: 0;
 }
 
+/* R7 phase 2 — status row above the oldest loaded message of a paginated
+   transcript (loading / failed / beginning of conversation). Its box is
+   reserved for the whole walk so the text changing never moves the rows
+   below it; the transcript disables native scroll anchoring. */
+#appShell #msgList > .history-page-status {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--ui-font-size-xs) * 1.5 + var(--ui-space-md) * 2);
+  padding: var(--ui-space-md) 0;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.5;
+  text-align: center;
+}
+
 /* P_perf-scroll — long-conversation scrolling: settled assistant turns skip
    layout/paint while off-screen. Scoped to [data-stream-settled] so the live
    streaming row — whose height the streaming turn's rAF scheduler measures
