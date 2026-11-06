@@ -511,9 +511,12 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 /* Reference effort slider: a thick track filled up to the thumb, with a
    small round dot at every stop inside the track, centred where the thumb
    sits on that stop. */
+/* Overlaid on the range input itself: the container pads it 4px 6px
+   (polish/overlays.css), and 12px + half a dot puts each dot under the
+   centre of the 28px thumb at that stop. */
 .chat-config-slider-dots {
   position: absolute;
-  inset: 0 0 auto;
+  inset: 4px 6px auto;
   height: 36px;
   display: flex;
   align-items: center;
@@ -529,6 +532,10 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   background: var(--ui-text-muted);
   opacity: .7;
 }
+
+/* The thumb covers its own stop in the reference; the dots sit above the
+   input, so the active one steps aside instead. */
+.chat-config-slider-dots span[data-active] { opacity: 0; }
 
 @keyframes chat-config-pop-in {
   from { opacity: 0; transform: translateY(6px) scale(.98); }

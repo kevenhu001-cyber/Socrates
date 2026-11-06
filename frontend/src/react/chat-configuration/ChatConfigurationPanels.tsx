@@ -111,7 +111,7 @@ export function EffortPanel({ effort, speed, supportsInstant = true, onBack, onC
           aria-valuetext={effortLabel(effort)}
           onChange={(event) => onCommit(stops[Number(event.target.value)], speed)}
         />
-        <div className="chat-config-slider-dots" aria-hidden="true">{stops.map(stop => <span key={stop} />)}</div>
+        <div className="chat-config-slider-dots" aria-hidden="true">{stops.map((stop, index) => <span key={stop} data-active={index === (sliderIndex < 0 ? 1 : sliderIndex) || undefined} />)}</div>
       </div>
     </>
   );
