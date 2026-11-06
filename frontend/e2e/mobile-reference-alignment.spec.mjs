@@ -35,7 +35,9 @@ for (const mode of ['dark', 'light']) {
       const css = getComputedStyle(el);
       return { background: css.backgroundColor, radius: css.borderTopLeftRadius };
     });
-    expect(rgbChannels(frameStyle.background)).toEqual(mode === 'dark' ? [41, 41, 41] : [255, 255, 255]);
+    /* Dark: the reference question box sits one rung above the pure-black
+       canvas (panel rung #1f1f1f, reference ≈ #1b1b1b); menus keep #292929. */
+    expect(rgbChannels(frameStyle.background)).toEqual(mode === 'dark' ? [31, 31, 31] : [255, 255, 255]);
     expect(frameStyle.radius).toBe('28px');
     const composerBox = await page.locator('#composerInputWrap').boundingBox();
     expect(composerBox.x).toBe(16);
