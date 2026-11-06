@@ -26,6 +26,7 @@ import {
 import type { LegacyChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity';
 import { setOffscreenMount } from './nearViewport';
+import { useAboveViewportResizeCompensation } from './aboveViewportResize';
 import { canLoadOlderHistory, registerBeforeOlderRows, requestOlderHistory } from '../../session/historyPagingState.ts';
 
 function sameWindow(track: MountTrack, next: MountWindowState): boolean {
@@ -134,6 +135,7 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
     }
   });
 
+  useAboveViewportResizeCompensation();
   useEffect(() => registerDeferredMessageRowsFlusher(
     () => {
       const track = trackRef.current;
