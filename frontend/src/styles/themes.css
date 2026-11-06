@@ -37,8 +37,10 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   color-scheme: dark;
 
   /* shadcn semantic roles. Product and retained HTML controls share these
-     values; there is no second palette in the component stylesheet. */
-  --background: var(--geist-background-100);
+     values; there is no second palette in the component stylesheet.
+     The canvas is the reference's pure black (Geist background-200); the
+     ladder guard allows it through the baseline's blackCanvas policy. */
+  --background: var(--geist-background-200);
   --foreground: var(--geist-gray-1000);
   --card: var(--geist-gray-200);
   --card-foreground: var(--foreground);
@@ -111,9 +113,9 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * steps is what keeps the ladder honest — a ladder whose rungs belong to
    * no scale step is four unrelated colours that happen to be close.
    *
-   * The canvas is Geist's background-100 (#0a0a0a), a near-black rather
-   * than pure #000: pure black crushes shadow detail and lets the lowest
-   * layer read as a hole punched through the UI.
+   * The dark canvas is Geist's background-200 (pure #000), matching the
+   * ChatGPT phone reference; rail / panel / elevated stay on the
+   * gray-100 → gray-300 slice so raised surfaces still read as depth.
    *
    * Interactive tints (control, bubble, selected pill) are named scale
    * steps too, so they carry a fixed relationship to the surfaces they
@@ -583,7 +585,7 @@ html[data-theme="socrates"][data-mode="dark"] {
    * roles use. They stay HSL triplets because the frozen legacy tree
    * composes them with `hsl(...)`; the values track the ladder exactly so
    * a legacy surface never drifts onto a tone the palette does not own. */
-  --bg-000: 0 0% 3.92%;   /* L1 — page (geist background-100) */
+  --bg-000: 0 0% 0%;      /* L1 — page (geist background-200, pure black) */
   --bg-100: 0 0% 10.2%;   /* L2 — rail (geist gray-100) */
   --bg-200: 0 0% 12.16%;  /* L3 — panel (geist gray-200) */
   --bg-300: 0 0% 16.08%;  /* L4 — elevated (geist gray-300) */

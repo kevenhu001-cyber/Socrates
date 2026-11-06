@@ -16,7 +16,8 @@
  *      layering reads as depth rather than as a colour change;
  *   3. the darkest rung is a near-black, never pure #000 — pure black crushes
  *      shadow detail and lets the lowest layer read as a hole punched
- *      through the UI.
+ *      through the UI. The one exception is a dark canvas a theme opts into
+ *      with `blackCanvas: true` (see BLACK CANVAS below).
  *
  * The band above is a sanity net rather than the contract. For a theme cut
  * from the Geist scale the stronger contract is that the four rungs are a
@@ -83,6 +84,16 @@
  * the three distinct tones (consecutive Geist slice, role order, step band).
  * Every other theme and mode keeps four distinct rungs.
  *
+ * BLACK CANVAS (ui-ref, 2026-11-06)
+ * ---------------------------------
+ * A theme whose baseline sets `blackCanvas: true` paints its DARK canvas pure
+ * #000 (Geist background-200), as the ChatGPT phone reference does. For that
+ * theme, in dark mode only: the page rung must be exactly #000000; the Geist
+ * slice check runs on the three raised rungs (rail / panel / elevated), which
+ * must still be consecutive; and the canvas → first-raised-rung gap may exceed
+ * the 7% band up to BLACK_CANVAS_MAX_STEP, since black sits below the ramp.
+ * Every other theme and mode still rejects pure black.
+ *
  * Usage:  node scripts/check-surface-ladder.mjs [--update]
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -119,6 +130,9 @@ const LIGHTNESS_ORDER = {
  * gap between its page tone and the gray ramp. */
 const MIN_STEP = 1.5;
 const MAX_STEP = 7.0;
+/* The widest canvas → rail gap a blackCanvas theme may take (#000 → gray-100
+ * is 10.2%). */
+const BLACK_CANVAS_MAX_STEP = 12.0;
 
 /* The chat-surface bridge. The frozen legacy chat surface composes these;
  * they are declared once per mode in themes.css and inherited by every
@@ -164,6 +178,7 @@ const GEIST_SURFACES = {
   ],
   dark: [
     { step: 'background-100', value: '#0a0a0a' },
+    { step: 'background-200', value: '#000000' },
     { step: 'gray-100', value: '#1a1a1a' },
     { step: 'gray-200', value: '#1f1f1f' },
     { step: 'gray-300', value: '#292929' },
@@ -503,8 +518,15 @@ function main() {
       if (new Set(rungs).size !== expectedDistinct || rungs.length !== expectedDistinct) {
         failures.push(`themes.css: theme "${theme}" ${mode} ladder has duplicate rungs — ${allRungs.join(', ')}`);
       }
-      if (rungs.includes('#000000')) {
-        failures.push(`themes.css: theme "${theme}" ${mode} ladder uses pure black #000000 — the canvas must be a near-black`);
+      const blackCanvas = mode === 'dark' && policy.blackCanvas === true;
+      if (blackCanvas && ladder.rungHex.page !== '#000000') {
+        failures.push(
+          `themes.css: theme "${theme}" dark ladder declares blackCanvas but page is ${ladder.rungHex.page}, not #000000`,
+        );
+      }
+      const blackRungs = blackCanvas ? rungs.filter((rung) => rung !== ladder.rungHex.page) : rungs;
+      if (blackRungs.includes('#000000')) {
+        failures.push(`themes.css: theme "${theme}" ${mode} ladder uses pure black #000000 — only a blackCanvas page may be #000`);
       }
 
       /* A scale-based theme's rungs must be tones the Geist scale actually
@@ -514,9 +536,10 @@ function main() {
        * structural properties above apply. */
       if (policy.scale === 'geist') {
         const scale = GEIST_SURFACES[mode];
-        const indices = rungs.map((rung) => scale.findIndex((entry) => entry.value === rung));
+        const sliceRungs = blackRungs;
+        const indices = sliceRungs.map((rung) => scale.findIndex((entry) => entry.value === rung));
         if (indices.includes(-1)) {
-          const unknown = rungs.filter((rung) => !scale.some((entry) => entry.value === rung));
+          const unknown = sliceRungs.filter((rung) => !scale.some((entry) => entry.value === rung));
           failures.push(
             `themes.css: theme "${theme}" ${mode} ladder rung ${unknown.join(', ')} is not a step of the Geist scale`,
           );
@@ -554,9 +577,10 @@ function main() {
       const sortedRungs = [...rungs].sort((a, b) => lightness(a) - lightness(b));
       for (let i = 1; i < sortedRungs.length; i += 1) {
         const step = Math.abs(lightness(sortedRungs[i]) - lightness(sortedRungs[i - 1]));
-        if (step < MIN_STEP - 0.01 || step > MAX_STEP + 0.01) {
+        const maxStep = blackCanvas && i === 1 ? BLACK_CANVAS_MAX_STEP : MAX_STEP;
+        if (step < MIN_STEP - 0.01 || step > maxStep + 0.01) {
           failures.push(
-            `themes.css: theme "${theme}" ${mode} ladder step ${sortedRungs[i - 1]} → ${sortedRungs[i]} is ${step.toFixed(2)}%, outside the ${MIN_STEP}%-${MAX_STEP}% band`,
+            `themes.css: theme "${theme}" ${mode} ladder step ${sortedRungs[i - 1]} → ${sortedRungs[i]} is ${step.toFixed(2)}%, outside the ${MIN_STEP}%-${maxStep}% band`,
           );
         }
       }
@@ -705,6 +729,7 @@ function main() {
       }
       next.themes[theme] = {
         ...(previous?.paperCanvas ? { paperCanvas: true } : {}),
+        ...(previous?.blackCanvas ? { blackCanvas: true } : {}),
         scale: previous?.scale ?? null,
         shared: previous?.shared ?? false,
         legacyTolerance: previous?.legacyTolerance ?? 0.5,

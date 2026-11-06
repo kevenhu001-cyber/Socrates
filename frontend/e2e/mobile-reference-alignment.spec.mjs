@@ -56,7 +56,7 @@ for (const mode of ['dark', 'light']) {
     await page.locator('#sidebarOpenBtn').click();
     await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).x)).toBe(0);
     expect(rgbChannels(await page.locator('#sidebar').evaluate(el => getComputedStyle(el).backgroundColor)))
-      .toEqual(mode === 'dark' ? [10, 10, 10] : [255, 255, 255]);
+      .toEqual(mode === 'dark' ? [0, 0, 0] : [255, 255, 255]);
     const searchRow = page.locator('#sidebarSearchRow');
     expect((await searchRow.boundingBox()).height).toBe(0);
     await page.locator('#sidebarSearchBtn').click();

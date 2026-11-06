@@ -50,13 +50,13 @@ const darkHex: ThemePaletteHex = {
   },
   bg: {
     /* Four-step ladder, projected from four consecutive steps of the Geist
-     * surface ramp: L1 #0a0a0a → L2 #1a1a1a → L3 #1f1f1f → L4 #292929.
+     * surface ramp: L1 #000000 → L2 #1a1a1a → L3 #1f1f1f → L4 #292929.
      * The canvas is a near-black, never pure #000. */
-    page: '#0a0a0a',
+    page: '#000000',
     raised: '#1f1f1f',
     overlay: '#292929',
     hover: '#363636',
-    sunken: '#0a0a0a',
+    sunken: '#000000',
   },
   text: {
     primary: '#ededed',
