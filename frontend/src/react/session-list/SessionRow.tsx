@@ -149,7 +149,7 @@ function SessionRowBase({
         onCancelRename={() => setRenaming(false)}
       />}
       tags={session.tags && session.tags.length > 0 ? <SessionTagPills tags={session.tags} /> : undefined}
-      actions={<SessionRowActionMenu
+      actions={<><SessionRowActionMenu
         session={session}
         open={actionsOpen}
         onOpenChange={setMenuOpen}
@@ -183,7 +183,25 @@ function SessionRowBase({
           onDelete(session.id, event);
         }}
         onMoveToProject={loadProjects}
-      />}
+      />
+      {/* Reference drawer rows carry a pin toggle beside ⋯ on touch screens;
+          the shell CSS shows it in the phone drawer only. Same action as the
+          menu's 置顶 / 取消置顶 item. */}
+      <UiButton
+        className="btn-icon recent-item-pin-toggle"
+        type="button"
+        title={t(session.pinned ? 'session.ctxUnpin' : 'session.ctxPin')}
+        aria-label={t(session.pinned ? 'session.ctxUnpin' : 'session.ctxPin')}
+        aria-pressed={Boolean(session.pinned)}
+        data-i18n-title={session.pinned ? 'session.ctxUnpin' : 'session.ctxPin'}
+        data-i18n-aria={session.pinned ? 'session.ctxUnpin' : 'session.ctxPin'}
+        onClick={(event) => {
+          event.stopPropagation();
+          void update({ pinned: !session.pinned });
+        }}
+      >
+        <Icon name="pin" size={16} />
+      </UiButton></>}
     />
   );
 }

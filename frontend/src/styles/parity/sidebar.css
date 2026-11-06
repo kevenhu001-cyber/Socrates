@@ -422,6 +422,9 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     color: var(--foreground);
   }
   #appShell #sidebar .recent-item-overflow svg { width: 16px; height: 16px; }
+  /* The pin toggle is the phone drawer's (polish/mobile-sidebar.css); the
+     desktop row keeps pinning inside the ⋯ menu. */
+  #appShell #sidebar .recent-item-pin-toggle { display: none; }
   #appShell #sidebar .recent-item.actions-open { background: var(--accent); }
 
   /* ── Footer: account row + quick actions ─────────────────────────────── */

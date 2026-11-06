@@ -592,6 +592,25 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     background: var(--ui-bg-active);
     color: var(--foreground);
   }
+  /* Reference rows: ⋯ then a pin toggle, both always visible on touch. The
+     toggle replaces the leading pinned mark, so a pinned row shows one pin. */
+  #appShell .recent-item .recent-item-pin-toggle {
+    display: grid;
+    place-items: center;
+    width: var(--ui-control-sm);
+    min-width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ui-radius-control);
+    background: transparent;
+    color: var(--ui-text-muted);
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+  #appShell .recent-item .recent-item-pin-toggle svg { width: 18px; height: 18px; }
+  #appShell .recent-item .recent-item-pin-toggle[aria-pressed="true"] { color: var(--ui-text-primary); }
+  #appShell .recent-item .recent-item-pin-toggle:active { background: var(--ui-bg-active); color: var(--ui-text-primary); }
+  #appShell .recent-item .recent-item-pin-icon { display: none; }
   #appShell .recent-item.active, #appShell .recent-item.actions-open { background: var(--ui-bg-selected); box-shadow: none; }
   #appShell #sidebarFooter {
     flex: 0 0 auto;

@@ -133,11 +133,9 @@
     height: 40px;
   }
 
-  /* Reference drawer: footer identity sits ~12px in from the edge (tighter
-     than the 16px row content inset); the upgrade pill keeps ~14px right. */
-  #appShell#appShell .sidebar-footer {
-    border-top: 0;
-  }
+  /* The drawer footer's hairline (the reference draws one above the account)
+     is owned by polish/mobile-sidebar.css; the border-top: 0 pin that sat
+     here was removed in the ui-ref pass. */
 
   /* P_sidebar-avatar-circle — flex-basis outranks `width` on a flex item,
      so raising width/height alone left this box oblong and `border-radius:
