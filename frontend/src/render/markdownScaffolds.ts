@@ -6,6 +6,7 @@ import {
   fieldsOf,
   parseAnswerKey,
   splitDerivationSteps,
+  derivationStepSource,
   stripTags,
 } from '@socrates/ui/learn-model';
 import { hasScaffoldMarkup, SCAFFOLD_TAGS, type ScaffoldTag } from '@socrates/ui/learn-split';
@@ -246,7 +247,7 @@ function stepRows(steps: string[], markdown: StreamMarkdownRenderer, part: strin
 function renderDerivationPreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const title = streamField(inner, 'title');
   const body = streamField(inner, 'body');
-  const steps = splitDerivationSteps(body);
+  const steps = splitDerivationSteps(body).map(derivationStepSource);
   return streamCard('derivation',
     (title ? markdown(title, 'derivation-title') : '')
     + (steps.length ? stepRows(steps, markdown, 'derivation-step') : markdown('', 'derivation-step')),

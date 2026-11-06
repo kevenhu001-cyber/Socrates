@@ -27,6 +27,7 @@ import {
   revealState,
   scaffoldReadiness,
   splitDerivationSteps,
+  derivationStepSource,
   fillTemplate,
   type QuizState,
 } from './learn/model.ts';
@@ -180,4 +181,14 @@ test('progressive reveal clamps to its total', () => {
   assert.equal(isFullyRevealed(revealNext(state)), true);
   assert.equal(revealState(-1).total, 0);
   assert.equal(fillTemplate('提示 {n}/{total}', { n: 1, total: 2 }), '提示 1/2');
+});
+
+test('derivation steps written as bare LaTeX render as math, prose and delimited math stay', () => {
+  assert.equal(derivationStepSource('\\operatorname{Res}(f,z_0) = \\lim_{z\\to z_0}(z-z_0)f(z)'), '$\\operatorname{Res}(f,z_0) = \\lim_{z\\to z_0}(z-z_0)f(z)$');
+  assert.equal(derivationStepSource('= \\lim_{z\\to 0} z\\cdot\\frac{e^z}{z}'), '$= \\lim_{z\\to 0} z\\cdot\\frac{e^z}{z}$');
+  assert.equal(derivationStepSource('由柯西定理 \\oint_C f(z)\\,dz = 0，得证'), '由柯西定理 $\\oint_C f(z)\\,dz = 0$，得证');
+  assert.equal(derivationStepSource('$a = \\frac{1}{2}$'), '$a = \\frac{1}{2}$');
+  assert.equal(derivationStepSource('\\[x = 1\\]'), '\\[x = 1\\]');
+  assert.equal(derivationStepSource('= 1'), '= 1');
+  assert.equal(derivationStepSource('先找出奇点'), '先找出奇点');
 });

@@ -21,6 +21,7 @@ import {
   learnStrings,
   parseAnswerKey,
   splitDerivationSteps,
+  derivationStepSource,
   type FlashcardState,
   type QuizResult,
   type RecallRating,
@@ -176,6 +177,6 @@ export function StepListScaffold({ steps }: { steps: ParsedStep[] }) {
 }
 
 export function DerivationScaffold({ parsed }: { parsed: ParsedDerivation }) {
-  const steps = splitDerivationSteps(parsed.body).map((body, index) => ({ n: index + 1, body }));
+  const steps = splitDerivationSteps(parsed.body).map((body, index) => ({ n: index + 1, body: derivationStepSource(body) }));
   return <StepsCard kind="derivation" title={parsed.title} steps={steps} />;
 }
