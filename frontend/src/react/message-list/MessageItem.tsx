@@ -4,6 +4,7 @@ import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel'
 import type { LegacyChatMessage } from '../types/domain';
 import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { useMessageContextMenu } from './useMessageContextMenu';
+import { TutorMessageActions } from './TutorMessageActions';
 import { MessageToolbar } from './MessageToolbar';
 import { MessageAttachments } from './MessageAttachments';
 import { MessageBody } from './MessageBody';
@@ -233,6 +234,7 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
           commitUserMessageEdit(clientId, text);
         }}
       />
+      {!readOnly && !isLive ? <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} /> : null}
       {visibility.showHistoryToolbar ? (
         <MessageToolbar message={message} role={toolbarRole(role)} onEdit={onEdit} contextMenu={contextMenu} />
       ) : null}

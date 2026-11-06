@@ -9,9 +9,8 @@
  *   .sc-live  — the static streaming preview, built to the card's metrics
  *               (16px radius, 44px label header, 24px body, 36px control
  *               rows) so the mount at stream end does not move.
- * The scaffold carries no frame: the preview and the mounted card are both
- * a zone inside the reply — no ring, no lift, no divider under the label.
- * The controls inside (options, inputs, pills) keep their own hairline.
+ * Preview and mounted cards carry a matching hairline frame, separating
+ * structured teaching material from the surrounding prose.
  */
 
 .sc-host,
@@ -80,13 +79,13 @@
 /* ---- streaming preview ------------------------------------------------ */
 /* RN-8: the preview is the card's own geometry (16px radius, 44px head,
    24px inset) so the mount at stream end does not move. Like the mounted
-   card it carries no frame: no ring, no lift, no divider under the label —
-   the scaffold reads as a zone inside the reply. */
+   card it carries a quiet frame, separating it from prose. */
 
 .sc-live {
   --sc-pad: var(--ui-gap-5);
   border-radius: var(--ui-round-lg);
-  background: transparent;
+  background: var(--ui-card);
+  border: 1px solid var(--ui-hairline);
   overflow: hidden;
 }
 

@@ -23,6 +23,7 @@ for (const mobile of [false, true]) {
       await expect(body.locator(`.sc-host[data-scaffold="${kind}"]`)).toHaveCount(1);
     }
     await expect(body.locator('[data-part="definition-body"]')).toContainText('瑞利判据');
+    await expect(body.getByTestId('scaffold-definition')).toHaveCSS('border-top-width', '1px');
     await expect(body.locator('[data-part="definition-body"] .katex')).toHaveCount(1);
     await expect(body.locator('[data-part="example-problem"]')).toContainText('分辨角变小');
     const question = body.locator('.sc-host[data-scaffold="quiz"]');

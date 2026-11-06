@@ -3220,7 +3220,30 @@ paths:
         do not require another model request before the closing frame. Plain
         answers without reasoning or tools may omit the retrospective.
         The native `render_intelligent_ui` tool accepts `{version: 1, nodes: [...]}`
-        with 1–80 unique typed nodes. Server validation rejects unsafe keys,
+        with 1–80 unique typed nodes. A `type: demonstration` node contains
+        a version-1 `program`: shared numeric parameters, ordered mathematical
+        definitions, optional bounded RK4 dynamics, and ordered views for plots,
+        algorithmic pixel fields, vectors, trajectories, controls and metrics.
+        Models may define new equations, finite sums and recurrences without a
+        preset model ID. The native tool supplies the exact expression grammar,
+        units, view contracts and resource limits. Mathematical data never runs
+        as JavaScript, HTML or a remote plugin. Unsupported syntax/identifiers,
+        unsafe values and excessive work are rejected or bounded locally.
+        Existing clients preserve unknown fields and display generic tool results.
+        A native `type: physics` node has a
+        `scene` (rayleigh, wave-interference, electric-field, harmonic-oscillator,
+        pendulum or projectile), optional plain-text title, and optional numeric
+        `parameters` object. Exact parameter names, units, ranges, defaults and
+        model assumptions are supplied in the native tool schema. Unknown
+        model IDs or parameter names and nonfinite/out-of-range numbers are
+        rejected. For example `{scene: pendulum, parameters: {length: 2, angle: 60}}`
+        uses metres and degrees. Rayleigh also accepts the earlier top-level
+        separation (0.2–3 reference Airy radii), wavelength (380–750 nm) and
+        aperture (10–300 mm) fields. The SPA computes fields, vectors, trajectories,
+        time plots and metrics locally without remote simulation services or
+        OpenUI parsing. Existing clients keep their generic tool result fallback;
+        unknown wire fields remain preserved.
+        Server validation rejects unsafe keys,
         URLs, invalid parents and cycles. UI data travels through ordinary
         tool_use/tool_result frames and stored toolCalls, separate from prose.
         Existing clients can display a generic tool result; legacy UI fences

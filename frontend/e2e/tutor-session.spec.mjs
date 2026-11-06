@@ -213,7 +213,7 @@ test('stopping a tutor follow-up before content arrives does not create an error
   await expect(page.locator('#msgList')).not.toContainText('Stream returned no content');
 });
 
-test('stuck learners see actionable help and can choose to keep thinking without another model call', async ({ page }) => {
+test('stuck learners receive tutor help without selecting an action', async ({ page }) => {
   const streams = await setupTutor(page);
   await openTutor(page);
   await page.locator('.tutor-explore-skip').click();
@@ -221,13 +221,11 @@ test('stuck learners see actionable help and can choose to keep thinking without
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await page.locator('#composerRoot .rich-composer-editor').fill('不知道');
     await page.locator('#composerPrimaryBtn').click();
-    if (attempt < 2) await expect.poll(() => streams.length).toBe(attempt + 2);
+    await expect.poll(() => streams.length).toBe(attempt + 2);
     await expect(page.locator('#composerPrimaryBtn')).not.toHaveAttribute('data-stop', '1');
   }
-  await expect(page.locator('[data-tutor-action]')).toHaveCount(2);
-  await page.locator('[data-tutor-action="retry"]').click();
   await expect(page.locator('[data-tutor-action]')).toHaveCount(0);
-  expect(streams).toHaveLength(3);
+  expect(streams).toHaveLength(4);
 });
 
 test('tutor help supports mistake saving, hints, explanations and another question', async ({ page }) => {
@@ -239,7 +237,8 @@ test('tutor help supports mistake saving, hints, explanations and another questi
   await page.locator('.tutor-explore-skip').click();
   await expect(page.locator('#msgList .msg.assistant .msg-body').last()).toContainText(LESSON);
   await page.evaluate(() => window.tutorSocratic.showFourOptionDialog());
-  await expect(page.locator('[data-tutor-action]')).toHaveCount(4);
+  await expect(page.locator('[data-tutor-action]')).toHaveCount(2);
+  await page.getByRole('button', { name: '更多辅导' }).click();
   await page.screenshot({ path: 'test-results/tutor-help-actions.png', fullPage: true });
   const saved = page.waitForRequest((request) => /\/api\/(?:v2\/)?mistakes$/.test(new URL(request.url()).pathname) && request.method() === 'POST');
   await page.locator('[data-tutor-action="mistake"]').click();
@@ -256,6 +255,7 @@ test('tutor help supports mistake saving, hints, explanations and another questi
   await expect(page.locator('#msgList .msg.assistant .msg-body').last()).toContainText('A focused explanation');
   await expect.poll(() => page.evaluate(() => window.stateStore.read('explaining'))).toBe(false);
   await page.evaluate(() => window.tutorSocratic.showFourOptionDialog());
+  await page.getByRole('button', { name: '更多辅导' }).click();
   await page.locator('[data-tutor-action="skip"]').click();
   await expect.poll(() => streams.length).toBe(3);
   expect(errors).toEqual([]);

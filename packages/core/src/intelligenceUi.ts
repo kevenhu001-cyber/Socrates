@@ -28,6 +28,8 @@ export type IntelligenceUiNodeType =
   | 'tabs'
   | 'entity'
   | 'image-gallery'
+  | 'demonstration'
+  | 'physics'
   | 'openui';
 
 const NODE_TYPES = new Set<IntelligenceUiNodeType>([
@@ -48,6 +50,8 @@ const NODE_TYPES = new Set<IntelligenceUiNodeType>([
   'tabs',
   'entity',
   'image-gallery',
+  'demonstration',
+  'physics',
   'openui',
 ]);
 

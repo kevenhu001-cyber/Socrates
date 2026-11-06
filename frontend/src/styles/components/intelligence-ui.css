@@ -918,3 +918,90 @@
   background: color-mix(in srgb, var(--foreground) 7%, transparent);
 }
 .intui-block-skeleton-line[data-width="title"] { width: 40%; height: 1rem; }
+
+/* Native field renderer, shared by direct physics nodes and OpenUI adapters. */
+.intui-physics {
+  display: grid;
+  gap: var(--ui-gap-3);
+  min-width: 0;
+  color: var(--ui-ink);
+}
+.intui-physics header p,
+.intui-physics-caption {
+  margin: 0;
+  color: var(--ui-ink-secondary);
+  font-size: var(--ui-type-body-sm-size);
+}
+.intui-physics canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2;
+  border-radius: var(--ui-round-lg);
+}
+.intui-physics svg { display: block; width: 100%; }
+.intui-physics-toolbar { display: flex; flex-wrap: wrap; gap: var(--ui-gap-2); }
+.intui-physics-parameter { display: grid; gap: var(--ui-gap-2); margin-block: var(--ui-gap-2); }
+.intui-physics-parameter input { width: 100%; min-width: 0; }
+.intui-physics-readout { font-variant-numeric: tabular-nums; }
+.intui-physics summary { cursor: pointer; color: var(--ui-ink-secondary); }
+.intui-physics summary:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); }
+.intui-physics-metrics { display: flex; flex-wrap: wrap; gap: var(--ui-gap-3); font-variant-numeric: tabular-nums; }
+.intui-physics-plot { margin: 0; min-width: 0; }
+.intui-physics-plot figcaption { color: var(--ui-ink-secondary); font-size: var(--ui-type-body-sm-size); }
+
+/* A quiet, inline scientific demonstration. Expressions own the content;
+   the app owns type, spacing, controls, legends and theme contrast. */
+.demonstration {
+  --ui-demo-blue: var(--ui-info);
+  --ui-demo-orange: var(--ui-warning);
+  --ui-demo-red: var(--ui-danger);
+  --ui-demo-green: var(--ui-success);
+  --ui-demo-violet: var(--chart-4);
+  display: grid;
+  gap: var(--ui-gap-5);
+  min-width: 0;
+  width: 100%;
+  padding-block: var(--ui-gap-2);
+  color: var(--ui-ink);
+}
+.demo-heading { font-weight: var(--ui-font-weight-medium); font-size: var(--ui-type-body-size); }
+.demo-views { display: grid; gap: var(--ui-gap-4); min-width: 0; }
+.demonstration figure { margin: 0; min-width: 0; }
+.demonstration figcaption { margin-bottom: var(--ui-gap-2); color: var(--ui-ink-secondary); font-size: var(--ui-type-label-sm-size); }
+.demo-field canvas { display: block; width: 100%; border-radius: var(--ui-round-lg); }
+.demo-plot > svg { display: block; width: 100%; overflow: visible; }
+.demo-axis { color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
+.demo-axis line { stroke: var(--ui-hairline-strong); stroke-width: .7; }
+.demo-axis text, .demo-axis-label { fill: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
+.demo-marker-label { fill: var(--ui-ink-secondary); font-size: var(--ui-type-label-sm-size); }
+.demo-legend { display: flex; flex-wrap: wrap; gap: var(--ui-gap-3); margin: var(--ui-gap-2) 0 0; color: var(--ui-ink-secondary); font-size: var(--ui-type-label-sm-size); }
+.demo-legend > span { display: inline-flex; align-items: center; gap: var(--ui-gap-2); }
+.demo-legend svg { flex: none; width: 22px; height: 8px; }
+.demo-controls { display: grid; gap: var(--ui-gap-2); }
+.demo-control { display: grid; grid-template-columns: minmax(52px, 1fr) minmax(80px, 5fr) minmax(56px, 1fr); align-items: center; gap: var(--ui-gap-3); min-height: var(--ui-control-md); }
+.demo-control > label { font-weight: var(--ui-font-weight-regular); color: var(--ui-ink-secondary); font-size: var(--ui-type-label-size); overflow-wrap: anywhere; }
+.demo-control > output { text-align: end; font-size: var(--ui-type-label-size); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.demo-control > output span { color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
+.demonstration input[type="range"] { appearance: none; width: 100%; min-width: 0; height: var(--ui-control-md); margin: 0; background: transparent; cursor: pointer; }
+.demonstration input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: var(--ui-fill-pressed); border-radius: var(--ui-round-pill); }
+.demonstration input[type="range"]::-moz-range-track { height: 4px; background: var(--ui-fill-pressed); border-radius: var(--ui-round-pill); }
+.demonstration input[type="range"]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; margin-top: -7px; background: var(--ui-card); border: 1px solid var(--ui-hairline-strong); border-radius: var(--ui-round-pill); box-shadow: none; }
+.demonstration input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: var(--ui-card); border: 1px solid var(--ui-hairline-strong); border-radius: var(--ui-round-pill); }
+.demonstration input[type="range"]:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); border-radius: var(--ui-round-pill); }
+.demo-advanced summary { color: var(--ui-ink-tertiary); cursor: pointer; font-size: var(--ui-type-label-sm-size); }
+.demo-advanced summary:focus-visible, .demo-error summary:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); }
+.demo-presets { display: flex; flex-wrap: wrap; gap: var(--ui-gap-2); }
+.demo-presets > button { flex: 1; }
+.demo-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: var(--ui-gap-4); margin: 0; padding-top: var(--ui-gap-2); }
+.demo-metrics dt { color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
+.demo-metrics dd { margin: var(--ui-gap-1) 0 0; font-size: var(--ui-type-title-sm-size); font-weight: var(--ui-font-weight-medium); font-variant-numeric: tabular-nums; }
+.demo-metrics dd > span { font-size: var(--ui-type-label-sm-size); font-weight: var(--ui-font-weight-regular); color: var(--ui-ink-secondary); }
+.demo-time { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--ui-gap-3); color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); font-variant-numeric: tabular-nums; }
+/* Older convenience scenes use the same compact control grammar. */
+.intui-physics.demonstration { gap: var(--ui-gap-3); }
+.intui-physics.demonstration header p { color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
+.intui-physics.demonstration .intui-physics-parameter { display: grid; grid-template-columns: minmax(76px, 1fr) minmax(100px, 3fr); align-items: center; gap: var(--ui-gap-3); margin-block: 0; min-height: var(--ui-control-md); font-size: var(--ui-type-label-sm-size); }
+.intui-physics.demonstration .intui-physics-caption { font-size: var(--ui-type-label-sm-size); }
+
+.demo-field { padding-inline: 7.3077% 2.3077%; }
+.demo-field canvas { aspect-ratio: auto; }

@@ -33,9 +33,7 @@ export function useCardPad(): number {
 /**
  * The site's learning scaffold card.
  *
- * The card is a zone inside the reply, not a box on top of it: no hairline
- * ring, no lift, no divider under the label. The content reads as part of
- * the answer, and the label plus the inner sheets carry the structure.
+ * A framed reference separates structured teaching material from surrounding prose.
  */
 export function ScaffoldCard({ kind, label, trailing, children, testID, accessibilityLabel }: {
   kind: string;
@@ -46,6 +44,7 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
   accessibilityLabel?: string;
 }) {
   const pad = useCardPad();
+  const { colors } = useUiTheme();
   return (
     <View
       testID={testID ?? `scaffold-${kind}`}
@@ -54,7 +53,9 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
       {...dataSet({ scaffold: kind })}
       style={{
         borderRadius: R.card,
-        backgroundColor: 'transparent',
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.hairline,
         overflow: 'hidden',
       }}
     >

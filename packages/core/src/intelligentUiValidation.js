@@ -1,4 +1,7 @@
-const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'openui'];
+import { validateDemonstration } from './demonstration.js';
+import { physicsParametersError } from './physicsModelRegistry.js';
+
+const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'physics', 'demonstration', 'openui'];
 
 /** Bound complexity and reject unsafe data before it is stored or rendered. */
 export function validateIntelligentUi(value) {
@@ -28,6 +31,19 @@ export function validateIntelligentUi(value) {
     }
     if (node.type === 'openui' && (typeof node.source !== 'string' || !node.source.trim() || node.source.length > 50000)) {
       return { ok: false, error: 'OpenUI nodes require 1–50000 characters of source' };
+    }
+    if (node.type === 'demonstration') {
+      const result = validateDemonstration(node.program);
+      if (!result.ok) return result;
+    }
+    if (node.type === 'physics') {
+      const error = physicsParametersError(node.scene, node.parameters);
+      if (error) return { ok: false, error };
+      for (const [key, min, max] of [['separation', .2, 3], ['wavelength', 380, 750], ['aperture', 10, 300]]) {
+        if (node[key] !== undefined && (typeof node[key] !== 'number' || !Number.isFinite(node[key]) || node[key] < min || node[key] > max)) {
+          return { ok: false, error: `Physics ${key} must be between ${min} and ${max}` };
+        }
+      }
     }
     ids.add(node.id);
   }

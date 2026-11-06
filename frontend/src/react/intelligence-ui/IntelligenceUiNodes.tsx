@@ -1,7 +1,9 @@
+import { Demonstration } from './demonstration/Demonstration';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button as BaseButton } from '../ui/Button';
+import { PhysicsLab } from './physics/PhysicsLab';
 import { LazyOpenUiBlock } from './LazyOpenUiBlock';
 import { Icon } from '../../ui/Icon';
 import { DeferredMenu } from '../menu/DeferredMenu';
@@ -596,6 +598,8 @@ function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: 
 type UiNodeRenderer = (node: IntelligenceUiNode, context: RenderContext) => ReactNode;
 
 const nodeRenderers = new Map<string, UiNodeRenderer>([
+  ['demonstration', (node, context) => <Demonstration program={node.program} title={asProse(resolve(node.title, context))} />],
+  ['physics', (node, context) => typeof node.scene === 'string' ? <PhysicsLab scene={node.scene} title={asProse(resolve(node.title, context))} parameters={isRecord(node.parameters) ? node.parameters : { separation: node.separation, wavelength: node.wavelength, aperture: node.aperture }} /> : null],
   ['openui', (node, context) => typeof node.source === 'string' ? <LazyOpenUiBlock source={node.source} readOnly={context.readOnly} open={context.streaming} embedded /> : null],
   ['panel', (node, context) => <UiPanel node={node} context={context} />],
   ['stack', (node, context) => <UiStack node={node} context={context} />],

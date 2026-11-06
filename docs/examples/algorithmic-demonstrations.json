@@ -1,0 +1,326 @@
+{
+  "grating": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "N",
+        "label": "缝数 N",
+        "value": 6,
+        "min": 2,
+        "max": 12,
+        "step": 1
+      },
+      {
+        "id": "ratio",
+        "label": "d / a",
+        "value": 4,
+        "min": 1,
+        "max": 8,
+        "step": 0.1
+      },
+      {
+        "id": "wavelength",
+        "label": "波长",
+        "value": 550,
+        "min": 380,
+        "max": 750,
+        "step": 5,
+        "unit": "nm"
+      },
+      {
+        "id": "gamma",
+        "label": "显示伽马",
+        "value": 0.4,
+        "min": 0.2,
+        "max": 1,
+        "step": 0.05,
+        "advanced": true
+      }
+    ],
+    "definitions": {
+      "phase": "pi*x*550/wavelength",
+      "envelope": "sinc(phase/ratio)^2",
+      "intensity": "envelope*sinratio(N,phase)^2"
+    },
+    "views": [
+      {
+        "kind": "controls"
+      },
+      {
+        "kind": "plot",
+        "x": [
+          -3.3,
+          3.3
+        ],
+        "y": [
+          0,
+          1.08
+        ],
+        "xLabel": "d · sinθ / 550 nm",
+        "yLabel": "I / I₀",
+        "curves": [
+          {
+            "expression": "intensity",
+            "label": "总光强",
+            "color": "blue"
+          },
+          {
+            "expression": "envelope",
+            "label": "单缝包络",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "field",
+        "x": [
+          -3.3,
+          3.3
+        ],
+        "y": [
+          -1,
+          1
+        ],
+        "expression": "intensity",
+        "gamma": "gamma",
+        "tint": [
+          0.55,
+          1,
+          0.08
+        ],
+        "height": 64
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "主峰间距（归一化）",
+            "expression": "wavelength/550",
+            "digits": 2
+          },
+          {
+            "label": "单缝第一暗纹（归一化）",
+            "expression": "ratio*wavelength/550",
+            "digits": 2
+          }
+        ]
+      }
+    ]
+  },
+  "airy": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "s",
+        "label": "角间距",
+        "value": 1,
+        "min": 0.2,
+        "max": 2.4,
+        "step": 0.01,
+        "unit": "θR"
+      },
+      {
+        "id": "gamma",
+        "label": "显示伽马",
+        "value": 0.55,
+        "min": 0.2,
+        "max": 1,
+        "step": 0.05,
+        "advanced": true
+      }
+    ],
+    "definitions": {
+      "left": "airy(3.83170597*sqrt((x+s/2)^2+y^2))",
+      "right": "airy(3.83170597*sqrt((x-s/2)^2+y^2))",
+      "total": "left+right"
+    },
+    "views": [
+      {
+        "kind": "field",
+        "x": [
+          -3.2,
+          3.2
+        ],
+        "y": [
+          -1.1,
+          1.1
+        ],
+        "expression": "total",
+        "gamma": "gamma",
+        "height": 110,
+        "tint": [
+          1,
+          0.98,
+          0.87
+        ]
+      },
+      {
+        "kind": "plot",
+        "x": [
+          -3.2,
+          3.2
+        ],
+        "y": [
+          0,
+          "max(1.12,1.12*total)"
+        ],
+        "xLabel": "θ / θR",
+        "yLabel": "I / I₀",
+        "curves": [
+          {
+            "expression": "left",
+            "label": "左光源",
+            "color": "blue",
+            "dashed": true
+          },
+          {
+            "expression": "right",
+            "label": "右光源",
+            "color": "orange",
+            "dashed": true
+          },
+          {
+            "expression": "total",
+            "label": "叠加光强",
+            "color": "ink"
+          }
+        ],
+        "markers": [
+          {
+            "x": 0,
+            "y": "total",
+            "label": "中点",
+            "color": "red"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "中点 / 单光源峰值",
+            "expression": "100*total",
+            "unit": "%",
+            "digits": 1
+          },
+          {
+            "label": "当前间距",
+            "expression": "s",
+            "unit": "θR",
+            "digits": 2
+          }
+        ]
+      }
+    ],
+    "presets": [
+      {
+        "label": "0.6 · 更近",
+        "values": {
+          "s": 0.6
+        }
+      },
+      {
+        "label": "1.0 · 瑞利",
+        "values": {
+          "s": 1
+        }
+      },
+      {
+        "label": "1.6 · 分离",
+        "values": {
+          "s": 1.6
+        }
+      }
+    ]
+  },
+  "lorenz": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "sigma",
+        "label": "σ",
+        "value": 10,
+        "min": 1,
+        "max": 20,
+        "step": 0.5
+      },
+      {
+        "id": "rho",
+        "label": "ρ",
+        "value": 28,
+        "min": 5,
+        "max": 40,
+        "step": 0.5
+      },
+      {
+        "id": "beta",
+        "label": "β",
+        "value": 2.6666666667,
+        "min": 1,
+        "max": 5,
+        "step": 0.1,
+        "advanced": true
+      }
+    ],
+    "dynamics": {
+      "initial": {
+        "X": 1,
+        "Y": 1,
+        "Z": 1
+      },
+      "derivatives": {
+        "X": "sigma*(Y-X)",
+        "Y": "X*(rho-Z)-Y",
+        "Z": "X*Y-beta*Z"
+      },
+      "duration": 20,
+      "step": 0.005
+    },
+    "views": [
+      {
+        "kind": "trajectory",
+        "x": [
+          -25,
+          25
+        ],
+        "y": [
+          0,
+          55
+        ],
+        "horizontal": "X",
+        "vertical": "Z",
+        "xLabel": "X",
+        "yLabel": "Z",
+        "color": "blue",
+        "label": "洛伦兹系统 · X–Z 相图"
+      },
+      {
+        "kind": "controls"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "X",
+            "expression": "X",
+            "digits": 2
+          },
+          {
+            "label": "Y",
+            "expression": "Y",
+            "digits": 2
+          },
+          {
+            "label": "Z",
+            "expression": "Z",
+            "digits": 2
+          }
+        ]
+      }
+    ]
+  }
+}

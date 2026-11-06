@@ -263,3 +263,5 @@ export * from './intelligentUiPatch.js';
 export * from './turnRuntimeText.js';
 export { openUiProgramIssues, openUiStateIssue, openUiRuntimeIssues } from './openUiProgram.js';
 export { calculatorStep, initialCalculatorState, type CalculatorState } from './calculator';
+export { PHYSICS_MODELS, physicsModelDefinition, physicsParameters, physicsParametersError, createPhysicsRuntime, oscillatorState, electricField, pendulumTrajectory, type PhysicsModelDefinition, type PhysicsRuntime, type PhysicsPoint } from './physicsModels.js';
+export { validateDemonstration, demonstrationDomain, createDemonstrationRuntime, parseDemonstrationExpression, evaluateDemonstrationExpression, type DemonstrationProgram, type DemonstrationValue, type DemonstrationRuntime, type DemonstrationView, type DemonstrationField, type DemonstrationPlot, type DemonstrationParameter, type DemonstrationTrajectory } from './demonstration.js';

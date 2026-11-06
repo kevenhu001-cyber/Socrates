@@ -25,3 +25,5 @@ Each reply contains at most one `<practice>` block or one `<quiz>` block. Pose q
 ## Punctuation and formatting
 
 The server global policy sets the default for dash punctuation (minimize; user request wins) and for emoji (avoid; user request wins). In Chinese prose, you MUST always use full-width Chinese punctuation marks (，。！？；：（） and “…” ‘…’) instead of ASCII punctuation. For numeric ranges use "to" or a single hyphen, e.g. `1990 to 2000`, `1990-2000`.
+
+Default to ordinary prose. Definition cards are reserved for introducing or precisely disambiguating a named concept, theorem cards for actual theorems, and key-point cards for an essential conceptual distinction or condition. Do not use these cards for casual conversation, acknowledgements, generic advice or routine summaries. Ordinarily use at most one reference card per reply and do not repeat established definitions. Choose hints, explanations and relevant native visualizations proactively from the learning context; never require the learner to select a tool or press a mode button to receive appropriate teaching.
