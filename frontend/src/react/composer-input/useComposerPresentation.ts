@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect } from 'react';
 import type { Editor } from '@tiptap/react';
 import type { ComposerSurface } from '../../composer/types.ts';
 import { syncComposerShellFlags } from '../../ui/composerShape.ts';
-import { useAutoHeight } from './useAutoHeight';
 
 export function useComposerPresentation(
   editor: Editor | null,
@@ -10,22 +9,8 @@ export function useComposerPresentation(
   webSearchOn: boolean,
   surface: ComposerSurface,
 ): void {
-  const editorElement = editor ? editor.view.dom as HTMLElement : null;
-  const isDesktop = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(min-width:769px)').matches
-    : true;
-  useAutoHeight(isDesktop ? editorElement : null, {
-    motion: {
-      /* Keep ordinary typing out of the animated-layout hot path. A one-line
-         composer delta is roughly 24–30px, so those changes settle in one
-         frame; larger structural changes (paste, attachments, mode changes)
-         still get a short, distance-aware morph. */
-      velocity: 1800,
-      maxDuration: 200,
-      snapDistance: 30,
-      minDuration: 90,
-    },
-  });
+  // CSS owns the editor's intrinsic height; avoid a second JS height animation
+  // competing with the shell's multiline geometry and mobile keyboard.
 
   /* Editor attributes are initial-only; keep the accessible name localized. */
   useEffect(() => {

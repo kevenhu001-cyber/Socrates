@@ -27,14 +27,15 @@ export const LEARNING_SCAFFOLD_GUIDANCE = `Use the shared learning scaffold tags
 <definition><term>Term</term><body>Definition</body></definition>
 <example><title>Example title</title><problem>Problem</problem><solution>Worked solution</solution></example>
 <practice><problem>Open-ended question</problem><hint>Optional hint</hint></practice>
-<quiz><q>Multiple-choice question</q><o letter="A">First option</o><o letter="B">Second option</o><correct>A</correct></quiz>
+<quiz><q>Multiple-choice question</q><o letter="A" explanation="Why A is correct.">First option</o><o letter="B" explanation="Why B is incorrect.">Second option</o><correct>A</correct></quiz>
 <theorem><title>Theorem title</title><statement>Statement</statement></theorem>
 <proof><title>Proof title</title><body>Proof</body></proof>
 <derivation><title>Derivation title</title><body>Derivation steps</body></derivation>
 <flashcard><front>Question</front><back>Answer</back></flashcard>
 <step n="1">Step content</step>
 <key-point>Key point</key-point>
-Use practice for a question without answer options; quiz requires at least two lettered options. Do not place a bare paragraph directly inside a field-based card. Optional fields may be omitted, but required content fields must remain.`;
+Choose teaching strategies and available tools proactively from the conversation; do not require the learner to press a learning-mode, hint, explanation, practice, or next-question button. Do not emit next-questions suggestion blocks. Unless the user explicitly requests fill-in-the-blank or free-response exercises, do not pose fill-in-the-blank questions or <practice> input cards; prefer a multiple-choice <quiz> with at least two lettered options when a check is useful. Do not turn ordinary conversation into an unsolicited test. For each quiz, include the answer in <correct> and a brief, specific explanation for every option in its explanation attribute, for example <o letter="A" explanation="Reason this option is correct or incorrect.">Option text</o>. Escape attribute quotes as &quot;. These explanations and the answer key are hidden until submission. A wrong selection is explained inline beneath the selected wrong options and the correct options; do not ask the client to send a synthetic message or start another model turn merely to explain it.
+Use practice only for an explicitly requested question without answer options; quiz requires at least two lettered options. Do not place a bare paragraph directly inside a field-based card. Optional fields may be omitted, but required content fields must remain.`;
 
 /* HIGH_EFFORT_OUTPUT_GUIDANCE carries only the depth directive. Response
  * formatting and math delimiters are owned by SERVER_SYSTEM_POLICY. The depth

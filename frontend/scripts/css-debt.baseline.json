@@ -6,8 +6,8 @@
       "literalRadius": 1,
       "stackedId": 32,
       "literalFontSize": 50,
-      "legacyChannel": 0,
-      "shadcnVarReads": 658
+      "legacyChannel": 1,
+      "shadcnVarReads": 664
     },
     "frozen": {
       "important": 409,

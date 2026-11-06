@@ -155,6 +155,8 @@ export function sameAnswer(a: readonly string[], b: readonly string[]): boolean 
 export interface QuizOption {
   letter: string;
   text: string;
+  /** Hidden until grading; generated with the question. */
+  explanation?: string;
 }
 
 export interface ParsedQuiz {
@@ -179,9 +181,13 @@ export function parseQuizInner(inner: string, attrs = ''): ParsedQuiz | null {
   const q = stripTags(question.trim());
   const options = fieldMatches(inner, 'o').flatMap((match): QuizOption[] => {
     const letter = match.attrs.match(/\bletter\s*=\s*["']([A-Ha-h])["']/i)?.[1];
-    return letter
-      ? [{ letter: letter.toUpperCase(), text: stripTags(decodeEntities(match.inner.trim())) }]
-      : [];
+    if (!letter) return [];
+    const explanation = match.attrs.match(/\bexplanation\s*=\s*(?:"([^"]*)"|'([^']*)')/i);
+    return [{
+      letter: letter.toUpperCase(),
+      text: stripTags(decodeEntities(match.inner.trim())),
+      ...(explanation ? { explanation: stripTags(decodeEntities(explanation[1] ?? explanation[2] ?? '')) } : {}),
+    }];
   });
   if (options.length < 2) return null;
   const letters = new Set(options.map((option) => option.letter));

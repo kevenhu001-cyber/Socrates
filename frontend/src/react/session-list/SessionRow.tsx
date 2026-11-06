@@ -63,6 +63,74 @@ function SessionRowActionMenu(props: Omit<SessionRowMenuProps, 'trigger'>) {
   );
 }
 
+type SessionRowControlsProps = Pick<SessionRowProps, 'session' | 'onTag' | 'onArchive' | 'onDelete'> & {
+  actions: ReturnType<typeof useSessionRowActions>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+function SessionRowControls({ session, actions, open, onOpenChange, onTag, onArchive, onDelete }: SessionRowControlsProps) {
+  const { projects, loadingProjects, projectError, error, saving, closeMenu, resetProjects, update, setRenaming, loadProjects } = actions;
+  const pinKey = session.pinned ? 'session.ctxUnpin' : 'session.ctxPin';
+  return (
+    <>
+      <SessionRowActionMenu
+        session={session}
+        open={open}
+        onOpenChange={onOpenChange}
+        projects={projects}
+        loadingProjects={loadingProjects}
+        projectError={projectError}
+        saveError={error}
+        saving={saving}
+        onClose={closeMenu}
+        onBack={resetProjects}
+        onChooseProject={(projectId) => void update({ projectId })}
+        onRename={(event) => {
+          closeMenu();
+          event.stopPropagation();
+          setRenaming(true);
+        }}
+        onTag={(event) => {
+          closeMenu();
+          onTag(session.id, event);
+        }}
+        onPin={() => {
+          closeMenu();
+          void update({ pinned: !session.pinned });
+        }}
+        onArchive={(event) => {
+          closeMenu();
+          onArchive(session.id, event);
+        }}
+        onDelete={(event) => {
+          closeMenu();
+          onDelete(session.id, event);
+        }}
+        onMoveToProject={loadProjects}
+      />
+      {/* Reference drawer rows carry a pin toggle beside ⋯ on touch screens;
+          the shell CSS shows it in the phone drawer only. Same action as the
+          menu's 置顶 / 取消置顶 item. */}
+      <UiButton
+        className="btn-icon recent-item-pin-toggle"
+        type="button"
+        title={t(pinKey)}
+        aria-label={t(pinKey)}
+        aria-pressed={Boolean(session.pinned)}
+        data-i18n-title={pinKey}
+        data-i18n-aria={pinKey}
+        onClick={(event) => {
+          event.stopPropagation();
+          void update({ pinned: !session.pinned });
+        }}
+      >
+        <Icon name="pin" size={16} />
+      </UiButton>
+    </>
+  );
+}
+
 function SessionRowBase({
   session,
   isActive,
@@ -78,19 +146,8 @@ function SessionRowBase({
   const [dragging, setDragging] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const hideMenu = useCallback(() => setActionsOpen(false), []);
-  const {
-    renaming,
-    setRenaming,
-    saving,
-    error,
-    projects,
-    loadingProjects,
-    projectError,
-    resetProjects,
-    closeMenu,
-    update,
-    loadProjects,
-  } = useSessionRowActions(session.id, hideMenu);
+  const actions = useSessionRowActions(session.id, hideMenu);
+  const { renaming, setRenaming, saving, error, closeMenu, update } = actions;
   const retained = actionsOpen || renaming || saving || dragging;
   useEffect(() => {
     onRetentionChange?.(session.id, retained);
@@ -149,59 +206,8 @@ function SessionRowBase({
         onCancelRename={() => setRenaming(false)}
       />}
       tags={session.tags && session.tags.length > 0 ? <SessionTagPills tags={session.tags} /> : undefined}
-      actions={<><SessionRowActionMenu
-        session={session}
-        open={actionsOpen}
-        onOpenChange={setMenuOpen}
-        projects={projects}
-        loadingProjects={loadingProjects}
-        projectError={projectError}
-        saveError={error}
-        saving={saving}
-        onClose={closeMenu}
-        onBack={resetProjects}
-        onChooseProject={(projectId) => void update({ projectId })}
-        onRename={(event) => {
-          closeMenu();
-          event.stopPropagation();
-          setRenaming(true);
-        }}
-        onTag={(event) => {
-          closeMenu();
-          onTag(session.id, event);
-        }}
-        onPin={() => {
-          closeMenu();
-          void update({ pinned: !session.pinned });
-        }}
-        onArchive={(event) => {
-          closeMenu();
-          onArchive(session.id, event);
-        }}
-        onDelete={(event) => {
-          closeMenu();
-          onDelete(session.id, event);
-        }}
-        onMoveToProject={loadProjects}
-      />
-      {/* Reference drawer rows carry a pin toggle beside ⋯ on touch screens;
-          the shell CSS shows it in the phone drawer only. Same action as the
-          menu's 置顶 / 取消置顶 item. */}
-      <UiButton
-        className="btn-icon recent-item-pin-toggle"
-        type="button"
-        title={t(session.pinned ? 'session.ctxUnpin' : 'session.ctxPin')}
-        aria-label={t(session.pinned ? 'session.ctxUnpin' : 'session.ctxPin')}
-        aria-pressed={Boolean(session.pinned)}
-        data-i18n-title={session.pinned ? 'session.ctxUnpin' : 'session.ctxPin'}
-        data-i18n-aria={session.pinned ? 'session.ctxUnpin' : 'session.ctxPin'}
-        onClick={(event) => {
-          event.stopPropagation();
-          void update({ pinned: !session.pinned });
-        }}
-      >
-        <Icon name="pin" size={16} />
-      </UiButton></>}
+      actions={<SessionRowControls session={session} actions={actions} open={actionsOpen} onOpenChange={setMenuOpen}
+        onTag={onTag} onArchive={onArchive} onDelete={onDelete} />}
     />
   );
 }

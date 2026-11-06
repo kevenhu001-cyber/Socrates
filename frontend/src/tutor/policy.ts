@@ -29,13 +29,9 @@ export function shouldAutoSearchTutor(text: unknown) {
     || CURRENTNESS_PATTERNS.some((pattern) => pattern.test(query));
 }
 
-/* Tutor quick checks are self-grading UI. A correct answer is terminal for
-   the card and must not spend a model turn; only a wrong answer needs the AI
-   to diagnose the misconception and produce a targeted follow-up. Questions
-   without a declared correct option stay UI-only because the client cannot
-   honestly classify the selection as wrong. */
-export function shouldRequestTutorAfterQuiz(correct: unknown, isRight: boolean) {
-  return Boolean(correct) && !isRight;
+/** Quiz feedback stays on the card; a pick never starts a model turn. */
+export function shouldRequestTutorAfterQuiz(_correct: unknown, _isRight: boolean) {
+  return false;
 }
 
 export function buildFallbackDiagnosticQuestions(topic: string, count: unknown, isZh: boolean) {

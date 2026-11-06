@@ -97,7 +97,7 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
       chatStreams.push(lastUser);
       let reply = `Stage reply ${chatStreams.length}`;
       if (lastUser.includes('ramp-4')) reply = quiz1 + '\n' + practice;
-      else if (lastUser.startsWith('I chose')) reply = quiz2;
+      else if (lastUser.startsWith('[Practice attempt]')) reply = quiz2 + '\nPractice feedback';
       else if (lastUser.includes('[Practice attempt]')) reply = 'Practice feedback';
       res.end(`data: {"choices":[{"delta":{"content":${JSON.stringify(reply)}}}]}\n\ndata: [DONE]\n\n`);
       return;
@@ -176,15 +176,13 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     await openKnowledgeView(page);
     if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
 
-    // Quiz proxy: a wrong pick with a declared answer locks the card, shows
-    // the baseline feedback and sends the synthetic "I chose …" turn. The
-    // shared card picks first and checks second.
+    // Wrong picks reveal both option explanations without spending a turn.
+    const streamsBeforeWrong = chatStreams.length;
     await quizCard('What is 2+2?').locator('[data-letter="A"]').click();
     await quizCard('What is 2+2?').getByTestId('quiz-submit').click();
-    await expect(page.getByText('Not quite. The correct answer is option B.')).toBeVisible();
-    await expect(page.getByText('I chose A. 3 (Result: incorrect, correct is B.)')).toBeVisible();
-    await expect(page.getByText('What is 3+3?', { exact: true })).toBeVisible();
-    expect(chatStreams.at(-1)).toContain('I chose A. 3');
+    await expect(quizCard('What is 2+2?').getByTestId('quiz-option-explanation-A')).toBeVisible();
+    await expect(quizCard('What is 2+2?').getByTestId('quiz-option-explanation-B')).toBeVisible();
+    expect(chatStreams.length).toBe(streamsBeforeWrong);
 
     // Mistake book: the wrong pick above lands as a quiz row.
     if (testInfo.project.name === 'mobile') await ensureSidebarOpen(page);

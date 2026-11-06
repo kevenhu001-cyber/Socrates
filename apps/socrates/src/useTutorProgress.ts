@@ -186,8 +186,9 @@ export function useTutorProgress({ active, activeId, accountEpoch, runTurn, subm
       store.patchSession(sessionId, { mistakes: prependMistake(normalizeMistakes(session.mistakes), quizMistake) as unknown as Session['mistakes'] });
       mirrorMistake(sessionId, quizMistake);
     }
-    submitTurn(`I chose ${pick.picked}. ${pick.pickedText} (Result: incorrect, correct is ${pick.correct}.)`, 'quiz');
-  }, [mirrorMistake, persistTutorPatch, submitTurn]);
+    // Flush the locally graded attempt and mistake without a synthetic turn.
+    persistTutorPatch(sessionId, {});
+  }, [mirrorMistake, persistTutorPatch]);
 
   const onPracticeSubmit = useCallback((submission: PracticeSubmission) => {
     const store = useChatStore.getState();

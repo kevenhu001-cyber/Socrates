@@ -57,26 +57,35 @@ function skipSpaceAndComma(source: string, index: number): number {
   return index;
 }
 
+function readVisualizationPayload(source: string, start: number): Record<string, unknown> | null {
+  const literal = readBalanced(source, start);
+  if (!literal) return null;
+  try {
+    const parsed: unknown = JSON.parse(literal.text.replace(/,\s*([}\]])/g, '$1'));
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
+  } catch { return null; /* Non-JSON expressions have no static table. */ }
+}
+
+function readVisualizationCall(source: string, start: number): VisualizationCallSource {
+  let index = skipSpaceAndComma(source, start);
+  const template = readString(source, index);
+  if (template) index = skipSpaceAndComma(source, template.end);
+  const title = template ? readString(source, index) : null;
+  if (title) index = skipSpaceAndComma(source, title.end);
+  return {
+    template: template?.value ?? null,
+    title: title?.value ?? null,
+    payload: title ? readVisualizationPayload(source, index) : null,
+  };
+}
+
 export function extractVisualizationCalls(source: unknown, limit = 8): VisualizationCallSource[] {
   if (typeof source !== 'string' || !source.includes('Visualization')) return [];
   const calls: VisualizationCallSource[] = [];
   const pattern = /\bVisualization\s*\(/g;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(source)) && calls.length < limit) {
-    let index = skipSpaceAndComma(source, match.index + match[0].length);
-    const template = readString(source, index);
-    if (template) index = skipSpaceAndComma(source, template.end);
-    const title = template ? readString(source, index) : null;
-    if (title) index = skipSpaceAndComma(source, title.end);
-    let payload: Record<string, unknown> | null = null;
-    const literal = title ? readBalanced(source, index) : null;
-    if (literal) {
-      try {
-        const parsed = JSON.parse(literal.text.replace(/,\s*([}\]])/g, '$1')) as unknown;
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) payload = parsed as Record<string, unknown>;
-      } catch { /* empty-catch: intentional — a non-JSON payload (expressions, $state) has no static table */ }
-    }
-    calls.push({ template: template?.value ?? null, title: title?.value ?? null, payload });
+    calls.push(readVisualizationCall(source, match.index + match[0].length));
   }
   return calls;
 }

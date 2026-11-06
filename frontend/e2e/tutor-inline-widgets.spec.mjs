@@ -10,7 +10,7 @@ const SOURCE = [
   '<derivation><title>推导</title><body>\n  x + 1\n= 2\n</body></derivation>',
   '<key-point>核心结论：**答案为 2**。</key-point>',
   '<example><title>乘法示例</title><problem>2 × 3 = ?</problem><solution>2 × 3 = 6</solution></example>',
-  '<quiz><q>2 + 2 = ?</q><o letter="A">4</o><o letter="B">5</o><correct>A</correct></quiz>',
+  '<quiz><q>2 + 2 = ?</q><o letter="A" explanation="两个二相加得到四。">4</o><o letter="B" explanation="五比两个二的和多一。">5</o><correct>A</correct></quiz>',
   '<practice correct="42"><problem>6 × 7 = ?</problem><hint>可以分解为 6 × (5 + 2)。</hint></practice>',
 ].join('\n\n');
 
@@ -69,6 +69,15 @@ for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light'
     await expect(example.locator('[data-part="example-solution"]')).toHaveCount(0);
     await example.getByTestId('example-solution-toggle').click();
     await expect(example.locator('[data-part="example-solution"]')).toBeVisible();
+    await expect(quiz.getByTestId('quiz-option-explanation-A')).toHaveCount(0);
+    await quiz.locator('[data-letter="B"]').click();
+    await quiz.getByTestId('quiz-submit').click();
+    await expect(quiz.getByTestId('quiz-feedback')).toHaveAttribute('data-verdict', 'incorrect');
+    await expect(quiz.getByTestId('quiz-option-explanation-B')).toContainText('五比两个二的和多一');
+    await expect(quiz.getByTestId('quiz-option-explanation-A')).toContainText('两个二相加得到四');
+    expect(modelRequests).toEqual([]);
+    await page.screenshot({ path: `test-results/quiz-inline-wrong-${encodeURIComponent(width)}.png` });
+    await quiz.getByTestId('quiz-retry').click();
     await quiz.locator('[data-letter="A"]').click();
     await quiz.getByTestId('quiz-submit').click();
     await expect(quiz.getByTestId('quiz-feedback')).toHaveAttribute('data-verdict', 'correct');

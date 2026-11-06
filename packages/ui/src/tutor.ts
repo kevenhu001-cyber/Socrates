@@ -38,7 +38,7 @@ export function stageInstruction(stage: string): string {
     case 'define': return 'Give the precise definition and only the essential first derivation. Build on the motivation already shown.';
     case 'develop': return 'Add the next layer of the concept and at most one worked example. Do not restart from the definition.';
     case 'illustrate': return 'Give at most two worked examples with clear progression. Do not repeat the preceding exposition.';
-    case 'exercise': return 'Give exactly one transfer practice problem and wait for the student\'s attempt.';
+    case 'exercise': return 'Give exactly one multiple-choice transfer quiz (free response only if explicitly requested) and wait for the student\'s attempt.';
     case 'check': return 'Give brief feedback and exactly one short quiz. Do not add another example or practice problem.';
     default: return 'Advance the lesson by one focused step.';
   }
@@ -84,7 +84,7 @@ export function tutorTurnDirective(stage: string, isFirst: boolean): string {
       scope = 'Work through a small, clearly progressing set of examples (usually two is enough), with brief surrounding explanation, and do not restate the lesson so far.';
       break;
     case 'exercise':
-      scope = 'Set up one transfer practice problem in a couple of short sentences, then stop and wait for the student\'s attempt.';
+      scope = 'Set up one multiple-choice transfer quiz (free response only if explicitly requested) in a couple of short sentences, then stop and wait for the student\'s attempt.';
       break;
     case 'check':
       scope = 'Keep the reply concise: brief feedback and one short quiz, with no new example or practice problem.';

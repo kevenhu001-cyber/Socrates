@@ -52,9 +52,9 @@ test('native function card renders an actual SVG curve for ln(x)', async ({ page
   }));
   expect(frame).toEqual({ border: '0px', background: 'rgba(0, 0, 0, 0)', headerDivider: '0px' });
   await page.screenshot({ path: 'test-results/tool-visualization-unboxed.png', fullPage: true });
-  await card.locator('[data-viz-action="table"]').click();
-  await expect(card.locator('.visualization-table')).toBeVisible();
-  await card.locator('[data-viz-action="reset"]').click();
+  // Static SVG embeds have no toolbar; match the lifecycle contract.
+  await expect(card.locator('[data-viz-action]')).toHaveCount(0);
+  await expect(card.locator('.visualization-data')).toBeHidden();
 });
 
 test('native function card stays within a 390px mobile viewport', async ({ page }) => {

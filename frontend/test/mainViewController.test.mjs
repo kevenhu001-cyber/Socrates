@@ -92,3 +92,17 @@ test('activateMainView moves tutor sessions into the diagnostic view', () => {
   assert.equal(isHidden(document, 'pluginsPanel'), true);
   assert.equal(document.body.className, '');
 });
+
+
+test('switching chats keeps the current transcript pane visible throughout', () => {
+  const document = createDocument();
+  activateMainView('chatView', document);
+  const chat = document.getElementById('chatView');
+  const observer = new document.defaultView.MutationObserver(() => {});
+  observer.observe(chat, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+  activateMainView('chatView', document);
+  const records = observer.takeRecords();
+  assert.equal(records.some((record) => record.oldValue?.split(/\s+/).includes('hidden')), false);
+  assert.equal(chat.classList.contains('hidden'), false);
+  observer.disconnect();
+});

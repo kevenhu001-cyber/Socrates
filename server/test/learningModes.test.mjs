@@ -11,12 +11,14 @@ import { appendTurnContext } from '../src/lib/chatPromptContext.js';
 import { ChatPayloadSchema, buildLearningModeTurn } from '../src/routes/chat/helpers.js';
 
 describe('RN-6 learning-mode prompts', () => {
-  test('every mode has a section and gets the shared next-questions contract', async () => {
+  test('every mode gets autonomous learning and inline feedback instructions', async () => {
     _clearPromptCacheForTests();
     for (const mode of LEARNING_MODE_IDS) {
       const prompt = await getLearningModePrompt(mode);
       assert.ok(prompt, `missing section for ${mode}`);
-      assert.match(prompt, /<next-questions>\[/, `${mode} lacks the next-questions contract`);
+      assert.match(prompt, /Do not emit next-questions suggestion blocks/, `${mode} lacks autonomous learning instructions`);
+      assert.match(prompt, /explanation attribute/);
+      assert.match(prompt, /Unless the user explicitly requests fill-in-the-blank/);
       assert.ok(prompt.length < 4_000, `${mode} prompt grew to ${prompt.length}`);
       assert.doesNotMatch(prompt, /[—–]/, `${mode} prompt uses a dash the server policy forbids`);
     }

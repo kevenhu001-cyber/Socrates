@@ -63,6 +63,8 @@ test('exam UI follows language changes without losing form values or answers', a
 
 test('submitting with a missing answer scrolls to the first unanswered card', async ({ page }) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openNav('exam'));
+  // The route opens lazily; seed questions after its form reset has completed.
+  await expect(page.locator('#examTopic')).toBeVisible();
   await page.evaluate(() => {
     const questions = Array.from({ length: 8 }, (_, index) => ({
       type: 'fill-blank',

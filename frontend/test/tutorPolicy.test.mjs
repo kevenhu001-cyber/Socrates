@@ -28,8 +28,8 @@ test('fallback diagnostic honors requested count and stays multiple choice', () 
   assert.deepEqual(questions.map((question) => question.nodeIdx), [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
 });
 
-test('Tutor quiz requests AI only after a wrong self-graded choice', () => {
+test('Tutor quiz choices never request an AI turn', () => {
   assert.equal(shouldRequestTutorAfterQuiz('B', true), false);
-  assert.equal(shouldRequestTutorAfterQuiz('B', false), true);
+  assert.equal(shouldRequestTutorAfterQuiz('B', false), false);
   assert.equal(shouldRequestTutorAfterQuiz('', false), false);
 });

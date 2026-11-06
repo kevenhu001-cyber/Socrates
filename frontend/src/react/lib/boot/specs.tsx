@@ -95,14 +95,6 @@ function lazyPortalSpecs(): MountSpec[] {
   ];
 }
 
-/** Resolve once the main thread is idle (bounded), for roots off the first-paint path. */
-function whenIdle(timeout = 1200): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(() => resolve(), { timeout });
-    else window.setTimeout(resolve, 200);
-  });
-}
-
 export function mountRegistryList(): MountSpec[] {
   const legacyComposer = getLegacyActions().composer;
   return [
@@ -142,31 +134,6 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'homeHero', label: 'home-hero', mount: (host) => {
       return import('../../home/HomeStartComponents').then(({ HomeHeroRoot }) => {
         mountOwnedRoot(host, 'home-hero', <HomeHeroRoot />);
-      });
-    } },
-    { hostId: 'homeQuickActions', label: 'home-quick-actions', mount: (host) => {
-      return import('../../home/HomeStartComponents').then(({ HomeQuickActions }) => {
-        mountOwnedRoot(host, 'home-quick-actions', <HomeQuickActions host={host} />);
-      });
-    } },
-    { hostId: 'homeSuggestion', label: 'home-suggestion', mount: (host) => import('../../home/HomeStartComponents').then(({ HomeSuggestion }) => mountOwnedRoot(host, 'home-suggestion', <HomeSuggestion />)) },
-    { hostId: 'homeTutorStarters', label: 'home-tutor-starters', mount: (host) => {
-      return import('../../home/HomeStartComponents').then(({ HomeTutorStarters }) => {
-        mountOwnedRoot(host, 'home-tutor-starters', <HomeTutorStarters />);
-      });
-    } },
-    /* RN-4 — learning modes (packages/ui/src/think): the segmented control
-       under the landing composer and the capsule menu by the conversation
-       composer. */
-    { hostId: 'homeLearningModes', label: 'home-learning-modes', mount: (host) => {
-      /* Not first-paint: let the composer's chunk load and mount first. */
-      return whenIdle().then(() => import('../../home/HomeLearningModes')).then(({ HomeLearningModes }) => {
-        mountOwnedRoot(host, 'home-learning-modes', <HomeLearningModes />);
-      });
-    } },
-    { hostId: 'learningModeBar', label: 'learning-mode-bar', mount: (host) => {
-      return whenIdle().then(() => import('../../tutor/QuestionChainRoot')).then(({ SessionLearningModes }) => {
-        mountOwnedRoot(host, 'learning-mode-bar', <SessionLearningModes />);
       });
     } },
     /* The header chrome — one root renders every control inside

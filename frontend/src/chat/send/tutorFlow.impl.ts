@@ -2,17 +2,12 @@ import { stateStore } from '../../state/store.ts';
 import { hasUsableActive } from '../../config/providers.ts';
 import { _origGenerateFollowUp } from '../mocks.ts';
 import { notifyMockFallbackOnce } from '../mockFallbackNotice.ts';
-import { reportSwallow } from '../../util/reportSwallow.ts';
 import { generateFollowUpStream } from '../../tutor/socraticTurn.ts';
 import { toolCallbacksForStream } from '../toolCallbacks.ts';
 import { isExpectedTurnAbort } from '../turnUi.ts';
-import { getTutorSocratic, addAnchoredAssistant, addStreamingMessage, askChatTurn, translate, reportTurnFailure } from './runtime.ts';
+import { addAnchoredAssistant, addStreamingMessage, askChatTurn, reportTurnFailure } from './runtime.ts';
 import { advanceTutorNodeIfReady, recordTutorProgress } from './tutorProgress.ts';
-import {
-  stuckPromptTransition,
-  type SubmitChatMessage,
-  type TutorTurnOptions,
-} from './tutorPolicy.ts';
+import type { SubmitChatMessage, TutorTurnOptions } from './tutorPolicy.ts';
 import type { KbNode } from '../teachingPlan.ts';
 
 /** What dispatchSendTurn hands the tutor path. */
@@ -21,56 +16,6 @@ export interface DispatchTutorTurnInput {
   chatContent: unknown;
   options: TutorTurnOptions;
   submitChatMessage: SubmitChatMessage;
-}
-
-function invokeTutorPrompt(method: string, context: string, ...args: unknown[]): boolean {
-  const tutor = getTutorSocratic() as Record<string, unknown> | null | undefined;
-  if (!tutor || typeof tutor[method] !== 'function') return false;
-  try {
-    (tutor[method] as (...callArgs: unknown[]) => void)(...args);
-    return true;
-  } catch (error) {
-    reportSwallow(error, context);
-    return true;
-  }
-}
-
-function showStuckResponse(text: string): void {
-  const transition = stuckPromptTransition({
-    stuckCount: stateStore.read('stuckCount'),
-    offered: stateStore.read('stuckCheckOffered'),
-    rejected: stateStore.read('stuckCheckRejected'),
-  });
-  const applyTransition = (): void => {
-    if (transition.patch) stateStore.dispatch({ type: 'state/batch', patch: transition.patch });
-  };
-
-  if (transition.action === 'four-options') {
-    if (!invokeTutorPrompt('showFourOptionDialog', 'sendPipeline.fourOptionDialog', text)) {
-      addAnchoredAssistant("Let's try a different approach.", 'suggest', [
-        { text: translate('tutor.explain'), action: 'explain', primary: true },
-        { text: translate('tutor.skip'), action: 'skip' },
-        { text: translate('tutor.thinkMore'), action: 'retry' },
-      ]);
-    }
-    applyTransition();
-    return;
-  }
-
-  if (transition.action === 'explain-prompt') {
-    if (!invokeTutorPrompt('showExplainPrompt', 'sendPipeline.explainPrompt')) {
-      addAnchoredAssistant("Let's try a different approach.", 'suggest', [
-        { text: translate('tutor.explain'), action: 'explain', primary: true },
-        { text: translate('tutor.skip'), action: 'skip' },
-        { text: translate('tutor.thinkMore'), action: 'retry' },
-      ]);
-    }
-    applyTransition();
-    return;
-  }
-
-  applyTransition();
-  addAnchoredAssistant(translate('tutor.takeTime'));
 }
 
 async function runChatFallback(text: string, chatContent: unknown): Promise<void> {
@@ -142,10 +87,6 @@ async function runTutorFollowUp(
   });
 }
 
-function shouldRunTutorFollowUp(isSubstantive: boolean, origin?: string | null): boolean {
-  return isSubstantive || stateStore.read('stuckCount') < 3 || origin === 'quiz';
-}
-
 export async function dispatchTutorTurn({
   text,
   chatContent,
@@ -157,9 +98,6 @@ export async function dispatchTutorTurn({
     return;
   }
 
-  if (shouldRunTutorFollowUp(isSubstantive, options.origin)) {
-    await runTutorFollowUp(text, chatContent, options, node, isSubstantive, submitChatMessage);
-  } else {
-    showStuckResponse(text);
-  }
+  // Let the tutor interpret short answers and offer the appropriate help.
+  await runTutorFollowUp(text, chatContent, options, node, isSubstantive, submitChatMessage);
 }

@@ -458,6 +458,25 @@ function chartRuntimeForCard(spec: VizSpec, card: VisualizationCard, renderState
   return runtime;
 }
 
+/** Update the text, table and optional caption after the chart accepts data. */
+function updateChartCardMetadata(card: VisualizationCard, next: VizSpec): void {
+  card.querySelector('.visualization-header h3')!.textContent = next.title || '';
+  card.querySelector('.visualization-summary')!.textContent = next.accessibilitySummary || '';
+  card.setAttribute('aria-label', (next.title || '') + '. ' + (next.accessibilitySummary || ''));
+  try {
+    card.querySelector('.visualization-data')!.innerHTML = renderVisualizationTable(next, esc, vizT);
+  } catch (error) {
+    reportSwallow(error, 'visualization/' + next.template + '/table_failure', 'recoverable');
+  }
+  let caption = card.querySelector<HTMLElement>('.visualization-caption');
+  if (!caption && next.caption) {
+    caption = document.createElement('figcaption');
+    caption.className = 'visualization-caption';
+    card.querySelector('.visualization-figure')!.appendChild(caption);
+  }
+  if (caption) caption.textContent = next.caption || '';
+}
+
 function createChartRuntime(card: VisualizationCard, chart: ChartInstance, initialSpec: VizSpec, liveEntry: LiveChart | null) {
   let currentSpec = initialSpec;
   function update(rawNext: VizSpec) {
@@ -468,21 +487,7 @@ function createChartRuntime(card: VisualizationCard, chart: ChartInstance, initi
     chart.setOption(nextOptions, { replaceMerge: ['series'] });
     currentSpec = next;
     if (liveEntry) liveEntry.spec = next;
-    card.querySelector('.visualization-header h3')!.textContent = next.title || '';
-    card.querySelector('.visualization-summary')!.textContent = next.accessibilitySummary || '';
-    card.setAttribute('aria-label', (next.title || '') + '. ' + (next.accessibilitySummary || ''));
-    try {
-      card.querySelector('.visualization-data')!.innerHTML = renderVisualizationTable(next, esc, vizT);
-    } catch (error) {
-      reportSwallow(error, 'visualization/' + next.template + '/table_failure', 'recoverable');
-    }
-    let caption = card.querySelector<HTMLElement>('.visualization-caption');
-    if (!caption && next.caption) {
-      caption = document.createElement('figcaption');
-      caption.className = 'visualization-caption';
-      card.querySelector('.visualization-figure')!.appendChild(caption);
-    }
-    if (caption) caption.textContent = next.caption || '';
+    updateChartCardMetadata(card, next);
     return true;
   }
   function reset() {

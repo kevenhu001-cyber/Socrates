@@ -213,3 +213,12 @@ test('plain cards preserve literal XML code examples and continue rejecting brok
   assert.equal(parseDefinitionInner('<body>unclosed'), null);
   assert.equal(parseQuizInner('<q>Q</q><o letter="A">Only one</o>'), null);
 });
+
+
+test('quiz option explanations are decoded separately from visible choices', () => {
+  const parsed = parseQuizInner('<q>2 + 2?</q><o letter="A" explanation="Two pairs make &quot;four&quot;.">4</o><o letter="B" explanation="One too many.">5</o><correct>A</correct>');
+  assert.deepEqual(parsed?.options, [
+    { letter: 'A', text: '4', explanation: 'Two pairs make "four".' },
+    { letter: 'B', text: '5', explanation: 'One too many.' },
+  ]);
+});

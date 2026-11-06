@@ -83,9 +83,13 @@ export function activateMainView(viewId: string, doc?: Document | null) {
   if (previousView !== viewId) closeDetailSurface(undefined, currentDocument, false);
   currentDocument.documentElement.dataset.mainView = viewId;
 
-  setHidden(currentDocument, CORE_VIEW_IDS, true);
-  setHidden(currentDocument, MAIN_PAGE_IDS, true);
-  resetShellState(currentDocument);
+  // Keep the active pane laid out during chat-to-chat session switches.
+  // Toggling display:none here invalidated editor and transcript geometry.
+  if (previousView !== viewId) {
+    setHidden(currentDocument, CORE_VIEW_IDS.filter((id) => id !== viewId), true);
+    setHidden(currentDocument, MAIN_PAGE_IDS.filter((id) => id !== viewId), true);
+    resetShellState(currentDocument);
+  }
 
   target.classList.remove('hidden');
   syncChatPageGate(currentDocument);

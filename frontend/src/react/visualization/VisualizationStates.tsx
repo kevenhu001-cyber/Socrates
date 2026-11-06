@@ -42,21 +42,25 @@ export function vizReasonText(reason: VizFailureReason): string {
   return i18n(`viz.reason.${reason}`, REASON_FALLBACKS[reason]);
 }
 
+function reasonFromValidationFailure(first: Record<string, unknown>): VizFailureReason {
+  const issues = Array.isArray(first.issues) ? first.issues.join(' ') : '';
+  switch (first.stage) {
+    case 'payload_shape': return /expected array, received undefined|required/i.test(issues) ? 'dataMissing' : 'dataFormat';
+    case 'semantic': return /at least one numeric|no finite values/i.test(issues) ? 'dataMissing' : 'mismatch';
+    case 'envelope': return /template/i.test(issues) ? 'unknownTemplate' : 'dataMissing';
+    case 'envelope_misuse': return 'syntax';
+    default: return 'unknown';
+  }
+}
+
 /** Map a server failure detail (or tool error code) to one readable reason. */
 export function reasonFromToolFailure(detail: unknown, errorCode?: string | null): VizFailureReason {
   const record = detail && typeof detail === 'object' && !Array.isArray(detail) ? detail as Record<string, unknown> : {};
-  if (record.truncated === true || record.stage === 'openui_truncated' || errorCode === 'arguments_truncated' || errorCode === 'arguments_too_large') return 'truncated';
-  if (errorCode === 'arguments_parse_failed') return 'truncated';
+  const truncatedCodes = ['arguments_truncated', 'arguments_too_large', 'arguments_parse_failed'];
+  if (record.truncated === true || record.stage === 'openui_truncated' || truncatedCodes.includes(errorCode ?? '')) return 'truncated';
   if (record.stage === 'openui_syntax' || record.stage === 'openui_program') return 'syntax';
   const first = Array.isArray(record.visualizations) ? record.visualizations[0] as Record<string, unknown> | undefined : undefined;
-  if (first) {
-    const issues = Array.isArray(first.issues) ? first.issues.join(' ') : '';
-    if (first.stage === 'payload_shape') return /expected array, received undefined|required/i.test(issues) ? 'dataMissing' : 'dataFormat';
-    if (first.stage === 'semantic') return /at least one numeric|no finite values/i.test(issues) ? 'dataMissing' : 'mismatch';
-    if (first.stage === 'envelope') return /template/i.test(issues) ? 'unknownTemplate' : 'dataMissing';
-    if (first.stage === 'envelope_misuse') return 'syntax';
-  }
-  return 'unknown';
+  return first ? reasonFromValidationFailure(first) : 'unknown';
 }
 
 /** Map a client-side render error to one readable reason. */

@@ -241,6 +241,22 @@ export function _looksLikeNumericMath(raw: string, next: string): boolean {
   return !NUMERIC_MATH_BAD_EDGE_RE.test(raw);
 }
 
+/** Locate a closing delimiter without crossing a paragraph or heading. */
+function findInlineDollarClose(s: string, open: number, multiline: boolean, isEscaped: (index: number) => boolean): number {
+  for (let j = open + 1; j < s.length; j++) {
+    const c = s.charAt(j);
+    if (c === '\n') {
+      if (!multiline || s.charAt(j + 1) === '\n') break;
+      if (/^[ \t]*(?:[#＃]|(?:\*\*|__)[ \t]*[#＃])/.test(s.slice(j + 1))) break;
+    }
+    if (c === '$') {
+      if (isEscaped(j)) continue;
+      return s.charAt(j + 1) !== '$' ? j : -1;
+    }
+  }
+  return -1;
+}
+
 /* Explicit paired dollar delimiters always request math. Escaped dollars
    remain literal; doubled dollars belong to the display-math pass.
    Streaming still limits unclosed fragments separately. */
@@ -270,19 +286,7 @@ export function replaceInlineDollarMath(
       i = open + 1;
       continue;
     }
-    let close = -1;
-    for (let j = open + 1; j < s.length; j++) {
-      const c = s.charAt(j);
-      if (c === '\n') {
-        if (!multiline || s.charAt(j + 1) === '\n') break;
-        if (/^[ \t]*(?:[#＃]|(?:\*\*|__)[ \t]*[#＃])/.test(s.slice(j + 1))) break;
-      }
-      if (c === '$') {
-        if (isEscaped(j)) continue;
-        if (s.charAt(j + 1) !== '$') close = j;
-        break;
-      }
-    }
+    const close = findInlineDollarClose(s, open, multiline, isEscaped);
     if (close > open + 1) {
       const math = s.slice(open + 1, close);
       const html = math.trim() ? render(math) : null;

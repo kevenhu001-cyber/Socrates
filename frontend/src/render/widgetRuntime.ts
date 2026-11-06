@@ -73,7 +73,7 @@ function persistQuizOutcome(services: WidgetRuntime) {
   catch (error) { reportSwallow(error, 'widgets.quiz.saveCurrentSession'); }
 }
 
-/** Grade one quiz submission and run its side effects (mistake book, stage, tutor follow-up). */
+/** Grade one quiz submission and run its side effects (mistake book, stage, local persistence). */
 export function handleQuizPick(picked: PickedQuizOption, parsed: QuizMountData): QuizPickFeedback {
   const services = runtime;
   const key = parseAnswerKey(parsed.correct);
@@ -87,15 +87,7 @@ export function handleQuizPick(picked: PickedQuizOption, parsed: QuizMountData):
   const verdict = correct ? (isRight ? 'correct' : 'incorrect') : 'recorded';
   recordQuizOutcome(parsed, picked, isRight, services);
   updateQuizStage(services.stateStore, isRight);
-  if (!services.shouldRequestTutorAfterQuiz(correct || null, isRight)) {
-    persistQuizOutcome(services);
-    return { feedbackText, feedbackClass, verdict };
-  }
-  /* RN-10: the synthetic user turn follows the interface language, like the
-     card's own feedback line (zh: 「我选了 B。…（结果：错误，正确答案是 A。）」). */
-  let text = services.t('tutor.quizChose').replace('{letter}', picked.letter).replace('{text}', picked.text);
-  if (correct) text += services.t(isRight ? 'tutor.quizChoseResultCorrect' : 'tutor.quizChoseResultWrong').replace('{answer}', correct);
-  services.submitChatMessage?.(text, { origin: 'quiz' });
+  persistQuizOutcome(services);
   return { feedbackText, feedbackClass, verdict };
 }
 

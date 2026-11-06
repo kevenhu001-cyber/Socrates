@@ -88,7 +88,7 @@ test('check-stage correct choice resets attempts', () => {
   assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 0 }]);
 });
 
-test('tutor follow-up submits grading context and leaves persistence to the turn', () => {
+test('quiz submission persists locally even with an obsolete follow-up policy', () => {
   const submitted = [], persisted = [];
   configureWidgetRuntime({
     shouldRequestTutorAfterQuiz: () => true,
@@ -96,11 +96,11 @@ test('tutor follow-up submits grading context and leaves persistence to the turn
     saveCurrentSession: () => persisted.push('session'),
   });
   pick('B');
-  assert.deepEqual(submitted, [['I chose B. 5 (Result: incorrect, correct is A.)', { origin: 'quiz' }]]);
-  assert.deepEqual(persisted, []);
+  assert.deepEqual(submitted, []);
+  assert.deepEqual(persisted, ['session']);
 });
 
-test('tutor follow-up is written in the interface language', () => {
+test('localized quiz feedback does not send synthetic messages', () => {
   const submitted = [];
   configureWidgetRuntime({
     t: (key) => zhTranslations[key] || key,
@@ -109,10 +109,7 @@ test('tutor follow-up is written in the interface language', () => {
   });
   pick('B');
   pick('A');
-  assert.deepEqual(submitted, [
-    ['我选了 B。5（结果：错误，正确答案是 A。）', { origin: 'quiz' }],
-    ['我选了 A。4（结果：正确。）', { origin: 'quiz' }],
-  ]);
+  assert.deepEqual(submitted, []);
 });
 
 test('quiz without an answer records the selection without inventing a correct answer', () => {

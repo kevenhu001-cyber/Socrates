@@ -58,6 +58,80 @@ function useExamScrollSync(isInView: boolean, questions: unknown[], setCurrentIn
   }, [isInView, questions, setCurrentIndex]);
 }
 
+/** Host actions stay separate from the shared exam presentation. */
+function createExamHandlers(draft: ExamSnapshot['draft'], readOnly: boolean, currentIndex: number, setCurrentIndex: (index: number) => void) {
+  function generateFromDraft() {
+    if (!draft.topic.trim()) {
+      (document.getElementById('examTopic') as HTMLElement | null)?.focus();
+      return;
+    }
+    void runExamGeneration(draft);
+  }
+
+  function onCommand(command: ExamCommand, index?: number) {
+    switch (command) {
+      case 'close':
+        closeExamView();
+        break;
+      case 'form':
+        renderExamForm();
+        break;
+      case 'generate':
+        generateFromDraft();
+        break;
+      case 'cancel':
+        cancelExamGeneration();
+        break;
+      case 'submit':
+        /* `submitExam` owns the gate: it scrolls the first unanswered card
+         * into view instead of submitting. */
+        submitExam();
+        break;
+      case 'previous': {
+        const next = examNavStep(-1, currentIndex);
+        if (next !== null) setCurrentIndex(next);
+        break;
+      }
+      case 'next': {
+        const next = examNavStep(1, currentIndex);
+        if (next !== null) setCurrentIndex(next);
+        break;
+      }
+      case 'jump':
+        if (typeof index === 'number') {
+          examNavJump(index);
+          setCurrentIndex(index);
+        }
+        break;
+    }
+  }
+
+  function onAnswer(index: number, value: string | number) {
+    if (readOnly) return;
+    if (typeof value === 'number') {
+      selectExamOpt(index, value);
+    } else {
+      setExamAnswer(index, value);
+      scheduleExamAnswerSave();
+    }
+  }
+
+  function onDraftChange(patch: ExamDraftPatch) {
+    dispatchExam({
+      type: 'exam/patch',
+      patch: {
+        examFormDraft: {
+          ...draft,
+          ...patch,
+          selectedTypes: { ...draft.selectedTypes, ...patch.selectedTypes },
+        },
+      },
+    });
+  }
+
+  return { onCommand, onAnswer, onDraftChange };
+}
+
 export function ExamView() {
   const exam = useExamStore((snapshot) => ({
     questions: snapshot.examQuestions,
@@ -103,74 +177,7 @@ export function ExamView() {
   const title = examTitleOf(snapshot, chrome);
   const showNav = examModeOf(snapshot) === 'questions' && !exam.submitted && !exam.readOnly && exam.questions.length > 0;
 
-  function generateFromDraft() {
-    if (!exam.draft.topic.trim()) {
-      (document.getElementById('examTopic') as HTMLElement | null)?.focus();
-      return;
-    }
-    void runExamGeneration(exam.draft);
-  }
-
-  function onCommand(command: ExamCommand, index?: number) {
-    switch (command) {
-      case 'close':
-        closeExamView();
-        break;
-      case 'form':
-        renderExamForm();
-        break;
-      case 'generate':
-        generateFromDraft();
-        break;
-      case 'cancel':
-        cancelExamGeneration();
-        break;
-      case 'submit':
-        /* `submitExam` owns the gate: it scrolls the first unanswered card
-         * into view instead of submitting. */
-        submitExam();
-        break;
-      case 'previous': {
-        const next = examNavStep(-1, currentIndex);
-        if (next !== null) setCurrentIndex(next);
-        break;
-      }
-      case 'next': {
-        const next = examNavStep(1, currentIndex);
-        if (next !== null) setCurrentIndex(next);
-        break;
-      }
-      case 'jump':
-        if (typeof index === 'number') {
-          examNavJump(index);
-          setCurrentIndex(index);
-        }
-        break;
-    }
-  }
-
-  function onAnswer(index: number, value: string | number) {
-    if (exam.readOnly) return;
-    if (typeof value === 'number') {
-      selectExamOpt(index, value);
-    } else {
-      setExamAnswer(index, value);
-      scheduleExamAnswerSave();
-    }
-  }
-
-  function onDraftChange(patch: ExamDraftPatch) {
-    dispatchExam({
-      type: 'exam/patch',
-      patch: {
-        examFormDraft: {
-          ...exam.draft,
-          ...patch,
-          selectedTypes: { ...exam.draft.selectedTypes, ...patch.selectedTypes },
-        },
-      },
-    });
-  }
+  const { onCommand, onAnswer, onDraftChange } = createExamHandlers(exam.draft, exam.readOnly, currentIndex, setCurrentIndex);
 
   return (
     <WebUiTheme>

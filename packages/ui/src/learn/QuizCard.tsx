@@ -1,6 +1,6 @@
 /**
  * Quiz: rounded option rows with letter tiles, single or multiple choice.
- * Pick, then check: the host grades (and records mistakes / asks the tutor),
+ * Pick, then check: the host grades and records mistakes,
  * the card shows the verdict in ink or grey with a ✓ / ✕ glyph and words,
  * opens the explanation, and offers a retry after a wrong answer.
  */
@@ -14,7 +14,6 @@ import { H, R, S, focusRing, insetRing, sheets, transition } from '../look';
 import { useLearnHost } from './host';
 import {
   fillTemplate,
-  formatAnswerKey,
   gradeQuiz,
   initialQuizState,
   quizOptionMark,
@@ -164,12 +163,8 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
     ? options.filter((option) => answerKey.includes(option.letter)).map((option) => `${option.letter}. ${option.text}`).join('；')
     : '';
   let explanationBody: ReactNode = null;
-  if (answered && explanation) explanationBody = <Rich source={explanation} part="quiz-explanation" />;
-  else if (answered && state.verdict === 'incorrect' && keyText) {
-    /* Option text is Markdown with math, like the option rows above; plain
-       text printed "$0$" literally. */
-    explanationBody = <Rich source={fillTemplate(strings.quizAnswerIs, { answer: keyText })} part="quiz-explanation" />;
-  }
+  if (answered && state.verdict !== 'incorrect' && explanation) explanationBody = <Rich source={explanation} part="quiz-explanation" />;
+
 
   return (
     <ScaffoldCard
@@ -181,14 +176,22 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
       <Rich source={question} part="quiz-q" />
       <View role={multi ? 'group' : 'radiogroup'} aria-label={question} style={{ gap: S[75] }}>
         {options.map((option) => (
-          <OptionRow
-            key={option.letter}
-            option={option}
-            multi={multi}
-            mark={quizOptionMark(option.letter, state, answerKey)}
-            disabled={locked}
-            onPress={() => dispatch({ type: 'toggle', letter: option.letter, multi })}
-          />
+          <View key={option.letter}>
+            <OptionRow
+              option={option}
+              multi={multi}
+              mark={quizOptionMark(option.letter, state, answerKey)}
+              disabled={locked}
+              onPress={() => dispatch({ type: 'toggle', letter: option.letter, multi })}
+            />
+            {answered && state.verdict === 'incorrect'
+              && (state.selected.includes(option.letter) || answerKey.includes(option.letter)) ? (
+                <View testID={`quiz-option-explanation-${option.letter}`} style={{ paddingHorizontal: S[200], paddingVertical: S[100] }}>
+                  <UiText variant="labelSm" tone="secondary">{answerKey.includes(option.letter) ? fillTemplate(strings.quizAnswerIs, { answer: option.letter }) : strings.quizIncorrect}</UiText>
+                  <Rich source={option.explanation || explanation || fillTemplate(strings.quizAnswerIs, { answer: keyText })} part="quiz-option-explanation" />
+                </View>
+              ) : null}
+          </View>
         ))}
       </View>
       {readOnly ? null : (

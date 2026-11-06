@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { memo, useRef, useState, type RefObject } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import type { LegacyChatMessage } from '../types/domain';
@@ -8,8 +8,6 @@ import { MessageToolbar } from './MessageToolbar';
 import { MessageAttachments } from './MessageAttachments';
 import { MessageBody } from './MessageBody';
 import { MessageEditForm } from './MessageEditForm';
-import { TutorMessageActions } from './TutorMessageActions';
-import { useAppMode } from '../app-mode/useAppMode.ts';
 import { areMessageItemsEqual } from './messageItemMemo';
 import type { MessageItemProps } from './types';
 import { useMessagePostRender } from './useMessagePostRender';
@@ -46,6 +44,13 @@ function messageClientId(message: LegacyChatMessage): string {
   if (typeof message.clientId === 'string') return message.clientId;
   if (typeof message.id === 'string') return message.id;
   return '';
+}
+
+function messageBodyFields(message: LegacyChatMessage) {
+  return {
+    html: typeof message.html === 'string' ? message.html : '',
+    attachments: Array.isArray(message.attachments) ? message.attachments : [],
+  };
 }
 
 function viewportAnchorData(message: LiveFields, hasAnchor: boolean): ViewportAnchorData {
@@ -154,13 +159,19 @@ function shouldShowToolbar(role: string, showSettledToolbar: boolean, isLive: bo
   return !readOnly && !editing && (role === 'user' || showSettledToolbar || isLive);
 }
 
-function tutorQuestionText(message: LegacyChatMessage, role: string, isLatest: boolean, isLive: boolean, readOnly: boolean): string | null {
-  if (readOnly || !isLatest || role !== 'assistant' || isLive || typeof message.rawText !== 'string') return null;
-  return message.rawText;
-}
-
 function userEditHandler(role: string, setEditing: (editing: boolean) => void): (() => void) | undefined {
   return role === 'user' ? () => setEditing(true) : undefined;
+}
+
+/** Derive visibility once so the row and its toolbar share the same gates. */
+function messageRowVisibility(role: string, showSettledToolbar: boolean, isLive: boolean, readOnly: boolean, editing: boolean, isLatestOfRole: boolean) {
+  const showContextMenu = !readOnly && !editing && !isLatestOfRole && !isLive;
+  return {
+    showContextMenu,
+    showHistoryToolbar: showContextMenu,
+    showToolbar: isLatestOfRole && shouldShowToolbar(role, showSettledToolbar, isLive, readOnly, editing),
+    tabIndex: !readOnly && !isLatestOfRole ? 0 : undefined,
+  };
 }
 
 function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnly = false }: MessageItemProps) {
@@ -171,19 +182,17 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
   const isLive = role === 'assistant' && !presentation.isSettled;
   const clientId = messageClientId(message);
   const bodyRef = useRef<HTMLDivElement | null>(null);
-  const html = typeof message.html === 'string' ? message.html : '';
+  const { html, attachments } = messageBodyFields(message);
   const liveMessage = message as LiveFields;
   const turnAnchor = turnAnchorOf(message);
   const hasTurnAnchor = turnAnchor.minHeight > 0 || turnAnchor.marginTop > 0;
   const anchorData = viewportAnchorData(liveMessage, hasTurnAnchor);
-  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
   /* Keep the declarative tree mounted across the finish boundary so the
      toolbar and cursor transition without replacing the message body. */
   const declarative = usesDeclarativeBody(role);
   const onEdit = userEditHandler(role, setEditing);
-  const contextMenu = useMessageContextMenu(!readOnly && !editing && !isLatestOfRole && !isLive);
-  const showToolbar = Boolean(isLatestOfRole) && shouldShowToolbar(role, presentation.showToolbar, isLive, readOnly, editing);
-  const questionText = tutorQuestionText(message, role, Boolean(isLatest), isLive, readOnly);
+  const visibility = messageRowVisibility(role, presentation.showToolbar, isLive, readOnly, editing, Boolean(isLatestOfRole));
+  const contextMenu = useMessageContextMenu(visibility.showContextMenu);
 
   useMessagePostRender(message, html, clientId, isLive, bodyRef);
 
@@ -201,7 +210,7 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
       className={`msg ${role}${anchorData.className}`}
       style={bubbleStyle}
       {...contextMenu.handlers}
-      tabIndex={!readOnly && !isLatestOfRole ? 0 : undefined}
+      tabIndex={visibility.tabIndex}
       data-client-id={clientId}
       data-react-owned="1"
       data-viewport-anchor={anchorData.mode}
@@ -224,12 +233,10 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
           commitUserMessageEdit(clientId, text);
         }}
       />
-      {renderTutorQuestionChain(questionText)}
-      {!readOnly ? <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} /> : null}
-      {!readOnly && !editing && !isLatestOfRole && !isLive ? (
+      {visibility.showHistoryToolbar ? (
         <MessageToolbar message={message} role={toolbarRole(role)} onEdit={onEdit} contextMenu={contextMenu} />
       ) : null}
-      {showToolbar ? (
+      {visibility.showToolbar ? (
         <MessageToolbar
           message={message}
           role={toolbarRole(role)}
@@ -240,24 +247,6 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
       ) : null}
     </div>
   );
-}
-
-const LazyLatestTutorQuestionChain = lazy(() => import('../tutor/QuestionChainRoot').then((module) => ({
-  default: module.LatestTutorQuestionChain,
-})));
-
-function TutorQuestionChainSlot({ rawText }: { rawText: string }) {
-  const appMode = useAppMode();
-  if (appMode !== 'tutor') return null;
-  return (
-    <Suspense fallback={null}>
-      <LazyLatestTutorQuestionChain rawText={rawText} />
-    </Suspense>
-  );
-}
-
-function renderTutorQuestionChain(rawText: string | null): ReactNode {
-  return rawText === null ? null : <TutorQuestionChainSlot rawText={rawText} />;
 }
 
 const MessageItem = memo(MessageItemBase, areMessageItemsEqual);

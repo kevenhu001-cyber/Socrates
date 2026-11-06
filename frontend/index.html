@@ -293,25 +293,6 @@
         <div class="composer-input-wrap composer-shell" id="composerInputWrap"></div>
         </div>
 
-        <!-- Landing shortcuts: each row delegates to an existing composer
-             extension, so this is a real entry point rather than a decorative
-             copy of the reference page. The previous AI-backed heuristic
-             suggestions block (id="homeSuggestionsWrap") was removed — those
-             chips read as noise on mobile and were the most-skipped UI on the
-             landing surface. -->
-        <!-- RN-4: five learning modes (packages/ui/src/think) as a capsule
-             segmented control; mounted by spec `home-learning-modes`. -->
-        <div class="home-learning-modes" id="homeLearningModes"></div>
-
-        <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions" data-i18n-aria="chrome.quickActions"></div>
-
-        <!-- Phone chat landing: one suggestion line above the composer, like
-             the reference (emoji, one muted line, truncated). Reuses the
-             tutor starter copy; mounted by spec `home-suggestion`. -->
-        <div class="home-suggestion" id="homeSuggestion"></div>
-
-
-        <section class="home-tutor-starters" id="homeTutorStarters" aria-labelledby="homeTutorHeading"></section>
 
       </div>
 
@@ -373,7 +354,6 @@
         <div class="find-bar hidden" id="findBar" role="search"></div>
         <div class="chat-input-bar" id="chatInputBar">
           <!-- RN-4: learning-mode capsule menu next to the conversation composer (tutor only). -->
-          <div class="learning-mode-bar tutor-only" id="learningModeBar"></div>
           <!-- P_pill-anchor-composer — moved inside chat-input-bar so the
                pill anchors to the composer's top edge instead of
                chat-view's top edge. The CSS rule `.chat-input-bar >

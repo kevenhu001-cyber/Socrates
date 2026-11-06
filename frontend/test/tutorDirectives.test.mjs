@@ -9,7 +9,7 @@ import {
 
 test('Tutor stage instructions no longer force a full lesson on every turn', () => {
   assert.doesNotMatch(stageInstruction('define'), /1500|8-20|verbose/i);
-  assert.match(stageInstruction('exercise'), /exactly one .*practice/i);
+  assert.match(stageInstruction('exercise'), /exactly one multiple-choice transfer quiz/i);
   assert.match(stageInstruction('check'), /exactly one short quiz/i);
 });
 
