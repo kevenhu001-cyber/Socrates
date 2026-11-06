@@ -11,8 +11,9 @@
  * exported objects below and writes CSS custom properties. Never hand-edit
  * the generated CSS; change the values here and re-run the generator.
  *
- * RN-7: the light canvas is pure white (the paper); cards and overlays are
- * separated from it by a 1px hairline plus a very soft shadow.
+ * RN-7: cards and overlays are the white paper, separated from the canvas
+ * by a 1px hairline plus a very soft shadow. The light canvas itself is a
+ * one-percent tint under the paper (#fcfcfc), as the phone reference measures.
  *
  * The background ladder (page / rail / panel / elevated) is not redefined
  * here: canvas and card reuse the ladder rungs in `rn.ts` / `tokens.ts`, so
@@ -42,7 +43,8 @@ export interface UiColors {
   readonly inkHover: string;
   /** Foreground on an `ink` fill (primary button label). */
   readonly onInk: string;
-  /** Primary composer action; independent from neutral text ink. */
+  /** Primary composer action; independent from neutral text ink. The phone
+   *  reference's send / stop disc is a muted blue (#3d66c0), not a bright one. */
   readonly action: string;
   readonly onAction: string;
   /** RN-7 (site `--site-color-copy`): long-form body copy, one step under ink. */
@@ -57,7 +59,7 @@ export interface UiColors {
 
 export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
   light: {
-    canvas: '#ffffff',
+    canvas: '#fcfcfc',
     card: '#ffffff',
     fill: 'rgba(0, 0, 0, 0.04)',
     fillHover: 'rgba(0, 0, 0, 0.07)',
@@ -69,7 +71,7 @@ export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
     inkTertiary: '#767676',
     inkHover: '#303030',
     onInk: '#ffffff',
-    action: '#397ef7',
+    action: '#3d66c0',
     onAction: '#ffffff',
     copy: '#303030',
     subtle: '#f9f9f9',
@@ -85,11 +87,11 @@ export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
     hairline: 'rgba(255, 255, 255, 0.10)',
     hairlineStrong: 'rgba(255, 255, 255, 0.16)',
     ink: '#ededed',
-    inkSecondary: '#a1a1a1',
+    inkSecondary: '#afafaf',
     inkTertiary: '#8f8f8f',
     inkHover: '#ffffff',
     onInk: '#0a0a0a',
-    action: '#397ef7',
+    action: '#3d66c0',
     onAction: '#ffffff',
     copy: '#d6d6d6',
     subtle: '#141414',

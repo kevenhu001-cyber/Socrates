@@ -239,11 +239,12 @@ export const lightPalette: ThemePalette = {
     surface: '0 0% 92.16%',
   },
   bg: {
-    /* RN-7 paper canvas: the canvas is the paper (#ffffff) and raised /
-     * overlay surfaces share it, lifted by a hairline and a soft shadow.
+    /* RN-7 paper canvas, tinted (phone reference): the canvas is #fcfcfc,
+     * one percent under the paper (#ffffff) that raised / overlay surfaces
+     * share; those are lifted by a hairline and a soft shadow.
      * The pale greys below carry the rail (background-200) and the inset
      * wells (gray-100): background-100 → background-200 → gray-100. */
-    page: '0 0% 100%',      // #ffffff  the canvas is the paper
+    page: '0 0% 98.82%',    // #fcfcfc  the canvas: a 1% tint under the paper
     raised: '0 0% 100%',    // #ffffff  cards on the canvas
     overlay: '0 0% 100%',   // #ffffff  floating bars, menus
     hover: '0 0% 87.84%',   // #e0e0e0  selected/hover tint (off-ladder)
@@ -282,5 +283,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
 
 /** Background color used for first paint by each theme mode. */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#ffffff' : '#000000';
+  return mode === 'light' ? '#fcfcfc' : '#000000';
 }

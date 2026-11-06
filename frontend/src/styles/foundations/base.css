@@ -85,8 +85,8 @@ button { -webkit-tap-highlight-color: transparent; }
   z-index: calc(var(--ui-z-modal, 400) + 10);
   padding: 8px 16px;
   border-radius: var(--ui-radius-md, 8px);
-  background: var(--ui-bg-overlay, #fff);
-  color: var(--ui-text-primary, #111);
+  background: var(--ui-bg-overlay);
+  color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
   text-decoration: none;
   box-shadow: var(--ui-shadow-menu, 0 8px 28px rgb(0 0 0 / 20%));

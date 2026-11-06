@@ -84,6 +84,11 @@
  * the three distinct tones (consecutive Geist slice, role order, step band).
  * Every other theme and mode keeps four distinct rungs.
  *
+ * A paperCanvas theme may also declare `paperTint` (ui-ref-4, 2026-11-06):
+ * the light page may then be that tint instead of the paper itself, as long
+ * as it sits strictly between the rail and the paper. Socrates uses #fcfcfc,
+ * the canvas the ChatGPT phone reference measures under its white fields.
+ *
  * BLACK CANVAS (ui-ref, 2026-11-06)
  * ---------------------------------
  * A theme whose baseline sets `blackCanvas: true` paints its DARK canvas pure
@@ -508,12 +513,24 @@ function main() {
 
       /* Paper canvas: the light page shares the elevated rung's white. */
       const paperCanvas = mode === 'light' && policy.paperCanvas === true;
-      if (paperCanvas && ladder.rungHex.page !== ladder.rungHex.elevated) {
+      const paperTint = paperCanvas && typeof policy.paperTint === 'string' ? policy.paperTint.toLowerCase() : null;
+      if (paperCanvas && ladder.rungHex.page !== ladder.rungHex.elevated && ladder.rungHex.page !== paperTint) {
         failures.push(
-          `themes.css: theme "${theme}" light ladder declares paperCanvas but page (${ladder.rungHex.page}) is not the elevated paper (${ladder.rungHex.elevated})`,
+          `themes.css: theme "${theme}" light ladder declares paperCanvas but page (${ladder.rungHex.page}) is neither the elevated paper (${ladder.rungHex.elevated})${paperTint ? ` nor the declared paperTint (${paperTint})` : ''}`,
         );
       }
-      const rungs = paperCanvas ? [...new Set(allRungs)] : allRungs;
+      /* A tinted paper canvas sits strictly between the rail and the paper. */
+      if (paperTint && ladder.rungHex.page === paperTint) {
+        const page = lightness(ladder.rungHex.page);
+        if (!(page > lightness(ladder.rungHex.rail) && page < lightness(ladder.rungHex.elevated))) {
+          failures.push(
+            `themes.css: theme "${theme}" light paperTint ${paperTint} must sit between the rail (${ladder.rungHex.rail}) and the paper (${ladder.rungHex.elevated})`,
+          );
+        }
+      }
+      const rungs = paperCanvas
+        ? [...new Set(RUNGS.filter((rung) => rung !== 'page').map((rung) => ladder.rungHex[rung]).filter(Boolean))]
+        : allRungs;
       const expectedDistinct = paperCanvas ? RUNGS.length - 1 : RUNGS.length;
       if (new Set(rungs).size !== expectedDistinct || rungs.length !== expectedDistinct) {
         failures.push(`themes.css: theme "${theme}" ${mode} ladder has duplicate rungs — ${allRungs.join(', ')}`);
@@ -729,6 +746,7 @@ function main() {
       }
       next.themes[theme] = {
         ...(previous?.paperCanvas ? { paperCanvas: true } : {}),
+        ...(typeof previous?.paperTint === 'string' ? { paperTint: previous.paperTint } : {}),
         ...(previous?.blackCanvas ? { blackCanvas: true } : {}),
         scale: previous?.scale ?? null,
         shared: previous?.shared ?? false,
