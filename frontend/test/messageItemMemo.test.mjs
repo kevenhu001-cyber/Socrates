@@ -60,3 +60,10 @@ test('render, tool, process, and anchor changes invalidate through snapshot iden
     );
   }
 });
+
+
+test('latest per role and read-only changes refresh actions without changing the message', () => {
+  const current = props(message());
+  assert.equal(areMessageItemsEqual(current, { ...current, isLatestOfRole: true }), false);
+  assert.equal(areMessageItemsEqual(current, { ...current, readOnly: true }), false);
+});

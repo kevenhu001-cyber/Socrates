@@ -1,3 +1,5 @@
+import { serializedUiBlocks } from './serializedUi';
+
 export const INTELLIGENCE_UI_FENCE = 'socrates-ui';
 
 const MAX_NODES = 80;
@@ -238,7 +240,7 @@ function nextFenceEnd(text: string, from: number): RegExpExecArray | null {
 }
 
 /** Split public prose from native Intelligent UI fences without touching tool offsets. */
-export function splitIntelligenceUiText(text: string): IntelligenceUiSegment[] {
+function splitFencedUiText(text: string): IntelligenceUiSegment[] {
   const source = String(text || '');
   const segments: IntelligenceUiSegment[] = [];
   let cursor = 0;
@@ -276,6 +278,29 @@ export function splitIntelligenceUiText(text: string): IntelligenceUiSegment[] {
   if (!segments.length && source) {
     segments.push({ kind: 'text', text: source, start: 0, end: source.length });
   }
+  return segments;
+}
+
+/** Recover serialized display calls alongside canonical fences. Keep raw offsets
+ * for citations and interleaved tools, including prose following a recovered UI. */
+export function splitIntelligenceUiText(text: string): IntelligenceUiSegment[] {
+  const source = String(text || '');
+  const blocks = serializedUiBlocks(source);
+  if (!blocks.length) return splitFencedUiText(source);
+  const segments: IntelligenceUiSegment[] = [];
+  let cursor = 0;
+  const appendProse = (end: number) => {
+    if (end <= cursor) return;
+    for (const segment of splitFencedUiText(source.slice(cursor, end))) {
+      segments.push({ ...segment, start: cursor + segment.start, end: cursor + segment.end });
+    }
+  };
+  for (const block of blocks) {
+    appendProse(block.start);
+    segments.push({ kind: 'ui', ...block });
+    cursor = block.end;
+  }
+  appendProse(source.length);
   return segments;
 }
 

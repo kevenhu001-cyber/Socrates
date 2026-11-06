@@ -123,3 +123,33 @@ test('an unsupported algebraic form is sent for tutor review, not locally marked
   await expect.poll(() => streams.length).toBe(1);
   expect(await page.evaluate(() => window.stateStore.read('mistakes'))).toEqual([]);
 });
+
+
+test('widget scheduling retains a late slot without remounting an earlier quiz', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page);
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.__testActivateMainView('chatView');
+    const host = document.createElement('div');
+    host.id = 'late-widget-fixture';
+    const source = '<quiz><q>First question</q><o letter="A">Yes</o><o letter="B">No</o><correct>A</correct></quiz>\n\n<example><problem>Late problem</problem><solution>Late solution</solution></example>';
+    host.innerHTML = window.renderAssistantHTML(source);
+    const late = host.querySelector('.example-slot');
+    late.remove();
+    document.getElementById('chatView').appendChild(host);
+    window.__lateWidgetFixture = { host, late };
+  });
+  const host = page.locator('#late-widget-fixture');
+  await expect(host.locator('[data-part="quiz-q"]')).toHaveText('First question');
+  await host.locator('[data-letter="A"]').click();
+  // The choice mutates the first card while the second slot is still absent.
+  await page.waitForTimeout(100);
+  await page.evaluate(() => {
+    const { host, late } = window.__lateWidgetFixture;
+    host.appendChild(late);
+  });
+  await expect(host.locator('[data-part="example-problem"]')).toHaveText('Late problem');
+  await host.getByTestId('quiz-submit').click();
+  await expect(host.getByTestId('quiz-feedback')).toHaveAttribute('data-verdict', 'correct');
+});

@@ -2,77 +2,66 @@ import { expect, test } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-/* The transcript toolbar has one shape per input device. On a pointer device
-   every row keeps its strip; on touch only the newest row does, and older
-   rows collapse to a single "more actions" trigger. Five always-on buttons
-   under every answer is the loudest thing on a phone, and a phone has no
-   hover to defer them. */
-
 async function seedTranscript(page) {
-  await page.evaluate(() => {
-    window.__testActivateMainView('chatView');
-  });
-  await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
-    window.addMessage('assistant', 'First answer.');
-    window.addMessage('assistant', 'Second answer.');
-  });
-}
-
-const rows = (page) => page.locator('[data-client-id^="msg-"].msg.assistant');
-
-test.describe('touch transcript toolbar', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-
-  test('only the newest row keeps the full strip', async ({ page }) => {
-    await mockAuthedApp(page);
-    await gotoAndSettle(page, '/');
-    await waitForAppShell(page);
-    await seedTranscript(page);
-
-    await expect(rows(page)).toHaveCount(2);
-    const older = rows(page).first().locator('.msg-toolbar');
-    const newest = rows(page).last().locator('.msg-toolbar');
-
-    await expect(older).toHaveAttribute('data-compact', 'true');
-    await expect(older.locator('button')).toHaveCount(1);
-    await expect(older.locator('button')).toHaveAttribute('aria-label', /More actions|更多操作/);
-
-    await expect(newest).not.toHaveAttribute('data-compact', 'true');
-    await expect(newest.locator("button")).toHaveCount(5);
-  });
-
-  test('the collapsed trigger still opens every action', async ({ page }) => {
-    await mockAuthedApp(page);
-    await gotoAndSettle(page, '/');
-    await waitForAppShell(page);
-    await seedTranscript(page);
-
-    const older = rows(page).first().locator('.msg-toolbar');
-    await older.locator('button').click();
-
-    const menu = page.locator('.msg-action-menu');
-    await expect(menu).toBeVisible();
-    /* The secondary actions live only behind this trigger on touch, so the
-       menu has to carry them all rather than just the strip's leftovers. */
-    for (const label of [/Copy|复制/, /Regenerate response|重新生成/, /Helpful|有帮助/, /Not helpful|没有帮助/, /Share conversation|分享会话/]) {
-      await expect(menu.getByRole('menuitem', { name: label })).toBeVisible();
-    }
-  });
-});
-
-test('a pointer device keeps the strip on every row', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await seedTranscript(page);
+  await page.evaluate(() => {
+    window.__testActivateMainView('chatView');
+    window.stateStore.dispatch({ type: 'state/batch', patch: {
+      phase: 'chat', currentSessionId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', messages: [],
+    } });
+    window.addMessage('user', 'First question.');
+    window.addMessage('assistant', 'First answer.');
+    window.addMessage('user', 'Second question.');
+    window.addMessage('assistant', 'Second answer.');
+  });
+  await expect(page.locator('#msgList .msg')).toHaveCount(4);
+}
 
-  await expect(rows(page)).toHaveCount(2);
-  for (const row of await rows(page).all()) {
-    const toolbar = row.locator('.msg-toolbar');
-    await expect(toolbar).not.toHaveAttribute('data-compact', 'true');
-    await expect(toolbar.locator("button")).toHaveCount(5);
-  }
-});
+for (const touch of [false, true]) {
+  test.describe(touch ? 'touch transcript actions' : 'desktop transcript actions', () => {
+    test.use(touch ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true } : { viewport: { width: 1280, height: 800 } });
+
+    test('only the latest message of each role has a toolbar; history opens a menu', async ({ page }) => {
+      const errors = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await seedTranscript(page);
+      for (const role of ['user', 'assistant']) {
+        const rows = page.locator(`#msgList .msg.${role}`);
+        await expect(rows.first().locator('.msg-toolbar')).toHaveCount(0);
+        await expect(rows.last().locator('.msg-toolbar')).toHaveCount(1);
+        await expect(rows.first().getByRole('button')).not.toBeVisible();
+        const body = rows.first().locator('.msg-body');
+        if (touch) {
+          await body.dispatchEvent('pointerdown', { pointerType: 'touch', clientX: 100, clientY: 100 });
+          await expect(page.locator('.msg-action-menu')).toBeVisible();
+          await body.dispatchEvent('pointerup', { pointerType: 'touch' });
+        } else await body.click({ button: 'right' });
+        const menu = page.locator('.msg-action-menu');
+        await expect(menu.getByRole('menuitem', { name: 'Copy', exact: true })).toBeVisible();
+        await expect(menu.getByRole('menuitem', { name: 'Delete message', exact: true })).toBeVisible();
+        await expect(menu.getByRole('menuitem', { name: 'Branch from here', exact: true })).toBeVisible();
+        if (role === 'assistant') await page.screenshot({ path: `test-results/message-menu-${encodeURIComponent(touch ? 'mobile' : 'desktop')}.png` });
+        await page.keyboard.press('Escape');
+        await expect(menu).not.toBeVisible();
+      }
+      const olderAnswer = page.locator('#msgList .msg.assistant').first();
+      await olderAnswer.locator('.msg-body').dispatchEvent('contextmenu');
+      await page.locator('.msg-action-menu').getByRole('menuitem', { name: 'Delete message', exact: true }).click();
+      await expect(page.locator('#msgList .msg')).toHaveCount(3);
+      await expect(page.locator('#msgList .msg.assistant')).toContainText('Second answer.');
+      expect(errors).toEqual([]);
+      await page.screenshot({ path: `test-results/message-actions-${encodeURIComponent(touch ? 'mobile' : 'desktop')}.png` });
+    });
+
+    test('movement cancels a long press', async ({ page }) => {
+      await seedTranscript(page);
+      const body = page.locator('#msgList .msg').first().locator('.msg-body');
+      await body.dispatchEvent('pointerdown', { pointerType: 'touch', clientX: 100, clientY: 100 });
+      await body.dispatchEvent('pointermove', { pointerType: 'touch', clientX: 100, clientY: 130 });
+      await page.waitForTimeout(650);
+      await expect(page.locator('.msg-action-menu')).not.toBeVisible();
+    });
+  });
+}

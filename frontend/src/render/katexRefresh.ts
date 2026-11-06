@@ -100,6 +100,7 @@ function repaintMathTarget(
 
 export function rerenderMathAfterKatex(): void {
   try {
+    const rev = bumpMathRenderRevision();
     const list = document.getElementById("msgList");
     if (!list) return;
     /* The declarative renderer paints prose from rawText through a per-turn
@@ -107,7 +108,6 @@ export function rerenderMathAfterKatex(): void {
        alone would hand back the SAME cached string — the one computed before
        KaTeX existed. Bumping this counter is what tells that cache to throw
        its entries away and re-typeset. */
-    const rev = bumpMathRenderRevision();
     const messages = stateStore.read("messages");
     const msgs: RepaintableMessage[] = Array.isArray(messages) ? messages as RepaintableMessage[] : [];
     /* Collect first, render in slices: re-rendering every math message in

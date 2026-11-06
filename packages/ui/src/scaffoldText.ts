@@ -57,3 +57,21 @@ export function escapeHtml(value: unknown): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+
+/** Legacy short-form cards contain Markdown directly, with no field tags.
+ * Do not reinterpret broken structured XML as prose; code examples remain
+ * literal and are excluded from the field-tag check. */
+export function plainScaffoldBody(value: string): string | null {
+  const source = String(value || '').trim();
+  if (!source) return null;
+  let prose = '';
+  let cursor = 0;
+  for (const range of markdownCodeRanges(source)) {
+    prose += source.slice(cursor, range.start);
+    cursor = range.end;
+  }
+  prose += source.slice(cursor);
+  if (/<\/?[a-z][\w-]*(?:\s[^<>]*)?\s*\/?>/i.test(prose)) return null;
+  return decodeEntities(source);
+}

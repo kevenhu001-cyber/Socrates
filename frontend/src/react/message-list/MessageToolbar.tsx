@@ -24,16 +24,6 @@ const EditIcon = getIconDescriptor('edit').children;
 const TrashIcon = getIconDescriptor('trash').children;
 const RegenerateIcon = getIconDescriptor('regenerate').children;
 
-/* `hover: none` is the same signal the toolbar's own CSS uses, so the compact
-   layout and the stylesheet agree on what counts as a touch device. */
-const TOUCH_QUERY = '(hover: none)';
-const touchMedia = typeof window === 'undefined' ? null : window.matchMedia(TOUCH_QUERY);
-const readTouch = () => touchMedia?.matches ?? false;
-function subscribeTouch(onChange: () => void) {
-  touchMedia?.addEventListener('change', onChange);
-  return () => touchMedia?.removeEventListener('change', onChange);
-}
-
 /* The reaction pop: one visible overshoot of roughly 19% that settles back.
  * The number is the spring's own — stiffness 380 / damping 18 give ζ = 0.46
  * and a peak of 19.5% — so the curve and the amplitude are one decision. */
@@ -96,6 +86,7 @@ interface MessageToolbarProps {
   /** True for the newest row in the transcript — the one that keeps its
    *  full action row on touch, where there is no hover to reveal the rest. */
   isLatest?: boolean;
+  contextMenu?: { open: boolean; setOpen: (open: boolean) => void };
 }
 
 interface MessageToolbarActionsProps {
@@ -107,8 +98,9 @@ interface MessageToolbarActionsProps {
   onCopy: () => void;
   onThumbsUp: () => void;
   likeButtonRef: React.RefObject<HTMLButtonElement | null>;
-  /** Touch layouts collapse an older row to a single "…" trigger. */
+  /** Historical rows expose their actions through the context menu. */
   compact: boolean;
+  contextMenu?: { open: boolean; setOpen: (open: boolean) => void };
 }
 
 function MessageToolbarActions({
@@ -121,6 +113,7 @@ function MessageToolbarActions({
   onThumbsUp,
   likeButtonRef,
   compact,
+  contextMenu,
 }: MessageToolbarActionsProps): React.ReactElement {
   const openMessageWorkbench = () => openWorkbench({
     id: String(message.clientId || message.id || Date.now()),
@@ -133,10 +126,7 @@ function MessageToolbarActions({
 
   const copyLabel = copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy');
 
-  /* One action list, two shapes. Pointer devices (and the newest row on
-     touch) render the strip; an older row on touch collapses to a single
-     "…" trigger, because five always-on buttons under every answer is the
-     loudest thing on a phone screen and there is no hover to defer them. */
+  /* Reuse the same actions for the latest toolbar and history menu. */
   const primaryActions: OverflowAction[] = role === 'user'
     ? [
         { label: copyLabel, icon: copied ? CheckIcon : CopyIcon, onClick: onCopy },
@@ -145,6 +135,7 @@ function MessageToolbarActions({
       ]
     : [
         { label: copyLabel, icon: copied ? CheckIcon : CopyIcon, onClick: onCopy },
+        { label: i18n('message.delete', 'Delete message'), icon: TrashIcon, onClick: () => callbacks.onDelete?.() },
         { label: i18n('message.regenerate', 'Regenerate response'), icon: RegenerateIcon, onClick: () => callbacks.onRegenerate?.() },
         { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, onClick: onThumbsUp },
         { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, onClick: () => callbacks.onThumbsDown?.() },
@@ -162,7 +153,7 @@ function MessageToolbarActions({
     { label: i18n('message.reExplain', 'Re-explain from a different angle'), icon: ReExplainIcon, onClick: () => callbacks.onReExplain?.() },
   ];
 
-  if (compact) return <MessageOverflow actions={[...primaryActions, ...secondaryActions]} />;
+  if (compact) return <MessageOverflow actions={[...primaryActions, ...secondaryActions]} contextMenu={contextMenu} />;
 
   return (
     <>
@@ -213,10 +204,9 @@ function MessageToolbarActions({
   );
 }
 
-function MessageToolbar({ message, role, onEdit, pending = false, isLatest = false }: MessageToolbarProps): React.ReactElement | null {
+function MessageToolbar({ message, role, onEdit, pending = false, contextMenu }: MessageToolbarProps): React.ReactElement | null {
   const legacyCallbacks = useMessageToolbarCallbacks(message);
   const callbacks = onEdit ? { ...legacyCallbacks, onEdit } : legacyCallbacks;
-  const touchLayout = React.useSyncExternalStore(subscribeTouch, readTouch);
   const [copied, setCopied] = React.useState(false);
   const [liked, setLiked] = React.useState(false);
   const likeButtonRef = React.useRef<HTMLButtonElement | null>(null);
@@ -278,14 +268,11 @@ function MessageToolbar({ message, role, onEdit, pending = false, isLatest = fal
 
   const branchInfo = message.branchInfo;
   const hasBranches = !!(branchInfo && Array.isArray(branchInfo.variants) && branchInfo.variants.length > 1);
-  /* A user turn keeps its three actions (copy · edit · delete) visible on
-     touch too, as the reference does under every question; only older
-     answers collapse to the single "…" trigger. */
-  const compact = touchLayout && !isLatest && role === 'assistant';
+  const compact = Boolean(contextMenu);
 
   return (
-    <div className="msg-toolbar" data-role={role} data-message-id={id} data-compact={compact ? 'true' : undefined}>
-      {hasBranches && callbacks.onSwitchBranch && (
+    <div className={contextMenu ? 'msg-context-actions' : 'msg-toolbar'} data-role={role} data-message-id={id} data-compact={compact ? 'true' : undefined}>
+      {!contextMenu && hasBranches && callbacks.onSwitchBranch && (
         <MessageBranchSwitcher
           currentIndex={branchInfo.currentIndex}
           total={branchInfo.variants.length}
@@ -303,6 +290,7 @@ function MessageToolbar({ message, role, onEdit, pending = false, isLatest = fal
         onThumbsUp={handleThumbsUp}
         likeButtonRef={likeButtonRef}
         compact={compact}
+        contextMenu={contextMenu}
       />
     </div>
   );

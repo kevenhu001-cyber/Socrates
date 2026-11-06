@@ -34,6 +34,8 @@ export interface MessageItemProps {
   mathRevision?: number;
   /** True when this row is the latest message in the visible transcript. */
   isLatest?: boolean;
+  /** Latest visible user or assistant message, independently. */
+  isLatestOfRole?: boolean;
   /** Shared public sessions render transcript content without message actions. */
   readOnly?: boolean;
 }

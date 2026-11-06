@@ -89,6 +89,9 @@ export function LearnMount({ readOnly, children }: { readOnly: boolean; children
 const submittedQuizzes = new Map<string, { letters: string[]; result: QuizResult }>();
 
 export function QuizScaffold({ parsed }: { parsed: QuizMountData }) {
+  if (!parsed.options.length) {
+    return <PracticeScaffold parsed={{ title: '', problem: parsed.q, hint: '' }} />;
+  }
   const answerKey = parseAnswerKey(parsed.correct);
   const answerId = JSON.stringify([stateStore.read('currentSessionId'), parsed.q, parsed.options, answerKey]);
   const onSubmit = (letters: string[]): QuizResult | Promise<QuizResult> => {

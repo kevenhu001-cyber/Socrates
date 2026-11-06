@@ -8,6 +8,7 @@ import {
   LEARNING_SCAFFOLD_GUIDANCE,
   PYTHON_RUNNABLE_RULES,
 } from '../src/chat/systemPrompts.ts';
+import { splitScaffolds } from '@socrates/ui/learn-split';
 import { SOCRATIC_SYSTEM_PROMPT } from '../src/prompts/socratic.ts';
 
 test('Chat and Tutor share one optional learning scaffold contract', () => {
@@ -77,4 +78,16 @@ test('chat prompt policies stay compact enough to avoid crowding user context', 
   assert.ok(CHAT_SYSTEM_PROMPT.length < 2_500, `high-effort prompt is ${CHAT_SYSTEM_PROMPT.length} chars`);
   assert.ok(CHAT_CONCISE_PROMPT.length < 2_000, `concise prompt is ${CHAT_CONCISE_PROMPT.length} chars`);
   assert.ok(PYTHON_RUNNABLE_RULES.length < 2_500, `python appendix is ${PYTHON_RUNNABLE_RULES.length} chars`);
+});
+
+
+test('every prompted learning-card example is accepted by the actual shared parser', () => {
+  const examples = LEARNING_SCAFFOLD_GUIDANCE.split('\n').filter(line => line.startsWith('<'));
+  assert.equal(examples.length, 10);
+  for (const example of examples) {
+    const parts = splitScaffolds(example);
+    assert.equal(parts.length, 1, example);
+    assert.equal(parts[0].kind, 'scaffold', example);
+  }
+  assert.match(LEARNING_SCAFFOLD_GUIDANCE, /practice for a question without answer options/);
 });

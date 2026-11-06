@@ -33,8 +33,8 @@ test('math revisions invalidate prose caches while matching revisions share fina
     assert.match(initial.__html, new RegExp(`data-math-revision="${initialRevision}"`));
     assert.equal(paints, 1);
 
-    const nextRevision = bumpMathRenderRevision();
-    await render(1);
+    let nextRevision;
+    await act(() => { nextRevision = bumpMathRenderRevision(); });
     assert.notEqual(prose, initialRenderer);
     const updated = prose.settled('Formula $x$.');
     assert.notEqual(updated, initial);

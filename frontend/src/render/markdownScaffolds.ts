@@ -2,6 +2,7 @@
 import { decodeEntities, escAttr, escHTML } from './helpers.ts';
 import {
   fieldMatches,
+  plainScaffoldBody,
   fieldOf,
   fieldsOf,
   parseAnswerKey,
@@ -110,6 +111,10 @@ function streamField(inner: string, name: string): string {
   return fieldOf(inner, name, true) ?? '';
 }
 
+function streamBodyField(inner: string, name: string): string {
+  return fieldOf(inner, name, true) ?? plainScaffoldBody(inner) ?? '';
+}
+
 function streamAttr(attrs: string, name: string): string {
   const attrRe = /([a-z][\w-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
   let match: RegExpExecArray | null;
@@ -177,13 +182,13 @@ function renderKeyPointPreview(inner: string, markdown: StreamMarkdownRenderer):
 
 function renderDefinitionPreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const term = streamField(inner, 'term');
-  const body = streamField(inner, 'body');
+  const body = streamBodyField(inner, 'body');
   return streamCard('definition', markdown(term, 'definition-term') + (term || body ? markdown(body, 'definition-body') : ''));
 }
 
 function renderExamplePreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const title = streamField(inner, 'title');
-  const problem = streamField(inner, 'problem');
+  const problem = streamBodyField(inner, 'problem');
   const solution = streamField(inner, 'solution');
   const hint = streamField(inner, 'hint');
   return streamCard('example',
@@ -195,7 +200,7 @@ function renderExamplePreview(inner: string, markdown: StreamMarkdownRenderer): 
 
 function renderPracticePreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const title = streamField(inner, 'title');
-  const problem = streamField(inner, 'problem');
+  const problem = streamBodyField(inner, 'problem');
   const hint = streamField(inner, 'hint');
   return streamCard('practice',
     (title && title !== 'Practice' ? markdown(title, 'practice-title') : '')
@@ -224,7 +229,7 @@ function renderTheoremPreview(inner: string, markdown: StreamMarkdownRenderer): 
   const statementInner = inner.replace(NESTED_PROOF_RE, '');
   const hasProof = statementInner.length !== inner.length;
   const title = streamField(statementInner, 'title');
-  const statement = streamField(statementInner, 'statement');
+  const statement = streamBodyField(statementInner, 'statement');
   return streamCard('theorem',
     (title ? markdown(title, 'theorem-title') : '')
     + markdown(statement, 'theorem-statement')
@@ -233,7 +238,7 @@ function renderTheoremPreview(inner: string, markdown: StreamMarkdownRenderer): 
 
 function renderProofPreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const title = streamField(inner, 'title');
-  const body = streamField(inner, 'body');
+  const body = streamBodyField(inner, 'body');
   return streamCard('proof', (title ? markdown(title, 'proof-title') : '') + markdown(body, 'proof-body'), skeletonPill('quiet', 72));
 }
 
@@ -246,7 +251,7 @@ function stepRows(steps: string[], markdown: StreamMarkdownRenderer, part: strin
 
 function renderDerivationPreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const title = streamField(inner, 'title');
-  const body = streamField(inner, 'body');
+  const body = streamBodyField(inner, 'body');
   const steps = splitDerivationSteps(body).map(derivationStepSource);
   return streamCard('derivation',
     (title ? markdown(title, 'derivation-title') : '')
@@ -263,7 +268,7 @@ function renderStepPreview(inner: string, markdown: StreamMarkdownRenderer, attr
 }
 
 function renderQuizPreview(inner: string, markdown: StreamMarkdownRenderer, attrs: string): string {
-  const question = streamField(inner, 'q');
+  const question = streamBodyField(inner, 'q');
   const options = fieldMatches(inner, 'o', true).flatMap((match) => {
     const letter = match.attrs.match(/\bletter\s*=\s*["']([A-Ha-h])["']/i)?.[1];
     return letter

@@ -23,7 +23,18 @@ export const INTELLIGENT_UI_GUIDANCE = `
 Follow the server policy for visualization choices and the supplied tool schemas.`;
 
 /** Same optional learning-card contract in Chat and Tutor. */
-export const LEARNING_SCAFFOLD_GUIDANCE = `Use the shared learning scaffold tags in Chat and Tutor when a structured card materially improves the answer: <definition>, <example>, <proof>, <theorem>, <derivation>, <key-point>, <step>, <quiz>, <practice>, and <flashcard>. Place each card beside its relevant prose; a card supplements prose and never wraps the whole answer. Ordinary conversation stays in prose. Emit complete tags, never place scaffold tags inside fenced or inline code, and use no more than one quiz or practice block unless the request or tutor stage explicitly calls for more. Do not reveal an unattempted practice answer unless the user has tried it or asks for the solution.`;
+export const LEARNING_SCAFFOLD_GUIDANCE = `Use the shared learning scaffold tags in Chat and Tutor when a structured card materially improves the answer: <definition>, <example>, <proof>, <theorem>, <derivation>, <key-point>, <step>, <quiz>, <practice>, and <flashcard>. Place each card beside its relevant prose; a card supplements prose and never wraps the whole answer. Ordinary conversation stays in prose. Emit complete tags, never place scaffold tags inside fenced or inline code, and use no more than one quiz or practice block unless the request or tutor stage explicitly calls for more. Do not reveal an unattempted practice answer unless the user has tried it or asks for the solution. Use these inner fields (replace examples with real content):
+<definition><term>Term</term><body>Definition</body></definition>
+<example><title>Example title</title><problem>Problem</problem><solution>Worked solution</solution></example>
+<practice><problem>Open-ended question</problem><hint>Optional hint</hint></practice>
+<quiz><q>Multiple-choice question</q><o letter="A">First option</o><o letter="B">Second option</o><correct>A</correct></quiz>
+<theorem><title>Theorem title</title><statement>Statement</statement></theorem>
+<proof><title>Proof title</title><body>Proof</body></proof>
+<derivation><title>Derivation title</title><body>Derivation steps</body></derivation>
+<flashcard><front>Question</front><back>Answer</back></flashcard>
+<step n="1">Step content</step>
+<key-point>Key point</key-point>
+Use practice for a question without answer options; quiz requires at least two lettered options. Do not place a bare paragraph directly inside a field-based card. Optional fields may be omitted, but required content fields must remain.`;
 
 /* HIGH_EFFORT_OUTPUT_GUIDANCE carries only the depth directive. Response
  * formatting and math delimiters are owned by SERVER_SYSTEM_POLICY. The depth

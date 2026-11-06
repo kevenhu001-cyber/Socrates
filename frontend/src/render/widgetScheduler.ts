@@ -85,13 +85,15 @@ function mountSlots<Parsed>(
   mount: (slot: Element, parsed: Parsed) => unknown,
 ): number {
   let mounted = 0;
-  items.forEach((item) => {
+  for (let index = items.length - 1; index >= 0; index--) {
+    const item = items[index];
     const slot = document.querySelector(`[${selector}="${item.id}"]`);
     if (slot) {
       mount(slot, item.parsed);
+      items.splice(index, 1);
       mounted += 1;
     }
-  });
+  }
   return mounted;
 }
 
@@ -187,6 +189,7 @@ export function scheduleWidgetMounts({
           const slot = document.querySelector(`[data-step-id="${item.id}"]`);
           if (slot) slot.remove();
         });
+        stepPH.length = 0;
       }
     }
     mounted += mountSlots(flashcardPH, 'data-flashcard-id', widgets.mountFlashcardWidget);

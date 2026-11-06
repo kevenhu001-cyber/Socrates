@@ -98,6 +98,9 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
     return <div data-react-message-list-empty="1" data-react-owned="1" />;
   }
 
+  const latestByRole = new Map<string, LegacyChatMessage>();
+  for (const entry of visibleMessages) latestByRole.set(entry.role || 'assistant', entry);
+
   return (
     <Suspense fallback={null}>
       {showsHistoryStatus(paging, start, readOnly) ? <HistoryPageStatus paging={paging} /> : null}
@@ -109,6 +112,7 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
             key={id}
             message={entry}
             isLatest={isLatest}
+            isLatestOfRole={latestByRole.get(entry.role || 'assistant') === entry}
             readOnly={readOnly}
             mathRevision={getMathRenderRevision()}
           />

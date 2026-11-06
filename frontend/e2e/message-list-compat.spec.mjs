@@ -185,7 +185,7 @@ test('React owns message editing while remaining toolbar actions dispatch throug
 
   const assistantBubble = page.locator(
     '[data-client-id^="msg-"].msg.assistant',
-  ).first();
+  ).last();
   await assistantBubble.hover();
   await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]').click();
   await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Helpful"]').click();

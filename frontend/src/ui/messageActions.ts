@@ -142,7 +142,7 @@ export function rollbackMessagesAfter(userMessageId: string): MessageEntry[] {
   return toDrop;
 }
 
-/** Delete one user message locally and server-side. */
+/** Delete one message locally and server-side (legacy name retained for callers). */
 export function deleteUserMessage(messageId: string): void {
   const idx = findMessageIndex(messageId);
   if (idx < 0) return;

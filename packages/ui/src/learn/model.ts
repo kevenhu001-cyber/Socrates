@@ -13,9 +13,9 @@
  * The reducers are pure: components keep them in `useReducer`, tests drive
  * them directly, and the host owns every side effect (grading, reporting).
  */
-import { decodeEntities, stripTags } from '../scaffoldText.ts';
+import { decodeEntities, plainScaffoldBody, stripTags } from '../scaffoldText.ts';
 import { markdownCodeRanges } from './markdownCode.ts';
-export { stripTags };
+export { plainScaffoldBody, stripTags };
 export { evaluatePracticeAnswer, type PracticeAnswerAssessment } from './practiceAnswer.ts';
 
 export const SCAFFOLD_KINDS = [
@@ -172,7 +172,10 @@ export interface ParsedQuiz {
 /** Parse the inner XML of a <quiz> block. `attrs` is the opening tag's attribute text. */
 export function parseQuizInner(inner: string, attrs = ''): ParsedQuiz | null {
   const question = fieldOf(inner, 'q');
-  if (question === null) return null;
+  if (question === null) {
+    const q = plainScaffoldBody(inner);
+    return q ? { q, options: [], correct: null } : null;
+  }
   const q = stripTags(question.trim());
   const options = fieldMatches(inner, 'o').flatMap((match): QuizOption[] => {
     const letter = match.attrs.match(/\bletter\s*=\s*["']([A-Ha-h])["']/i)?.[1];
@@ -204,7 +207,10 @@ export function parseExampleInner(inner: string): ParsedExample | null {
   const title = fieldOf(inner, 'title');
   const problem = fieldOf(inner, 'problem');
   const solution = fieldOf(inner, 'solution');
-  if (problem === null && solution === null) return null;
+  if (problem === null && solution === null) {
+    const plain = plainScaffoldBody(inner);
+    return plain ? { title: 'Example', problem: plain, solution: '' } : null;
+  }
   const parsed: ParsedExample = { title: title ?? 'Example', problem: problem ?? '', solution: solution ?? '' };
   const hints = fieldsOf(inner, 'hint');
   if (hints.length) parsed.hints = hints;
@@ -225,7 +231,7 @@ export interface ParsedPractice {
 }
 
 export function parsePracticeInner(inner: string, correct?: string | null): ParsedPractice | null {
-  const problem = fieldOf(inner, 'problem');
+  const problem = fieldOf(inner, 'problem') ?? plainScaffoldBody(inner);
   if (problem === null) return null;
   const hints = fieldsOf(inner, 'hint');
   const parsed: ParsedPractice = {
@@ -251,7 +257,10 @@ export interface ParsedDefinition { term: string; body: string }
 export function parseDefinitionInner(inner: string): ParsedDefinition | null {
   const term = fieldOf(inner, 'term');
   const body = fieldOf(inner, 'body');
-  if (term === null && body === null) return null;
+  if (term === null && body === null) {
+    const plain = plainScaffoldBody(inner);
+    return plain ? { term: '', body: plain } : null;
+  }
   return { term: term ?? '', body: body ?? '' };
 }
 
@@ -273,7 +282,7 @@ export interface ParsedTheorem {
 }
 
 export function parseTheoremInner(inner: string): ParsedTheorem | null {
-  const statement = fieldOf(inner, 'statement');
+  const statement = fieldOf(inner, 'statement') ?? plainScaffoldBody(inner);
   if (statement === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', statement };
 }
@@ -281,7 +290,7 @@ export function parseTheoremInner(inner: string): ParsedTheorem | null {
 export interface ParsedProof { title: string; body: string }
 
 export function parseProofInner(inner: string): ParsedProof | null {
-  const body = fieldOf(inner, 'body');
+  const body = fieldOf(inner, 'body') ?? plainScaffoldBody(inner);
   if (body === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', body };
 }
@@ -289,7 +298,7 @@ export function parseProofInner(inner: string): ParsedProof | null {
 export interface ParsedDerivation { title: string; body: string }
 
 export function parseDerivationInner(inner: string): ParsedDerivation | null {
-  const body = fieldOf(inner, 'body');
+  const body = fieldOf(inner, 'body') ?? plainScaffoldBody(inner);
   if (body === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', body };
 }

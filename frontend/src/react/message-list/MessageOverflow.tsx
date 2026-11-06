@@ -22,13 +22,16 @@ function subscribeMobile(onChange: () => void) {
 
 /** The shared primitive owns navigation and placement. Hidden phone actions are
  * excluded from its item collection, including when an open menu is resized. */
-export function MessageOverflow({ actions }: { actions: OverflowAction[] }) {
-  const [open, setOpen] = useState(false);
+export function MessageOverflow({ actions, contextMenu }: { actions: OverflowAction[]; contextMenu?: { open: boolean; setOpen: (open: boolean) => void } }) {
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = contextMenu?.open ?? localOpen;
+  const setOpen = contextMenu?.setOpen ?? setLocalOpen;
   const trigger = useRef<HTMLButtonElement>(null);
   const mobile = useSyncExternalStore(open ? subscribeMobile : subscribeClosed, readMobile);
   const label = i18n('message.moreActions', 'More actions');
   return <DeferredMenu open={open} onOpenChange={setOpen} className="msg-action-menu" label={label} align="start"
-    trigger={<ToolButton ref={trigger} label={label}><Icon name="more" size={18} className="msg-more-glyph" shapeRendering="geometricPrecision" /></ToolButton>}>
+    trigger={<ToolButton ref={trigger} label={label} tabIndex={contextMenu ? -1 : undefined}
+      style={contextMenu ? { position: 'absolute', width: 0, height: 0, padding: 0, opacity: 0, pointerEvents: 'none' } : undefined}><Icon name="more" size={18} className="msg-more-glyph" shapeRendering="geometricPrecision" /></ToolButton>}>
     {({ FoundationMenuItem }) => actions.filter((action) => mobile || !action.mobileOnly).map((action) =>
       <FoundationMenuItem key={action.label} className={action.mobileOnly ? 'msg-action-mobile-only' : undefined}
         onClick={(event) => {

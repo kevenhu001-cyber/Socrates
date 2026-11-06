@@ -81,7 +81,7 @@ function userMessageCallbacks(
   id: string | null,
   legacy: ReturnType<typeof getLegacyActions> | null,
 ): Pick<MessageToolbarCallbacks, 'onDelete'> {
-  if (role !== 'user' || !id || !legacy) return {};
+  if (!['user', 'assistant'].includes(role) || !id || !legacy) return {};
   return {
     onDelete: () => legacy.messages.deleteUserMessage(id),
   };
@@ -124,6 +124,7 @@ export function useMessageToolbarCallbacks(message: LegacyChatMessage): MessageT
   return {
     onCopy: () => doCopy(message),
     ...userMessageCallbacks(role, id, legacy),
+    ...(id && legacy ? { onBranch: () => legacy.messages.branchFromMessage(id) } : {}),
     ...assistantMessageCallbacks(message, role, id, legacy),
   };
 }

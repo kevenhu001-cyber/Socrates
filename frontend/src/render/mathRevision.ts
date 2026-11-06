@@ -6,6 +6,12 @@
  */
 
 let currentMathRevision = 0;
+const listeners = new Set<() => void>();
+
+export function subscribeMathRenderRevision(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
 
 export function getMathRenderRevision(): number {
   return currentMathRevision;
@@ -13,5 +19,6 @@ export function getMathRenderRevision(): number {
 
 export function bumpMathRenderRevision(): number {
   currentMathRevision += 1;
+  listeners.forEach((listener) => listener());
   return currentMathRevision;
 }

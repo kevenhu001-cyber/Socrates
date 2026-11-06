@@ -3,6 +3,7 @@ import { lazy, memo, Suspense, useRef, useState, type ReactNode, type RefObject 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import type { LegacyChatMessage } from '../types/domain';
 import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
+import { useMessageContextMenu } from './useMessageContextMenu';
 import { MessageToolbar } from './MessageToolbar';
 import { MessageAttachments } from './MessageAttachments';
 import { MessageBody } from './MessageBody';
@@ -162,7 +163,7 @@ function userEditHandler(role: string, setEditing: (editing: boolean) => void): 
   return role === 'user' ? () => setEditing(true) : undefined;
 }
 
-function MessageItemBase({ message, isLatest, readOnly = false }: MessageItemProps) {
+function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnly = false }: MessageItemProps) {
   const [editing, setEditing] = useState(false);
   const role = messageRole(message);
   /* The chat runtime store gives React an immutable snapshot for this row. */
@@ -180,7 +181,8 @@ function MessageItemBase({ message, isLatest, readOnly = false }: MessageItemPro
      toolbar and cursor transition without replacing the message body. */
   const declarative = usesDeclarativeBody(role);
   const onEdit = userEditHandler(role, setEditing);
-  const showToolbar = shouldShowToolbar(role, presentation.showToolbar, isLive, readOnly, editing);
+  const contextMenu = useMessageContextMenu(!readOnly && !editing && !isLatestOfRole && !isLive);
+  const showToolbar = Boolean(isLatestOfRole) && shouldShowToolbar(role, presentation.showToolbar, isLive, readOnly, editing);
   const questionText = tutorQuestionText(message, role, Boolean(isLatest), isLive, readOnly);
 
   useMessagePostRender(message, html, clientId, isLive, bodyRef);
@@ -198,6 +200,8 @@ function MessageItemBase({ message, isLatest, readOnly = false }: MessageItemPro
     <div
       className={`msg ${role}${anchorData.className}`}
       style={bubbleStyle}
+      {...contextMenu.handlers}
+      tabIndex={!readOnly && !isLatestOfRole ? 0 : undefined}
       data-client-id={clientId}
       data-react-owned="1"
       data-viewport-anchor={anchorData.mode}
@@ -222,6 +226,9 @@ function MessageItemBase({ message, isLatest, readOnly = false }: MessageItemPro
       />
       {renderTutorQuestionChain(questionText)}
       {!readOnly ? <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} /> : null}
+      {!readOnly && !editing && !isLatestOfRole && !isLive ? (
+        <MessageToolbar message={message} role={toolbarRole(role)} onEdit={onEdit} contextMenu={contextMenu} />
+      ) : null}
       {showToolbar ? (
         <MessageToolbar
           message={message}

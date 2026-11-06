@@ -75,7 +75,7 @@ test('practice and example collect hint levels and keep markdown', () => {
 
 test('static scaffold parsers', () => {
   assert.deepEqual(parseDefinitionInner('<term>Group</term><body>A set</body>'), { term: 'Group', body: 'A set' });
-  assert.equal(parseDefinitionInner('plain'), null);
+  assert.deepEqual(parseDefinitionInner('plain'), { term: '', body: 'plain' });
   assert.deepEqual(parseFlashcardInner('<front>Q</front>'), { front: 'Q', back: '' });
   assert.deepEqual(parseTheoremInner('<statement>a^2+b^2=c^2</statement>'), { title: '', statement: 'a^2+b^2=c^2' });
   assert.equal(parseTheoremInner('<term>x</term>'), null);
@@ -191,4 +191,25 @@ test('derivation steps written as bare LaTeX render as display math, CJK prose k
   assert.equal(derivationStepSource('\\[x = 1\\]'), '\\[x = 1\\]');
   assert.equal(derivationStepSource('= 1'), '= 1');
   assert.equal(derivationStepSource('先找出奇点'), '先找出奇点');
+});
+
+
+test('short-form learning cards retain their Markdown and math without inventing fields', () => {
+  const body = '**Concept**: $x < y$ means x is smaller.\n\nMore details.';
+  assert.deepEqual(parseDefinitionInner(body), { term: '', body });
+  assert.deepEqual(parseExampleInner(body), { title: 'Example', problem: body, solution: '' });
+  assert.deepEqual(parsePracticeInner(body), { title: 'Practice', problem: body, hint: '' });
+  assert.deepEqual(parseQuizInner(body), { q: body, options: [], correct: null });
+  assert.deepEqual(parseTheoremInner(body), { title: '', statement: body });
+  assert.deepEqual(parseProofInner(body), { title: '', body });
+  assert.deepEqual(parseDerivationInner(body), { title: '', body });
+});
+
+test('plain cards preserve literal XML code examples and continue rejecting broken structured content', () => {
+  const source = 'Markup example:\n```xml\n<term>literal</term>\n```';
+  assert.equal(parseDefinitionInner(source)?.body, source);
+  assert.equal(parseDefinitionInner('   '), null);
+  assert.equal(parsePracticeInner('<problem>unclosed'), null);
+  assert.equal(parseDefinitionInner('<body>unclosed'), null);
+  assert.equal(parseQuizInner('<q>Q</q><o letter="A">Only one</o>'), null);
 });

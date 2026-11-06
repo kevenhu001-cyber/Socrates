@@ -235,9 +235,12 @@ for (const viewport of ['desktop', 'mobile']) {
       expect(geometry.paddingRight).toBe(0);
     }
     await expect(ui.locator('.iui-card').first()).toHaveCSS('border-top-width', '0px');
-    const header = await page.locator('.intui-surface-header').boundingBox();
+    // A prose-fenced program has no supplied surface title. The shell
+    // intentionally omits its header instead of reserving an empty one.
+    await expect(page.locator('.intui-surface-header')).toHaveCount(0);
+    const document = await ui.locator('.iui-card').first().locator('..').boundingBox();
     const firstCard = await ui.locator('.iui-card').first().boundingBox();
-    expect(header.y + header.height).toBeLessThanOrEqual(firstCard.y);
+    expect(firstCard.y).toBeGreaterThanOrEqual(document.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
     await page.screenshot({ path: `test-results/openui-card-layout-${encodeURIComponent(viewport)}.png`, fullPage: true });
   });

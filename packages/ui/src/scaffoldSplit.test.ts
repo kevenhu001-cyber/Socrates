@@ -37,8 +37,8 @@ test('the first practice becomes the card and a later one degrades to its proble
 });
 
 test('a malformed block falls back and never consumes the interactive slot', () => {
-  const segments = splitScaffolds(`<quiz>no options</quiz>${QUIZ}`);
-  assert.deepEqual(kinds(`<quiz>no options</quiz>${QUIZ}`), ['fallback', 'scaffold']);
+  const segments = splitScaffolds(`<quiz><q>Missing options</q><o letter="A">Only one</o></quiz>${QUIZ}`);
+  assert.deepEqual(kinds(`<quiz><q>Missing options</q><o letter="A">Only one</o></quiz>${QUIZ}`), ['fallback', 'scaffold']);
   const fallback = segments[0];
   assert.equal(fallback.kind === 'fallback' ? fallback.scaffold : '', 'quiz');
 });
@@ -154,7 +154,7 @@ test('the turn plan keeps one quiz across pieces rendered separately', () => {
 });
 
 test('the turn plan skips a malformed first quiz and leaves prose untouched', () => {
-  const plan = scaffoldTurnPlan(`<quiz>no options</quiz>\n\n${QUIZ}`);
+  const plan = scaffoldTurnPlan(`<quiz><q>Missing options</q><o letter="A">Only one</o></quiz>\n\n${QUIZ}`);
   assert.equal(plan.quiz, QUIZ);
   assert.deepEqual(scaffoldTurnPlan('no scaffolds here'), {});
   const prose = 'plain <b>text</b>';
@@ -169,4 +169,14 @@ test('the turn plan tracks practice separately from quiz', () => {
   const rewritten = applyScaffoldTurnPlan(p2, plan);
   assert.equal(rewritten.trim(), '**T2**\n\nP2');
   assert.equal(applyScaffoldTurnPlan(QUIZ, plan), QUIZ);
+});
+
+
+test('legacy short-form definition, question and practice blocks become cards', () => {
+  const source = '<definition>Definition with $x$.</definition><quiz>What is $x$?</quiz><practice>Explain why.</practice>';
+  assert.deepEqual(kinds(source), ['scaffold', 'scaffold', 'scaffold']);
+  const parsed = blocks(source);
+  assert.deepEqual(parsed.map(block => block.kind), ['definition', 'quiz', 'practice']);
+  assert.equal(parsed[1].kind === 'quiz' ? parsed[1].parsed.options.length : -1, 0);
+  assert.deepEqual(scaffoldTurnPlan(source), { quiz: '<quiz>What is $x$?</quiz>', practice: '<practice>Explain why.</practice>' });
 });

@@ -321,6 +321,9 @@ function ScaffoldView({ block, language, slotId, onQuizPick, onPracticeSubmit }:
 }) {
   switch (block.kind) {
     case 'quiz':
+      if (!block.parsed.options.length) {
+        return <TutorPracticeCard practice={{ title: '', problem: block.parsed.q, hint: '' }} language={language} onPracticeSubmit={onPracticeSubmit} />;
+      }
       return <TutorQuizCard quiz={block.parsed} slotId={slotId ?? block.slotId} language={language} onQuizPick={onQuizPick} />;
     case 'practice':
       return <TutorPracticeCard practice={block.parsed} language={language} onPracticeSubmit={onPracticeSubmit} />;
