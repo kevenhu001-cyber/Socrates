@@ -90,3 +90,17 @@ test('a wrong quiz answer shows the answer key with typeset math', async ({ page
   await expect(explanation.locator('.katex')).toHaveCount(1);
   await expect(explanation).not.toContainText('$');
 });
+
+test('derivation steps written as bare LaTeX are typeset', async ({ page }) => {
+  const text = '<derivation><title>一阶极点的留数</title><body>\n\\operatorname{Res}(f,z_0) = \\lim_{z\\to z_0}(z-z_0)f(z)\n= \\lim_{z\\to 0} z\\cdot\\frac{e^z}{z}\n= 1\n</body></derivation>';
+  await open(page, [msg('der', text)]);
+  const card = row(page, 'der').locator('.sc-host[data-scaffold="derivation"]');
+  await expect(card).toHaveCount(1);
+  await expect(card.locator('.katex').first()).toBeVisible();
+  const raw = await card.evaluate((element) => {
+    const clone = element.cloneNode(true);
+    clone.querySelectorAll('.katex').forEach((node) => node.remove());
+    return /\\(?:lim|frac|operatorname)/.test(clone.textContent || '');
+  });
+  expect(raw).toBe(false);
+});

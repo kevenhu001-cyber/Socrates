@@ -6,7 +6,9 @@
  */
 import { recordRecallRating } from '../../tutor/recallRatings.ts';
 import { daysUntilReview, flashcardUiState, recordReview, rememberFlashcardUiState, reviewCardFor } from '../../tutor/reviewDeck.ts';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { hasMathDelimiters } from '../../render/markdownMath.ts';
+import { onKatexReady } from '../../vendor/lazy.ts';
 import {
   DefinitionCard,
   FlashcardCard,
@@ -48,14 +50,23 @@ function tr(key: string, fallback: string): string {
 }
 
 function RichHtml({ source, part }: { source: string; part: string }) {
+  /* KaTeX loads on demand. A card whose field holds the reply's only math
+     (a derivation step, an answer key) is painted before it lands, and the
+     turn-level KaTeX repaint only re-renders prose; repaint the field once. */
+  const [katexTick, setKatexTick] = useState(0);
+  useEffect(() => {
+    if ((window as { katex?: unknown }).katex || !hasMathDelimiters(source)) return undefined;
+    return onKatexReady(() => setKatexTick((value) => value + 1));
+  }, [source]);
   const html = useMemo(() => {
+    void katexTick; // repaint once KaTeX is ready
     try {
       return widgetRuntime().formatMsg(source);
     } catch (error) {
       reportSwallow(error, 'learn.renderRich');
       return widgetRuntime().esc(source);
     }
-  }, [source]);
+  }, [source, katexTick]);
   return <div className="sc-rich" data-part={part} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
