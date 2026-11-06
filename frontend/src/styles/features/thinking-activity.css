@@ -91,37 +91,17 @@
   .msg-retry-btn { min-height: var(--ui-control-touch); }
 }
 
-/* The live caption is still text; the working cue is the spark glyph in
-   front of it (react/tool-run/ThinkingSpark.tsx). It replaced a breathing
-   caption over a sweeping progress hairline. The spark turns once every
-   6s while its rays swell and settle, so the motion reads as "working"
-   without flashing. It sits on the caption ink; reduced motion freezes it. */
+/* The live caption is still text; the working cue is the glyph in front of
+   it (react/tool-run/ThinkingSpark.tsx): twelve dots on a sphere turning in
+   3D, one turn every 2.6s, near dots larger and inked, far dots small and
+   faint. The motion is a requestAnimationFrame loop in the component (it
+   pauses off-screen and stays a still frame under reduced motion or forced
+   colours), so there are no keyframes here. It sits on the caption ink. */
 .thinking-spark {
   display: block;
   flex: none;
   color: var(--ui-text-primary);
   overflow: visible;
-}
-.thinking-spark-turn {
-  transform-box: view-box;
-  transform-origin: 12px 12px;
-  animation: thinking-spark-turn 6s linear infinite;
-}
-.thinking-spark-rays {
-  transform-box: view-box;
-  transform-origin: 12px 12px;
-  animation: thinking-spark-swell 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
-}
-@keyframes thinking-spark-turn {
-  to { transform: rotate(360deg); }
-}
-@keyframes thinking-spark-swell {
-  from { transform: scale(1); opacity: 1; }
-  to { transform: scale(0.78) rotate(-12deg); opacity: 0.72; }
-}
-@media (prefers-reduced-motion: reduce), (forced-colors: active) {
-  .thinking-spark-turn,
-  .thinking-spark-rays { animation: none; }
 }
 
 /* Public timeline entries remain still beneath the one live caption. */

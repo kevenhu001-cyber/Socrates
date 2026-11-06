@@ -159,7 +159,7 @@ test('composer menu opens crisply on the shared clock and respects reduced motio
 });
 
 /* RN-2: the thinking line and tool rows are react-native-web components. The
-   live spark (CSS) and tool-row breathing (JS) stop under reduced motion; unified-turn-ui.spec.mjs and turn-activity.spec.mjs own
+   live 3D dot glyph (JS) and tool-row breathing (JS) stop under reduced motion; unified-turn-ui.spec.mjs and turn-activity.spec.mjs own
    those checks. This test keeps the CSS-owned cues: agent steps stay still,
    recording is the one persistent ring. */
 test('agent steps and recording share one primary persistent cue', async ({ page }) => {

@@ -124,23 +124,33 @@ test('a live turn shows one spark glyph and reduced motion freezes it', async ({
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  /* The working cue is a vector spark ahead of a still caption: one inline
-     SVG path, turning and swelling; no sweeping hairline, no breathing text. */
+  /* The working cue is one vector glyph ahead of a still caption: twelve SVG
+     dots on a sphere turning in 3D, near dots larger and more opaque than far
+     ones; no sweeping hairline, no breathing text. */
   const spark = activity.locator(`${TURN.indicator} svg.thinking-spark`);
+  const dots = spark.locator('circle.thinking-spark-dot');
+  const dotPose = () => dots.evaluateAll((nodes) => nodes.map((n) => `${n.getAttribute('cx')},${n.getAttribute('cy')}`).join(' '));
   await expect(spark).toHaveCount(1);
-  await expect(spark.locator('path')).toHaveCount(1);
-  await expect(spark.locator('.thinking-spark-turn')).toHaveCSS('animation-name', 'thinking-spark-turn');
-  await expect(spark.locator('.thinking-spark-rays')).toHaveCSS('animation-name', 'thinking-spark-swell');
+  await expect(dots).toHaveCount(12);
+  await expect(spark).toHaveAttribute('data-motion', 'running');
+  const depth = await dots.evaluateAll((nodes) => nodes.map((n) => ({ r: Number(n.getAttribute('r')), o: Number(n.getAttribute('opacity')) })));
+  expect(depth.at(-1).r).toBeGreaterThan(depth[0].r * 1.6);
+  expect(depth.at(-1).o).toBeGreaterThan(depth[0].o * 2);
+  const firstPose = await dotPose();
+  await expect.poll(dotPose).not.toBe(firstPose);
   const captionOpacity = () => activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node.parentElement).opacity));
   await page.waitForTimeout(800);
   expect(await captionOpacity()).toBe(1);
   await activity.locator(TURN.toggle).click();
   await expect(toolRow(activity, 'search').locator('.tool-inline-tool-icon')).toHaveCSS('animation-name', 'none');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  /* Reduced motion keeps the glyph and drops every animation on it. */
+  /* Reduced motion keeps the glyph as one still frame. */
   await expect(spark).toBeVisible();
-  await expect(spark.locator('.thinking-spark-turn')).toHaveCSS('animation-name', 'none');
-  await expect(spark.locator('.thinking-spark-rays')).toHaveCSS('animation-name', 'none');
+  await expect(spark).toHaveAttribute('data-motion', 'static');
+  await expect(dots).toHaveCount(12);
+  const stillPose = await dotPose();
+  await page.waitForTimeout(400);
+  expect(await dotPose()).toBe(stillPose);
   expect(await captionOpacity()).toBe(1);
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
