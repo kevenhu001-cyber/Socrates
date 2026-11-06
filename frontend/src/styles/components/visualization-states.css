@@ -62,6 +62,10 @@
   font-family: var(--font-sans);
 }
 .visualization-stage.visualization-stage-collapsed { height: auto; min-height: 0; }
+/* A timeline, process or number line laid out at a phone stage's own width
+   is drawn 1:1: the stage takes the drawing's height. */
+.visualization-stage[data-semantic-layout="narrow"] { height: auto; }
+.visualization-stage[data-semantic-layout="narrow"] > svg { height: auto; }
 .visualization-fallback.visualization-fallback-inline {
   display: grid;
   place-content: start;

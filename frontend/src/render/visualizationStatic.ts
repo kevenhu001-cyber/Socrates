@@ -197,8 +197,47 @@ function svgStart(spec: VizSpec, width: number, height: number, escapeHtml: Esca
   return '<svg class="visualization-diagram ' + className + '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + escapeHtml(spec.accessibilitySummary) + '" style="font-family:' + fontFamily + '">';
 }
 
-export function renderTimelineVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel): string {
+/** The desktop layout width every semantic diagram is drawn at. */
+export const SEMANTIC_LAYOUT_WIDTH = 760;
+/** Below this stage width a diagram is laid out at the stage's own width. */
+export const SEMANTIC_NARROW_WIDTH = 560;
+
+/**
+ * The width a semantic diagram should be laid out at for a stage. A 760-wide
+ * drawing shrunk into a phone card left its 12px labels about 4px tall, so a
+ * narrow stage gets a layout drawn at its own width (never below 280).
+ */
+export function semanticLayoutWidth(stageWidth: number | null | undefined): number {
+  const value = Number(stageWidth);
+  if (!Number.isFinite(value) || value <= 0 || value >= SEMANTIC_NARROW_WIDTH) return SEMANTIC_LAYOUT_WIDTH;
+  return Math.max(280, Math.round(value));
+}
+
+/* Inline style: the shared node rule centres every label, and a stylesheet
+   beats an SVG presentation attribute. */
+const START = ' style="text-anchor:start"';
+
+/** Narrow timeline: a vertical rail, one row per event, labels at full size. */
+function renderNarrowTimeline(spec: VizSpec, items: VizItem[], width: number, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel): string {
+  const rowH = 58, top = 26, railX = 18, textX = 38;
+  const height = Math.max(1, items.length) * rowH + top;
+  const chars = Math.max(6, Math.floor((width - textX - 8) / 13));
+  let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-timeline');
+  if (items.length > 1) svg += '<path class="visualization-edge" d="M' + railX + ' ' + top + ' V' + (top + (items.length - 1) * rowH) + '"/>';
+  items.forEach(function (item, index) {
+    const y = top + index * rowH;
+    const title = [item.value, item.label, item.detail].filter(Boolean).join(' — ');
+    svg += '<g class="visualization-node"><title>' + escapeHtml(title) + '</title><circle cx="' + railX + '" cy="' + y + '" r="6" fill="currentColor"/>'
+      + '<text' + START + ' dominant-baseline="middle" x="' + textX + '" y="' + y + '">' + escapeHtml(truncateLabel(item.label, chars)) + '</text>';
+    if (item.value != null) svg += '<text class="visualization-node-detail"' + START + ' dominant-baseline="middle" x="' + textX + '" y="' + (y + 19) + '">' + escapeHtml(truncateLabel(item.value, chars + 4)) + '</text>';
+    svg += '</g>';
+  });
+  return svg + '</svg>';
+}
+
+export function renderTimelineVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel, layoutWidth = SEMANTIC_LAYOUT_WIDTH): string {
   const items: VizItem[] = spec.payload.items || [];
+  if (layoutWidth < SEMANTIC_NARROW_WIDTH) return renderNarrowTimeline(spec, items, layoutWidth, escapeHtml, fontFamily, truncateLabel);
   const width = 760, height = 260, axisY = 130;
   const left = 48, right = width - 48, gap = items.length > 1 ? (right - left) / (items.length - 1) : 0;
   let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-timeline');
@@ -215,10 +254,14 @@ export function renderTimelineVisualization(spec: VizSpec, escapeHtml: EscapeHtm
   return svg + '</svg>';
 }
 
-export function renderProcessVisualization(spec: VizSpec, markerId: string, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel): string {
+export function renderProcessVisualization(spec: VizSpec, markerId: string, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel, layoutWidth = SEMANTIC_LAYOUT_WIDTH): string {
   const items: VizItem[] = spec.payload.items || [];
-  const columns = Math.min(4, Math.ceil(Math.sqrt(items.length * 1.5)));
-  const rows = Math.ceil(items.length / columns), width = 760, cellW = width / columns, cellH = 112, height = rows * cellH + 24;
+  const width = layoutWidth;
+  /* Every step box is 152 wide: a narrow stage holds as many columns as fit
+     at full size instead of shrinking four of them. */
+  const fit = Math.max(1, Math.floor(width / 168));
+  const columns = Math.max(1, Math.min(fit, 4, Math.ceil(Math.sqrt(items.length * 1.5))));
+  const rows = Math.ceil(items.length / columns), cellW = width / columns, cellH = 112, height = rows * cellH + 24;
   const positions: Point[] = items.map(function (_, index) {
     const row = Math.floor(index / columns);
     let col = index % columns;
@@ -259,13 +302,16 @@ export function renderComparisonVisualization(spec: VizSpec, escapeHtml: EscapeH
   return svg + '</svg>';
 }
 
-export function renderNumberLineVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel): string {
+export function renderNumberLineVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel, layoutWidth = SEMANTIC_LAYOUT_WIDTH): string {
   const items: VizItem[] = (spec.payload.items || []).slice().sort(function (a, b) { return Number(a.value) - Number(b.value); });
   const values = items.map(function (item) { return Number(item.value); });
   let min = Math.min.apply(null, values), max = Math.max.apply(null, values);
   const spread = max - min || 2;
   min -= spread * .12; max += spread * .12;
-  const width = 760, height = 260, left = 52, right = width - 52, axisY = 128;
+  const narrow = layoutWidth < SEMANTIC_NARROW_WIDTH;
+  const width = layoutWidth, height = 260, left = narrow ? 28 : 52, right = width - left, axisY = 128;
+  /* Labels in one lane keep this much room; a narrow axis packs them tighter. */
+  const spacing = narrow ? 72 : 112;
   const xAt = function (value: number): number { return left + (value - min) / (max - min) * (right - left); };
   let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-number-line') + '<path class="visualization-edge" d="M' + left + ' ' + axisY + ' H' + right + '"/>';
   interface LaneEntry { item: VizItem; pointX: number; labelX: number }
@@ -273,12 +319,12 @@ export function renderNumberLineVisualization(spec: VizSpec, escapeHtml: EscapeH
   items.forEach(function (item, index) { laneItems[index % 4].push({ item: item, pointX: xAt(Number(item.value)), labelX: xAt(Number(item.value)) }); });
   laneItems.forEach(function (lane) {
     lane.sort(function (a, b) { return a.labelX - b.labelX; });
-    for (let i = 1; i < lane.length; i++) lane[i].labelX = Math.max(lane[i].labelX, lane[i - 1].labelX + 112);
+    for (let i = 1; i < lane.length; i++) lane[i].labelX = Math.max(lane[i].labelX, lane[i - 1].labelX + spacing);
     for (let j = lane.length - 1; j >= 0; j--) {
-      const maxX = right - 20 - (lane.length - 1 - j) * 112;
+      const maxX = right - 20 - (lane.length - 1 - j) * spacing;
       lane[j].labelX = Math.min(lane[j].labelX, maxX);
     }
-    for (let k = 1; k < lane.length; k++) lane[k].labelX = Math.max(lane[k].labelX, lane[k - 1].labelX + 112);
+    for (let k = 1; k < lane.length; k++) lane[k].labelX = Math.max(lane[k].labelX, lane[k - 1].labelX + spacing);
   });
   const layout = new Map<VizItem, { pointX: number; labelX: number; lane: number }>();
   laneItems.forEach(function (lane, laneIndex) {
@@ -290,7 +336,7 @@ export function renderNumberLineVisualization(spec: VizSpec, escapeHtml: EscapeH
     const top = point.lane < 2;
     const labelY = [42, 78, 184, 220][point.lane];
     const lineY = top ? labelY + 26 : labelY - 12;
-    svg += '<g class="visualization-node"><title>' + escapeHtml(item.label + ': ' + item.value) + '</title><path d="M' + point.pointX + ' ' + (axisY - 8) + ' V' + (axisY + 8) + '" stroke="currentColor" stroke-width="2"/><circle cx="' + point.pointX + '" cy="' + axisY + '" r="5" fill="currentColor"/><text text-anchor="middle" x="' + point.labelX + '" y="' + labelY + '">' + escapeHtml(truncateLabel(item.label, 14)) + '</text><text class="visualization-node-detail" text-anchor="middle" x="' + point.labelX + '" y="' + (top ? labelY + 18 : labelY + 17) + '">' + escapeHtml(Number(item.value).toPrecision(5).replace(/\.?(?:0+)$/, '')) + '</text><path class="visualization-edge" d="M' + point.pointX + ' ' + (top ? axisY - 8 : axisY + 8) + ' L' + point.labelX + ' ' + lineY + '"/></g>';
+    svg += '<g class="visualization-node"><title>' + escapeHtml(item.label + ': ' + item.value) + '</title><path d="M' + point.pointX + ' ' + (axisY - 8) + ' V' + (axisY + 8) + '" stroke="currentColor" stroke-width="2"/><circle cx="' + point.pointX + '" cy="' + axisY + '" r="5" fill="currentColor"/><text text-anchor="middle" x="' + point.labelX + '" y="' + labelY + '">' + escapeHtml(truncateLabel(item.label, narrow ? 8 : 14)) + '</text><text class="visualization-node-detail" text-anchor="middle" x="' + point.labelX + '" y="' + (top ? labelY + 18 : labelY + 17) + '">' + escapeHtml(Number(item.value).toPrecision(5).replace(/\.?(?:0+)$/, '')) + '</text><path class="visualization-edge" d="M' + point.pointX + ' ' + (top ? axisY - 8 : axisY + 8) + ' L' + point.labelX + ' ' + lineY + '"/></g>';
   });
   return svg + '</svg>';
 }
@@ -385,11 +431,12 @@ export function renderSemanticVisualization(
   escapeHtml: EscapeHtml,
   fontFamily: string,
   truncateLabel: TruncateLabel,
+  layoutWidth = SEMANTIC_LAYOUT_WIDTH,
 ): string | null {
-  if (spec.template === 'timeline') return renderTimelineVisualization(spec, escapeHtml, fontFamily, truncateLabel);
-  if (spec.template === 'process') return renderProcessVisualization(spec, markerId, escapeHtml, fontFamily, truncateLabel);
+  if (spec.template === 'timeline') return renderTimelineVisualization(spec, escapeHtml, fontFamily, truncateLabel, layoutWidth);
+  if (spec.template === 'process') return renderProcessVisualization(spec, markerId, escapeHtml, fontFamily, truncateLabel, layoutWidth);
   if (spec.template === 'comparison') return renderComparisonVisualization(spec, escapeHtml, fontFamily, truncateLabel);
-  if (spec.template === 'number_line') return renderNumberLineVisualization(spec, escapeHtml, fontFamily, truncateLabel);
+  if (spec.template === 'number_line') return renderNumberLineVisualization(spec, escapeHtml, fontFamily, truncateLabel, layoutWidth);
   if (spec.template === 'geometry') return renderGeometryVisualization(spec, escapeHtml, fontFamily, truncateLabel);
   if (spec.template === 'tree' || spec.template === 'mindmap') return renderStructureVisualization(spec, markerId, escapeHtml, fontFamily, truncateLabel);
   return null;

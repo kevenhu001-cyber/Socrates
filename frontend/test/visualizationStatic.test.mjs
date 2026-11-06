@@ -9,6 +9,7 @@ import {
   renderStructureVisualization,
   renderTimelineVisualization,
   renderVisualizationTable,
+  semanticLayoutWidth,
 } from '../src/render/visualizationStatic.ts';
 
 function escapeHtml(value) {
@@ -121,4 +122,32 @@ test('heatmap and radar tables expose their category axes', () => {
   }, escapeHtml, (_key, fallback) => fallback);
   assert.match(radar, /Speed/);
   assert.match(radar, />8</);
+});
+
+const viewBoxWidth = (svg) => Number(/viewBox="0 0 ([\d.]+) /.exec(svg)[1]);
+
+test('semantic diagrams lay out at a phone stage width instead of shrinking a 760 drawing', () => {
+  assert.equal(semanticLayoutWidth(0), 760);
+  assert.equal(semanticLayoutWidth(900), 760);
+  assert.equal(semanticLayoutWidth(354), 354);
+  assert.equal(semanticLayoutWidth(200), 280);
+
+  const items = [{ label: '柯西', value: '1825' }, { label: '黎曼', value: '1851' }, { label: '魏尔斯特拉斯', value: '1870' }];
+  const timeline = renderTimelineVisualization({ accessibilitySummary: 't', payload: { items } }, escapeHtml, 'sans-serif', truncateLabel, 354);
+  assert.equal(viewBoxWidth(timeline), 354);
+  assert.match(timeline, /魏尔斯特拉斯/);
+  assert.match(timeline, /text-anchor:start/);
+  assert.equal(viewBoxWidth(renderTimelineVisualization({ accessibilitySummary: 't', payload: { items } }, escapeHtml, 'sans-serif', truncateLabel)), 760);
+
+  const steps = ['找奇点', '判类型', '算留数', '求和'].map((label) => ({ label }));
+  const process = renderProcessVisualization({ accessibilitySummary: 'p', payload: { items: steps } }, 'm', escapeHtml, 'sans-serif', truncateLabel, 354);
+  assert.equal(viewBoxWidth(process), 354);
+  const boxes = [...process.matchAll(/<rect x="([-\d.]+)"[^>]*width="152"/g)].map((match) => Number(match[1]));
+  assert.equal(boxes.length, 4);
+  assert.ok(boxes.every((x) => x >= 0 && x + 152 <= 354), 'every step box fits the narrow stage');
+
+  const line = renderNumberLineVisualization({ accessibilitySummary: 'n', payload: { items: [{ label: '-2', value: -2 }, { label: '0', value: 0 }, { label: '3', value: 3 }] } }, escapeHtml, 'sans-serif', truncateLabel, 354);
+  assert.equal(viewBoxWidth(line), 354);
+  const xs = [...line.matchAll(/<circle cx="([-\d.]+)"/g)].map((match) => Number(match[1]));
+  assert.ok(xs.every((x) => x > 0 && x < 354));
 });
