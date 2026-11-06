@@ -76,41 +76,25 @@ for (const mobile of [false, true]) {
   });
 }
 
-test('display modes preserve node identity, edited values and tabs across fullscreen', async ({ page }) => {
+test('inline results preserve node identity, edited values and tabs', async ({ page }) => {
   await prepareChatWorkbench(page, { messages: [message] });
   const shell = page.locator('.intui-surface-shell');
   const count = page.locator('[data-intui-id="count"]');
   await page.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect(count).toContainText('3');
-  await expect(page.getByRole('tab')).toHaveCount(0);
-  await shell.locator('.intui-surface-expand').click();
-  await page.getByRole('tab', { name: 'Second', exact: true }).click();
-  await page.keyboard.press('Escape');
   await expect(shell).toHaveAttribute('data-display-mode', 'inline');
+  /* Views are switchable where the result sits: no separate expanded state. */
+  const secondTab = page.getByRole('tab', { name: 'Second', exact: true });
+  await expect(secondTab).toHaveCount(1);
+  await expect(page.getByText('First view', { exact: true })).toBeVisible();
   await count.evaluate((node) => { window.__originalMetricNode = node; });
-  for (const mode of ['compact', 'carousel', 'pip', 'inline']) {
-    await shell.getByRole('button', { name: 'Display mode', exact: true }).click();
-    await page.getByRole('menuitemradio', { name: { compact: 'Compact', carousel: 'Carousel', pip: 'Floating', inline: 'Inline' }[mode], exact: true }).click();
-    await expect(shell).toHaveAttribute('data-display-mode', mode);
-    await expect(count).toContainText('3');
-  }
-  await shell.getByRole('button', { name: 'Display mode', exact: true }).click();
-  await page.getByRole('menuitemradio', { name: 'Floating', exact: true }).click();
-  await shell.getByRole('button', { name: 'Inline', exact: true }).click();
-  await expect(shell).toHaveAttribute('data-display-mode', 'inline');
-  await expect(count).toContainText('3');
-  const expand = shell.locator('.intui-surface-toolbar > button').first();
-  await expand.click();
-  await expect(shell).toHaveAttribute('data-display-mode', 'fullscreen');
-  expect(await shell.evaluate((node) => node.matches(':modal'))).toBe(false);
-  await expect(page.getByRole('tab', { name: 'Second', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await secondTab.click();
+  await expect(secondTab).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('Second view', { exact: true })).toBeVisible();
-  await page.screenshot({ path: 'test-results/intelligent-ui-fullscreen.png' });
-  await page.keyboard.press('Escape');
-  await expect(shell).toHaveAttribute('data-display-mode', 'inline');
-  await expect(expand).toBeFocused();
+  await expect(page.getByText('First view', { exact: true })).toHaveCount(0);
   expect(await count.evaluate((node) => node === window.__originalMetricNode)).toBe(true);
   await expect(count).toContainText('3');
+  await page.screenshot({ path: 'test-results/intelligent-ui-inline-tabs.png' });
 });
 
 test('a live turn shows one spark glyph and reduced motion freezes it', async ({ page }) => {

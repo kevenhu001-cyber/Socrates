@@ -1,5 +1,6 @@
 import { Demonstration } from './demonstration/Demonstration';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
+import { Switch as ShadcnSwitch } from '../ui/shadcn/switch';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button as BaseButton } from '../ui/Button';
@@ -8,7 +9,6 @@ import { LazyOpenUiBlock } from './LazyOpenUiBlock';
 import { Icon } from '../../ui/Icon';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { i18n } from '../legacy/gateway';
-import { useExpandedSurfaceState } from './IntelligentSurface';
 import {
   intelligenceUiChartDomain,
   isSafeIntelligenceUiStateKey,
@@ -210,6 +210,8 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
           return (
             <BaseButton
               type="button"
+              variant="outline"
+              size="sm"
               key={`${node.id}-${index}`}
               className={selected ? 'is-selected' : ''}
               aria-pressed={selected}
@@ -232,20 +234,17 @@ function UiToggle({ node, context }: { node: IntelligenceUiNode; context: Render
   const bound = context.state[bind];
   const checked = typeof bound === 'boolean' ? bound : node.checked === true;
   return (
-    <ShadcnLabel className="intui-toggle" data-intui-id={node.id}>
+    <div className="intui-toggle" data-intui-id={node.id}>
       <span className="intui-toggle-copy">
         {label ? <span className="intui-toggle-label">{label}</span> : null}
         {description ? <span className="intui-toggle-description">{description}</span> : null}
       </span>
-      <ShadcnNativeControl
-        type="checkbox"
-        role="switch"
+      <ShadcnSwitch
         checked={checked}
-        aria-checked={checked}
         aria-label={label || 'Toggle'}
-        onChange={(event) => setBoundValue(context, bind, event.currentTarget.checked)}
+        onCheckedChange={(next) => setBoundValue(context, bind, next)}
       />
-    </ShadcnLabel>
+    </div>
   );
 }
 
@@ -257,6 +256,8 @@ function UiButton({ node, context }: { node: IntelligenceUiNode; context: Render
   return (
     <BaseButton
       type="button"
+      variant={node.primary === true ? 'default' : 'outline'}
+      size="desktop"
       className={`intui-button${node.primary === true ? ' is-primary' : ''}`}
       data-intui-id={node.id}
       disabled={promptDisabled}
@@ -324,6 +325,13 @@ function resolvedChartPoints(node: IntelligenceUiNode, context: RenderContext): 
   return points;
 }
 
+function chartTickLabel(value: number): string {
+  if (!Number.isFinite(value)) return '';
+  if (Math.abs(value) >= 1000) return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (Number.isInteger(value)) return String(value);
+  return value.toFixed(1);
+}
+
 function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const points = resolvedChartPoints(node, context);
   if (!points.length) return null;
@@ -331,24 +339,34 @@ function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderC
   const kind = node.kind === 'line' ? 'line' : 'bar';
   const [domainMin, domainMax] = intelligenceUiChartDomain(points.map((point) => point.value));
   const range = Math.max(Number.EPSILON, domainMax - domainMin);
-  const width = 320;
-  const height = 128;
-  const padX = 12;
-  const padY = 12;
-  const plotWidth = width - padX * 2;
-  const plotHeight = height - padY * 2;
-  const xAt = (index: number) => padX + plotWidth * (index + 0.5) / points.length;
-  const yAt = (value: number) => padY + (domainMax - value) / range * plotHeight;
+  const width = 640;
+  const height = 220;
+  const padLeft = 34;
+  const padRight = 12;
+  const padTop = 16;
+  const padBottom = 30;
+  const plotWidth = width - padLeft - padRight;
+  const plotHeight = height - padTop - padBottom;
+  const xAt = (index: number) => padLeft + plotWidth * (index + 0.5) / points.length;
+  const yAt = (value: number) => padTop + (domainMax - value) / range * plotHeight;
   const baseline = yAt(0);
   const slotWidth = plotWidth / points.length;
-  const barWidth = Math.max(3, Math.min(24, slotWidth * 0.62));
+  const barWidth = Math.max(8, Math.min(48, slotWidth * 0.56));
   const polyline = points.map((point, index) => `${xAt(index).toFixed(2)},${yAt(point.value).toFixed(2)}`).join(' ');
+  const ticks = [domainMin, domainMin + range / 2, domainMax];
+  const labelEvery = Math.max(1, Math.ceil(points.length / 8));
 
   return (
     <figure className="intui-chart" data-intui-id={node.id} data-kind={kind}>
       {title ? <figcaption className="intui-chart-title">{title}</figcaption> : null}
       <svg className="intui-chart-plot" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title || 'Chart'}>
-        <line className="intui-chart-axis" x1={padX} x2={width - padX} y1={baseline} y2={baseline} />
+        {ticks.map((tick, index) => (
+          <g key={`${node.id}-grid-${index}`}>
+            {tick !== baseline ? <line className="intui-chart-grid" x1={padLeft} x2={width - padRight} y1={yAt(tick)} y2={yAt(tick)} /> : null}
+            <text className="intui-chart-tick" x={padLeft - 8} y={yAt(tick) + 4} textAnchor="end">{chartTickLabel(tick)}</text>
+          </g>
+        ))}
+        <line className="intui-chart-axis" x1={padLeft} x2={width - padRight} y1={baseline} y2={baseline} />
         {kind === 'bar' ? points.map((point, index) => {
           const y = yAt(point.value);
           const rectY = Math.min(y, baseline);
@@ -361,7 +379,7 @@ function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderC
               y={rectY}
               width={barWidth}
               height={rectHeight}
-              rx={2}
+              rx={4}
             >
               <title>{asProse(`${point.label}: ${asText(point.value)}`)}</title>
             </rect>
@@ -375,22 +393,30 @@ function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderC
                 className="intui-chart-point"
                 cx={xAt(index)}
                 cy={yAt(point.value)}
-                r={2.5}
+                r={3}
               >
                 <title>{asProse(`${point.label}: ${asText(point.value)}`)}</title>
               </circle>
             ))}
           </>
         )}
+        {points.map((point, index) => index % labelEvery === 0 ? (
+          <text className="intui-chart-tick" key={`${node.id}-label-${index}`} x={xAt(index)} y={height - 8} textAnchor="middle">
+            {point.label}
+          </text>
+        ) : null)}
+        {points.length <= 8 ? points.map((point, index) => (
+          <text
+            className="intui-chart-tick"
+            key={`${node.id}-amount-${index}`}
+            x={xAt(index)}
+            y={point.value >= 0 ? yAt(point.value) - 6 : yAt(point.value) + 14}
+            textAnchor="middle"
+          >
+            {asText(point.value)}
+          </text>
+        )) : null}
       </svg>
-      <div className="intui-chart-values">
-        {points.map((point, index) => (
-          <div className="intui-chart-value" key={`${node.id}-value-${index}`}>
-            <span>{point.label}</span>
-            <strong>{asText(point.value)}</strong>
-          </div>
-        ))}
-      </div>
     </figure>
   );
 }
@@ -415,7 +441,6 @@ function normalizedTabs(node: IntelligenceUiNode, context: RenderContext): TabIt
 }
 
 function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
-  const expanded = useExpandedSurfaceState();
   const tabs = normalizedTabs(node, context);
   const [localTab, setLocalTab] = useState(() => tabs[0]?.id || '');
   if (!tabs.length) return null;
@@ -447,7 +472,7 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
 
   return (
     <section className="intui-tabs" data-intui-id={node.id}>
-      {expanded ? <div
+      <div
         className="intui-tab-list"
         role="tablist"
         aria-label={asProse(resolve(node.label, context)) || 'Views'}
@@ -469,11 +494,8 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
             {tab.label}
           </BaseButton>
         ))}
-      </div> : <div className="intui-tabs-preview">
-        <span id={activeTabId}>{tabs.find((tab) => tab.id === active)?.label}</span>
-        <span>{i18n('intui.expandToExplore', 'Expand to explore views')}</span>
-      </div>}
-      <div className="intui-tab-panel" id={panelId} role={expanded ? 'tabpanel' : 'region'} aria-labelledby={activeTabId} tabIndex={expanded ? 0 : undefined}>
+      </div>
+      <div className="intui-tab-panel" id={panelId} role="tabpanel" aria-labelledby={activeTabId} tabIndex={0}>
         {children.map((child) => {
           const childTab = typeof child.tab === 'string' ? child.tab : '';
           if (childTab && childTab !== active) return null;
@@ -519,7 +541,7 @@ function EntityFields({ fields, nodeId, context }: { fields: Record<string, unkn
 
 function EntityAction({ action, label, disabled, context }: { action: UiAction | null; label: string; disabled: boolean; context: RenderContext }) {
   if (!action || !label) return null;
-  return <BaseButton type="button" className="intui-button intui-entity-action" disabled={disabled} onClick={(event) => executeAction(action, context, event)}>{label}</BaseButton>;
+  return <BaseButton type="button" variant="outline" size="desktop" className="intui-button intui-entity-action" disabled={disabled} onClick={(event) => executeAction(action, context, event)}>{label}</BaseButton>;
 }
 
 function UiEntity({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {

@@ -239,50 +239,29 @@
   flex-wrap: wrap;
   gap: var(--ui-space-xs);
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--ui-control-sm);
-  padding: 0 var(--ui-space-md);
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-control);
-  background: transparent;
-  color: var(--muted-foreground);
+/* Controls carry their own fill, border and state from the shadcn primitive;
+   this file only pins the chip geometry the transcript uses. */
+.msg.assistant .msg-body.is-declarative .intui-choice-options button {
+  border-radius: var(--ui-radius-pill);
   font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / 1 var(--font-sans);
-  cursor: pointer;
-  transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease, opacity var(--ui-duration-hover) ease;
+  touch-action: manipulation;
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button):hover:not(:disabled) {
-  border-color: var(--ui-border-strong);
-  background: var(--ui-bg-hover-ghost);
-  color: var(--foreground);
+.msg.assistant .msg-body.is-declarative .intui-choice-options button:not(.is-selected) {
+  background: transparent;
 }
 .msg.assistant .msg-body.is-declarative .intui-choice-options button.is-selected {
-  border-color: var(--ui-border-strong);
-  background: var(--ui-bg-pill-selected);
-  color: var(--foreground);
-}
-.msg.assistant .msg-body.is-declarative .intui-button.is-primary {
   border-color: var(--primary);
   background: var(--primary);
   color: var(--primary-foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-button {
-  min-height: var(--ui-control-md);
-  padding-inline: var(--ui-space-lg);
-  font-size: var(--ui-font-size-sm);
-  line-height: var(--ui-line-height-normal);
+  border-radius: var(--ui-radius-pill);
   touch-action: manipulation;
 }
 .msg.assistant .msg-body.is-declarative .intui-button.is-primary:hover:not(:disabled) {
   opacity: var(--ui-press-opacity);
-  background: var(--primary);
-  color: var(--primary-foreground);
 }
 .msg.assistant .msg-body.is-declarative .intui-button:disabled {
-  border-color: var(--ui-border-subtle);
-  color: var(--ui-text-disabled);
   cursor: default;
   opacity: .5;
 }
@@ -301,21 +280,20 @@
   background: transparent;
   color: var(--foreground);
 }
+/* A switch is a setting, not a card: the row sits on the transcript with the
+   same quiet rhythm as the rest of the result. */
 .msg.assistant .msg-body.is-declarative .intui-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--ui-space-md);
+  gap: var(--ui-space-lg);
   min-width: 0;
-  padding: var(--ui-space-sm) var(--ui-space-md);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
-  background: var(--ui-bg-surface);
-  cursor: pointer;
-  transition: border-color var(--ui-duration-hover) ease, background-color var(--ui-duration-hover) ease;
+  padding: var(--ui-space-sm) 0;
+  border: 0;
+  background: transparent;
 }
-.msg.assistant .msg-body.is-declarative .intui-toggle:hover {
-  border-color: var(--border);
+.msg.assistant .msg-body.is-declarative .intui-toggle + .intui-toggle {
+  border-top: 1px solid var(--ui-border-subtle);
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle-copy {
   display: grid;
@@ -333,38 +311,7 @@
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-normal);
 }
-.msg.assistant .msg-body.is-declarative .intui-toggle input {
-  position: relative;
-  flex: none;
-  inline-size: 32px;
-  block-size: 20px;
-  margin: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--ui-radius-pill);
-  background: var(--secondary);
-  cursor: pointer;
-  appearance: none;
-  transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease;
-}
-.msg.assistant .msg-body.is-declarative .intui-toggle input::before {
-  content: '';
-  position: absolute;
-  inset-block-start: 2px;
-  inset-inline-start: 2px;
-  inline-size: 14px;
-  block-size: 14px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-text-tertiary);
-  transition: transform var(--ui-duration-fast) var(--ui-ease-out), background-color var(--ui-duration-hover) ease;
-}
-.msg.assistant .msg-body.is-declarative .intui-toggle input:checked {
-  border-color: var(--primary);
-  background: var(--primary);
-}
-.msg.assistant .msg-body.is-declarative .intui-toggle input:checked::before {
-  transform: translateX(12px);
-  background: var(--primary-foreground);
-}
+.msg.assistant .msg-body.is-declarative .intui-toggle [data-slot="switch"] { flex: none; }
 .msg.assistant .msg-body.is-declarative .intui-table-wrap {
   max-width: 100%;
   overflow-x: auto;
@@ -430,58 +377,48 @@
   font-weight: var(--ui-font-weight-semibold);
   line-height: var(--ui-line-height-normal);
 }
+/* The SVG owns a wide viewBox and no fixed height, so the plot uses the
+   transcript width instead of letterboxing into the middle of it. */
 .intui .intui-chart-plot {
   display: block;
   width: 100%;
-  height: clamp(8rem, 24vw, 10rem);
+  height: auto;
   overflow: visible;
 }
-.intui .intui-chart-axis {
+.intui .intui-chart-grid {
   stroke: var(--ui-border-subtle);
   stroke-width: 1;
+  shape-rendering: crispEdges;
   vector-effect: non-scaling-stroke;
 }
+.intui .intui-chart-axis {
+  stroke: var(--ui-border-default);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+  vector-effect: non-scaling-stroke;
+}
+.intui .intui-chart-tick {
+  fill: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  font-variant-numeric: tabular-nums;
+}
 .intui .intui-chart-bar {
-  fill: var(--primary);
-  opacity: .82;
+  fill: var(--chart-1);
+  opacity: .9;
 }
 .intui .intui-chart-line {
   fill: none;
-  stroke: var(--primary);
+  stroke: var(--chart-1);
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2;
+  stroke-width: 2.25;
   vector-effect: non-scaling-stroke;
 }
 .intui .intui-chart-point {
-  fill: var(--ui-bg-raised);
-  stroke: var(--primary);
+  fill: var(--background);
+  stroke: var(--chart-1);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
-}
-.intui .intui-chart-values {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
-  gap: var(--ui-space-xs) var(--ui-space-md);
-}
-.intui .intui-chart-value {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--ui-space-xs);
-  min-width: 0;
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xs);
-}
-.intui .intui-chart-value span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.intui .intui-chart-value strong {
-  color: var(--foreground);
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--ui-font-weight-medium);
 }
 
 .intui .intui-tabs {
@@ -628,10 +565,7 @@
    to the surface itself instead of the window. */
 @container (max-width: 30rem) {
   .msg.assistant .msg-body.is-declarative .intui-grid {
-    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
-  }
-  .msg.assistant .msg-body.is-declarative .intui-metric {
-    padding: var(--ui-space-sm);
+    grid-template-columns: repeat(auto-fit, minmax(min(6.5rem, 100%), 1fr));
   }
   .msg.assistant .msg-body.is-declarative .intui-entity {
     grid-template-columns: 1fr;
@@ -646,10 +580,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .msg.assistant .msg-body.is-declarative .intui-progress-value,
-  .msg.assistant .msg-body.is-declarative .intui-toggle,
-  .msg.assistant .msg-body.is-declarative .intui-toggle input,
-  .msg.assistant .msg-body.is-declarative .intui-toggle input::before {
+  .msg.assistant .msg-body.is-declarative .intui-progress-value {
     transition: none;
   }
   .msg.assistant .msg-body.is-declarative .intui-stream-dot {
@@ -658,16 +589,8 @@
   }
 }
 
-/* Presentation belongs to the shell; nodes and their state remain mounted. */
-.msg.assistant .msg-body.is-declarative .intui:has(> .intui-surface-shell[data-display-mode="fullscreen"]) {
-  /* Size containment would make the fixed surface relative to its inline
-     card. Release it only for expansion; ordinary cards retain containment. */
-  container-type: normal;
-}
-.msg.assistant:has(.intui-surface-shell[data-display-mode="fullscreen"]) {
-  content-visibility: visible;
-  contain: none;
-}
+/* The surface is a plain container in the answer: no frame, no toolbar, no
+   presentation modes. Nodes keep their state because nothing remounts. */
 .intui-surface-shell {
   --intui-action-size: var(--ui-control-sm);
   position: relative;
@@ -691,21 +614,9 @@
   gap: var(--ui-space-md);
   padding: 0;
 }
-.intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]) .intui-surface-header {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 2;
-  padding: 0;
-  pointer-events: none;
-}
 .intui-surface-heading {
   flex: 1 1 auto;
   min-width: 0;
-  padding-block: calc((var(--intui-action-size) - var(--ui-space-xl)) / 2);
-}
-.intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]) .intui-surface-heading {
-  padding-block: 0;
 }
 #appShell #msgList .msg-body .intui-surface-title {
   margin: 0;
@@ -716,61 +627,6 @@
   text-wrap: pretty;
 }
 .intui-surface-description { margin-top: var(--ui-space-xs); }
-.intui-surface-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--ui-space-xs);
-  flex: 0 0 auto;
-  padding: 0;
-  background: transparent;
-  opacity: 0.72;
-  transition: opacity var(--ui-duration-hover) ease;
-}
-.intui-surface-shell:hover .intui-surface-toolbar,
-.intui-surface-toolbar:focus-within {
-  opacity: 1;
-}
-.intui-surface-toolbar button {
-  min-height: var(--intui-action-size);
-  padding: 0;
-  border: 0;
-  border-radius: var(--ui-radius-control);
-  background: transparent;
-  color: var(--muted-foreground);
-  font: inherit;
-  font-size: var(--ui-font-size-sm);
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
-}
-.intui-surface-toolbar button:hover {
-  background: var(--ui-bg-hover-ghost);
-  color: var(--foreground);
-}
-.intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]) .intui-surface-toolbar {
-  pointer-events: auto;
-}
-/* Generated content can begin with a grid, a control or a nested card. Keep
-   toolbar clearance outside the document instead of shrinking its headings. */
-.intui-surface-shell:not([data-has-title="true"]):not([data-display-mode="fullscreen"]):not([data-display-mode="pip"]):has(> .intui-surface-document .intui-openui) > .intui-surface-header {
-  position: static;
-  padding: 0;
-}
-.intui-surface-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-.intui-surface-expand,
-.intui-surface-return,
-.intui-surface-options { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: var(--intui-action-size); }
 .intui-surface-menu {
   min-width: 10rem;
   padding: var(--ui-space-xs);
@@ -812,8 +668,6 @@
   cursor: pointer;
 }
 .msg.assistant .msg-body.is-declarative .intui-panel-more:hover { background: var(--accent); color: var(--foreground); }
-.intui-tabs-preview { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--ui-space-sm); color: var(--muted-foreground); font-size: var(--ui-font-size-xs); }
-.intui-surface-menu [aria-checked="false"] .intui-surface-selected { visibility: hidden; }
 .intui-surface-document { display: grid; align-content: start; gap: var(--ui-space-md); min-width: 0; padding: var(--ui-space-sm) 0; container-type: inline-size; }
 .intui-surface-document > * { min-width: 0; }
 .intui-surface-document > .intui-panel,
@@ -823,73 +677,6 @@
   border-radius: 0;
   background: transparent;
 }
-.intui-surface-shell[data-display-mode="compact"] .intui-surface-document {
-  /* Compact changes density, keeping the conversation as the scroll owner. */
-  gap: var(--ui-space-md);
-  padding: var(--ui-space-xs) 0;
-}
-.msg.assistant .msg-body.is-declarative .intui-surface-shell[data-display-mode="compact"] .intui-panel-body { gap: var(--ui-space-md); }
-.intui-surface-shell[data-display-mode="carousel"] .intui-surface-document {
-  display: flex;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-}
-.intui-surface-shell[data-display-mode="carousel"] .intui-surface-document > * {
-  flex: 0 0 85%;
-  min-width: 0;
-  scroll-snap-align: start;
-}
-.intui-surface-shell[data-display-mode="fullscreen"] {
-  position: fixed;
-  inset: auto;
-  top: var(--intui-expanded-top, 0px);
-  left: var(--intui-expanded-left, 0px);
-  width: var(--intui-expanded-width, 100vw);
-  height: var(--intui-expanded-height, 80dvh);
-  max-height: none;
-  z-index: var(--ui-z-panel);
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: var(--background);
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-.intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-header {
-  position: sticky;
-  top: 0;
-  z-index: var(--ui-z-panel);
-  padding: var(--ui-space-md) max(var(--ui-foundation-space-md), calc((100% - var(--ui-content-chat)) / 2));
-  background: var(--background);
-  border-bottom: 1px solid var(--ui-border-subtle);
-}
-.intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-toolbar { background: var(--background); }
-.intui-surface-shell[data-display-mode="fullscreen"] .intui-surface-document {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: calc(var(--ui-content-chat) + 2 * var(--ui-foundation-space-md));
-  margin: auto;
-  padding-block: var(--ui-space-xl);
-}
-.intui-surface-shell::backdrop { background: transparent; pointer-events: none; }
-.intui-surface-shell[data-display-mode="pip"] {
-  position: fixed;
-  inset: auto var(--ui-space-sm) var(--ui-space-sm) auto;
-  z-index: var(--ui-z-panel);
-  width: min(26rem, calc(100vw - var(--ui-space-md) - var(--ui-space-xs)));
-  max-height: 60dvh;
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 0;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-lg);
-  box-shadow: var(--ui-shadow-popover);
-  background: var(--background);
-}
-.intui-surface-shell:is([data-display-mode="pip"], [data-display-mode="fullscreen"]) .intui-surface-document { padding-inline: var(--ui-space-lg); }
-.intui-surface-shell[data-display-mode="pip"] .intui-surface-header { padding: var(--ui-space-sm) var(--ui-space-lg) 0; }
 
 @media (max-width: 768px) {
   .intui-surface-shell { --intui-action-size: var(--ui-control-touch); }

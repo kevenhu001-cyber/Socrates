@@ -1,10 +1,8 @@
-import { createContext, useContext, useId, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { MathText } from '../rn/useInlineMath';
 import { i18n } from '../legacy/gateway';
 
 export type IntelligentDisplayMode = 'inline' | 'compact' | 'carousel' | 'fullscreen' | 'pip';
-const ExpandedSurface = createContext(false);
-export const useExpandedSurfaceState = () => useContext(ExpandedSurface);
 
 /** Interactive results stay embedded in the answer. */
 export function IntelligentSurface({ children, title, description }: {
@@ -20,6 +18,6 @@ export function IntelligentSurface({ children, title, description }: {
       {title ? <h3 id={titleId} className="intui-panel-title intui-surface-title"><MathText text={title} /></h3> : null}
       {description ? <div className="intui-panel-description intui-surface-description"><MathText text={description} /></div> : null}
     </div></header> : null}
-    <ExpandedSurface.Provider value={false}><div className="intui-surface-document">{children}</div></ExpandedSurface.Provider>
+    <div className="intui-surface-document">{children}</div>
   </section>;
 }

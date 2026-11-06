@@ -203,12 +203,6 @@ export const en = {
     "intui.routeUnavailable":"Street routing is unavailable. Only the places are shown.",
     "intui.routeDriving":"Driving route overview from OSRM / OpenStreetMap; not walking or turn-by-turn directions.",
     "intui.surface":"Interactive result",
-    "intui.displayMode":"Display mode",
-    "intui.expandToExplore":"Expand to explore views",
-    "intui.inline":"Inline",
-    "intui.compact":"Compact",
-    "intui.carousel":"Carousel",
-    "intui.pip":"Floating",
 
     "a11y.skipToContent":"Skip to content",
     /* chrome.* — static shell tooltips / aria labels (sidebar chrome, display

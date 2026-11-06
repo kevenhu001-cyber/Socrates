@@ -9,7 +9,7 @@ const nodes = [
 const answer = ['## 从一个小问题开始', '', '读懂概念，再逐步练习。', '', '```socrates-ui', ...nodes.map((node) => JSON.stringify(node)), '```'].join('\n');
 
 for (const theme of ['light', 'dark']) for (const size of ['desktop', 'mobile']) {
-  test(`result controls disclose progressively without nested scrolling: ${theme}, ${size}`, async ({ page }) => {
+  test(`result stays inline without presentation chrome or nested scrolling: ${theme}, ${size}`, async ({ page }) => {
     await page.addInitScript((value) => localStorage.setItem('socrates-theme', value), theme);
     await prepareChatWorkbench(page, { lang: 'zh', viewport: WORKBENCH_VIEWPORTS[size], messages: [
       { clientId: 'guidelines-answer', role: 'assistant', type: 'assistant', rawText: answer },
@@ -22,23 +22,11 @@ for (const theme of ['light', 'dark']) for (const size of ['desktop', 'mobile'])
     await expect(page.getByRole('menu')).toHaveCount(0);
     const options = result.getByRole('button', { name: '展示模式', exact: true });
     const expand = result.locator('.intui-surface-expand');
-    for (const control of [options, expand]) {
-      const box = await control.boundingBox();
-      expect(box.width).toBeGreaterThanOrEqual(size === 'mobile' ? 44 : 32);
-      expect(box.height).toBeGreaterThanOrEqual(size === 'mobile' ? 44 : 32);
-    }
-    await options.focus();
-    await options.press('Enter');
-    const inline = page.getByRole('menuitemradio', { name: '内嵌', exact: true });
-    const compact = page.getByRole('menuitemradio', { name: '紧凑', exact: true });
-    await expect(inline).toBeFocused();
-    await expect(inline).toHaveAttribute('aria-checked', 'true');
-    await page.keyboard.press('ArrowDown');
-    await expect(compact).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(result).toHaveAttribute('data-display-mode', 'compact');
-    await expect(page.getByRole('menu')).toBeHidden();
-    await expect(options).toBeFocused();
+    /* The result has no chrome of its own: it is read where the answer puts it. */
+    await expect(options).toHaveCount(0);
+    await expect(expand).toHaveCount(0);
+    await expect(result.locator('.intui-surface-toolbar')).toHaveCount(0);
+    await expect(result).toHaveCSS('border-top-width', '0px');
     const geometry = await result.locator('.intui-surface-document').evaluate((node) => ({
       height: node.getBoundingClientRect().height,
       overflow: getComputedStyle(node).overflowY,
@@ -54,20 +42,8 @@ for (const theme of ['light', 'dark']) for (const size of ['desktop', 'mobile'])
     const lastBox = await lastStep.boundingBox();
     const composerBox = await page.locator('.composer-shell').boundingBox();
     expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(composerBox.y + 1);
-    await options.click();
-    await expect(compact).toBeFocused();
-    await expect(page.getByRole('menu')).toHaveCSS('opacity', '1');
-    await page.screenshot({ path: `test-results/ui-guidelines-menu-${encodeURIComponent(theme)}-${encodeURIComponent(size)}.png` });
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('menu')).toBeHidden();
-    await expect(options).toBeFocused();
-    await expand.click();
-    await expect(result).toHaveAttribute('data-display-mode', 'fullscreen');
-    await page.keyboard.press('Escape');
-    await expect(result).toHaveAttribute('data-display-mode', 'compact');
-    await expect(expand).toBeFocused();
-    await expect(result.getByRole('slider', { name: '每日学习时长' })).toHaveValue('2');
     await page.screenshot({ path: `test-results/ui-guidelines-${encodeURIComponent(theme)}-${encodeURIComponent(size)}.png` });
+    await expect(result.getByRole('slider', { name: '每日学习时长' })).toHaveValue('2');
   });
 }
 
@@ -105,13 +81,18 @@ for (const size of ['desktop', 'mobile']) {
     const send = page.locator('#composerPrimaryBtn');
     const editor = page.locator('#composerRoot .rich-composer-editor');
     await expect(send).toBeDisabled();
-    const disabledOpacity = await send.evaluate((node) => Number(getComputedStyle(node).opacity));
+    const disabledDisc = await send.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { fill: style.backgroundColor, opacity: Number(style.opacity) };
+    });
     await editor.fill('Help me refine this plan.');
     await expect(send).toBeEnabled();
-    // The send button fades from the disabled 0.3 to its resting opacity, so
-    // the first frame after enabling still reports the disabled value.
-    await expect.poll(() => send.evaluate((node) => Number(getComputedStyle(node).opacity)))
-      .toBeGreaterThan(disabledOpacity);
+    // Desktop swaps the disc fill from quiet grey to the action colour at full
+    // opacity; the phone keeps the action colour and fades from 0.5.
+    await expect.poll(() => send.evaluate((node, baseline) => {
+      const style = getComputedStyle(node);
+      return style.backgroundColor !== baseline.fill || Number(style.opacity) > baseline.opacity;
+    }, disabledDisc)).toBe(true);
     await page.screenshot({ path: `test-results/ui-detail-actions-${encodeURIComponent(size)}.png` });
   });
 }

@@ -24,7 +24,7 @@ function message(format) {
 
 for (const format of ['native', 'openui']) {
   for (const mode of ['desktop', 'dark', 'mobile']) {
-    test(`${format} presentation stays readable and retains edits across fullscreen (${mode})`, async ({ page }) => {
+    test(`${format} presentation stays readable and retains edits inline (${mode})`, async ({ page }) => {
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('console', (entry) => { if (entry.type() === 'error') errors.push(entry.text()); });
@@ -41,7 +41,7 @@ for (const format of ['native', 'openui']) {
       if (format === 'native') {
         await expect(shell.getByRole('heading', { name: '本周学习计划', exact: true })).toHaveCount(1);
         await expect(shell).toHaveAccessibleName('本周学习计划');
-      } else await expect(shell.locator('.intui-surface-label')).toHaveText('交互结果');
+      } else await expect(shell).toHaveAccessibleName('交互结果');
       await expect(shell).toContainText('本周学习计划');
       const slider = shell.getByRole('slider', { name: '每日学习时长' });
       await slider.focus();
@@ -53,29 +53,19 @@ for (const format of ['native', 'openui']) {
       } else {
         await expect(slider).toHaveCSS('outline-style', 'none');
       }
-      const expand = shell.locator('.intui-surface-expand');
-      await expand.scrollIntoViewIfNeeded();
-      const bounds = await shell.locator('.intui-surface-toolbar').evaluate((toolbar) => {
-        const rect = toolbar.getBoundingClientRect();
-        return [...toolbar.children].every((child) => {
-          const box = child.getBoundingClientRect();
-          return box.left >= rect.left && box.right <= rect.right;
-        });
-      });
-      expect(bounds).toBe(true);
+      /* The result is part of the answer: no card frame and no presentation
+         toolbar, so nothing competes with the prose around it. */
+      await expect(shell).toHaveCSS('border-top-width', '0px');
+      await expect(shell).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+      await expect(shell).toHaveAttribute('data-display-mode', 'inline');
+      await expect(shell.locator('.intui-surface-toolbar')).toHaveCount(0);
+      await expect(shell.locator('.intui-surface-expand')).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
       await page.screenshot({ path: `test-results/intui-${encodeURIComponent(format)}-${encodeURIComponent(mode)}.png` });
-      await expand.click();
-      await expect(shell).toHaveAttribute('data-display-mode', 'fullscreen');
-      expect(await shell.evaluate((node) => node.matches(':modal'))).toBe(false);
-      await expect(shell).toHaveAttribute('aria-modal', 'false');
-      await expect(slider).toHaveValue('3');
+      /* An inline result must not capture the composer underneath it. */
       const editor = page.locator('#composerRoot .rich-composer-editor');
       await editor.fill('根据当前计划，帮我调整下一步。');
       await expect(editor).toBeFocused();
-      const composerBox = await page.locator('.composer-shell').boundingBox();
-      const surfaceBox = await shell.boundingBox();
-      expect(surfaceBox.y + surfaceBox.height).toBeLessThanOrEqual(composerBox.y + 1);
       await page.locator('#composerToolsBtn').click();
       const tools = page.locator('#composerToolsMenu');
       await expect(tools).toBeVisible();
@@ -91,12 +81,6 @@ for (const format of ['native', 'openui']) {
       })).toBe(true);
       await page.keyboard.press('Escape');
       await expect(tools).toBeHidden();
-      await expect(shell).toHaveAttribute('data-display-mode', 'fullscreen');
-      expect(await shell.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
-      await page.screenshot({ path: `test-results/intui-${encodeURIComponent(format)}-${encodeURIComponent(mode)}-fullscreen.png` });
-      await page.keyboard.press('Escape');
-      await expect(shell).toHaveAttribute('data-display-mode', 'inline');
-      await expect(expand).toBeFocused();
       await expect(slider).toHaveValue('3');
       expect(errors).toEqual([]);
     });

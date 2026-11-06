@@ -5,7 +5,7 @@ $a = 2
 $b = 4
 controls = Col([Slider($a,1,10,1,"频率"," Hz"),Slider($b,1,10,1,"振幅"," cm")],0)`;
 for (const mode of ['light', 'dark', 'mobile']) {
-  test(`compact borderless intelligence layout (${mode})`, async ({ page }) => {
+  test(`compact intelligence layout stays borderless (${mode})`, async ({ page }) => {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(theme => localStorage.setItem('socrates-theme', theme), mode === 'dark' ? 'dark' : 'light');

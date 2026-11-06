@@ -206,12 +206,6 @@ export const zh = {
     "intui.routeUnavailable":"暂时无法查询道路路线，目前仅显示地点。",
     "intui.routeDriving":"OSRM / OpenStreetMap 驾车路线概览，不适用于步行或逐向导航。",
     "intui.surface":"交互结果",
-    "intui.displayMode":"展示模式",
-    "intui.expandToExplore":"展开后切换视图",
-    "intui.inline":"内嵌",
-    "intui.compact":"紧凑",
-    "intui.carousel":"横向浏览",
-    "intui.pip":"悬浮",
 
     "a11y.skipToContent":"跳到主要内容",
     /* chrome.* — 静态外壳的 tooltip / aria 文案（侧栏 chrome、显示设置弹层、
