@@ -316,6 +316,13 @@ function replaceProgressiveCodeBlocks(
   });
 }
 
+/* A formula that cannot be typeset yet (KaTeX still loading, or the formula
+   still streaming) holds its place with blank space of the formula's height:
+   a display formula gets one quiet shimmer bar, an inline one a blank slot.
+   No dots: the project bans dot ornaments. */
+const PENDING_DISPLAY_MATH = '<div class="katex-display math-stream-placeholder" aria-hidden="true"><span class="math-pending-bar"></span></div>';
+const PENDING_INLINE_MATH = '<span class="math-stream-placeholder" data-math-pending="inline" aria-hidden="true">\u200b</span>';
+
 function replaceProgressiveDisplayMath(source: string, complete: boolean, bank: PlaceholderBank): string {
   const replaceClosed = (match: string, math: string) => {
     const html = renderStreamMath(math, true, false);
@@ -324,7 +331,7 @@ function replaceProgressiveDisplayMath(source: string, complete: boolean, bank: 
   const replaceOpen = (match: string, math: string) => {
     const html = renderStreamMath(math, true, true);
     if (html !== null) return bank.save(html);
-    return complete ? match : bank.save('<div class="katex-display math-stream-placeholder" style="min-height:2em;opacity:0.5;"><span class="scaffold-stream-placeholder shimmer-text">…</span></div>');
+    return complete ? match : bank.save(PENDING_DISPLAY_MATH);
   };
   source = source.replace(/\$\$([\s\S]+?)\$\$/g, replaceClosed);
   source = source.replace(/\\\[([\s\S]+?)\\\]/g, replaceClosed);
@@ -332,8 +339,6 @@ function replaceProgressiveDisplayMath(source: string, complete: boolean, bank: 
   return source.replace(/\\\[([\s\S]+)$/g, replaceOpen);
 }
 
-const PENDING_DISPLAY_MATH = '<div class="katex-display math-stream-placeholder" style="min-height:2em;opacity:0.5;"><span class="scaffold-stream-placeholder shimmer-text">…</span></div>';
-const PENDING_INLINE_MATH = '<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>';
 
 /* KaTeX loads on demand, when the first formula arrives. For the frames
    until it lands, the live tail holds the formulas' places with the same
@@ -371,7 +376,7 @@ function replaceProgressiveInlineMath(source: string, complete: boolean, bank: P
     if (complete || !_looksLikeInlineMathTail(math.trim())) return match;
     const html = renderStreamMath(math, false, true);
     if (html !== null) return bank.save(html);
-    return bank.save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
+    return bank.save(PENDING_INLINE_MATH);
   });
   /* The open `\(` tail: closed `\(…\)` spans were already converted, so
      everything up to the end of the line is the formula being typed. Its
@@ -381,7 +386,7 @@ function replaceProgressiveInlineMath(source: string, complete: boolean, bank: P
   return source.replace(/\\\(((?:(?!\\\))[^\n])+)$/g, (match, math: string) => {
     const html = renderStreamMath(math, false, true);
     if (html !== null) return bank.save(html);
-    return complete ? match : bank.save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
+    return complete ? match : bank.save(PENDING_INLINE_MATH);
   });
 }
 

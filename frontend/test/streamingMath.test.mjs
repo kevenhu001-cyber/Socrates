@@ -74,3 +74,14 @@ test('closed and open formulas in the live tail wait quietly while KaTeX loads',
     assert.doesNotMatch(settled, /math-stream-placeholder/);
   });
 });
+
+test('pending formulas hold their place with blank space, never an ellipsis', () => {
+  withKatex(null, () => {
+    const html = formatMsgProgressive(String.raw`系数 \(\frac{1}{z}\) 与 \[\oint_{|z|=R}`);
+    assert.equal((html.match(/math-stream-placeholder/g) || []).length, 2);
+    assert.doesNotMatch(html, /…|\.\.\.|shimmer-text/);
+    assert.match(html, /class="katex-display math-stream-placeholder"/);
+    assert.match(html, /class="math-pending-bar"/);
+    assert.match(html, /data-math-pending="inline"/);
+  });
+});
