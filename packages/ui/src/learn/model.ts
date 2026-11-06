@@ -374,6 +374,11 @@ function wrapInlineMath(piece: string): string {
 export function derivationStepSource(step: string): string {
   const text = String(step || '');
   if (!LATEX_COMMAND.test(text) || MATH_DELIMITER.test(text)) return text;
+  /* A step that is all formula is display math, written as `$$…$$` so the
+     streaming preview and the mounted card typeset it the same way (a lone
+     `$…$` line is promoted to display only once it is final, which made the
+     card taller than its preview). */
+  if (!EAST_ASIAN_RUN.test(text)) return '$$' + text.trim().replace(/\s*\n\s*/g, ' ') + '$$';
   return text
     .split(EAST_ASIAN_RUN)
     .map((piece, index) => (index % 2 === 0 && LATEX_COMMAND.test(piece) ? wrapInlineMath(piece) : piece))
