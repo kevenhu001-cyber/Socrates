@@ -54,11 +54,11 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(contract.surface).not.toBe('');
   expect(contract.mainBackgroundImage).toBe('none');
   /* Card-on-canvas shell: the shell paints the surface rung (#1a1a1a) and
-     the transcript card is the page rung (#0a0a0a). The sidebar is
+     the transcript card is the page rung (pure #000). The sidebar is
      transparent, so the surface shows through; separation is the card's
      8px inset, not a hairline. */
   expect(contract.pageBackground).toBe('rgb(26, 26, 26)');
-  expect(contract.mainBackground).toBe('rgb(10, 10, 10)');
+  expect(contract.mainBackground).toBe('rgb(0, 0, 0)');
   expect(contract.sidebarBackground).toBe('rgba(0, 0, 0, 0)');
   expect(contract.sidebarBorder).toBe('0px');
   expect(contract.topbarHeight).toBeGreaterThanOrEqual(50);

@@ -18,14 +18,16 @@ for (const [label, model, viewport, lang] of [
     await gotoAndSettle(page, '/');
     await waitForAppShell(page);
     const openEffort = async () => {
-      if (label === 'desktop') await page.locator('#topModelSwitcher').click();
-      else if (await page.locator('#effortTrigger:visible').count()) {
-        await page.locator('#effortTrigger:visible').first().click();
-      } else {
-        await page.locator('#topModelSwitcher').click();
-      }
       const pop = page.locator('.chat-config-pop');
-      await pop.getByRole('button', { name: lang === 'zh' ? /思考强度/ : /Reasoning effort/ }).click();
+      if (label === 'desktop') {
+        await page.locator('#topModelSwitcher').click();
+        await pop.getByRole('button', { name: lang === 'zh' ? /思考强度/ : /Reasoning effort/ }).click();
+      } else {
+        /* Phones follow the reference: no model chip in the header; the
+           composer's always-visible effort pill opens the effort view directly. */
+        await page.locator('#effortTrigger:visible').first().click();
+        await expect(pop.getByRole('slider')).toBeVisible();
+      }
       return pop;
     };
     let pop = await openEffort();

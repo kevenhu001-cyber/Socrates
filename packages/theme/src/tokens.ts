@@ -204,17 +204,14 @@ export const darkPalette: ThemePalette = {
   },
   bg: {
     /* Four-step ladder, projected from four consecutive steps of the Geist
-     * surface ramp: background-100 → gray-100 → gray-200 → gray-300.
-     * Perceived-lightness steps are 6.27% / 1.96% / 3.92%; the first one is
-     * Geist's own gap between the page tone and the gray ramp, not a choice.
-     * The canvas is a near-black, never pure #000 — pure black crushes
-     * shadow detail and lets the lowest layer read as a hole punched
-     * through the UI. */
-    page: '0 0% 3.92%',     // #0a0a0a  L1
+     * surface ramp: background-200 (pure #000, the reference canvas) →
+     * gray-100 → gray-200 → gray-300. The canvas → rail gap is wider than
+     * the other two steps; the ladder guard's blackCanvas policy allows it. */
+    page: '0 0% 0%',        // #000000  L1 — pure black (reference canvas)
     raised: '0 0% 12.16%',  // #1f1f1f  L3 — cards on the canvas
     overlay: '0 0% 16.08%', // #292929  L4 — floating bars, menus
     hover: '0 0% 21.18%',   // #363636  selected/hover tint (off-ladder)
-    sunken: '0 0% 3.92%',   // #0a0a0a  L1 — inset wells ride the canvas
+    sunken: '0 0% 0%',      // #000000  L1 — inset wells ride the canvas
   },
   text: {
     primary: '0 0% 92.94%',
@@ -285,5 +282,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
 
 /** Background color used for first paint by each theme mode. */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#ffffff' : '#0a0a0a';
+  return mode === 'light' ? '#ffffff' : '#000000';
 }

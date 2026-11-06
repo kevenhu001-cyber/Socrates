@@ -8,11 +8,12 @@ import { openChatConfiguration, useChatConfigurationSnapshot } from '../chat-con
 import { useActiveModelLabel, useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
-import { startNewChat } from '../../app/lifecycle.ts';
+import { startNewChat, toggleIncognito } from '../../app/lifecycle.ts';
 import { toggleAppMode } from '../../app/lifecycle/mode.ts';
 import { openFindInSession } from '../find-in-session/findInSession.actions.ts';
 import { openShareModal } from '../../ui/share.ts';
 import { useAppMode } from '../app-mode/useAppMode.ts';
+import { useIncognito } from '../app-mode/useIncognito.ts';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from '../sidebar-chrome/useMobileViewport.ts';
 import { WebUiTheme } from '../rn/WebUiTheme';
@@ -109,11 +110,11 @@ function SidebarToggle() {
 /**
  * The top-left model switcher opens the shared chat-configuration popover
  * (model · reasoning effort · speed). The visible model name is part of the
- * accessible name (WCAG 2.5.3). Phones show a chip with the model only, and
- * none at all once a conversation runs (the composer's effort pill opens
- * the same popover there).
+ * accessible name (WCAG 2.5.3). Phones never show it: like the reference,
+ * the composer's effort pill (always drawn on phones) opens the same
+ * popover, and the header's trailing slot belongs to the incognito chat.
  */
-function ModelSwitcher({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+function ModelSwitcher({ phone }: { phone: boolean }) {
   const snapshot = useChatConfigurationSnapshot();
   const modelLabel = useActiveModelLabel();
   const effort = useStoredReasoningEffort();
@@ -128,7 +129,7 @@ function ModelSwitcher({ phone, conversationActive }: { phone: boolean; conversa
       accessibilityLabel={`${visibleLabel} — ${purpose}${modelLabel ? '' : ` · ${effortLabel(effort)}`}`}
       expanded={snapshot.open && snapshot.triggerId === 'topModelSwitcher'}
       compact={phone}
-      visible={!(phone && conversationActive)}
+      visible={!phone}
       onPress={() => {
         const trigger = anchor('topModelSwitcher');
         if (trigger) openChatConfiguration(trigger);
@@ -188,20 +189,42 @@ function ExamTitle() {
   return <span className={`exam-title-bar${isInView ? '' : ' hidden'}`} id="examTitleBar" data-exam-only="true" data-locale-revision={localeRevision}>{label}</span>;
 }
 
+/**
+ * Phone conversation header, after the reference: drawer · new chat ·
+ * title. The title is the session's own (its saved title, else its topic);
+ * desktop keeps the model lockup in this slot instead.
+ */
+function ConversationTitle({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+  const title = useSessionStore((snapshot) => snapshot.sessionTitle || snapshot.topic);
+  if (!phone || !conversationActive || !title) return null;
+  return <span className="top-conversation-title" id="topConversationTitle" title={title}>{title}</span>;
+}
+
 function TopBarLeft({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
   return (
     <div className="top-bar-left">
       <SidebarToggle />
       <WebUiTheme>
+        <span className="mobile-newchat-btn" data-topbar-slot="new-chat">
+          <TopBarAction
+            id="mobileNewChatBtn"
+            icon="compose"
+            label={t('sidebar.nav.new', 'New chat')}
+            touch
+            visible={phone && conversationActive}
+            onPress={() => { void startNewChat(); }}
+          />
+        </span>
         {/* 手机对话中不显示模型 chip。槽位让页面按
             body[data-conversation-active] 同步隐藏（与 RN-7 前一致），
             不必等 store 推导后的下一次渲染。 */}
         <span className="top-model-slot" data-topbar-slot="model">
-          <ModelSwitcher phone={phone} conversationActive={conversationActive} />
+          <ModelSwitcher phone={phone} />
         </span>
         <PracticeProgress phone={phone} conversationActive={conversationActive} />
         <StageProgress phone={phone} conversationActive={conversationActive} />
       </WebUiTheme>
+      <ConversationTitle phone={phone} conversationActive={conversationActive} />
       <ExamTitle />
     </div>
   );
@@ -252,23 +275,30 @@ function ModeSwitch({ phone, conversationActive }: { phone: boolean; conversatio
   );
 }
 
-/* ── Right: new chat (phones) · find · share ───────────────────────────── */
+/* ── Right: incognito (phone home) · find · share ─────────────────────── */
+
+/** The reference's trailing "temporary chat": Socrates' incognito chat. */
+function IncognitoAction({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+  const on = useIncognito();
+  return (
+    <TopBarAction
+      id="mobileIncognitoBtn"
+      icon="incognito"
+      label={t('sidebar.nav.incognito', 'Incognito chat')}
+      pressed={on}
+      touch
+      visible={phone && !conversationActive}
+      onPress={() => { void toggleIncognito(); }}
+    />
+  );
+}
 
 function TopBarRight({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
   const { conversationActions, sharedView } = useTopbarState();
   return (
     <div className="top-bar-right">
       <WebUiTheme>
-        <span className="mobile-newchat-btn" data-topbar-slot="new-chat">
-          <TopBarAction
-            id="mobileNewChatBtn"
-            icon="new-chat"
-            label={t('sidebar.nav.new', 'New chat')}
-            touch
-            visible={phone && conversationActive}
-            onPress={() => { void startNewChat(); }}
-          />
-        </span>
+        <IncognitoAction phone={phone} conversationActive={conversationActive} />
         <TopBarAction
           id="findBtn"
           icon="search"

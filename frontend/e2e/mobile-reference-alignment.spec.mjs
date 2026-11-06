@@ -35,14 +35,28 @@ for (const mode of ['dark', 'light']) {
       const css = getComputedStyle(el);
       return { background: css.backgroundColor, radius: css.borderTopLeftRadius };
     });
-    expect(rgbChannels(frameStyle.background)).toEqual(mode === 'dark' ? [41, 41, 41] : [255, 255, 255]);
+    /* Dark: the reference question box sits one rung above the pure-black
+       canvas (panel rung #1f1f1f, reference ≈ #1b1b1b); menus keep #292929. */
+    expect(rgbChannels(frameStyle.background)).toEqual(mode === 'dark' ? [31, 31, 31] : [255, 255, 255]);
     expect(frameStyle.radius).toBe('28px');
     const composerBox = await page.locator('#composerInputWrap').boundingBox();
     expect(composerBox.x).toBe(16);
     expect(composerBox.width).toBe(358);
     expect(composerBox.height).toBe(86);
     expect(Math.round(769 - composerBox.y - composerBox.height)).toBe(24);
+    /* The desktop shortcut rail stays off the phone; the reference shows a
+       single suggestion line above the composer instead (emoji + one
+       muted, truncated line). */
     await expect(page.locator('.home-quick-actions')).toBeHidden();
+    const suggestion = page.locator('#homeSuggestion [data-testid="home-suggestion"]');
+    await expect(suggestion).toHaveCount(1);
+    await expect(suggestion).toBeVisible();
+    const suggestionBox = await suggestion.boundingBox();
+    expect(suggestionBox.y + suggestionBox.height).toBeLessThanOrEqual(composerBox.y);
+    expect(await suggestion.locator('.home-suggestion-text').evaluate(el => {
+      const css = getComputedStyle(el);
+      return { whiteSpace: css.whiteSpace, overflow: css.textOverflow, clipped: el.scrollWidth > el.clientWidth };
+    })).toEqual({ whiteSpace: 'nowrap', overflow: 'ellipsis', clipped: true });
     await expect(page.locator('#topicTitle')).toBeVisible();
     await assertNoOverflow(page);
     await page.screenshot({ path: `test-results/reference-alignment-${encodeURIComponent(mode)}-home.png` });
@@ -56,7 +70,7 @@ for (const mode of ['dark', 'light']) {
     await page.locator('#sidebarOpenBtn').click();
     await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).x)).toBe(0);
     expect(rgbChannels(await page.locator('#sidebar').evaluate(el => getComputedStyle(el).backgroundColor)))
-      .toEqual(mode === 'dark' ? [10, 10, 10] : [255, 255, 255]);
+      .toEqual(mode === 'dark' ? [0, 0, 0] : [255, 255, 255]);
     const searchRow = page.locator('#sidebarSearchRow');
     expect((await searchRow.boundingBox()).height).toBe(0);
     await page.locator('#sidebarSearchBtn').click();
@@ -77,7 +91,11 @@ for (const mode of ['dark', 'light']) {
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });
     await expect(recent).toBeVisible();
     expect((await recent.boundingBox()).height).toBe(40);
-    await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeHidden();
+    /* Reference drawer lockup: wordmark + ⌄ on the left, search and the
+       sidebar glyph (not ×) on the right. */
+    await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();
+    await expect(page.locator('.sidebar-logo [data-part="brand-caret"]')).toBeVisible();
+    await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
     await page.screenshot({ path: `test-results/reference-alignment-${encodeURIComponent(mode)}-drawer.png` });
     await recent.locator('.recent-item-overflow').click();
     const menu = page.locator('.recent-item-menu');
@@ -118,6 +136,7 @@ for (const mode of ['dark', 'light']) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openNav(page, 'navNew');
     await expect(page.locator('.home-quick-actions')).toBeVisible();
+    await expect(page.locator('#homeSuggestion')).toBeHidden();
     await page.evaluate(() => {
       if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar();
     });

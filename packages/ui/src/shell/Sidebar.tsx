@@ -97,15 +97,19 @@ export interface SidebarBrandProps {
   hostStyle?: StyleProp<ViewStyle>;
   logoStyle?: StyleProp<ImageStyle>;
   nameStyle?: StyleProp<TextStyle>;
+  /** Draw a ⌄ after the name (the phone drawer's reference lockup). Decorative. */
+  caret?: boolean;
+  /** Hide the mark and let the wordmark carry the lockup. */
+  hideLogo?: boolean;
 }
 
 /** The mark and the wordmark. Decorative: the drawer is named by its nav landmark. */
-export function SidebarBrand({ name, logo, compact = false, hostStyle, logoStyle, nameStyle }: SidebarBrandProps) {
+export function SidebarBrand({ name, logo, compact = false, hostStyle, logoStyle, nameStyle, caret = false, hideLogo = false }: SidebarBrandProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   const size = compact ? 24 : 20;
   return (
     <View aria-hidden style={[styles.brand, hostStyle]} {...dataSet({ part: 'sidebar-brand' })}>
-      <Image source={logo} accessibilityIgnoresInvertColors style={[{ width: size, height: size, borderRadius: uiRadius.xs }, logoStyle]} />
+      {hideLogo ? null : <Image source={logo} accessibilityIgnoresInvertColors style={[{ width: size, height: size, borderRadius: uiRadius.xs }, logoStyle]} />}
       <Text
         numberOfLines={1}
         {...dataSet({ part: 'brand-name' })}
@@ -120,6 +124,11 @@ export function SidebarBrand({ name, logo, compact = false, hostStyle, logoStyle
       >
         {name}
       </Text>
+      {caret ? (
+        <View {...dataSet({ part: 'brand-caret' })}>
+          <UiIcon name="chevron-down" size={16} color={colors.inkSecondary} />
+        </View>
+      ) : null}
     </View>
   );
 }

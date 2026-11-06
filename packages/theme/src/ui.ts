@@ -77,7 +77,7 @@ export const uiColors: Readonly<Record<ThemeMode, UiColors>> = {
     hairlineFocus: 'rgba(0, 0, 0, 0.28)',
   },
   dark: {
-    canvas: '#0a0a0a',
+    canvas: '#000000',
     card: '#1f1f1f',
     fill: 'rgba(255, 255, 255, 0.06)',
     fillHover: 'rgba(255, 255, 255, 0.10)',

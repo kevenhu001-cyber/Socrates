@@ -43,13 +43,14 @@
     },
     "socrates": {
       "paperCanvas": true,
+      "blackCanvas": true,
       "scale": "geist",
       "shared": true,
       "legacyTolerance": 0.05,
       "dark": {
         "page": {
-          "step": "background-100",
-          "value": "#0a0a0a"
+          "step": "background-200",
+          "value": "#000000"
         },
         "rail": {
           "step": "gray-100",

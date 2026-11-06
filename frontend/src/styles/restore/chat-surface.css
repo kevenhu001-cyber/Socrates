@@ -476,15 +476,15 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 .chat-config-slider input[type="range"]::-webkit-slider-runnable-track {
-  height: 36px;
+  height: 22px;
   border-radius: 999px;
-  background: var(--chat-accent);
+  background: linear-gradient(to right, var(--chat-accent) var(--chat-config-fill, 50%), var(--ui-bg-control) var(--chat-config-fill, 50%));
 }
 
 .chat-config-slider input[type="range"]::-webkit-slider-thumb {
   width: 28px;
   height: 28px;
-  margin-top: 4px;
+  margin-top: -3px;
   border: 0;
   border-radius: 50%;
   appearance: none;
@@ -494,9 +494,9 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 .chat-config-slider input[type="range"]::-moz-range-track {
-  height: 36px;
+  height: 22px;
   border-radius: 999px;
-  background: var(--chat-accent);
+  background: linear-gradient(to right, var(--chat-accent) var(--chat-config-fill, 50%), var(--ui-bg-control) var(--chat-config-fill, 50%));
 }
 
 .chat-config-slider input[type="range"]::-moz-range-thumb {
@@ -508,23 +508,34 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
 }
 
+/* Reference effort slider: a thick track filled up to the thumb, with a
+   small round dot at every stop inside the track, centred where the thumb
+   sits on that stop. */
+/* Overlaid on the range input itself: the container pads it 4px 6px
+   (polish/overlays.css), and 12px + half a dot puts each dot under the
+   centre of the 28px thumb at that stop. */
 .chat-config-slider-dots {
   position: absolute;
-  inset: 6px 8px auto;
+  inset: 4px 6px auto;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 36px;
-  padding: 0 16px;
+  padding: 0 12px;
   pointer-events: none;
 }
 
 .chat-config-slider-dots span {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background: rgb(255 255 255 / 45%);
+  background: var(--ui-text-muted);
+  opacity: .7;
 }
+
+/* The thumb covers its own stop in the reference; the dots sit above the
+   input, so the active one steps aside instead. */
+.chat-config-slider-dots span[data-active] { opacity: 0; }
 
 @keyframes chat-config-pop-in {
   from { opacity: 0; transform: translateY(6px) scale(.98); }

@@ -60,9 +60,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(550);
-  /* The mobile canvas shares the Geist-aligned page token with desktop. */
-  expect(geometry.background).toBe('rgb(10, 10, 10)');
-  expect(geometry.pageToken).toBe('#0a0a0a');
+  /* The mobile canvas shares the pure-black reference page token with desktop. */
+  expect(geometry.background).toBe('rgb(0, 0, 0)');
+  expect(geometry.pageToken).toBe('#000');
 
   /* P_greeting-mobile-center — the landing greeting must be visually
      centred horizontally on the viewport and sit just above the optical
@@ -231,11 +231,16 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(menu).toContainText('Web search');
   await expect(menu.locator('.composer-tools-disclosure')).toHaveCount(0);
   const menuBox = await menu.boundingBox();
-  /* On phones the add-content menu is a bottom sheet: full width and flush
-     with the viewport edge, with the row list scrolling inside it. */
-  expect(menuBox?.width).toBeGreaterThanOrEqual(389);
-  expect(menuBox?.width).toBeLessThanOrEqual(390);
-  expect((menuBox?.y ?? 0) + (menuBox?.height ?? 0)).toBeGreaterThanOrEqual(843);
+  /* On phones the add-content menu follows the reference: a card as wide
+     as the question box, on its 16px gutter, whose bottom edge rests over
+     the box's upper half so the + row stays visible below it. */
+  const askBox = await page.locator('#composerInputWrap').boundingBox();
+  expect(Math.round(menuBox?.width ?? 0)).toBe(Math.round(askBox?.width ?? -1));
+  expect(Math.round(menuBox?.x ?? 0)).toBe(16);
+  const menuBottom = (menuBox?.y ?? 0) + (menuBox?.height ?? 0);
+  expect(menuBottom).toBeGreaterThan(askBox?.y ?? 0);
+  expect(menuBottom).toBeLessThan((askBox?.y ?? 0) + (askBox?.height ?? 0));
+  expect(menuBox?.y ?? -1).toBeGreaterThanOrEqual(0);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 

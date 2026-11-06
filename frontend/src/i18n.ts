@@ -122,8 +122,12 @@ function updateTopicSetupCopy(){
   }
   const ts=document.getElementById("topicSub");
   if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
+  const disclaimer=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
   const tdisc=document.getElementById("topicDisclaimer");
-  if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
+  if(tdisc)tdisc.textContent=disclaimer;
+  /* The conversation view's phone twin (#chatDisclaimer) carries the same line. */
+  const cdisc=document.getElementById("chatDisclaimer");
+  if(cdisc)cdisc.textContent=disclaimer;
 }
 
 function refreshDynamicSurfaces(){

@@ -24,6 +24,8 @@ async function boot(page, mode = 'dark') {
 
 test('open sidebar uses quiet 36px rows, compact chrome and one-line history', async ({ page }) => {
   await boot(page, 'light');
+  /* The RN header mounts lazily after the shell; measure it once it exists. */
+  await expect(page.locator('#sidebarHeader .sidebar-logo')).toBeAttached();
   const rows = await page.evaluate(() => {
     const box = (n) => n.getBoundingClientRect();
     const nav = document.querySelector('#navLibrary');

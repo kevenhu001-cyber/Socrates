@@ -46,10 +46,10 @@ test('theme selector follows the operating system and persists explicit modes', 
       lobeElevated: styles.getPropertyValue('--lobe-color-bg-elevated').trim(),
     };
   });
-  // The dark canvas is a near-black, never pure #000 — see the surface
-  // ladder in styles/themes.css. The four rungs are four consecutive steps
-  // of the Geist scale.
-  expect(hex6(darkPalette.page)).toBe('#0a0a0a');
+  // The dark canvas is the reference's pure #000 (Geist background-200, the
+  // ladder's blackCanvas policy); rail / panel / elevated stay a consecutive
+  // slice of the Geist scale.
+  expect(hex6(darkPalette.page)).toBe('#000000');
   expect(hex6(darkPalette.sidebar)).toBe('#1a1a1a');
   expect(hex6(darkPalette.raised)).toBe('#1f1f1f');
   expect(hex6(darkPalette.surface)).toBe('#292929');
@@ -57,7 +57,7 @@ test('theme selector follows the operating system and persists explicit modes', 
   expect(hex6(darkPalette.cgPage)).toBe(hex6(darkPalette.page));
   expect(hex6(darkPalette.chatgptPage)).toBe(hex6(darkPalette.page));
   expect(hex6(darkPalette.conversationPage)).toBe(hex6(darkPalette.page));
-  expect(darkPalette.legacyPage).toBe('0 0% 3.92%');
+  expect(darkPalette.legacyPage).toBe('0 0% 0%');
   expect(hex6(darkPalette.lobeLayout)).toBe(hex6(darkPalette.page));
   expect(hex6(darkPalette.lobeContainer)).toBe(hex6(darkPalette.raised));
   expect(hex6(darkPalette.lobeElevated)).toBe(hex6(darkPalette.surface));

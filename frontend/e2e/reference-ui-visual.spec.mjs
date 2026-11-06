@@ -87,12 +87,13 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   });
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
   /* Reference phone capsule is a two-row 85px stack (editor row 1, controls row 2). */
-  expect(mobileGeometry.composer?.height).toBe(85);
+  /* The reference phone question box sets its text at 17px (was 16px). */
+  expect(mobileGeometry.composer?.height).toBe(86);
   expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(769);
   expect(mobileGeometry.plus?.width).toBe(36);
   expect(mobileGeometry.send?.width).toBe(36);
-  /* The mobile canvas shares the Geist-aligned page surface with desktop. */
-  expect(mobileGeometry.background).toBe('rgb(10, 10, 10)');
+  /* The mobile canvas shares the pure-black reference page surface with desktop. */
+  expect(mobileGeometry.background).toBe('rgb(0, 0, 0)');
 
   await page.locator('#composerToolsBtn').click();
   const toolsMenu = page.locator('#composerToolsMenu');
@@ -104,19 +105,17 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
   })).toBe(true);
   const toolsBox = await toolsMenu.boundingBox();
-  /* The reference sheet is ~65% of the phone width — 252px at 390px. */
-  expect(toolsBox?.width).toBeGreaterThanOrEqual(244);
-  expect(toolsBox?.width).toBeLessThanOrEqual(260);
+  /* The reference + menu is a card as wide as the question box, on the
+     16px page gutter (--ui-mobile-page-gutter), whose bottom edge rests
+     over the box's upper half so the + row stays visible below it. */
+  expect(Math.round(toolsBox?.width ?? 0)).toBe(Math.round(mobileGeometry.composer?.width ?? -1));
   expect(toolsBox?.height).toBeGreaterThanOrEqual(300);
-  expect(toolsBox?.height).toBeLessThanOrEqual(368);
-  /* The sheet is flush with the capsule's 16px page gutter
-     (--ui-mobile-page-gutter in styles/tokens.css). */
+  expect(toolsBox?.y ?? -1).toBeGreaterThanOrEqual(0);
   expect(toolsBox?.x).toBeGreaterThanOrEqual(14);
   expect(toolsBox?.x).toBeLessThanOrEqual(18);
-  expect(Math.abs(
-    ((toolsBox?.y ?? 0) + (toolsBox?.height ?? 0))
-      - ((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)),
-  )).toBeLessThanOrEqual(2);
+  const toolsBottom = (toolsBox?.y ?? 0) + (toolsBox?.height ?? 0);
+  expect(toolsBottom).toBeGreaterThan(mobileGeometry.composer?.y ?? 0);
+  expect(toolsBottom).toBeLessThan((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0));
   const toolsBackground = await toolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(toolsBackground).not.toBe('rgba(0, 0, 0, 0)');
   await page.mouse.move(380, 4);
@@ -187,7 +186,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const chatComposerBox = await page.locator('#composerInputWrap').boundingBox();
   const chatEditorBox = await page.locator('#composerRoot').boundingBox();
   const chatToolsBox = await page.locator('#composerToolsBtn').boundingBox();
-  expect(chatComposerBox?.height).toBe(85);
+  expect(chatComposerBox?.height).toBe(86);
   expect(chatToolsBox?.width).toBe(36);
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
 

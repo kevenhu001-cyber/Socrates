@@ -8,8 +8,12 @@ import { startNewChat } from '../../app/lifecycle.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { useDomTitle, webClass } from '../rn/webHost';
 import { SidebarBrand, SidebarHeaderActions, SidebarIconAction } from '@socrates/ui/shell';
+import type { TextStyle } from 'react-native';
 
 const LOGO = { uri: '/logo.png' };
+/* Phone drawer wordmark: the reference sets its brand line at 20px; the CSS
+   role keeps it on the user's type scale. */
+const MOBILE_BRAND_NAME = { fontSize: 'var(--ui-font-size-xl)', lineHeight: 28 } as unknown as TextStyle;
 
 /**
  * RN-7 — the sidebar header is the shared RN shell part
@@ -18,8 +22,10 @@ const LOGO = { uri: '/logo.png' };
  * (`.sidebar-logo`, `.sidebar-header-actions`, and `.btn-icon`, the phone
  * tap-target marker; desktop keeps the RN part's own 32px pill).
  *
- * Desktop draws the panel glyph on the collapse control (it toggles the
- * rail); the phone drawer draws the ×.
+ * Both desktop and the phone drawer draw the panel glyph on the collapse
+ * control, as the reference does. On the phone the header is the reference
+ * lockup: the wordmark with a decorative ⌄ (no mark), then search and
+ * collapse (new chat lives in the nav list there).
  */
 export function SidebarHeader() {
   useLocaleRefresh();
@@ -46,7 +52,15 @@ export function SidebarHeader() {
 
   return (
     <WebUiTheme>
-      <SidebarBrand name="Socrates" logo={LOGO} compact={isMobile} hostStyle={webClass('sidebar-logo')} />
+      <SidebarBrand
+        name="Socrates"
+        logo={LOGO}
+        compact={isMobile}
+        caret={isMobile}
+        hideLogo={isMobile}
+        nameStyle={isMobile ? MOBILE_BRAND_NAME : undefined}
+        hostStyle={webClass('sidebar-logo')}
+      />
       <SidebarHeaderActions hostStyle={webClass('sidebar-header-actions')}>
         <SidebarIconAction
           id="sidebarSearchBtn"
@@ -70,7 +84,7 @@ export function SidebarHeader() {
         />
         <SidebarIconAction
           id="sidebarCloseBtn"
-          icon={isMobile ? 'close' : 'panel'}
+          icon="panel"
           label={closeSidebarLabel}
           i18nKey={closeSidebarKey}
           controls="sidebar"

@@ -93,7 +93,8 @@
     padding: 10px 16px;
     border: 0;
     border-radius: var(--ui-radius-bubble);
-    background: var(--ui-bg-bubble);
+    /* The blue reference bubble is a themes.css role, shared with the phone. */
+    background: var(--conversation-user);
     box-shadow: var(--ui-bubble-shadow);
   }
   #appShell #msgList .msg.user .msg-body p { margin: 0; }
@@ -113,6 +114,9 @@
     font-weight: var(--ui-font-weight-medium);
     letter-spacing: -0.01em;
   }
+  /* h1 / h2 carry the answer's outline, so they take the semibold step the
+     phone already uses (reference: bold section titles); sizes unchanged. */
+  #appShell #msgList .msg-body :where(h1, h2) { font-weight: var(--ui-font-weight-semibold); }
   #appShell #msgList .msg-body h1 { margin: 28px 0 12px; font-size: var(--ui-font-size-xxl); line-height: 1.33; }
   #appShell #msgList .msg-body h2 { margin: 24px 0 12px; font-size: var(--ui-font-size-xl); line-height: 1.4; }
   #appShell #msgList .msg-body h3 { margin: 20px 0 8px; font-size: var(--ui-font-size-lg); line-height: 1.55; }

@@ -180,7 +180,8 @@ export interface TopBarModeSwitchProps {
 export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, compact, narrow = false, reducedMotion, thumbShadow, onSelect }: TopBarModeSwitchProps) {
   const { colors } = useUiTheme();
   const index = Math.max(0, options.findIndex((option) => option.mode === value));
-  const optionWidth = narrow ? 64 : compact ? 72 : 96;
+  /* Phones: the reference's segments are ~90px; 88 keeps the 320px gutter. */
+  const optionWidth = narrow ? 64 : compact ? 88 : 96;
   const inset = uiStep[50] - 1;
   const height = PILL;
   return (
@@ -212,7 +213,8 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
           width: optionWidth,
           borderRadius: uiRadius.pill,
           backgroundColor: colors.card,
-          boxShadow: thumbShadow ?? uiShadow.light.raised,
+          /* Phones draw the thumb as a flat step, as the reference does. */
+          boxShadow: compact ? 'none' : thumbShadow ?? uiShadow.light.raised,
           transform: [{ translateX: index * optionWidth }],
           transitionProperty: reducedMotion ? 'none' : 'transform',
           transitionDuration: reducedMotion ? '0ms' : `${uiMotion.medium}ms`,
@@ -240,7 +242,8 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
           >
             {({ hovered }: PressState) => (
               <UiText
-                variant="bodySm"
+                /* Phones set the segments at the reference's 16px; desktop keeps 14px. */
+                variant={compact ? 'body' : 'bodySm'}
                 tone={selected || hovered ? 'ink' : 'secondary'}
                 numberOfLines={1}
                 style={{ fontWeight: selected ? '500' : '400', transitionProperty: 'color', transitionDuration: `${uiMotion.fast}ms` } as object}

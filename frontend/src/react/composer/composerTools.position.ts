@@ -22,16 +22,24 @@ function positionTopicMenu(
   return true;
 }
 
-function positionMobileMenu(menu: HTMLElement): void {
-  /* The restore layer still contains old card geometry. The phone sheet is
-     pinned to the viewport edge, so these inline important values preserve
-     the measured mobile reference until that compatibility CSS is retired. */
-  menu.style.setProperty('left', '0px', 'important');
-  menu.style.setProperty('right', '0px', 'important');
+/* Phone popover, as in the reference: it covers the question box's text row
+   and leaves the control row (+, effort, mic, send) visible, sharing the box's
+   left edge and width. The inline !important values outrank the retired
+   bottom-sheet pins that compatibility CSS may still carry. */
+function positionMobileMenu(menu: HTMLElement, trigger: HTMLElement, viewportTop: number): void {
+  const frame = trigger.closest('[data-composer-frame]') ?? trigger.closest('#composerInputWrap');
+  const frameRect = frame ? frame.getBoundingClientRect() : restingRect(trigger);
+  const controlTop = restingRect(trigger).top;
+  const bottomEdge = controlTop - 8;
+  const layoutHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+  menu.style.setProperty('left', `${Math.round(frameRect.left)}px`, 'important');
+  menu.style.setProperty('right', 'auto', 'important');
+  menu.style.setProperty('width', `${Math.round(frameRect.width)}px`, 'important');
+  menu.style.setProperty('max-width', 'none', 'important');
   menu.style.setProperty('top', 'auto', 'important');
-  menu.style.setProperty('bottom', '0px', 'important');
-  menu.style.removeProperty('max-height');
-  menu.dataset.menuSide = 'sheet';
+  menu.style.setProperty('bottom', `${Math.round(layoutHeight - bottomEdge)}px`, 'important');
+  menu.style.setProperty('max-height', `${Math.max(160, Math.round(bottomEdge - viewportTop - 16))}px`, 'important');
+  menu.dataset.menuSide = 'above';
 }
 
 function chooseDesktopMenuPosition(
@@ -90,10 +98,7 @@ export function positionComposerToolsMenu(
   trigger: HTMLElement,
   mode: 'topic' | 'chat' | null,
 ): void {
-  menu.style.removeProperty('top');
-  menu.style.removeProperty('bottom');
-  menu.style.removeProperty('left');
-  menu.style.removeProperty('right');
+  for (const prop of ['top', 'bottom', 'left', 'right', 'width', 'max-width', 'max-height']) menu.style.removeProperty(prop);
   const rect = restingRect(trigger);
   const viewport = typeof window !== 'undefined' ? window.visualViewport : null;
   const viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
@@ -105,8 +110,7 @@ export function positionComposerToolsMenu(
 
   if (positionTopicMenu(menu, trigger, mode, rect, viewportWidth, viewportBottom, menuHeightCap)) return;
   if (viewportWidth <= 768) {
-    menu.style.removeProperty('width');
-    positionMobileMenu(menu);
+    positionMobileMenu(menu, trigger, viewportTop);
     return;
   }
 

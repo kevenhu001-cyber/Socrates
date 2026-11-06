@@ -278,7 +278,10 @@ function MessageToolbar({ message, role, onEdit, pending = false, isLatest = fal
 
   const branchInfo = message.branchInfo;
   const hasBranches = !!(branchInfo && Array.isArray(branchInfo.variants) && branchInfo.variants.length > 1);
-  const compact = touchLayout && !isLatest;
+  /* A user turn keeps its three actions (copy · edit · delete) visible on
+     touch too, as the reference does under every question; only older
+     answers collapse to the single "…" trigger. */
+  const compact = touchLayout && !isLatest && role === 'assistant';
 
   return (
     <div className="msg-toolbar" data-role={role} data-message-id={id} data-compact={compact ? 'true' : undefined}>
