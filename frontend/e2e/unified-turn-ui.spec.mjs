@@ -124,18 +124,34 @@ test('a live turn shows one spark glyph and reduced motion freezes it', async ({
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  /* The working cue is one vector glyph ahead of a still caption: twelve SVG
-     dots on a sphere turning in 3D, near dots larger and more opaque than far
-     ones; no sweeping hairline, no breathing text. */
-  const spark = activity.locator(`${TURN.indicator} svg.thinking-spark`);
-  const dots = spark.locator('circle.thinking-spark-dot');
-  const dotPose = () => dots.evaluateAll((nodes) => nodes.map((n) => `${n.getAttribute('cx')},${n.getAttribute('cy')}`).join(' '));
+  /* The working cue is one glyph ahead of a still caption: twelve dots on a
+     sphere turning in 3D, near dots larger and more opaque than far ones; no
+     sweeping hairline, no breathing text. The turn is a Web Animation of
+     transform and opacity only, so it runs on the compositor. */
+  const spark = activity.locator(`${TURN.indicator} .thinking-spark`);
+  const dots = spark.locator('.thinking-spark-dot');
+  const dotPose = () => dots.evaluateAll((nodes) => nodes.map((n) => getComputedStyle(n).transform).join(' '));
   await expect(spark).toHaveCount(1);
+  await expect(spark).toHaveAttribute('data-testid', 'thinking-spark');
   await expect(dots).toHaveCount(12);
   await expect(spark).toHaveAttribute('data-motion', 'running');
-  const depth = await dots.evaluateAll((nodes) => nodes.map((n) => ({ r: Number(n.getAttribute('r')), o: Number(n.getAttribute('opacity')) })));
-  expect(depth.at(-1).r).toBeGreaterThan(depth[0].r * 1.6);
-  expect(depth.at(-1).o).toBeGreaterThan(depth[0].o * 2);
+  /* Script animations only: the reduced-motion reset can leave stray 0.01ms CSS transitions. */
+  const motion = await dots.evaluateAll((nodes) => nodes.map((n) => n.getAnimations().filter((a) => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation)).map((a) => ({
+    state: a.playState,
+    iterations: a.effect.getTiming().iterations,
+    props: [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k).filter((key) => !['offset', 'easing', 'composite', 'computedOffset'].includes(key))))].sort().join(','),
+  }))));
+  expect(motion).toHaveLength(12);
+  for (const list of motion) expect(list).toEqual([{ state: 'running', iterations: Infinity, props: 'opacity,transform' }]);
+  const depth = await dots.evaluateAll((nodes) => nodes.map((n) => {
+    const style = getComputedStyle(n);
+    const m = new DOMMatrixReadOnly(style.transform);
+    return { s: Math.hypot(m.a, m.b), o: Number(style.opacity) };
+  }));
+  const scales = depth.map((d) => d.s);
+  const opacities = depth.map((d) => d.o);
+  expect(Math.max(...scales)).toBeGreaterThan(Math.min(...scales) * 1.4);
+  expect(Math.max(...opacities)).toBeGreaterThan(Math.min(...opacities) * 2);
   const firstPose = await dotPose();
   await expect.poll(dotPose).not.toBe(firstPose);
   const captionOpacity = () => activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node.parentElement).opacity));
@@ -148,6 +164,7 @@ test('a live turn shows one spark glyph and reduced motion freezes it', async ({
   await expect(spark).toBeVisible();
   await expect(spark).toHaveAttribute('data-motion', 'static');
   await expect(dots).toHaveCount(12);
+  expect(await dots.evaluateAll((nodes) => nodes.reduce((sum, n) => sum + n.getAnimations().filter((a) => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation)).length, 0))).toBe(0);
   const stillPose = await dotPose();
   await page.waitForTimeout(400);
   expect(await dotPose()).toBe(stillPose);

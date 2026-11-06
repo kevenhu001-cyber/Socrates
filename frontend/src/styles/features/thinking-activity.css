@@ -93,15 +93,21 @@
 
 /* The live caption is still text; the working cue is the glyph in front of
    it (react/tool-run/ThinkingSpark.tsx): twelve dots on a sphere turning in
-   3D, one turn every 2.6s, near dots larger and inked, far dots small and
-   faint. The motion is a requestAnimationFrame loop in the component (it
-   pauses off-screen and stays a still frame under reduced motion or forced
-   colours), so there are no keyframes here. It sits on the caption ink. */
+   3D, one turn every 3.4s, near dots larger and inked, far dots small and
+   faint. The component sizes the box and places each dot, then drives the
+   dots' transform and opacity with Web Animations, so the turn runs on the
+   compositor; there are no keyframes here. It sits on the caption ink. */
 .thinking-spark {
+  position: relative;
   display: block;
   flex: none;
   color: var(--ui-text-primary);
-  overflow: visible;
+}
+.thinking-spark-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  will-change: transform, opacity;
 }
 
 /* Public timeline entries remain still beneath the one live caption. */
