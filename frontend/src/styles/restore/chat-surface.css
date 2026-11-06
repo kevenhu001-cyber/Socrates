@@ -476,7 +476,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 .chat-config-slider input[type="range"]::-webkit-slider-runnable-track {
-  height: 6px;
+  height: 22px;
   border-radius: 999px;
   background: linear-gradient(to right, var(--chat-accent) var(--chat-config-fill, 50%), var(--ui-bg-control) var(--chat-config-fill, 50%));
 }
@@ -484,7 +484,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 .chat-config-slider input[type="range"]::-webkit-slider-thumb {
   width: 28px;
   height: 28px;
-  margin-top: -11px;
+  margin-top: -3px;
   border: 0;
   border-radius: 50%;
   appearance: none;
@@ -494,7 +494,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 .chat-config-slider input[type="range"]::-moz-range-track {
-  height: 6px;
+  height: 22px;
   border-radius: 999px;
   background: linear-gradient(to right, var(--chat-accent) var(--chat-config-fill, 50%), var(--ui-bg-control) var(--chat-config-fill, 50%));
 }
@@ -508,23 +508,25 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
 }
 
-/* Reference effort slider: a thin track filled up to the thumb. The stops
-   are short vertical strokes under the track, never dots. */
+/* Reference effort slider: a thick track filled up to the thumb, with a
+   small round dot at every stop inside the track, centred where the thumb
+   sits on that stop. */
 .chat-config-slider-dots {
   position: absolute;
-  inset: auto 8px 0;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 8px;
-  padding: 0 13px;
+  padding: 0 12px;
   pointer-events: none;
 }
 
 .chat-config-slider-dots span {
-  width: 1.5px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
   background: var(--ui-text-muted);
+  opacity: .7;
 }
 
 @keyframes chat-config-pop-in {

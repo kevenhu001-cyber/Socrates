@@ -10,7 +10,7 @@ function i18n(key: string, fallback: string): string {
   return value !== key ? value : fallback;
 }
 
-/* The shared shell draws glyphs from its own dot-free line set. */
+/* The shared shell draws glyphs from the shared interface icon set. */
 const GLYPHS: Record<NavButtonSpec['key'], UiGlyphName> = {
   new: 'compose',
   library: 'library',

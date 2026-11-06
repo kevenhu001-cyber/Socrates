@@ -56,7 +56,7 @@ function SessionRowActionMenu(props: Omit<SessionRowMenuProps, 'trigger'>) {
         data-i18n-aria="session.moreActions"
         onClick={(event) => event.stopPropagation()}
       >
-        {/* RN-9 「更多」：三条横向短线，不用圆点。 */}
+        {/* 「更多」：参考图的三个圆点 ⋯。 */}
         <Icon name="more" size={16} />
       </UiButton>}
     />

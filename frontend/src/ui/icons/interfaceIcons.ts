@@ -29,9 +29,9 @@ const GLYPHS = {
   site: [rect(3.5, 4.5, 17, 15, 3), path('M3.5 9.5h17M9 9.5v10')],
   exam: [rect(5, 4.5, 14, 16, 3), rect(9, 2.5, 6, 4, 1.5), path('m8.5 13 2.5 2.5 4.5-5')],
   skills: [rect(4, 4, 6, 6, 2), rect(14, 4, 6, 6, 2), rect(4, 14, 6, 6, 2), path('M17 13c.4 2.3 1.7 3.6 4 4-2.3.4-3.6 1.7-4 4-.4-2.3-1.7-3.6-4-4 2.3-.4 3.6-1.7 4-4Z')],
-  /* Three short horizontal strokes rather than the ⋯ dots: nothing in the
-     app reads as a dot except the streaming cursor. */
-  more: [path('M3.5 12h4M10 12h4M16.5 12h4')],
+  /* The reference ⋯: three round dots. A 1.25 radius under the shared
+     1.75 stroke draws a solid 4.25px dot. */
+  more: [circle(5, 12, 1.25), circle(12, 12, 1.25), circle(19, 12, 1.25)],
   search: [circle(10.75, 10.75, 6.75), path('m16 16 4.5 4.5')],
   panel: [rect(3.5, 4.5, 17, 15, 3), path('M9 4.5v15')],
   close: [path('m7 7 10 10M17 7 7 17')],
