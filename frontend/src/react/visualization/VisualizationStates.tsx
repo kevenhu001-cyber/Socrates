@@ -13,6 +13,7 @@ import type { ReactNode } from 'react';
 import { visualizationTableRows } from '@socrates/core/visualizationNormalize';
 import { Button } from '../ui/shadcn/button';
 import { i18n } from '../legacy/gateway';
+import { visualizationRendererKind } from '../../render/visualizationRendererKind';
 
 export type VizFailureReason =
   | 'dataFormat'
@@ -89,22 +90,35 @@ export interface VisualizationSkeletonProps {
   title?: string | null;
   /** 'receiving' while arguments stream, 'loading' while the renderer loads. */
   phase: 'receiving' | 'loading';
+  /** The template decides the engine, and the engine the card's stage height. */
+  template?: string | null;
+  /** Reserve the caption row the finished card will draw. */
+  caption?: string | null;
 }
 
-export function VisualizationSkeleton({ title, phase }: VisualizationSkeletonProps) {
+/**
+ * Same geometry as the finished card (header row, the engine's stage height,
+ * the phone breakpoint, the caption row), so the card replaces it in place.
+ * The status line sits inside the stage, where the card shows its own
+ * progress line, instead of adding a row that would vanish later.
+ */
+export function VisualizationSkeleton({ title, phase, template, caption }: VisualizationSkeletonProps) {
   const label = phase === 'receiving'
     ? i18n('viz.state.receiving', 'Receiving data…')
     : i18n('viz.state.loadingRenderer', 'Loading the chart renderer…');
   return (
-    <section className="viz-state viz-state-skeleton" aria-busy="true" data-viz-state={phase}>
-      {title ? <h3 className="viz-state-title">{title}</h3> : null}
-      <div className="viz-state-stage" aria-hidden="true">
-        <span className="viz-state-gridline" />
-        <span className="viz-state-gridline" />
-        <span className="viz-state-gridline" />
-        <span className="viz-state-baseline" />
+    <section className="viz-state-skeleton" aria-busy="true" data-viz-state={phase} data-renderer={visualizationRendererKind(template)}>
+      <header className="viz-skeleton-header">
+        <h3 className="viz-skeleton-title">{title || '\u00a0'}</h3>
+      </header>
+      <div className="viz-skeleton-stage">
+        <p className="viz-skeleton-progress" role="status">{label}</p>
+        <span className="viz-skeleton-gridline" aria-hidden="true" />
+        <span className="viz-skeleton-gridline" aria-hidden="true" />
+        <span className="viz-skeleton-gridline" aria-hidden="true" />
+        <span className="viz-skeleton-gridline" aria-hidden="true" />
       </div>
-      <p className="viz-state-progress" role="status">{label}</p>
+      {caption ? <p className="viz-skeleton-caption">{caption}</p> : null}
     </section>
   );
 }

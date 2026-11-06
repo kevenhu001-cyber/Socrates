@@ -16,7 +16,10 @@ test('heatmap gets matrix axes, flattened cells and a valid color scale', () => 
   assert.deepEqual(option.xAxis.data, ['Mon', 'Tue']);
   assert.deepEqual(option.yAxis.data, ['AM', 'PM']);
   assert.equal(option.yAxis.inverse, true);
-  assert.deepEqual(option.series[0].data, [[0, 0, 2], [1, 0, 4], [0, 1, 3], [1, 1, 1]]);
+  assert.deepEqual(option.series[0].data.map((cell) => cell.value), [[0, 0, 2], [1, 0, 4], [0, 1, 3], [1, 1, 1]]);
+  /* Labels follow the cell fill, not the page theme: white only on the
+     deep end of the ramp, ink everywhere else. */
+  assert.deepEqual(option.series[0].data.map((cell) => cell.label.color), ['#1c2637', '#ffffff', '#ffffff', '#1c2637']);
   assert.equal(option.visualMap.min, 1);
   assert.equal(option.visualMap.max, 4);
 });

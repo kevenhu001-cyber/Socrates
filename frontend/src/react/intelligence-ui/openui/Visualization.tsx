@@ -106,9 +106,10 @@ export const Visualization = defineComponent({
     const spec = JSON.parse(specKey) as Record<string, unknown>;
     return (
       <div className="openui-visualization" data-openui-visualization={props.template} data-viz-phase={streaming ? 'receiving' : phase.kind}>
-        {streaming ? <VisualizationSkeleton title={props.title} phase="receiving" /> : null}
-        {/* While loading, the card shell itself shows the real title and a
-            progress line in its reserved stage (see mountVisualization). */}
+        {/* The skeleton holds the card's exact footprint from the first token
+            until the engine's card is in the host (CSS hides it then), so
+            neither the end of the stream nor the renderer load moves text. */}
+        {streaming || phase.kind === 'loading' ? <VisualizationSkeleton title={props.title} template={props.template} caption={props.caption} phase={streaming ? 'receiving' : 'loading'} /> : null}
         {!streaming && phase.kind === 'failed' ? (
           <VisualizationFailure
             title={props.title}

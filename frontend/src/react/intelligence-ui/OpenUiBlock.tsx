@@ -1,8 +1,9 @@
 import { Button as UiButton } from '../ui/Button';
 import { Renderer, type ActionEvent, type OpenUIError, type ParseResult } from '@openuidev/react-lang';
-import { Component, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { i18n } from '../legacy/gateway';
 import { IntelligentSurface } from './IntelligentSurface';
+import { BlockSkeleton } from './BlockSkeleton';
 import { runOpenUiAction } from './openui/actionBridge';
 import { library } from './openui/library';
 import { programIssues, runtimeProgramIssues } from './openui/validateProgram';
@@ -93,9 +94,32 @@ function OpenUiUnavailableNotice({
   );
 }
 
+/**
+ * Until a streamed program first draws something, it shows the footprint the
+ * lazy-load fallback showed (measured before paint, then latched off); after
+ * that it never drops below it, so a short first line cannot pull the answer
+ * up before the program grows.
+ */
+function useFirstPaintHold(source: string, open: boolean) {
+  const program = useRef<HTMLDivElement>(null);
+  const [awaitingFirstPaint, setAwaitingFirstPaint] = useState(open);
+  const streamed = useRef(open);
+  useLayoutEffect(() => {
+    if (!awaitingFirstPaint) return;
+    const drew = Array.from(program.current?.children ?? []).some((child) => child.getBoundingClientRect().height > 0);
+    if (!open || drew) setAwaitingFirstPaint(false);
+  }, [awaitingFirstPaint, open, source]);
+  return {
+    program,
+    skeleton: awaitingFirstPaint ? <BlockSkeleton /> : null,
+    holdFootprint: streamed.current && !awaitingFirstPaint ? 'true' as const : undefined,
+  };
+}
+
 /** OpenUI is loaded only when a response actually contains an OpenUI program. */
 export default function OpenUiBlock({ source, open = false, readOnly = false, embedded = false }: OpenUiBlockProps) {
   const host = useRef<HTMLDivElement>(null);
+  const { program, skeleton, holdFootprint } = useFirstPaintHold(source, open);
   const [currentState, setCurrentState] = useState<{ source: string; value: Record<string, unknown> }>({ source, value: {} });
   const onStateUpdate = useCallback((state: Record<string, unknown>) => {
     setCurrentState({ source, value: state });
@@ -124,7 +148,8 @@ export default function OpenUiBlock({ source, open = false, readOnly = false, em
     } }));
   };
   const content = <div className="intui-openui" ref={host} data-openui-streaming={open ? 'true' : 'false'}>
-    <div className="iui-program" data-invalid-result={stateIssue ? 'true' : undefined}>
+    {skeleton}
+    <div className="iui-program" ref={program} data-invalid-result={stateIssue ? 'true' : undefined} data-hold-footprint={holdFootprint}>
       <OpenUiRenderBoundary source={source} onFailure={(message) => setRuntimeErrors({ source, messages: [message] })}>
       <OpenUiProgram
         source={source}

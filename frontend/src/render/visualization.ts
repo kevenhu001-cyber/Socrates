@@ -10,6 +10,7 @@ import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visual
 import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.ts';
 import { asVisualizationSpec, VizSpec } from './visualizationSpec.ts';
+import { CHART_TEMPLATES, EXTENSION_TEMPLATES, chartPrefersCanvas, visualizationRendererKind } from './visualizationRendererKind.ts';
 import { normalizeVisualizationSpec } from '@socrates/core/visualizationNormalize';
 import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable, semanticLayoutWidth, SEMANTIC_LAYOUT_WIDTH } from './visualizationStatic.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -191,8 +192,6 @@ function vizT(key: string, fallback?: string) {
   return fallback || key;
 }
 
-const CHART_TEMPLATES = ['line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'];
-const EXTENSION_TEMPLATES = ['svg_illustration', 'interactive_simulation'];
 
 function createVisualizationCard(spec: VizSpec, host: HTMLElement, cardId: string, mounting: Map<string, VisualizationCard>): VisualizationCard {
   const card: VisualizationCard = document.createElement('section');
@@ -207,12 +206,11 @@ function createVisualizationCard(spec: VizSpec, host: HTMLElement, cardId: strin
   return card;
 }
 
+/* Specialized templates only: every one of them is drawn by one of these
+   engines, and the stage CSS sizes itself by this name. */
 function rendererName(template: string) {
-  if (template === 'function' || template === 'paper_chart') return 'plotly';
-  if (template === 'geometry_3d') return 'three';
-  if (template === 'math_construction') return 'geogebra';
-  if (template === 'whiteboard') return 'tldraw';
-  return 'mermaid';
+  const kind = visualizationRendererKind(template);
+  return kind === 'echarts' || kind === 'semantic' || kind === 'extension' ? 'mermaid' : kind;
 }
 
 async function mountSpecializedRenderer(spec: VizSpec, card: VisualizationCard, stage: HTMLElement, renderState: VisualizationRenderState, isCancelled: () => boolean) {
@@ -332,9 +330,9 @@ async function mountChartRenderer(spec: VizSpec, host: HTMLElement, options: Vis
   await whenFontsReady('Noto Sans SC');
   const echarts = await loadEcharts();
   if (isCancelled()) { disposeCard(card); return true; }
-  const useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series: { data: unknown[] }) {
-    return series.data && series.data.length > 1200;
-  });
+  /* SVG keeps the chart sharp at any zoom and pixel ratio; canvas only for
+     data large enough that SVG nodes would cost more than they give. */
+  const useCanvas = chartPrefersCanvas(spec.template, spec.payload as Record<string, unknown>);
   clearStageProgress(stage);
   const chartOptions = optionForChart(spec, palette());
   if (!chartOptions || chartOptionIsEmpty(spec, chartOptions as Record<string, unknown>)) {

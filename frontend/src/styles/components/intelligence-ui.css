@@ -899,3 +899,22 @@
   .msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more { min-height: var(--ui-control-touch); }
   .msg.assistant .msg-body.is-declarative :is(.intui-button, .intui-choice-options button, .intui-slider input[type="range"]) { min-height: var(--ui-control-touch); }
 }
+
+/* One footprint for an interactive block that has nothing of its own to draw
+   yet (code chunk loading, OpenUI program before its root). Static: the
+   arriving content is the progress signal, so nothing pulses. */
+.intui-block-skeleton {
+  display: grid;
+  align-content: start;
+  gap: var(--ui-space-sm);
+  height: 3.5rem;
+  padding-block: var(--ui-space-xxs);
+}
+.intui-block-skeleton-line {
+  display: block;
+  width: 72%;
+  height: .75rem;
+  border-radius: var(--ui-radius-xs);
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
+}
+.intui-block-skeleton-line[data-width="title"] { width: 40%; height: 1rem; }

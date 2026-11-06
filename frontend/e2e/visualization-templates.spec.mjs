@@ -10,7 +10,7 @@ const nodes = [{ id: 'a', label: 'Start' }, { id: 'b', label: 'Middle' }, { id: 
 const edges = [{ from: 'a', to: 'b', label: 'go' }, { from: 'b', to: 'c' }];
 const CASES = [
   { spec: { ...S('radar', { indicators: [{ name: 'Speed', max: 10 }, { name: 'Power', max: 10 }, { name: 'Focus', max: 10 }], series: [{ name: 'x', data: [8, 6, 9] }, { name: 'y', data: [5, 9, 4] }] }), caption: 'Optional explanatory note.' }, content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'] },
-  { spec: S('heatmap', { xCategories: ['Mon', 'Tue'], yCategories: ['AM', 'PM'], values: [[2, 4], [3, 1]] }), content: 'canvas', actions: ['table', 'reset', 'download', 'fullscreen'], tableRows: 2 },
+  { spec: S('heatmap', { xCategories: ['Mon', 'Tue'], yCategories: ['AM', 'PM'], values: [[2, 4], [3, 1]] }), content: 'svg', actions: ['table', 'reset', 'download', 'fullscreen'], tableRows: 2 },
   { spec: S('scatter', { xLabel: 'Hours', yLabel: 'Score', series: [{ name: 'Samples', data: [[1, 4], { x: 2, y: 7 }, [3, 6]] }] }), content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'], tableRows: 3 },
   { spec: S('boxplot', { categories: ['A', 'B'], series: [{ name: 'Scores', data: [[1, 2, 3, 4, 5], [2, 3, 4, 5, 8]] }] }), content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'], tableRows: 2 },
   { spec: S('function', { functions: [{ expression: 'sin(x)', label: 'Sine', domain: [-3, 3] }] }), content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'] },

@@ -1,6 +1,6 @@
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
-import { defineComponent } from "@openuidev/react-lang";
-import { useId, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { defineComponent, useIsStreaming } from "@openuidev/react-lang";
+import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import { z } from "zod/v4";
 
 type Row = Record<string, unknown>;
@@ -32,6 +32,18 @@ function makeFormat(kind: string | undefined, currency: string | undefined): For
     const options: Intl.NumberFormatOptions = { minimumFractionDigits: 0, maximumFractionDigits: compact && big ? 1 : 2, ...(big ? { notation: "compact" } : {}) };
     return value.toLocaleString("en-US", kind === "currency" ? { ...options, style: "currency", currency: code } : options);
   };
+}
+
+/** A bar with only its far end rounded, so stacked segments meet flush. */
+function barPath(x: number, top: number, width: number, height: number, radius: number, roundTop: boolean) {
+  const r = Math.max(0, Math.min(radius, width / 2, height));
+  const f = (n: number) => n.toFixed(2);
+  if (!r) return `M${f(x)},${f(top)}h${f(width)}v${f(height)}h${f(-width)}Z`;
+  const right = x + width;
+  const bottom = top + height;
+  return roundTop
+    ? `M${f(x)},${f(bottom)}V${f(top + r)}Q${f(x)},${f(top)} ${f(x + r)},${f(top)}H${f(right - r)}Q${f(right)},${f(top)} ${f(right)},${f(top + r)}V${f(bottom)}Z`
+    : `M${f(x)},${f(top)}H${f(right)}V${f(bottom - r)}Q${f(right)},${f(bottom)} ${f(right - r)},${f(bottom)}H${f(x + r)}Q${f(x)},${f(bottom)} ${f(x)},${f(bottom - r)}Z`;
 }
 
 function niceStep(span: number) {
@@ -71,7 +83,6 @@ function Legend({ series }: { series: string[] }) {
 }
 
 function Cartesian({ spec, width }: { spec: Spec; width: number }) {
-  const gradient = useId().replace(/:/g, "");
   const [hover, setHover] = useState<number | null>(null);
   const { rows, series, type, height, format, x } = spec;
   const stacked = spec.stacked && type !== "line";
@@ -104,17 +115,10 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
   return (
     <div className="iui-chart-plot" style={{ height }}>
       <svg width={width} height={height} role="img" aria-label={`${type} chart of ${series.join(", ")} by ${x}`} onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
-        <defs>
-          {series.map((s, si) => (
-            <linearGradient key={s} id={`${gradient}-${si}`} x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor={seriesColor(si)} stopOpacity={stacked ? 0.5 : 0.24} />
-              <stop offset="100%" stopColor={seriesColor(si)} stopOpacity={stacked ? 0.3 : 0.02} />
-            </linearGradient>
-          ))}
-        </defs>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={pad.left} x2={pad.left + w} y1={y(t)} y2={y(t)} className="iui-chart-grid" strokeDasharray={t === 0 ? undefined : "3 4"} />
+            {/* Solid hairlines; the zero line carries the axis weight. */}
+            <line x1={pad.left} x2={pad.left + w} y1={y(t)} y2={y(t)} className={t === 0 ? "iui-chart-baseline" : "iui-chart-grid"} />
             <text x={pad.left - 10} y={y(t) + 4} textAnchor="end" className="iui-chart-tick">
               {format(t, true)}
             </text>
@@ -130,17 +134,18 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
         {hover !== null && type === "bar" && <rect x={pad.left + band * hover} y={pad.top} width={band} height={h} className="iui-chart-hover" />}
         {type === "bar" &&
           rows.map((row, i) => {
-            const inner = Math.min(band * 0.7, 72 * Math.max(1, stacked ? 1 : series.length));
+            /* Slim bars with air between them read as data, not as blocks. */
+            const inner = Math.min(band * 0.6, 44 * Math.max(1, stacked ? 1 : series.length));
             if (stacked)
               return series.map((s, si) => {
                 const top = y(tops[i][si]);
                 const base = y(tops[i][si - 1] ?? 0);
-                return <rect key={`${i}-${s}`} x={xAt(i) - inner / 2} y={top} width={inner} height={Math.max(0, base - top)} fill={seriesColor(si)} rx={si === series.length - 1 ? 4 : 0} />;
+                return <path key={`${i}-${s}`} d={barPath(xAt(i) - inner / 2, top, inner, Math.max(0, base - top), 3, si === series.length - 1)} fill={seriesColor(si)} />;
               });
             const each = inner / series.length;
             return series.map((s, si) => {
               const v = num(row[s]);
-              return <rect key={`${i}-${s}`} x={xAt(i) - inner / 2 + each * si + 1} y={Math.min(y(v), y(0))} width={Math.max(1, each - 2)} height={Math.abs(y(0) - y(v))} rx={4} fill={seriesColor(si)} />;
+              return <path key={`${i}-${s}`} d={barPath(xAt(i) - inner / 2 + each * si + 1, Math.min(y(v), y(0)), Math.max(1, each - 2), Math.abs(y(0) - y(v)), 3, v >= 0)} fill={seriesColor(si)} />;
             });
           })}
         {(type === "line" || type === "area") &&
@@ -151,8 +156,9 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
             const under = rows.map((_, i) => `${xAt(i).toFixed(1)},${y(base(i)).toFixed(1)}`).reverse();
             return (
               <g key={s}>
-                {type === "area" && rows.length > 1 && <path d={`M${points.join("L")}L${under.join("L")}Z`} fill={`url(#${gradient}-${si})`} />}
-                <path d={`M${points.join("L")}`} fill="none" stroke={seriesColor(si)} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" />
+                {/* A flat translucent fill: no gradient bands at any zoom. */}
+                {type === "area" && rows.length > 1 && <path d={`M${points.join("L")}L${under.join("L")}Z`} fill={seriesColor(si)} fillOpacity={stacked ? 0.32 : 0.12} />}
+                <path d={`M${points.join("L")}`} fill="none" stroke={seriesColor(si)} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
                 {(rows.length <= 16 || hover !== null) &&
                   rows.map((_, i) => (rows.length <= 16 || i === hover ? <circle key={i} cx={xAt(i)} cy={y(top(i))} r={i === hover ? 4.5 : 3} fill={seriesColor(si)} stroke="var(--iui-canvas)" strokeWidth={1.5} /> : null))}
               </g>
@@ -205,7 +211,7 @@ function Scatter({ spec, width }: { spec: Spec; width: number }) {
       <svg width={width} height={height} role="img" aria-label={`scatter chart of ${series.join(", ")} by ${x}`} onPointerLeave={() => setHover(null)}>
         {ya.ticks.map((t) => (
           <g key={`y${t}`}>
-            <line x1={pad.left} x2={pad.left + w} y1={py(t)} y2={py(t)} className="iui-chart-grid" strokeDasharray="3 4" />
+            <line x1={pad.left} x2={pad.left + w} y1={py(t)} y2={py(t)} className="iui-chart-grid" />
             <text x={pad.left - 10} y={py(t) + 4} textAnchor="end" className="iui-chart-tick">{format(t, true)}</text>
           </g>
         ))}
@@ -302,17 +308,33 @@ function toSpec(props: z.infer<typeof chartProps>): Spec | null {
   };
 }
 
+/** The height the drawn plot will take, known before its rows are complete. */
+function reservedHeight(spec: Spec | null, height: number | undefined, width: number) {
+  if (spec?.type === "pie" || spec?.type === "donut") return Math.max(80, Math.min(200, width > 0 && width < 420 ? width * 0.62 : 200));
+  return spec?.height ?? Math.min(480, Math.max(140, height ?? 240));
+}
+
 export const Chart = defineComponent({
   name: "Chart",
   props: chartProps,
   description: 'Rows of data; x is the category key (a number key for scatter), series the value keys (default: every number key). percent values are like 45; currency is a code like "EUR".',
   component: function ChartView({ props }) {
     const [ref, width] = useWidth();
+    const streaming = useIsStreaming();
     const spec = toSpec(props);
     const pie = spec?.type === "pie" || spec?.type === "donut";
+    /* Half-streamed rows would rescale the axes on every token. Hold the
+       plot's footprint (and the legend row, once the series are known) and
+       draw once the data is complete. */
+    const ready = spec && width > 0 && !streaming;
+    const reserved = reservedHeight(spec, props.height, width);
     return (
-      <figure className="iui-chart" ref={ref}>
-        {spec && width > 0 ? pie ? <Pie spec={spec} width={width} /> : spec.type === "scatter" ? <Scatter spec={spec} width={width} /> : <Cartesian spec={spec} width={width} /> : <div style={{ height: spec?.height ?? 240 }} />}
+      <figure className="iui-chart" ref={ref} aria-busy={streaming || undefined}>
+        {ready ? pie ? <Pie spec={spec} width={width} /> : spec.type === "scatter" ? <Scatter spec={spec} width={width} /> : <Cartesian spec={spec} width={width} /> : (
+          <div className="iui-chart-pending" style={{ height: reserved }} aria-hidden="true">
+            <span /><span /><span /><span />
+          </div>
+        )}
         {spec && !pie && <Legend series={spec.series} />}
       </figure>
     );
