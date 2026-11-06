@@ -51,14 +51,17 @@ test('on a phone the chart title keeps its line and the actions wrap under it', 
   await open(page, [msg('bar', '图：\n\n' + BAR)], { viewport: { width: 390, height: 844 } });
   const card = row(page, 'bar').locator('.visualization-card').first();
   await expect(card).toBeVisible();
-  const geometry = await card.evaluate((element) => {
+  // The action row mounts a beat after the card (its buttons hydrate into the
+  // header), so read the geometry once the header has settled.
+  const measure = () => card.evaluate((element) => {
     const title = element.querySelector('.visualization-header h3').getBoundingClientRect();
     const actions = element.querySelector('.visualization-actions').getBoundingClientRect();
-    return { titleWidth: title.width, titleHeight: title.height, actionsTop: actions.top, titleBottom: title.bottom };
+    return { titleWidth: title.width, titleHeight: title.height, actionsBelow: actions.top >= title.bottom - 1 };
   });
+  await expect.poll(async () => (await measure()).actionsBelow, { timeout: 5000 }).toBe(true);
+  const geometry = await measure();
   expect(geometry.titleWidth).toBeGreaterThan(150);
   expect(geometry.titleHeight).toBeLessThan(40);
-  expect(geometry.actionsTop).toBeGreaterThanOrEqual(geometry.titleBottom - 1);
 });
 
 test('a chart written as an openui fence has no frame and no header band in dark mode', async ({ page }) => {
