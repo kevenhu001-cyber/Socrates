@@ -95,3 +95,44 @@
     margin: 0 0 12px;
   }
 }
+
+/* Phone chat landing — one suggestion above the composer, as in the
+   reference: an emoji on the left, one muted line that truncates. Desktop
+   keeps its shortcut rail; tutor mode shows its starters instead. */
+#appShell .home-suggestion { display: none; }
+
+@media (max-width: 768px) {
+  body:not([data-app-mode="tutor"]) #appShell .home-suggestion {
+    display: block;
+    order: -1;
+    width: 100%;
+    margin: 0 0 30px;
+  }
+  #appShell .home-suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    background: transparent;
+    color: var(--ui-text-muted);
+    font: inherit;
+    font-size: var(--ui-mobile-font-meta);
+    text-align: start;
+  }
+  #appShell .home-suggestion-emoji {
+    flex: 0 0 auto;
+    width: 22px;
+    font-size: var(--ui-font-size-xl);
+    line-height: 1;
+    text-align: center;
+  }
+  #appShell .home-suggestion-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

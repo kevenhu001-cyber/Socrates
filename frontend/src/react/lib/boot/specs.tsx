@@ -149,6 +149,7 @@ export function mountRegistryList(): MountSpec[] {
         mountOwnedRoot(host, 'home-quick-actions', <HomeQuickActions host={host} />);
       });
     } },
+    { hostId: 'homeSuggestion', label: 'home-suggestion', mount: (host) => import('../../home/HomeStartComponents').then(({ HomeSuggestion }) => mountOwnedRoot(host, 'home-suggestion', <HomeSuggestion />)) },
     { hostId: 'homeTutorStarters', label: 'home-tutor-starters', mount: (host) => {
       return import('../../home/HomeStartComponents').then(({ HomeTutorStarters }) => {
         mountOwnedRoot(host, 'home-tutor-starters', <HomeTutorStarters />);

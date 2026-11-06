@@ -42,7 +42,19 @@ for (const mode of ['dark', 'light']) {
     expect(composerBox.width).toBe(358);
     expect(composerBox.height).toBe(86);
     expect(Math.round(769 - composerBox.y - composerBox.height)).toBe(24);
+    /* The desktop shortcut rail stays off the phone; the reference shows a
+       single suggestion line above the composer instead (emoji + one
+       muted, truncated line). */
     await expect(page.locator('.home-quick-actions')).toBeHidden();
+    const suggestion = page.locator('#homeSuggestion [data-testid="home-suggestion"]');
+    await expect(suggestion).toHaveCount(1);
+    await expect(suggestion).toBeVisible();
+    const suggestionBox = await suggestion.boundingBox();
+    expect(suggestionBox.y + suggestionBox.height).toBeLessThanOrEqual(composerBox.y);
+    expect(await suggestion.locator('.home-suggestion-text').evaluate(el => {
+      const css = getComputedStyle(el);
+      return { whiteSpace: css.whiteSpace, overflow: css.textOverflow, clipped: el.scrollWidth > el.clientWidth };
+    })).toEqual({ whiteSpace: 'nowrap', overflow: 'ellipsis', clipped: true });
     await expect(page.locator('#topicTitle')).toBeVisible();
     await assertNoOverflow(page);
     await page.screenshot({ path: `test-results/reference-alignment-${encodeURIComponent(mode)}-home.png` });
@@ -122,6 +134,7 @@ for (const mode of ['dark', 'light']) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openNav(page, 'navNew');
     await expect(page.locator('.home-quick-actions')).toBeVisible();
+    await expect(page.locator('#homeSuggestion')).toBeHidden();
     await page.evaluate(() => {
       if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar();
     });

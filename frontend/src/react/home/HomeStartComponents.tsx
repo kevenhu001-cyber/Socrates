@@ -10,6 +10,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { HomeHero, HomeShortcuts, HomeStarters, type HomeShortcut } from '@socrates/ui/home';
 import { i18n } from '../legacy/gateway.ts';
+import { Button } from '../ui';
 import { focusComposer, getComposerMarkdown, setComposerMarkdown } from '../../composer/controller.ts';
 import { composeAction } from '../../extensions/index.ts';
 import { toggleWebSearch } from '../../chat/webSearchToggle.ts';
@@ -105,6 +106,24 @@ export function HomeQuickActions({ host }: { host: HTMLElement }) {
         onDismiss={dismiss}
       />
     </WebUiTheme>
+  );
+}
+
+/* Phone chat landing: the reference shows one suggestion above the composer,
+   an emoji and a single muted line that truncates. It reuses the first tutor
+   starter's prompt, so no new copy; tapping it fills the composer. */
+const SUGGESTION = { prompt: 'understand', emoji: '💡' } as const;
+
+export function HomeSuggestion() {
+  useLocaleRefresh();
+  const text = i18n(`home.tutor.${SUGGESTION.prompt}.prompt`, '');
+  if (!text) return null;
+  return (
+    <Button type="button" className="home-suggestion-item" data-testid="home-suggestion"
+      onClick={() => applyTutorPrompt(SUGGESTION.prompt)}>
+      <span className="home-suggestion-emoji" aria-hidden="true">{SUGGESTION.emoji}</span>
+      <span className="home-suggestion-text">{text}</span>
+    </Button>
   );
 }
 
