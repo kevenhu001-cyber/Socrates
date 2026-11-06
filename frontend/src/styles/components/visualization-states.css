@@ -72,3 +72,16 @@
 }
 .visualization-fallback-inline .visualization-fallback-actions { justify-content: flex-start; }
 .openui-visualization { min-width: 0; }
+
+/* Mermaid lays a diagram out by measuring its labels in a temporary
+   container it appends to <body>. Under prefers-reduced-motion the global
+   reset gives every element a 0.01ms transition, so those measurements land
+   mid-transition and the layout comes out many times too large: the diagram
+   then shrinks into a corner of its stage. Diagrams never animate, so their
+   measuring containers simply have no transitions. */
+[id^="dsocrates-mermaid-"],
+[id^="dsocrates-mermaid-"] *,
+[id^="dmermaid-svg-"],
+[id^="dmermaid-svg-"] * {
+  transition-property: none;
+}
