@@ -21,8 +21,9 @@
     color: var(--foreground);
   }
   #appShell #sidebarOpenBtn svg { width: 24px; height: 24px; }
-  #appShell #sidebarOpenBtn .glyph-panel { display: none; }
-  #appShell #sidebarOpenBtn .glyph-hamburger { display: block; }
+  /* Reference: the sidebar glyph (rounded frame + rail line), not a hamburger. */
+  #appShell #sidebarOpenBtn .glyph-panel { display: block; }
+  #appShell #sidebarOpenBtn .glyph-hamburger { display: none; }
   /* Directories own their heading/actions; chat configuration has no
      context here, even before the main-view attribute catches up. */
   body.workspace-active #appShell .top-model-slot { display: none; }

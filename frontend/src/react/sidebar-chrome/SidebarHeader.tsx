@@ -18,8 +18,8 @@ const LOGO = { uri: '/logo.png' };
  * (`.sidebar-logo`, `.sidebar-header-actions`, and `.btn-icon`, the phone
  * tap-target marker; desktop keeps the RN part's own 32px pill).
  *
- * Desktop draws the panel glyph on the collapse control (it toggles the
- * rail); the phone drawer draws the ×.
+ * Both desktop and the phone drawer draw the panel glyph on the collapse
+ * control, as the reference does.
  */
 export function SidebarHeader() {
   useLocaleRefresh();
@@ -70,7 +70,7 @@ export function SidebarHeader() {
         />
         <SidebarIconAction
           id="sidebarCloseBtn"
-          icon={isMobile ? 'close' : 'panel'}
+          icon="panel"
           label={closeSidebarLabel}
           i18nKey={closeSidebarKey}
           controls="sidebar"
