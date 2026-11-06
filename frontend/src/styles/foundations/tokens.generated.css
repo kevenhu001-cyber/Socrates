@@ -98,7 +98,7 @@
 }
 
 [data-mode="light"] {
-  --ui-canvas: #ffffff;
+  --ui-canvas: #fcfcfc;
   --ui-card: #ffffff;
   --ui-fill: rgba(0, 0, 0, 0.04);
   --ui-fill-hover: rgba(0, 0, 0, 0.07);
@@ -110,7 +110,7 @@
   --ui-ink-tertiary: #767676;
   --ui-ink-hover: #303030;
   --ui-on-ink: #ffffff;
-  --ui-action: #397ef7;
+  --ui-action: #3d66c0;
   --ui-on-action: #ffffff;
   --ui-copy: #303030;
   --ui-subtle: #f9f9f9;
@@ -134,11 +134,11 @@
   --ui-hairline: rgba(255, 255, 255, 0.10);
   --ui-hairline-strong: rgba(255, 255, 255, 0.16);
   --ui-ink: #ededed;
-  --ui-ink-secondary: #a1a1a1;
+  --ui-ink-secondary: #afafaf;
   --ui-ink-tertiary: #8f8f8f;
   --ui-ink-hover: #ffffff;
   --ui-on-ink: #0a0a0a;
-  --ui-action: #397ef7;
+  --ui-action: #3d66c0;
   --ui-on-action: #ffffff;
   --ui-copy: #d6d6d6;
   --ui-subtle: #141414;

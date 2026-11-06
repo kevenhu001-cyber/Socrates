@@ -12,7 +12,8 @@ export const TURN = Object.freeze({
   label: '[data-testid="turn-activity-label"]',
   meta: '[data-testid="turn-activity-meta"]',
   body: '[data-testid="turn-activity-body"]',
-  progress: '[data-testid="turn-activity-progress"]',
+  /** The live working glyph (inline-SVG spark) ahead of the caption. */
+  indicator: '[data-testid="turn-activity-indicator"]',
   step: '[data-testid="thinking-step"]',
   stepTitle: '[data-testid="thinking-step-title"]',
   stepSummary: '[data-testid="thinking-step-summary"]',

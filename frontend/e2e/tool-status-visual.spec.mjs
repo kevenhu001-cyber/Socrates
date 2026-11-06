@@ -73,7 +73,7 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   /* The live thinking line carries the running tool's icon and its
      travelling hairline; no spinner. */
   await expect(bubble.locator('[data-testid="turn-activity-toggle"] .tool-inline-tool-icon')).toHaveCount(1);
-  await expect(bubble.locator('[data-testid="turn-activity-progress"]')).toHaveCount(1);
+  await expect(bubble.locator('[data-testid="turn-activity-indicator"]')).toHaveCount(1);
   await expect(bubble.locator('.thinking-spinner')).toHaveCount(0);
 
   // No orphaned stream cursor next to the status icon: while the live

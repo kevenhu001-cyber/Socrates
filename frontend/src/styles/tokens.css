@@ -119,14 +119,17 @@
   --ui-control-badge: 20px;
   --ui-hit-area: 44px;
   --ui-sidebar-mobile: 254px;
-  --ui-mobile-row: 40px;
+  --ui-mobile-row: 36px;
   --ui-mobile-header: 56px;
   --ui-mobile-page-gutter: 16px;
-  /* Phone type steps measured off the ChatGPT phone reference (390px wide):
-     drawer nav / recents / section titles / account name 17px, the mode
-     segments 16px, secondary drawer lines 15px, the home greeting 21px. */
-  --ui-mobile-font-nav: calc(17px * var(--app-type-scale));
-  --ui-mobile-font-meta: calc(15px * var(--app-type-scale));
+  /* Phone type steps measured off the ChatGPT phone reference (390px wide) by
+     CJK glyph advance, calibrated against the 16px user bubble: drawer nav,
+     recents, section titles and the + / account menus 14px, the account plan
+     line 13px. (An earlier pass read these as 17 / 15px.) */
+  --ui-mobile-font-nav: calc(14px * var(--app-type-scale));
+  --ui-mobile-font-meta: calc(13px * var(--app-type-scale));
+  /* Drawer account name (reference: 15px, between the nav and body steps). */
+  --ui-mobile-font-account: calc(15px * var(--app-type-scale));
   --ui-mobile-font-greeting: calc(21px * var(--app-type-scale));
   --ui-mobile-bottom: max(24px, env(safe-area-inset-bottom, 0px));
   --ui-sidebar-desktop: 260px;
@@ -234,5 +237,7 @@
 @media (max-width: 768px) {
   :root {
     --ui-sidebar-mobile: min(280px, 65vw);
+    /* Phone reference bubble: a pill on one line (44px tall, 22px radius). */
+    --ui-radius-bubble: 22px;
   }
 }

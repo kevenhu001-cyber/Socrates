@@ -113,7 +113,7 @@ test('display modes preserve node identity, edited values and tabs across fullsc
   await expect(count).toContainText('3');
 });
 
-test('a live turn has one text highlight and reduced motion disables it', async ({ page }) => {
+test('a live turn shows one spark glyph and reduced motion freezes it', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check assumptions.' });
@@ -124,14 +124,50 @@ test('a live turn has one text highlight and reduced motion disables it', async 
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  /* The live caption breathes (RN Animated opacity on its wrapper). */
+  /* The working cue is one glyph ahead of a still caption: twelve dots on a
+     sphere turning in 3D, near dots larger and more opaque than far ones; no
+     sweeping hairline, no breathing text. The turn is a Web Animation of
+     transform and opacity only, so it runs on the compositor. */
+  const spark = activity.locator(`${TURN.indicator} .thinking-spark`);
+  const dots = spark.locator('.thinking-spark-dot');
+  const dotPose = () => dots.evaluateAll((nodes) => nodes.map((n) => getComputedStyle(n).transform).join(' '));
+  await expect(spark).toHaveCount(1);
+  await expect(spark).toHaveAttribute('data-testid', 'thinking-spark');
+  await expect(dots).toHaveCount(12);
+  await expect(spark).toHaveAttribute('data-motion', 'running');
+  /* Script animations only: the reduced-motion reset can leave stray 0.01ms CSS transitions. */
+  const motion = await dots.evaluateAll((nodes) => nodes.map((n) => n.getAnimations().filter((a) => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation)).map((a) => ({
+    state: a.playState,
+    iterations: a.effect.getTiming().iterations,
+    props: [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k).filter((key) => !['offset', 'easing', 'composite', 'computedOffset'].includes(key))))].sort().join(','),
+  }))));
+  expect(motion).toHaveLength(12);
+  for (const list of motion) expect(list).toEqual([{ state: 'running', iterations: Infinity, props: 'opacity,transform' }]);
+  const depth = await dots.evaluateAll((nodes) => nodes.map((n) => {
+    const style = getComputedStyle(n);
+    const m = new DOMMatrixReadOnly(style.transform);
+    return { s: Math.hypot(m.a, m.b), o: Number(style.opacity) };
+  }));
+  const scales = depth.map((d) => d.s);
+  const opacities = depth.map((d) => d.o);
+  expect(Math.max(...scales)).toBeGreaterThan(Math.min(...scales) * 1.4);
+  expect(Math.max(...opacities)).toBeGreaterThan(Math.min(...opacities) * 2);
+  const firstPose = await dotPose();
+  await expect.poll(dotPose).not.toBe(firstPose);
   const captionOpacity = () => activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node.parentElement).opacity));
-  await expect.poll(captionOpacity, { timeout: 4000, intervals: [100] }).toBeLessThan(0.95);
+  await page.waitForTimeout(800);
+  expect(await captionOpacity()).toBe(1);
   await activity.locator(TURN.toggle).click();
   await expect(toolRow(activity, 'search').locator('.tool-inline-tool-icon')).toHaveCSS('animation-name', 'none');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect.poll(captionOpacity).toBe(1);
-  await page.waitForTimeout(800);
+  /* Reduced motion keeps the glyph as one still frame. */
+  await expect(spark).toBeVisible();
+  await expect(spark).toHaveAttribute('data-motion', 'static');
+  await expect(dots).toHaveCount(12);
+  expect(await dots.evaluateAll((nodes) => nodes.reduce((sum, n) => sum + n.getAnimations().filter((a) => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation)).length, 0))).toBe(0);
+  const stillPose = await dotPose();
+  await page.waitForTimeout(400);
+  expect(await dotPose()).toBe(stillPose);
   expect(await captionOpacity()).toBe(1);
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
@@ -139,7 +175,7 @@ test('a live turn has one text highlight and reduced motion disables it', async 
     ctl.append('The answer.');
     ctl.finish();
   });
-  await expect(activity.locator(TURN.progress)).toHaveCount(0);
+  await expect(activity.locator(TURN.indicator)).toHaveCount(0);
   expect(await captionOpacity()).toBe(1);
   await expect(activity.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
 });

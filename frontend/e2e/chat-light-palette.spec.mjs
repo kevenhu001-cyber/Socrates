@@ -17,7 +17,10 @@ const BASE_MESSAGES = [
 
 function parseRgb(value) {
   const channels = (value.match(/\d+(?:\.\d+)?/g) ?? []).slice(0, 3).map(Number);
-  return channels.length === 3 ? channels : null;
+  if (channels.length !== 3) return null;
+  /* A color-mix() surface (the light bubble) computes to `color(srgb r g b)`
+     with 0–1 channels; bring it onto the 0–255 scale the checks use. */
+  return /^color\(srgb\b/.test(value.trim()) ? channels.map((channel) => Math.round(channel * 255)) : channels;
 }
 
 function luminance(rgb) {
@@ -74,7 +77,7 @@ test('light conversation surface keeps readable brand and action colours', async
   /* The disc cross-fades from the disabled fill role to the action colour;
      poll until the transition settles so the snapshot is not mid-blend. */
   await expect.poll(async () => parseRgb(await page.locator('#composerPrimaryBtn').evaluate((el) => getComputedStyle(el).backgroundColor)))
-    .toEqual([57, 126, 247]);
+    .toEqual([61, 102, 192]);
 
   const palette = await snapshotPalette(page);
   expect(palette.bubble).not.toBeNull();
@@ -104,7 +107,7 @@ test('light conversation surface keeps readable brand and action colours', async
   const sendBg = parseRgb(palette.send.background);
   const sendFg = parseRgb(palette.send.color);
   expect(sendBg).not.toBeNull();
-  expect(sendBg).toEqual([57, 126, 247]);
+  expect(sendBg).toEqual([61, 102, 192]);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 
@@ -119,7 +122,7 @@ test('dark conversation surface retains the blue send control', async ({ page })
   await page.locator('#composerRoot .rich-composer-editor').fill('Check send colour');
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-ready', 'true');
   await expect.poll(async () => parseRgb(await page.locator('#composerPrimaryBtn').evaluate((el) => getComputedStyle(el).backgroundColor)))
-    .toEqual([57, 126, 247]);
+    .toEqual([61, 102, 192]);
 
   const palette = await snapshotPalette(page);
   const bubbleBg = parseRgb(palette.bubble.background);
@@ -131,7 +134,7 @@ test('dark conversation surface retains the blue send control', async ({ page })
   const sendBg = parseRgb(palette.send.background);
   const sendFg = parseRgb(palette.send.color);
   expect(sendBg).not.toBeNull();
-  expect(sendBg).toEqual([57, 126, 247]);
+  expect(sendBg).toEqual([61, 102, 192]);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
 });
 
@@ -172,10 +175,12 @@ test('mobile light conversation inverts header controls and the canvas fade', as
   expect(mobile.inputBar.backgroundImage).toContain(`${mobile.canvas} 24px`);
   expect(mobile.inputBar.backgroundImage).not.toContain('rgb(0, 0, 0) 24px');
 
-  // Header controls are borderless dark glyphs on the page now.
+  // Header controls are borderless glyphs on the page. The drawer toggle is
+  // the reference's quiet secondary grey (#8f8f8f on the #fcfcfc canvas), an
+  // icon, so it is held to WCAG 1.4.11's 3:1 non-text contrast.
   const canvas = parseRgb(mobile.canvas);
   const openFg = parseRgb(mobile.openBtn.color);
-  expect(contrast(openFg, canvas)).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(openFg, canvas)).toBeGreaterThanOrEqual(3);
 
   // …and the icon-only actions are dark on the page.
   expect(contrast(parseRgb(mobile.findBtn.color), canvas)).toBeGreaterThanOrEqual(4.5);

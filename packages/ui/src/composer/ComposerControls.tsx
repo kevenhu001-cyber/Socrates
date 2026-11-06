@@ -10,9 +10,12 @@
  * `effortTrigger`, `composerMicBtn`, `composerPrimaryBtn`) and carries
  * `data-composer-control` so the host grid can place it.
  *
- * Look (site chrome): 36px pill controls, quiet until touched — a 4% fill
- * on hover, 8% while a menu it owns is open — and the send disc, grey when
- * empty and ink once there is something to send. Focus is drawn by the host's focus ring.
+ * Look (site chrome): 36px pill controls, bare glyphs until touched — a 4%
+ * fill on hover, 8% while a menu it owns is open — and the send disc, grey
+ * when empty and ink once there is something to send. Phones follow the
+ * reference instead: the effort control is plain text and the empty send
+ * disc is the action colour at half strength. Focus is drawn by the host's
+ * focus ring.
  */
 import type { ReactNode } from 'react';
 import { Pressable, View, type PressableStateCallbackType } from 'react-native';
@@ -72,11 +75,11 @@ export interface ComposerControlsProps {
   effort: ComposerEffortControl;
   mic: ComposerMicControl;
   primary: ComposerPrimaryControl;
-  /** Phone rail: tools and mic sit on a pale fill instead of being bare. */
+  /** Phone rail: plain-text effort, half-strength empty send disc. */
   compact?: boolean;
 }
 
-function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPressed, haspopup, filled, children, onPress }: {
+function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPressed, haspopup, children, onPress }: {
   id: string;
   control: string;
   label: string;
@@ -84,7 +87,6 @@ function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPres
   expanded?: boolean;
   pressed?: boolean;
   haspopup?: 'menu' | 'dialog';
-  filled: boolean;
   children: ReactNode;
   onPress: () => void;
 }) {
@@ -108,8 +110,7 @@ function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPres
         justifyContent: 'center',
         backgroundColor: pressed ? colors.fillPressed
           : active ? colors.fillHover
-            : hovered ? (filled ? colors.fillHover : colors.fill)
-              : filled ? colors.fill : 'transparent',
+            : hovered ? colors.fill : 'transparent',
       })}
     >
       {children}
@@ -130,7 +131,6 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
         i18nKey={tools.i18nKey}
         expanded={tools.expanded}
         haspopup="menu"
-        filled={compact}
         onPress={tools.onPress}
       >
         <UiIcon name="plus" size={20} color={tools.expanded ? colors.ink : colors.inkSecondary} />
@@ -159,16 +159,16 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
             paddingRight: 10,
             borderRadius: uiRadius.pill,
             backgroundColor: pressed ? colors.fillPressed
-              : hovered || effort.expanded ? colors.fillHover
-                : compact ? colors.fill : 'transparent',
+              : hovered || effort.expanded ? colors.fillHover : 'transparent',
           })}
         >
           {compact ? null : <UiText variant="bodySm" numberOfLines={1}>{effort.caption}</UiText>}
           {effort.value ? (
             <UiText
-              variant={compact ? 'label' : 'bodySm'}
+              variant={compact ? 'body' : 'bodySm'}
+              tone={compact ? 'tertiary' : undefined}
               numberOfLines={1}
-              style={compact ? { fontWeight: '400', lineHeight: 18 } : undefined}
+              style={compact ? { lineHeight: 20 } : undefined}
               aria-hidden
               {...dataSet({ effortValue: '' })}
             >
@@ -185,7 +185,6 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
         label={mic.label}
         i18nKey={mic.i18nKey}
         pressed={mic.listening}
-        filled={compact}
         onPress={mic.onPress}
       >
         <UiIcon name="mic" size={20} color={mic.listening ? colors.ink : colors.inkSecondary} />
@@ -206,15 +205,17 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
           alignItems: 'center',
           justifyContent: 'center',
           /* Site send disc: a quiet grey disc while there is nothing to
-             send, the ink disc once there is (and while it means Stop). */
-          backgroundColor: enabled
+             send, the action disc once there is (and while it means Stop).
+             Phones keep the action colour at half strength when empty. */
+          backgroundColor: enabled || compact
             ? colors.action
             : colors.fill,
+          opacity: enabled || !compact ? 1 : 0.5,
           transform: [{ scale: pressed && enabled ? 0.94 : 1 }],
         })}
       >
         <View nativeID="composerPrimaryBtnContent">
-          <UiIcon name={stop ? 'stop' : 'arrow-up'} size={18} color={enabled ? colors.onAction : colors.inkTertiary} />
+          <UiIcon name={stop ? 'stop' : 'arrow-up'} size={18} color={enabled || compact ? colors.onAction : colors.inkTertiary} />
         </View>
       </Pressable>
     </>

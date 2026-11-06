@@ -260,37 +260,35 @@
   }
 }
 
-/* "New reply" / scroll pill — modern floating frosted FAB */
+/* Scroll-to-bottom (reference): a 36px circle on the canvas with a hairline
+   ring and a 20px down arrow, centred above the composer. The "New reply"
+   label stays as visually hidden text; the host's aria-label names it. */
 #appShell .new-reply-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: var(--ui-radius-pill);
+  display: grid;
+  place-items: center;
+  left: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  margin-inline: auto;
+  padding: 0;
+  border-radius: 50%;
   border: 1px solid var(--ui-border-subtle);
-  background: color-mix(in srgb, var(--ui-bg-surface-elevated, var(--popover)) 88%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--background);
   box-shadow: var(--ui-shadow-menu);
-  color: var(--muted-foreground);
-  font-family: var(--font-sans);
-  font-size: var(--ui-font-size-xs, 12px);
-  font-weight: var(--ui-font-weight-medium);
-  letter-spacing: -0.01em;
+  color: var(--foreground);
   transition:
     opacity var(--ui-duration-fast) var(--ui-ease-out),
     transform var(--ui-duration-overlay) var(--ui-ease-spring-gentle, cubic-bezier(0.16, 1, 0.3, 1)),
-    box-shadow var(--ui-duration-overlay) var(--ui-ease-out),
-    background var(--ui-duration-hover) ease,
-    color var(--ui-duration-hover) ease;
+    background var(--ui-duration-hover) ease;
 }
+#appShell .new-reply-pill-glyph { display: block; width: 20px; height: 20px; }
 
 #appShell .new-reply-pill:hover {
-  background: var(--ui-bg-surface-elevated, var(--popover));
-  color: var(--foreground);
-  box-shadow: var(--ui-shadow-modal);
-  transform: translateY(-2px);
+  background: var(--ui-bg-hover, var(--accent));
+  box-shadow: var(--ui-shadow-menu);
+  filter: none;
+  transform: none;
 }
 
 #appShell .new-reply-pill:active {

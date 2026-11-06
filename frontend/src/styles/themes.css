@@ -181,7 +181,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-on-accent: var(--primary-foreground);
   --ui-accent-strong: var(--primary);
   /* Restore the pre-R1 blue action and teal identity; geometry stays neutral. */
-  --ui-accent-action: rgb(57 126 247);
+  --ui-accent-action: rgb(61 102 192);
   --ui-on-action: rgb(255 255 255);
   /* The danger tone is a *text* colour, so it has to clear AA on the
      lightest dark rung as well as on the canvas. The old Lobe value
@@ -234,7 +234,10 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 [data-mode="light"] {
   color-scheme: light;
 
-  --background: var(--geist-background-100);
+  /* Phone reference (light home, measured): the canvas is a one-percent
+     tint under the paper; the question box, the selected mode segment,
+     cards and menus stay the white paper (background-100) above it. */
+  --background: #fcfcfc;
   --foreground: var(--geist-gray-1000);
   --card: var(--geist-background-100);
   --card-foreground: var(--foreground);
@@ -299,8 +302,10 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 
   /* Marketing-site paper/ink foundation, projected through the existing API.
    *
-   * RN-7: the canvas IS the paper (#ffffff), as on the marketing site. The
-   * page and the elevated rung (composer, menus, dialogs) share that white;
+   * RN-7: the canvas sits on the paper, as on the marketing site; since
+   * ui-ref-4 it is a one-percent tint (#fcfcfc) under it, as the phone
+   * reference measures (surface-ladder baseline `paperTint`). The elevated
+   * rung (composer, menus, dialogs) is the white paper;
    * what lifts a raised surface off the page is a 1px hairline plus a very
    * soft shadow, not a tone step. Hierarchy otherwise runs on two layers:
    * white, and the pale greys below it — the rail (background-200) and the
@@ -368,7 +373,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * The thinking accent stays a vivid chart/accent colour and is never used
    * as body text; warning no longer aliases it. */
   --ui-on-accent: var(--primary-foreground);
-  --ui-accent-action: rgb(57 126 247);
+  --ui-accent-action: rgb(61 102 192);
   --ui-on-action: rgb(255 255 255);
   --ui-accent-strong: var(--primary);
   --ui-danger: rgb(176 45 28);
@@ -577,9 +582,24 @@ html[data-theme="socrates"][data-mode="light"] {
 }
 
 html[data-theme="socrates"][data-mode="dark"] {
-  /* Reference user bubble: a deep tint of the blue action colour under the
-     same primary ink (#ededed on it is ≈ 10:1). Assistant turns stay bare. */
-  --conversation-user: color-mix(in srgb, var(--ui-accent-action) 42%, var(--ui-bg-page));
+  /* Reference user bubble (phone, measured): #223d72 under white copy
+     (≈ 11:1). Assistant turns stay bare. */
+  --conversation-user: rgb(34 61 114);
+  --conversation-user-text: rgb(255 255 255);
+  /* Reference secondary grey: icons, placeholder, disclaimer, section
+     titles and quiet labels all measure #afafaf–#b0b0b0 on the black canvas. */
+  --muted-foreground: rgb(175 175 175);
+  /* Phone reference fields: the question box and the selected mode segment
+     are one tone (#1b1b1b) between the canvas and the panel rung; the mode
+     track sits a step below it (#131313). Field tones, not ladder rungs. */
+  --ui-bg-field: rgb(27 27 27);
+  --ui-bg-segment: rgb(19 19 19);
+  /* Phone drawer rows (nav, recents) read one step under the ink. */
+  --ui-text-nav: rgb(202 202 202);
+  --ui-hairline-faint: rgb(255 255 255 / 6%);
+  /* Quiet chrome glyphs (drawer toggle, new chat, action rows). */
+  --ui-icon-secondary: var(--muted-foreground);
+  --ui-segment-thumb-shadow: none;
   --cg-surface-raised: var(--ui-bg-control);
   /* Legacy HSL channels project the same four-step ladder the `--ui-*`
    * roles use. They stay HSL triplets because the frozen legacy tree
@@ -607,6 +627,15 @@ html[data-theme="socrates"][data-mode="light"] {
   /* Light twin of the blue user bubble: a pale action tint on the paper, the
      primary ink on top. */
   --conversation-user: color-mix(in srgb, var(--ui-accent-action) 12%, var(--ui-bg-page));
+  --conversation-user-text: var(--ui-text-primary);
+  /* Phone reference fields (light): white question box / selected segment
+     on a #f4f4f4 mode track. */
+  --ui-bg-field: var(--ui-bg-elevated);
+  --ui-bg-segment: rgb(244 244 244);
+  --ui-text-nav: var(--ui-text-primary);
+  --ui-hairline-faint: rgb(0 0 0 / 6%);
+  --ui-icon-secondary: var(--geist-gray-700);
+  --ui-segment-thumb-shadow: 0 0 0 1px rgb(0 0 0 / 4%), 0 1px 3px rgb(0 0 0 / 6%);
   --cg-surface-raised: var(--ui-bg-raised);
   /* Same four-step ladder as dark mode, running the other way.
    *
@@ -617,7 +646,7 @@ html[data-theme="socrates"][data-mode="light"] {
    * `scripts/surface-ladder.baseline.json`; the values below are the rungs
    * that mapping points at, so the canvas move left them untouched. */
   --bg-000: 0 0% 100%;     /* the paper (elevated) */
-  --bg-100: 0 0% 100%;     /* the canvas (page) — RN-7: the canvas is the paper */
+  --bg-100: 0 0% 98.82%;   /* the canvas (page) — #fcfcfc, a tint under the paper */
   --bg-200: 0 0% 98.04%;  /* the rail (geist background-200) */
   --bg-300: 0 0% 94.9%;   /* the panel: controls, chips, wells (geist gray-100) */
   --text-000: 0 0% 0%;

@@ -12,7 +12,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
   const body = accordion.getByTestId('turn-activity-body');
   // Live copy reflects the observed state, not a fabricated step counter.
   await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking…');
-  await expect(accordion.getByTestId('turn-activity-progress')).toHaveCount(1);
+  await expect(accordion.getByTestId('turn-activity-indicator')).toHaveCount(1);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.focus();
   await page.keyboard.press('Enter');
@@ -39,7 +39,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-complete' });
   await expect(accordion).not.toHaveAttribute('data-live', 'true');
-  await expect(accordion.getByTestId('turn-activity-progress')).toHaveCount(0);
+  await expect(accordion.getByTestId('turn-activity-indicator')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await setLang(page, 'zh');
   // Settled activity details do not imply a count of reasoning steps.

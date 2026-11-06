@@ -155,18 +155,28 @@
 @media (max-width: 768px) {
   /* Project shared RN card/fill roles onto the canonical phone palette.
      All colour values still come from themes.css; this is surface wiring. */
+  /* Reference phone question box. Dark: a #1b1b1b field with a hairline
+     barely above it, no drop shadow; + and mic in ink, the effort label,
+     placeholder and chevron in the secondary grey. Light: the white field on
+     a 7% hairline with a soft all-round shadow; + and mic, placeholder in
+     #8f8f8f. Focus changes nothing: the caret is the cue, as in the shots. */
   #appShell .composer-shell {
-    --ui-card: var(--ui-bg-composer);
+    --ui-card: var(--ui-bg-field);
     --ui-fill: var(--ui-bg-control);
     --ui-ink-secondary: var(--ui-text-primary);
+    --ui-ink-tertiary: var(--muted-foreground);
+    --ui-elevation-field: 0 0 0 1px rgb(255 255 255 / 6%);
+    --ui-elevation-field-hover: var(--ui-elevation-field);
+    --ui-elevation-field-focus: var(--ui-elevation-field);
   }
-  /* Reference (dark): the question box sits one step above the canvas and a
-     step below its popovers (+ menu, effort), so it takes the panel rung;
-     menus keep the elevated one. Light keeps the paper box and its hairline. */
-  [data-mode="dark"] #appShell .composer-shell { --ui-card: var(--ui-bg-panel); }
+  [data-mode="light"] #appShell .composer-shell {
+    --ui-ink-secondary: var(--geist-gray-700);
+    --ui-ink-tertiary: var(--geist-gray-700);
+    --ui-elevation-field: 0 0 0 1px rgb(0 0 0 / 7%), 0 4px 24px rgb(0 0 0 / 5%);
+  }
   #appShell .composer-shell:not(.voice-recording-active) { width: 100%; max-width: none; }
-  /* Reference phone question box sets its text and placeholder at 17px. */
-  #appShell .composer-shell .rich-composer-editor { max-height: 220px; font-size: var(--ui-mobile-font-nav); }
+  /* Reference phone question box: draft and placeholder at 16px. */
+  #appShell .composer-shell .rich-composer-editor { max-height: 220px; font-size: var(--ui-font-size-md); }
   #appShell .composer-shell .composer-plugin-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   #appShell .composer-shell .composer-plugin-chips::-webkit-scrollbar { display: none; }
   #appShell .composer-shell :is(.composer-plugin-chip, .composer-tool-chip) { flex: 0 0 auto; }

@@ -158,9 +158,8 @@ test('composer menu opens crisply on the shared clock and respects reduced motio
   await expect(menu).toHaveCSS('animation-name', 'none');
 });
 
-/* RN-2: the thinking line and tool rows are react-native-web components whose
-   motion is JS-driven (opacity breathing, progress hairline) and stops under
-   reduced motion; unified-turn-ui.spec.mjs and turn-activity.spec.mjs own
+/* RN-2: the thinking line and tool rows are react-native-web components. The
+   live 3D dot glyph (JS) and tool-row breathing (JS) stop under reduced motion; unified-turn-ui.spec.mjs and turn-activity.spec.mjs own
    those checks. This test keeps the CSS-owned cues: agent steps stay still,
    recording is the one persistent ring. */
 test('agent steps and recording share one primary persistent cue', async ({ page }) => {

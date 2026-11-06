@@ -69,7 +69,7 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
 
   // The text reply landed, so the live caption is gone.
-  await expect(bubble.locator(TURN.progress)).toHaveCount(0);
+  await expect(bubble.locator(TURN.indicator)).toHaveCount(0);
 
   const searchRow = toolRow(bubble, 'search-1');
   await expect(searchRow).toHaveAttribute('data-state', 'done');
@@ -212,7 +212,7 @@ test('live chat shows a running search row while the model is searching', async 
   await expect(row.locator(TURN.status)).toHaveText('Running');
   await expect(row.locator('.tool-inline-tool-icon svg circle')).toHaveCount(1);
   await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(1);
-  await expect(bubble.locator(TURN.progress)).toHaveCount(1);
+  await expect(bubble.locator(TURN.indicator)).toHaveCount(1);
   await expect(row).toHaveAttribute('data-state', 'running');
 
   await page.evaluate(() => window.__finishSearchStream());

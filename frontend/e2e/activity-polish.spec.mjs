@@ -84,7 +84,7 @@ for (const mobile of [false, true]) {
     const caption = surface.locator(TURN.label);
     await expect(wrapper).toHaveAttribute('data-live', 'true');
     await expect(caption).toHaveAttribute('role', 'status');
-    await expect(surface.locator(TURN.progress)).toHaveCount(1);
+    await expect(surface.locator(TURN.indicator)).toHaveCount(1);
     /* Status is spoken as words: no status dots anywhere in the activity. */
     await expect(surface.locator('.turn-activity-dot')).toHaveCount(0);
     await expect(surface.locator(`${TURN.toggle} .tool-inline-tool-icon`)).toBeVisible();
@@ -108,7 +108,7 @@ for (const mobile of [false, true]) {
     });
     await publishChatRuntime(page, { type: 'state-synced', reason: 'reference-complete' });
     await expect(wrapper).not.toHaveAttribute('data-live', 'true');
-    await expect(surface.locator(TURN.progress)).toHaveCount(0);
+    await expect(surface.locator(TURN.indicator)).toHaveCount(0);
     await expect(caption).not.toHaveAttribute('role', 'status');
     await expect(surface.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
     await page.mouse.move(0, 0);

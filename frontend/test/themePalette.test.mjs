@@ -152,16 +152,22 @@ test('the background ladder follows the explicit paper-canvas and black-canvas p
   for (const mode of ['dark', 'light']) {
     const rungs = RUNGS[mode].map((rung) => sharedRungHex(mode, rung));
 
-    // Matches surface-ladder.baseline.json: light shares its white paper
-    // between page and elevated; dark retains four distinct surface tones.
-    assert.equal(new Set(rungs).size, mode === 'light' ? 3 : 4, `${mode} unique surface count`);
-    if (mode === 'light') assert.equal(rungs[0], rungs[3], 'paper canvas and elevated share white');
+    // Matches surface-ladder.baseline.json: the light canvas is the paper
+    // tint (paperTint #fcfcfc), strictly between the rail and the white
+    // paper; the remaining three light rungs and all four dark ones are the
+    // distinct ladder tones the step band applies to.
+    if (mode === 'light') {
+      assert.equal(rungs[0], '#fcfcfc', 'light canvas is the paper tint');
+      assert.ok(lightnessPercent(rungs[0]) > lightnessPercent(rungs[1]) && lightnessPercent(rungs[0]) < lightnessPercent(rungs[3]), 'paper tint sits between rail and paper');
+    }
+    const banded = mode === 'light' ? rungs.slice(1) : rungs;
+    assert.equal(new Set(banded).size, mode === 'light' ? 3 : 4, `${mode} unique surface count`);
     // Black canvas (surface-ladder.baseline.json blackCanvas): only the dark
     // page may be pure #000, and its gap to the rail may reach 12%.
     if (mode === 'dark') assert.equal(rungs[0], '#000000', 'dark canvas is pure black');
     assert.ok(!rungs.slice(mode === 'dark' ? 1 : 0).includes('#000000'), `${mode} raised rungs must not use pure black`);
 
-    const sorted = [...new Set(rungs)].sort((a, b) => lightnessPercent(a) - lightnessPercent(b));
+    const sorted = [...new Set(banded)].sort((a, b) => lightnessPercent(a) - lightnessPercent(b));
     for (let i = 1; i < sorted.length; i += 1) {
       const step = Math.abs(lightnessPercent(sorted[i]) - lightnessPercent(sorted[i - 1]));
       const maxStep = mode === 'dark' && i === 1 ? 12 : MAX_STEP;

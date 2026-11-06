@@ -13,7 +13,8 @@ import type { TextStyle } from 'react-native';
 const LOGO = { uri: '/logo.png' };
 /* Phone drawer wordmark: the reference sets its brand line at 20px; the CSS
    role keeps it on the user's type scale. */
-const MOBILE_BRAND_NAME = { fontSize: 'var(--ui-font-size-xl)', lineHeight: 28 } as unknown as TextStyle;
+/* Reference drawer wordmark: 18px semibold (cap + ascender ink 13px). */
+const MOBILE_BRAND_NAME = { fontSize: 'var(--ui-font-size-lg)', lineHeight: 28 } as unknown as TextStyle;
 
 /**
  * RN-7 — the sidebar header is the shared RN shell part
@@ -48,7 +49,8 @@ export function SidebarHeader() {
   useDomTitle('sidebarCloseBtn', closeSidebarLabel);
   // Subscribe to the chrome bridge so the header re-renders on user change.
   useUserInfo();
-  const iconSize = isMobile ? 24 : 20;
+  /* Reference header glyphs (search, collapse) are 20px on the phone too. */
+  const iconSize = 20;
 
   return (
     <WebUiTheme>
