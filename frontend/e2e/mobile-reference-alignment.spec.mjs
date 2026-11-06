@@ -77,7 +77,11 @@ for (const mode of ['dark', 'light']) {
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });
     await expect(recent).toBeVisible();
     expect((await recent.boundingBox()).height).toBe(40);
-    await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeHidden();
+    /* Reference drawer lockup: wordmark + ⌄ on the left, search and the
+       sidebar glyph (not ×) on the right. */
+    await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();
+    await expect(page.locator('.sidebar-logo [data-part="brand-caret"]')).toBeVisible();
+    await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
     await page.screenshot({ path: `test-results/reference-alignment-${encodeURIComponent(mode)}-drawer.png` });
     await recent.locator('.recent-item-overflow').click();
     const menu = page.locator('.recent-item-menu');

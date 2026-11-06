@@ -406,9 +406,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     min-height: calc(var(--ui-control-touch) + 18px);
     padding: 8px 10px;
   }
-  #appShell .sidebar-logo { display: flex; align-items: center; padding: 0 4px; gap: 8px; min-width: 0; }
+  #appShell .sidebar-logo { display: flex; align-items: center; padding: 0 4px; gap: 4px; min-width: 0; }
   #appShell .sidebar-logo-img { display: block; width: 24px; height: 24px; }
-  #appShell .sidebar-logo [data-part="brand-name"] { display: none; }
+  /* Reference drawer lockup: wordmark + ⌄, no mark. */
+  #appShell .sidebar-logo [data-part="brand-caret"] { display: grid; place-items: center; }
   #appShell .sidebar-logo > span {
     display: inline-block;
     color: var(--foreground);
