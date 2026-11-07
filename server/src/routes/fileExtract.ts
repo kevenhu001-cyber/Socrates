@@ -13,8 +13,11 @@
  *   - Legacy .ppt has no extractor and stays rejected here (metadata-only
  *     via /api/files, same as read_attachment).
  *   - 25 MB upload cap (matches /api/files MAX_SIZE).
- *   - Output text capped at MAX_TEXT_BYTES (200 KB) so a single
- *     large spreadsheet cannot blow the LLM prompt budget.
+ *   - Output text capped at MAX_TEXT_BYTES (200 K chars) so a single
+ *     large spreadsheet cannot blow the LLM prompt budget; the cut keeps
+ *     head + tail and says what was omitted. The text opens with a
+ *     one-line `[Document info: …]` summary (type, size, pages/slides/
+ *     sheets, scanned-PDF note).
  *
  * Response shape (uniform across all formats):
  *   {
@@ -40,6 +43,9 @@ import { uploadLimiter } from '../middleware/rateLimit.js';
 import { BadRequest, PayloadTooLarge } from '../lib/errors.js';
 import { extractText as dispatch, SUPPORTED_MIMES } from '../services/fileParsers/index.js';
 import { resolveInsideRoot } from '../lib/pathSafety.js';
+import { normalizeFileName } from '../lib/fileName.js';
+import { truncateHeadTail } from '../services/fileParsers/text.js';
+import { formatBytes } from '../services/embeddings/attachmentReader.js';
 
 const MAX_UPLOAD = 25 * 1024 * 1024;        // 25 MB — matches /api/files
 const MAX_TEXT_BYTES = 200 * 1024;          // 200 KB extracted text
@@ -50,13 +56,14 @@ const TMP_DIR = process.env.NODE_ENV === 'production'
 await fs.mkdir(TMP_DIR, { recursive: true }).catch(() => {});
 
 /* Map a few loose MIME aliases the browser sometimes sends (especially
-   for drag-and-drop on Windows / older browsers). */
+   for drag-and-drop on Windows / older browsers).
+   Legacy application/msword and application/vnd.ms-excel used to be
+   aliased to the OOXML types here, which sent every .doc to mammoth and
+   every .xls to exceljs — both fail on OLE binaries. They now keep their
+   own types and reach the word-extractor / SheetJS parsers. */
 const MIME_ALIASES: Record<string, string> = {
   'application/x-pdf': 'application/pdf',
   'application/acrobat': 'application/pdf',
-  'application/msword': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 };
 
 function normalizeMime(raw: string, originalName: string) {
@@ -88,7 +95,10 @@ const upload = multer({
     filename: (_req, _file, cb) => cb(null, `${crypto.randomUUID()}.bin`),
   }),
   limits: { fileSize: MAX_UPLOAD },
+  /* UTF-8 filenames — busboy's latin1 default garbles Chinese names. */
+  defParamCharset: 'utf8',
   fileFilter: (_req, file, cb) => {
+    file.originalname = normalizeFileName(file.originalname) || 'file';
     const mime = normalizeMime(file.mimetype, file.originalname);
     /* Application/pdf + the new office formats pass. text/html and
        text/xhtml stay blocked (XSS surface at the raw endpoint). */
@@ -105,7 +115,10 @@ const upload = multer({
       'application/vnd.oasis.opendocument.presentation',
     ];
     if (allowed.includes(mime)) return cb(null, true);
-    cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
+    if (mime === 'application/vnd.ms-powerpoint' || path.extname(file.originalname).toLowerCase() === '.ppt') {
+      return cb(new BadRequest('Legacy .ppt files cannot be read. Save the presentation as .pptx or PDF and upload it again.'));
+    }
+    cb(new BadRequest(`Unsupported file type: ${file.mimetype || 'unknown'} ("${file.originalname}")`));
   },
 });
 
@@ -141,51 +154,57 @@ router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
       const mime = normalizeMime(uploadedFile.mimetype, uploadedFile.originalname);
       const kind = kindFromMime(mime);
 
-      let extractResult: { text: string; meta: Record<string, unknown> };
+      const displayName = uploadedFile.originalname;
+      let extractResult: { text: string; truncated: boolean; meta: Record<string, unknown> };
       try {
-        if (mime === 'application/pdf') {
-          /* PDF keeps the existing pdf-parse path — it takes a Buffer
-             (not a path); files.ts preview uses the same convention. */
-          const mod = await import('pdf-parse');
-          const pdfParse = mod.default || mod;
-          const result = await pdfParse(await fs.readFile(uploadPath!));
-          extractResult = {
-            text: String((result && result.text) || ''),
-            meta: { pageCount: result && result.numpages ? Number(result.numpages) : 0 },
-          };
-        } else {
-          extractResult = await dispatch(mime, uploadPath!);
-        }
+        /* One dispatcher for every format, PDF included: page markers,
+           markdown tables/headings, scanned and encrypted detection. */
+        extractResult = await dispatch(mime, uploadPath!);
       } catch (e) {
         await cleanup();
         const code = (e && (e as NodeJS.ErrnoException).code) || 'PARSE_FAILED';
         const msg = (e && (e as Error).message) || String(e);
+        const error = code === 'ENCRYPTED'
+          ? `"${displayName}" is password-protected or encrypted and cannot be read. Remove the password and upload it again.`
+          : code === 'EMPTY_DOCUMENT'
+            ? `"${displayName}" contains no readable content.`
+            : `Could not parse ${kind || 'file'} "${displayName}": ${msg}`;
         return res.json({
           ok: false,
           text: '',
           truncated: false,
           meta: {},
-          name: uploadedFile.originalname,
+          name: displayName,
           kind,
-          error: `Could not parse ${kind || 'file'}: ${msg}`,
+          error,
           errorCode: code,
         });
       }
       await cleanup();
 
-      let text = String((extractResult && extractResult.text) || '').replace(/\r\n/g, '\n');
       const meta = (extractResult && extractResult.meta) || {};
-      let truncated = false;
+      let truncated = !!extractResult?.truncated;
+      let text = String((extractResult && extractResult.text) || '');
+      const totalChars = text.length;
+      /* Keep the beginning and the end (conclusions, answer keys, totals)
+         with an explicit note of what was dropped, instead of a blind
+         head cut. */
       if (text.length > MAX_TEXT_BYTES) {
-        text = text.slice(0, MAX_TEXT_BYTES);
+        const cut = truncateHeadTail(text, MAX_TEXT_BYTES);
+        text = cut.text;
         truncated = true;
+        meta.omitted = `${cut.omittedChars} of ${totalChars} characters from the middle`;
       }
+      /* A one-line summary the model can cite from (the client labels the
+         part with the file name already). */
+      const summary = describeExtract(kind, uploadedFile.size, meta, truncated);
+      if (summary) text = `${summary}\n\n${text}`;
       return res.json({
         ok: true,
         text,
         truncated,
         meta,
-        name: uploadedFile.originalname,
+        name: displayName,
         kind,
       });
     } catch (err) {
@@ -194,6 +213,24 @@ router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
     }
   });
 });
+
+function describeExtract(kind: string, size: number, meta: Record<string, unknown>, truncated: boolean): string {
+  const bits: string[] = [kind.toUpperCase(), formatBytes(size)];
+  const n = (k: string) => (typeof meta[k] === 'number' && (meta[k] as number) > 0 ? (meta[k] as number) : 0);
+  if (n('pageCount')) bits.push(`${n('pageCount')} pages, each starting with a "[Page N]" marker`);
+  if (n('slideCount')) bits.push(`${n('slideCount')} slides under "## Slide N" headings`);
+  if (n('sheetCount')) bits.push(`${n('sheetCount')} sheets as markdown tables under "## Sheet:" headings`);
+  if (n('chapterCount')) bits.push(`${n('chapterCount')} chapters`);
+  if (typeof meta.omitted === 'string' && truncated) bits.push(`truncated — omitted: ${meta.omitted}`);
+  let line = `[Document info: ${bits.join(' · ')}]`;
+  if (meta.scanned) {
+    line += '\n[Note: this PDF has no text layer (scanned or image-only), so its content could not be extracted. ' +
+      'Ask the user to send the pages as images or a text-based PDF.]';
+  } else if (typeof meta.pagesWithoutText === 'string' && meta.pagesWithoutText) {
+    line += `\n[Note: pages ${meta.pagesWithoutText} have no text layer (scanned images); their content is missing below.]`;
+  }
+  return line;
+}
 
 function kindFromMime(mime: string) {
   if (mime === 'application/pdf') return 'pdf';

@@ -80,6 +80,7 @@ import { getDb } from './db/index.js';
 import { apiKeys, artifacts as artifactsTable, files as filesTable, executions as executionsTable, shares as sharesTable, sessions as sessionsTable } from './db/schema/index.js';
 import { sql, and, eq, isNotNull, isNull, inArray } from 'drizzle-orm';
 import { getStatus as getPubsubStatus } from './lib/pubsub.js';
+import { contentDisposition } from './lib/fileName.js';
 
 const app = express();
 
@@ -739,8 +740,13 @@ app.get('/api/files/:id/raw', optionalAuth, async (req, res, next) => {
       || (file.mimeType.startsWith('text/') && file.mimeType !== 'text/html' && file.mimeType !== 'text/xhtml' && file.mimeType !== 'text/xhtml+xml')
       || file.mimeType === 'application/json'
     );
+    /* Always name the file (RFC 6266 filename + RFC 5987 filename*=UTF-8'')
+       so a download is saved as 「数学.pdf」 rather than "raw" or a uuid;
+       the disposition type itself is unchanged. */
     if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf' && !inlinePreview) {
-      res.set('Content-Disposition', 'attachment');
+      res.set('Content-Disposition', contentDisposition('attachment', file.name));
+    } else {
+      res.set('Content-Disposition', contentDisposition('inline', file.name));
     }
     return res.sendFile(file.storagePath);
   } catch (err) { next(err); }

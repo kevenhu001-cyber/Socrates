@@ -11,9 +11,11 @@
  *     exists and can call the `read_attachment` native tool on demand.
  *
  * Extraction strategy by stored mime/kind:
- *   - text/* and textual application types → raw UTF-8 read (paged)
- *   - application/pdf → pdf-parse (with pageCount meta)
- *   - Office/EPUB/RTF → services/fileParsers dispatch
+ *   - text/* and textual application types → encoding-detected read
+ *     (UTF-8 ± BOM, UTF-16, GB18030/GBK, Big5), paged
+ *   - application/pdf, Office/EPUB/RTF/ODF → services/fileParsers dispatch
+ *     (structured markdown, page/slide/sheet markers, scanned-PDF and
+ *     encrypted-file detection)
  *   - image/* → MiniMax vision describe (describeImageFile) — this is how
  *     a text-only model "sees" an attached image without pre-baking a
  *     description into the prompt
@@ -23,12 +25,13 @@
  * walking a 25 MB workbook in slices does not re-parse it per hop.
  */
 
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
 import { files } from '../../db/schema/index.js';
 import { extractText as extractDocumentText, SUPPORTED_MIMES } from '../fileParsers/index.js';
+import { cleanExtractedText, readTextFile } from '../fileParsers/text.js';
+import { displayFileName } from '../../lib/fileName.js';
 import { describeImageFile } from './vision.js';
 
 /* ─── Tool definition (sent to upstream on every chat turn) ─── */
@@ -197,25 +200,30 @@ const EXTRACT_CACHE = new Map<string, Extracted>();
 
 async function extractFile(file: FileRow, question?: string): Promise<Extracted> {
   const mime = String(file.mimeType || '').toLowerCase();
+  const displayName = displayFileName(file.name);
   try {
-    if (mime === 'application/pdf') {
-      const mod = await import('pdf-parse');
-      const pdfParse = (mod as { default?: unknown }).default || mod;
-      const result = await (pdfParse as (b: Buffer) => Promise<{ text?: string; numpages?: number }>)(await fs.readFile(file.storagePath));
-      return {
-        readable: true,
-        text: normalizeText(result && result.text),
-        meta: { pageCount: result && result.numpages ? Number(result.numpages) : 0 },
-        truncated: false,
-      };
-    }
+    /* PDF and Office/EPUB/RTF/ODF all go through the parser dispatcher:
+       PDF gets [Page N] markers and scanned-PDF detection, spreadsheets
+       markdown tables, DOCX markdown headings/lists/tables, PPTX slide
+       titles/bullets/tables/notes. */
     if (PARSER_MIMES.has(mime)) {
       const result = await extractDocumentText(mime, file.storagePath);
+      const meta = (result && result.meta) || {};
+      let note: string | undefined;
+      if (meta.scanned) {
+        note =
+          'This PDF has no text layer — it looks scanned or image-only, so only page markers could be extracted. ' +
+          'Its content cannot be read from this tool. Tell the user, and ask them to upload the pages as images ' +
+          '(photos or screenshots, which are read with vision) or a text-based PDF.';
+      } else if (meta.pagesWithoutText) {
+        note = `Pages ${String(meta.pagesWithoutText)} have no text layer (scanned images); their content is not included.`;
+      }
       return {
         readable: true,
         text: normalizeText(result && result.text),
-        meta: (result && result.meta) || {},
+        meta,
         truncated: !!(result && result.truncated),
+        note,
       };
     }
     if (mime.startsWith('image/')) {
@@ -228,11 +236,15 @@ async function extractFile(file: FileRow, question?: string): Promise<Extracted>
       };
     }
     if (isTextReadable(mime, file.name, file.kind)) {
-      const buf = await fs.readFile(file.storagePath);
+      /* Detect the encoding instead of assuming UTF-8: Chinese .txt/.csv
+         files saved by Windows Notepad/Excel are often GBK/GB18030 (or
+         Big5), and a BOM must not leak into the first header cell. */
+      const decoded = await readTextFile(file.storagePath);
+      const text = cleanExtractedText(decoded.text);
       return {
         readable: true,
-        text: normalizeText(buf.toString('utf8')),
-        meta: { encoding: 'utf-8' },
+        text,
+        meta: { encoding: decoded.encoding, lines: text ? text.split('\n').length : 0 },
         truncated: false,
       };
     }
@@ -243,7 +255,7 @@ async function extractFile(file: FileRow, question?: string): Promise<Extracted>
       truncated: false,
       note:
         `This file type (${mime || 'unknown'}) has no readable text representation. ` +
-        `Only metadata is available: name "${file.name}", ${formatBytes(file.size)}. ` +
+        `Only metadata is available: name "${displayName}", ${formatBytes(file.size)}. ` +
         'If the user needs its contents analyzed, ask them to convert it to a supported ' +
         'document format (PDF, DOCX, XLSX, PPTX, DOC, XLS, ODT, ODS, ODP, EPUB, RTF, plain text, or an image).',
     };
@@ -254,6 +266,13 @@ async function extractFile(file: FileRow, question?: string): Promise<Extracted>
     if (code === 'ENOENT') {
       throw new AttachmentReadError('file_missing', 'The uploaded file is missing from storage.', false);
     }
+    if (code === 'ENCRYPTED') {
+      throw new AttachmentReadError('encrypted',
+        `"${displayName}" is password-protected or encrypted, so its contents cannot be read. ${message}`, false);
+    }
+    if (code === 'EMPTY_DOCUMENT') {
+      throw new AttachmentReadError('empty_document', `"${displayName}" contains no readable content. ${message}`, false);
+    }
     if (mime.startsWith('image/')) {
       const status = (err as { status?: number })?.status;
       throw new AttachmentReadError(
@@ -262,7 +281,10 @@ async function extractFile(file: FileRow, question?: string): Promise<Extracted>
         status !== 413,
       );
     }
-    throw new AttachmentReadError('parse_failed', `Could not extract text from this file: ${message}`, false);
+    if (code === 'UNSUPPORTED_MIME') {
+      throw new AttachmentReadError('unsupported_type', `"${displayName}" (${mime || 'unknown type'}) is not a supported document format.`, false);
+    }
+    throw new AttachmentReadError('parse_failed', `Could not extract text from "${displayName}" (the file may be corrupt): ${message}`, false);
   }
 }
 
@@ -323,7 +345,7 @@ export async function readAttachmentForUser(input: {
   const slice = extracted.text.slice(start, start + limit);
   return {
     fileId: file.id,
-    name: file.name,
+    name: displayFileName(file.name),
     kind: file.kind || 'file',
     mimeType: file.mimeType,
     size: file.size,
@@ -349,9 +371,32 @@ export function formatAttachmentReadOutput(page: AttachmentPage): string {
   const metaLine = metaEntries.length
     ? `[meta: ${metaEntries.map(([k, v]) => `${k}=${String(v)}`).join(', ')}]\n`
     : '';
+  /* On the first page, say how the extracted text is laid out so the
+     model can cite pages/slides/sheets instead of guessing. */
+  const structure = page.offset === 0 ? structureHint(page) : '';
+  const noteLine = page.note ? `[note: ${page.note}]\n` : '';
   const end = page.offset + page.returnedChars;
+  const omitted = typeof page.meta?.omitted === 'string' ? ` (omitted: ${page.meta.omitted})` : '';
   const range = `[extract: chars ${page.offset}–${end} of ${page.totalChars}` +
     (page.hasMore ? ` — more available; call read_attachment again with offset=${end}` : ' — end of file') +
-    (page.truncated ? '; note: the source extraction itself was capped' : '') + ']';
-  return `${header}\n${metaLine}${range}\n${page.text}`;
+    (page.truncated ? `; note: the source extraction itself was capped${omitted}` : '') + ']';
+  return `${header}\n${metaLine}${structure}${noteLine}${range}\n${page.text}`;
+}
+
+function structureHint(page: AttachmentPage): string {
+  const mime = String(page.mimeType || '').toLowerCase();
+  const kind = String(page.kind || '').toLowerCase();
+  if (mime === 'application/pdf') {
+    return '[layout: each page starts with a "[Page N]" marker line]\n';
+  }
+  if (['xlsx', 'xls', 'ods'].includes(kind) || mime.includes('spreadsheet') || mime === 'application/vnd.ms-excel') {
+    return '[layout: one markdown table per sheet under "## Sheet: <name>" headings; the first row of each table is the sheet\'s first non-empty row]\n';
+  }
+  if (['pptx', 'odp'].includes(kind) || mime.includes('presentation')) {
+    return '[layout: each slide starts with "## Slide N", its title as "### …", speaker notes as "Notes:"]\n';
+  }
+  if (kind === 'docx' || mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    return '[layout: markdown — "#" headings, "-"/"1." lists, "|" tables, "[image]" where a picture was]\n';
+  }
+  return '';
 }

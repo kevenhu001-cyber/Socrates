@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
-import { extractText as extractDocumentText } from '../services/fileParsers/index.js';
+import { extractText as extractDocumentText, SUPPORTED_MIMES } from '../services/fileParsers/index.js';
 import {
   TEXT_FILE_EXTENSIONS,
   DOCUMENT_FILE_EXTENSIONS,
@@ -19,7 +19,10 @@ import {
   MEDIA_FILE_EXTENSIONS,
   TEXTUAL_APPLICATION_MIMES,
   formatBytes,
+  isTextReadable,
 } from '../services/embeddings/attachmentReader.js';
+import { decodeTextBuffer, cleanExtractedText, truncateHeadTail } from '../services/fileParsers/text.js';
+import { displayFileName, normalizeFileName, safeStorageExtension } from '../lib/fileName.js';
 import { isUuid } from '../lib/validate.js';
 import { resolveInsideRoot } from '../lib/pathSafety.js';
 import { ensureUploadDirectory, UPLOAD_DIR } from '../lib/uploadStorage.js';
@@ -33,16 +36,17 @@ const USER_QUOTA_BYTES = (() => {
   return Number.isFinite(n) && n > 0 ? n : 250 * 1024 * 1024;
 })();
 const MAX_PREVIEW_CHARS = 200 * 1024;
-const PLAIN_TEXT_MIMES = new Set([
-  'application/json',
-  'text/plain', 'text/csv', 'text/markdown',
-]);
+/* Every format with a server-side extractor (PDF, DOCX/XLSX/PPTX,
+   DOC/XLS, ODT/ODS/ODP, EPUB, RTF) is previewable with the same output
+   the model gets from read_attachment. */
+const PREVIEW_PARSER_MIMES = new Set<string>(SUPPORTED_MIMES);
 
+/* Storage key = server uuid + a short ASCII extension. The user's name
+   (any script, any length) only ever lives in files.name. */
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || '';
-    cb(null, `${crypto.randomUUID()}${ext}`);
+    cb(null, `${crypto.randomUUID()}${safeStorageExtension(file.originalname)}`);
   },
 });
 
@@ -76,7 +80,16 @@ const ALLOWED_EXACT_MIMES = new Set([
 const upload = multer({
   storage,
   limits: { fileSize: MAX_SIZE },
+  /* busboy decodes the multipart `filename="…"` parameter as latin1 by
+     default, while browsers send it as raw UTF-8 bytes — that turned
+     「数学.pdf」 into "æ\u0095°å\u00ad¦.pdf". Decode it as UTF-8. (RFC 5987
+     `filename*=UTF-8''…` is honoured by busboy either way.) */
+  defParamCharset: 'utf8',
   fileFilter: (_req, file, cb) => {
+    /* Normalize once, before storage and every later read of
+       originalname: mojibake repair (older clients/proxies), NFC, no
+       directories or control characters. */
+    file.originalname = normalizeFileName(file.originalname) || 'file';
     const mime = String(file.mimetype || '').toLowerCase();
     // text/html, application/xhtml+xml and image/svg+xml are explicitly
     // blocked: a malicious upload labelled as HTML/SVG would render in
@@ -144,7 +157,8 @@ router.get('/', async (req, res, next) => {
     if (hasMore) rows.pop();
 
     return res.json({
-      files: rows,
+      /* displayFileName repairs names stored before the UTF-8 fix. */
+      files: rows.map((row) => ({ ...row, name: displayFileName(row.name) })),
       nextCursor: hasMore ? rows[rows.length - 1]?.id : null,
     });
   } catch (err) { next(err); }
@@ -170,42 +184,49 @@ router.get('/:id/content', async (req, res, next) => {
     let text = '';
     let meta: Record<string, unknown> = {};
     let truncated = false;
-    if (PLAIN_TEXT_MIMES.has(file.mimeType)) {
-      // Stream only the head of the file instead of reading it all into
-      // memory. A user can upload up to the quota (250 MB) as text, so
-      // buffering the whole file here would let a single preview consume
-      // that much server memory. We read a little more than the char cap
-      // to avoid splitting a multi-byte UTF-8 sequence, then clean up the
-      // tail below via the same normalization + slice path.
-      const headBytes = await readHead(file.storagePath, MAX_PREVIEW_CHARS + 4096);
-      text = headBytes.toString('utf8');
-    } else if (file.mimeType === 'application/pdf') {
-      const mod = await import('pdf-parse');
-      const pdfParse = mod.default || mod;
-      const result = await pdfParse(await fs.readFile(resolveInsideRoot(UPLOAD_DIR, file.storagePath)));
-      text = String((result && result.text) || '');
-      meta = { pageCount: result && result.numpages ? Number(result.numpages) : 0 };
-    } else if (['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'application/epub+zip', 'application/rtf'].includes(file.mimeType)) {
-      const result = await extractDocumentText(file.mimeType, resolveInsideRoot(UPLOAD_DIR, file.storagePath));
+    const mime = String(file.mimeType || '').toLowerCase();
+    const name = displayFileName(file.name);
+    if (PREVIEW_PARSER_MIMES.has(mime)) {
+      const result = await extractDocumentText(mime, resolveInsideRoot(UPLOAD_DIR, file.storagePath));
       text = String(result.text || '');
       meta = result.meta || {};
       truncated = !!result.truncated;
+    } else if (isTextReadable(mime, name, file.kind)) {
+      // Stream only the head of the file instead of reading it all into
+      // memory. A user can upload up to the quota (250 MB) as text, so
+      // buffering the whole file here would let a single preview consume
+      // that much server memory. The decoder tolerates a multi-byte
+      // sequence cut at the end of the head; GBK/Big5/UTF-16 files are
+      // detected instead of being shown as mojibake.
+      const headBytes = await readHead(file.storagePath, MAX_PREVIEW_CHARS * 2 + 4096);
+      const decoded = decodeTextBuffer(headBytes);
+      text = cleanExtractedText(decoded.text);
+      meta = { encoding: decoded.encoding };
+      if (headBytes.length >= MAX_PREVIEW_CHARS * 2 + 4096) truncated = true;
+      /* Head-only read: a head/tail cut here would present the middle of
+         the file as its end, so keep a plain head cut. */
+      if (text.length > MAX_PREVIEW_CHARS) {
+        text = text.slice(0, MAX_PREVIEW_CHARS);
+        truncated = true;
+      }
     } else {
       return res.status(415).json({ ok: false, error: 'This file type cannot be previewed as text.' });
     }
 
-    text = text.replace(/\r\n/g, '\n');
     if (text.length > MAX_PREVIEW_CHARS) {
-      text = text.slice(0, MAX_PREVIEW_CHARS);
+      text = truncateHeadTail(text, MAX_PREVIEW_CHARS).text;
       truncated = true;
     }
-    return res.json({ ok: true, id: file.id, name: file.name, mimeType: file.mimeType, kind: file.kind, text, truncated, meta });
+    return res.json({ ok: true, id: file.id, name, mimeType: file.mimeType, kind: file.kind, text, truncated, meta });
   } catch (err) {
     if (err instanceof NotFound) throw err;
-    return res.status(422).json({ ok: false, error: 'Could not parse this file for preview.' });
+    const code = (err as { code?: string })?.code;
+    const error = code === 'ENCRYPTED'
+      ? 'This file is password-protected or encrypted and cannot be previewed.'
+      : code === 'EMPTY_DOCUMENT'
+        ? 'This file contains no readable content.'
+        : 'Could not parse this file for preview.';
+    return res.status(422).json({ ok: false, error, errorCode: code || 'PARSE_FAILED' });
   }
 });
 
@@ -333,7 +354,7 @@ router.post('/', uploadLimiter, async (req, res, next) => {
         }
         const [row] = await tx.insert(files).values({
           userId: req.userId!,
-          name: sanitizeFileName(file.originalname) || 'file',
+          name: normalizeFileName(file.originalname) || 'file',
           mimeType: file.mimetype,
           size: file.size,
           kind: mimeKind(file.mimetype, file.originalname),
@@ -372,19 +393,9 @@ router.get('/:id', async (req, res, next) => {
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
-    return res.json(file);
+    return res.json({ ...file, name: displayFileName(file.name) });
   } catch (err) { next(err); }
 });
-
-const MAX_NAME_LENGTH = 255;
-
-/** Display names are never a path: strip directories, control chars, and overlong input. */
-function sanitizeFileName(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null;
-  const base = path.basename(raw.trim()).replace(/[\u0000-\u001f\u007f]/g, '');
-  if (!base || base === '.' || base === '..' || base.length > MAX_NAME_LENGTH) return null;
-  return base;
-}
 
 /* Reject active content masquerading as an allowed binary type, without
  * breaking text/code uploads (which have no magic bytes). Reads only the
@@ -448,7 +459,9 @@ router.patch('/:id', async (req, res, next) => {
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
-    const name = sanitizeFileName(req.body?.name);
+    /* Same normalization as uploads (NFC, no path, no control/bidi
+       characters); over-long names are rejected so the user can fix them. */
+    const name = normalizeFileName(req.body?.name, 'reject');
     if (!name) throw new BadRequest('name is required (1-255 chars, no path separators)');
     await db.update(files).set({ name }).where(eq(files.id, req.params.id));
     return res.json({ id: file.id, name });
