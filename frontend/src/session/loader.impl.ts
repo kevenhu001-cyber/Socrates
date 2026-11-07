@@ -31,7 +31,7 @@ import {
 import { reattachPendingTurn } from './pendingTurnRestore.ts';
 import { beginHistoryPaging, endHistoryPaging } from './historyPaging.ts';
 import { normalizeDetailPage, olderRowCount, sessionDetailPath } from './historyPagingState.ts';
-import { seedSyncedMessages } from './persistence.ts';
+import { flushDeferredSessionSave, seedSyncedMessages } from './persistence.ts';
 import { toggleShareBtn } from '../ui/share.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { clearComposer } from '../composer/controller.ts';
@@ -315,6 +315,9 @@ interface SessionLoadRecovery {
 }
 
 function beginSessionLoad(id: string): AbortController {
+  /* A just-finished turn may have parked its save for the next paint; post
+     it while its session is still current, before the load drops queued saves. */
+  flushDeferredSessionSave();
   saveState.loadingSession = true;
   saveState.saveDirty = false;
   saveState.pendingSnapshot = null;

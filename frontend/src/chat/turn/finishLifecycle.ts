@@ -4,7 +4,7 @@ import { turnState } from '../turnState.ts';
 import { setChatStopState, markTurnEnded } from '../turnUi.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { announceTranscript } from '../../ui/liveRegion.js';
-import { saveCurrentSession } from '../../session/persistence.ts';
+import { saveCurrentSessionAfterPaint } from '../../session/persistence.ts';
 import { appendLocalMemory } from '../../storage/localMemory.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { dequeuePrompt } from '../promptQueue.ts';
@@ -59,6 +59,29 @@ function releaseFinishedTurn(state: TurnRuntimeState): void {
       reportSwallow(error, 'streamingTurn.finishAfterRender.drainPromptQueue');
     }
   }, 50);
+}
+
+/**
+ * Run non-visual finish work once the settled frame has painted: one
+ * animation frame, then a macrotask. A hidden tab gets no frames, so it runs
+ * the work on the next macrotask; a fallback timer bounds a throttled rAF.
+ */
+function runAfterFinishPaint(work: () => void): void {
+  let done = false;
+  let fallback: ReturnType<typeof setTimeout> | null = null;
+  const run = (): void => {
+    if (done) return;
+    done = true;
+    if (fallback !== null) clearTimeout(fallback);
+    work();
+  };
+  const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+  if (hidden || typeof requestAnimationFrame !== 'function') {
+    setTimeout(run, 0);
+    return;
+  }
+  fallback = setTimeout(run, 250);
+  requestAnimationFrame(() => { setTimeout(run, 0); });
 }
 
 export interface FinishLifecycle {
@@ -136,22 +159,32 @@ export function createFinishLifecycle(
   }
 
   function finishAfterRender(renderResult: FinishRenderResult | undefined): void {
-    try { appendLocalMemory('assistant', state.full); }
-    catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.appendLocalMemory'); }
-
     const visibleFinal = renderResult ? renderResult.visibleFinal : null;
-    try {
-      if (typeof visibleFinal === 'string' && visibleFinal.trim()) {
-        announceTranscript(visibleFinal);
-      }
-    } catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.announceTranscript'); }
-
     updateActiveBranchVariant(state, visibleFinal);
+
+    /* P_stream-finish-paint — the settled snapshot reaches React as a
+       microtask after this task, so any synchronous work left here delays
+       the final frame and the finished answer visibly hangs for a beat.
+       Bookkeeping that nothing on screen depends on (the local transcript
+       mirror, the screen-reader announcement, the session save) runs right
+       after that frame paints instead. */
+    const full = state.full;
+    const finishedSessionId = stateStore.read('currentSessionId') as string | null;
+    runAfterFinishPaint(() => {
+      if (stateStore.read('currentSessionId') !== finishedSessionId) return;
+      try { appendLocalMemory('assistant', full); }
+      catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.appendLocalMemory'); }
+      try {
+        if (typeof visibleFinal === 'string' && visibleFinal.trim()) {
+          announceTranscript(visibleFinal);
+        }
+      } catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.announceTranscript'); }
+    });
 
     const kbNodes = stateStore.read('kbNodes') as readonly unknown[];
     if (stateStore.read('phase') === 'chat'
       || (stateStore.read('topic') && kbNodes.length)) {
-      saveCurrentSession();
+      saveCurrentSessionAfterPaint();
     }
 
     /* An older turn must not clear the Stop control installed by a newer
