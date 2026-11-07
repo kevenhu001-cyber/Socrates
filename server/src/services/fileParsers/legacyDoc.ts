@@ -10,6 +10,7 @@
  * blow the prompt budget or server memory before truncation.
  */
 import WordExtractor from 'word-extractor';
+import { cleanExtractedText, parseError, truncateHeadTail } from './text.js';
 
 const MAX_OUTPUT_CHARS = 200 * 1024;
 
@@ -21,18 +22,24 @@ export async function extract(filepath: string) {
     body = String((doc && doc.getBody && doc.getBody()) || '').replace(/\r\n/g, '\n');
   } catch (e) {
     const em = e as Error;
-    const err = new Error('doc_parse_failed: ' + (em.message || em)) as Error & { code: string };
-    err.code = 'PARSE_FAILED';
-    throw err;
+    if (/password|encrypt/i.test(String(em?.message || ''))) {
+      throw parseError('ENCRYPTED', 'doc_encrypted: this DOC file is password-protected. Remove the password and upload it again.');
+    }
+    throw parseError('PARSE_FAILED', 'doc_parse_failed: ' + (em.message || em));
   }
+  body = cleanExtractedText(body);
+  const totalChars = body.length;
   let truncated = false;
+  const meta: Record<string, unknown> = { format: 'doc' };
   if (body.length > MAX_OUTPUT_CHARS) {
-    body = body.slice(0, MAX_OUTPUT_CHARS);
+    const cut = truncateHeadTail(body, MAX_OUTPUT_CHARS);
+    body = cut.text;
     truncated = true;
+    meta.omitted = `${cut.omittedChars} of ${totalChars} characters from the middle`;
   }
   return {
     text: body,
     truncated,
-    meta: {},
+    meta,
   };
 }

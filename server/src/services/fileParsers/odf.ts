@@ -19,6 +19,7 @@
 import JSZip from 'jszip';
 import { parseStringPromise } from 'xml2js';
 import fs from 'node:fs/promises';
+import { markdownTable } from './text.js';
 
 const MAX_OUTPUT_CHARS = 200 * 1024;
 const MAX_SHEETS = 50;
@@ -188,7 +189,11 @@ export async function extractOdt(filepath: string) {
   return { text: text(), truncated: done(), meta: {} };
 }
 
-const SHEET_HEADER = (name: string) => `### Sheet: ${name || 'Untitled'}\n`;
+/* Same dialect as xlsx.ts / legacyXls.ts: one markdown table per sheet. */
+const SHEET_HEADER = (name: string, rows: number) => `## Sheet: ${name || 'Untitled'} (${rows} rows)\n`;
+/* Trailing empty cells are often stored as one cell repeated thousands of
+   times (to the sheet edge); cap the expansion. */
+const MAX_COLUMNS = 100;
 
 export async function extractOds(filepath: string) {
   const body = await loadBody(filepath);
@@ -199,32 +204,24 @@ export async function extractOds(filepath: string) {
   let sheetCount = 0;
   for (const table of tables) {
     sheetCount++;
-    if (!push(SHEET_HEADER(attr(table, 'table:name')))) break;
     const rows = asArray<OdfNode>(table['table:table-row']);
-    let rowCount = 0;
-    let go = true;
+    const grid: string[][] = [];
     for (const row of rows) {
-      if (!go || rowCount >= MAX_ROWS_PER_SHEET) break;
+      if (grid.length >= MAX_ROWS_PER_SHEET) break;
       const cells: string[] = [];
       for (const cell of asArray<OdfNode>(row['table:table-cell'])) {
         // Covered cells (merge continuations) carry no text — skip.
         const repeat = Math.max(1, parseInt(attr(cell, 'table:number-columns-repeated') || '1', 10) || 1);
         const t = blockTexts(cell).join(' ');
-        for (let i = 0; i < Math.min(repeat, MAX_ROWS_PER_SHEET); i++) cells.push(t);
+        for (let i = 0; i < repeat && cells.length < MAX_COLUMNS; i++) cells.push(t);
       }
-      const line = cells.join('\t');
-      if (line.trim().length > 0) {
-        rowCount++;
-        go = push(line + '\n');
-      }
+      if (cells.some((c) => c.trim().length > 0)) grid.push(cells);
     }
-    if (rowCount >= MAX_ROWS_PER_SHEET) {
-      push(`\n[sheet truncated at ${MAX_ROWS_PER_SHEET} rows]\n`);
-    }
-    if (!go) break;
-    push('\n');
+    let sheet = SHEET_HEADER(attr(table, 'table:name'), grid.length) + (markdownTable(grid) || '(empty sheet)') + '\n';
+    if (grid.length >= MAX_ROWS_PER_SHEET) sheet += `[sheet truncated at ${MAX_ROWS_PER_SHEET} rows]\n`;
+    if (!push(sheet)) break;
   }
-  return { text: text(), truncated: done(), meta: { sheetCount } };
+  return { text: text(), truncated: done(), meta: { sheetCount, format: 'markdown-tables' } };
 }
 
 export async function extractOdp(filepath: string) {
@@ -236,7 +233,7 @@ export async function extractOdp(filepath: string) {
   let slideCount = 0;
   for (const page of pages) {
     slideCount++;
-    if (!push(`### Slide ${slideCount}\n`)) break;
+    if (!push(`## Slide ${slideCount}\n`)) break;
     const runs: string[] = [];
     deepTexts(page, runs);
     for (const t of runs) {

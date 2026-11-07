@@ -70,8 +70,11 @@ export const executeReadAttachment: ToolExecutor = async (
     });
   } catch (err) {
     if (err instanceof AttachmentReadError) {
-      return fail(err.code, err.retryable, err.message,
-        err.code === 'file_not_found' ? '附件不存在或已被删除。' : '无法读取该附件。');
+      const userMessage = err.code === 'file_not_found' ? '附件不存在或已被删除。'
+        : err.code === 'encrypted' ? '该附件已加密或设有密码，无法读取。'
+        : err.code === 'unsupported_type' ? '暂不支持读取该文件格式。'
+        : '无法读取该附件。';
+      return fail(err.code, err.retryable, err.message, userMessage);
     }
     const message = (err as Error)?.message || String(err);
     return fail('read_failed', true, message);

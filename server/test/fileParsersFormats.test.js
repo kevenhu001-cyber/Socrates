@@ -55,12 +55,13 @@ test('legacy .xls (BIFF8) extracts sheets as tab-separated text', async () => {
     await fs.writeFile(fp, XLSX.write(wb, { type: 'buffer', bookType: 'biff8' }));
 
     const direct = await legacyXlsExtract(fp);
-    assert.match(direct.text, /### Sheet: People/);
-    assert.match(direct.text, /Alice\t30/);
+    assert.match(direct.text, /## Sheet: People/);
+    assert.match(direct.text, /\| Name \| Age \|\n\| --- \| --- \|/);
+    assert.match(direct.text, /\| Alice \| 30 \|/);
     assert.equal(direct.meta.sheetCount, 1);
 
     const viaDispatch = await extractText('application/vnd.ms-excel', fp);
-    assert.match(viaDispatch.text, /Bob\t25/);
+    assert.match(viaDispatch.text, /\| Bob \| 25 \|/);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
@@ -118,8 +119,8 @@ test('ods extracts tables with repeated columns', async () => {
   );
   try {
     const r = await extractOds(fp);
-    assert.match(r.text, /### Sheet: S1/);
-    assert.match(r.text, /A\tB\tB/);
+    assert.match(r.text, /## Sheet: S1/);
+    assert.match(r.text, /\| A \| B \| B \|/);
     assert.equal(r.meta.sheetCount, 1);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
@@ -137,8 +138,8 @@ test('odp extracts slide text in order', async () => {
   );
   try {
     const r = await extractOdp(fp);
-    assert.match(r.text, /### Slide 1[\s\S]*Slide one/);
-    assert.match(r.text, /### Slide 2[\s\S]*Slide two/);
+    assert.match(r.text, /## Slide 1[\s\S]*Slide one/);
+    assert.match(r.text, /## Slide 2[\s\S]*Slide two/);
     assert.equal(r.meta.slideCount, 2);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });

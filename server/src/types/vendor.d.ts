@@ -30,6 +30,8 @@ declare module 'multer' {
   export interface Options {
     storage?: unknown;
     limits?: { fileSize?: number };
+    /** Charset busboy uses for part header params (e.g. filename) that carry no explicit charset. multer default: 'latin1'. */
+    defParamCharset?: string;
     fileFilter?: (req: Request, file: UploadedFile, callback: FileFilterCallback) => void;
   }
   export interface Instance {

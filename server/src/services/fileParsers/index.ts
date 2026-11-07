@@ -23,6 +23,8 @@ import { extract as rtfExtract } from './rtf.js';
 import { extract as legacyDocExtract } from './legacyDoc.js';
 import { extract as legacyXlsExtract } from './legacyXls.js';
 import { extractOdt, extractOds, extractOdp } from './odf.js';
+import { extract as pdfExtract } from './pdf.js';
+import { cleanExtractedText, parseError } from './text.js';
 
 type ExtractResult = {
   text: string;
@@ -50,22 +52,38 @@ export const PARSERS = new Map<string, Parser>([
   ['application/vnd.oasis.opendocument.text', extractOdt],
   ['application/vnd.oasis.opendocument.spreadsheet', extractOds],
   ['application/vnd.oasis.opendocument.presentation', extractOdp],
+  /* PDF — pdf-parse with page markers and scanned/encrypted detection. */
+  ['application/pdf', pdfExtract],
   /* Legacy .ppt has no pure-JS extractor — intentionally unmapped so
-     callers fall back to the metadata-only note instead of crashing.
-     PDF is unmapped for the same reason: routes/fileExtract.ts keeps it
-     on pdf-parse, which needs a Buffer rather than a path. */
+     callers fall back to the metadata-only note instead of crashing. */
 ]);
 
 /**
  * Dispatch extraction by MIME type. Returns `{ text, truncated, meta }`
- * or throws on unsupported / parse failure.
+ * or throws on unsupported / parse failure (err.code: PARSE_FAILED,
+ * ENCRYPTED, EMPTY_DOCUMENT, UNSUPPORTED_MIME).
+ *
+ * Every result passes through the same whitespace cleanup, so the model
+ * never pays tokens for control characters, zero-width junk, trailing
+ * spaces or long runs of blank lines, whatever the source format.
  */
-export async function extractText(mimeType: string, filepath: string) {
+export async function extractText(mimeType: string, filepath: string): Promise<ExtractResult> {
+  const result = await dispatchParser(mimeType, filepath);
+  return {
+    text: cleanExtractedText(result?.text),
+    truncated: !!result?.truncated,
+    meta: result?.meta || {},
+  };
+}
+
+async function dispatchParser(mimeType: string, filepath: string): Promise<ExtractResult> {
   /* Keep dispatch as direct calls instead of invoking a function retrieved
      from a user-selected map key. PARSERS remains exported for capability
      reporting; this switch makes executable targets explicit to reviewers
      and static analysis. */
   switch (mimeType) {
+    case 'application/pdf':
+      return await pdfExtract(filepath);
     case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
       return await docxExtract(filepath);
     case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
@@ -87,11 +105,8 @@ export async function extractText(mimeType: string, filepath: string) {
       return await extractOds(filepath);
     case 'application/vnd.oasis.opendocument.presentation':
       return await extractOdp(filepath);
-    default: {
-      const err = new Error(`unsupported_mime:${mimeType}`) as Error & { code: string };
-      err.code = 'UNSUPPORTED_MIME';
-      throw err;
-    }
+    default:
+      throw parseError('UNSUPPORTED_MIME', `unsupported_mime:${mimeType}`);
   }
 }
 
