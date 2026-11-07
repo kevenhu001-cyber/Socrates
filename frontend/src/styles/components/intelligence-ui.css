@@ -688,8 +688,9 @@
 }
 
 /* One footprint for an interactive block that has nothing of its own to draw
-   yet (code chunk loading, OpenUI program before its root). Static: the
-   arriving content is the progress signal, so nothing pulses. */
+   yet (code chunk loading, OpenUI program before its root). Each line also
+   carries the shared .skeleton-shimmer sweep (foundations/base.css), the
+   same one the streaming scaffold previews use. */
 .intui-block-skeleton {
   display: grid;
   align-content: start;
@@ -702,7 +703,7 @@
   width: 72%;
   height: .75rem;
   border-radius: var(--ui-radius-xs);
-  background: color-mix(in srgb, var(--foreground) 7%, transparent);
+  background-color: color-mix(in srgb, var(--foreground) 7%, transparent);
 }
 .intui-block-skeleton-line[data-width="title"] { width: 40%; height: 1rem; }
 
@@ -793,10 +794,3 @@
 .demo-field { padding-inline: 7.3077% 2.3077%; }
 .demo-field canvas { aspect-ratio: auto; }
 
-@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
-  .intui-block-skeleton-line {
-    background-image: linear-gradient(100deg, transparent 25%, var(--ui-fill-pressed) 50%, transparent 75%);
-    background-size: 250% 100%;
-    animation: thinking-text-shimmer var(--ui-duration-shimmer) ease-in-out infinite alternate;
-  }
-}

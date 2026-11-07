@@ -93,8 +93,7 @@ const STREAM_LABEL_KEYS: Record<string, [string, string]> = {
   'flashcard-front': ['learn.flashcard.front', 'Question'],
 };
 
-function streamLabel(tag: string): string {
-  const [key, fallback] = STREAM_LABEL_KEYS[tag] || ['', tag];
+function translateOr(key: string, fallback: string): string {
   const translate = (globalThis as { t?: (key: string) => string }).t;
   if (key && typeof translate === 'function') {
     try {
@@ -105,6 +104,11 @@ function streamLabel(tag: string): string {
     }
   }
   return fallback;
+}
+
+function streamLabel(tag: string): string {
+  const [key, fallback] = STREAM_LABEL_KEYS[tag] || ['', tag];
+  return translateOr(key, fallback);
 }
 
 function streamField(inner: string, name: string): string {
@@ -147,7 +151,17 @@ export function streamScaffoldFallbackText(content: string): string {
 
 /** Quiet capsule that holds a control's place until the card mounts. */
 function skeletonPill(kind: 'solid' | 'soft' | 'quiet' = 'quiet', width = 96): string {
-  return '<span class="sc-live-pill sc-live-pill--' + kind + '" style="width:' + width + 'px"></span>';
+  return '<span class="sc-live-pill sc-live-pill--' + kind + ' skeleton-shimmer" style="width:' + width + 'px"></span>';
+}
+
+/** A field that has not started yet: one shimmering line in its place. */
+function skeletonLine(part: string): string {
+  return '<div class="sc-live-skeleton skeleton-shimmer" data-part="' + escAttr(part) + '" aria-hidden="true"></div>';
+}
+
+/** Screen-reader copy for a card that is still being written. */
+function generatingLabel(): string {
+  return translateOr('learn.generating', 'Generating practice…');
 }
 
 function actionsRow(left: string, right: string): string {
@@ -156,17 +170,22 @@ function actionsRow(left: string, right: string): string {
 }
 
 function streamCard(tag: string, body: string, trailing = ''): string {
+  /* aria-busy marks the whole card as still being written; the hidden line
+     says so in words. No live-region role: the preview is repainted on every
+     token, and a status region would be re-announced each time. */
   return '<div class="sc-live" data-scaffold-live="' + escAttr(tag) + '" aria-busy="true">'
+    + '<span class="visually-hidden">' + escHTML(generatingLabel()) + '</span>'
     + '<div class="sc-live-head"><span class="sc-live-label">' + escHTML(streamLabel(tag)) + '</span>' + trailing + '</div>'
     + '<div class="sc-live-body">' + body + '</div></div>';
 }
 
 type StreamMarkdownRenderer = (value: string, part: string) => string;
-type StreamPreviewRenderer = (inner: string, markdown: StreamMarkdownRenderer, attrs: string) => string;
+/** `open` is true while the block's closing tag has not arrived yet. */
+type StreamPreviewRenderer = (inner: string, markdown: StreamMarkdownRenderer, attrs: string, open: boolean) => string;
 
 function renderStreamMarkdown(value: string, part: string, formatMarkdown: (value: string) => string): string {
   const text = String(value || '').trim();
-  if (!text) return '<div class="sc-live-skeleton" data-part="' + escAttr(part) + '"></div>';
+  if (!text) return skeletonLine(part);
   let html: string;
   try {
     html = formatMarkdown(text);
@@ -267,7 +286,23 @@ function renderStepPreview(inner: string, markdown: StreamMarkdownRenderer, attr
   return streamCard('step', stepRows([body], markdown, 'step-step', [number || '1']));
 }
 
-function renderQuizPreview(inner: string, markdown: StreamMarkdownRenderer, attrs: string): string {
+/* A quiz usually carries four lettered options (the prompt asks for at least
+   two). While the block is still open, empty option rows hold the rest of
+   that height so the card does not grow one row per option; each row is
+   replaced in place by the real option as it streams in. */
+const QUIZ_OPTION_SLOTS = 4;
+
+function pendingQuizOptions(count: number): string {
+  let rows = '';
+  for (let index = 0; index < count; index++) {
+    rows += '<div class="sc-live-option sc-live-option--pending" aria-hidden="true">'
+      + '<span class="sc-live-letter sc-live-letter--pending"></span>'
+      + skeletonLine('quiz-option') + '</div>';
+  }
+  return rows;
+}
+
+function renderQuizPreview(inner: string, markdown: StreamMarkdownRenderer, attrs: string, open: boolean): string {
   const question = streamBodyField(inner, 'q');
   const options = fieldMatches(inner, 'o', true).flatMap((match) => {
     const letter = match.attrs.match(/\bletter\s*=\s*["']([A-Ha-h])["']/i)?.[1];
@@ -279,9 +314,10 @@ function renderQuizPreview(inner: string, markdown: StreamMarkdownRenderer, attr
   });
   const multi = /\b(?:multi|multiple)\b/i.test(attrs)
     || fieldsOf(inner, 'correct').some((answer) => parseAnswerKey(answer).length > 1);
+  const pending = open ? pendingQuizOptions(Math.max(0, QUIZ_OPTION_SLOTS - options.length)) : '';
   return streamCard('quiz',
     markdown(question, 'quiz-q')
-    + (options.length ? '<div class="sc-live-options">' + options.join('') + '</div>' : '')
+    + (options.length || pending ? '<div class="sc-live-options">' + options.join('') + pending + '</div>' : '')
     + actionsRow('', skeletonPill('solid', 88)),
     multi ? skeletonPill('quiet', 64) : '');
 }
@@ -300,18 +336,40 @@ const STREAM_PREVIEW_RENDERERS: Record<string, StreamPreviewRenderer> = {
   proof: (inner, markdown) => renderProofPreview(inner, markdown),
   derivation: (inner, markdown) => renderDerivationPreview(inner, markdown),
   step: (inner, markdown, attrs) => renderStepPreview(inner, markdown, attrs),
-  quiz: (inner, markdown, attrs) => renderQuizPreview(inner, markdown, attrs),
+  quiz: (inner, markdown, attrs, open) => renderQuizPreview(inner, markdown, attrs, open),
 };
 
+/**
+ * Preview for a scaffold block during streaming. `open` is true for the
+ * dangling block at the tail (its closing tag has not arrived), which may
+ * reserve the rest of the finished card's height with skeleton rows.
+ */
 export function renderStreamScaffoldPreview(
   tag: string,
   inner: string,
   attrs: string,
   formatMarkdown: (value: string) => string,
+  open = false,
 ): string | null {
   if (!STREAM_SCAFFOLD_TAGS.has(tag)) return null;
   const renderer = STREAM_PREVIEW_RENDERERS[tag];
   if (!renderer) return renderGenericScaffoldPreview(tag, inner);
   const markdown: StreamMarkdownRenderer = (value, part) => renderStreamMarkdown(value, part, formatMarkdown);
-  return renderer(inner, markdown, attrs);
+  return renderer(inner, markdown, attrs, open);
+}
+
+/**
+ * A scaffold opener still being typed at the very end of the stream
+ * (`<qu`, `<quiz`, `<quiz multi="tr`) has no `>` yet, so the block patterns
+ * do not see it and it would flash as raw text or vanish. Returns the tag
+ * when the name is already complete (show that card's skeleton now), 'hold'
+ * when it is only a prefix of a scaffold tag (drop it until the next token
+ * decides), or null when it is not a scaffold opener at all.
+ */
+export function pendingScaffoldOpener(name: string, attrs: string): ScaffoldTag | 'hold' | null {
+  const lower = name.toLowerCase();
+  const tag = SCAFFOLD_TAGS.find((candidate) => candidate === lower);
+  if (tag) return tag;
+  if (attrs) return null;
+  return SCAFFOLD_TAGS.some((candidate) => candidate.startsWith(lower)) ? 'hold' : null;
 }

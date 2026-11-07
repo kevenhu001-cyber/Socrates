@@ -5,13 +5,15 @@ import { i18n } from '../legacy/gateway';
  * its own to draw: while its code chunk loads, and while an OpenUI program
  * streams in before its `root` line. Both moments share this footprint, so
  * the block takes its place once and only grows from there. The skeleton highlights pending
- * content while preserving the final layout.
+ * content while preserving the final layout. Its lines carry the shared
+ * `.skeleton-shimmer` sweep (foundations/base.css), the same one the streaming
+ * scaffold previews use, and stay static under reduced motion.
  */
 export function BlockSkeleton({ announce = true }: { announce?: boolean }) {
   return (
     <div className="intui-block-skeleton" role={announce ? 'status' : undefined} aria-busy={announce || undefined}>
-      <span className="intui-block-skeleton-line" data-width="title" aria-hidden="true" />
-      <span className="intui-block-skeleton-line" aria-hidden="true" />
+      <span className="intui-block-skeleton-line skeleton-shimmer" data-width="title" aria-hidden="true" />
+      <span className="intui-block-skeleton-line skeleton-shimmer" aria-hidden="true" />
       {announce ? <span className="sr-only">{i18n('common.loading', 'Loading…')}</span> : null}
     </div>
   );
