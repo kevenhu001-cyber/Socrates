@@ -41,8 +41,11 @@
   unicode-range: U+6587;
 }
 
-/* Deep-space chrome: compact navigation, restrained controls and a quiet
-   footer. Every control keeps a 44px hit area. */
+/* OpenAI-style chrome: a plain white top bar the width of the content
+   container (wordmark, compact 14px links, a gray "Log in" pill and a black
+   "Try" pill), and a white footer of small grouped links. Every control is a
+   full pill; hit areas reach 44px through transparent padding, so the
+   visible controls stay small (36px). */
 .site-header,
 .site-footer {
   --site-chrome-font: var(--site-font);
@@ -63,9 +66,12 @@
 .site-locale { font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); }
 
 .site-header { position: sticky; top: 0; z-index: 100; }
-/* Keep the top edge clear over the image; scrolling brings in a near-opaque
-   dark surface without per-frame backdrop filtering. */
-.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: rgb(5 7 11 / .94); box-shadow: 0 1px 0 var(--site-color-line); pointer-events: none; transition: opacity 300ms var(--site-ease); }
+/* The bar's layer is a pseudo-element, so nothing on the header itself can
+   become the containing block of the fixed mobile menu.
+   At the top of the page the bar is clear and borderless; once the page
+   moves under it, the layer fades in with a hairline below. Only the
+   layer's opacity animates. */
+.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: rgb(255 255 255 / .94); box-shadow: 0 1px 0 var(--site-color-line); pointer-events: none; transition: opacity 300ms var(--site-ease); }
 .site-header[data-scroll-aware]:not(.is-scrolled)::before { opacity: 0; }
 html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
 .site-header-inner { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--space-400); height: var(--site-header-height); }
@@ -108,8 +114,8 @@ html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
 .site-header :is(.site-login, .site-try)::after { content: ''; position: absolute; inset: -4px -2px; }
 .site-header .site-login { background: var(--site-color-fill); color: var(--site-color-ink); }
 .site-header .site-login:hover { background: var(--site-color-fill-hover); }
-.site-header .site-try { background: #f3f6fb; color: #05070b; }
-.site-header .site-try:hover { background: #d8eaff; color: #05070b; }
+.site-header .site-try { background: var(--site-color-ink); color: #fff; }
+.site-header .site-try:hover { background: var(--site-color-ink-hover); color: #fff; }
 .site-header :is(.site-login, .site-try):active { transform: scale(.98); }
 .site-try svg { flex: none; width: 14px; height: 14px; transition: transform var(--site-motion-move); }
 .site-try:hover svg { transform: translate(1px, -1px); }
@@ -127,8 +133,8 @@ html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
 .site-menu-toggle[aria-expanded="true"] span:last-child { transform: rotate(-45deg); }
 .site-header [hidden] { display: none; }
 
-/* The mobile menu drops from the bar as a raised midnight sheet; the dimmed
-   page below stays tappable to close. */
+/* Mobile menu: a white sheet that drops from the bar with rounded lower
+   corners and a soft shadow; the dimmed page below stays tappable to close. */
 .site-mobile-menu {
   position: fixed;
   z-index: 0;
@@ -140,8 +146,8 @@ html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
   overscroll-behavior: contain;
   padding: var(--space-75) var(--site-gutter) var(--space-300);
   border-radius: 0 0 var(--radius-3xl) var(--radius-3xl);
-  background: var(--site-color-paper);
-  box-shadow: 0 24px 48px -16px rgb(0 0 0 / .72), inset 0 1px 0 var(--site-hairline);
+  background: #fff;
+  box-shadow: 0 24px 48px -16px rgb(0 0 0 / .16);
 }
 .site-mobile-menu nav { display: grid; }
 .site-mobile-menu nav a { display: flex; align-items: center; min-height: 48px; font: 500 1.125rem/1.5rem var(--site-chrome-font); letter-spacing: -.01em; transition: color var(--site-motion-color); }
@@ -149,13 +155,15 @@ html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
 .site-mobile-menu nav a[aria-current="page"] { color: var(--site-color-muted); }
 .site-mobile-utilities { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-75); margin-top: var(--space-300); padding-top: var(--space-300); border-top: 1px solid var(--site-color-line); }
 .site-mobile-utilities a { display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--space-200); border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-ink); font: var(--type-button-sm); font-family: var(--site-chrome-font); }
-.site-mobile-utilities a:first-child { background: #f3f6fb; color: #05070b; }
+.site-mobile-utilities a:first-child { background: var(--site-color-ink); color: #fff; }
 .site-mobile-utilities .site-locale { font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); }
 .site-menu-scrim { position: fixed; z-index: 90; inset: 0; background: rgb(0 0 0 / .16); }
 html.site-menu-open { overflow: hidden; }
 
-/* Footer: a quiet dark field with grouped links and restrained separators. */
-.site-footer { padding-block: var(--space-900) var(--space-400); background: var(--site-color-night); color: var(--site-color-ink); }
+/* Footer: white, five columns of small links under muted group labels, then
+   one row with social icons, copyright and legal links, and a gray
+   language pill. */
+.site-footer { padding-block: var(--space-900) var(--space-400); background: #fff; color: var(--site-color-ink); }
 .site-footer-inner { display: grid; gap: var(--space-700); }
 .site-footer-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-400) var(--space-300); }
 .site-footer-col { min-width: 0; }

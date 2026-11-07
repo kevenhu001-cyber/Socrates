@@ -56,8 +56,8 @@ for (const prefix of ['', '/zh']) {
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
       assert.ok(geometry.artTop >= geometry.featureTop, 'supporting artwork belongs to the cards below the question');
       assert.ok(Math.abs(geometry.artRatio - 1) < .01, 'the diagram keeps its square composition');
-      // The homepage opens on the NASA photograph with a deep-space ground.
-      assert.equal(geometry.background, 'rgb(5, 7, 11)');
+      // OpenAI-style clean UI: the page ground is pure white.
+      assert.equal(geometry.background, 'rgb(255, 255, 255)');
       assert.ok(geometry.radius >= 18, 'the composer retains the rounded reference silhouette');
       assert.equal(await page.locator('[data-ask-form]').count(), 1, 'the homepage has one question entry at the top');
       assert.ok(geometry.tutorSize >= 16 && geometry.questionSize >= 15, 'preview copy uses actual reading sizes, not container-scaled pixels');
