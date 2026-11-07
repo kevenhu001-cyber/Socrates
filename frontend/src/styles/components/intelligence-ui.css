@@ -777,7 +777,12 @@
 .demonstration input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: var(--ui-card); border: 1px solid var(--ui-hairline-strong); border-radius: var(--ui-round-pill); }
 .demonstration input[type="range"]:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); border-radius: var(--ui-round-pill); }
 .demo-advanced summary { color: var(--ui-ink-tertiary); cursor: pointer; font-size: var(--ui-type-label-sm-size); }
-.demo-advanced summary:focus-visible, .demo-error summary:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); }
+.demo-advanced summary:focus-visible, .demo-error summary:focus-visible, .demo-note summary:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); }
+/* A located calculation note: one short line, details on demand. */
+.demo-issue p { margin: 0; }
+.demo-issue details { margin-top: var(--ui-gap-1); color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); overflow-wrap: anywhere; }
+.demo-issue summary { cursor: pointer; }
+.demo-note { margin-top: var(--ui-gap-2); color: var(--ui-ink-secondary); font-size: var(--ui-type-label-sm-size); }
 .demo-presets { display: flex; flex-wrap: wrap; gap: var(--ui-gap-2); }
 .demo-presets > button { flex: 1; }
 .demo-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: var(--ui-gap-4); margin: 0; padding-top: var(--ui-gap-2); }

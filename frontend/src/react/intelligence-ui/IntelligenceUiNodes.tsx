@@ -620,7 +620,7 @@ function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: 
 type UiNodeRenderer = (node: IntelligenceUiNode, context: RenderContext) => ReactNode;
 
 const nodeRenderers = new Map<string, UiNodeRenderer>([
-  ['demonstration', (node, context) => <Demonstration program={node.program} title={asProse(resolve(node.title, context))} />],
+  ['demonstration', (node, context) => <Demonstration program={node.program} title={asProse(resolve(node.title, context))} streaming={context.streaming} />],
   ['physics', (node, context) => typeof node.scene === 'string' ? <PhysicsLab scene={node.scene} title={asProse(resolve(node.title, context))} parameters={isRecord(node.parameters) ? node.parameters : { separation: node.separation, wavelength: node.wavelength, aperture: node.aperture }} /> : null],
   ['openui', (node, context) => typeof node.source === 'string' ? <LazyOpenUiBlock source={node.source} readOnly={context.readOnly} open={context.streaming} embedded /> : null],
   ['panel', (node, context) => <UiPanel node={node} context={context} />],

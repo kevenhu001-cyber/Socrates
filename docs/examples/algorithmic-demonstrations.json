@@ -322,5 +322,243 @@
         ]
       }
     ]
+  },
+  "fourier": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "N",
+        "label": "谐波项数 N",
+        "value": 7,
+        "min": 1,
+        "max": 60,
+        "step": 1
+      },
+      {
+        "id": "f0",
+        "label": "基频",
+        "value": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1,
+        "unit": "Hz"
+      }
+    ],
+    "definitions": {
+      "partial": "4/pi*sum(k,1,N,sin(2*pi*(2*k-1)*f0*x)/(2*k-1))",
+      "square": "sign(sin(2*pi*f0*x))"
+    },
+    "views": [
+      {
+        "kind": "plot",
+        "label": "方波的傅里叶部分和",
+        "x": [
+          0,
+          2
+        ],
+        "y": [
+          -1.5,
+          1.5
+        ],
+        "xLabel": "t (s)",
+        "yLabel": "f(t)",
+        "curves": [
+          {
+            "expression": "square",
+            "label": "方波",
+            "color": "muted",
+            "dashed": true
+          },
+          {
+            "expression": "partial",
+            "label": "部分和",
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "跳变附近的峰值",
+            "expression": "4/pi*sum(k,1,N,sin(pi*(2*k-1)/(2*N))/(2*k-1))",
+            "digits": 3
+          }
+        ]
+      }
+    ]
+  },
+  "logistic": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "r",
+        "label": "增长率 r",
+        "value": 3.2,
+        "min": 2.5,
+        "max": 4,
+        "step": 0.01
+      },
+      {
+        "id": "x0",
+        "label": "初始种群 x₀",
+        "value": 0.2,
+        "min": 0.01,
+        "max": 0.99,
+        "step": 0.01
+      }
+    ],
+    "definitions": {
+      "orbit": "iterate(v,x0,floor(x),r*v*(1-v))",
+      "fixed": "1-1/r"
+    },
+    "views": [
+      {
+        "kind": "controls"
+      },
+      {
+        "kind": "plot",
+        "label": "逻辑斯谛映射的轨道",
+        "x": [
+          0,
+          60
+        ],
+        "y": [
+          0,
+          1
+        ],
+        "xLabel": "代数 n",
+        "yLabel": "xₙ",
+        "curves": [
+          {
+            "expression": "orbit",
+            "label": "xₙ",
+            "color": "blue"
+          },
+          {
+            "expression": "fixed",
+            "label": "不动点 1 − 1/r",
+            "color": "muted",
+            "dashed": true
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "第 200 代的 x",
+            "expression": "iterate(v,x0,200,r*v*(1-v))",
+            "digits": 4
+          },
+          {
+            "label": "不动点处斜率 |2 − r|",
+            "expression": "abs(2-r)",
+            "digits": 3
+          }
+        ]
+      }
+    ]
+  },
+  "dragProjectile": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "v0",
+        "label": "初速度",
+        "value": 20,
+        "min": 5,
+        "max": 40,
+        "step": 1,
+        "unit": "m/s"
+      },
+      {
+        "id": "angle",
+        "label": "发射角",
+        "value": 45,
+        "min": 5,
+        "max": 85,
+        "step": 1,
+        "unit": "°"
+      },
+      {
+        "id": "k",
+        "label": "空气阻力系数",
+        "value": 0.05,
+        "min": 0,
+        "max": 0.3,
+        "step": 0.01,
+        "unit": "1/m"
+      }
+    ],
+    "definitions": {
+      "g": 9.81,
+      "speed": "sqrt(vx^2+vy^2)",
+      "flying": "if(py>=0,1,0)"
+    },
+    "dynamics": {
+      "initial": {
+        "px": 0,
+        "py": 0,
+        "vx": "v0*cos(angle*pi/180)",
+        "vy": "v0*sin(angle*pi/180)"
+      },
+      "derivatives": {
+        "px": "vx*flying",
+        "py": "vy*flying",
+        "vx": "-k*speed*vx*flying",
+        "vy": "(-g-k*speed*vy)*flying"
+      },
+      "duration": 8,
+      "step": 0.01
+    },
+    "views": [
+      {
+        "kind": "trajectory",
+        "label": "有空气阻力的抛体轨迹",
+        "x": [
+          0,
+          "max(10,1.1*v0^2/g)"
+        ],
+        "y": [
+          0,
+          "max(5,0.6*v0^2/g)"
+        ],
+        "xLabel": "x (m)",
+        "yLabel": "y (m)",
+        "horizontal": "px",
+        "vertical": "py",
+        "color": "blue"
+      },
+      {
+        "kind": "controls"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "当前高度",
+            "expression": "py",
+            "unit": "m",
+            "digits": 2
+          },
+          {
+            "label": "当前速率",
+            "expression": "speed",
+            "unit": "m/s",
+            "digits": 2
+          },
+          {
+            "label": "无阻力射程",
+            "expression": "v0^2*sin(2*angle*pi/180)/g",
+            "unit": "m",
+            "digits": 1
+          }
+        ]
+      }
+    ]
   }
 }
