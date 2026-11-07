@@ -1,7 +1,9 @@
 /** App-owned mathematical runtime; models author algorithms and composition, not executable JS. */
-export const DEMONSTRATION_GUIDANCE = `Build a new algorithmic demonstration without choosing a preset physics model. Arguments are JSON, not markup: program is an object whose version is the number 1, every list is a JSON array, and every numeric field is a JSON number. Never encode a list as {"item": [...]}, never wrap an array in tags, and never send "1" where a number belongs. The tool schema names every property and its type; the notes below define the mathematics.
+export const DEMONSTRATION_GUIDANCE = `Build a new algorithmic demonstration without choosing a preset physics model. Arguments are JSON, not markup: every list is a JSON array, every numeric field is a JSON number, and program.version is the number 1. Never encode a list as {"item": [...]}, never wrap an array in tags, and never send "1" where a number belongs.
 
-A demonstration node is {"id":"demo","type":"demonstration","title":"...","program":{"version":1,"parameters":[],"definitions":{},"views":[]}}. All views share parameters, definitions, time t and optional ODE state. To drive an existing demonstration from the conversation, patch its program with changed parameter value fields: edited defaults apply immediately while unrelated manual control values survive. Set or change the optional resetKey string to restore all declared defaults, including a value equal to a previous default. This is the preferred route for novel mathematical/physical demonstrations and custom compositions.
+A demonstration node is {"id":"demo","type":"demonstration","title":"...","program":{"version":1,"parameters":[],"definitions":{},"views":[]}}. views has 1-8 entries. Required per view: plot -> x, y and 1-6 curves; field -> x, y and expression; trajectory -> x, y, horizontal, vertical and program.dynamics; metrics -> 1-6 values; controls -> nothing. At most one controls, two field views and twelve curves total. The schema marks per-kind fields optional because JSON Schema cannot express the condition; validation still requires them. Fix every field named in an error in one corrected call.
+
+All views share parameters, definitions, time t and optional ODE state. To drive an existing demonstration from the conversation, patch its program with changed parameter value fields: edited defaults apply immediately while unrelated manual control values survive. Set or change the optional resetKey string to restore all declared defaults, including a value equal to a previous default. This is the preferred route for novel mathematical/physical demonstrations and custom compositions.
 
 Parameters: up to 12 entries with id, label, value, min, max and optional step, unit, advanced. IDs are ASCII identifiers, never x,y,t,pi,e or function names, and expressions must use exactly the same spelling (names are case-sensitive). min < max and value lies inside [min,max]. Definitions: up to 24 name:expression entries, where an expression is a number or mathematical string. Definitions can use each other in any order (no cycles), parameters, x,y,t and ODE states. They are reevaluated at the current sample coordinates/time, so refer to a definition by its name (f, not f(x)). Operators + - * / % ^ < > <= >= == != && || and condition ? yes : no; write powers as x^2, multiplication as * (2*x; 2x is also read as 2*x), pi for π. Angles are radians; convert degrees with deg*pi/180. Functions sin cos tan asin acos atan atan2 sqrt abs exp log (natural; ln is accepted) log10 pow min max floor ceil round sign hypot sinh cosh tanh clamp(v,min,max), sinc(z)=sin(z)/z with limit 1, sinratio(n,z)=sin(n*z)/(n*sin(z)) with removable singularities filled for integer n, besselJ1(z), airy(u)=[2J1(u)/u]^2 with limit 1. sum(i,first,last,expression) sums at most 1000 integer-indexed terms; iterate(v,initial,count,expression) applies a scalar recurrence at most 1000 times. if(condition,yes,no) is lazy. Use mathematical expressions, not JavaScript syntax; no Math. prefixes, property access, code, callbacks, imports, HTML or shaders. A sample that divides by zero or leaves a function's domain is drawn as a gap rather than failing the view, but keep the plotted range where the model is defined. Express new algorithms through definitions, sums, recurrences and ODEs. Each expression is ≤1600 characters and the entire program ≤40000.
 Dynamics, optional: {"initial":{"X":1,"Y":1,"Z":1},"derivatives":{"X":"sigma*(X-Y)","Y":"X*(rho-Z)-Y","Z":"X*Y-beta*Z"},"duration":20,"step":0.01}. Initial values are numbers/parameter expressions; derivatives can use all current states, definitions and parameters. State IDs cannot collide with parameters/definitions/x/y/t. Up to 6 states, duration ≤30 seconds, step 0.002–0.05 and ≤10000 fixed RK4 steps. A program may instead specify duration for algebraic time animation without dynamics. Numeric dynamics may diverge; the app then keeps the history up to that time and stops there, so choose sensible steps/ranges and keep physical assumptions in prose.
@@ -32,6 +34,7 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
     resetKey: { type: 'string', maxLength: 80, description: 'Change it to restore every declared default.' },
     parameters: {
       type: 'array', maxItems: 12,
+      description: 'Optional; at most 12. Use only for demonstration nodes, inside program.',
       items: {
         type: 'object', required: ['id', 'label', 'value', 'min', 'max'],
         properties: {
@@ -52,6 +55,7 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
     },
     dynamics: {
       type: 'object', required: ['initial', 'derivatives', 'duration', 'step'],
+      description: 'Optional for algebraic time animation; required for trajectory views.',
       properties: {
         initial: { type: 'object', maxProperties: 6, additionalProperties: EXPRESSION },
         derivatives: { type: 'object', maxProperties: 6, additionalProperties: { type: 'string', maxLength: 1600 } },
@@ -61,8 +65,10 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
     },
     views: {
       type: 'array', minItems: 1, maxItems: 8,
+      description: '1-8 views. Required per kind: plot x, y and 1-6 curves; field x, y and expression; trajectory x, y, horizontal, vertical and dynamics; metrics 1-6 values; controls nothing. At most one controls, two field views and twelve curves total.',
       items: {
         type: 'object', required: ['kind'],
+        description: 'The schema cannot express per-kind required fields; the validator enforces the list on views.',
         properties: {
           kind: { type: 'string', enum: ['controls', 'plot', 'field', 'trajectory', 'metrics'] },
           label: { type: 'string', maxLength: 200 },

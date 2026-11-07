@@ -9,6 +9,7 @@ import {
 } from '../src/services/tools/toolErrorFeedback.js';
 import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/core/planning.js';
 import { VISUALIZATION_TOOL, executeVisualization } from '../src/services/visualization.ts';
+import { INTELLIGENT_UI_TOOL, validateIntelligentUi } from '../src/services/intelligentUi.js';
 import { WEB_SEARCH_TOOL } from '../src/services/webSearch.ts';
 import { WEB_FETCH_TOOL } from '../src/services/util/fetchBatch.js';
 import { repairToolArguments } from '../src/services/tools/toolCallSafety.js';
@@ -24,6 +25,14 @@ test('canonical examples pass the executors that validate them', () => {
 
   const visual = executeVisualization(canonicalToolExample('render_visualization', VISUALIZATION_TOOL.function.parameters));
   assert.equal(visual.status, 'completed', `visual example rejected: ${JSON.stringify(visual.detail)}`);
+});
+
+test('the canonical render_intelligent_ui example is a valid demonstration, not a panel', () => {
+  const example = canonicalToolExample('render_intelligent_ui', INTELLIGENT_UI_TOOL.function.parameters);
+  assert.ok(example);
+  assert.equal(example.nodes[0].type, 'demonstration');
+  const result = validateIntelligentUi(example);
+  assert.equal(result.ok, true, result.ok ? '' : result.error);
 });
 
 test('web search asks for natural prose and separately displayed sources instead of raw citation markers', () => {

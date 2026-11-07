@@ -22,7 +22,7 @@ import {PI_AGENT_ENABLED} from './piAgent.js';
 
 /**
  * Tools whose executor already owns a tolerant normalizer AND a strict
- * validator (zod) for its own arguments.
+ * validator (zod, or the tool's own schema library) for its own arguments.
  *
  * For these the pipeline must NOT drop keys the JSON Schema does not
  * declare, and must NOT pre-validate against that schema: the executor's
@@ -31,10 +31,17 @@ import {PI_AGENT_ENABLED} from './piAgent.js';
  * step into `{title}`), and every pre-pass that deleted or rejected those
  * shapes first turned a recoverable call into `missing required field`.
  * The executors return their own field-level errors
- * (`visual_spec_invalid` / `plan_spec_invalid`), so nothing is lost.
+ * (`visual_spec_invalid` / `plan_spec_invalid` / demonstration feedback),
+ * so nothing is lost.
  */
 export const SELF_NORMALIZING_TOOLS: ReadonlySet<string> = new Set([
   'render_visualization',
+  /* The demonstration program is a free-form nested object with per-kind
+     requirements the pipeline schema pre-pass cannot validate. Its executor
+     owns the normalizer and the strict demonstration validator, so route
+     every rejection to the demonstration-aware correction instead of the
+     generated panel example. */
+  'render_intelligent_ui',
   'create_plan',
   'create_spec',
 ]);

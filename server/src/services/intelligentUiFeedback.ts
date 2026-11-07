@@ -31,6 +31,8 @@ export interface IntelligentUiFailure {
   nodeId: string | null;
   failures: OpenUiVisualizationFailure[];
   sourceChars: number;
+  /** Aggregated shape issues, e.g. every missing view field in one pass. */
+  issues?: Array<{ path: string; message: string }>;
 }
 
 export interface IntelligentUiFeedback {
@@ -40,6 +42,7 @@ export interface IntelligentUiFeedback {
     stage: IntelligentUiFailureStage;
     nodeId: string | null;
     visualizations: Array<{ template: string | null; title: string | null; stage: string; paths: string[]; issues: string[] }>;
+    issues: Array<{ path: string; message: string }>;
     truncated: boolean;
   };
 }
@@ -99,7 +102,9 @@ export function intelligentUiFeedback(error: string, failure: IntelligentUiFailu
   if (failure.failures.some((item) => item.stage === 'payload_shape' || item.stage === 'semantic')) lines.push(NUMBER_HINT);
   if (failure.stage === 'demonstration') {
     lines.push('A demonstration node is {id, type:"demonstration", title, program:{version:1, parameters:[], definitions:{}, views:[...]}}. Put version inside program and write it as the number 1. Write arrays as JSON arrays (never {"item": ...}), numbers as JSON numbers (1, not "1"), give every parameter finite min < max with value inside that range, and use 1–8 views with increasing x/y ranges. The error names the failing part (for example definitions.f or views[1].curves[0]); fix that part. Expressions are plain ASCII math using the exact parameter and definition names: x^2, 2*x, pi, sqrt(x), log(x), no Math. prefixes.');
+    lines.push('Required per view: plot needs x, y and 1–6 curves; field needs x, y and expression; trajectory needs x, y, horizontal, vertical and program.dynamics; metrics needs 1–6 values. At most one controls, two field views and twelve curves total. Fix every field named in the error in one corrected call; do not switch node type or drop the program.');
     lines.push('A minimal valid node: {"id":"demo","type":"demonstration","title":"Demo","program":{"version":1,"parameters":[{"id":"a","label":"A","value":1,"min":0,"max":2,"step":0.1}],"definitions":{"f":"a*x"},"views":[{"kind":"controls"},{"kind":"plot","x":[0,1],"y":[0,2],"curves":[{"expression":"f","label":"a·x"}]}]}}');
+    lines.push('A valid trajectory node: {"id":"phase","type":"demonstration","title":"Phase portrait","program":{"version":1,"parameters":[{"id":"k","label":"Damping","value":0.2,"min":0,"max":1}],"dynamics":{"initial":{"q":1,"p":0},"derivatives":{"q":"p","p":"-k*p-q"},"duration":10,"step":0.01},"views":[{"kind":"trajectory","x":[-1.5,1.5],"y":[-1.5,1.5],"horizontal":"q","vertical":"p"}]}}');
   }
   if (failure.stage === 'physics') {
     lines.push('A physics node is {id, type:"physics", scene:"<reviewed model>", title, parameters:{...}}. Use one of the documented scenes, pass numeric parameter values inside their documented bounds, and omit fields to take the defaults.');
@@ -123,6 +128,7 @@ export function intelligentUiFeedback(error: string, failure: IntelligentUiFailu
         paths: item.issues.map((issue) => issue.path).slice(0, 6),
         issues: item.issues.map((issue) => `${issue.path}: ${issue.message}`).slice(0, 6),
       })),
+      issues: (failure.issues ?? []).slice(0, 8),
       truncated: failure.stage === 'openui_truncated',
     },
   };

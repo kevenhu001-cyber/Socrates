@@ -33,6 +33,42 @@ test('the program parameter is a real schema, so arrays keep their shape',()=>{
  assert.match(program.description,/Never encode a list as \{"item": \[\.\.\.\]\}/);
  assert.doesNotMatch(program.description,/- \{"kind":/);
 });
+test('a plot missing every required field reports all three in one rejection',()=>{
+ const program={version:1,views:[{kind:'plot'}]};
+ const result=validateIntelligentUi({version:1,nodes:[{id:'demo',type:'demonstration',program}]});
+ assert.equal(result.ok,false);
+ assert.match(result.error,/views\[0\]\.x/);
+ assert.match(result.error,/views\[0\]\.y/);
+ assert.match(result.error,/views\[0\]\.curves/);
+ assert.ok(Array.isArray(result.failure.issues));
+ assert.equal(result.failure.issues.length,3);
+});
+test('a trajectory missing every required field reports all five in one rejection',()=>{
+ const program={version:1,views:[{kind:'trajectory'}]};
+ const result=validateIntelligentUi({version:1,nodes:[{id:'demo',type:'demonstration',program}]});
+ assert.equal(result.ok,false);
+ assert.match(result.error,/views\[0\]\.x/);
+ assert.match(result.error,/views\[0\]\.y/);
+ assert.match(result.error,/views\[0\]: trajectory requires program\.dynamics/);
+ assert.match(result.error,/views\[0\]\.horizontal/);
+ assert.match(result.error,/views\[0\]\.vertical/);
+ assert.ok(Array.isArray(result.failure.issues));
+ assert.equal(result.failure.issues.length,5);
+});
+test('shape failures report global view limits once',()=>{
+ const program={version:1,views:[
+  {kind:'controls'},{kind:'controls'},
+  {kind:'field',x:[0,1],y:[0,1],expression:'x'},
+  {kind:'field',x:[0,1],y:[0,1],expression:'x'},
+  {kind:'field',x:[0,1],y:[0,1],expression:'x'},
+  {kind:'plot',x:[0,1],y:[0,1],curves:Array.from({length:13},()=>({expression:'x'}))},
+ ]};
+ const result=validateIntelligentUi({version:1,nodes:[{id:'demo',type:'demonstration',program}]});
+ assert.equal(result.ok,false);
+ assert.match(result.error,/at most one controls view/);
+ assert.match(result.error,/at most two field views/);
+ assert.match(result.error,/at most twelve curves/);
+});
 test('invalid model-authored algorithms produce actionable validation failures',()=>{
  const program={...examples.grating,definitions:{bad:'document.cookie'}};
  const result=validateIntelligentUi({version:1,nodes:[{id:'bad',type:'demonstration',program}]});

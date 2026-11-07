@@ -5,4 +5,5 @@ export function validateIntelligentUi(value: unknown):
       error: string;
       nodeId?: string | null;
       kind?: 'document' | 'node' | 'openui' | 'demonstration' | 'physics';
+      issues?: Array<{ path: string; message: string }>;
     };

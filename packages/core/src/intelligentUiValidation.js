@@ -40,7 +40,13 @@ export function validateIntelligentUi(value) {
     }
     if (node.type === 'demonstration') {
       const result = validateDemonstration(node.program);
-      if (!result.ok) return { ok: false, error: `Demonstration node "${id}": ${result.error}`, nodeId: id, kind: 'demonstration' };
+      if (!result.ok) return {
+        ok: false,
+        error: `Demonstration node "${id}": ${result.error}`,
+        nodeId: id,
+        kind: 'demonstration',
+        ...(Array.isArray(result.issues) && result.issues.length ? { issues: result.issues } : {}),
+      };
     }
     if (node.type === 'physics') {
       const error = physicsParametersError(node.scene, node.parameters);

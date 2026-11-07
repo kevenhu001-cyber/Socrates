@@ -27,7 +27,7 @@ test('new composed programs validate without registering physics model IDs',()=>
   assert.deepEqual(validateDemonstration(program),{ok:true});
   assert.equal(validateIntelligentUi({version:1,nodes:[{id:'new-algorithm',type:'demonstration',program}]}).ok,true);
  }
- const invalid=[{...examples.grating,definitions:{a:'b+1',b:'a'}},{...examples.grating,parameters:[{id:'x',min:0,max:1,value:.5}]},{...examples.lorenz,dynamics:{...examples.lorenz.dynamics,step:.00001}},{...examples.grating,views:[{kind:'script',x:[0,1],y:[0,1]}]}];
+ const invalid=[{...examples.grating,definitions:{a:'b+1',b:'a'}},{...examples.grating,parameters:[{id:'x',min:0,max:1,value:.5}]},{...examples.lorenz,dynamics:{...examples.lorenz.dynamics,step:'not-a-number'}},{...examples.grating,views:[{kind:'script',x:[0,1],y:[0,1]}]}];
  for(const program of invalid)assert.equal(validateDemonstration(program).ok,false);
 });
 test('grating curves and raster field share physical definitions and removable singularities',()=>{

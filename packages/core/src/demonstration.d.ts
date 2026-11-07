@@ -14,7 +14,8 @@ export interface DemonstrationWarning { path: string; time: number; message: str
 export interface DemonstrationRuntime { duration: number; parameters: Record<string, number>; warnings: DemonstrationWarning[]; resetBudget(): void; evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number): number; stateAt(time: number): Record<string, number> }
 export function parseDemonstrationExpression(source: DemonstrationValue): DemonstrationExpression;
 export function evaluateDemonstrationExpression(ast: DemonstrationExpression, scope: Record<string, number>, budget?: {remaining: number}): number;
-export function validateDemonstration(program: unknown): {ok: true} | {ok: false; error: string; path?: string};
+export interface DemonstrationIssue { path: string; message: string }
+export function validateDemonstration(program: unknown): {ok: true} | {ok: false; error: string; path?: string; issues?: DemonstrationIssue[]};
 export function normalizeDemonstrationProgram(program: unknown): unknown;
 export function normalizeDemonstrationExpression<T>(source: T): T;
 export function normalizeDemonstrationIdentifier<T>(value: T): T;

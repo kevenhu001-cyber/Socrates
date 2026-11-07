@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createToolRegistry} from '../src/services/tools/toolRegistry.js';
+import {createToolRegistry, SELF_NORMALIZING_TOOLS} from '../src/services/tools/toolRegistry.js';
 import {PI_AGENT_ENABLED} from '../src/services/tools/piAgent.js';
+
+test('render_intelligent_ui validates inside its executor instead of the generic schema pre-pass', () => {
+  assert.equal(SELF_NORMALIZING_TOOLS.has('render_intelligent_ui'), true);
+});
 
 test('tool registry exposes the same native search and visual tools in tutor mode', () => {
   const chat = createToolRegistry({ codeInterpreterToolDef: { function: { name: 'code_interpreter' } }, mode: 'chat' });

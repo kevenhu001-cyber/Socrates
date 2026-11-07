@@ -61,7 +61,10 @@ export const executeIntelligentUi: ToolExecutor = async (rawArgs, call, { emitte
       id: call.id, outcome: 'rejected', stage: validation.failure.stage, nodeId: validation.failure.nodeId,
       nodes: nodes.length, sourceChars, templates,
       vizStages: validation.failure.failures.map((item) => item.stage),
-      issuePaths: validation.failure.failures.flatMap((item) => item.issues.map((issue) => issue.path)).slice(0, 12),
+      issuePaths: [
+        ...validation.failure.failures.flatMap((item) => item.issues.map((issue) => issue.path)),
+        ...(validation.failure.issues ?? []).map((issue) => issue.path),
+      ].slice(0, 12),
       error: validation.error.slice(0, 300), durationMs: Date.now() - startedAt,
     }));
   }

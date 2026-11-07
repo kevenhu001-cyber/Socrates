@@ -743,6 +743,9 @@ describe('appendToolRoutingHints', () => {
        here: sending it twice cost about 2.8k tokens per turn. The hint points
        at that single copy instead. */
     assert.match(out[0].content, /in the `source` parameter description of `render_intelligent_ui`/);
+    assert.match(out[0].content, /plot needs x, y and 1-6 curves/);
+    assert.match(out[0].content, /trajectory needs x, y, horizontal, vertical and program\.dynamics/);
+    assert.match(out[0].content, /At most one controls, two field views and twelve curves total/);
     assert.doesNotMatch(out[0].content, /Example payload:/);
     assert.doesNotMatch(out[0].content, /For `render_visualization`, follow its native JSON schema/);
   });
