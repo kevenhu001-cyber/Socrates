@@ -81,7 +81,9 @@ export function renderChrome(pathname, locale) {
   const page = pathname.split('/').filter(Boolean)[0];
   const keys = ['product', 'research', 'principles', 'learn', 'developers', 'pricing', 'about'];
   const nav = keys.map((key, i) => `<a href="${localHref(`/${key}`, locale)}"${key === page ? ' aria-current="page"' : ''}>${text.nav[i]}</a>`).join('');
-  const otherPath = locale === 'zh' ? pathname : `/zh${pathname}`;
+  const otherPath = pathname === '/404'
+    ? (locale === 'zh' ? '/' : '/zh/')
+    : (locale === 'zh' ? pathname : `/zh${pathname}`);
   const language = `<a class="site-locale" href="${otherPath}" data-locale-switcher hreflang="${text.languageTag}" lang="${text.languageTag}">${text.language}</a>`;
   const questionShortcut = !page ? `\n      <a class="site-search" href="#askInputHero" aria-label="${locale === 'zh' ? '开始提问' : 'Ask a question'}"><svg class="home-icon" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-search"/></svg></a>` : '';
   const header = `<header class="site-header">
