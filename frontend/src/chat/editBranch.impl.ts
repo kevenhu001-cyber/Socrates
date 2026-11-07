@@ -81,7 +81,7 @@ export function commitUserMessageEdit(messageId: string, text: string){
   let entry = stateStore.read("messages")[idx];
   if (!entry || entry.role !== 'user') return;
   const next = String(text || "").trim();
-  if (!next || next === entry.rawText) return;
+  if (!next) return;
   /* Editing rewinds this user turn and replays it. Later messages no longer
      follow the same conversation, so state remains the only transcript writer. */
   const editedText = next;

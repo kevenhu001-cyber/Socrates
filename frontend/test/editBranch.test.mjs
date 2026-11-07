@@ -61,3 +61,48 @@ test('committing a React-edited message replaces state and replays after the ser
     dom.window.close();
   }
 });
+
+test('committing an unchanged message also replaces state and replays after server patch settles', async () => {
+  const dom2 = new JSDOM('<!doctype html><body></body>', { url: 'http://localhost/' });
+  globalThis.window = dom2.window;
+  globalThis.document = dom2.window.document;
+  globalThis.localStorage = dom2.window.localStorage;
+  stateStore.dispatch({ type: 'session/replace-messages', payload: [
+    { clientId: 'edit-user-same', role: 'user', rawText: 'original', html: 'original', attachments: [] },
+    { clientId: 'edit-answer-same', role: 'assistant', rawText: 'old answer' },
+  ] });
+  const requests = [];
+  const replayed = [];
+  const errors = [];
+  const onError = event => { errors.push(event.error); event.preventDefault(); };
+  window.addEventListener('error', onError);
+  const originalFetch = globalThis.fetch;
+  let resolvePatch;
+  globalThis.fetch = (url, options) => {
+    requests.push({ url, options });
+    return new Promise(resolve => { resolvePatch = resolve; });
+  };
+  window.askChatTurn = text => { replayed.push(text); };
+  try {
+    commitUserMessageEdit('edit-user-same', 'original');
+    assert.deepEqual(errors, []);
+    const messages = stateStore.read('messages');
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].rawText, 'original');
+    assert.equal(messages[0].branchInfo?.currentIndex, 1);
+    assert.equal(messages[0].branchInfo?.variants?.length, 2);
+    assert.equal(requests.length, 1);
+    assert.deepEqual(JSON.parse(requests[0].options.body), {
+      content: 'original', regenerate: false, discardFollowing: true,
+    });
+    resolvePatch(new Response('{"ok":true}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(replayed, ['original']);
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete window.askChatTurn;
+    window.removeEventListener('error', onError);
+    turnState.pendingChatContent = null;
+    dom2.window.close();
+  }
+});

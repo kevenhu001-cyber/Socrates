@@ -75,24 +75,154 @@
 }
 
 
-/* Edit-in-place textarea and actions bar */
+/* Edit-in-place card (matching reference edit UI) */
 #appShell .msg.user .msg-body:has(.msg-edit-area) {
   max-width: 100%;
   width: 100%;
-  border-radius: var(--ui-radius-xl);
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border: none;
 }
 #appShell .msg-edit-wrap {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 14px 10px 14px;
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: var(--ui-elevation-flyout);
+  box-sizing: border-box;
+}
+#appShell .msg-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+#appShell .msg-edit-title {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  color: var(--foreground);
+  line-height: 1.2;
+}
+#appShell .msg-edit-close-btn {
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  border-radius: var(--ui-radius-pill);
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+#appShell .msg-edit-close-btn:hover {
+  color: var(--foreground);
+  background: var(--ui-surface-hover);
+}
+#appShell .msg-edit-area {
+  width: 100%;
+  min-height: 64px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 4px 0 6px 0;
+  resize: none;
+  font-family: inherit;
+  font-size: var(--ui-font-size-md);
+  line-height: 1.55;
+  color: var(--foreground);
+  box-sizing: border-box;
+}
+#appShell .msg-edit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   width: 100%;
+  padding-top: 4px;
+  flex-wrap: wrap;
+}
+#appShell .msg-edit-toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+#appShell .msg-edit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--ui-control-sm);
+  border-radius: var(--ui-radius-pill);
+  padding: 0 12px;
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-regular);
+  color: var(--muted-foreground);
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border-subtle);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+#appShell .msg-edit-pill:hover {
+  background: var(--ui-surface-hover);
+  color: var(--foreground);
+}
+#appShell .msg-edit-pill.is-active,
+#appShell .msg-edit-pill[aria-pressed="true"] {
+  color: var(--ui-accent-action);
+  border-color: color-mix(in srgb, var(--ui-accent-action) 45%, transparent);
+  background: color-mix(in srgb, var(--ui-accent-action) 12%, transparent);
 }
 #appShell .msg-edit-actions {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
+}
+#appShell .msg-edit-plus-btn {
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-surface-muted);
+  border: 1px solid var(--ui-border-subtle);
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+#appShell .msg-edit-plus-btn:hover {
+  background: var(--ui-surface-hover);
+  color: var(--foreground);
+}
+#appShell .msg-edit-submit {
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-accent-action);
+  color: var(--primary-foreground);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.12s, background 0.15s;
+}
+#appShell .msg-edit-submit:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: scale(1.04);
+}
+#appShell .msg-edit-submit:active:not(:disabled) {
+  transform: scale(0.96);
+}
+#appShell .msg-edit-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 
