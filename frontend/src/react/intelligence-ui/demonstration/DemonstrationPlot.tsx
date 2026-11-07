@@ -5,7 +5,7 @@ import type { DemonstrationPlot, DemonstrationRuntime, DemonstrationTrajectory, 
 export const demoColors: Record<string, string> = { ink:'var(--ui-ink)', muted:'var(--ui-ink-tertiary)', blue:'var(--ui-demo-blue)', orange:'var(--ui-demo-orange)', red:'var(--ui-demo-red)', green:'var(--ui-demo-green)', violet:'var(--ui-demo-violet)' };
 export function DemoPlot({ view, runtime, time }: { view: DemonstrationPlot | DemonstrationTrajectory; runtime: DemonstrationRuntime; time: number }) {
  const id=useId();
- try { return renderPlot(view,runtime,time,id); } catch { return <p role="status">{i18n('intui.demo.unavailable','This demonstration could not complete its calculation.')}</p>; }
+ try { runtime.resetBudget(); return renderPlot(view,runtime,time,id); } catch { return <p role="status">{i18n('intui.demo.unavailable','This demonstration could not complete its calculation.')}</p>; }
 }
 function renderPlot(view: DemonstrationPlot | DemonstrationTrajectory, runtime: DemonstrationRuntime, time: number, id: string) {
  const width=520,height=232,left=38,right=12,top=14,bottom=38;

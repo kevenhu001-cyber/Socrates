@@ -8,11 +8,29 @@ import { getCurrentLanguage } from '../i18n/languageState.ts';
    Called fire-and-forget on first save. A short cooldown prevents repeated
    saves from amplifying a 429 while still allowing a later retry.
    Uses the user's initial topic as context. */
-let _titleGenQueued = false;
-let _titleGenSession: string | null = null;
-let _titleGenRetryAfter = 0;
-let _titleFallbackSession: string | null = null;
-let _titleFallbackValue: string | null = null;
+interface TitleJob {
+  queued: boolean;
+  retryAfter: number;
+  attempts: number;
+  completed: boolean;
+  timer?: ReturnType<typeof setTimeout>;
+}
+const titleJobs = new Map<string, TitleJob>();
+function titleJob(sessionId: string): TitleJob {
+  let job = titleJobs.get(sessionId);
+  if (!job) {
+    job = { queued: false, retryAfter: 0, attempts: 0, completed: false };
+    titleJobs.set(sessionId, job);
+  }
+  return job;
+}
+
+/** A deliberate rename wins even if it happens to match the local fallback. */
+export function keepSessionTitle(sessionId: string): void {
+  const job = titleJob(sessionId);
+  job.completed = true;
+  if (job.timer) clearTimeout(job.timer);
+}
 
 /** A cheap local fallback so every session gets a short title even when the
  *  provider is unavailable. Keeps Chinese under ~8 chars and English under
@@ -66,12 +84,14 @@ function getTitleGenerationContext(): TitleGenerationContext | null {
     .trim();
   if (!sessionId || !topic) return null;
   const currentTitle = (stateStore.read("sessionTitle") as string) || "";
-  const ownsFallback = _titleFallbackSession === sessionId && currentTitle === _titleFallbackValue;
+  // A persisted local fallback remains eligible after reload/session changes.
+  const ownsFallback = currentTitle === fallbackTitle(topic);
+  const job = titleJob(sessionId);
   if (currentTitle && !ownsFallback) return null;
-  if (_titleGenQueued && _titleGenSession === sessionId) return null;
+  if (job.queued || job.completed || job.attempts >= 3) return null;
   /* P_title-429 — background title generation must not turn repeated saves
      into a request storm after a rate-limit response. */
-  if (_titleGenSession === sessionId && Date.now() < _titleGenRetryAfter) return null;
+  if (Date.now() < job.retryAfter) return null;
   return { sessionId, topic, currentTitle };
 }
 
@@ -79,8 +99,7 @@ function seedFallbackTitle(context: TitleGenerationContext): void {
   const fallback = fallbackTitle(context.topic);
   if (context.currentTitle || !fallback) return;
   stateStore.dispatch({ type: 'state/set', key: 'sessionTitle', value: fallback });
-  _titleFallbackSession = context.sessionId;
-  _titleFallbackValue = fallback;
+
 }
 
 function titleUsesChinese(topic: string): boolean {
@@ -122,43 +141,51 @@ function responseTitle(response: TitleGenerationResponse | null | undefined): un
 
 function canAdoptGeneratedTitle(sessionId: string): boolean {
   const latestTitle = (stateStore.read('sessionTitle') as string) || '';
-  const ownsFallback = _titleFallbackSession === sessionId && latestTitle === _titleFallbackValue;
-  return !latestTitle || ownsFallback;
+  const ownsFallback = stateStore.read('currentSessionId') === sessionId && latestTitle === fallbackTitle(stateStore.read('topic'));
+  return !titleJob(sessionId).completed && (!latestTitle || ownsFallback);
 }
 
 function saveGeneratedTitle(title: string, sessionId: string): void {
   stateStore.dispatch({ type: 'state/set', key: 'sessionTitle', value: title });
-  if (_titleFallbackSession === sessionId) {
-    _titleFallbackSession = null;
-    _titleFallbackValue = null;
-  }
-  _titleGenRetryAfter = 0;
+  const job = titleJob(sessionId);
+  job.completed = true;
+  job.retryAfter = 0;
+  if (job.timer) clearTimeout(job.timer);
   const win = window as { saveCurrentSession?: () => void };
   if (typeof win.saveCurrentSession === 'function') win.saveCurrentSession();
 }
 
 function handleGeneratedTitle(response: TitleGenerationResponse | null | undefined, sessionId: string): void {
-  if (_titleGenSession === sessionId) _titleGenQueued = false;
+  titleJob(sessionId).queued = false;
   if (stateStore.read('currentSessionId') !== sessionId) return;
   const raw = responseTitle(response);
-  if (!raw || !canAdoptGeneratedTitle(sessionId)) return;
+  if (!canAdoptGeneratedTitle(sessionId)) return;
+  if (!raw) { scheduleTitleRetry(sessionId); return; }
   const title = normalizeSessionTitle(raw);
-  if (title.length <= 2) return;
+  if (title.length < 2) { scheduleTitleRetry(sessionId); return; }
   /* P_title-save-race — the active-session check prevents an old response
      from saving its title after the user switches sessions. */
   saveGeneratedTitle(title, sessionId);
 }
 
+function scheduleTitleRetry(sessionId: string, delay = 30000): void {
+  const job = titleJob(sessionId);
+  job.retryAfter = Date.now() + delay;
+  if (job.timer) clearTimeout(job.timer);
+  if (job.attempts >= 3 || job.completed) return;
+  job.timer = setTimeout(() => {
+    job.timer = undefined;
+    if (stateStore.read('currentSessionId') === sessionId) generateSessionTitle();
+  }, delay);
+}
+
 function handleTitleGenerationFailure(error: unknown, sessionId: string): void {
-  if (_titleGenSession === sessionId) _titleGenQueued = false;
-  /* P_title-quiet — 401 and 429 are already surfaced by the main turn. */
+  const job = titleJob(sessionId);
+  job.queued = false;
   const status = (error as { status?: number })?.status;
-  if (status === 429) {
-    if (_titleGenSession === sessionId) _titleGenRetryAfter = Date.now() + 5 * 60 * 1000;
-    return;
-  }
-  if (status === 401) return;
-  console.log('[title gen] failed');
+  if (status === 401 || status === 403) return;
+  // Bounded background retries respect rate limits and never reopen auth UI.
+  scheduleTitleRetry(sessionId, status === 429 ? 5 * 60 * 1000 : 30000);
 }
 
 export function generateSessionTitle(): void {
@@ -167,9 +194,10 @@ export function generateSessionTitle(): void {
   const { sessionId, topic } = context;
   seedFallbackTitle(context);
   if(!hasUsableActive())return;
-  _titleGenQueued=true;
-  _titleGenSession=sessionId;
-  _titleGenRetryAfter=Date.now()+30000;
+  const job = titleJob(sessionId);
+  job.queued = true;
+  job.attempts++;
+  job.retryAfter = Date.now() + 30000;
   /* Title language follows the language the user actually wrote the
      topic in; the UI preference is only a fallback when the topic
      carries no detectable language signal. */
@@ -186,7 +214,8 @@ export function generateSessionTitle(): void {
   apiFetch<TitleGenerationResponse>("/api/chat", {
     method: "POST",
     _authEndpoint: true,
-    body: { messages: msgs2, temperature: 0.3, max_tokens: 30, mode: "chat" },
+    signal: AbortSignal.timeout(30000),
+    body: { messages: msgs2, temperature: 0.3, max_tokens: 512, mode: "chat" },
   }).then((response) => handleGeneratedTitle(response, sessionId))
     .catch((error: unknown) => handleTitleGenerationFailure(error, sessionId));
 }

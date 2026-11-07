@@ -4,8 +4,8 @@ import { i18n } from '../legacy/gateway';
  * The one placeholder an interactive block shows before it has anything of
  * its own to draw: while its code chunk loads, and while an OpenUI program
  * streams in before its `root` line. Both moments share this footprint, so
- * the block takes its place once and only grows from there. Static on
- * purpose: the arriving content is the progress signal.
+ * the block takes its place once and only grows from there. The skeleton highlights pending
+ * content while preserving the final layout.
  */
 export function BlockSkeleton({ announce = true }: { announce?: boolean }) {
   return (

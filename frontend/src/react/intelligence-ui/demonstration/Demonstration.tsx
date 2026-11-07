@@ -42,13 +42,15 @@ export function Demonstration({program:input,title}:{program:unknown;title?:stri
   const tick=(now:number)=>{if(document.hidden){previous=now;frame=requestAnimationFrame(tick);return;}if(now-previous>=50){const dt=Math.min(.1,(now-previous)/1000);previous=now;setTime(t=>Math.min(duration,t+dt));}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);
  },[playing,visible,reduced,duration]);
  useEffect(()=>{if(time>=duration)setPlaying(false);},[time,duration]);
- if(!runtime||!program||fieldError)return <section className="demonstration demo-error" role="status"><p>{i18n('intui.demo.unavailable','This demonstration could not complete its calculation.')}</p><details><summary>{i18n('intui.demo.details','Details')}</summary>{fieldError||calculation.error}</details></section>;
+ const restore=()=>{setPlaying(false);setTime(0);setFieldError('');setValues({});};
+ if(!runtime||!program)return <section className="demonstration demo-error" role="status"><p>{i18n('intui.demo.unavailable','This demonstration could not complete its calculation.')}</p><details><summary>{i18n('intui.demo.details','Details')}</summary>{calculation.error}</details>{program?<Button size="sm" variant="outline" onClick={restore}>{i18n('intui.demo.reset','Restore defaults')}</Button>:null}</section>;
  runtime.resetBudget();
  const metricValue=(expression:string|number)=>{try{return runtime.evaluate(expression,time);}catch{return Number.NaN;}};
  const update=(key:string,value:number)=>{setPlaying(false);setTime(0);setFieldError('');setValues(previous=>({...previous,[key]:value}));};
  const parameter=(p:DemonstrationParameter)=><div className="demo-control" key={p.id}><Label htmlFor={`${id}-${p.id}`}>{p.label||p.id}</Label><NativeControl id={`${id}-${p.id}`} type="range" min={p.min} max={p.max} step={p.step??(p.max-p.min)/100} value={runtime.parameters[p.id]} onChange={event=>update(p.id,Number(event.target.value))}/><output htmlFor={`${id}-${p.id}`}>{format(runtime.parameters[p.id])}{p.unit?<span> {p.unit}</span>:null}</output></div>;
  return <section className="demonstration" ref={host} aria-label={title||i18n('intui.demo.title','Interactive demonstration')} data-demonstration="1">
   {title?<header className="demo-heading">{title}</header>:null}
+  {fieldError?<div className="demo-error" role="status"><p>{i18n('intui.demo.unavailable','This demonstration could not complete its calculation.')}</p><details><summary>{i18n('intui.demo.details','Details')}</summary>{fieldError}</details><Button size="sm" variant="outline" onClick={restore}>{i18n('intui.demo.reset','Restore defaults')}</Button></div>:null}
   <div className="demo-views">{program.views.map((view,index)=>{
    if(view.kind==='controls')return <div className="demo-controls" key={index}>{program.parameters?.filter(p=>!p.advanced).map(parameter)}</div>;
    if(view.kind==='field')return <DemoField key={index} view={view} runtime={runtime} time={time} onError={reportError}/>;

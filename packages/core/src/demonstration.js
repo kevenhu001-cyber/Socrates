@@ -55,7 +55,7 @@ export function evaluateDemonstrationExpression(ast, scope, budget={remaining:20
  }
  if(ast.name==='if')return run(ast.args[0])?run(ast.args[1]):run(ast.args[2]);
  if(ast.name==='sum'||ast.name==='iterate'){
-  const key=ast.args[0].name,local={...scope};let result=0;
+  const key=ast.args[0].name,local=Object.defineProperties({},Object.getOwnPropertyDescriptors(scope));delete local[key];let result=0;
   if(ast.name==='sum') {const start=Math.ceil(run(ast.args[1])),end=Math.floor(run(ast.args[2]));if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||end-start>127)throw Error('sum supports at most 128 terms');for(let i=start;i<=end;i++){local[key]=i;result+=evaluateDemonstrationExpression(ast.args[3],local,budget);}return result;}
   result=run(ast.args[1]);const count=Math.floor(run(ast.args[2]));if(!Number.isFinite(count)||count<0||count>128)throw Error('iterate supports 0–128 steps');for(let i=0;i<count;i++){local[key]=result;result=evaluateDemonstrationExpression(ast.args[3],local,budget);}return result;
  }
@@ -122,7 +122,15 @@ export function createDemonstrationRuntime(program,values={}) {
  const params=Object.fromEntries((program.parameters??[]).map(p=>[p.id,finite(values[p.id])?Math.max(p.min,Math.min(p.max,values[p.id])):p.value]));
  const evalRaw=(expression,scope)=>evaluateDemonstrationExpression(compile(expression),scope,budget);
  const definitions=Object.entries(program.definitions??{});
- const scopeAt=(t=0,x=0,y=0,state={})=>{const scope={...params,x,y,t,...state};for(const [key,expression]of definitions)scope[key]=evalRaw(expression,scope);return scope;};
+ const scopeAt=(t=0,x=0,y=0,state={})=>{
+  const scope={...params,x,y,t,...state};
+  // Definitions are evaluated once per sample, only when referenced. A field
+  // must not calculate unrelated metrics/curves for every raster pixel.
+  for(const [key,expression]of definitions)Object.defineProperty(scope,key,{enumerable:true,configurable:true,get(){
+   const value=evalRaw(expression,scope);Object.defineProperty(scope,key,{value,enumerable:true,configurable:true});return value;
+  }});
+  return scope;
+ };
  let trajectory=[];const dynamics=program.dynamics,duration=dynamics?.duration??program.duration??0;
  if(dynamics){
   const names=Object.keys(dynamics.initial),step=dynamics.duration/Math.ceil(dynamics.duration/dynamics.step);

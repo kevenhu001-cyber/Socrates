@@ -1,6 +1,5 @@
 /* Native visualization loading / failure states (V1 reliability).
-   Restrained on purpose: surface, 1px subtle rules, muted text. No shimmer,
-   no pulse, no dot patterns. The full visual pass (V2) replaces this. */
+   Restrained on purpose: surface, 1px subtle rules, muted text. A moving highlight marks pending content. The full visual pass (V2) replaces this. */
 .viz-state {
   display: grid;
   gap: var(--ui-space-sm);
@@ -24,7 +23,7 @@
 /* Streaming / loading skeleton. It mirrors the finished card's geometry
    (02-modals-library.css + surfaces.css: header row, stage heights per
    engine, the 520px phone stage, the caption row) so the card that replaces
-   it lands on the same pixels. Static: the arriving text is the progress. */
+   it lands on the same pixels. A highlight sweeps over the reserved stage. */
 .viz-state-skeleton {
   margin: 0;
   min-width: 0;
@@ -134,4 +133,13 @@
 [id^="dmermaid-svg-"],
 [id^="dmermaid-svg-"] * {
   transition-property: none;
+}
+
+/* Placeholders animate without changing the reserved card geometry. */
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+  .viz-skeleton-stage {
+    background-image: linear-gradient(100deg, transparent 25%, var(--ui-fill-pressed) 50%, transparent 75%);
+    background-size: 250% 100%;
+    animation: thinking-text-shimmer var(--ui-duration-shimmer) ease-in-out infinite alternate;
+  }
 }

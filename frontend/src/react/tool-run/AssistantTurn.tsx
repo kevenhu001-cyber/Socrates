@@ -19,7 +19,6 @@ import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { useProseRenderer, useScaffoldTurnProse } from './proseRenderer';
-import { hasCompleteScaffold } from '../../render/markdownScaffolds.ts';
 import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
 import type { LegacyChatMessage } from '../types/domain';
 
@@ -213,16 +212,9 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const storedProse = storedProseFor(rawText, storedHtml, calls);
   // Keep the renderer and its block cache for the lifetime of a streamed turn.
   // Finishing only changes chrome; it must not repaint prose with another parser.
-  // Exception: the streaming renderer paints scaffolds (quiz, flashcard, …) as
-  // static `.sc-live` previews and never mounts their cards. A settled turn
-  // that holds a closed scaffold switches to the final renderer once, which
-  // schedules the mounts; the preview reserves the card's box, so nothing moves.
   const streamedRef = useRef(isLive);
   if (isLive) streamedRef.current = true;
-  const mountScaffolds = !isLive && hasCompleteScaffold(rawText);
-  /* Quiz and practice are single-shot per turn. The turn is painted block by
-     block, so the winner is decided over the whole text first. */
-  const turnProse = useProseRenderer(streamedRef.current && !mountScaffolds);
+  const turnProse = useProseRenderer(streamedRef.current);
   const prose = useScaffoldTurnProse(turnProse, rawText);
   const textIdx = lastTextIndex(segments);
   const growingIndex = isLive ? (textIdx !== -1 ? textIdx : segments.findIndex((s) => s.kind === 'think')) : -1;

@@ -111,3 +111,18 @@
 }
 
 /* Public timeline entries remain still beneath the one live caption. */
+
+/* Sweep only the live caption; completed activity stays still. */
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+  [data-turn-surface-part="activity"][data-live="true"] [data-testid="turn-activity-label"] {
+    background-image: linear-gradient(100deg, var(--ui-text-tertiary) 35%, var(--ui-text-primary) 50%, var(--ui-text-tertiary) 65%);
+    background-size: 250% 100%;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: thinking-text-shimmer var(--ui-duration-shimmer) ease-in-out infinite alternate;
+  }
+}
+@keyframes thinking-text-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
+}

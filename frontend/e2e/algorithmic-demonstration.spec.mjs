@@ -102,3 +102,32 @@ test('native tool events render a program, preserve controls through a patch and
  await expect(page.getByRole('slider',{name:'缝数 N',exact:true})).toHaveValue('8');
  await expectNoGlobalError(page);
 });
+
+
+test('complex raster fields reduce sampling and keep controls available across repeated renders',async({page})=>{
+ const program={version:1,parameters:[{id:'a',min:0,max:2,value:1}],definitions:{intensity:'sum(k,1,128,sin(x*k+a)^2)/128',unused:'sum(k,1,128,sum(j,1,128,k*j))'},views:[{kind:'field',x:[-2,2],y:[-1,1],expression:'intensity'}]};
+ const node={id:'costly',type:'demonstration',title:'复杂场图',program};
+ await prepareChatWorkbench(page,{lang:'zh',messages:[{clientId:'costly',role:'assistant',type:'assistant',rawText:'```socrates-ui\n'+JSON.stringify(node)+'\n```'}]});
+ const demo=page.locator('.demonstration');
+ await expect(demo.locator('canvas')).toBeVisible();
+ for(const value of ['0.5','1.5','1']){
+  await demo.getByRole('slider',{name:'a',exact:true}).fill(value);
+  await expect(demo.locator('.demo-error')).toHaveCount(0);
+ }
+ const bright=await demo.locator('canvas').evaluate(canvas=>canvas.getContext('2d').getImageData(160,80,1,1).data[0]);
+ expect(bright).toBeGreaterThan(0);
+ await expectNoGlobalError(page);
+});
+
+
+test('a bare versioned document from the screenshot renders as an interactive demonstration',async({page})=>{
+ const doc={version:1,nodes:[{id:'bare-demo',type:'demonstration',title:'单缝夫琅禾费衍射',program:{version:1,parameters:[{id:'ratio',label:'缝宽 / 波长',value:4,min:.6,max:20,step:.2}],definitions:{I:'sinc(pi*x)^2'},views:[{kind:'controls'},{kind:'plot',x:[-5,5],y:[0,1.05],curves:[{expression:'I',color:'blue'}]}]}}]};
+ await prepareChatWorkbench(page,{lang:'zh',viewport:{width:390,height:844},messages:[{clientId:'bare',role:'assistant',type:'assistant',rawText:'下面这个可调演示里，你可以拖动滑块：\n\n'+JSON.stringify(doc,null,2)+'\n\n调整参数观察变化。'}]});
+ const demo=page.getByRole('region',{name:'单缝夫琅禾费衍射',exact:true});
+ await expect(demo.locator('.demo-plot path[fill="none"]')).toHaveCount(1);
+ await demo.getByRole('slider').fill('6');
+ await expect(demo.getByRole('slider')).toHaveValue('6');
+ await expect(page.locator('#msgList')).not.toContainText('"version"');
+ await page.screenshot({path:'test-results/recovered-bare-demonstration-phone.png'});
+ await expectNoGlobalError(page);
+});

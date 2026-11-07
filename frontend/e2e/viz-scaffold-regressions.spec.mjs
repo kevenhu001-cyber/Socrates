@@ -47,21 +47,21 @@ test('a code fence closed on the same line as </problem> still mounts the card',
   await expect(row(page, 'glued')).not.toContainText('</problem>');
 });
 
-test('on a phone the chart title keeps its line and the actions wrap under it', async ({ page }) => {
+test('on a phone the chart title stays readable and the plot fits below it', async ({ page }) => {
   await open(page, [msg('bar', '图：\n\n' + BAR)], { viewport: { width: 390, height: 844 } });
   const card = row(page, 'bar').locator('.visualization-card').first();
   await expect(card).toBeVisible();
-  // The action row mounts a beat after the card (its buttons hydrate into the
-  // header), so read the geometry once the header has settled.
-  const measure = () => card.evaluate((element) => {
+  await expect(card.locator('.visualization-header h3')).toHaveText('三个班级的期中平均分');
+  const geometry = await card.evaluate((element) => {
     const title = element.querySelector('.visualization-header h3').getBoundingClientRect();
-    const actions = element.querySelector('.visualization-actions').getBoundingClientRect();
-    return { titleWidth: title.width, titleHeight: title.height, actionsBelow: actions.top >= title.bottom - 1 };
+    const stage = element.querySelector('.visualization-stage').getBoundingClientRect();
+    return { titleWidth: title.width, titleHeight: title.height, plotBelow: stage.top >= title.bottom - 1,
+      fits: element.getBoundingClientRect().right <= innerWidth + 1 };
   });
-  await expect.poll(async () => (await measure()).actionsBelow, { timeout: 5000 }).toBe(true);
-  const geometry = await measure();
   expect(geometry.titleWidth).toBeGreaterThan(150);
   expect(geometry.titleHeight).toBeLessThan(40);
+  expect(geometry.plotBelow).toBe(true);
+  expect(geometry.fits).toBe(true);
 });
 
 test('a chart written as an openui fence has no frame and no header band in dark mode', async ({ page }) => {
@@ -90,7 +90,7 @@ test('a wrong quiz answer shows the answer key with typeset math', async ({ page
   const quiz = row(page, 'quiz').locator('.sc-host[data-scaffold="quiz"]');
   await quiz.locator('[data-letter="B"]').click();
   await quiz.getByTestId('quiz-submit').click();
-  const explanation = quiz.getByTestId('quiz-explanation');
+  const explanation = quiz.getByTestId('quiz-option-explanation-B');
   await expect(explanation).toBeVisible();
   await expect(explanation.locator('.katex')).toHaveCount(1);
   await expect(explanation).not.toContainText('$');
@@ -141,4 +141,49 @@ test('OpenUI headings, definitions, flashcards and tables typeset explicit dolla
   await body.locator('.iui-flashcard').click();
   await expect(body.locator('.iui-flashcard .katex')).toHaveCount(1);
   await page.screenshot({ path: 'test-results/inline-math-fields.png' });
+});
+
+
+test('streamed cards mount before finish and keep their nodes; footer follows the latest message',async({page})=>{
+ await open(page,[]);
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.evaluate(async()=>{
+  window.__scaffoldCtl=await window.addStreamingMessage({userPrompt:'测试实时卡片'});
+  window.__scaffoldCtl.append('已经输出的正文。\n\n<quiz><q>第一题');
+ });
+ const preview=page.locator('.sc-live').first();
+ await expect(preview).toBeVisible();
+ const skeleton=preview.locator('.sc-live-pill,.sc-live-skeleton').first();
+ await expect(skeleton).toBeVisible();
+ expect(await skeleton.evaluate(el=>getComputedStyle(el).animationName)).toBe('thinking-text-shimmer');
+ await page.screenshot({path:'test-results/scaffold-stream-shimmer.png'});
+ await page.evaluate(()=>window.__scaffoldCtl.append('：1+1？</q><o letter="A">2</o><o letter="B">3</o><correct>A</correct></quiz>'));
+ const card=page.locator('.sc-host[data-scaffold="quiz"]');
+ await expect(card).toContainText('第一题');
+ await page.evaluate(()=>{window.__mountedQuiz=document.querySelector('.sc-host[data-scaffold="quiz"]');});
+ await page.evaluate(()=>window.__scaffoldCtl.append('\n\n继续输出的正文。'));
+ await expect(page.locator('#msgList')).toContainText('继续输出的正文');
+ await page.evaluate(()=>window.__scaffoldCtl.finish());
+ await expect.poll(()=>page.evaluate(()=>window.__mountedQuiz===document.querySelector('.sc-host[data-scaffold="quiz"]'))).toBe(true);
+ const footer=page.locator('#msgList > .msg:last-child > #chatDisclaimer');
+ await expect(footer).toContainText('Socrates 也可能会犯错');
+ expect(await footer.evaluate(el=>el===el.parentElement.lastElementChild)).toBe(true);
+ expect(await footer.evaluate(el=>getComputedStyle(el).position)).toBe('static');
+ await page.screenshot({path:'test-results/transcript-footer.png'});
+});
+
+
+test('the first native UI block does not remount the prose already on screen',async({page})=>{
+ await open(page,[]);
+ await page.evaluate(async()=>{
+  window.__nativeCtl=await window.addStreamingMessage({userPrompt:'组件与正文同步输出'});
+  window.__nativeCtl.append('已经完成的第一段。\n\n正在继续的第二段。');
+ });
+ await expect(page.locator('.tool-run-prose').first()).toContainText('已经完成的第一段');
+ await page.evaluate(()=>{window.__firstProse=document.querySelector('.tool-run-prose p');});
+ await page.evaluate(()=>window.__nativeCtl.append('\n\n```socrates-ui\n{"id":"result","type":"metric","label":"结果","value":42}\n```'));
+ await expect(page.locator('.intui-metric')).toContainText('42');
+ expect(await page.evaluate(()=>window.__firstProse===document.querySelector('.tool-run-prose p'))).toBe(true);
+ await page.evaluate(()=>window.__nativeCtl.finish());
+ expect(await page.evaluate(()=>window.__firstProse===document.querySelector('.tool-run-prose p'))).toBe(true);
 });

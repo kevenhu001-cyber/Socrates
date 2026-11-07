@@ -125,9 +125,9 @@ function updateTopicSetupCopy(){
   const disclaimer=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
   const tdisc=document.getElementById("topicDisclaimer");
   if(tdisc)tdisc.textContent=disclaimer;
-  /* The conversation view's phone twin (#chatDisclaimer) carries the same line. */
+  /* React owns the transcript footer; keep the current DOM copy in sync. */
   const cdisc=document.getElementById("chatDisclaimer");
-  if(cdisc)cdisc.textContent=disclaimer;
+  if(cdisc)cdisc.textContent=t("topic.disclaimerChat");
 }
 
 function refreshDynamicSurfaces(){

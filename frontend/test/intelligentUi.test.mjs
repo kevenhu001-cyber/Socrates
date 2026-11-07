@@ -182,3 +182,29 @@ test('OpenUI fences split prose and strip source from copy and speech output', (
   assert.equal(live[0].format, 'openui');
   assert.match(live[0].source, /heading = Title/);
 });
+
+
+test('recovers a validated bare or JSON-fenced document with pretty-printed nodes and original offsets',()=>{
+ const document={version:1,nodes:[{id:'demo',type:'demonstration',program:{version:1,views:[{kind:'plot',x:[-5,5],y:[0,1.05],curves:[{expression:'sinc(pi*x)^2'}]}]}}]};
+ for(const raw of [JSON.stringify(document),JSON.stringify(document,null,2),'```json\n'+JSON.stringify(document,null,2)+'\n```','```socrates-ui\n'+JSON.stringify(document,null,2)+'\n```']){
+  const text='演示如下：\n'+raw+'\n继续说明。';
+  const segments=splitIntelligenceUiText(text);
+  const ui=segments.find(segment=>segment.kind==='ui');
+  assert.ok(ui,raw);
+  assert.equal(ui.open,false);
+  assert.equal(parseIntelligenceUiRecords(ui.source)[0].type,'demonstration');
+  assert.equal(text.slice(ui.start,ui.end),raw);
+  assert.match(stripIntelligenceUiBlocks(text),/继续说明/);
+  assert.doesNotMatch(stripIntelligenceUiBlocks(text),/"nodes"/);
+ }
+});
+
+test('incomplete bare documents reserve a skeleton; ordinary JSON and quoted code stay literal',()=>{
+ const partial='演示：\n{"version":1,"nodes":[{"id":"demo","type":"demonstration","program":';
+ const ui=splitIntelligenceUiText(partial).find(segment=>segment.kind==='ui');
+ assert.equal(ui.open,true);
+ assert.deepEqual(parseIntelligenceUiRecords(ui.source),[]);
+ for(const text of ['{"foo":42}','`{"version":1,"nodes":[]}`','```python\n{"version":1,"nodes":[]}\n```','{"version":1,"nodes":[{"id":"bad","type":"script"}]}']){
+  assert.equal(splitIntelligenceUiText(text).some(segment=>segment.kind==='ui'),false);
+ }
+});

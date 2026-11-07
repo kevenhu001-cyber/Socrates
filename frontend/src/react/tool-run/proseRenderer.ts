@@ -1,3 +1,5 @@
+import { hasCompleteScaffold } from '../../render/markdownScaffolds.ts';
+import { isStableMarkdownPrefix } from '../../render/streaming.ts';
 import { createProseCache, sharedFinalProseCache, clearSharedProseCache } from '../../render/proseCache.ts';
 import { useMemo, useSyncExternalStore } from 'react';
 import { applyScaffoldTurnPlan, scaffoldTurnPlan, type ScaffoldTurnPlan } from '@socrates/ui/learn-split';
@@ -53,7 +55,10 @@ export function useProseRenderer(live: boolean): ProseRenderer {
       const clean = stripLegacyToolHtml(text);
       if (!clean.trim()) return '';
       try {
-        return live && progressive ? progressive(clean, { complete }) : final(clean);
+        // Closed cards mount as soon as their data arrives. Other prose keeps
+        // the progressive parser and its DOM through the end of the turn.
+        const readyScaffold = hasCompleteScaffold(clean) && isStableMarkdownPrefix(clean);
+        return live && progressive && !readyScaffold ? progressive(clean, { complete }) : final(clean);
       } catch {
         /* A segment failure must not blank the rest of the assistant answer. */
         return '';
@@ -62,12 +67,12 @@ export function useProseRenderer(live: boolean): ProseRenderer {
 
     const cache = createProseCache(1_000_000, 200);
     const settled = (text: string): { __html: string } => {
-      const key = text;
+      const key = hasCompleteScaffold(text) ? text.trim() : text;
       const hit = cache.get(key);
       if (hit !== undefined) return hit;
       const box = live
-        ? { __html: paint(text, true) }
-        : sharedFinalProse(text, () => paint(text, true), mathRevision);
+        ? { __html: paint(key, true) }
+        : sharedFinalProse(text, () => paint(key, true), mathRevision);
       cache.set(key, box);
       return box;
     };
@@ -75,6 +80,7 @@ export function useProseRenderer(live: boolean): ProseRenderer {
     let lastTailText: string | null = null;
     let lastTailBox: { __html: string } | null = null;
     const tail = (text: string): { __html: string } => {
+      if (hasCompleteScaffold(text) && isStableMarkdownPrefix(text)) return settled(text);
       if (lastTailBox !== null && text === lastTailText) return lastTailBox;
       lastTailText = text;
       lastTailBox = { __html: paint(text, false) };

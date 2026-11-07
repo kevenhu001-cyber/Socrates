@@ -63,3 +63,13 @@ test('parameter-dependent axes keep linked intensity curves visible with calibra
  assert.throws(()=>demonstrationDomain([1,0],normal),/increasing/);
  assert.throws(()=>demonstrationDomain([0,'1/0'],normal),/finite/);
 });
+
+
+test('sampling only evaluates referenced definitions and retains a finite resettable budget',()=>{
+ const runtime=createDemonstrationRuntime({version:1,definitions:{costly:'sum(k,1,128,sum(j,1,128,k*j))',signal:'sin(x)'},views:[{kind:'metrics',values:[{label:'signal',expression:'signal'}]}]});
+ for(let i=0;i<2000;i++)assert.equal(runtime.evaluate('signal',0,0),0);
+ assert.equal(runtime.evaluate('costly'),(128*129/2)**2);
+ assert.throws(()=>{for(let i=0;i<100;i++)runtime.evaluate('costly');},/budget exceeded/);
+ runtime.resetBudget();
+ assert.equal(runtime.evaluate('signal',0,0),0);
+});

@@ -1,4 +1,5 @@
-import { serializedUiBlocks } from './serializedUi';
+import { validateIntelligentUi } from './intelligentUiValidation.js';
+import { serializedDocumentBlocks, serializedUiBlocks } from './serializedUi';
 
 export const INTELLIGENCE_UI_FENCE = 'socrates-ui';
 
@@ -217,6 +218,16 @@ function normalizeNode(value: unknown): IntelligenceUiNode | null {
  * token batch. No eval, HTML, CSS, or arbitrary JavaScript is accepted.
  */
 export function parseIntelligenceUiRecords(source: string): IntelligenceUiNode[] {
+  // Canonical JSONL remains incremental. Complete JSON nodes/documents also
+  // support pretty printing and recovered versioned tool output.
+  try {
+    const value: unknown = JSON.parse(source);
+    if (isRecord(value) && value.version === 1 && validateIntelligentUi(value).ok) {
+      return (value.nodes as unknown[]).map(normalizeNode).filter((node): node is IntelligenceUiNode => node !== null);
+    }
+    const node = normalizeNode(value);
+    if (node) return [node];
+  } catch { /* JSONL or an incomplete streaming tail: parse complete lines below */ }
   const nodes: IntelligenceUiNode[] = [];
   const seen = new Set<string>();
   const lines = String(source || '').split(/\r?\n/);
@@ -289,7 +300,8 @@ function splitFencedUiText(text: string): IntelligenceUiSegment[] {
  * for citations and interleaved tools, including prose following a recovered UI. */
 export function splitIntelligenceUiText(text: string): IntelligenceUiSegment[] {
   const source = String(text || '');
-  const blocks = serializedUiBlocks(source);
+  const serialized = serializedUiBlocks(source);
+  const blocks = [...serialized, ...serializedDocumentBlocks(source).filter(block => !serialized.some(call => block.start < call.end && block.end > call.start))].sort((a,b) => a.start-b.start);
   if (!blocks.length) return splitFencedUiText(source);
   const segments: IntelligenceUiSegment[] = [];
   let cursor = 0;

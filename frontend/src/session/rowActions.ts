@@ -1,5 +1,6 @@
 /* Session metadata edits share one persistence path. Reconcile only after the
  * server accepts the change; never mutate immutable React bridge snapshots. */
+import { keepSessionTitle } from '../chat/sessionTitle.ts';
 import { apiFetch } from '../util/api.ts';
 import { serverCache } from './serverCache.ts';
 import { stateStore } from '../state/store.ts';
@@ -15,6 +16,7 @@ export interface SessionMetadataPatch {
 
 export async function updateSessionMetadata(id: string, patch: SessionMetadataPatch): Promise<void> {
   await apiFetch('/api/sessions/' + encodeURIComponent(id), { method: 'PATCH', body: patch });
+  if ('title' in patch) keepSessionTitle(id);
   const row = serverCache.sessions.find((item) => item.id === id);
   if (row) Object.assign(row, patch);
   detailCache.invalidate(id);

@@ -359,12 +359,6 @@
                chat-view's top edge. The CSS rule `.chat-input-bar >
                .new-reply-pill` keys off this parent. -->
           <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply" data-i18n-aria="chrome.jumpToNewReply"><svg class="new-reply-pill-glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"></path><path d="m6 13 6 6 6-6"></path></svg><span class="visually-hidden">↓ New reply</span></div>
-          <!-- Phone conversation disclaimer. #topicDisclaimer lives in the
-               landing column (#mainInner), which is display:none for the
-               whole conversation view, so no rule on it can surface it here.
-               This twin is shown only on phones (polish/mobile-shell.css);
-               i18n.ts keeps its copy in step with #topicDisclaimer. -->
-          <p class="chat-disclaimer" id="chatDisclaimer">Socrates can make mistakes. Check important information.</p>
           <!-- P_composer-single — typed Composer controller places the single shell here for a conversation. -->
           <div class="chat-composer-slot composer-slot" id="chatComposerSlot"></div>
         </div>

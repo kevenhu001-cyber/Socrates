@@ -241,3 +241,16 @@ for (const theme of ['light', 'dark']) {
     });
   }
 }
+
+
+test('live thinking text sweeps in both directions and respects reduced motion',async({page})=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ const bubble=await startTurn(page);
+ const label=bubble.locator(TURN.label);
+ await expect.poll(()=>label.evaluate(el=>getComputedStyle(el).animationName)).toBe('thinking-text-shimmer');
+ expect(await label.evaluate(el=>getComputedStyle(el).animationDirection)).toBe('alternate');
+ await page.screenshot({path:'test-results/thinking-text-shimmer.png'});
+ await page.emulateMedia({reducedMotion:'reduce'});
+ expect(await label.evaluate(el=>getComputedStyle(el).animationName)).not.toBe('thinking-text-shimmer');
+ await page.evaluate(()=>window.__finishPlain());
+});

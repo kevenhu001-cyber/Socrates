@@ -69,6 +69,7 @@ export const en = {
     "intui.physics.projectile.speed": "Launch speed",
     "intui.physics.projectile.angle": "Launch angle",
     "intui.physics.projectile.gravity": "Gravity",
+    "intui.demo.reset": "Restore defaults",
     "intui.demo.unavailable": "This demonstration could not complete its calculation.",
     "intui.demo.details": "Details",
     "intui.demo.title": "Interactive demonstration",

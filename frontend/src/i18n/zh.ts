@@ -72,6 +72,7 @@ export const zh = {
     "intui.physics.projectile.speed": "初速度",
     "intui.physics.projectile.angle": "发射角度",
     "intui.physics.projectile.gravity": "重力加速度",
+    "intui.demo.reset": "恢复默认参数",
     "intui.demo.unavailable": "这个演示暂时无法完成计算。",
     "intui.demo.details": "查看详情",
     "intui.demo.title": "交互演示",

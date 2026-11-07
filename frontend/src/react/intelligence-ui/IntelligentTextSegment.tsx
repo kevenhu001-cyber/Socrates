@@ -47,14 +47,9 @@ export function IntelligentTextSegment({
   /* The split is O(text length); memoizing keeps tool/prose identity churn
      from re-scanning the whole accumulated segment on every render. */
   const segments = useMemo(() => splitIntelligenceUiText(text), [text]);
-  const hasUi = segments.some((segment) => segment.kind === 'ui');
-
-  /* Preserve the exact pre-Intelligent-UI streaming path for ordinary prose.
-     This keeps the settled-prefix cache and live-tail animation unchanged. */
-  if (!hasUi) {
-    return <TextProse text={text} live={live} prose={prose} />;
-  }
-
+  // Keep the same keyed prose sequence before and after the first UI block
+  // arrives. Switching from a single child to a keyed fragment remounts the
+  // already painted answer and resets embedded widgets/reveal state.
   const liveTextIndex = live ? lastTextSegmentIndex(segments) : -1;
   return (
     <>

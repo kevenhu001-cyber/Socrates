@@ -3,9 +3,8 @@
  * the OpenUI `Visualization` component, a rejected `render_intelligent_ui`
  * call, and the legacy imperative card.
  *
- * Deliberately restrained: white/grey surface, 1px rules, no shimmer, no
- * pulse, no dots. The full visual redesign lands later; these states only
- * have to be honest (a real title, a real reason, a way forward) and keep
+ * Pending states reserve the final geometry and show a shimmer. Failures
+ * explain the reason and a way forward. These states have to be honest (a real title, a real reason, a way forward) and keep
  * their height so the transcript never collapses to a zero-height gap.
  */
 import { useRef, useState } from 'react';
