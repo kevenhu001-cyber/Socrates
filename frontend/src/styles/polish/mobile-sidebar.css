@@ -620,7 +620,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recent-item.active, #appShell .recent-item.actions-open { background: var(--ui-bg-selected); box-shadow: none; }
   #appShell #sidebarFooter {
     flex: 0 0 auto;
-    padding: 8px 8px max(8px, env(safe-area-inset-bottom, 8px));
+    padding: 8px 8px max(24px, env(safe-area-inset-bottom, 24px));
     /* Reference: a one-device-pixel line barely above the canvas. */
     border-top: 1px solid var(--ui-hairline-faint);
     gap: 0;

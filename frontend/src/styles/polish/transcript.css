@@ -448,6 +448,9 @@
    to disagree between the same file and this one. Only the non-declarative
    (legacy/agent-card) nesting keeps its step. */
 
+.code-block-copy.copied {
+  color: var(--ui-success);
+}
 .code-block-copy.copied svg {
   animation: checkmarkPop var(--ui-duration-fast) var(--ui-ease-spring-bouncy) forwards;
   transform-origin: center center;

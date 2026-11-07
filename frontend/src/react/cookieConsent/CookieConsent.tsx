@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { i18n } from '../legacy/gateway.ts';
+import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import {
   CONSENT_ACCEPT,
   CONSENT_ESSENTIAL,
@@ -11,15 +12,33 @@ import {
   syncCookieConsentPlacement,
 } from '../../cookieConsent.ts';
 
-function t(key: string, fallback: string): string {
-  return i18n(key, fallback);
+const ZH_FALLBACKS: Record<string, string> = {
+  'consent.title': '我们尊重你的隐私',
+  'consent.message': '我们使用严格必需的 Cookie 来让 Socrates 正常运行。只有在你允许后，我们才会放置非必要 Cookie（例如分析 Cookie）。',
+  'consent.essential': '仅必要 Cookie',
+  'consent.accept': '全部接受',
+  'consent.learnMore': '隐私政策',
+};
+
+function t(key: string, enFallback: string): string {
+  const isZh = getCurrentLanguage() === 'zh';
+  const effectiveFallback = isZh && ZH_FALLBACKS[key] ? ZH_FALLBACKS[key] : enFallback;
+  const res = i18n(key, effectiveFallback);
+  return res !== key ? res : effectiveFallback;
 }
 
 export function CookieConsent() {
   const [hasChoice, setHasChoice] = useState(() => getConsentPreference() !== null);
+  const [, setLangTick] = useState(0);
   const privacyUrl = getCookieConsentPrivacyUrl();
   const authPlacement = getCookieConsentAuthPlacement();
   const bannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleLangChange = () => setLangTick((n) => n + 1);
+    window.addEventListener('socrates:languagechange', handleLangChange);
+    return () => window.removeEventListener('socrates:languagechange', handleLangChange);
+  }, []);
 
   useLayoutEffect(() => {
     if (!hasChoice) syncCookieConsentPlacement(authPlacement);

@@ -97,6 +97,9 @@ export function preprocessMarkdown(t: string | null | undefined): string {
 
   s = _autoWrapBareBracketMath(s);
 
+  /* Auto-wrap bare physical and Greek unit symbols emitted by weak models (e.g. "20\Omega", "60\Omega") */
+  s = s.replace(/(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g, '$1$$$2\\$3$$');
+
   /* Promote a "---" / "----" / "-----" line that is *directly* preceded
      by non-blank text into a clearly-bounded horizontal rule. Without
      this padding, marked's setext-h2 rule fires first — the 3-or-more
@@ -215,6 +218,7 @@ export function preprocessMarkdownForStreaming(
     : promoteStandaloneInlineMath(s.slice(0, openFence), false) + s.slice(openFence);
 
   s = _autoWrapBareBracketMath(s);
+  s = s.replace(/(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g, '$1$$$2\\$3$$');
   /* Mirror the `---` horizontal-rule fix from preprocessMarkdown.
      Streaming buffers concatenate partial tokens, so a "first
      paragraph / `---` / next paragraph" sequence often shows up

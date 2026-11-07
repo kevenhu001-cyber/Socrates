@@ -43,6 +43,7 @@
     --ui-card: var(--ui-bg-field);
   }
   [data-mode="dark"] #appShell .top-mode-switch { --ui-ink-secondary: var(--ui-text-nav); }
+  [data-mode="light"] #appShell .top-mode-switch { --ui-ink-secondary: var(--ui-text-secondary); }
   body:not([data-conversation-active="true"]) #appShell .mobile-newchat-btn { display: none; }
   /* 手机对话中不显示模型 chip（RN-7 前的行为）；模型设置仍可从提问框的强度胶囊打开。 */
   body[data-conversation-active="true"] #appShell .top-model-slot { display: none; }

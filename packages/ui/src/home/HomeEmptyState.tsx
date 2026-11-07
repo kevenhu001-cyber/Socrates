@@ -153,6 +153,8 @@ export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label 
             alignItems: 'center',
             borderRadius: uiRadius.pill,
             backgroundColor: item.pressed ? colors.ink : colors.fill,
+            borderWidth: 1,
+            borderColor: item.pressed ? colors.hairlineStrong : colors.hairline,
           }, enter(index)]}
         >
           <UiButton
