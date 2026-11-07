@@ -1,3 +1,4 @@
+import { MathText } from '../../rn/useInlineMath';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createDemonstrationRuntime, normalizeDemonstrationProgram, validateDemonstration, type DemonstrationProgram, type DemonstrationParameter } from '@socrates/core';
 import { Button } from '../../ui/Button';
@@ -76,7 +77,7 @@ export function Demonstration({program:input,title,streaming=false}:{program:unk
  runtime.resetBudget();
  const metricValue=(expression:string|number)=>{try{return runtime.evaluate(expression,time);}catch{return Number.NaN;}};
  const update=(key:string,value:number)=>{setPlaying(false);setTime(0);setValues(previous=>({...previous,[key]:value}));};
- const parameter=(p:DemonstrationParameter)=><div className="demo-control" key={p.id}><Label htmlFor={`${id}-${p.id}`}>{p.label||p.id}</Label><NativeControl id={`${id}-${p.id}`} type="range" min={p.min} max={p.max} step={p.step??(p.max-p.min)/100} value={runtime.parameters[p.id]} onChange={event=>update(p.id,Number(event.target.value))}/><output htmlFor={`${id}-${p.id}`}>{format(runtime.parameters[p.id])}{p.unit?<span> {p.unit}</span>:null}</output></div>;
+ const parameter=(p:DemonstrationParameter)=><div className="demo-control" key={p.id}><Label htmlFor={`${id}-${p.id}`}><MathText text={p.label||p.id} /></Label><NativeControl id={`${id}-${p.id}`} type="range" min={p.min} max={p.max} step={p.step??(p.max-p.min)/100} value={runtime.parameters[p.id]} onChange={event=>update(p.id,Number(event.target.value))}/><output htmlFor={`${id}-${p.id}`}>{format(runtime.parameters[p.id])}{p.unit?<span> {p.unit}</span>:null}</output></div>;
  const warning=runtime.warnings[0];
  return <section className="demonstration" ref={host} aria-label={title||i18n('intui.demo.title','Interactive demonstration')} data-demonstration="1">
   {title?<header className="demo-heading">{title}</header>:null}
@@ -84,12 +85,12 @@ export function Demonstration({program:input,title,streaming=false}:{program:unk
   <div className="demo-views">{program.views.map((view,index)=>{
    if(view.kind==='controls')return <div className="demo-controls" key={index}>{program.parameters?.filter(p=>!p.advanced).map(parameter)}</div>;
    if(view.kind==='field')return <DemoField key={index} view={view} runtime={runtime} time={time} onError={pause}/>;
-   if(view.kind==='metrics')return <dl className="demo-metrics" key={index}>{view.values.map((value,i)=><div key={i}><dt>{value.label}</dt><dd>{format(metricValue(value.expression),value.digits??3)}{value.unit?<span> {value.unit}</span>:null}</dd></div>)}</dl>;
+   if(view.kind==='metrics')return <dl className="demo-metrics" key={index}>{view.values.map((value,i)=><div key={i}><dt><MathText text={value.label} /></dt><dd>{format(metricValue(value.expression),value.digits??3)}{value.unit?<span> {value.unit}</span>:null}</dd></div>)}</dl>;
    return <DemoPlot key={index} view={view} runtime={runtime} time={time}/>;
   })}</div>
   {!program.views.some(view=>view.kind==='controls')?<div className="demo-controls">{program.parameters?.filter(p=>!p.advanced).map(parameter)}</div>:null}
   {program.parameters?.some(p=>p.advanced)?<details className="demo-advanced"><summary>{i18n('intui.demo.parameters','More parameters')}</summary><div className="demo-controls">{program.parameters.filter(p=>p.advanced).map(parameter)}</div></details>:null}
-  {program.presets?.length?<div className="demo-presets">{program.presets.map((preset,index)=><Button key={index} variant="outline" size="sm" onClick={()=>{setPlaying(false);setTime(0);setValues(previous=>({...previous,...preset.values}));}}>{preset.label}</Button>)}</div>:null}
+  {program.presets?.length?<div className="demo-presets">{program.presets.map((preset,index)=><Button key={index} variant="outline" size="sm" onClick={()=>{setPlaying(false);setTime(0);setValues(previous=>({...previous,...preset.values}));}}><MathText text={preset.label} /></Button>)}</div>:null}
   {duration>0?<div className="demo-time"><Button size="sm" variant="ghost" disabled={reduced} aria-pressed={playing} onClick={()=>{if(time>=duration)setTime(0);setPlaying(value=>!value);}}>{playing?i18n('intui.simPause','Pause'):i18n('intui.simPlay','Play')}</Button><NativeControl type="range" min={0} max={duration} step="any" value={time} aria-label={i18n('intui.simTime','Time')} onChange={event=>{setPlaying(false);setTime(Number(event.target.value));}}/><output>{time.toFixed(2)} s</output></div>:null}
  </section>;
 }

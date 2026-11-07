@@ -9,6 +9,7 @@ export interface VisualizationCard extends HTMLElement {
   webkitRequestFullscreen?: () => void;
   _visualizationDisposed?: boolean;
   _visualizationCleanup?: (() => void) | null;
+  _visualizationMathCleanup?: (() => void) | null;
   _visualizationReactRoots?: OwnedRootHandle[];
   _visualizationUpdate?: (next: VizSpec) => boolean;
 }

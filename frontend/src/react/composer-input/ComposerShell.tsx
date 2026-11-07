@@ -113,7 +113,7 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   const [languageRevision, refreshLanguage] = useReducer((value: number) => value + 1, 0);
   const composerTools = useComposerToolsSnapshot();
   const surface = useComposerSurface();
-  const draft = useStore(composerLifecycleStore, (state) => state.drafts[surface]);
+  const hasDraft = useStore(composerLifecycleStore, (state) => Boolean(state.drafts[surface].trim()));
   const attachments = useAttachments();
   const streaming = useIsChatStreaming();
   const sending = useSendGlyphStore((state) => state.isSending);
@@ -125,7 +125,7 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   const effort = useStoredReasoningEffort();
   const effortValue = effortLabel(effort);
   const effortAccessibleLabel = modelLabel ? `${modelLabel} · ${effortValue}` : effortValue;
-  const canSend = Boolean(draft.trim() || attachments.length > 0);
+  const canSend = hasDraft || attachments.length > 0;
   const { primaryLabel, toolsLabel, voiceLabel } = controlLabels(streaming);
   const composerLabel = surface === 'chat'
     ? i18n('chat.placeholder', 'Ask Socrates')

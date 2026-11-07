@@ -887,3 +887,19 @@ test('Instant controls pass validation and the provider option allowlist', () =>
     thinking: { type: 'disabled' }, enable_thinking: false, chat_template_kwargs: { enable_thinking: false },
   });
 });
+
+
+test('tool guidance is deterministic, capability gated and encourages label math', () => {
+  const base = [{ role: 'system', content: 'base' }];
+  const visual = appendToolRoutingHints(base, ['render_intelligent_ui', 'web_search']);
+  assert.deepEqual(visual, appendToolRoutingHints(base, ['web_search', 'render_intelligent_ui']));
+  assert.match(visual[0].content, /Use LaTeX proactively/);
+  assert.match(visual[0].content, /Keep executable expressions/);
+  assert.deepEqual(visual, appendToolRoutingHints(visual, ['web_search', 'render_intelligent_ui']));
+  assert.deepEqual(appendToolRoutingHints(base, []), base);
+  const common = enforceServerSystemBoundary([{ role: 'user', content: 'hello' }]);
+  assert.doesNotMatch(common[0].content, /Demonstration shape|per-kind fields|Bind controls to declared/);
+  assert.match(appendToolRoutingHints(common, ['render_intelligent_ui'])[0].content, /Bind controls to declared/);
+  assert.doesNotMatch(appendToolRoutingHints(base, ['create_plan'])[0].content, /When `create_spec`/);
+  assert.doesNotMatch(appendToolRoutingHints(base, ['create_spec'])[0].content, /When `create_plan`/);
+});

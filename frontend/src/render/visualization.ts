@@ -1,3 +1,4 @@
+import { installVisualizationMath } from './visualizationMath.ts';
 import type { VisualizationCard, VisualizationMountOptions, LiveChart, VisualizationRenderState } from './visualizationRuntime.ts';
 import type { ChartInstance } from '../types/vendorRuntime.ts';
 /* Native visual cards. The model provides semantic data only; this module
@@ -51,6 +52,8 @@ function _mountingFor(host: HTMLElement) {
 function cleanupCard(card: VisualizationCard) {
   if (!card || card._visualizationDisposed) return;
   card._visualizationDisposed = true;
+  card._visualizationMathCleanup?.();
+  card._visualizationMathCleanup = null;
   disposeCardReactRoots(card);
   const cleanup = card._visualizationCleanup;
   card._visualizationCleanup = null;
@@ -153,14 +156,6 @@ function svgStageChart(stage: HTMLElement) {
   };
 }
 
-function renderCardMath(card: Element) {
-  try {
-    if (typeof window !== 'undefined') {
-      const renderMath = (window as unknown as { renderMathInElement?: (el: Element, opts: unknown) => void }).renderMathInElement;
-      if (typeof renderMath === 'function') renderMath(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
-    }
-  } catch (error) { reportSwallow(error, 'visualization.renderCardMath'); }
-}
 
 function mountFallbackActions(card: VisualizationCard, host: HTMLElement, spec: VizSpec, options: VisualizationMountOptions, error: unknown) {
   const table = card.querySelector<HTMLElement>('.visualization-data');
@@ -202,7 +197,7 @@ function createVisualizationCard(spec: VizSpec, host: HTMLElement, cardId: strin
   card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"><p class="visualization-stage-progress" role="status">' + esc(vizT('viz.state.loadingRenderer', 'Loading the chart renderer…')) + '</p></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden></div>';
   host.appendChild(card);
   mounting.delete(cardId);
-  renderCardMath(card);
+
   return card;
 }
 
@@ -541,6 +536,7 @@ export async function mountVisualization(rawSpec: unknown, host: HTMLElement | n
   const mounted = findExistingCard(host, cardId);
   if (mounted.card) return mounted.card;
   const card = createVisualizationCard(spec, host, cardId, mounted.mounting!);
+  card._visualizationMathCleanup = installVisualizationMath(card);
   const stage = card.querySelector<HTMLElement>('.visualization-stage')!;
   const renderState: VisualizationRenderState = { chart: null, liveEntry: null };
   /* The table and the chart fail independently: a table error used to throw
@@ -613,14 +609,7 @@ function _refreshCharts() {
       /* ignore */
     }
   }
-  /* Re-run KaTeX on every live card so LaTeX renders pick up any token
-   * change tied to the theme. We re-discover the cards via the data
-   * attribute each time to avoid keeping strong references ourselves. */
-  if (typeof window !== 'undefined' && typeof (window as unknown as { renderMathInElement?: unknown }).renderMathInElement === 'function') {
-    document.querySelectorAll('.visualization-card').forEach(function (card) {
-      renderCardMath(card);
-    });
-  }
+
 }
 
 function _ensureThemeWatcher() {

@@ -40,3 +40,9 @@ test('long chart categories wrap or rotate without unbounded labels', () => {
   assert.equal(dense.rotate, 35);
   assert.ok(dense.bottom >= 80);
 });
+
+
+test('category math labels remain complete instead of splitting LaTeX commands', () => {
+  const label = '$f(x)=\\frac{1}{1+x^2}$';
+  assert.equal(formatCategoryLabel(label, { maxChars: 8, lineChars: 4 }), label);
+});

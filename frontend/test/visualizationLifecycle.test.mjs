@@ -51,11 +51,26 @@ test('cleanup failure is reported once and does not block card removal', async (
 test('math enhancement failure preserves the inline SVG', async (context) => {
   const diagnostics = [];
   context.mock.method(console, 'warn', (...args) => diagnostics.push(args));
-  /* renderCardMath reads the KaTeX auto-render hook from `window`, which in
-     this test is the JSDOM window rather than Node's globalThis. */
-  window.renderMathInElement = () => { throw new Error('Math renderer failed'); };
-  const card = await mount();
-  assert.ok(card.querySelector('svg'));
-  assert.equal(card.querySelector('[data-viz-action]'), null);
-  assert.deepEqual(diagnostics.map((entry) => entry[1]), ['visualization.renderCardMath']);
+  const frames = [];
+  const oldRaf = globalThis.requestAnimationFrame;
+  const oldCancel = globalThis.cancelAnimationFrame;
+  globalThis.requestAnimationFrame = (callback) => { frames.push(callback); return frames.length; };
+  globalThis.cancelAnimationFrame = () => {};
+  context.mock.method(globalThis, 'getComputedStyle', () => { throw new Error('Math measurement failed'); });
+  globalThis.katex = { renderToString: () => '<span class="katex">x</span>' };
+  try {
+    const card = await mount();
+    const text = card.querySelector('svg text');
+    text.textContent = '$x$';
+    text.getBBox = () => ({ x: 0, y: 0, width: 20, height: 20 });
+    frames.shift()();
+    assert.ok(card.querySelector('svg'));
+    assert.equal(text.textContent, '$x$');
+    assert.deepEqual(diagnostics.map((entry) => entry[1]), ['visualization.renderMath']);
+  } finally {
+    disposeVisualizations(document.body);
+    delete globalThis.katex;
+    globalThis.requestAnimationFrame = oldRaf;
+    globalThis.cancelAnimationFrame = oldCancel;
+  }
 });

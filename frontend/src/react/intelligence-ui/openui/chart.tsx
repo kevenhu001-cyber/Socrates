@@ -1,3 +1,5 @@
+import { SvgMathText } from '../../rn/SvgMathText';
+import { MathText } from '../../rn/useInlineMath';
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
 import { defineComponent, useIsStreaming } from "@openuidev/react-lang";
 import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
@@ -75,7 +77,7 @@ function Legend({ series }: { series: string[] }) {
       {series.map((s, i) => (
         <span key={s}>
           <i style={{ background: seriesColor(i) }} />
-          {s}
+          <MathText text={s} />
         </span>
       ))}
     </div>
@@ -126,9 +128,7 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
         ))}
         {rows.map((row, i) =>
           shown(i) ? (
-            <text key={i} x={xAt(i)} y={height - 6} textAnchor="middle" className="iui-chart-category">
-              {label(row, x)}
-            </text>
+            <SvgMathText key={i} x={xAt(i)} y={height - 6} anchor="middle" width={Math.max(40, band * every)} className="iui-chart-category" text={label(row, x)} />
           ) : null,
         )}
         {hover !== null && type === "bar" && <rect x={pad.left + band * hover} y={pad.top} width={band} height={h} className="iui-chart-hover" />}
@@ -168,11 +168,11 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
       </svg>
       {tip && (
         <div className="iui-chart-tooltip" style={{ left: Math.min(Math.max(xAt(hover!), 70), width - 70), top: pad.top }}>
-          <strong>{label(tip, x)}</strong>
+          <strong><MathText text={label(tip, x)} /></strong>
           {series.map((s, si) => (
             <span key={s}>
               <i style={{ background: seriesColor(si) }} />
-              {series.length > 1 ? `${s} ` : ""}
+              {series.length > 1 ? <MathText text={`${s} `} /> : ""}
               <b>{format(num(tip[s]))}</b>
             </span>
           ))}
@@ -224,9 +224,9 @@ function Scatter({ spec, width }: { spec: Spec; width: number }) {
       </svg>
       {tip && hover && (
         <div className="iui-chart-tooltip" style={{ left: Math.min(Math.max(px(num(tip[x])), 70), width - 70), top: Math.max(0, py(num(tip[series[hover.si]])) - 70) }}>
-          <strong>{name ? String(tip[name]) : series[hover.si]}</strong>
-          <span>{x} <b>{num(tip[x]).toLocaleString("en-US", { maximumFractionDigits: 2 })}</b></span>
-          <span><i style={{ background: seriesColor(hover.si) }} />{series[hover.si]} <b>{format(num(tip[series[hover.si]]))}</b></span>
+          <strong><MathText text={name ? String(tip[name]) : series[hover.si]} /></strong>
+          <span><MathText text={x} /> <b>{num(tip[x]).toLocaleString("en-US", { maximumFractionDigits: 2 })}</b></span>
+          <span><i style={{ background: seriesColor(hover.si) }} /><MathText text={series[hover.si]} /> <b>{format(num(tip[series[hover.si]]))}</b></span>
         </div>
       )}
     </div>
@@ -270,7 +270,7 @@ function Pie({ spec, width }: { spec: Spec; width: number }) {
         {items.map((item, i) => (
           <div key={i}>
             <i style={{ background: seriesColor(i) }} />
-            <span>{item.label}</span>
+            <span><MathText text={item.label} /></span>
             <b>{`${Math.round((item.value / total) * 1000) / 10}%`}</b>
           </div>
         ))}

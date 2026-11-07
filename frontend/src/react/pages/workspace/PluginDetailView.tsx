@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { getLegacyActions } from '../../legacy/gateway.ts';
 import { focusComposer } from '../../composer-input';
 import { toggleComposerPlugin } from '../../../composer/pluginSelection.ts';
@@ -13,18 +12,6 @@ export function PluginDetailView({ plugin, configured, dispatch, onBack, renderM
   const isOpenConnector = plugin.id.startsWith('oc_');
   const connectable = plugin.available !== false && (isOpenConnector || configured);
   const capabilities = Array.isArray(plugin.capabilities) ? plugin.capabilities.filter(Boolean) : [];
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    const panel = document.getElementById('pluginsPanel');
-    if (panel) panel.scrollTop = 0;
-  }, []);
-
-  const handleBack = () => {
-    const panel = document.getElementById('pluginsPanel');
-    if (panel) panel.scrollTop = 0;
-    onBack();
-  };
 
   const handleConnect = () => {
     if (plugin.authType === 'api_key' || plugin.authType === 'custom_credential') {
@@ -66,7 +53,7 @@ export function PluginDetailView({ plugin, configured, dispatch, onBack, renderM
         connectable={connectable}
         isConnected={isConnected}
         renderMark={renderMark}
-        onBack={handleBack}
+        onBack={onBack}
         onConnect={handleConnect}
         onManage={handleManage}
         onUseInChat={() => { void handleUseInChat(); }}

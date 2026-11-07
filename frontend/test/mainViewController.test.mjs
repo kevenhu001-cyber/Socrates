@@ -106,3 +106,17 @@ test('switching chats keeps the current transcript pane visible throughout', () 
   assert.equal(chat.classList.contains('hidden'), false);
   observer.disconnect();
 });
+
+
+test('explicit home navigation clears boot and stale conversation visibility synchronously', () => {
+  const document = createDocument();
+  document.documentElement.dataset.mainView = 'topicSetup';
+  document.documentElement.dataset.routedSession = 'true';
+  document.documentElement.dataset.chatViewOpen = 'true';
+  activateMainView('topicSetup', document);
+  assert.equal(document.documentElement.hasAttribute('data-routed-session'), false);
+  assert.equal(document.documentElement.hasAttribute('data-chat-view-open'), false);
+  assert.equal(isHidden(document, 'pluginsPanel'), true);
+  assert.equal(isHidden(document, 'mainInner'), false);
+  assert.equal(document.body.classList.contains('workspace-active'), false);
+});

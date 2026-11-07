@@ -1,3 +1,5 @@
+import { workspaceForPath } from '../app/router.ts';
+
 /* session/store.ts — pure session-list/URL helpers.
  *
  * Everything here is DOM-read-only or arithmetic; no fetch, no rendering.
@@ -38,10 +40,8 @@ function timeMs(value: unknown): number {
   return Number.isNaN(parsed) ? 0 : parsed;
 }
 
-const ROUTE_PREFIX_RE = /^\/(library|projects|scheduled|plugins|exam)\/?$/;
-
 function routeBase(): string {
-  return ROUTE_PREFIX_RE.test(location.pathname) ? '/' : location.pathname;
+  return workspaceForPath(location.pathname) ? '/' : location.pathname;
 }
 
 export function getChatIdFromURL(): string | null {

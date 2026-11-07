@@ -86,6 +86,8 @@
 .intui-openui .iui-check.is-done span { text-decoration: line-through; color: var(--iui-muted); }
 .intui-openui .iui-segmented { display: flex; flex-wrap: wrap; gap: var(--ui-space-xxs); }
 .intui-openui .iui-segmented button { flex: 1; cursor: pointer; }
+/* Formula ink follows the control, including inverted selected choices. */
+.intui-openui .katex :is(.mord, .mbin, .mrel) { color: inherit; }
 .intui-openui .is-selected { background: var(--primary); color: var(--primary-foreground); border-color: transparent; }
 .intui-openui .iui-radio-group { border: 0; padding: 0; margin: 0; min-width: 0; }
 .intui-openui .iui-radio-group > div { display: flex; flex-wrap: wrap; gap: var(--ui-space-sm); }
@@ -129,7 +131,7 @@
 .intui-openui .iui-chart-pending { display: grid; align-content: space-between; padding: 10px 4px 26px 0; }
 .intui-openui .iui-chart-pending span { display: block; height: 0; border-top: var(--iui-hairline) solid var(--iui-grid); }
 .intui-openui .iui-chart-pending span:last-child { border-top-color: var(--iui-axis); }
-.intui-openui :is(.iui-chart-legend, .iui-chart-legend span, .iui-pie-legend > div) { display: flex; align-items: center; gap: var(--ui-space-sm); }
+.intui-openui :is(.iui-chart-legend, .iui-chart-legend > span, .iui-pie-legend > div) { display: flex; align-items: center; gap: var(--ui-space-sm); }
 .intui-openui .iui-chart-legend { justify-content: center; flex-wrap: wrap; }
 .intui-openui :is(.iui-chart-legend i, .iui-pie-legend i) { width: .65em; height: .65em; border-radius: var(--ui-radius-xs); }
 .intui-openui .iui-pie { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-md); }

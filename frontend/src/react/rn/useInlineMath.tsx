@@ -7,7 +7,7 @@
  * KaTeX loads lazily. Until it is ready the plain text shows, and the hook
  * repaints once `onKatexReady` fires.
  */
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { renderInlineMathHtml } from '../../render/inlineMath.ts';
 import { onKatexReady } from '../../vendor/lazy.ts';
 
@@ -24,7 +24,7 @@ export function useInlineMath(): InlineTextRenderer {
 }
 
 /** Shared rich inline text for DOM cards, including lazy KaTeX refresh. */
-export function MathText({ text }: { text: string }) {
+export const MathText = memo(function MathText({ text = '' }: { text?: string }) {
   const render = useInlineMath();
   return <>{render(text, 'content')}</>;
-}
+});

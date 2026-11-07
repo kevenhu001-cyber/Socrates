@@ -102,19 +102,8 @@ export function useRichComposerEditor({
         return false;
       },
       handleDOMEvents: {
-        beforeinput: (view) => {
-          /* Preserve the painted start height before ProseMirror mutates it. */
-          shape.captureShapeHeight(view.dom as HTMLElement);
-          return false;
-        },
         focus: (view) => {
           shape.handleComposerFocus(view.dom as HTMLElement);
-          /* Prevent mobile WebKit from scrolling the window on focus. */
-          if (typeof window !== 'undefined' && (window.scrollY !== 0 || window.scrollX !== 0)) {
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          }
-          /* Defer the wrap growth by one frame so it does not race the IME
-             keyboard-lift animation. */
           return false;
         },
         blur: (_view, event) => {
@@ -136,8 +125,7 @@ export function useRichComposerEditor({
       if (!switchingSurface) scheduleComposerNotification(editor, () => {
         if (readComposerSurface() === surface) notifyComposerChange(surface, getCachedComposerMarkdown(editor));
       });
-      /* Geometry is measured once on the next frame; beforeinput already
-         captured the painted start height for the existing animation. */
+      /* Coalesce geometry reads after the editor commits its document. */
       shape.syncComposerShape(editor.view.dom as HTMLElement);
     },
   });

@@ -138,7 +138,7 @@ function buildQuestionPrompt({ topic, difficulty, questionType, lang, index, tot
     "For multiple-choice add opts:[{letter,text}] (4 options A-D) and answer (correct letter).\n" +
     "For fill-blank add answers:[string] (acceptable fills).\n" +
     "For short-answer add answer (key facts).\n" +
-    "Always add explanation (string). Use Markdown + $LaTeX$ in q text.\n\n" +
+    "Always add explanation (string). Use Markdown + $LaTeX$ proactively in q text, every mathematical option text, and explanation. Keep option letters and JSON keys unchanged; escape LaTeX backslashes for JSON.\n\n" +
     (instructions ? "Specifics: " + instructions + "\n" : "") +
     "Previously generated questions (DO NOT repeat the same topic angle):\n" + previous;
 }

@@ -76,9 +76,8 @@ test('theme selector follows the operating system and persists explicit modes', 
       border: styles.getPropertyValue('--ui-border-default').trim(),
     };
   });
-  /* Paper-canvas policy (surface-ladder.baseline.json): the light canvas IS
-     the paper, so page, raised and elevated share #ffffff; the rail
-     (#fafafa) and panel (#f2f2f2) carry the separation. */
+  /* paperTint policy (surface-ladder.baseline.json): the page is #fcfcfc;
+     raised and elevated surfaces retain the white paper. */
   expect({
     page: hex6(lightPalette.page),
     raised: hex6(lightPalette.raised),
@@ -86,7 +85,7 @@ test('theme selector follows the operating system and persists explicit modes', 
     text: hex6(lightPalette.text),
     border: hex6(lightPalette.border),
   }).toEqual({
-    page: '#ffffff',
+    page: '#fcfcfc',
     raised: '#ffffff',
     elevated: '#ffffff',
     text: '#171717',

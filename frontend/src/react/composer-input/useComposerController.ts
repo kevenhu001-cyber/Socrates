@@ -9,7 +9,6 @@ import type { ComposerExtensionToken, ComposerSurface } from '../../composer/typ
 export function useComposerController(
   editor: Editor | null,
   surface: ComposerSurface,
-  captureShapeHeight: (editorDom: HTMLElement) => void,
 ): void {
   const getMarkdown = useCallback(() => (editor ? getCachedComposerMarkdown(editor) : ''), [editor]);
 
@@ -74,11 +73,9 @@ export function useComposerController(
     return registerComposer(surface, {
       getMarkdown,
       setMarkdown(value) {
-        captureShapeHeight(editor.view.dom as HTMLElement);
         editor.commands.setContent(value || '', { emitUpdate: true, contentType: 'markdown' });
       },
       insertText(value) {
-        captureShapeHeight(editor.view.dom as HTMLElement);
         editor.chain().focus().insertContent(value, { contentType: 'markdown' }).run();
       },
       clear() {
@@ -96,5 +93,5 @@ export function useComposerController(
         return editor.view.dom.closest('.hidden') === null && editor.view.dom.getClientRects().length > 0;
       },
     });
-  }, [captureShapeHeight, editor, getExtensionToken, getMarkdown, setExtensionToken, surface]);
+  }, [editor, getExtensionToken, getMarkdown, setExtensionToken, surface]);
 }

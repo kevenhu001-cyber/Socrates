@@ -408,8 +408,11 @@ const TOOL_ROUTING_HINTS_MARKER = '[Server policy: tool-routing-hints]';
 const INTELLIGENT_UI_VISUALIZATION_HINT = `## Unified visual tool
 Use \`render_intelligent_ui\` for every explicitly requested static or interactive chart, function graph, diagram, timeline, comparison, simulation, or illustration. Use the existing native template renderer rather than a Mermaid/SVG/HTML fence or Python drawing code. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported.
 Choose one shape: a \`chart\` node for a trivial bar or line series of at most 50 labelled points; a \`demonstration\` node when the visual needs its own mathematical model, parameters or live fields; otherwise one \`openui\` node whose source calls \`Visualization(template, title, payload, accessibilitySummary)\`. When interaction helps, compose that call with controls bound to the same local state.
+For custom mathematical models, define expressions, finite sums, recurrences or bounded differential equations and compose linked plots, fields, trajectories and numerical readouts. For reviewed physical models use a native physics node with its matching scene and numeric parameters from the tool contract; choose the actual computation rather than decorative shapes.
 Demonstration shape (validator-enforced): {id,type:"demonstration",title,program:{version:1,views:[...]}}. The schema marks per-kind fields optional, but validation requires them: plot needs x, y and 1-6 curves; field needs x, y and expression; trajectory needs x, y, horizontal, vertical and program.dynamics; metrics needs 1-6 values. At most one controls, two field views and twelve curves total. Use JSON numbers and arrays, keep the program under 40000 characters, and fix every field named in a rejection in one corrected call.
 Call \`Visualization\` with four separate arguments in this order: template name, short title, template payload, accessibility summary. Add an optional fifth caption only when a note below the card helps. Never submit colors, fonts, CSS, dimensions, raw renderer options, or a legacy \`render_visualization\` call. Each series stays at or below ${MAX_VISUALIZATION_POINTS} points; downsample longer data first. Rows of facts belong in a \`Table\` component or a Markdown table, not a chart.
+Bind controls to declared local state, keep each OpenUI source below 50000 characters, and start with the smallest complete program. A failed render is not a delivered visual: correct the reported fields within the tool budget; if exhausted, state the limitation and give the essential answer in prose.
+Use LaTeX proactively for mathematical titles, axis labels, curve legends, annotations, question stems, answer choices and explanations: $...$ inline and $$...$$ for display. Keep executable expressions and numeric data in their required machine syntax; put LaTeX only in human-readable label fields. Escape each backslash through every JSON and OpenUI string layer (for example a LaTeX command needs two backslashes in JSON, then four when that JSON is inside another string).
 Every template, its payload contract and its example payload are in the \`source\` parameter description of \`render_intelligent_ui\`; read that before choosing a template. If validation returns field errors, correct exactly those fields once and retry; if it says the program was cut off, send fewer points instead of the same program.`;
 
 const PLANNING_ROUTING_HINT = `## Planning and specification tools
@@ -435,7 +438,13 @@ export function appendToolRoutingHints<T extends { role: string; content?: unkno
   if (nameSet.has('web_search')) blocks.push(WEB_SEARCH_ROUTING_HINT);
   if (nameSet.has('web_fetch')) blocks.push(WEB_FETCH_ROUTING_HINT);
   if (nameSet.has('render_intelligent_ui')) blocks.push(INTELLIGENT_UI_VISUALIZATION_HINT);
-  if (nameSet.has('create_plan') || nameSet.has('create_spec')) blocks.push(PLANNING_ROUTING_HINT);
+  if (nameSet.has('create_plan') || nameSet.has('create_spec')) {
+    const paragraphs = PLANNING_ROUTING_HINT.split('\n');
+    blocks.push(paragraphs.filter((line) =>
+      (!line.startsWith('When `create_plan`') || nameSet.has('create_plan'))
+      && (!line.startsWith('When `create_spec`') || nameSet.has('create_spec'))
+    ).join('\n'));
+  }
   if (nameSet.has('read_attachment')) blocks.push(READ_ATTACHMENT_ROUTING_HINT);
   if (nameSet.has('workspace_agent')) blocks.push(WORKSPACE_AGENT_ROUTING_HINT);
   if (blocks.length === 0) return messages;

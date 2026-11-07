@@ -13,7 +13,7 @@
 @import './foundations/tokens.generated.css';
 
 /* Shared RN action role follows the active web theme's canonical accent. */
-html[data-mode] { --ui-action: var(--ui-accent-action); }
+html[data-mode] { --ui-action: var(--ui-accent-action); --ui-connector-tile: var(--ui-bg-surface); }
 
 html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {

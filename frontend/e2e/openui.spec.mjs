@@ -330,3 +330,29 @@ test('an OpenUI chart waits for complete rows before drawing, inside a stable fr
   const drawn = await figure.evaluate((el) => Math.round(el.getBoundingClientRect().height));
   expect(drawn).toBe(pending);
 });
+
+
+test('chart labels and multiple-choice options typeset LaTeX without remounting controls', async ({ page }) => {
+  const source = 'root = Col([Title("$f(x)=x^2$"), Chart("line", [{x:"$x=0$", "$f(x)$":0, "$g(x)$":1},{x:"$x=1$", "$f(x)$":1, "$g(x)$":2}], "x", ["$f(x)$", "$g(x)$"]), RadioGroup($answer, [{value:"a",label:"$x^2$"},{value:"b",label:"$x^3$"}], "$f(x)$"), Text("Selected: " + $answer)])\n$answer = "a"';
+  await prepareChatWorkbench(page, { messages: [message(source)] });
+  const ui = page.locator('.intui-openui');
+  await expect(ui.locator('.iui-chart-legend .katex')).toHaveCount(2);
+  await expect(ui.locator('.iui-radio-group .katex')).toHaveCount(3);
+  await expect(ui.locator('foreignObject .katex').first()).toBeVisible();
+  await expect(ui.locator('.iui-notice')).toHaveCount(0);
+  expect(await ui.locator('.iui-chart-legend .katex-html').first().evaluate(el => getComputedStyle(el).display)).not.toBe('flex');
+  await ui.locator('input[type="radio"]').nth(1).check();
+  await expect(ui.locator('input[type="radio"]').nth(1)).toBeChecked();
+  await expect(ui.getByText('Selected: b', { exact: true })).toBeVisible();
+  expect(await ui.locator('.iui-radio-group .is-selected').evaluate(el => getComputedStyle(el.querySelector('.katex .mord')).color === getComputedStyle(el).color)).toBe(true);
+  await expect(ui.locator('.iui-notice')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/latex-chart-choices.png' });
+});
+
+test('native function graph typesets legend and axes after lazy renderer load', async ({ page }) => {
+  const source = 'root = Visualization("function", "$f(x)=x^2$", {functions:[{expression:"x^2",label:"$f(x)=x^2$",domain:[-2,2]},{expression:"x",label:"$g(x)=x$",domain:[-2,2]}],xLabel:"$x$",yLabel:"$y$"}, "Two curves")';
+  await prepareChatWorkbench(page, { messages: [message(source)] });
+  const card = page.locator('.visualization-card');
+  await expect(card.locator('svg foreignObject .katex').first()).toBeVisible();
+  await page.screenshot({ path: 'test-results/latex-native-function.png' });
+});

@@ -1,3 +1,5 @@
+import { MathText } from '../../rn/useInlineMath';
+import { SvgMathText } from '../../rn/SvgMathText';
 import { demonstrationDomain, isDemonstrationBudgetError } from '@socrates/core';
 import { i18n } from '../../legacy/gateway';
 import { useId } from 'react';
@@ -94,7 +96,7 @@ export function DemoPlot({ view, runtime, time }: { view: View; runtime: Demonst
   // Only an axis that cannot be evaluated or an exhausted budget reaches here.
   const name=viewName(view);
   const headline=name?i18n('intui.demo.failedNamed','Could not compute “{name}”').replace('{name}',name):i18n('intui.demo.failedView','This view could not be computed');
-  return <figure className="demo-plot">{view.label?<figcaption>{view.label}</figcaption>:null}<div className="demo-error" role="status"><DemoIssue headline={headline} details={[message(error)]}/></div></figure>;
+  return <figure className="demo-plot">{view.label?<figcaption><MathText text={view.label} /></figcaption>:null}<div className="demo-error" role="status"><DemoIssue headline={headline} details={[message(error)]}/></div></figure>;
  }
  return renderPlot(view,result,id);
 }
@@ -122,18 +124,18 @@ function renderPlot(view: View, result: Sampled, id: string) {
  const point=(p:Point|undefined)=>p&&Number.isFinite(sx(p[0]))&&Number.isFinite(sy(p[1]))?{x:sx(p[0]),y:sy(p[1])}:null;
  const head=view.kind==='trajectory'?point(result.markers[0]):null;
  return <figure className="demo-plot">
-  {view.label?<figcaption>{view.label}</figcaption>:null}
+  {view.label?<figcaption><MathText text={view.label} /></figcaption>:null}
   <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={view.label||view.yLabel||view.xLabel||i18n('intui.surface','Interactive result')}>
    <defs><clipPath id={id}><rect x={left} y={top} width={width-left-right} height={height-top-bottom}/></clipPath></defs>
    {ticks(yDomain[0],yDomain[1],3).map(y=><g key={`y${y}`} className="demo-axis"><line x1={left} x2={width-right} y1={sy(y)} y2={sy(y)} strokeDasharray="2 5"/><text x={left-8} y={sy(y)+3} textAnchor="end">{format(y)}</text></g>)}
    <g className="demo-axis"><line x1={left} x2={width-right} y1={xAxis} y2={xAxis}/>{ticks(xDomain[0],xDomain[1],6).map(x=><g key={x}><line x1={sx(x)} x2={sx(x)} y1={height-bottom} y2={height-bottom+4}/><text x={sx(x)} y={height-bottom+17} textAnchor="middle">{format(x)}</text></g>)}</g>
    <g clipPath={`url(#${id})`}>{curves.map((curve,i)=><path key={i} d={paths[i]} fill="none" stroke={demoColors[curve.color||'ink']||demoColors.ink} strokeWidth={curve.dashed?1.3:1.8} strokeDasharray={curve.dashed?'5 4':undefined} vectorEffect="non-scaling-stroke"/>)}
-    {view.kind==='plot'?view.markers?.map((marker,i)=>{const p=point(result.markers[i]);return p?<g key={i}><circle cx={p.x} cy={p.y} r="3.5" fill={demoColors[marker.color||'red']||demoColors.red}/>{marker.label?<text className="demo-marker-label" x={p.x+7} y={p.y-7}>{marker.label}</text>:null}</g>:null;}):head?<circle cx={head.x} cy={head.y} r="3.5" fill={demoColors[view.color||'blue']||demoColors.blue}/>:null}
+    {view.kind==='plot'?view.markers?.map((marker,i)=>{const p=point(result.markers[i]);return p?<g key={i}><circle cx={p.x} cy={p.y} r="3.5" fill={demoColors[marker.color||'red']||demoColors.red}/>{marker.label?<SvgMathText className="demo-marker-label" x={p.x+7} y={p.y-7} text={marker.label} />:null}</g>:null;}):head?<circle cx={head.x} cy={head.y} r="3.5" fill={demoColors[view.color||'blue']||demoColors.blue}/>:null}
    </g>
-   <text className="demo-axis-label" x={width-right} y={height-2} textAnchor="end">{view.xLabel}</text>
-   <text className="demo-axis-label" x={left} y={10}>{view.yLabel}</text>
+   <SvgMathText className="demo-axis-label" x={width-right} y={height-2} anchor="end" text={view.xLabel || ""} />
+   <SvgMathText className="demo-axis-label" x={left} y={10} text={view.yLabel || ""} />
   </svg>
-  {view.kind==='plot'&&view.curves.some(c=>c.label)?<div className="demo-legend">{view.curves.map((curve,i)=>curve.label?<span key={i}><svg viewBox="0 0 22 8" aria-hidden="true"><path d="M0 4H22" stroke={demoColors[curve.color||'ink']||demoColors.ink} strokeWidth="1.7" strokeDasharray={curve.dashed?'4 3':undefined}/></svg>{curve.label}</span>:null)}</div>:null}
+  {view.kind==='plot'&&view.curves.some(c=>c.label)?<div className="demo-legend">{view.curves.map((curve,i)=>curve.label?<span key={i}><svg viewBox="0 0 22 8" aria-hidden="true"><path d="M0 4H22" stroke={demoColors[curve.color||'ink']||demoColors.ink} strokeWidth="1.7" strokeDasharray={curve.dashed?'4 3':undefined}/></svg><MathText text={curve.label} /></span>:null)}</div>:null}
   {result.issues.length?<div className="demo-note" role="status"><DemoIssue headline={issueHeadline(result.issues)} details={result.issues.map(issue=>`${issue.name}: ${issue.detail}`)}/></div>:null}
  </figure>;
 }

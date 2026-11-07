@@ -1,3 +1,4 @@
+import { MathText } from '../../rn/useInlineMath';
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Textarea as ShadcnTextarea } from '../../ui/shadcn/textarea';
@@ -67,7 +68,7 @@ function Field({ label, children: content }: { label?: string; children: ReactNo
   if (!label) return <>{content}</>;
   return (
     <ShadcnLabel className="iui-field">
-      <span className="iui-label">{label}</span>
+      <span className="iui-label"><MathText text={label} /></span>
       {content}
     </ShadcnLabel>
   );
@@ -105,7 +106,7 @@ export const Button = defineComponent({
         onClick={() => run(label, props.action)}
       >
         {props.icon ? <Glyph name={props.icon} size={props.size === "sm" ? 14 : 16} /> : null}
-        {label}
+        <MathText text={label} />
       </UiButton>
     );
   },
@@ -304,7 +305,7 @@ export const SegmentedControl = defineComponent({
             className={cx(o.value === value && "is-selected")}
             onClick={() => field.setValue(o.value)}
           >
-            {o.label}
+            <MathText text={o.label} />
           </UiButton>
         ))}
       </div>
@@ -336,7 +337,7 @@ export const Slider = defineComponent({
       <div className="iui-slider">
         {(props.label || props.unit) && (
           <div className="iui-slider-head">
-            <ShadcnLabel htmlFor={id}>{props.label}</ShadcnLabel>
+            <ShadcnLabel htmlFor={id}><MathText text={props.label} /></ShadcnLabel>
             <output htmlFor={id}>{readout}</output>
           </div>
         )}
@@ -412,14 +413,14 @@ export const RadioGroup = defineComponent({
     const variant = props.variant ?? "list";
     return (
       <fieldset className={cx("iui-radio-group", `iui-radio-${variant}`)}>
-        {props.label ? <legend className="iui-label">{props.label}</legend> : null}
+        {props.label ? <legend className="iui-label"><MathText text={props.label} /></legend> : null}
         <div>
           {choiceList(props.options).map((o, i) => (
             <ShadcnLabel key={`${o.value}-${i}`} className={cx(variant === "list" ? "iui-check" : "iui-choice", o.value === value && "is-selected")}>
               <ShadcnNativeControl type="radio" name={name} checked={o.value === value} onChange={() => field.setValue(o.value)} />
               <span className="iui-choice-text">
-                <span>{o.label}</span>
-                {o.description ? <span className="iui-choice-description">{o.description}</span> : null}
+                <span><MathText text={o.label} /></span>
+                {o.description ? <span className="iui-choice-description"><MathText text={o.description} /></span> : null}
               </span>
             </ShadcnLabel>
           ))}
@@ -510,7 +511,7 @@ export const Timer = defineComponent({
     return (
       <div className={cx("iui-timer", running && "is-running", done && "is-done")} role="timer" aria-label={props.label || "Timer"}>
         <div className="iui-timer-read">
-          {props.label && <span className="iui-label">{props.label}</span>}
+          {props.label && <span className="iui-label"><MathText text={props.label} /></span>}
           <span className="iui-timer-time">{clock(left)}</span>
         </div>
         <div className="iui-timer-actions">

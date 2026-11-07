@@ -57,3 +57,24 @@ test('new chat switches instantly while a session save is in flight', async ({ p
   const sentAcrossAllPosts = [...new Set(posted.flatMap((b) => b.messages.map((m) => m.clientId)))].sort();
   expect(sentAcrossAllPosts).toEqual(['a1', 'u1']);
 });
+
+
+test('new chat returns from every destination with the same live editor and no reload', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => { window.__originalComposer = document.querySelector('.rich-composer-editor'); });
+  for (const [path, view] of [['/plugins','pluginsPanel'], ['/library','libraryPanel'], ['/projects','spacesPanel'], ['/images','imagesPanel'], ['/assistants','assistantsPanel'], ['/sites','sitesPanel'], ['/admin','adminPanel'], ['/exam','examView']]) {
+    await page.evaluate(({ path, view }) => {
+      history.pushState({}, '', path);
+      window.__testActivateMainView(view);
+    }, { path, view });
+    await page.locator('#newChatBtn').click();
+    if (view === 'examView') await page.getByRole('alertdialog').getByRole('button', { name: 'OK', exact: true }).click();
+    await expect(page.locator('#topicSetup')).toBeVisible();
+    await expect(page.locator('.rich-composer-editor')).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
+    expect(await page.evaluate(() => document.querySelector('.rich-composer-editor') === window.__originalComposer)).toBe(true);
+  }
+  await page.screenshot({ path: 'test-results/new-chat-restored.png' });
+});

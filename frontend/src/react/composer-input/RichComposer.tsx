@@ -55,7 +55,7 @@ export function RichComposer({
     shape.isShapeAnimating,
     shape.cacheSettledShapeHeight,
   );
-  useComposerController(editor, surface, shape.captureShapeHeight);
+  useComposerController(editor, surface);
   useComposerPresentation(editor, activePlaceholder, webSearchOn, surface);
 
   if (!editor) return null;

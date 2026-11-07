@@ -29,7 +29,7 @@ const CONNECTORS = [
   },
 ];
 
-async function mockConnectedCatalog(page) {
+async function mockConnectedCatalog(page, connectors = CONNECTORS) {
   await page.route('**/api/**', async (route) => {
     if (!route.request().url().includes('project-connectors')) {
       await route.fallback();
@@ -38,7 +38,7 @@ async function mockConnectedCatalog(page) {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ configured: true, connectors: CONNECTORS }),
+      body: JSON.stringify({ configured: true, connectors }),
     });
   });
 }
@@ -313,4 +313,47 @@ test('OAuth return restores the original composer surface and plugin context', a
   await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
   await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText('Restored OAuth draft');
   await expect(page).toHaveURL(url => url.pathname === '/' && url.search === '');
+});
+
+
+test('plugin detail preserves directory query and themed SVG tiles', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  await mockConnectedCatalog(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#navPlugins').click();
+  const search = page.locator('.plugin-directory-search input');
+  await search.fill('GitHub');
+  const tile = page.locator('[data-connector-id="github"] svg rect').first();
+  for (const mode of ['light', 'dark']) {
+    await page.evaluate((mode) => {
+      document.documentElement.dataset.mode = mode;
+      document.documentElement.classList.toggle('dark', mode === 'dark');
+    }, mode);
+    const colors = await tile.evaluate(el => ({ fill: getComputedStyle(el).fill, expected: getComputedStyle(el).getPropertyValue('--ui-connector-tile').trim() }));
+    expect(colors.expected).toBeTruthy();
+    if (mode === 'light') await page.screenshot({ path: 'test-results/plugin-tile-light.png', animations: 'disabled' });
+    else await page.screenshot({ path: 'test-results/plugin-tile-dark.png', animations: 'disabled' });
+  }
+  await page.locator('[data-connector-id="github"]').click();
+  await page.locator('.plugin-detail-back-btn').click();
+  await expect(search).toHaveValue('GitHub');
+  await expect(page.locator('[data-connector-id="github"]')).toBeVisible();
+});
+
+
+test('returning from plugin detail restores the directory scroll position', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  await mockConnectedCatalog(page, Array.from({ length: 40 }, (_, i) => ({ ...CONNECTORS[0], id: `service_${i}`, name: `Service ${i}` })));
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#navPlugins').click();
+  const row = page.locator('[data-connector-id="service_30"]');
+  await row.scrollIntoViewIfNeeded();
+  const position = await page.locator('#pluginsPanel').evaluate(el => el.scrollTop);
+  expect(position).toBeGreaterThan(0);
+  await row.click();
+  await expect(page.locator('.plugin-detail-view')).toBeVisible();
+  await page.locator('.plugin-detail-back-btn').click();
+  await expect.poll(() => page.locator('#pluginsPanel').evaluate(el => el.scrollTop)).toBe(position);
 });

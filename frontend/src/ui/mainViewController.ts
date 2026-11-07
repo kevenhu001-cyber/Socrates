@@ -21,7 +21,7 @@ function resolveDocument(doc?: Document | null) {
 function setHidden(doc: Document, ids: readonly string[], hidden: boolean) {
   ids.forEach((id) => {
     const element = doc.getElementById(id);
-    if (element) element.classList.toggle('hidden', hidden);
+    if (element && element.classList.contains('hidden') !== hidden) element.classList.toggle('hidden', hidden);
   });
 }
 
@@ -85,13 +85,15 @@ export function activateMainView(viewId: string, doc?: Document | null) {
 
   // Keep the active pane laid out during chat-to-chat session switches.
   // Toggling display:none here invalidated editor and transcript geometry.
-  if (previousView !== viewId) {
-    setHidden(currentDocument, CORE_VIEW_IDS.filter((id) => id !== viewId), true);
-    setHidden(currentDocument, MAIN_PAGE_IDS.filter((id) => id !== viewId), true);
-    resetShellState(currentDocument);
-  }
+  setHidden(currentDocument, CORE_VIEW_IDS.filter((id) => id !== viewId), true);
+  setHidden(currentDocument, MAIN_PAGE_IDS.filter((id) => id !== viewId), true);
+  resetShellState(currentDocument);
 
+  // Explicit navigation supersedes the first-paint boot hint.
+  currentDocument.documentElement.removeAttribute('data-routed-session');
   target.classList.remove('hidden');
+  currentDocument.documentElement.toggleAttribute('data-chat-view-open', viewId === 'chatView');
+  currentDocument.documentElement.toggleAttribute('data-topic-setup-open', viewId === 'topicSetup');
   syncChatPageGate(currentDocument);
   if (viewId === 'topicSetup' || viewId === 'chatView') {
     try { activateComposerSurface(viewId === 'chatView' ? 'chat' : 'topic', currentDocument); }
