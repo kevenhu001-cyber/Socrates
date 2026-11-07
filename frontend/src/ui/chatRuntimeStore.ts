@@ -132,6 +132,18 @@ function streamFromEvent(
   event: ChatRuntimeEvent,
   messages: LegacyChatMessage[],
 ): ChatStreamSnapshot {
+  /* A superseded turn can finish after the replacement has started. Its
+     terminal event still matters to the message row, but must not release
+     the Stop state owned by the newer stream. */
+  const isStaleTerminal = event.type === 'stream-finished'
+    || event.type === 'stream-aborted'
+    || event.type === 'stream-failed';
+  if (isStaleTerminal
+    && snapshot.stream.status === 'streaming'
+    && snapshot.stream.messageId !== event.messageId) {
+    return snapshot.stream;
+  }
+
   switch (event.type) {
     case 'stream-started':
       return Object.freeze({

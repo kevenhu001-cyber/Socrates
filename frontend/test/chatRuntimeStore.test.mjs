@@ -215,6 +215,23 @@ test('a terminal event flushes pending work before it commits', () => {
   assert.equal(bridge.getSnapshot().stream.status, 'completed', 'the frame commits nothing late');
 });
 
+test('a stale terminal event cannot release a newer streaming turn', () => {
+  const bridge = freshBridge();
+  stateStore.dispatch({
+    type: 'session/replace-messages',
+    payload: [message('m-new', 'new turn')],
+  });
+
+  bridge.publish({ type: 'stream-started', messageId: 'm-new' });
+  runFrames();
+  assert.equal(bridge.getSnapshot().isStreaming, true);
+
+  bridge.publish({ type: 'stream-finished', messageId: 'm-old', textLength: 12 });
+  assert.equal(bridge.getSnapshot().stream.messageId, 'm-new');
+  assert.equal(bridge.getSnapshot().stream.status, 'streaming');
+  assert.equal(bridge.getSnapshot().isStreaming, true);
+});
+
 test('retry replacement removes the failed row and clears its terminal stream state', () => {
   const bridge = freshBridge();
   stateStore.dispatch({
