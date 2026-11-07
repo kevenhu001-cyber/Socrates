@@ -55,7 +55,11 @@ function lastTextIndex(segments: TurnSegment[]): number {
 }
 
 function segmentKey(segment: TurnSegment, index: number): string {
-  if (segment.kind === 'text') return 'text-' + segment.start + '-' + index;
+  // Text ranges never overlap, so the source offset alone names a prose run.
+  // Folding in the array index re-keyed (and remounted, dropping the streamed
+  // block DOM) every later prose run whenever a row or group was inserted
+  // ahead of it, e.g. a deferred tool row mounting when the turn settles.
+  if (segment.kind === 'text') return 'text-' + segment.start;
   // Membership can expand before tool_use. Child outputs retain their own
   // call IDs; the run host stays mounted when its first call changes.
   if (segment.kind === 'group') return 'group-' + index;

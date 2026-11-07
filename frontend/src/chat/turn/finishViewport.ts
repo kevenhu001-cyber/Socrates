@@ -266,7 +266,12 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
       if (frames < 30) requestAnimationFrame(settleFrame);
       else intent.detach();
     };
-    settleFrame();
+    /* P_stream-finish-paint — settle() runs inside the finish task, before
+       React commits the settled snapshot (that commit is a microtask after
+       this task). Correcting here only forced a layout of the pre-commit DOM
+       and wrote a no-op scrollTop; the first useful correction is in the
+       next frame, after the commit and before that frame paints. */
+    requestAnimationFrame(settleFrame);
   }
 
   return { capture, settle };

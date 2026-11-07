@@ -197,6 +197,72 @@ function _appMode(): string {
   return appMode;
 }
 
+/* P_stream-finish-paint — a streamed answer's completion used to run the
+   whole save (capture + per-row normalize + delta fingerprint + ~1 MB
+   stringify + title kick-off) inside the same task that published the
+   settled turn, so the final frame could not paint until the save was done:
+   the answer visibly froze for a beat at the end of every turn. The finish
+   path now asks for the save right AFTER the settled frame paints.
+
+   Only an already-identified session defers; a brand-new chat saves
+   synchronously because its first save mints the session id and must stay
+   in lock-step with any other save in the same tick (P_dup-session), and its
+   payload is tiny anyway. Every path that would otherwise lose the parked
+   save flushes it first: a session switch (beginSessionLoad), the new-chat
+   reset (saveSessionBeforeReset), and page teardown (the unload beacon). */
+interface DeferredFinishSave {
+  sessionId: string;
+  cancel: () => void;
+}
+
+let _deferredFinishSave: DeferredFinishSave | null = null;
+
+/** Run a save parked by saveCurrentSessionAfterPaint now.
+ *  saveCurrentSession captures one self-consistent snapshot of whatever
+ *  session is current (and keeps its own load/delete/incognito guards), so
+ *  even if the id moved meanwhile (server id adoption) nothing is mixed. */
+export function flushDeferredSessionSave(): void {
+  const pending = _deferredFinishSave;
+  if (!pending) return;
+  _deferredFinishSave = null;
+  pending.cancel();
+  saveCurrentSession();
+}
+
+/** Save the current session once the next frame has painted. */
+export function saveCurrentSessionAfterPaint(): void {
+  const sessionId = stateStore.read('currentSessionId') as string | null;
+  const canDefer = Boolean(sessionId)
+    && typeof window !== 'undefined'
+    && typeof window.requestAnimationFrame === 'function'
+    && typeof document !== 'undefined'
+    && document.visibilityState !== 'hidden';
+  if (!canDefer || !sessionId) {
+    saveCurrentSession();
+    return;
+  }
+  if (_deferredFinishSave) {
+    if (_deferredFinishSave.sessionId === sessionId) return;
+    flushDeferredSessionSave();
+  }
+  let frame = 0;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  /* rAF is throttled in background tabs; the fallback keeps the save bounded. */
+  const fallback = setTimeout(flushDeferredSessionSave, 250);
+  frame = window.requestAnimationFrame(() => {
+    frame = 0;
+    timer = setTimeout(flushDeferredSessionSave, 0);
+  });
+  _deferredFinishSave = {
+    sessionId,
+    cancel: () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      if (timer !== null) clearTimeout(timer);
+      clearTimeout(fallback);
+    },
+  };
+}
+
 export function saveCurrentSession(): Promise<unknown> | null {
   /* P_mobile-topbar — incognito ("无痕对话") sessions are never
      persisted. Entering incognito first saves any prior real session
@@ -253,6 +319,8 @@ export function saveCurrentSession(): Promise<unknown> | null {
    the signature and the network call move to the next macrotask, after
    the reset has been painted. */
 export function saveSessionBeforeReset(): Promise<unknown> | null {
+  /* A finished turn's save may still be parked for the next paint. */
+  flushDeferredSessionSave();
   if (isIncognitoOn()) return null;
   if (!stateStore.read('topic')) return null;
   if (!getCurrentUser()) return null;
@@ -632,6 +700,9 @@ export function installUnloadSave(): void {
     return m ? m[1] : null;
   }
   function _beaconSave(): void {
+    /* P_stream-finish-paint — a finished turn parked for the next paint is
+       saved now; its POST then counts as in flight for the beacon below. */
+    flushDeferredSessionSave();
     /* P_reset-defer — a snapshot parked by saveSessionBeforeReset is the
        authority here: the caller has already reset the live state, so the
        store-based branch below would find an empty conversation. Flush the
@@ -676,6 +747,7 @@ export function installUnloadSave(): void {
   }
   /* beforeunload — show confirmation if a save is in-flight. */
   window.addEventListener('beforeunload', function (e) {
+    flushDeferredSessionSave();
     if (saveState.saveInFlight) {
       e.preventDefault();
       e.returnValue = '';
