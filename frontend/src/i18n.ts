@@ -122,12 +122,13 @@ function updateTopicSetupCopy(){
   }
   const ts=document.getElementById("topicSub");
   if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
-  const disclaimer=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
+  /* The "Socrates can make mistakes" line is gone from the product. Chat
+     mode shows no landing disclaimer at all; tutor mode keeps the Socratic
+     ethos line. The element is hidden rather than emptied so the desktop
+     footer slot does not keep an empty block. */
+  const disclaimer=appMode==="chat"?"":t("profile.disclaimerTutor");
   const tdisc=document.getElementById("topicDisclaimer");
-  if(tdisc)tdisc.textContent=disclaimer;
-  /* React owns the transcript footer; keep the current DOM copy in sync. */
-  const cdisc=document.getElementById("chatDisclaimer");
-  if(cdisc)cdisc.textContent=t("topic.disclaimerChat");
+  if(tdisc){tdisc.textContent=disclaimer;tdisc.style.display=disclaimer?"":"none";}
 }
 
 function refreshDynamicSurfaces(){

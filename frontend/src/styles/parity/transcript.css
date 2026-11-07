@@ -335,16 +335,3 @@ html[data-mode="dark"] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote)
   color: var(--ui-text-tertiary);
   font-style: italic;
 }
-
-/* Part of the transcript flow, directly after the newest content. */
-#appShell #msgList > .msg > #chatDisclaimer {
-  position: static;
-  flex: none;
-  align-self: stretch;
-  margin: var(--ui-space-md) 0;
-  padding: 0 var(--ui-space-lg);
-  color: var(--muted-foreground);
-  text-align: center;
-  font-size: var(--ui-font-size-xxs);
-  line-height: var(--ui-line-height-normal);
-}

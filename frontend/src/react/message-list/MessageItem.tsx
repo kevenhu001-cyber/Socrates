@@ -14,7 +14,6 @@ import type { MessageItemProps } from './types';
 import { useMessagePostRender } from './useMessagePostRender';
 import { commitUserMessageEdit } from '../../chat/editBranch.ts';
 import { stripMarkdown } from '../../render/markdown.ts';
-import { useLocaleRefresh } from '../rn/WebUiTheme';
 import { i18n } from '../legacy/gateway';
 
 type LiveFields = LegacyChatMessage & {
@@ -176,11 +175,6 @@ function messageRowVisibility(role: string, showSettledToolbar: boolean, isLive:
   };
 }
 
-function TranscriptDisclaimer() {
-  useLocaleRefresh();
-  return <p className="chat-disclaimer" id="chatDisclaimer">{i18n('topic.disclaimerChat', 'Socrates can make mistakes. Check important information.')}</p>;
-}
-
 function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnly = false }: MessageItemProps) {
   const [editing, setEditing] = useState(false);
   const role = messageRole(message);
@@ -253,7 +247,6 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
           onEdit={onEdit}
         />
       ) : null}
-      {isLatest ? <TranscriptDisclaimer /> : null}
     </div>
   );
 }

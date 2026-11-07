@@ -1699,7 +1699,6 @@ export const en = {
     "share.readOnly":"Read-only",
     "topic.titleChat":"What can I help you with?",
     "topic.subChat":"",
-    "topic.disclaimerChat":"Socrates can make mistakes. Check important information.",
     "profile.savedAt":"Saved at {hh}:{mm}",
     "profile.instructionsSavedPlaceholder":"Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language.",
     "profile.instructionsAboutPlaceholder":"e.g. I'm a backend engineer working on a payments product. I'm allergic to puns.",

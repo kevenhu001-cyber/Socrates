@@ -144,7 +144,7 @@ test('OpenUI headings, definitions, flashcards and tables typeset explicit dolla
 });
 
 
-test('streamed cards mount before finish and keep their nodes; footer follows the latest message',async({page})=>{
+test('streamed cards mount before finish and keep their nodes; no disclaimer footer trails the transcript',async({page})=>{
  await open(page,[]);
  await page.emulateMedia({reducedMotion:'no-preference'});
  await page.evaluate(async()=>{
@@ -165,11 +165,9 @@ test('streamed cards mount before finish and keep their nodes; footer follows th
  await expect(page.locator('#msgList')).toContainText('继续输出的正文');
  await page.evaluate(()=>window.__scaffoldCtl.finish());
  await expect.poll(()=>page.evaluate(()=>window.__mountedQuiz===document.querySelector('.sc-host[data-scaffold="quiz"]'))).toBe(true);
- const footer=page.locator('#msgList > .msg:last-child > #chatDisclaimer');
- await expect(footer).toContainText('Socrates 也可能会犯错');
- expect(await footer.evaluate(el=>el===el.parentElement.lastElementChild)).toBe(true);
- expect(await footer.evaluate(el=>getComputedStyle(el).position)).toBe('static');
- await page.screenshot({path:'test-results/transcript-footer.png'});
+ /* The transcript carries no "Socrates can make mistakes" footer line. */
+ await expect(page.locator('#msgList #chatDisclaimer')).toHaveCount(0);
+ await expect(page.locator('#msgList')).not.toContainText('也可能');
 });
 
 

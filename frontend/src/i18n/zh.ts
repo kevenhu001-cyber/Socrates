@@ -1655,7 +1655,6 @@ export const zh = {
     "share.readOnly":"只读",
     "topic.titleChat":"我能帮你什么？",
     "topic.subChat":"",
-    "topic.disclaimerChat":"Socrates 也可能会犯错。请核查重要信息。",
     "profile.savedAt":"已保存 {hh}:{mm}",
     "profile.instructionsSavedPlaceholder":"例如：用简洁的项目符号回复。引用来源标为 [1]、[2]。避免模棱两可的措辞。",
     "profile.instructionsAboutPlaceholder":"例如：我是一名后端工程师，正在做支付产品。我讨厌双关语。",
