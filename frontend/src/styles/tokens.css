@@ -194,6 +194,9 @@
   --ui-duration-pulse-slow: 1600ms;
   --ui-duration-spin: 900ms;
   --ui-duration-shimmer: 3000ms;
+  /* One left-to-right sweep: the thinking caption's text shimmer and the
+     skeleton placeholders (.skeleton-shimmer) share this clock. */
+  --ui-duration-shimmer-sweep: 1900ms;
 
   /* Wave loader (styles/components/wave.css + react/wave/Wave.tsx). */
   --ui-wave-duration: 1400ms;

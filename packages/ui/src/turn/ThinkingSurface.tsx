@@ -5,7 +5,10 @@
  * The host supplies an observed live status and neutral settled activity
  * copy. Expanding reveals public summaries and tool records. While a turn
  * is live the host also supplies the working indicator (the web passes an
- * inline-SVG spark); the caption itself stays still.
+ * inline-SVG spark); the caption itself is not animated here. On the web
+ * the host's stylesheet sweeps a CSS text shimmer across the live caption
+ * (frontend/src/styles/features/thinking-activity.css, keyed on the
+ * turn-activity-label testID), which stops when the turn settles.
  * The host passes already-public copy only (see thinkingModel).
  */
 import { type ReactNode } from 'react';

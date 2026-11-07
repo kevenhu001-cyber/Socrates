@@ -106,6 +106,33 @@ button { -webkit-tap-highlight-color: transparent; }
   box-shadow: none;
 }
 
+/* Shared skeleton shimmer. A placeholder keeps its own quiet fill (its
+   background-color); this utility lays one soft highlight band over it and
+   sweeps the band left to right on a loop. The image is three boxes wide
+   with the band in the middle third, so at both ends of the loop the band is
+   fully outside the box and the restart is invisible. Only background-position
+   animates. Used by the OpenUI BlockSkeleton (react/intelligence-ui) and the
+   streaming scaffold previews (render/markdownScaffolds.ts). Reduced motion
+   and forced colours get the static fill. */
+.skeleton-shimmer {
+  --skeleton-shimmer-highlight: var(--ui-fill-pressed);
+}
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+  .skeleton-shimmer {
+    background-image: linear-gradient(90deg, transparent 33%, var(--skeleton-shimmer-highlight) 50%, transparent 67%);
+    background-repeat: no-repeat;
+    background-size: 300% 100%;
+    background-position: 100% 0;
+    animation: ui-shimmer-sweep var(--ui-duration-shimmer-sweep, 1900ms) ease-in-out infinite;
+  }
+}
+/* 100% → 0% moves an oversized image's middle from left of the box to right
+   of it. Shared with the thinking caption's text shimmer. */
+@keyframes ui-shimmer-sweep {
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
+}
+
 /* RN-7 — the boot shell keeps the shimmering wordmark only; its three-dot
    loader was the last dotted decoration outside the streaming cue. */
 .boot-loading-dots {

@@ -1120,6 +1120,7 @@ export const en = {
     "learn.quiz.answerIs":"Answer: {answer}",
     "learn.quiz.incorrect":"Not quite",
     "learn.readOnly":"View only",
+    "learn.generating":"Generating practice…",
     "learn.flashcard.front":"Question",
     "learn.flashcard.back":"Answer",
     "learn.flashcard.flip":"Turn the card",

@@ -1094,6 +1094,7 @@ export const zh = {
     "learn.quiz.answerIs":"正确答案：{answer}",
     "learn.quiz.incorrect":"不太对",
     "learn.readOnly":"仅供查看",
+    "learn.generating":"正在生成练习…",
     "learn.flashcard.front":"问题",
     "learn.flashcard.back":"答案",
     "learn.flashcard.flip":"翻面",

@@ -23,7 +23,7 @@ import {
   type ScaffoldTag,
 } from '@socrates/ui/learn-split';
 import {
-  findStreamScaffold, renderStreamScaffoldPreview,
+  findStreamScaffold, pendingScaffoldOpener, renderStreamScaffoldPreview,
   streamScaffoldFallbackLabel, streamScaffoldFallbackText,
 } from './markdownScaffolds.ts';
 export { clearStreamScaffolds, registerStreamScaffold } from './markdownScaffolds.ts';
@@ -205,6 +205,7 @@ function renderProgressiveScaffold(
   content: string,
   attrs: string,
   bank: PlaceholderBank,
+  open = false,
 ): string {
   const plugin = findStreamScaffold(tag);
   if (plugin) {
@@ -219,7 +220,7 @@ function renderProgressiveScaffold(
       /* Plugin threw — fall through to preview and plain text. */
     }
   }
-  const preview = renderStreamScaffoldPreview(tag, content, attrs, formatMsgProgressive);
+  const preview = renderStreamScaffoldPreview(tag, content, attrs, formatMsgProgressive, open);
   if (preview) return bank.save(preview);
 
   const label = streamScaffoldFallbackLabel(tag);
@@ -236,7 +237,29 @@ function renderProgressiveScaffold(
     + label + '</span> ' + escHTML(text) + '</div>');
 }
 
-function replaceProgressiveScaffolds(source: string, bank: PlaceholderBank): string {
+/* `<name` or `<name attrs…` at the very end of the text, with no `>` yet.
+   It must start a line or follow whitespace / a tag, so `a<b` in prose or a
+   formula is never read as an opener. */
+const PENDING_OPENER_RE = /(^|[\s>])<([a-z][a-z-]*)((?:\s[^<>\n]*)?)$/i;
+
+/**
+ * Scaffold opener still being typed at the tail of a live stream. A complete
+ * tag name paints that card's skeleton right away (so the block never shows
+ * as raw `<quiz …` text); a bare prefix of a scaffold tag is held back for a
+ * token. Anything inside a Markdown code span or fence is left alone.
+ */
+function replacePendingScaffoldOpener(source: string, bank: PlaceholderBank): string {
+  const match = PENDING_OPENER_RE.exec(source);
+  if (!match) return source;
+  const start = match.index + match[1].length;
+  if (markdownCodeRanges(source).some((range) => range.start <= start && range.end > start)) return source;
+  const kind = pendingScaffoldOpener(match[2], match[3] || '');
+  if (!kind) return source;
+  if (kind === 'hold') return source.slice(0, start);
+  return source.slice(0, start) + renderProgressiveScaffold(kind, '', match[3] || '', bank, true);
+}
+
+function replaceProgressiveScaffolds(source: string, bank: PlaceholderBank, complete = false): string {
   source = source.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
   /* Thinking text is shown in the live status line, not in the transcript. */
   source = stripThinkingBlocks(source);
@@ -245,13 +268,15 @@ function replaceProgressiveScaffolds(source: string, bank: PlaceholderBank): str
     source,
     (match) => renderProgressiveScaffold(match.tag, match.inner, match.attrs, bank),
   );
-  return replaceDanglingScaffoldOutsideMarkdownCode(
+  source = replaceDanglingScaffoldOutsideMarkdownCode(
     source,
     new RegExp('<(' + tags + ')\\b([^>]*)>([\\s\\S]*?)$', 'gi'),
     (match) => bank.containsBlockPlaceholder(match[0])
       ? escHTML(match[0])
-      : renderProgressiveScaffold(match[1], match[3], match[2], bank),
+      : renderProgressiveScaffold(match[1], match[3], match[2], bank, !complete),
   );
+  /* Settled text cannot grow, so a trailing `<quiz` there is just text. */
+  return complete ? source : replacePendingScaffoldOpener(source, bank);
 }
 
 /* Only an explicit ```html / ```viz / ```svg fence, or an UNLABELED fence
@@ -448,7 +473,7 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
 
   const bank = createPlaceholderBank();
 
-  s = replaceProgressiveScaffolds(s, bank);
+  s = replaceProgressiveScaffolds(s, bank, !!opts?.complete);
 
   s = replaceProgressiveCodeBlocks(s, !!opts?.complete, bank);
 

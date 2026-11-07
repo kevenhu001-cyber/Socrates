@@ -126,7 +126,7 @@
   width: 40%;
   margin: 6px 0;
   border-radius: var(--ui-round-pill);
-  background: var(--ui-fill);
+  background-color: var(--ui-fill);
 }
 
 .sc-live-actions {
@@ -142,14 +142,19 @@
   display: inline-block;
   height: 36px;
   border-radius: var(--ui-round-pill);
-  background: var(--ui-fill);
+  background-color: var(--ui-fill);
   vertical-align: middle;
 }
 
-.sc-live-pill--solid { background: var(--ui-fill-pressed); }
-.sc-live-pill--quiet { background: var(--ui-card); box-shadow: inset 0 0 0 1px var(--ui-hairline-strong); }
+.sc-live-pill--solid {
+  background-color: var(--ui-fill-pressed);
+  /* The solid capsule already sits on the pressed fill; its band is a step
+     stronger so the sweep still reads. */
+  --skeleton-shimmer-highlight: color-mix(in srgb, var(--ui-ink) 14%, transparent);
+}
+.sc-live-pill--quiet { background-color: var(--ui-card); box-shadow: inset 0 0 0 1px var(--ui-hairline-strong); }
 .sc-live-head .sc-live-pill { height: 32px; }
-.sc-live[data-scaffold-live="quiz"] .sc-live-head .sc-live-pill { height: 24px; box-shadow: none; background: var(--ui-fill); }
+.sc-live[data-scaffold-live="quiz"] .sc-live-head .sc-live-pill { height: 24px; box-shadow: none; background-color: var(--ui-fill); }
 
 .sc-live-options {
   display: flex;
@@ -188,6 +193,12 @@
   font-weight: var(--ui-font-weight-medium);
   color: var(--ui-ink-secondary);
 }
+
+/* Option rows still to come while a quiz streams: same 44px row and letter
+   ring as a real option, with a shimmering line where the text will be. */
+.sc-live-option--pending { align-items: center; }
+.sc-live-option--pending > .sc-live-skeleton { flex: none; width: 52%; margin: 0; }
+.sc-live-option--pending:nth-child(even) > .sc-live-skeleton { width: 38%; }
 
 .sc-live-input {
   box-sizing: border-box;
@@ -298,11 +309,5 @@
   list-style: none;
 }
 
-/* Placeholders animate without changing the reserved card geometry. */
-@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
-  .sc-live-skeleton, .sc-live-pill {
-    background-image: linear-gradient(100deg, transparent 25%, var(--ui-fill-pressed) 50%, transparent 75%);
-    background-size: 250% 100%;
-    animation: thinking-text-shimmer var(--ui-duration-shimmer) ease-in-out infinite alternate;
-  }
-}
+/* Placeholders sweep with the shared .skeleton-shimmer utility
+   (foundations/base.css) without changing the reserved card geometry. */

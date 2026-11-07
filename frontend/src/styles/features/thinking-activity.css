@@ -112,14 +112,35 @@
 
 /* Public timeline entries remain still beneath the one live caption. */
 
-/* Sweep only the live caption; completed activity stays still. */
+/* Text shimmer on the live caption (「正在思考…」, a tool status, while the
+   answer streams too). A light band crosses the glyphs left to right on a
+   loop: the muted secondary ink is the base, the primary ink is the band,
+   both theme variables so light and dark read the same. The gradient image
+   is three captions wide with the band (40%–60%) in its middle, so the band
+   starts and ends fully outside the text and every loop restarts unseen;
+   ease-in-out leaves a short rest between sweeps. One element, background-
+   position only, no JS. data-live is dropped when the turn settles, so the
+   collapsed 「已思考 Xs」 caption is plain text again. Reduced motion and
+   forced colours never match this block and keep the normal ink. */
 @media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
   [data-turn-surface-part="activity"][data-live="true"] [data-testid="turn-activity-label"] {
-    background-image: linear-gradient(100deg, var(--ui-text-tertiary) 35%, var(--ui-text-primary) 50%, var(--ui-text-tertiary) 65%);
-    background-size: 250% 100%;
+    background-image: linear-gradient(90deg, var(--ui-text-secondary) 40%, var(--ui-text-primary) 50%, var(--ui-text-secondary) 60%);
+    background-repeat: no-repeat;
+    background-size: 300% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: thinking-text-shimmer var(--ui-duration-shimmer) ease-in-out infinite alternate;
+    animation: ui-shimmer-sweep var(--ui-duration-shimmer-sweep, 1900ms) ease-in-out infinite;
+  }
+}
+/* Defensive: should a forced-colours user agent still apply the clip, the
+   caption falls back to system text ink rather than transparent glyphs. */
+@media (forced-colors: active) {
+  [data-turn-surface-part="activity"] [data-testid="turn-activity-label"] {
+    background-image: none;
+    -webkit-text-fill-color: CanvasText;
+    animation: none;
   }
 }
 @keyframes thinking-text-shimmer {
