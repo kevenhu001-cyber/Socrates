@@ -5,9 +5,9 @@ const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider'
 
 /** Bound complexity and reject unsafe data before it is stored or rendered. */
 export function validateIntelligentUi(value) {
-  if (!value || typeof value !== 'object') return { ok: false, error: 'Expected version and nodes' };
+  if (!value || typeof value !== 'object') return { ok: false, error: 'Expected version and nodes', kind: 'document' };
   const spec = value;
-  if (spec.version !== 1 || !Array.isArray(spec.nodes) || !spec.nodes.length || spec.nodes.length > 80) return { ok: false, error: 'Expected version 1 and 1–80 nodes' };
+  if (spec.version !== 1 || !Array.isArray(spec.nodes) || !spec.nodes.length || spec.nodes.length > 80) return { ok: false, error: 'Expected version 1 and 1–80 nodes', kind: 'document' };
   let budget = 10000;
   const unsafe = (data, depth = 0) => {
     if (--budget < 0 || depth > 16) return true;
@@ -19,29 +19,35 @@ export function validateIntelligentUi(value) {
       return unsafe(item, depth + 1);
     });
   };
-  if (unsafe(spec.nodes)) return { ok: false, error: 'Unsafe or overly complex UI data' };
-  if (JSON.stringify(spec.nodes).length > 60000) return { ok: false, error: 'UI document too large' };
+  if (unsafe(spec.nodes)) return { ok: false, error: 'Unsafe or overly complex UI data', kind: 'document' };
+  if (JSON.stringify(spec.nodes).length > 60000) return { ok: false, error: 'UI document too large', kind: 'document' };
   const nodes = spec.nodes;
   const ids = new Set();
   for (const node of nodes) {
+    const id = node && typeof node === 'object' && typeof node.id === 'string' ? node.id.slice(0, 80) : '(missing)';
     if (!node || typeof node !== 'object' || Array.isArray(node) || typeof node.id !== 'string' || !safeId(node.id)
         || typeof node.type !== 'string' || !TYPES.includes(node.type) || ids.has(node.id)
         || (node.parent !== undefined && (typeof node.parent !== 'string' || !safeId(node.parent)))) {
-      return { ok: false, error: 'Invalid or duplicate node id/type' };
+      const reason = !node || typeof node !== 'object' || Array.isArray(node) ? 'Node must be an object'
+        : typeof node.id !== 'string' || !safeId(node.id) ? 'Invalid node id'
+          : typeof node.type !== 'string' || !TYPES.includes(node.type) ? `Unsupported node type "${String(node.type).slice(0, 40)}"`
+            : ids.has(node.id) ? 'Duplicate node id'
+              : 'Invalid parent id';
+      return { ok: false, error: `${reason}: "${id}"`, nodeId: id === '(missing)' ? null : id, kind: 'node' };
     }
     if (node.type === 'openui' && (typeof node.source !== 'string' || !node.source.trim() || node.source.length > 50000)) {
-      return { ok: false, error: 'OpenUI nodes require 1–50000 characters of source' };
+      return { ok: false, error: `OpenUI node "${id}" needs 1–50000 characters of source`, nodeId: id, kind: 'openui' };
     }
     if (node.type === 'demonstration') {
       const result = validateDemonstration(node.program);
-      if (!result.ok) return result;
+      if (!result.ok) return { ok: false, error: `Demonstration node "${id}": ${result.error}`, nodeId: id, kind: 'demonstration' };
     }
     if (node.type === 'physics') {
       const error = physicsParametersError(node.scene, node.parameters);
-      if (error) return { ok: false, error };
+      if (error) return { ok: false, error: `Physics node "${id}": ${error}`, nodeId: id, kind: 'physics' };
       for (const [key, min, max] of [['separation', .2, 3], ['wavelength', 380, 750], ['aperture', 10, 300]]) {
         if (node[key] !== undefined && (typeof node[key] !== 'number' || !Number.isFinite(node[key]) || node[key] < min || node[key] > max)) {
-          return { ok: false, error: `Physics ${key} must be between ${min} and ${max}` };
+          return { ok: false, error: `Physics node "${id}": ${key} must be between ${min} and ${max}`, nodeId: id, kind: 'physics' };
         }
       }
     }
@@ -52,7 +58,9 @@ export function validateIntelligentUi(value) {
     const seen = new Set([node.id]);
     let parent = node.parent;
     while (parent) {
-      if (typeof parent !== 'string' || !byId.has(parent) || seen.has(parent)) return { ok: false, error: 'Invalid or cyclic parent' };
+      if (typeof parent !== 'string' || !byId.has(parent) || seen.has(parent)) {
+        return { ok: false, error: `Invalid or cyclic parent "${String(parent).slice(0, 80)}" on node "${node.id}"`, nodeId: node.id, kind: 'node' };
+      }
       seen.add(parent);
       parent = byId.get(parent)?.parent;
     }

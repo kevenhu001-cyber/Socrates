@@ -22,6 +22,8 @@ export type IntelligentUiFailureStage =
   | 'openui_syntax'
   | 'openui_truncated'
   | 'openui_program'
+  | 'demonstration'
+  | 'physics'
   | 'visualization';
 
 export interface IntelligentUiFailure {
@@ -69,6 +71,10 @@ function userMessageFor(failure: IntelligentUiFailure): string {
     }
     case 'action':
       return '交互按钮缺少动作，已请模型修正。';
+    case 'demonstration':
+      return '演示程序的结构不符合要求，已请模型修正。';
+    case 'physics':
+      return '物理演示的参数不符合要求，已请模型修正。';
     default:
       return '可视化结构不符合要求，已请模型修正。';
   }
@@ -91,6 +97,16 @@ export function intelligentUiFeedback(error: string, failure: IntelligentUiFailu
     if (line) lines.push(`A valid call: ${line}`);
   }
   if (failure.failures.some((item) => item.stage === 'payload_shape' || item.stage === 'semantic')) lines.push(NUMBER_HINT);
+  if (failure.stage === 'demonstration') {
+    lines.push('A demonstration node is {id, type:"demonstration", title, program:{version:1, parameters:[], definitions:{}, views:[...]}}. Put version inside program and write it as the number 1. Write arrays as JSON arrays (never {"item": ...}), numbers as JSON numbers (1, not "1"), give every parameter finite min < max with value inside that range, and use 1–8 views with increasing x/y ranges.');
+    lines.push('A minimal valid node: {"id":"demo","type":"demonstration","title":"Demo","program":{"version":1,"parameters":[{"id":"a","label":"A","value":1,"min":0,"max":2,"step":0.1}],"definitions":{"f":"a*x"},"views":[{"kind":"controls"},{"kind":"plot","x":[0,1],"y":[0,2],"curves":[{"expression":"f","label":"a·x"}]}]}}');
+  }
+  if (failure.stage === 'physics') {
+    lines.push('A physics node is {id, type:"physics", scene:"<reviewed model>", title, parameters:{...}}. Use one of the documented scenes, pass numeric parameter values inside their documented bounds, and omit fields to take the defaults.');
+  }
+  if (failure.stage === 'envelope') {
+    lines.push('The call envelope is {version:1, nodes:[...]}. Node ids must match ^[A-Za-z0-9._:-]+$ and be unique, every parent must name a node in the same call, and only the documented node types are accepted. Keep the whole document under 60000 characters.');
+  }
   if (failure.stage === 'openui_syntax' || failure.stage === 'openui_program') {
     lines.push('Write one statement per line as name = Component(...), define root = Col([...]) first, close every string, bracket and parenthesis, and pass Visualization arguments in order: template, title, payload, accessibilitySummary.');
   }

@@ -1,3 +1,5 @@
+import { normalizeIntelligentUiArgs, normalizeIntelligentUiPatchArgs } from '../intelligentUiNormalize.js';
+
 /* Advertised tool schemas must never promise a larger payload than this
  * transport cap accepts — a model that follows the schema would otherwise
  * be rejected as `arguments_too_large` for a compliant call. */
@@ -312,6 +314,15 @@ export function repairToolArguments(
 
   candidate = normalizeToolArgumentAliases(candidate, options.toolName, repairs);
   candidate = unwrapArgumentWrapper(candidate, schema, repairs);
+  /* `render_intelligent_ui` carries a free-form demonstration program that
+     the schema cannot describe. Normalize the XML-style shapes providers
+     emit (`{item: [...]}`, quoted numbers, quoted version) before the strict
+     validators see them. */
+  if (options.toolName === 'render_intelligent_ui') {
+    candidate = normalizeIntelligentUiArgs(candidate) as Record<string, unknown>;
+  } else if (options.toolName === 'patch_intelligent_ui') {
+    candidate = normalizeIntelligentUiPatchArgs(candidate) as Record<string, unknown>;
+  }
   if (schema && schema.properties) {
     candidate = coerceObjectToSchema(candidate, schema, repairs, '', 0, dropUnknown) as Record<string, unknown>;
   }
@@ -587,6 +598,17 @@ function coerceValueToSchema(
       const itemSchema = schema.items || {};
       if (Array.isArray(value)) {
         return value.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
+      }
+      /* XML-style tool calls encode a repeated element as `{item: ...}` (one
+         entry) or `{items: [...]}`. The schema says this position is an
+         array, so unwrapping is unambiguous. */
+      if (value && typeof value === 'object') {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (entries.length === 1 && (entries[0][0] === 'item' || entries[0][0] === 'items')) {
+          const list = Array.isArray(entries[0][1]) ? entries[0][1] : [entries[0][1]];
+          repairs.push(`coerced:${path}:item_collection_to_array`);
+          return list.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
+        }
       }
       if (typeof value === 'string') {
         const trimmed = value.trim();

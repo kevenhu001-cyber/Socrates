@@ -7,6 +7,7 @@ after(async () => {
 });
 import assert from 'node:assert/strict';
 import { validateIntelligentUi } from '../src/services/intelligentUi.js';
+import { normalizeIntelligentUiArgs } from '../src/services/intelligentUiNormalize.js';
 import { executeIntelligentUi } from '../src/routes/chat/pipeline/executors/intelligentUi.js';
 import { SERVER_SYSTEM_POLICY } from '../src/lib/chatPolicy.js';
 import { OPENUI_SCHEMA, OPENUI_TOOL_GUIDANCE } from '../src/services/openUiPrompt.generated.js';
@@ -177,4 +178,73 @@ test('the prompt envelope example is valid JSON and an executable OpenUI program
   assert.equal(validateIntelligentUi(JSON.parse(example)).ok, true);
   assert.match(OPENUI_TOOL_GUIDANCE, /50000 characters/);
   assert.match(SERVER_SYSTEM_POLICY, /never claim a failed tool succeeded/);
+});
+
+test('XML-style demonstration payloads are normalized into a valid program', () => {
+  const args = {
+    version: '1',
+    nodes: [{
+      id: ' nr ', type: 'Demonstration', title: 'Newton rings',
+      program: {
+        version: '1',
+        parameters: { item: [{ id: 'lam', label: 'λ', value: '550', min: '380', max: '750', step: '10' }] },
+        definitions: { ringI: 'lam * x' },
+        views: { item: [
+          { kind: 'controls' },
+          { kind: 'plot', x: { item: ['-0.003', '0.003'] }, y: { item: ['0', '1.05'] },
+            curves: { item: [{ expression: 'ringI', label: 'I(r)' }] } },
+        ] },
+      },
+    }],
+  };
+  const normalized = normalizeIntelligentUiArgs(args);
+  assert.equal(normalized.version, 1);
+  assert.equal(normalized.nodes[0].id, 'nr');
+  assert.equal(normalized.nodes[0].type, 'demonstration');
+  assert.equal(normalized.nodes[0].program.version, 1);
+  assert.equal(normalized.nodes[0].program.parameters[0].value, 550);
+  assert.deepEqual(normalized.nodes[0].program.views[1].x, [-0.003, 0.003]);
+  assert.equal(validateIntelligentUi(args).ok, true);
+});
+
+test('a demonstration without a program version defaults to version 1', () => {
+  const args = {
+    version: 1,
+    nodes: [{ id: 'demo', type: 'demonstration', program: { views: [{ kind: 'controls' }] } }],
+  };
+  assert.equal(validateIntelligentUi(args).ok, true);
+});
+
+test('demonstration failures name the node and produce targeted feedback', async () => {
+  const events = [];
+  const outcome = await executeIntelligentUi(
+    { version: 1, nodes: [{ id: 'demo', type: 'demonstration', program: { version: 1, views: [] } }] },
+    { id: 'bad-demo' },
+    { emitter: { event: (...args) => events.push(args) } },
+  );
+  assert.equal(outcome.result.status, 'failed');
+  assert.equal(outcome.result.detail.stage, 'demonstration');
+  assert.equal(outcome.result.detail.nodeId, 'demo');
+  assert.match(outcome.result.error, /Demonstration node "demo"/);
+  assert.match(outcome.result.correction, /version/);
+  assert.match(outcome.result.correction, /JSON arrays/);
+  assert.match(outcome.result.userMessage, /演示程序/);
+  assert.notEqual(outcome.result.userMessage, '可视化结构不符合要求，已请模型修正。');
+});
+
+test('physics nodes survive quoted numeric parameters', () => {
+  const args = {
+    version: 1,
+    nodes: [{ id: 'p', type: 'physics', scene: 'rayleigh', parameters: { separation: '2.4', wavelength: '550' }, separation: '2.4' }],
+  };
+  assert.equal(validateIntelligentUi(args).ok, true);
+});
+
+test('OpenUI source split into item lines is rejoined before parsing', () => {
+  const args = {
+    version: 1,
+    nodes: [{ id: 'app', type: 'openui', source: { item: ['root = Col([', 'Text("Hello")])'] } }],
+  };
+  const result = validateIntelligentUi(args);
+  assert.equal(result.ok, true, result.ok ? '' : result.error);
 });

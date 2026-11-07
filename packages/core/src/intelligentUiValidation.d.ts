@@ -1,1 +1,8 @@
-export function validateIntelligentUi(value: unknown): { ok: true } | { ok: false; error: string };
+export function validateIntelligentUi(value: unknown):
+  | { ok: true }
+  | {
+      ok: false;
+      error: string;
+      nodeId?: string | null;
+      kind?: 'document' | 'node' | 'openui' | 'demonstration' | 'physics';
+    };

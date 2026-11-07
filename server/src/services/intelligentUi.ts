@@ -1,7 +1,8 @@
-import { DEMONSTRATION_GUIDANCE } from './demonstrationGuide.js';
+import { DEMONSTRATION_PROGRAM_SCHEMA } from './demonstrationGuide.js';
 import { PHYSICS_MODELS } from '../../../packages/core/src/physicsModelRegistry.js';
 import { visualizationTemplateGuide } from './visualization.js';
 import { validateIntelligentUi as validateEnvelope } from '../../../packages/core/src/intelligentUiValidation.js';
+import { normalizeIntelligentUiArgs } from './intelligentUiNormalize.js';
 import { inspectOpenUiProgram } from './openUiProgram.js';
 import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
 import type { IntelligentUiFailure } from './intelligentUiFeedback.js';
@@ -10,7 +11,7 @@ export const INTELLIGENT_UI_TOOL = {
   type: 'function' as const,
   function: {
     name: 'render_intelligent_ui',
-    description: 'Render reader-facing visuals and interactive UI alongside prose. Use this single tool for static or interactive charts, function graphs, diagrams, timelines, comparisons, simulations and illustrations. For new algorithmic demonstrations and freely composed physical/mathematical models, prefer a demonstration node with program as documented below. It can define new mathematical expressions, sums, recurrences and ODEs and link fields, plots, trajectories, markers and controls; it is not limited to named scenes. For an existing reviewed physical simulation, a convenient starting point is a direct native node {id, type:"physics", scene, title, parameters:{...}}. Supported models are rayleigh, wave-interference, electric-field, harmonic-oscillator, pendulum and projectile. The app computes physical fields/trajectories locally with Canvas, vector overlays, time plots and numerical readouts; no plugin, remote simulation or OpenUI source is needed. Choose the model that matches the actual concept; do not misuse Rayleigh for unrelated physics. The parameters property supplies the exact model-specific contracts. Compose multiple physics nodes with native text/chart/table nodes when comparison helps. This is a bounded library, not an arbitrary physics solver; explain unsupported models rather than inventing a scene. Choose useful controls proactively; do not ask users to choose tools or rendering technology. For a native visualization template, use one openui node with source in OpenUI Lang 1.0 and a Visualization(template, title, payload, accessibilitySummary) component; its payload is the template inner data. Compose controls with Visualization when interaction helps and bind them to shared local state. Nodes have unique id/type and optional parent. Root state and bind support local controls: slider, choice, toggle and tabs. Values support {state:key}, {tool:callId,path:field}, or {op:add|sub|mul|div|round|min|max|eq|if|concat,args:[]}. Actions: set, increment, prompt, open_url. Tables use columns and rows. Callouts and progress bars accept tone:neutral|info|success|warning|danger; metrics accept delta and trend:up|down|flat. No HTML, CSS, JS or executable handlers. Emit parents before children and write each complete node before starting the next. Keep essential conclusions in prose. After success, the surface ID is this tool call ID and revision is 0. Use patch_intelligent_ui to modify it in this turn while preserving local controls.',
+    description: 'Render reader-facing visuals and interactive UI alongside prose. Use this single tool for static or interactive charts, function graphs, diagrams, timelines, comparisons, simulations and illustrations. Choose one of three shapes: a chart node for a quick bar or line series of at most 50 labelled points; a demonstration node when the visual needs its own mathematical model, parameters or live fields; otherwise one openui node whose source calls Visualization(template, title, payload, accessibilitySummary). Arguments are JSON, not markup: arrays are JSON arrays, numeric fields are JSON numbers, and version is the number 1. Never wrap a list in {"item": [...]}, never use XML-style tags for arguments, and never send "1" where a number belongs. For new algorithmic demonstrations and freely composed physical/mathematical models, prefer a demonstration node with program as documented below. It can define new mathematical expressions, sums, recurrences and ODEs and link fields, plots, trajectories, markers and controls; it is not limited to named scenes. For an existing reviewed physical simulation, a convenient starting point is a direct native node {id, type:"physics", scene, title, parameters:{...}}. Supported models are rayleigh, wave-interference, electric-field, harmonic-oscillator, pendulum and projectile. The app computes physical fields/trajectories locally with Canvas, vector overlays, time plots and numerical readouts; no plugin, remote simulation or OpenUI source is needed. Choose the model that matches the actual concept; do not misuse Rayleigh for unrelated physics. The parameters property supplies the exact model-specific contracts. Compose multiple physics nodes with native text/chart/table nodes when comparison helps. This is a bounded library, not an arbitrary physics solver; explain unsupported models rather than inventing a scene. Choose useful controls proactively; do not ask users to choose tools or rendering technology. Nodes have unique id/type and optional parent. Root state and bind support local controls: slider, choice, toggle and tabs. Values support {state:key}, {tool:callId,path:field}, or {op:add|sub|mul|div|round|min|max|eq|if|concat,args:[]}. Actions: set, increment, prompt, open_url. Tables use columns and rows. Callouts and progress bars accept tone:neutral|info|success|warning|danger; metrics accept delta and trend:up|down|flat. No HTML, CSS, JS or executable handlers. Emit parents before children and write each complete node before starting the next. Keep essential conclusions in prose. After success, the surface ID is this tool call ID and revision is 0. Use patch_intelligent_ui to modify it in this turn while preserving local controls.',
     parameters: {
       type: 'object', additionalProperties: false, required: ['version', 'nodes'],
       properties: {
@@ -23,7 +24,7 @@ export const INTELLIGENT_UI_TOOL = {
               id: { type: 'string', minLength: 1, maxLength: 80, pattern: '^[A-Za-z0-9._:-]+$' },
               type: { type: 'string', enum: TYPES },
               parent: { type: 'string', maxLength: 80, pattern: '^[A-Za-z0-9._:-]+$' },
-              program: { type: 'object', description: DEMONSTRATION_GUIDANCE },
+              program: DEMONSTRATION_PROGRAM_SCHEMA,
               scene: { type: 'string', enum: PHYSICS_MODELS.map(model => model.id), description: 'Required for physics nodes. Select the matching reviewed physical model.' },
               parameters: { type: 'object', additionalProperties: { type: 'number' }, description: 'Native physics model parameters; omitted fields use defaults. Exact units and bounds by scene: ' + JSON.stringify(PHYSICS_MODELS.map(model => ({ scene: model.id, assumptions: model.assumption, parameters: model.parameters }))) },
               separation: { type: 'number', minimum: .2, maximum: 3, description: 'Initial angular separation in reference Airy radii (550 nm / 100 mm). Default 2.4.' },
@@ -78,14 +79,23 @@ export type IntelligentUiValidation =
  * over re-deriving the spec from raw program props.
  */
 export function validateIntelligentUi(value: unknown): IntelligentUiValidation {
-  const envelope = validateEnvelope(value);
+  const document = normalizeIntelligentUiArgs(value);
+  const envelope = validateEnvelope(document);
   const fail = (error: string, stage: IntelligentUiFailure['stage'], nodeId: string | null = null, extra: Partial<IntelligentUiFailure> = {}): IntelligentUiValidation => ({
     ok: false, error, failure: { stage, nodeId, failures: [], sourceChars: 0, ...extra },
   });
-  if (!envelope.ok) return fail(envelope.error, 'envelope');
+  if (!envelope.ok) {
+    /* A demonstration/physics rejection is a node-level problem, not a
+       malformed envelope: name it so the correction and the reader-facing
+       message can say what actually failed. */
+    const stage: IntelligentUiFailure['stage'] = envelope.kind === 'demonstration' ? 'demonstration'
+      : envelope.kind === 'physics' ? 'physics'
+        : 'envelope';
+    return fail(envelope.error, stage, envelope.nodeId ?? null);
+  }
   const visualizations: Array<Record<string, unknown>> = [];
   const warnings: string[] = [];
-  for (const node of (value as { nodes: Array<{ id: string; type: string; source?: string; action?: { type?: string; key?: string; prompt?: unknown; url?: unknown } }> }).nodes) {
+  for (const node of (document as { nodes: Array<{ id: string; type: string; source?: string; action?: { type?: string; key?: string; prompt?: unknown; url?: unknown } }> }).nodes) {
     if (node.type === 'button' || node.action) {
       const action = node.action;
       if (!action || !['set', 'increment', 'prompt', 'open_url'].includes(action.type || '')) return fail(`UI ${node.id}: supply a supported explicit button action`, 'action', node.id);

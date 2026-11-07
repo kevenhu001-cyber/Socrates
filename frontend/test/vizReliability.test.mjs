@@ -111,6 +111,9 @@ test('server failure details map to one readable reason', () => {
   assert.equal(states.reasonFromToolFailure({ stage: 'visualization', visualizations: [{ stage: 'payload_shape', issues: ['payload.series.0.data.0: Invalid input: expected number, received string'] }] }), 'dataFormat');
   assert.equal(states.reasonFromToolFailure({ stage: 'visualization', visualizations: [{ stage: 'semantic', issues: ['payload.series.0.data: must contain exactly 3 values'] }] }), 'mismatch');
   assert.equal(states.reasonFromToolFailure({ stage: 'openui_syntax' }), 'syntax');
+  assert.equal(states.reasonFromToolFailure({ stage: 'demonstration' }), 'structure');
+  assert.equal(states.reasonFromToolFailure({ stage: 'physics' }), 'structure');
+  assert.equal(states.reasonFromToolFailure({ stage: 'envelope' }), 'structure');
   assert.equal(states.reasonFromToolFailure(null, 'arguments_parse_failed'), 'truncated');
   assert.equal(states.reasonFromToolFailure(null, null), 'unknown');
 });

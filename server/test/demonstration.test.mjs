@@ -14,6 +14,25 @@ test('the native tool teaches an open mathematical program and accepts new algor
  const sample=JSON.parse(DEMONSTRATION_GUIDANCE.split('\n').at(-1));
  assert.equal(createDemonstrationRuntime(sample).evaluate('intensity'),1);
 });
+test('the program parameter is a real schema, so arrays keep their shape',()=>{
+ const program=INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties.program;
+ /* A free-form object gave providers no anchors and let repeated siblings
+    collapse into {"item": [...]}. Named, typed properties prevent that. */
+ assert.deepEqual(program.required,['version','views']);
+ assert.deepEqual(program.properties.version.enum,[1]);
+ assert.equal(program.properties.parameters.type,'array');
+ assert.equal(program.properties.parameters.items.type,'object');
+ assert.equal(program.properties.views.type,'array');
+ assert.deepEqual(program.properties.views.items.properties.kind.enum,['controls','plot','field','trajectory','metrics']);
+ assert.equal(program.properties.views.items.properties.curves.type,'array');
+ assert.equal(program.properties.views.items.properties.values.type,'array');
+ assert.equal(program.properties.dynamics.properties.initial.type,'object');
+ assert.equal(program.properties.presets.items.properties.values.type,'object');
+ /* The guidance must state the serialization rule before the first attempt. */
+ assert.match(program.description,/version is the number 1/);
+ assert.match(program.description,/Never encode a list as \{"item": \[\.\.\.\]\}/);
+ assert.doesNotMatch(program.description,/- \{"kind":/);
+});
 test('invalid model-authored algorithms produce actionable validation failures',()=>{
  const program={...examples.grating,definitions:{bad:'document.cookie'}};
  const result=validateIntelligentUi({version:1,nodes:[{id:'bad',type:'demonstration',program}]});

@@ -149,3 +149,21 @@ test('invalid OpenUI source patches are rejected atomically without changing the
   assert.match(result.error, /explicit action/);
   assert.deepEqual(f.runtime(), before);
 });
+
+test('streamed demonstration nodes are normalized before the live preview', () => {
+  const f = fixture();
+  const demo = {
+    id: 'demo', type: 'demonstration', title: 'Newton rings',
+    program: {
+      version: '1',
+      parameters: { item: [{ id: 'a', label: 'A', value: '1', min: '0', max: '2' }] },
+      views: { item: [{ kind: 'controls' }] },
+    },
+  };
+  f.ctl.toolArguments({ id: 'ui', name: 'render_intelligent_ui', arguments: JSON.stringify({ version: 1, nodes: [demo] }) }, 0);
+  const added = f.events.find((event) => event.type === 'ui.add');
+  assert.ok(added);
+  assert.equal(added.node.program.version, 1);
+  assert.equal(added.node.program.parameters[0].value, 1);
+  assert.ok(Array.isArray(added.node.program.views));
+});

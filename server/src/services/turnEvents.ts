@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import type { PublicTurnActivity } from '../../../packages/contracts/src/turnActivity.js';
 import type { TurnActivityEntry, TurnEvent, TurnEventPayload, TurnUiNode, TurnRuntime, TurnSource, TurnClaim, TurnCitation } from '../../../packages/contracts/src/turnEvent.js';
 import { validateIntelligentUi } from './intelligentUi.js';
+import { normalizeIntelligentUiNode } from './intelligentUiNormalize.js';
 import { createIntelligentUiNodeStream } from './intelligentUiStream.js';
 
 /** All modern public events for one turn share identity, ordering and time. */
@@ -134,7 +135,10 @@ export function createTurnEventController(emit: (event: TurnEvent) => void, turn
       const result = surface.parser.push(delta.arguments);
       if (result.failed) { abortSurface(delta.id); return; }
       for (const candidate of result.nodes) {
-        const node = candidate as TurnUiNode;
+        /* Normalize before publishing: the live card renders this node while
+           the arguments are still streaming, so it must not see an
+           XML-style `{item: ...}` program the commit path would repair. */
+        const node = normalizeIntelligentUiNode(candidate) as TurnUiNode;
         // Parents may arrive later; validate each node's data before buffering it.
         if (!node || typeof node !== 'object' || !validateIntelligentUi({ version: 1, nodes: [{ ...node, parent: undefined }] }).ok
           || surface.nodes.some((entry) => entry.id === node.id)) { abortSurface(delta.id); return; }

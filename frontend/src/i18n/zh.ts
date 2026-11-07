@@ -1637,6 +1637,7 @@ export const zh = {
     "viz.reason.mismatch":"类别与数值的数量对不上。",
     "viz.reason.truncated":"内容在生成时被截断（数据量过大）。",
     "viz.reason.syntax":"可视化描述有语法错误。",
+    "viz.reason.structure":"交互结果的结构不完整，无法生成。",
     "viz.reason.library":"图形库加载失败。",
     "viz.reason.render":"图表渲染出错。",
     "viz.reason.unknownTemplate":"不支持这种图表类型。",

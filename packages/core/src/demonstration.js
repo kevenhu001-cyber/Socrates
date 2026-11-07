@@ -79,7 +79,8 @@ const text=value=>value===undefined||typeof value==='string'&&value.length<=200;
 /** Validate identifiers, syntax, dependencies and finite resource limits before storage. */
 export function validateDemonstration(program) {
  try {
-  if(!record(program)||program.version!==1)throw Error('Demonstration requires version 1');
+  if(!record(program))throw Error('Demonstration requires a program object: {version:1, parameters, definitions, views}');
+  if(program.version!==1)throw Error('Demonstration requires version 1 inside program');
   if(program.resetKey!==undefined&&(typeof program.resetKey!=='string'||program.resetKey.length>80))throw Error('resetKey must be a string of at most 80 characters');
   if(JSON.stringify(program).length>40000)throw Error('Demonstration is too large');
   const params=program.parameters??[],definitions=program.definitions??{},dynamics=program.dynamics;

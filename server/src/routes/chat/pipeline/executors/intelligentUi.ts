@@ -1,4 +1,5 @@
 import { validateIntelligentUi } from '../../../../services/intelligentUi.js';
+import { normalizeIntelligentUiArgs } from '../../../../services/intelligentUiNormalize.js';
 import { intelligentUiFeedback } from '../../../../services/intelligentUiFeedback.js';
 import { VISUALIZATION_TEMPLATES } from '../../../../services/visualization.js';
 import { recordVisualizationValidation } from '../../../../lib/telemetry.js';
@@ -12,8 +13,11 @@ function templateLabel(template: unknown): string {
   return KNOWN_TEMPLATES.has(template) ? template : 'other';
 }
 
-export const executeIntelligentUi: ToolExecutor = async (args, call, { emitter, toolPolicy }) => {
+export const executeIntelligentUi: ToolExecutor = async (rawArgs, call, { emitter, toolPolicy }) => {
   const startedAt = Date.now();
+  /* The pipeline already normalizes through repairToolArguments; repeat it
+     here so direct callers and retries see the same document. */
+  const args = normalizeIntelligentUiArgs(rawArgs) as Record<string, unknown>;
   const validation = validateIntelligentUi(args);
   const nodes = Array.isArray(args.nodes) ? args.nodes as Array<Record<string, unknown>> : [];
   const sourceChars = nodes.reduce((total, node) => total + (typeof node?.source === 'string' ? node.source.length : 0), 0);

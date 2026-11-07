@@ -29,7 +29,7 @@ import {getActiveApiKey} from '../../services/core/apiKey.js';
 import {validateThinkingMode} from '../../services/core/llmProtocol.js';
 import {DEFAULT_MAX_TOKENS} from '../../services/core/llm.js';
 import {estimateContextMessageTokens} from '../../services/core/usageTracker.js';
-import {MAX_VISUALIZATION_POINTS, visualizationTemplateGuide} from '../../services/visualization.js';
+import {MAX_VISUALIZATION_POINTS} from '../../services/visualization.js';
 /* P_teacher-mode-cache — the teacher-mode system prompt lives on
    disk and rarely changes. The canonical loader is in
    src/lib/prompts.js (mtime-keyed cache, placeholder substitution).
@@ -406,10 +406,10 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
 const TOOL_ROUTING_HINTS_MARKER = '[Server policy: tool-routing-hints]';
 
 const INTELLIGENT_UI_VISUALIZATION_HINT = `## Unified visual tool
-Use \`render_intelligent_ui\` for every explicitly requested static or interactive chart, function graph, diagram, timeline, comparison, simulation, or illustration. A static visual is one \`openui\` node containing a \`Visualization(...)\` component; when interaction helps, compose that component with controls and bind both to the same local state. Use the existing native template renderer rather than a Mermaid/SVG/HTML fence or Python drawing code. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported.
-Call \`Visualization\` with four separate arguments in this order: template name, short title, template payload, accessibility summary. Add an optional fifth caption only when a note below the card helps. The payload is the template's inner data, never a versioned visualization envelope. Keep labels concise; put explanations in the caption, payload details, or accessibility summary. Never submit colors, fonts, CSS, dimensions, raw renderer options, or a legacy \`render_visualization\` call. Data format: chart values are JSON numbers (12.5, not "12.5" or "12.5%"), a missing measurement is null, \`series\` is always an array of \`{name,data}\` objects, and each series stays at or below ${MAX_VISUALIZATION_POINTS} points (about 200 reads best; downsample longer data first). Rows of facts belong in a \`Table\` component or a Markdown table, not a chart. If validation returns field errors, correct exactly those fields once and retry; if it says the program was cut off, send fewer points instead of the same program.
-Available templates and their payload contracts:
-${visualizationTemplateGuide()}`;
+Use \`render_intelligent_ui\` for every explicitly requested static or interactive chart, function graph, diagram, timeline, comparison, simulation, or illustration. Use the existing native template renderer rather than a Mermaid/SVG/HTML fence or Python drawing code. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported.
+Choose one shape: a \`chart\` node for a trivial bar or line series of at most 50 labelled points; a \`demonstration\` node when the visual needs its own mathematical model, parameters or live fields; otherwise one \`openui\` node whose source calls \`Visualization(template, title, payload, accessibilitySummary)\`. When interaction helps, compose that call with controls bound to the same local state.
+Call \`Visualization\` with four separate arguments in this order: template name, short title, template payload, accessibility summary. Add an optional fifth caption only when a note below the card helps. Never submit colors, fonts, CSS, dimensions, raw renderer options, or a legacy \`render_visualization\` call. Each series stays at or below ${MAX_VISUALIZATION_POINTS} points; downsample longer data first. Rows of facts belong in a \`Table\` component or a Markdown table, not a chart.
+Every template, its payload contract and its example payload are in the \`source\` parameter description of \`render_intelligent_ui\`; read that before choosing a template. If validation returns field errors, correct exactly those fields once and retry; if it says the program was cut off, send fewer points instead of the same program.`;
 
 const PLANNING_ROUTING_HINT = `## Planning and specification tools
 When \`create_plan\` is supplied, call it for a genuinely multi-step request: a roadmap, study schedule, or step-by-step approach the user must act on in order. Send a short \`title\`, an optional one-sentence \`goal\`, and 1-30 ordered \`steps\` (each \`{title, detail?, status?}\`, where status is \`todo\`, \`in_progress\`, or \`done\`). Do not call it for a single-step answer or to restate prose you already wrote.

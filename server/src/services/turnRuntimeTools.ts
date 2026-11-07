@@ -25,7 +25,7 @@ export const PATCH_INTELLIGENT_UI_TOOL = {
         surfaceId: { type: 'string', minLength: 1, maxLength: 200 }, revision: { type: 'integer', minimum: 0 },
         operations: { type: 'array', minItems: 1, maxItems: 40, items: {
           type: 'object', required: ['op'], additionalProperties: false,
-          properties: { op: { type: 'string', enum: ['add', 'patch', 'remove'] }, nodeId: { type: 'string' }, props: { type: 'object' }, node: { type: 'object' } },
+          properties: { op: { type: 'string', enum: ['add', 'patch', 'remove'] }, nodeId: { type: 'string' }, props: { type: 'object', description: 'Changed node properties only, without id/type/parent. A changed program is the complete demonstration program, not a fragment.' }, node: { type: 'object', description: 'A complete node with the same shape as one render_intelligent_ui nodes[] entry.' } },
         } },
       },
     },

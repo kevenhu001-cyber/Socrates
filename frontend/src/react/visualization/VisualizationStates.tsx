@@ -21,6 +21,7 @@ export type VizFailureReason =
   | 'mismatch'
   | 'truncated'
   | 'syntax'
+  | 'structure'
   | 'library'
   | 'render'
   | 'unknownTemplate'
@@ -32,6 +33,7 @@ const REASON_FALLBACKS: Record<VizFailureReason, string> = {
   mismatch: 'The number of labels and values do not match.',
   truncated: 'The visual was cut off while it was being generated (too much data).',
   syntax: 'The visual description has a syntax error.',
+  structure: 'The interactive result could not be built from the model description.',
   library: 'The chart library failed to load.',
   render: 'The chart renderer hit an error.',
   unknownTemplate: 'This chart type is not supported.',
@@ -59,6 +61,8 @@ export function reasonFromToolFailure(detail: unknown, errorCode?: string | null
   const truncatedCodes = ['arguments_truncated', 'arguments_too_large', 'arguments_parse_failed'];
   if (record.truncated === true || record.stage === 'openui_truncated' || truncatedCodes.includes(errorCode ?? '')) return 'truncated';
   if (record.stage === 'openui_syntax' || record.stage === 'openui_program') return 'syntax';
+  if (record.stage === 'demonstration' || record.stage === 'physics'
+    || record.stage === 'envelope' || record.stage === 'action') return 'structure';
   const first = Array.isArray(record.visualizations) ? record.visualizations[0] as Record<string, unknown> | undefined : undefined;
   return first ? reasonFromValidationFailure(first) : 'unknown';
 }

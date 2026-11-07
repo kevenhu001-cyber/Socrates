@@ -1681,6 +1681,7 @@ export const en = {
     "viz.reason.mismatch":"The number of labels and values do not match.",
     "viz.reason.truncated":"The visual was cut off while it was being generated (too much data).",
     "viz.reason.syntax":"The visual description has a syntax error.",
+    "viz.reason.structure":"The interactive result could not be built from the model description.",
     "viz.reason.library":"The chart library failed to load.",
     "viz.reason.render":"The chart renderer hit an error.",
     "viz.reason.unknownTemplate":"This chart type is not supported.",

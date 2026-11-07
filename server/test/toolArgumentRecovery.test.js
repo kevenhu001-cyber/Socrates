@@ -32,6 +32,8 @@ import { SELF_NORMALIZING_TOOLS } from '../src/services/tools/toolRegistry.js';
 import { VISUALIZATION_TOOL, executeVisualization, validateVisualizationSpec } from '../src/services/visualization.js';
 import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/core/planning.js';
 import { CREATE_SITE_TOOL } from '../src/services/siteCreation.js';
+import { INTELLIGENT_UI_TOOL } from '../src/services/intelligentUi.js';
+import { PATCH_INTELLIGENT_UI_TOOL } from '../src/services/turnRuntimeTools.js';
 import { buildToolErrorFeedback } from '../src/services/tools/toolErrorFeedback.js';
 import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from '../src/services/integrations/projectConnectorTools.js';
 
@@ -275,4 +277,71 @@ test('each argument error code carries its own user and model copy', () => {
   assert.match(tooLarge.modelMessage, /smaller payload/i);
   const parseFailed = buildToolErrorFeedback({ toolName: 'web_search', errorCode: TOOL_ARGUMENT_ERRORS.parse, retryable: true });
   assert.match(parseFailed.modelMessage, /single JSON object/i);
+});
+
+/* ── XML-style demonstration payloads ────────────────────────────── */
+
+test('XML-style item collections and quoted numbers are repaired before validation', () => {
+  /* Some providers encode repeated elements as `{item: ...}` and every
+     scalar as a string. The program schema names the properties, but a
+     provider that has already collapsed a list into a single object still
+     needs the render tool's own normalizer to rebuild the array. */
+  const raw = JSON.stringify({
+    version: '1',
+    nodes: [{
+      id: 'nr',
+      type: 'demonstration',
+      title: 'Newton rings',
+      program: {
+        version: '1',
+        parameters: { item: [{ id: 'lam', label: 'λ', value: '550', min: '380', max: '750', step: '10' }] },
+        definitions: { ringI: 'lam * x' },
+        views: { item: [
+          { kind: 'controls' },
+          { kind: 'plot', x: { item: ['-0.003', '0.003'] }, y: { item: ['0', '1.05'] },
+            curves: { item: [{ expression: 'ringI', label: 'I(r)' }] } },
+        ] },
+      },
+    }],
+  });
+  const prepared = prepareArguments('render_intelligent_ui', raw, INTELLIGENT_UI_TOOL.function.parameters);
+  assert.equal(prepared.ok, true);
+  const program = prepared.args.nodes[0].program;
+  assert.equal(program.version, 1);
+  assert.deepEqual(program.parameters, [{ id: 'lam', label: 'λ', value: 550, min: 380, max: 750, step: 10 }]);
+  assert.equal(program.views.length, 2);
+  assert.deepEqual(program.views[1].x, [-0.003, 0.003]);
+  assert.equal(program.views[1].curves.length, 1);
+});
+
+test('a valid demonstration program survives argument repair unchanged', () => {
+  /* The program schema must not rewrite a payload the model already sent in
+     the documented shape; coercion is only a repair path. */
+  const program = {
+    version: 1,
+    parameters: [{ id: 'a', label: 'A', value: 1, min: 0, max: 2, step: 0.1 }],
+    definitions: { f: 'a*x' },
+    views: [{ kind: 'controls' }, { kind: 'plot', x: [0, 1], y: [0, 2], curves: [{ expression: 'f', label: 'a*x' }] }],
+  };
+  const args = { version: 1, nodes: [{ id: 'demo', type: 'demonstration', title: 'Demo', program }] };
+  const prepared = prepareArguments('render_intelligent_ui', JSON.stringify(args), INTELLIGENT_UI_TOOL.function.parameters);
+  assert.equal(prepared.ok, true);
+  assert.deepEqual(prepared.repairs, []);
+  assert.deepEqual(prepared.args.nodes[0].program, program);
+});
+
+test('patch operations normalize an XML-style demonstration program', () => {
+  const raw = JSON.stringify({
+    surfaceId: 'ui-call',
+    revision: 0,
+    operations: [{
+      op: 'patch', nodeId: 'demo',
+      props: { program: { version: '1', views: { item: [{ kind: 'controls' }] } } },
+    }],
+  });
+  const prepared = prepareArguments('patch_intelligent_ui', raw, PATCH_INTELLIGENT_UI_TOOL.function.parameters);
+  assert.equal(prepared.ok, true);
+  const program = prepared.args.operations[0].props.program;
+  assert.equal(program.version, 1);
+  assert.deepEqual(program.views, [{ kind: 'controls' }]);
 });

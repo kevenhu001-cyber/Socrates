@@ -147,7 +147,9 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /Default to connected natural-language paragraphs/i);
     assert.match(out[0].content, /Follow the user's explicit preferences for length, depth, and format/i);
     assert.match(out[0].content, /use `render_intelligent_ui` for both static and interactive visuals/i);
-    assert.match(out[0].content, /native `Visualization` component/i);
+    assert.match(out[0].content, /`Visualization\(template, title, payload, accessibilitySummary\)`/);
+    assert.match(out[0].content, /There is no `visualization` node type/);
+    assert.match(out[0].content, /Never encode a list as \{"item": \[\.\.\.\]\}/);
     assert.match(out[0].content, /For mathematics, use LaTeX/);
     /* The new client-system classifier (P_client_system_classifier)
        routes unstyled client strings like "Call [web_search: query]"
@@ -737,8 +739,11 @@ describe('appendToolRoutingHints', () => {
   test('routes every static and interactive visual through Intelligent UI', () => {
     const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['render_intelligent_ui']);
     assert.match(out[0].content, /Use `render_intelligent_ui` for every explicitly requested static or interactive/);
-    assert.match(out[0].content, /Available templates and their payload contracts/);
-    assert.match(out[0].content, /`function`/);
+    /* The template catalogue lives in the tool's `source` description, not
+       here: sending it twice cost about 2.8k tokens per turn. The hint points
+       at that single copy instead. */
+    assert.match(out[0].content, /in the `source` parameter description of `render_intelligent_ui`/);
+    assert.doesNotMatch(out[0].content, /Example payload:/);
     assert.doesNotMatch(out[0].content, /For `render_visualization`, follow its native JSON schema/);
   });
 
