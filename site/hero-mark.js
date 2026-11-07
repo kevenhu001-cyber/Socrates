@@ -43,7 +43,7 @@
   var POINT_AT = 760;   // then the point's block, row by row
   var POINT_ROW = 50;
   var POINT_DUR = 260;
-  var INK = '#111111';
+  var INK = '#ffffff';
   var FIELD_R = .75;    // the CSS field's dot radius (px) and ink
   var FIELD_A = .13;
   var MAX_R = .36;      // largest halftone dot, in cells

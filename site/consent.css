@@ -1,6 +1,5 @@
-/* Cookie consent banner — a small white card with pill buttons, in the
-   public-site style (white, neutral grays, soft shadow, 20px radius).
-   Injected by site/locale.js on every page. */
+/* Cookie consent banner — a dark charcoal card with pill buttons, matching
+   the OpenAI clean dark public-site style. Injected by site/locale.js on every page. */
 #socratesCookieConsent {
   position: fixed;
   right: 20px;
@@ -14,11 +13,11 @@
   gap: 8px;
   padding: 16px 18px;
   border-radius: 20px;
-  background: #ffffff;
-  border: 0;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .06), 0 12px 40px -12px rgba(0, 0, 0, .18);
-  color: var(--ed-ink, #000000);
-  font-family: var(--ed-sans, inherit);
+  background: #181818;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 16px 48px -12px rgba(0, 0, 0, 0.9);
+  color: #ffffff;
+  font-family: var(--site-font, inherit);
   font-size: 13px;
   line-height: 1.45;
   box-sizing: border-box;
@@ -29,12 +28,12 @@
   padding-right: 88px;
   font-size: 13px;
   font-weight: 500;
-  color: #0d0d0d;
+  color: #ffffff;
   letter-spacing: -0.01em;
 }
 .socrates-cookie-consent-message {
   margin: 0;
-  color: #5d5d5d;
+  color: #8e8e8e;
   font-size: 12px;
   line-height: 1.48;
 }
@@ -48,38 +47,39 @@
   min-height: 34px;
   padding: 6px 14px;
   border-radius: 9999px;
-  border: 0;
-  background: rgba(0, 0, 0, .04);
-  color: #0d0d0d;
-  font-family: var(--ed-sans, inherit);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-family: var(--site-font, inherit);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: background .15s cubic-bezier(.22, 1, .36, 1), color .15s cubic-bezier(.22, 1, .36, 1), transform .2s cubic-bezier(.22, 1, .36, 1);
 }
 .socrates-cookie-consent-btn:hover {
-  background: rgba(0, 0, 0, .08);
+  background: rgba(255, 255, 255, 0.14);
 }
 .socrates-cookie-consent-btn:active { transform: scale(.98); }
 .socrates-cookie-consent-btn.primary {
-  background: #0d0d0d;
-  color: #ffffff;
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #000000;
 }
 .socrates-cookie-consent-btn.primary:hover {
-  background: #303030;
-  color: #fff;
+  background: #e5e5e5;
+  color: #000000;
 }
 .socrates-cookie-consent-link {
   position: absolute;
   top: 16px;
   right: 18px;
   font-size: 12px;
-  color: #5d5d5d;
+  color: #8e8e8e;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .socrates-cookie-consent-link:hover {
-  color: #0d0d0d;
+  color: #ffffff;
 }
 @media (prefers-reduced-motion: reduce) {
   #socratesCookieConsent, .socrates-cookie-consent-btn { transition: none; }

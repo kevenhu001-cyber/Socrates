@@ -1617,7 +1617,7 @@ body.ed-site .ed-button-quiet:active {
   transform: translateY(0) scale(.985);
   transition-duration: .08s;
 }
-body.ed-site .ed-button-quiet:hover { background: #fff; }
+body.ed-site .ed-button-quiet:hover { background: var(--site-color-fill-hover, rgba(255, 255, 255, 0.14)); }
 
 @media (hover: hover) and (pointer: fine) {
   body.ed-site .ed-button:hover {
@@ -3798,7 +3798,7 @@ body.ed-site .ed-search-field {
   min-width: 220px;
   transition: border-color .18s ease, background .18s ease;
 }
-body.ed-site .ed-search-field:focus-within { border-color: var(--sv-clay-bright); background: #fff; }
+body.ed-site .ed-search-field:focus-within { border-color: var(--sv-clay-bright); background: var(--site-color-raised, #1f1f1f); }
 body.ed-site .ed-search-field input {
   flex: 1;
   border: 0;
@@ -5304,7 +5304,7 @@ body.ed-site .ed-chat-demo {
 body.ed-site .ed-chat-head { font-family: var(--an-mono); font-size: 10.5px; letter-spacing: .1em; }
 body.ed-site .ed-chat-bubble { font-size: 14.5px; line-height: 1.6; }
 body.ed-site .ed-chat-bubble.user { background: var(--an-ink); color: var(--an-paper-text); }
-body.ed-site .ed-chat-bubble.tutor { background: #ffffff; border: 1px solid var(--an-line); }
+body.ed-site .ed-chat-bubble.tutor { background: var(--site-color-surface, #181818); border: 1px solid var(--an-line); }
 
 /* ── Z15. Marquee ─────────────────────────────────────────────────────── */
 .ed-marquee { border-top: 1px solid var(--an-line); border-bottom: 1px solid var(--an-line); }

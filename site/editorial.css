@@ -122,7 +122,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   top: 0;
   z-index: 30;
   padding: 24px 0 18px;
-  background: #ffffff !important;
+  background: #000000 !important;
   border-bottom: 1px solid transparent;
   transition: padding .15s ease, border-color .15s ease;
 }
@@ -612,8 +612,8 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 .ed-price-card.is-featured ul { color: rgba(244, 241, 233, .7); }
 .ed-price-card .ed-button,
 .ed-price-card .ed-button-quiet { margin-top: auto; }
-.ed-price-card.is-featured .ed-button { color: var(--ed-ink); border-color: var(--ed-paper); background: var(--ed-paper); }
-.ed-price-card.is-featured .ed-button:hover { color: var(--ed-ink); background: #fff; }
+.ed-price-card.is-featured .ed-button { color: #000; border-color: var(--ed-paper); background: var(--ed-paper); }
+.ed-price-card.is-featured .ed-button:hover { color: #000; background: var(--site-color-ink-hover, #e5e5e5); }
 .ed-contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .ed-contact-card { min-height: 240px; padding: 32px; border-radius: 12px; border: 1px solid var(--ed-line); background: var(--ed-paper-soft); }
 .ed-contact-card h2 { max-width: 10ch; margin: 14px 0; font-family: var(--ed-serif); font-size: clamp(32px, 3.6vw, 44px); font-weight: 400; letter-spacing: -.012em; line-height: 1.08; }
@@ -1153,7 +1153,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   transition: border-color .18s var(--ed-ease), background .18s var(--ed-ease);
 }
 .ed-search-field input::placeholder { color: var(--ed-ink-muted); }
-.ed-search-field input:focus { border-color: var(--ed-ink); background: #fff; }
+.ed-search-field input:focus { border-color: var(--ed-ink); background: var(--site-color-raised, #1f1f1f); }
 .ed-research-publications > .ed-filter-bar { margin-top: 34px; }
 .ed-research-publications > .ed-publication-list { margin-top: 28px; }
 .ed-publication-row { color: inherit; text-decoration: none; transition: color .15s ease; }

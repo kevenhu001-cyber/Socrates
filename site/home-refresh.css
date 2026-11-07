@@ -40,7 +40,7 @@ body.home-refresh {
 .home-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .home-symbols { position: absolute; width: 0; height: 0; overflow: hidden; }
 .home-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.home-skip { position: fixed; z-index: 500; top: var(--space-100); left: var(--space-100); transform: translateY(-160%); border-radius: var(--radius-full); background: var(--ink); padding: var(--space-75) var(--space-200); color: #fff; font: var(--type-button-sm); transition: transform var(--site-motion-move); }
+.home-skip { position: fixed; z-index: 500; top: var(--space-100); left: var(--space-100); transform: translateY(-160%); border-radius: var(--radius-full); background: var(--ink); padding: var(--space-75) var(--space-200); color: #000000; font: var(--type-button-sm); transition: transform var(--site-motion-move); }
 .home-skip:focus { transform: none; }
 
 /* Buttons: small pills. Primary is black, secondary is a 4% gray fill. A
@@ -49,8 +49,8 @@ body.home-refresh {
 .home-text-link { position: relative; display: inline-flex; height: 40px; align-items: center; justify-content: center; gap: var(--space-50); border-radius: var(--radius-full); padding-inline: var(--space-200) var(--space-200); font: var(--type-button-sm); white-space: nowrap; transition: background-color var(--site-motion-color), color var(--site-motion-color), transform var(--site-motion-move); }
 .home-button::after,
 .home-text-link::after { content: ''; position: absolute; inset: -2px; }
-.home-button { background: var(--ink); color: #fff; }
-.home-refresh .home-button { color: #fff; }
+.home-button { background: var(--ink); color: #000; }
+.home-refresh .home-button { color: #000; }
 .home-button:hover { background: var(--site-color-ink-hover); }
 .home-text-link { background: var(--fill); color: var(--ink); }
 .home-text-link:hover { background: var(--fill-hover); }
@@ -67,15 +67,22 @@ body.home-refresh {
 .hero-ask { width: 100%; }
 .ask-box {
   position: relative;
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-3xl);
   background: var(--raised);
   padding: var(--space-200) var(--space-200) var(--space-200) var(--space-300);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 8px 40px -8px rgb(0 0 0 / .1);
+  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.7);
   text-align: left;
-  transition: box-shadow var(--site-motion-color);
+  transition: border-color var(--site-motion-color), box-shadow var(--site-motion-color);
 }
-.ask-box:hover { box-shadow: 0 0 0 1px rgb(0 0 0 / .12), 0 8px 40px -8px rgb(0 0 0 / .12); }
-.ask-box:focus-within { box-shadow: 0 0 0 1px rgb(0 0 0 / .24), 0 8px 40px -8px rgb(0 0 0 / .14); }
+.ask-box:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 6px 30px -4px rgba(0, 0, 0, 0.8);
+}
+.ask-box:focus-within {
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45), 0 8px 36px -8px rgba(0, 0, 0, 0.9);
+}
 .ask-input { display: block; width: 100%; height: 72px; min-height: 72px; resize: none; border: 0; outline: 0; background: transparent; padding: 4px 48px var(--space-300) 0; color: var(--ink); font: var(--type-body-3); font-family: var(--site-font); }
 .ask-placeholder { position: absolute; top: calc(var(--space-200) + 4px); left: var(--space-300); max-width: calc(100% - 96px); color: var(--quiet); font: var(--type-body-3); pointer-events: none; }
 .ask-input:not(:placeholder-shown) + .ask-placeholder { display: none; }
@@ -83,9 +90,9 @@ body.home-refresh {
 .home-refresh .ask-send { position: absolute; right: var(--space-100); bottom: var(--space-100); display: grid; width: 36px; height: 36px; place-items: center; border-radius: var(--radius-full); background: var(--fill); color: var(--quiet); transition: background-color var(--site-motion-color), color var(--site-motion-color), transform var(--site-motion-move); }
 .home-refresh .ask-send::after { content: ''; position: absolute; inset: -4px; border-radius: inherit; }
 .ask-send .home-icon { width: 18px; height: 18px; stroke-width: 1.8; }
-.home-refresh .has-value .ask-send { background: var(--ink); color: #fff; }
+.home-refresh .has-value .ask-send { background: var(--ink); color: #000; }
 .home-refresh .ask-send:hover { background: var(--fill-hover); color: var(--ink); }
-.home-refresh .has-value .ask-send:hover { background: var(--site-color-ink-hover); color: #fff; }
+.home-refresh .has-value .ask-send:hover { background: var(--site-color-ink-hover); color: #000; }
 .home-refresh .ask-send:active { transform: scale(.94); }
 .ask-handoff { margin-top: var(--space-100); color: var(--muted); font: var(--type-caption-5); }
 .ask-suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-75); margin-top: var(--space-300); }
@@ -137,8 +144,8 @@ body.home-refresh {
 .rc-actions > [aria-hidden="true"] { visibility: hidden; opacity: 0; transform: translateY(4px); transition-delay: 0s, 0s, 300ms; }
 .rc-rate { display: flex; flex-wrap: wrap; gap: var(--space-75); }
 .rc-flip, .rc-grade { display: inline-flex; height: 36px; align-items: center; border-radius: var(--radius-full); padding-inline: var(--space-200); font: var(--type-button-sm); transition: background-color var(--site-motion-color), color var(--site-motion-color), box-shadow var(--site-motion-color), transform 160ms cubic-bezier(.22,1,.36,1); }
-.rc-flip { background: var(--ink); color: #fff; }
-.rc-flip:hover { background: #333; }
+.rc-flip { background: var(--ink); color: #000; }
+.rc-flip:hover { background: #e5e5e5; color: #000; }
 .rc-grade { background: var(--raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .rc-grade:hover { background: var(--subtle); }
 .rc-grade[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--ink); }
@@ -169,7 +176,7 @@ body.home-refresh {
 .demo-map-canvas { grid-column: 2; grid-row: 1 / 3; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-75) var(--space-300); }
 .demo-node { position: relative; display: inline-flex; align-items: center; height: 32px; padding-inline: 14px; border-radius: var(--radius-full); background: var(--raised); box-shadow: inset 0 0 0 1px var(--line-strong); font: var(--type-caption-1); }
 /* The kept connection: the second idea is filled and a short rule joins them. */
-.demo-node--b { background: var(--ink); color: #fff; box-shadow: none; }
+.demo-node--b { background: var(--ink); color: #000; box-shadow: none; }
 .demo-node--b::before { content: ''; position: absolute; top: 50%; right: 100%; width: var(--space-300); height: 1px; background: var(--line-strong); }
 .demo-map-foot { max-width: 380px; color: var(--muted); font: var(--type-caption-5); }
 .feature-caption { padding: var(--space-200) var(--space-50) 0; }
@@ -220,7 +227,7 @@ body.home-refresh {
   border-radius: var(--radius-3xl);
   aspect-ratio: 16 / 9;
   background: #02040a;
-  box-shadow: 0 16px 44px -10px rgb(2 132 199 / .2), 0 0 0 1px rgb(0 0 0 / .08);
+  box-shadow: 0 16px 44px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--line);
   transition: box-shadow 400ms var(--site-ease);
 }
 .story-media::after {
@@ -232,7 +239,7 @@ body.home-refresh {
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / .12);
 }
 .story-visual:hover .story-media {
-  box-shadow: 0 24px 56px -12px rgb(234 88 12 / .25), 0 0 0 1px rgb(0 0 0 / .12);
+  box-shadow: 0 24px 56px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--line-strong);
 }
 .story-visual img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
 .story-visual figcaption { margin-top: var(--space-100); padding-inline: var(--space-50); color: var(--muted); font: var(--type-caption-5); }
@@ -288,7 +295,7 @@ body.home-refresh {
 
 /* Final call to action: a gray rounded panel with two pills. */
 .home-cta { margin-block: var(--section-gap) 0; }
-.home-cta-inner { display: grid; justify-items: center; gap: var(--space-200); border-radius: var(--radius-3xl); background: linear-gradient(180deg, #ffffff 0%, var(--surface) 100%); padding: var(--space-800) var(--space-300); text-align: center; }
+.home-cta-inner { display: grid; justify-items: center; gap: var(--space-200); border-radius: var(--radius-3xl); background: var(--surface); border: 1px solid var(--line); padding: var(--space-800) var(--space-300); text-align: center; }
 .home-cta-inner h2 { max-width: 720px; font: var(--type-heading-3); letter-spacing: -.015em; text-wrap: balance; }
 :lang(zh) .home-cta-inner h2 { letter-spacing: 0; line-height: 1.35; }
 .home-cta-inner p { max-width: 560px; color: var(--muted); font: var(--type-body-7); text-wrap: balance; }
@@ -369,23 +376,23 @@ body.home-refresh {
 .home-hero { isolation: isolate; }
 /* The question box: white sheet, hairline, contact shadow and a wide soft
    ambient shadow; focus deepens the ring, never a colour. */
-.ask-box { box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 1px 2px rgb(0 0 0 / .04), 0 12px 40px -12px rgb(0 0 0 / .14), var(--site-inner-highlight); transition: box-shadow 300ms var(--site-ease); }
-.ask-box:hover { box-shadow: 0 0 0 1px rgb(0 0 0 / .12), 0 1px 2px rgb(0 0 0 / .05), 0 16px 48px -14px rgb(0 0 0 / .16), var(--site-inner-highlight); }
-.ask-box:focus-within { box-shadow: 0 0 0 1px rgb(0 0 0 / .28), 0 0 0 4px rgb(0 0 0 / .05), 0 16px 48px -14px rgb(0 0 0 / .16); }
+.ask-box { border: 1px solid var(--line-strong); box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.7); transition: box-shadow 300ms var(--site-ease), border-color 300ms var(--site-ease); }
+.ask-box:hover { border-color: rgba(255, 255, 255, 0.28); box-shadow: 0 6px 30px -4px rgba(0, 0, 0, 0.8); }
+.ask-box:focus-within { border-color: rgba(255, 255, 255, 0.45); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.45), 0 8px 36px -8px rgba(0, 0, 0, 0.9); }
 /* Typewriter caret for the rotating example question (home-question.js). */
 .ask-placeholder.is-typing::after { content: ''; display: inline-block; width: 1.5px; height: 1.1em; margin-left: 2px; vertical-align: -.18em; border-radius: 1px; background: var(--muted); animation: home-caret 1s steps(1, end) infinite; }
 @keyframes home-caret { 50% { opacity: 0; } }
-.home-refresh .ask-chip { box-shadow: 0 1px 2px rgb(0 0 0 / .03); }
+.home-refresh .ask-chip { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
 /* Feature cards: a hairline and soft depth on the preview sheet. */
 .demo-app { box-shadow: var(--site-shadow-1); }
-.feature-media, .plate-media { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }
-.news-item { position: relative; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); transition: background-color 300ms var(--site-ease), transform 500ms var(--site-ease); }
+.feature-media, .plate-media { box-shadow: inset 0 0 0 1px var(--line); }
+.news-item { position: relative; box-shadow: inset 0 0 0 1px var(--line); transition: background-color 300ms var(--site-ease), transform 500ms var(--site-ease); }
 .news-item::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--site-shadow-2); opacity: 0; pointer-events: none; transition: opacity 300ms var(--site-ease); }
 @media (hover: hover) and (pointer: fine) {
-  .news-item:hover { transform: translateY(-2px); background: #fff; }
+  .news-item:hover { transform: translateY(-2px); background: var(--surface-strong); }
   .news-item:hover::after { opacity: 1; }
 }
-.home-cta-inner { box-shadow: inset 0 0 0 1px rgb(0 0 0 / .03); }
+.home-cta-inner { box-shadow: inset 0 0 0 1px var(--line); }
 @media (prefers-reduced-motion: reduce) {
   .ask-placeholder.is-typing::after { animation: none; display: none; }
   .news-item, .news-item::after, .ask-box { transition: none; }
@@ -419,7 +426,7 @@ body.home-refresh {
 
 .qc-stage { position: relative; margin: 0; padding: var(--space-400) var(--space-500) var(--space-400); border-radius: var(--radius-3xl); background: var(--subtle) var(--site-noise); box-shadow: inset 0 0 0 1px var(--site-hairline); }
 .qc-stage-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-200); color: var(--copy); font: 500 .8125rem/1.4 var(--site-font); }
-.qc-badge { padding: var(--space-50) var(--space-100); border-radius: var(--radius-full); background: var(--fill); color: var(--muted); font-weight: 500; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .06); }
+.qc-badge { padding: var(--space-50) var(--space-100); border-radius: var(--radius-full); background: var(--fill); color: var(--muted); font-weight: 500; box-shadow: inset 0 0 0 1px var(--line); }
 .qc-list { --qc-progress: 1; position: relative; margin: var(--space-500) 0 0; padding: 0 0 0 var(--space-500); list-style: none; }
 .qc-list::before, .qc-list::after { content: ''; position: absolute; left: 7px; top: 10px; bottom: 34px; width: 1px; background: var(--line-strong); }
 .qc-list::after { background: var(--ink); transform: scaleY(var(--qc-progress)); transform-origin: top; transition: transform 700ms cubic-bezier(.22,1,.36,1); }
@@ -459,12 +466,12 @@ body.home-refresh {
    keep" grows out of the field. Without scripts the field stays off and
    the map is simply complete. */
 .qc-stage { isolation: isolate; }
-.qc-stage::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(circle at center, rgb(0 0 0 / .13) .75px, transparent 1.15px) var(--qc-gx, 0) var(--qc-gy, 0) / var(--qc-g, 18px) var(--qc-g, 18px); }
+.qc-stage::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(circle at center, rgba(255, 255, 255, 0.12) .75px, transparent 1.15px) var(--qc-gx, 0) var(--qc-gy, 0) / var(--qc-g, 18px) var(--qc-g, 18px); }
 .qc-stage[data-qc-grid]::before { opacity: 1; }
 .qc-node circle { transform-box: fill-box; transform-origin: center; transition: transform 500ms cubic-bezier(.22,1,.36,1), fill 300ms cubic-bezier(.22,1,.36,1), stroke 300ms cubic-bezier(.22,1,.36,1); }
 .qc-node text { transition: opacity 400ms cubic-bezier(.22,1,.36,1); }
 /* Still a point of the field: the size and gray of its neighbours. */
-.qc-node.is-grid circle { fill: rgb(0 0 0 / .13); stroke: transparent; transform: scale(.18); transition-duration: 300ms; }
+.qc-node.is-grid circle { fill: rgba(255, 255, 255, 0.12); stroke: transparent; transform: scale(.18); transition-duration: 300ms; }
 .qc-node-root.is-grid circle { transform: scale(.15); }
 .qc-node-cut.is-grid circle { transform: scale(.225); }
 .qc-node.is-grid text { opacity: 0; transition-duration: 200ms; }
@@ -499,7 +506,7 @@ body.home-refresh {
 .qc-step.is-future .qc-dot { opacity: 1; transform: scale(.78); background: var(--subtle); box-shadow: 0 0 0 4px var(--subtle), inset 0 0 0 1.5px var(--line-strong); }
 .qc-step.is-future { visibility: visible; }
 .qc-step.is-future :is(.qc-label, .qc-question, .qc-answer) { visibility: hidden; transition: opacity 300ms cubic-bezier(.22,1,.36,1), transform 300ms cubic-bezier(.22,1,.36,1), visibility 0s 300ms; }
-[data-qc-ready] .qc-line { color: rgb(0 0 0 / .2); }
+[data-qc-ready] .qc-line { color: rgba(255, 255, 255, 0.25); }
 .qc-next.is-again { background: var(--fill); color: var(--ink); box-shadow: none; }
 .qc-next.is-again:hover { background: var(--fill-hover); }
 .home-chain + .home-feature { margin-top: var(--section-gap); }
@@ -551,11 +558,11 @@ body.home-refresh {
    cells from the mark, so the dots stay on the mark's cells. */
 .hero-mark { --hm-fx: 24; --hm-fy: 27; }
 .hero-mark::before, .hero-mark::after { content: ''; position: absolute; z-index: -1; inset: calc(-1 * var(--hm-fy) * var(--hm-s)) calc(-1 * var(--hm-fx) * var(--hm-s)); pointer-events: none; }
-.hero-mark::before { background: radial-gradient(circle at center, rgb(0 0 0 / .13) .75px, transparent 1.15px) 0 0 / var(--hm-s) var(--hm-s); }
-.hero-mark::after { background: radial-gradient(closest-side, rgb(255 255 255 / 0) 0%, rgb(255 255 255 / .45) 50%, #fff 100%); }
+.hero-mark::before { background: radial-gradient(circle at center, rgba(255, 255, 255, 0.12) .75px, transparent 1.15px) 0 0 / var(--hm-s) var(--hm-s); }
+.hero-mark::after { background: radial-gradient(closest-side, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / .45) 50%, #000000 100%); }
 .hero-mark-svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
 .hm-fine { display: none; }
-.hm-nodes, .hm-point { fill: #111; }
+.hm-nodes, .hm-point { fill: #ffffff; }
 /* Scripts and motion are coming: hold the finished mark back so the canvas
    can write it, but bring it in anyway if the canvas never starts. */
 @media (prefers-reduced-motion: no-preference) {
@@ -568,7 +575,7 @@ body.home-refresh {
 .home-refresh main { position: relative; }
 .hero-mark-canvas { position: absolute; z-index: 3; top: 0; left: 0; display: block; pointer-events: none; }
 /* The one black dot the point gathers into (hero-mark.js moves it). */
-.hero-mark-dot { position: absolute; z-index: 3; top: 0; left: 0; width: 12px; height: 12px; border-radius: 50%; background: #0d0d0d; opacity: 0; transform-origin: 50% 50%; pointer-events: none; will-change: transform; }
+.hero-mark-dot { position: absolute; z-index: 3; top: 0; left: 0; width: 12px; height: 12px; border-radius: 50%; background: #ffffff; opacity: 0; transform-origin: 50% 50%; pointer-events: none; will-change: transform; }
 /* Until the point has arrived, the chain's first node waits for it; the
    point then becomes that node (the canvas stops drawing it). */
 .qc-list[data-point-pending] .qc-step[data-qc-step="0"] .qc-dot { visibility: hidden; }
