@@ -61,10 +61,12 @@ for (const path of ['/', '/zh/']) {
       const art = document.querySelector('.hero-art').getBoundingClientRect();
       const intro = document.querySelector('.feature-intro').getBoundingClientRect();
       const preview = document.querySelector('.feature-main').getBoundingClientRect();
+      const heroImage = document.querySelector('.home-hero-image img').getBoundingClientRect();
       return {
-        leftColumn: composer.right <= innerWidth / 2 + 40 && Math.abs(composer.left - document.querySelector('h1').getBoundingClientRect().left) < 1,
-        heroImageWidth: document.querySelector('.home-hero-image img').getBoundingClientRect().width,
-        heroImageHeight: document.querySelector('.home-hero-image img').getBoundingClientRect().height,
+        centered: Math.abs(composer.left + composer.width / 2 - innerWidth / 2) < 4,
+        heroImageWidth: heroImage.width,
+        heroImageHeight: heroImage.height,
+        heroImageTop: heroImage.top,
         composerWidth: composer.width,
         composerBottom: composer.bottom,
         artBelowQuestion: art.top > composer.bottom,
@@ -79,16 +81,18 @@ for (const path of ['/', '/zh/']) {
         tutorSize: parseFloat(getComputedStyle(document.querySelector('.rc-prompt')).fontSize),
       };
     });
-    assert.ok(geometry.leftColumn);
-    assert.equal(geometry.heroImageWidth, 1440, 'NASA art spans the desktop viewport');
-    assert.ok(geometry.heroImageHeight >= 640);
-    assert.ok(geometry.composerWidth >= 560 && geometry.composerWidth <= 620);
+    assert.ok(geometry.centered, 'desktop composer is centered');
+    assert.ok(geometry.heroImageTop > geometry.composerBottom, 'NASA art card sits below the composer');
+    assert.ok(geometry.heroImageWidth > 0);
+    assert.ok(geometry.heroImageHeight > 0);
+    assert.ok(geometry.composerWidth >= 560 && geometry.composerWidth <= 720);
     assert.ok(geometry.composerBottom < 800);
-    assert.ok(geometry.titleSize >= 48 && geometry.titleSize <= 100);
+    assert.ok(geometry.titleSize >= 36 && geometry.titleSize <= 100);
     assert.ok(geometry.artBelowQuestion && geometry.artBesidePreview);
     assert.ok(geometry.previewBeforeIntro, 'cards enter the page before the longer product copy');
     assert.ok(geometry.previewRatio >= 2.3 && geometry.previewRatio <= 2.4 && geometry.previewWidth >= 650);
-    assert.equal(geometry.groundColour, 'rgba(0, 0, 0, 0)', 'the feature section continues the white page');
+    assert.equal(geometry.groundColour, 'rgba(0, 0, 0, 0)', 'the feature section continues the dark page');
+    assert.equal(geometry.pageColour, 'rgb(0, 0, 0)', 'page background is black');
     assert.ok(geometry.tutorSize >= 16);
     assert.equal(await page.locator('[data-art], .feature-rail').count(), 0);
     assert.equal(await page.locator('canvas').count(), 0, 'reduced motion never creates the animated canvas; the static mark stands in');

@@ -1,51 +1,47 @@
 /* Public marketing foundations. Page files own composition; chrome.css owns navigation.
    This sheet bridges older article templates into the same public-site system.
 
-   Visual language: the OpenAI.com style system, rebuilt with our own type
-   and content. A pure white ground, near-black text, a neutral gray ramp
-   (#f9f9f9 / #f7f7f8 / #f0f0f0 / #e8e8e8 / #cdcdcd / #8e8e8e / #5d5d5d / #303030),
-   no distracting colored accents, one geometric sans (Geist) at a medium 500 weight
-   with tight tracking for headings, fully rounded pill controls and soft 16-24px card
-   radii. Nothing here copies OpenAI assets, fonts or copy. */
+   Visual language: OpenAI clean dark aesthetic. A pure black ground (#000000),
+   charcoal card surfaces (#181818 / #212121), crisp pure white headings and text,
+   a neutral gray ramp (#d4d4d4 / #8e8e8e / #737373), hairline borders (rgba(255, 255, 255, 0.1)),
+   no distracting colored accents, geometric sans at medium 500 weight with tight
+   tracking, fully rounded pill controls and soft 16-24px card radii. */
 :root {
-  /* Colour: neutral grays only, matching OpenAI clean style.
-     Contrast on white: ink 19.6:1 (#0d0d0d), copy 12.6:1 (#303030),
-     muted 6.9:1 (#5d5d5d), quiet 4.6:1 (#767676). */
-  --site-color-paper: #fff;
-  --site-color-surface: #f7f7f8;
-  --site-color-surface-strong: #f0f0f0;
-  --site-color-subtle: #fafafa;
-  --site-color-raised: #fff;
-  --site-color-ink: #0d0d0d;
-  --site-color-copy: #303030;
-  --site-color-muted: #5d5d5d;
-  --site-color-quiet: #767676;
-  --site-color-line: rgb(0 0 0 / .08);
-  --site-color-line-strong: rgb(0 0 0 / .12);
-  /* No brand accent: the slot resolves to ink, producing a clean monochrome voice. */
-  --site-color-accent: #0d0d0d;
-  --site-color-ink-hover: #303030;
-  --site-color-fill: rgb(0 0 0 / .04);
-  --site-color-fill-hover: rgb(0 0 0 / .08);
-  /* Inverse tokens kept for older templates that still draw a dark band;
-     the shared footer is white. */
-  --site-color-night: #0d0d0d;
-  --site-color-night-copy: #fff;
-  --site-color-night-muted: #afafaf;
-  --site-color-night-line: rgb(255 255 255 / .14);
-  /* Shadows: neutral and very soft, used only on floating composers. */
-  --site-shadow-raised: 0 0 0 1px rgb(0 0 0 / .05), 0 4px 24px -4px rgb(0 0 0 / .08);
-  --site-shadow-ring: 0 0 0 1px rgb(0 0 0 / .08);
-  /* Texture: layered neutral shadows. Each step is a 1px hairline, a tight
-     contact shadow and a wide, very faint ambient one, so a white card reads
-     as a physical sheet without any colour. */
-  --site-hairline: rgb(0 0 0 / .06);
-  --site-shadow-1: 0 0 0 1px rgb(0 0 0 / .05), 0 1px 2px rgb(0 0 0 / .04), 0 4px 12px -4px rgb(0 0 0 / .05);
-  --site-shadow-2: 0 0 0 1px rgb(0 0 0 / .05), 0 1px 2px rgb(0 0 0 / .04), 0 12px 32px -12px rgb(0 0 0 / .12);
-  --site-shadow-3: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .04), 0 24px 56px -20px rgb(0 0 0 / .18);
-  /* A faint top highlight on raised surfaces and pills. */
-  --site-inner-highlight: inset 0 1px 0 rgb(255 255 255 / .7);
-  --site-inner-highlight-dark: inset 0 1px 0 rgb(255 255 255 / .14);
+  /* Colour: OpenAI clean dark palette (#000000 canvas, #ffffff ink, neutral gray ramp).
+     Contrast on black: ink 21:1 (#ffffff), copy 14:1 (#d4d4d4),
+     muted 7.5:1 (#8e8e8e), quiet 5.3:1 (#737373). */
+  --site-color-paper: #000000;
+  --site-color-surface: #181818;
+  --site-color-surface-strong: #212121;
+  --site-color-subtle: #0f0f0f;
+  --site-color-raised: #1f1f1f;
+  --site-color-ink: #ffffff;
+  --site-color-copy: #d4d4d4;
+  --site-color-muted: #8e8e8e;
+  --site-color-quiet: #737373;
+  --site-color-line: rgba(255, 255, 255, 0.1);
+  --site-color-line-strong: rgba(255, 255, 255, 0.18);
+  /* Neutral monochromatic accent */
+  --site-color-accent: #ffffff;
+  --site-color-ink-hover: #e5e5e5;
+  --site-color-fill: rgba(255, 255, 255, 0.08);
+  --site-color-fill-hover: rgba(255, 255, 255, 0.14);
+  /* Inverse / night tokens */
+  --site-color-night: #000000;
+  --site-color-night-copy: #ffffff;
+  --site-color-night-muted: #8e8e8e;
+  --site-color-night-line: rgba(255, 255, 255, 0.1);
+  /* Shadows: neutral deep ambient */
+  --site-shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 36px -12px rgba(0, 0, 0, 0.8);
+  --site-shadow-ring: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  /* Hairline and soft dark shadows */
+  --site-hairline: rgba(255, 255, 255, 0.08);
+  --site-shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  --site-shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+  --site-shadow-3: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.5), 0 28px 64px -20px rgba(0, 0, 0, 0.8);
+  /* Highlights */
+  --site-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --site-inner-highlight-dark: inset 0 1px 0 rgba(255, 255, 255, 0.18);
   /* Film grain: a 160px fractal-noise tile at about 3% ink, laid over large
      gray panels only. Static, rasterised once and tiled. */
   --site-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.32'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
@@ -199,7 +195,7 @@
   color: var(--site-color-ink);
   font-family: var(--site-font);
   -webkit-font-smoothing: antialiased;
-  color-scheme: light;
+  color-scheme: dark;
 }
 [data-site-public] ::selection { background: var(--site-color-ink); color: var(--site-color-paper); }
 /* One offset per anchor; scroll-padding and scroll-margin must not add up. */

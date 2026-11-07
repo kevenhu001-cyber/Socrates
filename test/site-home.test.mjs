@@ -27,12 +27,14 @@ for (const prefix of ['', '/zh']) {
         return {
           width: document.documentElement.scrollWidth,
           hero: { left: hero.left, right: hero.right, top: hero.top, height: hero.height },
-          heroImage: { left: image.left, right: image.right, height: image.height, loaded: heroImage.complete && heroImage.naturalWidth > 0 },
+          heroImage: { left: image.left, right: image.right, top: image.top, height: image.height, loaded: heroImage.complete && heroImage.naturalWidth > 0 },
           artTop: art.top,
           artRatio: art.width / art.height,
           askBottom: ask.bottom,
           titleLeft: title.left,
           askLeft: ask.left,
+          titleCenter: title.left + title.width / 2,
+          askCenter: ask.left + ask.width / 2,
           titleBottom: title.bottom,
           askTop: ask.top,
           background: getComputedStyle(document.body).backgroundColor,
@@ -49,15 +51,15 @@ for (const prefix of ['', '/zh']) {
       assert.equal(geometry.width, width);
       assert.ok(geometry.askBottom < 700, 'the question can be submitted from the first viewport');
       assert.equal(geometry.heroImage.loaded, true, 'the NASA hero image loads');
-      assert.ok(Math.abs(geometry.hero.left) < 1 && Math.abs(geometry.hero.right - width) < 1, 'the image hero spans the viewport');
-      assert.ok(Math.abs(geometry.heroImage.left) < 1 && Math.abs(geometry.heroImage.right - width) < 1, 'the image itself covers the viewport width');
-      assert.ok(geometry.hero.height >= 640, 'the hero keeps a cinematic height');
-      assert.ok(Math.abs(geometry.titleLeft - geometry.askLeft) < 1, 'title and composer share one left edge');
+      assert.ok(Math.abs(geometry.titleCenter - width / 2) < 4, 'title is centered');
+      assert.ok(Math.abs(geometry.askCenter - width / 2) < 4, 'composer is centered');
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
+      assert.ok(geometry.heroImage.top >= geometry.askBottom, 'the visual card sits below the question entry');
+      assert.ok(geometry.heroImage.height > 100, 'the visual card has height');
       assert.ok(geometry.artTop >= geometry.featureTop, 'supporting artwork belongs to the cards below the question');
       assert.ok(Math.abs(geometry.artRatio - 1) < .01, 'the diagram keeps its square composition');
-      // OpenAI-style clean UI: the page ground is pure white.
-      assert.equal(geometry.background, 'rgb(255, 255, 255)');
+      // OpenAI-style clean dark UI: the page ground is pure black.
+      assert.equal(geometry.background, 'rgb(0, 0, 0)');
       assert.ok(geometry.radius >= 18, 'the composer retains the rounded reference silhouette');
       assert.equal(await page.locator('[data-ask-form]').count(), 1, 'the homepage has one question entry at the top');
       assert.ok(geometry.tutorSize >= 16 && geometry.questionSize >= 15, 'preview copy uses actual reading sizes, not container-scaled pixels');
