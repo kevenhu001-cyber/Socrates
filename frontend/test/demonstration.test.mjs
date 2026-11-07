@@ -18,8 +18,8 @@ test('mathematical language supports precedence, lazy branches, sums and recurre
  assert.ok(calc('airy(3.8317059702)')<1e-7);
 });
 test('expressions cannot execute code, access objects, perform unbounded loops or exceed budget',()=>{
- for(const expression of ['window.location','Math.sin(x)','fetch("/api")','x=>x','[1,2]','constructor(1)','1e999','sin(1,2)','a;alert(1)','x=1'])assert.throws(()=>parseDemonstrationExpression(expression));
- for(const expression of ['sum(k,0,1e30,k)','sum(k,0,200,k)','iterate(v,1,200,v+1)'])assert.throws(()=>calc(expression));
+ for(const expression of ['window.location','Math.random()','fetch("/api")','x=>x','[1,2]','constructor(1)','1e999','sin(1,2)','a;alert(1)','x=1'])assert.throws(()=>parseDemonstrationExpression(expression));
+ for(const expression of ['sum(k,0,1e30,k)','sum(k,0,2000,k)','iterate(v,1,2000,v+1)'])assert.throws(()=>calc(expression));
  assert.throws(()=>evaluateDemonstrationExpression(parseDemonstrationExpression('sum(k,1,100,k^2)'),{},{remaining:20}));
 });
 test('new composed programs validate without registering physics model IDs',()=>{
@@ -27,7 +27,7 @@ test('new composed programs validate without registering physics model IDs',()=>
   assert.deepEqual(validateDemonstration(program),{ok:true});
   assert.equal(validateIntelligentUi({version:1,nodes:[{id:'new-algorithm',type:'demonstration',program}]}).ok,true);
  }
- const invalid=[{...examples.grating,definitions:{a:'b+1',b:2}},{...examples.grating,parameters:[{id:'x',min:0,max:1,value:.5}]},{...examples.lorenz,dynamics:{...examples.lorenz.dynamics,step:.00001}},{...examples.grating,views:[{kind:'script',x:[0,1],y:[0,1]}]}];
+ const invalid=[{...examples.grating,definitions:{a:'b+1',b:'a'}},{...examples.grating,parameters:[{id:'x',min:0,max:1,value:.5}]},{...examples.lorenz,dynamics:{...examples.lorenz.dynamics,step:.00001}},{...examples.grating,views:[{kind:'script',x:[0,1],y:[0,1]}]}];
  for(const program of invalid)assert.equal(validateDemonstration(program).ok,false);
 });
 test('grating curves and raster field share physical definitions and removable singularities',()=>{
@@ -52,7 +52,11 @@ test('generic RK4 integrates an unregistered oscillator and Lorenz system with b
  assert.ok(Math.abs(lorenz.stateAt(1).X-(-9.37857))<.001);
  assert.ok(Object.values(lorenz.stateAt(20)).every(Number.isFinite));
  const divergent={...oscillator,dynamics:{...oscillator.dynamics,derivatives:{q:'1e100*q',v:'v'}}};
- assert.throws(()=>createDemonstrationRuntime(divergent),/diverged/);
+ // Divergence keeps the valid history and reports where it stopped.
+ const stopped=createDemonstrationRuntime(divergent);
+ assert.match(stopped.warnings[0].message,/diverged/);
+ assert.ok(stopped.duration<divergent.dynamics.duration);
+ assert.ok(Object.values(stopped.stateAt(stopped.duration)).every(Number.isFinite));
 });
 
 test('parameter-dependent axes keep linked intensity curves visible with calibrated bounds',()=>{
@@ -60,8 +64,9 @@ test('parameter-dependent axes keep linked intensity curves visible with calibra
  const bounds=examples.airy.views[1].y;
  assert.deepEqual(demonstrationDomain(bounds,normal),[0,1.12]);
  assert.ok(demonstrationDomain(bounds,close)[1]>close.evaluate('total'));
- assert.throws(()=>demonstrationDomain([1,0],normal),/increasing/);
+ assert.deepEqual(demonstrationDomain([1,0],normal),[0,1]);
  assert.throws(()=>demonstrationDomain([0,'1/0'],normal),/finite/);
+ assert.deepEqual(demonstrationDomain([0,'1/0'],normal,0,[-1,1]),[-1,1]);
 });
 
 
@@ -72,4 +77,16 @@ test('sampling only evaluates referenced definitions and retains a finite resett
  assert.throws(()=>{for(let i=0;i<100;i++)runtime.evaluate('costly');},/budget exceeded/);
  runtime.resetBudget();
  assert.equal(runtime.evaluate('signal',0,0),0);
+});
+
+test('model notation and XML-encoded programs are normalized before validation',()=>{
+ for(const [expression,expected] of [['x²+2x',8],['2πx',4*Math.PI],['3·x − 1',5],['Math.sin(x)**2',Math.sin(2)**2],['y = x^2',4],['√(4x)',Math.sqrt(8)],['x>0 ? 1 : -1',1],['ln(e)',1],['（1＋2）×3',9]])
+  assert.ok(Math.abs(calc(expression,{x:2})-expected)<1e-12,expression);
+ const program={version:'1',parameters:{item:[{id:'A',label:'A',value:'5',min:'2',max:'0'}]},definitions:{f:'g+1',g:'A·x'},views:{item:[{type:'plot',x:{item:['1','-1']},y:['-3','3'],curves:'f'}]}};
+ assert.deepEqual(validateDemonstration(program),{ok:true});
+ const runtime=createDemonstrationRuntime(program);
+ assert.equal(runtime.parameters.A,2);
+ assert.equal(runtime.evaluate('f',0,1),3);
+ const located=validateDemonstration({version:1,parameters:[{id:'a',value:1,min:0,max:2}],views:[{kind:'plot',x:[0,1],y:[0,1],curves:[{expression:'A*x'}]}]});
+ assert.equal(located.ok,false);assert.equal(located.path,'views[0].curves[0]');assert.match(located.error,/did you mean a/);
 });

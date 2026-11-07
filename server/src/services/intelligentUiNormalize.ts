@@ -14,6 +14,8 @@
  * gets a targeted correction.
  */
 
+import { normalizeDemonstrationProgram as normalizeCoreDemonstrationProgram } from '../../../packages/core/src/demonstration.js';
+
 type JsonRecord = Record<string, unknown>;
 
 const ITEM_KEYS = new Set(['item', 'items']);
@@ -47,65 +49,11 @@ function numberEntries(value: unknown): unknown {
   return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, numberLike(item)]));
 }
 
-function normalizeView(raw: unknown): unknown {
-  if (!isRecord(raw)) return raw;
-  const view: JsonRecord = { ...raw };
-  for (const key of ['x', 'y', 'tint', 'vector']) {
-    const list = asArray(view[key]);
-    if (Array.isArray(list)) view[key] = list.map(numberLike);
-  }
-  if (view.height !== undefined) view.height = numberLike(view.height);
-  for (const key of ['curves', 'markers', 'values']) {
-    const list = asArray(view[key]);
-    if (!Array.isArray(list)) continue;
-    view[key] = key === 'markers'
-      ? list.map((marker) => isRecord(marker) ? { ...marker, x: numberLike(marker.x), y: numberLike(marker.y) } : marker)
-      : key === 'values'
-        ? list.map((metric) => isRecord(metric) ? { ...metric, digits: numberLike(metric.digits) } : metric)
-        : list;
-  }
-  return view;
-}
-
-/** Repair the free-form demonstration program before the strict validator runs. */
+/** Repair the free-form demonstration program before the strict validator
+ * runs. The core normalizer is shared with the browser, so a program recovered
+ * from prose or history gets exactly the same repairs as a tool call. */
 export function normalizeDemonstrationProgram(program: unknown): unknown {
-  let source = program;
-  if (typeof source === 'string') {
-    try { source = JSON.parse(source); } catch { return program; }
-  }
-  if (!isRecord(source)) return program;
-  const out: JsonRecord = { ...source };
-  /* Version 1 is the only program version; an omitted or quoted version is
-     a serialization artifact, not a different contract. */
-  if (out.version === undefined) out.version = 1;
-  else out.version = numberLike(out.version);
-
-  const parameters = asArray(out.parameters);
-  if (Array.isArray(parameters)) {
-    out.parameters = parameters.map((parameter) => isRecord(parameter) ? {
-      ...parameter,
-      min: numberLike(parameter.min),
-      max: numberLike(parameter.max),
-      value: numberLike(parameter.value),
-      step: numberLike(parameter.step),
-    } : parameter);
-  }
-  const views = asArray(out.views);
-  if (Array.isArray(views)) out.views = views.map(normalizeView);
-  if (out.duration !== undefined) out.duration = numberLike(out.duration);
-  const presets = asArray(out.presets);
-  if (Array.isArray(presets)) {
-    out.presets = presets.map((preset) => isRecord(preset) ? { ...preset, values: numberEntries(preset.values) } : preset);
-  }
-  if (isRecord(out.dynamics)) {
-    out.dynamics = {
-      ...out.dynamics,
-      duration: numberLike(out.dynamics.duration),
-      step: numberLike(out.dynamics.step),
-      initial: numberEntries(out.dynamics.initial),
-    };
-  }
-  return out;
+  return normalizeCoreDemonstrationProgram(program);
 }
 
 /** Normalize one node; unknown fields pass through untouched. */

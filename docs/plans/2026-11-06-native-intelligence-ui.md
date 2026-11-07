@@ -76,7 +76,28 @@ Native panels, text, tables, charts and metrics can surround the demonstration.
 Resource bounds are explicit: 12 parameters, 24 definitions, 8 views, 2 pixel
 fields, 12 curves, 6 ODE states, 30 simulated seconds and 10000 integration steps.
 Expressions contain at most 320 tokens/1600 characters, have bounded depth,
-loops contain at most 128 terms/steps, and execution has an operation budget.
+loops contain at most 1000 terms/steps, and execution has an operation budget.
+
+### Robust computation (2026-11-07)
+
+Programs pass through one shared normalizer (`normalizeDemonstrationProgram`)
+on the server, in validation and in the browser, so a program recovered from
+prose or history gets the same repairs as a tool call: `{item: [...]}`
+collections, quoted numbers, reversed or empty ranges, out-of-range defaults,
+`type` instead of `kind`, curve strings and definition lists. Expressions are
+normalized to the ASCII grammar (`x²`, `π`, `×`, `−`, `°`, `√`, full-width
+characters, Greek letters, `**`, `Math.sin`, a leading `y =`), implicit
+multiplication (`2x`, `2(x+1)`) and `cond ? a : b` are parsed, and definitions
+may appear in any order with cycles rejected. Validation errors carry a path
+such as `views[1].curves[0]` or `definitions.f`.
+
+At run time a non-finite or failing sample is a gap, not a failed view; a curve
+with no finite samples is named under its plot while the others draw; an axis
+that cannot be evaluated is fitted to the samples; budget overruns retry at a
+lower sampling density; and diverging dynamics keep the valid history and stop
+the animation there with a located note. The generic "could not complete its
+calculation" message only remains for a program that cannot be read at all;
+during streaming such a block shows the skeleton instead.
 There is no eval, generated JavaScript, shader injection, DOM access, network
 access or external plugin runtime. These limits constrain work, not model IDs.
 A general arbitrary-code/PDE/multiphysics solver is outside the present contract.
@@ -100,6 +121,12 @@ paragraphs and equations stay outside the visualization.
 - An unregistered Lorenz system: model-authored differential equations generate
   a projected attractor and live state values. No Lorenz scene or React component
   was registered. This verifies freedom beyond the original physics examples.
+- A Fourier partial sum of a square wave: `sum()` over up to 60 odd harmonics
+  against a dashed square wave, with a live Gibbs-peak readout.
+- A logistic-map orbit: `iterate()` drives a generation-by-generation curve and
+  a 200-generation readout, with the fixed point as a dashed reference.
+- A projectile with quadratic air drag: four-state RK4 dynamics that stop at
+  the ground, a trajectory with parameter-dependent axes and live readouts.
 
 These examples are data, not entries required by the demonstration runtime.
 

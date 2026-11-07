@@ -10,10 +10,16 @@ export interface DemonstrationTrajectory extends DemonstrationViewBase { kind: '
 export interface DemonstrationMetrics { kind: 'metrics'; label?: string; values: { label?: string; expression: DemonstrationValue; unit?: string; digits?: number }[] }
 export type DemonstrationView = DemonstrationPlot | DemonstrationField | DemonstrationTrajectory | DemonstrationMetrics | {kind: 'controls'};
 export interface DemonstrationProgram { version: 1; resetKey?: string; parameters?: DemonstrationParameter[]; definitions?: Record<string, DemonstrationValue>; dynamics?: { initial: Record<string, DemonstrationValue>; derivatives: Record<string, DemonstrationValue>; duration: number; step: number }; duration?: number; views: DemonstrationView[]; presets?: {label?: string; values: Record<string, number>}[] }
-export interface DemonstrationRuntime { duration: number; parameters: Record<string, number>; resetBudget(): void; evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number): number; stateAt(time: number): Record<string, number> }
+export interface DemonstrationWarning { path: string; time: number; message: string }
+export interface DemonstrationRuntime { duration: number; parameters: Record<string, number>; warnings: DemonstrationWarning[]; resetBudget(): void; evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number): number; stateAt(time: number): Record<string, number> }
 export function parseDemonstrationExpression(source: DemonstrationValue): DemonstrationExpression;
 export function evaluateDemonstrationExpression(ast: DemonstrationExpression, scope: Record<string, number>, budget?: {remaining: number}): number;
-export function validateDemonstration(program: unknown): {ok: true} | {ok: false; error: string};
+export function validateDemonstration(program: unknown): {ok: true} | {ok: false; error: string; path?: string};
+export function normalizeDemonstrationProgram(program: unknown): unknown;
+export function normalizeDemonstrationExpression<T>(source: T): T;
+export function normalizeDemonstrationIdentifier<T>(value: T): T;
+export function isDemonstrationBudgetError(error: unknown): boolean;
+export const DEMONSTRATION_LOOP_LIMIT: number;
 export function createDemonstrationRuntime(program: DemonstrationProgram, values?: Record<string, number>): DemonstrationRuntime;
 
-export function demonstrationDomain(bounds: [DemonstrationValue, DemonstrationValue], runtime: DemonstrationRuntime, time?: number): [number, number];
+export function demonstrationDomain(bounds: [DemonstrationValue, DemonstrationValue], runtime: DemonstrationRuntime, time?: number, fallback?: [number, number]): [number, number];

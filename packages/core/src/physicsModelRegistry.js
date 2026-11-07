@@ -13,7 +13,9 @@ export function physicsModelDefinition(scene) {
 }
 export function physicsParameters(scene, input = {}) {
   return Object.fromEntries((physicsModelDefinition(scene)?.parameters ?? []).map(p => {
-    const value = input[p.key];
+    // Recovered or XML-encoded payloads may quote numbers or omit the object.
+    const raw = input && typeof input === 'object' ? input[p.key] : undefined;
+    const value = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw;
     return [p.key, typeof value === 'number' && Number.isFinite(value) ? Math.min(p.max, Math.max(p.min, value)) : p.initial];
   }));
 }
