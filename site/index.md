@@ -114,15 +114,15 @@ What makes an explanation useful after a conversation ends? Read the questions, 
 
 ## For the way you learn
 
-### Your subject. Your next step.
+### An orbital vantage point. Your next explanation.
 
-Bring a question from the work already in front of you. Use Socrates to think it through, then take your explanation back into the world.
+From orbit, Earth’s atmosphere is just a razor-thin luminous ribbon between everyday assumptions and the infinite void. Real understanding works the same way: stepping back from what felt obvious, questioning the boundaries, and reconnecting the pieces from an orbital vantage point.
 
-- Work through a concept on your own.
-- Bring a clearer question to your study group.
-- Prepare the explanation you want to try in class.
+- Step back from the obvious to see the whole system.
+- Spot the boundary between what you know and what you assume.
+- Return from the overview with an explanation of your own.
 
-The accompanying independent study scene is an editorial illustration.
+The accompanying photograph shows Space Shuttle Endeavour against Earth’s atmospheric limb, captured by NASA (STS-130).
 
 [Find a way to begin](https://topodrive.top/guide)
 
