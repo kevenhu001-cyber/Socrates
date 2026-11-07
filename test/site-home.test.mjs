@@ -17,38 +17,23 @@ for (const prefix of ['', '/zh']) {
         const text = [...document.querySelectorAll('main h1, main h2, main h3, main p:not(.home-sr-only), .demo-node')].filter(visible);
         const demo = document.querySelector('.rc-prompt');
         const hero = document.querySelector('.home-hero').getBoundingClientRect();
+        const heroImage = document.querySelector('.home-hero-image img');
+        const image = heroImage.getBoundingClientRect();
         const art = document.querySelector('.hero-art').getBoundingClientRect();
         const ask = document.querySelector('.hero-ask .ask-box').getBoundingClientRect();
         const title = document.querySelector('h1').getBoundingClientRect();
-        const mark = document.querySelector('.hero-mark').getBoundingClientRect();
-        const glyph = [...document.querySelectorAll('.hero-mark-svg')].find(visible);
         const images = [...document.querySelectorAll('main img')].map((image) => image.getAttribute('src')).filter((src) => src !== '/logo.png');
         const map = document.querySelector('.demo-map-canvas').getBoundingClientRect();
         return {
           width: document.documentElement.scrollWidth,
-          heroTop: hero.top,
+          hero: { left: hero.left, right: hero.right, top: hero.top, height: hero.height },
+          heroImage: { left: image.left, right: image.right, height: image.height, loaded: heroImage.complete && heroImage.naturalWidth > 0 },
           artTop: art.top,
           artRatio: art.width / art.height,
           askBottom: ask.bottom,
-          suggestionsBottom: document.querySelector('.hero-ask .ask-suggestions').getBoundingClientRect().bottom,
-          askCenter: ask.x + ask.width / 2,
-          titleCenter: title.x + title.width / 2,
           titleLeft: title.left,
           askLeft: ask.left,
-          askRight: ask.right,
-          mark: { left: mark.left, right: mark.right, top: mark.top, bottom: mark.bottom, center: mark.x + mark.width / 2, height: mark.height },
-          markNodes: glyph.querySelectorAll('.hm-nodes circle').length,
-          // Round 10: the point is a square block of the same halftone dots.
-          markPoint: [...glyph.querySelectorAll('.hm-point circle')].map((node) => ({ x: Number(node.getAttribute('cx')), y: Number(node.getAttribute('cy')), r: Number(node.getAttribute('r')) })),
-          markLargest: Math.max(...[...glyph.querySelectorAll('circle')].map((node) => Number(node.getAttribute('r')))),
-          markNodeMax: Math.max(...[...glyph.querySelectorAll('.hm-nodes circle')].map((node) => Number(node.getAttribute('r')))),
-          // Every stroke dot sits on a cell centre of the hero's dot field.
-          markOffGrid: [...glyph.querySelectorAll('.hm-nodes circle')].filter((node) => [node.getAttribute('cx'), node.getAttribute('cy')].some((v) => Math.abs(Number(v) - .5 - Math.round(Number(v) - .5)) > 1e-6)).length,
-          markCell: mark.width / glyph.viewBox.baseVal.width,
-          markCellY: mark.height / glyph.viewBox.baseVal.height,
-          fieldSize: getComputedStyle(document.querySelector('.hero-mark'), '::before').backgroundSize,
           titleBottom: title.bottom,
-          titleTop: title.top,
           askTop: ask.top,
           background: getComputedStyle(document.body).backgroundColor,
           radius: parseFloat(getComputedStyle(document.querySelector('.ask-box')).borderRadius),
@@ -63,52 +48,27 @@ for (const prefix of ['', '/zh']) {
       });
       assert.equal(geometry.width, width);
       assert.ok(geometry.askBottom < 700, 'the question can be submitted from the first viewport');
-      if (width >= 1024) {
-        // Round 7: desktop pairs the question (left) with the network
-        // question mark (right), which takes roughly half the screen.
-        assert.ok(Math.abs(geometry.titleLeft - geometry.askLeft) < 1, 'title and composer share one left edge');
-        assert.ok(geometry.mark.left >= geometry.askRight, 'the mark sits beside the question entry, never over it');
-        assert.ok(geometry.mark.center > width / 2 && geometry.mark.right <= width, 'the mark owns the right half');
-        assert.ok(geometry.mark.height >= 400, 'the mark is the hero’s large brand object');
-        assert.ok(geometry.mark.top < geometry.askTop && geometry.mark.bottom > geometry.askBottom - 40, 'mark and question are composed in one band');
-      } else {
-        assert.ok(Math.abs(geometry.askCenter - width / 2) < 1);
-        assert.ok(Math.abs(geometry.titleCenter - width / 2) < 1);
-        if (width > 760) assert.ok(geometry.mark.bottom <= geometry.titleTop + 1, 'tablets show the smaller mark above the title');
-        else assert.ok(geometry.mark.top >= geometry.suggestionsBottom + 16, 'phones keep the question entry first and show the mark after the starters');
-        assert.ok(Math.abs(geometry.mark.center - width / 2) < 1);
-      }
-      // Round 8: the mark is written in the hero's own dot field.
-      assert.ok(geometry.markNodes >= 50 && geometry.markNodes <= 140, 'the mark is 50-140 field dots');
-      assert.equal(geometry.markOffGrid, 0, 'every dot of the mark is a dot of the field');
-      assert.ok(Math.abs(geometry.markCell - geometry.markCellY) < .01, 'square cells');
-      assert.equal(geometry.fieldSize, `${geometry.markCell}px ${geometry.markCell}px`, 'the field repeats at exactly the mark’s cell size');
-      assert.ok(geometry.markCell >= 12 && geometry.markCell <= 20, 'field spacing stays between 12 and 20px');
-      // Round 10: no solid disc. The point is Geist's square period sampled
-      // on the same cells: at least a 3 x 3 block, on the field, with dots no
-      // larger than the stroke's (at most .36 of a cell).
-      assert.ok(geometry.markPoint.length >= 9, 'the point is a block of field dots');
-      assert.ok(geometry.markPoint.every((dot) => [dot.x, dot.y].every((v) => Math.abs(v - .5 - Math.round(v - .5)) < 1e-6)), 'every dot of the point is a dot of the field');
-      assert.equal(new Set(geometry.markPoint.map((dot) => dot.x)).size, new Set(geometry.markPoint.map((dot) => dot.y)).size, 'the block is square, like Geist’s period');
-      assert.ok(Math.abs(Math.max(...geometry.markPoint.map((dot) => dot.r)) - geometry.markNodeMax) < 1e-6, 'the point uses the stroke’s own dot size');
-      assert.ok(geometry.markLargest <= .36 + 1e-6, 'no dot of the mark is larger than .36 of a cell');
-      assert.equal(await page.locator('.hero-mark .hm-dot').count(), 0, 'no separate solid point');
-      assert.equal(await page.locator('.hero-mark .hm-point').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1, 'one point is shown');
-      assert.equal(await page.locator('.hero-mark').getAttribute('aria-hidden'), 'true');
+      assert.equal(geometry.heroImage.loaded, true, 'the NASA hero image loads');
+      assert.ok(Math.abs(geometry.hero.left) < 1 && Math.abs(geometry.hero.right - width) < 1, 'the image hero spans the viewport');
+      assert.ok(Math.abs(geometry.heroImage.left) < 1 && Math.abs(geometry.heroImage.right - width) < 1, 'the image itself covers the viewport width');
+      assert.ok(geometry.hero.height >= 640, 'the hero keeps a cinematic height');
+      assert.ok(Math.abs(geometry.titleLeft - geometry.askLeft) < 1, 'title and composer share one left edge');
       assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
-      assert.ok(geometry.artTop >= geometry.featureTop, 'artwork belongs to the cards below the question');
+      assert.ok(geometry.artTop >= geometry.featureTop, 'supporting artwork belongs to the cards below the question');
       assert.ok(Math.abs(geometry.artRatio - 1) < .01, 'the diagram keeps its square composition');
-      // OpenAI-style redesign: the page ground is pure white.
-      assert.equal(geometry.background, 'rgb(255, 255, 255)');
+      // The homepage opens on the NASA photograph with a deep-space ground.
+      assert.equal(geometry.background, 'rgb(5, 7, 11)');
       assert.ok(geometry.radius >= 18, 'the composer retains the rounded reference silhouette');
       assert.equal(await page.locator('[data-ask-form]').count(), 1, 'the homepage has one question entry at the top');
       assert.ok(geometry.tutorSize >= 16 && geometry.questionSize >= 15, 'preview copy uses actual reading sizes, not container-scaled pixels');
       assert.deepEqual(geometry.clippedText, []);
       assert.equal(geometry.clippedNodes, false, 'both connected ideas fit in the preview');
       assert.equal(new Set(geometry.images).size, geometry.images.length, 'do not reuse a cover in multiple sections');
-      // The session story is now a drawn, scroll-driven product view, so one
-      // learning photograph remains beside the original diagram and covers.
-      assert.equal(geometry.images.length, 5, 'one original diagram, one learning scene and three source-backed research covers');
+      // The hero adds the NASA photograph while the lower-page illustration,
+      // learning scene and three research covers remain unique.
+      assert.equal(geometry.images.length, 6, 'NASA hero, product diagram, learning scene and three research covers');
+      assert.equal(await page.locator('.home-hero-image img').getAttribute('src'), '/media/socrates-nasa-endeavour-limb-v2.jpg');
+      assert.match(await page.locator('.home-hero-image figcaption').innerText(), /NASA\/JSC · ISS022-E-062673/);
       assert.ok(geometry.editorialRatios.every((ratio) => ratio >= 1.3 && ratio <= 1.8), 'editorial images stay landscape, not an intrinsic 941px-tall poster');
       assert.equal(await page.locator('.home-hero .hero-art, .home-hero .hero-actions, .home-hero em').count(), 0, 'the first screen stays focused on the question');
       assert.equal(await page.locator('.hero-ask .ask-chip').count(), 5);
@@ -123,10 +83,9 @@ for (const prefix of ['', '/zh']) {
       assert.equal(await page.locator('.rc-grade').count(), 2);
       assert.match(await page.locator('.rc-back').textContent(), /990/, 'the back keeps the learner’s explanation of the base rate');
       assert.equal(await page.locator('[data-art], .feature-rail').count(), 0, 'no generated gradient fields or competing story rail');
-      // Reduced motion (this suite's default) shows the finished SVG mark and
-      // never creates the animated canvas; nothing sits behind the question.
-      assert.equal(await page.locator('canvas, [data-hero-field]').count(), 0);
-      assert.equal(await page.locator('.hero-mark-svg:visible').count(), 1, 'one finished mark for this width');
+      // The NASA image carries the hero artwork in every motion mode.
+      assert.equal(await page.locator('canvas, [data-hero-field], .hero-mark').count(), 0);
+      assert.ok(await page.locator('.home-hero-image img').isVisible());
       assert.ok(await page.locator('.hero-ask .ask-box').evaluate((box) => {
         const rect = box.getBoundingClientRect();
         return box.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));

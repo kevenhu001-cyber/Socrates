@@ -261,180 +261,25 @@ test('the research filter row holds its place from the first paint', async (t) =
   assert.ok(await noJS.locator('[data-research-filters]').evaluate((node) => !node.checkVisibility()), 'without scripts the inert filters stay hidden');
 });
 
-// Round 8 · A. The dot-matrix question mark.
-test('the dot-matrix question mark is written once, then rests', async (t) => {
-  const context = await site.browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
-  t.after(() => context.close());
-  await context.route('https://**/*', (route) => route.abort());
-  await context.addInitScript(() => {
-    window.__shift = 0;
-    new PerformanceObserver((list) => { for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__shift += entry.value; }).observe({ type: 'layout-shift', buffered: true });
-    const clear = CanvasRenderingContext2D.prototype.clearRect;
-    window.__draws = 0;
-    CanvasRenderingContext2D.prototype.clearRect = function (...args) { window.__draws += 1; return clear.apply(this, args); };
-  });
-  const page = await context.newPage();
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(site.baseURL + '/');
-  await page.locator('[data-consent-choice="essential"]').click();
-  const canvas = page.locator('main > canvas.hero-mark-canvas');
-  assert.equal(await canvas.count(), 1);
-  assert.equal(await canvas.getAttribute('aria-hidden'), 'true');
-  assert.equal(await canvas.evaluate((node) => getComputedStyle(node).pointerEvents), 'none');
-  assert.ok(await page.locator('.hero-mark').evaluate((node) => node.classList.contains('is-live')));
-  assert.equal(await page.locator('.hm-fine').evaluate((node) => getComputedStyle(node).opacity), '0', 'the canvas, not the static mark, writes the entrance');
-  const size = await canvas.evaluate((node) => ({ w: node.width, cssW: node.getBoundingClientRect().width }));
-  assert.equal(size.w, Math.round(size.cssW * Math.min(2, await page.evaluate(() => devicePixelRatio))));
-  await page.waitForTimeout(1500);
-  const ink = (x, y) => canvas.evaluate((node, [x, y]) => {
-    const box = node.getBoundingClientRect();
-    const scale = node.width / box.width;
-    const data = node.getContext('2d').getImageData(Math.round((x - box.left) * scale) - 2, Math.round((y - box.top) * scale) - 2, 5, 5).data;
-    let max = 0;
-    for (let i = 3; i < data.length; i += 4) max = Math.max(max, data[i]);
-    return max;
-  }, [x, y]);
-  const at = (selector) => page.evaluate((selector) => {
-    const mark = document.querySelector('.hero-mark').getBoundingClientRect();
-    const svg = document.querySelector('.hm-fine');
-    const s = mark.width / svg.viewBox.baseVal.width;
-    const node = svg.querySelector(selector);
-    return { x: mark.left + Number(node.getAttribute('cx')) * s, y: mark.top + Number(node.getAttribute('cy')) * s };
-  }, selector);
-  const point = await at('.hm-point circle:not([fill-opacity])');
-  const firstCell = await at('.hm-nodes circle:not([fill-opacity])');
-  assert.ok(await ink(point.x, point.y) > 200, 'the point’s halftone block has landed after the ~1s entrance');
-  assert.ok(await ink(firstCell.x, firstCell.y) > 200, 'the stroke’s cells are written in ink');
-  // No idle loop: once written, the mark is still.
-  const idle = await page.evaluate(async () => { const a = window.__draws; await new Promise((r) => setTimeout(r, 600)); return window.__draws - a; });
-  assert.equal(idle, 0, 'nothing redraws while the reader is not scrolling');
-  assert.ok(await page.evaluate(() => window.__shift) < .01, 'the mark never shifts the layout');
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForFunction(() => !document.querySelector('canvas.hero-mark-canvas'));
-  await page.waitForFunction(() => getComputedStyle(document.querySelector('.hm-fine')).opacity === '1');
-  assert.equal(await page.locator('.qc-list[data-point-pending]').count(), 0, 'the chain’s first node is shown again');
-  assert.deepEqual(errors, []);
+test('NASA hero remains present as the reader reaches the interactive question chain', async (t) => {
+  const page = await animatedPage(t);
+  const image = page.locator('.home-hero-image img');
+  assert.equal(await image.getAttribute('src'), '/media/socrates-nasa-endeavour-limb-v2.jpg');
+  assert.ok(await image.evaluate((node) => node.complete && node.naturalWidth > 0));
+  await page.locator('#question-chain').scrollIntoViewIfNeeded();
+  assert.ok(await page.locator('#question-chain [data-qc-next]').isVisible());
+  assert.equal(await page.locator('canvas.hero-mark-canvas, [data-hero-field], .hero-mark').count(), 0);
 });
 
-test('scrolling away absorbs the question into the field and hands its point to the question chain', async (t) => {
-  const context = await site.browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
-  t.after(() => context.close());
-  await context.route('https://**/*', (route) => route.abort());
-  const page = await context.newPage();
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(site.baseURL + '/');
-  await page.locator('[data-consent-choice="essential"]').click();
-  await page.waitForTimeout(1400);
-  const canvas = page.locator('canvas.hero-mark-canvas');
-  const firstNode = page.locator('.qc-step[data-qc-step="0"] .qc-dot');
-  // Before the hand-off the chain's node waits, so two points never show.
-  assert.ok(await page.locator('.qc-list').evaluate((node) => node.hasAttribute('data-point-pending')));
-  assert.equal(await firstNode.evaluate((node) => getComputedStyle(node).visibility), 'hidden');
-  const inkAt = (x, y, r = 2) => canvas.evaluate((node, [x, y, r]) => {
-    const box = node.getBoundingClientRect();
-    const scale = node.width / box.width;
-    const data = node.getContext('2d').getImageData(Math.round((x - box.left) * scale) - r, Math.round((y - box.top) * scale) - r, 2 * r + 1, 2 * r + 1).data;
-    let max = 0;
-    for (let i = 3; i < data.length; i += 4) max = Math.max(max, data[i]);
-    return max;
-  }, [x, y, r]);
-  const cell = () => page.evaluate(() => {
-    const mark = document.querySelector('.hero-mark').getBoundingClientRect();
-    const svg = document.querySelector('.hm-fine');
-    const s = mark.width / svg.viewBox.baseVal.width;
-    const node = svg.querySelector('.hm-nodes circle:not([fill-opacity])');
-    return { x: mark.left + Number(node.getAttribute('cx')) * s, y: mark.top + Number(node.getAttribute('cy')) * s };
-  });
-  // Midway the top of the stroke has already faded back to the field's gray.
-  await page.evaluate(() => scrollTo({ top: 200, behavior: 'instant' }));
-  await page.waitForTimeout(250);
-  const top = await cell();
-  assert.ok(await inkAt(top.x, top.y) < 60, 'the absorbed cells are no darker than the field');
-  // Round 10: the point's block gathers into exactly one black dot, the
-  // size of a chain node; no halftone cell of the point is left behind.
-  const dotBox = () => page.evaluate(() => {
-    const dots = [...document.querySelectorAll('.hero-mark-dot')];
-    const b = dots[0].getBoundingClientRect();
-    return { count: dots.length, x: b.left + b.width / 2, y: b.top + b.height / 2, w: b.width, o: Number(getComputedStyle(dots[0]).opacity) };
-  });
-  const travel = await page.evaluate(() => {
-    const dot = document.querySelector('.qc-step[data-qc-step="0"] .qc-dot').getBoundingClientRect();
-    return dot.top + dot.height / 2 + scrollY - innerHeight * .45;
-  });
-  await page.evaluate((y) => scrollTo({ top: y, behavior: 'instant' }), Math.round(travel * .04));
-  await page.waitForTimeout(250);
-  assert.equal((await dotBox()).o, 0, 'at first the point is still a block, not yet a dot');
-  const gatheredAt = Math.round(travel * .28);
-  await page.evaluate((y) => scrollTo({ top: y, behavior: 'instant' }), gatheredAt);
-  await page.waitForTimeout(250);
-  const gathered = await page.evaluate(() => {
-    const mark = document.querySelector('.hero-mark').getBoundingClientRect();
-    const svg = document.querySelector('.hm-fine');
-    const s = mark.width / svg.viewBox.baseVal.width;
-    return [...svg.querySelectorAll('.hm-point circle')].map((node) => ({ x: mark.left + Number(node.getAttribute('cx')) * s, y: mark.top + Number(node.getAttribute('cy')) * s }));
-  });
-  const blockCenter = { x: gathered.reduce((a, c) => a + c.x, 0) / gathered.length, y: gathered.reduce((a, c) => a + c.y, 0) / gathered.length };
-  const one = await dotBox();
-  const node = await firstNode.evaluate((n) => n.offsetWidth);
-  assert.equal(one.count, 1, 'one black dot');
-  assert.equal(one.o, 1);
-  assert.ok(Math.abs(one.w - node) < .5, 'the dot is a chain node’s size, not a large disc');
-  assert.ok(Math.hypot(one.x - blockCenter.x, one.y - blockCenter.y) < 1, 'it forms where the block was');
-  const canvasBox = await canvas.evaluate((n) => { const b = n.getBoundingClientRect(); return { t: b.top, b: b.bottom }; });
-  for (const cell of gathered) {
-    if (cell.y < canvasBox.t || cell.y > canvasBox.b) continue;
-    if (Math.hypot(cell.x - one.x, cell.y - one.y) < one.w) continue;
-    assert.equal(await inkAt(cell.x, cell.y, 1), 0, 'no halftone cell of the point is left once it has gathered');
-  }
-  // Landing: the dot is exactly where the chain's node is, then the node
-  // takes over and the dot is no longer shown.
-  const end = await page.evaluate(() => {
-    const dot = document.querySelector('.qc-step[data-qc-step="0"] .qc-dot').getBoundingClientRect();
-    return dot.top + dot.height / 2 + scrollY - innerHeight * .45;
-  });
-  await page.evaluate((y) => scrollTo({ top: y - 2, behavior: 'instant' }), end);
-  await page.waitForTimeout(250);
-  const near = await firstNode.evaluate((node) => { const b = node.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; });
-  const before = await dotBox();
-  assert.ok(before.o > .99 && Math.hypot(before.x - near.x, before.y - near.y) < 1.5, 'just before the hand-off the dot sits on the node');
-  await page.evaluate((y) => scrollTo({ top: y + 40, behavior: 'instant' }), end);
-  await page.waitForFunction(() => !document.querySelector('.qc-list').hasAttribute('data-point-pending'));
-  const landed = await firstNode.evaluate((node) => { const b = node.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2, v: getComputedStyle(node).visibility }; });
-  assert.equal(landed.v, 'visible');
-  assert.equal((await dotBox()).o, 0, 'after the hand-off only the chain’s own node is shown');
-  // Scrolling back up takes the point back out of the chain.
-  await page.evaluate(() => scrollTo({ top: 120, behavior: 'instant' }));
-  await page.waitForFunction(() => document.querySelector('.qc-list').hasAttribute('data-point-pending'));
-  assert.deepEqual(errors, []);
-
-  // Phones: the question fades back, the point never leaves the hero and the
-  // chain's node is simply there.
-  const phone = await site.browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'no-preference' });
-  t.after(() => phone.close());
-  await phone.route('https://**/*', (route) => route.abort());
-  const small = await phone.newPage();
-  await small.goto(site.baseURL + '/zh/');
-  await small.locator('[data-consent-choice="essential"]').click();
-  await small.waitForTimeout(1400);
-  assert.ok(await small.locator('.hm-compact').evaluate((node) => node.checkVisibility()));
-  assert.equal(await small.locator('.qc-list[data-point-pending]').count(), 0);
-  await small.evaluate(() => scrollTo({ top: 1200, behavior: 'instant' }));
-  assert.equal(await small.locator('.qc-step[data-qc-step="0"] .qc-dot').evaluate((node) => getComputedStyle(node).visibility), 'visible');
-  assert.equal(await small.evaluate(() => document.documentElement.scrollWidth), 390);
+test('without scripts the NASA hero image and native question form stay usable', async (t) => {
+  const page = await sitePage(site, t, '/zh/', 390, false);
+  const image = page.locator('.home-hero-image img');
+  assert.equal(await image.getAttribute('src'), '/media/socrates-nasa-endeavour-limb-v2.jpg');
+  assert.ok(await image.evaluate((node) => node.complete && node.naturalWidth > 0));
+  assert.equal(await page.locator('[data-ask-form]').count(), 1);
+  assert.equal(await page.locator('#askInputHero').getAttribute('name'), 'q');
+  assert.equal(await page.locator('canvas.hero-mark-canvas, [data-hero-field], .hero-mark').count(), 0);
 });
-
-test('without scripts the finished question mark is shown and the hero stays usable', async (t) => {
-  const page = await sitePage(site, t, '/zh/', 1440, false);
-  assert.ok(await page.locator('.hm-fine').isVisible());
-  assert.equal(await page.locator('canvas').count(), 0);
-  assert.equal(await page.locator('.hero-mark .hm-point').evaluateAll((dots) => dots.filter((dot) => dot.checkVisibility()).length), 1);
-  assert.equal(await page.locator('.qc-list[data-point-pending]').count(), 0);
-  assert.ok(await page.locator('.qc-step[data-qc-step="0"] .qc-dot').isVisible(), 'the chain starts from its own point');
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 1440);
-});
-
 // Round 7 · B. The mode deck.
 test('the mode deck pins, turns with scroll, keys and buttons, and keeps one card reachable', async (t) => {
   const page = await animatedPage(t);
@@ -577,61 +422,21 @@ test('the footer wordmark’s point drops and lights up at the end of the page',
 
 // Round 9 ---------------------------------------------------------------
 
-test('writing in the hero box writes the question mark, and an empty box puts it back', async (t) => {
+test('editing the hero question updates its submit state without changing the NASA artwork', async (t) => {
   const page = await animatedPage(t);
-  const mark = page.locator('[data-hero-mark]');
-  await page.waitForFunction(() => document.querySelector('[data-hero-mark]').classList.contains('is-live'));
-  assert.equal(await mark.getAttribute('data-writing'), 'idle');
   const input = page.locator('#askInputHero');
+  const form = page.locator('[data-ask-form]');
+  const image = page.locator('.home-hero-image img');
   await input.focus();
-  assert.equal(await mark.getAttribute('data-writing'), 'empty', 'focus: a faint trace, the point an outline');
-  await input.pressSequentially('Why is the sky');
-  assert.equal(await mark.getAttribute('data-writing'), 'partial');
-  await input.pressSequentially(' blue at noon but red at sunset, every day?');
-  assert.equal(await mark.getAttribute('data-writing'), 'full', 'a whole question writes the whole mark');
+  await input.fill('Why does the horizon glow?');
+  assert.ok(await form.evaluate((node) => node.classList.contains('has-value')));
+  assert.equal(await input.inputValue(), 'Why does the horizon glow?');
+  assert.ok(await image.isVisible());
   await input.fill('');
-  assert.equal(await mark.getAttribute('data-writing'), 'empty', 'clearing goes back to the start of writing');
-  await page.locator('h1').click();
-  assert.equal(await mark.getAttribute('data-writing'), 'idle', 'leaving an empty box restores the finished mark');
-  // Writing never touches the form itself.
-  await input.fill('一个问题');
-  assert.equal(await input.inputValue(), '一个问题');
-  assert.ok(await page.locator('[data-ask-form]').evaluate((form) => form.classList.contains('has-value')));
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForFunction(() => !document.querySelector('[data-hero-mark]').hasAttribute('data-writing'));
+  assert.equal(await form.evaluate((node) => node.classList.contains('has-value')), false);
+  assert.equal(await image.getAttribute('src'), '/media/socrates-nasa-endeavour-limb-v2.jpg');
 });
 
-test('the flying point never passes over a line of the question chain', async (t) => {
-  const context = await site.browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
-  t.after(() => context.close());
-  await context.route('https://**/*', (route) => route.abort());
-  const page = await context.newPage();
-  await page.goto(site.baseURL + '/');
-  await page.locator('[data-consent-choice="essential"]').click();
-  await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(1400);
-  const end = await page.evaluate(() => document.querySelector('.qc-step[data-qc-step="0"] .qc-dot').getBoundingClientRect().top + scrollY - innerHeight * .45);
-  for (let f = .4; f < 1; f += .04) {
-    await page.evaluate((y) => scrollTo({ top: y, behavior: 'instant' }), Math.round(end * f));
-    const inked = await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => {
-      const canvas = document.querySelector('.hero-mark-canvas');
-      const box = canvas.getBoundingClientRect();
-      const ctx = canvas.getContext('2d');
-      const k = canvas.width / box.width;
-      const texts = document.querySelectorAll('.qc-stage-head > span, .qc-intro h2, .qc-intro p, .qc-label, .qc-question');
-      let hits = 0;
-      texts.forEach((node) => {
-        const r = node.getBoundingClientRect();
-        const x0 = Math.max(r.left, box.left), x1 = Math.min(r.right, box.right), y0 = Math.max(r.top, box.top), y1 = Math.min(r.bottom, box.bottom);
-        if (x1 - x0 < 1 || y1 - y0 < 1) return;
-        const data = ctx.getImageData(Math.floor((x0 - box.left) * k), Math.floor((y0 - box.top) * k), Math.ceil((x1 - x0) * k), Math.ceil((y1 - y0) * k)).data;
-        for (let i = 3; i < data.length; i += 4) if (data[i] > 200) hits += 1;
-      });
-      done(hits);
-    }))));
-    assert.equal(inked, 0, `at ${Math.round(f * 100)}% of the flight the point covers chain text`);
-  }
-});
 
 test('the question chain grows its map out of the dot field, node by node, on its points', async (t) => {
   const page = await animatedPage(t);

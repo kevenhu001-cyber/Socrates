@@ -36,7 +36,7 @@ for (const path of ['/', '/zh/']) {
       assert.ok(layout.frame.y > layout.suggestions.bottom, 'cards follow the complete question entry');
       assert.ok(layout.art.y > layout.frame.y, 'the supporting art stacks after the preview on phones');
       assert.ok(layout.art.x >= 0 && layout.art.right <= width);
-      assert.ok(layout.composer.bottom < 400, 'the composer stays in the first viewport on phones');
+      assert.ok(layout.composer.bottom < 700, 'the composer stays in the image-led hero on phones');
       assert.ok(layout.composer.height <= 100, 'the mobile composer matches the compact reference');
       assert.ok(Math.abs(layout.composer.x + layout.composer.width / 2 - width / 2) < 1);
       assert.ok(layout.card.x >= layout.frame.x && layout.card.right <= layout.frame.right + 1 && layout.card.height > 0, 'the recall card fits inside the preview');
@@ -62,10 +62,9 @@ for (const path of ['/', '/zh/']) {
       const intro = document.querySelector('.feature-intro').getBoundingClientRect();
       const preview = document.querySelector('.feature-main').getBoundingClientRect();
       return {
-        // Round 7: the question sits in the left column, the network
-        // question mark in the right one.
         leftColumn: composer.right <= innerWidth / 2 + 40 && Math.abs(composer.left - document.querySelector('h1').getBoundingClientRect().left) < 1,
-        markBeside: document.querySelector('.hero-mark').getBoundingClientRect().left >= composer.right,
+        heroImageWidth: document.querySelector('.home-hero-image img').getBoundingClientRect().width,
+        heroImageHeight: document.querySelector('.home-hero-image img').getBoundingClientRect().height,
         composerWidth: composer.width,
         composerBottom: composer.bottom,
         artBelowQuestion: art.top > composer.bottom,
@@ -76,14 +75,16 @@ for (const path of ['/', '/zh/']) {
         previewWidth: preview.width,
         sheetColour: getComputedStyle(document.querySelector('.feature-media')).backgroundColor,
         groundColour: getComputedStyle(document.querySelector('.home-feature')).backgroundColor,
+        pageColour: getComputedStyle(document.body).backgroundColor,
         tutorSize: parseFloat(getComputedStyle(document.querySelector('.rc-prompt')).fontSize),
       };
     });
-    assert.ok(geometry.leftColumn && geometry.markBeside);
-    // OpenAI-style hero: a 720-800px composer under a medium 40px question.
-    assert.ok(geometry.composerWidth >= 720 && geometry.composerWidth <= 800);
-    assert.ok(geometry.composerBottom < 600);
-    assert.ok(geometry.titleSize >= 36 && geometry.titleSize <= 44);
+    assert.ok(geometry.leftColumn);
+    assert.equal(geometry.heroImageWidth, 1440, 'NASA art spans the desktop viewport');
+    assert.ok(geometry.heroImageHeight >= 640);
+    assert.ok(geometry.composerWidth >= 560 && geometry.composerWidth <= 620);
+    assert.ok(geometry.composerBottom < 800);
+    assert.ok(geometry.titleSize >= 48 && geometry.titleSize <= 100);
     assert.ok(geometry.artBelowQuestion && geometry.artBesidePreview);
     assert.ok(geometry.previewBeforeIntro, 'cards enter the page before the longer product copy');
     assert.ok(geometry.previewRatio >= 2.3 && geometry.previewRatio <= 2.4 && geometry.previewWidth >= 650);

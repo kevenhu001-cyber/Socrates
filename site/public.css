@@ -1,51 +1,37 @@
 /* Public marketing foundations. Page files own composition; chrome.css owns navigation.
    This sheet bridges older article templates into the same public-site system.
 
-   Visual language: the OpenAI.com style system, rebuilt with our own type
-   and content. A pure white ground, near-black text, a neutral gray ramp
-   (#f9f9f9 / #f3f3f3 / #e8e8e8 / #cdcdcd / #8f8f8f / #5d5d5d), no accent
-   colour, one geometric sans (Geist) at a medium 500 weight with tight
-   tracking for headings, fully rounded pill controls and soft 16-24px card
-   radii. Nothing here copies OpenAI assets, fonts or copy. */
+   Visual language: deep-space ink, layered midnight surfaces, quiet blue
+   highlights and clear light type. Page-specific layouts keep their structure;
+   shared tokens bring them into one dark visual system. */
 :root {
-  /* Colour: neutral grays only. Contrast on white: ink 19.6:1 (#0d0d0d),
-     copy 12.6:1 (#303030), muted 6.9:1 (#5d5d5d), quiet 4.6:1 (#767676). */
-  --site-color-paper: #fff;
-  --site-color-surface: #f3f3f3;
-  --site-color-surface-strong: #e8e8e8;
-  --site-color-subtle: #f9f9f9;
-  --site-color-raised: #fff;
-  --site-color-ink: #0d0d0d;
-  --site-color-copy: #303030;
-  --site-color-muted: #5d5d5d;
-  --site-color-quiet: #767676;
-  --site-color-line: rgb(0 0 0 / .08);
-  --site-color-line-strong: rgb(0 0 0 / .12);
-  /* No brand accent: the former accent slot now resolves to ink, so legacy
-     selectors that still name it render in the same neutral voice. */
-  --site-color-accent: #0d0d0d;
-  --site-color-ink-hover: #303030;
-  --site-color-fill: rgb(0 0 0 / .04);
-  --site-color-fill-hover: rgb(0 0 0 / .08);
-  /* Inverse tokens kept for older templates that still draw a dark band;
-     the shared footer is white. */
-  --site-color-night: #0d0d0d;
-  --site-color-night-copy: #fff;
-  --site-color-night-muted: #afafaf;
-  --site-color-night-line: rgb(255 255 255 / .14);
-  /* Shadows: neutral and very soft, used only on floating composers. */
-  --site-shadow-raised: 0 0 0 1px rgb(0 0 0 / .05), 0 4px 24px -4px rgb(0 0 0 / .08);
-  --site-shadow-ring: 0 0 0 1px rgb(0 0 0 / .08);
-  /* Texture: layered neutral shadows. Each step is a 1px hairline, a tight
-     contact shadow and a wide, very faint ambient one, so a white card reads
-     as a physical sheet without any colour. */
-  --site-hairline: rgb(0 0 0 / .06);
-  --site-shadow-1: 0 0 0 1px rgb(0 0 0 / .05), 0 1px 2px rgb(0 0 0 / .04), 0 4px 12px -4px rgb(0 0 0 / .05);
-  --site-shadow-2: 0 0 0 1px rgb(0 0 0 / .05), 0 1px 2px rgb(0 0 0 / .04), 0 12px 32px -12px rgb(0 0 0 / .12);
-  --site-shadow-3: 0 0 0 1px rgb(0 0 0 / .06), 0 2px 4px rgb(0 0 0 / .04), 0 24px 56px -20px rgb(0 0 0 / .18);
-  /* A faint top highlight on raised surfaces and pills. */
-  --site-inner-highlight: inset 0 1px 0 rgb(255 255 255 / .7);
-  --site-inner-highlight-dark: inset 0 1px 0 rgb(255 255 255 / .14);
+  --site-color-paper: #000;
+  --site-color-surface: #0d1118;
+  --site-color-surface-strong: #151c27;
+  --site-color-subtle: #080b11;
+  --site-color-raised: #0a0f16;
+  --site-color-ink: #f3f6fb;
+  --site-color-copy: #c1cad5;
+  --site-color-muted: #9aa7b7;
+  --site-color-quiet: #7f8b9b;
+  --site-color-line: rgb(190 210 235 / .13);
+  --site-color-line-strong: rgb(190 210 235 / .22);
+  --site-color-accent: #9bcfff;
+  --site-color-ink-hover: #d8eaff;
+  --site-color-fill: rgb(230 240 255 / .07);
+  --site-color-fill-hover: rgb(230 240 255 / .12);
+  --site-color-night: #000;
+  --site-color-night-copy: #f3f6fb;
+  --site-color-night-muted: #9aa7b7;
+  --site-color-night-line: rgb(190 210 235 / .16);
+  --site-shadow-raised: 0 0 0 1px rgb(190 210 235 / .08), 0 12px 36px -12px rgb(0 0 0 / .48);
+  --site-shadow-ring: 0 0 0 1px rgb(190 210 235 / .16);
+  --site-hairline: rgb(190 210 235 / .09);
+  --site-shadow-1: 0 0 0 1px rgb(190 210 235 / .08), 0 1px 2px rgb(0 0 0 / .28), 0 8px 24px -8px rgb(0 0 0 / .34);
+  --site-shadow-2: 0 0 0 1px rgb(190 210 235 / .09), 0 2px 6px rgb(0 0 0 / .26), 0 16px 40px -12px rgb(0 0 0 / .5);
+  --site-shadow-3: 0 0 0 1px rgb(190 210 235 / .12), 0 4px 12px rgb(0 0 0 / .32), 0 28px 64px -20px rgb(0 0 0 / .64);
+  --site-inner-highlight: inset 0 1px 0 rgb(255 255 255 / .06);
+  --site-inner-highlight-dark: inset 0 1px 0 rgb(255 255 255 / .12);
   /* Film grain: a 160px fractal-noise tile at about 3% ink, laid over large
      gray panels only. Static, rasterised once and tiled. */
   --site-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.32'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
@@ -164,9 +150,57 @@
   --ed-serif: var(--site-font);
   --ed-sans: var(--site-font);
   --site-ink: var(--site-color-ink);
+  --site-ink-soft: var(--site-color-copy);
   --site-ink-muted: var(--site-color-muted);
+  --site-paper: var(--site-color-paper);
+  --site-paper-soft: var(--site-color-surface);
+  --site-paper-strong: var(--site-color-surface-strong);
+  --site-sand: var(--site-color-subtle);
+  --site-black: var(--site-color-night);
+  --site-clay: var(--site-color-accent);
+  --site-line: var(--site-color-line);
+  --ed-paper: var(--site-color-paper);
+  --ed-paper-strong: var(--site-color-raised);
+  --ed-paper-soft: var(--site-color-surface);
+  --ed-sand: var(--site-color-subtle);
+  --ed-sand-deep: var(--site-color-surface-strong);
   --ed-ink: var(--site-color-ink);
+  --ed-ink-soft: var(--site-color-copy);
   --ed-ink-muted: var(--site-color-muted);
+  --ed-line: var(--site-color-line);
+  --ed-clay: var(--site-color-accent);
+  --ed-clay-warm: var(--site-color-accent);
+  --ed-black: var(--site-color-night);
+  --ed-black-soft: #0a0e15;
+  --ed-line-dark: var(--site-color-night-line);
+  --bg-000: 222 35% 3%;
+  --bg-100: 220 32% 5%;
+  --bg-200: 218 28% 8%;
+  --bg-300: 216 25% 11%;
+  --bg-400: 0 0% 95%;
+  --neu-bg: 222 35% 3%;
+  --neu-bg-deep: 220 32% 5%;
+  --neu-bg-darker: 222 40% 2%;
+  --neu-surface: 218 28% 8%;
+  --neu-line: 215 25% 75%;
+  --neu-line-soft: 215 25% 75%;
+  --neu-line-strong: 215 25% 75%;
+  --text-000: 0 0% 96%;
+  --text-100: 0 0% 91%;
+  --text-200: 0 0% 82%;
+  --text-300: 0 0% 69%;
+  --text-400: 0 0% 58%;
+  --text-500: 0 0% 48%;
+  --accent-000: 207 100% 81%;
+  --accent-100: 207 70% 64%;
+  --accent-200: 207 50% 44%;
+  --accent-soft: 207 25% 32%;
+  --accent-900: 0 0% 96%;
+  --border-100: 215 25% 75%;
+  --border-300: 215 25% 75%;
+  --brand-000: 207 100% 81%;
+  --brand-100: 207 70% 64%;
+  --oncolor-100: 222 35% 3%;
   --content-ink: var(--site-color-ink);
   --content-muted: var(--site-color-muted);
   --content-line: var(--site-color-line);
@@ -219,6 +253,18 @@ html { scroll-padding-top: 0; }
 [data-site-public] .product-preview, [data-site-public] .product-sample { border-radius: var(--site-radius); }
 [data-site-public].ed-site :is(.ed-copy-serif, .ed-report-standfirst, .ed-article .lede) { font-family: var(--site-font); }
 [data-site-public] [data-site-reveal] { scroll-margin-top: calc(var(--site-header-height) + 24px); }
+[data-site-public] { color-scheme: dark; }
+
+/* Older editorial components use their own variable names. Keep their
+   reverse-contrast panels legible while the surrounding pages use dark tokens. */
+body.ed-site[data-site-public] :is(.ed-black-band-copy, .ed-inline-feature, .ed-footer-frame, .ed-story-card.dark, .ed-price-card.is-featured, .ed-network-copy) {
+  --ed-paper: #f3f6fb;
+  --ed-ink: #f3f6fb;
+  --ed-ink-soft: #c1cad5;
+  --ed-ink-muted: #9aa7b7;
+}
+body.ed-site[data-site-public] .ed-price-card.is-featured .ed-button { color: #05070b; border-color: #f3f6fb; background: #f3f6fb; }
+body.ed-site[data-site-public] .ed-price-card.is-featured .ed-button:hover { color: #05070b; background: #d8eaff; }
 
 @view-transition { navigation: auto; }
 ::view-transition-old(root) { animation: site-page-out 150ms var(--site-ease) both; }
