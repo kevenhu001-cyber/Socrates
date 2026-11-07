@@ -14,10 +14,10 @@ export function animateSurfaceEntrance(host: HTMLElement, previousView?: string,
   const style = getComputedStyle(host);
   const time = style.getPropertyValue('--ui-duration-overlay').trim();
   const value = Number.parseFloat(time);
-  const duration = Number.isFinite(value) ? value * (time.endsWith('ms') ? 1 : 1000) : 180;
-  const easing = style.getPropertyValue('--ui-ease-out').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
+  const duration = Number.isFinite(value) ? value * (time.endsWith('ms') ? 1 : 1000) : 200;
+  const easing = style.getPropertyValue('--ui-ease-out').trim() || 'cubic-bezier(0.22, 1, 0.36, 1)';
   const animation = host.animate([
-    { opacity: 0.86, transform: 'translateY(6px)' },
+    { opacity: 0, transform: 'translateY(12px)' },
     { opacity: 1, transform: 'translateY(0)' },
   ], { duration, easing });
   const entry = { host, animation };

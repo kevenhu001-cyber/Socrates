@@ -29,7 +29,7 @@ test('account menu uses the shared overlay entrance anchored to its trigger edge
 
   expect(motion.animationName).toBe('none');
   expect(motion.transitionProperty).toBe('opacity, transform');
-  expect(motion.transitionDuration).toBe('0.18s, 0.22s');
+  expect(motion.transitionDuration).toBe('0.2s, 0.22s');
   expect(motion.placement).toBe('above');
   expect(motion.align).toBe('end');
   expect(motion.originX).toBeCloseTo(motion.width, 0);

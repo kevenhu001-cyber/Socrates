@@ -27,7 +27,7 @@
      docked to the right edge, so only the two leading corners round. */
   border-start-start-radius: var(--ui-radius-xl);
   border-end-start-radius: var(--ui-radius-xl);
-  animation: detail-enter var(--ui-duration-overlay) var(--ui-ease-out) both;
+  animation: detail-enter var(--ui-duration-drawer, 280ms) var(--ui-ease-out) both;
 }
 .detail-header {
   display: flex;
@@ -72,7 +72,7 @@
   height: 100%;
   border-radius: 0;
 }
-@keyframes detail-enter { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes detail-enter { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
 @media (max-width: 768px) {
   /* The phone drawer is a full-bleed sheet: no corner, no edge. */
   .detail-surface { width: 100%; border: 0; border-start-start-radius: 0; border-end-start-radius: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -107,7 +107,7 @@
     flex-direction: column;
     background: var(--background);
     border-inline-start: 1px solid var(--border);
-    animation: detail-enter var(--ui-duration-overlay) var(--ui-ease-out) both;
+    animation: detail-enter var(--ui-duration-drawer, 280ms) var(--ui-ease-out) both;
     position: relative;
     z-index: var(--ui-z-drawer);
   }

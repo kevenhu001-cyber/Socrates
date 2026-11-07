@@ -30,7 +30,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={surface ? cn(className) : cn(
-        "fixed inset-0 isolate z-(--ui-z-modal) bg-(--ui-backdrop) duration-100",
+        "fixed inset-0 isolate z-(--ui-z-modal) bg-(--ui-backdrop) duration-200",
         className
       )}
       {...props}
@@ -62,7 +62,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-(--ui-z-modal) -translate-x-1/2 -translate-y-1/2 rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100",
+          "fixed top-1/2 left-1/2 z-(--ui-z-modal) -translate-x-1/2 -translate-y-1/2 rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200",
           layout === "settings" ? "flex flex-col gap-0 p-0" : "grid w-full max-w-[calc(100%-2rem)] gap-4 p-4 sm:max-w-sm",
           className
         )}

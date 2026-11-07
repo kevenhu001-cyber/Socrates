@@ -30,7 +30,7 @@
   grid-template-rows: 1fr;
   visibility: visible;
   transition:
-    grid-template-rows var(--ui-duration-overlay) var(--ui-ease-out),
+    grid-template-rows var(--ui-duration-normal) var(--ui-ease-out),
     visibility 0s;
 }
 
@@ -44,8 +44,8 @@
   grid-template-rows: 0fr;
   visibility: hidden;
   transition:
-    grid-template-rows var(--ui-duration-overlay) var(--ui-ease-out),
-    visibility 0s linear var(--ui-duration-overlay);
+    grid-template-rows var(--ui-duration-normal) var(--ui-ease-out),
+    visibility 0s linear var(--ui-duration-normal);
 }
 
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {

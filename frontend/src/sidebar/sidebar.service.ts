@@ -5,7 +5,7 @@ import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 const RECENTS_FILTER_KEY = 'socrates-recents-filter';
 const SIDEBAR_SPATIAL_DURATION_MS = 180;
-const SIDEBAR_SPATIAL_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const SIDEBAR_SPATIAL_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 let mainShiftAnimation: Animation | null = null;
 let sidebarRevealAnimation: Animation | null = null;
@@ -73,7 +73,7 @@ function animateDesktopSidebarMotion(
   if (!inner || typeof inner.animate !== 'function') return;
   sidebarRevealAnimation = inner.animate(
     [
-      { opacity: 0.82, transform: 'translateX(-4px)' },
+      { opacity: 0, transform: 'translateX(-12px)' },
       { opacity: 1, transform: 'translateX(0)' },
     ],
     {

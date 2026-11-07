@@ -94,8 +94,8 @@ test('overlay motion uses only opacity and transform with a crisp ease-out', asy
     menu.remove();
     return result;
   });
-  expect(result.duration).toBe('0.18s');
-  expect(result.easing).toBe('cubic-bezier(0.16, 1, 0.3, 1)');
+  expect(result.duration).toBe('0.2s');
+  expect(result.easing).toBe('cubic-bezier(0.22, 1, 0.36, 1)');
   expect(result.hasFilter).toBe(false);
 });
 
@@ -150,8 +150,8 @@ test('composer menu opens crisply on the shared clock and respects reduced motio
     return { duration: style.animationDuration, easing: style.animationTimingFunction,
       radius: style.borderTopLeftRadius, hasFilter: frames.some((frame) => 'filter' in frame) };
   });
-  expect(motion.duration).toBe('0.18s');
-  expect(motion.easing).toBe('cubic-bezier(0.16, 1, 0.3, 1)');
+  expect(motion.duration).toBe('0.2s');
+  expect(motion.easing).toBe('cubic-bezier(0.22, 1, 0.36, 1)');
   expect(motion.radius).toBe('16px');
   expect(motion.hasFilter).toBe(false);
   await page.emulateMedia({ reducedMotion: 'reduce' });

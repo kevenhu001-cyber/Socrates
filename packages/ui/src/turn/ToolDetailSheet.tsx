@@ -36,17 +36,28 @@ export function ToolDetailSheet({ visible, onClose, title, subtitle, status, clo
   const reduced = useReducedMotion();
   const mode = layout || (width < SHEET_BREAKPOINT ? 'sheet' : 'drawer');
   const enter = useRef(new Animated.Value(0)).current;
+  const [rendered, setRendered] = useState(visible);
+
   useEffect(() => {
-    if (!visible) {
-      enter.setValue(0);
-      return;
+    if (visible) {
+      setRendered(true);
+      if (reduced) {
+        enter.setValue(1);
+        return;
+      }
+      Animated.timing(enter, { toValue: 1, duration: uiMotion.medium, easing: Easing.out(Easing.cubic), useNativeDriver: nativeDriver }).start();
+    } else if (rendered) {
+      if (reduced) {
+        enter.setValue(0);
+        setRendered(false);
+        return;
+      }
+      Animated.timing(enter, { toValue: 0, duration: uiMotion.fast, easing: Easing.in(Easing.cubic), useNativeDriver: nativeDriver }).start(() => {
+        setRendered(false);
+      });
     }
-    if (reduced) {
-      enter.setValue(1);
-      return;
-    }
-    Animated.timing(enter, { toValue: 1, duration: uiMotion.medium, easing: Easing.out(Easing.cubic), useNativeDriver: nativeDriver }).start();
-  }, [visible, reduced, enter]);
+  }, [visible, reduced, enter, rendered]);
+
   const slide = mode === 'drawer'
     ? { translateX: enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }
     : { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [48, 0] }) };
@@ -54,7 +65,7 @@ export function ToolDetailSheet({ visible, onClose, title, subtitle, status, clo
     ? { position: 'absolute' as const, top: S[100], right: S[100], bottom: S[100], width: Math.min(440, width - S[400]), borderRadius: R.stage }
     : { position: 'absolute' as const, left: 0, right: 0, bottom: 0, maxHeight: '86%' as const, borderTopLeftRadius: R.stage, borderTopRightRadius: R.stage };
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal visible={rendered} transparent animationType="none" onRequestClose={onClose}>
       <View style={{ flex: 1 }}>
         <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: enter }}>
           <Pressable testID="tool-detail-backdrop" aria-label={closeLabel} onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.16)' }} />

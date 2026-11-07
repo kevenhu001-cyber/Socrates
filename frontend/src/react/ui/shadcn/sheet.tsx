@@ -40,7 +40,7 @@ function SheetOverlay({
     <DialogPrimitive.Backdrop
       data-slot="sheet-overlay"
       className={surface ? cn(className) : cn(
-        "fixed inset-0 isolate z-(--ui-z-backdrop) bg-(--ui-backdrop) duration-100",
+        "fixed inset-0 isolate z-(--ui-z-backdrop) bg-(--ui-backdrop) duration-200",
         className
       )}
       {...props}
@@ -72,7 +72,7 @@ function SheetContent({
       data-slot="sheet-content"
       data-side={side}
       className={cn(
-        "fixed z-(--ui-z-drawer) flex flex-col bg-popover text-popover-foreground shadow-md outline-none duration-100",
+        "fixed z-(--ui-z-drawer) flex flex-col bg-popover text-popover-foreground shadow-md outline-none duration-300 ease-out",
         SIDE_PLACEMENT[side],
         className
       )}
