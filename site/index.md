@@ -122,7 +122,7 @@ From orbit, Earth’s atmosphere is just a razor-thin luminous ribbon between ev
 - Spot the boundary between what you know and what you assume.
 - Return from the overview with an explanation of your own.
 
-The accompanying photograph shows Space Shuttle Endeavour against Earth’s atmospheric limb, captured by NASA (STS-130).
+The accompanying photograph shows the Moon’s cratered near side, mapped by NASA’s Lunar Reconnaissance Orbiter (NASA/GSFC/Arizona State University).
 
 [Find a way to begin](https://topodrive.top/guide)
 

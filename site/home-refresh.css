@@ -599,7 +599,8 @@ body.home-refresh {
 
 /* Full-bleed NASA opening image and dark question surface. The older mark
    styles above remain harmless compatibility rules for pages without it. */
-.home-hero.home-shell {
+.home-hero.home-shell,
+[data-site-public] .home-hero.home-shell {
   display: grid;
   width: 100%;
   max-width: none;
@@ -642,7 +643,7 @@ body.home-refresh {
 .hero-ask { width: min(100%, 620px); }
 .home-hero .ask-box {
   border: 1px solid rgb(221 235 250 / .24);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-3xl);
   background: rgb(5 8 14 / .82);
   box-shadow: 0 16px 48px -18px rgb(0 0 0 / .7), inset 0 1px 0 rgb(255 255 255 / .06);
   -webkit-backdrop-filter: blur(12px);

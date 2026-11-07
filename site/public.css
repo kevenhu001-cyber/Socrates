@@ -5,7 +5,7 @@
    highlights and clear light type. Page-specific layouts keep their structure;
    shared tokens bring them into one dark visual system. */
 :root {
-  --site-color-paper: #000;
+  --site-color-paper: #05070b;
   --site-color-surface: #0d1118;
   --site-color-surface-strong: #151c27;
   --site-color-subtle: #080b11;
