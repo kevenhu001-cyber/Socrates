@@ -114,15 +114,15 @@ body.ed-site main .page-media-frame img {
   gap: 10px;
   margin-top: 11px;
   padding-top: 10px;
-  border-top: 1px solid rgba(0, 0, 0, .14);
-  color: #535353;
+  border-top: 1px solid var(--site-color-line);
+  color: var(--site-color-muted);
   font-size: 12px;
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
 
 .page-media-index {
-  color: #777;
+  color: var(--site-color-quiet);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 10px;
   letter-spacing: .08em;
@@ -131,7 +131,7 @@ body.ed-site main .page-media-frame img {
 .page-media-side-card {
   margin: 26px 0 0;
   padding-top: 20px;
-  border-top: 1px solid rgba(0, 0, 0, .14);
+  border-top: 1px solid var(--site-color-line);
 }
 
 .page-media-side-card .page-media-frame {
@@ -141,7 +141,7 @@ body.ed-site main .page-media-frame img {
 
 .page-media-side-card figcaption {
   margin-top: 10px;
-  color: #686868;
+  color: var(--site-color-muted);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -150,7 +150,7 @@ body.ed-site main .page-media-frame img {
   display: block;
   margin: 0;
   padding: 0 0 22px;
-  border-bottom: 1px solid rgba(0, 0, 0, .14);
+  border-bottom: 1px solid var(--site-color-line);
 }
 
 .page-media-checkout img {
@@ -165,7 +165,7 @@ body.ed-site main .page-media-frame img {
   grid-template-columns: 30px minmax(0, 1fr);
   gap: 10px;
   margin-top: 11px;
-  color: #535353;
+  color: var(--site-color-muted);
   font-size: 13px;
   line-height: 1.5;
 }

@@ -18,6 +18,7 @@
   --m-line: var(--site-color-line);
   --m-line-strong: var(--site-color-line-strong);
   --m-surface: var(--site-color-surface);
+  --m-surface-strong: var(--site-color-surface-strong);
   --m-subtle: var(--site-color-subtle);
   --m-fill: var(--site-color-fill);
   --m-fill-hover: var(--site-color-fill-hover);
@@ -129,7 +130,7 @@
 /* Feature cards: a bento of soft gray cards, each with a miniature over a
    short title and line. */
 .m-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-200); }
-.m-card { display: flex; min-width: 0; flex-direction: column; border-radius: var(--radius-3xl); background: var(--m-subtle); color: inherit; text-decoration: none; transition: background-color 150ms var(--m-ease); }
+.m-card { display: flex; min-width: 0; flex-direction: column; border-radius: var(--radius-3xl); background: var(--m-subtle); box-shadow: var(--site-elevation-card); color: inherit; text-decoration: none; transition: background-color 150ms var(--m-ease); }
 a.m-card:hover { background: var(--m-surface); }
 .m-card--wide { grid-column: span 2; }
 .m-card-media { display: grid; flex: 1; place-items: center; min-height: 240px; padding: var(--space-400) var(--space-400) var(--space-200); }
@@ -147,15 +148,15 @@ a.m-card:hover .m-card-media > * { transform: translateY(-4px); }
 :lang(zh) .m-graph-copy h2 { letter-spacing: 0; line-height: 1.3; }
 .m-graph-copy > p { margin-top: var(--space-200); color: var(--m-copy); font: var(--type-body-7); text-wrap: pretty; }
 .m-graph-copy .m-link { margin-top: var(--space-400); }
-.m-graph-stage { position: relative; overflow: hidden; border-radius: var(--radius-3xl); background: var(--m-subtle); }
+.m-graph-stage { position: relative; overflow: hidden; border-radius: var(--radius-3xl); background: var(--m-subtle); box-shadow: var(--site-elevation-card); }
 .m-graph-stage svg { display: block; width: 100%; height: auto; font-family: var(--site-font); }
-.kg-edge { stroke: var(--m-line-strong); stroke-width: 1; transition: opacity 400ms var(--m-ease), stroke 150ms var(--m-ease); }
+.kg-edge { stroke: rgba(255, 255, 255, .22); stroke-width: 1; transition: opacity 400ms var(--m-ease), stroke 150ms var(--m-ease); }
 .kg-node { cursor: pointer; pointer-events: bounding-box; transition: opacity 400ms var(--m-ease); }
-.kg-node circle { fill: var(--m-surface); stroke: var(--m-line-strong); stroke-width: 1.25; transition: transform 300ms var(--m-ease); transform-box: fill-box; transform-origin: center; }
-.kg-node text { fill: var(--m-muted); font-size: 13px; font-weight: 500; }
+.kg-node circle { fill: var(--m-surface-strong); stroke: rgba(255, 255, 255, .34); stroke-width: 1.25; transition: transform 300ms var(--m-ease); transform-box: fill-box; transform-origin: center; }
+.kg-node text { fill: var(--m-copy); font-size: 13px; font-weight: 500; }
 .kg-node--core circle { fill: var(--m-ink); stroke: none; }
 .kg-node--core text { fill: var(--m-ink); font-size: 15px; }
-.kg-node--soft text { fill: var(--m-quiet); font-weight: 400; }
+.kg-node--soft text { fill: var(--m-muted); font-weight: 400; }
 .kg-halo { fill: none; stroke: var(--m-line); }
 .m-graph-stage.is-hovering .kg-edge { opacity: .25; }
 .m-graph-stage.is-hovering .kg-node { opacity: .35; }

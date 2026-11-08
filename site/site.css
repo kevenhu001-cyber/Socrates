@@ -29,17 +29,20 @@
 
 
 :root {
-  --bg: #ffffff;
-  --bg-soft: #f7f7f5;
-  --bg-soft-2: #f1f1ee;
-  --ink: #0b0b0b;
-  --ink-2: #2f2f2f;
-  --muted: #666664;
-  --faint: #8e8e8a;
-  --line: #e7e7e3;
-  --line-2: #d8d8d3;
-  --dark: #0b0b0b;
-  --dark-2: #171717;
+  /* Legacy aliases, mapped onto the shared palette in public.css. The old
+     literal light ramp lived here; on the dark site an unmapped token is a
+     white panel under white type, so every value resolves to the ladder. */
+  --bg: var(--site-color-paper);
+  --bg-soft: var(--site-color-surface);
+  --bg-soft-2: var(--site-color-raised);
+  --ink: var(--site-color-ink);
+  --ink-2: var(--site-color-copy);
+  --muted: var(--site-color-muted);
+  --faint: var(--site-color-quiet);
+  --line: var(--site-color-line);
+  --line-2: var(--site-color-line-strong);
+  --dark: var(--site-color-night);
+  --dark-2: var(--site-color-surface);
 
   --font-sans: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
@@ -129,7 +132,7 @@ ol {
 
 ::selection {
   background: var(--ink);
-  color: #fff;
+  color: var(--site-color-paper);
 }
 
 :focus-visible {
@@ -144,7 +147,7 @@ ol {
   top: 0;
   z-index: 999;
   background: var(--ink);
-  color: #fff;
+  color: var(--site-color-paper);
   padding: 12px 18px;
   border-radius: 0 0 8px 0;
   font-size: 14px;
@@ -177,6 +180,7 @@ ol {
 
 .sec--soft {
   background: var(--bg-soft);
+  border-block: 1px solid var(--site-color-line-faint);
 }
 
 .sec--flush {
@@ -309,7 +313,7 @@ ol {
   padding: 0 22px;
   border-radius: 999px;
   background: var(--ink);
-  color: #fff;
+  color: var(--site-color-paper);
   font-size: 14px;
   font-weight: 500;
   letter-spacing: -0.005em;
@@ -318,7 +322,7 @@ ol {
 }
 
 .btn:hover {
-  background: #2a2a2a;
+  background: var(--site-color-ink-hover);
 }
 
 .btn:active {
@@ -347,12 +351,13 @@ ol {
 }
 
 .btn--light {
-  background: #fff;
-  color: var(--ink);
+  background: var(--site-color-ink);
+  color: var(--site-color-paper);
 }
 
 .btn--light:hover {
-  background: #ececea;
+  background: var(--site-color-ink-hover);
+  color: var(--site-color-paper);
 }
 
 .btn--sm {
@@ -413,7 +418,7 @@ ol {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #fff;
+  background: var(--site-color-raised);
   border-bottom: 1px solid var(--line);
 }
 
@@ -569,7 +574,7 @@ ol {
   margin-top: clamp(48px, 6vw, 80px);
   border: 1px solid var(--line);
   border-radius: var(--r-xl);
-  background: #fff;
+  background: var(--site-color-raised);
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 48px 90px -56px rgba(0, 0, 0, 0.28);
 }
@@ -660,7 +665,7 @@ ol {
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: var(--site-color-raised);
   font-size: 12px;
   color: var(--muted);
 }
@@ -925,7 +930,7 @@ ol {
   grid-column: 5 / 13;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  background: #fff;
+  background: var(--site-color-raised);
   overflow: hidden;
 }
 
@@ -1053,7 +1058,7 @@ ol {
 .card {
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--site-color-raised);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -1628,7 +1633,7 @@ ol {
   padding: 28px 24px 24px;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  background: #fff;
+  background: var(--site-color-raised);
 }
 
 .plan--dark {
@@ -2542,63 +2547,6 @@ ol {
   padding-top: 6px;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
-}
-
-/* Cookie consent — aligned to the site system */
-body #socratesCookieConsent {
-  border-radius: 14px;
-  border-color: var(--line);
-  padding: 16px 18px;
-  gap: 8px;
-  font-family: var(--font-sans);
-  width: min(360px, calc(100vw - 28px));
-}
-
-body .socrates-cookie-consent-title {
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-
-body .socrates-cookie-consent-message {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-body .socrates-cookie-consent-btn {
-  min-height: 34px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border-color: var(--line-2);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-body .socrates-cookie-consent-btn.primary {
-  background: var(--ink);
-  border-color: var(--ink);
-}
-
-body .socrates-cookie-consent-link {
-  font-size: 11px;
-  color: var(--faint);
-  text-decoration: none;
-  border-bottom: 1px solid var(--line-2);
-  padding-bottom: 1px;
-}
-
-body .socrates-cookie-consent-link:hover {
-  color: var(--ink);
-  border-bottom-color: var(--ink);
-}
-
-@media (max-width: 560px) {
-  body #socratesCookieConsent {
-    border-radius: 14px;
-    padding: 14px 15px;
-  }
 }
 
 .display {

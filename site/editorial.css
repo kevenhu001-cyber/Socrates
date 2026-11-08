@@ -5,28 +5,25 @@
    actual visible typography — display serif, CJK stack, legal layout,
    product-block scale — is owned by brand.css. */
 :root {
-  /* Pure black-and-white palette — paper/sand collapse to white, ink
-     becomes pure black, clay accents collapse to black, lines become
-     subtle black. The serif (Newsreader) and the sans-serif stack
-     (Inter) are unchanged. The dark "black band" sections and modal
-     scrims are still pure black; they remain intentional contrast bands
-     inside the monochrome theme. */
-  color-scheme: light only;
-  --ed-paper: #ffffff;
-  --ed-paper-strong: #ffffff;
-  --ed-paper-soft: #ffffff;
-  --ed-sand: #ffffff;
-  --ed-sand-deep: #ffffff;
-  --ed-ink: #000000;
-  --ed-ink-soft: #1a1a1a;
-  --ed-ink-muted: #666666;
-  --ed-line: rgba(0, 0, 0, .12);
+  /* Same dark palette as public.css, mapped through the editorial aliases
+     so the legacy selectors below stay valid. The serif (Newsreader) and
+     the sans-serif stack are unchanged; modal scrims stay pure black. */
+  color-scheme: dark;
+  --ed-paper: var(--site-color-paper);
+  --ed-paper-strong: var(--site-color-surface);
+  --ed-paper-soft: var(--site-color-subtle);
+  --ed-sand: var(--site-color-subtle);
+  --ed-sand-deep: var(--site-color-surface-strong);
+  --ed-ink: var(--site-color-ink);
+  --ed-ink-soft: var(--site-color-copy);
+  --ed-ink-muted: var(--site-color-muted);
+  --ed-line: var(--site-color-line);
   --ed-line-dark: rgba(255, 255, 255, .22);
   --ed-black: #000000;
-  --ed-black-soft: #000000;
-  --ed-clay: #000000;
-  --ed-clay-warm: #000000;
-  --ed-clay-soft: rgba(0, 0, 0, .08);
+  --ed-black-soft: #0c0c0c;
+  --ed-clay: var(--site-color-accent);
+  --ed-clay-warm: var(--site-color-accent);
+  --ed-clay-soft: rgba(255, 255, 255, .08);
   /* Legacy aliases — kept so selectors that still reference --ed-serif
      and --ed-sans below don't crash, but brand.css wins on the visible
      surface. We deliberately removed "Segoe UI" and the system CJK
@@ -74,14 +71,14 @@ body.ed-menu-open { overflow: hidden; }
 body.ed-site::-webkit-scrollbar { width: 12px; height: 12px; }
 body.ed-site::-webkit-scrollbar-track { background: var(--ed-paper); }
 body.ed-site::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, .32);
+  background: rgba(255, 255, 255, .30);
   border: 3px solid var(--ed-paper);
   border-radius: 999px;
   transition: background .2s var(--ed-ease);
 }
 body.ed-site::-webkit-scrollbar-thumb:hover { background: var(--ed-ink); }
 /* Firefox thin scrollbar */
-body.ed-site { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, .32) var(--ed-paper); }
+body.ed-site { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .24) var(--ed-paper); }
 
 /* Smooth focus ring — anthropic-style outline-offset so it never clips
    the rounded button corners. */
@@ -122,7 +119,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   top: 0;
   z-index: 30;
   padding: 24px 0 18px;
-  background: #000000 !important;
+  background: var(--site-color-paper) !important;
   border-bottom: 1px solid transparent;
   transition: padding .15s ease, border-color .15s ease;
 }
@@ -184,7 +181,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 .ed-button { color: var(--ed-paper); background: var(--ed-ink); }
-.ed-button:hover { color: var(--ed-paper); background: #000; border-color: #000; }
+.ed-button:hover { color: var(--site-color-paper); background: var(--site-color-ink-hover); border-color: var(--site-color-ink-hover); }
 .ed-button:active { background: var(--ed-clay-warm); border-color: var(--ed-clay-warm); }
 .ed-button-quiet { color: var(--ed-ink); background: transparent; border-color: var(--ed-line); }
 .ed-button-quiet:hover { color: var(--ed-ink); border-color: var(--ed-ink); }
@@ -430,7 +427,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   color: inherit;
   transition: border-color .15s ease, background .15s ease;
 }
-.ed-portal:hover { background: var(--ed-paper-strong); border-color: rgba(0, 0, 0, .35); }
+.ed-portal:hover { background: var(--ed-paper-strong); border-color: var(--site-color-line-strong); }
 .ed-portal h3 { margin: 14px 0 10px; font-family: var(--ed-serif); font-size: 22px; font-weight: 400; letter-spacing: -.012em; transition: color .15s ease; }
 .ed-portal:hover h3 { color: var(--ed-clay); }
 .ed-portal p { max-width: 24ch; margin: 0; color: var(--ed-ink-soft); font-family: var(--ed-serif); font-size: 17px; line-height: 1.4; }
@@ -466,7 +463,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 .ed-story-card p { margin: 0; color: var(--ed-ink-soft); font-size: 15px; line-height: 1.58; }
 .ed-story-card.dark p { color: rgba(244, 241, 233, .66); }
 .ed-card-meta { display: grid; gap: 10px; margin-top: auto; padding-top: 26px; }
-.ed-card-meta div { display: flex; justify-content: space-between; gap: 14px; padding-top: 10px; border-top: 1px solid rgba(0, 0, 0, .12); color: var(--ed-ink-soft); font-size: 12px; }
+.ed-card-meta div { display: flex; justify-content: space-between; gap: 14px; padding-top: 10px; border-top: 1px solid var(--ed-line); color: var(--ed-ink-soft); font-size: 12px; }
 .ed-story-card.dark .ed-card-meta div { border-top-color: var(--ed-line-dark); color: rgba(244, 241, 233, .62); }
 
 /* Lists and publication routes */
@@ -612,8 +609,8 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 .ed-price-card.is-featured ul { color: rgba(244, 241, 233, .7); }
 .ed-price-card .ed-button,
 .ed-price-card .ed-button-quiet { margin-top: auto; }
-.ed-price-card.is-featured .ed-button { color: #000; border-color: var(--ed-paper); background: var(--ed-paper); }
-.ed-price-card.is-featured .ed-button:hover { color: #000; background: var(--site-color-ink-hover, #e5e5e5); }
+.ed-price-card.is-featured .ed-button { color: var(--site-color-paper); border-color: var(--site-color-ink); background: var(--site-color-ink); }
+.ed-price-card.is-featured .ed-button:hover { color: var(--site-color-paper); background: var(--site-color-ink-hover, #e5e5e5); }
 .ed-contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .ed-contact-card { min-height: 240px; padding: 32px; border-radius: 12px; border: 1px solid var(--ed-line); background: var(--ed-paper-soft); }
 .ed-contact-card h2 { max-width: 10ch; margin: 14px 0; font-family: var(--ed-serif); font-size: clamp(32px, 3.6vw, 44px); font-weight: 400; letter-spacing: -.012em; line-height: 1.08; }

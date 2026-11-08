@@ -33,7 +33,7 @@ body.pricing-page :is(.plan--dark, .ed-price-card.is-featured) { background: var
    step up (Free one, Euclid four). It marks the order of the plans only;
    it is not a measure of how much each plan can do. Decorative. */
 body.pricing-page .plan-tier { order: -2; display: flex; gap: 6px; margin: 0 0 var(--space-200); }
-body.pricing-page .plan-tier i { width: 6px; height: 6px; border-radius: 50%; background: rgb(0 0 0 / .13); }
+body.pricing-page .plan-tier i { width: 6px; height: 6px; border-radius: 50%; background: var(--site-color-line-strong); }
 body.pricing-page .plan-tier i.is-on { background: var(--site-color-ink); }
 body.pricing-page .plan-tag { order: -1; width: fit-content; margin: 0 0 var(--space-100); padding: 0; border: 0; background: none; color: var(--site-color-muted); font: var(--type-caption-1); font-family: var(--site-font); letter-spacing: 0; text-transform: none; }
 body.pricing-page :is(.plan-name, .ed-price-card h2) { margin: 0; color: inherit; font: var(--type-heading-4); letter-spacing: -.01em; }
@@ -48,8 +48,8 @@ body.pricing-page .plan li svg { flex: none; width: 16px; height: 16px; color: v
 body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet) { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-50); height: 40px; min-height: 0; width: 100%; margin-top: auto; padding: 0 var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-ink); font: var(--type-button-sm); font-family: var(--site-font); box-shadow: none; text-decoration: none; transition: background-color var(--site-motion-color), transform var(--site-motion-move); }
 body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet)::after { display: none; }
 body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet):hover { background: var(--site-color-fill-hover); color: var(--site-color-ink); }
-body.pricing-page :is(.plan--dark .btn, .ed-price-card.is-featured .ed-button) { background: var(--site-color-ink); color: #fff; }
-body.pricing-page :is(.plan--dark .btn, .ed-price-card.is-featured .ed-button):hover { background: var(--site-color-ink-hover); color: #fff; }
+body.pricing-page :is(.plan--dark .btn, .ed-price-card.is-featured .ed-button) { background: var(--site-color-ink); color: var(--site-color-paper); }
+body.pricing-page :is(.plan--dark .btn, .ed-price-card.is-featured .ed-button):hover { background: var(--site-color-ink-hover); color: var(--site-color-paper); }
 body.pricing-page :is(.plan .btn, .ed-price-card .ed-button, .ed-price-card .ed-button-quiet):active { transform: scale(.98); }
 body.pricing-page .plan .btn svg { width: 14px; height: 14px; }
 
@@ -83,7 +83,7 @@ body.pricing-page .ed-product-block .ed-meta { display: inline-flex; align-items
 body.pricing-page .ed-inline-feature { align-items: center; padding: var(--space-300); border-radius: var(--radius-3xl); background: var(--site-color-surface); }
 body.pricing-page .ed-inline-feature img { border-radius: var(--radius-xl); }
 body.pricing-page .ed-inline-feature p:not(.ed-kicker) { color: var(--site-color-muted) !important; }
-body.pricing-page .ed-inline-feature .ed-link { display: inline-flex; align-items: center; height: 36px; margin-top: var(--space-200); padding-inline: var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-ink); color: #fff !important; font: var(--type-button-sm); text-decoration: none; }
+body.pricing-page .ed-inline-feature .ed-link { display: inline-flex; align-items: center; height: 36px; margin-top: var(--space-200); padding-inline: var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-ink); color: var(--site-color-paper) !important; font: var(--type-button-sm); text-decoration: none; }
 body.pricing-page .ed-inline-feature .ed-link::after { display: none; }
 body.pricing-page .ed-inline-feature h2 { font: var(--type-heading-3); letter-spacing: 0; line-height: 1.35; color: var(--site-color-ink) !important; }
 
@@ -103,7 +103,7 @@ body.pricing-page .cta-slim { padding-block: var(--space-900) 0; border: 0; back
 body.pricing-page .cta-slim .shell { display: grid; justify-items: center; gap: var(--space-200); padding: var(--space-800) var(--space-300); border-radius: var(--radius-3xl); background: var(--site-color-surface); text-align: center; }
 body.pricing-page .cta-slim .h2 { max-width: 720px; margin: 0; font: var(--type-heading-3); letter-spacing: -.015em; text-wrap: balance; }
 body.pricing-page .cta-slim .body { color: var(--site-color-muted); font: var(--type-body-7); }
-body.pricing-page .cta-slim .btn { margin-top: var(--space-100); height: 40px; min-height: 0; padding: 0 var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-ink); color: #fff; font: var(--type-button-sm); }
+body.pricing-page .cta-slim .btn { margin-top: var(--space-100); height: 40px; min-height: 0; padding: 0 var(--space-200); border: 0; border-radius: var(--radius-full); background: var(--site-color-ink); color: var(--site-color-paper); font: var(--type-button-sm); }
 body.pricing-page .cta-slim .btn:hover { background: var(--site-color-ink-hover); }
 
 @media (max-width: 1080px) {

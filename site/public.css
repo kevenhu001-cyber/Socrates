@@ -1,50 +1,60 @@
 /* Public marketing foundations. Page files own composition; chrome.css owns navigation.
    This sheet bridges older article templates into the same public-site system.
 
-   Visual language: OpenAI clean dark aesthetic. A pure black ground (#000000),
-   charcoal card surfaces (#181818 / #212121), crisp pure white headings and text,
-   a neutral gray ramp (#d4d4d4 / #8e8e8e / #737373), hairline borders (rgba(255, 255, 255, 0.1)),
-   no distracting colored accents, geometric sans at medium 500 weight with tight
-   tracking, fully rounded pill controls and soft 16-24px card radii. */
+   Visual language: OpenAI clean dark aesthetic. A black ground, a tight
+   neutral elevation ladder (subtle panel → surface → raised → strong), crisp
+   white headings, a neutral gray ramp for copy, hairline borders,
+   no distracting colored accents, geometric sans at medium 500 weight with
+   tight tracking, fully rounded pill controls and soft 16-24px card radii. */
 :root {
-  /* Colour: OpenAI clean dark palette (#000000 canvas, #ffffff ink, neutral gray ramp).
-     Contrast on black: ink 21:1 (#ffffff), copy 14:1 (#d4d4d4),
-     muted 7.5:1 (#8e8e8e), quiet 5.3:1 (#737373). */
+  /* Colour: one neutral ladder on a black canvas. Every step is a real step:
+     a panel only ever sits on the surface below it, so a card reads as an
+     object instead of a muddy rectangle.
+     Contrast on black: ink 21:1 (#ffffff), copy 14.5:1 (#d6d6d6),
+     muted 7.8:1 (#9a9a9a), quiet 5.7:1 (#7c7c7c). */
   --site-color-paper: #000000;
-  --site-color-surface: #181818;
-  --site-color-surface-strong: #212121;
-  --site-color-subtle: #0f0f0f;
-  --site-color-raised: #1f1f1f;
+  --site-color-subtle: #0c0c0c;
+  --site-color-surface: #151515;
+  --site-color-raised: #1c1c1c;
+  --site-color-surface-strong: #242424;
   --site-color-ink: #ffffff;
-  --site-color-copy: #d4d4d4;
-  --site-color-muted: #8e8e8e;
-  --site-color-quiet: #737373;
-  --site-color-line: rgba(255, 255, 255, 0.1);
-  --site-color-line-strong: rgba(255, 255, 255, 0.18);
+  --site-color-copy: #d6d6d6;
+  --site-color-muted: #9a9a9a;
+  --site-color-quiet: #7c7c7c;
+  --site-color-line: rgba(255, 255, 255, 0.09);
+  --site-color-line-strong: rgba(255, 255, 255, 0.16);
+  /* A line that only hints at an edge; used inside cards and on dividers. */
+  --site-color-line-faint: rgba(255, 255, 255, 0.055);
   /* Neutral monochromatic accent */
   --site-color-accent: #ffffff;
   --site-color-ink-hover: #e5e5e5;
-  --site-color-fill: rgba(255, 255, 255, 0.08);
-  --site-color-fill-hover: rgba(255, 255, 255, 0.14);
+  --site-color-fill: rgba(255, 255, 255, 0.07);
+  --site-color-fill-hover: rgba(255, 255, 255, 0.12);
   /* Inverse / night tokens */
   --site-color-night: #000000;
   --site-color-night-copy: #ffffff;
-  --site-color-night-muted: #8e8e8e;
-  --site-color-night-line: rgba(255, 255, 255, 0.1);
+  --site-color-night-muted: #9a9a9a;
+  --site-color-night-line: rgba(255, 255, 255, 0.09);
   /* Shadows: neutral deep ambient */
-  --site-shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 12px 36px -12px rgba(0, 0, 0, 0.8);
-  --site-shadow-ring: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  --site-shadow-raised: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 12px 36px -12px rgba(0, 0, 0, 0.85);
+  --site-shadow-ring: 0 0 0 1px rgba(255, 255, 255, 0.16);
   /* Hairline and soft dark shadows */
-  --site-hairline: rgba(255, 255, 255, 0.08);
-  --site-shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
-  --site-shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 40px -12px rgba(0, 0, 0, 0.7);
-  --site-shadow-3: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.5), 0 28px 64px -20px rgba(0, 0, 0, 0.8);
+  --site-hairline: rgba(255, 255, 255, 0.07);
+  --site-shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+  --site-shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.09), 0 2px 6px rgba(0, 0, 0, 0.5), 0 16px 40px -16px rgba(0, 0, 0, 0.8);
+  --site-shadow-3: 0 0 0 1px rgba(255, 255, 255, 0.11), 0 4px 12px rgba(0, 0, 0, 0.55), 0 28px 64px -24px rgba(0, 0, 0, 0.9);
+  /* One elevation recipe for every card in the system: a hairline edge, a
+     one-pixel highlight along the top (the light source is above), and a
+     deep ambient shadow that only registers against the black ground. */
+  --site-elevation-card: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(255, 255, 255, 0.07), 0 18px 40px -24px rgba(0, 0, 0, 0.9);
   /* Highlights */
-  --site-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  --site-inner-highlight-dark: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  /* Film grain: a 160px fractal-noise tile at about 3% ink, laid over large
-     gray panels only. Static, rasterised once and tiled. */
-  --site-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.32'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
+  --site-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  --site-inner-highlight-dark: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  /* Film grain: a 160px fractal-noise tile of light particles at about 4%,
+     laid over large panels only. On black the particles read as a quiet
+     tooth; black grain would disappear into the ground. Static, rasterised
+     once and tiled. */
+  --site-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.32'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
   --site-font: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   /* Display shares the sans family: one typeface, as on the reference. */
   --site-font-display: var(--site-font);
@@ -190,6 +200,32 @@
   --shell: var(--site-width);
   --header-h: var(--site-header-height);
   --ed-header-h: var(--site-header-height);
+  /* Legacy bridge. site.css shipped its own light tokens (--bg, --ink, --muted,
+     --line, --dark) and half the older templates still resolve them. Pointing
+     them at the live palette here — instead of restating the same values in
+     every legacy component — is what keeps a "soft" band or a card dark
+     instead of leaving a white panel with white type on it. */
+  --bg: var(--site-color-paper);
+  --bg-soft: var(--site-color-surface);
+  --bg-soft-2: var(--site-color-raised);
+  --ink: var(--site-color-ink);
+  --ink-2: var(--site-color-copy);
+  --muted: var(--site-color-muted);
+  --faint: var(--site-color-quiet);
+  --line: var(--site-color-line);
+  --line-2: var(--site-color-line-strong);
+  --dark: var(--site-color-night);
+  --dark-2: var(--site-color-surface);
+  /* brand.css's own layer (--sf-*) was pinned to plain white; on the dark
+     site it must resolve to the palette or every ed-site page turns white
+     under the dark chrome. */
+  --sf-paper: var(--site-color-paper);
+  --sf-paper-deep: var(--site-color-subtle);
+  --sf-ink: var(--site-color-ink);
+  --sf-ink-soft: var(--site-color-copy);
+  --sf-line: var(--site-color-line);
+  --sf-card: var(--site-color-surface);
+  --sf-accent: var(--site-color-accent);
   margin: 0;
   background: var(--site-color-paper);
   color: var(--site-color-ink);
@@ -199,7 +235,7 @@
 }
 [data-site-public] ::selection { background: var(--site-color-ink); color: var(--site-color-paper); }
 /* One offset per anchor; scroll-padding and scroll-margin must not add up. */
-html { scroll-padding-top: 0; }
+html { scroll-padding-top: 0; background: var(--site-color-paper); color-scheme: dark; }
 [data-site-public] main [id] { scroll-margin-top: calc(var(--site-header-height) + 24px); }
 [data-site-public] :is(.home-shell, .shell) { width: 100%; max-width: var(--site-width); margin-inline: auto; padding-inline: var(--site-gutter); }
 [data-site-public] :is(.content-shell, .product-shell), [data-site-public].ed-site .ed-shell { width: min(calc(100% - var(--site-gutter) * 2), calc(var(--site-width) - var(--site-gutter) * 2)); margin-inline: auto; }

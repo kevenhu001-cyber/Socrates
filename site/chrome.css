@@ -69,9 +69,9 @@
 /* The bar's layer is a pseudo-element, so nothing on the header itself can
    become the containing block of the fixed mobile menu.
    At the top of the page the bar is clear and borderless; once the page
-   moves under it, the layer fades in with a hairline below. Only the
-   layer's opacity animates. */
-.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: rgb(0 0 0 / .92); box-shadow: 0 1px 0 var(--site-color-line); pointer-events: none; transition: opacity 300ms var(--site-ease); }
+   moves under it, the layer fades in as a frosted sheet with a hairline
+   below. Only the layer's opacity animates. */
+.site-header::before { content: ''; position: absolute; z-index: 0; inset: 0; background: var(--site-color-paper); box-shadow: 0 1px 0 var(--site-color-line); pointer-events: none; transition: opacity 300ms var(--site-ease); }
 .site-header[data-scroll-aware]:not(.is-scrolled)::before { opacity: 0; }
 html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
 .site-header-inner { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--space-400); height: var(--site-header-height); }
@@ -164,7 +164,7 @@ html.site-menu-open { overflow: hidden; }
 /* Footer: white, five columns of small links under muted group labels, then
    one row with social icons, copyright and legal links, and a gray
    language pill. */
-.site-footer { padding-block: var(--space-900) var(--space-400); background: #000000; color: var(--site-color-ink); border-top: 1px solid var(--site-color-line); }
+.site-footer { padding-block: var(--space-900) var(--space-400); background: var(--site-color-paper); color: var(--site-color-ink); border-top: 1px solid var(--site-color-line); }
 .site-footer-inner { display: grid; gap: var(--space-700); }
 .site-footer-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-400) var(--space-300); }
 .site-footer-col { min-width: 0; }

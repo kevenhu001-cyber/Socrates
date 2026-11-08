@@ -466,7 +466,7 @@ body.home-refresh {
    keep" grows out of the field. Without scripts the field stays off and
    the map is simply complete. */
 .qc-stage { isolation: isolate; }
-.qc-stage::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(circle at center, rgba(255, 255, 255, 0.12) .75px, transparent 1.15px) var(--qc-gx, 0) var(--qc-gy, 0) / var(--qc-g, 18px) var(--qc-g, 18px); }
+.qc-stage::before { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(circle at center, rgba(255, 255, 255, 0.07) .75px, transparent 1.15px) var(--qc-gx, 0) var(--qc-gy, 0) / var(--qc-g, 18px) var(--qc-g, 18px); }
 .qc-stage[data-qc-grid]::before { opacity: 1; }
 .qc-node circle { transform-box: fill-box; transform-origin: center; transition: transform 500ms cubic-bezier(.22,1,.36,1), fill 300ms cubic-bezier(.22,1,.36,1), stroke 300ms cubic-bezier(.22,1,.36,1); }
 .qc-node text { transition: opacity 400ms cubic-bezier(.22,1,.36,1); }
@@ -506,7 +506,7 @@ body.home-refresh {
 .qc-step.is-future .qc-dot { opacity: 1; transform: scale(.78); background: var(--subtle); box-shadow: 0 0 0 4px var(--subtle), inset 0 0 0 1.5px var(--line-strong); }
 .qc-step.is-future { visibility: visible; }
 .qc-step.is-future :is(.qc-label, .qc-question, .qc-answer) { visibility: hidden; transition: opacity 300ms cubic-bezier(.22,1,.36,1), transform 300ms cubic-bezier(.22,1,.36,1), visibility 0s 300ms; }
-[data-qc-ready] .qc-line { color: rgba(255, 255, 255, 0.25); }
+[data-qc-ready] .qc-line { color: rgba(255, 255, 255, 0.38); }
 .qc-next.is-again { background: var(--fill); color: var(--ink); box-shadow: none; }
 .qc-next.is-again:hover { background: var(--fill-hover); }
 .home-chain + .home-feature { margin-top: var(--section-gap); }
