@@ -25,7 +25,7 @@ Keep the `.site-brand-label` exclusion in `site/locale.js`: a brand link to `/zh
 
 ## Homepage content
 
-`site/index.html` and `site/zh/index.html` share `site/home-refresh.css`, which owns only homepage content. `site.css` is not loaded. The hero is a centered question entry, followed by a readable product illustration and a supporting probability card. Keep the original square illustration, all four preview messages, the learner's correction, connected ideas and the explicit non-interactive/not-live caption.
+`site/index.html` and `site/zh/index.html` share `site/home-refresh.css`, which owns only homepage content. The hero is a centered question entry, followed by a readable product illustration and a supporting probability card. Keep the original square illustration, all four preview messages, the learner's correction, connected ideas and the explicit non-interactive/not-live caption.
 
 The lower page alternates a compact three-column news list, a landscape learning story, three image-led research links and a reversed learning scene. Use the existing assets with stable media ratios and preserve the article titles/dates from the research index. The learning scenes are editorial illustrations, not verified customer stories. There is one native question form at the top; the repeated bottom CTA was removed at the user's request and must remain absent.
 
@@ -41,7 +41,7 @@ The current session and feature panels are explicitly labeled **non-interactive 
 
 ## Research and company content
 
-`site/content.css` owns shared reading-page typography, buttons and the 1280px content grid. `site/research.css` owns the article directory; `site/company.css` owns the company narrative. Both page types have structurally equivalent English/Chinese HTML and Markdown twins, with local fonts rather than the legacy remote font sheets.
+`site/inner.css` owns shared reading-page and inner-page typography, buttons, forms and the content layout grid. `site/research.css` owns the article directory; `site/company.css` owns the company narrative. Both page types have structurally equivalent English/Chinese HTML and Markdown twins, with local fonts rather than the legacy remote font sheets.
 
 The research index is the primary `/research` experience while the collection has six notes. Titles, summaries, topics, publication dates and reading times appear before background information. Metadata follows the linked article (not an unrelated homepage promotion date). `site/research-index.js` progressively enhances the static list with topic buttons and announced result counts; controls are hidden without JavaScript, and all six links remain available. Preserve the `memory`, `explanation`, `practice`, `mapping` and `tutoring` topic anchors when editing the list.
 

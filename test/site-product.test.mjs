@@ -120,7 +120,9 @@ for (const path of ['/', '/about', '/research', '/research/memory-recall/', '/pr
     });
     assert.equal(chrome.height, 64);
     assert.equal(chrome.logo, 0, 'the public header consistently uses the Socrates wordmark');
-    assert.equal(chrome.label, '19px');
+    // The wordmark follows the shared type ramp: --fs-18, the same rung the
+    // rest of the chrome reads from.
+    assert.equal(chrome.label, '18px');
     assert.match(chrome.family, /Geist Sans/);
     // OpenAI-style bar: a plain top bar whose content row is the centred page
     // container (never wider than 1440px of content), wordmark at the 32px gutter.

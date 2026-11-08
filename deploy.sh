@@ -355,7 +355,6 @@ EOF
 deploy_marketing_site() {
   if [ -d "$SITE_DIR" ]; then
     backup_previous "$SITE_WEB_ROOT"
-    $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/base.css" "$SITE_WEB_ROOT/base.css"
     $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/index.html" "$SITE_WEB_ROOT/index.html"
     for page in pricing guide about contact terms privacy account api-keys profile checkout announcements documents learn principles product research developers; do
       if [ -f "$SITE_DIR/$page.html" ]; then
@@ -382,14 +381,13 @@ deploy_marketing_site() {
         *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2|*.css|*.js|*.md|*.txt|*.xml|*.json|*.jsonl) ;;
         *) continue ;;
       esac
-      # Never overwrite any HTML or the editorial base stylesheet from this loop.
+      # Never overwrite any HTML from this loop.
       case "$fname" in
-        *.html|base.css) continue ;;
+        *.html) continue ;;
       esac
       $SUDO install -m 644 -o www-data -g www-data "$asset" "$SITE_WEB_ROOT/$fname"
     done < <(find "$SITE_DIR" -maxdepth 1 -type f \
         ! -name '*.html' \
-        ! -name 'base.css' \
         ! -name '.*' \
         ! -name '*~' \
         -print0)

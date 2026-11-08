@@ -566,7 +566,7 @@ HTML
 cp "$site_state_base/site/index.html" "$site_state_base/site/pricing.html"
 cp "$site_state_base/site/index.html" "$site_state_base/site/zh/index.html"
 cp "$site_state_base/site/index.html" "$site_state_base/site/zh/pricing.html"
-printf '/* fixture */\n' > "$site_state_base/site/base.css"
+printf '/* fixture */\n' > "$site_state_base/site/inner.css"
 # Ignore everything so the fixture worktree reads as clean. The dirty-file
 # count is only zero there, and only a zero count took the broken fallback
 # branch (`grep -c` exits 1 on a zero count, and `|| echo 0` appended a

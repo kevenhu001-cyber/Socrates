@@ -59,8 +59,10 @@
   /* Display shares the sans family: one typeface, as on the reference. */
   --site-font-display: var(--site-font);
   --site-font-mono: 'Geist Mono', ui-monospace, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', monospace;
-  /* 1440px of content plus gutters, as the reference container (90rem). */
-  --site-width: 1504px;
+  /* 1440px of content plus gutters, as the reference container (90rem).
+     The box is border-box, so the measure is 1440 − 2 × 32 = 1376px, the
+     same content width openai.com uses for its 1440px container. */
+  --site-width: 1440px;
   --site-gutter: 32px;
   --site-header-height: 64px;
 
@@ -68,6 +70,7 @@
   --space-50: 4px;
   --space-75: 8px;
   --space-100: 12px;
+  --space-150: 14px;
   --space-200: 16px;
   --space-300: 24px;
   --space-400: 32px;
@@ -86,37 +89,85 @@
   --site-radius: var(--radius-xl);
   --site-space-section: var(--space-900);
 
-  /* Named text styles: weight size/line-height family. Headings use the
-     reference scale (h1 64 / h2 48 / h3 30 / h4 22 / h5 18) at weight 500;
-     body copy is 17px (p1) and 14px (p2); controls are 14px/500. */
-  --type-heading-1: 500 3.5rem/1.1 var(--site-font-display);
-  --type-heading-2: 500 2.5rem/1.15 var(--site-font-display);
-  --type-heading-3: 500 1.875rem/1.25 var(--site-font-display);
-  --type-heading-4: 500 1.375rem/1.3 var(--site-font-display);
-  --type-heading-5: 500 1.125rem/1.35 var(--site-font-display);
-  --type-heading-6: 500 1rem/1.4 var(--site-font-display);
-  --type-title-1: 500 1.25rem/1.75rem var(--site-font);
-  --type-title-2: 500 1.125rem/1.5rem var(--site-font);
-  --type-title-3: 500 1rem/1.5rem var(--site-font);
-  --type-title-4: 500 .875rem/1.25rem var(--site-font);
-  --type-title-5: 500 .75rem/1rem var(--site-font);
-  --type-body-1: 500 1.0625rem/1.75rem var(--site-font);
-  --type-body-2: 500 1rem/1.5rem var(--site-font);
-  --type-body-3: 400 1rem/1.625rem var(--site-font);
-  --type-body-4: 500 .875rem/1.25rem var(--site-font);
-  --type-body-5: 500 .875rem/1.25rem var(--site-font);
-  --type-body-6: 400 .875rem/1.4375rem var(--site-font);
+  /* Size and line-height rungs. Every text style below is assembled from
+     these, and every page-level sheet (home, inner, chrome) picks sizes
+     from the same list, so a card title is the same size wherever it
+     appears. The numbers are measured off openai.com (the / and
+     /zh-Hans-CN/ home pages, 1440px viewport) rather than invented here:
+
+       28 / 34     hero        "有什么可以帮忙的？" / "What can I help with?"
+       48 / 55.68  feature     "推出 GPT-6.1 Terra", "开始使用 ChatGPT"
+       22 / 27.72  section     "最新动态", "客户案例", "Recent news"
+       18 / 23.76  card title  "图像 2.6 隆重登场", "Introducing Images"
+       17 / 28     p1          body copy
+       16 / 24     p2          body copy, controls
+       14 / 20     button      pills, footer links
+       13 / 19.68  nav         header links */
+  --fs-48: 3rem;
+  --fs-40: 2.5rem;
+  --fs-32: 2rem;
+  --fs-24: 1.5rem;
+  --fs-28: 1.75rem;
+  --fs-22: 1.375rem;
+  --fs-18: 1.125rem;
+  --fs-17: 1.0625rem;
+  --fs-16: 1rem;
+  --fs-15: .9375rem;
+  --fs-14: .875rem;
+  --fs-13: .8125rem;
+  --fs-12: .75rem;
+  --fs-11: .6875rem;
+  --fs-10: .625rem;
+  /* The home hero is the one display statement that stays above the
+     reference ceiling: it is the page's opening line, not a section
+     headline, so it keeps its own rung. */
+  --fs-64: 4rem;
+  --lh-48: 1.16;
+  --lh-32: 1.2;
+  --lh-28: 1.214;
+  --lh-22: 1.26;
+  --lh-18: 1.32;
+  --lh-17: 1.647;
+  --lh-16: 1.5;
+  --lh-15: 1.6;
+  --lh-14: 1.43;
+  --lh-13: 1.515;
+  --lh-12: 1.6;
+  --lh-11: 1.5;
+  --lh-10: 1.5;
+
+  /* Named text styles: weight size/line-height family. */
+  --type-hero: 600 var(--fs-28)/var(--lh-28) var(--site-font-display);
+  --type-heading-1: 500 var(--fs-48)/var(--lh-48) var(--site-font-display);
+  --type-heading-2: 500 var(--fs-32)/var(--lh-32) var(--site-font-display);
+  --type-heading-3: 500 var(--fs-22)/var(--lh-22) var(--site-font-display);
+  --type-heading-4: 500 var(--fs-18)/var(--lh-18) var(--site-font-display);
+  --type-heading-5: 500 var(--fs-16)/var(--lh-16) var(--site-font-display);
+  --type-heading-6: 400 var(--fs-15)/var(--lh-15) var(--site-font-display);
+  --type-title-1: 500 var(--fs-18)/var(--lh-18) var(--site-font);
+  --type-title-2: 500 var(--fs-16)/var(--lh-16) var(--site-font);
+  --type-title-3: 500 var(--fs-15)/var(--lh-15) var(--site-font);
+  --type-title-4: 500 var(--fs-14)/var(--lh-14) var(--site-font);
+  --type-title-5: 400 var(--fs-13)/var(--lh-13) var(--site-font);
+  --type-body-1: 400 var(--fs-17)/var(--lh-17) var(--site-font);
+  --type-body-2: 400 var(--fs-16)/var(--lh-16) var(--site-font);
+  --type-body-3: 400 var(--fs-16)/var(--lh-16) var(--site-font);
+  --type-body-4: 400 var(--fs-14)/var(--lh-14) var(--site-font);
+  --type-body-5: 400 var(--fs-14)/var(--lh-14) var(--site-font);
+  /* Small body copy: 14px is the floor for anything that reads as interface
+     text (diagram labels, chat bubbles, table cells). */
+  --type-body-6: 400 var(--fs-14)/var(--lh-14) var(--site-font);
   /* Body 7: lead paragraphs, the reference p1 (17px / 28px). */
-  --type-body-7: 400 1.0625rem/1.75rem var(--site-font);
-  --type-button-lg: 500 1rem/1.5rem var(--site-font);
-  --type-button-md: 500 .9375rem/1.375rem var(--site-font);
-  --type-button-sm: 500 .875rem/1.25rem var(--site-font);
-  --type-button-xsm: 500 .8125rem/1.125rem var(--site-font);
-  --type-caption-1: 500 .875rem/1.25rem var(--site-font);
-  --type-caption-2: 400 .875rem/1.25rem var(--site-font);
-  --type-caption-3: 500 .75rem/1rem var(--site-font);
-  --type-caption-4: 500 .8125rem/1.125rem var(--site-font);
-  --type-caption-5: 400 .8125rem/1.125rem var(--site-font);
+  --type-body-7: 400 var(--fs-17)/var(--lh-17) var(--site-font);
+  --type-button-lg: 500 var(--fs-14)/var(--lh-14) var(--site-font);
+  --type-button-md: 500 var(--fs-13)/var(--lh-13) var(--site-font);
+  --type-button-sm: 500 var(--fs-13)/var(--lh-13) var(--site-font);
+  --type-button-xsm: 500 var(--fs-12)/var(--lh-12) var(--site-font);
+  --type-caption-1: 500 var(--fs-14)/var(--lh-14) var(--site-font);
+  --type-caption-2: 400 var(--fs-14)/var(--lh-14) var(--site-font);
+  --type-caption-3: 400 var(--fs-13)/var(--lh-13) var(--site-font);
+  --type-caption-4: 500 var(--fs-13)/var(--lh-13) var(--site-font);
+  --type-caption-5: 400 var(--fs-12)/var(--lh-12) var(--site-font);
 
   /* Motion: quiet. 150ms colour changes, 200ms small moves. */
   --site-ease: cubic-bezier(.22, 1, .36, 1);
@@ -169,6 +220,23 @@
   --site-serif-cjk: var(--site-font);
   --ed-serif: var(--site-font);
   --ed-sans: var(--site-font);
+  /* The alias layer below closes the type gap that used to leak a second
+     and a third typeface onto the Chinese pages. A custom property
+     substitutes where it is *declared*, not where it is used: fonts.css
+     declares `--font-serif` and `--font-sans` on :root, so an alias such as
+     `--an-serif: var(--font-serif)` resolved to Newsreader on <html> and the
+     re-mapping on <body> never reached it. The Chinese inner pages were
+     therefore set in a serif and the Latin fallback in Inter, while the
+     English pages used Geist Sans.
+     One typeface for the whole site: Geist Sans with Noto Sans SC for
+     Chinese, exactly as the reference does. */
+  --site-sans-latin: var(--site-font);
+  --site-sans-cjk: var(--site-font);
+  --site-mono: var(--site-font-mono);
+  --font-mono: var(--site-font-mono);
+  --an-serif: var(--site-font);
+  --an-sans: var(--site-font);
+  --an-mono: var(--site-font-mono);
   --site-ink: var(--site-color-ink);
   --site-ink-soft: var(--site-color-copy);
   --site-ink-muted: var(--site-color-muted);
@@ -226,6 +294,51 @@
   --sf-line: var(--site-color-line);
   --sf-card: var(--site-color-surface);
   --sf-accent: var(--site-color-accent);
+  /* The remaining legacy palettes, bridged the same way. They used to live
+     in the :root blocks of site.css, editorial.css and brand.css; those
+     blocks are element-level rules and the merged sheet keeps one curated
+     element layer, so the palettes are declared here instead — one place,
+     pointed at the live palette. */
+  --ease: var(--site-ease);
+  --gap: 24px;
+  --sec: clamp(88px, 10vw, 152px);
+  --ed-ease: cubic-bezier(.22, .76, .26, 1);
+  --ed-mono: var(--site-font-mono);
+  --ed-radius-md: 20px;
+  --an-paper: var(--site-color-paper);
+  --an-paper-soft: var(--site-color-subtle);
+  --an-paper-deep: var(--site-color-surface);
+  --an-ink: var(--site-color-ink);
+  --an-ink-soft: var(--site-color-copy);
+  --an-ink-muted: var(--site-color-muted);
+  --an-line: var(--site-color-line);
+  --an-line-strong: var(--site-color-line-strong);
+  --an-black: var(--site-color-night);
+  --an-clay: var(--site-color-accent);
+  --an-clay-bright: var(--site-color-ink);
+  --an-paper-text: var(--site-color-paper);
+  --an-serif: var(--site-font);
+  --an-sans: var(--site-font);
+  --an-mono: var(--site-font-mono);
+  --an-band-radius: 24px;
+  --an-media-radius: 12px;
+  --an-btn-radius: 10px;
+  --sv-ease: cubic-bezier(.16, 1, .3, 1);
+  --sv-speed: .35s;
+  --sv-clay: var(--site-color-accent);
+  --sv-clay-bright: var(--site-color-ink);
+  --sv-glow-clay: rgba(255, 255, 255, .10);
+  --sv-glow-sand: rgba(255, 255, 255, .22);
+  --sv-shadow-sm: none;
+  --sv-shadow-md: none;
+  --sv-shadow-lg: none;
+  --sv-prose-rhythm: 1.55em;
+  --sv-prose-max: 68ch;
+  --sv-shell-pad: clamp(20px, 5vw, 60px);
+  --sv-btn-pad-y: 9px;
+  --sv-btn-pad-x: 18px;
+  --sv-btn-min-h: 38px;
+  --sv-input-min-h: 38px;
   margin: 0;
   background: var(--site-color-paper);
   color: var(--site-color-ink);
@@ -240,7 +353,7 @@ html { scroll-padding-top: 0; background: var(--site-color-paper); color-scheme:
 [data-site-public] :is(.home-shell, .shell) { width: 100%; max-width: var(--site-width); margin-inline: auto; padding-inline: var(--site-gutter); }
 [data-site-public] :is(.content-shell, .product-shell), [data-site-public].ed-site .ed-shell { width: min(calc(100% - var(--site-gutter) * 2), calc(var(--site-width) - var(--site-gutter) * 2)); margin-inline: auto; }
 [data-site-public] :is(.content-title, .page-title, .ed-report-title, .ed-page-title) { font-family: var(--site-font); font-weight: 500; letter-spacing: -.03em; }
-[data-site-public] :is(.page-title, .ed-report-title, .ed-page-title) { font-size: clamp(32px, 3.6vw, 52px); line-height: 1.12; }
+[data-site-public] :is(.page-title, .ed-report-title, .ed-page-title) { font-size: clamp(var(--fs-32), 3.6vw, var(--fs-48)); line-height: 1.12; }
 [data-site-public] .page-head { padding-block: var(--space-700) var(--space-600); }
 [data-site-public] .page-lede { line-height: 1.7; }
 [data-site-public] .content-hero { padding-block: var(--space-700) var(--space-600); }
@@ -340,7 +453,7 @@ html { scroll-padding-top: 0; background: var(--site-color-paper); color-scheme:
    the title; the white ground stays plain, as on the home page. */
 [data-site-public].ed-site :is(.ed-page-hero, .ed-news-hero, .ed-home-hero, .ed-reference-hero, .ed-learning-hero)::before,
 [data-site-public].ed-site :is(.ed-page-hero, .ed-news-hero)::after { display: none !important; }
-[data-site-public].ed-site :is(.ed-page-hero, .ed-learning-hero) :is(.ed-page-title, h1) { font-size: clamp(32px, 3.6vw, 52px); }
+[data-site-public].ed-site :is(.ed-page-hero, .ed-learning-hero) :is(.ed-page-title, h1) { font-size: clamp(var(--fs-32), 3.6vw, var(--fs-48)); }
 
 /* Texture layer (round 4). Shared by every public page that loads this
    sheet: tabular figures where numbers line up, a highlight on dark pills,

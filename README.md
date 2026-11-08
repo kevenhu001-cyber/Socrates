@@ -207,7 +207,7 @@ builds and copies the bundle into the nginx web root.
 ### Marketing & docs
 
 - The marketing site ([`site/`](site/)) is a parallel set of static
-  pages with a `base.css`, a Chinese translation in `site/zh/`,
+  pages with shared typography and design tokens, a Chinese translation in `site/zh/`,
   pricing tiers, and terms / privacy.
 - The OpenAPI spec lives at [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
 - The `prompts/` directory ships the Socratic teacher system prompt
@@ -364,7 +364,7 @@ Socrates/
 │   └── package.json
 ├── site/                   # Marketing site (topodrive.top)
 │   ├── index.html
-│   ├── base.css
+│   ├── inner.css
 │   └── zh/                 # Chinese translations
 ├── server/                 # TypeScript / Express 5 / Drizzle / PostgreSQL
 │   ├── package.json

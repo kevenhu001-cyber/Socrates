@@ -116,7 +116,7 @@ body.ed-site main .page-media-frame img {
   padding-top: 10px;
   border-top: 1px solid var(--site-color-line);
   color: var(--site-color-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
@@ -124,7 +124,7 @@ body.ed-site main .page-media-frame img {
 .page-media-index {
   color: var(--site-color-quiet);
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 10px;
+  font-size: var(--fs-10);
   letter-spacing: .08em;
 }
 
@@ -142,7 +142,7 @@ body.ed-site main .page-media-frame img {
 .page-media-side-card figcaption {
   margin-top: 10px;
   color: var(--site-color-muted);
-  font-size: 12px;
+  font-size: var(--fs-12);
   line-height: 1.5;
 }
 
@@ -166,7 +166,7 @@ body.ed-site main .page-media-frame img {
   gap: 10px;
   margin-top: 11px;
   color: var(--site-color-muted);
-  font-size: 13px;
+  font-size: var(--fs-13);
   line-height: 1.5;
 }
 
@@ -207,7 +207,7 @@ body.ed-site main .page-media-frame img {
   }
 
   .page-visual-page:not(.ed-site) .page-title { max-width: 14ch; }
-  .page-visual-page:not(.ed-site) .page-lede { margin-top: 18px; font-size: 17px; }
+  .page-visual-page:not(.ed-site) .page-lede { margin-top: 18px; font-size: var(--fs-17); }
   .page-visual-page:not(.ed-site) .sec { padding-block: 58px; }
   .page-visual-page:not(.ed-site) .sec.sec--flush { padding-top: 24px; }
 
@@ -222,7 +222,7 @@ body.ed-site main .page-media-frame img {
   .page-media-band { padding: 8px 0 46px; }
   .page-media-shell { width: calc(100% - 40px); }
   .page-media-grid { gap: 18px 14px; }
-  .page-media-card figcaption { grid-template-columns: 24px minmax(0, 1fr); gap: 7px; font-size: 11px; }
+  .page-media-card figcaption { grid-template-columns: 24px minmax(0, 1fr); gap: 7px; font-size: var(--fs-11); }
   .page-media-side-card {
     display: grid;
     grid-template-columns: minmax(84px, .72fr) minmax(0, 1fr);
@@ -232,7 +232,7 @@ body.ed-site main .page-media-frame img {
   }
   .page-media-side-card figcaption { margin-top: 0; }
   .page-media-checkout { padding-bottom: 18px; }
-  .page-media-checkout figcaption { grid-template-columns: 24px minmax(0, 1fr); gap: 7px; font-size: 12px; }
+  .page-media-checkout figcaption { grid-template-columns: 24px minmax(0, 1fr); gap: 7px; font-size: var(--fs-12); }
   .page-media-inline { margin: 38px 0; }
   .page-media-inline .page-media-frame { aspect-ratio: 1.35 / 1; }
   .page-media-grid.is-pair { grid-template-columns: minmax(0, 1fr); }
