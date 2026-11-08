@@ -604,6 +604,9 @@ body.ed-site {
   --site-serif-latin: var(--font-sans);
   --an-paper: var(--site-color-paper);
   --ed-paper: var(--site-color-paper);
+  --ed-paper-soft: var(--site-color-surface, #151515);
+  --ed-paper-strong: var(--site-color-raised, #1c1c1c);
+  --ed-sand: var(--site-color-fill, #1a1a1a);
   background: var(--site-color-paper);
   font-family: var(--font-sans);
 }
@@ -613,6 +616,8 @@ body.ed-site :is(.ed-copy-serif, .ed-page-hero p, .ed-state p) { font-family: va
 body.ed-site :is(.ed-button, .ed-button-quiet) { border-radius: 9999px; }
 body.ed-site .ed-button-quiet { background: var(--site-color-fill); border-color: transparent; color: var(--site-color-ink); }
 body.ed-site .ed-button-quiet:hover { background: var(--site-color-fill-hover); }
+body.ed-site .ed-submit { border-radius: 9999px; background: var(--site-color-btn-primary, #ececec); color: #000000; }
+body.ed-site .ed-submit:hover:not(:disabled) { background: var(--site-color-btn-primary-hover, #ffffff); color: #000000; }
 body.ed-site :is(.ed-sub-hero, .ed-app-card, .ed-key-card, .ed-auth-card, .ed-modal) { border-radius: 24px; }
 body.ed-site :is(.ed-input, .ed-select, input[type="text"], input[type="email"], input[type="password"], textarea, select) { border-radius: 12px; }
 body.ed-site .page-media-frame { border: 0; border-radius: 16px; }

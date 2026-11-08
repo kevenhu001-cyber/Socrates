@@ -68,8 +68,8 @@
   position: relative;
   overflow: hidden;
   aspect-ratio: 4 / 3;
-  background: #f8f8f8;
-  border: 1px solid #ededed;
+  background: var(--site-color-surface, #151515);
+  border: 1px solid var(--site-color-line, rgba(255, 255, 255, 0.09));
   border-radius: 8px;
 }
 

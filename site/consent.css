@@ -61,12 +61,13 @@
 }
 .socrates-cookie-consent-btn:active { transform: scale(.98); }
 .socrates-cookie-consent-btn.primary {
-  background: #ffffff;
-  border-color: #ffffff;
+  background: #ececec;
+  border-color: #ececec;
   color: #000000;
 }
 .socrates-cookie-consent-btn.primary:hover {
-  background: #e5e5e5;
+  background: #ffffff;
+  border-color: #ffffff;
   color: #000000;
 }
 .socrates-cookie-consent-link {

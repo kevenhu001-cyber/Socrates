@@ -357,24 +357,7 @@
    * fills as the visitor moves through the page.
    * -------------------------------------------------------------- */
   function initialiseScrollProgress() {
-    if (!document.body.classList.contains('ed-site')) return;
-    var bar = document.createElement('div');
-    bar.className = 'ed-progress';
-    bar.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(bar);
-    var ticking = false;
-    function update() {
-      var doc = document.documentElement;
-      var max = doc.scrollHeight - window.innerHeight;
-      var y = window.scrollY || window.pageYOffset || doc.scrollTop || 0;
-      var p = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
-      bar.style.transform = 'scaleX(' + p.toFixed(4) + ')';
-      ticking = false;
-    }
-    function request() { if (!ticking) { ticking = true; window.requestAnimationFrame(update); } }
-    window.addEventListener('scroll', request, { passive: true });
-    window.addEventListener('resize', request, { passive: true });
-    update();
+    /* Retired: reading progress light bar removed to avoid visual clutter and maintain minimal header */
   }
 
   /* --------------------------------------------------------------

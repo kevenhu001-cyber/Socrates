@@ -114,8 +114,8 @@ html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
 .site-header :is(.site-login, .site-try)::after { content: ''; position: absolute; inset: -4px -2px; }
 .site-header .site-login { background: var(--site-color-fill); color: var(--site-color-ink); }
 .site-header .site-login:hover { background: var(--site-color-fill-hover); }
-.site-header .site-try { background: var(--site-color-ink); color: #000; }
-.site-header .site-try:hover { background: var(--site-color-ink-hover); color: #000; }
+.site-header .site-try { background: var(--site-color-button-primary, #ececec); color: var(--site-color-button-primary-ink, #000000); }
+.site-header .site-try:hover { background: var(--site-color-button-primary-hover, #ffffff); color: #000000; }
 .site-header :is(.site-login, .site-try):active { transform: scale(.98); }
 .site-try svg { flex: none; width: 14px; height: 14px; transition: transform var(--site-motion-move); }
 .site-try:hover svg { transform: translate(1px, -1px); }
@@ -156,7 +156,7 @@ html.site-menu-open .site-header[data-scroll-aware]::before { opacity: 1; }
 .site-mobile-menu nav a[aria-current="page"] { color: var(--site-color-muted); }
 .site-mobile-utilities { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-75); margin-top: var(--space-300); padding-top: var(--space-300); border-top: 1px solid var(--site-color-line); }
 .site-mobile-utilities a { display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--space-200); border-radius: var(--radius-full); background: var(--site-color-fill); color: var(--site-color-ink); font: var(--type-button-lg); font-family: var(--site-chrome-font); }
-.site-mobile-utilities a:first-child { background: var(--site-color-ink); color: #000; }
+.site-mobile-utilities a:first-child { background: var(--site-color-button-primary, #ececec); color: var(--site-color-button-primary-ink, #000000); }
 .site-mobile-utilities .site-locale { font-family: 'Geist Sans', 'Socrates Locale', var(--site-font); }
 .site-menu-scrim { position: fixed; z-index: 90; inset: 0; background: rgb(0 0 0 / .6); }
 html.site-menu-open { overflow: hidden; }
@@ -239,8 +239,8 @@ html.site-menu-open { overflow: hidden; }
   .site-footer-social { margin-right: auto; }
 }
 
-/* Reading progress is visual, with no extra controls in article text. */
-.site-header[data-reading-progress]::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--site-color-ink); transform: scaleX(var(--reading-progress, 0)); transform-origin: left; }
+/* Reading progress line retired to keep the header minimal and non-distracting. */
+.site-header[data-reading-progress]::after { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .site-header, .site-header::before, .site-nav a::before, .site-try svg, .site-menu-toggle span, .site-header :is(.site-login, .site-try, .site-search), .site-footer-group a, .site-footer-summary::after { transition: none; }
   .site-try:hover svg { transform: none; }
