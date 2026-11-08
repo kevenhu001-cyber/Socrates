@@ -24,7 +24,7 @@ scripts/
 ├── restart-server.sh            ← 停 + 起 socrates-api systemd 服务
 ├── rotate-secrets.sh            ← 重新生成 secrets/SESSION_SECRET 等敏感值
 ├── search.sh                    ← 全仓 ripgrep 助手（用法见脚本注释）
-└── test-deploy-flow.sh          ← 部署夹具：锁、候选构建、失败回滚（本地运行，CI 不再调用）
+└── test-deploy-flow.sh          ← 部署夹具：锁、候选构建、失败回滚（ci.yml + 本地）
 ```
 
 ## 关于「根目录里的脚本」
@@ -37,7 +37,7 @@ scripts/
 | `restart-server.sh` | 自包含 |
 | `rotate-secrets.sh` | `scripts/backup-secrets.sh` 内部调用 |
 | `clean-local-artifacts.sh` | `scripts/README.md`（本文）引用方式说明 |
-| `test-deploy-flow.sh` | 无外部调用；在临时夹具中验证 `deploy.sh` 的锁、候选构建与回滚路径 |
+| `test-deploy-flow.sh` | `.github/workflows/ci.yml`；在临时夹具中验证 `deploy.sh` 的锁、候选构建与回滚路径 |
 
 **严禁把上表脚本移入子目录**。如需调整，先改所有调用点 + 更新 CI 流水线。
 
@@ -67,20 +67,11 @@ backup/
 - 加密前会先 `pg_restore --list` 验证 TOC，写盘即失败而不是备份失败。
 - 调度与异地副本的注意事项写在脚本头注释（cron 样例 + rclone/rsync 说明）。
 
-## `scripts/utils/` — 复用率低的工具集
+## `scripts/utils/` — 可复用的辅助工具
 
-```
-utils/
-├── .gitkeep
-├── add_animate_text.py            ← 动画文本便利脚本（来源不清晰，无 README）
-├── capture_site.js                ← 市场站截图/抓取用
-├── dump-palette.py                ← 设计令牌导出脚本
-├── resolve-site-merge.ps1         ← PowerShell 站点合并工具
-├── verify-tokens.py               ← 设计令牌校验脚本
-```
-
-未知/孤立脚本处置：**不在本 PR 改动其内容**；若长期无引用将走 `archive/`。
-PR 中如果引用了这些脚本，请把它们的归属与约束写到子目录 README。
+当前没有维护中的通用工具。旧工具没有仓库内调用方，且依赖已删除的 CSS
+布局或旧机器路径，已从活动工具目录移除。新增工具时应提供稳定的仓库相对路径、
+调用说明和必要的回归覆盖；一次性审计放入 `scripts/archive/`。
 
 ## 命名与路径约定（写到 scripts/ 根的硬约束）
 

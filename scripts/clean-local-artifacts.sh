@@ -8,17 +8,14 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 # tooling. Source files, lockfiles, and deployment rollback state are
 # deliberately not included.
 TARGETS=(
-  "mobile/node_modules"
-  "mobile/.expo"
-  "mobile/android"
-  "mobile/ios"
-  "mobile/dist"
-  "mobile/e2e-artifacts"
   "frontend/node_modules"
   "frontend/dist"
   "frontend/.vite"
   "server/node_modules"
   "server/dist"
+  "apps/socrates/node_modules"
+  "apps/socrates/.expo"
+  "apps/socrates/dist"
   ".opencode/node_modules"
   ".kilo/node_modules"
 )

@@ -11,32 +11,40 @@ set -euo pipefail
 QUERY="${1:?Usage: search.sh <query> [count]}"
 COUNT="${2:-10}"
 SEARXNG_URL="http://127.0.0.1:8888/search"
+if ! [[ "$COUNT" =~ ^[1-9][0-9]*$ ]]; then
+  printf 'count must be a positive integer\n' >&2
+  exit 2
+fi
 
-# URL-encode the query
-ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$QUERY'))")
+# Pass user input as argv; never interpolate it into Python source.
+ENCODED=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$QUERY")
 
-curl -s --max-time 30 "$SEARXNG_URL?q=$ENCODED&format=json&pageno=1&language=zh-CN" |
-python3 -c "
-import sys, json
+curl -fsS --max-time 30 "$SEARXNG_URL?q=$ENCODED&format=json&pageno=1&language=zh-CN" |
+python3 -c '
+import json
+import sys
+
+query = sys.argv[1]
+count = int(sys.argv[2])
+raw = sys.stdin.read()
 try:
-    data = json.load(sys.stdin)
-    results = data.get('results', [])
+    data = json.loads(raw)
+    results = data.get("results", [])
     if not results:
-        print('No results found.')
+        print("No results found.")
         sys.exit(0)
-    print(f'── {len(results)} results for \"$QUERY\" ──\n')
-    for i, r in enumerate(results[:$COUNT], 1):
-        title = r.get('title', '?')
-        url = r.get('url', '?')
-        snippet = r.get('content', '')[:150].replace(chr(10), ' ')
-        engine = r.get('engine', '?')
-        print(f'{i}. [{engine}] {title}')
-        print(f'   {url}')
+    print(f"── {len(results)} results for {query!r} ──\n")
+    for i, result in enumerate(results[:count], 1):
+        title = result.get("title", "?")
+        url = result.get("url", "?")
+        snippet = result.get("content", "")[:150].replace(chr(10), " ")
+        engine = result.get("engine", "?")
+        print(f"{i}. [{engine}] {title}")
+        print(f"   {url}")
         if snippet:
-            print(f'   {snippet}')
+            print(f"   {snippet}")
         print()
-except json.JSONDecodeError as e:
-    print(f'Error: {e}')
-    text = sys.stdin.read()
-    print(f'Raw response: {text[:200]}')
-"
+except json.JSONDecodeError as error:
+    print(f"Error: {error}")
+    print(f"Raw response: {raw[:200]}")
+' "$QUERY" "$COUNT"
