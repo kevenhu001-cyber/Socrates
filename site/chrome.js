@@ -1,6 +1,23 @@
 (function () {
   'use strict';
 
+  // Keep browser topbar and notch synchronized with the dark canvas
+  var metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (!metaTheme) {
+    metaTheme = document.createElement('meta');
+    metaTheme.name = 'theme-color';
+    document.head.appendChild(metaTheme);
+  }
+  metaTheme.setAttribute('content', '#000000');
+
+  var metaScheme = document.querySelector('meta[name="color-scheme"]');
+  if (!metaScheme) {
+    metaScheme = document.createElement('meta');
+    metaScheme.name = 'color-scheme';
+    document.head.appendChild(metaScheme);
+  }
+  metaScheme.setAttribute('content', 'dark');
+
   var header = document.querySelector('.site-header');
   var footer = document.querySelector('.site-footer');
   if (!header || !footer) return;

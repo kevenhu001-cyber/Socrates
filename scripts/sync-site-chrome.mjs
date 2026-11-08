@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../site/', import.meta.url));
 // locale.js change: the site serves them with `cache-control: immutable,
 // max-age=604800`, so a returning browser keeps the old bytes for a week
 // unless the query string changes.
-const version = '20261108q11';
+const version = '20261108q12';
 const appURL = 'https://app.topodrive.top';
 const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const globe = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M3.2 10h13.6M10 3c2.2 2.3 3.2 4.6 3.2 7s-1 4.7-3.2 7c-2.2-2.3-3.2-4.6-3.2-7S7.8 5.3 10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
@@ -225,6 +225,9 @@ export async function syncChrome({ check = false } = {}) {
       .replace(/(<script src="[^\"]*locale\.js)(?:\?[^\"]*)?(")/g, `$1?cb=${version}$2`)
       .replace(/(<script src="[^\"]*editorial\.js)(?:\?[^\"]*)?(")/g, `$1?cb=${version}$2`)
       .replace(/(<link rel="stylesheet" href="[^\"]*(?:inner|account|page-media)\.css)(?:\?[^\"]*)?(")/g, `$1?cb=${version}$2`)
+      .replace(/[ \t]*<meta name="theme-color"[^>]*>\r?\n?/g, '')
+      .replace(/[ \t]*<meta name="color-scheme"[^>]*>\r?\n?/g, '')
+      .replace(/(<meta name="viewport"[^>]*>\r?\n)/, `$1  <meta name="theme-color" content="#000000">\n  <meta name="color-scheme" content="dark">\n`)
       .replace(/\s*<\/head>/, `\n${locale === 'zh' ? `${preloads}  <link rel="stylesheet" href="/fonts.css?cb=${version}">\n` : ''}  <link rel="stylesheet" href="/public.css?cb=${version}">\n  <link rel="stylesheet" href="/chrome.css?cb=${version}">\n</head>`)
       .replace(/\s*<\/body>/, `\n  <script src="/chrome.js?cb=${version}"></script>\n  <script src="/motion.js?cb=${version}"></script>\n</body>`);
     // Preserve existing whitespace around all non-generated content.
