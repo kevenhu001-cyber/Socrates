@@ -212,12 +212,9 @@ test('restored edit actions keep the answer intact inside the unified activity h
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
   await expect.poll(async () => (await body.locator('.tool-run-prose').allTextContents()).join('').replace(/\s/g, '')).toBe(rawText.replace(/\s/g, ''));
-  /* Two consecutive edits merge into one group; each row names its file. */
+  /* Each edit keeps its own row and names its file. */
   await body.locator('[data-testid="turn-activity-toggle"]').click();
-  await expect(body.locator('[data-testid="tool-group-title"]')).toHaveText('Used 2 tools');
-  await body.locator('[data-testid="tool-group-toggle"]').click();
-  await expect(body.locator('.rn-tool-row [data-testid="tool-row-verb"]')).toHaveText(['Edit file', 'Edit file']);
-  await expect(body.locator('.rn-tool-row [data-testid="tool-row-target"]')).toHaveText(['moe.py', 'router_v2.py']);
+  await expect(body.locator('.rn-tool-row [data-testid="thinking-step-title"]')).toContainText(['moe.py', 'router_v2.py']);
   const flow = await body.locator('.turn-evidence > *').evaluateAll((nodes) => nodes.map((node) => ({
     className: node.className,
     text: node.textContent.trim(),

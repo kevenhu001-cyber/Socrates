@@ -159,7 +159,6 @@ test('a settled visualization beside visible tool activities stays on screen', a
 
   const group = body.locator('.rn-turn-activity');
   await expect(group).toHaveCount(1);
-  await expect(group.locator('[data-testid="tool-group-search-1"]')).toHaveCount(1);
   await expect(group.locator('[data-testid="turn-activity-toggle"]')).toHaveAttribute('aria-expanded', 'false');
 
   const card = body.locator('.visualization-card');
@@ -210,13 +209,11 @@ test('opening a mobile tool detail does not move or duplicate call outputs', asy
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
 
   await body.locator('[data-testid="turn-activity-toggle"]').click();
-  await body.locator('[data-testid="tool-group-toggle"]').click();
   await body.locator('[data-testid="tool-row-search-1"]').click();
-  /* Phone: the detail is a bottom sheet over the transcript, not an inline
-     expansion that could move the outputs. */
+  /* The detail opens inline beneath its row; outputs above and below keep
+     their nodes. */
   const sheet = page.locator('[data-testid="tool-detail"]');
   await expect(sheet).toBeVisible();
-  await expect(sheet).toHaveAttribute('data-layout', 'sheet');
   await expect(page.locator('[data-tool-run-sheet="1"]')).toHaveCount(0);
   await expect(charts).toHaveCount(2);
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
@@ -407,18 +404,17 @@ test('expanding and collapsing a tool ten times never remounts its chart', async
   await expect(card).toBeVisible();
   const handle = await card.elementHandle();
 
-  /* RN-2: the row opens a drawer instead of expanding in place; toggling the
-     run's group open and closed is the in-transcript disclosure now. */
+  /* RN-2: a call opens its detail in place; repeated disclosure must not
+     remount the chart that lives outside the row. */
   await body.locator('[data-testid="turn-activity-toggle"]').click();
-  const summary = body.locator('[data-testid="tool-group-toggle"]');
+  const summary = body.locator('[data-testid="tool-row-search-1"]');
   for (let i = 0; i < 10; i++) {
     await summary.click();
     await expect(summary).toHaveAttribute('aria-expanded', i % 2 === 0 ? 'true' : 'false');
   }
-  await body.locator('[data-testid="tool-group-toggle"]').click();
-  await body.locator('[data-testid="tool-row-search-1"]').click();
+  await summary.click();
   await expect(page.locator('[data-testid="tool-detail"]')).toBeVisible();
-  await page.keyboard.press('Escape');
+  await summary.click();
   await expect(page.locator('[data-testid="tool-detail"]')).toHaveCount(0);
 
   const sameNode = await page.evaluate((el) => {

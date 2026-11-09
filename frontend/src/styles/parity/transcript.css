@@ -260,9 +260,12 @@
   }
 }
 
-/* Newly published prose on desktop and mobile; settled paragraphs stay still. */
+/* Newly published prose on desktop and mobile; settled paragraphs stay still.
+   A published chunk settles from a slightly lighter ink rather than fading up
+   from near-transparent: at 0.25 the opening glyphs of a fast stream spent
+   their first frames invisible and the text read as a flicker. */
 .tool-run-prose.is-live .stream-append-reveal {
-  animation: stream-append-reveal 120ms ease-out backwards;
+  animation: stream-append-reveal 90ms ease-out backwards;
 }
 
 /* Older runs have already revealed themselves and only need the opacity to
@@ -275,12 +278,12 @@
 }
 
 @keyframes stream-append-reveal {
-  from { opacity: 0.25; }
+  from { opacity: 0.75; }
   to   { opacity: 1; }
 }
 
 @keyframes stream-append-age {
-  from { opacity: 0.25; }
+  from { opacity: 0.75; }
   to   { opacity: 1; }
 }
 

@@ -1,5 +1,5 @@
-// RN-2 tool cards: consecutive calls merge into 「使用了 N 个工具」; each row
-// opens its detail as a drawer (desktop) or bottom sheet (phone).
+// RN-2 activity rail: every tool call is one row on the turn's hairline rail,
+// and a row opens its own detail inline beneath the label.
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -35,7 +35,7 @@ const FIXTURE_CALLS = [
     { title: 'Beta one', url: 'https://example.test/beta-one', snippet: 'Third' },
   ]),
   /* No output, no status, no duration → still in flight. History cannot
-     literally stream, so this is how the fixture gets a running member. */
+     literally stream, so this is how the fixture gets a running row. */
   {
     id: 's3',
     name: 'web_search',
@@ -127,65 +127,57 @@ async function loadFixtureSession(page, { theme = 'dark', html = null, toolCalls
   return body;
 }
 
-async function openGroup(body) {
-  const toggle = body.getByTestId('tool-group-toggle');
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
-  return body.getByTestId('tool-group-body');
-}
-
 async function openDetail(page, body, id) {
+  const toggle = body.getByTestId('turn-activity-toggle');
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
   await body.getByTestId(`tool-row-${id}`).click();
   const detail = page.getByTestId('tool-detail');
   await expect(detail).toBeVisible();
   return detail;
 }
 
-test('consecutive calls collapse into one 「Used N tools」 group, rows in call order', async ({ page }) => {
+test('every call is one row on the rail, in call order', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  const toggle = body.getByTestId('tool-group-toggle');
-  await expect(toggle).toHaveCount(1);
-  await expect(body.getByTestId('tool-group-title')).toHaveText('Used 6 tools');
-  // One call is still in flight, so the group says so in words.
-  await expect(body.getByTestId('tool-group-status')).toHaveText('Running');
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(body.getByTestId('tool-group-body')).toBeHidden();
-  const list = await openGroup(body);
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  expect(await list.locator('.rn-tool-row').evaluateAll((rows) => rows.map((row) => row.dataset.tcid)))
+  expect(await body.locator('.rn-tool-row').evaluateAll((rows) => rows.map((row) => row.dataset.tcid)))
     .toEqual(['s1', 's2', 's3', 'f1', 'w1', 'w2']);
   const s1 = body.getByTestId('tool-row-s1');
-  await expect(s1.getByTestId('tool-row-verb')).toHaveText('Search the web');
-  await expect(s1.getByTestId('tool-row-target')).toHaveText('alpha theory');
-  await expect(s1.getByTestId('tool-row-status')).toHaveText('Done');
-  await expect(s1.getByTestId('tool-row-duration')).toHaveText('1.2s');
+  await expect(s1).toContainText('alpha theory');
+  await expect(body.getByTestId('tool-row-w1')).toContainText('router_v2.py');
+  await expect(body.getByTestId('tool-row-w2')).toContainText('moe.py');
+  // A row that is still in flight leads with the spinner; settled rows do not.
   await expect(body.locator('.rn-tool-row[data-tcid="s3"]')).toHaveAttribute('data-state', 'running');
-  await expect(body.getByTestId('tool-row-s3').getByTestId('tool-row-status')).toHaveText('Running');
-  await expect(body.getByTestId('tool-row-f1').getByTestId('tool-row-status')).toHaveText('Failed');
-  // Keyboard: the group toggle is a real button.
-  await toggle.focus();
-  await page.keyboard.press('Enter');
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner')).toHaveCount(1);
+  await expect(s1.getByTestId('thinking-step-spinner')).toHaveCount(0);
+  await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-state', 'error');
 });
 
-test('a row opens a drawer with input, sources and Escape-to-close', async ({ page }) => {
+test('a row opens its detail inline, and closes on a second press', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  await openGroup(body);
+  const row = body.getByTestId('tool-row-s1');
+  await expect(row).toHaveAttribute('aria-expanded', 'false');
   const detail = await openDetail(page, body, 's1');
-  await expect(detail).toHaveAttribute('data-layout', 'drawer');
-  await expect(detail).toHaveAttribute('aria-modal', 'true');
-  await expect(detail.getByTestId('tool-detail-title')).toHaveText('Search the web · alpha theory');
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+  expect(await detail.getAttribute('role')).toBe(null);
   await expect(detail.getByTestId('tool-detail-section-input')).toContainText('"query": "alpha theory"');
   const sources = detail.getByTestId('tool-detail-section-sources');
   await expect(sources.getByTestId('tool-source')).toHaveCount(2);
   await expect(sources.getByTestId('tool-source-title').first()).toHaveText('Alpha one');
   await expect(sources.getByTestId('tool-source-host').first()).toHaveText('example.test');
   await expect(sources.getByTestId('tool-source').first()).toHaveAttribute('role', 'link');
-  // The drawer sits on the right edge of a wide viewport.
-  const box = await detail.boundingBox();
-  expect(box.x + box.width).toBeGreaterThan(page.viewportSize().width - 40);
-  expect(box.x).toBeGreaterThan(page.viewportSize().width / 2);
-  await page.keyboard.press('Escape');
+  // The panel sits inside the prose column, under its own row.
+  expect(await detail.evaluate((el) => Boolean(el.closest('.rn-tool-row[data-tcid="s1"]')))).toBe(true);
+  await row.click();
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
+});
+
+test('keyboard activation toggles the row disclosure', async ({ page }) => {
+  const body = await loadFixtureSession(page);
+  const row = body.getByTestId('tool-row-s1');
+  await row.focus();
+  await page.keyboard.press('Enter');
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('Enter');
+  await expect(row).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('long tool output expands and copies the complete source text', async ({ page }) => {
@@ -215,7 +207,7 @@ test('long tool output expands and copies the complete source text', async ({ pa
   await expect(block).not.toContainText('line-15:');
 });
 
-test('long arguments stay within the drawer', async ({ page }) => {
+test('long arguments stay inside the inline panel viewport', async ({ page }) => {
   const longCall = {
     ...searchCall('wide-args', 'wide detail', []),
     input: { query: 'wide detail', payload: 'x'.repeat(2048) },
@@ -224,14 +216,11 @@ test('long arguments stay within the drawer', async ({ page }) => {
   const detail = await openDetail(page, body, 'wide-args');
   const input = detail.getByTestId('tool-detail-section-input');
   await expect(input).toContainText('wide detail');
-  const metrics = await detail.evaluate((element) => ({
+  const bounds = await input.evaluate((element) => ({
     right: element.getBoundingClientRect().right,
-    scroll: element.scrollWidth,
-    client: element.clientWidth,
+    viewport: document.documentElement.clientWidth,
   }));
-  const inputBox = await input.boundingBox();
-  expect(inputBox.x + inputBox.width).toBeLessThanOrEqual(metrics.right + 1);
-  expect(metrics.scroll).toBeLessThanOrEqual(metrics.client + 1);
+  expect(bounds.right).toBeLessThanOrEqual(bounds.viewport);
 });
 
 test('a failure keeps a readable reason and a Retry in the transcript', async ({ page }) => {
@@ -254,22 +243,18 @@ test('a failure keeps a readable reason and a Retry in the transcript', async ({
   expect(seen).toHaveLength(1);
   expect(seen[0]).toMatchObject({ toolId: 'f1', tool: 'web_search', errorCode: 'SEARCH_TIMEOUT' });
 
-  /* The drawer carries the full error and the error code as a footnote. */
-  await openGroup(body);
+  /* The inline panel carries the full error and the error code as a footnote. */
   const detail = await openDetail(page, body, 'f1');
   await expect(detail.getByTestId('tool-detail-section-error')).toContainText('Search upstream timed out after 30s');
   await expect(detail.getByTestId('tool-detail-section-technical')).toContainText('SEARCH_TIMEOUT');
 });
 
-test('each file action names its file and opens its own result details', async ({ page }) => {
+test('each file action names its file in the row and in its own details', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  await openGroup(body);
   const w1 = body.getByTestId('tool-row-w1');
-  await expect(w1.getByTestId('tool-row-verb')).toHaveText('Create file');
-  await expect(w1.getByTestId('tool-row-target')).toHaveText('router_v2.py');
+  await expect(w1).toContainText('router_v2.py');
   const w2 = body.getByTestId('tool-row-w2');
-  await expect(w2.getByTestId('tool-row-verb')).toHaveText('Edit file');
-  await expect(w2.getByTestId('tool-row-target')).toHaveText('moe.py');
+  await expect(w2).toContainText('moe.py');
   const detail = await openDetail(page, body, 'w1');
   await expect(detail).toContainText('router_v2.py');
 });
@@ -299,22 +284,24 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
   await expect(body).not.toContainText('baked row');
 });
 
-test('a narrow viewport opens the detail as a bottom sheet', async ({ page }) => {
+test('narrow viewports keep the inline panel inside the transcript column', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const body = await loadFixtureSession(page);
-  await openGroup(body);
   const detail = await openDetail(page, body, 's1');
-  await expect(detail).toHaveAttribute('data-layout', 'sheet');
   const box = await detail.boundingBox();
-  expect(Math.round(box.y + box.height)).toBeGreaterThanOrEqual(843);
-  expect(box.width).toBeGreaterThanOrEqual(388);
+  expect(box.width).toBeLessThanOrEqual(390);
+  const panel = await detail.evaluate((element) => ({
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+  }));
+  expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth + 1);
   await expect(detail.getByTestId('tool-source')).toHaveCount(2);
-  await detail.getByTestId('tool-detail-close').click();
+  await body.getByTestId('tool-row-s1').click();
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
   await expect(body.getByTestId('tool-row-s2')).toBeVisible();
 });
 
-test('mobile tool activity titles stay horizontal and open in a contained touch-friendly sheet', async ({ page }) => {
+test('phone rows stay horizontal, touch-height and one line', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   const body = await loadFixtureSession(page, { theme: 'light', language: 'zh' });
 
@@ -332,26 +319,6 @@ test('mobile tool activity titles stay horizontal and open in a contained touch-
   await expect(retry).toBeVisible();
   expect((await retry.boundingBox()).height).toBeGreaterThanOrEqual(44);
 
-  const toggle = body.getByTestId('tool-group-toggle');
-  const title = body.getByTestId('tool-group-title');
-  const groupLayout = await toggle.evaluate((element) => ({
-    direction: getComputedStyle(element).flexDirection,
-    wrap: getComputedStyle(element).flexWrap,
-    width: element.clientWidth,
-    scrollWidth: element.scrollWidth,
-  }));
-  const titleLayout = await title.evaluate((element) => ({
-    writingMode: getComputedStyle(element).writingMode,
-    height: element.getBoundingClientRect().height,
-    lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight),
-  }));
-  expect(groupLayout.direction).toBe('row');
-  expect(groupLayout.wrap).toBe('nowrap');
-  expect(groupLayout.scrollWidth).toBeLessThanOrEqual(groupLayout.width + 1);
-  expect(titleLayout.writingMode).toBe('horizontal-tb');
-  expect(titleLayout.height).toBeLessThanOrEqual(titleLayout.lineHeight * 1.5);
-
-  await openGroup(body);
   const row = body.getByTestId('tool-row-s1');
   const rowLayout = await row.evaluate((element) => ({
     direction: getComputedStyle(element).flexDirection,
@@ -368,7 +335,6 @@ test('mobile tool activity titles stay horizontal and open in a contained touch-
   await body.screenshot({ path: 'test-results/tool-run-group-mobile-320-open.png' });
 
   const detail = await openDetail(page, body, 's1');
-  await expect(detail).toHaveAttribute('data-layout', 'sheet');
   const detailLayout = await detail.evaluate((element) => ({
     width: element.getBoundingClientRect().width,
     scrollWidth: element.scrollWidth,
@@ -376,18 +342,18 @@ test('mobile tool activity titles stay horizontal and open in a contained touch-
   }));
   expect(detailLayout.width).toBeLessThanOrEqual(320);
   expect(detailLayout.scrollWidth).toBeLessThanOrEqual(detailLayout.clientWidth + 1);
-  const closeBox = await detail.getByTestId('tool-detail-close').boundingBox();
-  expect(closeBox.height).toBeGreaterThanOrEqual(44);
 });
 
 test('rows share one icon column and the prose column', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  await openGroup(body);
   await body.scrollIntoViewIfNeeded();
   await body.screenshot({ path: 'test-results/tool-run-group-dark-open.png' });
   const icons = await body.locator('.rn-tool-row .tool-inline-tool-icon').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
-  expect(icons.length).toBe(6);
+  /* Five settled rows carry their tool glyph; the in-flight row leads with
+     the shared spinner instead, so it contributes no icon. */
+  expect(icons.length).toBe(5);
   expect(Math.max(...icons) - Math.min(...icons)).toBeLessThanOrEqual(1);
+  await expect(body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner')).toHaveCount(1);
   const proseWidth = await body.locator('.tool-run-prose').first().evaluate((el) => {
     const p = el.querySelector('p') || el.firstElementChild;
     return p ? p.getBoundingClientRect().width : 0;
@@ -395,7 +361,7 @@ test('rows share one icon column and the prose column', async ({ page }) => {
   expect(proseWidth).toBeGreaterThan(200);
 });
 
-test('a running code call streams into the open drawer and keeps it open on completion', async ({ page }) => {
+test('a running code call streams into the open panel and keeps it open on completion', async ({ page }) => {
   await page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     const encoder = new TextEncoder();
@@ -440,16 +406,15 @@ test('a running code call streams into the open drawer and keeps it open on comp
     const sessionId = '55555555-5555-4555-8555-555555555555';
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-code', role: 'user', rawText: 'Run it', html: null }] });
     window.__testActivateMainView('chatView');
     window.__codeTurnPromise = window.askChatTurn('Run it');
   });
 
-  await page.locator('.msg.assistant').last().getByTestId('turn-activity-toggle').click();
   const bubble = page.locator('.msg.assistant').last();
   const row = bubble.locator('.rn-tool-row[data-tcid="live-code"]').last();
   await expect(row).toHaveAttribute('data-state', 'running');
+  await expect(bubble.getByTestId('turn-activity-label')).toContainText(/\d/);
 
   await page.evaluate(() => {
     window.__beforeToolSnapshot = window.stateStore.read('messages').at(-1);
@@ -497,7 +462,7 @@ test('a running code call streams into the open drawer and keeps it open on comp
 
   await page.evaluate(() => window.__finishCode());
   await expect(row).toHaveAttribute('data-state', 'done');
-  /* A settled call reports results, not the stream: the open drawer swaps the
+  /* A settled call reports results, not the stream: the open panel swaps the
      live blocks for the output section and stays open. */
   await expect(page.getByTestId('tool-live-preview')).toHaveCount(0);
   await expect(page.getByTestId('tool-detail')).toBeVisible();
@@ -566,7 +531,6 @@ test('a pending approval stays visible in the transcript with pill decisions', a
   await expect(prompt.getByRole('button', { name: 'Decline' })).toBeVisible();
   await expect(prompt.locator('[data-approval-action="acceptForSession"]')).toHaveCount(0);
   await expect(prompt.locator('[data-approval-action="stop"]')).toHaveCount(0);
-  await expect(row.getByTestId('tool-row-status')).toHaveText('Needs approval');
 
   await prompt.locator('[data-approval-action="accept"]').click();
   await expect(prompt.getByTestId('tool-approval-status')).toHaveText('Approved');

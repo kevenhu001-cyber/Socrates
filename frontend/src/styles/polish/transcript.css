@@ -232,7 +232,10 @@
      transform here would paint the bubble at a second, compositor-only
      position mid-glide (legacy 06-chat-transcript.css pins transform:none and
      e2e/chat-send.spec.mjs asserts it). Movement belongs to the glide alone.
-   - Live assistant response: translateY(10px) -> 0
+   - Live assistant response: opacity only, one fast step. The prose inside
+     already reveals itself per published chunk; a second fade or a 6px rise
+     on the row stacked on top of that and the opening characters read as
+     "invisible, then double-speed". The row now just arrives.
    Settled rows have data-stream-settled, keeping history clean. */
 @keyframes msgUserIn {
   0% { opacity: 0; }
@@ -240,14 +243,8 @@
 }
 
 @keyframes msgIn {
-  0% {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 /* Opacity-only fade: a bouncy curve overshoots opacity, which reads as a
@@ -258,7 +255,7 @@
 }
 
 #appShell .msg.assistant:not([data-stream-settled]) {
-  animation: msgIn var(--ui-duration-normal) var(--ui-ease-content, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation: msgIn var(--ui-duration-fast) var(--ui-ease-out) both;
 }
 
 #appShell .msg.assistant[data-stream-settled] { animation: none; }
@@ -463,4 +460,19 @@
   #appShell :is(.stream-cursor, .msg.assistant[data-stream-settled] .msg-toolbar) {
     transition: none;
   }
+}
+
+/* Find in session mounts by toggling `display`, so an entrance is the only
+   cue available; a 2px drop on the fast clock matches the toolbar's fade. */
+#appShell .find-bar:not(.hidden) {
+  animation: findBarIn var(--ui-duration-fast) var(--ui-ease-out) both;
+}
+
+@keyframes findBarIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell .find-bar:not(.hidden) { animation: none; }
 }

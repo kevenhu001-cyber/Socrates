@@ -96,14 +96,13 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   const rowButton = row.getByTestId(`tool-row-${TOOL_ID}`);
   await expect(row).toHaveCount(1);
 
-  // Running: the row carries the running state and says it in words (a
-  // status region), never with a dot.
+  // Running: the row carries the running state, a spinner, and nothing else.
   await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(row.getByTestId('tool-row-status')).toHaveText('Running');
-  await expect(row.getByTestId('tool-row-status')).toHaveAttribute('role', 'status');
+  await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(1);
+  await expect(row.getByTestId('thinking-step-title')).toContainText('Executing code');
 
-  // The elapsed counter ticks while the row is in flight.
-  const meta = row.getByTestId('tool-row-duration');
+  // The turn's header ticks while the row is in flight.
+  const meta = bubble.getByTestId('turn-activity-label');
   const readMeta = async () => (await meta.count()) ? (await meta.first().innerText()).trim() : '';
   await expect.poll(readMeta, { timeout: 10_000 }).toMatch(/\d/);
   const firstReading = await readMeta();
@@ -112,9 +111,9 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   // The terminal frame settles the row.
   await page.evaluate(() => window.__pushToolResult());
   await expect(row).toHaveAttribute('data-state', 'done');
-  await expect(row.getByTestId('tool-row-status')).toHaveText('Done');
+  await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(0);
 
-  // The settled row opens its detail drawer on demand; Escape closes it.
+  // The settled row opens its detail inline on demand; a second press folds it.
   const activityToggle = bubble.getByTestId('turn-activity-toggle');
   if (await activityToggle.count()) {
     const isExpanded = await activityToggle.getAttribute('aria-expanded');
@@ -123,13 +122,12 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
     }
   }
 
-  await expect(rowButton).toHaveAttribute('aria-haspopup', 'dialog');
+  await expect(rowButton).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
   await rowButton.click();
   const detail = page.getByTestId('tool-detail');
   await expect(detail).toBeVisible();
-  await expect(detail).toHaveAttribute('data-layout', 'drawer');
   await expect(detail.getByTestId('tool-detail-section-input')).toBeVisible();
-  await page.keyboard.press('Escape');
+  await rowButton.click();
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
 });

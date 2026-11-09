@@ -10,9 +10,9 @@ test('thinking disclosure supports keyboard control and preserves intent through
   const accordion = page.locator('.rn-turn-activity');
   const toggle = accordion.getByTestId('turn-activity-toggle');
   const body = accordion.getByTestId('turn-activity-body');
-  // Live copy reflects the observed state, not a fabricated step counter.
-  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking…');
-  await expect(accordion.getByTestId('turn-activity-indicator')).toHaveCount(1);
+  // The header speaks run time; the working cue is the row's spinner.
+  await expect(accordion.getByTestId('turn-activity-label')).toContainText(/Processing|Running/);
+  await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(1);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.focus();
   await page.keyboard.press('Enter');
@@ -29,7 +29,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-update' });
-  await expect(accordion.getByTestId('thinking-step-title')).toHaveText('Checked the relevant sources.');
+  await expect(accordion.getByTestId('thinking-step-title').first()).toHaveText('Checked the relevant sources.');
   await expect(accordion).not.toContainText('internal draft');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await page.keyboard.press('Enter');
@@ -39,11 +39,12 @@ test('thinking disclosure supports keyboard control and preserves intent through
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-complete' });
   await expect(accordion).not.toHaveAttribute('data-live', 'true');
-  await expect(accordion.getByTestId('turn-activity-indicator')).toHaveCount(0);
+  await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await setLang(page, 'zh');
-  // Settled activity details do not imply a count of reasoning steps.
-  await expect(toggle).toContainText('活动详情');
+  // The settled header freezes the observed run time; it still never claims
+  // a count of reasoning steps.
+  await expect(toggle).toContainText(/运行了 \d+秒/);
   await page.screenshot({ path: 'test-results/thinking-disclosure-desktop.png', animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'test-results/thinking-disclosure-mobile.png', animations: 'disabled' });

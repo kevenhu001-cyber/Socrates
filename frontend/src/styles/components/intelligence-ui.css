@@ -326,8 +326,11 @@
   background: var(--ui-bg-surface-raised, var(--card, transparent));
 }
 .ds-table-wrap:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -1px;
+  /* The shared double ring (ink + paper gap), not a bare outline: the table
+     scroller is focusable so a keyboard reader can scroll it, and it was the
+     one focusable surface in the app painting its own outline. */
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
 }
 .ds-table-wrap.is-streaming {
   min-height: 44px;
@@ -341,7 +344,7 @@
   min-width: 100%;
   border-collapse: collapse;
   color: var(--muted-foreground);
-  font-size: calc(13px * var(--app-type-scale, 1));
+  font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-normal, 1.5);
 }
 .ds-table-wrap > table.ds-table caption,

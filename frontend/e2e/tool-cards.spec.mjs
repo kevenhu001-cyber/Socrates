@@ -68,12 +68,12 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   // Live chat must not have the legacy tool card chrome.
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
 
-  // The text reply landed, so the live caption is gone.
-  await expect(bubble.locator(TURN.indicator)).toHaveCount(0);
+  // The text reply landed, so the live row spinner is gone.
+  await expect(bubble.locator(TURN.spinner)).toHaveCount(0);
 
   const searchRow = toolRow(bubble, 'search-1');
   await expect(searchRow).toHaveAttribute('data-state', 'done');
-  await expect(toolRowButton(bubble, 'search-1')).toHaveAttribute('aria-haspopup', 'dialog');
+  await expect(toolRowButton(bubble, 'search-1')).toHaveAttribute('aria-expanded', 'false');
 
   const detail = await openToolDetail(page, bubble, 'search-1');
   await expect(detail.locator(TURN.source).first()).toContainText('Trusted source');
@@ -204,25 +204,24 @@ test('live chat shows a running search row while the model is searching', async 
   await openActivity(bubble);
   const row = toolRow(bubble, 'late-search');
   await expect(row).toBeVisible();
-  /* Verb and object are steady text; only the status word is live. */
-  await expect(row.locator(TURN.verb)).toHaveText('Search the web');
-  await expect(row.locator(TURN.target)).toHaveText('weather today');
-  await expect(row.locator(TURN.verb)).not.toHaveClass(/shimmer-text/);
-  expect(await row.locator(TURN.verb).evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
-  await expect(row.locator(TURN.status)).toHaveText('Running');
-  await expect(row.locator('.tool-inline-tool-icon svg circle')).toHaveCount(1);
-  await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(1);
-  await expect(bubble.locator(TURN.indicator)).toHaveCount(1);
+  /* One line of copy: the row names the object and never shimmers. */
+  const label = row.locator(TURN.stepTitle);
+  await expect(label).toContainText('weather today');
+  expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
   await expect(row).toHaveAttribute('data-state', 'running');
+  await expect(row.locator(TURN.spinner)).toHaveCount(1);
+  await expect(bubble.locator(TURN.spinner)).toHaveCount(1);
 
   await page.evaluate(() => window.__finishSearchStream());
   await expect(row).toHaveAttribute('data-state', 'done');
-  /* P_declarative-tool-run — the settled row still names its object; the
-     source count moves into the drawer's subtitle. */
-  await expect(row.locator(TURN.status)).toHaveText('Done');
-  await expect(row.locator(TURN.target)).toHaveText('weather today');
+  /* P_declarative-tool-run — the settled row still names its object, shows its
+     tool glyph again, and the source count moves into the open panel. */
+  await expect(row.locator(TURN.spinner)).toHaveCount(0);
+  await expect(row.locator(TURN.stepTitle)).toContainText('weather today');
+  await expect(row.locator('.tool-inline-tool-icon svg circle')).toHaveCount(1);
+  await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(1);
   const detail = await openToolDetail(page, bubble, 'late-search');
-  await expect(detail).toContainText('1 source');
+  await expect(detail.locator(TURN.source)).toHaveCount(1);
 });
 
 test('code execution streams live output into its row without thinking overlap', async ({ page }) => {
@@ -276,22 +275,23 @@ test('code execution streams live output into its row without thinking overlap',
   const bubble = page.locator('.msg.assistant').last();
   await openActivity(bubble);
   const row = toolRow(bubble, 'live-code');
-  await expect(row.locator(TURN.verb)).toHaveText('Run code');
-  await expect(row.locator(TURN.status)).toHaveText('Running');
-  await expect(row.locator('.tool-inline-tool-icon svg')).toBeVisible();
-  /* The icon set is a single-path glyph now; what the gate owns is that the
-     inline tool icon actually paints, not how many paths it is cut into. */
-  expect(await row.locator('.tool-inline-tool-icon svg path').count()).toBeGreaterThan(0);
+  await expect(row).toHaveAttribute('data-state', 'running');
+  await expect(row.locator(TURN.stepTitle)).toContainText('Executing code');
+  await expect(row.locator(TURN.spinner)).toHaveCount(1);
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   /* RN-2 dropped the phase relabel (Executing code → Analyzing data): the
      verb stays put and the stdout chunk shows up as live output instead. */
   await page.evaluate(() => window.__sendCodeProgress());
   const detail = await openToolDetail(page, bubble, 'live-code');
   await expect(detail.locator('[data-testid="tool-detail-section-live"]')).toContainText('1');
-  await page.keyboard.press('Escape');
   await page.evaluate(() => window.__finishCodeStream());
   await expect(row).toHaveAttribute('data-state', 'done');
-  await expect(row.locator(TURN.status)).toHaveText('Done');
+  await expect(row.locator(TURN.spinner)).toHaveCount(0);
+  await expect(row.locator(TURN.stepTitle)).toHaveText('Ran Python');
+  /* The settled row puts its tool glyph back; the icon set is a single-path
+     glyph, and what the gate owns is that it paints at all. */
+  await expect(row.locator('.tool-inline-tool-icon svg')).toBeVisible();
+  expect(await row.locator('.tool-inline-tool-icon svg path').count()).toBeGreaterThan(0);
 });
 
 test('Tutor streams the same native tools and sends the tutor mode contract', async ({ page }) => {
@@ -388,7 +388,7 @@ test('live chat keeps a burst in the reading flow and persists every call on fin
   await expect(burst.locator(TURN.row)).toHaveCount(3);
 });
 
-test('consecutive tools merge into one group whose rows stay individually inspectable', async ({ page }) => {
+test('consecutive tools stay one row each and open their own details', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
@@ -418,24 +418,18 @@ test('consecutive tools merge into one group whose rows stay individually inspec
 
   const bubble = page.locator('.msg.assistant').last();
   await openActivity(bubble);
-  /* RN-2 design: consecutive calls merge into 「Used N tools」. */
-  const group = bubble.locator('[data-testid="tool-group-group-a"]');
-  await expect(group).toHaveCount(1);
-  await expect(group.locator(TURN.groupTitle)).toHaveText('Used 2 tools');
-  await expect(group.locator('[data-testid="tool-group-status"]')).toHaveText('Done');
-  await openToolGroups(bubble);
-  await expect(group.locator(TURN.row)).toHaveCount(2);
-  for (const id of ['group-a', 'group-b']) await expect(toolRow(group, id)).toBeVisible();
-  await expect(toolRow(group, 'group-a').locator(TURN.target)).toHaveText('alpha');
+  /* Every call keeps its own row; there is no aggregate card between them. */
+  await expect(bubble.locator(TURN.row)).toHaveCount(2);
+  for (const id of ['group-a', 'group-b']) await expect(toolRow(bubble, id)).toBeVisible();
+  await expect(toolRow(bubble, 'group-a').locator(TURN.stepTitle)).toContainText('alpha');
   let detail = await openToolDetail(page, bubble, 'group-a');
   await expect(detail.locator(TURN.sourceTitle)).toHaveCount(1);
-  await page.keyboard.press('Escape');
+  await toolRowButton(bubble, 'group-a').click();
   await expect(page.locator(TURN.detail)).toHaveCount(0);
   detail = await openToolDetail(page, bubble, 'group-b');
   await expect(detail.locator(TURN.sourceTitle)).toContainText('Beta');
 
-  /* Same split-point contract as the burst test above: the merged row is a
-     rendering decision, the persistence is one record per call. */
+  /* Same split-point contract as the burst test above: one record per call. */
   const groupCalls = await page.evaluate(() => {
     const last = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
     const calls = Array.isArray(last && last.toolCalls) ? last.toolCalls : [];
@@ -445,7 +439,7 @@ test('consecutive tools merge into one group whose rows stay individually inspec
   expect(groupCalls.offsets.every((o) => typeof o === 'number'), 'merging must not drop a split point').toBe(true);
 });
 
-test('a failed member marks the grouped run and keeps its own error detail', async ({ page }) => {
+test('a failed member keeps its own error row and detail', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
@@ -476,17 +470,12 @@ test('a failed member marks the grouped run and keeps its own error detail', asy
   /* Failed actions remain visible beside successful actions. */
   const bubble = page.locator('.msg.assistant').last();
   await openActivity(bubble);
-  const group = bubble.locator('[data-testid="tool-group-fail-a"]');
-  await expect(group.locator('[data-testid="tool-group-status"]')).toHaveText('Failed');
-  await openToolGroups(bubble);
-  const failed = toolRow(group, 'fail-b');
+  const failed = toolRow(bubble, 'fail-b');
   await expect(failed).toHaveAttribute('data-state', 'error');
   await expect(failed).toHaveAttribute('data-error', '1');
-  await expect(failed.locator(TURN.status)).toHaveText('Failed');
   const detail = await openToolDetail(page, bubble, 'fail-b');
   await expect(detail.locator('[data-testid="tool-detail-section-error"]')).toContainText('boom');
-  await page.keyboard.press('Escape');
+  await toolRowButton(bubble, 'fail-b').click();
   /* The row that succeeded is not painted as a failure. */
-  await expect(toolRow(group, 'fail-a')).toHaveAttribute('data-state', 'done');
-  await expect(toolRow(group, 'fail-a').locator(TURN.status)).toHaveText('Done');
+  await expect(toolRow(bubble, 'fail-a')).toHaveAttribute('data-state', 'done');
 });

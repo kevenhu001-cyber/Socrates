@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
-import { TURN, openActivity, openToolGroups, toolRow, toolRowButton } from './_turn-ui.mjs';
+import { TURN, openActivity, toolRow, toolRowButton } from './_turn-ui.mjs';
 
 async function installStream(page, immediate = true) {
   await page.evaluate((immediate) => {
@@ -71,7 +71,7 @@ test('intent stays in the unified activity and completed observations do not dup
   const bubble = await startTurn(page);
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   await expect(bubble.locator(TURN.label)).toHaveAttribute('role', 'status');
-  await expect(bubble.locator(TURN.indicator)).toHaveCount(1);
+  await expect(bubble.locator(TURN.spinner)).toHaveCount(1);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
   const toggle = bubble.locator(TURN.toggle);
   await expect(toggle).toBeEnabled();
@@ -83,39 +83,38 @@ test('intent stays in the unified activity and completed observations do not dup
   await expect(bubble).not.toContainText('another private thought');
   await page.evaluate(() => window.__finishThinking());
   await expect(bubble).toContainText('The final answer.');
-  /* Settled: no live caption, no travelling hairline. */
-  await expect(bubble.locator(TURN.indicator)).toHaveCount(0);
+  /* Settled: no spinner, no live status role, no live surface. */
+  await expect(bubble.locator(TURN.spinner)).toHaveCount(0);
   await expect(bubble.locator(`${TURN.label}[role="status"]`)).toHaveCount(0);
   await expect(bubble.locator(`${TURN.wrapper}[data-live="true"]`)).toHaveCount(0);
   await expect(bubble).not.toContainText('private');
   await expect(page.locator('[data-thinking-panel], #thinkingPanelReactRoot, #summaryBtn')).toHaveCount(0);
 });
 
-test('tool status owns live progress without a duplicate activity list', async ({ page }) => {
+test('the running tool names itself on its row, and its detail opens inline', async ({ page }) => {
   const bubble = await startTurn(page);
   await page.evaluate(() => window.__pushThinkingFrame('tool_use', [{ id: 'search-inline', name: 'web_search', input: { query: 'public query' } }]));
   const row = toolRow(bubble, 'search-inline');
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  /* The live caption names the running tool instead of inventing reasoning steps. */
-  await expect(bubble.locator(TURN.label)).toHaveText('Searching "public query"…');
-  await expect(bubble.locator(`${TURN.toggle} .tool-inline-tool-icon svg`)).toBeVisible();
+  /* The header counts time; the running row carries what is happening. */
+  await expect(bubble.locator(TURN.label)).toContainText(/\d/);
+  await expect(row.locator(TURN.spinner)).toHaveCount(1);
   await openActivity(bubble);
-  await expect(row.locator(TURN.verb)).toHaveText('Search the web');
-  await expect(row.locator(TURN.target)).toHaveText('public query');
+  await expect(toolRowButton(bubble, 'search-inline')).toContainText('public query');
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', { id: 'search-inline', name: 'web_search', ok: true, output: 'Found a source', results: [{ title: 'Source', url: 'https://example.test' }], status: 'completed' }));
   await expect(row).toHaveAttribute('data-state', 'done');
-  // Keyboard: the row is a button that opens the call's detail drawer.
+  // Keyboard: the row is a button that opens the call's detail inline.
   const trigger = toolRowButton(bubble, 'search-inline');
-  await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await trigger.focus();
   await page.keyboard.press('Enter');
   const detail = page.locator(TURN.detail);
   await expect(detail).toBeVisible();
   await expect(detail.locator(TURN.source)).toBeVisible();
   await expect(detail.locator(TURN.sourceTitle)).toHaveText('Source');
-  await page.keyboard.press('Escape');
+  await page.keyboard.press('Enter');
   await expect(detail).toHaveCount(0);
   await page.evaluate(() => window.__finishThinking());
 });
@@ -127,21 +126,20 @@ test('parallel tools keep their order, DOM identity, and open details as later c
     { id: 'second-fast', name: 'web_search', input: { query: 'fast source' } },
   ]));
   await openActivity(bubble);
-  await openToolGroups(bubble);
   const first = toolRow(bubble, 'first-slow');
   await expect(first).toBeVisible();
   const handle = await first.elementHandle();
   await toolRowButton(bubble, 'first-slow').click();
   const detail = page.locator(TURN.detail);
   await expect(detail).toBeVisible();
-  await expect(detail.locator(TURN.detailTitle)).toHaveText('Read file · slow.ts');
+  await expect(detail.locator('[data-testid="tool-detail-section-input"]')).toContainText('slow.ts');
   const detailHandle = await detail.elementHandle();
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', {
     id: 'second-fast', name: 'web_search', ok: true, status: 'completed', output: 'Found source',
     results: [{ title: 'Source', url: 'https://example.test/fast' }],
   }));
   await expect(toolRow(bubble, 'second-fast')).toHaveAttribute('data-state', 'done');
-  /* A sibling settling neither closes nor remounts the open drawer. */
+  /* A sibling settling neither closes nor remounts the open panel. */
   await expect(detail).toBeVisible();
   expect(await page.evaluate((node) => node === document.querySelector('[data-testid="tool-detail"]'), detailHandle)).toBe(true);
   expect(await page.evaluate((node) => node === document.querySelector('.rn-tool-row[data-tcid="first-slow"]'), handle)).toBe(true);
@@ -152,7 +150,6 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   expect(await page.evaluate((node) => node === document.querySelector('[data-testid="tool-detail"]'), detailHandle)).toBe(true);
   await expect(detail.locator(TURN.codeOutput).filter({ hasText: 'export const value = 1;' })).toBeVisible();
   await expect(page.locator(TURN.detail)).toHaveCount(1);
-  await page.keyboard.press('Escape');
   await page.evaluate(() => window.__finishPlain());
 });
 
@@ -168,7 +165,7 @@ test('a task preview does not leave a thought header on a plain answer', async (
 
 for (const theme of ['light', 'dark']) {
   for (const mobile of [false, true]) {
-    test(`ChatGPT activity hierarchy: ${theme}, ${mobile ? 'mobile' : 'desktop'}`, async ({ page }) => {
+    test(`activity rail hierarchy: ${theme}, ${mobile ? 'mobile' : 'desktop'}`, async ({ page }) => {
       await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 });
       await page.emulateMedia({ reducedMotion: 'reduce' });
       const errors = [];
@@ -198,10 +195,7 @@ for (const theme of ['light', 'dark']) {
       await page.mouse.move(0, 0);
       await expect(process).toBeVisible();
       await expect(bubble).not.toContainText('private reasoning');
-      /* Three consecutive calls merge into one 「使用了 3 个工具」 group. */
-      await expect(bubble.locator(TURN.groupTitle)).toHaveText('使用了 3 个工具');
-      await openToolGroups(bubble);
-      /* Rows are judged at rest: park the pointer so none is hovered. */
+      /* Every call is one row: no aggregate group header to open first. */
       await page.mouse.move(0, 0);
       await expect(bubble.locator(TURN.row)).toHaveCount(3);
       for (const row of await bubble.locator(`${TURN.row} [data-testid^="tool-row-"][role="button"]`).all()) {
@@ -210,20 +204,17 @@ for (const theme of ['light', 'dark']) {
       }
       const brand = toolRow(bubble, 'github-jobs').locator('.is-connector-brand svg');
       await expect(brand).toBeVisible();
-      await expect(toolRow(bubble, 'github-jobs').locator(TURN.verb)).toHaveText('使用已连接应用');
       const tool = toolRow(bubble, 'search-example');
-      await expect(tool.locator(TURN.verb)).toHaveText('搜索网页');
-      /* The object is clipped to one line; the full query lives in the drawer. */
-      const target = tool.locator(TURN.target);
-      await expect(target).toHaveText(/^检查 GitHub Actions/);
-      const verbType = await tool.locator(TURN.verb).evaluate((node) => ({ size: getComputedStyle(node).fontSize, lineHeight: node.getBoundingClientRect().height }));
-      const labelSize = await bubble.locator(TURN.label).evaluate((node) => getComputedStyle(node).fontSize);
-      expect(verbType.size).toBe(labelSize);
-      expect(await target.evaluate((node) => node.scrollWidth <= node.clientWidth + 1 || getComputedStyle(node).textOverflow === 'ellipsis')).toBe(true);
-      /* Rows bleed 8px (uiSpace[2]) each side so the hover fill frames the
-         text column; anything wider means the long object pushed the row. */
+      /* The object is clipped to one line; the full query lives in the panel. */
+      const label = tool.locator(TURN.stepTitle);
+      await expect(label).toHaveText(/检查 GitHub Actions/);
+      const labelType = await label.evaluate((node) => ({ size: getComputedStyle(node).fontSize, lineHeight: getComputedStyle(node).lineHeight }));
+      const headerSize = await bubble.locator(TURN.label).evaluate((node) => getComputedStyle(node).fontSize);
+      expect(labelType.size).toBe(headerSize);
+      expect(await label.evaluate((node) => node.scrollWidth <= node.clientWidth + 1 || getComputedStyle(node).textOverflow === 'ellipsis')).toBe(true);
+      /* Rows sit inside the column; a long object may not push the surface. */
       const overflow = await bubble.evaluate((node) => node.scrollWidth - node.clientWidth);
-      expect(overflow).toBeLessThanOrEqual(8);
+      expect(overflow).toBeLessThanOrEqual(1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       await bubble.scrollIntoViewIfNeeded();
       if (mobile && theme === 'light') await page.screenshot({ path: 'test-results/activity-reference-mobile-light.png' });
@@ -233,8 +224,7 @@ for (const theme of ['light', 'dark']) {
       await toolRowButton(bubble, 'search-example').click();
       const detail = page.locator(TURN.detail);
       await expect(detail).toBeVisible();
-      await expect(detail).toHaveAttribute('data-layout', mobile ? 'sheet' : 'drawer');
-      await expect(detail.locator(TURN.detailTitle)).toContainText(longQuery.slice(0, 20));
+      await expect(detail.locator('[data-testid="tool-detail-section-input"]')).toContainText(longQuery.slice(0, 20));
       await expect(detail.locator(TURN.source)).toBeVisible();
       await expect(page.locator('.tool-run-sheet, [data-thinking-panel], vite-error-overlay')).toHaveCount(0);
       expect(errors).toEqual([]);
@@ -242,15 +232,22 @@ for (const theme of ['light', 'dark']) {
   }
 }
 
-
-test('live thinking text sweeps in both directions and respects reduced motion',async({page})=>{
- await page.emulateMedia({reducedMotion:'no-preference'});
- const bubble=await startTurn(page);
- const label=bubble.locator(TURN.label);
- await expect.poll(()=>label.evaluate(el=>getComputedStyle(el).animationName)).toBe('thinking-text-shimmer');
- expect(await label.evaluate(el=>getComputedStyle(el).animationDirection)).toBe('alternate');
- await page.screenshot({path:'test-results/thinking-text-shimmer.png'});
- await page.emulateMedia({reducedMotion:'reduce'});
- expect(await label.evaluate(el=>getComputedStyle(el).animationName)).not.toBe('thinking-text-shimmer');
- await page.evaluate(()=>window.__finishPlain());
+test('the running row spins on the compositor and stops when the turn settles', async ({ page }) => {
+  const bubble = await startTurn(page);
+  const spinner = bubble.locator(TURN.spinner);
+  await expect(spinner).toHaveCount(1);
+  const transform = () => spinner.evaluate((el) => {
+    const computed = getComputedStyle(el).transform;
+    return computed && computed !== 'none' ? computed : el.style.transform;
+  });
+  const first = await transform();
+  await expect.poll(transform, { timeout: 5_000 }).not.toBe(first);
+  // Reduced motion freezes the arc instead of stopping mid-turn.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForTimeout(300);
+  const frozen = await transform();
+  await page.waitForTimeout(400);
+  expect(await transform()).toBe(frozen);
+  await page.evaluate(() => window.__finishPlain());
+  await expect(bubble.locator(TURN.surface)).toHaveCount(0);
 });

@@ -17,7 +17,7 @@
  *   - square icon: `--ui-radius-control`
  *   - circle icon: pill (`--ui-radius-pill`)
  *   - sidebar row: 12px (`--ui-radius-row`)
- *   - colour feedback: `--ui-duration-hover` (100 ms)
+ *   - colour feedback: `--ui-duration-hover` (140 ms)
  *   - press feedback: handled by polish/press.css (`scale` property, not
  *     `transform`, so it composes with the controls' own transitions)
  *

@@ -34,7 +34,7 @@ test('one process disclosure contains public summaries and tools while results s
   await expect(activity.getByText('Checked the assumptions.')).toBeVisible();
   await expect(toolRow(activity, 'ui')).toBeVisible();
   /* Row text sits on the same small label step as the thinking line. */
-  const type = await toolRow(activity, 'ui').locator(TURN.verb).evaluate((node) => ({ size: parseFloat(getComputedStyle(node).fontSize), line: parseFloat(getComputedStyle(node).lineHeight) }));
+  const type = await toolRow(activity, 'ui').locator(TURN.stepTitle).evaluate((node) => ({ size: parseFloat(getComputedStyle(node).fontSize), line: parseFloat(getComputedStyle(node).lineHeight) }));
   const labelSize = await activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
   expect(type.size).toBe(labelSize);
   expect(type.line).toBeGreaterThanOrEqual(type.size);
@@ -97,7 +97,7 @@ test('inline results preserve node identity, edited values and tabs', async ({ p
   await page.screenshot({ path: 'test-results/intelligent-ui-inline-tabs.png' });
 });
 
-test('a live turn shows one spark glyph and reduced motion freezes it', async ({ page }) => {
+test('a live turn counts run time and spins exactly one running step', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check assumptions.' });
@@ -108,59 +108,34 @@ test('a live turn shows one spark glyph and reduced motion freezes it', async ({
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  /* The working cue is one glyph ahead of a still caption: twelve dots on a
-     sphere turning in 3D, near dots larger and more opaque than far ones; no
-     sweeping hairline, no breathing text. The turn is a Web Animation of
-     transform and opacity only, so it runs on the compositor. */
-  const spark = activity.locator(`${TURN.indicator} .thinking-spark`);
-  const dots = spark.locator('.thinking-spark-dot');
-  const dotPose = () => dots.evaluateAll((nodes) => nodes.map((n) => getComputedStyle(n).transform).join(' '));
-  await expect(spark).toHaveCount(1);
-  await expect(spark).toHaveAttribute('data-testid', 'thinking-spark');
-  await expect(dots).toHaveCount(12);
-  await expect(spark).toHaveAttribute('data-motion', 'running');
-  /* Script animations only: the reduced-motion reset can leave stray 0.01ms CSS transitions. */
-  const motion = await dots.evaluateAll((nodes) => nodes.map((n) => n.getAnimations().filter((a) => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation)).map((a) => ({
-    state: a.playState,
-    iterations: a.effect.getTiming().iterations,
-    props: [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k).filter((key) => !['offset', 'easing', 'composite', 'computedOffset'].includes(key))))].sort().join(','),
-  }))));
-  expect(motion).toHaveLength(12);
-  for (const list of motion) expect(list).toEqual([{ state: 'running', iterations: Infinity, props: 'opacity,transform' }]);
-  const depth = await dots.evaluateAll((nodes) => nodes.map((n) => {
-    const style = getComputedStyle(n);
-    const m = new DOMMatrixReadOnly(style.transform);
-    return { s: Math.hypot(m.a, m.b), o: Number(style.opacity) };
-  }));
-  const scales = depth.map((d) => d.s);
-  const opacities = depth.map((d) => d.o);
-  expect(Math.max(...scales)).toBeGreaterThan(Math.min(...scales) * 1.4);
-  expect(Math.max(...opacities)).toBeGreaterThan(Math.min(...opacities) * 2);
-  const firstPose = await dotPose();
-  await expect.poll(dotPose).not.toBe(firstPose);
-  const captionOpacity = () => activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node.parentElement).opacity));
-  await page.waitForTimeout(800);
-  expect(await captionOpacity()).toBe(1);
+  /* The header is a still line of time; the one running row owns the motion.
+     Nothing in the header sweeps, breathes or shimmers. */
+  const label = activity.locator(TURN.label);
+  await expect(label).toHaveAttribute('role', 'status');
+  await expect(label).toContainText(/\d/);
+  expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+  const spinner = activity.locator(TURN.spinner);
+  await expect(spinner).toHaveCount(1);
   await activity.locator(TURN.toggle).click();
-  await expect(toolRow(activity, 'search').locator('.tool-inline-tool-icon')).toHaveCSS('animation-name', 'none');
+  const pose = () => spinner.evaluate((node) => {
+    const computed = getComputedStyle(node).transform;
+    return computed && computed !== 'none' ? computed : node.style.transform;
+  });
+  const firstPose = await pose();
+  await expect.poll(pose, { timeout: 5_000 }).not.toBe(firstPose);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  /* Reduced motion keeps the glyph as one still frame. */
-  await expect(spark).toBeVisible();
-  await expect(spark).toHaveAttribute('data-motion', 'static');
-  await expect(dots).toHaveCount(12);
-  expect(await dots.evaluateAll((nodes) => nodes.reduce((sum, n) => sum + n.getAnimations().filter((a) => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation)).length, 0))).toBe(0);
-  const stillPose = await dotPose();
+  /* Reduced motion freezes the arc in place instead of stopping mid-turn. */
+  await page.waitForTimeout(300);
+  const stillPose = await pose();
   await page.waitForTimeout(400);
-  expect(await dotPose()).toBe(stillPose);
-  expect(await captionOpacity()).toBe(1);
+  expect(await pose()).toBe(stillPose);
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
     ctl.recordToolResult({ id: 'search', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
     ctl.append('The answer.');
     ctl.finish();
   });
-  await expect(activity.locator(TURN.indicator)).toHaveCount(0);
-  expect(await captionOpacity()).toBe(1);
+  await expect(activity.locator(TURN.spinner)).toHaveCount(0);
   await expect(activity.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'true');
 });
 

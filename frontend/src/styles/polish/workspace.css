@@ -768,6 +768,22 @@
   animation: workspaceSkeletonShimmer var(--ui-duration-shimmer) linear infinite;
 }
 
+/* The global .01ms blanket stops these loops but leaves the gradient frozen
+   mid-sweep, which reads as a random bright band. Give them a deliberate
+   static state instead: a flat placeholder, normal ink for the copy. */
+@media (prefers-reduced-motion: reduce) {
+  #appShell .workspace-skeleton-shimmer {
+    animation: none;
+    background-image: none;
+  }
+  #appShell .workspace-loading-banner-text .shimmer-text {
+    animation: none;
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+  }
+  #appShell .workspace-loading-spinner-ring { animation: none; }
+}
+
 #appShell .workspace-skeleton-strip {
   display: flex;
   flex-direction: column;

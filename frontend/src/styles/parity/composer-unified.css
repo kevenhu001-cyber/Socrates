@@ -151,6 +151,23 @@
   box-shadow: var(--ui-focus-shadow);
 }
 
+/* ── Primary control: one disc changing meaning ─────────────────────────
+   The disc fills when a draft exists and becomes Stop while a turn runs.
+   Both used to be hard cuts; the fill now eases and the glyph settles a
+   touch smaller for the 220ms send beat (ui/sendGlyph.ts), so the swap
+   reads as the same control changing state. */
+#appShell .composer-shell [data-composer-control="send"] {
+  transition:
+    background-color var(--ui-duration-fast) var(--ui-ease-out),
+    opacity var(--ui-duration-fast) var(--ui-ease-out);
+}
+#appShell .composer-shell #composerPrimaryBtnContent {
+  transition: transform var(--ui-duration-fast) var(--ui-ease-out);
+}
+#appShell .composer-shell [data-composer-control="send"][data-sending="true"] #composerPrimaryBtnContent {
+  transform: scale(0.9);
+}
+
 /* ── Phone: same sheet, full width, 44px hit areas ──────────────────────── */
 @media (max-width: 768px) {
   /* Project shared RN card/fill roles onto the canonical phone palette.
@@ -249,7 +266,7 @@
   scroll-snap-align: start;
   display: flex;
   align-items: center;
-  transition: box-shadow var(--ui-motion-fast) var(--ui-motion-ease-out);
+  transition: box-shadow var(--ui-duration-fast) var(--ui-ease-out);
 }
 
 .composer-shell .attachment-chip:hover {

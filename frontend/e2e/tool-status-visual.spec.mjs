@@ -70,11 +70,11 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   // The deferred state: status line visible, NO mounted tool row yet.
   await expect(bubble.locator('.rn-tool-row')).toHaveCount(0);
   await expect(bubble).toContainText(/正在更新文件|工具运行中|思考中/);
-  /* The live thinking line carries the running tool's icon and its
-     travelling hairline; no spinner. */
-  await expect(bubble.locator('[data-testid="turn-activity-toggle"] .tool-inline-tool-icon')).toHaveCount(1);
-  await expect(bubble.locator('[data-testid="turn-activity-indicator"]')).toHaveCount(1);
-  await expect(bubble.locator('.thinking-spinner')).toHaveCount(0);
+  /* The live status line is a rail row: a spinning arc and the observed
+     tool copy. The header itself only counts time. */
+  await expect(bubble.locator('[data-testid="turn-activity-indicator"]')).toHaveCount(0);
+  await expect(bubble.locator('[data-testid="thinking-step-spinner"]')).toHaveCount(1);
+  await expect(bubble.locator('[data-testid="thinking-step-title"]')).toContainText(/更新文件|更新|文件|工具/);
 
   // No orphaned stream cursor next to the status icon: while the live
   // status line shows, it owns the "alive" signal.
@@ -93,7 +93,7 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await expect(row).toHaveCount(1);
   await expect(bubble.locator('[data-testid="turn-activity"]')).toHaveCount(1);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  await expect(row.locator('[data-testid="tool-row-target"]')).toContainText('demo.txt');
+  await expect(row.locator('[data-testid="thinking-step-title"]')).toContainText('demo.txt');
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-mounted.png' });
 });

@@ -5,6 +5,7 @@
 
 import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.ts';
 import { scrollToBottomIfPinned } from './ui/scroll.ts';
+import { withViewTransition } from './ui/viewTransitions.ts';
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
 
@@ -54,9 +55,15 @@ export function getThemeStyle() {
 
 export function setThemeStyle(style: string | null) {
   if (!isThemeStyle(style)) return;
-  document.documentElement.setAttribute("data-theme", style);
   try { localStorage.setItem("socrates-theme-style", style); } catch (_) { /* empty-catch: intentional — theme style preference write is best-effort */ }
-  applyDisplayPrefs();
+  /* A palette swap repaints every surface at once. The browser's own
+     cross-fade is the only transition that covers the whole page without
+     painting intermediate palettes; older browsers and reduced motion run
+     the update synchronously, exactly as before. */
+  withViewTransition(() => {
+    document.documentElement.setAttribute("data-theme", style);
+    applyDisplayPrefs();
+  });
 }
 
 function systemThemeMode(): ThemeMode {
@@ -158,13 +165,17 @@ export function initTheme() {
 
 export function setThemePreference(preference: string | null) {
   if (!isThemePreference(preference)) return;
-  document.documentElement.setAttribute("data-theme-preference", preference);
   try { localStorage.setItem("socrates-theme", preference); } catch (_) {
     reportEmptyCatch(_, 'empty catch: displayPrefs.ts:189', 'expected');
     /* ignore */
   }
-  setEffectiveThemeMode(resolveThemeMode(preference));
-  applyDisplayPrefs();
+  /* Light ↔ dark is a full-page repaint; cross-fade it instead of cutting.
+     The preference is already persisted, so the callback only owns the paint. */
+  withViewTransition(() => {
+    document.documentElement.setAttribute("data-theme-preference", preference);
+    setEffectiveThemeMode(resolveThemeMode(preference));
+    applyDisplayPrefs();
+  });
 }
 
 /* ── helpers ── */

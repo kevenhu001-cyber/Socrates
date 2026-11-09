@@ -1,38 +1,40 @@
 /**
- * The turn's activity surface (RN-2): the thinking line plus its timeline of
- * public summaries and tool calls, drawn with @socrates/ui/turn.
+ * The turn's activity surface (RN-2): one quiet line of run time above a
+ * rail of steps.
  *
- * Live:      a turning spark glyph leads the observed transport/tool status.
- * Settled:   show neutral activity copy — never a fabricated step counter.
- * Tools:     consecutive calls merge into 「使用了 N 个工具」, expandable.
+ * Live:      the header counts up (「已运行 12秒」) and the running step
+ *            spins; nothing shimmers and nothing rewrites itself.
+ * Settled:   the count freezes (「运行了 12秒」) and every row is still.
+ * Steps:     public provider summaries and tool calls share one row shape;
+ *            a row opens its detail inline, beneath its own label.
  *
  * Only public provider summaries reach this file; raw reasoning never does.
  */
-import { useId, useState, type ReactElement } from 'react';
+import { useId, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
+  ActivityStep,
   ThinkingSurface,
   ThinkingTimeline,
-  ToolCallGroup,
   activityTimeline,
-  aggregateStatus,
-  formatDurationMs,
   publicSummariesOf,
   stepsWithFallback,
-  sumDurations,
   thinkingHeaderOf,
   thinkingLabelOf,
+  type ThinkingLabels,
   type ThinkingStep,
-  type TimelineEntry,
-  type ToolCardStatus,
 } from '@socrates/ui/turn';
 import type { TurnActivityEntry } from '@socrates/contracts';
 import type { LiveTurnStatus } from '../types/domain';
 import { i18n } from '../legacy/gateway';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon } from './ToolActivityIcon';
-import { ThinkingSpark } from './ThinkingSpark';
-import { ToolRunRow, callDurationMs, statusLabelOf } from './ToolRunRow';
-import { runStartedAt, toolRunStateOf, toolRunView, type ToolCallRecord } from './toolRunModel';
+import { ToolRunDetail } from './ToolRunDetail';
+import { ToolRunAgentSteps } from './ToolRunAgentSteps';
+import { useToolRunDisclosure } from './ToolRunDisclosure';
+import { useElapsed } from './useElapsed';
+import { agentRunStateOf, runStartedAt, toolRunStateOf, toolRunView, type ToolCallRecord, type ToolRunView } from './toolRunModel';
+import { toolRunLabel } from '../../ui/toolPresentationModel.ts';
+import { interfaceIcon } from '../../ui/icons/interfaceIcons.ts';
 
 export interface TurnActivitySurfaceProps {
   /** Public model-provided summary only. Never pass parsed reasoning text here. */
@@ -52,84 +54,139 @@ export interface TurnActivitySurfaceProps {
   readOnly?: boolean;
 }
 
-function thinkingLabels() {
+function thinkingLabels(): ThinkingLabels {
   return {
-    live: i18n('think.rn.live', 'Processing…'),
-    done: i18n('think.rn.done', 'Activity · {sec}s'),
-    doneNoSteps: i18n('think.rn.doneNoSteps', 'Activity · {sec}s'),
-    doneNoTime: i18n('think.rn.doneNoTime', 'Activity details'),
-    fallback: i18n('think.summary', 'Activity summary'),
+    running: i18n('think.rn.running', '已运行 {sec}秒'),
+    ran: i18n('think.rn.ran', '运行了 {sec}秒'),
+    runningNoTime: i18n('think.rn.runningNoTime', '正在处理…'),
+    doneNoTime: i18n('think.rn.doneNoTime', '活动详情'),
   };
 }
 
-function ToolRunsEntry({ calls, messageId, readOnly }: { calls: ToolCallRecord[]; messageId?: string; readOnly?: boolean }): ReactElement {
+/** A public summary row. The body text, when present, is the disclosure. */
+function SummaryStep({ step, live }: { step: ThinkingStep; live: boolean }): ReactElement {
   const [open, setOpen] = useState(false);
-  const bodyId = useId();
-  const rows = calls.map((call) => (
-    <ToolRunRow key={call.id} view={toolRunView(call)} call={call} startedAt={runStartedAt(call)} messageId={messageId} readOnly={readOnly} activityOnly />
-  ));
-  if (calls.length === 1) return <>{rows}</>;
-  const status = aggregateStatus(calls.map((call) => toolRunStateOf(call) as ToolCardStatus));
-  const settled = status !== 'running' && status !== 'awaiting';
-  const names = new Set(calls.map((call) => call.name));
+  const label = step.title || step.summary;
+  const expandable = Boolean(step.summary);
   return (
-    <WebUiTheme>
-      <ToolCallGroup
-        id={calls[0].id}
-        icon={<ToolActivityIcon name={names.size === 1 ? calls[0].name : 'tool'} />}
-        title={i18n('think.summaryToolsTitle', 'Used {n} tools').replace('{n}', String(calls.length))}
-        status={status}
-        statusLabel={statusLabelOf(status)}
-        duration={settled ? formatDurationMs(sumDurations(calls.map(callDurationMs))) : ''}
-        open={open}
-        onToggle={() => setOpen((value) => !value)}
-        bodyId={bodyId}
-      >
-        {rows}
-      </ToolCallGroup>
-    </WebUiTheme>
+    <ActivityStep
+      testID="thinking-step"
+      label={label}
+      live={live}
+      icon={<StepGlyph html={interfaceIcon('thinking')} />}
+      expandable={expandable}
+      open={open}
+      onToggle={expandable ? () => setOpen((value) => !value) : undefined}
+      detail={expandable ? <p className="thinking-step-summary">{step.summary}</p> : null}
+    />
   );
 }
 
-function liveMeta(isLive: boolean, answerStarted: boolean, status?: LiveTurnStatus): string[] {
-  if (!isLive) return [];
-  const meta: string[] = [];
-  if (answerStarted) meta.push(i18n('think.answeringWhileWorking', 'Answering while activity continues'));
-  if (status?.elapsedSec) meta.push(`${status.elapsedSec}s`);
-  return meta;
+function StepGlyph({ html }: { html: string }) {
+  return <span className="tool-inline-tool-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-function timelineEntries(input: {
+function hasDetail(view: ToolRunView): boolean {
+  return Boolean(view.sections.length || view.tech.length || view.livePreview || view.liveOutput || view.approval);
+}
+
+/** One tool call as one row. The detail opens inline, not in a drawer. */
+function ToolStep({ call, readOnly }: { call: ToolCallRecord; readOnly?: boolean }): ReactElement {
+  const view = toolRunView(call);
+  const state = toolRunStateOf(call);
+  const inFlight = state === 'running' || state === 'awaiting';
+  const disclosure = useToolRunDisclosure(view.id);
+  const expandable = hasDetail(view);
+  const label = toolRunLabel(call, state).text;
+  return (
+    <div
+      className={`rn-tool-row${inFlight ? ' is-live' : ''}`}
+      data-tcid={view.id}
+      data-tool={view.name}
+      data-state={state}
+      data-react-owned="1"
+      data-error={state === 'error' ? '1' : undefined}
+    >
+      <WebUiTheme>
+        <ActivityStep
+          testID={`tool-row-${view.id}`}
+          label={label}
+          live={inFlight}
+          error={state === 'error'}
+          icon={<ToolActivityIcon name={view.name} />}
+          expandable={expandable}
+          open={disclosure.open}
+          onToggle={expandable ? () => disclosure.setOpen(!disclosure.open) : undefined}
+          detail={expandable ? (
+            <div className="thinking-step-detail-body" data-testid="tool-detail">
+              <ToolRunDetail view={view} call={call} inFlight={inFlight} readOnly={readOnly} />
+              {view.agentRun ? <ToolRunAgentSteps run={view.agentRun} live={inFlight} state={agentRunStateOf(state)} /> : null}
+            </div>
+          ) : null}
+        />
+      </WebUiTheme>
+    </div>
+  );
+}
+
+/** The observed run start: earliest activity or tool stamp, else mount time. */
+function useRunStart(activities: ReadonlyArray<TurnActivityEntry>, calls: ReadonlyArray<ToolCallRecord>): number {
+  const mountAt = useRef(Date.now());
+  return useMemo(() => {
+    let first = 0;
+    for (const entry of activities) {
+      if (typeof entry.startedAt === 'number' && entry.startedAt > 0 && (!first || entry.startedAt < first)) first = entry.startedAt;
+    }
+    for (const call of calls) {
+      const started = runStartedAt(call);
+      if (started > 0 && (!first || started < first)) first = started;
+    }
+    return first || mountAt.current;
+  }, [activities, calls]);
+}
+
+/** Build the rail's rows, plus the live-status fallback when nothing runs. */
+function rowsFor(input: {
   steps: ThinkingStep[];
   calls: ReadonlyArray<ToolCallRecord>;
   intent: string;
   isLive: boolean;
-  messageId?: string;
+  statusLabel?: string;
+  status?: LiveTurnStatus;
   readOnly?: boolean;
-}): TimelineEntry[] {
-  const { steps, calls, intent, isLive, messageId, readOnly } = input;
-  const lastStep = steps[steps.length - 1];
+}): ReactElement[] {
+  const { steps, calls, intent, isLive, statusLabel, status, readOnly } = input;
   const timeline = activityTimeline(steps, calls.map((call) => ({ id: call.id, startedAt: runStartedAt(call) || undefined, item: call })));
-  const entries: TimelineEntry[] = intent ? [{ kind: 'step', key: 'intent', title: intent, summary: '' }] : [];
+  const lastStep = steps[steps.length - 1];
+  const rows: ReactElement[] = [];
+  if (intent) rows.push(<ActivityStep key="intent" testID="thinking-step" label={intent} />);
   for (const entry of timeline) {
     if (entry.kind === 'step') {
-      const live = isLive && entry.step === lastStep && entry.step.phase === 'running';
-      entries.push({ kind: 'step', key: entry.step.id, title: entry.step.title, summary: entry.step.summary, live });
-    } else {
-      entries.push({ kind: 'node', key: entry.id, node: <ToolRunsEntry calls={entry.tools} messageId={messageId} readOnly={readOnly} /> });
+      const step = entry.step;
+      rows.push(<SummaryStep key={step.id} step={step} live={isLive && step === lastStep && step.phase === 'running'} />);
+      continue;
     }
+    for (const call of entry.tools) rows.push(<ToolStep key={call.id} call={call} readOnly={readOnly} />);
   }
-  return entries;
-}
 
-function activityLabelFor(
-  isLive: boolean,
-  statusLabel: string | undefined,
-  header: ReturnType<typeof thinkingHeaderOf>,
-  labels: ReturnType<typeof thinkingLabels>,
-): string {
-  if (isLive && statusLabel) return statusLabel;
-  return thinkingLabelOf(header, labels);
+  /* While the turn is live something must always be visibly working. If no
+     tool row owns the spinner, the transport's own status takes the last row. */
+  const hasLiveRow = isLive && (
+    (lastStep?.phase === 'running')
+    || calls.some((call) => ['running', 'awaiting'].includes(toolRunStateOf(call)))
+  );
+  if (isLive && !hasLiveRow) {
+    rows.push(
+      <ActivityStep
+        key="status"
+        testID="thinking-step"
+        label={statusLabel || i18n('think.rn.runningNoTime', '正在处理…')}
+        live
+        icon={status?.toolName ? <ToolActivityIcon name={status.toolName} /> : undefined}
+      />,
+    );
+  }
+  return rows;
 }
 
 function surfaceDataAttrs(input: { isLive: boolean; showActivityCue: boolean; status?: LiveTurnStatus; answerStarted: boolean; isOpen: boolean; hasTimeline: boolean }) {
@@ -143,30 +200,31 @@ function surfaceDataAttrs(input: { isLive: boolean; showActivityCue: boolean; st
   };
 }
 
-function surfaceContent(activities: ReadonlyArray<TurnActivityEntry>, publicSummary: string | undefined, intentSummary: string | undefined, callCount: number) {
-  const timelineSteps = publicSummariesOf(activities);
-  const steps = stepsWithFallback(timelineSteps, (publicSummary || '').trim());
-  const intent = intentSummary?.trim() || '';
-  return { timelineSteps, steps, intent, hasDetails: Boolean(steps.length || callCount || intent) };
-}
-
 export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
-  const { activities = [], isLive = false, elapsedSec, status, calls = [], messageId, readOnly } = props;
+  const { activities = [], isLive = false, elapsedSec, status, calls = [], readOnly } = props;
   const statusLabel = props.statusLabel?.trim();
   const answerStarted = Boolean(props.answerStarted);
   const [isOpen, setIsOpen] = useState(false);
   const bodyId = useId();
   useLocaleRefresh();
 
-  const { timelineSteps, steps, intent, hasDetails } = surfaceContent(activities, props.publicSummary, props.intentSummary, calls.length);
-  if (!hasDetails && !isLive) return null;
+  const timelineSteps = publicSummariesOf(activities);
+  const steps = stepsWithFallback(timelineSteps, (props.publicSummary || '').trim());
+  const intent = props.intentSummary?.trim() || '';
 
-  /* Tool calls are activity records, not model reasoning steps. Only public
-     summaries contribute to the optional summary count, and the visible copy
-     never invents a step number while the provider is still responding. */
-  const header = thinkingHeaderOf({ live: isLive, stepCount: steps.length, durationSec: elapsedSec });
-  const labels = thinkingLabels();
-  const label = activityLabelFor(isLive, statusLabel, header, labels);
+  const liveSec = useElapsed(useRunStart(activities, calls), isLive);
+  /* The ticking counter stops with the turn; keep the last observed second
+     so a settled row never drops back to "activity details". */
+  const lastSec = useRef(0);
+  if (isLive) lastSec.current = Math.max(lastSec.current, Math.ceil(liveSec / 1000));
+  const frozenSec = lastSec.current || undefined;
+  const durationSec = isLive ? liveSec / 1000 : frozenSec ?? elapsedSec;
+  const header = thinkingHeaderOf({ live: isLive, durationSec });
+  const label = thinkingLabelOf(header, thinkingLabels());
+
+  const rows = rowsFor({ steps, calls, intent, isLive, statusLabel, status, readOnly });
+  const hasDetails = rows.length > 0 && Boolean(steps.length || intent || calls.length);
+  if (!hasDetails && !isLive) return null;
   const attrs = surfaceDataAttrs({ isLive, showActivityCue: props.showActivityCue !== false, status, answerStarted, isOpen, hasTimeline: timelineSteps.length > 0 });
 
   return (
@@ -175,16 +233,14 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         <ThinkingSurface
           label={label}
           live={isLive}
-          indicator={isLive ? <ThinkingSpark /> : undefined}
-          meta={liveMeta(isLive, answerStarted, status)}
-          icon={isLive && status?.toolName ? <ToolActivityIcon name={status.toolName} /> : undefined}
           expandable={hasDetails}
           open={isOpen}
           onToggle={() => setIsOpen((previous) => !previous)}
           bodyId={bodyId}
         >
-          {hasDetails ? <ThinkingTimeline entries={timelineEntries({ steps, calls, intent, isLive, messageId, readOnly })} /> : null}
+          {hasDetails ? <ThinkingTimeline>{rows}</ThinkingTimeline> : null}
         </ThinkingSurface>
+        {!hasDetails && isLive ? <ThinkingTimeline>{rows}</ThinkingTimeline> : null}
       </WebUiTheme>
     </div>
   );

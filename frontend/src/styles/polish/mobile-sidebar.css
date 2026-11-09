@@ -690,3 +690,12 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
      the desktop owner must not carry mobile rules.) */
   #appShell #sidebarUserRow .sidebar-account-static { gap: 6px; padding: 4px 0; }
 }
+
+/* The desktop drawer pins `transition: none` on the shell (polish/motion.css);
+   the phone drawer relied on the global .01ms blanket instead, which still
+   commits a transition on every frame of the slide. Same explicit cut here. */
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  #appShell .sidebar { transition: none; }
+  #appShell .sidebar-backdrop { transition: none; }
+  #appShell .sidebar-search-row { transition: none; }
+}

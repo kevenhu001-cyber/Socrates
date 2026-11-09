@@ -10,23 +10,15 @@ export const TURN = Object.freeze({
   wrapper: '.rn-turn-activity',
   toggle: '[data-testid="turn-activity-toggle"]',
   label: '[data-testid="turn-activity-label"]',
-  meta: '[data-testid="turn-activity-meta"]',
   body: '[data-testid="turn-activity-body"]',
-  /** The live working glyph (inline-SVG spark) ahead of the caption. */
-  indicator: '[data-testid="turn-activity-indicator"]',
+  /** The running step's arc. There is no separate header indicator any more. */
+  spinner: '[data-testid="thinking-step-spinner"]',
   step: '[data-testid="thinking-step"]',
   stepTitle: '[data-testid="thinking-step-title"]',
-  stepSummary: '[data-testid="thinking-step-summary"]',
-  groupToggle: '[data-testid="tool-group-toggle"]',
-  groupTitle: '[data-testid="tool-group-title"]',
-  groupBody: '[data-testid="tool-group-body"]',
+  stepDetail: '[data-testid="thinking-step-detail"]',
+  stepSummary: '.thinking-step-summary',
   row: '.rn-tool-row',
-  verb: '[data-testid="tool-row-verb"]',
-  target: '[data-testid="tool-row-target"]',
-  status: '[data-testid="tool-row-status"]',
   detail: '[data-testid="tool-detail"]',
-  detailTitle: '[data-testid="tool-detail-title"]',
-  detailClose: '[data-testid="tool-detail-close"]',
   sources: '[data-testid="tool-sources"]',
   source: '[data-testid="tool-source"]',
   sourceTitle: '[data-testid="tool-source-title"]',
@@ -43,7 +35,7 @@ export function toolRow(scope, id) {
   return scope.locator(`${TURN.row}[data-tcid="${id}"]`);
 }
 
-/** The pressable row that opens the call's detail drawer / sheet. */
+/** The pressable row that opens the call's detail inline. */
 export function toolRowButton(scope, id) {
   return scope.locator(`[data-testid="tool-row-${id}"]`);
 }
@@ -55,27 +47,25 @@ export async function openActivity(scope) {
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 }
 
-/** Expand every collapsed 「使用了 N 个工具」 group inside `scope`. */
-export async function openToolGroups(scope) {
-  const toggles = scope.locator(TURN.groupToggle);
-  const count = await toggles.count();
-  for (let index = 0; index < count; index++) {
-    const toggle = toggles.nth(index);
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
-  }
-}
+/**
+ * Kept for specs written against the old 「使用了 N 个工具」 group. Calls are
+ * one row each now, so there is nothing left to expand.
+ */
+export async function openToolGroups() {}
 
-/** Open the activity, any tool groups, then the call's detail drawer. Returns the drawer. */
+/** Open the activity, then the call's inline detail. Returns the panel. */
 export async function openToolDetail(page, scope, id) {
   await openActivity(scope);
-  await openToolGroups(scope);
-  await toolRowButton(scope, id).click();
+  const row = toolRowButton(scope, id);
+  if ((await row.getAttribute('aria-expanded')) !== 'true') await row.click();
   const detail = page.locator(TURN.detail);
   await expect(detail).toBeVisible();
   return detail;
 }
 
-export async function closeToolDetail(page) {
-  await page.locator(TURN.detailClose).click();
+/** Collapse the inline detail by pressing its own row again. */
+export async function closeToolDetail(page, scope) {
+  const open = (scope ?? page).locator('[data-testid^="tool-row-"][aria-expanded="true"]').first();
+  await open.click();
   await expect(page.locator(TURN.detail)).toHaveCount(0);
 }

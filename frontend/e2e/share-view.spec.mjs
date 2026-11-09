@@ -172,9 +172,7 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   await expect(body).toHaveClass(/is-declarative/);
 
   await body.getByTestId('turn-activity-toggle').click();
-  // Consecutive calls merge into one 「Used N tools」 group in the shared transcript.
-  await expect(body.getByTestId('tool-group-title')).toHaveText('Used 2 tools');
-  await body.getByTestId('tool-group-toggle').click();
+  // Each call is its own row in the shared transcript.
   await expect(body.locator('.rn-tool-row').first()).toBeVisible();
   await expect(body.locator('.rn-tool-row')).toHaveCount(2);
 
@@ -190,12 +188,11 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   )));
   expect(order).toEqual(['activity', 'text:' + oneLine(SHARED_RAW)]);
 
-  await expect(body.getByTestId('tool-row-verb')).toHaveText(['Search the web', 'Read web page']);
-  await expect(body.getByTestId('tool-row-target')).toHaveText(['inverse square law', 'arxiv.org']);
+  await expect(body.getByTestId('thinking-step-title')).toContainText(['inverse square law', 'arxiv.org']);
   await body.getByTestId('tool-row-shared-search').click();
   // Sources are shown only inside their own action detail.
   await expect(page.getByTestId('tool-detail').getByTestId('tool-source')).toHaveCount(2);
-  await page.keyboard.press('Escape');
+  await body.getByTestId('tool-row-shared-search').click();
 
   /* Read-only: nothing in the turn can retry a call or answer a permission
      prompt, and the legacy card chrome must not come back alongside. */

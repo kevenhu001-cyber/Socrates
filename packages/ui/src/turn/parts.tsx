@@ -75,8 +75,7 @@ export function Chevron({ open = false, size = 7, tone = 'tertiary' }: { open?: 
   );
 }
 
-/** Opacity breathing for an in-flight status word (e.g. 「进行中」). */
-export function useBreathing(active: boolean): Animated.Value {
+/** Opacity breathing for an in-flight status word (e.g. 「进行中」). */export function useBreathing(active: boolean): Animated.Value {
   const reduced = useReducedMotion();
   const value = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -95,8 +94,7 @@ export function useBreathing(active: boolean): Animated.Value {
   return value;
 }
 
-/** Fades content in when it first appears (an expanded body, a sheet).
- *  A layout effect, so under reduced motion the body is already at full
+/** Fades content in when it first appears (an expanded body, a sheet). *  A layout effect, so under reduced motion the body is already at full
  *  opacity in the frame the toggle commits (a passive effect landed one
  *  frame later and the body flashed in from 0). */
 export function useReveal(visible: boolean, distance = 4) {
@@ -113,4 +111,69 @@ export function useReveal(visible: boolean, distance = 4) {
     opacity: value,
     transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [-distance, 0] }) }],
   };
+}
+
+/* One module-level rotation drives every running step. A turn can show a
+   dozen live rows; one loop keeps the browser's animation queue and the
+   native driver's bridge traffic flat instead of starting a timer per row. */
+const spinProgress = new Animated.Value(0);
+let spinLoop: Animated.CompositeAnimation | null = null;
+let spinSubscribers = 0;
+
+const SPIN_MS = 900;
+
+function retainSpin(): void {
+  spinSubscribers += 1;
+  if (spinLoop) return;
+  spinProgress.setValue(0);
+  spinLoop = Animated.loop(Animated.timing(spinProgress, {
+    toValue: 1,
+    duration: SPIN_MS,
+    easing: Easing.linear,
+    useNativeDriver: nativeDriver,
+  }));
+  spinLoop.start();
+}
+
+function releaseSpin(): void {
+  spinSubscribers = Math.max(0, spinSubscribers - 1);
+  if (spinSubscribers > 0 || !spinLoop) return;
+  spinLoop.stop();
+  spinLoop = null;
+  spinProgress.setValue(0);
+}
+
+/** Shared 0→1 rotation progress for in-flight rows. Static under reduced motion. */
+export function useSpin(active: boolean): Animated.Value {
+  const reduced = useReducedMotion();
+  const running = active && !reduced;
+  useEffect(() => {
+    if (!running) return undefined;
+    retainSpin();
+    return releaseSpin;
+  }, [running]);
+  return spinProgress;
+}
+
+/** A 12px arc that turns while a step runs. No `will-change`, no keyframes:
+ *  one compositor transform, shared by every row on the surface. */
+export function Spinner({ size = 12 }: { size?: number }) {
+  const { colors } = useUiTheme();
+  const spin = useSpin(true);
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return (
+    <Animated.View
+      testID="thinking-step-spinner"
+      aria-hidden
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: 1.5,
+        borderColor: colors.hairlineStrong,
+        borderTopColor: colors.inkSecondary,
+        transform: [{ rotate }],
+      }}
+    />
+  );
 }

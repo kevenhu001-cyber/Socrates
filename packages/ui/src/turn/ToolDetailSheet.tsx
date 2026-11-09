@@ -1,109 +1,18 @@
 /**
- * ToolDetailSheet — per-call detail: a right-hand drawer on wide screens,
- * a bottom sheet on phones. Holds input, output and error sections.
- *
- * Built on RN `Modal`, so react-native-web supplies the portal, the focus
- * trap and Escape (`onRequestClose`); focus returns to the opener on close.
+ * Detail primitives for one tool call: sections, code output, sources and
+ * images. The call's detail now opens inline beneath its step row, so the
+ * old drawer/bottom-sheet host is gone; the content blocks stay shared.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, Image, Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
-import { uiMotion } from '@socrates/theme';
-import { R, S, focusRing, insetRing, shadow, sheets } from '../look';
+import { Image, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { R, S, focusRing, insetRing, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { UiButton, usePressFeedback } from '../primitives/UiButton';
-import { nativeDriver, useReducedMotion } from './parts';
 import { MonoText, monoFamily } from './ToolCards';
 import type { SourceCardView } from './toolCardModel';
 
 export const SHEET_BREAKPOINT = 768;
-
-export interface ToolDetailSheetProps {
-  visible: boolean;
-  onClose(): void;
-  title: string;
-  subtitle?: string;
-  status?: string;
-  closeLabel: string;
-  /** Override the width-based choice (tests, native tablets). */
-  layout?: 'drawer' | 'sheet';
-  children: ReactNode;
-}
-
-export function ToolDetailSheet({ visible, onClose, title, subtitle, status, closeLabel, layout, children }: ToolDetailSheetProps) {
-  const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
-  const reduced = useReducedMotion();
-  const mode = layout || (width < SHEET_BREAKPOINT ? 'sheet' : 'drawer');
-  const enter = useRef(new Animated.Value(0)).current;
-  const [rendered, setRendered] = useState(visible);
-
-  useEffect(() => {
-    if (visible) {
-      setRendered(true);
-      if (reduced) {
-        enter.setValue(1);
-        return;
-      }
-      Animated.timing(enter, { toValue: 1, duration: uiMotion.medium, easing: Easing.out(Easing.cubic), useNativeDriver: nativeDriver }).start();
-    } else if (rendered) {
-      if (reduced) {
-        enter.setValue(0);
-        setRendered(false);
-        return;
-      }
-      Animated.timing(enter, { toValue: 0, duration: uiMotion.fast, easing: Easing.in(Easing.cubic), useNativeDriver: nativeDriver }).start(() => {
-        setRendered(false);
-      });
-    }
-  }, [visible, reduced, enter, rendered]);
-
-  const slide = mode === 'drawer'
-    ? { translateX: enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }
-    : { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [48, 0] }) };
-  const panel = mode === 'drawer'
-    ? { position: 'absolute' as const, top: S[100], right: S[100], bottom: S[100], width: Math.min(440, width - S[400]), borderRadius: R.stage }
-    : { position: 'absolute' as const, left: 0, right: 0, bottom: 0, maxHeight: '86%' as const, borderTopLeftRadius: R.stage, borderTopRightRadius: R.stage };
-  return (
-    <Modal visible={rendered} transparent animationType="none" onRequestClose={onClose}>
-      <View style={{ flex: 1 }}>
-        <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: enter }}>
-          <Pressable testID="tool-detail-backdrop" aria-label={closeLabel} onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.16)' }} />
-        </Animated.View>
-        <Animated.View
-          testID="tool-detail"
-          role="dialog"
-          aria-modal
-          aria-label={title}
-          {...{ dataSet: { layout: mode } }}
-          style={[panel, {
-            backgroundColor: colors.card,
-            boxShadow: shadow(colors, 'dialog'),
-            overflow: 'hidden',
-            opacity: enter,
-            transform: [slide],
-          }]}
-        >
-          {mode === 'sheet' ? <View aria-hidden style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, marginTop: S[75], backgroundColor: colors.hairlineStrong }} /> : null}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[100], minHeight: 64, paddingHorizontal: S[300], paddingVertical: S[100], borderBottomWidth: 1, borderBottomColor: colors.hairline }}>
-            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-              <UiText testID="tool-detail-title" variant="label" tone="ink" numberOfLines={2} role="heading" aria-level={2}>{title}</UiText>
-              {subtitle || status ? (
-                <UiText variant="labelSm" tone="tertiary" numberOfLines={1} style={{ fontWeight: '400' }}>
-                  {[subtitle, status].filter(Boolean).join(' · ')}
-                </UiText>
-              ) : null}
-            </View>
-            <UiButton testID="tool-detail-close" label={closeLabel} variant="secondary" size={mode === 'sheet' ? 'lg' : 'sm'} onPress={onClose} style={{ flexShrink: 0 }} />
-          </View>
-          <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ padding: S[300], gap: S[300] }}>
-            {children}
-          </ScrollView>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-}
 
 export function DetailSection({ title, kind, children }: { title: string; kind: string; children: ReactNode }) {
   return (

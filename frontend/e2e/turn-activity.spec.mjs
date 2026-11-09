@@ -25,14 +25,15 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
   const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveCount(1);
-  await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
-  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
+  // The header speaks run time; the observed status lives on the row below.
+  await expect(status.getByTestId('turn-activity-label')).toContainText(/\d/);
+  await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(1);
+  await expect(status).toContainText('Waiting for the response.');
   const before = await status.boundingBox();
 
   await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
   await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity')).toHaveAttribute('data-answer-started', 'true');
-  await expect(message.getByTestId('turn-activity-meta').first()).toContainText('Answering while activity continues');
   const answer = message.locator('.tool-run-prose p').first();
   await expect(answer).toContainText('回答从同一个消息正文位置开始。');
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
@@ -56,15 +57,15 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   const message = page.locator('#msgList .msg.assistant').last();
   const status = message.locator('.rn-turn-activity.is-live');
   await expect(status).toHaveAttribute('data-phase', 'waiting');
-  await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
-  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
+  await expect(status.getByTestId('turn-activity-label')).toContainText(/\d/);
+  await expect(status).toContainText('Waiting for the response.');
+  await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(1);
   await page.evaluate(() => window.__advanceReasoningClock());
-  await expect(status.getByTestId('turn-activity-meta')).toContainText(/[5-9]s/);
+  await expect(status.getByTestId('turn-activity-label')).toContainText(/[5-9]\s?(s|秒)/);
   await page.screenshot({ path: 'test-results/waiting-response.png' });
   await page.evaluate(() => window.__waitingController.appendThinking('PRIVATE REASONING'));
   await expect(status).toHaveAttribute('data-phase', 'thinking');
-  await expect(status.getByTestId('turn-activity-indicator')).toHaveCount(1);
-  await expect(status.getByTestId('turn-activity-meta')).toHaveCount(0);
+  await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(1);
   const duration = await page.evaluate(() => window.stateStore.read('messages').at(-1).reasoningDurationSec);
   expect(duration).toBe(0);
   await page.screenshot({ path: 'test-results/observed-reasoning.png' });
@@ -72,7 +73,6 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await page.evaluate(() => window.__waitingController.append('这才是正文。'));
   await expect(status).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity')).toHaveAttribute('data-answer-started', 'true');
-  await expect(message.getByTestId('turn-activity-meta').first()).toContainText('Answering while activity continues');
   await page.evaluate(() => window.__waitingController.finish());
 });
 
@@ -107,7 +107,10 @@ test('streaming actions are absent and running tools own the activity surface', 
   await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity')).toHaveCount(1);
-  await expect(message.getByTestId('turn-activity-label')).toHaveText('Searching "React Context rendering"…');
+  // The running call names itself on its row; the header counts time.
+  await expect(message.locator('.rn-tool-row[data-tcid="search"]')).toContainText('React Context rendering');
+  await expect(message.locator('.rn-tool-row[data-tcid="search"]').getByTestId('thinking-step-spinner')).toHaveCount(1);
+  await expect(message.getByTestId('turn-activity-label')).toContainText(/\d/);
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 
@@ -144,7 +147,10 @@ test('detail-free rows are static and native UI output is outside disclosure', a
   await page.getByTestId('turn-activity-toggle').click();
   await page.getByTestId('tool-row-ui').click();
   await expect(page.getByTestId('tool-detail')).toBeVisible();
-  await page.keyboard.press('Escape');
+  // The native UI lives outside the disclosure, so opening and closing the
+  // row never unmounts it.
+  await page.getByTestId('tool-row-ui').click();
+  await expect(page.getByTestId('tool-detail')).toHaveCount(0);
   await expect(page.locator('.intui')).toBeVisible();
 
   await page.evaluate(() => {

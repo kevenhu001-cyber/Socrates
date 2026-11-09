@@ -127,31 +127,31 @@ function finiteOr(value: number | undefined): number {
 }
 
 export interface ThinkingHeader {
-  phase: 'live' | 'done';
-  /** Public-summary count supplied by the host; not a verified reasoning-step count. */
-  steps: number;
-  /** Whole seconds, at least 1, or null when the duration is unknown. */
+  live: boolean;
+  /** Whole seconds, at least 1, or null when the run duration is unknown. */
   durationSec: number | null;
 }
 
-export function thinkingHeaderOf(input: { live: boolean; stepCount: number; durationSec?: number | null }): ThinkingHeader {
-  const raw = Math.max(0, Math.floor(input.stepCount || 0));
+/**
+ * The header speaks one fact: how long the run has been going. Step counts
+ * are gone on purpose — a provider's public summaries are not a verified
+ * step log, and a fabricated counter read as progress that never happened.
+ */
+export function thinkingHeaderOf(input: { live: boolean; durationSec?: number | null }): ThinkingHeader {
   const duration = typeof input.durationSec === 'number' && Number.isFinite(input.durationSec) && input.durationSec > 0
     ? Math.max(1, Math.round(input.durationSec)) : null;
-  return { phase: input.live ? 'live' : 'done', steps: input.live ? Math.max(1, raw) : raw, durationSec: duration };
+  return { live: Boolean(input.live), durationSec: duration };
 }
 
 export interface ThinkingLabels {
-  /** Observed live status, e.g. "Processing…"; no inferred step count. */
-  live: string;
-  /** Neutral activity copy with an optional duration. */
-  done: string;
-  /** Neutral activity copy when no public summary is available. */
-  doneNoSteps: string;
-  /** Neutral activity copy when duration is unknown. */
+  /** Live copy with an observed duration, e.g. 「已运行 22秒」. */
+  running: string;
+  /** Settled copy with the final duration, e.g. 「运行了 22秒」. */
+  ran: string;
+  /** Live copy without a duration. */
+  runningNoTime: string;
+  /** Settled copy without a duration. */
   doneNoTime: string;
-  /** Fallback when neither activity nor duration is available. */
-  fallback: string;
 }
 
 function fill(template: string, values: Record<string, number>): string {
@@ -159,9 +159,8 @@ function fill(template: string, values: Record<string, number>): string {
 }
 
 export function thinkingLabelOf(header: ThinkingHeader, labels: ThinkingLabels): string {
-  if (header.phase === 'live') return fill(labels.live, { n: header.steps });
-  if (header.durationSec !== null && header.steps > 0) return fill(labels.done, { sec: header.durationSec, n: header.steps });
-  if (header.durationSec !== null) return fill(labels.doneNoSteps, { sec: header.durationSec });
-  if (header.steps > 0) return fill(labels.doneNoTime, { n: header.steps });
-  return labels.fallback;
+  if (header.durationSec !== null) {
+    return fill(header.live ? labels.running : labels.ran, { sec: header.durationSec });
+  }
+  return header.live ? labels.runningNoTime : labels.doneNoTime;
 }
