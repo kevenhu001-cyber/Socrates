@@ -67,6 +67,7 @@ const copy = {
 };
 
 function localHref(href, locale) {
+  if (href === appURL) return `${appURL}/?lang=${locale}`;
   if (!href.startsWith('/') || /\.(?:json|txt)$/.test(href)) return href;
   return locale === 'zh' ? `/zh${href}` : href;
 }
@@ -91,14 +92,14 @@ export function renderChrome(pathname, locale) {
       <nav class="site-nav" aria-label="${text.primary}">${nav}</nav>${questionShortcut}
       <div class="site-header-actions">
         ${language}
-        <a class="site-login" href="${appURL}">${text.login}</a>
-        <a class="site-try" href="${appURL}">${text.try}${arrow}</a>
+        <a class="site-login" href="${localHref(appURL, locale)}">${text.login}</a>
+        <a class="site-try" href="${localHref(appURL, locale)}">${text.try}${arrow}</a>
         <button class="site-menu-toggle" type="button" data-site-menu-toggle aria-controls="site-mobile-menu" aria-expanded="false" aria-label="${text.menu}" data-open-label="${text.menu}" data-close-label="${text.close}"><span></span><span></span></button>
       </div>
     </div>
     <div class="site-mobile-menu" id="site-mobile-menu" hidden>
       <nav aria-label="${text.mobile}">${nav}</nav>
-      <div class="site-mobile-utilities"><a href="${appURL}">${text.try}</a><a href="${localHref('/account', locale)}">${text.account}</a><a href="${localHref('/contact', locale)}">${text.contact}</a>${language}</div>
+      <div class="site-mobile-utilities"><a href="${localHref(appURL, locale)}">${text.try}</a><a href="${localHref('/account', locale)}">${text.account}</a><a href="${localHref('/contact', locale)}">${text.contact}</a>${language}</div>
     </div>
   </header>`;
   const columns = text.groups.map((groups, i) => `<details class="site-footer-col" open>

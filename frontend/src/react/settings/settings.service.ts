@@ -3,6 +3,7 @@ import { publishProfileSnapshot } from '../../ui/profile.ts';
 import { i18n } from '../legacy/gateway';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
+import { loadSettingsModal } from './settings.preload';
 
 let settingsReturnFocus: HTMLElement | null = null;
 
@@ -32,7 +33,7 @@ export async function openSettings(): Promise<void> {
     settingsReturnFocus = active instanceof HTMLElement && active !== document.body ? active : null;
   }
   try {
-    const { mountSettingsModal } = await import('./SettingsModal');
+    const { mountSettingsModal } = await loadSettingsModal();
     mountSettingsModal();
   } catch {
     showToast(i18n('toast.settingsLoadFailed', 'Could not load settings. Please try again.'));

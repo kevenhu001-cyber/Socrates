@@ -1,7 +1,7 @@
 import { Button } from '../ui/shadcn/button';
-import { i18n } from '../legacy/gateway.ts';
 import { ProviderList } from './ProviderList';
 import { useProviderListState } from './useProviderListState';
+import type { SettingsLabel } from './settings.types';
 
 const PROVIDER_LIST_ID = 'providerList';
 
@@ -11,28 +11,30 @@ export function ModelsProviderSection({
   providers,
   providerErrors,
   providerState,
+  label,
 }: {
   externalApiOn: boolean;
   language: 'zh' | 'en';
   providers: Parameters<typeof ProviderList>[0]['providers'];
   providerErrors: Parameters<typeof ProviderList>[0]['providerErrors'];
   providerState: ReturnType<typeof useProviderListState>;
+  label: SettingsLabel;
 }) {
   return (
     <section className="settings-section">
       <div className="settings-section-head">
-        <h3>Model providers</h3>
-        <p>Add a provider or choose the active model.</p>
+        <h3>{label('模型服务商', 'Model providers')}</h3>
+        <p>{label('添加服务商或选择当前使用的模型。', 'Add a provider or choose the active model.')}</p>
       </div>
       <div className="settings-field">
         <div className="settings-label-row">
-          <span className="settings-label">{i18n('settings.models', 'Models')}</span>
-          <Button variant="default" className="settings-btn-mini" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
-            {i18n('settings.addProvider', '+ Add')}
+          <span className="settings-label">{label('模型', 'Models')}</span>
+          <Button variant="default" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
+            {label('添加服务商', '+ Add provider')}
           </Button>
         </div>
         <span className="settings-hint">
-          {i18n('settings.providerHint', 'Configure one or more providers. Click the circle to set one as active.')}
+          {label('配置一个或多个服务商，选择圆形按钮可设为当前使用项。', 'Configure providers, then select the circle to choose the active one.')}
         </span>
         <ProviderList
           id={PROVIDER_LIST_ID}

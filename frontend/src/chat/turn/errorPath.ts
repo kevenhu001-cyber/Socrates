@@ -9,7 +9,7 @@
  * split. The split is structural only: a transient failure keeps its retry
  * affordance, send-button restore, and stream-failed runtime publish.
  */
-import { settleTurnRuntime } from '@socrates/core';
+import { settleTurnRuntime } from '@socrates/core/turnRuntime';
 import { esc } from '../../render/helpers.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';

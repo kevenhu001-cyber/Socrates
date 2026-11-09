@@ -186,7 +186,7 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
   const { html, attachments } = messageBodyFields(message);
   const liveMessage = message as LiveFields;
   const turnAnchor = turnAnchorOf(message);
-  const hasTurnAnchor = turnAnchor.minHeight > 0 || turnAnchor.marginTop > 0;
+  const hasTurnAnchor = Math.max(turnAnchor.minHeight, turnAnchor.marginTop) > 0;
   const anchorData = viewportAnchorData(liveMessage, hasTurnAnchor);
   /* Keep the declarative tree mounted across the finish boundary so the
      toolbar and cursor transition without replacing the message body. */

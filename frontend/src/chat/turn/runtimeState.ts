@@ -14,9 +14,9 @@ import { stateStore } from '../../state/store.ts';
 import type { ActiveChatController } from '../turnState.ts';
 import type { ToolRuntime } from '../toolRuntime.ts';
 import type { StreamPlayer } from '../../render/streamPlayer.ts';
-import type { normalizeTurnRuntime } from '@socrates/core';
+import type { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
 
-/** `@socrates/core` re-exports the normaliser but not the runtime type. */
+/** The turn-runtime subpath exports the normaliser but not the runtime type. */
 export type TurnRuntime = ReturnType<typeof normalizeTurnRuntime>;
 
 /** The status line `message._liveStatus` that React's TurnStatus draws. */

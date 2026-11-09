@@ -106,10 +106,10 @@ test('production entry keeps the static closure gzip transfer under budget', () 
   };
   expect(metrics).toEqual(report.metrics);
   expect(metrics.htmlGzipBytes).toBeLessThan(19_000);
-  /* The original 360 KB entry budget is restored after moving locale tables
-     and low-frequency React control hosts out of the static import closure.
-     Keep this guard at the original limit; the total-closure cap below is
-     unchanged. */
+  /* The original 360 KB entry budget is restored after moving locale tables,
+     low-frequency React control hosts, and the session-list RN shell out of
+     the static import closure. Keep this guard at its original limit; the
+     total-closure cap below is unchanged. */
   expect(metrics.staticJsGzipBytes).toBeLessThan(360_000);
   expect(metrics.linkedCssGzipBytes).toBeLessThan(210_000);
   expect(Object.values(metrics).reduce((sum, bytes) => sum + bytes, 0)).toBeLessThan(588_000);
@@ -128,6 +128,10 @@ test('production entry keeps the static closure gzip transfer under budget', () 
     'src/react/settings/DisplaySettingsPane.tsx',
     'src/react/settings/PersonalizationSettingsPane.tsx',
     'src/react/settings/AccountSettingsPane.tsx',
+    'src/react/session-list/SessionList.tsx',
+    'src/react/session-list/SessionTimeline.tsx',
+    'src/react/session-list/SessionRow.tsx',
+    'src/react/session-list/VirtualSessionTimeline.tsx',
   ];
   for (const id of lazyOnly) {
     const module = report.modules.find((item) => item.id === id);
@@ -157,6 +161,33 @@ test('settings and workspace code load only when opened', async ({ page }) => {
   await expect(page.locator('#libraryPanel')).not.toHaveAttribute('aria-busy', 'true');
   const afterWorkspace = await loadedScripts();
   expect(newlyLoadedScripts(afterSettings, afterWorkspace)).toBe(true);
+});
+
+test('settings modal and first pane preload on trigger intent before the click', async ({ page }) => {
+  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
+  const modal = report.modules.find((module) => module.id === 'src/react/settings/SettingsModal.tsx');
+  const general = report.modules.find((module) => module.id === 'src/react/settings/GeneralSettingsPane.tsx');
+  expect(modal).toBeTruthy();
+  expect(general).toBeTruthy();
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await login(page);
+
+  const loadedScripts = () => page.evaluate(() => performance.getEntriesByType('resource')
+    .map((entry) => new URL(entry.name).pathname).filter((path) => path.endsWith('.js')));
+  const trigger = page.locator('#apiSettingsBtn');
+  const beforeIntent = await loadedScripts();
+  expect(beforeIntent.some((path) => path.endsWith(modal.chunk))).toBe(false);
+  expect(beforeIntent.some((path) => path.endsWith(general.chunk))).toBe(false);
+
+  await trigger.hover();
+  await expect.poll(async () => {
+    const paths = await loadedScripts();
+    return paths.some((path) => path.endsWith(modal.chunk)) && paths.some((path) => path.endsWith(general.chunk));
+  }).toBe(true);
+  await trigger.click();
+  await expect(page.locator('#settingsOverlay')).toBeVisible();
+  await expect(page.locator('.settings-pane:visible h2')).toHaveText('General');
 });
 
 test('anonymous boot checks the session once', async ({ page }) => {

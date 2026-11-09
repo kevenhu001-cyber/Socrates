@@ -53,27 +53,9 @@ function ArrowUpIcon() {
   );
 }
 
-export function MessageEditForm({ initialText, cancelLabel, submitLabel, onCancel, onCommit }: {
-  initialText: string;
-  cancelLabel: string;
-  submitLabel: string;
-  onCancel: () => void;
-  onCommit: (text: string) => void;
-}) {
-  const [value, setValue] = useState(initialText);
+function useEditPreferences() {
   const [deepThinking, setDeepThinking] = useState(() => isExtensiveThinkingOn() || getStoredReasoningEffort() === 'high');
   const [smartSearch, setSmartSearch] = useState(() => isWebSearchOn());
-  const input = useRef<HTMLTextAreaElement>(null);
-
-  useLayoutEffect(() => {
-    const textarea = input.current;
-    if (!textarea) return;
-    textarea.focus();
-    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-    textarea.style.height = 'auto';
-    textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, 60), 320)}px`;
-  }, []);
-
   useEffect(() => {
     const onPrefChange = (event: Event) => {
       const detail = (event as CustomEvent<{ effort?: string }>).detail;
@@ -102,6 +84,29 @@ export function MessageEditForm({ initialText, cancelLabel, submitLabel, onCance
     setSmartSearch(next);
     setWebSearchOn(next);
   };
+
+  return { deepThinking, smartSearch, toggleDeepThinking, toggleSmartSearch };
+}
+
+export function MessageEditForm({ initialText, cancelLabel, submitLabel, onCancel, onCommit }: {
+  initialText: string;
+  cancelLabel: string;
+  submitLabel: string;
+  onCancel: () => void;
+  onCommit: (text: string) => void;
+}) {
+  const [value, setValue] = useState(initialText);
+  const { deepThinking, smartSearch, toggleDeepThinking, toggleSmartSearch } = useEditPreferences();
+  const input = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const textarea = input.current;
+    if (!textarea) return;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, 60), 320)}px`;
+  }, []);
 
   const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(event.currentTarget.value);

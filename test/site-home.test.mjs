@@ -125,6 +125,7 @@ for (const prefix of ['', '/zh']) {
       await input.press('Enter');
       const target = new URL((await request).url());
       assert.equal(target.searchParams.get('q'), question);
+      assert.equal(target.searchParams.get('lang'), prefix ? 'zh' : 'en');
       await page.waitForURL((url) => url.origin === target.origin);
     });
 

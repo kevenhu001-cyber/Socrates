@@ -40,7 +40,7 @@ interface StreamingContext {
  *   user-stop (abort) body — chat/turn/abortPath.js
  *   replaceWithError body — chat/turn/errorPath.js
  */
-import { normalizeTurnRuntime, reduceTurnEvent } from '@socrates/core';
+import { normalizeTurnRuntime, reduceTurnEvent } from '@socrates/core/turnRuntime';
 import { normalizePublicTurnActivity } from '../ui/turnActivityModel';
 import { stateStore } from '../state/store.ts';
 import { turnState, streamRetryViewport } from './turnState.ts';

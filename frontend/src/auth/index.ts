@@ -17,6 +17,8 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import { afterAuthEnter } from './postAuth.ts';
 import { createAuthFormHandlers } from './forms.ts';
 import { t } from '../i18n.ts';
+import { consumeMarketingQuestion } from './marketingHandoff.ts';
+import { getVisibleComposerSurface, setComposerMarkdown } from '../composer/controller.ts';
 import {
   setGateVisible,
   setBootState,
@@ -150,7 +152,13 @@ export function revealAppAndHydrate(onHydrated?: () => void): void {
   } catch (e) { reportSwallow(e, 'auth/index.mountReactCompatibility'); }
   Promise.resolve(hydration)
     .catch(function (err) { try { console.error("[auth] post-auth hydration failed", err); } catch (e) { reportSwallow(e, 'auth/index.hydrate.log'); } })
-    .then(function () { if (typeof onHydrated === "function") try { onHydrated(); } catch (e) { reportSwallow(e, 'auth/index.hydrate.onHydrated'); } });
+    .then(function () {
+      if (typeof onHydrated === "function") try { onHydrated(); } catch (e) { reportSwallow(e, 'auth/index.hydrate.onHydrated'); }
+      const question = consumeMarketingQuestion();
+      if (!question) return;
+      const surface = getVisibleComposerSurface();
+      setComposerMarkdown(surface, question);
+    });
 }
 
 /* Form actions are kept in a feature module so this file remains the gate's

@@ -6,7 +6,7 @@
  * patches its own row and asks for a throttled reconcile. See
  * session/recentsReconcile.ts.
  */
-import { normalizeTurnRuntime } from '@socrates/core';
+import { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
 import { stateStore } from '../state/store.ts';
 import { isIncognitoOn } from '../app/lifecycle/incognitoState.ts';
 import { saveState, deletedSessionGuard } from './saveState.ts';

@@ -11,6 +11,7 @@ import {
   useMorePopoverSnapshot,
 } from './morePopover.store';
 import type { MorePopoverAction } from './types';
+import { preloadSettingsModal } from '../settings/settings.preload.ts';
 
 const POPOVER_ID = 'moreNavPopover';
 const TRIGGER_ID = 'navMore';
@@ -59,11 +60,15 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: MoreP
   const className = spec.danger
     ? 'sidebar-more-item sidebar-more-item-danger'
     : 'sidebar-more-item';
+  const preloadSettings = spec.action === 'settings' ? preloadSettingsModal : undefined;
   return (
     <UiButton
       type="button"
       className={className}
       role="menuitem"
+      onPointerEnter={preloadSettings}
+      onPointerDown={preloadSettings}
+      onFocus={preloadSettings}
       onClick={() => onPick(spec.action)}
     >
       <span dangerouslySetInnerHTML={{ __html: spec.icon }} />

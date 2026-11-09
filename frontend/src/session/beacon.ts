@@ -11,9 +11,9 @@
  * - cap attachments/toolCalls at 20 per message
  * - topic falls back to sessionTitle and vice versa
  */
-import { normalizeTurnRuntime } from '@socrates/core';
+import { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
 
-/** `@socrates/core` re-exports the normaliser, not the `TurnRuntime` type. */
+/** The turn-runtime subpath exports the normaliser, not the `TurnRuntime` type. */
 type NormalizedTurnRuntime = ReturnType<typeof normalizeTurnRuntime>;
 
 /** A message as it sits in the client store; only these fields are read. */

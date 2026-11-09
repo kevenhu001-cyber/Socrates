@@ -4,6 +4,7 @@ import type { SaveSettingsPreference, SettingsLabel, SettingsSection } from './s
 
 interface SettingsPanesProps {
   section: SettingsSection;
+  hideAll?: boolean;
   language: 'zh' | 'en';
   externalApiOn: boolean;
   label: SettingsLabel;
@@ -12,7 +13,7 @@ interface SettingsPanesProps {
   onLanguageChange: (language: string) => void;
 }
 
-type PaneProps = Omit<SettingsPanesProps, 'section'> & { hidden: boolean };
+type PaneProps = Omit<SettingsPanesProps, 'section' | 'hideAll'> & { hidden: boolean };
 // Keep export names beside their imports so retries select the same pane.
 const panes = {
   general: { name: 'GeneralSettingsPane', load: () => import('./GeneralSettingsPane') },
@@ -75,12 +76,15 @@ function SettingsPaneLoader({ section, ...props }: PaneProps & { section: Settin
   </section>;
 }
 
-export function SettingsPanes({ section, ...props }: SettingsPanesProps) {
+export function SettingsPanes({ section, hideAll = false, ...props }: SettingsPanesProps) {
   const [visited, setVisited] = useState<SettingsSection[]>([section]);
   // Keep visited panes at stable keys so drafts and focusable controls survive
   // category switches. No extra DOM wrapper is needed around loaded panes.
-  if (!visited.includes(section)) setVisited([...visited, section]);
-  return <>{visited.map((key) =>
-    <SettingsPaneLoader key={key} section={key} hidden={section !== key} {...props} />,
+  useEffect(() => {
+    setVisited((current) => current.includes(section) ? current : [...current, section]);
+  }, [section]);
+  const renderedSections = visited.includes(section) ? visited : [...visited, section];
+  return <>{renderedSections.map((key) =>
+    <SettingsPaneLoader key={key} section={key} hidden={hideAll || section !== key} {...props} />,
   )}</>;
 }

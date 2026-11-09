@@ -1,12 +1,14 @@
 import { i18n } from './workspaceUi';
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '../../ui/shadcn/empty';
+import { Button } from '../../ui/shadcn/button';
 
 interface LibraryEmptyStateProps {
   query: string;
   chip: 'recommend' | 'favorite' | 'folder' | 'images' | 'all';
+  canUpload: boolean;
 }
 
-export function LibraryEmptyState({ query, chip }: LibraryEmptyStateProps) {
+export function LibraryEmptyState({ query, chip, canUpload }: LibraryEmptyStateProps) {
   return (
     <Empty className="workspace-empty"><EmptyHeader>
       {query ? (
@@ -16,6 +18,8 @@ export function LibraryEmptyState({ query, chip }: LibraryEmptyStateProps) {
       ) : (
         <><EmptyTitle>{i18n('library.emptyFiles', '你的资料库已就绪')}</EmptyTitle><EmptyDescription>{i18n('library.emptyFilesDesc', '上传文件，或在对话中添加附件。')}</EmptyDescription></>
       )}
-    </EmptyHeader></Empty>
+    </EmptyHeader>
+    {canUpload && <Button type="button" onClick={() => document.getElementById('libraryUploadInput')?.click()}>{i18n('library.upload', 'Upload file')}</Button>}
+    </Empty>
   );
 }

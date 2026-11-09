@@ -70,7 +70,7 @@ function LibraryView({ data, dispatch }: {
       )}
 
       {items.length === 0 ? (
-        <LibraryEmptyState query={data.query} chip={chip} />
+        <LibraryEmptyState query={data.query} chip={chip} canUpload={!data.query && typeFilter === 'all' && (chip === 'recommend' || chip === 'all') && allItems.length === 0} />
       ) : (
         <div className={`workspace-table library-list view-${viewMode}`}>
           <div className="workspace-table-head library-desktop-table-head">

@@ -46,7 +46,7 @@ export function SettingsNavigation({
   onQueryChange: (query: string) => void;
   onSectionChange: (section: SettingsSection) => void;
 }) {
-  const navRef = useRef<HTMLElement | null>(null);
+  const navRef = useRef<HTMLDivElement | null>(null);
 
   /* On a phone the rail is a horizontal strip eight categories wide, so the
      restored section can open off-screen — the modal remembers the last tab
@@ -62,8 +62,8 @@ export function SettingsNavigation({
   }, [open, section, query]);
 
   return (
-    <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')} ref={navRef}>
-      <InputGroup className="settings-search mb-3 shrink-0">
+    <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
+      <InputGroup className="settings-search shrink-0">
         <InputGroupInput
           type="search"
           placeholder={label('搜索设置', 'Search settings')}
@@ -73,9 +73,8 @@ export function SettingsNavigation({
         />
         <InputGroupAddon><SearchIcon aria-hidden /></InputGroupAddon>
       </InputGroup>
-      {categories
-        .filter(([, name]) => name.toLowerCase().includes(query.toLowerCase()))
-        .map(([key, name]) => (
+      <div className="settings-nav-categories" ref={navRef}>
+        {categories.map(([key, name]) => (
           <Button
             variant={section === key ? 'secondary' : 'ghost'}
             key={key}
@@ -85,6 +84,7 @@ export function SettingsNavigation({
             onClick={() => onSectionChange(key)}
           >{name}</Button>
         ))}
+      </div>
     </aside>
   );
 }

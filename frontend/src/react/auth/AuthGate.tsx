@@ -89,6 +89,12 @@ export function AuthGate() {
           <img src="/logo.png" width={22} height={22} alt="" className="logo-img" />
           <span>Socrates</span>
         </div>
+        <h1 className="auth-screen-title" data-i18n-key="auth.welcomeTitle">
+          Your next question starts here.
+        </h1>
+        <p className="auth-intro" data-i18n-key="auth.intro">
+          Learn through guided questions, practice, and review at your own pace.
+        </p>
 
         <div
           className="auth-tabs"
@@ -143,9 +149,6 @@ export function AuthGate() {
           <ResetSuccessView />
           <CodeLoginView />
         </div>
-      </div>
-      <div className="auth-footnote" data-i18n-key="auth.footnote">
-        Socrates asks questions to help you think. It does not judge your answers.
       </div>
     </>
   );
@@ -204,10 +207,6 @@ function SigninView() {
       <a className="auth-inline-link auth-code-login-link" href="#" data-i18n-key="auth.codeLoginLink" onClick={(event) => handleAuthLink(event, showAuthCodeLogin)}>
         Login with verification code
       </a>
-      <div className="auth-foot">
-        <span data-i18n-key="auth.noAccount">No account?</span>{' '}
-          <a href="#" data-i18n-key="auth.createOne" onClick={(event) => handleAuthLink(event, showAuthRegister)}>Create one</a>
-      </div>
     </form>
   );
 }

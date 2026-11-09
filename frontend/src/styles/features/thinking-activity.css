@@ -3,37 +3,6 @@
  * (zero-debt sections extracted from legacy/15-thinking-activity.css).
  * ========================================================================== */
 
-/* When consent is shown before authentication, it must not sit above the
-   sign-in card as a viewport-fixed layer. Keep it in the auth gate's scroll
-   flow instead; the card remains usable and the banner is still reachable
-   below the form. Once the gate closes, cookieConsent.js moves it back to
-   body and the normal fixed treatment resumes. */
-.auth-gate:has(.socrates-cookie-consent--auth){
-  justify-content:flex-start;
-  gap:16px;
-}
-.socrates-cookie-consent--auth{
-  position:static;
-  left:auto;
-  bottom:auto;
-  transform:none;
-  z-index:auto;
-  width:min(420px,calc(100vw - 24px));
-  margin:0 auto;
-  flex:0 0 auto;
-}
-@media (max-width:520px){
-  .auth-gate:has(.socrates-cookie-consent--auth){
-    padding-top:24px;
-    padding-bottom:24px;
-  }
-  .socrates-cookie-consent--auth{
-    width:calc(100vw - 24px);
-    padding:12px 14px;
-    gap:8px;
-  }
-}
-
 /* Compatibility aliases resolve to the sole theme palette. */
 :root {
   --tool-activity-border: var(--ui-border-subtle);

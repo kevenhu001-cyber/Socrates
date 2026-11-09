@@ -15,7 +15,7 @@
  * wiring (memory / a11y / save / stats / stop-button restore) stays
  * adjacent to the rest of the finish path.
  */
-import { settleTurnRuntime } from '@socrates/core';
+import { settleTurnRuntime } from '@socrates/core/turnRuntime';
 import { stateStore } from '../../state/store.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';

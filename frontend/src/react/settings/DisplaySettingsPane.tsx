@@ -31,11 +31,11 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
   return (
     <section className="settings-pane" hidden={hidden}>
       <h2>{label('外观', 'Display')}</h2>
-      <div className="settings-field">
-        <span className="settings-label">{label('文字大小', 'Text size')}</span>
+      <div className="settings-choice settings-choice--segmented">
+        <span className="settings-choice-label" id="settings-font-size-label">{label('文字大小', 'Text size')}</span>
         <ToggleGroup variant="outline" value={[String(display.font)]}
           onValueChange={(values) => { if (values[0]) apply(() => setDisplayFont(Number(values[0]))); }}
-          aria-label={label('文字大小', 'Text size')}>
+          aria-labelledby="settings-font-size-label">
           {DISPLAY_FONT_STEPS.map((step, index) => (
             <ToggleGroupItem
               key={step}
@@ -45,11 +45,11 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
           ))}
         </ToggleGroup>
       </div>
-      <div className="settings-field">
-        <span className="settings-label">{label('内容宽度', 'Content width')}</span>
+      <div className="settings-choice settings-choice--segmented">
+        <span className="settings-choice-label" id="settings-content-width-label">{label('内容宽度', 'Content width')}</span>
         <ToggleGroup variant="outline" value={[String(display.width)]}
           onValueChange={(values) => { if (values[0]) apply(() => setDisplayWidth(Number(values[0]))); }}
-          aria-label={label('内容宽度', 'Content width')}>
+          aria-labelledby="settings-content-width-label">
           {DISPLAY_WIDTH_STEPS.map((step, index) => (
             <ToggleGroupItem
               key={step}
@@ -65,8 +65,8 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
           onCheckedChange={() => apply(() => toggleGrid())}
         />
       </ShadcnLabel>
-      <div className="settings-field">
-        <span className="settings-label">{label('自定义背景色', 'Custom background')}</span>
+      <div className="settings-choice settings-choice--color">
+        <span className="settings-choice-label">{label('自定义背景色', 'Custom background')}</span>
         <div className="settings-bg-pickers">
           <ShadcnLabel className="settings-bg-picker">
             <ShadcnNativeControl type="color" value={display.darkBg || '#09090b'} onChange={(event) => apply(() => setBackgroundDark(event.target.value))} />

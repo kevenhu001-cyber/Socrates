@@ -23,6 +23,67 @@
 }
 
 .auth-brand { letter-spacing: -0.01em; }
+.auth-gate .auth-brand { margin-bottom: var(--ui-space-sm); }
+.auth-screen-title {
+  margin: 0 0 var(--ui-space-xs);
+  color: var(--foreground);
+  font-size: var(--ui-font-size-xl);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: 1.25;
+  text-align: center;
+}
+.auth-intro {
+  margin: 0 0 var(--ui-space-lg);
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Consent stays in the auth page's reading and scroll order until the visitor
+   chooses. On wide screens it sits alongside the form. */
+.auth-gate:has(.socrates-cookie-consent--auth) {
+  justify-content: flex-start;
+  gap: 16px;
+}
+.socrates-cookie-consent--auth {
+  position: static;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  z-index: auto;
+  width: min(420px, calc(100vw - 24px));
+  margin: 0 auto;
+  flex: 0 0 auto;
+}
+@media (min-width: 1000px) {
+  .auth-gate:has(.socrates-cookie-consent--auth) {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+  }
+  .auth-gate:has(.socrates-cookie-consent--auth) > .auth-card {
+    width: min(420px, 100%);
+    flex: 0 1 420px;
+  }
+  .auth-gate:has(.socrates-cookie-consent--auth) > #cookieConsentReactRoot {
+    width: 360px;
+    flex: 0 1 360px;
+  }
+  .socrates-cookie-consent--auth { width: min(360px, 100%); }
+}
+@media (max-width: 520px) {
+  .auth-gate:has(.socrates-cookie-consent--auth) {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+  .socrates-cookie-consent--auth {
+    width: calc(100vw - 24px);
+    padding: 12px 14px;
+    gap: 8px;
+  }
+}
 
 /* Tabs: shadcn's segmented control — muted track, raised active pill. */
 .auth-gate .auth-tabs {

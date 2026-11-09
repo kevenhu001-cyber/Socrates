@@ -3,13 +3,28 @@ import { PreferenceSelect } from './PreferenceSelect';
 import { Button } from '../ui/shadcn/button';
 import { Field, FieldLabel } from '../ui/shadcn/field';
 import { useState } from 'react';
-import { i18n } from '../legacy/gateway.ts';
+import { getCurrentUser } from '../legacy/gateway.ts';
 import { confirmClearSettings } from '../../ui/dangerConfirms.js';
 import { closeSettings } from './settings.service';
 import type { SettingsLabel, SaveSettingsPreference } from './settings.types';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 const SAVE_BTN_ID = 'saveSettingsBtn';
+
+function readPreference(localKey: string, preferenceKey: string, fallback: string): string {
+  try {
+    const localValue = localStorage.getItem(localKey);
+    if (localValue !== null) return localValue;
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/settings/ModelsPreferenceSections.tsx:read-local');
+  }
+  const preferences = getCurrentUser<{ preferences?: unknown }>()?.preferences;
+  if (preferences && typeof preferences === 'object' && !Array.isArray(preferences)) {
+    const value = (preferences as Record<string, unknown>)[preferenceKey];
+    if (typeof value === 'string') return value;
+  }
+  return fallback;
+}
 
 export function ImageVoiceSettingsSection({
   label,
@@ -18,20 +33,8 @@ export function ImageVoiceSettingsSection({
   label: SettingsLabel;
   savePreference: SaveSettingsPreference;
 }) {
-  const [imageModel, setImageModel] = useState(() => {
-    try {
-      return localStorage.getItem('socrates-image-model') || '';
-    } catch {
-      return '';
-    }
-  });
-  const [voiceLanguage, setVoiceLanguage] = useState(() => {
-    try {
-      return localStorage.getItem('socrates-voice-language') || 'auto';
-    } catch {
-      return 'auto';
-    }
-  });
+  const [imageModel, setImageModel] = useState(() => readPreference('socrates-image-model', 'imageModel', ''));
+  const [voiceLanguage, setVoiceLanguage] = useState(() => readPreference('socrates-voice-language', 'voiceLanguage', 'auto'));
   const updateImageModel = (value: string) => {
     setImageModel(value);
     try {
@@ -76,22 +79,24 @@ export function ImageVoiceSettingsSection({
 }
 
 export function SettingsModelActions({
+  label,
   saving,
   onSave,
 }: {
+  label: SettingsLabel;
   saving: boolean;
   onSave: () => void | Promise<void>;
 }) {
   return (
-    <div className="settings-actions">
-      <Button variant="destructive" id="clearSettingsBtn" onClick={confirmClearSettings}>
-        {i18n('settings.clearAll', 'Clear all')}
+    <div className="settings-actions settings-provider-actions">
+      <Button variant="destructive" type="button" id="clearSettingsBtn" onClick={confirmClearSettings}>
+        {label('清除 API 设置', 'Clear API settings')}
       </Button>
-      <Button variant="outline" id="cancelSettingsBtn" onClick={closeSettings}>
-        {i18n('common.cancel', 'Cancel')}
+      <Button variant="outline" type="button" id="cancelSettingsBtn" onClick={closeSettings}>
+        {label('关闭设置', 'Close settings')}
       </Button>
-      <Button id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
-        {saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
+      <Button type="button" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
+        {saving ? label('正在保存…', 'Saving…') : label('保存服务商', 'Save providers')}
       </Button>
     </div>
   );

@@ -3,7 +3,7 @@
 // single-line history, a 52px icon rail when collapsed. The palette is the
 // light ladder: a quiet #f6f6f6 rail one rung below the #fafafa canvas.
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, setLang } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SESSIONS = ['贝叶斯定理', '导数的几何意义', '光合作用'].map((title, i) => ({
@@ -115,4 +115,27 @@ test('collapsing keeps a 52px icon rail with named buttons and reopens from it',
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
   await expect.poll(() => page.evaluate(() => Math.round(document.getElementById('sidebar').getBoundingClientRect().width))).toBe(260);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+});
+
+test('lazy session list mounts and time groups follow English and Chinese', async ({ page }) => {
+  const today = new Date();
+  const sessions = [
+    { id: 'locale-today', title: 'Today session', updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12).toISOString(), createdAt: today.toISOString() },
+    { id: 'locale-yesterday', title: 'Yesterday session', updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 12).toISOString(), createdAt: today.toISOString() },
+  ];
+  await mockAuthedApp(page, { lang: 'en' });
+  await page.route('**/api/**/sessions**', (route) => (route.request().method() === 'GET'
+    ? route.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions }) })
+    : route.fallback()));
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const headings = page.locator('#recentsList .recents-time-label');
+  await expect(headings).toHaveText(['Today', 'Yesterday']);
+  await expect(page.locator('#recentsList .recent-item')).toHaveCount(2);
+
+  await setLang(page, 'zh');
+  await expect(headings).toHaveText(['今天', '昨天']);
+  await setLang(page, 'en');
+  await expect(headings).toHaveText(['Today', 'Yesterday']);
 });

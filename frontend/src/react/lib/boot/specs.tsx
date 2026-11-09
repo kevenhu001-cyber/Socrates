@@ -19,7 +19,6 @@ import type { MountSpec } from './registry';
    tick later. RN sidebar and transcript hosts are reserved while their
    rendering trees load, independently of authentication/config requests. */
 import { hydrateRecentsFilterChips } from '../../sidebar/RecentsFilterChips';
-import { mountSessionList } from '../../session-list';
 import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
 import { handleComposerEscape, submitComposer, submitPrimaryComposer } from '../../composer-input/lifecycle';
 
@@ -191,8 +190,14 @@ export function mountRegistryList(): MountSpec[] {
     ...workspacePageSpecs(),
     /* 5. Lazy portal roots */
     ...lazyPortalSpecs(),
+    /* P_perf-session-list — its shared RN shell pulls React Native Web's
+       virtual-list and animation code. Reserve the host while the feature
+       chunk loads so legacy rendering cannot race the React owner. */
     { hostId: 'recentsList', label: 'session-list',
-      mount: () => mountSessionList() },
+      mount: (host) => import('../../session-list').then(({ mountSessionList }) => {
+        if (document.getElementById('recentsList') !== host) return false;
+        mountSessionList();
+      }) },
     /* 6. Global React roots — composer, message list, workflow layer.
        P_perf-composer-lazy — RichComposer pulls the whole tiptap/prosemirror
        editor chain (vendor-editor, ~460 KB). Mount it via dynamic import so

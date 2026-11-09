@@ -22,6 +22,10 @@
       "types": "./src/learningBlocks.ts",
       "import": "./src/learningBlocks.ts"
     },
+    "./turnRuntime": {
+      "types": "./src/turnRuntime.d.ts",
+      "import": "./src/turnRuntime.js"
+    },
     "./motion/spring": {
       "types": "./src/motion/spring.ts",
       "import": "./src/motion/spring.ts"

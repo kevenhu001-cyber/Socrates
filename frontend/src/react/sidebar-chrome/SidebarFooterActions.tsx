@@ -2,6 +2,7 @@ import { Button } from '../ui/shadcn/button';
 import { NativeControl } from '../ui/NativeControl';
 import { i18n } from '../legacy/gateway.ts';
 import { openSettings } from '../settings/settings.service.ts';
+import { preloadSettingsModal } from '../settings/settings.preload.ts';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { restingRect } from '../../ui/pressFeedback.ts';
 import {
@@ -228,6 +229,7 @@ export function SidebarFooterActions() {
     <Button variant="ghost" size="icon-sm" type="button" className="btn-icon" id="apiSettingsBtn"
       title={t('chrome.apiSettings', 'API Settings')} aria-label={t('chrome.apiSettings', 'API Settings')}
       data-i18n-title="chrome.apiSettings" data-i18n-aria="chrome.apiSettings"
+      onPointerEnter={preloadSettingsModal} onPointerDown={preloadSettingsModal} onFocus={preloadSettingsModal}
       onClick={() => { void openSettings(); }}>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m9.5 4 .5-1h4l.5 1 .6 1.8 1.9.5 1.8-.4 2 3.4-1.3 1.3-.5 1.4.5 1.4 1.3 1.3-2 3.4-1.8-.4-1.9.5-.6 1.8-.5 1h-4l-.5-1-.6-1.8-1.9-.5-1.8.4-2-3.4 1.3-1.3.5-1.4-.5-1.4-1.3-1.3 2-3.4 1.8.4 1.9-.5.6-1.8Z" /><circle cx="12" cy="12" r="3" /></svg>
     </Button>

@@ -36,8 +36,14 @@ function SettingsModal() {
             onSectionChange={navigation.setSection}
           />
           <div className="settings-body">
+            {navigation.hasNoSearchResults
+              ? <p className="settings-search-empty" role="status">
+                {preferences.label('没有匹配的设置，请尝试其他关键词。', 'No matching settings. Try another keyword.')}
+              </p>
+              : null}
             <SettingsPanes
               section={navigation.section}
+              hideAll={navigation.hasNoSearchResults}
               language={preferences.language}
               externalApiOn={snapshot.externalApiOn}
               label={preferences.label}

@@ -1,12 +1,15 @@
 import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/shadcn/card';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
+import { useEffect, useRef } from 'react';
+import { buildCustomInstructionsString } from '../../config/customInstructions.ts';
 import type { SaveSettingsPreference, SettingsLabel } from './settings.types';
 
 export function PersonalizationInstructionsSection({
   language,
   label,
   value,
+  about,
   onChange,
   savePreference,
   reportSaveError,
@@ -14,18 +17,32 @@ export function PersonalizationInstructionsSection({
   language: 'zh' | 'en';
   label: SettingsLabel;
   value: string;
+  about: string;
   onChange: (value: string) => void;
   savePreference: SaveSettingsPreference;
   reportSaveError: (message: string) => void;
 }) {
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+
+  useEffect(() => () => {
+    if (saveTimer.current !== null) clearTimeout(saveTimer.current);
+  }, []);
+
   const handleChange = (nextValue: string) => {
     onChange(nextValue);
+    const nextInstructions = { response: nextValue, about, savedAt: new Date().toISOString() };
     try {
-      localStorage.setItem('socrates-custom-instructions', nextValue);
+      localStorage.setItem('socrates-custom-instructions', JSON.stringify(nextInstructions));
     } catch {
       reportSaveError(label('无法保存在此设备。', 'Could not save on this device.'));
     }
-    void savePreference({ customInstructions: nextValue });
+    if (saveTimer.current !== null) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
+      const patch = { customInstructions: buildCustomInstructionsString(nextInstructions) };
+      saveQueue.current = saveQueue.current.then(() => savePreference(patch));
+    }, 500);
   };
 
   return (

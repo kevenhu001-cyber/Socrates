@@ -128,6 +128,26 @@ function readChatState(): {
   };
 }
 
+function streamFromMessages(messages: LegacyChatMessage[]): ChatStreamSnapshot {
+  let activeMessage: LegacyChatMessage | undefined;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index].type === 'streaming') {
+      activeMessage = messages[index];
+      break;
+    }
+  }
+  if (!activeMessage) {
+    return IDLE_STREAM;
+  }
+  return Object.freeze({
+    messageId: asString(activeMessage.clientId ?? activeMessage.id),
+    status: 'streaming',
+    textLength: typeof activeMessage.rawText === 'string'
+      ? activeMessage.rawText.length
+      : 0,
+  });
+}
+
 function streamFromEvent(
   event: ChatRuntimeEvent,
   messages: LegacyChatMessage[],
@@ -186,25 +206,8 @@ function streamFromEvent(
       /* A tool lifecycle change is not a text-streaming change: the stream
          keeps whatever status the last stream-* event gave it. */
       return snapshot.stream;
-    case 'state-synced': {
-      let activeMessage: LegacyChatMessage | undefined;
-      for (let index = messages.length - 1; index >= 0; index -= 1) {
-        if (messages[index].type === 'streaming') {
-          activeMessage = messages[index];
-          break;
-        }
-      }
-      if (!activeMessage) {
-        return IDLE_STREAM;
-      }
-      return Object.freeze({
-        messageId: asString(activeMessage.clientId ?? activeMessage.id),
-        status: 'streaming',
-        textLength: typeof activeMessage.rawText === 'string'
-          ? activeMessage.rawText.length
-          : 0,
-      });
-    }
+    case 'state-synced':
+      return streamFromMessages(messages);
   }
 }
 

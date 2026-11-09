@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { getCurrentUser } from '../legacy/gateway.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 import { getTonePreset, setTonePreset } from '../../config/tonePresets.ts';
+import { loadCustomInstructions, type CustomInstructions } from '../../config/customInstructions.ts';
 import { getAllMemories } from '../../storage/memoryStore.ts';
 import type { SettingsLabel, SettingsMemory, SaveSettingsPreference } from './settings.types';
 import { PersonalizationInstructionsSection } from './PersonalizationInstructionsSection';
@@ -15,12 +18,36 @@ interface PersonalizationSettingsPaneProps {
   reportSaveError: (message: string) => void;
 }
 
-function readCustomInstructions(): string {
-  try {
-    return localStorage.getItem('socrates-custom-instructions') || '';
-  } catch {
-    return '';
+function parseAccountInstructions(value: string): CustomInstructions {
+  const responsePrefix = '[How to respond]\n';
+  const aboutPrefix = '[About the user]\n';
+  const aboutDivider = '\n\n' + aboutPrefix;
+  if (value.startsWith(responsePrefix)) {
+    const content = value.slice(responsePrefix.length);
+    const divider = content.indexOf(aboutDivider);
+    return divider < 0
+      ? { response: content, about: '', savedAt: '' }
+      : { response: content.slice(0, divider), about: content.slice(divider + aboutDivider.length), savedAt: '' };
   }
+  if (value.startsWith(aboutPrefix)) return { response: '', about: value.slice(aboutPrefix.length), savedAt: '' };
+  return { response: value, about: '', savedAt: '' };
+}
+
+function readCustomInstructions(): CustomInstructions {
+  try {
+    const localValue = localStorage.getItem('socrates-custom-instructions');
+    if (localValue !== null) {
+      const saved = loadCustomInstructions();
+      if (saved.response || saved.about || saved.savedAt) return saved;
+      return { response: localValue, about: '', savedAt: '' };
+    }
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/settings/PersonalizationSettingsPane.tsx:read-local');
+  }
+  const customInstructions = getCurrentUser<{ customInstructions?: unknown }>()?.customInstructions;
+  return typeof customInstructions === 'string'
+    ? parseAccountInstructions(customInstructions)
+    : { response: '', about: '', savedAt: '' };
 }
 
 function readMemories(): SettingsMemory[] {
@@ -39,7 +66,7 @@ export function PersonalizationSettingsPane({
   reportSaveError,
 }: PersonalizationSettingsPaneProps) {
   const [selectedTone, setSelectedTone] = useState(() => getTonePreset());
-  const [customInstructions, setCustomInstructions] = useState(readCustomInstructions);
+  const [customInstructions, setCustomInstructions] = useState<CustomInstructions>(readCustomInstructions);
   const [memories, setMemories] = useState<SettingsMemory[]>(readMemories);
 
   const selectTone = (tone: string) => {
@@ -59,8 +86,9 @@ export function PersonalizationSettingsPane({
       <PersonalizationInstructionsSection
         language={language}
         label={label}
-        value={customInstructions}
-        onChange={setCustomInstructions}
+        value={customInstructions.response}
+        about={customInstructions.about}
+        onChange={(response) => setCustomInstructions((current) => ({ ...current, response }))}
         savePreference={savePreference}
         reportSaveError={reportSaveError}
       />

@@ -12,7 +12,7 @@
  * split. The slot-ownership guard, partial-text finalize, and
  * superseded-stub retirement all keep their original sequencing.
  */
-import { settleTurnRuntime } from '@socrates/core';
+import { settleTurnRuntime } from '@socrates/core/turnRuntime';
 import { esc } from '../../render/helpers.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { formatMsgProgressive } from '../../render/markdown.ts';

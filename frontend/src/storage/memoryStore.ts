@@ -32,8 +32,8 @@ interface ServerMemoryRow {
   text?: string;
   scope?: string;
   enabled?: boolean;
-  createdAt?: number;
-  updatedAt?: number;
+  createdAt?: number | string;
+  updatedAt?: number | string;
 }
 
 interface MemoryLegacyWindow extends Window {
@@ -94,12 +94,15 @@ function loadFromServer(): void {
       .then(function (res) {
         if (!res || !Array.isArray(res.memories)) return;
         const serverRows = res.memories.map(function (m): MemoryEntry | null {
+          const rawText = String(m.value || m.text || "");
+          const divider = rawText.indexOf(':');
+          const parsedKey = divider > 0 ? rawText.slice(0, divider).trim() : "";
           return m && {
             id: m.id || _genId(),
-            key: m.key || (m.scope === "project" ? "project" : "fact"),
-            value: m.value || m.text || "",
-            createdAt: m.createdAt || Date.now(),
-            updatedAt: m.updatedAt || m.createdAt || Date.now(),
+            key: m.key || parsedKey || (m.scope === "project" ? "project" : "fact"),
+            value: m.value || (divider > 0 ? rawText.slice(divider + 1).trim() : rawText),
+            createdAt: toTimestamp(m.createdAt),
+            updatedAt: toTimestamp(m.updatedAt || m.createdAt),
           };
         }).filter(function (m): m is MemoryEntry { return !!m && m.value !== ""; });
         if (!serverRows.length) return;
@@ -121,6 +124,15 @@ function loadFromServer(): void {
 /* Generate a short unique id for a memory entry. */
 function _genId(): string {
   return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+}
+
+function toTimestamp(value: number | string | undefined): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return Date.now();
 }
 
 /* Add or update a memory. `key` is a short label (e.g. "name",
@@ -146,6 +158,15 @@ function setMemory(key: unknown, value: unknown): MemoryEntry | null {
   }
   saveMemories();
   return existing || memories[memories.length - 1];
+}
+
+/* Replace a local-only id with the durable id returned by /api/memory. */
+function replaceMemoryId(localId: string, serverId: string): boolean {
+  const memory = loadMemories().find(function (entry) { return entry.id === localId; });
+  if (!memory) return false;
+  memory.id = serverId;
+  saveMemories();
+  return true;
 }
 
 /* Remove a memory by id. Returns true if found and removed. */
@@ -194,6 +215,7 @@ function injectMemoryContext(): string {
 const memoryStore = {
   loadMemories: loadMemories,
   setMemory: setMemory,
+  replaceMemoryId: replaceMemoryId,
   removeMemory: removeMemory,
   removeMemoryByKey: removeMemoryByKey,
   getAllMemories: getAllMemories,
@@ -216,6 +238,7 @@ export { memoryStore };
 export {
   loadMemories,
   setMemory,
+  replaceMemoryId,
   removeMemory,
   removeMemoryByKey,
   getAllMemories,

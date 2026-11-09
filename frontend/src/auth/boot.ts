@@ -9,6 +9,7 @@ import { captureBrowserLoginRequest } from '../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishSidebarChrome } from '../ui/profile.ts';
 import { revealAppAndHydrate, showGate, showAuthSignin } from './index.ts';
+import { captureMarketingQuestion } from './marketingHandoff.ts';
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow } from '../app/lifecycle.ts';
 import { handleAuthUrlRoutes } from './boot/routes.ts';
 import {
@@ -83,6 +84,7 @@ async function finishUnavailableBoot(): Promise<void> {
 }
 
 export async function authBoot(): Promise<void> {
+  captureMarketingQuestion();
   captureBrowserLoginRequest();
   /* index.html preloads csrf/me/config while the module graph evaluates. */
   const preflight = readBootPreflight();

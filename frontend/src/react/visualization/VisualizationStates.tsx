@@ -60,8 +60,7 @@ export function reasonFromToolFailure(detail: unknown, errorCode?: string | null
   const truncatedCodes = ['arguments_truncated', 'arguments_too_large', 'arguments_parse_failed'];
   if (record.truncated === true || record.stage === 'openui_truncated' || truncatedCodes.includes(errorCode ?? '')) return 'truncated';
   if (record.stage === 'openui_syntax' || record.stage === 'openui_program') return 'syntax';
-  if (record.stage === 'demonstration' || record.stage === 'physics'
-    || record.stage === 'envelope' || record.stage === 'action') return 'structure';
+  if (['demonstration', 'physics', 'envelope', 'action'].includes(String(record.stage))) return 'structure';
   const first = Array.isArray(record.visualizations) ? record.visualizations[0] as Record<string, unknown> | undefined : undefined;
   return first ? reasonFromValidationFailure(first) : 'unknown';
 }

@@ -353,6 +353,8 @@ body.composer-tools-open.composer-tools-open::after {
 .settings-modal--full .settings-title { font-weight:var(--ui-font-weight-semibold); font-size:var(--ui-font-size-md); }
 .settings-modal--full .settings-shell { display:grid; grid-template-columns:218px minmax(0,1fr); min-height:0; flex:1; }
 .settings-modal--full .settings-nav { display:flex; flex-direction:column; align-items:stretch; gap:var(--ui-space-xxs); padding:var(--ui-space-lg) var(--ui-space-md); border-right:1px solid var(--border); overflow:auto; background:var(--sidebar); }
+.settings-modal--full .settings-nav-categories { display:flex; flex-direction:column; gap:var(--ui-space-xxs); }
+.settings-modal--full .settings-search { margin:0 0 var(--ui-space-sm); }
 .settings-modal--full .settings-body { display:block; min-height:0; overflow:auto; padding:var(--ui-space-xl); }
 .settings-modal--full .settings-pane[hidden] { display:none; }
 .settings-preference-fields { gap: 18px; }
@@ -363,10 +365,18 @@ body.composer-tools-open.composer-tools-open::after {
 .settings-modal--full .settings-pane > h2 { margin:0 0 10px; color:var(--foreground); font-size:var(--ui-font-size-xl); font-weight:var(--ui-font-weight-semibold); }
 .settings-modal--full .settings-pane > p { margin:0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-sm); }
 .settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:55px; border-bottom:1px solid var(--border); color:var(--foreground); font-size:var(--ui-font-size-sm); }
-.settings-modal--full .settings-section { margin-top:20px; }
+.settings-modal--full .settings-choice--segmented > [data-slot="toggle-group"] { flex:none; }
+.settings-modal--full .settings-choice--color { padding-block:10px; }
+.settings-modal--full .settings-choice-label { color:var(--foreground); font-size:var(--ui-font-size-sm); }
+.settings-modal--full .settings-memory-head { flex-direction:row; justify-content:space-between; align-items:center; gap:16px; }
+.settings-modal--full .settings-section { margin-top:0; }
+.settings-modal--full .settings-section-head { display:flex; flex-direction:column; gap:4px; }
+.settings-modal--full .settings-section-head > h3 { margin:0; color:var(--foreground); font-size:var(--ui-font-size-md); font-weight:var(--ui-font-weight-semibold); }
+.settings-modal--full .settings-section-head > p { margin:0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-xs); line-height:var(--ui-text-ui-line); }
+.settings-modal--full .settings-provider-actions { padding-top:var(--ui-space-md); border-top:1px solid var(--border); }
 .settings-modal--full .settings-save-error { margin:20px 0 0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-xxs); }
+.settings-modal--full .settings-search-empty { margin:0; padding:var(--ui-space-xl) 0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-sm); }
 @media(max-width:640px) {
-  .settings-modal--full .settings-search { display: none; }
   .provider-fields { grid-template-columns: minmax(0, 1fr); }
   .settings-modal.settings-modal--full { width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
   /* A full-bleed sheet sits under the notch and the home indicator, so both
@@ -376,20 +386,27 @@ body.composer-tools-open.composer-tools-open::after {
     min-height: calc(54px + env(safe-area-inset-top, 0px));
   }
   .settings-modal--full .settings-shell { display:flex; flex-direction:column; }
-  /* The rail becomes a scroll strip. Eight categories are wider than a phone,
-     so the strip snaps tab-to-tab and keeps the end padding scrollable —
-     without `scroll-padding-inline` the last tab can never come fully clear
-     of the right edge. The scrollbar is hidden because the strip is one row
-     and the cut-off tab is the affordance. */
+  /* Keep search reachable above the category strip. The eight categories are
+     wider than a phone, so the strip snaps tab-to-tab and keeps end padding
+     scrollable; the clipped next tab signals that more categories are there. */
   .settings-modal--full .settings-nav {
-    flex:none; flex-direction:row; gap:4px; padding:10px;
+    display:grid; grid-template-columns:minmax(0,1fr); gap:8px; padding:10px;
     border-right:0; border-bottom:1px solid var(--border);
-    overflow-x:auto; scroll-snap-type:x proximity; scroll-padding-inline:10px;
-    scrollbar-width:none;
+    overflow:visible; background:var(--sidebar);
   }
-  .settings-modal--full .settings-nav::-webkit-scrollbar { display:none; }
-  .settings-modal--full .settings-nav > button { flex:none; scroll-snap-align:center; }
+  .settings-modal--full .settings-search { display:flex; width:100%; margin:0; }
+  .settings-modal--full .settings-nav-categories {
+    display:flex; flex-direction:row; align-items:center; gap:4px; min-width:0; overflow-x:auto;
+    scroll-snap-type:x proximity; scroll-padding-inline:10px; scrollbar-width:none;
+  }
+  .settings-modal--full .settings-nav-categories::-webkit-scrollbar { display:none; }
+  .settings-modal--full .settings-nav-categories > button { flex:none; scroll-snap-align:center; }
   .settings-modal--full .settings-body { padding:20px 18px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .settings-modal--full .settings-choice { flex-wrap:wrap; gap:10px 16px; }
+  .settings-modal--full .settings-choice--segmented > [data-slot="toggle-group"] { width:100%; }
+  .settings-modal--full .settings-choice--segmented [data-slot="toggle-group-item"] { flex:1; min-width:0; }
+  .settings-modal--full .settings-provider-actions { flex-wrap:wrap; }
+  .settings-modal--full .settings-memory-head { align-items:flex-start; }
 }
 
 /* ── Profile modal ── */

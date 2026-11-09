@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { useUserInfo } from './sidebarChrome.store';
 import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
+import { preloadSettingsModal } from '../settings/settings.preload.ts';
 
 export function SidebarFooter() {
   const user = useUserInfo();
@@ -32,7 +33,8 @@ export function SidebarFooter() {
       <ShadcnSeparator />
       <FoundationMenuItem onClick={() => navigate('personalization')}><Icon name="sliders" />{label('个性化', 'Personalization')}</FoundationMenuItem>
       <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}><Icon name="user" />{label('个人资料', 'Profile')}</FoundationMenuItem>
-      <FoundationMenuItem onClick={() => navigate('general')}><Icon name="gear" />{label('设置', 'Settings')}</FoundationMenuItem>
+      <FoundationMenuItem onPointerEnter={preloadSettingsModal} onPointerDown={preloadSettingsModal} onFocus={preloadSettingsModal}
+        onClick={() => navigate('general')}><Icon name="gear" />{label('设置', 'Settings')}</FoundationMenuItem>
       <ShadcnSeparator />
       <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openCheatsheet(); }}><Icon name="lifeBuoy" />{label('帮助', 'Help')}<Icon name="chevronRight" className="account-menu-trailing" /></FoundationMenuItem>
       {user.isSignedIn && <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.signOut(); }}><Icon name="logOut" />{label('退出登录', 'Sign out')}</FoundationMenuItem>}

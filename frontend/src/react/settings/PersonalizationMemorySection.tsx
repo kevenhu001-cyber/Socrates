@@ -1,9 +1,14 @@
 import { Button } from '../ui/shadcn/button';
 import { getApiFetch } from '../legacy/gateway.ts';
-import { clearAllMemories, getAllMemories, removeMemory, setMemory } from '../../storage/memoryStore.ts';
+import { clearAllMemories, getAllMemories, removeMemory, replaceMemoryId, setMemory } from '../../storage/memoryStore.ts';
+import { showConfirm } from '../../ui/confirm.ts';
 import type { SettingsLabel, SettingsMemory } from './settings.types';
 import { PersonalizationMemoryAddForm } from './PersonalizationMemoryAddForm';
 import { PersonalizationMemoryList } from './PersonalizationMemoryList';
+
+function isServerMemoryId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
 
 export function PersonalizationMemorySection({
   label,
@@ -39,21 +44,47 @@ export function PersonalizationMemorySection({
   const deleteMemory = (id: string) => {
     removeMemory(id);
     refreshMemories();
-    syncMemoryChange(() => getApiFetch()?.('/api/memory/' + id, { method: 'DELETE' }));
+    if (isServerMemoryId(id)) {
+      syncMemoryChange(() => getApiFetch()?.('/api/memory/' + id, { method: 'DELETE' }));
+    }
   };
 
   const addMemory = (key: string, value: string) => {
-    setMemory(key, value);
+    const memory = setMemory(key, value);
     refreshMemories();
-    syncMemoryChange(() => getApiFetch()?.('/api/memory', {
-      method: 'POST',
-      body: { text: key + ': ' + value },
-    }));
+    const api = getApiFetch();
+    if (!memory || !api) return;
+    const localId = memory.id;
+    syncMemoryChange(async () => {
+      const text = key + ': ' + value;
+      if (isServerMemoryId(localId)) {
+        await api('/api/memory/' + localId, { method: 'PATCH', body: { text } });
+        return;
+      }
+      const result = await api<{ id?: string }>('/api/memory', { method: 'POST', body: { text } });
+      if (result.id && isServerMemoryId(result.id)) {
+        const wasStillPresent = replaceMemoryId(localId, result.id);
+        refreshMemories();
+        // A user can remove a local draft while its first server write is in flight.
+        if (!wasStillPresent) await api('/api/memory/' + result.id, { method: 'DELETE' });
+      }
+    });
+  };
+
+  const clearMemories = async () => {
+    const current = getAllMemories();
+    clearAllMemories();
+    onChange([]);
+    const api = getApiFetch();
+    const serverIds = current.filter((memory) => isServerMemoryId(memory.id)).map((memory) => memory.id);
+    if (api && serverIds.length > 0) {
+      syncMemoryChange(() => Promise.all(serverIds.map((id) => api('/api/memory/' + id, { method: 'DELETE' }))));
+    }
   };
 
   return (
     <section className="settings-section">
-      <div className="settings-section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="settings-section-head settings-memory-head">
         <div>
           <h3>{label('跨会话记忆', 'Memory')}</h3>
           <p>{label('助手在对话中自动沉淀的关于你的背景与偏好。', 'Things the assistant has learned about you across conversations.')}</p>
@@ -63,9 +94,11 @@ export function PersonalizationMemorySection({
             type="button"
             className="settings-btn-mini"
             onClick={() => {
-              if (!window.confirm(label('确定要清空全部已保存的记忆吗？', 'Are you sure you want to clear all memories?'))) return;
-              clearAllMemories();
-              onChange([]);
+              void showConfirm(
+                label('清空全部记忆？', 'Clear all memories?'),
+                label('这会从此设备和账户中删除已保存的记忆。', 'This removes saved memories from this device and your account.'),
+                true,
+              ).then((confirmed) => { if (confirmed) void clearMemories(); });
             }}
           >{label('清空全部', 'Clear all')}</Button>
         )}

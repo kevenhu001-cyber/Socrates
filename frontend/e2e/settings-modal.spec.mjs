@@ -5,16 +5,21 @@
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle, login } from './_lib.mjs';
-import { mockAuthedApp } from './_mock-api.mjs';
+import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test.beforeEach(async ({ page }, testInfo) => {
+  const hydrateSettings = testInfo.title.includes('restore server preferences');
   const apiKeys = testInfo.title.includes('provider activation failure') || testInfo.title.includes('provider update patches existing')
     ? { providers: [
       { id: 'provider-one', label: 'First provider', url: 'https://first.example.test/v1', model: 'first', hasKey: true, isActive: true },
       { id: 'provider-two', label: 'Second provider', url: 'https://second.example.test/v1', model: 'second', hasKey: true, isActive: false },
     ] }
     : undefined;
-  await mockAuthedApp(page, { apiKeys });
+  const user = hydrateSettings ? {
+    customInstructions: 'Use my saved account instructions.',
+    preferences: { theme: 'dark', language: 'en', imageModel: 'gpt-image-2', voiceLanguage: 'en-US' },
+  } : undefined;
+  await mockAuthedApp(page, { apiKeys, user, lang: hydrateSettings ? false : undefined });
   await gotoAndSettle(page, '/');
   await login(page);
 });
@@ -58,6 +63,28 @@ test('tone choices have separate readable labels and expose the selected state',
 });
 
 test('settings modal opens with React-owned providers and tones, and closes', async ({ page }) => {
+  const memoryRequests = [];
+  const serverMemoryId = '550e8400-e29b-41d4-a716-446655440000';
+  let serverMemories = [];
+  await page.route(/\/api\/(?:v2\/)?memory(?:\/[^?]*)?(?:\?.*)?$/, async (route) => {
+    const request = route.request();
+    memoryRequests.push({ method: request.method(), url: request.url(), body: request.postDataJSON() });
+    if (request.method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ memories: serverMemories }) });
+    } else if (request.method() === 'POST') {
+      const entry = { id: serverMemoryId, text: request.postDataJSON().text, createdAt: new Date().toISOString() };
+      serverMemories = [...serverMemories, entry];
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(entry) });
+    } else if (request.method() === 'PATCH') {
+      serverMemories = serverMemories.map((entry) => entry.id === serverMemoryId
+        ? { ...entry, text: request.postDataJSON().text }
+        : entry);
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: serverMemoryId }) });
+    } else {
+      serverMemories = serverMemories.filter((entry) => !request.url().includes(entry.id));
+      await route.fulfill({ status: 204 });
+    }
+  });
   // Open through the typed navigation action shared with the React model menu.
   const overlay = await openModelsPane(page);
   expect(await page.evaluate(() => typeof window.SERVER_HAS_BEAGLE_KEY)).toBe('undefined');
@@ -85,7 +112,7 @@ test('settings modal opens with React-owned providers and tones, and closes', as
 
   const instructions = overlay.locator('.settings-textarea');
   await instructions.fill('Use concise examples.');
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-custom-instructions')))
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-custom-instructions') || '{}').response))
     .toBe('Use concise examples.');
 
   await overlay.locator('.settings-memory-key-input').fill('preference');
@@ -94,13 +121,273 @@ test('settings modal opens with React-owned providers and tones, and closes', as
   const memory = overlay.locator('.settings-memory-item');
   await expect(memory).toContainText('preference');
   await expect(memory).toContainText('prefers TypeScript');
-  await memory.locator('.settings-memory-del-btn').click();
-  await expect(overlay.locator('.settings-memory-item')).toHaveCount(0);
+  await expect.poll(() => memoryRequests.some((request) => request.method === 'POST')).toBe(true);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-memory-store') || '[]').find((item) => item.key === 'preference')?.id)).toBe(serverMemoryId);
+  expect(memoryRequests.find((request) => request.method === 'POST')?.body).toEqual({ text: 'preference: prefers TypeScript' });
+
+  await overlay.locator('.settings-memory-key-input').fill('preference');
+  await overlay.locator('.settings-memory-val-input').fill('prefers Python');
+  await overlay.locator('.settings-memory-add-form button[type="submit"]').click();
+  await expect(memory).toContainText('prefers Python');
+  await expect.poll(() => memoryRequests.some((request) => request.method === 'PATCH')).toBe(true);
+  expect(memoryRequests.find((request) => request.method === 'PATCH')?.body).toEqual({ text: 'preference: prefers Python' });
+
+  await overlay.locator('#settingsCloseBtn').click();
+  await page.reload();
+  await waitForAppShell(page);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-memory-store') || '[]')
+    .find((item) => item.key === 'preference'))).toEqual({
+    id: serverMemoryId,
+    key: 'preference',
+    value: 'prefers Python',
+    createdAt: expect.any(Number),
+    updatedAt: expect.any(Number),
+  });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const reloadedOverlay = page.locator('#settingsOverlay');
+  await reloadedOverlay.locator('.settings-nav [data-section="personalization"]').click();
+  await expect(reloadedOverlay.locator('.settings-memory-item')).toContainText('prefers Python');
+
+  await reloadedOverlay.locator('.settings-memory-item .settings-memory-del-btn').click();
+  await expect(reloadedOverlay.locator('.settings-memory-item')).toHaveCount(0);
+  await expect.poll(() => memoryRequests.filter((request) => request.method === 'DELETE').length).toBe(1);
+  expect(memoryRequests.find((request) => request.method === 'DELETE')?.url).toContain(serverMemoryId);
+
+  await reloadedOverlay.locator('.settings-memory-key-input').fill('clear-target');
+  await reloadedOverlay.locator('.settings-memory-val-input').fill('remove from all devices');
+  await reloadedOverlay.locator('.settings-memory-add-form button[type="submit"]').click();
+  await expect(reloadedOverlay.locator('.settings-memory-item')).toContainText('clear-target');
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-memory-store') || '[]').find((item) => item.key === 'clear-target')?.id)).toBe(serverMemoryId);
+  await reloadedOverlay.getByRole('button', { name: 'Clear all', exact: true }).click();
+  const memoryConfirm = page.getByRole('alertdialog', { name: 'Clear all memories?' });
+  await expect(memoryConfirm).toBeVisible();
+  await memoryConfirm.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(reloadedOverlay.locator('.settings-memory-item')).toHaveCount(0);
+  await expect.poll(() => memoryRequests.filter((request) => request.method === 'DELETE').length).toBe(2);
 
   // Close via the React close button.
-  await overlay.locator('#settingsCloseBtn').click();
-  await expect(overlay).toBeHidden();
+  await reloadedOverlay.locator('#settingsCloseBtn').click();
+  await expect(reloadedOverlay).toBeHidden();
 });
+
+test('all settings categories render their own pane and mobile search reaches hidden categories', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+  await expect(overlay).toBeVisible();
+  const sections = [
+    ['general', 'General'], ['display', 'Display'], ['notifications', 'Notifications'],
+    ['personalization', 'Personalization'], ['models', 'Models & voice'],
+    ['apps', 'Apps & connections'], ['data', 'Data controls'], ['account', 'Account'],
+  ];
+  for (const [key, title] of sections) {
+    await overlay.locator(`.settings-nav [data-section="${key}"]`).click();
+    await expect(overlay.locator('.settings-pane:visible h2')).toHaveText(title);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const search = overlay.getByRole('searchbox', { name: 'Search settings' });
+  await expect(search).toBeVisible();
+  const categories = overlay.locator('.settings-nav-categories');
+  expect(await categories.evaluate((element) => getComputedStyle(element).flexDirection)).toBe('row');
+  expect(await categories.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  await overlay.locator('.settings-nav [data-section="general"]').click();
+  const accountTab = overlay.locator('.settings-nav [data-section="account"]');
+  await accountTab.click();
+  await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Account');
+  expect(await accountTab.evaluate((element) => {
+    const item = element.getBoundingClientRect();
+    const strip = element.parentElement.getBoundingClientRect();
+    return item.left >= strip.left && item.right <= strip.right;
+  })).toBe(true);
+  await search.fill('字号');
+  await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
+  await expect(overlay.locator('.settings-nav [data-section="display"]')).toBeVisible();
+  await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Display');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('model provider actions stay inside the settings pane on mobile', async ({ page }) => {
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await overlay.locator('.settings-nav [data-section="models"]').click();
+  const actions = overlay.locator('.settings-provider-actions');
+  await actions.scrollIntoViewIfNeeded();
+  const bounds = await actions.evaluate((element) => {
+    const body = element.closest('.settings-body').getBoundingClientRect();
+    const buttons = [...element.querySelectorAll('button')].map((button) => {
+      const rect = button.getBoundingClientRect();
+      return { left: rect.left, right: rect.right };
+    });
+    return { bodyLeft: body.left, bodyRight: body.right, buttons };
+  });
+  for (const button of bounds.buttons) {
+    expect(button.left).toBeGreaterThanOrEqual(bounds.bodyLeft);
+    expect(button.right).toBeLessThanOrEqual(bounds.bodyRight);
+  }
+});
+
+test('display settings persist text size, content width, grid, and background colors', async ({ page }) => {
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+  await overlay.locator('.settings-nav [data-section="display"]').click();
+
+  const fontGroup = overlay.locator('.settings-choice--segmented').filter({ hasText: 'Text size' });
+  await fontGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }).click();
+  const widthGroup = overlay.locator('.settings-choice--segmented').filter({ hasText: 'Content width' });
+  await widthGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }).click();
+  await expect.poll(() => page.evaluate(() => ({
+    font: getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale').trim(),
+    width: getComputedStyle(document.documentElement).getPropertyValue('--app-width-scale').trim(),
+  }))).toEqual({ font: '1.375', width: '1.7' });
+
+  const grid = overlay.getByRole('switch', { name: 'Conversation grid' });
+  await grid.click();
+  await expect(grid).toHaveAttribute('aria-checked', 'true');
+
+  const colors = overlay.locator('.settings-bg-pickers input[type="color"]');
+  await colors.nth(0).evaluate((input) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '#123456');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await colors.nth(1).evaluate((input) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '#eeeeee');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
+    .toMatchObject({ font: 1.375, width: 1.7, showGrid: true, darkBg: '#123456', lightBg: '#eeeeee' });
+
+  const resetButtons = overlay.getByRole('button', { name: 'Reset', exact: true });
+  await resetButtons.nth(0).click();
+  await resetButtons.nth(1).click();
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
+    .toMatchObject({ darkBg: '', lightBg: '' });
+});
+
+test('custom instructions save once after typing and sync through the account endpoint', async ({ page }) => {
+  const requests = [];
+  page.on('request', (request) => {
+    if (request.method() !== 'PATCH' || !/\/api\/(?:v2\/)?users\/me(?:\?|$)/.test(request.url())) return;
+    requests.push({ url: request.url(), body: request.postDataJSON() });
+  });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+  await overlay.locator('.settings-nav [data-section="personalization"]').click();
+  const instructions = overlay.locator('#settings-custom-instructions');
+  await instructions.fill('Draft one');
+  await instructions.fill('Use concise examples and clear steps.');
+  await expect.poll(() => requests.length, { timeout: 3000 }).toBe(1);
+  expect(new URL(requests[0].url).pathname).toMatch(/\/api\/(?:v2\/)?users\/me$/);
+  expect(requests[0].body).toEqual({ customInstructions: '[How to respond]\nUse concise examples and clear steps.' });
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-custom-instructions') || '{}').response))
+    .toBe('Use concise examples and clear steps.');
+  await expect(overlay.locator('.settings-save-error')).toHaveCount(0);
+});
+
+test('general and model preferences update the app and sync supported account fields', async ({ page }) => {
+  const preferencePatches = [];
+  page.on('request', (request) => {
+    if (request.method() === 'PATCH' && /\/api\/(?:v2\/)?users\/me\/preferences(?:\?|$)/.test(request.url())) {
+      preferencePatches.push(request.postDataJSON());
+    }
+  });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+
+  await overlay.locator('#settings-appearance').click();
+  await page.getByRole('option', { name: 'Dark', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
+  await overlay.locator('#settings-theme-style').click();
+  await page.getByRole('option', { name: 'Philosophy', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'philosophy');
+
+  await overlay.locator('#settings-language').click();
+  await page.getByRole('option', { name: '中文', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
+  await overlay.locator('.settings-nav [data-section="models"]').click();
+
+  await overlay.locator('#settings-voice-language').click();
+  await page.getByRole('option', { name: '中文', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-voice-language'))).toBe('zh-CN');
+  await overlay.locator('#settings-image-model').fill('gpt-image-2');
+  await overlay.getByRole('button', { name: '同步图片模型', exact: true }).click();
+  await expect.poll(() => preferencePatches.some((patch) => patch.imageModel === 'gpt-image-2')).toBe(true);
+  await expect.poll(() => preferencePatches.some((patch) => patch.voiceLanguage === 'zh-CN')).toBe(true);
+  expect(preferencePatches).toContainEqual({ theme: 'dark' });
+  expect(preferencePatches).toContainEqual({ language: 'zh' });
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-image-model'))).toBe('gpt-image-2');
+});
+
+test('settings restore server preferences when this browser has no local values', async ({ page }) => {
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+  await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(overlay.locator('#settings-language')).toContainText('English');
+
+  await overlay.locator('.settings-nav [data-section="models"]').click();
+  await expect(overlay.locator('#settings-image-model')).toHaveValue('gpt-image-2');
+  await expect(overlay.locator('#settings-voice-language')).toContainText('English');
+
+  await overlay.locator('.settings-nav [data-section="personalization"]').click();
+  await expect(overlay.locator('#settings-custom-instructions')).toHaveValue('Use my saved account instructions.');
+});
+
+test('settings utility links reach Plugins and Library, while account actions stay guarded', async ({ page }) => {
+  const requests = [];
+  page.on('request', (request) => {
+    if (request.method() === 'PATCH' || request.method() === 'DELETE') {
+      requests.push({ method: request.method(), url: request.url(), body: request.postDataJSON() });
+    }
+  });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+
+  await overlay.locator('.settings-nav [data-section="apps"]').click();
+  await overlay.getByRole('button', { name: 'Open plugins', exact: true }).click();
+  await expect(overlay).toBeHidden();
+  await expect(page.locator('.plugin-directory')).toBeVisible();
+
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await overlay.locator('.settings-nav [data-section="data"]').click();
+  await overlay.getByRole('button', { name: 'Open library', exact: true }).click();
+  await expect(overlay).toBeHidden();
+  await expect(page.locator('.library-directory')).toBeVisible();
+
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await overlay.locator('.settings-nav [data-section="account"]').click();
+  const displayName = overlay.getByRole('textbox', { name: 'Display name' });
+  await displayName.fill('Settings QA learner');
+  await displayName.press('Enter');
+  await expect.poll(() => requests.filter((request) => request.method === 'PATCH' && /\/users\/me(?:\?|$)/.test(request.url)).length).toBe(1);
+  expect(requests.find((request) => request.method === 'PATCH' && /\/users\/me(?:\?|$)/.test(request.url))?.body)
+    .toMatchObject({ displayName: 'Settings QA learner' });
+
+  await overlay.locator('.settings-choice').filter({ hasText: 'Token usage' }).getByRole('button', { name: 'View' }).click();
+  await expect(page.locator('#usageOverlay')).toBeVisible();
+  await page.locator('#usageOverlay .usage-close').click();
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await overlay.locator('.settings-nav [data-section="account"]').click();
+  await overlay.locator('.settings-choice').filter({ hasText: 'Archived sessions' }).getByRole('button', { name: 'Manage' }).click();
+  await expect(page.locator('#storageModalOverlay')).toBeVisible();
+  await page.locator('#storageModalOverlay').getByRole('button', { name: 'Close' }).click();
+
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await overlay.locator('.settings-nav [data-section="account"]').click();
+  await overlay.getByRole('button', { name: 'Delete account' }).click();
+  const deleteConfirm = page.getByRole('alertdialog', { name: 'Delete your account?' });
+  await expect(deleteConfirm).toBeVisible();
+  await deleteConfirm.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(deleteConfirm).toHaveCount(0);
+  expect(requests.some((request) => request.method === 'DELETE' && /\/auth\/account/.test(request.url))).toBe(false);
+  await expect(overlay).toBeVisible();
+});
+
 
 test('settings modal closes on backdrop click and via Esc', async ({ page }) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
@@ -150,6 +437,18 @@ test('settings switch toggles by its label and persists', async ({ page }) => {
   await overlay.locator('#settingsCloseBtn').click();
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(track).toHaveAttribute('aria-checked', expectedState);
+});
+
+test('clear API settings confirms before clearing provider configuration', async ({ page }) => {
+  const overlay = await openModelsPane(page);
+  await expect(overlay.getByRole('button', { name: 'Clear API settings', exact: true })).toBeVisible();
+  await overlay.locator('#clearSettingsBtn').click();
+  const confirmation = page.getByRole('alertdialog', { name: 'Clear API settings?' });
+  await expect(confirmation).toBeVisible();
+  await confirmation.locator('#confirmOkBtn').click();
+  await expect(confirmation).toHaveCount(0);
+  await expect(overlay.locator('#providerList .provider-row.built-in-row')).toBeVisible();
+  await expect(overlay).toBeVisible();
 });
 
 test('React-owned provider rows stay synchronized with provider configuration', async ({ page }) => {

@@ -2,7 +2,7 @@
  * These helpers own the boundary between saved session data, the transcript
  * store, and browser-local history. */
 import { whenSessionIdle } from './afterSessionPaint.ts';
-import { normalizeTurnRuntime } from '@socrates/core';
+import { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
 import { stateStore } from '../state/store.ts';
 import { buildUserContentParts } from '../chat/history.ts';
 import { quietTurn } from '../chat/turnUi.ts';

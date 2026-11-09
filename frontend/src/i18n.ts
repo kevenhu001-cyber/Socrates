@@ -152,6 +152,21 @@ function applyI18n(){
   updateTopicSetupCopy();
   refreshDynamicSurfaces();
 }
+function consumeMarketingLocale(): "en" | "zh" | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const url = new URL(window.location.href);
+    const locale = url.searchParams.get("lang");
+    if (locale !== "en" && locale !== "zh") return null;
+    url.searchParams.delete("lang");
+    const query = url.searchParams.toString();
+    window.history.replaceState(window.history.state, "", `${url.pathname}${query ? `?${query}` : ""}${url.hash}`);
+    return locale;
+  } catch (error) {
+    reportSwallow(error, 'i18n.consumeMarketingLocale');
+    return null;
+  }
+}
 /* Load saved language preference. languageState.ts is the single source
    of truth at runtime; setLang() persists changes and applyI18n()
    pushes them onto the DOM.
@@ -162,12 +177,17 @@ function applyI18n(){
    clears) can leave the entry null between sessions. Re-writing
    it here makes the preference resilient to a transient missing
    entry and gives a single load() call a self-healing behavior. */
+const marketingLocale = consumeMarketingLocale();
 try{
-  const s=localStorage.getItem("socrates-lang-app");
+  const s=marketingLocale || localStorage.getItem("socrates-lang-app");
   /* Validate saved language against supported names, not the async-loaded
      locale table, or a valid preference would be wiped before it lands. */
   if(s==="en"||s==="zh"){
     setCurrentLanguage(s);
+    if (marketingLocale) {
+      try { localStorage.setItem("socrates-lang-app", marketingLocale); }
+      catch (error) { reportSwallow(error, 'i18n.consumeMarketingLocale.persist'); }
+    }
   }else if(!s){
     /* No preference recorded yet — persist the default so the
        next load picks up the same value instead of leaving the

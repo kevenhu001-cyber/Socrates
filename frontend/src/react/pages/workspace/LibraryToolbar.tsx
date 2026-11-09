@@ -1,6 +1,7 @@
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button } from '../../ui/shadcn/button';
+import { preloadSettingsModal } from '../../settings/settings.preload.ts';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { getLegacyActions, t as translate } from '../../legacy/gateway.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
@@ -68,7 +69,9 @@ export function LibraryToolbar({
               </div>
             ) : null}
           </div>
-          <Button type="button" variant="ghost" size="icon-lg" className="library-settings-btn" aria-label={i18n('profile.preferences', '偏好设置')} onClick={() => getLegacyActions().navigation.openSettings()}>
+          <Button type="button" variant="ghost" size="icon-lg" className="library-settings-btn" aria-label={i18n('profile.preferences', '偏好设置')}
+            onPointerEnter={preloadSettingsModal} onPointerDown={preloadSettingsModal} onFocus={preloadSettingsModal}
+            onClick={() => getLegacyActions().navigation.openSettings()}>
             <GearIcon />
           </Button>
         </div>
