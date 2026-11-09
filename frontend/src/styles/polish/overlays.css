@@ -31,7 +31,7 @@
 }
 .chat-config-pop {
   border-radius: var(--ui-radius-popover);
-  animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-out) both;
+  transform-origin: top left;
 }
 
 /* Generation-config popover — converge on the same density as the "+"
@@ -162,20 +162,82 @@ body.composer-tools-open.composer-tools-open::after {
   to { opacity: 0; }
 }
 
-.cmd-k-modal,
 .settings-modal,
-.profile-modal,
-.usage-modal,
-.share-modal,
 .confirm-box,
 .sidebar-more-popover,
-.display-prefs-popover,
 .anchored-menu,
 .msg-action-menu,
 .library-row-menu,
 .library-new-menu,
 .library-filter-menu {
   animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-out) both;
+}
+
+/* ── Dismissal for the class-hidden panels ────────────────────────────────
+   These six panels stay in the DOM and are dismissed by adding `.hidden`, so
+   their exit can be a real transition instead of a cut: `allow-discrete`
+   keeps the box painted for the fade and flips `display` at the end, and
+   `@starting-style` supplies the first frame of the next open. One surface,
+   one animation — these selectors were removed from `ui-overlay-in` above.
+   Browsers without discrete transitions keep the old instant toggle. */
+.cmd-k-modal,
+.profile-modal,
+.usage-modal,
+.share-modal,
+.display-prefs-popover,
+.chat-config-pop {
+  opacity: 1;
+  transform: none;
+  transform-origin: center;
+  transition:
+    opacity var(--ui-duration-fast) var(--ui-ease-out),
+    transform var(--ui-duration-fast) var(--ui-ease-out),
+    display var(--ui-duration-fast) allow-discrete;
+}
+.cmd-k-modal.hidden,
+.profile-modal.hidden,
+.usage-modal.hidden,
+.share-modal.hidden,
+.display-prefs-popover.hidden,
+.chat-config-pop.hidden {
+  opacity: 0;
+  transform: scale(var(--ui-overlay-enter-scale));
+}
+@starting-style {
+  .cmd-k-modal:not(.hidden),
+  .profile-modal:not(.hidden),
+  .usage-modal:not(.hidden),
+  .share-modal:not(.hidden),
+  .display-prefs-popover:not(.hidden),
+  .chat-config-pop:not(.hidden) {
+    opacity: 0;
+    transform: scale(var(--ui-overlay-enter-scale));
+  }
+}
+/* Anchored panels unfold from their trigger, not their centre. */
+.display-prefs-popover,
+.chat-config-pop { transform-origin: top left; }
+
+/* Their scrims share the clock: the dim holds while the card leaves, then
+   both flip to `display: none` together. */
+.cmd-k-overlay,
+.profile-overlay,
+.usage-overlay,
+.share-overlay {
+  opacity: 1;
+  transition:
+    opacity var(--ui-duration-fast) var(--ui-ease-out),
+    display var(--ui-duration-fast) allow-discrete;
+}
+.cmd-k-overlay.hidden,
+.profile-overlay.hidden,
+.usage-overlay.hidden,
+.share-overlay.hidden { opacity: 0; }
+@starting-style {
+  .cmd-k-overlay:not(.hidden),
+  .profile-overlay:not(.hidden),
+  .usage-overlay:not(.hidden),
+  .share-overlay:not(.hidden) { opacity: 0; }
 }
 
 /* Anchored surfaces grow from the edge that touches their trigger, so the
@@ -192,12 +254,9 @@ body.composer-tools-open.composer-tools-open::after {
 
 /* The scrim fades with its card. `.cmd-k-overlay` was the one scrim with no
    entrance at all; the rest carried their own 120–150ms fadeIn. One token
-   keeps the dim and the card on the same clock. */
-.cmd-k-overlay,
+   keeps the dim and the card on the same clock. The four scrims that share
+   the dismissal transition above are no longer in this list. */
 .settings-overlay,
-.profile-overlay,
-.usage-overlay,
-.share-overlay,
 .admin-modal-overlay,
 .confirm-dialog {
   animation: ui-scrim-in var(--ui-duration-overlay) var(--ui-ease-out) both;

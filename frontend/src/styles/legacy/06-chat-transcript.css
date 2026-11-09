@@ -227,30 +227,11 @@ body.admin-active #topicDisclaimer{display:none!important}
 
 .msg-list{display:flex;flex-direction:column;flex:1;overflow-anchor:none}
 .msg{animation:none;padding:6px 0}
-/* Only a live assistant row gets an entrance reveal. Keeping the default
-   state static prevents restored history and progressively-mounted rows from
-   replaying the same fade as the transcript is reconciled. */
-.msg.assistant:not([data-stream-settled="true"]){animation:msgIn .22s var(--ease-out)}
-/* The submitted prompt is already being moved by turnAnchor's single
-   transcript scroll glide, so transform stays at none. The bubble's
-   opacity ramp is **tied to the glide duration** — turnAnchor stamps
-   `--bubble-fade-duration` (== planSendGlide duration capped at 240ms)
-   on the just-sent user bubble, then sets `data-bubble-arriving` so
-   this rule kicks in. The bubble reaches full opacity within the first
-   part of the glide, so the prompt reads as arrived even while a far
-   glide is still travelling, instead of "bubble pops in, then camera
-   glides, then bubble fades, then camera lands, then content-follow".
-   History loads / prepended pages / retries never set the attribute,
-   so they keep opacity:1 from the first frame.
-   `animation:none` on the base rule matters: it stops the base .msg
-   `msgIn` reveal from REPLAYING when `data-bubble-arriving` is removed
-   at landing — a finished named animation restarts from 0 the moment
-   the shorthand flips back, which used to re-dim the settled bubble
-   for another 220ms right after arrival. */
+/* Row entrances are owned by polish/transcript.css (`#appShell .msg.user[…]`
+   and `#appShell .msg.assistant:not([data-stream-settled])`). This file used
+   to define its own msgIn / msgUserIn with different opacity ramps, so the
+   physics of "how a row arrives" depended on cascade order. Removed. */
 .msg.user{animation:none;opacity:1;transform:none}
-.msg.user[data-bubble-arriving]{
-  animation:msgUserIn var(--bubble-fade-duration, 220ms) var(--ease-out) both;
-}
 .msg.turn-viewport-anchor{box-sizing:border-box}
 /* Transcript geometry is owned by components/chat.css. The blanket
    `content-visibility: visible` that used to live here was overridden by
@@ -268,8 +249,6 @@ body.admin-active #topicDisclaimer{display:none!important}
    motion to the single scroll owner so a new prompt never flashes or appears
    to teleport. Starting partially visible also avoids a blank frame between
    clearing the composer and painting the submitted bubble. */
-@keyframes msgIn{from{opacity:.45}to{opacity:1}}
-@keyframes msgUserIn{from{opacity:.4}to{opacity:1}}
 /* User bubbles right-align. The toolbar lives BELOW the bubble
  * (flex-direction:column + align-items:flex-end), not next to it on
  * the right edge. This keeps the bubble flush-right while putting

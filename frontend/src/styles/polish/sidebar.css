@@ -383,3 +383,30 @@
 }
 
 /* ── Empty state (mobile) — centred text ── */
+
+/* ── Theme toggle: one icon changing meaning ─────────────────────────────
+   Sun and moon used to swap through `display: none`, which is a cut. Both
+   glyphs now stay in the tree, stacked in the control, and cross-fade with a
+   quarter turn: the eye sees the same 20px slot change state instead of two
+   different marks appearing in place. The legacy `display: none` pair is
+   overridden by the id selector, so the hidden glyph is still removed from
+   the a11y tree by the button's own aria-label. */
+#themeToggle { position: relative; }
+#themeToggle .theme-sun,
+#themeToggle .theme-moon {
+  display: block;
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  transition:
+    opacity var(--ui-duration-fast) var(--ui-ease-out),
+    transform var(--ui-duration-fast) var(--ui-ease-out);
+}
+[data-mode="dark"] #themeToggle .theme-sun { opacity: 0; transform: rotate(-60deg) scale(0.8); }
+[data-mode="dark"] #themeToggle .theme-moon { opacity: 1; transform: none; }
+[data-mode="light"] #themeToggle .theme-sun { opacity: 1; transform: none; }
+[data-mode="light"] #themeToggle .theme-moon { opacity: 0; transform: rotate(60deg) scale(0.8); }
+@media (prefers-reduced-motion: reduce) {
+  #themeToggle .theme-sun,
+  #themeToggle .theme-moon { transition: none; }
+}

@@ -53,27 +53,35 @@
 /* "+" open animation — same motion language as the rest of the overlay
    system: a 2px anchored lift and the shared scale / duration / easing.
    The menu lives on <body> and is shown by removing .hidden (display:none),
-   so this animation replays on every open without JS coordination. */
-@keyframes composerToolsIn {
-  from {
-    opacity: 0;
-    transform: translateY(var(--_ct-dir, -2px)) scale(var(--ui-overlay-enter-scale));
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-body #composerToolsMenu.composer-tools-menu:not(.hidden) {
-  animation: composerToolsIn var(--ui-duration-overlay) var(--ui-ease-out) both;
+   so the panel stays in the DOM and the whole open/close pair can be one
+   transition: `allow-discrete` holds the box for the fade before `display`
+   flips, and `@starting-style` supplies the first frame of the next open.
+   Browsers without support keep the instant toggle. */
+body #composerToolsMenu.composer-tools-menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
   transform-origin: top left;
+  transition:
+    opacity var(--ui-duration-fast) var(--ui-ease-out),
+    transform var(--ui-duration-fast) var(--ui-ease-out),
+    display var(--ui-duration-fast) allow-discrete;
 }
-body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden) {
+body #composerToolsMenu.composer-tools-menu.hidden {
+  opacity: 0;
+  transform: translateY(var(--_ct-dir, -2px)) scale(var(--ui-overlay-enter-scale));
+}
+body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
   --_ct-dir: 2px;
   transform-origin: bottom left;
 }
+@starting-style {
+  body #composerToolsMenu.composer-tools-menu:not(.hidden) {
+    opacity: 0;
+    transform: translateY(var(--_ct-dir, -2px)) scale(var(--ui-overlay-enter-scale));
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  body #composerToolsMenu.composer-tools-menu:not(.hidden) { animation: none; }
+  body #composerToolsMenu.composer-tools-menu { transition: none; }
 }
 /* The tools card's rows, glyphs, group labels and footer now belong to
    `components/menu.css` alone (ADR 0024: one owner per surface). The 34px /
