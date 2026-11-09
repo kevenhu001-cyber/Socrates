@@ -232,6 +232,37 @@ for (const theme of ['light', 'dark']) {
   }
 }
 
+test('the live caption shimmers and the sphere turns, both respecting reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const bubble = await startTurn(page);
+  /* The caption's own sweep: a light band crosses the glyphs while the turn
+     runs. It is one element's background-position — no JS. */
+  const label = bubble.locator(TURN.label);
+  await expect.poll(() => label.evaluate((el) => getComputedStyle(el).animationName)).toBe('ui-shimmer-sweep');
+  await page.screenshot({ path: 'test-results/thinking-text-shimmer.png' });
+  /* The working glyph ahead of the caption: twelve dots on a sphere, driven
+     by the Web Animations API so the turn runs on the compositor. */
+  const spark = bubble.locator(TURN.indicator);
+  await expect(spark).toHaveCount(1);
+  const dots = spark.locator('.thinking-spark-dot');
+  await expect(dots).toHaveCount(12);
+  const motion = await dots.evaluateAll((nodes) => nodes.map((n) => n.getAnimations()
+    .filter((a) => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation))
+    .map((a) => ({ state: a.playState, iterations: a.effect.getTiming().iterations }))));
+  expect(motion).toHaveLength(12);
+  for (const list of motion) expect(list).toEqual([{ state: 'running', iterations: Infinity }]);
+  /* Reduced motion freezes both: the shimmer stops and the sphere holds one
+     still frame instead of turning. */
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForTimeout(300);
+  expect(await label.evaluate((el) => getComputedStyle(el).animationName)).not.toBe('ui-shimmer-sweep');
+  await expect(spark.locator('.thinking-spark')).toHaveAttribute('data-motion', 'static');
+  const still = await dots.evaluateAll((nodes) => nodes.map((n) => n.getAnimations()
+    .filter((a) => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation)).length));
+  expect(still.reduce((sum, n) => sum + n, 0)).toBe(0);
+  await page.evaluate(() => window.__finishPlain());
+});
+
 test('the running row spins on the compositor and stops when the turn settles', async ({ page }) => {
   const bubble = await startTurn(page);
   const spinner = bubble.locator(TURN.spinner);

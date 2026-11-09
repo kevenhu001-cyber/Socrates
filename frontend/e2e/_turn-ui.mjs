@@ -11,7 +11,9 @@ export const TURN = Object.freeze({
   toggle: '[data-testid="turn-activity-toggle"]',
   label: '[data-testid="turn-activity-label"]',
   body: '[data-testid="turn-activity-body"]',
-  /** The running step's arc. There is no separate header indicator any more. */
+  /** The live working glyph (inline-SVG spark) ahead of the caption. */
+  indicator: '[data-testid="turn-activity-indicator"]',
+  /** The running step's arc, one per running row. */
   spinner: '[data-testid="thinking-step-spinner"]',
   step: '[data-testid="thinking-step"]',
   stepTitle: '[data-testid="thinking-step-title"]',

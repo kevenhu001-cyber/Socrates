@@ -97,7 +97,7 @@ test('inline results preserve node identity, edited values and tabs', async ({ p
   await page.screenshot({ path: 'test-results/intelligent-ui-inline-tabs.png' });
 });
 
-test('a live turn counts run time and spins exactly one running step', async ({ page }) => {
+test('a live turn counts run time, sweeps the caption and spins exactly one running step', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check assumptions.' });
@@ -108,12 +108,13 @@ test('a live turn counts run time and spins exactly one running step', async ({ 
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  /* The header is a still line of time; the one running row owns the motion.
-     Nothing in the header sweeps, breathes or shimmers. */
+  /* The header is a line of time behind the turning sphere, and its caption
+     sweeps a shimmer while the turn runs. */
   const label = activity.locator(TURN.label);
   await expect(label).toHaveAttribute('role', 'status');
   await expect(label).toContainText(/\d/);
-  expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+  await expect(activity.locator(TURN.indicator)).toHaveCount(1);
+  expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('ui-shimmer-sweep');
   const spinner = activity.locator(TURN.spinner);
   await expect(spinner).toHaveCount(1);
   await activity.locator(TURN.toggle).click();
@@ -129,6 +130,8 @@ test('a live turn counts run time and spins exactly one running step', async ({ 
   const stillPose = await pose();
   await page.waitForTimeout(400);
   expect(await pose()).toBe(stillPose);
+  /* Reduced motion also stops the caption's shimmer. */
+  expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
     ctl.recordToolResult({ id: 'search', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });

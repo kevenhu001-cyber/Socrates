@@ -2,12 +2,12 @@
  * ThinkingSurface — the one-line activity header and its expandable
  * step list (RN-2, design R3).
  *
- * The header is quiet: the observed run duration and a chevron. It carries
- * no working glyph and no shimmer — liveness lives on the rows below it,
- * where the running step spins and every other row stays still. That is the
- * whole point of the shape: a reader scans one line of time, then a list of
- * things that happened, instead of reading a status sentence that rewrites
- * itself while an answer streams.
+ * The header is one line of time plus a chevron, led by the host's working
+ * glyph: the observed run duration, a 3D sphere turning in front of it, and
+ * a shimmer that sweeps the caption's ink while the turn runs. The rows below
+ * carry the detail — the running step spins on its own arc — but the header
+ * keeps its own liveness cue, so a reader sees the turn working even when
+ * the rail is collapsed.
  *
  * The host supplies already-public copy only (see thinkingModel).
  */
@@ -23,6 +23,8 @@ export interface ThinkingSurfaceProps {
   /** The quiet headline: run duration, or a neutral fallback. */
   label: string;
   live: boolean;
+  /** Live working indicator, drawn ahead of the caption (host-rendered glyph). */
+  indicator?: ReactNode;
   expandable: boolean;
   open: boolean;
   onToggle(): void;
@@ -31,7 +33,7 @@ export interface ThinkingSurfaceProps {
   children?: ReactNode;
 }
 
-export function ThinkingSurface({ label, live, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
+export function ThinkingSurface({ label, live, indicator, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -66,6 +68,11 @@ export function ThinkingSurface({ label, live, expandable, open, onToggle, bodyI
           cursor: expandable ? 'pointer' : 'auto',
         }}
       >
+        {live && indicator ? (
+          <View testID="turn-activity-indicator" aria-hidden style={{ width: 18, height: 18, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}>
+            {indicator}
+          </View>
+        ) : null}
         <UiText
           testID="turn-activity-label"
           variant="bodySm"

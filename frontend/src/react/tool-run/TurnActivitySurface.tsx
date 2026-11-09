@@ -2,9 +2,11 @@
  * The turn's activity surface (RN-2): one quiet line of run time above a
  * rail of steps.
  *
- * Live:      the header counts up (「已运行 12秒」) and the running step
- *            spins; nothing shimmers and nothing rewrites itself.
- * Settled:   the count freezes (「运行了 12秒」) and every row is still.
+ * Live:      the header counts up (「已运行 12秒」) behind the turning
+ *            sphere, its caption sweeps a shimmer, and the running step
+ *            spins on its own arc.
+ * Settled:   the count freezes (「运行了 12秒」), the glyph and the shimmer
+ *            stop with it, and every row is still.
  * Steps:     public provider summaries and tool calls share one row shape;
  *            a row opens its detail inline, beneath its own label.
  *
@@ -28,6 +30,7 @@ import type { LiveTurnStatus } from '../types/domain';
 import { i18n } from '../legacy/gateway';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon } from './ToolActivityIcon';
+import { ThinkingSpark } from './ThinkingSpark';
 import { ToolRunDetail } from './ToolRunDetail';
 import { ToolRunAgentSteps } from './ToolRunAgentSteps';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
@@ -233,6 +236,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         <ThinkingSurface
           label={label}
           live={isLive}
+          indicator={isLive ? <ThinkingSpark /> : undefined}
           expandable={hasDetails}
           open={isOpen}
           onToggle={() => setIsOpen((previous) => !previous)}

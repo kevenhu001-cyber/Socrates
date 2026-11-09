@@ -71,8 +71,8 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await expect(bubble.locator('.rn-tool-row')).toHaveCount(0);
   await expect(bubble).toContainText(/正在更新文件|工具运行中|思考中/);
   /* The live status line is a rail row: a spinning arc and the observed
-     tool copy. The header itself only counts time. */
-  await expect(bubble.locator('[data-testid="turn-activity-indicator"]')).toHaveCount(0);
+     tool copy. The header leads with the turning sphere and counts time. */
+  await expect(bubble.locator('[data-testid="turn-activity-indicator"]')).toHaveCount(1);
   await expect(bubble.locator('[data-testid="thinking-step-spinner"]')).toHaveCount(1);
   await expect(bubble.locator('[data-testid="thinking-step-title"]')).toContainText(/更新文件|更新|文件|工具/);
 

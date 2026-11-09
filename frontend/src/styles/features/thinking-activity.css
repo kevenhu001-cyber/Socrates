@@ -64,8 +64,7 @@
    The rows themselves are drawn by @socrates/ui/turn (RN): one hairline
    rail, one 16px glyph, one line of copy per step. Two HTML blocks still
    live inside a row on the web host — a public summary body and an inline
-   tool detail — and these rules shape only those, from theme variables.
-   Nothing here animates: the surface stays still while the answer streams. */
+   tool detail — and these rules shape only those, from theme variables. */
 .rn-turn-activity .thinking-step-summary {
   margin: 0;
   padding-top: var(--ui-gap-1);
@@ -90,6 +89,61 @@
   margin-block: 0;
 }
 
+/* The live caption is still text; the working cue is the glyph in front of
+   it (react/tool-run/ThinkingSpark.tsx): twelve dots on a sphere turning in
+   3D, one turn every 3.4s, near dots larger and inked, far dots small and
+   faint. The component sizes the box and places each dot, then drives the
+   dots' transform and opacity with Web Animations, so the turn runs on the
+   compositor; there are no keyframes here. It sits on the caption ink. */
+.thinking-spark {
+  position: relative;
+  display: block;
+  flex: none;
+  color: var(--ui-text-primary);
+}
+.thinking-spark-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  will-change: transform, opacity;
+}
+
+/* Public timeline entries remain still beneath the one live caption. */
+
+/* Text shimmer on the live caption (「已运行 12秒」, a tool status, while the
+   answer streams too). A light band crosses the glyphs left to right on a
+   loop: the muted secondary ink is the base, the primary ink is the band,
+   both theme variables so light and dark read the same. The gradient image
+   is three captions wide with the band (40%–60%) in its middle, so the band
+   starts and ends fully outside the text and every loop restarts unseen;
+   ease-in-out leaves a short rest between sweeps. One element, background-
+   position only, no JS. data-live is dropped when the turn settles, so the
+   frozen 「运行了 12秒」 caption is plain text again. Reduced motion and
+   forced colours never match this block and keep the normal ink. */
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+  [data-turn-surface-part="activity"][data-live="true"] [data-testid="turn-activity-label"] {
+    background-image: linear-gradient(90deg, var(--ui-text-secondary) 40%, var(--ui-text-primary) 50%, var(--ui-text-secondary) 60%);
+    background-repeat: no-repeat;
+    background-size: 300% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: ui-shimmer-sweep var(--ui-duration-shimmer-sweep, 1900ms) ease-in-out infinite;
+  }
+}
+/* Defensive: should a forced-colours user agent still apply the clip, the
+   caption falls back to system text ink rather than transparent glyphs. */
+@media (forced-colors: active) {
+  [data-turn-surface-part="activity"] [data-testid="turn-activity-label"] {
+    background-image: none;
+    -webkit-text-fill-color: CanvasText;
+    animation: none;
+  }
+}
+
+/* The sweep itself. Shared with the visualization card's skeleton
+   (components/visualization-states.css), which asks for the same band. */
 @keyframes thinking-text-shimmer {
   from { background-position: 100% 0; }
   to { background-position: 0% 0; }
