@@ -60,3 +60,32 @@ test('wave phase inversion cancels equidistant sources and projectile returns to
   assert.ok(Math.abs(flight.frame(flight.duration).bodies[0].y)<1e-12);
   assert.ok(Math.abs(flight.frame(flight.duration).bodies[0].x-40)<1e-10);
 });
+
+test('legacy scene IDs adapt to the shared mathematical program across parameter extremes', async () => {
+ const {physicsDemonstrationProgram,createDemonstrationRuntime,validateDemonstration}=await import('@socrates/core');
+ for(const model of PHYSICS_MODELS) for(const edge of ['initial','min','max']) {
+  const values=Object.fromEntries(model.parameters.map(p=>[p.key,p[edge]]));
+  const program=physicsDemonstrationProgram(model.id,values);
+  assert.deepEqual(validateDemonstration(program),{ok:true},`${model.id}/${edge}`);
+  const runtime=createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings,[],`${model.id}/${edge}`);
+  for(const view of program.views) if(view.kind==='metrics') for(const value of view.values) {
+   assert.ok(Number.isFinite(runtime.evaluate(value.expression,runtime.duration/2)),`${model.id}/${value.label}`);
+  }
+ }
+ assert.equal(physicsDemonstrationProgram('unknown'),null);
+});
+
+test('adapted programs agree with reviewed oscillator and optical kernels', async()=>{
+ const {physicsDemonstrationProgram,createDemonstrationRuntime}=await import('@socrates/core');
+ const spring=createDemonstrationRuntime(physicsDemonstrationProgram('harmonic-oscillator'));
+ for(const t of [0,.5,2,8]){
+  const expected=oscillatorState(t,1,8,.3,1.5);
+  assert.ok(Math.abs(spring.evaluate('q',t)-expected.x)<1e-5);
+  assert.ok(Math.abs(spring.evaluate('v',t)-expected.v)<1e-5);
+ }
+ const airy=createDemonstrationRuntime(physicsDemonstrationProgram('rayleigh',{separation:1}));
+ assert.ok(Math.abs(airy.evaluate('intensity')-.735)<.001);
+ const revised=createDemonstrationRuntime(physicsDemonstrationProgram('rayleigh',{wavelength:650}));
+ assert.ok(Math.abs(revised.evaluate('clamp(radius,0.2,3)')-650/550)<1e-12);
+});

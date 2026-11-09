@@ -155,7 +155,7 @@ test('streamed cards mount before finish and keep their nodes; no disclaimer foo
  await expect(preview).toBeVisible();
  const skeleton=preview.locator('.sc-live-pill,.sc-live-skeleton').first();
  await expect(skeleton).toBeVisible();
- expect(await skeleton.evaluate(el=>getComputedStyle(el).animationName)).toBe('thinking-text-shimmer');
+ expect(await skeleton.evaluate(el=>getComputedStyle(el).animationName)).toBe('ui-shimmer-sweep');
  await page.screenshot({path:'test-results/scaffold-stream-shimmer.png'});
  await page.evaluate(()=>window.__scaffoldCtl.append('：1+1？</q><o letter="A">2</o><o letter="B">3</o><correct>A</correct></quiz>'));
  const card=page.locator('.sc-host[data-scaffold="quiz"]');

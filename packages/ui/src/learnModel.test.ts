@@ -76,7 +76,7 @@ test('practice and example collect hint levels and keep markdown', () => {
 test('static scaffold parsers', () => {
   assert.deepEqual(parseDefinitionInner('<term>Group</term><body>A set</body>'), { term: 'Group', body: 'A set' });
   assert.deepEqual(parseDefinitionInner('plain'), { term: '', body: 'plain' });
-  assert.deepEqual(parseFlashcardInner('<front>Q</front>'), { front: 'Q', back: '' });
+  assert.equal(parseFlashcardInner('<front>Q</front>'), null);
   assert.deepEqual(parseTheoremInner('<statement>a^2+b^2=c^2</statement>'), { title: '', statement: 'a^2+b^2=c^2' });
   assert.equal(parseTheoremInner('<term>x</term>'), null);
   assert.deepEqual(parseProofInner('<title>P</title><body>Done</body>'), { title: 'P', body: 'Done' });
@@ -249,4 +249,17 @@ test('scaffold parsers tolerate Chinese quotation marks, unquoted attributes, an
   // Example with <question> and <answer>
   const ex = parseExampleInner('<title>例1</title><question>求积分</question><answer>结果为 x^2/2</answer>');
   assert.deepEqual(ex, { title: '例1', problem: '求积分', solution: '结果为 x^2/2' });
+});
+
+
+test('malformed legacy quizzes never produce duplicate options or a partially guessed rubric',()=>{
+ const options='<q>Choose</q><o letter="A">One</o><o letter="B">Two</o>';
+ assert.equal(parseQuizInner(options+'<correct>AE</correct>')?.correct,null);
+ assert.equal(parseQuizInner(options+'<correct>A,I</correct>')?.correct,null);
+ assert.equal(parseQuizInner(options+'<correct>A</correct>',' multi="false"')?.multi,undefined);
+ assert.equal(parseQuizInner('<q>Choose</q><o letter="A">One</o><o letter="A">Two</o><correct>A</correct>'),null);
+ assert.equal(parseQuizInner('<q>Choose</q><o letter="A"></o><o letter="B">Two</o><correct>A</correct>'),null);
+ assert.equal(parseQuizInner('<q>Choose</q><o letter="Z">One</o><o letter="B">Two</o><correct>B</correct>'),null);
+ assert.equal(parseDefinitionInner('<term>No body</term>'),null);
+ assert.equal(parseFlashcardInner('<front>Question</front><back></back>'),null);
 });

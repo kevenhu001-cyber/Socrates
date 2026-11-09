@@ -8,6 +8,7 @@ import { library } from '../src/react/intelligence-ui/openui/library.ts';
 import { Grid, Row } from '../src/react/intelligence-ui/openui/layout.tsx';
 import { webUrl, bg, size } from '../src/react/intelligence-ui/openui/style.ts';
 import { runOpenUiAction } from '../src/react/intelligence-ui/openui/actionBridge.ts';
+import { buildOpenUiRepairPrompt } from '../src/react/intelligence-ui/openui/repairPrompt.ts';
 import { validateIntelligentUi } from '@socrates/core';
 
 const example = `root = Col([Card([Title("Study planner"), hours, result])])
@@ -89,4 +90,15 @@ test('host actions reuse chat, preserve submitted values and block readonly requ
     globalThis.CustomEvent = previous.CustomEvent;
     dom.window.close();
   }
+});
+
+test('a hallucinated learning component is repaired with the learning contract, not OpenUI wiring advice', () => {
+  const unknown = (name) => JSON.stringify({ code: 'unknown-component', component: name, path: '', message: `Unknown component "${name}" — not found in catalog or builtins.` });
+  const learning = buildOpenUiRepairPrompt({ problems: 'unknown component', issues: [unknown('QuestionCard')], source: 'root = Col([QuestionCard("Q")])', state: '{}' });
+  assert.match(learning, /type:"learning"/);
+  assert.match(learning, /QuestionCard/);
+  assert.doesNotMatch(learning, /inputs bind to declared \$state/);
+  const generic = buildOpenUiRepairPrompt({ problems: 'no root', issues: ['OpenUI program could not be parsed'], source: 'root =', state: '{}' });
+  assert.match(generic, /inputs bind to declared \$state/);
+  assert.doesNotMatch(generic, /type:"learning"/);
 });

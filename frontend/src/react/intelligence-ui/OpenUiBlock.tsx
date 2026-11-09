@@ -6,6 +6,7 @@ import { IntelligentSurface } from './IntelligentSurface';
 import { BlockSkeleton } from './BlockSkeleton';
 import { runOpenUiAction } from './openui/actionBridge';
 import { library } from './openui/library';
+import { buildOpenUiRepairPrompt } from './openui/repairPrompt';
 import { programIssues, runtimeProgramIssues } from './openui/validateProgram';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import '../../styles/components/openui.css';
@@ -142,9 +143,15 @@ export default function OpenUiBlock({ source, open = false, readOnly = false, em
   const unavailable = Boolean(tooLarge || (!open && (stateIssue || (runtimeErrors.source === source && runtimeErrors.messages.length > 0) || (hasRoot?.source === source && !hasRoot.present) || issues.length > 0)));
   const repair = () => {
     if (readOnly || open) return;
+    const problems = [...issues, ...(runtimeErrors.source === source ? runtimeErrors.messages : []), stateIssue].filter(Boolean).join('; ') || 'Client runtime error';
     host.current?.dispatchEvent(new CustomEvent('tool-retry', { bubbles: true, detail: {
       tool: 'intelligent_ui',
-      prompt: `Repair this OpenUI view with render_intelligent_ui. Problems: ${[...issues, ...(runtimeErrors.source === source ? runtimeErrors.messages : []), stateIssue].filter(Boolean).join('; ') || 'Client runtime error'}. Every enabled Button needs an explicit action, inputs bind to declared $state, and outputs must update locally. Preserve the requested tool and connect its inputs, actions and results. Use local actions for deterministic calculations, filtering and list edits; use @ToAssistant only for explicitly requesting assistant work.\n\n${source}\n\nCurrent local state: ${JSON.stringify(currentState.source === source ? currentState.value : {}, (_, value: unknown) => typeof value === 'number' && !Number.isFinite(value) ? String(value) : value).slice(0, 10000)}`,
+      prompt: buildOpenUiRepairPrompt({
+        problems,
+        issues,
+        source,
+        state: JSON.stringify(currentState.source === source ? currentState.value : {}, (_, value: unknown) => typeof value === 'number' && !Number.isFinite(value) ? String(value) : value).slice(0, 10000),
+      }),
     } }));
   };
   const content = <div className="intui-openui" ref={host} data-openui-streaming={open ? 'true' : 'false'}>

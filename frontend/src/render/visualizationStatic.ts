@@ -112,7 +112,7 @@ export function renderVisualizationTable(spec: VizSpec, escapeHtml: EscapeHtml, 
   const rows = dataRows(spec, translate);
   if (!rows.length) return '';
   const header = rows[0], body = rows.slice(1, 121);
-  return '<div class="visualization-table-wrap" tabindex="0"><table class="visualization-table"><thead><tr>' + header.map(function (cell) { return '<th>' + escapeHtml(cell) + '</th>'; }).join('') + '</tr></thead><tbody>' + body.map(function (row) { return '<tr>' + row.map(function (cell) { return '<td>' + escapeHtml(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+  return '<div class="ds-table-wrap visualization-table-wrap" tabindex="0" role="region" aria-label="' + escapeHtml(spec.title || translate('viz.action.viewTable', 'Data table')) + '"><table class="ds-table visualization-table"><thead><tr>' + header.map(function (cell) { return '<th>' + escapeHtml(cell) + '</th>'; }).join('') + '</tr></thead><tbody>' + body.map(function (row) { return '<tr>' + row.map(function (cell) { return '<td>' + escapeHtml(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
 }
 
 export function renderStructureVisualization(

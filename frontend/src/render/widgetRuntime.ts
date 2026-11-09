@@ -86,7 +86,7 @@ export function handleQuizPick(picked: PickedQuizOption, parsed: QuizMountData):
   const feedbackClass = `inline-quiz-feedback${correct ? (isRight ? ' ok' : ' bad') : ''}`;
   const verdict = correct ? (isRight ? 'correct' : 'incorrect') : 'recorded';
   recordQuizOutcome(parsed, picked, isRight, services);
-  updateQuizStage(services.stateStore, isRight);
+  if (key.length) updateQuizStage(services.stateStore, isRight);
   persistQuizOutcome(services);
   return { feedbackText, feedbackClass, verdict };
 }

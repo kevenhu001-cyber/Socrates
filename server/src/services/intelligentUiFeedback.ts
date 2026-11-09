@@ -24,6 +24,7 @@ export type IntelligentUiFailureStage =
   | 'openui_program'
   | 'demonstration'
   | 'physics'
+  | 'learning'
   | 'visualization';
 
 export interface IntelligentUiFailure {
@@ -76,6 +77,8 @@ function userMessageFor(failure: IntelligentUiFailure): string {
       return '交互按钮缺少动作，已请模型修正。';
     case 'demonstration':
       return '演示程序的结构不符合要求，已请模型修正。';
+    case 'learning':
+      return '学习卡片的题目、选项或答案格式不完整，已附上具体字段请模型修正。';
     case 'physics':
       return '物理演示的参数不符合要求，已请模型修正。';
     default:
@@ -100,11 +103,17 @@ export function intelligentUiFeedback(error: string, failure: IntelligentUiFailu
     if (line) lines.push(`A valid call: ${line}`);
   }
   if (failure.failures.some((item) => item.stage === 'payload_shape' || item.stage === 'semantic')) lines.push(NUMBER_HINT);
+  if (failure.stage === 'visualization') {
+    lines.push('Keep a native visualization node inside render_intelligent_ui: {id:"chart", type:"visualization", template:"<template>", title:"<Title>", payload:{...}, accessibilitySummary:"<Summary>"}. Write values as JSON numbers with null for missing values, keep series as an array of {name,data}, and match category lengths. Do not wrap static visualizations in OpenUI source strings.');
+  }
   if (failure.stage === 'demonstration') {
     lines.push('A demonstration node is {id, type:"demonstration", title, program:{version:1, parameters:[], definitions:{}, views:[...]}}. Put version inside program and write it as the number 1. Write arrays as JSON arrays (never {"item": ...}), numbers as JSON numbers (1, not "1"), give every parameter finite min < max with value inside that range, and use 1–8 views with increasing x/y ranges. The error names the failing part (for example definitions.f or views[1].curves[0]); fix that part. Expressions are plain ASCII math using the exact parameter and definition names: x^2, 2*x, pi, sqrt(x), log(x), no Math. prefixes.');
-    lines.push('Required per view: plot needs x, y and 1–6 curves; field needs x, y and expression; trajectory needs x, y, horizontal, vertical and program.dynamics; metrics needs 1–6 values. At most one controls, two field views and twelve curves total. Fix every field named in the error in one corrected call; do not switch node type or drop the program.');
+    lines.push('Required per view: plot needs x, y and 1–6 curves; field needs x, y and expression; trajectory needs x, y, horizontal, vertical and program.dynamics; scene needs x, y and 1-32 objects (body: center/radius; block: center/width/height; rod/spring/vector: from/to); metrics needs 1–6 values. At most one controls, two field views and twelve curves total. Fix every field named in the error in one corrected call; do not switch node type or drop the program.');
     lines.push('A minimal valid node: {"id":"demo","type":"demonstration","title":"Demo","program":{"version":1,"parameters":[{"id":"a","label":"A","value":1,"min":0,"max":2,"step":0.1}],"definitions":{"f":"a*x"},"views":[{"kind":"controls"},{"kind":"plot","x":[0,1],"y":[0,2],"curves":[{"expression":"f","label":"a·x"}]}]}}');
     lines.push('A valid trajectory node: {"id":"phase","type":"demonstration","title":"Phase portrait","program":{"version":1,"parameters":[{"id":"k","label":"Damping","value":0.2,"min":0,"max":1}],"dynamics":{"initial":{"q":1,"p":0},"derivatives":{"q":"p","p":"-k*p-q"},"duration":10,"step":0.01},"views":[{"kind":"trajectory","x":[-1.5,1.5],"y":[-1.5,1.5],"horizontal":"q","vertical":"p"}]}}');
+  }
+  if (failure.stage === 'learning') {
+    lines.push('Keep a native learning node inside render_intelligent_ui: {id,type:"learning",kind:"quiz",q:"Question",options:[{letter:"A",text:"First",explanation:"Why"},{letter:"B",text:"Second",explanation:"Why"}],correct:"A"}. Fix every located field in one retry. correct uses existing letters only, never numeric indexes or answer text. Multiple answers use correct:"AC" and multi:true. Unknown answers require graded:false with no key; never invent an answer. Other kinds: practice needs problem; definition needs body (term optional); flashcard needs front/back. Do not switch to OpenUI learning-card functions (Quiz, QuizCard, Question, QuestionCard, KnowledgeCard, MCQ) or XML tags.');
   }
   if (failure.stage === 'physics') {
     lines.push('A physics node is {id, type:"physics", scene:"<reviewed model>", title, parameters:{...}}. Use one of the documented scenes, pass numeric parameter values inside their documented bounds, and omit fields to take the defaults.');

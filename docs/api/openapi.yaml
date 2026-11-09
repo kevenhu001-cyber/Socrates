@@ -3219,6 +3219,30 @@ paths:
         retrospective. Completed summaries use observed execution facts and
         do not require another model request before the closing frame. Plain
         answers without reasoning or tools may omit the retrospective.
+        Learning cards use native `type: learning` nodes with `kind` selecting quiz,
+        practice, definition, flashcard, example, theorem, proof, derivation,
+        key-point or step. Quiz nodes require q, 2-8 unique letter/text options,
+        and correct using only existing A-H letters; multi-answer keys use AC.
+        Explicit graded:false questions omit the key and record without grading.
+        Practice uses problem; definition uses body and optional term; flashcard
+        requires front/back. Markdown and LaTeX stay in string fields, without
+        nested XML or OpenUI Quiz/Question/KnowledgeCard calls. Common field aliases
+        normalize before validation; ambiguous rubrics return located learning
+        errors instead of guessing. Unknown session/message wire fields remain
+        preserved and older clients retain their generic tool-result fallback.
+        Mathematical demonstration views also support `kind: scene` with x/y
+        axis ranges and 1-32 declarative objects: body (center/radius), block
+        (center/width/height/optional angle), and rod/spring/vector (from/to).
+        Coordinate pairs, sizes and angles use bounded mathematical expressions;
+        units follow the axes, y points upward and angles use radians. These
+        objects share demonstration parameters, definitions, ODE state and time.
+        A scene path has 2-64 expression coordinate pairs and optional closed/dashed
+        booleans. Presets can compute their parameter values with expressions
+        against current parameters/definitions at time zero; results apply atomically
+        only when finite and within each parameter range. All new physics uses the
+        demonstration program format; historical physics and OpenUI Rayleigh
+        nodes adapt to the same renderer without changing persisted wire fields.
+        Existing node kinds and unknown session/message fields remain preserved.
         The native `render_intelligent_ui` tool accepts `{version: 1, nodes: [...]}`
         with 1–80 unique typed nodes. A `type: demonstration` node contains
         a version-1 `program`: shared numeric parameters, ordered mathematical

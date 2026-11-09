@@ -216,10 +216,11 @@
     font: inherit;
   }
 
-  /* ── Tables: hairline rows, no fills ─────────────────────────────────── */
-  /* Markdown tables only: native Intelligent UI tables own their shell in
-     components/intelligence-ui.css (full-width, filled header, padded cells). */
-  #appShell #msgList .msg-body table:not(.intui-table) {
+  /* ── Tables: unified design system contract with fallback for legacy un-wrapped tables ── */
+  #appShell #msgList .msg-body .ds-table-wrap {
+    margin: 14px 0 16px;
+  }
+  #appShell #msgList .msg-body table:not(.ds-table):not(.intui-table) {
     width: auto;
     min-width: 50%;
     max-width: 100%;
@@ -229,7 +230,7 @@
     font-size: calc(14px * var(--app-type-scale));
     line-height: 1.5;
   }
-  #appShell #msgList .msg-body :where(th, td):not(.intui-table *) {
+  #appShell #msgList .msg-body :where(th, td):not(.ds-table *):not(.intui-table *) {
     padding: 8px 16px 8px 0;
     border: 0;
     border-bottom: 1px solid var(--ui-border-subtle);
@@ -238,21 +239,19 @@
     text-align: left;
     vertical-align: top;
   }
-  #appShell #msgList .msg-body th:not(.intui-table th) {
+  #appShell #msgList .msg-body th:not(.ds-table th):not(.intui-table th) {
     border-bottom-color: var(--ui-border-strong);
     font-weight: var(--ui-font-weight-semibold);
   }
-  #appShell #msgList .msg-body tr:last-child td:not(.intui-table *) { border-bottom: 0; }
+  #appShell #msgList .msg-body tr:last-child td:not(.ds-table *):not(.intui-table *) { border-bottom: 0; }
 
 }
 
 /* Phones clip horizontal overflow on the transcript (#msgList is
-   `overflow-x: hidden`), so a table wider than the column used to lose its
-   right-hand columns with no way to reach them. The table becomes its own
-   scroll surface: `max-content` lets it grow to the data, `max-width: 100%`
-   caps the box at the column, and the overflow scrolls inside it. */
+   `overflow-x: hidden`), so legacy un-wrapped tables need a fallback scroll rule.
+   Unified `.ds-table-wrap` already manages its own scroll container on all screen widths. */
 @media (max-width: 768px) {
-  #appShell #msgList .msg-body table:not(.intui-table) {
+  #appShell #msgList .msg-body table:not(.ds-table):not(.intui-table) {
     display: block;
     width: max-content;
     max-width: 100%;

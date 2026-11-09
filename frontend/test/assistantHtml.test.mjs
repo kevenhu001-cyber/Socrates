@@ -121,14 +121,14 @@ test('scaffold-looking markup in Markdown code stays literal in the final answer
 });
 
 test('unparseable quiz renders the fallback card', () => {
-  const html = buildAssistantHtml('<quiz>no question here</quiz>');
+  const html = buildAssistantHtml('<quiz><q>No complete choices</q><o letter="A">Only one</o></quiz>');
   assert.match(html, /inline-block-fallback/);
   assert.doesNotMatch(html, /data-quiz-id/);
 });
 
 test('invalid questions do not consume the one interactive quiz or practice slot', () => {
   const quiz = '<quiz><q>Pick?</q><o letter="A">x</o><o letter="B">y</o><correct>A</correct></quiz>';
-  const html = buildAssistantHtml('<quiz>invalid</quiz>' + quiz + quiz + '<practice>invalid</practice><practice><problem>First</problem></practice><practice><problem>Later</problem></practice>');
+  const html = buildAssistantHtml('<quiz><q>Incomplete</q><o letter="A">Only one</o></quiz>' + quiz + quiz + '<practice><hint>No question</hint></practice><practice><problem>First</problem></practice><practice><problem>Later</problem></practice>');
   assert.equal((html.match(/data-quiz-id="/g) || []).length, 1);
   assert.equal((html.match(/data-practice-id="/g) || []).length, 1);
   assert.equal((html.match(/inline-block-fallback-label/g) || []).length, 2);

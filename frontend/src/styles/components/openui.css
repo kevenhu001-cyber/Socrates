@@ -182,18 +182,6 @@
 .intui-openui .iui-calculator .iui-calculator-op { color: var(--muted-foreground); font-weight: var(--ui-font-weight-medium); }
 .intui-openui .iui-calculator .iui-calculator-equals { grid-column: span 2; background: var(--primary); color: var(--primary-foreground); }
 
-/* An embedded visual belongs to the surface that holds it, and the card's
-   own shadcn toolbar joins the tool's style. The app shell owns the card's border
-   and background by id, so the rule that removes a second frame inside a
-   card has to reach that id too; a visual that is the whole surface keeps
-   its own frame. */
-.intui-openui [data-openui-visualization] .visualization-card { margin: 0; font-family: var(--font-sans); }
-#appShell .intui-openui [data-openui-visualization] .visualization-card { border: 0; box-shadow: none; background: transparent; }
-.intui-openui [data-openui-visualization] .visualization-header { padding: var(--ui-space-xs) 0; border-bottom: 0; }
-/* The shell's card header pads 14px in by id; inside an answer the chart
-   title and caption share the prose column's left edge instead. */
-#appShell .intui-openui [data-openui-visualization] :is(.visualization-header, .visualization-caption) { padding-inline: 0; }
-
 /* A streamed program never drops below the skeleton it replaced. */
 .intui-openui .iui-program[data-hold-footprint="true"] { min-height: 3.5rem; }
 

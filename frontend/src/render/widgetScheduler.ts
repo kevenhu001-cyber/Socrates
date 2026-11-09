@@ -1,3 +1,4 @@
+import { configureWidgetRuntime } from './widgetRuntime.ts';
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from './vizStubs.ts';
 import type { WidgetRuntime, QuizMountData, PracticeMountData, ParsedStep, TheoremMountData } from './widgetRuntime.ts';
 import type {
@@ -54,12 +55,12 @@ export function loadWidgets(): Promise<WidgetsModule> {
   return _widgetsImport;
 }
 
-/* widgetSetup hands over the dependency bag at boot; widgets.js reads it
- * lazily, so the config is stashed here and applied once the chunk lands
- * (or immediately when it is already warm). */
+/* Initialize the lightweight services at boot for every learning host.
+ * Legacy DOM mounts stay lazy; native Intelligence UI cards must not depend
+ * on a previous XML placeholder loading that chunk first. */
 export function configureWidgetRuntimeEarly(cfg: Partial<WidgetRuntime>): void {
   _widgetRuntimeConfig = cfg;
-  if (_widgetsModule) _widgetsModule.configureWidgetRuntime(cfg);
+  configureWidgetRuntime(cfg);
 }
 
 export function mountQuizWidget(slot: Element, parsed: QuizMountData): unknown {

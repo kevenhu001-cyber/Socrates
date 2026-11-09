@@ -1,3 +1,4 @@
+import { normalizeLearningUiNode } from '../../../packages/core/src/learningUi.js';
 /**
  * Shape normalization for `render_intelligent_ui` arguments.
  *
@@ -69,13 +70,26 @@ export function normalizeIntelligentUiNode(raw: unknown): unknown {
     const lines = asArray(node.source);
     if (Array.isArray(lines) && lines.every((line) => typeof line === 'string')) node.source = lines.join('\n');
   }
+  if (node.type === 'visualization') {
+    if (typeof node.template !== 'string') {
+      if (typeof node.kind === 'string') node.template = node.kind.trim();
+      else if (typeof node.chartType === 'string') node.template = node.chartType.trim();
+    }
+    if (node.payload === undefined && isRecord(node.data)) {
+      node.payload = node.data;
+    }
+    if (typeof node.accessibilitySummary !== 'string') {
+      if (typeof node.accessibility_summary === 'string') node.accessibilitySummary = node.accessibility_summary;
+      else if (typeof node.summary === 'string') node.accessibilitySummary = node.summary;
+    }
+  }
   if (node.type === 'physics') {
     node.parameters = numberEntries(node.parameters);
     for (const key of ['separation', 'wavelength', 'aperture']) {
       if (node[key] !== undefined) node[key] = numberLike(node[key]);
     }
   }
-  return node;
+  return normalizeLearningUiNode(node);
 }
 
 /** Normalize a whole `render_intelligent_ui` document. */

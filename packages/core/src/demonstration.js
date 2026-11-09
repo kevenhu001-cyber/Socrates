@@ -250,7 +250,7 @@ function rangeLike(value){
  }
  return list;
 }
-const VIEW_KINDS={plot:'plot',graph:'plot',chart:'plot',line:'plot',curve:'plot',curves:'plot',function:'plot',field:'field',heatmap:'field',image:'field',raster:'field',map:'field',trajectory:'trajectory',phase:'trajectory',orbit:'trajectory',path:'trajectory',metrics:'metrics',metric:'metrics',readout:'metrics',readouts:'metrics',values:'metrics',controls:'controls',control:'controls',sliders:'controls',parameters:'controls'};
+const VIEW_KINDS={scene:'scene',plot:'plot',graph:'plot',chart:'plot',line:'plot',curve:'plot',curves:'plot',function:'plot',field:'field',heatmap:'field',image:'field',raster:'field',map:'field',trajectory:'trajectory',phase:'trajectory',orbit:'trajectory',path:'trajectory',metrics:'metrics',metric:'metrics',readout:'metrics',readouts:'metrics',values:'metrics',controls:'controls',control:'controls',sliders:'controls',parameters:'controls'};
 function normalizeParameter(raw){
  if(!record(raw))return raw;
  const p={...raw};
@@ -303,6 +303,18 @@ function normalizeView(raw){
   });
   const markers=asArray(view.markers);
   if(Array.isArray(markers))view.markers=markers.map(marker=>record(marker)?{...marker,x:expressionLike(marker.x),y:expressionLike(marker.y),...(marker.label!==undefined?{label:textLike(marker.label)}:{})}:marker);
+ }
+ if(view.kind==='scene'){
+  const objects=asArray(view.objects);
+  if(Array.isArray(objects))view.objects=objects.map(object=>{
+   if(!record(object))return object;
+   const out={...object};
+   for(const key of ['center','from','to']){const point=asArray(out[key]);if(Array.isArray(point))out[key]=point.map(expressionLike);}
+   const points=asArray(out.points);if(Array.isArray(points))out.points=points.map(point=>{const pair=asArray(point);return Array.isArray(pair)?pair.map(expressionLike):pair;});
+   for(const key of ['radius','width','height','angle'])if(out[key]!==undefined)out[key]=expressionLike(out[key]);
+   if(out.label!==undefined)out.label=textLike(out.label);
+   return out;
+  });
  }
  if(view.kind==='field'){
   if(view.expression!==undefined)view.expression=expressionLike(view.expression);
@@ -370,7 +382,7 @@ export function normalizeDemonstrationProgram(input){
  const presets=asArray(out.presets);
  if(Array.isArray(presets))out.presets=presets.map(preset=>{
   if(!record(preset))return preset;
-  const values=mapValues(namedMap(preset.values,['value']),numberLike);
+  const values=mapValues(namedMap(preset.values,['value']),expressionLike);
   if(record(values)&&Array.isArray(out.parameters))for(const [key,value] of Object.entries(values)){
    const p=out.parameters.find(p=>record(p)&&p.id===key);
    if(p&&finite(value)&&finite(p.min)&&finite(p.max))values[key]=Math.max(p.min,Math.min(p.max,value));
@@ -381,7 +393,7 @@ export function normalizeDemonstrationProgram(input){
 }
 
 /* ---------- Shape preflight ---------- */
-const VIEW_KIND_SET=new Set(['controls','plot','field','trajectory','metrics']);
+const VIEW_KIND_SET=new Set(['controls','plot','field','trajectory','scene','metrics']);
 const SHAPE_ISSUE_LIMIT=8;
 const shapeIssue=(path,message)=>({path,message});
 const formatShapeIssue=issue=>`${issue.path}: ${issue.message}`;
@@ -405,7 +417,7 @@ function viewShapeIssues(view,index,hasDynamics){
  const path=`views[${index}]`;
  if(!record(view))return [shapeIssue(path,'must be an object')];
  const kind=typeof view.kind==='string'?view.kind:'';
- if(!VIEW_KIND_SET.has(kind))return [shapeIssue(`${path}.kind`,'use controls, plot, field, trajectory or metrics')];
+ if(!VIEW_KIND_SET.has(kind))return [shapeIssue(`${path}.kind`,'use controls, plot, field, trajectory, scene or metrics')];
  if(kind==='controls')return [];
  if(kind==='metrics'){
   if(!Array.isArray(view.values)||view.values.length<1||view.values.length>6)return [shapeIssue(`${path}.values`,'use 1-6 values')];
@@ -413,7 +425,9 @@ function viewShapeIssues(view,index,hasDynamics){
  }
  const issues=[];
  for(const axis of ['x','y'])if(!Array.isArray(view[axis])||view[axis].length!==2)issues.push(shapeIssue(`${path}.${axis}`,'needs a two-element [min,max] range'));
- if(kind==='plot'){
+ if(kind==='scene'){
+  if(!Array.isArray(view.objects)||view.objects.length<1||view.objects.length>32)issues.push(shapeIssue(`${path}.objects`,'use 1-32 scene objects'));
+ }else if(kind==='plot'){
   if(!Array.isArray(view.curves)||view.curves.length<1||view.curves.length>6)issues.push(shapeIssue(`${path}.curves`,'use 1-6 curves'));
  }else if(kind==='field'){
   if(view.expression===undefined||view.expression===null||view.expression==='')issues.push(shapeIssue(`${path}.expression`,'needs a mathematical expression'));
@@ -538,9 +552,31 @@ export function validateDemonstration(input) {
     view.values.forEach((m,j)=>at(`${path}.values[${j}]`,()=>{if(!record(m)||!text(m.label)||!text(m.unit)||m.digits!==undefined&&(!Number.isInteger(m.digits)||m.digits<0||m.digits>5))throw Error('Metric needs label, expression, optional unit and digits 0–5');check(m.expression);}));
     return;
    }
-   if(!['plot','field','trajectory'].includes(view.kind))throw located(`${path}.kind`,Error(`Unknown demonstration view kind "${String(view.kind).slice(0,40)}"; use controls, plot, field, trajectory or metrics`));
+   if(!['plot','field','trajectory','scene'].includes(view.kind))throw located(`${path}.kind`,Error(`Unknown demonstration view kind "${String(view.kind).slice(0,40)}"; use controls, plot, field, trajectory, scene or metrics`));
    for(const axis of ['x','y'])at(`${path}.${axis}`,()=>{if(!range(view[axis]))throw Error('Needs an increasing [min, max] range within ±1e6');view[axis].forEach(v=>check(v));});
-   if(view.kind==='field'){
+   if(view.kind==='scene'){
+    if(!Array.isArray(view.objects)||!view.objects.length||view.objects.length>32)throw located(`${path}.objects`,Error('Use 1–32 scene objects'));
+    view.objects.forEach((object,j)=>{
+     const objectPath=`${path}.objects[${j}]`;
+     at(objectPath,()=>{
+      if(!record(object)||!['body','block','rod','spring','vector','path'].includes(object.kind))throw Error('Object kind must be body, block, rod, spring, vector or path');
+      if(!text(object.label))throw Error('Object label must be text of at most 200 characters');
+      if(object.color!==undefined&&!['ink','muted','blue','orange','red','green','violet'].includes(object.color))throw Error('Use a documented scene color');
+     });
+     if(object.kind==='path'){
+      at(`${objectPath}.points`,()=>{
+       if(!Array.isArray(object.points)||object.points.length<2||object.points.length>64)throw Error('Path needs 2–64 coordinate pairs');
+       for(const point of object.points){if(!Array.isArray(point)||point.length!==2)throw Error('Path points need two expressions');point.forEach(value=>check(value));}
+       for(const key of ['closed','dashed'])if(object[key]!==undefined&&typeof object[key]!=='boolean')throw Error('closed and dashed must be booleans');
+      });
+     }
+     const pairs=object.kind==='path'?[]:['body','block'].includes(object.kind)?['center']:['from','to'];
+     for(const key of pairs)at(`${objectPath}.${key}`,()=>{if(!Array.isArray(object[key])||object[key].length!==2)throw Error('Needs two coordinate expressions');object[key].forEach(value=>check(value));});
+     const sizes=object.kind==='body'?['radius']:object.kind==='block'?['width','height']:[];
+     for(const key of sizes)at(`${objectPath}.${key}`,()=>{check(object[key]);if(typeof object[key]==='number'&&object[key]<=0)throw Error('Size must be positive');});
+     if(object.angle!==undefined)at(`${objectPath}.angle`,()=>check(object.angle));
+    });
+   }else if(view.kind==='field'){
     fields++;at(`${path}.expression`,()=>check(view.expression));
     for(const key of ['gamma','exposure'])if(view[key]!==undefined)at(`${path}.${key}`,()=>check(view[key]));
     if(view.vector!==undefined)at(`${path}.vector`,()=>{if(!Array.isArray(view.vector)||view.vector.length!==2)throw Error('Field vector needs two expressions');view.vector.forEach(v=>check(v));});
@@ -565,7 +601,7 @@ export function validateDemonstration(input) {
    if(!Array.isArray(program.presets)||program.presets.length>4)throw located('presets',Error('Use at most four presets'));
    program.presets.forEach((preset,i)=>at(`presets[${i}]`,()=>{
     if(!record(preset)||!text(preset.label)||!record(preset.values))throw Error('Preset needs a label and a values map');
-    for(const [key,value] of Object.entries(preset.values)){const p=params.find(p=>p.id===key);if(!p)throw Error(`Unknown parameter ${key}`);if(!finite(value)||value<p.min||value>p.max)throw Error(`Value for ${key} must be a number inside its range`);}
+    for(const [key,value] of Object.entries(preset.values)){const p=params.find(p=>p.id===key);if(!p)throw Error(`Unknown parameter ${key}`);check(value);if(typeof value==='number'&&(!finite(value)||value<p.min||value>p.max))throw Error(`Value for ${key} must be a number inside its range`);}
    }));
   }
   return {ok:true};

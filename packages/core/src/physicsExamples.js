@@ -1,0 +1,1229 @@
+/** Editable mathematical examples, never a whitelist of allowed physical models. */
+export const PHYSICS_EXAMPLES = {
+  "oscillator": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "mass",
+        "label": "质量 m",
+        "value": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1,
+        "unit": "kg"
+      },
+      {
+        "id": "stiffness",
+        "label": "劲度 k",
+        "value": 4,
+        "min": 1,
+        "max": 9,
+        "step": 0.5,
+        "unit": "N/m"
+      }
+    ],
+    "definitions": {
+      "force": "-stiffness*q",
+      "energy": "mass*v^2/2+stiffness*q^2/2"
+    },
+    "dynamics": {
+      "initial": {
+        "q": 1,
+        "v": 0
+      },
+      "derivatives": {
+        "q": "v",
+        "v": "force/mass"
+      },
+      "duration": 10,
+      "step": 0.01
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "弹簧振子与回复力",
+        "x": [
+          -2,
+          2
+        ],
+        "y": [
+          -1,
+          1
+        ],
+        "xLabel": "x (m)",
+        "yLabel": "y (m)",
+        "objects": [
+          {
+            "kind": "rod",
+            "from": [
+              -1.8,
+              -0.4
+            ],
+            "to": [
+              -1.8,
+              0.4
+            ],
+            "color": "muted"
+          },
+          {
+            "kind": "spring",
+            "from": [
+              -1.8,
+              0
+            ],
+            "to": [
+              "q-0.2",
+              0
+            ],
+            "color": "blue"
+          },
+          {
+            "kind": "block",
+            "center": [
+              "q",
+              0
+            ],
+            "width": 0.4,
+            "height": 0.4,
+            "color": "blue",
+            "label": "m"
+          },
+          {
+            "kind": "vector",
+            "from": [
+              "q",
+              0.4
+            ],
+            "to": [
+              "q+force/5",
+              0.4
+            ],
+            "color": "red",
+            "label": "F (1 m = 5 N)"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      },
+      {
+        "kind": "plot",
+        "label": "位移随时间变化",
+        "x": [
+          0,
+          10
+        ],
+        "y": [
+          -1.2,
+          1.2
+        ],
+        "xLabel": "t (s)",
+        "yLabel": "q (m)",
+        "curves": [
+          {
+            "expression": "cos(sqrt(stiffness/mass)*x)",
+            "color": "blue",
+            "label": "q(t)"
+          }
+        ],
+        "markers": [
+          {
+            "x": "t",
+            "y": "q",
+            "color": "red"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "位移",
+            "expression": "q",
+            "unit": "m"
+          },
+          {
+            "label": "回复力",
+            "expression": "force",
+            "unit": "N"
+          },
+          {
+            "label": "机械能",
+            "expression": "energy",
+            "unit": "J"
+          }
+        ]
+      }
+    ]
+  },
+  "pendulum": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "length",
+        "label": "摆长 L",
+        "value": 1.4,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.1,
+        "unit": "m"
+      }
+    ],
+    "definitions": {
+      "bobX": "length*sin(theta)",
+      "bobY": "-length*cos(theta)"
+    },
+    "dynamics": {
+      "initial": {
+        "theta": 0.7,
+        "omega": 0
+      },
+      "derivatives": {
+        "theta": "omega",
+        "omega": "-9.81/length*sin(theta)"
+      },
+      "duration": 10,
+      "step": 0.01
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "非线性单摆",
+        "x": [
+          -2.5,
+          2.5
+        ],
+        "y": [
+          -2.4,
+          0.6
+        ],
+        "xLabel": "x (m)",
+        "yLabel": "y (m)",
+        "objects": [
+          {
+            "kind": "rod",
+            "from": [
+              -0.5,
+              0.15
+            ],
+            "to": [
+              0.5,
+              0.15
+            ],
+            "color": "muted"
+          },
+          {
+            "kind": "rod",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              "bobX",
+              "bobY"
+            ]
+          },
+          {
+            "kind": "body",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 0.04
+          },
+          {
+            "kind": "body",
+            "center": [
+              "bobX",
+              "bobY"
+            ],
+            "radius": 0.12,
+            "color": "orange",
+            "label": "m"
+          }
+        ]
+      },
+      {
+        "kind": "trajectory",
+        "label": "摆球轨迹",
+        "x": [
+          -2.5,
+          2.5
+        ],
+        "y": [
+          -2.4,
+          0.6
+        ],
+        "horizontal": "bobX",
+        "vertical": "bobY",
+        "color": "orange"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "摆角",
+            "expression": "theta*180/pi",
+            "unit": "°"
+          }
+        ]
+      }
+    ]
+  },
+  "circularMotion": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "radius",
+        "label": "轨道半径 R",
+        "value": 1.5,
+        "min": 0.6,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "speed",
+        "label": "角速度 ω",
+        "value": 1,
+        "min": 0.3,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "definitions": {
+      "orbX": "radius*cos(speed*t)",
+      "orbY": "radius*sin(speed*t)"
+    },
+    "duration": 10,
+    "views": [
+      {
+        "kind": "scene",
+        "label": "圆周运动与速度方向",
+        "x": [
+          -2.8,
+          2.8
+        ],
+        "y": [
+          -2.8,
+          2.8
+        ],
+        "objects": [
+          {
+            "kind": "body",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 0.08,
+            "color": "muted"
+          },
+          {
+            "kind": "rod",
+            "from": [
+              0,
+              0
+            ],
+            "to": [
+              "orbX",
+              "orbY"
+            ],
+            "color": "muted"
+          },
+          {
+            "kind": "body",
+            "center": [
+              "orbX",
+              "orbY"
+            ],
+            "radius": 0.14,
+            "color": "blue",
+            "label": "m"
+          },
+          {
+            "kind": "vector",
+            "from": [
+              "orbX",
+              "orbY"
+            ],
+            "to": [
+              "orbX-0.3*speed*orbY",
+              "orbY+0.3*speed*orbX"
+            ],
+            "color": "green",
+            "label": "v × 0.3 s"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "速率",
+            "expression": "speed*radius"
+          },
+          {
+            "label": "向心加速度",
+            "expression": "speed^2*radius"
+          }
+        ]
+      }
+    ]
+  },
+  "coupledOscillators": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "coupling",
+        "label": "耦合劲度",
+        "value": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "unit": "N/m"
+      }
+    ],
+    "definitions": {
+      "energy": "(v1^2+v2^2+q1^2+q2^2+coupling*(q2-q1)^2)/2"
+    },
+    "dynamics": {
+      "initial": {
+        "q1": 0.5,
+        "q2": 0,
+        "v1": 0,
+        "v2": 0
+      },
+      "derivatives": {
+        "q1": "v1",
+        "q2": "v2",
+        "v1": "-q1-coupling*(q1-q2)",
+        "v2": "-q2-coupling*(q2-q1)"
+      },
+      "duration": 20,
+      "step": 0.01
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "双振子的能量交换",
+        "x": [
+          -3,
+          3
+        ],
+        "y": [
+          -1.5,
+          1.5
+        ],
+        "objects": [
+          {
+            "kind": "spring",
+            "from": [
+              -2.8,
+              0
+            ],
+            "to": [
+              "q1-1.2",
+              0
+            ],
+            "color": "blue"
+          },
+          {
+            "kind": "block",
+            "center": [
+              "q1-1",
+              0
+            ],
+            "width": 0.4,
+            "height": 0.4,
+            "color": "blue",
+            "label": "m₁"
+          },
+          {
+            "kind": "spring",
+            "from": [
+              "q1-.8",
+              0
+            ],
+            "to": [
+              "q2+.8",
+              0
+            ],
+            "color": "blue"
+          },
+          {
+            "kind": "block",
+            "center": [
+              "q2+1",
+              0
+            ],
+            "width": 0.4,
+            "height": 0.4,
+            "color": "blue",
+            "label": "m₂"
+          },
+          {
+            "kind": "spring",
+            "from": [
+              "q2+1.2",
+              0
+            ],
+            "to": [
+              2.8,
+              0
+            ],
+            "color": "blue"
+          }
+        ]
+      },
+      {
+        "kind": "controls"
+      },
+      {
+        "kind": "trajectory",
+        "label": "位移耦合",
+        "x": [
+          -0.7,
+          0.7
+        ],
+        "y": [
+          -0.7,
+          0.7
+        ],
+        "horizontal": "q1",
+        "vertical": "q2",
+        "color": "blue"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "总机械能",
+            "expression": "energy",
+            "unit": "J"
+          },
+          {
+            "label": "左振子位移",
+            "expression": "q1",
+            "unit": "m"
+          },
+          {
+            "label": "右振子位移",
+            "expression": "q2",
+            "unit": "m"
+          }
+        ]
+      }
+    ],
+    "presets": [
+      {
+        "label": "无耦合",
+        "values": {
+          "coupling": 0
+        }
+      },
+      {
+        "label": "强耦合",
+        "values": {
+          "coupling": 2
+        }
+      }
+    ]
+  },
+  "drivenOscillator": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "drive",
+        "label": "驱动角频率",
+        "value": 2,
+        "min": 0.5,
+        "max": 4,
+        "step": 0.1,
+        "unit": "rad/s"
+      }
+    ],
+    "definitions": {
+      "forcing": "cos(drive*t)",
+      "energy": "v^2/2+2*q^2"
+    },
+    "dynamics": {
+      "initial": {
+        "q": 0,
+        "v": 0
+      },
+      "derivatives": {
+        "q": "v",
+        "v": "forcing-.2*v-4*q"
+      },
+      "duration": 20,
+      "step": 0.01
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "受驱阻尼振子",
+        "x": [
+          -4,
+          4
+        ],
+        "y": [
+          -1.5,
+          1.5
+        ],
+        "objects": [
+          {
+            "kind": "spring",
+            "from": [
+              -2.8,
+              0
+            ],
+            "to": [
+              "q-.2",
+              0
+            ],
+            "color": "blue"
+          },
+          {
+            "kind": "block",
+            "center": [
+              "q",
+              0
+            ],
+            "width": 0.4,
+            "height": 0.4,
+            "color": "blue",
+            "label": "m"
+          },
+          {
+            "kind": "vector",
+            "from": [
+              "q",
+              0.5
+            ],
+            "to": [
+              "q+forcing",
+              0.5
+            ],
+            "color": "red",
+            "label": "F × (1 m / N)"
+          }
+        ]
+      },
+      {
+        "kind": "trajectory",
+        "label": "相轨迹",
+        "x": [
+          -4,
+          4
+        ],
+        "y": [
+          -8,
+          8
+        ],
+        "horizontal": "q",
+        "vertical": "v",
+        "color": "blue"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "机械能",
+            "expression": "energy",
+            "unit": "J"
+          },
+          {
+            "label": "驱动力",
+            "expression": "forcing",
+            "unit": "N"
+          }
+        ]
+      }
+    ]
+  },
+  "chargedParticle": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "magnetic",
+        "label": "磁场 B",
+        "value": 1,
+        "min": -2,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "electric",
+        "label": "电场 E",
+        "value": 0,
+        "min": -0.5,
+        "max": 0.5,
+        "step": 0.05
+      }
+    ],
+    "definitions": {
+      "kinetic": "(vx^2+vy^2)/2"
+    },
+    "dynamics": {
+      "initial": {
+        "px": 0,
+        "py": 0,
+        "vx": 1,
+        "vy": 0
+      },
+      "derivatives": {
+        "px": "vx",
+        "py": "vy",
+        "vx": "electric+magnetic*vy",
+        "vy": "-magnetic*vx"
+      },
+      "duration": 12,
+      "step": 0.01
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "电磁场中的带电粒子（矢量显示倍率 0.4）",
+        "x": [
+          "-max(2,abs(px)+1)",
+          "max(2,abs(px)+1)"
+        ],
+        "y": [
+          "-max(2.5,abs(py)+1)",
+          "max(0.5,py+1)"
+        ],
+        "objects": [
+          {
+            "kind": "body",
+            "center": [
+              "px",
+              "py"
+            ],
+            "radius": 0.1,
+            "color": "blue",
+            "label": ""
+          },
+          {
+            "kind": "vector",
+            "from": [
+              "px",
+              "py"
+            ],
+            "to": [
+              "px+.4*vx",
+              "py+.4*vy"
+            ],
+            "color": "green",
+            "label": "v"
+          },
+          {
+            "kind": "vector",
+            "from": [
+              "px",
+              "py"
+            ],
+            "to": [
+              "px+.4*(electric+magnetic*vy)",
+              "py-.4*magnetic*vx"
+            ],
+            "color": "red",
+            "label": "a"
+          }
+        ]
+      },
+      {
+        "kind": "trajectory",
+        "label": "粒子轨迹",
+        "x": [
+          "-max(2,abs(px)+1)",
+          "max(2,abs(px)+1)"
+        ],
+        "y": [
+          "-max(2.5,abs(py)+1)",
+          "max(0.5,py+1)"
+        ],
+        "horizontal": "px",
+        "vertical": "py",
+        "color": "blue"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "比动能",
+            "expression": "kinetic",
+            "unit": "归一化"
+          },
+          {
+            "label": "磁场",
+            "expression": "magnetic",
+            "unit": "归一化"
+          },
+          {
+            "label": "水平位置",
+            "expression": "px",
+            "unit": "归一化"
+          }
+        ]
+      }
+    ],
+    "presets": [
+      {
+        "label": "纯磁场",
+        "values": {
+          "magnetic": 1,
+          "electric": 0
+        }
+      },
+      {
+        "label": "交叉场",
+        "values": {
+          "magnetic": 1,
+          "electric": 0.2
+        }
+      }
+    ]
+  },
+  "keplerOrbit": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "launch",
+        "label": "初始切向速度",
+        "value": 0.9,
+        "min": 0.75,
+        "max": 1.2,
+        "step": 0.05
+      }
+    ],
+    "definitions": {
+      "distance": "hypot(px,py)",
+      "energy": "(vx^2+vy^2)/2-1/distance",
+      "angular": "px*vy-py*vx"
+    },
+    "dynamics": {
+      "initial": {
+        "px": 1,
+        "py": 0,
+        "vx": 0,
+        "vy": "launch"
+      },
+      "derivatives": {
+        "px": "vx",
+        "py": "vy",
+        "vx": "-px/distance^3",
+        "vy": "-py/distance^3"
+      },
+      "duration": 16,
+      "step": 0.005
+    },
+    "views": [
+      {
+        "kind": "scene",
+        "label": "中心引力下的开普勒轨道",
+        "x": [
+          -2.8,
+          2.8
+        ],
+        "y": [
+          -2.8,
+          2.8
+        ],
+        "objects": [
+          {
+            "kind": "body",
+            "center": [
+              0,
+              0
+            ],
+            "radius": 0.12,
+            "color": "orange",
+            "label": "M"
+          },
+          {
+            "kind": "body",
+            "center": [
+              "px",
+              "py"
+            ],
+            "radius": 0.06,
+            "color": "blue",
+            "label": "m"
+          }
+        ]
+      },
+      {
+        "kind": "trajectory",
+        "label": "轨道",
+        "x": [
+          -2.8,
+          2.8
+        ],
+        "y": [
+          -2.8,
+          2.8
+        ],
+        "horizontal": "px",
+        "vertical": "py",
+        "color": "blue"
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "比机械能",
+            "expression": "energy",
+            "unit": "归一化"
+          },
+          {
+            "label": "比角动量",
+            "expression": "angular",
+            "unit": "归一化"
+          },
+          {
+            "label": "轨道半径",
+            "expression": "distance",
+            "unit": "归一化"
+          }
+        ]
+      }
+    ]
+  },
+  "rcCharging": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "resistance",
+        "label": "电阻 R",
+        "value": 2,
+        "min": 0.5,
+        "max": 4,
+        "step": 0.1,
+        "unit": "Ω"
+      },
+      {
+        "id": "capacitance",
+        "label": "电容 C",
+        "value": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.1,
+        "unit": "F"
+      },
+      {
+        "id": "supply",
+        "label": "电源电压",
+        "value": 5,
+        "min": 1,
+        "max": 10,
+        "step": 0.5,
+        "unit": "V"
+      }
+    ],
+    "definitions": {
+      "voltage": "supply*(1-exp(-t/(resistance*capacitance)))",
+      "current": "supply/resistance*exp(-t/(resistance*capacitance))"
+    },
+    "duration": 12,
+    "views": [
+      {
+        "kind": "scene",
+        "label": "RC 充电电路示意",
+        "x": [
+          -3,
+          3
+        ],
+        "y": [
+          -1.5,
+          2
+        ],
+        "objects": [
+          {
+            "kind": "path",
+            "points": [
+              [
+                -2,
+                -1
+              ],
+              [
+                -2,
+                1
+              ],
+              [
+                -0.5,
+                1
+              ]
+            ],
+            "color": "muted"
+          },
+          {
+            "kind": "block",
+            "center": [
+              0,
+              1
+            ],
+            "width": 1,
+            "height": 0.3,
+            "label": "R"
+          },
+          {
+            "kind": "path",
+            "points": [
+              [
+                0.5,
+                1
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                2,
+                0.15
+              ]
+            ],
+            "color": "muted"
+          },
+          {
+            "kind": "rod",
+            "from": [
+              1.6,
+              0.15
+            ],
+            "to": [
+              2.4,
+              0.15
+            ],
+            "label": "C"
+          },
+          {
+            "kind": "rod",
+            "from": [
+              1.6,
+              -0.15
+            ],
+            "to": [
+              2.4,
+              -0.15
+            ]
+          },
+          {
+            "kind": "path",
+            "points": [
+              [
+                2,
+                -0.15
+              ],
+              [
+                2,
+                -1
+              ],
+              [
+                -2,
+                -1
+              ]
+            ],
+            "color": "muted"
+          },
+          {
+            "kind": "rod",
+            "from": [
+              -2.3,
+              -0.25
+            ],
+            "to": [
+              -1.7,
+              -0.25
+            ],
+            "label": "V"
+          },
+          {
+            "kind": "rod",
+            "from": [
+              -2.5,
+              0.25
+            ],
+            "to": [
+              -1.5,
+              0.25
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "电容电压",
+        "x": [
+          0,
+          12
+        ],
+        "y": [
+          0,
+          "supply*1.1"
+        ],
+        "xLabel": "t (s)",
+        "yLabel": "V",
+        "curves": [
+          {
+            "expression": "supply*(1-exp(-x/(resistance*capacitance)))",
+            "color": "blue"
+          }
+        ],
+        "markers": [
+          {
+            "x": "t",
+            "y": "voltage",
+            "color": "red"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "电容电压",
+            "expression": "voltage",
+            "unit": "V"
+          },
+          {
+            "label": "电流",
+            "expression": "current",
+            "unit": "A"
+          },
+          {
+            "label": "时间常数",
+            "expression": "resistance*capacitance",
+            "unit": "s"
+          }
+        ]
+      }
+    ]
+  },
+  "thermalCooling": {
+    "version": 1,
+    "parameters": [
+      {
+        "id": "rate",
+        "label": "冷却系数",
+        "value": 0.2,
+        "min": 0.05,
+        "max": 0.5,
+        "step": 0.05,
+        "unit": "s⁻¹"
+      },
+      {
+        "id": "ambient",
+        "label": "环境温度",
+        "value": 20,
+        "min": 0,
+        "max": 40,
+        "step": 1,
+        "unit": "°C"
+      }
+    ],
+    "definitions": {
+      "temperature": "ambient+(90-ambient)*exp(-rate*t)"
+    },
+    "duration": 20,
+    "views": [
+      {
+        "kind": "scene",
+        "label": "牛顿冷却温度计示意",
+        "x": [
+          -2,
+          2
+        ],
+        "y": [
+          -1.3,
+          1.3
+        ],
+        "objects": [
+          {
+            "kind": "path",
+            "points": [
+              [
+                -0.3,
+                -1
+              ],
+              [
+                -0.3,
+                1
+              ],
+              [
+                0.3,
+                1
+              ],
+              [
+                0.3,
+                -1
+              ]
+            ],
+            "closed": true,
+            "color": "muted"
+          },
+          {
+            "kind": "block",
+            "center": [
+              0,
+              "-1+temperature/100"
+            ],
+            "width": 0.4,
+            "height": "2*temperature/100",
+            "color": "red",
+            "label": "T"
+          }
+        ]
+      },
+      {
+        "kind": "plot",
+        "label": "温度随时间变化",
+        "x": [
+          0,
+          20
+        ],
+        "y": [
+          0,
+          100
+        ],
+        "curves": [
+          {
+            "expression": "ambient+(90-ambient)*exp(-rate*x)",
+            "color": "red"
+          }
+        ],
+        "markers": [
+          {
+            "x": "t",
+            "y": "temperature"
+          }
+        ]
+      },
+      {
+        "kind": "metrics",
+        "values": [
+          {
+            "label": "温度",
+            "expression": "temperature",
+            "unit": "°C"
+          },
+          {
+            "label": "与环境温差",
+            "expression": "temperature-ambient",
+            "unit": "°C"
+          }
+        ]
+      }
+    ]
+  }
+};
+
+export const PHYSICS_EXAMPLE_ASSUMPTIONS = {
+  "oscillator": "Linear spring, no damping, SI units; force arrow uses an explicit display scale.",
+  "pendulum": "Point mass, massless rigid rod, nonlinear gravity, no damping.",
+  "circularMotion": "Prescribed circular kinematics, not a gravitational orbit solver.",
+  "coupledOscillators": "Two unit masses, unit outer springs and variable middle coupling; no damping or collision.",
+  "drivenOscillator": "Unit mass, spring k=4, viscous damping 0.2, unit sinusoidal force; finite-time response.",
+  "chargedParticle": "Nonrelativistic planar Lorentz force with q/m=1 in normalized units; uniform B along +z, E along +x; no radiation.",
+  "keplerOrbit": "Fixed central mass, negligible orbiting mass, G*M=1 in normalized units; point masses, no collision handling.",
+  "rcCharging": "Ideal series RC circuit from an initially uncharged capacitor; circuit drawing is schematic, equations are explicit.",
+  "thermalCooling": "Lumped constant-coefficient Newton cooling, initial 90°C, fixed ambient, no phase change; thermometer is schematic."
+};

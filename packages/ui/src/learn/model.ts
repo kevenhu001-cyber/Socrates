@@ -182,6 +182,7 @@ export function parseQuizInner(inner: string, attrs = ''): ParsedQuiz | null {
   const oMatches = fieldMatches(inner, 'o');
   const optionMatches = oMatches.length >= 2 ? oMatches : fieldMatches(inner, 'option');
   const targetMatches = optionMatches.length >= oMatches.length ? optionMatches : oMatches;
+  if(targetMatches.some(match=>/\bletter\s*=/.test(match.attrs)&&!match.attrs.match(/\bletter\s*=\s*["'“”‘’]?([A-Ha-h])(?=["'“”‘’\s]|$)/i)))return null;
   let autoIndex = 0;
   const options = targetMatches.flatMap((match): QuizOption[] => {
     let letter = match.attrs.match(/\bletter\s*=\s*["'“”‘’]?([A-Ha-h])["'“”‘’]?/i)?.[1];
@@ -205,14 +206,20 @@ export function parseQuizInner(inner: string, attrs = ''): ParsedQuiz | null {
       ...(explanationText ? { explanation: stripTags(decodeEntities(explanationText)) } : {}),
     }];
   });
-  if (options.length < 2) return null;
+  if (!q || options.length < 2 || options.length > 8 || options.some(option => !option.text.trim())) return null;
   const letters = new Set(options.map((option) => option.letter));
+  if (letters.size !== options.length) return null;
   const correctRaw = fieldsOf(inner, 'correct');
   const keySource = correctRaw.length ? correctRaw : fieldsOf(inner, 'answer').concat(fieldsOf(inner, 'ans'));
-  const key = keySource.flatMap((value) => parseAnswerKey(value)).filter((letter) => letters.has(letter));
+  const declared = keySource.flatMap((value) => parseAnswerKey(value));
+  // A partially invalid key must never become a different, apparently valid key.
+  const validNotation=keySource.every(value=>/^[A-H]+$/.test(value.toUpperCase().replace(/\bAND\b/g,',').replace(/[\s,，、;；/|&]+/g,'')));
+  const key = validNotation && declared.every(letter => letters.has(letter)) ? declared : [];
   const unique = Array.from(new Set(key)).sort();
   const parsed: ParsedQuiz = { q, options, correct: unique.length ? unique.join('') : null };
-  if (unique.length > 1 || /\b(?:multi|multiple)\b|\btype\s*=\s*["'](?:multi|multiple)["']/i.test(attrs)) parsed.multi = true;
+  const multiAttribute=attrs.match(/\b(?:multi|multiple)\s*=\s*["'“”‘’]?([A-Za-z0-9]+)/i);
+  const multiple=multiAttribute?/^(true|1)$/i.test(multiAttribute[1]):/\b(?:multi|multiple)\b(?!\s*=)/i.test(attrs);
+  if (unique.length > 1 || multiple) parsed.multi = true;
   const explanation = fieldOf(inner, 'explain') ?? fieldOf(inner, 'explanation');
   if (explanation) parsed.explanation = explanation;
   return parsed;
@@ -285,7 +292,8 @@ export function parseDefinitionInner(inner: string): ParsedDefinition | null {
     const plain = plainScaffoldBody(inner);
     return plain ? { term: '', body: plain } : null;
   }
-  return { term: term ?? '', body: body ?? '' };
+  if (!body?.trim()) return null;
+  return { term: term ?? '', body };
 }
 
 export interface ParsedFlashcard { front: string; back: string }
@@ -293,7 +301,7 @@ export interface ParsedFlashcard { front: string; back: string }
 export function parseFlashcardInner(inner: string): ParsedFlashcard | null {
   const front = fieldOf(inner, 'front') ?? fieldOf(inner, 'question') ?? fieldOf(inner, 'q');
   const back = fieldOf(inner, 'back') ?? fieldOf(inner, 'answer') ?? fieldOf(inner, 'a');
-  if (front === null && back === null) return null;
+  if (!front?.trim() || !back?.trim()) return null;
   return { front: front ?? '', back: back ?? '' };
 }
 
@@ -306,6 +314,7 @@ export interface ParsedTheorem {
 }
 
 export function parseTheoremInner(inner: string): ParsedTheorem | null {
+  if (fieldOf(inner, 'term') !== null) return null;
   const statement = fieldOf(inner, 'statement') ?? fieldOf(inner, 'content') ?? fieldOf(inner, 'body') ?? plainScaffoldBody(inner);
   if (statement === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', statement };

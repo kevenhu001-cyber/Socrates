@@ -248,3 +248,121 @@ test('OpenUI source split into item lines is rejoined before parsing', () => {
   const result = validateIntelligentUi(args);
   assert.equal(result.ok, true, result.ok ? '' : result.error);
 });
+
+test('physical scene objects validate and patch through the Intelligent UI tool contract', async () => {
+ const { readFileSync } = await import('node:fs');
+ const { INTELLIGENT_UI_TOOL } = await import('../src/services/intelligentUi.js');
+ const { applyIntelligentUiPatch } = await import('../../packages/core/src/intelligentUiPatch.js');
+ const examples = JSON.parse(readFileSync(new URL('../../docs/examples/intelligent-ui-physics.json', import.meta.url), 'utf8'));
+ for (const program of Object.values(examples)) {
+  const input = {version:1,nodes:[{id:'physical',type:'demonstration',program}]};
+  assert.equal(validateIntelligentUi(input).ok,true);
+ }
+ const schema = INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties.program;
+ assert.ok(schema.properties.views.items.properties.kind.enum.includes('scene'));
+ assert.equal(schema.properties.views.items.properties.objects.maxItems,32);
+ const nodes = [{id:'physical',type:'demonstration',program:examples.oscillator}];
+ const changed = structuredClone(examples.oscillator);
+ changed.parameters[0].value = 2;
+ const patch = applyIntelligentUiPatch(nodes,[{op:'patch',nodeId:'physical',props:{program:changed}}]);
+ assert.equal(patch.ok,true);
+ assert.equal(patch.nodes[0].program.parameters[0].value,2);
+ assert.equal(nodes[0].program.parameters[0].value,1);
+ const bad = structuredClone(examples.oscillator);
+ bad.views[0].objects[1].to = ['missing', 0];
+ assert.equal(validateIntelligentUi({version:1,nodes:[{id:'physical',type:'demonstration',program:bad}]}).ok,false);
+});
+
+test('learning cards normalize aliases and return located grading errors with the correct repair contract',async()=>{
+ const {intelligentUiFeedback}=await import('../src/services/intelligentUiFeedback.js');
+ const quiz={id:'quiz',type:'quiz',question:'Choose',choices:['First','Second'],answer:'B'};
+ assert.equal(validateIntelligentUi({version:1,nodes:[quiz]}).ok,true);
+ const normalized=normalizeIntelligentUiArgs({version:1,nodes:[quiz]});
+ assert.equal(normalized.nodes[0].type,'learning');assert.equal(normalized.nodes[0].kind,'quiz');
+ const result=validateIntelligentUi({version:1,nodes:[{...quiz,answer:'E'}]});
+ assert.equal(result.ok,false);assert.equal(result.failure.stage,'learning');
+ assert.match(result.error,/nodes.quiz.correct/);
+ const feedback=intelligentUiFeedback(result.error,result.failure);
+ assert.match(feedback.correction,/type:"learning"/);
+ assert.match(feedback.correction,/never invent an answer/i);
+ assert.equal(feedback.detail.stage,'learning');
+ assert.ok(SERVER_SYSTEM_POLICY.includes('native learning nodes'));
+ assert.ok(SERVER_SYSTEM_POLICY.includes('never OpenUI learning-card functions'));
+});
+
+test('hallucinated OpenUI quiz functions get learning-specific repair instead of chart instructions',()=>{
+ const result=validateIntelligentUi({version:1,nodes:[{id:'mixed',type:'openui',source:'root = Col([Quiz("Question", ["A", "B"], "A")])'}]});
+ assert.equal(result.ok,false);
+ assert.equal(result.failure.stage,'learning');
+});
+
+test('every hallucinated learning component name is routed to the learning contract',()=>{
+ for(const name of ['Quiz','QuizCard','Question','QuestionCard','KnowledgeCard','MCQ']){
+  const result=validateIntelligentUi({version:1,nodes:[{id:'mixed',type:'openui',source:`root = Col([${name}("Question")])`}]});
+  assert.equal(result.ok,false,name);
+  assert.equal(result.failure.stage,'learning',name);
+  assert.ok(result.failure.issues.some(issue=>/is not an OpenUI component/.test(issue.message)),name);
+ }
+ /* Real OpenUI components that merely look like cards are not a learning misuse. */
+ const flashcard=validateIntelligentUi({version:1,nodes:[{id:'card',type:'openui',source:'root = Col([Flashcard("front", "back")])'}]});
+ assert.equal(flashcard.ok,true);
+ const text=validateIntelligentUi({version:1,nodes:[{id:'text',type:'openui',source:'root = Col([Text("hello")])'}]});
+ assert.equal(text.ok,true);
+});
+
+test('native visualization nodes validate and extract normalized specs without OpenUI source wrapper', async () => {
+ const { intelligentUiFeedback } = await import('../src/services/intelligentUiFeedback.js');
+ const viz = {
+  id: 'sales-chart',
+  type: 'visualization',
+  template: 'bar',
+  title: 'Quarterly Sales',
+  accessibilitySummary: 'Q1: 10, Q2: 20',
+  payload: {
+   categories: ['Q1', 'Q2'],
+   series: [{ name: 'Sales', data: [10, 20] }],
+  },
+ };
+ const result = validateIntelligentUi({ version: 1, nodes: [viz] });
+ assert.equal(result.ok, true, result.ok ? '' : result.error);
+ assert.equal(result.visualizations.length, 1);
+ assert.equal(result.visualizations[0].template, 'bar');
+ assert.equal(result.visualizations[0].title, 'Quarterly Sales');
+
+ const normalized = normalizeIntelligentUiArgs({
+  version: 1,
+  nodes: [{ id: 'sales-chart', type: 'visualization', kind: 'line', data: { categories: ['A'], series: [{ data: [1] }] } }],
+ });
+ assert.equal(normalized.nodes[0].template, 'line');
+ assert.deepEqual(normalized.nodes[0].payload, { categories: ['A'], series: [{ data: [1] }] });
+
+ const bad = { id: 'bad-chart', type: 'visualization', template: 'bar', payload: { categories: ['A'], series: [{ data: [1, 2] }] } };
+ const badResult = validateIntelligentUi({ version: 1, nodes: [bad] });
+ assert.equal(badResult.ok, false);
+ assert.equal(badResult.failure.stage, 'visualization');
+ assert.match(badResult.error, /nodes.bad-chart/);
+
+ const feedback = intelligentUiFeedback(badResult.error, badResult.failure);
+ assert.match(feedback.correction, /type:"visualization"/);
+ assert.ok(SERVER_SYSTEM_POLICY.includes('type: "visualization"'));
+});
+
+test('static tables in intelligent_ui trigger telemetry warning, while interactive tables pass clean', () => {
+ const staticTable = {
+  version: 1,
+  nodes: [{ id: 'tbl', type: 'table', columns: [{ key: 'a', label: 'A' }], rows: [{ a: '1' }] }],
+ };
+ const staticResult = validateIntelligentUi(staticTable);
+ assert.equal(staticResult.ok, true);
+ assert.ok(staticResult.warnings.some((w) => w.includes('static table rendered via intelligent_ui')));
+
+ const interactiveTable = {
+  version: 1,
+  state: { selected: '1' },
+  nodes: [{ id: 'tbl', type: 'table', bind: 'selected', columns: [{ key: 'a', label: 'A' }], rows: [{ a: '1' }] }],
+ };
+ const interactiveResult = validateIntelligentUi(interactiveTable);
+ assert.equal(interactiveResult.ok, true);
+ assert.equal(interactiveResult.warnings.some((w) => w.includes('static table rendered via intelligent_ui')), false);
+});
+

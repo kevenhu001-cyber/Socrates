@@ -181,3 +181,11 @@ layout patches preserving controls, explicit AI parameter edits, resetKey and
 history restoration. Field/curve consistency, Rayleigh saddle depth, generic ODE
 accuracy and operation limits have numerical checks. Browser scenarios use model
 output fixtures; live-provider generation quality has not been benchmarked.
+
+### Unified physics follow-up (2026-11-09)
+
+The six historical physics scene IDs now adapt into the same mathematical
+`demonstration.program` renderer used for new models. Dedicated ModelLab and
+RayleighLab renderers were removed. New modeling guidance, nine portable examples,
+path primitives and expression presets are described in
+[the physical composition handoff](2026-11-09-intelligent-ui-physical-components.md).

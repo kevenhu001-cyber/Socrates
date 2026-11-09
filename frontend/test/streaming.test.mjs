@@ -766,10 +766,16 @@ test('unclosed table renders calm placeholder while closed renders complete tabl
   try {
     const streaming = renderProgressive('Data:\n| Col 1 | Col 2 |\n|---|---|\n| val 1 | val 2 |');
     assert.match(streaming, /class="table-stream-placeholder/);
-    assert.doesNotMatch(streaming, /<table>/);
+    assert.match(streaming, /class="ds-table-wrap is-streaming"/);
+    assert.doesNotMatch(streaming, /<table/);
 
-    const closed = renderProgressive('Data:\n\n| Col 1 | Col 2 |\n|---|---|\n| val 1 | val 2 |\n\n', { complete: true });
-    assert.match(closed, /<table>/);
+    const closed = renderProgressive('Data:\n\n| Col 1 | Col 2 |\n| :--- | ---: |\n| val 1 | val 2 |\n\n', { complete: true });
+    assert.match(closed, /class="ds-table-wrap"/);
+    assert.match(closed, /role="region"/);
+    assert.match(closed, /tabindex="0"/);
+    assert.match(closed, /<table class="ds-table">/);
+    assert.match(closed, /<th align="left">Col 1<\/th>/);
+    assert.match(closed, /<th align="right">Col 2<\/th>/);
     assert.match(closed, /Col 1/);
   } finally {
     globalThis.marked = prevMarked;

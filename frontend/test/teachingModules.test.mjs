@@ -55,7 +55,7 @@ test('socraticDirectives: stageInstruction is stable per teaching stage', () => 
   );
   assert.equal(
     stageInstruction('exercise'),
-    'Give exactly one transfer practice problem and wait for the student\'s attempt.',
+    'Give exactly one multiple-choice transfer quiz (free response only if explicitly requested) and wait for the student\'s attempt.',
   );
   assert.equal(
     stageInstruction('check'),

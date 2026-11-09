@@ -7,7 +7,11 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
+import { installMarkedExtensions } from '../render/markdownExtensions.ts';
+
 import 'highlight.js/styles/atom-one-dark.css';
+
+installMarkedExtensions(marked);
 
 const w = typeof window !== 'undefined' ? (window as unknown as { marked?: typeof marked; DOMPurify?: typeof DOMPurify }) : null;
 if (w) {

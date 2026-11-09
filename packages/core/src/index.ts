@@ -264,4 +264,8 @@ export * from './turnRuntimeText.js';
 export { openUiProgramIssues, openUiStateIssue, openUiRuntimeIssues } from './openUiProgram.js';
 export { calculatorStep, initialCalculatorState, type CalculatorState } from './calculator';
 export { PHYSICS_MODELS, physicsModelDefinition, physicsParameters, physicsParametersError, createPhysicsRuntime, oscillatorState, electricField, pendulumTrajectory, type PhysicsModelDefinition, type PhysicsRuntime, type PhysicsPoint } from './physicsModels.js';
-export { validateDemonstration, demonstrationDomain, createDemonstrationRuntime, parseDemonstrationExpression, evaluateDemonstrationExpression, normalizeDemonstrationProgram, normalizeDemonstrationExpression, isDemonstrationBudgetError, type DemonstrationWarning, type DemonstrationIssue, type DemonstrationProgram, type DemonstrationValue, type DemonstrationRuntime, type DemonstrationView, type DemonstrationField, type DemonstrationPlot, type DemonstrationParameter, type DemonstrationTrajectory } from './demonstration.js';
+export { validateDemonstration, demonstrationDomain, createDemonstrationRuntime, parseDemonstrationExpression, evaluateDemonstrationExpression, normalizeDemonstrationProgram, normalizeDemonstrationExpression, isDemonstrationBudgetError, type DemonstrationWarning, type DemonstrationIssue, type DemonstrationProgram, type DemonstrationValue, type DemonstrationRuntime, type DemonstrationView, type DemonstrationField, type DemonstrationPlot, type DemonstrationParameter, type DemonstrationTrajectory, type DemonstrationScene, type DemonstrationObject, type DemonstrationPoint } from './demonstration.js';
+
+export { physicsDemonstrationProgram } from './physicsPrograms.js';
+
+export { LEARNING_KINDS, LEARNING_UI_GUIDANCE, LEARNING_UI_MISUSE_COMPONENTS, openUiLearningMisuse, normalizeLearningUiNode, learningUiIssues, type LearningUiNode, type LearningUiKind } from './learningUi.js';

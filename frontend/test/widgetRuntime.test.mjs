@@ -208,3 +208,17 @@ test('practice without an answer key sends the response for tutor grading', () =
   assert.deepEqual(submitPracticeAnswer(PRACTICE(''), 'My explanation'), { state: 'recorded', text: 'tutor.practiceSent' });
   assert.deepEqual(submitted, [['My answer: My explanation', { origin: 'practice' }]]);
 });
+
+test('an ungraded quiz never increases failed attempts or changes teaching stage',()=>{
+ const dispatches=[],mistakes=[];
+ configureWidgetRuntime({stateStore:teachingStore('exercise',2,dispatches),recordMistake:entry=>mistakes.push(entry)});
+ assert.equal(pick('B',{...QUIZ(),correct:null}).verdict,'recorded');
+ assert.deepEqual(dispatches,[]);assert.deepEqual(mistakes,[]);
+});
+
+test('early learning configuration is available before the legacy card bundle mounts',async()=>{
+ const {configureWidgetRuntimeEarly}=await import('../src/render/widgetScheduler.ts');
+ const {widgetRuntime}=await import('../src/render/widgetRuntime.ts');
+ configureWidgetRuntimeEarly({formatMsg:value=>`<p>${value}</p>`});
+ assert.equal(widgetRuntime().formatMsg('formula'),'<p>formula</p>');
+});

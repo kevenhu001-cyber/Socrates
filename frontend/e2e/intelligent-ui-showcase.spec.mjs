@@ -43,7 +43,8 @@ test('v2 Intelligent UI showcase renders trusted components and local tab state'
   const ui = page.locator('.intui');
   await expect(ui).toBeVisible();
   await expect(ui.locator('.intui-chart')).toBeVisible();
-  await expect(ui.locator('.intui-chart-bar')).toHaveCount(3);
+  await expect(ui.locator('.intui-chart .visualization-card')).toHaveAttribute('data-visualization-renderer', 'echarts');
+  await expect.poll(() => ui.locator('.intui-chart .visualization-stage').evaluate((stage) => window.echarts?.getInstanceByDom(stage)?.getOption().series[0].data)).toEqual([12, 19, 8]);
 
   const metric = ui.locator('.intui-metric');
   await expect(metric.getByText('Active sessions')).toBeVisible();

@@ -1,3 +1,4 @@
+import { normalizeLearningUiNode } from './learningUi.js';
 import { validateIntelligentUi } from './intelligentUiValidation.js';
 import { serializedDocumentBlocks, serializedUiBlocks } from './serializedUi';
 
@@ -31,6 +32,8 @@ export type IntelligenceUiNodeType =
   | 'image-gallery'
   | 'demonstration'
   | 'physics'
+  | 'learning'
+  | 'visualization'
   | 'openui';
 
 const NODE_TYPES = new Set<IntelligenceUiNodeType>([
@@ -53,6 +56,8 @@ const NODE_TYPES = new Set<IntelligenceUiNodeType>([
   'image-gallery',
   'demonstration',
   'physics',
+  'learning',
+  'visualization',
   'openui',
 ]);
 
@@ -108,6 +113,9 @@ export interface IntelligenceUiNode {
   rows?: unknown;
   kind?: unknown;
   points?: unknown;
+  template?: unknown;
+  payload?: unknown;
+  accessibilitySummary?: unknown;
   options?: unknown;
   tabs?: unknown;
   tab?: unknown;
@@ -193,20 +201,35 @@ export function intelligenceUiChartDomain(values: ReadonlyArray<unknown>): [numb
   return [min, max];
 }
 
-function normalizeNode(value: unknown): IntelligenceUiNode | null {
+function normalizeNode(input: unknown): IntelligenceUiNode | null {
+  const value = normalizeLearningUiNode(input);
   if (!isRecord(value)) return null;
   const id = typeof value.id === 'string' ? value.id.trim() : '';
   const type = typeof value.type === 'string' ? value.type.trim() as IntelligenceUiNodeType : null;
   if (!id || id.length > MAX_ID_LENGTH || !SAFE_ID.test(id) || !type || !NODE_TYPES.has(type)) return null;
   const parent = typeof value.parent === 'string' ? value.parent.trim() : '';
   const state = isRecord(value.state) ? value.state : undefined;
-  return {
+  const node: IntelligenceUiNode = {
     ...value,
     id,
     type,
     parent: parent && SAFE_ID.test(parent) ? parent.slice(0, MAX_ID_LENGTH) : undefined,
     state,
   };
+  if (type === 'visualization') {
+    if (typeof value.template !== 'string') {
+      if (typeof value.kind === 'string') node.template = value.kind.trim();
+      else if (typeof value.chartType === 'string') node.template = value.chartType.trim();
+    }
+    if (value.payload === undefined && isRecord(value.data)) {
+      node.payload = value.data;
+    }
+    if (typeof value.accessibilitySummary !== 'string') {
+      if (typeof value.accessibility_summary === 'string') node.accessibilitySummary = value.accessibility_summary;
+      else if (typeof value.summary === 'string') node.accessibilitySummary = value.summary;
+    }
+  }
+  return node;
 }
 
 /**
@@ -222,8 +245,13 @@ export function parseIntelligenceUiRecords(source: string): IntelligenceUiNode[]
   // support pretty printing and recovered versioned tool output.
   try {
     const value: unknown = JSON.parse(source);
-    if (isRecord(value) && value.version === 1 && validateIntelligentUi(value).ok) {
-      return (value.nodes as unknown[]).map(normalizeNode).filter((node): node is IntelligenceUiNode => node !== null);
+    if (isRecord(value) && value.version === 1 && Array.isArray(value.nodes)) {
+      const validation=validateIntelligentUi(value);
+      // A broken learning card from history keeps its own fallback and healthy siblings.
+      // Unsafe/oversized documents still fail closed before any node is recovered.
+      if(validation.ok || validation.kind==='learning') {
+        return value.nodes.map(normalizeNode).filter((node): node is IntelligenceUiNode => node !== null);
+      }
     }
     const node = normalizeNode(value);
     if (node) return [node];

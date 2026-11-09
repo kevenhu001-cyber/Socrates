@@ -90,3 +90,89 @@ test('model notation and XML-encoded programs are normalized before validation',
  const located=validateDemonstration({version:1,parameters:[{id:'a',value:1,min:0,max:2}],views:[{kind:'plot',x:[0,1],y:[0,1],curves:[{expression:'A*x'}]}]});
  assert.equal(located.ok,false);assert.equal(located.path,'views[0].curves[0]');assert.match(located.error,/did you mean a/);
 });
+
+test('physical scene composition uses shared ODE state, units and parameter changes', () => {
+ const scenes = JSON.parse(readFileSync(new URL('../../docs/examples/intelligent-ui-physics.json', import.meta.url), 'utf8'));
+ for (const program of Object.values(scenes)) {
+  assert.deepEqual(validateDemonstration(program), {ok:true});
+  assert.equal(validateIntelligentUi({version:1,nodes:[{id:'scene',type:'demonstration',program}]}).ok,true);
+ }
+ const runtime = createDemonstrationRuntime(scenes.oscillator);
+ const quarterPeriod = Math.PI / 4;
+ assert.ok(Math.abs(runtime.evaluate('q', quarterPeriod)) < .0001);
+ assert.ok(Math.abs(runtime.evaluate('v', quarterPeriod) + 2) < .0001);
+ assert.ok(Math.abs(runtime.evaluate('energy', quarterPeriod) - 2) < .0003);
+ const heavier = createDemonstrationRuntime(scenes.oscillator, {mass:2});
+ assert.ok(heavier.evaluate('q', quarterPeriod) > .4);
+ const pendulum = createDemonstrationRuntime(scenes.pendulum);
+ for (const time of [0, 1, 3]) assert.ok(Math.abs(Math.hypot(pendulum.evaluate('bobX', time), pendulum.evaluate('bobY', time)) - 1.4) < 1e-10);
+});
+
+test('scene objects reject missing coordinates, invalid sizes, unsafe expressions and excess geometry', () => {
+ const scene = objects => ({version:1,views:[{kind:'scene',x:[-2,2],y:[-1,1],objects}]});
+ const body = {kind:'body',center:[0,0],radius:.1};
+ for (const object of [
+  {...body,center:[0]}, {...body,radius:-1}, {...body,center:['unknown',0]},
+  {...body,radius:'fetch(1)'}, {...body,color:'url(https://example.com)'},
+  {kind:'block',center:[0,0],width:1}, {kind:'spring',from:[0,0]}, {kind:'script'},
+ ]) {
+  const result = validateDemonstration(scene([object]));
+  assert.equal(result.ok,false,JSON.stringify(object));
+  assert.match(result.path,/views\[0\].objects/);
+ }
+ assert.equal(validateDemonstration(scene([])).ok,false);
+ assert.equal(validateDemonstration(scene(Array.from({length:33},()=>body))).ok,false);
+ assert.equal(validateDemonstration(scene([{...body,center:{item:['0','1']},radius:'0.1'}])).ok,true);
+});
+
+test('editable physics catalog stays portable and is present in the published examples', async () => {
+ const { PHYSICS_EXAMPLES, PHYSICS_EXAMPLE_ASSUMPTIONS } = await import('../../packages/core/src/physicsExamples.js');
+ const published = JSON.parse(readFileSync(new URL('../../docs/examples/intelligent-ui-physics.json', import.meta.url),'utf8'));
+ assert.deepEqual(published, PHYSICS_EXAMPLES);
+ assert.equal(Object.keys(PHYSICS_EXAMPLES).length,9);
+ for (const [id,program] of Object.entries(PHYSICS_EXAMPLES)) {
+  assert.ok(PHYSICS_EXAMPLE_ASSUMPTIONS[id]);
+  assert.deepEqual(validateDemonstration(program),{ok:true},id);
+  const runtime=createDemonstrationRuntime(program);
+  assert.deepEqual(runtime.warnings,[],id);
+ }
+});
+
+test('coupled springs and magnetic motion preserve their declared invariants', async () => {
+ const { PHYSICS_EXAMPLES } = await import('../../packages/core/src/physicsExamples.js');
+ const coupled=createDemonstrationRuntime(PHYSICS_EXAMPLES.coupledOscillators);
+ const energy=coupled.evaluate('energy');
+ for(const t of [1,4,12,20]) assert.ok(Math.abs(coupled.evaluate('energy',t)-energy)<1e-6);
+ const particle=createDemonstrationRuntime(PHYSICS_EXAMPLES.chargedParticle);
+ for(const t of [0,1,6,12]) {
+  assert.ok(Math.abs(particle.evaluate('kinetic',t)-.5)<1e-5);
+  assert.ok(Math.abs(particle.evaluate('px^2+(py+1)^2',t)-1)<1e-5);
+ }
+ const orbit=createDemonstrationRuntime(PHYSICS_EXAMPLES.keplerOrbit);
+ const orbitalEnergy=orbit.evaluate('energy'),angular=orbit.evaluate('angular');
+ for(const t of [2,8,16]) {
+  assert.ok(Math.abs(orbit.evaluate('energy',t)-orbitalEnergy)<1e-5);
+  assert.ok(Math.abs(orbit.evaluate('angular',t)-angular)<1e-5);
+ }
+});
+
+test('RC and thermal examples match initial and one-time-constant limits', async () => {
+ const { PHYSICS_EXAMPLES }=await import('../../packages/core/src/physicsExamples.js');
+ const rc=createDemonstrationRuntime(PHYSICS_EXAMPLES.rcCharging);
+ assert.equal(rc.evaluate('voltage'),0);
+ assert.ok(Math.abs(rc.evaluate('voltage',2)-5*(1-Math.exp(-1)))<1e-10);
+ const thermal=createDemonstrationRuntime(PHYSICS_EXAMPLES.thermalCooling);
+ assert.equal(thermal.evaluate('temperature'),90);
+ assert.ok(Math.abs(thermal.evaluate('temperature',5)-(20+70/Math.E))<1e-10);
+});
+
+test('path and expression presets validate geometry, dependencies and resource limits',()=>{
+ const program={version:1,parameters:[{id:'a',value:1,min:0,max:3}],views:[{kind:'scene',x:[-1,1],y:[-1,1],objects:[{kind:'path',points:[[0,0],['a',1]],dashed:true}]}],presets:[{label:'Double',values:{a:'min(3,2*a)'}}]};
+ assert.equal(validateDemonstration(program).ok,true);
+ for(const points of [[[0,0]],[[0]],Array.from({length:65},()=>[0,0]),[[0,0],['unknown',1]]]){
+  const invalid=structuredClone(program);invalid.views[0].objects[0].points=points;
+  assert.equal(validateDemonstration(invalid).ok,false);
+ }
+ const invalid=structuredClone(program);invalid.presets[0].values.a='unknown';
+ assert.equal(validateDemonstration(invalid).ok,false);
+});

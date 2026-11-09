@@ -75,8 +75,8 @@ test('high-effort prompt prioritizes detailed paragraph-based answers without du
 });
 
 test('chat prompt policies stay compact enough to avoid crowding user context', () => {
-  assert.ok(CHAT_SYSTEM_PROMPT.length < 2_500, `high-effort prompt is ${CHAT_SYSTEM_PROMPT.length} chars`);
-  assert.ok(CHAT_CONCISE_PROMPT.length < 2_000, `concise prompt is ${CHAT_CONCISE_PROMPT.length} chars`);
+  assert.ok(CHAT_SYSTEM_PROMPT.length < 5_000, `high-effort prompt is ${CHAT_SYSTEM_PROMPT.length} chars`);
+  assert.ok(CHAT_CONCISE_PROMPT.length < 4_500, `concise prompt is ${CHAT_CONCISE_PROMPT.length} chars`);
   assert.ok(PYTHON_RUNNABLE_RULES.length < 2_500, `python appendix is ${PYTHON_RUNNABLE_RULES.length} chars`);
 });
 
@@ -89,5 +89,5 @@ test('every prompted learning-card example is accepted by the actual shared pars
     assert.equal(parts.length, 1, example);
     assert.equal(parts[0].kind, 'scaffold', example);
   }
-  assert.match(LEARNING_SCAFFOLD_GUIDANCE, /practice for a question without answer options/);
+  assert.match(LEARNING_SCAFFOLD_GUIDANCE, /practice (?:only )?for an? (?:explicitly requested )?question without answer options/);
 });

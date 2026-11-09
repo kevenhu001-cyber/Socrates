@@ -14,6 +14,7 @@ import { Label } from '../../ui/shadcn/label';
 import { i18n } from '../../legacy/gateway';
 import { BlockSkeleton } from '../BlockSkeleton';
 import { DemoPlot } from './DemonstrationPlot';
+import { DemoScene } from './DemonstrationScene';
 import { DemoField } from './DemonstrationField';
 import { DemoIssue } from './DemonstrationIssue';
 
@@ -183,18 +184,31 @@ function AdvancedParameters({ program, runtime, id, onChange }: {
   </details>;
 }
 
-function PresetButtons({ program, setTime, setPlaying, setValues }: {
+function PresetButtons({ program, runtime, setTime, setPlaying, setValues }: {
   program: DemonstrationProgram;
+  runtime: NonNullable<Calculation['runtime']>;
   setTime: (time: number) => void;
   setPlaying: (playing: boolean) => void;
   setValues: Dispatch<SetStateAction<Record<string, number>>>;
 }) {
+  const [error, setError] = useState('');
   if (!program.presets?.length) return null;
-  return <div className="demo-presets">{program.presets.map((preset, index) => <Button key={index} variant="outline" size="sm" onClick={() => {
-    setPlaying(false);
-    setTime(0);
-    setValues((previous) => ({ ...previous, ...preset.values }));
-  }}><MathText text={preset.label} /></Button>)}</div>;
+  return <><div className="demo-presets">{program.presets.map((preset, index) => <Button key={index} variant="outline" size="sm" onClick={() => {
+    try {
+      runtime.resetBudget();
+      const values = Object.fromEntries(Object.entries(preset.values).map(([key, expression]) => {
+        const value = runtime.evaluate(expression);
+        const parameter = program.parameters?.find(parameter => parameter.id === key);
+        if (!Number.isFinite(value) || !parameter || value < parameter.min || value > parameter.max) throw Error(`Preset ${key}: value must be finite and within its parameter range`);
+        return [key, value];
+      }));
+      setPlaying(false);
+      setTime(0);
+      setValues(previous => ({ ...previous, ...values }));
+      setError('');
+    } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+
+  }}><MathText text={preset.label} /></Button>)}</div>{error ? <div className="demo-note" role="status"><DemoIssue headline={failureHeadline('presets')} details={[error]} /></div> : null}</>;
 }
 
 function TimeControls({ duration, time, playing, reduced, setTime, setPlaying }: {
@@ -248,6 +262,7 @@ function metricValue(runtime: NonNullable<Calculation['runtime']>, expression: s
 
 function renderView(view: DemoView, index: number, program: DemonstrationProgram, runtime: NonNullable<Calculation['runtime']>, time: number, id: string, onChange: (key: string, value: number) => void, pause: () => void): ReactNode {
   if (view.kind === 'controls') return <ParameterControls key={index} program={program} runtime={runtime} id={id} onChange={onChange} />;
+  if (view.kind === 'scene') return <DemoScene key={index} view={view} runtime={runtime} time={time} />;
   if (view.kind === 'field') return <DemoField key={index} view={view} runtime={runtime} time={time} onError={pause} />;
   if (view.kind === 'metrics') return <dl className="demo-metrics" key={index}>{view.values.map((value, itemIndex) => <div key={itemIndex}>
     <dt><MathText text={value.label} /></dt>
@@ -280,7 +295,7 @@ function DemonstrationControls({ program, runtime, id, onChange, setTime, setPla
   return <>
     {!hasControlView ? <ParameterControls program={program} runtime={runtime} id={id} onChange={onChange} /> : null}
     <AdvancedParameters program={program} runtime={runtime} id={id} onChange={onChange} />
-    <PresetButtons program={program} setTime={setTime} setPlaying={setPlaying} setValues={setValues} />
+    <PresetButtons program={program} runtime={runtime} setTime={setTime} setPlaying={setPlaying} setValues={setValues} />
   </>;
 }
 

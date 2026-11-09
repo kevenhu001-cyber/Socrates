@@ -7,9 +7,18 @@ export interface DemonstrationViewBase { label?: string; x: [DemonstrationValue,
 export interface DemonstrationPlot extends DemonstrationViewBase { kind: 'plot'; curves: DemonstrationCurve[]; markers?: DemonstrationMarker[] }
 export interface DemonstrationField extends DemonstrationViewBase { kind: 'field'; expression: DemonstrationValue; palette?: 'light' | 'signed' | 'heat'; tint?: [number, number, number]; gamma?: DemonstrationValue; exposure?: DemonstrationValue; height?: number; vector?: [DemonstrationValue, DemonstrationValue] }
 export interface DemonstrationTrajectory extends DemonstrationViewBase { kind: 'trajectory'; horizontal: DemonstrationValue; vertical: DemonstrationValue; color?: string }
+/** Coordinates and sizes use the same physical units as the scene axes; angles are radians. */
+export type DemonstrationPoint = [DemonstrationValue, DemonstrationValue];
+export interface DemonstrationObjectBase { label?: string; color?: 'ink' | 'muted' | 'blue' | 'orange' | 'red' | 'green' | 'violet' }
+export type DemonstrationObject =
+  | (DemonstrationObjectBase & { kind: 'body'; center: DemonstrationPoint; radius: DemonstrationValue })
+  | (DemonstrationObjectBase & { kind: 'block'; center: DemonstrationPoint; width: DemonstrationValue; height: DemonstrationValue; angle?: DemonstrationValue })
+  | (DemonstrationObjectBase & { kind: 'path'; points: DemonstrationPoint[]; closed?: boolean; dashed?: boolean })
+  | (DemonstrationObjectBase & { kind: 'rod' | 'spring' | 'vector'; from: DemonstrationPoint; to: DemonstrationPoint });
+export interface DemonstrationScene extends DemonstrationViewBase { kind: 'scene'; objects: DemonstrationObject[] }
 export interface DemonstrationMetrics { kind: 'metrics'; label?: string; values: { label?: string; expression: DemonstrationValue; unit?: string; digits?: number }[] }
-export type DemonstrationView = DemonstrationPlot | DemonstrationField | DemonstrationTrajectory | DemonstrationMetrics | {kind: 'controls'};
-export interface DemonstrationProgram { version: 1; resetKey?: string; parameters?: DemonstrationParameter[]; definitions?: Record<string, DemonstrationValue>; dynamics?: { initial: Record<string, DemonstrationValue>; derivatives: Record<string, DemonstrationValue>; duration: number; step: number }; duration?: number; views: DemonstrationView[]; presets?: {label?: string; values: Record<string, number>}[] }
+export type DemonstrationView = DemonstrationPlot | DemonstrationField | DemonstrationTrajectory | DemonstrationScene | DemonstrationMetrics | {kind: 'controls'};
+export interface DemonstrationProgram { version: 1; resetKey?: string; parameters?: DemonstrationParameter[]; definitions?: Record<string, DemonstrationValue>; dynamics?: { initial: Record<string, DemonstrationValue>; derivatives: Record<string, DemonstrationValue>; duration: number; step: number }; duration?: number; views: DemonstrationView[]; presets?: {label?: string; values: Record<string, DemonstrationValue>}[] }
 export interface DemonstrationWarning { path: string; time: number; message: string }
 export interface DemonstrationRuntime { duration: number; parameters: Record<string, number>; warnings: DemonstrationWarning[]; resetBudget(): void; evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number): number; stateAt(time: number): Record<string, number> }
 export function parseDemonstrationExpression(source: DemonstrationValue): DemonstrationExpression;

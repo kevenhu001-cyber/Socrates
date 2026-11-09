@@ -128,3 +128,12 @@ test('stripMarkdown removes multiline display math blocks', () => {
   const stripped = stripMarkdown(input);
   assert.equal(stripped, '公式如下：\n\n完成');
 });
+
+test('bare-unit repair preserves existing inline and display math in learning cards',()=>{
+ const inline='瑞利判据为 $\\theta=1.22\\lambda/D$。';
+ assert.equal(preprocessMarkdown(inline),inline);
+ const display='公式：$$\\theta=1.22\\lambda/D$$';
+ assert.equal(preprocessMarkdown(display),display);
+ assert.equal(preprocessMarkdown('电阻为 20\\Omega。'),'电阻为 $20\\Omega$。');
+ assert.equal(preprocessMarkdown('代码 `20\\Omega` 保持原样。'),'代码 `20\\Omega` 保持原样。');
+});

@@ -47,7 +47,9 @@ function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | n
   }
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
   const record = candidate as Record<string, unknown>;
-  if (record.version !== 1 || !Array.isArray(record.nodes) || !validateIntelligentUi(record).ok) return null;
+  if (record.version !== 1 || !Array.isArray(record.nodes)) return null;
+  const validation=validateIntelligentUi(record);
+  if (!validation.ok && validation.kind!=='learning') return null;
   return { version: 1, nodes: record.nodes };
 }
 

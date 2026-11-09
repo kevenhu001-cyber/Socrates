@@ -14,6 +14,7 @@ import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { sanitizeUrls } from '../util/safe.ts';
 import { sanitizeHtml } from './sanitizeHtml.ts';
 import { installCodeBlockCopy } from './markdownCodeCopy.ts';
+import { installMarkedExtensions } from './markdownExtensions.ts';
 import { stripTags } from '@socrates/ui/learn-model';
 import {
   markdownCodeRanges,
@@ -71,7 +72,9 @@ interface MarkedLike {
 }
 
 function getMarked(): MarkedLike | undefined {
-  return (globalThis as { marked?: MarkedLike }).marked;
+  const m = (globalThis as { marked?: MarkedLike }).marked;
+  if (m) installMarkedExtensions(m);
+  return m;
 }
 
 interface PlaceholderBank {
@@ -492,7 +495,7 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
 
   if (!opts?.complete) {
     s = s.replace(/(?:^|\n)((?:\|[^\n]+\|\s*\n?)+)$/, function () {
-      return bank.save('<div class="table-stream-placeholder shimmer-text"><span class="table-stream-icon">⊞</span> 正在生成表格…</div>');
+      return bank.save('<div class="ds-table-wrap is-streaming" role="region" tabindex="0" aria-label="Table loading"><div class="table-stream-placeholder shimmer-text"><span class="table-stream-icon">⊞</span> 正在生成表格…</div></div>');
     });
   }
   return renderProgressiveMarkdown(s, bank);

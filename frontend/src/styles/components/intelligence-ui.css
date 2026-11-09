@@ -312,42 +312,75 @@
   line-height: var(--ui-line-height-normal);
 }
 .msg.assistant .msg-body.is-declarative .intui-toggle [data-slot="switch"] { flex: none; }
+/* ── Unified Design System Table Contract: .ds-table-wrap & .ds-table ── */
+.ds-table-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 14px 0 16px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface-raised, var(--card, transparent));
+}
+.ds-table-wrap:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+}
+.ds-table-wrap.is-streaming {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: var(--ui-space-xs) var(--ui-space-sm);
+}
+.ds-table-wrap > table.ds-table,
+.msg.assistant .msg-body.is-declarative .intui-table {
+  width: 100%;
+  min-width: 100%;
+  border-collapse: collapse;
+  color: var(--muted-foreground);
+  font-size: calc(13px * var(--app-type-scale, 1));
+  line-height: var(--ui-line-height-normal, 1.5);
+}
+.ds-table-wrap > table.ds-table caption,
+.msg.assistant .msg-body.is-declarative .intui-table-caption {
+  padding: var(--ui-space-sm, 8px) var(--ui-space-md, 14px);
+  border-bottom: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-surface);
+  color: var(--foreground);
+  font-size: var(--ui-font-size-xs, 12px);
+  font-weight: var(--ui-font-weight-medium, 500);
+  text-align: start;
+}
+.ds-table-wrap > table.ds-table :is(th, td),
+.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td) {
+  padding: var(--ui-space-sm, 8px) var(--ui-space-md, 14px);
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  text-align: start;
+  vertical-align: top;
+}
+.ds-table-wrap > table.ds-table th,
+.msg.assistant .msg-body.is-declarative .intui-table th {
+  background: var(--ui-bg-surface);
+  color: var(--foreground);
+  font-weight: var(--ui-font-weight-medium, 500);
+  white-space: nowrap;
+}
+.ds-table-wrap > table.ds-table tbody tr:hover td,
+.msg.assistant .msg-body.is-declarative .intui-table tbody tr:hover td {
+  background: var(--ui-bg-hover-ghost);
+}
+.ds-table-wrap > table.ds-table tbody tr:last-child td,
+.msg.assistant .msg-body.is-declarative .intui-table tbody tr:last-child td { border-bottom: 0; }
 .msg.assistant .msg-body.is-declarative .intui-table-wrap {
   max-width: 100%;
   overflow-x: auto;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-md);
 }
-.msg.assistant .msg-body.is-declarative .intui-table {
-  width: 100%;
-  border-collapse: collapse;
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-xs);
-}
-.msg.assistant .msg-body.is-declarative .intui-table-caption {
-  padding: var(--ui-space-sm) var(--ui-space-md);
-  border-bottom: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-surface);
-  color: var(--foreground);
-  font-size: var(--ui-font-size-xs);
-  font-weight: var(--ui-font-weight-medium);
-  text-align: start;
-}
-.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td) {
-  padding: var(--ui-space-sm) var(--ui-space-md);
-  border-bottom: 1px solid var(--ui-border-subtle);
-  text-align: start;
-  vertical-align: top;
-}
-.msg.assistant .msg-body.is-declarative .intui-table th {
-  background: var(--ui-bg-surface);
-  color: var(--foreground);
-  font-weight: var(--ui-font-weight-medium);
-}
-.msg.assistant .msg-body.is-declarative .intui-table tbody tr:hover td {
-  background: var(--ui-bg-hover-ghost);
-}
-.msg.assistant .msg-body.is-declarative .intui-table tbody tr:last-child td { border-bottom: 0; }
 .msg.assistant .msg-body.is-declarative .intui-stream-dot {
   position: absolute;
   inset-inline-end: var(--ui-space-xs);
@@ -707,36 +740,6 @@
 }
 .intui-block-skeleton-line[data-width="title"] { width: 40%; height: 1rem; }
 
-/* Native field renderer, shared by direct physics nodes and OpenUI adapters. */
-.intui-physics {
-  display: grid;
-  gap: var(--ui-gap-3);
-  min-width: 0;
-  color: var(--ui-ink);
-}
-.intui-physics header p,
-.intui-physics-caption {
-  margin: 0;
-  color: var(--ui-ink-secondary);
-  font-size: var(--ui-type-body-sm-size);
-}
-.intui-physics canvas {
-  display: block;
-  width: 100%;
-  aspect-ratio: 2;
-  border-radius: var(--ui-round-lg);
-}
-.intui-physics svg { display: block; width: 100%; }
-.intui-physics-toolbar { display: flex; flex-wrap: wrap; gap: var(--ui-gap-2); }
-.intui-physics-parameter { display: grid; gap: var(--ui-gap-2); margin-block: var(--ui-gap-2); }
-.intui-physics-parameter input { width: 100%; min-width: 0; }
-.intui-physics-readout { font-variant-numeric: tabular-nums; }
-.intui-physics summary { cursor: pointer; color: var(--ui-ink-secondary); }
-.intui-physics summary:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); }
-.intui-physics-metrics { display: flex; flex-wrap: wrap; gap: var(--ui-gap-3); font-variant-numeric: tabular-nums; }
-.intui-physics-plot { margin: 0; min-width: 0; }
-.intui-physics-plot figcaption { color: var(--ui-ink-secondary); font-size: var(--ui-type-body-sm-size); }
-
 /* A quiet, inline scientific demonstration. Expressions own the content;
    the app owns type, spacing, controls, legends and theme contrast. */
 .demonstration {
@@ -791,10 +794,18 @@
 .demo-metrics dd > span { font-size: var(--ui-type-label-sm-size); font-weight: var(--ui-font-weight-regular); color: var(--ui-ink-secondary); }
 .demo-time { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--ui-gap-3); color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); font-variant-numeric: tabular-nums; }
 /* Older convenience scenes use the same compact control grammar. */
-.intui-physics.demonstration { gap: var(--ui-gap-3); }
-.intui-physics.demonstration header p { color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
-.intui-physics.demonstration .intui-physics-parameter { display: grid; grid-template-columns: minmax(76px, 1fr) minmax(100px, 3fr); align-items: center; gap: var(--ui-gap-3); margin-block: 0; min-height: var(--ui-control-md); font-size: var(--ui-type-label-sm-size); }
-.intui-physics.demonstration .intui-physics-caption { font-size: var(--ui-type-label-sm-size); }
 
 .demo-field { padding-inline: 7.3077% 2.3077%; }
 .demo-field canvas { aspect-ratio: auto; }
+
+/* An embedded visual belongs to the surface that holds it, and the card's
+   own shadcn toolbar joins the tool's style. The app shell owns the card's border
+   and background by id, so the rule that removes a second frame inside a
+   card has to reach that id too; a visual that is the whole surface keeps
+   its own frame. */
+:is(.intui, .intui-openui) [data-openui-visualization] .visualization-card { margin: 0; font-family: var(--font-sans); }
+#appShell :is(.intui, .intui-openui) [data-openui-visualization] .visualization-card { border: 0; box-shadow: none; background: transparent; }
+:is(.intui, .intui-openui) [data-openui-visualization] .visualization-header { padding: var(--ui-space-xs) 0; border-bottom: 0; }
+/* The shell's card header pads 14px in by id; inside an answer the chart
+   title and caption share the prose column's left edge instead. */
+#appShell :is(.intui, .intui-openui) [data-openui-visualization] :is(.visualization-header, .visualization-caption) { padding-inline: 0; }

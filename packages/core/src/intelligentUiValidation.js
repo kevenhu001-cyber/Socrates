@@ -1,7 +1,8 @@
+import { normalizeLearningUiNode, learningUiIssues } from './learningUi.js';
 import { validateDemonstration } from './demonstration.js';
 import { physicsParametersError } from './physicsModelRegistry.js';
 
-const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'physics', 'demonstration', 'openui'];
+const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'physics', 'demonstration', 'learning', 'visualization', 'openui'];
 
 /** Bound complexity and reject unsafe data before it is stored or rendered. */
 export function validateIntelligentUi(value) {
@@ -21,7 +22,7 @@ export function validateIntelligentUi(value) {
   };
   if (unsafe(spec.nodes)) return { ok: false, error: 'Unsafe or overly complex UI data', kind: 'document' };
   if (JSON.stringify(spec.nodes).length > 60000) return { ok: false, error: 'UI document too large', kind: 'document' };
-  const nodes = spec.nodes;
+  const nodes = spec.nodes.map(normalizeLearningUiNode);
   const ids = new Set();
   for (const node of nodes) {
     const id = node && typeof node === 'object' && typeof node.id === 'string' ? node.id.slice(0, 80) : '(missing)';
@@ -35,8 +36,20 @@ export function validateIntelligentUi(value) {
               : 'Invalid parent id';
       return { ok: false, error: `${reason}: "${id}"`, nodeId: id === '(missing)' ? null : id, kind: 'node' };
     }
+    if (node.type === 'visualization') {
+      if (typeof node.template !== 'string' || !node.template.trim() || node.template.length > 80) {
+        return { ok: false, error: `Visualization node "${id}" needs a string template`, nodeId: id, kind: 'visualization' };
+      }
+      if (!node.payload || typeof node.payload !== 'object' || Array.isArray(node.payload)) {
+        return { ok: false, error: `Visualization node "${id}" needs an object payload`, nodeId: id, kind: 'visualization' };
+      }
+    }
     if (node.type === 'openui' && (typeof node.source !== 'string' || !node.source.trim() || node.source.length > 50000)) {
       return { ok: false, error: `OpenUI node "${id}" needs 1–50000 characters of source`, nodeId: id, kind: 'openui' };
+    }
+    if (node.type === 'learning') {
+      const issues=learningUiIssues(node).map(issue=>({path:`nodes.${id}.${issue.path}`,message:issue.message}));
+      if(issues.length)return {ok:false,error:issues.map(issue=>`${issue.path}: ${issue.message}`).join('; '),nodeId:id,kind:'learning',issues};
     }
     if (node.type === 'demonstration') {
       const result = validateDemonstration(node.program);

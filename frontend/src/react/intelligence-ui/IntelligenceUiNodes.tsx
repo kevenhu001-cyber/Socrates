@@ -1,3 +1,5 @@
+import { LazyLearningNode } from './LazyLearningNode';
+import { NativeVisualization } from './NativeVisualization';
 import { Demonstration } from './demonstration/Demonstration';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { Switch as ShadcnSwitch } from '../ui/shadcn/switch';
@@ -10,7 +12,6 @@ import { Icon } from '../../ui/Icon';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { i18n } from '../legacy/gateway';
 import {
-  intelligenceUiChartDomain,
   isSafeIntelligenceUiStateKey,
   normalizeIntelligenceUiImageUrl,
   normalizeIntelligenceUiTone,
@@ -282,8 +283,8 @@ function UiTable({ node, context }: { node: IntelligenceUiNode; context: RenderC
     return { key: `col-${index}`, label: '' };
   });
   return (
-    <div className="intui-table-wrap" data-intui-id={node.id}>
-      <table className="intui-table">
+    <div className="ds-table-wrap intui-table-wrap" data-intui-id={node.id} role="region" tabIndex={0} aria-label={caption || 'Data table'}>
+      <table className="ds-table intui-table">
         <caption className={caption ? 'intui-table-caption' : 'sr-only'}>{caption || 'Table'}</caption>
         <thead>
           <tr>{normalizedColumns.map((column) => <th key={column.key} scope="col">{column.label}</th>)}</tr>
@@ -313,7 +314,7 @@ interface ChartPoint {
 function resolvedChartPoints(node: IntelligenceUiNode, context: RenderContext): ChartPoint[] {
   if (!Array.isArray(node.points)) return [];
   const points: ChartPoint[] = [];
-  for (const rawPoint of node.points.slice(0, 16)) {
+  for (const rawPoint of node.points.slice(0, 50)) {
     if (!isRecord(rawPoint)) continue;
     const value = asNumber(resolve(rawPoint.value, context), Number.NaN);
     if (!Number.isFinite(value)) continue;
@@ -325,99 +326,38 @@ function resolvedChartPoints(node: IntelligenceUiNode, context: RenderContext): 
   return points;
 }
 
-function chartTickLabel(value: number): string {
-  if (!Number.isFinite(value)) return '';
-  if (Math.abs(value) >= 1000) return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  if (Number.isInteger(value)) return String(value);
-  return value.toFixed(1);
-}
-
 function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const points = resolvedChartPoints(node, context);
   if (!points.length) return null;
   const title = asProse(resolve(node.title, context));
-  const kind = node.kind === 'line' ? 'line' : 'bar';
-  const [domainMin, domainMax] = intelligenceUiChartDomain(points.map((point) => point.value));
-  const range = Math.max(Number.EPSILON, domainMax - domainMin);
-  const width = 640;
-  const height = 220;
-  const padLeft = 34;
-  const padRight = 12;
-  const padTop = 16;
-  const padBottom = 30;
-  const plotWidth = width - padLeft - padRight;
-  const plotHeight = height - padTop - padBottom;
-  const xAt = (index: number) => padLeft + plotWidth * (index + 0.5) / points.length;
-  const yAt = (value: number) => padTop + (domainMax - value) / range * plotHeight;
-  const baseline = yAt(0);
-  const slotWidth = plotWidth / points.length;
-  const barWidth = Math.max(8, Math.min(48, slotWidth * 0.56));
-  const polyline = points.map((point, index) => `${xAt(index).toFixed(2)},${yAt(point.value).toFixed(2)}`).join(' ');
-  const ticks = [domainMin, domainMin + range / 2, domainMax];
-  const labelEvery = Math.max(1, Math.ceil(points.length / 8));
+  return <div className="intui-chart" data-intui-id={node.id}>
+    <NativeVisualization template={node.kind === 'line' ? 'line' : 'bar'} title={title}
+      streaming={context.streaming} accessibilitySummary={points.map((point) => `${point.label}: ${point.value}`).join('; ')}
+      payload={{ categories: points.map((point) => point.label), series: [{ name: title || 'Values', data: points.map((point) => point.value) }] }} />
+  </div>;
+}
 
+function UiVisualization({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
+  const title = asProse(resolve(node.title, context));
+  const caption = asProse(resolve(node.caption, context));
+  const template = typeof node.template === 'string' ? node.template : typeof node.kind === 'string' ? node.kind : 'bar';
+  const payload = isRecord(node.payload) ? node.payload : isRecord(node.data) ? node.data : {};
+  const accessibilitySummary = typeof node.accessibilitySummary === 'string'
+    ? node.accessibilitySummary
+    : typeof node.summary === 'string'
+      ? node.summary
+      : undefined;
   return (
-    <figure className="intui-chart" data-intui-id={node.id} data-kind={kind}>
-      {title ? <figcaption className="intui-chart-title">{title}</figcaption> : null}
-      <svg className="intui-chart-plot" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title || 'Chart'}>
-        {ticks.map((tick, index) => (
-          <g key={`${node.id}-grid-${index}`}>
-            {tick !== baseline ? <line className="intui-chart-grid" x1={padLeft} x2={width - padRight} y1={yAt(tick)} y2={yAt(tick)} /> : null}
-            <text className="intui-chart-tick" x={padLeft - 8} y={yAt(tick) + 4} textAnchor="end">{chartTickLabel(tick)}</text>
-          </g>
-        ))}
-        <line className="intui-chart-axis" x1={padLeft} x2={width - padRight} y1={baseline} y2={baseline} />
-        {kind === 'bar' ? points.map((point, index) => {
-          const y = yAt(point.value);
-          const rectY = Math.min(y, baseline);
-          const rectHeight = Math.max(1, Math.abs(baseline - y));
-          return (
-            <rect
-              key={`${node.id}-bar-${index}`}
-              className="intui-chart-bar"
-              x={xAt(index) - barWidth / 2}
-              y={rectY}
-              width={barWidth}
-              height={rectHeight}
-              rx={4}
-            >
-              <title>{asProse(`${point.label}: ${asText(point.value)}`)}</title>
-            </rect>
-          );
-        }) : (
-          <>
-            <polyline className="intui-chart-line" points={polyline} />
-            {points.map((point, index) => (
-              <circle
-                key={`${node.id}-point-${index}`}
-                className="intui-chart-point"
-                cx={xAt(index)}
-                cy={yAt(point.value)}
-                r={3}
-              >
-                <title>{asProse(`${point.label}: ${asText(point.value)}`)}</title>
-              </circle>
-            ))}
-          </>
-        )}
-        {points.map((point, index) => index % labelEvery === 0 ? (
-          <text className="intui-chart-tick" key={`${node.id}-label-${index}`} x={xAt(index)} y={height - 8} textAnchor="middle">
-            {point.label}
-          </text>
-        ) : null)}
-        {points.length <= 8 ? points.map((point, index) => (
-          <text
-            className="intui-chart-tick"
-            key={`${node.id}-amount-${index}`}
-            x={xAt(index)}
-            y={point.value >= 0 ? yAt(point.value) - 6 : yAt(point.value) + 14}
-            textAnchor="middle"
-          >
-            {asText(point.value)}
-          </text>
-        )) : null}
-      </svg>
-    </figure>
+    <div className="intui-chart" data-intui-id={node.id} data-template={template}>
+      <NativeVisualization
+        template={template}
+        title={title}
+        caption={caption}
+        payload={payload}
+        accessibilitySummary={accessibilitySummary}
+        streaming={context.streaming}
+      />
+    </div>
   );
 }
 
@@ -620,6 +560,8 @@ function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: 
 type UiNodeRenderer = (node: IntelligenceUiNode, context: RenderContext) => ReactNode;
 
 const nodeRenderers = new Map<string, UiNodeRenderer>([
+  ['learning', (node, context) => <LazyLearningNode node={node} readOnly={context.readOnly} streaming={context.streaming} />],
+  ['visualization', (node, context) => <UiVisualization node={node} context={context} />],
   ['demonstration', (node, context) => <Demonstration program={node.program} title={asProse(resolve(node.title, context))} streaming={context.streaming} />],
   ['physics', (node, context) => typeof node.scene === 'string' ? <PhysicsLab scene={node.scene} title={asProse(resolve(node.title, context))} parameters={isRecord(node.parameters) ? node.parameters : { separation: node.separation, wavelength: node.wavelength, aperture: node.aperture }} /> : null],
   ['openui', (node, context) => typeof node.source === 'string' ? <LazyOpenUiBlock source={node.source} readOnly={context.readOnly} open={context.streaming} embedded /> : null],

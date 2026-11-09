@@ -23,7 +23,7 @@ test('the program parameter is a real schema, so arrays keep their shape',()=>{
  assert.equal(program.properties.parameters.type,'array');
  assert.equal(program.properties.parameters.items.type,'object');
  assert.equal(program.properties.views.type,'array');
- assert.deepEqual(program.properties.views.items.properties.kind.enum,['controls','plot','field','trajectory','metrics']);
+ assert.deepEqual(program.properties.views.items.properties.kind.enum,['controls','plot','field','trajectory','scene','metrics']);
  assert.equal(program.properties.views.items.properties.curves.type,'array');
  assert.equal(program.properties.views.items.properties.values.type,'array');
  assert.equal(program.properties.dynamics.properties.initial.type,'object');
@@ -75,4 +75,17 @@ test('invalid model-authored algorithms produce actionable validation failures',
  assert.equal(result.ok,false);assert.match(result.error,/syntax/);
  const unknown=validateIntelligentUi({version:1,nodes:[{id:'bad',type:'demonstration',program:{...examples.grating,definitions:{bad:'unknownValue'}}}]});
  assert.equal(unknown.ok,false);assert.match(unknown.error,/Unknown variable/);
+});
+
+test('all new physics guidance uses the same program format and includes editable model composition', async()=>{
+ const {PHYSICS_EXAMPLES}=await import('../../packages/core/src/physicsExamples.js');
+ assert.match(DEMONSTRATION_GUIDANCE,/One format for new physics content/);
+ assert.match(DEMONSTRATION_GUIDANCE,/examples are editable starting points/);
+ assert.ok(DEMONSTRATION_GUIDANCE.includes(JSON.stringify(PHYSICS_EXAMPLES.coupledOscillators)));
+ assert.ok(DEMONSTRATION_GUIDANCE.includes(JSON.stringify(PHYSICS_EXAMPLES.chargedParticle)));
+ for(const [id,program] of Object.entries(PHYSICS_EXAMPLES))assert.equal(validateIntelligentUi({version:1,nodes:[{id,type:'demonstration',program}]}).ok,true,id);
+ const properties=INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties.program.properties;
+ assert.ok(properties.views.items.properties.objects.items.properties.kind.enum.includes('path'));
+ assert.equal(properties.views.items.properties.objects.items.properties.points.maxItems,64);
+ assert.ok(properties.presets.items.properties.values.additionalProperties.anyOf);
 });
