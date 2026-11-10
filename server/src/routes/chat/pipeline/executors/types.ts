@@ -13,6 +13,7 @@ import type { JsonSchemaNode } from '../../../../services/tools/toolCallSafety.j
 import type { SseEmitter } from '../sseEmitter.js';
 import type { ToolCall, ToolResult } from '../types.js';
 import type { connectorConnections, projectConnectorConnections } from '../../../../db/schema/index.js';
+import type { ConnectorActivation, ConnectorCatalog } from '../../../../services/integrations/connectorCatalog.js';
 
 type PersonalConnectorSnapshot = typeof connectorConnections.$inferSelect;
 type ProjectConnectorSnapshot = typeof projectConnectorConnections.$inferSelect;
@@ -29,6 +30,10 @@ export interface ToolExecutorContext {
   schemaForTool: (name: string) => JsonSchemaNode | null;
   connectorConnectionsByProvider: Record<string, PersonalConnectorSnapshot>;
   projectConnectorConnectionsByProvider: Record<string, ProjectConnectorSnapshot>;
+  /** Connected connector tools, used by search_connectors/get_connector_spec. */
+  connectorCatalog: ConnectorCatalog;
+  /** Per-turn set of connector tools whose spec the model has read. */
+  connectorActivation: ConnectorActivation;
 }
 
 /** Per-iteration info executors may need (e.g. the available tool list in feedback). */

@@ -66,7 +66,7 @@ test('visualization, plan and spec feedback covers success and correction paths'
     errorCode: 'visual_spec_invalid',
     retryable: false,
   });
-  assert.match(visualFailure, /Explain the issue concisely/);
+  assert.match(visualFailure, /do not repeat the validation error/);
 
   const plan = formatToolResultContent('create_plan', { status: 'completed', output: 'plan body' });
   assert.match(plan, /\[plan card rendered\]/);
@@ -147,6 +147,45 @@ test('workspace, search, fetch and connector failures explain the next action', 
   });
   assert.match(uncertainImageTask, /\[retryable: no\]/);
   assert.match(uncertainImageTask, /Do not submit it again automatically/);
+});
+
+test('failure feedback keeps error narration out of the answer body', () => {
+  const code = formatToolResultContent('code_interpreter', {
+    status: 'failed',
+    errorCode: 'execution_timeout',
+    retryable: false,
+    errorMessage: 'execution timed out',
+  });
+  assert.match(code, /tool card already shows it/);
+  assert.doesNotMatch(code, /explain the error to the user/i);
+
+  const workspace = formatToolResultContent('workspace_agent', {
+    status: 'failed',
+    runId: 'run-1',
+    errorCode: 'agent_failed',
+    error: 'runner stopped',
+  });
+  assert.match(workspace, /tool card already shows it/);
+  assert.doesNotMatch(workspace, /report the failure/i);
+
+  const connector = formatToolResultContent('arxiv_search', {
+    status: 'failed',
+    errorCode: 'provider_down',
+    retryable: true,
+    detail: 'unavailable',
+  });
+  assert.match(connector, /tool card already shows it/);
+  assert.doesNotMatch(connector, /Explain the error/i);
+
+  const generic = formatToolResultContent('some_tool', { status: 'failed', error: 'failed' });
+  assert.match(generic, /tool card already shows it/);
+
+  const withDetail = formatToolResultContent('read_attachment', {
+    status: 'failed',
+    error: 'invalid_file_id',
+    detail: 'Pass the fileId uuid exactly as shown in the [Attached file: …] pointer.',
+  });
+  assert.match(withDetail, /\[detail: Pass the fileId uuid exactly/);
 });
 
 test('generic correction and terminal results retain their original payload', () => {

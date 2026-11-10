@@ -28,7 +28,7 @@ import {
   repairToolArguments,
   validateToolArguments,
 } from '../src/services/tools/toolCallSafety.js';
-import { SELF_NORMALIZING_TOOLS } from '../src/services/tools/toolRegistry.js';
+import { toolArgumentPolicy } from '../src/services/tools/toolArgumentPolicy.js';
 import { VISUALIZATION_TOOL, executeVisualization, validateVisualizationSpec } from '../src/services/visualization.js';
 import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/core/planning.js';
 import { CREATE_SITE_TOOL } from '../src/services/siteCreation.js';
@@ -42,14 +42,21 @@ const PLAN_SCHEMA = PLAN_TOOL.function.parameters;
 
 /** What the pipeline does with one streamed argument string. */
 function prepareArguments(toolName, raw, schema) {
-  const selfNormalizing = SELF_NORMALIZING_TOOLS.has(toolName);
-  const repaired = repairToolArguments(raw, schema, { dropUnknown: !selfNormalizing, toolName });
+  const policy = toolArgumentPolicy(toolName);
+  const repaired = repairToolArguments(raw, schema, { dropUnknown: policy.dropUnknown, toolName });
   if (!repaired.ok) return { ok: false, code: repaired.error, args: null };
-  if (!selfNormalizing) {
-    const validation = validateToolArguments(repaired.value, schema);
-    if (!validation.ok) {
-      return { ok: false, code: TOOL_ARGUMENT_ERRORS.schema, args: repaired.value, fieldErrors: validation.fieldErrors };
-    }
+  const validation = policy.validation === 'schema'
+    ? validateToolArguments(repaired.value, schema)
+    : policy.validation === 'tool' && policy.validate
+      ? policy.validate(repaired.value)
+      : { ok: true, fieldErrors: [] };
+  if (!validation.ok) {
+    return {
+      ok: false,
+      code: validation.errorCode || TOOL_ARGUMENT_ERRORS.schema,
+      args: repaired.value,
+      fieldErrors: validation.fieldErrors,
+    };
   }
   return { ok: true, code: null, args: repaired.value, repairs: repaired.repairs };
 }
@@ -221,6 +228,34 @@ test('create_spec: snake_case aliases survive the pipeline', () => {
   assert.equal(result.status, 'completed');
   assert.deepEqual(result.spec.requirements, ['从会话菜单触发导出']);
   assert.deepEqual(result.spec.acceptanceCriteria, ['A4 页面下不裁切图表']);
+});
+
+test('create_plan and create_spec are rejected before execution with their own code', () => {
+  const plan = prepareArguments('create_plan', JSON.stringify({ steps: ['a'] }), PLAN_SCHEMA);
+  assert.equal(plan.ok, false);
+  assert.equal(plan.code, 'plan_spec_invalid');
+  assert.match(plan.fieldErrors.join('; '), /title/);
+
+  const spec = prepareArguments(
+    'create_spec',
+    JSON.stringify({ title: 'x', requirements: [] }),
+    SPEC_TOOL.function.parameters,
+  );
+  assert.equal(spec.ok, false);
+  assert.equal(spec.code, 'plan_spec_invalid');
+  assert.match(spec.fieldErrors.join('; '), /requirements/);
+});
+
+test('a tool-specific rejection keeps its own user message', () => {
+  const feedback = buildToolErrorFeedback({
+    toolName: 'create_spec',
+    schema: SPEC_TOOL.function.parameters,
+    errorCode: 'plan_spec_invalid',
+    fieldErrors: 'requirements: Too small',
+    retryable: true,
+    userMessageOverride: '规格结构有字段不符合要求。',
+  });
+  assert.equal(feedback.userMessage, '规格结构有字段不符合要求。');
 });
 
 test('tools without their own normalizer are still pre-validated', () => {

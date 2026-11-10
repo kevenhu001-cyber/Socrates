@@ -244,3 +244,88 @@ export function recordVisualizationValidation(record: VisualizationValidationRec
 export function visualizationValidationTally(): Record<string, number> {
   return Object.fromEntries(visualizationTally);
 }
+
+/* ── Tool call outcomes ────────────────────────────────────────────────
+   One counter for every tool call, including pre-execution rejections and
+   connector discovery. `stage` separates a rejected call from an executor
+   failure and from a completed call, so a dashboard can show both the
+   model's argument quality and the upstream failure rate. The label sets
+   are bounded by the registry's tool names and the error-code vocabulary. */
+const toolOutcomes = meter.createCounter('socrates.tool.outcome', {
+  description: 'Tool call outcomes by tool, outcome, error code, retryability and stage.',
+});
+const toolOutcomeTally = new Map<string, number>();
+
+export type ToolOutcome = 'completed' | 'failed' | 'cancelled';
+
+export interface ToolOutcomeRecord {
+  tool: string;
+  outcome: ToolOutcome;
+  errorCode?: string | null;
+  retryable?: boolean | null;
+  /** rejected | executed | threw | missing_executor | cancelled */
+  stage?: string;
+}
+
+export function recordToolOutcome(record: ToolOutcomeRecord): void {
+  /* A model can invent a tool name; keep the metric label bounded and
+     low-cardinality instead of turning every hallucination into a series. */
+  const tool = String(record.tool || 'unknown').replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 80) || 'unknown';
+  const errorCode = String(record.errorCode || 'none').slice(0, 80);
+  const retryable = record.retryable ? 'yes' : 'no';
+  const stage = record.stage || 'executed';
+  toolOutcomes.add(1, {
+    'socrates.tool': tool,
+    'socrates.tool.outcome': record.outcome,
+    'socrates.tool.error_code': errorCode,
+    'socrates.tool.retryable': retryable,
+    'socrates.tool.stage': stage,
+  });
+  const key = `${tool}|${record.outcome}|${errorCode}|${retryable}|${stage}`;
+  toolOutcomeTally.set(key, (toolOutcomeTally.get(key) || 0) + 1);
+}
+
+/** Process-local copy of the tool outcome counter
+ * (`tool|outcome|errorCode|retryable|stage` → count). */
+export function toolOutcomeTallySnapshot(): Record<string, number> {
+  return Object.fromEntries(toolOutcomeTally);
+}
+
+/* ── Connector discovery searches ──────────────────────────────────────
+   A separate counter for the retrieval step: hit/miss, match-count bucket,
+   and the top result's family/service. This is the signal for "is the
+   connector catalog finding the right app?" without parsing the model's
+   tool output. */
+const connectorSearches = meter.createCounter('socrates.connector.search', {
+  description: 'Connector discovery searches by hit/miss, match-count bucket and top result.',
+});
+const connectorSearchTally = new Map<string, number>();
+
+export interface ConnectorSearchRecord {
+  matches: number;
+  topFamily?: string | null;
+  topService?: string | null;
+}
+
+export function recordConnectorSearch(record: ConnectorSearchRecord): void {
+  const hit = record.matches > 0 ? 'yes' : 'no';
+  const bucket = record.matches === 0 ? '0'
+    : record.matches <= 2 ? '1-2'
+      : record.matches <= 5 ? '3-5' : '6+';
+  const topFamily = record.topFamily || 'none';
+  const topService = record.topService || 'none';
+  connectorSearches.add(1, {
+    'socrates.connector.hit': hit,
+    'socrates.connector.matches': bucket,
+    'socrates.connector.top_family': topFamily,
+    'socrates.connector.top_service': topService,
+  });
+  const key = `${hit}|${bucket}|${topFamily}|${topService}`;
+  connectorSearchTally.set(key, (connectorSearchTally.get(key) || 0) + 1);
+}
+
+/** Process-local copy of the connector search counter
+ * (`hit|bucket|topFamily|topService` → count). */
+export function connectorSearchTallySnapshot(): Record<string, number> {
+  return Object.fromEntries(connectorSearchTally);
+}

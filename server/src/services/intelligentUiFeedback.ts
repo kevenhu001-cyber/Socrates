@@ -124,6 +124,7 @@ export function intelligentUiFeedback(error: string, failure: IntelligentUiFailu
   if (failure.stage === 'openui_syntax' || failure.stage === 'openui_program') {
     lines.push('Write one statement per line as name = Component(...), define root = Col([...]) first, close every string, bracket and parenthesis, and pass Visualization arguments in order: template, title, payload, accessibilitySummary.');
   }
+  lines.push('Do not put this validation error, its field paths, or a "tool failed" line into your answer; the tool card already shows it. If you cannot render the visual, continue in prose and state the limitation in one plain sentence.');
   return {
     correction: lines.join('\n'),
     userMessage: userMessageFor(failure),

@@ -307,6 +307,13 @@ describe('appendFinalOutputConstraints', () => {
     assert.deepEqual(twice, once);
   });
 
+  test('keeps tool failures out of the answer body', () => {
+    const out = appendFinalOutputConstraints([{ role: 'system', content: 'base' }]);
+    assert.match(out[0].content, /Tool failures stay out of the answer body/);
+    assert.match(out[0].content, /tool card/);
+    assert.match(out[0].content, /Do NOT put tool error codes/);
+  });
+
   test('creates a system message when none exists', () => {
     const out = appendFinalOutputConstraints([{ role: 'user', content: 'hi' }]);
     assert.equal(out[0].role, 'system');
@@ -768,6 +775,17 @@ describe('appendToolRoutingHints', () => {
   test('stays absent when the agent tool is not callable', () => {
     const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['web_search']);
     assert.doesNotMatch(out[0].content, /Codex workspace agent/);
+  });
+
+  test('routes connected-app work through search_connectors and get_connector_spec', () => {
+    const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['search_connectors', 'get_connector_spec']);
+    assert.match(out[0].content, /Connected app connectors/);
+    assert.match(out[0].content, /call `search_connectors`/);
+    assert.match(out[0].content, /call `get_connector_spec`/);
+    assert.match(out[0].content, /Never guess a connector tool name/);
+
+    const without = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['web_search']);
+    assert.doesNotMatch(without[0].content, /Connected app connectors/);
   });
 });
 

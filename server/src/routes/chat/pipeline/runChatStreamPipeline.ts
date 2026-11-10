@@ -40,7 +40,7 @@ import {
   truncatedArgumentsHint,
   validateToolArguments,
 } from '../../../services/tools/toolCallSafety.js';
-import {SELF_NORMALIZING_TOOLS} from '../../../services/tools/toolRegistry.js';
+import {toolArgumentPolicy} from '../../../services/tools/toolArgumentPolicy.js';
 import {hashToolArguments} from '../../../services/tools/toolTurnPolicy.js';
 import {dispatchToolCalls} from '../../../services/tools/toolDispatch.js';
 import {
@@ -547,7 +547,11 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
    * ───────────────────────────────────────────────────────────── */
   const toolCtx = await toolCtxPromise;
   timing.mark('tools_ready');
-  const { toolPolicy, toolRegistry, toolDefs, toolNames, schemaForTool, toolExamples, FUZZY_SAFE, connectorConnectionsByProvider, projectConnectorConnectionsByProvider } = toolCtx;
+  const {
+    toolPolicy, toolRegistry, toolDefs, toolNames, initialToolNames, schemaForTool, toolExamples,
+    FUZZY_SAFE, connectorConnectionsByProvider, projectConnectorConnectionsByProvider,
+    connectorCatalog, connectorActivation,
+  } = toolCtx;
   const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
   const executionResults = new Map<string, import("./types.js").ToolResult>();
   const runToolCall = createToolRunner({
@@ -563,6 +567,8 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     onResult: (id, result) => executionResults.set(id, result),
     connectorConnectionsByProvider,
     projectConnectorConnectionsByProvider,
+    connectorCatalog,
+    connectorActivation,
   });
 
   /* Kept structurally loose to match the legacy `finalMessages` shape that
@@ -590,7 +596,12 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     /* Withdrawn tools are removed from both the request and the prompt,
      * so the model is never invited to call something the loop will
      * reject. Everything else stays available. */
-    const activeToolNames = toolsAllowed ? toolPolicy.enabledToolNames(toolNames).slice().sort() : [];
+    /* Connected connector tools are not offered until get_connector_spec
+       activates them. The activation set is per-turn and grows only after
+       the model has read that tool's exact schema. */
+    const activeToolNames = toolsAllowed
+      ? toolPolicy.enabledToolNames([...initialToolNames, ...connectorActivation.active()]).slice().sort()
+      : [];
     const activeToolDefs = toolsAllowed
       ? toolDefs.filter((tool) => activeToolNames.includes(
         (tool as { function?: { name?: string } }).function?.name || '',
@@ -858,15 +869,16 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       }
       const registryEntry = resolved.name ? toolRegistry.get(resolved.name) : null;
       const schema = resolved.name ? schemaForTool(resolved.name) : null;
-      /* Tools that normalize their own arguments keep every key they were
-         sent and skip the pipeline's schema pre-pass (see
-         SELF_NORMALIZING_TOOLS): their executor rescues mis-placed keys and
-         reports its own field errors. */
-      const selfNormalizing = !!resolved.name && SELF_NORMALIZING_TOOLS.has(resolved.name);
+      /* The policy declares, per tool, whether unknown keys survive repair
+         and which validator owns the pre-execution check. Tools with a
+         tolerant normalizer keep every key they were sent; tools with a
+         tool-specific validator run it here instead of the generic schema
+         pass. */
+      const argumentPolicy = toolArgumentPolicy(resolved.name);
       const repaired = repairToolArguments(
         call.function?.arguments,
         schema || undefined,
-        { dropUnknown: !selfNormalizing, toolName: resolved.name || undefined },
+        { dropUnknown: argumentPolicy.dropUnknown, toolName: resolved.name || undefined },
       );
       if (repaired.ok && repaired.repairs.length > 0) {
         /* Log the repair kinds only — never the argument values. */
@@ -892,6 +904,14 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           retryable: false,
           hint: `\`${resolved.name}\` was withdrawn for the rest of this turn (${toolPolicy.disabledReason(resolved.name)}).`,
         };
+      } else if (connectorCatalog.byTool.has(resolved.name) && !connectorActivation.has(resolved.name)) {
+        /* A guessed connector name is not enough: the model must read the
+           exact spec first, which also activates the tool for the next hop. */
+        rejection = {
+          code: 'tool_not_available',
+          retryable: true,
+          hint: `Connector tools are discovered first. Call search_connectors, then get_connector_spec for \`${resolved.name}\`, before calling it.`,
+        };
       } else if (!repaired.ok) {
         /* Distinct codes: an oversized payload needs a smaller call, a
            parse failure needs the arguments re-emitted as one JSON
@@ -908,16 +928,24 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       } else {
         /* Repair coerced the shape; now enforce the declared contract
          * (required fields, bounds, enums) so a malformed call gets the
-         * correction package instead of a wasted execution. Self-
-         * normalizing tools validate inside their executor instead. */
-        const validation = selfNormalizing
-          ? { ok: true, fieldErrors: [] as string[] }
-          : validateToolArguments(args, schema);
+         * correction package instead of a wasted execution. The policy
+         * decides whether the generic schema validator or a tool-specific
+         * validator owns this check; `none` means the executor validates. */
+        const validation: { ok: boolean; fieldErrors: string[]; errorCode?: string; userMessage?: string } =
+          argumentPolicy.validation === 'schema'
+            ? validateToolArguments(args, schema)
+            : argumentPolicy.validation === 'tool' && argumentPolicy.validate
+              ? argumentPolicy.validate(args)
+              : { ok: true, fieldErrors: [] };
         if (!validation.ok) {
+          const retryable = toolPolicy.remainingRetries(resolved.name) > 1;
           rejection = {
-            code: TOOL_ARGUMENT_ERRORS.schema,
-            retryable: toolPolicy.remainingRetries(resolved.name) > 1,
+            code: validation.errorCode || TOOL_ARGUMENT_ERRORS.schema,
+            retryable,
             fieldErrors: validation.fieldErrors.join('; '),
+            /* The tool-specific card copy describes a correction attempt, so
+               only use it while another attempt is actually allowed. */
+            ...(retryable && validation.userMessage ? { userMessage: validation.userMessage } : {}),
           };
         } else if (toolPolicy.isDuplicate(resolved.name, hashToolArguments(args))) {
           rejection = {

@@ -17,35 +17,9 @@ import {
 } from '../integrations/connectorTools.js';
 import {PROJECT_CONNECTOR_TOOL_NAMES, PROJECT_CONNECTOR_TOOLS} from '../integrations/projectConnectorTools.js';
 import {OPEN_CONNECTOR_CHAT_TOOLS} from '../integrations/openConnectorChatTools.js';
+import {GET_CONNECTOR_SPEC_TOOL, SEARCH_CONNECTORS_TOOL} from '../integrations/connectorDiscovery.js';
 import {INITIALIZE_WORKSPACE_TOOL, WORKSPACE_AGENT_TOOL} from './agentRuntime.js';
 import {PI_AGENT_ENABLED} from './piAgent.js';
-
-/**
- * Tools whose executor already owns a tolerant normalizer AND a strict
- * validator (zod, or the tool's own schema library) for its own arguments.
- *
- * For these the pipeline must NOT drop keys the JSON Schema does not
- * declare, and must NOT pre-validate against that schema: the executor's
- * normalizer exists to move a mis-placed key where it belongs (top-level
- * chart keys into `payload`, `items`/`tasks` into `steps`, a bare string
- * step into `{title}`), and every pre-pass that deleted or rejected those
- * shapes first turned a recoverable call into `missing required field`.
- * The executors return their own field-level errors
- * (`visual_spec_invalid` / `plan_spec_invalid` / demonstration feedback),
- * so nothing is lost.
- */
-export const SELF_NORMALIZING_TOOLS: ReadonlySet<string> = new Set([
-  'render_visualization',
-  /* The demonstration program is a free-form nested object with per-kind
-     requirements the pipeline schema pre-pass cannot validate. Its executor
-     owns the normalizer and the strict demonstration validator, so route
-     every rejection to the demonstration-aware correction instead of the
-     generated panel example. */
-  'render_intelligent_ui',
-  'create_plan',
-  'create_spec',
-]);
-
 
 /** The model-facing capability registry. Route-specific executors retain
  * their streaming/session semantics while availability is defined once.
@@ -58,11 +32,13 @@ export const SELF_NORMALIZING_TOOLS: ReadonlySet<string> = new Set([
  *   Only providers with a live row get their tool enabled.  arXiv is always
  *   enabled (public, no auth needed).
  */
-export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider, projectConnectorConnectionsByProvider }: {
+export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider, projectConnectorConnectionsByProvider, connectorDiscoveryEnabled }: {
   codeInterpreterToolDef?: unknown;
   mode?: string;
   connectorConnectionsByProvider?: Record<string, unknown>;
   projectConnectorConnectionsByProvider?: Record<string, unknown>;
+  /** Offer search_connectors/get_connector_spec when at least one connector is connected. */
+  connectorDiscoveryEnabled?: boolean;
 }) {
   /* Scheduling surface, consumed by dispatchToolCalls:
    * - pure: side-effect-free → eligible for fuzzy name recovery; tools
@@ -110,6 +86,14 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
     /* Sites the agent builds land in the same artifacts store the Sites
        page lists; publishing mints the /s/<token> share URL. */
     { name: 'create_site', modelDefinition: CREATE_SITE_TOOL, enabled: true, pure: false, sessionSerial: false },
+
+    /* Connected-app discovery. The model sees these two small tools instead
+       of every connected connector; get_connector_spec activates one tool
+       for the next hop. Pure because discovery has no external side effect;
+       sessionSerial keeps two discovery calls from racing the activation
+       set. */
+    { name: 'search_connectors', modelDefinition: SEARCH_CONNECTORS_TOOL, enabled: Boolean(connectorDiscoveryEnabled), pure: true, sessionSerial: 'connector-discovery' },
+    { name: 'get_connector_spec', modelDefinition: GET_CONNECTOR_SPEC_TOOL, enabled: Boolean(connectorDiscoveryEnabled), pure: true, sessionSerial: 'connector-discovery' },
 
     // ── Connector tools (gated on per-user connection) ──────
     { name: CONNECTOR_TOOL_NAMES.ARXIV,  modelDefinition: ARXIV_TOOL,    enabled: true, pure: true, sessionSerial: false },

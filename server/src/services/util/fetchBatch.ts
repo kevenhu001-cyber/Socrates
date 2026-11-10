@@ -589,6 +589,7 @@ export const WEB_FETCH_TOOL = {
       'Each page returns at most max_chars of extracted text starting at offset (defaults: 20000 and 0; in batch mode offset is unsupported and each page starts at 0). Start at offset 0; then use next_offset with the same single url to continue when has_more is yes. Ranges are zero-based with an exclusive end and total available characters are reported. If the cached page snapshot expires, restart from offset 0. The source is read up to 1 MB of raw text; source_truncated means content beyond that limit is unavailable, even when has_more is no. Summarize in natural prose; do not paste raw page text back to the user.',
     parameters: {
       type: 'object',
+      description: 'Provide exactly one of `url` or `urls`. `offset` and `max_chars` apply only to a single `url`; batch mode starts every page at offset 0.',
       properties: {
         url: {
           type: 'string',

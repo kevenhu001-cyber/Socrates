@@ -54,8 +54,10 @@ test('valid bearer credential returns process/request/SSE metrics identically vi
   const body = await response.json();
   const aliasBody = await aliasResponse.json();
   assert.deepEqual(Object.keys(body).sort(), [
-    'activeSseConnections', 'process', 'requests', 'uptimeSeconds',
+    'activeSseConnections', 'connectorSearches', 'process', 'requests', 'tools', 'uptimeSeconds',
   ]);
+  assert.equal(typeof body.tools, 'object');
+  assert.equal(typeof body.connectorSearches, 'object');
   assert.equal(typeof body.process.pid, 'number');
   assert.equal(typeof body.process.memory.heapUsedBytes, 'number');
   assert.equal(body.requests.avgResponseMs === null || typeof body.requests.avgResponseMs === 'number', true);

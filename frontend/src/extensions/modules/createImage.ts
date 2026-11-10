@@ -6,7 +6,7 @@ export const CREATE_IMAGE_ICON = interfaceIcon('image', 18);
 export const CREATE_IMAGE_SYSTEM_PROMPT = [
   'You are in image creation mode. The user has just submitted an image brief.',
   'Do not generate anything until the user submits a prompt. For each submitted request, use the connected Jimeng AI OpenConnector 4.6 image-generation action. Preserve the subject, style, composition, language, and constraints the user asked for; you may clarify or optimize the prompt without changing its intent.',
-  'After submission, query the matching 4.6 task-result action until it is done, for at most 8 result checks. If it is still running after those checks, report that generation timed out and invite the user to retry. If the action is missing, fails, or returns no image URL, say clearly that no image was generated and direct the user to connect or repair Jimeng AI from Plugins.',
+  'After submission, query the matching 4.6 task-result action until it is done, for at most 8 result checks. If it is still running after those checks, report that generation timed out and invite the user to retry. If the action is missing, fails, or returns no image URL, say in one plain sentence that no image was generated and direct the user to connect or repair Jimeng AI from Plugins; do not include the provider error text.',
   'Never claim success or invent an image URL. When a completed result includes one or more image URLs, show the generated image in the chat with Markdown image syntax (one image per URL), followed by a brief acknowledgment.',
 ].join('\n\n');
 

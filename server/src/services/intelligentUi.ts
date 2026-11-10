@@ -19,6 +19,7 @@ export const INTELLIGENT_UI_TOOL = {
         version: { type: 'integer', enum: [1] },
         nodes: {
           type: 'array', minItems: 1, maxItems: 80,
+          description: 'Keep the whole serialized nodes array under 60000 characters; a single openui source counts toward that cap.',
           items: {
             type: 'object', required: ['id', 'type'],
             description: 'A learning node requires kind and content fields; a visualization node requires template and payload; a demonstration node requires program; a physics node requires scene; an openui node requires source.',
@@ -40,13 +41,13 @@ export const INTELLIGENT_UI_TOOL = {
               term: { type: 'string', maxLength: 400 }, body: { type: 'string', maxLength: 8000 },
               front: { type: 'string', maxLength: 8000 }, back: { type: 'string', maxLength: 8000 },
               statement: { type: 'string', maxLength: 8000 }, n: { type: 'integer', minimum: 1, maximum: 100 },
-              program: { ...DEMONSTRATION_PROGRAM_SCHEMA, description: 'Required for demonstration nodes, omitted for other node types. ' + DEMONSTRATION_GUIDANCE },
+              program: { ...DEMONSTRATION_PROGRAM_SCHEMA, description: 'Required for demonstration nodes, omitted for other node types. Keep the program under 40000 characters. ' + DEMONSTRATION_GUIDANCE },
               scene: { type: 'string', enum: PHYSICS_MODELS.map(model => model.id), description: 'Required for physics nodes. Select the matching reviewed physical model.' },
               parameters: { type: 'object', additionalProperties: { type: 'number' }, description: 'Physics nodes only. Native physics model parameters; omitted fields use defaults. For demonstration nodes put parameters inside program.parameters. Exact units and bounds by scene: ' + JSON.stringify(PHYSICS_MODELS.map(model => ({ scene: model.id, assumptions: model.assumption, parameters: model.parameters }))) },
               separation: { type: 'number', minimum: .2, maximum: 3, description: 'Initial angular separation in reference Airy radii (550 nm / 100 mm). Default 2.4.' },
               wavelength: { type: 'number', minimum: 380, maximum: 750, description: 'Wavelength in nm, default 550.' },
               aperture: { type: 'number', minimum: 10, maximum: 300, description: 'Circular aperture diameter in mm, default 100.' },
-              source: { type: 'string', maxLength: 50000, description: 'Required for openui nodes. ' + OPENUI_TOOL_GUIDANCE + '\nSupported Visualization templates and exact payload contracts:\n' + visualizationTemplateGuide() },
+              source: { type: 'string', maxLength: 50000, description: 'Required for openui nodes. ' + OPENUI_TOOL_GUIDANCE + '\nFor a Visualization component, the supported templates and exact payload contracts are in the `template` and `payload` parameter descriptions above.' },
               title: { description: 'Plain text or local value expression.' },
               description: { description: 'Plain text or local value expression.' },
               text: { description: 'Text node or callout content, plain text or expression.' },

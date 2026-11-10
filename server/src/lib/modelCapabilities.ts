@@ -770,6 +770,8 @@ export interface ContextBudgetOptions {
   overrideTokens?: number | undefined;
   /** Tokens reserved for the model's reply. */
   reserveTokens?: number | undefined;
+  /** Tokens occupied by the tool definitions sent with the request. */
+  toolSchemaTokens?: number | undefined;
 }
 
 export interface ContextBudget {
@@ -779,6 +781,9 @@ export interface ContextBudget {
   source: 'override' | 'model-window' | 'fallback';
   /** The model's declared window, when there is one. */
   contextWindow?: number;
+  /** True when the declared input window cannot fit the reply reserve,
+   * safety margin, and tool schemas even before any conversation. */
+  fixedOverflow?: boolean;
 }
 
 /**
@@ -798,6 +803,9 @@ export function resolveContextBudget(model: string, opts: ContextBudgetOptions =
     return { budget: Math.floor(override), source: 'override', contextWindow: capability.contextWindow };
   }
   const reserve = Number.isFinite(Number(opts.reserveTokens)) ? Math.max(0, Number(opts.reserveTokens)) : 0;
+  const toolReserve = Number.isFinite(Number(opts.toolSchemaTokens))
+    ? Math.max(0, Number(opts.toolSchemaTokens))
+    : 0;
   /* The basis is the number of tokens the model accepts as INPUT. A context
    * window is shared between input and output, so a total window is not the
    * input limit — using it as one is exactly how a request ends up larger
@@ -809,10 +817,25 @@ export function resolveContextBudget(model: string, opts: ContextBudgetOptions =
         : capability.contextWindow)
       : undefined);
   if (inputLimit !== undefined) {
-    const usable = inputLimit - reserve - CONTEXT_SAFETY_MARGIN_TOKENS;
+    const usable = inputLimit - reserve - CONTEXT_SAFETY_MARGIN_TOKENS - toolReserve;
     if (usable > 0) {
       return { budget: Math.floor(usable), source: 'model-window', contextWindow: capability.contextWindow };
     }
+    /* The fixed overhead alone exceeds the declared input window. Falling
+     * back to the 100 K unknown-model floor here would guarantee a provider
+     * context-length 400, which the compatibility chain treats as terminal.
+     * Return the smallest positive budget so the compressor keeps the
+     * conversation minimal, and mark the overflow for the caller to log. */
+    return {
+      budget: 1,
+      source: 'model-window',
+      contextWindow: capability.contextWindow,
+      fixedOverflow: true,
+    };
   }
-  return { budget: DEFAULT_CONTEXT_BUDGET_TOKENS, source: 'fallback', contextWindow: capability.contextWindow };
+  return {
+    budget: Math.max(1, DEFAULT_CONTEXT_BUDGET_TOKENS - toolReserve),
+    source: 'fallback',
+    contextWindow: capability.contextWindow,
+  };
 }

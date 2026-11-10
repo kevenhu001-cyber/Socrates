@@ -229,6 +229,26 @@ test('the conversation budget follows the model window instead of one global con
   assert.equal(overridden.budget, 12_345);
 });
 
+test('tool schemas are subtracted from the conversation budget', () => {
+  const withoutTools = resolveContextBudget('gpt-4o', { reserveTokens: 16384 });
+  const withTools = resolveContextBudget('gpt-4o', { reserveTokens: 16384, toolSchemaTokens: 25_000 });
+  assert.equal(withTools.source, 'model-window');
+  assert.equal(withTools.budget, withoutTools.budget - 25_000);
+
+  /* The fixed overhead alone exceeds the declared input window. The budget
+     must not fall back to the 100 K unknown-model floor, which would
+     guarantee a provider context-length 400. */
+  const overflow = resolveContextBudget('gpt-4o', { reserveTokens: 16384, toolSchemaTokens: 200_000 });
+  assert.equal(overflow.source, 'model-window');
+  assert.equal(overflow.budget, 1);
+  assert.equal(overflow.fixedOverflow, true);
+
+  /* Unknown models keep the fallback floor, minus the tool schemas. */
+  const fallback = resolveContextBudget('custom-model', { toolSchemaTokens: 25_000 });
+  assert.equal(fallback.source, 'fallback');
+  assert.equal(fallback.budget, DEFAULT_CONTEXT_BUDGET_TOKENS - 25_000);
+});
+
 test('a provider that rejects temperature while reasoning gets none', async () => {
   /* The GPT-6 family documents: "when reasoning effort is not `none`, remove
      temperature, top_p, and top_logprobs". */

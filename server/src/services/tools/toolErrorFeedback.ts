@@ -39,6 +39,8 @@ export interface ToolErrorFeedbackInput {
   hint?: string | null;
   /** Tool-specific complete example when one generic example would mislead. */
   exampleOverride?: Record<string, unknown> | null;
+  /** Tool-specific card message, e.g. the plan/spec validator's copy. */
+  userMessageOverride?: string | null;
 }
 
 export interface ToolErrorFeedback {
@@ -57,6 +59,19 @@ const CANONICAL_EXAMPLES: Record<string, Record<string, unknown>> = {
   web_fetch: { url: 'https://example.com/article' },
   code_interpreter: { language: 'python', code: 'import pandas as pd\nprint(pd.__version__)' },
   workspace_agent: { task: 'Read server/src/app.ts and list the registered routes.' },
+  initialize_workspace: { max_memory_mb: 512, max_disk_mb: 1024, reset: false },
+  create_site: {
+    title: 'Course notes',
+    source: '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Course notes</title></head><body><h1>Course notes</h1></body></html>',
+    visibility: 'unlisted',
+  },
+  patch_intelligent_ui: {
+    surfaceId: 'call_abc123',
+    revision: 0,
+    operations: [{ op: 'add', node: { id: 'note', type: 'text', text: 'Updated note' } }],
+  },
+  read_attachment: { fileId: '00000000-0000-4000-8000-000000000000', offset: 0, limit: 12000 },
+  cite_sources: { claims: [{ quote: 'Exact sentence from the answer.', sourceIds: ['source-1'] }] },
   create_plan: {
     title: '两周复习计划',
     goal: '在两周内完成微积分期中复习',
@@ -151,16 +166,50 @@ export function canonicalToolExampleJson(
   }
 }
 
+/** A number inside the schema's declared bounds, so the example is valid. */
+function boundedNumber(schema: JsonSchemaNode): number {
+  const min = typeof schema.minimum === 'number' ? schema.minimum : null;
+  const max = typeof schema.maximum === 'number' ? schema.maximum : null;
+  if (min !== null && max !== null) return min <= max ? min : max;
+  if (min !== null) return min;
+  if (max !== null && max < 1) return max;
+  return 1;
+}
+
+/** An integer inside the schema's declared bounds. */
+function boundedInteger(schema: JsonSchemaNode): number {
+  const min = typeof schema.minimum === 'number' ? Math.ceil(schema.minimum) : null;
+  const max = typeof schema.maximum === 'number' ? Math.floor(schema.maximum) : null;
+  if (min !== null && max !== null) return min <= max ? min : max;
+  if (min !== null) return min;
+  if (max !== null && max < 1) return max;
+  return 1;
+}
+
+/** A placeholder that respects `minLength` / `maxLength`. */
+function placeholderString(key: string, schema: JsonSchemaNode): string {
+  const min = typeof schema.minLength === 'number' ? Math.max(0, schema.minLength) : 0;
+  const max = typeof schema.maxLength === 'number' ? Math.max(0, schema.maxLength) : null;
+  let value = `<${key}>`;
+  if (max !== null && value.length > max) value = 'x'.repeat(max);
+  if (value.length < min) value = value.padEnd(min, 'x');
+  return value;
+}
+
 function exampleValueFor(key: string, schema: JsonSchemaNode, depth: number): unknown {
   if (depth > 3) return 'value';
   if (Array.isArray(schema.enum) && schema.enum.length) return schema.enum[0];
   const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
   switch (type) {
-    case 'string': return `<${key}>`;
-    case 'number': return 1;
-    case 'integer': return 1;
+    case 'string': return placeholderString(key, schema);
+    case 'number': return boundedNumber(schema);
+    case 'integer': return boundedInteger(schema);
     case 'boolean': return true;
-    case 'array': return [exampleValueFor(key, schema.items || { type: 'string' }, depth + 1)];
+    case 'array': {
+      const item = exampleValueFor(key, schema.items || { type: 'string' }, depth + 1);
+      const minItems = typeof schema.minItems === 'number' ? Math.max(1, Math.min(3, schema.minItems)) : 1;
+      return Array.from({ length: minItems }, () => item);
+    }
     case 'object': {
       const nested: Record<string, unknown> = {};
       const properties = schema.properties || {};
@@ -171,7 +220,7 @@ function exampleValueFor(key: string, schema: JsonSchemaNode, depth: number): un
       }
       return nested;
     }
-    default: return `<${key}>`;
+    default: return placeholderString(key, schema);
   }
 }
 
@@ -275,13 +324,15 @@ export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolError
 
   lines.push('', retryable
     ? 'Send one corrected call with materially different arguments, or continue in prose if the tool is not needed.'
-    : 'Do not repeat this call. Explain the situation to the user in prose instead.');
+    : 'Do not repeat this call. Continue in prose instead.');
+  lines.push('Do not repeat this error text in your answer; the tool card already shows it.');
 
   const detailParts = [fieldErrors, example ? `example: ${example}` : ''].filter(Boolean);
   return {
     modelMessage: lines.join('\n'),
     detail: detailParts.join(' | ').slice(0, MAX_DETAIL_CHARS) || errorCode,
-    userMessage: USER_MESSAGES[errorCode]
+    userMessage: input.userMessageOverride
+      || USER_MESSAGES[errorCode]
       || (retryable ? '工具调用被拒绝，已请模型按正确格式重试。' : '工具调用被拒绝，本轮不再重试。'),
   };
 }

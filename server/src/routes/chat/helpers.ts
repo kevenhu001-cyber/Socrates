@@ -28,7 +28,7 @@ import type {NextFunction, Request, Response} from 'express';
 import {getActiveApiKey} from '../../services/core/apiKey.js';
 import {validateThinkingMode} from '../../services/core/llmProtocol.js';
 import {DEFAULT_MAX_TOKENS} from '../../services/core/llm.js';
-import {estimateContextMessageTokens} from '../../services/core/usageTracker.js';
+import {estimateContextMessageTokens, estimateTokens} from '../../services/core/usageTracker.js';
 import {MAX_VISUALIZATION_POINTS} from '../../services/visualization.js';
 /* P_teacher-mode-cache — the teacher-mode system prompt lives on
    disk and rarely changes. The canonical loader is in
@@ -432,11 +432,15 @@ When \`web_search\` is supplied, call it for real-time information, current fact
 const WEB_FETCH_ROUTING_HINT = `## Web fetch
 When \`web_fetch\` is supplied, call it to read the content of specific URLs discovered via search or provided by the user. Pass \`url\` (a single http/https URL string) or \`urls\` (an array of up to 4 URLs).`;
 
+const CONNECTOR_DISCOVERY_ROUTING_HINT = `## Connected app connectors
+When the request needs data or actions from a connected app (email, calendar, GitHub, Notion, Zotero, Todoist, and similar), call \`search_connectors\` with a short English query. Then call \`get_connector_spec\` with the exact tool name to read its arguments; that tool becomes callable on the next step. Never guess a connector tool name or call one before reading its spec. If no match appears, use the connected services list in the result to refine the query.`;
+
 export function appendToolRoutingHints<T extends { role: string; content?: unknown }>(messages: T[], toolNames: string[]): T[] {
   const nameSet = new Set(toolNames.filter((name): name is string => typeof name === 'string'));
   const blocks: string[] = [];
   if (nameSet.has('web_search')) blocks.push(WEB_SEARCH_ROUTING_HINT);
   if (nameSet.has('web_fetch')) blocks.push(WEB_FETCH_ROUTING_HINT);
+  if (nameSet.has('search_connectors')) blocks.push(CONNECTOR_DISCOVERY_ROUTING_HINT);
   if (nameSet.has('render_intelligent_ui')) blocks.push(INTELLIGENT_UI_VISUALIZATION_HINT);
   if (nameSet.has('create_plan') || nameSet.has('create_spec')) {
     const paragraphs = PLANNING_ROUTING_HINT.split('\n');
@@ -906,10 +910,27 @@ export async function buildLearningModeTurn(
     + (focusText ? `\n\n<client_context_data scope="untrusted">\nLearning focus: ${focusText}\n</client_context_data>` : '');
 }
 
+/** Conservative token estimate for the tool definitions sent beside the
+ * messages. They are not part of `finalMessages`, so the context budget must
+ * subtract them explicitly; otherwise a small-window model can overflow
+ * before the first conversation token is counted. */
+function estimateToolSchemaTokens(toolDefs: unknown): number {
+  if (!Array.isArray(toolDefs) || toolDefs.length === 0) return 0;
+  try {
+    return estimateTokens(JSON.stringify(toolDefs));
+  } catch {
+    return 0;
+  }
+}
+
 export async function prepareChatRequest(
   req: Request,
   res: Response,
-  options: { signal?: AbortSignal } = {},
+  options: {
+    signal?: AbortSignal;
+    /** Resolved tool context for this turn, used to budget the tool schemas. */
+    toolCtxPromise?: Promise<{ toolDefs?: Array<{ function?: { name?: string; parameters?: unknown } }> }> | null;
+  } = {},
 ): Promise<
   {
     ok: true;
@@ -986,10 +1007,31 @@ export async function prepareChatRequest(
        request with a context-length 400 — a failure the compatibility chain
        treats as terminal. */
     const budgetProvider = await providerPromise.catch(() => null);
+    const toolSchemaTokens = options.toolCtxPromise
+      ? await options.toolCtxPromise
+        .then((ctx) => estimateToolSchemaTokens(ctx?.toolDefs))
+        .catch(() => 0)
+      : 0;
     const budget = resolveContextBudget(budgetProvider?.model ?? '', {
       overrideTokens: Number(process.env.CHAT_CONTEXT_MAX_TOKENS),
       reserveTokens: max_tokens ?? DEFAULT_MAX_TOKENS,
+      toolSchemaTokens,
     });
+    if (budget.fixedOverflow || (toolSchemaTokens > 0 && budget.budget <= 1)) {
+      /* The tool schemas plus the reply reserve cannot fit the declared
+       * input window (or the unknown-model fallback floor). Compression
+       * cannot fix this; surface it so the operator can add the model to
+       * the registry, lower the tool surface, or set
+       * CHAT_CONTEXT_MAX_TOKENS. */
+      console.warn('[chat/prepare] fixed prompt and tool schemas exceed the model input window', JSON.stringify({
+        model: budgetProvider?.model ?? '',
+        contextWindow: budget.contextWindow,
+        budget: budget.budget,
+        source: budget.source,
+        toolSchemaTokens,
+        reserveTokens: max_tokens ?? DEFAULT_MAX_TOKENS,
+      }));
+    }
     if (estimateContextMessageTokens(finalMessages) > budget.budget) {
       const { compressSessionMessages } = await import('../../services/embeddings/sessionCompressor.js');
       const rawKeep = Number(process.env.CHAT_CONTEXT_KEEP_TURNS);

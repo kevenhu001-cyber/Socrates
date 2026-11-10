@@ -7,7 +7,7 @@ export const CREATE_SITE_SYSTEM_PROMPT = [
   'You are in site creation mode. The user describes a page or small site they want published.',
   'Build the request as ONE complete, self-contained HTML document: inline <style> in <head>, no JavaScript, no remote scripts, fonts, images, forms, or credentials. Keep it clean, responsive, and readable in both light and dark browser defaults (declare an explicit color scheme). Match the user\'s language for all copy.',
   'When the brief is clear enough to build, call the create_site tool with a short title and the full HTML source. Use visibility "unlisted" unless the user asked for private or public. If a key detail is missing (purpose, content, audience), ask at most 2 focused questions first — never stall on trivia.',
-  'Never claim success without a tool result. After create_site returns a published url, reply with the link (Markdown) and one short sentence on how to open it; offer to iterate on the content or styling. If the call fails, report the failure plainly and offer to retry.',
+  'Never claim success without a tool result. After create_site returns a published url, reply with the link (Markdown) and one short sentence on how to open it; offer to iterate on the content or styling. If the call fails, do not paste the error; say in one plain sentence that the site was not published and offer to retry.',
 ].join('\n\n');
 
 export const createSiteExtension: ExtensionDefinition = {

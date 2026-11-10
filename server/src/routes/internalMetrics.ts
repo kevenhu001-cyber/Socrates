@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { getRequestMetrics } from '../services/util/statusMonitor.js';
+import { connectorSearchTallySnapshot, toolOutcomeTallySnapshot } from '../lib/telemetry.js';
 
 const router = Router();
 
@@ -38,6 +39,8 @@ router.get('/', (req, res) => {
       },
     },
     requests: getRequestMetrics(),
+    tools: toolOutcomeTallySnapshot(),
+    connectorSearches: connectorSearchTallySnapshot(),
     activeSseConnections: Number.isFinite(req.app.locals.sseCount)
       ? Math.max(0, req.app.locals.sseCount)
       : 0,

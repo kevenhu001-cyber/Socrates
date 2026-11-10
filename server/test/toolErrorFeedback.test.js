@@ -52,6 +52,47 @@ test('canonical examples satisfy their own schemas without repair', () => {
     ['create_plan', PLAN_TOOL.function.parameters],
     ['create_spec', SPEC_TOOL.function.parameters],
     ['render_visualization', VISUALIZATION_TOOL.function.parameters],
+    ['initialize_workspace', {
+      type: 'object',
+      properties: {
+        max_memory_mb: { type: 'integer', minimum: 64, maximum: 4096 },
+        max_disk_mb: { type: 'integer', minimum: 16, maximum: 8192 },
+        reset: { type: 'boolean' },
+      },
+      additionalProperties: false,
+    }],
+    ['create_site', {
+      type: 'object',
+      required: ['title', 'source'],
+      properties: {
+        title: { type: 'string', minLength: 1, maxLength: 120 },
+        source: { type: 'string', minLength: 15 },
+        visibility: { type: 'string', enum: ['private', 'unlisted', 'public'] },
+      },
+      additionalProperties: false,
+    }],
+    ['patch_intelligent_ui', {
+      type: 'object',
+      required: ['surfaceId', 'revision', 'operations'],
+      properties: {
+        surfaceId: { type: 'string', minLength: 1 },
+        revision: { type: 'integer', minimum: 0 },
+        operations: { type: 'array', minItems: 1, items: { type: 'object', required: ['op'], properties: { op: { type: 'string', enum: ['add', 'patch', 'remove'] }, node: { type: 'object' } } } },
+      },
+      additionalProperties: false,
+    }],
+    ['read_attachment', {
+      type: 'object',
+      required: ['fileId'],
+      properties: { fileId: { type: 'string' }, offset: { type: 'number', minimum: 0 }, limit: { type: 'number', minimum: 1, maximum: 30000 } },
+      additionalProperties: false,
+    }],
+    ['cite_sources', {
+      type: 'object',
+      required: ['claims'],
+      properties: { claims: { type: 'array', minItems: 1, items: { type: 'object', required: ['quote', 'sourceIds'], properties: { quote: { type: 'string' }, sourceIds: { type: 'array', minItems: 1, items: { type: 'string' } } } } } },
+      additionalProperties: false,
+    }],
   ];
   for (const [name, schema] of cases) {
     const json = canonicalToolExampleJson(name, schema);
@@ -60,6 +101,20 @@ test('canonical examples satisfy their own schemas without repair', () => {
     assert.equal(repaired.ok, true, `${name} example must parse`);
     assert.deepEqual(repaired.repairs, [], `${name} example must need no repair`);
   }
+});
+
+test('generated examples respect numeric, string and array bounds', () => {
+  const example = canonicalToolExample('bounded_tool', {
+    type: 'object',
+    required: ['memory', 'disk', 'language', 'tags'],
+    properties: {
+      memory: { type: 'integer', minimum: 64, maximum: 4096 },
+      disk: { type: 'integer', minimum: 16, maximum: 8192 },
+      language: { type: 'string', minLength: 2, maxLength: 2 },
+      tags: { type: 'array', minItems: 2, items: { type: 'string' } },
+    },
+  });
+  assert.deepEqual(example, { memory: 64, disk: 16, language: 'xx', tags: ['<tags>', '<tags>'] });
 });
 
 test('canonicalToolExample falls back to a schema-derived skeleton', () => {
@@ -109,6 +164,7 @@ test('buildToolErrorFeedback embeds field errors, schema and a copyable example'
   assert.match(feedback.modelMessage, /"query":"Python 3\.13 release date"/);
   assert.match(feedback.modelMessage, /no `input`\/`arguments` wrapper/);
   assert.match(feedback.modelMessage, /Send one corrected call/);
+  assert.match(feedback.modelMessage, /tool card already shows it/);
   assert.match(feedback.detail, /example: \{"query"/);
   assert.match(feedback.userMessage, /正确格式示例/);
 });
@@ -123,6 +179,7 @@ test('buildToolErrorFeedback tells the model to stop when retries are exhausted'
   });
   assert.match(feedback.modelMessage, /Do not repeat this call/);
   assert.doesNotMatch(feedback.modelMessage, /Send one corrected call/);
+  assert.match(feedback.modelMessage, /tool card already shows it/);
 });
 
 test('tool correction feedback can replace a generic example with the rejected visualization template', () => {

@@ -164,7 +164,12 @@ test('the generated OpenUI guidance states the Visualization argument shape', ()
 test('the tool supplies every visualization contract before the first attempt', async () => {
   const { INTELLIGENT_UI_TOOL } = await import('../src/services/intelligentUi.js');
   const { VISUALIZATION_TEMPLATE_CONTRACTS } = await import('../src/services/visualization.js');
-  const guidance = INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties.source.description;
+  const properties = INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties;
+  const guidance = properties.template.description;
+  /* The template guide is owned by the `template` property only. The
+     `source` property points at it instead of repeating the same ~10 KB,
+     which keeps the tool schema smaller without hiding the contract. */
+  assert.match(properties.source.description, /template` and `payload` parameter descriptions/);
   for (const [template, contract] of Object.entries(VISUALIZATION_TEMPLATE_CONTRACTS)) {
     assert.ok(guidance.includes(contract.guidance), template);
     const source = `root = Col([Visualization(${JSON.stringify(template)}, "Example", ${JSON.stringify(contract.payload)}, "Summary")])`;
@@ -177,7 +182,7 @@ test('the prompt envelope example is valid JSON and an executable OpenUI program
   const example = OPENUI_TOOL_GUIDANCE.match(/Return tool arguments as (.*?)\. The source/)[1];
   assert.equal(validateIntelligentUi(JSON.parse(example)).ok, true);
   assert.match(OPENUI_TOOL_GUIDANCE, /50000 characters/);
-  assert.match(SERVER_SYSTEM_POLICY, /never claim a failed tool succeeded/);
+  assert.match(SERVER_SYSTEM_POLICY, /Never claim a failed tool succeeded/);
 });
 
 test('XML-style demonstration payloads are normalized into a valid program', () => {

@@ -34,7 +34,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       lines.push(`[retryable: ${retryable ? 'yes' : 'no'}]`);
       lines.push(`[error: ${result.errorMessage || result.error || result.status}]`);
       if (!retryable) {
-        lines.push('This call is not retryable. STOP retrying this exact code — explain the error to the user and propose a corrected approach in prose instead of executing again.');
+        lines.push('This call is not retryable. STOP retrying this exact code. Do not repeat the error text in your answer; the tool card already shows it. Continue with a corrected approach in prose, or state the limitation in one plain sentence.');
       }
       // P_exec-remediation-preamble — the structured header
       // tells the model WHAT failed; this preamble tells it
@@ -59,6 +59,8 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       lines.push('- `ModuleNotFoundError` → use `import micropip; micropip.install("pkg")` at the top. NEVER use `pip install` or `subprocess` (the runner is WASM, no shell, no network).');
       lines.push('- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.');
       lines.push('- Empty PNG / "figure not found" → forgot `plt.close()` from the previous run. Add `plt.close("all")` at the top of this run.');
+      lines.push('');
+      lines.push('Do not repeat this error text in your answer; the tool card already shows it.');
     }
     lines.push('--- stdout ---');
     lines.push(result.stdout || '(empty)');
@@ -78,7 +80,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     if (result.status === 'completed' && result.visualization) {
       return `[status: completed]\n[visualization: ${result.visualization.template}]\n[title: ${result.visualization.title}]\nThe visual card is now rendered in the conversation. Refer to it briefly in prose and do not output a legacy viz/html/plot fence.`;
     }
-    return `${result.correction || `[error] ${result.errorCode || 'visual_spec_invalid'}`}\n${retryable ? 'Do not fall back to Python or a legacy fenced visualization.' : 'Explain the issue concisely without using Python or a legacy fenced visualization.'}`;
+    return `${result.correction || `[error] ${result.errorCode || 'visual_spec_invalid'}`}\n${retryable ? 'Do not fall back to Python or a legacy fenced visualization.' : 'Continue in prose without using Python or a legacy fenced visualization; do not repeat the validation error in your answer.'}`;
   }
 
   if (toolName === 'create_plan' || toolName === 'create_spec') {
@@ -87,13 +89,13 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       return `[status: completed]\n[${kind} card rendered]\n${result.output || ''}\nThe ${kind} card is now shown in the conversation. Refer to it briefly in prose; do not paste the whole ${kind} again. Reply in the user's language.`;
     }
     return result.correction
-      || `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]`;
+      || `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\nDo not repeat these field errors in your answer; the tool card already shows them.`;
   }
 
   if (toolName === 'workspace_agent') {
     return result.status === 'completed'
       ? `[status: completed]\n[run_id: ${result.runId || 'unknown'}]\n[workspace_id: ${result.workspaceId || 'unknown'}]\n${result.output || result.stdout || '(no output)'}\nThe workspace run is rendered inline. Summarize the concrete changes, tests, and artifacts in the user's language.`
-      : `[status: ${result.status || 'failed'}]\n[run_id: ${result.runId || 'unknown'}]\n[error_code: ${result.errorCode || 'workspace_agent_failed'}]\n${result.error || 'The workspace agent did not complete.'}\nDo not start a duplicate run; report the failure or continue with a corrected task.`;
+      : `[status: ${result.status || 'failed'}]\n[run_id: ${result.runId || 'unknown'}]\n[error_code: ${result.errorCode || 'workspace_agent_failed'}]\n${result.error || 'The workspace agent did not complete.'}\nDo not start a duplicate run; continue with a corrected task. Do not paste the error text into your answer; the tool card already shows it.`;
   }
 
   if (result.correction) {
@@ -103,7 +105,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
   }
 
   if (result.status !== 'completed' && toolName === 'web_search') {
-    return `[status: failed]\n[error_code: ${result.errorCode || 'web_search_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n${result.detail || result.error || ''}\nThe search engines are unavailable or rate-limited. If retryable, wait a moment and retry with the same or a rephrased query; otherwise answer from your own knowledge and note that live results could not be fetched.`;
+    return `[status: failed]\n[error_code: ${result.errorCode || 'web_search_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n${result.detail || result.error || ''}\nThe search engines are unavailable or rate-limited. If retryable, wait a moment and retry with the same or a rephrased query; otherwise answer from your own knowledge and note that live results could not be fetched, without quoting the search error.`;
   }
 
   if (result.status !== 'completed' && toolName === 'web_fetch') {
@@ -129,18 +131,20 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     const isImageSubmission = toolName === 'oc_jimeng_ai_submit_image_generation_4_6';
     const context = nonIdempotentOpenConnectorAction
       ? 'The action has an uncertain outcome. Do not claim it completed or that the provider did nothing.'
-      : 'The connector could not provide results. Do not fabricate results. Explain the error and answer what you can.';
+      : 'The connector could not provide results. Do not fabricate results. Do not repeat the provider error in your answer; the tool card already shows it. Answer what you can and state the limitation only if it matters.';
     const nextStep = nonIdempotentOpenConnectorAction
       ? isImageSubmission
-        ? 'This request may have created an image task even though its response failed. Do not submit it again automatically; explain the uncertain status and ask before creating another task.'
-        : 'This action may have taken effect even though its response failed. Do not repeat it automatically; explain the uncertain status and ask before repeating.'
+        ? 'This request may have created an image task even though its response failed. Do not submit it again automatically; state that the outcome is uncertain and ask before creating another task, without quoting the provider error.'
+        : 'This action may have taken effect even though its response failed. Do not repeat it automatically; state that the outcome is uncertain and ask before repeating, without quoting the provider error.'
       : retryable
-        ? 'Wait briefly and retry this read once. If it fails again, stop and explain the provider error.'
+        ? 'Wait briefly and retry this read once. If it fails again, stop and state the limitation without repeating the provider error.'
         : 'Do not blindly repeat the same call. If the error points to a missing or rejected connection, ask the user to verify it; otherwise continue without this source or use another tool.';
     return `[status: failed]\n[error_code: ${result.errorCode || 'connector_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n${result.detail || result.error || ''}\n${context} ${nextStep}`;
   }
 
-  return result.status === 'completed'
-    ? (result.output || result.stdout || '(no output)')
-    : `[status: ${result.status || 'failed'}]\n[error_code: ${result.errorCode || 'tool_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n[error: ${result.errorMessage || result.error || result.status || 'Tool failed.'}]`;
+  if (result.status === 'completed') return result.output || result.stdout || '(no output)';
+  const detail = result.detail === undefined || result.detail === null
+    ? ''
+    : `\n[detail: ${String(result.detail).slice(0, 1200)}]`;
+  return `[status: ${result.status || 'failed'}]\n[error_code: ${result.errorCode || 'tool_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n[error: ${result.errorMessage || result.error || result.status || 'Tool failed.'}]${detail}\nDo not repeat this error text in your answer; the tool card already shows it.`;
 }

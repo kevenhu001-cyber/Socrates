@@ -15,6 +15,13 @@ import { codeInterpreter } from '../../../services/codeInterpreter.js';
 import { createToolRegistry } from '../../../services/tools/toolRegistry.js';
 import { canonicalToolExampleJson } from '../../../services/tools/toolErrorFeedback.js';
 import { createToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
+import {
+  buildConnectorCatalog,
+  createConnectorActivation,
+  splitInitialToolNames,
+  type ConnectorActivation,
+  type ConnectorCatalog,
+} from '../../../services/integrations/connectorCatalog.js';
 import type { JsonSchemaNode } from '../../../services/tools/toolCallSafety.js';
 import type { Request } from 'express';
 
@@ -34,11 +41,16 @@ export interface StreamToolContext {
   toolRegistry: ReturnType<typeof createToolRegistry>;
   toolDefs: RuntimeToolDefinition[];
   toolNames: string[];
+  /** Tools offered on the first hop: core tools plus the discovery tools.
+   * Connected connector tools are activated by get_connector_spec. */
+  initialToolNames: string[];
   schemaForTool: (name: string) => JsonSchemaNode | null;
   toolExamples: Record<string, string>;
   FUZZY_SAFE: (name: string) => boolean;
   connectorConnectionsByProvider: Record<string, PersonalConnectorSnapshot>;
   projectConnectorConnectionsByProvider: Record<string, ProjectConnectorSnapshot>;
+  connectorCatalog: ConnectorCatalog;
+  connectorActivation: ConnectorActivation;
 }
 
 /**
@@ -88,7 +100,23 @@ export async function createStreamToolContext(req: Request & { userId?: string }
   const { connectorConnectionsByProvider, projectConnectorConnectionsByProvider } =
     await loadConnectorSnapshots(req.userId);
 
-  const toolRegistry = createToolRegistry({ codeInterpreterToolDef, mode, connectorConnectionsByProvider, projectConnectorConnectionsByProvider });
+  /* The catalog and the registry are derived from the same connection
+     snapshots. The registry still knows every connected tool so an activated
+     tool can execute; the first hop only offers the core tools plus the two
+     discovery tools. */
+  const connectorCatalog = buildConnectorCatalog({
+    connectorConnectionsByProvider,
+    projectConnectorConnectionsByProvider,
+  });
+  const connectorActivation = createConnectorActivation();
+
+  const toolRegistry = createToolRegistry({
+    codeInterpreterToolDef,
+    mode,
+    connectorConnectionsByProvider,
+    projectConnectorConnectionsByProvider,
+    connectorDiscoveryEnabled: connectorCatalog.entries.length > 0,
+  });
   const toolDefs = toolRegistry.definitions as RuntimeToolDefinition[];
 
   /* P_native-tool-contract — derive the prompt appendix from the same
@@ -127,10 +155,13 @@ export async function createStreamToolContext(req: Request & { userId?: string }
     toolRegistry,
     toolDefs,
     toolNames,
+    initialToolNames: splitInitialToolNames(toolNames, connectorCatalog),
     schemaForTool,
     toolExamples,
     FUZZY_SAFE,
     connectorConnectionsByProvider,
     projectConnectorConnectionsByProvider,
+    connectorCatalog,
+    connectorActivation,
   };
 }

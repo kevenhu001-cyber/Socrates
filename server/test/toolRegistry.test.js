@@ -1,10 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createToolRegistry, SELF_NORMALIZING_TOOLS} from '../src/services/tools/toolRegistry.js';
+import {createToolRegistry} from '../src/services/tools/toolRegistry.js';
+import {SELF_NORMALIZING_TOOLS, toolArgumentPolicy} from '../src/services/tools/toolArgumentPolicy.js';
 import {PI_AGENT_ENABLED} from '../src/services/tools/piAgent.js';
 
-test('render_intelligent_ui validates inside its executor instead of the generic schema pre-pass', () => {
+test('the argument policy declares which validator owns each tool', () => {
+  assert.equal(toolArgumentPolicy('render_intelligent_ui').validation, 'none');
+  assert.equal(toolArgumentPolicy('render_visualization').validation, 'none');
+  assert.equal(toolArgumentPolicy('create_plan').validation, 'tool');
+  assert.equal(toolArgumentPolicy('create_spec').validation, 'tool');
+  assert.equal(toolArgumentPolicy('web_search').validation, 'schema');
   assert.equal(SELF_NORMALIZING_TOOLS.has('render_intelligent_ui'), true);
+  assert.equal(SELF_NORMALIZING_TOOLS.has('create_plan'), false);
+});
+
+test('connector discovery tools are offered only when a connector is connected', () => {
+  const without = createToolRegistry({ codeInterpreterToolDef: null, mode: 'chat' });
+  assert.equal(without.get('search_connectors').enabled, false);
+  assert.equal(without.get('get_connector_spec').enabled, false);
+
+  const withConnectors = createToolRegistry({
+    codeInterpreterToolDef: null,
+    mode: 'chat',
+    connectorDiscoveryEnabled: true,
+  });
+  assert.equal(withConnectors.get('search_connectors').enabled, true);
+  assert.equal(withConnectors.get('get_connector_spec').enabled, true);
+  assert.ok(withConnectors.definitions.some((tool) => tool.function.name === 'search_connectors'));
+  assert.ok(withConnectors.definitions.some((tool) => tool.function.name === 'get_connector_spec'));
 });
 
 test('tool registry exposes the same native search and visual tools in tutor mode', () => {

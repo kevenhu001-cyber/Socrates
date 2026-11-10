@@ -124,6 +124,42 @@ function planningError(errorCode: string, issues: Array<{ path: string; message:
   };
 }
 
+export interface PlanningValidation {
+  ok: boolean;
+  fieldErrors: string[];
+  errorCode?: string;
+  userMessage?: string;
+}
+
+function planningValidation(
+  userMessage: string,
+  issues: Array<{ path: string; message: string }>,
+): PlanningValidation {
+  return {
+    ok: false,
+    fieldErrors: issues.map((issue) => `${issue.path}: ${issue.message}`),
+    errorCode: 'plan_spec_invalid',
+    userMessage,
+  };
+}
+
+/** Pre-execution validation for create_plan, shared by the chat pipeline and
+ * the executor so both reject the same normalized shape with the same code. */
+export function validatePlanArgs(input: unknown): PlanningValidation {
+  const parsed = planSchema.safeParse(normalizePlan(input));
+  return parsed.success
+    ? { ok: true, fieldErrors: [] }
+    : planningValidation('计划结构有字段不符合要求，已附上正确示例请模型修正。', compactIssues(parsed.error));
+}
+
+/** Pre-execution validation for create_spec. */
+export function validateSpecArgs(input: unknown): PlanningValidation {
+  const parsed = specSchema.safeParse(normalizeSpec(input));
+  return parsed.success
+    ? { ok: true, fieldErrors: [] }
+    : planningValidation('规格结构有字段不符合要求，已附上正确示例请模型修正。', compactIssues(parsed.error));
+}
+
 /* ─── Tool definitions ─────────────────────────────────────── */
 
 export const PLAN_TOOL = {

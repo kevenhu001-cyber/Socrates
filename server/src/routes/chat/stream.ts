@@ -132,7 +132,7 @@ export function registerStreamRoute(router: Router) {
             req as typeof req & { userId?: string }, bodyMode === 'tutor' ? 'tutor' : 'chat',
           );
           toolCtxPromise.catch(() => {});
-          const prep = await prepareChatRequest(req, res, { signal: executionSignal });
+          const prep = await prepareChatRequest(req, res, { signal: executionSignal, toolCtxPromise });
           timing.mark('prepared');
           if (executionSignal.aborted) throw new Error('Turn execution interrupted during preparation');
           await runChatStreamPipeline({
