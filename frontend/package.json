@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "allowScripts": {
+    "@openuidev/lang-core": true,
     "esbuild": true
   },
   "type": "module",

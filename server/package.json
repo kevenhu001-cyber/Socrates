@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "allowScripts": {
-    "esbuild": true
+    "@openuidev/lang-core": true,
+    "esbuild": true,
+    "protobufjs": true
   },
   "description": "Socrates AI tutor — backend API server",
   "type": "module",
