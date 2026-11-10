@@ -137,3 +137,70 @@ test('bare-unit repair preserves existing inline and display math in learning ca
  assert.equal(preprocessMarkdown('电阻为 20\\Omega。'),'电阻为 $20\\Omega$。');
  assert.equal(preprocessMarkdown('代码 `20\\Omega` 保持原样。'),'代码 `20\\Omega` 保持原样。');
 });
+
+test('a bare unit is wrapped outside math but never inside an existing span', () => {
+  /* preprocess.ts auto-wraps `20\Omega` for weak models. A number already
+     inside `$…$` or `$$…$$` is part of the model's own formula; wrapping it
+     there splits the formula (`$\theta=1.22\lambda/D$`). */
+  assert.match(preprocessMarkdown('测得 20\\Omega 的电阻'), /\$20\\Omega\$/);
+  assert.doesNotMatch(preprocessMarkdown('$\\theta=1.22\\lambda/D$'), /\$1\.22\\lambda\$/);
+  assert.doesNotMatch(preprocessMarkdown('$$x=3\\mu$$'), /\$3\\mu\$/);
+});
+
+test('a display span does not swallow a later inline span in the unit scan', () => {
+  /* The scan must pair `$$` with `$$` only. A `$$` that opened inline math
+     used to leave every later `$…$` "inside" and suppress the unit wrap for
+     the rest of the message. */
+  const out = preprocessMarkdown('$$a=1$$\n\n然后 60\\Omega 的电阻');
+  assert.match(out, /\$60\\Omega\$/);
+});
+
+test('an unclosed dollar does not suppress every later unit wrap', () => {
+  /* A lone `$` followed by whitespace is a currency amount, not an opener
+     (pandoc's rule). Without that rule the `$5` opened a span that never
+     closed and every later unit wrap was skipped. */
+  const out = preprocessMarkdown('价格 $ 5, 然后 60\\Omega 的电阻');
+  assert.match(out, /\$60\\Omega\$/);
+  /* An inline span still stops at a blank line rather than running on. */
+  const stray = preprocessMarkdown('价格 $5\n\n然后 60\\Omega 的电阻');
+  assert.match(stray, /\$60\\Omega\$/);
+});
+
+test('a streaming numeric tail never renders a currency range as math', () => {
+  /* `$5-$10` is a range, not a formula. The live tail used to pass '' as the
+     "next character", which disabled the digit-after-close guard and made
+     `5-` render as math mid-stream, then revert at settle — a visible flash. */
+  assert.equal(_looksLikeInlineMathTail('5-'), false);
+  assert.equal(_looksLikeInlineMathTail('1/2'), true);
+  assert.equal(_looksLikeInlineMathTail('3+4=7'), true);
+});
+
+test('bare-unit auto-wrap keeps its pairing in step with the inline pass', () => {
+  /* A `$$` run opens display math and is closed only by another `$$`; an
+     inline `$` inside it is not a delimiter. The old scanner let one `$$`
+     open a span that swallowed every later `$…$`, so the unit wrap was
+     skipped for the rest of the message. */
+  const displayThenInline = '$$x=1$$\n\n电阻 20\\Omega 与 $a$ 之后 60\\Omega。';
+  assert.equal(
+    preprocessMarkdown(displayThenInline),
+    '$$x=1$$\n\n电阻 $20\\Omega$ 与 $a$ 之后 $60\\Omega$。',
+  );
+  /* An unclosed inline `$` stops at a blank line instead of consuming the
+     rest of the document. */
+  const stray = '价格 $5\n\n电阻 20\\Omega。';
+  assert.equal(preprocessMarkdown(stray), '价格 $5\n\n电阻 $20\\Omega$。');
+  /* An escaped dollar is literal and never opens a span. */
+  assert.equal(preprocessMarkdown('花费 \\$5 后 20\\Omega。'), '花费 \\$5 后 $20\\Omega$。');
+});
+
+test('a streaming numeric tail never flashes a currency range as math', () => {
+  /* `$5-$10` is a currency range: the closed pass rejects it because the
+     closing `$` is followed by a digit. The live tail used to pass an empty
+     `next`, which disabled that guard and rendered `5-` as a formula until
+     settle. A trailing binary operator now waits for the closing `$`. */
+  assert.equal(_looksLikeInlineMathTail('5-'), false);
+  assert.equal(_looksLikeInlineMathTail('5+'), false);
+  /* Genuine live formulas still render. */
+  assert.equal(_looksLikeInlineMathTail('1/2'), true);
+  assert.equal(_looksLikeInlineMathTail('3+4=7'), true);
+});

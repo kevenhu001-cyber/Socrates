@@ -24,7 +24,23 @@ const abbreviation = new RegExp(
 const protectedPatterns = [
   /https?:\/\/[^\s<>"'，。！？；（）]+|www\.[^\s<>"'，。！？；（）]+|[\w.+-]+@[\w.-]+\.[a-z]{2,}|[a-z]:[\\/][^\s<>"'，。！？；（）]+|(?:\.{1,2}\/|\/)[\p{L}\p{N}_.~/-]+|[\p{L}\p{N}_-]+\.[a-z][a-z\d_-]*(?:\.[a-z\d_-]+)*|\d+(?:[.,:/-]\d+)+|\{[\w]+\}(?::\{[\w]+\})*|\$\$[\s\S]*?\$\$|\$[^\n$]+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/giu,
   abbreviation,
-  /\b[a-z_]\w*\([^\p{Script=Han}()\n]*\)/giu,
+  /* A parenthesised technical tuple — a coordinate pair or a number list
+     with units (`(0 m, 1 m)`, `(2, 3)`). It carries a digit and no Han
+     character, so its ASCII parens and comma are data, not Chinese prose
+     punctuation. A Chinese aside (`（本次操作）`) has Han inside and is
+     normalized normally.
+
+     The full-width form is included: a model that already wrote `（2, 3）`
+     inside a Chinese sentence means the same tuple, and without this the
+     inner `,` was still rewritten to `，` (the parens themselves are not in
+     `normalizablePunctuation`'s ASCII set, so only the comma broke). */
+  /[（(][^()（）\n\p{Script=Han}]*\d[^()（）\n\p{Script=Han}]*[）)]/gu,
+  /* A latin identifier immediately followed by an argument list is a
+     function call, not prose parentheses (`J₁(u)`, `I(r)`, `f(x)`). The
+     sub/superscript digits are part of the name (`J₁`), and the leading
+     `\b` cannot be used: a coefficient makes the character before the name
+     a word character too (`[2J₁(u)`), so no boundary exists there. */
+  /[a-z_][\w₀-₉⁰-⁹]*\([^\p{Script=Han}()\n]*\)/giu,
   /^\s*\d+[.)]\s+/gm,
 ];
 

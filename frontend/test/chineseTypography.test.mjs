@@ -118,3 +118,25 @@ test('Chinese system hints, confirmations and toast copy use the same punctuatio
   confirmState.flush();
   assert.equal(await confirmation, false);
 });
+
+test('a tuple keeps its ASCII comma inside either bracket style', () => {
+  /* The tuple is data wherever it sits: only the parens were localized, so
+     the comma must survive in full-width brackets too. */
+  assert.equal(normalizeChineseProse('坐标(2, 3)处'), '坐标(2, 3)处');
+  assert.equal(normalizeChineseProse('坐标（2, 3）处'), '坐标（2, 3）处');
+  /* A Chinese aside still normalizes: Han inside means prose, not data. */
+  assert.equal(normalizeChineseProse('是否继续(本次操作)?'), '是否继续（本次操作）？');
+  assert.equal(normalizeChineseProse('共 3 项,见下'), '共 3 项，见下');
+});
+
+test('a coordinate tuple keeps its ASCII comma inside either bracket style', () => {
+  /* A tuple is data wherever it sits. The ASCII form was already protected;
+     a model that wrote `（2, 3）` in a Chinese sentence still had its comma
+     rewritten to `，`, which breaks the pair for any downstream copy. */
+  assert.equal(normalizeChineseProse('坐标（2, 3）位于原点附近。'), '坐标（2, 3）位于原点附近。');
+  assert.equal(normalizeChineseProse('坐标(2, 3)位于原点附近。'), '坐标(2, 3)位于原点附近。');
+  assert.equal(normalizeChineseProse('从(0 m, 1 m)出发。'), '从(0 m, 1 m)出发。');
+  /* A prose aside still normalizes: Han inside means it is not a tuple. */
+  assert.equal(normalizeChineseProse('是否继续(本次操作)?'), '是否继续（本次操作）？');
+  assert.equal(normalizeChineseProse('共 3 项, 见下。'), '共 3 项， 见下。');
+});

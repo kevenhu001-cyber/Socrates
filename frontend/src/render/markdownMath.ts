@@ -257,9 +257,29 @@ function findInlineDollarClose(s: string, open: number, multiline: boolean, isEs
   return -1;
 }
 
-/* Explicit paired dollar delimiters always request math. Escaped dollars
-   remain literal; doubled dollars belong to the display-math pass.
-   Streaming still limits unclosed fragments separately. */
+/* Closed `$…$` acceptance shared by the streaming and final passes. `next`
+   is the character right after the closing `$`.
+
+   Content decides, not the delimiters: an explicit pair around prose
+   (`$Thus (see note)$`, `$hello world$`, `$US to $EU rate`) stays literal.
+   73b49163 removed this gate so any pair rendered, which turned every
+   currency amount into a formula. The numeric branch also accepts a padded
+   amount (`$ 123 $`) by testing the trimmed content — a digit run with no
+   letters cannot be prose, so the padding is unambiguous. */
+function _acceptInlineMath(raw: string, next: string): boolean {
+  return _looksLikeInlineMath(String(raw).trim()) || _looksLikeNumericMath(String(raw).trim(), next);
+}
+
+/* Closed inline `$…$` replacement, shared by the streaming and final passes.
+
+   A lazy `/\$(.+?)\$/` pairs dollars strictly left to right and consumes
+   BOTH delimiters even when the candidate is rejected, so one currency
+   amount swallowed the next formula's opening `$` (`花了 $5，概率 $1/2$`
+   paired `$5，概率 $` and left `1/2$` as text). This scanner hands back only
+   the opening `$` on a rejection and retries from the next character.
+   `$$` runs are display-math delimiters and never open or close inline
+   math; an escaped `\$` never opens. `multiline` (the final pass) lets a
+   formula wrap a single newline but never cross a blank line. */
 export function replaceInlineDollarMath(
   s: string,
   multiline: boolean,
@@ -289,7 +309,7 @@ export function replaceInlineDollarMath(
     const close = findInlineDollarClose(s, open, multiline, isEscaped);
     if (close > open + 1) {
       const math = s.slice(open + 1, close);
-      const html = math.trim() ? render(math) : null;
+      const html = _acceptInlineMath(math, s.charAt(close + 1)) ? render(math) : null;
       if (html !== null) {
         out += s.slice(i, open) + html;
         i = close + 1;
@@ -338,10 +358,17 @@ function looksLikeNumericMathTail(trimmed: string): boolean {
   /* P_numeric-math — an unclosed letter-free formula renders live only when a
      fraction / power / equation operator already marks it (`$1/2`, `$3+4=7`);
      a bare amount (`$5`, `$1,000`) waits for its closing `$`, so currency on
-     the live tail never flashes as math. */
+     the live tail never flashes as math.
+
+     The tail has no closing `$` yet, so `next` is unknown. Passing '' used to
+     disable `_looksLikeNumericMath`'s "closing `$` followed by a digit" guard
+     (`$5-$10`), letting `5-` render as a formula mid-stream and then revert to
+     text at settle — a visible flash. `-` is the one character that can be
+     either the amount's sign or the next amount's currency prefix, so a
+     trailing binary operator is rejected here and the closed pass decides. */
+  if (/[+\-*/^_=<>,:\u2212]$/.test(trimmed)) return false;
   return /[/^=]/.test(trimmed) && _looksLikeNumericMath(trimmed, '');
 }
-
 function looksLikeCompactMathTail(trimmed: string): boolean {
   if (!COMPACT_MATH_RE.test(trimmed)) return false;
   if (/[^A-Za-z]/.test(trimmed) || trimmed.length === 1) return true;

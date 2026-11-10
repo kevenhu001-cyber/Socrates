@@ -58,8 +58,10 @@ export function wireScrollPill(){
 
   let debounceTmo: number|null = null;
   let lastScrollTop: number | null = null;
+  let lastScrollHeight = 0;
+  let lastClientHeight = 0;
   let lastScroller = scrollContainer();
-  if(lastScroller) lastScrollTop = lastScroller.scrollTop;
+  if(lastScroller){ lastScrollTop = lastScroller.scrollTop; lastScrollHeight = lastScroller.scrollHeight; lastClientHeight = lastScroller.clientHeight; }
 
   /* P_stream-scroll-intent — the scroll-position listener below cannot
      tell an upward wheel flick from the layout growing underneath the
@@ -110,6 +112,37 @@ export function wireScrollPill(){
     else if(ev.key === "End"){ markUserScrollIntent(); upIntentAt = 0; }
   }, true);
 
+  /* A scroll event that arrives in the same frame as a layout change
+     (scrollHeight or clientHeight moved) is usually the browser clamping
+     the position to the new content, not the reader scrolling: retiring a
+     send-anchor stub, an inline image decoding, or a reserve releasing
+     can pull scrollTop hundreds of pixels "up" without any gesture.
+     Treating that as intent strands the reader above the new bottom
+     and kills the streaming follow mid-answer.
+
+     "Usually" is the whole bug: while an answer streams, scrollHeight
+     moves almost every frame, so an unconditional early return swallowed
+     every genuine upward gesture that happened to land on a growing
+     frame — a wheel flick or PageUp inside the pin slack was discarded
+     and the reader stayed locked to the bottom. Only a position change
+     that a clamp can explain is skipped: the new top is at or beyond the
+     new maximum (the browser pulled it back) and it did not move DOWN.
+     A real upward move that still sits below the new maximum is intent,
+     and falls through to the ordinary sampler. */
+  function sampleThroughLayoutClamp(sc: HTMLElement): boolean {
+    const layoutChanged = sc.scrollHeight !== lastScrollHeight || sc.clientHeight !== lastClientHeight;
+    lastScrollHeight = sc.scrollHeight;
+    lastClientHeight = sc.clientHeight;
+    if(!layoutChanged) return false;
+    const maxTop = Math.max(0, sc.scrollHeight - sc.clientHeight);
+    const clamped = sc.scrollTop >= maxTop - 1;
+    const movedDown = lastScroller === sc && lastScrollTop != null && sc.scrollTop > lastScrollTop + 1;
+    if(!clamped && !movedDown) return false;
+    lastScroller = sc;
+    lastScrollTop = sc.scrollTop;
+    return true;
+  }
+
   document.addEventListener("scroll", function(ev){
     const sc = scrollContainer();
     if(!sc) return;
@@ -128,6 +161,7 @@ export function wireScrollPill(){
        followed by the scroll because wasPinned would already be
        false by the time the inset animation reached its target). */
     if(sc.dataset.autoScrolling === 'true') return;
+    if(sampleThroughLayoutClamp(sc)) return;
     if(Date.now() < positionIntentSuppressedUntil){
       /* Programmatic layout compensation — keep the sampler in sync and
          do not interpret the write as reader intent. */

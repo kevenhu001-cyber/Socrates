@@ -49,6 +49,7 @@ import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.ts';
 import { generateId } from '../util/ids.ts';
 import { hideNewReplyPill } from '../ui/scrollPill.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { updateMessageSnapshot } from '../ui/messageSnapshot.ts';
 import { createStreamPlayer } from '../render/streamPlayer.js';
 import { scheduleActiveTurnToTop, turnAnchorReserve, TURN_ANCHOR_TOP_OFFSET, RetryViewportOffset } from './turnAnchor.ts';
 import { createToolRuntime } from './toolRuntime.ts';
@@ -118,24 +119,33 @@ function prepareStreamingShell(opts: StreamingOptions){
   const msgIdx=stateStore.read("messages").length-1;
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
   if (list && typeof turnAnchorReserve === 'function') {
+    /* The session this send belongs to. A `session/replace-messages` (history
+       load, session switch) between the append and this frame leaves a list
+       that no longer contains `clientId`; without this guard the stamp would
+       look up a row that is not there and drop the reserve silently. */
+    const sessionAtSend = stateStore.read('currentSessionId');
     requestAnimationFrame(function stampTurnReserve(){
       try {
         if (!list || typeof list.getBoundingClientRect !== 'function') return;
+        if (stateStore.read('currentSessionId') !== sessionAtSend) return;
         const styles=(typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(list) : null;
         const bottomPadding=styles ? (parseFloat(styles.paddingBottom) || 0) : 0;
         const latestUser=list.querySelector ? list.querySelector('.msg.user:last-of-type') : null;
         const promptHeight=latestUser ? latestUser.getBoundingClientRect().height : 0;
         const reserve=turnAnchorReserve(list.clientHeight,promptHeight,bottomPadding);
         if (reserve > 0) {
-          stateStore.dispatch({
-            type:'session/update-message',
-            clientId:clientId,
-            patch: {
-              _turnAnchorMinHeight: reserve,
-              _turnAnchorMode: 'turn',
-              _turnViewportTarget: initialTargetOffset,
-            },
-          });
+          /* `session/update-message` is index-addressed: the reducer refuses
+             an action without an integer `index`, so a clientId-only dispatch
+             was a silent no-op and the send-time reserve never applied. Resolve
+             the row by client id at stamp time (the list can grow between the
+             append and this frame) and let the shared helper supply the index. */
+          const entry=(stateStore.read('messages') as Array<{clientId?: string}>)
+            .find((message) => message && message.clientId === clientId);
+          updateMessageSnapshot(entry, {
+            _turnAnchorMinHeight: reserve,
+            _turnAnchorMode: 'turn',
+            _turnViewportTarget: initialTargetOffset,
+          }, true);
         }
       } catch (error) { reportSwallow(error, 'streamingTurn.stampTurnReserve.measure'); }
     });

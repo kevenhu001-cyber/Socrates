@@ -33,7 +33,32 @@ export interface RetryViewportOffset {
 }
 
 export interface TurnAnchorList extends HTMLElement {
+  /** @deprecated The send anchor publishes ownership on
+   *  `dataset.turnViewportOwner` (see markTurnViewportOwner). This property
+   *  is kept only so older callers type-check; nothing reads it any more. */
   __socratesTurnViewportOwner?: boolean;
+}
+
+/* One spelling for "the send anchor owns this transcript" — the `data-`
+   attribute every reader already queries (ui/scroll.ts, the mount window,
+   above-viewport compensation). The old DOM-expando
+   `__socratesTurnViewportOwner` was written by the send pass but read by the
+   composer-resize handler alone, and nothing but a new user message ever
+   cleared it: a retry or an error path left the transcript marked as owned
+   forever, so a pinned reader silently stopped following the bottom. */
+export function markTurnViewportOwner(list: HTMLElement | null): void {
+  if (!list || !list.dataset) return;
+  list.dataset.turnViewportOwner = 'turn';
+  /* Keep the legacy expando in sync for any external caller still reading
+     it; it is never the source of truth. */
+  (list as TurnAnchorList).__socratesTurnViewportOwner = true;
+}
+
+/** Hand the transcript back. Safe to repeat and to call on a detached list. */
+export function clearTurnViewportOwner(list: HTMLElement | null): void {
+  if (!list) return;
+  if (list.dataset) delete list.dataset.turnViewportOwner;
+  if ('__socratesTurnViewportOwner' in list) delete (list as TurnAnchorList).__socratesTurnViewportOwner;
 }
 
 /* The submitted prompt's own top offset inside the transcript viewport.
@@ -71,6 +96,7 @@ export function turnAnchorReserve(
 }
 
 let anchorDeps: TurnAnchorDeps = { isMsgListMounted: () => false };
+
 
 /** Provide the React-ownership reader owned by main.js. */
 export function configureTurnAnchor(next: TurnAnchorDeps): void {
@@ -244,6 +270,7 @@ export function releaseTurnViewportHold(): void {
   /* ui/keyboard reads this flag to leave the transcript alone while the
      send anchor owns it; clearing it hands the position back. */
   if (hold.list.dataset) delete hold.list.dataset.turnAnchorHold;
+  clearTurnViewportOwner(hold.list);
 }
 
 function findAnchorEntry(clientId: string): MessageEntry | null {
@@ -358,6 +385,20 @@ function observeTurnViewportRow(el: HTMLElement): void {
   }
 }
 
+function observeHoldTargets(observer: ResizeObserver, list: HTMLElement, anchorRow: HTMLElement): void {
+  try { observer.observe(list, { box: 'border-box' }); }
+  catch (_) { try { observer.observe(list); } catch (err) {
+    reportEmptyCatch(err, 'empty catch: chat/turnAnchor.ts:375');
+    /* detached list */
+  } }
+  /* Watching the answer's own row is what retires the hold the moment the
+     answer outgrows its reserve and sticky-bottom resumes. */
+  try { observer.observe(anchorRow); } catch (err) {
+    reportEmptyCatch(err, 'empty catch: chat/turnAnchor.ts:378');
+    /* detached row */
+  }
+}
+
 function startTurnViewportHold(
   list: TurnAnchorList | null,
   rowFor: () => HTMLElement | null,
@@ -384,17 +425,7 @@ function startTurnViewportHold(
   const observer = new ResizeObserver(function () { holdTurnViewport(); });
   hold.observer = observer;
   viewportHold = hold;
-  try { observer.observe(list, { box: 'border-box' }); }
-  catch (_) { try { observer.observe(list); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:375');
-    /* detached list */
-  } }
-  /* Watching the answer's own row is what retires the hold the moment the
-     answer outgrows its reserve and sticky-bottom resumes. */
-  try { observer.observe(anchorRow); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:378');
-    /* detached row */
-  }
+  observeHoldTargets(observer, list, anchorRow);
   /* Resize-observer deliveries for a viewport change land one frame after the
      layout that revealed it, so the frame in between can paint the stale
      reserve and clamp scrollTop. A discrete viewport resize (window, mobile
@@ -413,6 +444,15 @@ function startTurnViewportHold(
     hold.unsubInset = getKeyboardLift()?.onInset(() => { holdTurnViewport(); }) ?? null;
   } catch (_) { hold.unsubInset = null; }
   if (list.dataset) list.dataset.turnAnchorHold = 'true';
+  /* Publish the ownership the mount window, the above-viewport compensation
+     and the scroll animations already read. `align` is true only once the
+     send glide has landed: during the glide `turnAnchorSettling` covers the
+     same window, and claiming `turnViewportOwner` earlier would stop the
+     glide's own animation on its first frame. A mid-glide hold
+     (`align === false`) still owns the composer-resize decision, so it
+     claims the flag too: the scroll animation that must not be stopped is
+     already covered by `turnAnchorSettling`, not by this flag. */
+  markTurnViewportOwner(list);
   holdTurnViewport();
 }
 
@@ -834,7 +874,7 @@ export function scheduleActiveTurnToTop(
     );
     stampTurnAnchor(anchorContext, 'turn', reserve, targetOffset);
     if (!hasTurnAnchorReserve(row)) return;
-    list.__socratesTurnViewportOwner = true;
+    markTurnViewportOwner(list);
     /* Read layout once. Both rects land in the same flush and reusing
        `anchorInList` below skips a separate `offsetTop` read, which
        would otherwise force a second layout flush in this rAF body. */

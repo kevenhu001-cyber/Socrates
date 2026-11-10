@@ -748,7 +748,23 @@ app.get('/api/files/:id/raw', optionalAuth, async (req, res, next) => {
     } else {
       res.set('Content-Disposition', contentDisposition('inline', file.name));
     }
-    return res.sendFile(file.storagePath);
+    /* `dotfiles: 'deny'` — every artifact is stored under a UUID filename, so
+       no legitimate download needs a leading dot. 'allow' would have served a
+       `.env`/`.git` entry if a storagePath ever resolved into a directory
+       that carries one, turning this route into a dotfile reader for a
+       shared session. A denied path reports ENOENT/EACCES and lands on the
+       same 404 as a missing file. */
+    return res.sendFile(file.storagePath, { dotfiles: 'deny' }, (err) => {
+      if (err) {
+        if (!res.headersSent) {
+          const failure = err as { code?: string; status?: number };
+          if (failure.status === 404 || failure.code === 'ENOENT' || failure.code === 'EACCES') {
+            return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
+          }
+        }
+        next(err);
+      }
+    });
   } catch (err) { next(err); }
 });
 app.use('/api/files', fileExtractRouter);

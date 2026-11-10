@@ -30,6 +30,76 @@ export { recoverUnclosedDisplayMathBeforeHeading } from './markdownBoundary.ts';
 const STANDALONE_MATH_LINE_RE = /(^|\n)\$([^$\n]+)\$(\s*\n|$)/g;
 const STANDALONE_MATH_CLOSED_LINE_RE = /(^|\n)\$([^$\n]+)\$(\s*\n)/g;
 
+/* True when `index` sits inside a `$…$` or `$$…$$` span in `s`. Inline
+   code and fenced blocks are already stashed by the callers, so every
+   dollar here is a math delimiter. A bare-unit auto-wrap must not fire
+   inside one — the number is part of a formula the model already wrote.
+
+   The scan mirrors the inline pass (render/markdownMath.ts) rather than
+   pairing dollars naively:
+     • `\\$` is a literal dollar and never opens or closes;
+     • a `$$` run opens display math and is closed only by another `$$`,
+       so an inline `$` inside it is not a delimiter;
+     • an inline `$` never closes across a blank line (that is where the
+       inline pass gives up), so an unclosed `$` cannot swallow the rest
+       of the document and suppress every later auto-wrap.
+   A `$` that opens but never closes leaves `inMath` false at the end: the
+   text is prose with a stray dollar, and wrapping a unit after it is the
+   right repair. */
+/* The scanner state for `_insideMathSpan`. `delim` is 0 outside math, 1 for
+   an inline `$…$` span and 2 for a display `$$…$$` span. */
+interface MathScanState {
+  inMath: boolean;
+  delim: 0 | 1 | 2;
+}
+
+/** Step the scan over one `$` run at `i`. Returns the next index. */
+function scanDollarRun(s: string, i: number, run: number, state: MathScanState): number {
+  if (!state.inMath) {
+    /* A run of two or more opens display math; a lone `$` opens inline.
+       A lone `$` followed by whitespace is a currency amount, not an
+       opener (pandoc's rule, the same one `_looksLikeNumericMath` uses) —
+       otherwise `价格 $5, 然后 60\Omega` would open a span that never
+       closes and suppress every later unit wrap. */
+    if (run === 1 && /\s/.test(s.charAt(i + 1) || '')) return i + 1;
+    state.inMath = true;
+    state.delim = run >= 2 ? 2 : 1;
+    return i + run;
+  }
+  if ((state.delim === 2 && run >= 2) || (state.delim === 1 && run === 1)) {
+    state.inMath = false;
+    state.delim = 0;
+  }
+  /* A `$$` inside an inline span (or a lone `$` inside display math) is not
+     a closer; step past it without changing state. */
+  return i + run;
+}
+
+/** Step the scan over one ordinary character at `i`. Returns the next index. */
+function scanPlainChar(s: string, i: number, state: MathScanState): number {
+  /* An inline span never crosses a blank line; abandon it there, exactly
+     where the inline pass gives up. */
+  if (state.inMath && state.delim === 1 && s.charAt(i) === '\n' && s.charAt(i + 1) === '\n') {
+    state.inMath = false;
+    state.delim = 0;
+  }
+  return i + 1;
+}
+
+function _insideMathSpan(s: string, index: number): boolean {
+  const state: MathScanState = { inMath: false, delim: 0 };
+  let i = 0;
+  while (i < index) {
+    const c = s.charAt(i);
+    if (c === '\\') { i += 2; continue; }
+    if (c !== '$') { i = scanPlainChar(s, i, state); continue; }
+    let run = 0;
+    while (s.charAt(i + run) === '$') run += 1;
+    i = scanDollarRun(s, i, run, state);
+  }
+  return state.inMath;
+}
+
 export function promoteStandaloneInlineMath(s: string, complete: boolean): string {
   return s.replace(
     complete ? STANDALONE_MATH_LINE_RE : STANDALONE_MATH_CLOSED_LINE_RE,
@@ -97,8 +167,14 @@ export function preprocessMarkdown(t: string | null | undefined): string {
 
   s = _autoWrapBareBracketMath(s);
 
-  /* Auto-wrap bare physical and Greek unit symbols emitted by weak models (e.g. "20\Omega", "60\Omega") */
-  s = s.replace(/(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g, '$1$$$2\\$3$$');
+  /* Auto-wrap bare physical and Greek unit symbols emitted by weak models (e.g. "20\Omega", "60\Omega").
+     Only outside existing math: a number already sitting inside `$…$` or `$$…$$` is part of a
+     formula (`$\theta=1.22\lambda/D$`); wrapping it there would split the formula
+     (`$\theta=$1.22\lambda$/D$`). Inline code and fences are stashed above, so a `$` here is
+     real math. */
+  s = s.replace(/(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g, function (match: string, lead: string, value: string, unit: string, offset: number) {
+    return _insideMathSpan(s, offset + lead.length) ? match : lead + '$' + value + '\\' + unit + '$';
+  });
 
   /* Promote a "---" / "----" / "-----" line that is *directly* preceded
      by non-blank text into a clearly-bounded horizontal rule. Without
@@ -218,7 +294,9 @@ export function preprocessMarkdownForStreaming(
     : promoteStandaloneInlineMath(s.slice(0, openFence), false) + s.slice(openFence);
 
   s = _autoWrapBareBracketMath(s);
-  s = s.replace(/(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g, '$1$$$2\\$3$$');
+  s = s.replace(/(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g, function (match: string, lead: string, value: string, unit: string, offset: number) {
+    return _insideMathSpan(s, offset + lead.length) ? match : lead + '$' + value + '\\' + unit + '$';
+  });
   /* Mirror the `---` horizontal-rule fix from preprocessMarkdown.
      Streaming buffers concatenate partial tokens, so a "first
      paragraph / `---` / next paragraph" sequence often shows up

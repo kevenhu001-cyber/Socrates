@@ -431,7 +431,7 @@ export function smoothScrollToBottom(list: HTMLElement | null, opts: ScrollOptio
   }:o);
 }
 
-function createComposerResizeHandler(list: (HTMLElement & { __socratesTurnViewportOwner?: boolean }) | null,pinState: PinState,hooks: ComposerResizeHooks,pinSlack: number){
+function createComposerResizeHandler(list: HTMLElement | null,pinState: PinState,hooks: ComposerResizeHooks,pinSlack: number){
   return function(){
     const current=hooks.readMetrics();
     const heightBeforeResize=pinState.observedViewportHeight;
@@ -448,7 +448,7 @@ function createComposerResizeHandler(list: (HTMLElement & { __socratesTurnViewpo
       }
     }
     if(!pinnedBeforeResize){hooks.rememberMetrics();return;}
-    if(list.__socratesTurnViewportOwner===true)return;
+    if(list.dataset&&list.dataset.turnViewportOwner==='turn')return;
     smoothScrollToBottom(list,{smooth:false});
     hooks.rememberMetrics();
     hooks.armComposerFollow();
@@ -579,6 +579,9 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
   let contentMetrics: ContentMetrics | null=null;
   let composerFollowFrame=0;
   let composerFollowUntil=0;
+  /* True while another controller owns the viewport (see scheduleContentFollow).
+     Carries the reader's pin membership across a held window. */
+  let followOwnedElsewhere=false;
   /* The transcript viewport height as the ResizeObserver last saw it. Only
      this observer writes the value. The shared metrics snapshot
      is refreshed by the content-follow path and by the scroll listener, so by
@@ -673,8 +676,22 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
          height delta — an append to it never moves scrollTop, so this
          reconstructs the true pre-growth bottom exactly. */
       const growth=measureContentGrowth(previous,current,list);
-      const shouldFollow=growth.grew&&!contentFollowIsBlocked(list,lastMessage)
-        &&wasPinned(growth.beforeGrowth);
+      /* A controller (the send-time turn anchor) can own scrollTop while the
+         answer grows. Its held geometry is not reader position, so neither
+         follow nor forget the reader's pin here: following would fight that
+         controller, and advancing `pinState` would record the gap IT created
+         (0 → several hundred px) as "the reader scrolled away". That poisoned
+         baseline is what left a pinned reader stranded mid-answer once the
+         anchor released. Keep the height baseline fresh, keep the pin truth,
+         and follow on the first sample after the viewport comes back. */
+      if (contentFollowIsBlocked(list,lastMessage)) {
+        followOwnedElsewhere = true;
+        contentMetrics=current;
+        return;
+      }
+      const pinned=wasPinned(growth.beforeGrowth) || (followOwnedElsewhere && pinState.lastPinned);
+      followOwnedElsewhere = false;
+      const shouldFollow=growth.grew&&pinned;
       if(shouldFollow&&!userScrolledAway()){
         /* Keep one bottom-follow animation active; its live target moves with
            streamed content instead of restarting the easing curve per update. */
