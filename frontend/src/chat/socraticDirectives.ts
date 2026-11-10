@@ -15,10 +15,10 @@ export function stageInstruction(stage: string): string {
 
 /* Shared "from basics" directive — used by all three prompt paths so
    the wording stays identical. The cold-start diagnostic only sets
-   DEPTH (how detailed / how many examples); it never changes WHERE
-   we start — we always begin from the most essential core definition.
+   DEPTH (how much prerequisite support is needed). The current stage
+   decides whether to establish intuition or introduce the definition.
    Reference: P_teaching-plan, P_level-consistency, P_knowledge-point. */
-export const BASELINE_LEVEL = "baseline (not mastery), depth cue only, always start from the core definition";
+export const BASELINE_LEVEL = "baseline (not mastery), depth cue only; establish foundations within the current teaching stage";
 
 /** The node fields the directive reads. */
 export interface DirectiveNode {
@@ -41,11 +41,11 @@ export function fromBasicsDirective(
   return "CRITICAL, TWO PRINCIPLES YOU MUST FOLLOW FOR THIS SUB-TOPIC:\n"+
     "Principle 1 (DEPTH ONLY): The cold-start diagnostic for this sub-topic is '"+status+
       "'. This result tells you ONLY how detailed your explanation should be:\n"+
-    "  - 'fuzzy' / 'internalized' (some familiarity): fewer examples (1-2), less scaffolding, faster pace, less repetition of basics.\n"+
-    "  - 'blank' (no familiarity): more examples (3+), more analogies, more scaffolding, slower pace, more emphasis on definitions.\n"+
+    "  - 'fuzzy' / 'internalized' (some familiarity): less scaffolding and less repetition; use examples only as needed within the current stage.\n"+
+    "  - 'blank' (no familiarity): more explicit prerequisites and smaller explanatory steps; add a relevant example or analogy when the stage calls for it.\n"+
     "  The diagnostic does NOT mean the student has mastered anything.\n"+
     "Principle 2 (ALWAYS START FROM THE FOUNDATION): Regardless of the diagnostic result (fuzzy, blank, or skipped), "+
-      "you MUST begin this sub-topic from the most essential, foundational core definition and build up layer by layer. "+
+      "establish the essential foundation before advanced details. In the motivate stage, start with intuition and defer the formal definition to the define stage; thereafter build up layer by layer. "+
       "Never start from a mid-level detail, application, or shortcut. Never assume the student already knows the core definition "+
       "even if the diagnostic said 'fuzzy'.\n\n";
 }
@@ -81,6 +81,6 @@ export function tutorTurnDirective(stage: string, isFirst: boolean): string {
     default:
       scope="Keep this turn focused on one new idea and avoid repeating material already visible in the conversation.";
   }
-  return "TURN-SCOPE RULES. These rules override any generic length or formatting defaults above. "+opening+" "+scope+
+  return "TURN-SCOPE RULES. These rules scope the lesson activity within the server policy and native output schemas. A direct user request for an explanation, worked solution, or different format takes precedence over this default stage plan. "+opening+" "+scope+
     " Never pad with synonyms, repeated definitions, repeated derivation steps, or a second conclusion. Every new idea should be expressed plainly and in the shape that fits the stage best.";
 }

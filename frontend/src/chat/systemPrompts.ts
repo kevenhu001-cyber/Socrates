@@ -22,24 +22,8 @@ export const INTELLIGENT_UI_GUIDANCE = `
 
 Follow the server policy for visualization choices and the supplied tool schemas.`;
 
-/** Same optional learning-card contract in Chat and Tutor. */
-export const LEARNING_SCAFFOLD_GUIDANCE = `Use the shared learning scaffold tags in Chat and Tutor when a structured card materially improves the answer: <definition>, <example>, <proof>, <theorem>, <derivation>, <key-point>, <step>, <quiz>, <practice>, and <flashcard>. Place each card beside its relevant prose; a card supplements prose and never wraps the whole answer. Ordinary conversation stays in prose, including everyday questions, brief follow-ups, confirmations and casual explanations. Use <definition> only to introduce or precisely disambiguate a named concept; use <theorem> only for an actual theorem and <key-point> only for an essential conceptual distinction or condition worth isolating. Do not turn generic advice, transitions or routine summaries into cards. Default to zero definition/key-point cards; ordinarily use at most one such reference card in a reply and never repeat a definition already established unless the learner asks or shows a misconception. Emit complete tags, never place scaffold tags inside fenced or inline code, and use no more than one quiz or practice block unless the request or tutor stage explicitly calls for more. Do not reveal an unattempted practice answer unless the user has tried it or asks for the solution. Use these inner fields (replace examples with real content):
-<definition><term>Term</term><body>Definition</body></definition>
-<example><title>Example title</title><problem>Problem</problem><solution>Worked solution</solution></example>
-<practice><problem>Open-ended question</problem><hint>Optional hint</hint></practice>
-<quiz><q>Multiple-choice question</q><o letter="A" explanation="Why A is correct.">First option</o><o letter="B" explanation="Why B is incorrect.">Second option</o><correct>A</correct></quiz>
-<theorem><title>Theorem title</title><statement>Statement</statement></theorem>
-<proof><title>Proof title</title><body>Proof</body></proof>
-<derivation><title>Derivation title</title><body>Derivation steps</body></derivation>
-<flashcard><front>Question</front><back>Answer</back></flashcard>
-<step n="1">Step content</step>
-<key-point>Key point</key-point>
-Choose teaching strategies and available tools proactively from the conversation; do not require the learner to press a learning-mode, hint, explanation, practice, or next-question button. Do not emit next-questions suggestion blocks. Unless the user explicitly requests fill-in-the-blank or free-response exercises, do not pose fill-in-the-blank questions or <practice> input cards; prefer a multiple-choice <quiz> with at least two lettered options when a check is useful. Do not turn ordinary conversation into an unsolicited test.
-For XML reliability:
-- All tag names and XML attribute keys and values are structural syntax: use pure ASCII lowercase tags and ASCII double quotes for attributes (e.g. <o letter="A" explanation="...">, <step n="1">), even in Chinese responses.
-- In <quiz>, use <q> (not <question>), <o letter="..."> (not <option>), and <correct> (not <answer>). Include the answer in <correct> and a specific explanation for every option in its explanation attribute. If quotation marks are needed inside explanation text, use paired Chinese quotes “…” or &quot;, never unescaped double quotes.
-- In <definition>, use <term> and <body>. In <example>, use <title>, <problem>, and <solution>. In <theorem>, use <title> and <statement>. In <flashcard>, use <front> and <back>.
-- Use practice only for an explicitly requested question without answer options; quiz requires at least two lettered options. Do not place a bare paragraph directly inside a field-based card. Optional fields may be omitted, but required content fields must remain.`;
+/** Compatibility export name; learning output protocols are server-owned. */
+export const LEARNING_SCAFFOLD_GUIDANCE = `Follow the server's learning-interaction policy and the current native tool schemas. Learning cards supplement the explanation and never wrap the whole answer. Ordinary conversation stays in prose. Use a learning interaction only when it serves the current request; if the tool is unavailable, use ordinary prose or Markdown. Do not emit legacy XML learning tags or invent component functions.`;
 
 /* HIGH_EFFORT_OUTPUT_GUIDANCE carries only the depth directive. Response
  * formatting and math delimiters are owned by SERVER_SYSTEM_POLICY. The depth

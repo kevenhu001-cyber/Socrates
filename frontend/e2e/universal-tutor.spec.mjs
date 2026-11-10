@@ -173,6 +173,7 @@ test('universal tutor generates a diagnostic, grades the baseline and teaches', 
     await page.getByRole('button', { name: 'Jump the chat to this knowledge point' }).click();
     await expect(page.getByText('Taught reply', { exact: true })).toHaveCount(++replyCount);
     expect(streams.at(-1)?.mode).toBe('tutor');
+    expect(streams.at(-1)?.system).toMatch(/^\[Current turn instructions\]\n/);
     expect([...records.values()].some((session) => session.currentNode === 2)).toBe(true);
     expect(errors).toEqual([]);
   } finally {

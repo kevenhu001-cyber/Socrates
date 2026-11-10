@@ -56,7 +56,7 @@ export async function streamConversation(input: {
       knowledgePoints: diagnosticPointsForNode(questions, answers, nodeIdx),
     });
   } else {
-    system = toneVoice(useSettingsStore.getState().tone);
+    system = '[Assistant mode instructions]\n' + toneVoice(useSettingsStore.getState().tone);
   }
   const request: ChatRequest = {
     mode: tutor ? 'tutor' : 'chat',

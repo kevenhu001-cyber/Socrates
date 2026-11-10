@@ -142,10 +142,10 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /Avoid emoji and decorative symbols/i);
     assert.match(out[0].content, /never invent facts, citations, sources, URLs, files, tool results, or completed actions/i);
     assert.match(out[0].content, /Do not reveal private chain-of-thought/i);
-    assert.match(out[0].content, /sufficiently detailed, self-contained response/i);
+    assert.match(out[0].content, /closing FINAL OUTPUT CONSTRAINTS for depth/i);
     /* Global defaults allow task-specific formats and explicit user preferences. */
-    assert.match(out[0].content, /Default to connected natural-language paragraphs/i);
-    assert.match(out[0].content, /Follow the user's explicit preferences for length, depth, and format/i);
+    assert.match(out[0].content, /Output style never overrides these requirements/i);
+    assert.match(out[0].content, /user.s current explicit request sets the task/i);
     assert.match(out[0].content, /use `render_intelligent_ui` for both static and interactive visuals/i);
     /* The `Visualization(template, title, payload, accessibilitySummary)`
        function-call form was removed when the Intelligent-UI tool took over

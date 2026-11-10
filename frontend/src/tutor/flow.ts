@@ -142,10 +142,10 @@ export function buildSocraticMessages(
         stageInstr +
         '\n' +
         'Follow the textbook principles:\n' +
-        '1) **Foundation-first**: Start with the core definition, build up layer by layer.\n' +
+        '1) **Foundation-first**: Establish intuition in the motivate stage, introduce the core definition in the define stage, then build up layer by layer.\n' +
         '2) **Systematic connection**: Link this sub-topic to the broader topic. Make it part of a coherent narrative.\n' +
         '3) **Focused explanation**: explain the current stage clearly, define terms when they first appear, and show only the reasoning needed for this turn.\n' +
-        '4) Use only the scaffold blocks required by the current teaching stage. Do not add examples, practice, or quiz blocks early just to make the response longer.\n' +
+        '4) Use only the native learning interactions required by the current teaching stage. Do not add examples, practice, or quiz blocks early just to make the response longer.\n' +
         'Write in formal, precise textbook language. Use bold for terms. Use LaTeX for math. Build a knowledge system one stage at a time.'
       : fromBasicsTxt +
         diagKps +
@@ -157,7 +157,7 @@ export function buildSocraticMessages(
         stageInstr +
         ' ' +
         'Connect new material to what was already taught. Do NOT restart from the beginning. ' +
-        'Use only the scaffold required by the current stage. ' +
+        'Use only native learning interactions required by the current stage. ' +
         'Write in formal textbook register. Build systematically on prior knowledge.') +
       '\n\n' +
       turnScope,
@@ -211,10 +211,10 @@ export function buildFollowUpMessages(
         : 'Present a practice problem for the student to attempt, then wait for their answer.';
   } else if (stage === 'check') {
     stageGuidance =
-      'If the student just answered a <quiz> correctly, acknowledge and prepare to move to the next sub-topic. If wrong, briefly correct the misconception and re-check with another short quiz.';
+      'If the student just answered a quiz correctly, acknowledge and prepare to move to the next sub-topic. If wrong, briefly correct the misconception and re-check with another short quiz.';
   } else if (stage === 'illustrate') {
     stageGuidance =
-      'If the student just answered a <quiz>, acknowledge (right/wrong) and continue with the next worked <example> in the progression.';
+      'If the student just answered a quiz, acknowledge (right/wrong) and continue with the next worked example in the progression.';
   } else {
     stageGuidance = 'Advance the lesson one stage: ' + stageInstr;
   }
@@ -233,9 +233,9 @@ export function buildFollowUpMessages(
       stageGuidance +
       '\n' +
       'Your job is to advance the lesson; stay anchored to the two principles above:\n' +
-      '- If the student just answered a <quiz>, acknowledge (right/wrong) and move to the next stage (a worked <example> or a <practice> problem). When introducing new material, refer to the earlier core definition in one sentence only.\n' +
-      '- If the student just attempted a <practice> problem, evaluate their work: if correct, affirm and present the next sub-topic; if wrong or partial, identify the specific gap and repair only that gap before giving a similar practice problem.\n' +
-      '- If the student just asked a free-form question, answer it briefly (1-2 paragraphs) and then return to the current stage of the loop, still rooted in the foundational definition.\n' +
+      '- If the student just answered a quiz, acknowledge (right/wrong) and move to the next stage (a worked example or a practice problem). When introducing new material, refer to the earlier core definition in one sentence only.\n' +
+      '- If the student just attempted a practice problem, evaluate their work: if correct, affirm and present the next sub-topic; if wrong or partial, identify the specific gap and repair only that gap before giving a similar practice problem.\n' +
+      '- If the student just asked a free-form question, answer it with the depth it needs before returning to the current stage when appropriate, still rooted in the foundational definition.\n' +
       turnScope +
       '\n' +
       'Do NOT restart the entire topic from scratch on every turn; instead, advance the lesson while keeping the foundation as the persistent anchor for any new material.',

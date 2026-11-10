@@ -31,6 +31,8 @@ class LearningModelsTest {
     @Test fun tutorVoiceAndProgressAreRealAndSessionScoped() {
         val session=ChatSession(topic="Algebra",mode="tutor",kind="tutor",wire=JSONObject().put("teachingStage","motivate").put("kbNodes",org.json.JSONArray().put(JSONObject().put("name","Linear equations"))))
         assertTrue(LearningModels.tutorSystemPrompt(session).contains("Socratic tutor"))
+        assertTrue(LearningModels.tutorSystemPrompt(session).startsWith("[Current turn instructions]\n"))
+        assertTrue(LearningModels.tutorSystemPrompt(session).contains("takes precedence over the default stage plan"))
         val progressed=LearningModels.advanceTutorProgress(session,"I have a detailed understanding of this topic and can explain the underlying reasoning in my own words.")
         assertEquals("define",progressed.wire?.getString("teachingStage")); assertEquals(1,progressed.wire?.getInt("substantiveCount"))
         val chat=session.copy(kind="chat"); assertEquals(chat,LearningModels.advanceTutorProgress(chat,"hello"))

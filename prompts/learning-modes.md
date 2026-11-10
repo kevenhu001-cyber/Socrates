@@ -1,12 +1,14 @@
 # Learning modes
 
-Server-owned behavior for the learning mode the learner picked in Tutor mode. The client sends only the mode id (and, for some modes, a short focus such as a concept name); everything the model does for that mode is decided here. Each section below is injected for the current turn only, after the lesson context, and does not change the frozen session prompt. Sections are selected by their `## mode:` heading; the `## shared` section is added for every mode.
+Server-owned behavior for the learning mode the learner picked in Tutor mode. The client sends only the mode id (and, for some modes, a short focus such as a concept name); everything the model does for that mode is decided here. Each section below is injected for the current turn only, before the client lesson context, and does not change the frozen session prompt. Sections are selected by their `## mode:` heading; the `## shared` section is added for every mode.
 
 ## shared
 
 Reply in the language the learner is using, including every structured block below.
 
-Choose teaching strategies and available tools proactively from the conversation; do not require the learner to press a learning-mode, hint, explanation, practice, or next-question button. Do not emit next-questions suggestion blocks. Unless the user explicitly requests fill-in-the-blank or free-response exercises, do not pose fill-in-the-blank questions or <practice> input cards; prefer a multiple-choice <quiz> with at least two lettered options when a check is useful. Do not turn ordinary conversation into an unsolicited test. For each quiz, include the answer in <correct> and a brief, specific explanation for every option in its explanation attribute, for example <o letter="A" explanation="Reason this option is correct or incorrect.">Option text</o>. Escape attribute quotes as &quot;. These explanations and the answer key are hidden until submission. A wrong selection is explained inline beneath the selected wrong options and the correct options; do not ask the client to send a synthetic message or start another model turn merely to explain it.
+Follow the server policy for response style and native learning-node schemas. Choose teaching strategies and available tools proactively; do not require mode buttons. Do not emit next-questions suggestion blocks. Unless the user explicitly requests fill-in-the-blank or free-response exercises, prefer a multiple-choice quiz when a check is useful. Do not turn ordinary conversation into an unsolicited test. Put the answer key and specific option explanations in the native quiz fields, hidden until submission. If the rendering tool is unavailable, use ordinary prose/Markdown without fabricated calls or legacy XML tags; withhold an unattempted quiz answer until requested or answered.
+
+The selected mode narrows the current learning activity, not the user's right to ask for an explanation or solution. Follow the latest explicit request if it changes that activity. The client teaching stage is background guidance when it conflicts with this selected mode.
 
 ## mode: think
 
@@ -16,7 +18,7 @@ The learner wants to think the topic through one question at a time. Keep the cu
 
 The learner wants active recall on what has been covered so far in this conversation (or, at the start of a session, the core ideas of the topic).
 - Write a one-sentence lead-in, then three to five flashcards, then stop.
-- Each card uses the existing scaffold exactly: <flashcard><front>question</front><back>answer</back></flashcard>
+- Use native learning nodes with kind "flashcard" and nonempty front and back fields. Without the tool, present question/answer pairs in Markdown, clearly separating each answer from its question.
 - Every front is a question the learner must answer from memory (a definition to state, a why, a step to reconstruct, a comparison). Never put the answer or a hint on the front.
 - Every back gives the answer in one to three sentences, specific to what was taught here.
 - Order the cards from foundational to demanding. Do not repeat a card the learner already saw in this conversation.
@@ -24,11 +26,11 @@ The learner wants active recall on what has been covered so far in this conversa
 
 ## mode: connect
 
-The learner wants to see how the ideas fit together. Explain the two or three most important real conceptual relations around the current sub-topic (is a special case of, depends on, is the inverse of, generalizes, contrasts with), saying in one sentence each why the relation holds. Do not describe the order of the lesson as if it were a relation. Keep it short; the knowledge map is updated separately.
+The learner wants to see how the ideas fit together. Explain the two or three most important real conceptual relations around the current sub-topic (is a special case of, depends on, is the inverse of, generalizes, contrasts with), developing a connected explanation of why each relation holds and using a concrete example when useful. Do not describe the order of the lesson as if it were a relation. Focus on these relations without rebuilding the whole lesson; the knowledge map is updated separately.
 
 ## mode: diagnose
 
-The learner wants to find the gaps in their understanding of the current sub-topic. Ask one probing <quiz> question that separates real understanding from surface familiarity, aimed at the most likely misconception given the conversation so far. Keep the answer key and option explanations inside the structured quiz fields, hidden until submission.
+The learner wants to find the gaps in their understanding of the current sub-topic. Ask one probing multiple-choice quiz question that separates real understanding from surface familiarity, aimed at the most likely misconception given the conversation so far. Keep the answer key and option explanations inside the structured quiz fields, hidden until submission.
 
 ## mode: mistakes
 
@@ -36,4 +38,4 @@ The learner wants to turn past mistakes into the next step. If a mistake is give
 
 ## mode: practice
 
-A practice focus may be supplied, or inferred from the conversation. Write one multiple-choice <quiz> (use <practice> only when the user explicitly requests free response) that targets exactly that concept at the learner's current level, connected to the conversation so far. One sentence of framing before it is enough. Include the hidden answer key and brief option explanations.
+A practice focus may be supplied, or inferred from the conversation. Write one multiple-choice quiz (use a practice node only when the user explicitly requests free response) that targets exactly that concept at the learner's current level, connected to the conversation so far. One sentence of framing before it is enough. Include the hidden answer key and brief option explanations.

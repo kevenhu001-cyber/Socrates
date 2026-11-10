@@ -68,7 +68,7 @@ test('socraticDirectives: stageInstruction is stable per teaching stage', () => 
 test('socraticDirectives: fromBasicsDirective depth cue and continuation are stable', () => {
   assert.equal(
     BASELINE_LEVEL,
-    'baseline (not mastery), depth cue only, always start from the core definition',
+    'baseline (not mastery), depth cue only; establish foundations within the current teaching stage',
   );
 
   const cold = fromBasicsDirective({ status: 'fuzzy' }, {});

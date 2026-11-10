@@ -17,17 +17,19 @@ describe('RN-6 learning-mode prompts', () => {
       const prompt = await getLearningModePrompt(mode);
       assert.ok(prompt, `missing section for ${mode}`);
       assert.match(prompt, /Do not emit next-questions suggestion blocks/, `${mode} lacks autonomous learning instructions`);
-      assert.match(prompt, /explanation attribute/);
+      assert.match(prompt, /native quiz fields/);
+      assert.doesNotMatch(prompt, /<(?:quiz|practice|flashcard|correct|o)[ >]/);
       assert.match(prompt, /Unless the user explicitly requests fill-in-the-blank/);
       assert.ok(prompt.length < 4_000, `${mode} prompt grew to ${prompt.length}`);
       assert.doesNotMatch(prompt, /[—–]/, `${mode} prompt uses a dash the server policy forbids`);
     }
   });
 
-  test('recall asks for 3-5 cards in the RN-3 flashcard scaffold', async () => {
+  test('recall asks for 3-5 native flashcards with a tool-free fallback', async () => {
     const prompt = await getLearningModePrompt('recall');
     assert.match(prompt, /three to five flashcards/);
-    assert.match(prompt, /<flashcard><front>question<\/front><back>answer<\/back><\/flashcard>/);
+    assert.match(prompt, /kind "flashcard" and nonempty front and back fields/);
+    assert.match(prompt, /Without the tool, present question\/answer pairs in Markdown/);
   });
 
   test('section parser ignores the preamble and unknown headings', () => {

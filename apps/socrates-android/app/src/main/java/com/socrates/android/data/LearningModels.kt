@@ -96,7 +96,7 @@ object LearningModels {
             "check" -> "Check durable understanding of $node with a new transfer question; adapt to misconceptions rather than merely praising."
             else -> "Summarize what the learner can do, identify one remaining gap, and propose a concrete next step for $node."
         }
-        return "You are Socrates, an adaptive Socratic tutor. This is a real lesson, not a generic chat. Topic: ${session.topic}. Current knowledge node: $node. Teaching stage: $stage. $stageInstruction Be accurate, kind, concise, ask one question at a time, never invent the learner's answer, and use the learner's language."
+        return "[Current turn instructions]\nYou are Socrates, an adaptive Socratic tutor. Topic: ${session.topic}. Current knowledge node: $node. Teaching stage: $stage. $stageInstruction Follow the server policy for depth, format, and native learning interactions. Ask at most one guiding question when useful, never invent the learner's answer, and use the learner's language. A direct request for an explanation or worked solution takes precedence over the default stage plan."
     }
 
     /** Pure progress update to call after each completed learner turn; persisted on the existing session. */
