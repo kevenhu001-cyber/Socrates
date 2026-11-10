@@ -98,5 +98,11 @@ Do not run the full `test:unit` / Playwright suites for every change. Tests are 
      spec instead of relying on the full suite.
 3. Run a subset, e.g.:
    `npx playwright test --config=playwright.config.mjs e2e/<spec>.spec.mjs --workers=1`
-4. If an existing spec fails, rebuild `git stash`-clean HEAD (or inspect the traces)
-   to confirm it is pre-existing before attributing it to the change.
+4. If a spec or test fails, treat it as a defect to fix — do not rebuild
+   `git stash`-clean HEAD to prove it is "pre-existing" first. Root-cause
+   and repair the underlying issue directly (stale assertion, broken
+   guarantee, harness bug); time saved on re-verification goes into the
+   fix. If the failure turns out to be environmental (DNS, snapshots
+   regenerated only for another platform), fix the artifact or document
+   it, then move on. A "pre-existing" label is only a comment in the
+   change description, never a reason to stop.
