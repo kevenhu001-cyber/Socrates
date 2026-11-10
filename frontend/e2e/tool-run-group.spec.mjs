@@ -414,7 +414,8 @@ test('a running code call streams into the open panel and keeps it open on compl
   const bubble = page.locator('.msg.assistant').last();
   const row = bubble.locator('.rn-tool-row[data-tcid="live-code"]').last();
   await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(bubble.getByTestId('turn-activity-label')).toContainText(/\d/);
+  await expect(bubble.getByTestId('turn-activity-label')).toContainText('Executing code');
+  await expect(bubble.getByTestId('turn-activity-duration')).toContainText(/\d/);
 
   await page.evaluate(() => {
     window.__beforeToolSnapshot = window.stateStore.read('messages').at(-1);

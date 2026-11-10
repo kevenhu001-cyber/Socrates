@@ -10,8 +10,9 @@ test('thinking disclosure supports keyboard control and preserves intent through
   const accordion = page.locator('.rn-turn-activity');
   const toggle = accordion.getByTestId('turn-activity-toggle');
   const body = accordion.getByTestId('turn-activity-body');
-  // The header speaks run time; the working cue is the row's spinner.
-  await expect(accordion.getByTestId('turn-activity-label')).toContainText(/Processing|Running/);
+  // The action leads; elapsed time is quiet metadata beside it.
+  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking…');
+  await expect(accordion.getByTestId('turn-activity-duration')).toContainText(/\d/);
   await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(1);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.focus();
@@ -42,9 +43,10 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await setLang(page, 'zh');
-  // The settled header freezes the observed run time; it still never claims
-  // a count of reasoning steps.
-  await expect(toggle).toContainText(/运行了 \d+秒/);
+  // The settled label is neutral; neither seconds nor summary counts are
+  // presented as a measure of reasoning progress.
+  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('思考过程');
+  await expect(accordion.getByTestId('turn-activity-duration')).toContainText(/\d+ 秒/);
   await page.screenshot({ path: 'test-results/thinking-disclosure-desktop.png', animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'test-results/thinking-disclosure-mobile.png', animations: 'disabled' });

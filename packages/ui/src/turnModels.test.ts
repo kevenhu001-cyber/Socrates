@@ -23,10 +23,10 @@ import {
 } from './turn/toolCardModel.ts';
 
 const ZH: ThinkingLabels = {
-  running: '已运行 {sec}秒',
-  ran: '运行了 {sec}秒',
   runningNoTime: '正在处理…',
-  doneNoTime: '活动详情',
+  doneNoTime: '思考过程',
+  usedTool: '使用了 {n} 个工具',
+  usedTools: '使用了 {n} 个工具',
 };
 
 test('splitSummary reads bold, heading, line and sentence shapes', () => {
@@ -81,14 +81,25 @@ test('timeline interleaves by time and merges consecutive tools into one group',
   assert.deepEqual(history.map((entry) => entry.kind), ['step', 'step', 'tools']);
 });
 
-test('the activity header reports run time only, never a reasoning step count', () => {
+test('the current action leads while elapsed time stays out of the live announcement', () => {
   assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: true }), ZH), '正在处理…');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: true, durationSec: 0 }), ZH), '正在处理…');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: true, durationSec: 22.4 }), ZH), '已运行 22秒');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, durationSec: 11.4 }), ZH), '运行了 11秒');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, durationSec: 0.2 }), ZH), '运行了 1秒');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false }), ZH), '活动详情');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, durationSec: Number.NaN }), ZH), '活动详情');
+  for (const durationSec of [0, 1, 22.4, 120]) {
+    const header = thinkingHeaderOf({ live: true, durationSec, statusLabel: ' 正在搜索网页… ', toolCount: 3 });
+    assert.equal(thinkingLabelOf(header, ZH), '正在搜索网页…');
+  }
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, durationSec: 11.4 }), ZH), '思考过程');
+  assert.equal(thinkingHeaderOf({ live: false, durationSec: 0.2 }).durationSec, 1);
+  assert.equal(thinkingHeaderOf({ live: false, durationSec: Number.NaN }).durationSec, null);
+});
+
+test('settled headers count actual tool calls, not summaries or successful steps', () => {
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount: 3, statusLabel: 'Searching…' }), ZH), '使用了 3 个工具');
+  const en = { ...ZH, usedTool: 'Used {n} tool', usedTools: 'Used {n} tools' };
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount: 1 }), en), 'Used 1 tool');
+  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount: 2 }), en), 'Used 2 tools');
+  for (const toolCount of [undefined, -1, Number.NaN, Infinity]) {
+    assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount }), ZH), '思考过程');
+  }
 });
 
 test('verbs map tool names to one action vocabulary', () => {

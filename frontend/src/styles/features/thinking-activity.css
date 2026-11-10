@@ -60,17 +60,18 @@
   .msg-retry-btn { min-height: var(--ui-control-touch); }
 }
 
-/* ── Activity rail ──────────────────────────────────────────────────────
-   The rows themselves are drawn by @socrates/ui/turn (RN): one hairline
-   rail, one 16px glyph, one line of copy per step. Two HTML blocks still
-   live inside a row on the web host — a public summary body and an inline
-   tool detail — and these rules shape only those, from theme variables. */
+/* ── Activity disclosure ────────────────────────────────────────────────
+   The RN surface owns the compact action + duration header and a single
+   quiet rail. These HTML bodies stay aligned with their row's label;
+   neither summaries nor tool details introduce another card surface. */
 .rn-turn-activity .thinking-step-summary {
   margin: 0;
-  padding-top: var(--ui-gap-1);
+  max-height: min(360px, 50dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
   color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
-  line-height: var(--ui-text-ui-line);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-relaxed);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -81,9 +82,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--ui-gap-3);
-  max-height: 360px;
+  min-width: 0;
+  max-height: min(360px, 50dvh);
   overflow: auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 .rn-turn-activity .thinking-step-detail-body .rn-tool-actions {
   margin-block: 0;
@@ -110,7 +113,7 @@
 
 /* Public timeline entries remain still beneath the one live caption. */
 
-/* Text shimmer on the live caption (「已运行 12秒」, a tool status, while the
+/* Text shimmer on the live action caption (thinking or a tool status, while the
    answer streams too). A light band crosses the glyphs left to right on a
    loop: the muted secondary ink is the base, the primary ink is the band,
    both theme variables so light and dark read the same. The gradient image
@@ -118,7 +121,7 @@
    starts and ends fully outside the text and every loop restarts unseen;
    ease-in-out leaves a short rest between sweeps. One element, background-
    position only, no JS. data-live is dropped when the turn settles, so the
-   frozen 「运行了 12秒」 caption is plain text again. Reduced motion and
+   settled disclosure label is plain text again. Reduced motion and
    forced colours never match this block and keep the normal ink. */
 @media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
   [data-turn-surface-part="activity"][data-live="true"] [data-testid="turn-activity-label"] {

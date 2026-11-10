@@ -10,8 +10,9 @@ export const TURN = Object.freeze({
   wrapper: '.rn-turn-activity',
   toggle: '[data-testid="turn-activity-toggle"]',
   label: '[data-testid="turn-activity-label"]',
+  duration: '[data-testid="turn-activity-duration"]',
   body: '[data-testid="turn-activity-body"]',
-  /** The live working glyph (inline-SVG spark) ahead of the caption. */
+  /** The live working glyph (rotating dotted sphere) ahead of the caption. */
   indicator: '[data-testid="turn-activity-indicator"]',
   /** The running step's arc, one per running row. */
   spinner: '[data-testid="thinking-step-spinner"]',

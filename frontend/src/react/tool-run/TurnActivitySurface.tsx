@@ -1,12 +1,11 @@
 /**
- * The turn's activity surface (RN-2): one quiet line of run time above a
+ * The turn's activity surface (RN-2): one quiet current-action line above a
  * rail of steps.
  *
- * Live:      the header counts up (「已运行 12秒」) behind the turning
- *            sphere, its caption sweeps a shimmer, and the running step
- *            spins on its own arc.
- * Settled:   the count freezes (「运行了 12秒」), the glyph and the shimmer
- *            stop with it, and every row is still.
+ * Live:      the current action leads behind the turning sphere; elapsed
+ *            time is quiet metadata, outside the status live region.
+ * Settled:   actual tool usage (or a thought disclosure) replaces the live
+ *            action, and the working glyph and shimmer stop.
  * Steps:     public provider summaries and tool calls share one row shape;
  *            a row opens its detail inline, beneath its own label.
  *
@@ -36,7 +35,7 @@ import { ToolRunAgentSteps } from './ToolRunAgentSteps';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
 import { useElapsed } from './useElapsed';
 import { agentRunStateOf, runStartedAt, toolRunStateOf, toolRunView, type ToolCallRecord, type ToolRunView } from './toolRunModel';
-import { toolRunLabel } from '../../ui/toolPresentationModel.ts';
+import { tf, toolRunLabel } from '../../ui/toolPresentationModel.ts';
 import { interfaceIcon } from '../../ui/icons/interfaceIcons.ts';
 
 export interface TurnActivitySurfaceProps {
@@ -59,17 +58,17 @@ export interface TurnActivitySurfaceProps {
 
 function thinkingLabels(): ThinkingLabels {
   return {
-    running: i18n('think.rn.running', '已运行 {sec}秒'),
-    ran: i18n('think.rn.ran', '运行了 {sec}秒'),
     runningNoTime: i18n('think.rn.runningNoTime', '正在处理…'),
-    doneNoTime: i18n('think.rn.doneNoTime', '活动详情'),
+    doneNoTime: i18n('think.rn.doneNoTime', '思考过程'),
+    usedTool: i18n('think.summaryToolTitle', '使用了 {n} 个工具'),
+    usedTools: i18n('think.summaryToolsTitle', '使用了 {n} 个工具'),
   };
 }
 
 /** A public summary row. The body text, when present, is the disclosure. */
 function SummaryStep({ step, live }: { step: ThinkingStep; live: boolean }): ReactElement {
   const [open, setOpen] = useState(false);
-  const label = step.title || step.summary;
+  const label = step.title || i18n('think.summary', '思考摘要');
   const expandable = Boolean(step.summary);
   return (
     <ActivityStep
@@ -203,6 +202,15 @@ function surfaceDataAttrs(input: { isLive: boolean; showActivityCue: boolean; st
   };
 }
 
+function useRunDuration(activities: ReadonlyArray<TurnActivityEntry>, calls: ReadonlyArray<ToolCallRecord>, isLive: boolean, elapsedSec?: number): number | undefined {
+  const liveSec = useElapsed(useRunStart(activities, calls), isLive);
+  /* Freeze exactly the displayed second, without rounding up again when
+     the turn settles. An unknown historical duration stays unknown. */
+  const lastSec = useRef(0);
+  if (isLive && liveSec > 0) lastSec.current = Math.max(lastSec.current, Math.max(1, Math.round(liveSec / 1000)));
+  return isLive ? liveSec / 1000 : (lastSec.current || undefined) ?? elapsedSec;
+}
+
 export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const { activities = [], isLive = false, elapsedSec, status, calls = [], readOnly } = props;
   const statusLabel = props.statusLabel?.trim();
@@ -215,15 +223,10 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const steps = stepsWithFallback(timelineSteps, (props.publicSummary || '').trim());
   const intent = props.intentSummary?.trim() || '';
 
-  const liveSec = useElapsed(useRunStart(activities, calls), isLive);
-  /* The ticking counter stops with the turn; keep the last observed second
-     so a settled row never drops back to "activity details". */
-  const lastSec = useRef(0);
-  if (isLive) lastSec.current = Math.max(lastSec.current, Math.ceil(liveSec / 1000));
-  const frozenSec = lastSec.current || undefined;
-  const durationSec = isLive ? liveSec / 1000 : frozenSec ?? elapsedSec;
-  const header = thinkingHeaderOf({ live: isLive, durationSec });
+  const durationSec = useRunDuration(activities, calls, isLive, elapsedSec);
+  const header = thinkingHeaderOf({ live: isLive, durationSec, toolCount: calls.length, statusLabel });
   const label = thinkingLabelOf(header, thinkingLabels());
+  const durationLabel = header.durationSec === null ? undefined : tf('think.rn.elapsed', '{sec}秒', { sec: header.durationSec });
 
   const rows = rowsFor({ steps, calls, intent, isLive, statusLabel, status, readOnly });
   const hasDetails = rows.length > 0 && Boolean(steps.length || intent || calls.length);
@@ -235,6 +238,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
       <WebUiTheme>
         <ThinkingSurface
           label={label}
+          durationLabel={durationLabel}
           live={isLive}
           indicator={isLive ? <ThinkingSpark /> : undefined}
           expandable={hasDetails}
@@ -244,7 +248,6 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
         >
           {hasDetails ? <ThinkingTimeline>{rows}</ThinkingTimeline> : null}
         </ThinkingSurface>
-        {!hasDetails && isLive ? <ThinkingTimeline>{rows}</ThinkingTimeline> : null}
       </WebUiTheme>
     </div>
   );

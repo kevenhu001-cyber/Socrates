@@ -97,7 +97,7 @@ test('inline results preserve node identity, edited values and tabs', async ({ p
   await page.screenshot({ path: 'test-results/intelligent-ui-inline-tabs.png' });
 });
 
-test('a live turn counts run time, sweeps the caption and spins exactly one running step', async ({ page }) => {
+test('a live turn names its action, separates run time and spins exactly one running step', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check assumptions.' });
@@ -108,11 +108,13 @@ test('a live turn counts run time, sweeps the caption and spins exactly one runn
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
   await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
-  /* The header is a line of time behind the turning sphere, and its caption
-     sweeps a shimmer while the turn runs. */
+  /* The action leads behind the original sphere; only the secondary time
+     ticks, so the status announcement and action text stay stable. */
   const label = activity.locator(TURN.label);
   await expect(label).toHaveAttribute('role', 'status');
-  await expect(label).toContainText(/\d/);
+  await expect(label).toContainText('official specifications');
+  await expect(activity.locator(TURN.duration)).toContainText(/\d/);
+  await expect(activity.locator(TURN.duration)).toHaveAttribute('aria-live', 'off');
   await expect(activity.locator(TURN.indicator)).toHaveCount(1);
   expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('ui-shimmer-sweep');
   const spinner = activity.locator(TURN.spinner);

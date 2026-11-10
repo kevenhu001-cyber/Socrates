@@ -58,7 +58,11 @@ for (const viewport of VIEWPORTS) for (const mode of ['light', 'dark']) {
         primary: style.color, font: style.fontFamily, border: style.borderTopWidth, shadow: style.boxShadow, background: style.backgroundColor,
         overflow: document.documentElement.scrollWidth - innerWidth, x: body.getBoundingClientRect().x, width: body.getBoundingClientRect().width };
     });
-    expect(typography).toMatchObject({ size: '16px', line: '28px', h2: '20px', h3: '18px', border: '0px', shadow: 'none', background: 'rgba(0, 0, 0, 0)', overflow: 0 });
+    // Phones have a separate reference-pinned type scale in components/chat.css;
+    // parity/transcript.css owns the larger desktop headings and line pitch.
+    const mobile = viewport.width <= 768;
+    const readingType = mobile ? { line: '26px', h2: '18px', h3: '16px' } : { line: '28px', h2: '20px', h3: '18px' };
+    expect(typography).toMatchObject({ size: '16px', ...readingType, border: '0px', shadow: 'none', background: 'rgba(0, 0, 0, 0)', overflow: 0 });
     expect(typography.headingColors).toEqual([typography.primary, typography.primary]);
     expect(typography.font).toContain('Geist Sans');
     expect(typography.font).toContain('Noto Sans SC');
@@ -79,7 +83,7 @@ for (const viewport of VIEWPORTS) for (const mode of ['light', 'dark']) {
     // Scale must be normalized once for both prose and headings.
     await page.evaluate(() => document.documentElement.style.setProperty('--app-font-scale', '1.35'));
     await expect(page.locator('.msg.assistant .msg-body')).toHaveCSS('font-size', '19.2px');
-    await expect(page.locator('.tool-run-prose h3')).toHaveCSS('font-size', '21.6px');
+    await expect(page.locator('.tool-run-prose h3')).toHaveCSS('font-size', mobile ? '19.2px' : '21.6px');
     expect(errors).toEqual([]);
   });
 }

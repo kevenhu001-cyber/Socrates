@@ -71,7 +71,9 @@ test('intent stays in the unified activity and completed observations do not dup
   const bubble = await startTurn(page);
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   await expect(bubble.locator(TURN.label)).toHaveAttribute('role', 'status');
-  await expect(bubble.locator(TURN.spinner)).toHaveCount(1);
+  await expect(bubble.locator(TURN.label)).toHaveText('Thinking…');
+  await expect(bubble.locator(TURN.indicator)).toBeVisible();
+  await expect(bubble.locator(TURN.spinner)).toHaveCount(0);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
   const toggle = bubble.locator(TURN.toggle);
   await expect(toggle).toBeEnabled();
@@ -98,8 +100,10 @@ test('the running tool names itself on its row, and its detail opens inline', as
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  /* The header counts time; the running row carries what is happening. */
-  await expect(bubble.locator(TURN.label)).toContainText(/\d/);
+  /* The collapsed header names the action; time is secondary metadata. */
+  await expect(bubble.locator(TURN.label)).toContainText('public query');
+  await expect(bubble.locator(TURN.duration)).toContainText(/\d/);
+  await expect(bubble.locator(TURN.duration)).toHaveAttribute('aria-live', 'off');
   await expect(row.locator(TURN.spinner)).toHaveCount(1);
   await openActivity(bubble);
   await expect(toolRowButton(bubble, 'search-inline')).toContainText('public query');
@@ -163,6 +167,22 @@ test('a task preview does not leave a thought header on a plain answer', async (
   await expect(bubble.locator(TURN.surface)).toHaveCount(0);
 });
 
+test('a long public summary has a short disclosure title, without repeating the body', async ({ page }) => {
+  const bubble = await startTurn(page);
+  const text = 'Comparing the assumptions across the official specifications and independently checking the numerical results';
+  await page.evaluate((text) => window.__pushThinkingFrame('turn_activity', { type: 'public_reasoning_summary', text }), text);
+  await openActivity(bubble);
+  const step = bubble.locator(TURN.step).first();
+  await expect(step).toHaveText('Activity summary');
+  await step.focus();
+  await page.keyboard.press('Enter');
+  await expect(bubble.locator(TURN.stepSummary)).toHaveText(text);
+  await expect(bubble.locator(TURN.stepSummary)).toBeVisible();
+  await page.keyboard.press('Space');
+  await expect(bubble.locator(TURN.stepSummary)).toHaveCount(0);
+  await page.evaluate(() => window.__finishThinking());
+});
+
 for (const theme of ['light', 'dark']) {
   for (const mobile of [false, true]) {
     test(`activity rail hierarchy: ${theme}, ${mobile ? 'mobile' : 'desktop'}`, async ({ page }) => {
@@ -191,6 +211,12 @@ for (const theme of ['light', 'dark']) {
       const bubble = page.locator('.msg.assistant').last();
       const process = bubble.locator(TURN.toggle);
       await expect(process).toHaveAttribute('aria-expanded', 'false');
+      await expect(bubble.locator(TURN.label)).toHaveText('使用了 3 个工具');
+      await process.hover();
+      const headerBounds = await process.boundingBox();
+      const surfaceBounds = await bubble.locator(TURN.surface).boundingBox();
+      expect(headerBounds.width).toBeLessThan(surfaceBounds.width);
+      expect(headerBounds.height).toBeGreaterThanOrEqual(mobile ? 44 : 32);
       await process.click();
       await page.mouse.move(0, 0);
       await expect(process).toBeVisible();
@@ -198,6 +224,9 @@ for (const theme of ['light', 'dark']) {
       /* Every call is one row: no aggregate group header to open first. */
       await page.mouse.move(0, 0);
       await expect(bubble.locator(TURN.row)).toHaveCount(3);
+      const rail = bubble.getByTestId('thinking-timeline');
+      await expect(rail).toHaveCSS('border-left-width', '1px');
+      expect(await rail.evaluate((node) => getComputedStyle(node).borderLeftColor)).not.toBe('rgba(0, 0, 0, 0)');
       for (const row of await bubble.locator(`${TURN.row} [data-testid^="tool-row-"][role="button"]`).all()) {
         await expect(row).toBeVisible();
         await expect(row).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -226,6 +255,8 @@ for (const theme of ['light', 'dark']) {
       await expect(detail).toBeVisible();
       await expect(detail.locator('[data-testid="tool-detail-section-input"]')).toContainText(longQuery.slice(0, 20));
       await expect(detail.locator(TURN.source)).toBeVisible();
+      expect(await bubble.evaluate((node) => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+      await bubble.screenshot({ path: `test-results/activity-detail-${encodeURIComponent(mobile ? 'mobile' : 'desktop')}-${encodeURIComponent(theme)}.png` });
       await expect(page.locator('.tool-run-sheet, [data-thinking-panel], vite-error-overlay')).toHaveCount(0);
       expect(errors).toEqual([]);
     });
@@ -265,6 +296,8 @@ test('the live caption shimmers and the sphere turns, both respecting reduced mo
 
 test('the running row spins on the compositor and stops when the turn settles', async ({ page }) => {
   const bubble = await startTurn(page);
+  await page.evaluate(() => window.__pushThinkingFrame('tool_use', [{ id: 'spinning-tool', name: 'web_search', input: { query: 'motion' } }]));
+  await openActivity(bubble);
   const spinner = bubble.locator(TURN.spinner);
   await expect(spinner).toHaveCount(1);
   const transform = () => spinner.evaluate((el) => {
@@ -279,6 +312,11 @@ test('the running row spins on the compositor and stops when the turn settles', 
   const frozen = await transform();
   await page.waitForTimeout(400);
   expect(await transform()).toBe(frozen);
-  await page.evaluate(() => window.__finishPlain());
-  await expect(bubble.locator(TURN.surface)).toHaveCount(0);
+  await page.evaluate(() => {
+    window.__pushThinkingFrame('tool_result', { id: 'spinning-tool', name: 'web_search', ok: true, status: 'completed', output: 'Done.' });
+    window.__finishPlain();
+  });
+  await expect(bubble.locator(TURN.spinner)).toHaveCount(0);
+  await expect(bubble.locator(TURN.indicator)).toHaveCount(0);
+  await expect(bubble.locator(TURN.label)).toHaveText('Used 1 tool');
 });

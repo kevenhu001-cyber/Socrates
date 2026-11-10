@@ -101,8 +101,9 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(1);
   await expect(row.getByTestId('thinking-step-title')).toContainText('Executing code');
 
-  // The turn's header ticks while the row is in flight.
-  const meta = bubble.getByTestId('turn-activity-label');
+  // Only the secondary duration ticks; the current-action label is stable.
+  await expect(bubble.getByTestId('turn-activity-label')).toContainText('Executing code');
+  const meta = bubble.getByTestId('turn-activity-duration');
   const readMeta = async () => (await meta.count()) ? (await meta.first().innerText()).trim() : '';
   await expect.poll(readMeta, { timeout: 10_000 }).toMatch(/\d/);
   const firstReading = await readMeta();

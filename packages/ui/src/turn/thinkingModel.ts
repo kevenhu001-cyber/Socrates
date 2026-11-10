@@ -130,28 +130,32 @@ export interface ThinkingHeader {
   live: boolean;
   /** Whole seconds, at least 1, or null when the run duration is unknown. */
   durationSec: number | null;
+  /** Actual tool calls, never an inferred reasoning-step count. */
+  toolCount: number;
+  statusLabel: string;
 }
 
-/**
- * The header speaks one fact: how long the run has been going. Step counts
- * are gone on purpose — a provider's public summaries are not a verified
- * step log, and a fabricated counter read as progress that never happened.
- */
-export function thinkingHeaderOf(input: { live: boolean; durationSec?: number | null }): ThinkingHeader {
+/** The current action is the headline; elapsed time is separate metadata.
+ * Keeping the ticking duration out of the label also keeps a live region
+ * from announcing a new status every second. */
+export function thinkingHeaderOf(input: {
+  live: boolean;
+  durationSec?: number | null;
+  toolCount?: number;
+  statusLabel?: string;
+}): ThinkingHeader {
   const duration = typeof input.durationSec === 'number' && Number.isFinite(input.durationSec) && input.durationSec > 0
     ? Math.max(1, Math.round(input.durationSec)) : null;
-  return { live: Boolean(input.live), durationSec: duration };
+  const toolCount = typeof input.toolCount === 'number' && Number.isFinite(input.toolCount)
+    ? Math.max(0, Math.floor(input.toolCount)) : 0;
+  return { live: Boolean(input.live), durationSec: duration, toolCount, statusLabel: input.statusLabel?.trim() || '' };
 }
 
 export interface ThinkingLabels {
-  /** Live copy with an observed duration, e.g. 「已运行 22秒」. */
-  running: string;
-  /** Settled copy with the final duration, e.g. 「运行了 22秒」. */
-  ran: string;
-  /** Live copy without a duration. */
   runningNoTime: string;
-  /** Settled copy without a duration. */
   doneNoTime: string;
+  usedTool: string;
+  usedTools: string;
 }
 
 function fill(template: string, values: Record<string, number>): string {
@@ -159,8 +163,7 @@ function fill(template: string, values: Record<string, number>): string {
 }
 
 export function thinkingLabelOf(header: ThinkingHeader, labels: ThinkingLabels): string {
-  if (header.durationSec !== null) {
-    return fill(header.live ? labels.running : labels.ran, { sec: header.durationSec });
-  }
-  return header.live ? labels.runningNoTime : labels.doneNoTime;
+  if (header.live) return header.statusLabel || labels.runningNoTime;
+  if (header.toolCount > 0) return fill(header.toolCount === 1 ? labels.usedTool : labels.usedTools, { n: header.toolCount });
+  return labels.doneNoTime;
 }

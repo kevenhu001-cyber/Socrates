@@ -1,13 +1,9 @@
 /**
  * ThinkingSurface — the one-line activity header and its expandable
- * step list (RN-2, design R3).
- *
- * The header is one line of time plus a chevron, led by the host's working
- * glyph: the observed run duration, a 3D sphere turning in front of it, and
- * a shimmer that sweeps the caption's ink while the turn runs. The rows below
- * carry the detail — the running step spins on its own arc — but the header
- * keeps its own liveness cue, so a reader sees the turn working even when
- * the rail is collapsed.
+ * step list. The current action leads; elapsed time stays secondary, and
+ * the host's working glyph remains visible with the details collapsed.
+ * A content-sized trigger and a single quiet rail keep this subordinate
+ * to the answer rather than looking like another message card.
  *
  * The host supplies already-public copy only (see thinkingModel).
  */
@@ -20,8 +16,10 @@ import { usePressFeedback } from '../primitives/UiButton';
 import { Chevron, Spinner, useReducedMotion, useReveal } from './parts';
 
 export interface ThinkingSurfaceProps {
-  /** The quiet headline: run duration, or a neutral fallback. */
+  /** Current action, or a neutral settled disclosure label. */
   label: string;
+  /** Quiet elapsed time; deliberately outside the status live region. */
+  durationLabel?: string;
   live: boolean;
   /** Live working indicator, drawn ahead of the caption (host-rendered glyph). */
   indicator?: ReactNode;
@@ -33,7 +31,7 @@ export interface ThinkingSurfaceProps {
   children?: ReactNode;
 }
 
-export function ThinkingSurface({ label, live, indicator, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
+export function ThinkingSurface({ label, durationLabel, live, indicator, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -51,16 +49,16 @@ export function ThinkingSurface({ label, live, indicator, expandable, open, onTo
         onPress={onToggle}
         {...handlers}
         style={{
-          alignSelf: 'stretch',
+          alignSelf: 'flex-start',
+          maxWidth: '100%',
           minWidth: 0,
           flexDirection: 'row',
           flexWrap: 'nowrap',
           alignItems: 'center',
-          gap: S[50],
+          gap: S[75],
           minHeight: width < 768 ? 44 : 32,
-          paddingLeft: S[100],
-          paddingRight: expandable ? S[50] : S[100],
-          marginLeft: -S[100],
+          paddingHorizontal: S[75],
+          marginLeft: -S[75],
           borderRadius: R.row,
           backgroundColor: expandable && hovered ? colors.fill : 'transparent',
           ...focusRing(colors, focused),
@@ -84,13 +82,25 @@ export function ThinkingSurface({ label, live, indicator, expandable, open, onTo
         >
           {label}
         </UiText>
+        {durationLabel ? (
+          <UiText
+            testID="turn-activity-duration"
+            variant="labelSm"
+            tone="tertiary"
+            aria-live="off"
+            numberOfLines={1}
+            style={{ flexShrink: 0, fontVariant: ['tabular-nums'] }}
+          >
+            {durationLabel}
+          </UiText>
+        ) : null}
         {expandable ? <Chevron open={open} tone="tertiary" /> : null}
       </Pressable>
       <Animated.View
         testID="turn-activity-body"
         nativeID={bodyId}
         aria-hidden={!open}
-        style={[{ display: open ? 'flex' : 'none', marginTop: S[25] }, reveal]}
+        style={[{ display: open ? 'flex' : 'none', marginTop: S[50], marginBottom: S[75] }, reveal]}
       >
         {children}
       </Animated.View>
@@ -115,14 +125,14 @@ export interface ActivityStepProps {
   testID?: string;
 }
 
-/**
- * Vertical timeline on a single hairline rail. The rail is the line, the
- * active step's segment is drawn in ink, and every row is one icon plus one
- * line of text — no cards, no status words, no per-row durations.
- */
+/** One continuous muted rail, not a heavy active segment for every row. */
 export function ThinkingTimeline({ children }: { children?: ReactNode }) {
+  const { colors } = useUiTheme();
   return (
-    <View testID="thinking-timeline" style={{ alignSelf: 'stretch' }}>
+    <View
+      testID="thinking-timeline"
+      style={{ alignSelf: 'stretch', minWidth: 0, marginLeft: S[75], paddingLeft: S[75], borderLeftWidth: 1, borderLeftColor: colors.hairline }}
+    >
       {children}
     </View>
   );
@@ -130,7 +140,7 @@ export function ThinkingTimeline({ children }: { children?: ReactNode }) {
 
 const ROW_ICON = 16;
 const ROW_GAP = S[75];
-const ROW_PAD = S[100];
+const ROW_PAD = S[50];
 /** The row's text and its expanded body share one left edge. */
 const DETAIL_INSET = ROW_PAD + ROW_ICON + ROW_GAP;
 
@@ -155,7 +165,8 @@ export function ActivityStep({ icon, label, live, error, expandable, open, onTog
       {...handlers}
       {...{ dataSet: { state: live ? 'running' : error ? 'error' : 'done' } }}
       style={{
-        alignSelf: 'stretch',
+        alignSelf: 'flex-start',
+        maxWidth: '100%',
         minWidth: 0,
         flexDirection: 'row',
         flexWrap: 'nowrap',
@@ -188,23 +199,17 @@ export function ActivityStep({ icon, label, live, error, expandable, open, onTog
   );
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
-      <View
-        aria-hidden
-        style={{ width: 1, flexShrink: 0, marginRight: S[200], backgroundColor: live ? colors.ink : colors.hairlineStrong }}
-      />
-      <View style={{ flex: 1, minWidth: 0 }}>
-        {row}
-        {detail && open ? (
-          <Animated.View
-            testID="thinking-step-detail"
-            nativeID={detailId}
-            style={[{ paddingLeft: DETAIL_INSET, paddingBottom: S[100] }, reveal]}
-          >
-            {detail}
-          </Animated.View>
-        ) : null}
-      </View>
+    <View style={{ minWidth: 0 }}>
+      {row}
+      {detail && open ? (
+        <Animated.View
+          testID="thinking-step-detail"
+          nativeID={detailId}
+          style={[{ minWidth: 0, paddingLeft: DETAIL_INSET, paddingTop: S[50], paddingBottom: S[100] }, reveal]}
+        >
+          {detail}
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
