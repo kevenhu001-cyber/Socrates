@@ -5,6 +5,7 @@ import {
   type IntelligenceUiState,
 } from '@socrates/core';
 
+import { i18n } from '../legacy/gateway';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { IntelligentSurface, type IntelligentDisplayMode } from './IntelligentSurface';
 import { UiNode } from './IntelligenceUiNodes';
@@ -32,7 +33,7 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
 
   const roots = nodes.filter((node) => !node.parent);
   /* Keep the loading footprint until the first record names a root. */
-  if (!roots.length) return <PendingBlock open={open} />;
+  if (!roots.length) return open ? <PendingBlock open /> : <div className="intui-callout" data-intui-failure="document" role="status">{i18n('tool.uiInvalid', 'Component could not be displayed.')}</div>;
 
   const context: RenderContext = {
     state,

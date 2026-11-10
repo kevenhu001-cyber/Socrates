@@ -1,3 +1,4 @@
+import { normalizeIntelligentUiControl } from '../../../packages/core/src/intelligentUiControls.js';
 import { normalizeLearningUiNode } from '../../../packages/core/src/learningUi.js';
 /**
  * Shape normalization for `render_intelligent_ui` arguments.
@@ -89,7 +90,7 @@ export function normalizeIntelligentUiNode(raw: unknown): unknown {
       if (node[key] !== undefined) node[key] = numberLike(node[key]);
     }
   }
-  return normalizeLearningUiNode(node);
+  return normalizeLearningUiNode(normalizeIntelligentUiControl(node));
 }
 
 /** Normalize a whole `render_intelligent_ui` document. */

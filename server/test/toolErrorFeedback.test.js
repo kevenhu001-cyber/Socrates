@@ -27,10 +27,10 @@ test('canonical examples pass the executors that validate them', () => {
   assert.equal(visual.status, 'completed', `visual example rejected: ${JSON.stringify(visual.detail)}`);
 });
 
-test('the canonical render_intelligent_ui example is a valid demonstration, not a panel', () => {
+test('the canonical render_intelligent_ui example is a minimal text node', () => {
   const example = canonicalToolExample('render_intelligent_ui', INTELLIGENT_UI_TOOL.function.parameters);
   assert.ok(example);
-  assert.equal(example.nodes[0].type, 'demonstration');
+  assert.equal(example.nodes[0].type, 'text');
   const result = validateIntelligentUi(example);
   assert.equal(result.ok, true, result.ok ? '' : result.error);
 });

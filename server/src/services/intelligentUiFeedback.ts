@@ -1,3 +1,4 @@
+import { intelligentUiExample } from './intelligentUiExamples.js';
 /**
  * Correction package for a rejected render_intelligent_ui call.
  *
@@ -17,6 +18,7 @@ import type { OpenUiVisualizationFailure } from './openUiProgram.js';
 import { VISUALIZATION_TEMPLATE_CONTRACTS } from './visualization.js';
 
 export type IntelligentUiFailureStage =
+  | 'control'
   | 'envelope'
   | 'action'
   | 'openui_syntax'
@@ -28,6 +30,8 @@ export type IntelligentUiFailureStage =
   | 'visualization';
 
 export interface IntelligentUiFailure {
+  componentType?: string;
+  componentKind?: string;
   stage: IntelligentUiFailureStage;
   nodeId: string | null;
   failures: OpenUiVisualizationFailure[];
@@ -48,9 +52,10 @@ export interface IntelligentUiFeedback {
   };
 }
 
-function exampleLine(template: string): string | null {
+function exampleLine(template: string, native = false): string | null {
   const contract = VISUALIZATION_TEMPLATE_CONTRACTS[template as keyof typeof VISUALIZATION_TEMPLATE_CONTRACTS];
   if (!contract) return null;
+  if (native) return JSON.stringify({version:1,nodes:[{id:'chart',type:'visualization',template,title:'Short title',payload:contract.payload,accessibilitySummary:'One sentence describing the visual.'}]});
   return `v = Visualization(${JSON.stringify(template)}, "Short title", ${JSON.stringify(contract.payload)}, "One sentence describing the visual.")`;
 }
 
@@ -73,6 +78,8 @@ function userMessageFor(failure: IntelligentUiFailure): string {
       if (first?.stage === 'extension_safety') return '插图包含沙箱不允许的内容，已请模型修正。';
       return `${what}没有通过校验，已请模型修正。`;
     }
+    case 'control':
+      return '交互组件字段不完整，已请模型按具体字段修正。';
     case 'action':
       return '交互按钮缺少动作，已请模型修正。';
     case 'demonstration':
@@ -88,6 +95,8 @@ function userMessageFor(failure: IntelligentUiFailure): string {
 
 export function intelligentUiFeedback(error: string, failure: IntelligentUiFailure): IntelligentUiFeedback {
   const lines = [`Fix the UI and call render_intelligent_ui again: ${error}`];
+  const example = intelligentUiExample(failure.componentType || '', failure.componentKind);
+  if (example) lines.push(`Minimal example for this component (illustrative data only; preserve the user task): ${JSON.stringify(example)}`);
   if (failure.stage === 'openui_truncated') {
     lines.push(`The OpenUI source (${failure.sourceChars} characters) ends mid-string or mid-statement: it was cut off while being written, most likely by the output limit. Do not resend the same program. Send fewer data points (about 200 per series is plenty for reading; never more than ${MAX_VISUALIZATION_POINTS}), shorter labels, or split it into several smaller visuals.`);
   }
@@ -99,7 +108,7 @@ export function intelligentUiFeedback(error: string, failure: IntelligentUiFailu
       continue;
     }
     lines.push(`Visualization "${template}" contract: ${contract.guidance}`);
-    const line = exampleLine(template);
+    const line = exampleLine(template, failure.componentType === 'visualization');
     if (line) lines.push(`A valid call: ${line}`);
   }
   if (failure.failures.some((item) => item.stage === 'payload_shape' || item.stage === 'semantic')) lines.push(NUMBER_HINT);

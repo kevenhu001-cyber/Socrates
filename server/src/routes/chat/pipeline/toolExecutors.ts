@@ -28,7 +28,7 @@ const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
 import {hashToolArguments, type ToolTurnPolicy} from '../../../services/tools/toolTurnPolicy.js';
 import {SseEmitter} from './sseEmitter.js';
 import {formatToolResultContent} from './toolFeedback.js';
-import {normalizeToolResultRetryability} from './toolResultPolicy.js';
+import {canRetryIdenticalToolCall, normalizeToolResultRetryability} from './toolResultPolicy.js';
 import {createToolExecutorRegistry} from './executors/registry.js';
 import type {ToolExecutorContext} from './executors/types.js';
 import type {PreparedCall, StreamMessage, ToolResult,} from './types.js';
@@ -239,13 +239,8 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
       );
     }
 
-    /* A FAILED execution must release the (name,args) pair in the
-       duplicate guard: retrying an identical call after a transient
-       error (timeout, 429, flaky engine) is the correct recovery, but
-       the guard used to reject it as `duplicate_tool_call` — which also
-       contradicted the `retryable` hint in the failure feedback. The
-       per-tool failure limit still bounds deterministic retry loops. */
-    if (result.status !== 'completed') {
+    // Keep deterministic rejections pinned until the model changes arguments.
+    if (canRetryIdenticalToolCall(result, entry.registryEntry?.pure === true)) {
       deps.toolPolicy.unmarkCall(toolName, hashToolArguments(entry.args));
     }
 

@@ -128,7 +128,8 @@ export function checkServiceBoundaries(serverDir = fileURLToPath(new URL('..', i
           const symbol = project.checker.getSymbolAtLocation(entry.node);
           target = symbol?.declarations?.find((declaration) => declaration.kind === ts.SyntaxKind.SourceFile)?.path || null;
         }
-        const external = target?.split(sep).includes('node_modules');
+        // Compiler SourceFile paths may use '/' even on Windows.
+        const external = Boolean(target && /[\\/]node_modules[\\/]/.test(target));
         const local = target && !external && within(repo, target);
         let problem = null;
         if (spec === null) problem = 'Computed import/require cannot be checked; use a literal module specifier';

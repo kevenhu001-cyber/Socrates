@@ -102,30 +102,7 @@ const CANONICAL_EXAMPLES: Record<string, Record<string, unknown>> = {
       yLabel: '得分',
     },
   },
-  /* The schema-generated skeleton for this tool would be
-     {"version":1,"nodes":[{"id":"<id>","type":"panel"}]}, which is not a
-     visual at all and anchors the model on the wrong node type. Show a
-     complete demonstration instead: it carries the version, program,
-     parameters, definitions, duration and the three most common views. */
-  render_intelligent_ui: {
-    version: 1,
-    nodes: [{
-      id: 'demo',
-      type: 'demonstration',
-      title: 'Damped oscillation',
-      program: {
-        version: 1,
-        parameters: [{ id: 'k', label: 'Damping', value: 0.2, min: 0.05, max: 1, step: 0.05 }],
-        definitions: { f: 'exp(-k*t)*cos(2*pi*t)' },
-        duration: 10,
-        views: [
-          { kind: 'controls' },
-          { kind: 'plot', x: [0, 10], y: [-1.2, 1.2], xLabel: 't', yLabel: 'x', curves: [{ expression: 'f', label: 'x(t)', color: 'blue' }] },
-          { kind: 'metrics', values: [{ label: 'x', expression: 'f', digits: 3 }] },
-        ],
-      },
-    }],
-  },
+  render_intelligent_ui: {version:1,nodes:[{id:'summary',type:'text',text:'Summary'}]},
   arxiv_search: { query: 'diffusion models sampling' },
   zotero_search: { query: 'attention is all you need' },
   notion_search_pages: { query: 'meeting notes' },

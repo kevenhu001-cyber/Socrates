@@ -1,3 +1,4 @@
+import { INTELLIGENT_UI_CONTROL_GUIDANCE } from '../../../packages/core/src/intelligentUiControls.js';
 import { LEARNING_KINDS, LEARNING_UI_GUIDANCE, openUiLearningMisuse } from '../../../packages/core/src/learningUi.js';
 import { DEMONSTRATION_GUIDANCE, DEMONSTRATION_PROGRAM_SCHEMA } from './demonstrationGuide.js';
 import { PHYSICS_MODELS } from '../../../packages/core/src/physicsModelRegistry.js';
@@ -12,7 +13,7 @@ export const INTELLIGENT_UI_TOOL = {
   type: 'function' as const,
   function: {
     name: 'render_intelligent_ui',
-    description: 'Render reader-facing visuals, learning cards and interactive UI alongside prose. Every component is a declarative JSON node with id and type inside {version: 1, nodes: [...]}. Four standard component families: 1) learning: quizzes, questions, flashcards and knowledge cards (kind: "quiz"|"practice"|"definition"|"flashcard"|"example"|"theorem"|"proof"|"derivation"|"key-point"|"step"); never invent OpenUI learning-card functions (Quiz, QuizCard, Question, QuestionCard, KnowledgeCard, MCQ). 2) visualization: data charts and diagrams (template, payload, title?, accessibilitySummary?). 3) demonstration: mathematical/physical models, ODEs, fields and scene simulations (program). 4) interactive controls/layout: panel, stack, grid, text, metric, progress, table, slider, choice, button, tabs. Arguments are pure JSON: arrays are JSON arrays, numeric fields are JSON numbers, and version is the number 1. Never wrap a list in {"item": [...]}, never use XML-style tags, and never wrap static visual charts in OpenUI source. Choose useful components proactively; do not ask users to choose rendering technology. Nodes have unique id/type and optional parent. Root state and bind support local controls. Actions: set, increment, prompt, open_url. Tables use columns and rows. Tables in intelligent_ui are strictly for interactive/stateful data (bound to $state or paired with controls); for standard static comparisons, reference data, or textual summaries, ALWAYS emit standard Markdown tables in prose instead. Callouts accept tone:neutral|info|success|warning|danger; metrics accept delta and trend:up|down|flat. No HTML, CSS, JS or executable handlers. Keep essential conclusions in prose. Use patch_intelligent_ui to modify nodes in this turn while preserving local controls.',
+    description: 'Render reader-facing visuals, learning cards and interactive UI alongside prose. Every component is a declarative JSON node with id and type inside {version: 1, nodes: [...]}. Four standard component families: 1) learning: quizzes, questions, flashcards and knowledge cards (kind: "quiz"|"practice"|"definition"|"flashcard"|"example"|"theorem"|"proof"|"derivation"|"key-point"|"step"); never invent OpenUI learning-card functions (Quiz, QuizCard, Question, QuestionCard, KnowledgeCard, MCQ). 2) visualization: data charts and diagrams (template, payload, title, accessibilitySummary). 3) demonstration: mathematical/physical models, ODEs, fields and scene simulations (program). 4) interactive controls/layout: panel, stack, grid, text, metric, progress, table, slider, choice, button, tabs. Arguments are pure JSON: arrays are JSON arrays, numeric fields are JSON numbers, and version is the number 1. Never wrap a list in {"item": [...]}, never use XML-style tags, and never wrap static visual charts in OpenUI source. Choose useful components proactively; do not ask users to choose rendering technology. Nodes have unique id/type and optional parent. Root state and bind support local controls. Actions: set, increment, prompt, open_url. Tables use columns and rows. Tables in intelligent_ui are strictly for interactive/stateful data (bound to $state or paired with controls); for standard static comparisons, reference data, or textual summaries, ALWAYS emit standard Markdown tables in prose instead. Callouts accept tone:neutral|info|success|warning|danger; metrics accept delta and trend:up|down|flat. No HTML, CSS, JS or executable handlers. Keep essential conclusions in prose. Use patch_intelligent_ui to modify nodes in this turn while preserving local controls.',
     parameters: {
       type: 'object', additionalProperties: false, required: ['version', 'nodes'],
       properties: {
@@ -22,7 +23,7 @@ export const INTELLIGENT_UI_TOOL = {
           description: 'Keep the whole serialized nodes array under 60000 characters; a single openui source counts toward that cap.',
           items: {
             type: 'object', required: ['id', 'type'],
-            description: 'A learning node requires kind and content fields; a visualization node requires template and payload; a demonstration node requires program; a physics node requires scene; an openui node requires source.',
+            description: INTELLIGENT_UI_CONTROL_GUIDANCE + ' A learning node requires kind and content fields; a visualization node requires template, payload, a nonempty title and accessibilitySummary; a demonstration node requires program; a physics node requires scene; an openui node requires source.',
             properties: {
               id: { type: 'string', minLength: 1, maxLength: 80, pattern: '^[A-Za-z0-9._:-]+$' },
               type: { type: 'string', enum: TYPES },
@@ -65,7 +66,7 @@ export const INTELLIGENT_UI_TOOL = {
               caption: { type: 'string', description: 'Table caption for assistive technology.' },
               when: { description: 'Boolean or value expression controlling visibility.' },
               columns: { description: 'Grid: number of columns. Table: [{key,label}].' },
-              rows: { type: 'array', maxItems: 50, description: 'Table rows, keyed by column keys.' },
+              rows: { type: 'array', maxItems: 24, description: 'Table rows, keyed by column keys.' },
               points: { type: 'array', maxItems: 50, description: 'Chart values: [{label,value}].' },
               options: { type: 'array', maxItems: 8, description: 'Choice nodes: [{label,value}]. Learning quiz nodes: 2-8 {letter,text,explanation?} options.', items: { type: 'object', properties: { letter: { type: 'string', pattern: '^[A-H]$' }, text: { type: 'string', maxLength: 2000 }, explanation: { type: 'string', maxLength: 4000 }, label: { type: 'string' }, value: {} } } },
               tabs: { type: 'array', maxItems: 8, description: 'Tabs: [{id,label}].' },
@@ -106,9 +107,13 @@ export function validateIntelligentUi(value: unknown): IntelligentUiValidation {
        message can say what actually failed. */
     const stage: IntelligentUiFailure['stage'] = envelope.kind === 'demonstration' ? 'demonstration'
       : envelope.kind === 'physics' ? 'physics'
+        : envelope.kind === 'control' ? 'control'
         : envelope.kind === 'learning' ? 'learning'
         : 'envelope';
+    const rejectedNode = (document as {nodes?: Array<Record<string, unknown>>})?.nodes?.find(node => node?.id === envelope.nodeId);
     return fail(envelope.error, stage, envelope.nodeId ?? null, {
+      componentType: typeof rejectedNode?.type === 'string' ? rejectedNode.type : undefined,
+      componentKind: typeof rejectedNode?.kind === 'string' ? rejectedNode.kind : undefined,
       ...(Array.isArray(envelope.issues) && envelope.issues.length ? { issues: envelope.issues } : {}),
     });
   }
@@ -138,6 +143,7 @@ export function validateIntelligentUi(value: unknown): IntelligentUiValidation {
         const issues = validation.issues.map((issue) => ({ path: `nodes.${node.id}.${issue.path}`, message: issue.message }));
         const errorText = issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ');
         return fail(`Visualization ${node.id}: ${errorText}`, 'visualization', node.id, {
+          componentType: 'visualization', componentKind: vizNode.template,
           failures: [{ stage: validation.stage, template: validation.template ?? null, title: typeof vizNode.title === 'string' ? vizNode.title : null, issues: validation.issues }],
           issues,
         });

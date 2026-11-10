@@ -1,3 +1,4 @@
+import { intelligentUiControlIssues, normalizeIntelligentUiControl } from './intelligentUiControls.js';
 import { normalizeLearningUiNode, learningUiIssues } from './learningUi.js';
 import { validateDemonstration } from './demonstration.js';
 import { physicsParametersError } from './physicsModelRegistry.js';
@@ -22,7 +23,7 @@ export function validateIntelligentUi(value) {
   };
   if (unsafe(spec.nodes)) return { ok: false, error: 'Unsafe or overly complex UI data', kind: 'document' };
   if (JSON.stringify(spec.nodes).length > 60000) return { ok: false, error: 'UI document too large', kind: 'document' };
-  const nodes = spec.nodes.map(normalizeLearningUiNode);
+  const nodes = spec.nodes.map(node => normalizeLearningUiNode(normalizeIntelligentUiControl(node)));
   const ids = new Set();
   for (const node of nodes) {
     const id = node && typeof node === 'object' && typeof node.id === 'string' ? node.id.slice(0, 80) : '(missing)';
@@ -36,6 +37,8 @@ export function validateIntelligentUi(value) {
               : 'Invalid parent id';
       return { ok: false, error: `${reason}: "${id}"`, nodeId: id === '(missing)' ? null : id, kind: 'node' };
     }
+    const controlIssues = intelligentUiControlIssues(node).map(issue => ({path: `nodes.${id}.${issue.path}`, message: issue.message}));
+    if (controlIssues.length) return {ok:false, error:controlIssues.map(issue => `${issue.path}: ${issue.message}`).join('; '), nodeId:id, kind:'control', issues:controlIssues};
     if (node.type === 'visualization') {
       if (typeof node.template !== 'string' || !node.template.trim() || node.template.length > 80) {
         return { ok: false, error: `Visualization node "${id}" needs a string template`, nodeId: id, kind: 'visualization' };
@@ -74,6 +77,8 @@ export function validateIntelligentUi(value) {
   }
   const byId = new Map(nodes.map((node) => [node.id, node]));
   for (const node of nodes) {
+    if (node.parent && byId.has(node.parent) && !['panel', 'stack', 'grid', 'metric', 'tabs'].includes(byId.get(node.parent).type)) return {ok:false, error:'Parent does not render children', nodeId:node.id, kind:'control', issues:[{path:`nodes.${node.id}.parent`,message:'Expected a container parent'}]};
+    if (node.tab !== undefined && (!node.parent || byId.get(node.parent)?.type !== 'tabs' || !byId.get(node.parent).tabs?.some(tab => tab.id === node.tab))) return {ok:false, error:'Unknown tab reference', nodeId:node.id, kind:'control', issues:[{path:`nodes.${node.id}.tab`,message:'Expected a tab id on the tabs parent'}]};
     const seen = new Set([node.id]);
     let parent = node.parent;
     while (parent) {

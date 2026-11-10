@@ -1,3 +1,4 @@
+import { normalizeIntelligentUiControl } from './intelligentUiControls.js';
 import { normalizeLearningUiNode } from './learningUi.js';
 import { validateIntelligentUi } from './intelligentUiValidation.js';
 import { serializedDocumentBlocks, serializedUiBlocks } from './serializedUi';
@@ -202,7 +203,7 @@ export function intelligenceUiChartDomain(values: ReadonlyArray<unknown>): [numb
 }
 
 function normalizeNode(input: unknown): IntelligenceUiNode | null {
-  const value = normalizeLearningUiNode(input);
+  const value = normalizeLearningUiNode(normalizeIntelligentUiControl(input));
   if (!isRecord(value)) return null;
   const id = typeof value.id === 'string' ? value.id.trim() : '';
   const type = typeof value.type === 'string' ? value.type.trim() as IntelligenceUiNodeType : null;
@@ -249,7 +250,7 @@ export function parseIntelligenceUiRecords(source: string): IntelligenceUiNode[]
       const validation=validateIntelligentUi(value);
       // A broken learning card from history keeps its own fallback and healthy siblings.
       // Unsafe/oversized documents still fail closed before any node is recovered.
-      if(validation.ok || validation.kind==='learning') {
+      if(validation.ok || validation.kind==='learning' || validation.kind==='control') {
         return value.nodes.map(normalizeNode).filter((node): node is IntelligenceUiNode => node !== null);
       }
     }

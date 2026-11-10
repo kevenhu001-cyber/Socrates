@@ -170,3 +170,13 @@ test('broken syntax or unresolved local imports cannot produce a clean check', (
 test('unreadable projects fail rather than silently reporting no violations', () => {
   assert.throws(() => checkServiceBoundaries('/nonexistent/socrates-test-boundaries'));
 });
+
+test('external declarations are not traversed as first-party runtime modules on Windows', () => {
+  fixture({
+    'server/src/lib/helper.ts': "import { value } from 'helper-package'; export {value};",
+    'server/node_modules/helper-package/package.json': JSON.stringify({name:'helper-package',types:'index.d.ts'}),
+    'server/node_modules/helper-package/index.d.ts': "import {Request} from 'express'; export declare const value: Request;",
+    'server/node_modules/express/package.json': JSON.stringify({name:'express',types:'index.d.ts'}),
+    'server/node_modules/express/index.d.ts': 'export interface Request {ip: string}',
+  }, result => assert.deepEqual(result.violations, []));
+});

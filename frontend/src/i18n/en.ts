@@ -1,5 +1,9 @@
 /* English locale table. Kept synchronous because it is the fallback for all locales. */
 export const en = {
+    "common.noData": "No data",
+    "common.details": "Details",
+    "tool.uiInvalid": "Component could not be displayed.",
+
     "intui.learning.incomplete": "This learning card is incomplete. Its available content is shown below.",
     "boot.composerUnavailable": "The message editor could not load. Your saved draft has not been changed.",
     "boot.headerUnavailable": "The conversation controls could not load.",

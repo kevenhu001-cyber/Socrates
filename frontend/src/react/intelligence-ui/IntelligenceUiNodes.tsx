@@ -13,6 +13,7 @@ import { DeferredMenu } from '../menu/DeferredMenu';
 import { i18n } from '../legacy/gateway';
 import {
   isSafeIntelligenceUiStateKey,
+  intelligentUiControlIssues,
   normalizeIntelligenceUiImageUrl,
   normalizeIntelligenceUiTone,
   normalizeIntelligenceUiTrend,
@@ -272,7 +273,8 @@ function UiButton({ node, context }: { node: IntelligenceUiNode; context: Render
 function UiTable({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const columns = Array.isArray(node.columns) ? node.columns.slice(0, 8) : [];
   const rows = Array.isArray(node.rows) ? node.rows.slice(0, 24) : [];
-  if (!columns.length || !rows.length) return null;
+  if (!columns.length) return null;
+  if (!rows.length) return <div className="intui-table-wrap" data-intui-id={node.id} role="status">{i18n('common.noData', 'No data')}</div>;
   const caption = asProse(resolve(node.caption ?? node.label ?? node.title, context));
   const normalizedColumns = columns.map((column, index) => {
     if (typeof column === 'string') return { key: column, label: column };
@@ -586,5 +588,10 @@ const nodeRenderers = new Map<string, UiNodeRenderer>([
 
 export function UiNode({ node, context }: { node: IntelligenceUiNode; context: RenderContext }): ReactNode {
   if (!resolveVisible(node, context)) return null;
+  const issues = intelligentUiControlIssues(node);
+  if (issues.length && !context.streaming) return <div className="intui-callout" data-intui-failure={node.id} role="status">
+    {i18n('tool.uiInvalid', 'Component could not be displayed.')}
+    <details><summary>{i18n('common.details', 'Details')}</summary>{issues.map(issue => <p key={issue.path}>{issue.path}: {issue.message}</p>)}</details>
+  </div>;
   return nodeRenderers.get(node.type)?.(node, context) ?? null;
 }
