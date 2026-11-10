@@ -9,6 +9,7 @@ import { extractText, SUPPORTED_MIMES, PARSERS } from '../src/services/fileParse
 import { extract as legacyDocExtract } from '../src/services/fileParsers/legacyDoc.js';
 import { extract as legacyXlsExtract } from '../src/services/fileParsers/legacyXls.js';
 import { extractOdt, extractOds, extractOdp } from '../src/services/fileParsers/odf.js';
+import { cleanExtractedText } from '../src/services/fileParsers/text.js';
 
 /* New-format coverage: legacy .doc/.xls plus OpenDocument (.odt/.ods/.odp).
  * Fixtures are synthesized in tmp (BIFF8 via SheetJS itself, ODF zips via
@@ -100,7 +101,11 @@ test('odt extracts headings and paragraphs', async () => {
     assert.match(r.text, /## Hello ODT/);
     assert.match(r.text, /First para\./);
     const viaDispatch = await extractText(ODF_MIMES[0], fp);
-    assert.equal(viaDispatch.text, r.text);
+    /* extractText owns the whitespace contract (see its doc comment): the
+       parser returns raw blocks and the dispatcher strips trailing spaces,
+       blank-line runs and the trailing newline for every format alike. So
+       the invariant is dispatch === clean(direct), not dispatch === raw. */
+    assert.equal(viaDispatch.text, cleanExtractedText(r.text));
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

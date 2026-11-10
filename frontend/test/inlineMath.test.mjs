@@ -87,9 +87,15 @@ test('before KaTeX loads, marks paint and a formula keeps its escaped source', (
 });
 
 
-test('explicit dollars accept words and spaces', () => {
+/* Explicit delimiters do not override content: a prose pair stays literal.
+   73b49163 removed the acceptance gate so `$…$` always rendered, which
+   turned every currency amount (`$5 到 $10`, `$US to $EU rate`) into a
+   formula sprint ahead of the answer. The gate is back; these shapes still
+   render as math. */
+test('dollars render math shapes, never prose or padded currency', () => {
   installKatex();
-  for (const source of ['$hello world$', '$ 123 $', '$USD$']) {
-    assert.match(renderInlineMathHtml(source), /katex/);
-  }
+  assert.match(renderInlineMathHtml('$USD$'), /katex/);
+  assert.match(renderInlineMathHtml('$ 123 $'), /katex/);
+  assert.match(renderInlineMathHtml('$x^2$'), /katex/);
+  assert.equal(renderInlineMathHtml('$hello world$'), null);
 });

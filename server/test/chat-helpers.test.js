@@ -147,8 +147,15 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /Default to connected natural-language paragraphs/i);
     assert.match(out[0].content, /Follow the user's explicit preferences for length, depth, and format/i);
     assert.match(out[0].content, /use `render_intelligent_ui` for both static and interactive visuals/i);
-    assert.match(out[0].content, /`Visualization\(template, title, payload, accessibilitySummary\)`/);
-    assert.match(out[0].content, /There is no `visualization` node type/);
+    /* The `Visualization(template, title, payload, accessibilitySummary)`
+       function-call form was removed when the Intelligent-UI tool took over
+       visuals. The prompt now pins the native JSON node shape instead, so
+       assert that contract — a stale assertion must not outlive the tool it
+       described. */
+    assert.match(out[0].content, /\{id, type: "visualization", template: \.\.\., payload: \.\.\.\}/);
+    /* The old function-call form must not come back: visuals are native JSON
+       nodes only. */
+    assert.doesNotMatch(out[0].content, /Visualization\(template/);
     assert.match(out[0].content, /Never encode a list as \{"item": \[\.\.\.\]\}/);
     assert.match(out[0].content, /For mathematics, use LaTeX/);
     /* The new client-system classifier (P_client_system_classifier)
@@ -739,12 +746,12 @@ describe('appendToolRoutingHints', () => {
   test('routes every static and interactive visual through Intelligent UI', () => {
     const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['render_intelligent_ui']);
     assert.match(out[0].content, /Use `render_intelligent_ui` for every explicitly requested static or interactive/);
-    /* The template catalogue lives in the tool's `source` description, not
-       here: sending it twice cost about 2.8k tokens per turn. The hint points
-       at that single copy instead. */
-    assert.match(out[0].content, /in the `source` parameter description of `render_intelligent_ui`/);
+    /* The template catalogue lives in the tool's `template` / `payload`
+       parameter descriptions, not here: sending it twice cost about 2.8k
+       tokens per turn. The hint points at that single copy instead. */
+    assert.match(out[0].content, /in the `template` and `payload` parameter descriptions of `render_intelligent_ui`/);
     assert.match(out[0].content, /plot needs x, y and 1-6 curves/);
-    assert.match(out[0].content, /trajectory needs x, y, horizontal, vertical and program\.dynamics/);
+    assert.match(out[0].content, /trajectory needs x, y, horizontal, vertical and dynamics/);
     assert.match(out[0].content, /At most one controls, two field views and twelve curves total/);
     assert.doesNotMatch(out[0].content, /Example payload:/);
     assert.doesNotMatch(out[0].content, /For `render_visualization`, follow its native JSON schema/);
@@ -898,8 +905,8 @@ test('tool guidance is deterministic, capability gated and encourages label math
   assert.deepEqual(visual, appendToolRoutingHints(visual, ['web_search', 'render_intelligent_ui']));
   assert.deepEqual(appendToolRoutingHints(base, []), base);
   const common = enforceServerSystemBoundary([{ role: 'user', content: 'hello' }]);
-  assert.doesNotMatch(common[0].content, /Demonstration shape|per-kind fields|Bind controls to declared/);
-  assert.match(appendToolRoutingHints(common, ['render_intelligent_ui'])[0].content, /Bind controls to declared/);
+  assert.doesNotMatch(common[0].content, /Demonstration shape|per-kind fields|bound to declared local state/);
+  assert.match(appendToolRoutingHints(common, ['render_intelligent_ui'])[0].content, /bound to declared local state/);
   assert.doesNotMatch(appendToolRoutingHints(base, ['create_plan'])[0].content, /When `create_spec`/);
   assert.doesNotMatch(appendToolRoutingHints(base, ['create_spec'])[0].content, /When `create_plan`/);
 });

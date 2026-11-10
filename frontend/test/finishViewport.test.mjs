@@ -62,15 +62,19 @@ test('finish settle stops across a session change even when the tail id is uncha
 
 test('same-turn finish keeps restoring its capture for at most 30 frames', async () => {
   await withViewport(({ frames, listeners, scroller }) => {
-    let count = 1; // settle() already applied its first synchronous frame.
+    /* settle() no longer corrects synchronously — it defers the first
+       correction to the next animation frame (P_stream-finish-paint, see
+       chat/turn/finishViewport.ts), so every correction here comes from a
+       queued frame. Count them and hold the documented 30-frame bound. */
+    let corrections = 0;
     while (frames.length) {
       scroller.scrollTop = 450;
       frames.shift()(0);
       assert.equal(scroller.scrollTop, 400, 'same-turn layout still preserves the captured viewport');
-      count += 1;
-      assert.ok(count <= 30, 'finish remains bounded');
+      corrections += 1;
+      assert.ok(corrections <= 30, 'finish remains bounded');
     }
-    assert.equal(count, 30);
+    assert.equal(corrections, 30);
     assert.equal(listeners.size, 0);
   });
 });

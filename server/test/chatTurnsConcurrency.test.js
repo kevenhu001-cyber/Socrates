@@ -120,7 +120,11 @@ test('a client turn ID cannot be rebound to a different session', { skip: !enabl
 test('concurrent HTTP streams bound to one turn make only one upstream LLM call', { skip: !enabled, timeout: 15000 }, async () => {
   let calls = 0;
   const provider = express();
-  provider.use(express.json());
+  /* The mock must accept what a real provider accepts: the system prompt plus
+     fourteen tool schemas is well over express.json's 100 kB default, so the
+     default rejected the body with 413 before reaching the handler and the
+     test saw zero upstream calls. */
+  provider.use(express.json({ limit: '4mb' }));
   provider.post('/v1/chat/completions', async (_req, res) => {
     calls++;
     await new Promise((resolve) => setTimeout(resolve, 100));

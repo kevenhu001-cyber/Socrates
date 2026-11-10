@@ -18,5 +18,16 @@ export async function resolve(specifier, context, nextResolve) {
     const source = new URL(`${specifier}.ts`, context.parentURL);
     if (existsSync(source)) return nextResolve(source.href, context);
   }
+  /* TypeScript ESM sources write `./x.js` for a module that only exists as
+     `./x.ts` (Node's convention so the emitted `.js` resolves at runtime).
+     packages/core/src/index.ts does exactly that for `./physicsModels.js`,
+     and the loader would otherwise fail with ERR_MODULE_NOT_FOUND. Map to
+     the `.ts` twin ONLY when the `.js` file is absent, so genuine runtime
+     `.js` modules keep winning. */
+  if (specifier.endsWith('.js') && /^\.{1,2}\//.test(specifier)) {
+    const emitted = new URL(specifier, context.parentURL);
+    const source = new URL(`${specifier.slice(0, -3)}.ts`, context.parentURL);
+    if (!existsSync(emitted) && existsSync(source)) return nextResolve(source.href, context);
+  }
   return nextResolve(specifier, context);
 }

@@ -17,7 +17,10 @@ test('new conversations receive Chinese prose punctuation without changing code 
   assert.match(prompt, /Chinese prose, use full-width Chinese punctuation: ，。！？；：（）/);
   assert.match(prompt, /human-readable labels and descriptions in interactive UI cards/);
   assert.match(prompt, /Keep English passages in normal English punctuation/);
-  assert.match(prompt, /Preserve code, inline code, JSON and OpenUI syntax/);
+  /* The preservation list grew (XML and scaffold tag syntax sit between JSON
+     and OpenUI syntax), so pin the guarantee — every one of these stays
+     verbatim — instead of one exact sentence. */
+  assert.match(prompt, /Preserve code, inline code, JSON[^.]*OpenUI syntax/);
   assert.match(prompt, /URLs, email addresses, file paths, version numbers, decimal points, mathematical notation, exact quotations/);
   assert.match(prompt, /Markdown structural syntax must remain ASCII/);
   assert.match(prompt, /Follow an explicit user request for different punctuation/);
