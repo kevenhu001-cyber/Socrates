@@ -208,3 +208,33 @@ test('incomplete bare documents reserve a skeleton; ordinary JSON and quoted cod
   assert.equal(splitIntelligenceUiText(text).some(segment=>segment.kind==='ui'),false);
  }
 });
+
+test('frontend normalization handles string numeric attributes and choice options', async () => {
+  const { normalizeIntelligentUiArgs, validateIntelligentUi } = await import('@socrates/core');
+  const rawDoc = {
+    version: '1',
+    nodes: [
+      { id: 's1', type: 'slider', bind: 'speed', min: '0', max: '100', step: '5', value: '50' },
+      { id: 'c1', type: 'choice', bind: 'mode', options: ['Fast', 'Slow'] },
+      { id: 'b1', type: 'button', label: 'Go', action: { type: 'set', target: 'speed', value: 100 } },
+      { id: 't1', type: 'table', columns: ['A', 'B'] },
+    ],
+  };
+
+  const normalized = normalizeIntelligentUiArgs(rawDoc);
+  assert.equal(normalized.version, 1);
+  assert.equal(normalized.nodes[0].min, 0);
+  assert.equal(normalized.nodes[0].max, 100);
+  assert.equal(normalized.nodes[0].step, 5);
+  assert.equal(normalized.nodes[0].value, 50);
+  assert.deepEqual(normalized.nodes[1].options, [
+    { label: 'Fast', value: 'Fast' },
+    { label: 'Slow', value: 'Slow' },
+  ]);
+  assert.equal(normalized.nodes[2].action.key, 'speed');
+  assert.deepEqual(normalized.nodes[3].rows, []);
+
+  const validation = validateIntelligentUi(normalized);
+  assert.equal(validation.ok, true, validation.error);
+});
+

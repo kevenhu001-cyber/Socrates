@@ -16,6 +16,30 @@ export const INTELLIGENT_UI_EXAMPLES: Record<string, Record<string, unknown>> = 
   openui: {id:'app',type:'openui',source:'root = Col([Text("Summary")])'},
 };
 export function intelligentUiExample(componentType: string, kind?: string): Record<string, unknown> | null {
-  const node = INTELLIGENT_UI_EXAMPLES[`${componentType}.${kind}`] ?? INTELLIGENT_UI_EXAMPLES[`interactive.${componentType}`] ?? INTELLIGENT_UI_EXAMPLES[componentType];
-  return node ? {version:1,nodes:[node]} : null;
+  const normType = (componentType || '').trim().toLowerCase();
+  const normKind = (kind || '').trim().toLowerCase();
+  const directKey = normKind ? `${normType}.${normKind}` : normType;
+  const node = INTELLIGENT_UI_EXAMPLES[directKey]
+    ?? (normKind ? INTELLIGENT_UI_EXAMPLES[`${normType}.${normKind}`] : undefined)
+    ?? INTELLIGENT_UI_EXAMPLES[`interactive.${normType}`]
+    ?? INTELLIGENT_UI_EXAMPLES[`layout.${normType}`]
+    ?? (normKind ? INTELLIGENT_UI_EXAMPLES[`visualization.${normKind}`] : undefined)
+    ?? (normKind ? INTELLIGENT_UI_EXAMPLES[`learning.${normKind}`] : undefined)
+    ?? INTELLIGENT_UI_EXAMPLES[normType]
+    ?? (normKind ? INTELLIGENT_UI_EXAMPLES[normKind] : undefined);
+  return node ? { version: 1, nodes: [node] } : null;
 }
+
+export function inferIntelligentUiExample(args: unknown, rawArgsText?: string): Record<string, unknown> | null {
+  let doc = args && typeof args === 'object' ? args as Record<string, unknown> : null;
+  if (!doc && typeof rawArgsText === 'string') {
+    try { doc = JSON.parse(rawArgsText); } catch { /* ignore */ }
+  }
+  const firstNode = Array.isArray(doc?.nodes) && doc.nodes[0] && typeof doc.nodes[0] === 'object'
+    ? doc.nodes[0] as Record<string, unknown>
+    : null;
+  const type = String(firstNode?.type || doc?.type || '');
+  const kind = String(firstNode?.kind || firstNode?.template || doc?.kind || doc?.template || '');
+  return intelligentUiExample(type, kind);
+}
+

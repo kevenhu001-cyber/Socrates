@@ -1,4 +1,5 @@
 export { intelligentUiControlIssues, normalizeIntelligentUiControl } from './intelligentUiControls.js';
+export { normalizeIntelligentUiNode, normalizeIntelligentUiArgs, normalizeIntelligentUiPatchArgs } from './intelligentUiNormalize.js';
 export * from './intelligenceUi';
 export * from './turnRuntime.js';
 export { validateIntelligentUi } from './intelligentUiValidation.js';

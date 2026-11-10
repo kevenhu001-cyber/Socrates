@@ -20,10 +20,21 @@ export function normalizeIntelligentUiControl(raw) {
     }
   }
   const number = value => typeof value === 'string' && value.trim() && Number.isFinite(Number(value)) ? Number(value) : value;
-  if (node.type === 'slider') for (const field of ['min', 'max', 'step']) {
+  if (node.type === 'slider') for (const field of ['min', 'max', 'step', 'value']) {
     if (node[field] !== undefined) node[field] = number(node[field]);
   }
-  if (node.type === 'chart' && Array.isArray(node.points)) node.points = node.points.map(point => record(point) ? { ...point, value: number(point.value) } : point);
+  if (node.type === 'chart') {
+    if (!node.kind) node.kind = 'bar';
+    if (Array.isArray(node.points)) node.points = node.points.map(point => record(point) ? { ...point, value: number(point.value) } : point);
+  }
+  if (node.type === 'choice' && Array.isArray(node.options)) {
+    node.options = node.options.map(opt => typeof opt === 'string' ? { label: opt, value: opt } : opt);
+  }
+  if (record(node.action)) {
+    const act = { ...node.action };
+    if (!act.key && typeof act.target === 'string') act.key = act.target;
+    node.action = act;
+  }
   return node;
 }
 
@@ -49,7 +60,10 @@ export function intelligentUiControlIssues(node) {
       if (valid) { require(!seen.has(option.value), `options.${i}.value`, 'Expected unique option values'); seen.add(option.value); }
     });
   }
-  if (node.type === 'button') require(text(node.label), 'label', 'Expected a visible button label');
+  if (node.type === 'button') {
+    require(text(node.label), 'label', 'Expected a visible button label');
+    require(record(node.action), 'action', 'Expected a button action object: set, increment, prompt, or open_url');
+  }
   if (node.type === 'button' || node.action !== undefined) {
     const action = node.action;
     require(record(action) && ['set', 'increment', 'prompt', 'open_url'].includes(action.type), 'action.type', 'Expected set, increment, prompt or open_url');
@@ -87,6 +101,30 @@ export function intelligentUiControlIssues(node) {
       if (record(tab)) seen.add(tab.id);
     });
     if (node.bind !== undefined) require(key(node.bind), 'bind', 'Expected a safe local state key');
+  }
+  if (node.type === 'text') {
+    require(text(node.text ?? node.value), 'text', 'Expected visible text content');
+  }
+  if (node.type === 'callout') {
+    require(text(node.text ?? node.title), 'text', 'Expected callout text or title');
+  }
+  if (node.type === 'metric') {
+    require(node.value !== undefined || node.label !== undefined, 'value', 'Expected metric value or label');
+  }
+  if (node.type === 'progress') {
+    require(node.value !== undefined, 'value', 'Expected progress value');
+  }
+  if (node.type === 'entity') {
+    require(
+      text(node.title ?? node.description ?? node.subtitle) ||
+      (typeof node.image === 'string' && Boolean(node.image.trim())) ||
+      (Array.isArray(node.fields) && node.fields.length > 0),
+      'title',
+      'Expected entity title, description, image, or fields',
+    );
+  }
+  if (node.type === 'image-gallery') {
+    require(Array.isArray(node.images) && node.images.length > 0 && node.images.length <= 8, 'images', 'Expected 1–8 gallery images');
   }
   return issues;
 }

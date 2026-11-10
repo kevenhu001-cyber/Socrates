@@ -941,7 +941,11 @@ export async function streamChatCompletion(
       } catch { /* skip */ }
     }
 
-    const shouldDispatchTools = isToolFinishReason(finishReason) || finishReason == null || finishReason === 'length';
+    const hasCallableTools = Array.from(toolCallAcc.values()).some((entry) => Boolean(entry.function?.name));
+    const shouldDispatchTools = isToolFinishReason(finishReason)
+      || finishReason == null
+      || finishReason === 'length'
+      || (finishReason === 'stop' && hasCallableTools);
     const finalizedToolCalls = Array.from(toolCallAcc.values()).map((entry) => ({
       ...entry,
       id: entry.id || (shouldDispatchTools ? `call_${randomUUID()}` : undefined),

@@ -2,13 +2,15 @@ import { intelligentUiControlIssues, normalizeIntelligentUiControl } from './int
 import { normalizeLearningUiNode, learningUiIssues } from './learningUi.js';
 import { validateDemonstration } from './demonstration.js';
 import { physicsParametersError } from './physicsModelRegistry.js';
+import { normalizeIntelligentUiArgs } from './intelligentUiNormalize.js';
+import { VISUALIZATION_TEMPLATES } from './visualizationNormalize.js';
 
 const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'physics', 'demonstration', 'learning', 'visualization', 'openui'];
 
 /** Bound complexity and reject unsafe data before it is stored or rendered. */
 export function validateIntelligentUi(value) {
   if (!value || typeof value !== 'object') return { ok: false, error: 'Expected version and nodes', kind: 'document' };
-  const spec = value;
+  const spec = normalizeIntelligentUiArgs(value);
   if (spec.version !== 1 || !Array.isArray(spec.nodes) || !spec.nodes.length || spec.nodes.length > 80) return { ok: false, error: 'Expected version 1 and 1–80 nodes', kind: 'document' };
   let budget = 10000;
   const unsafe = (data, depth = 0) => {
@@ -23,7 +25,7 @@ export function validateIntelligentUi(value) {
   };
   if (unsafe(spec.nodes)) return { ok: false, error: 'Unsafe or overly complex UI data', kind: 'document' };
   if (JSON.stringify(spec.nodes).length > 60000) return { ok: false, error: 'UI document too large', kind: 'document' };
-  const nodes = spec.nodes.map(node => normalizeLearningUiNode(normalizeIntelligentUiControl(node)));
+  const nodes = spec.nodes;
   const ids = new Set();
   for (const node of nodes) {
     const id = node && typeof node === 'object' && typeof node.id === 'string' ? node.id.slice(0, 80) : '(missing)';
@@ -35,16 +37,19 @@ export function validateIntelligentUi(value) {
           : typeof node.type !== 'string' || !TYPES.includes(node.type) ? `Unsupported node type "${String(node.type).slice(0, 40)}"`
             : ids.has(node.id) ? 'Duplicate node id'
               : 'Invalid parent id';
-      return { ok: false, error: `${reason}: "${id}"`, nodeId: id === '(missing)' ? null : id, kind: 'node' };
+      return { ok: false, error: `${reason}: "${id}"`, nodeId: id === '(missing)' ? null : id, kind: 'node', issues: [{ path: `nodes.${id}`, message: `${reason}: "${id}"` }] };
     }
     const controlIssues = intelligentUiControlIssues(node).map(issue => ({path: `nodes.${id}.${issue.path}`, message: issue.message}));
     if (controlIssues.length) return {ok:false, error:controlIssues.map(issue => `${issue.path}: ${issue.message}`).join('; '), nodeId:id, kind:'control', issues:controlIssues};
     if (node.type === 'visualization') {
       if (typeof node.template !== 'string' || !node.template.trim() || node.template.length > 80) {
-        return { ok: false, error: `Visualization node "${id}" needs a string template`, nodeId: id, kind: 'visualization' };
+        return { ok: false, error: `Visualization node "${id}" needs a string template`, nodeId: id, kind: 'visualization', issues: [{ path: `nodes.${id}.template`, message: 'needs a string template' }] };
+      }
+      if (!VISUALIZATION_TEMPLATES.includes(node.template.trim())) {
+        return { ok: false, error: `Visualization node "${id}": unknown template "${node.template}"`, nodeId: id, kind: 'visualization', issues: [{ path: `nodes.${id}.template`, message: `unknown template "${node.template}"` }] };
       }
       if (!node.payload || typeof node.payload !== 'object' || Array.isArray(node.payload)) {
-        return { ok: false, error: `Visualization node "${id}" needs an object payload`, nodeId: id, kind: 'visualization' };
+        return { ok: false, error: `Visualization node "${id}" needs an object payload`, nodeId: id, kind: 'visualization', issues: [{ path: `nodes.${id}.payload`, message: 'needs an object payload' }] };
       }
     }
     if (node.type === 'openui' && (typeof node.source !== 'string' || !node.source.trim() || node.source.length > 50000)) {

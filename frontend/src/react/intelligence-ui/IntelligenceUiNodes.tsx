@@ -593,5 +593,26 @@ export function UiNode({ node, context }: { node: IntelligenceUiNode; context: R
     {i18n('tool.uiInvalid', 'Component could not be displayed.')}
     <details><summary>{i18n('common.details', 'Details')}</summary>{issues.map(issue => <p key={issue.path}>{issue.path}: {issue.message}</p>)}</details>
   </div>;
-  return nodeRenderers.get(node.type)?.(node, context) ?? null;
+  const renderer = nodeRenderers.get(node.type);
+  if (!renderer) {
+    if (!context.streaming) {
+      return (
+        <div className="intui-callout" data-intui-failure={node.id} role="status">
+          {i18n('tool.uiInvalid', 'Component could not be displayed.')}
+          <details><summary>{i18n('common.details', 'Details')}</summary><p>Unsupported node type "{String(node.type)}".</p></details>
+        </div>
+      );
+    }
+    return null;
+  }
+  const rendered = renderer(node, context);
+  if (!rendered && !context.streaming) {
+    return (
+      <div className="intui-callout" data-intui-failure={node.id} role="status">
+        {i18n('tool.uiInvalid', 'Component could not be displayed.')}
+        <details><summary>{i18n('common.details', 'Details')}</summary><p>Component "{node.id}" ({node.type}) failed to render or has missing required attributes.</p></details>
+      </div>
+    );
+  }
+  return rendered;
 }

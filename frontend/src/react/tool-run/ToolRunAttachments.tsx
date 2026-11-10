@@ -11,7 +11,7 @@
  * rendered as React children immediately; only imperative visualization
  * adapters wait for its DOM node.
  */
-import { validateIntelligentUi } from '@socrates/core';
+import { normalizeIntelligentUiArgs, validateIntelligentUi } from '@socrates/core';
 import { LazyIntelligenceUiBlock } from '../intelligence-ui/LazyIntelligenceUiBlock';
 import { NormalizedVisualizationsContext } from '../intelligence-ui/openui/normalizedVisualizations';
 import { IntelligenceUiFailureCard } from '../intelligence-ui/IntelligenceUiFailureCard';
@@ -46,11 +46,13 @@ function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | n
     }
   }
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
-  const record = candidate as Record<string, unknown>;
-  if (record.version !== 1 || !Array.isArray(record.nodes)) return null;
-  const validation=validateIntelligentUi(record);
-  if (!validation.ok && validation.kind!=='learning') return null;
-  return { version: 1, nodes: record.nodes };
+  const normalized = normalizeIntelligentUiArgs(candidate) as Record<string, unknown>;
+  if (!normalized || normalized.version !== 1 || !Array.isArray(normalized.nodes)) return null;
+  const validation = validateIntelligentUi(normalized);
+  if (!validation.ok && !['learning', 'control', 'visualization', 'demonstration'].includes(validation.kind || '')) {
+    return null;
+  }
+  return { version: 1, nodes: normalized.nodes };
 }
 
 /**
@@ -87,9 +89,16 @@ function renderIntelligenceUiAttachment(
      instead of vanishing, unless a later attempt in the same turn replaced
      it: that retry renders its own card. */
   if (state === 'error') return renderIntelligenceUiFailure(call, tools, readOnly);
-  if (!document || state === 'stopped') return null;
+  if (state === 'stopped') return null;
+  if (!document) {
+    if (state === 'done') return renderIntelligenceUiFailure(call, tools, readOnly);
+    return null;
+  }
   const source = document.nodes.map((node) => JSON.stringify(node)).join('\n');
-  if (!source) return null;
+  if (!source) {
+    if (state === 'done') return renderIntelligenceUiFailure(call, tools, readOnly);
+    return null;
+  }
   const serverSpecs = Array.isArray(call.visualizations)
     ? call.visualizations.filter((spec): spec is Record<string, unknown> => !!spec && typeof spec === 'object' && !Array.isArray(spec))
     : [];

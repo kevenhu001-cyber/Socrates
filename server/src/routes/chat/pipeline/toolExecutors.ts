@@ -18,6 +18,7 @@
 import {buildToolErrorFeedback} from '../../../services/tools/toolErrorFeedback.js';
 import {TOOL_ARGUMENT_ERRORS, wrapUntrustedToolResult} from '../../../services/tools/toolCallSafety.js';
 import {recordToolOutcome} from '../../../lib/telemetry.js';
+import { intelligentUiExample, inferIntelligentUiExample } from '../../../services/intelligentUiExamples.js';
 
 /** Every code that means "the arguments were wrong", for logging. */
 const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
@@ -98,6 +99,9 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
      * exactly what was wrong. */
     if (entry.rejection) {
       const { code, retryable, hint, fieldErrors, userMessage } = entry.rejection;
+      const exampleOverride = toolName === 'render_intelligent_ui'
+        ? inferIntelligentUiExample(entry.args, tc.function?.arguments)
+        : null;
       const feedback = buildToolErrorFeedback({
         toolName,
         schema: deps.schemaForTool(toolName),
@@ -107,6 +111,7 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
         fieldErrors: fieldErrors || null,
         availableTools: activeToolNames,
         userMessageOverride: userMessage || null,
+        exampleOverride,
       });
       if (ARGUMENT_ERROR_CODES.has(code)) {
         /* The code itself now carries the stage (parse / schema / size),
