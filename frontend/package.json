@@ -92,6 +92,8 @@
     "@openuidev/react-lang": "1.0.1",
     "@socrates/contracts": "file:../packages/contracts",
     "@socrates/core": "file:../packages/core",
+    "@socrates/theme": "file:../packages/theme",
+    "@socrates/ui": "file:../packages/ui",
     "@tiptap/extension-link": "^3.32.1",
     "@tiptap/extension-placeholder": "^3.32.1",
     "@tiptap/extension-task-item": "^3.32.1",
