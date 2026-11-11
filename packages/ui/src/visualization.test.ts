@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildVisualizationDocument, formatNumber, isVisualizationSpec, visualizationSpecOf } from './visualization.ts';
+import { buildVisualizationDocument, formatNumber, isVisualizationSpec } from './visualization.ts';
 
 const spec = {
   version: 1 as const,
@@ -17,15 +17,6 @@ test('v1 visualization specs are recognized and rejected when malformed', () => 
   assert.equal(isVisualizationSpec(null), false);
 });
 
-test('visualizationSpecOf prefers the persisted result and falls back to live arguments', () => {
-  assert.equal(visualizationSpecOf({ name: 'render_visualization', visualization: spec })?.title, spec.title);
-  assert.equal(visualizationSpecOf({ name: 'render_visualization', input: spec })?.title, spec.title);
-  assert.equal(visualizationSpecOf({ name: 'render_visualization', visualization: spec, isError: true }), null);
-  // The persisted `visualization` field is authoritative regardless of name.
-  assert.equal(visualizationSpecOf({ name: 'web_search', visualization: spec })?.title, spec.title);
-  assert.equal(visualizationSpecOf({ name: 'web_search' }), null);
-  assert.equal(visualizationSpecOf(null), null);
-});
 
 test('the island document renders an inline SVG chart and escapes the title', () => {
   const html = buildVisualizationDocument(spec, { artifactId: 'a1', mode: 'light' });

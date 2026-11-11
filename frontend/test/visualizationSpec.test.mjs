@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 
 import {
   asVisualizationSpec,
-  visualizationSpecOf,
 } from '../src/render/visualizationSpec.ts';
 
 /* The v1 spec is model output. These cases pin the contract the renderers
@@ -52,31 +51,4 @@ test('preserves unknown fields for forward compatibility', () => {
   assert.equal(spec.title, 'Graph');
   assert.deepEqual(spec.futureField, { a: 1 });
   assert.equal(spec.template, 'tree');
-});
-
-test('visualizationSpecOf prefers the persisted visualization', () => {
-  const persisted = { version: 1, template: 'bar', payload: { series: [] } };
-  const call = { name: 'render_visualization', visualization: persisted, input: { version: 1, template: 'line', payload: {} } };
-  assert.equal(visualizationSpecOf(call), persisted);
-});
-
-test('visualizationSpecOf falls back to the streaming input', () => {
-  const call = { name: 'render_visualization', input: { version: 1, template: 'line', payload: { series: [] } } };
-  assert.equal(visualizationSpecOf(call).template, 'line');
-});
-
-test('visualizationSpecOf ignores calls that failed', () => {
-  const base = { name: 'render_visualization', input: { version: 1, template: 'line', payload: {} } };
-  assert.equal(visualizationSpecOf({ ...base, isError: true }), null);
-  assert.equal(visualizationSpecOf({ ...base, status: 'cancelled' }), null);
-  assert.equal(visualizationSpecOf({ ...base, _run: { phase: 'timed_out' } }), null);
-});
-
-test('visualizationSpecOf ignores non-v1 payloads', () => {
-  assert.equal(visualizationSpecOf({ name: 'render_visualization', input: { version: 2, template: 'line' } }), null);
-  assert.equal(visualizationSpecOf({ name: 'render_visualization', visualization: { template: 'line' } }), null);
-});
-
-test('visualizationSpecOf drops a v1 payload with no template', () => {
-  assert.equal(visualizationSpecOf({ name: 'render_visualization', input: { version: 1, payload: {} } }), null);
 });

@@ -17,7 +17,7 @@
  * alias or mis-placed key before the schema prunes it.
  */
 
-import { validatePlanArgs, validateSpecArgs } from '../core/planning.js';
+import { validateDocumentArgs } from '../core/planning.js';
 
 export type ToolArgumentValidationMode = 'schema' | 'tool' | 'none';
 
@@ -44,9 +44,6 @@ const DEFAULT_POLICY: ToolArgumentPolicy = {
 };
 
 const POLICIES: Record<string, ToolArgumentPolicy> = {
-  /* Legacy flat-spec route. Disabled in the registry, but kept here so a
-     stored or replayed call still gets the visualization normalizer. */
-  render_visualization: { dropUnknown: false, validation: 'none' },
   /* The demonstration program is a free-form nested object with per-kind
      requirements the shallow schema pre-pass cannot validate. Its executor
      owns the normalizer and the strict demonstration validator, so route
@@ -56,8 +53,7 @@ const POLICIES: Record<string, ToolArgumentPolicy> = {
   /* Plan/spec have their own normalizers and zod schemas. Run them in the
      pipeline so an invalid card is rejected before execution, with the same
      error code and correction the executor used to produce. */
-  create_plan: { dropUnknown: false, validation: 'tool', validate: validatePlanArgs },
-  create_spec: { dropUnknown: false, validation: 'tool', validate: validateSpecArgs },
+  create_document: { dropUnknown: false, validation: 'tool', validate: validateDocumentArgs },
 };
 
 export function toolArgumentPolicy(toolName: string | null | undefined): ToolArgumentPolicy {

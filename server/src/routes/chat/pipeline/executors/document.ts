@@ -1,21 +1,20 @@
 /**
- * create_plan / create_spec executor — structured card tools.
+ * create_document executor — structured card tools.
  */
 
-import { executePlan, executeSpec } from '../../../../services/core/planning.js';
+import { executeDocument } from '../../../../services/core/planning.js';
 import { buildToolErrorFeedback } from '../../../../services/tools/toolErrorFeedback.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 
-export const executePlanSpec: ToolExecutor = async (
+export const executeDocumentTool: ToolExecutor = async (
   args,
   call,
   ctx,
 ): Promise<ToolExecutionResult> => {
   const { emitter, toolPolicy, schemaForTool } = ctx;
   const toolName = call.function?.name || '';
-  const isPlan = toolName === 'create_plan';
-  const result: ToolResult = isPlan ? executePlan(args) : executeSpec(args);
+  const result: ToolResult = executeDocument(args);
   if (result.status !== 'completed') {
     toolPolicy.recordResult(toolName, false, result.errorCode || 'plan_spec_invalid');
     result.retryable = toolPolicy.remainingRetries(toolName) > 0;

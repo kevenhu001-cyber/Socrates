@@ -52,10 +52,21 @@ export function installVisualizationMath(host: HTMLElement): () => void {
         text.style.opacity = '0';
         labels.set(text, overlay);
       }
-      for (const el of host.querySelectorAll<HTMLElement>('h3, figcaption, th, td')) {
-        if (el.querySelector('.katex')) continue;
-        const html = renderInlineMathHtml(el.textContent || '');
-        if (html) el.innerHTML = html;
+      // Replace text leaves only: replacing a table cell or control's
+      // innerHTML destroys nested controls and their event listeners.
+      const walker = host.ownerDocument.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+      const leaves: Text[] = [];
+      let leaf: Text | null;
+      while ((leaf = walker.nextNode() as Text | null)) {
+        if (leaf.parentElement?.closest('svg, .katex, script, style, textarea, pre, code')) continue;
+        if (/\$|\\[([]/.test(leaf.data)) leaves.push(leaf);
+      }
+      for (const leaf of leaves) {
+        const html = renderInlineMathHtml(leaf.data);
+        if (!html) continue;
+        const span = host.ownerDocument.createElement('span');
+        span.innerHTML = html;
+        leaf.replaceWith(span);
       }
     } catch (error) { reportSwallow(error, 'visualization.renderMath'); }
     observer.observe(host, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['transform', 'x', 'y', 'style', 'fill'] });

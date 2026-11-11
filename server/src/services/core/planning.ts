@@ -1,25 +1,3 @@
-/**
- * Planning tools — create_plan and create_spec.
- *
- * These are "pure" structuring tools in the same family as
- * render_visualization: they take semantic content, validate it against a
- * strict schema, and echo back a tidy artifact the model then presents to
- * the user. They have no external side effects, so they run concurrently
- * and never touch the database, network, or sandbox.
- *
- * Why native tools rather than free-form prose:
- *   - The structured envelope forces the model to commit to an ordered,
- *     trackable breakdown (steps for a plan, requirements/criteria for a
- *     spec) instead of a loose wall of text.
- *   - The frontend renders the tool card inline (see toolCards.js /
- *     toolInline.ts), so the plan/spec is visually distinct from ordinary
- *     reply prose.
- *
- * Tool-description convention mirrors WEB_SEARCH_TOOL / ARXIV_TOOL:
- *   ## What this tool does / When to call / When NOT to call /
- *   ## Parameters / ## Output format.
- */
-
 import { z } from 'zod';
 
 /* ─── Schemas ──────────────────────────────────────────────── */
@@ -46,64 +24,8 @@ const specSchema = z.object({
   outOfScope: z.array(z.string().min(1).max(500)).max(40).optional(),
 }).strict();
 
-/* ─── Normalization ─────────────────────────────────────────
- * Weaker models frequently wrap the payload in {plan|spec|input|arguments}
- * or send steps as bare strings. Unwrap a single recognizable envelope and
- * coerce string steps into {title} so the strict schema does not reject an
- * otherwise-usable call. */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function unwrapEnvelope(input: unknown, keys: string[]): unknown {
-  if (!isRecord(input)) return input;
-  const inputKeys = Object.keys(input);
-  if (inputKeys.length === 1 && keys.includes(inputKeys[0])
-      && isRecord(input[inputKeys[0]])) {
-    return input[inputKeys[0]];
-  }
-  return input;
-}
-
-function normalizePlan(input: unknown) {
-  const source = unwrapEnvelope(input, ['plan', 'input', 'arguments']);
-  if (!isRecord(source)) return source;
-  const normalized: Record<string, unknown> = { ...source };
-  const rawSteps = normalized.steps ?? normalized.items ?? normalized.tasks;
-  if (Array.isArray(rawSteps)) {
-    normalized.steps = rawSteps.map((step: unknown) => {
-      if (typeof step === 'string') return { title: step };
-      if (!isRecord(step)) return step;
-      const next = { ...step };
-      if (!next.title) next.title = next.name ?? next.label ?? next.step ?? next.text;
-      delete next.name; delete next.label; delete next.step; delete next.text;
-      return next;
-    });
-  }
-  delete normalized.items; delete normalized.tasks;
-  return normalized;
-}
-
-function normalizeSpec(input: unknown) {
-  const source = unwrapEnvelope(input, ['spec', 'input', 'arguments']);
-  if (!isRecord(source)) return source;
-  const normalized: Record<string, unknown> = { ...source };
-  if (!normalized.summary && typeof normalized.overview === 'string') normalized.summary = normalized.overview;
-  delete normalized.overview;
-  if (!normalized.requirements && Array.isArray(normalized.features)) normalized.requirements = normalized.features;
-  delete normalized.features;
-  if (!normalized.acceptanceCriteria) {
-    normalized.acceptanceCriteria = normalized.acceptance_criteria ?? normalized.acceptance;
-  }
-  delete normalized.acceptance_criteria; delete normalized.acceptance;
-  if (!normalized.outOfScope) normalized.outOfScope = normalized.out_of_scope ?? normalized.nonGoals ?? normalized.non_goals;
-  delete normalized.out_of_scope; delete normalized.nonGoals; delete normalized.non_goals;
-  const arrayify = (value: unknown) => (typeof value === 'string' ? [value] : value);
-  normalized.requirements = arrayify(normalized.requirements);
-  normalized.acceptanceCriteria = arrayify(normalized.acceptanceCriteria);
-  normalized.constraints = arrayify(normalized.constraints);
-  normalized.outOfScope = arrayify(normalized.outOfScope);
-  return normalized;
 }
 
 function compactIssues(error: z.ZodError) {
@@ -143,18 +65,18 @@ function planningValidation(
   };
 }
 
-/** Pre-execution validation for create_plan, shared by the chat pipeline and
+/** Pre-execution validation for plan content, shared by the chat pipeline and
  * the executor so both reject the same normalized shape with the same code. */
-export function validatePlanArgs(input: unknown): PlanningValidation {
-  const parsed = planSchema.safeParse(normalizePlan(input));
+function validatePlanArgs(input: unknown): PlanningValidation {
+  const parsed = planSchema.safeParse(input);
   return parsed.success
     ? { ok: true, fieldErrors: [] }
     : planningValidation('计划结构有字段不符合要求，已附上正确示例请模型修正。', compactIssues(parsed.error));
 }
 
-/** Pre-execution validation for create_spec. */
-export function validateSpecArgs(input: unknown): PlanningValidation {
-  const parsed = specSchema.safeParse(normalizeSpec(input));
+/** Pre-execution validation for spec content. */
+function validateSpecArgs(input: unknown): PlanningValidation {
+  const parsed = specSchema.safeParse(input);
   return parsed.success
     ? { ok: true, fieldErrors: [] }
     : planningValidation('规格结构有字段不符合要求，已附上正确示例请模型修正。', compactIssues(parsed.error));
@@ -162,29 +84,7 @@ export function validateSpecArgs(input: unknown): PlanningValidation {
 
 /* ─── Tool definitions ─────────────────────────────────────── */
 
-export const PLAN_TOOL = {
-  type: 'function',
-  function: {
-    name: 'create_plan',
-    description:
-      '## What this tool does\n' +
-      'Captures an ordered, trackable action or study plan as a structured artifact. The interface renders it as a distinct plan card (title, optional goal, numbered steps with optional per-step status) above your reply.\n\n' +
-      '## When to call\n' +
-      '- The user asks for a plan, roadmap, study schedule, or step-by-step approach to a multi-step task or project.\n' +
-      '- You are about to walk the user through a procedure that has clear, orderable stages.\n' +
-      '- Breaking a large request into sequenced, checkable steps genuinely helps the user act.\n\n' +
-      '## When NOT to call\n' +
-      '- Single-step answers, direct factual questions, or short explanations.\n' +
-      '- A specification of WHAT to build (use create_spec for requirements/acceptance criteria).\n' +
-      '- Merely to restate content you already wrote in prose.\n\n' +
-      '## Parameters\n' +
-      '- title: short plan name (required).\n' +
-      '- goal: one-sentence objective the plan achieves (optional).\n' +
-      '- steps: 1-30 ordered steps, each { title, detail?, status? }. status is one of todo | in_progress | done.\n' +
-      '- notes: caveats, assumptions, or dependencies (optional).\n\n' +
-      '## Output format\n' +
-      'On success the plan card is rendered in the conversation. Refer to it briefly in prose (do not paste the whole plan again). Follow the user\'s language for all titles, details, and notes.',
-    parameters: {
+const PLAN_CONTENT_SCHEMA = {
       type: 'object',
       required: ['title', 'steps'],
       properties: {
@@ -208,34 +108,9 @@ export const PLAN_TOOL = {
         notes: { type: 'string', maxLength: 1000 },
       },
       additionalProperties: false,
-    },
-  },
-};
+    };
 
-export const SPEC_TOOL = {
-  type: 'function',
-  function: {
-    name: 'create_spec',
-    description:
-      '## What this tool does\n' +
-      'Captures a structured specification (what to build or deliver) as an artifact: title, optional summary, functional requirements, and optional acceptance criteria, constraints, and out-of-scope items. The interface renders it as a distinct spec card above your reply.\n\n' +
-      '## When to call\n' +
-      '- The user asks you to specify, scope, or define requirements for a feature, document, API, or design.\n' +
-      '- You need to pin down WHAT a deliverable must satisfy before any HOW / implementation discussion.\n' +
-      '- Turning a vague request into testable requirements and acceptance criteria helps the user.\n\n' +
-      '## When NOT to call\n' +
-      '- The user wants an ordered sequence of actions (use create_plan instead).\n' +
-      '- Simple questions, explanations, or code you can just provide directly.\n\n' +
-      '## Parameters\n' +
-      '- title: short spec name (required).\n' +
-      '- summary: one-paragraph overview of the deliverable (optional).\n' +
-      '- requirements: 1-40 functional requirements, each a concise sentence (required).\n' +
-      '- acceptanceCriteria: 0-40 verifiable pass/fail conditions (optional).\n' +
-      '- constraints: technical, budget, or policy limits (optional).\n' +
-      '- outOfScope: explicitly excluded items to prevent scope creep (optional).\n\n' +
-      '## Output format\n' +
-      'On success the spec card is rendered in the conversation. Refer to it briefly in prose (do not paste the whole spec again). Follow the user\'s language for all fields.',
-    parameters: {
+const SPEC_CONTENT_SCHEMA = {
       type: 'object',
       required: ['title', 'requirements'],
       properties: {
@@ -247,17 +122,45 @@ export const SPEC_TOOL = {
         outOfScope: { type: 'array', maxItems: 40, items: { type: 'string', maxLength: 500 } },
       },
       additionalProperties: false,
+    };
+
+/** One strictly discriminated document contract. */
+export const DOCUMENT_TOOL = {
+  type: 'function',
+  function: {
+    name: 'create_document',
+    description: 'Create a structured plan or specification card. Use kind:plan for ordered actions and kind:spec for requirements and acceptance criteria. Arguments are {kind, content}; content follows the selected schema. Use the user’s language and refer briefly to the resulting card without repeating it. Do not call for a single-step answer.',
+    parameters: {
+      type: 'object', additionalProperties: false, required: ['kind', 'content'],
+      properties: {
+        kind: { type: 'string', enum: ['plan', 'spec'] },
+        content: { anyOf: [PLAN_CONTENT_SCHEMA, SPEC_CONTENT_SCHEMA] },
+      },
     },
   },
 };
+
+export function validateDocumentArgs(input: unknown): PlanningValidation {
+  if (!isRecord(input) || !['plan', 'spec'].includes(String(input.kind)) || Object.keys(input).some(key => !['kind', 'content'].includes(key))) {
+    return planningValidation('请使用 {kind: "plan"|"spec", content: {...}}。', [{ path: 'kind', message: 'Expected plan or spec with content, without extra envelope fields' }]);
+  }
+  return input.kind === 'plan' ? validatePlanArgs(input.content) : validateSpecArgs(input.content);
+}
+
+export function executeDocument(input: unknown) {
+  const validation = validateDocumentArgs(input);
+  if (!validation.ok) return planningError('plan_spec_invalid', validation.fieldErrors.map(message => ({ path: 'content', message })), 0);
+  const document = input as { kind: 'plan' | 'spec'; content: unknown };
+  return document.kind === 'plan' ? executePlan(document.content) : executeSpec(document.content);
+}
 
 /* ─── Executors ────────────────────────────────────────────── */
 
 const STATUS_MARK: Record<string, string> = { done: '[x]', in_progress: '[~]', todo: '[ ]' };
 
-export function executePlan(input: unknown) {
+function executePlan(input: unknown) {
   const startedAt = Date.now();
-  const parsed = planSchema.safeParse(normalizePlan(input));
+  const parsed = planSchema.safeParse(input);
   if (!parsed.success) return planningError('plan_spec_invalid', compactIssues(parsed.error), Date.now() - startedAt);
   const plan = parsed.data;
   const lines: string[] = [];
@@ -282,9 +185,9 @@ export function executePlan(input: unknown) {
   };
 }
 
-export function executeSpec(input: unknown) {
+function executeSpec(input: unknown) {
   const startedAt = Date.now();
-  const parsed = specSchema.safeParse(normalizeSpec(input));
+  const parsed = specSchema.safeParse(input);
   if (!parsed.success) return planningError('plan_spec_invalid', compactIssues(parsed.error), Date.now() - startedAt);
   const spec = parsed.data;
   const lines: string[] = [];

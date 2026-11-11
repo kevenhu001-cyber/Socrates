@@ -228,7 +228,7 @@ test('repairToolArguments works without a schema', () => {
 
 const REGISTRY_NAMES = [
   'code_interpreter', 'workspace_agent', 'render_intelligent_ui',
-  'web_search', 'web_fetch', 'create_plan', 'create_spec',
+  'web_search', 'web_fetch', 'create_document',
 ];
 
 test('resolveToolName matches an exact registry name first', () => {
@@ -252,8 +252,6 @@ test('resolveToolName maps documented synonyms onto canonical tools', () => {
     browse: 'web_fetch',
     python: 'code_interpreter',
     run_code: 'code_interpreter',
-    plan: 'create_plan',
-    spec: 'create_spec',
     chart: 'render_intelligent_ui',
   };
   for (const [requested, expected] of Object.entries(cases)) {

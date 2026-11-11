@@ -143,7 +143,6 @@ export const SessionPayloadSchema = z.object({
        * visualization specs the run produced. These are needed to
        * rebuild the inline text→row→chart layout on reload/share. */
       textOffset: z.number().int().nonnegative().max(10_000_000).optional().nullable(),
-      visualization: z.unknown().optional().nullable(),
       visualizations: z.array(z.unknown()).max(8).optional(),
       /* P_tool-run-restore — the Codex step log and the terminal status the
        * declarative renderer (frontend/src/react/tool-run) needs to rebuild a
@@ -715,7 +714,6 @@ router.post('/', writeLimiter, async (req, res, next) => {
                      * offset, and native visualization specs. */
                     results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
                     textOffset: typeof tc.textOffset === 'number' ? tc.textOffset : null,
-                    visualization: tc.visualization == null ? null : tc.visualization,
                     visualizations: Array.isArray(tc.visualizations) ? tc.visualizations.slice(0, 8) : [],
                     runId: tc.runId == null ? null : String(tc.runId).slice(0, 200),
                     status: tc.status == null ? null : String(tc.status).slice(0, 60),

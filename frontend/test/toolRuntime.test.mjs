@@ -447,17 +447,17 @@ test('visualization results retain terminal metadata and spec for session saves'
     accessibilitySummary: 'A bar chart of market values.',
     payload: { categories: ['A'], series: [{ name: 'Value', data: [1] }] },
   };
-  runtime.recordToolUse({ id: 'viz-1', name: 'render_visualization', input: spec });
+  runtime.recordToolUse({ id: 'viz-1', name: 'render_intelligent_ui', input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]} });
   runtime.recordToolResult({
-    id: 'viz-1', name: 'render_visualization', ok: true, status: 'completed',
-    output: 'Visualization ready', visualization: spec, durationMs: 900,
+    id: 'viz-1', name: 'render_intelligent_ui', ok: true, status: 'completed',
+    output: 'Visualization ready', visualizations: [{...spec,nodeId:'visual',index:0}], durationMs: 900,
   });
 
   const entry = message.toolCalls.find((call) => call.id === 'viz-1');
   assert.equal(entry.status, 'completed');
   assert.equal(entry.durationMs, 900);
-  assert.deepEqual(entry.visualization, spec);
-  assert.deepEqual(entry.input, spec);
+  assert.deepEqual(entry.visualizations, [{...spec,nodeId:'visual',index:0}]);
+  assert.deepEqual(entry.input, {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]});
   runtime.dispose();
 });
 

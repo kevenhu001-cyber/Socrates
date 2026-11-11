@@ -1,5 +1,4 @@
-/** Normalize current and legacy tool results into the shared output protocol. */
-import {visualizationSpecOf} from '../../render/visualizationSpec.ts';
+/** Normalize tool results into the shared output protocol. */
 import type {
   ArtifactOutput,
   ToolCallRecord,
@@ -8,7 +7,6 @@ import type {
   VisualizationOutput,
 } from './toolRunModel.types.ts';
 
-export {visualizationSpecOf};
 
 /* ── tool output protocol ──────────────────────────────────────────────── */
 
@@ -74,21 +72,12 @@ function normalizePersistedOutputs(toolCallId: string, value: unknown): ToolOutp
 }
 
 /**
- * Synthesize the protocol from a call saved before it existed. Order is fixed
+ * Build output entries from executor result fields. Order is fixed
  * and testable: visualization, artifacts, result text, stderr text.
  */
-function legacyToolOutputs(call: ToolCallRecord): ToolOutput[] {
+function toolResultOutputs(call: ToolCallRecord): ToolOutput[] {
   const toolCallId = String(call.id || '');
   const out: ToolOutput[] = [];
-  const spec = visualizationSpecOf(call);
-  if (spec) {
-    out.push({
-      id: outputId(toolCallId, 'visualization', '0'),
-      toolCallId,
-      kind: 'visualization',
-      spec,
-    });
-  }
   const artifacts = Array.isArray(call.artifacts) ? call.artifacts : [];
   const seen = new Set<string>();
   for (const artifact of artifacts) {
@@ -140,7 +129,7 @@ export function toolOutputsOf(call: ToolCallRecord | null | undefined): ToolOutp
   const toolCallId = String(call.id || '');
   const persisted = normalizePersistedOutputs(toolCallId, call.outputs);
   if (persisted.length) return persisted;
-  return legacyToolOutputs(call);
+  return toolResultOutputs(call);
 }
 
 /** The outputs an attachment host renders: charts and saved files.

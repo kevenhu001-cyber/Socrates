@@ -7,8 +7,7 @@ import {
   canonicalToolExampleJson,
   describeToolSchema,
 } from '../src/services/tools/toolErrorFeedback.js';
-import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/core/planning.js';
-import { VISUALIZATION_TOOL, executeVisualization } from '../src/services/visualization.ts';
+import { DOCUMENT_TOOL, executeDocument } from '../src/services/core/planning.js';
 import { INTELLIGENT_UI_TOOL, validateIntelligentUi } from '../src/services/intelligentUi.js';
 import { WEB_SEARCH_TOOL } from '../src/services/webSearch.ts';
 import { WEB_FETCH_TOOL } from '../src/services/util/fetchBatch.js';
@@ -17,14 +16,8 @@ import { repairToolArguments } from '../src/services/tools/toolCallSafety.js';
 /* The whole point of shipping an example is that a model can copy it
    verbatim and succeed. Assert that against each tool's real executor. */
 test('canonical examples pass the executors that validate them', () => {
-  const plan = executePlan(canonicalToolExample('create_plan', PLAN_TOOL.function.parameters));
-  assert.equal(plan.status, 'completed', `plan example rejected: ${JSON.stringify(plan.detail)}`);
-
-  const spec = executeSpec(canonicalToolExample('create_spec', SPEC_TOOL.function.parameters));
-  assert.equal(spec.status, 'completed', `spec example rejected: ${JSON.stringify(spec.detail)}`);
-
-  const visual = executeVisualization(canonicalToolExample('render_visualization', VISUALIZATION_TOOL.function.parameters));
-  assert.equal(visual.status, 'completed', `visual example rejected: ${JSON.stringify(visual.detail)}`);
+  const document = executeDocument(canonicalToolExample('create_document', DOCUMENT_TOOL.function.parameters));
+  assert.equal(document.status, 'completed');
 });
 
 test('the canonical render_intelligent_ui example is a minimal text node', () => {
@@ -47,11 +40,9 @@ test('web search asks for natural prose and separately displayed sources instead
 
 test('canonical examples satisfy their own schemas without repair', () => {
   const cases = [
+    ['create_document', DOCUMENT_TOOL.function.parameters],
     ['web_search', WEB_SEARCH_TOOL.function.parameters],
     ['web_fetch', WEB_FETCH_TOOL.function.parameters],
-    ['create_plan', PLAN_TOOL.function.parameters],
-    ['create_spec', SPEC_TOOL.function.parameters],
-    ['render_visualization', VISUALIZATION_TOOL.function.parameters],
     ['initialize_workspace', {
       type: 'object',
       properties: {
@@ -171,8 +162,8 @@ test('buildToolErrorFeedback embeds field errors, schema and a copyable example'
 
 test('buildToolErrorFeedback tells the model to stop when retries are exhausted', () => {
   const feedback = buildToolErrorFeedback({
-    toolName: 'render_visualization',
-    schema: VISUALIZATION_TOOL.function.parameters,
+    toolName: 'render_intelligent_ui',
+    schema: INTELLIGENT_UI_TOOL.function.parameters,
     errorCode: 'visual_spec_invalid',
     fieldErrors: ['payload.series: required'],
     retryable: false,
@@ -184,8 +175,8 @@ test('buildToolErrorFeedback tells the model to stop when retries are exhausted'
 
 test('tool correction feedback can replace a generic example with the rejected visualization template', () => {
   const feedback = buildToolErrorFeedback({
-    toolName: 'render_visualization',
-    schema: VISUALIZATION_TOOL.function.parameters,
+    toolName: 'render_intelligent_ui',
+    schema: INTELLIGENT_UI_TOOL.function.parameters,
     errorCode: 'visual_spec_invalid',
     fieldErrors: 'payload.values: must match yCategories',
     retryable: true,

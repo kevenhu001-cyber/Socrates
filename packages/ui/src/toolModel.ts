@@ -30,11 +30,11 @@ export interface ToolArtifactRef {
 const LABELS: Record<string, string> = {
   workspace_agent: 'Agent',
   initialize_workspace: 'Workspace',
-  render_visualization: 'Visual',
+  render_intelligent_ui: 'Visual',
+  patch_intelligent_ui: 'Visual',
   web_search: 'Search',
   web_fetch: 'Fetch',
-  create_plan: 'Plan',
-  create_spec: 'Spec',
+  create_document: 'Document',
   code_interpreter: 'Code',
   arxiv_search: 'arXiv',
   zotero_search: 'Zotero',
@@ -67,11 +67,10 @@ export function toolInputPreview(name: string, input: JsonValue | undefined): st
       return field(record, 'query') || field(record, 'q');
     case 'web_fetch':
       return field(record, 'url');
-    case 'create_plan':
-    case 'create_spec':
-      return field(record, 'title');
-    case 'render_visualization':
-      return [field(record, 'template'), field(record, 'title')].filter(Boolean).join(' · ');
+    case 'create_document': {
+      const content = record.content;
+      return content && typeof content === 'object' && !Array.isArray(content) ? field(content, 'title') : '';
+    }
     case 'code_interpreter': {
       const code = field(record, 'code');
       return [field(record, 'language') || 'python', (code.split('\n')[0] || '').slice(0, 80)].filter(Boolean).join(' · ');

@@ -19,7 +19,7 @@ import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiv
 import { renderRecents } from '../ui/recentsView.ts';
 import { openNav } from '../sidebar/navigation.service.ts';
 import { closeConfirm, showConfirm } from '../ui/confirm.js';
-import { deleteUserMessage, sendFeedback, restorePersistedMessageExtras } from '../ui/messageActions.ts';
+import { deleteUserMessage, sendFeedback } from '../ui/messageActions.ts';
 import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHtml.ts';
 import { showToast } from '../ui/toast.ts';
 import { addMessage } from '../chat/messages.ts';
@@ -234,7 +234,6 @@ browserWindow.__socratesLegacy = {
     reclaimVizCards,
     processPendingVizActions,
     wireCodeBlockHeaders,
-    restorePersistedMessageExtras,
     /* P_declarative-tool-run — chart specs are normalized from toolCalls[];
        the React attachment owns the renderer host and its effect lifecycle. */
     mountVisualization: function (spec, host, options) {

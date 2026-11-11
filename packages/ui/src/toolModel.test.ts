@@ -12,7 +12,7 @@ test('tool labels use the known map and prettify unknown names', () => {
 test('input previews stay single-line and tool-aware', () => {
   assert.equal(toolInputPreview('web_search', { query: 'linear algebra' }), 'linear algebra');
   assert.equal(toolInputPreview('code_interpreter', { language: 'python', code: 'import numpy\nprint(1)' }), 'python · import numpy');
-  assert.equal(toolInputPreview('render_visualization', { template: 'bar', title: 'Sales' }), 'bar · Sales');
+  assert.equal(toolInputPreview('create_document', {kind:'plan',content:{title:'Sales',steps:[]}}), 'Sales');
   assert.equal(toolInputPreview('web_search', null), '');
 });
 

@@ -17,9 +17,9 @@ test('whiteboard, composer and menu work together after the shared-dependency sp
     payload: { nodes: [{ label: 'Shared dependency check' }] },
   };
   await prepareChatWorkbench(page, {
-    streamBody: namedFrame('tool_use', [{ id: 'whiteboard-runtime-tool', name: 'render_visualization', input: spec }])
-      + namedFrame('tool_result', { id: 'whiteboard-runtime-tool', name: 'render_visualization',
-        ok: true, status: 'completed', visualization: spec, output: 'Whiteboard ready', durationMs: 1 })
+    streamBody: namedFrame('tool_use', [{ id: 'whiteboard-runtime-tool', name: 'render_intelligent_ui', input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]} }])
+      + namedFrame('tool_result', { id: 'whiteboard-runtime-tool', name: 'render_intelligent_ui',
+        ok: true, status: 'completed', visualizations: [{...spec,nodeId:'visual',index:0}], output: 'Whiteboard ready', durationMs: 1 })
       + textFrame('The whiteboard is ready.') + completeFrame(),
   });
   await page.evaluate(() => window.askChatTurn('Draw a whiteboard'));

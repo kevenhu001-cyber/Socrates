@@ -1,3 +1,5 @@
+import { renderInlineMathHtml } from './inlineMath.ts';
+import { ensureKatex } from '../vendor/lazy.ts';
 import { installVisualizationMath } from './visualizationMath.ts';
 import type { VisualizationCard, VisualizationMountOptions, LiveChart, VisualizationRenderState } from './visualizationRuntime.ts';
 import type { ChartInstance } from '../types/vendorRuntime.ts';
@@ -353,9 +355,17 @@ async function mountChartRenderer(spec: VizSpec, host: HTMLElement, options: Vis
 function mountExtensionRenderer(spec: VizSpec, card: VisualizationCard, stage: HTMLElement, cardId: string) {
   stage.innerHTML = renderExtension(spec, cardId, esc);
   const frame = stage.querySelector('iframe')!;
-  const receiveExtensionMsg = function (event: MessageEvent<{ cardId?: string; nonce?: string; type?: string; message?: string }>) {
+  const receiveExtensionMsg = function (event: MessageEvent<{ cardId?: string; nonce?: string; type?: string; message?: string; id?: number; source?: string }>) {
     const data = event.data || {};
     if (event.source !== frame.contentWindow || data.cardId !== cardId || data.nonce !== frame.dataset.nonce) return;
+    if (data.type === 'socrates-viz-math') {
+      if (!Number.isSafeInteger(data.id) || typeof data.source !== 'string' || data.source.length > 8000) return;
+      void ensureKatex().then(() => {
+        if (!frame.isConnected) return;
+        frame.contentWindow?.postMessage({ type: 'socrates-viz-math-result', cardId, nonce: frame.dataset.nonce, id: data.id, html: renderInlineMathHtml(data.source!, 'mathml') }, '*');
+      }).catch(error => reportSwallow(error, 'visualization.extensionMath'));
+      return;
+    }
     if (data.type === 'socrates-viz-ready') {
       frame.dataset.ready = 'true';
       return;

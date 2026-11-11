@@ -25,3 +25,8 @@ test('charts stay vector unless the data is large', () => {
   assert.equal(chartPrefersCanvas('line', { series: [{ data: Array(1201).fill(1) }] }), true);
   assert.equal(chartPrefersCanvas('bar', null), false);
 });
+
+test('formula labels retain SVG typesetting even for large datasets', () => {
+  const payload = { categories: ['$x^2$'], series: [{ name: 'n', data: Array(2000).fill(1) }] };
+  assert.equal(chartPrefersCanvas('line', payload), false);
+});

@@ -30,17 +30,17 @@ export function parseFunctionExpression(source) {
     return left;
   }
   function term() {
-    var left = power();
+    var left = unary();
     while (peek() === '*' || peek() === '/') {
-      var operator = input[index++], right = power();
+      var operator = input[index++], right = unary();
       left = binary(left, right, operator);
     }
     return left;
   }
   function power() {
-    var left = unary();
+    var left = atom();
     if (consume('^')) {
-      var right = power();
+      var right = unary();
       return binary(left, right, '^');
     }
     return left;
@@ -48,7 +48,7 @@ export function parseFunctionExpression(source) {
   function unary() {
     if (consume('+')) return unary();
     if (consume('-')) { var value = unary(); return function (x) { return -value(x); }; }
-    return atom();
+    return power();
   }
   function atom() {
     if (consume('(')) { var nested = expression(); if (!consume(')')) fail('Expected )'); return nested; }
@@ -91,15 +91,34 @@ export function robustExtent(values) {
 export function sampleFunction(expression, domain, count) {
   var evaluator = parseFunctionExpression(expression);
   var selectedDomain = Array.isArray(domain) ? domain : defaultDomain(expression);
-  var start = selectedDomain[0], end = selectedDomain[1], samples = Math.max(120, Math.min(1600, count || 720));
+  var start = selectedDomain[0], end = selectedDomain[1], samples = Math.round(Math.max(120, Math.min(1600, Number.isFinite(count) ? count : 720)));
   if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) throw new Error('Function domain must have two increasing finite values');
   var points = [], values = [], previous = null;
   for (var i = 0; i < samples; i++) {
     var x = start + (end - start) * i / (samples - 1), y;
     try { y = evaluator(x); } catch (_) { y = NaN; }
-    // Split on a non-finite evaluation or an implausible jump. The latter
-    // prevents asymptotes (1/x, tan) from being connected by a fake stroke.
-    if (!Number.isFinite(y) || (previous != null && Math.abs(y - previous) > 1800)) {
+    // Probe inside the interval: a pole must not become a connecting stroke,
+    // and a steep continuous line must not lose all its measurements.
+    var discontinuous = false;
+    if (previous != null && Number.isFinite(y)) {
+      var previousX = points[points.length - 1][0];
+      var midpoint = evaluator(previousX + (x - previousX) / 2);
+      var scale = Math.max(1e-12, Math.abs(y - previous));
+      discontinuous = !Number.isFinite(midpoint) || (
+        Math.abs(midpoint - (y + previous) / 2) > scale * 4
+        && Math.abs(midpoint) > Math.max(Math.abs(previous), Math.abs(y), 1e-12) * 2
+      );
+      // Opposite, diverging slopes near an off-grid pole.
+      if (!discontinuous && previous * y < 0) {
+        var quarter = evaluator(previousX + (x - previousX) / 4);
+        var threeQuarter = evaluator(previousX + 3 * (x - previousX) / 4);
+        discontinuous = !Number.isFinite(quarter) || !Number.isFinite(threeQuarter)
+          || Math.max(Math.abs(quarter), Math.abs(threeQuarter)) > Math.max(Math.abs(previous), Math.abs(y)) * 2
+          || (quarter - previous) * (y - previous) < 0
+          || (y - threeQuarter) * (y - previous) < 0;
+      }
+    }
+    if (!Number.isFinite(y) || discontinuous) {
       points.push([x, null]); previous = null;
     } else {
       points.push([x, y]); values.push(y); previous = y;

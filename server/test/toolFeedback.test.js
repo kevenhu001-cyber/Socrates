@@ -55,32 +55,19 @@ test('code interpreter failures preserve remediation details and stderr tail', (
 });
 
 test('visualization, plan and spec feedback covers success and correction paths', () => {
-  const visual = formatToolResultContent('render_visualization', {
-    status: 'completed',
-    visualization: { template: 'bar', title: 'Scores' },
-  });
-  assert.match(visual, /visual card is now rendered/);
-
-  const visualFailure = formatToolResultContent('render_visualization', {
-    status: 'failed',
-    errorCode: 'visual_spec_invalid',
-    retryable: false,
-  });
-  assert.match(visualFailure, /do not repeat the validation error/);
-
-  const plan = formatToolResultContent('create_plan', { status: 'completed', output: 'plan body' });
+  const plan = formatToolResultContent('create_document', { status: 'completed', plan: {title:'Plan'}, output: 'plan body' });
   assert.match(plan, /\[plan card rendered\]/);
-  const spec = formatToolResultContent('create_spec', { status: 'completed', output: 'spec body' });
+  const spec = formatToolResultContent('create_document', { status: 'completed', output: 'spec body' });
   assert.match(spec, /\[spec card rendered\]/);
 
-  const correction = formatToolResultContent('create_plan', {
+  const correction = formatToolResultContent('create_document', {
     status: 'failed',
     errorCode: 'plan_spec_invalid',
     retryable: true,
     correction: 'fix the steps',
   });
   assert.equal(correction, 'fix the steps');
-  const fallback = formatToolResultContent('create_spec', {
+  const fallback = formatToolResultContent('create_document', {
     status: 'failed',
     errorCode: 'spec_spec_invalid',
     retryable: false,

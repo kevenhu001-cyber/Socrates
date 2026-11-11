@@ -16,7 +16,7 @@ export { artifactFromFence, artifactsFromToolCalls, islandKindForLang, parseArti
 export { buildEmbeddedDocument } from './artifactDocument';
 export { buildMathDocument } from './artifactDocument';
 export { extractFootnoteDefinitions, splitMathSegments, stripCitationMarkers, type ContentSegment, type Footnote } from './math';
-export { buildVisualizationDocument, isVisualizationSpec, paletteForDocument, visualizationSpecOf, visualizationSummary, type VisualizationSpec } from './visualization';
+export { buildVisualizationDocument, isVisualizationSpec, paletteForDocument, visualizationSummary, type VisualizationSpec } from './visualization';
 export { fileKindLabel, formatFileSize, isImageMime, storedFileIdFromRawUrl, storedFileIdsInText } from './fileMeta';
 export { countFindMatches, findMessageMatches, type FindMessageMatch } from './findMessages';
 export { assignMistakeQuizSlot, bumpMistakeRedo, createMistake, filterMistakes, formatMistakeTime, isMistakeResolved, mistakeRedoPlan, mistakesBadgeText, mistakesEmptyState, normalizeMistakes, practiceMistakeFor, prependMistake, quizMistakeFor, removeMistakesForQuizSlot, unresolvedMistakeCount, type BookMistake, type BookMistakeOption, type MistakeFilter, type MistakeRedoPlan } from './mistakes';

@@ -14,7 +14,6 @@ import test from 'node:test';
 import {
   attachmentOutputsOf,
   toolOutputsOf,
-  visualizationSpecOf,
 } from '../src/react/tool-run/toolRunModel.ts';
 
 const VIZ = {
@@ -39,20 +38,18 @@ test('legacy calls synthesize the protocol in a fixed order with stable ids', ()
     stderr: 'warning',
   });
   assert.deepEqual(outputs.map((output) => [output.kind, output.id]), [
-    ['visualization', 'call-1:visualization:0'],
     ['artifact', 'call-1:artifact:file-1'],
     ['artifact', 'call-1:artifact:file-2'],
     ['text', 'call-1:text:result'],
     ['text', 'call-1:text:stderr'],
   ]);
-  assert.equal(outputs[0].spec, VIZ);
   assert.deepEqual(
-    { mimeType: outputs[1].mimeType, name: outputs[1].name },
+    { mimeType: outputs[0].mimeType, name: outputs[0].name },
     { mimeType: 'image/png', name: 'plot.png' },
   );
-  assert.deepEqual(outputs[3].stream, 'result');
-  assert.deepEqual(outputs[3].text, '1');
-  assert.deepEqual(outputs[4].stream, 'stderr');
+  assert.deepEqual(outputs[2].stream, 'result');
+  assert.deepEqual(outputs[2].text, '1');
+  assert.deepEqual(outputs[3].stream, 'stderr');
 });
 
 test('legacy artifacts dedupe by fileId and drop malformed entries', () => {
@@ -74,29 +71,15 @@ test('legacy artifacts dedupe by fileId and drop malformed entries', () => {
   );
 });
 
-test('a streaming render_visualization reads the spec from its arguments', () => {
-  const call = {
-    id: 'call-3',
-    name: 'render_visualization',
-    input: VIZ,
-    _run: { phase: 'running' },
-  };
-  assert.equal(visualizationSpecOf(call), VIZ);
-  const outputs = toolOutputsOf(call);
-  assert.deepEqual(outputs.map((output) => output.kind), ['visualization']);
-  assert.equal(outputs[0].spec, VIZ);
-});
 
 test('a non-v1 spec is never handed to a renderer', () => {
-  assert.equal(visualizationSpecOf({ id: 'x', name: 'render_visualization', input: { version: 2 } }), null);
-  assert.equal(visualizationSpecOf({ id: 'x', name: 'Read', visualization: { version: 0 } }), null);
   assert.deepEqual(toolOutputsOf({ id: 'x', name: 'Read', visualization: { version: 2 } }), []);
 });
 
 test('a rejected visualization does not mount the unvalidated input as an output', () => {
   assert.deepEqual(toolOutputsOf({
     id: 'bad-viz',
-    name: 'render_visualization',
+    name: 'render_intelligent_ui',
     input: VIZ,
     status: 'failed',
     isError: true,
@@ -144,7 +127,7 @@ test('attachment outputs keep charts and files but leave text in the row', () =>
     artifacts: [{ id: 'file-5' }],
     output: '3 rows',
   });
-  assert.deepEqual(outputs.map((output) => output.kind), ['visualization', 'artifact']);
+  assert.deepEqual(outputs.map((output) => output.kind), ['artifact']);
   assert.deepEqual(attachmentOutputsOf(null), []);
   assert.deepEqual(toolOutputsOf(undefined), []);
 });
@@ -170,7 +153,7 @@ test('image artifacts stay out of automatic attachments for both output protocol
   });
 
   assert.deepEqual(legacy.map((output) => output.kind === 'artifact' ? output.fileId : output.kind), [
-    'visualization', 'csv',
+    'csv',
   ]);
   assert.deepEqual(normalized.map((output) => output.kind === 'artifact' ? output.fileId : output.kind), ['pdf']);
 });

@@ -98,7 +98,7 @@ export function looksTruncatedToolArguments(text: unknown): boolean {
   return inString || depth > 0;
 }
 
-const VISUAL_TOOLS = new Set(['render_intelligent_ui', 'patch_intelligent_ui', 'render_visualization']);
+const VISUAL_TOOLS = new Set(['render_intelligent_ui', 'patch_intelligent_ui']);
 
 /** Model-facing instruction for arguments that were cut off mid-object. */
 export function truncatedArgumentsHint(toolName: string | null | undefined): string {
@@ -258,7 +258,7 @@ export interface RepairToolArgumentsOptions {
    * `additionalProperties: false`. Default true.
    *
    * Pass `false` for tools whose executor owns a tolerant normalizer
-   * (render_visualization, create_plan, create_spec): those normalizers
+   * (render_intelligent_ui, create_document): those normalizers
    * exist precisely to move a mis-placed key where it belongs, and dropping
    * the key here deleted the evidence first, turning a recoverable call
    * into "missing required field".
@@ -724,9 +724,6 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
    * mapping that guess onto a real host-side agent turns a benign
    * hallucination into an execution. Those calls get the standard
    * unknown_tool correction instead. */
-  // planning
-  plan: 'create_plan', make_plan: 'create_plan', todo: 'create_plan', todo_write: 'create_plan',
-  update_plan: 'create_plan', spec: 'create_spec', requirements: 'create_spec',
   // visualization
   visualize: 'render_intelligent_ui', visualization: 'render_intelligent_ui',
   chart: 'render_intelligent_ui', plot: 'render_intelligent_ui', draw: 'render_intelligent_ui',

@@ -74,8 +74,8 @@ const SHARED_PAYLOAD = {
       id: 'm-2', role: 'assistant', content: 'Gravity is a force that attracts two bodies with mass.', createdAt: '2026-01-01T00:00:02Z',
       toolCalls: [{
         id: 'shared-viz',
-        name: 'render_visualization',
-        input: SHARED_VIZ,
+        name: 'render_intelligent_ui',
+        input: {version:1,nodes:[{...SHARED_VIZ,id:'visual',type:'visualization'}]},
         output: 'Visualization ready',
         artifacts: [],
       }],

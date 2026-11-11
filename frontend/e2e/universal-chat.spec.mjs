@@ -55,8 +55,8 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
       res.write('data: {"choices":[{"delta":{"reasoning_content":"Reasoning only"}}]}\n\n');
       res.write('event: tool_use\ndata: [{"id":"tool-1","name":"web_search","input":{"query":"algebra"}}]\n\n');
       res.write('event: tool_result\ndata: {"id":"tool-1","ok":true,"output":"Found result"}\n\n');
-      res.write('event: tool_use\ndata: [{"id":"viz-1","name":"render_visualization","input":{"version":1,"template":"bar","title":"Bar demo","accessibilitySummary":"Two bars","payload":{"categories":["A","B"],"series":[{"data":[1,2]}]}}}]\n\n');
-      res.write('event: tool_result\ndata: {"id":"viz-1","ok":true,"output":"Visualization ready","visualization":{"version":1,"template":"bar","title":"Bar demo","accessibilitySummary":"Two bars","payload":{"categories":["A","B"],"series":[{"data":[1,2]}]}}}\n\n');
+      res.write('event: tool_use\ndata: [{"id":"viz-1","name":"render_intelligent_ui","input":{"version":1,"nodes":[{"id":"visual","type":"visualization","template":"bar","title":"Bar demo","accessibilitySummary":"Two bars","payload":{"categories":["A","B"],"series":[{"data":[1,2]}]}}]}}]\n\n');
+      res.write('event: tool_result\ndata: {"id":"viz-1","ok":true,"output":"Visualization ready","visualizations":[{"version":1,"template":"bar","title":"Bar demo","accessibilitySummary":"Two bars","payload":{"categories":["A","B"],"series":[{"data":[1,2]}]}}]}\n\n');
       res.write('data: {"choices":[{"delta":{"content":"First chunk"}}]}\n\n');
       return;
     }

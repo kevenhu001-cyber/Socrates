@@ -75,10 +75,10 @@ function vizCall(id, title) {
   const spec = vizSpec(title);
   return {
     id,
-    name: 'render_visualization',
-    input: spec,
+    name: 'render_intelligent_ui',
+    input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]},
     output: 'Visualization ready',
-    visualization: spec,
+    visualizations: [{...spec,nodeId:'visual',index:0}],
     durationMs: 400,
     status: 'completed',
     textOffset: 0,
@@ -359,7 +359,7 @@ test('a visualization stays visible across the running → result transition', a
      in the arguments) and must not vanish when the result lands. */
   const spec = vizSpec('Probe transition');
   await page.evaluate((input) => window.__outPushFrame('tool_use', [
-    { id: 'viz-1', name: 'render_visualization', input },
+    { id: 'viz-1', name: 'render_intelligent_ui', input: {version:1,nodes:[{...input,id:'visual',type:'visualization'}]} },
   ]), spec);
   const message = page.locator('.msg.assistant').last();
   const card = message.locator('.visualization-card').last();
@@ -467,8 +467,8 @@ test('a call persisted with the outputs protocol renders the same', async ({ pag
   };
   const viz = {
     id: 'viz-proto',
-    name: 'render_visualization',
-    input: { note: 'protocol only' },
+    name: 'render_intelligent_ui',
+    input: {version:1,nodes:[{...{ note: 'protocol only' },id:'visual',type:'visualization'}]},
     output: 'Visualization ready',
     durationMs: 10,
     status: 'completed',
@@ -593,10 +593,10 @@ test('visible activities with a real chart do not overflow a 390px viewport', as
 test('a broken spec falls back alone and does not take the turn down', async ({ page }) => {
   const bad = {
     id: 'bad-viz',
-    name: 'render_visualization',
-    input: BAD_SPEC,
+    name: 'render_intelligent_ui',
+    input: {version:1,nodes:[{...BAD_SPEC,id:'visual',type:'visualization'}]},
     output: 'Visualization ready',
-    visualization: BAD_SPEC,
+    visualizations: [{...BAD_SPEC,nodeId:'visual',index:0}],
     durationMs: 10,
     status: 'completed',
     textOffset: 0,
@@ -617,8 +617,8 @@ test('a broken spec falls back alone and does not take the turn down', async ({ 
 test('a rejected visualization shows the tool error without mounting its input spec', async ({ page }) => {
   const rejected = {
     id: 'bad-viz',
-    name: 'render_visualization',
-    input: BAD_SPEC,
+    name: 'render_intelligent_ui',
+    input: {version:1,nodes:[{...BAD_SPEC,id:'visual',type:'visualization'}]},
     output: 'Invalid visualization spec',
     isError: true,
     status: 'failed',
@@ -685,10 +685,10 @@ test('a failed GeoGebra load is retried locally instead of replaying the rejecti
   };
   const geo = {
     id: 'geo-1',
-    name: 'render_visualization',
-    input: geoSpec,
+    name: 'render_intelligent_ui',
+    input: {version:1,nodes:[{...geoSpec,id:'visual',type:'visualization'}]},
     output: 'Visualization ready',
-    visualization: geoSpec,
+    visualizations: [{...geoSpec,nodeId:'visual',index:0}],
     durationMs: 10,
     status: 'completed',
     textOffset: 0,

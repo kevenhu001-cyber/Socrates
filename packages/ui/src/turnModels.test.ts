@@ -109,7 +109,7 @@ test('verbs map tool names to one action vocabulary', () => {
   assert.equal(toolVerbOf('code_interpreter').key, 'tool.verb.code');
   assert.equal(toolVerbOf('Bash').key, 'tool.verb.command');
   assert.equal(toolVerbOf('save_memory').key, 'tool.verb.memory');
-  assert.equal(toolVerbOf('create_plan').key, 'tool.verb.plan');
+  assert.equal(toolVerbOf('create_document').key, 'tool.verb.document');
   assert.equal(toolVerbOf('Grep').key, 'tool.verb.read');
   assert.equal(toolVerbOf('oc_github').key, 'tool.verb.connector');
   assert.equal(toolVerbOf('mystery').key, 'tool.verb.default');

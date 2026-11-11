@@ -13,7 +13,6 @@ export interface ToolResultInput {
   durationMs?: number;
   name?: string;
   results?: unknown[];
-  visualization?: { version: number; [key: string]: unknown } | null;
   visualizations?: unknown[] | null;
   detail?: unknown;
   retryable?: boolean;
@@ -107,11 +106,6 @@ function optionalResultFields(result: ToolResultInput): Record<string, unknown> 
   return fields;
 }
 
-function visualizationFields(result: ToolResultInput): Record<string, unknown> {
-  if (!result.visualization || result.visualization.version !== 1) return {};
-  return { input: result.visualization, visualization: result.visualization };
-}
-
 function appendArtifactFields(
   entryPatch: Record<string, unknown>,
   result: ToolResultInput,
@@ -142,7 +136,6 @@ function buildEntryPatch(
     isError: result.ok === false,
     results: Array.isArray(result.results) ? result.results.slice(0, 20) : [],
     ...optionalResultFields(result),
-    ...visualizationFields(result),
   };
   appendArtifactFields(entryPatch, result, display, existingArtifacts);
   return entryPatch;

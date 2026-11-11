@@ -1,16 +1,7 @@
-export interface VisualizationCallLike {
-  name?: unknown;
-  input?: unknown;
-  visualization?: unknown;
-  isError?: unknown;
-  status?: unknown;
-  _run?: { phase?: unknown } | null;
-}
-
 /* ------------------------------------------------------------------ */
 /* v1 visualization spec                                              */
 /* ------------------------------------------------------------------ */
-/* `render_visualization` input is model output, so every field below is
+/* Visualization input is model output, so every field below is
    untrusted until `asVisualizationSpec` has run. The interfaces describe
    what the renderers may rely on: a non-empty `template` and an object
    `payload`. Everything inside the payload stays optional and loosely
@@ -95,23 +86,6 @@ export interface VizSpec {
   [key: string]: unknown;
 }
 
-const FAILED_VISUALIZATION_STATUSES = new Set([
-  'failed', 'error', 'timeout', 'timed_out', 'cancelled', 'stopped', 'aborted',
-]);
-const FAILED_VISUALIZATION_PHASES = new Set(['failed', 'timed_out', 'cancelled']);
-
-function visualizationCallFailed(call: VisualizationCallLike): boolean {
-  if (call.name !== 'render_visualization') return false;
-  const status = String(call.status || '').toLowerCase();
-  const phase = String(call._run?.phase || '').toLowerCase();
-  return call.isError === true || FAILED_VISUALIZATION_STATUSES.has(status)
-    || FAILED_VISUALIZATION_PHASES.has(phase);
-}
-
-function isVersionOneSpec(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && (value as { version?: unknown }).version === 1;
-}
-
 /**
  * Narrow untrusted input to a renderable spec.
  *
@@ -130,22 +104,4 @@ export function asVisualizationSpec(input: unknown): VizSpec | null {
     return raw as VizSpec;
   }
   return { ...raw, template: raw.template, payload: {} } as VizSpec;
-}
-
-/**
- * The v1 visualization spec a call carries, from whichever field the writer
- * used: `visualization` (the runtime's normalized result) or, while the call
- * is still streaming, the `render_visualization` arguments themselves.
- *
- * Returns null for a failed call and for a payload that cannot be rendered,
- * so the caller never hands a malformed spec to mountVisualization.
- */
-export function visualizationSpecOf(
-  call: VisualizationCallLike | null | undefined,
-): VizSpec | null {
-  if (!call || visualizationCallFailed(call)) return null;
-  const persisted = call.visualization;
-  if (isVersionOneSpec(persisted)) return asVisualizationSpec(persisted);
-  if (call.name === 'render_visualization' && isVersionOneSpec(call.input)) return asVisualizationSpec(call.input);
-  return null;
 }

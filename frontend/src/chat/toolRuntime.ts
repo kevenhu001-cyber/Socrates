@@ -60,7 +60,6 @@ interface ToolCallEntry {
   executionId?: string;
   status?: string;
   durationMs?: number;
-  visualization?: unknown;
   visualizations?: unknown[];
   results?: unknown[];
   /** Structured error layers mirrored from the tool_result payload so the

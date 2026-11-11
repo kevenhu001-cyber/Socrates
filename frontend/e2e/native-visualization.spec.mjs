@@ -15,8 +15,8 @@ async function renderLn(page) {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
-      'event: tool_use\ndata: ' + JSON.stringify([{ id: 'visual-ln', name: 'render_visualization', input: lnSpec }]) + '\n\n',
-      'event: tool_result\ndata: ' + JSON.stringify({ id: 'visual-ln', name: 'render_visualization', ok: true, status: 'completed', visualization: lnSpec, output: 'Visualization ready', durationMs: 1 }) + '\n\n',
+      'event: tool_use\ndata: ' + JSON.stringify([{ id: 'visual-ln', name: 'render_intelligent_ui', input: {version:1,nodes:[{...lnSpec,id:"visual",type:"visualization"}]} }]) + '\n\n',
+      'event: tool_result\ndata: ' + JSON.stringify({ id: 'visual-ln', name: 'render_intelligent_ui', ok: true, status: 'completed', visualizations: [{...lnSpec,nodeId:"visual",index:0}], output: 'Visualization ready', durationMs: 1 }) + '\n\n',
       'data: ' + JSON.stringify({ choices: [{ delta: { content: 'The curve is shown below.' } }] }) + '\n\n',
       'data: [DONE]\n\n',
     ].join('');

@@ -1,3 +1,6 @@
+import { after } from 'node:test';
+import { shutdownPubsub } from '../src/lib/pubsub.js';
+after(async () => { await shutdownPubsub(); });
 // @ts-check
 /**
  * Unit tests for src/routes/chat/helpers.js — the pure functions
@@ -918,13 +921,11 @@ test('tool guidance is deterministic, capability gated and encourages label math
   const base = [{ role: 'system', content: 'base' }];
   const visual = appendToolRoutingHints(base, ['render_intelligent_ui', 'web_search']);
   assert.deepEqual(visual, appendToolRoutingHints(base, ['web_search', 'render_intelligent_ui']));
-  assert.match(visual[0].content, /Use LaTeX proactively/);
+  assert.match(visual[0].content, /Use LaTeX for EVERY displayed formula/);
   assert.match(visual[0].content, /Keep executable expressions/);
   assert.deepEqual(visual, appendToolRoutingHints(visual, ['web_search', 'render_intelligent_ui']));
   assert.deepEqual(appendToolRoutingHints(base, []), base);
   const common = enforceServerSystemBoundary([{ role: 'user', content: 'hello' }]);
   assert.doesNotMatch(common[0].content, /Demonstration shape|per-kind fields|bound to declared local state/);
   assert.match(appendToolRoutingHints(common, ['render_intelligent_ui'])[0].content, /bound to declared local state/);
-  assert.doesNotMatch(appendToolRoutingHints(base, ['create_plan'])[0].content, /When `create_spec`/);
-  assert.doesNotMatch(appendToolRoutingHints(base, ['create_spec'])[0].content, /When `create_plan`/);
 });

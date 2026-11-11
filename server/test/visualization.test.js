@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   executeVisualization,
   validateVisualizationSpec,
-  VISUALIZATION_TOOL,
   VISUALIZATION_TEMPLATE_CONTRACTS,
   visualizationTemplateExample,
 } from '../src/services/visualization.js';
@@ -77,8 +76,6 @@ test('caption is optional and remains separate from the chart title', () => {
   assert.equal(withCaption.spec.caption, 'Values are adjusted for inflation.');
   assert.equal(withoutCaption.ok, true);
   assert.equal(withoutCaption.spec.caption, undefined);
-  assert.equal(VISUALIZATION_TOOL.function.parameters.required.includes('caption'), false);
-  assert.match(VISUALIZATION_TOOL.function.parameters.properties.caption.description, /optional note displayed beneath/i);
 });
 
 test('visual tool returns structured field errors instead of a Python fallback', () => {
@@ -189,10 +186,6 @@ test('extension content rejects external asset URLs that its CSP cannot load', (
   assert.equal(inline.ok, true);
 });
 
-test('tool declaration exposes the versioned visual contract', () => {
-  assert.equal(VISUALIZATION_TOOL.function.name, 'render_visualization');
-  assert.deepEqual(VISUALIZATION_TOOL.function.parameters.properties.version.enum, [1]);
-});
 
 test('specialized mature-renderer templates validate semantic payloads', () => {
   const specs = [

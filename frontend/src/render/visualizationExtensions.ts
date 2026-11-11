@@ -1,3 +1,4 @@
+import { visualizationSandboxMath } from './visualizationSandboxMath.ts';
 /* Sandboxed extension rendering and model-facing repair routing. */
 /* Extension content is self-contained: tags and CSP block executable/network
    escape paths, and resource URLs are limited to fragments or inline data.
@@ -75,11 +76,11 @@ export function renderExtension(
   const svgSource = spec.template === 'svg_illustration' ? standaloneSvgSource(source) : '';
   if (spec.template === 'svg_illustration' && !svgSource) throw new Error('svg_document_root_invalid');
   const renderSource = svgSource
-    ? '<img class="visualization-svg-illustration" alt="' + escapeHtml(spec.accessibilitySummary) + '" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSource) + '">'
+    ? svgSource.replace(/^<svg\b/i, '<svg role="img" aria-label="' + escapeHtml(spec.accessibilitySummary) + '"')
     : source.replace(/^\uFEFF?\s*<\?xml[^?]*\?>\s*/i, '');
   const fontPreload = '<style>body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;margin:0;padding:0}'
     + (spec.template === 'svg_illustration'
-      ? 'html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:transparent}body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);place-items:center;background:transparent}svg{max-width:100%;max-height:100%}.visualization-svg-illustration{display:block;width:100%;height:100%;min-width:0;min-height:0;object-fit:contain}'
+      ? 'html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:transparent}body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);place-items:center;background:transparent}svg{max-width:100%;max-height:100%}'
       : '')
     + '</style>';
   /* P_ext-viz-error — an interactive_simulation script throwing inside
@@ -93,7 +94,8 @@ export function renderExtension(
     'window.addEventListener("unhandledrejection",function(e){post({type:"socrates-viz-error",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + ',message:String((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection").slice(0,300)})});' +
     'post({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '})' +
     '})()</script>';
-  const documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + headScript + renderSource;
+  const mathScript = '<script>(' + visualizationSandboxMath.toString() + ')(' + JSON.stringify(cardId).replace(/</g, '\\u003c') + ',' + JSON.stringify(nonce) + ')</script>';
+  const documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + headScript + mathScript + renderSource;
   return '<iframe class="visualization-extension" sandbox="allow-scripts" title="' + escapeHtml(spec.title) + '" data-card-id="' + escapeHtml(cardId) + '" data-nonce="' + escapeHtml(nonce) + '" srcdoc="' + escapeHtml(documentSource) + '"></iframe>';
 }
 
@@ -106,7 +108,7 @@ function extensionRepairPrompt(spec: ExtensionSpec | null | undefined, errMsg: u
   let msg = 'The Visualization card "' + String((spec && spec.title) || '').slice(0, 80)
     + '" (template: ' + (spec && spec.template) + ') failed to render in the client: '
     + String(errMsg || 'render error').slice(0, 300)
-    + '. Rebuild it with render_intelligent_ui using one openui node whose source calls Visualization(template, title, corrected payload, accessibilitySummary) — fix the payload, or switch to a simpler built-in template (chart/graph templates are more reliable than extension templates).';
+    + '. Rebuild it with render_intelligent_ui using one native node {id, type: "visualization", template, title, payload, accessibilitySummary} inside {version:1,nodes:[...]} — fix the payload, or switch to a simpler built-in template (chart/graph templates are more reliable than extension templates).';
   /* GeoGebra is the only renderer loaded from a third-party CDN. When
      the CDN itself is unreachable, retrying the same template cannot
      help — tell the model to express the construction with a

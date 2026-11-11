@@ -50,9 +50,6 @@ function freezeToolCall(call: ToolCall): ToolCall {
     _run: call._run ? freezeToolData(call._run) : call._run,
     results: call.results ? freezeToolData(call.results) : call.results,
     artifacts: call.artifacts ? freezeToolData(call.artifacts) : call.artifacts,
-    visualization: call.visualization
-      ? freezeToolData(call.visualization)
-      : call.visualization,
     visualizations: call.visualizations
       ? freezeToolData(call.visualizations)
       : call.visualizations,

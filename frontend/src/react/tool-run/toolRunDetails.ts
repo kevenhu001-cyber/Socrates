@@ -426,44 +426,6 @@ function extractFieldFromJson(argsJson: string, ...keys: string[]): string {
   return '';
 }
 
-export function extractVisualizationPreview(argsJson: string, input?: unknown): string {
-  const parsed = visualizationInputOf(argsJson, input);
-  if (!parsed) return rawVisualizationPreview(argsJson);
-  return formatVisualizationPreview(parsed);
-}
-
-function visualizationInputOf(argsJson: string, input?: unknown): Record<string, unknown> | null {
-  if (input && typeof input === 'object' && Object.keys(input).length > 0) {
-    return input as Record<string, unknown>;
-  }
-  if (!argsJson.trim()) return null;
-  for (const candidate of [argsJson, argsJson + '"}', argsJson + '}', argsJson + '"}}', argsJson + '"}']) {
-    try {
-      const candidateObj = JSON.parse(candidate);
-      if (candidateObj && typeof candidateObj === 'object') return candidateObj as Record<string, unknown>;
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts:437');
-      /* keep trying */
-    }
-  }
-  return null;
-}
-
-function rawVisualizationPreview(argsJson: string): string {
-  const raw = argsJson.trim().replace(/^\s*\{?\s*"[a-z_]+?"\s*:\s*"?/i, '');
-  return raw.length >= 3 ? clip(raw, 120) : '';
-}
-
-function formatVisualizationPreview(parsed: Record<string, unknown>): string {
-  const template = String(parsed.template || parsed.type || '');
-  const title = String(parsed.title || parsed.caption || '');
-  const lines: string[] = [];
-  if (template) lines.push(`图表类型: ${template}`);
-  if (title) lines.push(`标题: ${title}`);
-  if (parsed.description) lines.push(`描述: ${clip(String(parsed.description), 80)}`);
-  return lines.join('\n');
-}
-
 export function extractQueryPreview(argsJson: string): string {
   return extractFieldFromJson(argsJson, 'query', 'q', 'search_query', 'pattern');
 }
@@ -489,9 +451,6 @@ function livePreviewOf(call: ToolCallRecord): string {
   if (category === 'code' || call.name === 'Bash') {
     if (!streamed.trim()) return '';
     return extractCodePreview(streamed);
-  }
-  if (call.name === 'render_visualization') {
-    return extractVisualizationPreview(streamed, call.input);
   }
   if (isInlineSearchTool(call.name)) {
     const q = queryOf(call.input) || extractQueryPreview(streamed);

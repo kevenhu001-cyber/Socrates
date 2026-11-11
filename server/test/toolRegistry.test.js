@@ -6,12 +6,10 @@ import {PI_AGENT_ENABLED} from '../src/services/tools/piAgent.js';
 
 test('the argument policy declares which validator owns each tool', () => {
   assert.equal(toolArgumentPolicy('render_intelligent_ui').validation, 'none');
-  assert.equal(toolArgumentPolicy('render_visualization').validation, 'none');
-  assert.equal(toolArgumentPolicy('create_plan').validation, 'tool');
-  assert.equal(toolArgumentPolicy('create_spec').validation, 'tool');
+  assert.equal(toolArgumentPolicy('create_document').validation, 'tool');
   assert.equal(toolArgumentPolicy('web_search').validation, 'schema');
   assert.equal(SELF_NORMALIZING_TOOLS.has('render_intelligent_ui'), true);
-  assert.equal(SELF_NORMALIZING_TOOLS.has('create_plan'), false);
+  assert.equal(SELF_NORMALIZING_TOOLS.has('create_document'), false);
 });
 
 test('connector discovery tools are offered only when a connector is connected', () => {
@@ -33,9 +31,9 @@ test('connector discovery tools are offered only when a connector is connected',
 test('tool registry exposes the same native search and visual tools in tutor mode', () => {
   const chat = createToolRegistry({ codeInterpreterToolDef: { function: { name: 'code_interpreter' } }, mode: 'chat' });
   const workspaceTools = PI_AGENT_ENABLED ? ['workspace_agent', 'initialize_workspace'] : [];
-  assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', ...workspaceTools, 'web_search', 'web_fetch', 'read_attachment', 'save_memory', 'render_intelligent_ui', 'patch_intelligent_ui', 'cite_sources', 'create_plan', 'create_spec', 'create_site', 'arxiv_search']);
+  assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', ...workspaceTools, 'web_search', 'web_fetch', 'read_attachment', 'save_memory', 'render_intelligent_ui', 'patch_intelligent_ui', 'cite_sources', 'create_document', 'create_site', 'arxiv_search']);
   const tutor = createToolRegistry({ codeInterpreterToolDef: null, mode: 'tutor' });
-  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), [...workspaceTools, 'web_search', 'web_fetch', 'read_attachment', 'save_memory', 'render_intelligent_ui', 'patch_intelligent_ui', 'cite_sources', 'create_plan', 'create_spec', 'create_site', 'arxiv_search']);
+  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), [...workspaceTools, 'web_search', 'web_fetch', 'read_attachment', 'save_memory', 'render_intelligent_ui', 'patch_intelligent_ui', 'cite_sources', 'create_document', 'create_site', 'arxiv_search']);
   /* sessionSerial carries the lane name: workspace tools share 'workspace'
      (a reset must not overlap an agent run); code_interpreter's scratch
      dir is an independent 'code' lane. */
@@ -44,7 +42,7 @@ test('tool registry exposes the same native search and visual tools in tutor mod
   assert.equal(chat.get('initialize_workspace').sessionSerial, 'workspace');
   assert.equal(chat.get('initialize_workspace').pure, false);
   assert.equal(tutor.get('workspace_agent').pure, false);
-  assert.equal(chat.get('render_visualization').enabled, false);
+  assert.equal(chat.get('render_visualization'), null);
   assert.equal(chat.get('render_intelligent_ui').enabled, true);
   assert.equal(chat.get('patch_intelligent_ui').sessionSerial, chat.get('render_intelligent_ui').sessionSerial);
   assert.equal(chat.get('cite_sources').enabled, true);

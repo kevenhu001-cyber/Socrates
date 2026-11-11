@@ -141,11 +141,6 @@ export interface LegacyPostRender {
   reclaimVizCards?(root: HTMLElement): void;
   processPendingVizActions(root?: HTMLElement): void;
   wireCodeBlockHeaders(root: HTMLElement): void;
-  restorePersistedMessageExtras?(
-    root: HTMLElement,
-    message: Record<string, unknown>,
-    idPrefix?: string,
-  ): void;
   /** A chart renderer lifecycle adapter. Saved files are rendered by React. */
   mountVisualization?(
     spec: Record<string, unknown>,

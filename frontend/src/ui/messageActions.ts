@@ -10,9 +10,7 @@ import { stateStore } from '../state/store.ts';
 import { apiFetch } from '../util/api.ts';
 import { i18n } from '../react/legacy/gateway.ts';
 import { showToast } from './toast.js';
-import { visualizationSpecOf } from '../render/visualizationSpec.ts';
 import { publishReactChatRuntime } from './reactBridge.ts';
-import { mountVisualization } from '../render/vizStubs.ts';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -97,7 +95,6 @@ export interface ToolCallEntry {
   output?: unknown;
   isError?: boolean;
   status?: string;
-  visualization?: { version?: number; [key: string]: unknown };
   artifacts?: Array<{ id: string; mimeType?: string; name?: string }>;
 }
 
@@ -161,99 +158,6 @@ export function deleteUserMessage(messageId: string): void {
       console.log('[msg-delete] not synced — queued for replay');
     }
   });
-}
-
-/* Restore non-HTML message content that is persisted separately from the
-   assistant's markdown. React calls this after a history bubble commits;
-   the public-share renderer uses the same helper so both paths stay in
-   parity. The data marker makes repeated React renders idempotent. */
-function toolCallSelector(id: string | undefined): string {
-  const raw = String(id || '');
-  try {
-    if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(raw);
-  } catch (error) {
-    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras');
-  }
-  return raw.replace(/[^a-zA-Z0-9_-]/g, '');
-}
-
-function inlineToolRow(body: HTMLElement, selector: string): Element | null {
-  if (!selector) return null;
-  try {
-    /* The RN tool row host (`.rn-tool-row`) carries data-tcid; older
-       persisted HTML may still have the legacy `.tool-inline` wrapper. */
-    return body.querySelector('.rn-tool-row[data-tcid="' + selector + '"]')
-      || body.querySelector('[data-tcid="' + selector + '"]');
-  } catch (error) {
-    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras');
-    return null;
-  }
-}
-
-function inlineVisualizationHost(body: HTMLElement, row: Element, selector: string, callId?: string): HTMLElement {
-  let host: HTMLElement | null = null;
-  try {
-    host = body.querySelector<HTMLElement>('.tool-inline-attachments[data-tool-anchor="' + selector + '"]');
-  } catch (error) {
-    reportSwallow(error, 'ui/messageActions.restorePersistedMessageExtras#2');
-  }
-  if (host) return host;
-  const next = row.nextElementSibling;
-  if (next instanceof HTMLElement && next.classList.contains('tool-inline-attachments')) return next;
-  host = document.createElement('div');
-  host.className = 'tool-inline-attachments';
-  host.setAttribute('data-tool-anchor', String(callId || ''));
-  row.insertAdjacentElement('afterend', host);
-  return host;
-}
-
-function mountRestoredVisualization(
-  spec: NonNullable<ReturnType<typeof visualizationSpecOf>>,
-  host: HTMLElement,
-  toolCallId: string,
-  reportContext: string,
-): void {
-  try {
-    mountVisualization(spec, host, { toolCallId }).catch(() => { /* async: the surrounding try cannot see this */ });
-  } catch (error) {
-    reportSwallow(error, reportContext);
-  }
-}
-
-function restoreInlineToolCall(
-  body: HTMLElement,
-  row: Element,
-  selector: string,
-  call: ToolCallEntry,
-  spec: NonNullable<ReturnType<typeof visualizationSpecOf>> | null,
-  toolCallId: string,
-): void {
-  if (!spec) return;
-  const host = inlineVisualizationHost(body, row, selector, call.id);
-  mountRestoredVisualization(spec, host, toolCallId, 'ui/messageActions.restorePersistedMessageExtras#3');
-}
-
-function restoreToolCallExtras(body: HTMLElement, call: ToolCallEntry, index: number, idPrefix?: string): void {
-  if (!call.name) return;
-  const selector = toolCallSelector(call.id);
-  const row = inlineToolRow(body, selector);
-  const spec = visualizationSpecOf(call);
-  const toolCallId = call.id || ((idPrefix || 'history') + '-viz-' + index);
-  if (!row) return;
-  restoreInlineToolCall(body, row, selector, call, spec, toolCallId);
-}
-
-export function restorePersistedMessageExtras(
-  body: HTMLElement,
-  entry: MessageEntry,
-  idPrefix?: string,
-): void {
-  if (!body || !entry) return;
-  const messageKey = String(entry.clientId || entry.id || idPrefix || 'message');
-  if (body.dataset && body.dataset.persistedExtrasFor === messageKey) return;
-  const calls: ToolCallEntry[] = Array.isArray(entry.toolCalls) ? entry.toolCalls : [];
-  calls.forEach((call, index) => restoreToolCallExtras(body, call, index, idPrefix));
-  if (body.dataset) body.dataset.persistedExtrasFor = messageKey;
 }
 
 /* Re-seat a live artifact / chart node after the final-render innerHTML

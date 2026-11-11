@@ -72,42 +72,14 @@ const CANONICAL_EXAMPLES: Record<string, Record<string, unknown>> = {
   },
   read_attachment: { fileId: '00000000-0000-4000-8000-000000000000', offset: 0, limit: 12000 },
   cite_sources: { claims: [{ quote: 'Exact sentence from the answer.', sourceIds: ['source-1'] }] },
-  create_plan: {
-    title: '两周复习计划',
-    goal: '在两周内完成微积分期中复习',
-    steps: [
-      { title: '梳理极限与连续性', status: 'done' },
-      { title: '练习导数应用题', detail: '每天 10 题，重点是最值问题', status: 'in_progress' },
-      { title: '模拟卷限时训练', status: 'todo' },
-    ],
-  },
-  create_spec: {
-    title: '导出 PDF 报告',
-    summary: '把会话中的可视化与结论导出为一份可分享的 PDF。',
-    requirements: [
-      '用户可以从会话菜单触发导出。',
-      '导出内容包含标题、正文与全部可视化卡片。',
-    ],
-    acceptanceCriteria: ['导出的 PDF 在 A4 页面下不裁切图表。'],
-  },
-  render_visualization: {
-    version: 1,
-    template: 'bar',
-    title: '各科目得分',
-    accessibilitySummary: '柱状图比较三个科目的得分，数学最高。',
-    payload: {
-      categories: ['数学', '物理', '化学'],
-      series: [{ name: '得分', data: [92, 85, 78] }],
-      xLabel: '科目',
-      yLabel: '得分',
-    },
-  },
   render_intelligent_ui: {version:1,nodes:[{id:'summary',type:'text',text:'Summary'}]},
   arxiv_search: { query: 'diffusion models sampling' },
   zotero_search: { query: 'attention is all you need' },
   notion_search_pages: { query: 'meeting notes' },
   github_list_repos: { query: 'socrates' },
   gitee_list_repos: { query: 'socrates' },
+  create_document: { kind: 'plan', content: { title: 'Study plan', steps: [{ title: 'Review concepts', status: 'todo' }] } },
+
 };
 
 /** The canonical example for a tool, generated from its schema if needed. */

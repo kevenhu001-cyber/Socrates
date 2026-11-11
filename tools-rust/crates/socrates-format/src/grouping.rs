@@ -71,9 +71,8 @@ pub fn categorize_tool(name: &str) -> ToolCategory {
         | "github_list_repos" | "gitee_list_repos" => ToolCategory::Search,
         "code_interpreter" | "Code" => ToolCategory::Code,
         "web_fetch" | "WebFetch" => ToolCategory::Fetch,
-        "render_visualization" => ToolCategory::Visual,
-        "create_plan" => ToolCategory::Plan,
-        "create_spec" => ToolCategory::Spec,
+        "render_intelligent_ui" | "patch_intelligent_ui" => ToolCategory::Visual,
+        "create_document" => ToolCategory::Plan,
         "Read" | "Glob" | "Grep" => ToolCategory::Read,
         "Write" | "Edit" | "Bash" => ToolCategory::Write,
         _ => ToolCategory::Other,
@@ -139,16 +138,14 @@ mod tests {
     fn code_visual_plan_spec_categories() {
         let groups = group_tool_calls(vec![
             entry("a", "code_interpreter"),
-            entry("b", "render_visualization"),
-            entry("c", "create_plan"),
-            entry("d", "create_spec"),
+            entry("b", "render_intelligent_ui"),
+            entry("c", "create_document"),
         ]);
         let cats: Vec<ToolCategory> = groups.iter().map(|g| g.category).collect();
         assert_eq!(cats, vec![
             ToolCategory::Code,
             ToolCategory::Visual,
             ToolCategory::Plan,
-            ToolCategory::Spec,
         ]);
     }
 

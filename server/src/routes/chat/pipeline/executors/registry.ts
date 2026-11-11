@@ -16,12 +16,11 @@ import type {ToolExecutor} from './types.js';
 import {executeWorkspaceAgent} from './workspaceAgent.js';
 import {executeInitializeWorkspace} from './workspaceInit.js';
 import {executeCodeInterpreter} from './codeInterpreter.js';
-import {executeRenderVisualization} from './renderVisualization.js';
 import {executeWebSearch} from './webSearch.js';
 import {executeWebFetch} from './webFetch.js';
 import {executeReadAttachment} from './readAttachment.js';
 import {executeSaveMemory} from './saveMemory.js';
-import {executePlanSpec} from './planSpec.js';
+import {executeDocumentTool} from './document.js';
 import {executeCreateSite} from './createSite.js';
 import {executePersonalConnector, executeProjectConnector,} from './connectors.js';
 import {executeOpenConnector} from './openConnector.js';
@@ -40,7 +39,6 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
     ['workspace_agent', executeWorkspaceAgent],
     ['initialize_workspace', executeInitializeWorkspace],
     ['code_interpreter', executeCodeInterpreter],
-    ['render_visualization', executeRenderVisualization],
     ['web_search', executeWebSearch],
     ['web_fetch', executeWebFetch],
     ['read_attachment', executeReadAttachment],
@@ -48,8 +46,7 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
     ['render_intelligent_ui', executeIntelligentUi],
     ['patch_intelligent_ui', executePatchIntelligentUi],
     ['cite_sources', executeCiteSources],
-    ['create_plan', executePlanSpec],
-    ['create_spec', executePlanSpec],
+    ['create_document', executeDocumentTool],
     ['create_site', executeCreateSite],
     ['search_connectors', executeSearchConnectors],
     ['get_connector_spec', executeGetConnectorSpec],

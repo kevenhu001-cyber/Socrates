@@ -26,7 +26,7 @@ function hasInlineMarks(text: string): boolean {
   return CODE_RE.test(text) || BOLD_RE.test(text);
 }
 
-export function renderInlineMathHtml(text: string): string | null {
+export function renderInlineMathHtml(text: string, output: 'htmlAndMathml' | 'mathml' = 'htmlAndMathml'): string | null {
   const source = String(text ?? '');
   const hasMath = hasMathDelimiters(source);
   const hasMarks = hasInlineMarks(source);
@@ -46,7 +46,7 @@ export function renderInlineMathHtml(text: string): string | null {
     typesetCount += 1;
     let html: string;
     try {
-      html = katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS });
+      html = katex.renderToString(math.trim(), { displayMode: false, output, throwOnError: false, macros: KATEX_MACROS });
     } catch {
       html = esc(math);
     }

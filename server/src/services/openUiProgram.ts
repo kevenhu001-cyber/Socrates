@@ -9,7 +9,7 @@ const parser = createParser(OPENUI_SCHEMA as LibraryJSONSchema, 'Col');
 /** The parser stops at the first type mismatch and reports the missing
  * arguments it could not fill. On its own that reads like "add a payload", so
  * the argument shape is spelled out once the component is named in the error. */
-const VISUALIZATION_ARGUMENT_HINT = 'Visualization takes four arguments in order: the template name, a short title, the template payload and an accessibility summary. The payload is the template inner data, for example {"categories":["A"],"series":[{"name":"Values","data":[1,2]}]}. Do not pass the render_visualization envelope {version, template, title, accessibilitySummary, payload} as one object or as the payload.';
+const VISUALIZATION_ARGUMENT_HINT = 'Visualization takes four arguments in order: the template name, a short title, the template payload and an accessibility summary. The payload is the template inner data, for example {"categories":["A"],"series":[{"name":"Values","data":[1,2]}]}. Do not pass the visualization envelope {version, template, title, accessibilitySummary, payload} as one object or as the payload.';
 
 function withVisualizationArgumentHint(issues: string[]): string[] {
   const confused = issues.some((issue) => issue.includes('"component":"Visualization"')
@@ -96,7 +96,7 @@ function looksUnterminated(source: string): boolean {
   return Boolean(quote) || depth > 0;
 }
 
-/** The model sometimes hands the whole render_visualization envelope to the
+/** The model sometimes hands the whole visualization envelope to the
  * Visualization component, either as the first argument or nested in the
  * payload. The native validator then reports a missing field inside the
  * payload, which points at the wrong thing and invites the same broken call
@@ -109,10 +109,10 @@ function envelopeMisuse(props: Record<string, unknown>): string | null {
     return 'version' in record || 'template' in record || 'accessibilitySummary' in record;
   };
   if (looksLikeEnvelope(props.template)) {
-    return 'Visualization: the first argument must be the template name as a string, for example "bar". Do not pass the render_visualization envelope {version, template, title, accessibilitySummary, payload} as one object: template, title, payload and accessibilitySummary are separate arguments.';
+    return 'Visualization: the first argument must be the template name as a string, for example "bar". Do not pass the visualization envelope {version, template, title, accessibilitySummary, payload} as one object: template, title, payload and accessibilitySummary are separate arguments.';
   }
   if (looksLikeEnvelope(props.payload)) {
-    return 'Visualization: the payload argument must be the template inner data, for example {"categories":["A"],"series":[{"name":"Values","data":[1,2]}]}, not the render_visualization envelope. Pass template, title, payload and accessibilitySummary as separate arguments.';
+    return 'Visualization: the payload argument must be the template inner data, for example {"categories":["A"],"series":[{"name":"Values","data":[1,2]}]}, not the visualization envelope. Pass template, title, payload and accessibilitySummary as separate arguments.';
   }
   return null;
 }

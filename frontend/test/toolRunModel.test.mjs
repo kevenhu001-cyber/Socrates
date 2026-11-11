@@ -531,7 +531,7 @@ test('a group hands every call to the output renderer, settled or in flight', ()
      them and the order matches the rows. */
   const group = buildTurnLayout('work\n\n', [
     call({ id: 'settled', textOffset: 5, output: 'ok', durationMs: 3 }),
-    call({ id: 'live', name: 'render_visualization', textOffset: 5, _run: { phase: 'running' } }),
+    call({ id: 'live', name: 'render_intelligent_ui', textOffset: 5, _run: { phase: 'running' } }),
   ]).find((s) => s.kind === 'group');
   assert.deepEqual(groupOutputCalls(group).map((c) => c.id), ['settled', 'live']);
   assert.deepEqual(groupOutputCalls(group), group.members.concat(group.running));
@@ -666,19 +666,17 @@ test('read_attachment distinguishes images from documents in running and done st
   assert.match(doneDoc.text, /Read attachment|已读取附件/);
 });
 
-test('render_visualization includes chart template and title', () => {
+test('render_intelligent_ui uses a visual action label', () => {
   const chartCall = {
     id: 'viz-1',
-    name: 'render_visualization',
+    name: 'render_intelligent_ui',
     input: { template: 'line', title: '月度销售趋势' },
   };
   const running = toolRunLabel(chartCall, 'running');
-  assert.match(running.text, /折线图/);
-  assert.match(running.text, /月度销售趋势/);
+  assert.match(running.text, /visual|可视化|图形/);
 
   const done = toolRunLabel({ ...chartCall, output: 'ok' }, 'done');
-  assert.match(done.text, /折线图/);
-  assert.match(done.text, /月度销售趋势/);
+  assert.match(done.text, /visual|可视化|图形/);
 });
 
 test('code_interpreter distinguishes drafting from executing and analyzing', () => {

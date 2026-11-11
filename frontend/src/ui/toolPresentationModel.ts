@@ -189,45 +189,6 @@ export function attachmentInfo(call: ToolCallLike): { fileName: string; isImage:
   };
 }
 
-const CHART_TYPE_NAMES: Record<string, string> = {
-  function: '函数图像',
-  line: '折线图',
-  area: '面积图',
-  bar: '柱状图',
-  scatter: '散点图',
-  pie: '饼图',
-  histogram: '直方图',
-  heatmap: '热力图',
-  radar: '雷达图',
-  boxplot: '箱线图',
-  flowchart: '流程图',
-  sequence: '时序图',
-  state: '状态图',
-  tree: '树状图',
-  mindmap: '思维导图',
-  network: '拓扑图',
-  timeline: '时间线',
-  comparison: '对比图',
-  process: '流程架构图',
-  number_line: '数轴',
-  geometry: '几何图示',
-  concept_map: '概念图',
-  svg_illustration: '示意图',
-  interactive_simulation: '交互仿真',
-  paper_chart: '统计图表',
-  math_construction: '几何构造',
-  geometry_3d: '3D 模型',
-  whiteboard: '白板演练',
-};
-
-export function chartInfo(call: ToolCallLike): { type: string; title: string } {
-  const input = (call && call.input && typeof call.input === 'object' ? call.input : {}) as Record<string, unknown>;
-  const template = strField(input, 'template', 'type');
-  const type = CHART_TYPE_NAMES[template] || (template ? template + '图' : translate('tool.actionVisual', '图表'));
-  const title = strField(input, 'title', 'caption', 'name');
-  return { type, title };
-}
-
 /* A test/build one-liner is worth surfacing in the row; a page dump isn't.
    Match only summary shapes so we never promote an arbitrary first line. */
 const PASSED_RE = /(\d+)\s+passed/i;
@@ -323,21 +284,13 @@ function runningFileLabel(call: ToolCallLike, name: string): RunLabel {
   return { text: translate('tool.actionWrite', 'Updating files') };
 }
 
-function runningChartLabel(call: ToolCallLike): RunLabel {
-  const { type, title } = chartInfo(call);
-  return title
-    ? { text: tf('tool.creatingChartWithTitle', 'Creating {type}: “{title}”…', { type, title: clip(title, 24) }) }
-    : { text: tf('tool.creatingChart', 'Creating {type}…', { type }) };
-}
-
 const RUNNING_STATIC_LABELS = new Map<string, () => RunLabel>([
   ['cite_sources', () => ({ text: translate('tool.actionCite', 'Checking references…') })],
   ['patch_intelligent_ui', () => ({ text: translate('tool.actionPatchUi', 'Updating the visual…') })],
   ['render_intelligent_ui', () => ({ text: translate('tool.actionVisual', 'Creating a visual') })],
   ['workspace_agent', () => ({ text: translate('tool.actionCodex', 'Working in the workspace…') })],
   ['initialize_workspace', () => ({ text: translate('tool.actionInitWorkspace', 'Initializing the workspace…') })],
-  ['create_plan', () => ({ text: translate('tool.actionPlan', 'Drafting a plan…') })],
-  ['create_spec', () => ({ text: translate('tool.actionSpec', 'Drafting a spec…') })],
+  ['create_document', () => ({ text: translate('tool.actionDocument', 'Drafting a document…') })],
   ['create_site', () => ({ text: translate('tool.actionSite', 'Building and publishing the site…') })],
 ]);
 
@@ -351,7 +304,7 @@ function runningSearchLabel(call: ToolCallLike): RunLabel {
 const RUNNING_LABEL_HANDLERS = new Map<string, (call: ToolCallLike) => RunLabel>([
   ['web_fetch', runningFetchLabel], ['WebFetch', runningFetchLabel],
   ['code_interpreter', runningCodeLabel], ['Code', runningCodeLabel],
-  ['render_visualization', runningChartLabel], ['read_attachment', runningAttachmentLabel],
+  ['read_attachment', runningAttachmentLabel],
   ['Read', (call) => runningFileLabel(call, 'Read')],
   ['Glob', (call) => runningFileLabel(call, 'Glob')],
   ['Grep', (call) => runningFileLabel(call, 'Grep')],
@@ -438,17 +391,10 @@ function doneCodeLabel(call: ToolCallLike): RunLabel {
   return { text: translate('tool.ranCode', 'Ran Python'), meta: outcome ? [outcome] : [] };
 }
 
-function doneChartLabel(call: ToolCallLike): RunLabel {
-  const { type, title } = chartInfo(call);
-  return title
-    ? { text: tf('tool.createdChartWithTitle', 'Created {type}: “{title}”', { type, title: clip(title, 24) }) }
-    : { text: tf('tool.createdChart', 'Created {type}', { type }) };
-}
-
 const DONE_LABEL_HANDLERS = new Map<string, (call: ToolCallLike) => RunLabel>([
   ['web_fetch', doneFetchLabel], ['WebFetch', doneFetchLabel],
   ['code_interpreter', doneCodeLabel], ['Code', doneCodeLabel],
-  ['render_visualization', doneChartLabel], ['read_attachment', doneAttachmentLabel],
+  ['read_attachment', doneAttachmentLabel],
   ['Bash', doneBashLabel],
   ['Read', (call) => doneFileLabel(call, 'Read')],
   ['Glob', (call) => doneFileLabel(call, 'Glob')],
@@ -468,8 +414,7 @@ const DONE_STATIC_LABELS = new Map<string, () => RunLabel>([
   ['render_intelligent_ui', () => ({ text: translate('tool.doneVisual', 'Created a visual') })],
   ['workspace_agent', () => ({ text: translate('tool.doneCodex', 'Workspace run') })],
   ['initialize_workspace', () => ({ text: translate('tool.doneInitWorkspace', 'Workspace ready') })],
-  ['create_plan', () => ({ text: translate('tool.donePlan', 'Drafted a plan') })],
-  ['create_spec', () => ({ text: translate('tool.doneSpec', 'Drafted a spec') })],
+  ['create_document', () => ({ text: translate('tool.doneDocument', 'Drafted a document') })],
   ['create_site', () => ({ text: translate('tool.doneSite', 'Site published') })],
 ]);
 

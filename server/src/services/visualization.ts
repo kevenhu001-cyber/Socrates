@@ -526,27 +526,6 @@ export function visualizationError(issues: Array<{ path: string; message: string
   };
 }
 
-export const VISUALIZATION_TOOL = {
-  type: 'function',
-  function: {
-    name: 'render_visualization',
-    description: 'Create a native Socrates visual card. Follow the exact payload contract for the selected template in the system guidance. Submit semantic data, never raw renderer options, CSS, fonts, dimensions, or Mermaid source. Keep titles and labels concise. Use code_interpreter first only when data must be calculated, read from files, transformed, or exported.',
-    parameters: {
-      type: 'object',
-      required: ['version', 'template', 'title', 'accessibilitySummary', 'payload'],
-      properties: {
-        version: { type: 'integer', enum: [1] },
-        template: { type: 'string', enum: VISUALIZATION_TEMPLATES },
-        title: { type: 'string', maxLength: 120 },
-        caption: { type: 'string', maxLength: 500, description: 'Optional note displayed beneath the visualization, separate from the title.' },
-        accessibilitySummary: { type: 'string', maxLength: 800 },
-        payload: { type: 'object', description: `Template-specific payload. Follow the selected template's field rules and example in the system guidance. Extension source must be at most ${Math.floor(MAX_TOOL_STRING_FIELD_CHARS / 1024)} KB so the call fits in one request.` },
-      },
-      additionalProperties: false,
-    },
-  },
-};
-
 export function executeVisualization(input: unknown) {
   const startedAt = Date.now();
   const validation = validateVisualizationSpec(input);

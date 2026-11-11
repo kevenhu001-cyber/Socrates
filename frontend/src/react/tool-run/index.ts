@@ -33,7 +33,6 @@ export {
   toolRunStateOf,
   toolRunView,
   visualizationSpecKey,
-  visualizationSpecOf,
   type ApprovalView,
   type ArtifactOutput,
   type DetailSection,

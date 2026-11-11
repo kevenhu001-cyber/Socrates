@@ -36,7 +36,7 @@ const TOOL_CATEGORIES = new Map<string, string>([
   ...Array.from(SEARCH_TOOLS, (name) => [name, 'search'] as const),
   ['code_interpreter', 'code'], ['Code', 'code'],
   ['web_fetch', 'fetch'], ['WebFetch', 'fetch'],
-  ['render_visualization', 'visual'], ['create_plan', 'plan'], ['create_spec', 'spec'],
+  ['render_intelligent_ui', 'visual'], ['patch_intelligent_ui', 'visual'], ['create_document', 'plan'],
   ['workspace_agent', 'agent'], ['initialize_workspace', 'agent'],
   ...Array.from(READ_TOOLS, (name) => [name, 'read'] as const),
   ...Array.from(WRITE_TOOLS, (name) => [name, 'write'] as const),

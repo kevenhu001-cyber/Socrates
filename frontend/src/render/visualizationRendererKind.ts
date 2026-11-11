@@ -35,6 +35,9 @@ export const SVG_SERIES_POINT_LIMIT = 1200;
 export const SVG_HEATMAP_CELL_LIMIT = 2500;
 
 export function chartPrefersCanvas(template: string, payload: Record<string, unknown> | null | undefined): boolean {
+  // Formula labels need SVG DOM anchors for the shared LaTeX overlay.
+  // Canvas has no text nodes to typeset, even when a series is large.
+  if (/\$|\\[([]/.test(JSON.stringify(payload ?? {}))) return false;
   if (template === 'heatmap') {
     const values = payload?.values;
     const cells = Array.isArray(values)

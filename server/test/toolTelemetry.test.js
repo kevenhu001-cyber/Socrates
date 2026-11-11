@@ -22,9 +22,9 @@ test('tool outcomes are tallied by tool, outcome, error code, retryability and s
 });
 
 test('missing error codes and retryability use bounded default labels', () => {
-  const key = 'create_plan|completed|none|no|executed';
+  const key = 'create_document|completed|none|no|executed';
   const before = toolOutcomeTallySnapshot()[key] || 0;
-  recordToolOutcome({ tool: 'create_plan', outcome: 'completed' });
+  recordToolOutcome({ tool: 'create_document', outcome: 'completed' });
   assert.equal(toolOutcomeTallySnapshot()[key], before + 1);
 });
 

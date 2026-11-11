@@ -53,8 +53,8 @@ export function buildLargeTranscript(count, { seed = 'cccccccc' } = {}) {
     };
     if (role === 'assistant' && i % 6 === 3) {
       row.toolCalls = [{
-        id: `viz-${seed}-${i}`, name: 'render_visualization', input: VIZ_SPEC,
-        output: 'Visualization ready', artifacts: [], visualization: VIZ_SPEC,
+        id: `viz-${seed}-${i}`, name: 'render_intelligent_ui', input: {version:1,nodes:[{...VIZ_SPEC,id:'visual',type:'visualization'}]},
+        output: 'Visualization ready', artifacts: [], visualizations: [{...VIZ_SPEC,nodeId:'visual',index:0}],
       }];
     }
     return row;

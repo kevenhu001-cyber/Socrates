@@ -397,7 +397,7 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
  * when the matching tool is actually present in this turn's tool set.
  * The previous client-side implementation prepended visual and planning
  * routing prompts unconditionally, even on turns that had no matching
- * visualization or create_plan/create_spec tool — wasting tokens
+ * visualization or document tool — wasting tokens
  * and inviting weaker models to fabricate unsupported calls. The server
  * now gates these appendices on the live tool list, so a turn without
  * visualization capability gets zero visualization prompt and vice
@@ -409,16 +409,11 @@ const INTELLIGENT_UI_VISUALIZATION_HINT = `## Unified visual tool
 Use \`render_intelligent_ui\` for every explicitly requested static or interactive chart, function graph, diagram, timeline, comparison, simulation, illustration, or learning card. Use the existing native template renderer rather than a Mermaid/SVG/HTML fence or Python drawing code. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported.
 All components follow one unified declarative JSON format: {version: 1, nodes: [...]}.
 1. Learning cards: {id, type: "learning", kind: "quiz"|"practice"|"definition"|"flashcard"|"example"|"theorem"|"proof"|"derivation"|"key-point"|"step", ...}. Read the kind parameter contract. Do not emit XML learning tags or invent OpenUI component functions (Quiz, QuizCard, Question, QuestionCard, KnowledgeCard, MCQ). Quiz keys must use existing option letters; unknown answers require graded:false with no key.
-2. Visualizations and charts: {id, type: "visualization", template, title, payload, accessibilitySummary}. Pass template name, short title, template payload ({categories, series} or template-specific fields), and accessibility summary. Add an optional caption only when a note below the card helps. Never submit raw renderer options or wrap static charts in OpenUI source. Each series stays at or below ${MAX_VISUALIZATION_POINTS} points; downsample longer data first. Rows of facts belong in a \`table\` node or a Markdown table, not a chart.
+2. Visualizations and charts: {id, type: "visualization", template, title, payload, accessibilitySummary}. Pass template name, short title, template payload ({categories, series} or template-specific fields), and accessibility summary. Add an optional caption only when a note below the card helps. Never submit raw renderer options or wrap static charts in OpenUI source. Each series stays at or below ${MAX_VISUALIZATION_POINTS} points; downsample longer data first. Static rows of facts belong in Markdown tables. Use a table node only for interactive data bound to local state.
 3. Mathematical/Physical demonstrations: {id, type: "demonstration", title, program: {version: 1, parameters: [...], definitions: {...}, dynamics: {...}, views: [...]}}. Required per view: plot needs x, y and 1-6 curves; field needs x, y and expression; trajectory needs x, y, horizontal, vertical and dynamics; scene needs x, y and 1-32 objects; metrics needs 1-6 values. At most one controls, two field views and twelve curves total. Use JSON numbers and arrays, keep the program under 40000 characters.
 4. Interactive controls and layouts: {id, type: "panel"|"slider"|"choice"|"toggle"|"button"|"table"|"metric"|"tabs", ...} bound to declared local state.
-Use LaTeX proactively for mathematical titles, axis labels, curve legends, annotations, question stems, answer choices and explanations: $...$ inline and $$...$$ for display. Keep executable expressions and numeric data in their required machine syntax.
+Use LaTeX for EVERY displayed formula in every visualization, including mathematical titles, axis labels, curve legends, annotations, SVG text, simulations, question stems, answer choices and explanations: $...$ inline and $$...$$ for display. Keep executable expressions and numeric data in their required machine syntax. Derive every plotted point, annotation and metric from the same live state and equations. Declare units and assumptions, use radians for trigonometry, guard singularities and invalid domains, and check initial, boundary and reset states. Never substitute hardcoded results or illustrative motion for the requested calculation.
 Every template, its payload contract and its example payload are in the \`template\` and \`payload\` parameter descriptions of \`render_intelligent_ui\`; read that before choosing a template. If validation returns field errors, correct exactly those fields once and retry.`;
-
-const PLANNING_ROUTING_HINT = `## Planning and specification tools
-When \`create_plan\` is supplied, call it for a genuinely multi-step request: a roadmap, study schedule, or step-by-step approach the user must act on in order. Send a short \`title\`, an optional one-sentence \`goal\`, and 1-30 ordered \`steps\` (each \`{title, detail?, status?}\`, where status is \`todo\`, \`in_progress\`, or \`done\`). Do not call it for a single-step answer or to restate prose you already wrote.
-When \`create_spec\` is supplied, call it to pin down WHAT a deliverable must satisfy before any implementation: send \`title\`, an optional one-sentence \`summary\`, 1-40 functional \`requirements\`, and optional \`acceptanceCriteria\`, \`constraints\`, and \`outOfScope\`. Use \`create_plan\` instead when the user wants an ordered sequence of actions.
-Follow the native JSON schema exactly: no extra top-level fields and no \`input\`/\`arguments\` wrapper. Write every title, step, and requirement in the user's language. After the tool succeeds the card is rendered above your reply, so refer to it briefly in prose rather than pasting the whole plan or spec again. If validation returns field errors, correct those fields once and retry.`;
 
 const READ_ATTACHMENT_ROUTING_HINT = `## Reading file attachments
 When a user message contains \`[Attached file: "name" (mime, size), fileId: <uuid>]\` pointers, those files are stored on the server. Call \`read_attachment\` with the pointer's fileId to read a file on demand: documents return extracted text page by page (page forward with \`offset\` until hasMore is false), image attachments return a visual description (optionally focused by \`question\`), and media/binary files return metadata. Always read an attachment before answering questions about its contents; never guess from the filename. If the message also contains native image content, prefer it; use \`read_attachment\` for a second look or for files with no inline preview.`;
@@ -442,12 +437,8 @@ export function appendToolRoutingHints<T extends { role: string; content?: unkno
   if (nameSet.has('web_fetch')) blocks.push(WEB_FETCH_ROUTING_HINT);
   if (nameSet.has('search_connectors')) blocks.push(CONNECTOR_DISCOVERY_ROUTING_HINT);
   if (nameSet.has('render_intelligent_ui')) blocks.push(INTELLIGENT_UI_VISUALIZATION_HINT);
-  if (nameSet.has('create_plan') || nameSet.has('create_spec')) {
-    const paragraphs = PLANNING_ROUTING_HINT.split('\n');
-    blocks.push(paragraphs.filter((line) =>
-      (!line.startsWith('When `create_plan`') || nameSet.has('create_plan'))
-      && (!line.startsWith('When `create_spec`') || nameSet.has('create_spec'))
-    ).join('\n'));
+  if (nameSet.has('create_document')) {
+    blocks.push('## Structured documents\nUse create_document with {kind: \"plan\"|\"spec\", content: {...}}. For plan content send title, optional goal, and 1-30 ordered steps ({title, detail?, status?: todo|in_progress|done}). For spec content send title, optional summary, 1-40 requirements and optional acceptanceCriteria, constraints, outOfScope. Use the user’s language. Do not add input/arguments wrappers or repeat the resulting card in prose.');
   }
   if (nameSet.has('read_attachment')) blocks.push(READ_ATTACHMENT_ROUTING_HINT);
   if (nameSet.has('workspace_agent')) blocks.push(WORKSPACE_AGENT_ROUTING_HINT);

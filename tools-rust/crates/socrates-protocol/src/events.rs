@@ -82,7 +82,7 @@ pub struct SearchResult {
     pub matched_query: Option<String>,
 }
 
-/// `visualization` payload of `tool_result` (render_visualization).
+/// `visualization` payload of `tool_result` (render_intelligent_ui).
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct VisualizationSpec {
@@ -91,7 +91,7 @@ pub struct VisualizationSpec {
     pub payload: Option<Value>,
 }
 
-/// `plan` payload of `tool_result` (create_plan).
+/// `plan` payload of `tool_result` (create_document, kind=plan).
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PlanSpec {
@@ -100,7 +100,7 @@ pub struct PlanSpec {
     pub steps: Vec<Value>,
 }
 
-/// `spec` payload of `tool_result` (create_spec).
+/// `spec` payload of `tool_result` (create_document, kind=spec).
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SpecSpec {

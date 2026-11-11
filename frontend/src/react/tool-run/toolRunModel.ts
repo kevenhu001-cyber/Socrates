@@ -8,7 +8,7 @@ export type * from './toolRunModel.types.ts';
 export {
   attachmentOutputsOf,
   toolOutputsOf,
-  visualizationSpecOf,
+
 } from './toolOutputs.ts';
 export {agentRunStateOf, runStartedAt, toolRunStateOf} from '../../ui/toolPresentationState.ts';
 export {

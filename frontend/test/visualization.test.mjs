@@ -46,3 +46,27 @@ test('category math labels remain complete instead of splitting LaTeX commands',
   const label = '$f(x)=\\frac{1}{1+x^2}$';
   assert.equal(formatCategoryLabel(label, { maxChars: 8, lineChars: 4 }), label);
 });
+
+test('function precedence matches mathematical notation including negative exponents', () => {
+  for (const [expression, expected] of [['-x^2', -9], ['(-x)^2', 9], ['2^-2', .25], ['2^3^2', 512], ['-2^2*3', -12], ['2*-x^2', -18]]) {
+    assert.equal(parseFunctionExpression(expression)(3), expected, expression);
+  }
+});
+
+test('sampling keeps steep continuous curves and splits off-grid poles at any scale', () => {
+  const steep = sampleFunction('1000000*x', [-2, 2], 400);
+  assert.ok(steep.points.every(point => Number.isFinite(point[1])));
+  for (const expression of ['1/x', '0.001/x', '1/(x-0.123)', '0.001/(x-0.123)', 'tan(x)']) {
+    const sample = sampleFunction(expression, [-2, 2], 400);
+    assert.ok(sample.points.some(point => point[1] === null), expression);
+    assert.ok(sample.points.some(point => Number.isFinite(point[1])), expression);
+  }
+  assert.equal(sampleFunction('x', [-1, 1], 120.5).points.length, 121);
+});
+
+test('smooth extrema do not acquire false discontinuities between equal endpoints', () => {
+  for (const expression of ['x^2', '1-x^2', 'sin(x)', 'cos(x)']) {
+    const sample = sampleFunction(expression, [-2, 2], 400);
+    assert.ok(sample.points.every(point => Number.isFinite(point[1])), expression);
+  }
+});

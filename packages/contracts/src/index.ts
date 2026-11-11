@@ -132,8 +132,7 @@ export interface ToolCall {
   artifacts?: Array<{ id: string; mimeType?: string | null; name?: string | null }>;
   results?: Array<Record<string, JsonValue>>;
   textOffset?: number;
-  visualization?: JsonValue;
-  /** Validated v1 visual snapshots extracted from an OpenUI tool result. */
+  /** Validated v1 visual snapshots extracted from intelligent UI nodes. */
   visualizations?: JsonValue[];
   approval?: ToolApproval;
 }

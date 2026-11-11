@@ -15,7 +15,6 @@
  * defensively here. */
 
 import { getThemePaletteHex, type ThemeMode } from '@socrates/theme';
-import type { ToolCall } from '@socrates/contracts';
 import { buildArtifactDocument, buildEmbeddedDocument, escapeHtml, type ArtifactDocumentPalette } from './artifactDocument';
 
 export interface VisualizationSpec {
@@ -43,19 +42,6 @@ export function isVisualizationSpec(value: unknown): value is VisualizationSpec 
     && typeof value.title === 'string'
     && typeof value.accessibilitySummary === 'string'
     && isRecord(value.payload);
-}
-
-type VisualizationCallLike = Pick<ToolCall, 'name'> & Partial<Pick<ToolCall, 'visualization' | 'input' | 'isError' | 'progressPhase'>>;
-
-/** The v1 spec a tool call carries, mirroring the web baseline's
- * `visualizationSpecOf` (persisted result first, then live arguments). */
-export function visualizationSpecOf(call: VisualizationCallLike | null | undefined): VisualizationSpec | null {
-  if (!call) return null;
-  const phase = String(call.progressPhase || '').toLowerCase();
-  if (call.isError === true || ['failed', 'cancelled', 'stopped', 'aborted'].includes(phase)) return null;
-  if (isVisualizationSpec(call.visualization)) return call.visualization;
-  if (call.name === 'render_visualization' && isVisualizationSpec(call.input)) return call.input;
-  return null;
 }
 
 export function visualizationSummary(spec: VisualizationSpec): string {

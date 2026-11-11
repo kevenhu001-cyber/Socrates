@@ -56,7 +56,6 @@ export interface ToolCall {
   argumentsText?: string;
   /** Last `tool_progress` phase (`stdout` / `stderr` / `queued` / …). */
   _progressPhase?: string;
-  visualization?: Record<string, unknown> | null;
   visualizations?: unknown[];
 }
 

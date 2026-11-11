@@ -398,8 +398,8 @@ test('plotly charts follow a theme switch after mounting', async ({ page }) => {
       { id: 'u1', role: 'user', rawText: 'plot', html: '<p>plot</p>' },
       { id: 'a1', role: 'assistant', rawText: 'Here.', html: '', toolCalls: [{
         id: 'viz-1',
-        name: 'render_visualization',
-        input: { version: 1, template: 'function', title: 'Parabola', caption: 'y = x²', accessibilitySummary: 'A parabola.', payload: { functions: [{ expression: 'x^2', label: 'y' }], xLabel: 'x', yLabel: 'y' } },
+        name: 'render_intelligent_ui',
+        input: {version:1,nodes:[{...{ version: 1, template: 'function', title: 'Parabola', caption: 'y = x²', accessibilitySummary: 'A parabola.', payload: { functions: [{ expression: 'x^2', label: 'y' }], xLabel: 'x', yLabel: 'y' } },id:'visual',type:'visualization'}]},
         output: 'ok',
         artifacts: [],
       }] },

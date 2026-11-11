@@ -76,15 +76,8 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     return lines.join('\n');
   }
 
-  if (toolName === 'render_visualization') {
-    if (result.status === 'completed' && result.visualization) {
-      return `[status: completed]\n[visualization: ${result.visualization.template}]\n[title: ${result.visualization.title}]\nThe visual card is now rendered in the conversation. Refer to it briefly in prose and do not output a legacy viz/html/plot fence.`;
-    }
-    return `${result.correction || `[error] ${result.errorCode || 'visual_spec_invalid'}`}\n${retryable ? 'Do not fall back to Python or a legacy fenced visualization.' : 'Continue in prose without using Python or a legacy fenced visualization; do not repeat the validation error in your answer.'}`;
-  }
-
-  if (toolName === 'create_plan' || toolName === 'create_spec') {
-    const kind = toolName === 'create_plan' ? 'plan' : 'spec';
+  if (toolName === 'create_document') {
+    const kind = result.plan ? 'plan' : 'spec';
     if (result.status === 'completed') {
       return `[status: completed]\n[${kind} card rendered]\n${result.output || ''}\nThe ${kind} card is now shown in the conversation. Refer to it briefly in prose; do not paste the whole ${kind} again. Reply in the user's language.`;
     }

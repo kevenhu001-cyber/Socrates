@@ -35,16 +35,16 @@ export function useMessagePostRender(
     if (deferrable) {
       const row = root.closest('.msg') ?? root;
       return runWhenNearViewport(row, () => {
-        if (root.isConnected) wirePostRender(root, message, clientId);
+        if (root.isConnected) wirePostRender(root);
       });
     }
-    wirePostRender(root, message, clientId);
+    wirePostRender(root);
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, clientId, isLive, message.restoredFromHistory]);
 }
 
-function wirePostRender(root: HTMLElement, message: LegacyChatMessage, clientId: string): void {
+function wirePostRender(root: HTMLElement): void {
   const postRender = getLegacyActions().postRender;
   /* Reclaim rendered viz/mermaid cards BEFORE the pending queues drain:
      a placeholder adopted here must not also get a fresh handshake. */
@@ -56,13 +56,4 @@ function wirePostRender(root: HTMLElement, message: LegacyChatMessage, clientId:
   runOptionalPostRender(() => postRender.processPendingViz?.(root));
   runOptionalPostRender(() => postRender.processPendingVizActions?.(root));
   runOptionalPostRender(() => postRender.wireCodeBlockHeaders?.(root));
-  if (message.restoredFromHistory) {
-    runOptionalPostRender(() => {
-      postRender.restorePersistedMessageExtras?.(
-        root,
-        message as unknown as Record<string, unknown>,
-        `history-${clientId}`,
-      );
-    });
-  }
 }

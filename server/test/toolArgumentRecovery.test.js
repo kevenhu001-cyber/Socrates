@@ -29,16 +29,14 @@ import {
   validateToolArguments,
 } from '../src/services/tools/toolCallSafety.js';
 import { toolArgumentPolicy } from '../src/services/tools/toolArgumentPolicy.js';
-import { VISUALIZATION_TOOL, executeVisualization, validateVisualizationSpec } from '../src/services/visualization.js';
-import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/core/planning.js';
+import { validateVisualizationSpec } from '../src/services/visualization.js';
+import { DOCUMENT_TOOL, executeDocument } from '../src/services/core/planning.js';
 import { CREATE_SITE_TOOL } from '../src/services/siteCreation.js';
 import { INTELLIGENT_UI_TOOL } from '../src/services/intelligentUi.js';
 import { PATCH_INTELLIGENT_UI_TOOL } from '../src/services/turnRuntimeTools.js';
 import { buildToolErrorFeedback } from '../src/services/tools/toolErrorFeedback.js';
 import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from '../src/services/integrations/projectConnectorTools.js';
 
-const VIZ_SCHEMA = VISUALIZATION_TOOL.function.parameters;
-const PLAN_SCHEMA = PLAN_TOOL.function.parameters;
 
 /** What the pipeline does with one streamed argument string. */
 function prepareArguments(toolName, raw, schema) {
@@ -175,81 +173,19 @@ test('empty arguments are accepted only for tools with no required fields', () =
 
 /* ── the calls that used to fail ──────────────────────────────────── */
 
-test('render_visualization: top-level chart keys reach the executor', () => {
-  /* The model puts template keys at the top level instead of under
-     `payload` — exactly what visualization.ts normalizeSpec() exists to
-     fix. The repair pass used to delete them first, and the call was
-     rejected for "template / accessibilitySummary / payload missing". */
-  const raw = JSON.stringify({
-    version: 1,
-    type: 'bar',
-    title: '各科目得分',
-    summary: '三科分数对比',
-    categories: ['数学', '物理'],
-    series: [{ name: '得分', data: [92, 85] }],
-  });
-  const prepared = prepareArguments('render_visualization', raw, VIZ_SCHEMA);
+test('document validation runs before execution and preserves the selected content', () => {
+  const schema = DOCUMENT_TOOL.function.parameters;
+  const args = { kind: 'plan', content: { title: 'Review', steps: [{title:'Read'}] } };
+  const prepared = prepareArguments('create_document', JSON.stringify(args), schema);
   assert.equal(prepared.ok, true);
-  const result = executeVisualization(prepared.args);
-  assert.equal(result.status, 'completed');
-  assert.equal(result.visualization.template, 'bar');
-  assert.deepEqual(result.visualization.payload.categories, ['数学', '物理']);
-});
-
-test('create_plan: steps under an alias, or as bare strings, still run', () => {
-  const aliased = prepareArguments('create_plan', JSON.stringify({ title: '两周复习', items: ['梳理极限', '导数练习'] }), PLAN_SCHEMA);
-  assert.equal(aliased.ok, true);
-  const aliasedResult = executePlan(aliased.args);
-  assert.equal(aliasedResult.status, 'completed');
-  assert.equal(aliasedResult.plan.steps.length, 2);
-
-  const bareStrings = prepareArguments('create_plan', JSON.stringify({ title: '两周复习', steps: ['梳理极限', '导数练习'] }), PLAN_SCHEMA);
-  assert.equal(bareStrings.ok, true);
-  const bareResult = executePlan(bareStrings.args);
-  assert.equal(bareResult.status, 'completed');
-  assert.deepEqual(bareResult.plan.steps.map((step) => step.title), ['梳理极限', '导数练习']);
-
-  /* An extra per-step key is passed through rather than stripped: the
-     plan schema is `passthrough()` on steps. */
-  const extraKey = prepareArguments('create_plan', JSON.stringify({ title: 't', steps: [{ title: 'a', duration: '2天' }] }), PLAN_SCHEMA);
-  assert.equal(extraKey.args.steps[0].duration, '2天');
-  assert.equal(executePlan(extraKey.args).status, 'completed');
-});
-
-test('create_spec: snake_case aliases survive the pipeline', () => {
-  const prepared = prepareArguments('create_spec', JSON.stringify({
-    title: '导出 PDF',
-    overview: '把会话导出为 PDF。',
-    features: ['从会话菜单触发导出'],
-    acceptance_criteria: ['A4 页面下不裁切图表'],
-  }), SPEC_TOOL.function.parameters);
-  assert.equal(prepared.ok, true);
-  const result = executeSpec(prepared.args);
-  assert.equal(result.status, 'completed');
-  assert.deepEqual(result.spec.requirements, ['从会话菜单触发导出']);
-  assert.deepEqual(result.spec.acceptanceCriteria, ['A4 页面下不裁切图表']);
-});
-
-test('create_plan and create_spec are rejected before execution with their own code', () => {
-  const plan = prepareArguments('create_plan', JSON.stringify({ steps: ['a'] }), PLAN_SCHEMA);
-  assert.equal(plan.ok, false);
-  assert.equal(plan.code, 'plan_spec_invalid');
-  assert.match(plan.fieldErrors.join('; '), /title/);
-
-  const spec = prepareArguments(
-    'create_spec',
-    JSON.stringify({ title: 'x', requirements: [] }),
-    SPEC_TOOL.function.parameters,
-  );
-  assert.equal(spec.ok, false);
-  assert.equal(spec.code, 'plan_spec_invalid');
-  assert.match(spec.fieldErrors.join('; '), /requirements/);
+  assert.equal(executeDocument(prepared.args).status, 'completed');
+  assert.equal(prepareArguments('create_document', JSON.stringify({kind:'spec', content:{title:'x', requirements:[]}}), schema).code, 'plan_spec_invalid');
 });
 
 test('a tool-specific rejection keeps its own user message', () => {
   const feedback = buildToolErrorFeedback({
-    toolName: 'create_spec',
-    schema: SPEC_TOOL.function.parameters,
+    toolName: 'create_document',
+    schema: DOCUMENT_TOOL.function.parameters,
     errorCode: 'plan_spec_invalid',
     fieldErrors: 'requirements: Too small',
     retryable: true,

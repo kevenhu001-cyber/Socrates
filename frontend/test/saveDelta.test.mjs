@@ -103,7 +103,7 @@ test('a completed visualization result is dirty even when text and call count ar
   };
   const pending = msg('viz-message', 'Chart incoming.', {
     type: 'assistant',
-    toolCalls: [{ id: 'viz-1', name: 'render_visualization', input: spec, output: null }],
+    toolCalls: [{ id: 'viz-1', name: 'render_intelligent_ui', input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]}, output: null }],
   });
   seedSynced(synced, [pending], fp);
   const completed = msg('viz-message', 'Chart incoming.', {
@@ -113,13 +113,13 @@ test('a completed visualization result is dirty even when text and call count ar
       output: 'Visualization ready',
       status: 'completed',
       durationMs: 900,
-      visualization: spec,
+      visualizations: [{...spec,nodeId:'visual',index:0}],
     }],
   });
 
   const delta = messageDelta(synced, [completed], fp);
   assert.equal(delta.length, 1, 'tool output/spec changes must be persisted without a prose change');
-  assert.equal(delta[0].toolCalls[0].visualization.title, 'Market values');
+  assert.equal(delta[0].toolCalls[0].visualizations[0].title, 'Market values');
 });
 
 test('the watermark only advances when the caller commits', () => {

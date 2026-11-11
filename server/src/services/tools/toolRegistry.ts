@@ -4,8 +4,7 @@ import {WEB_SEARCH_TOOL} from '../webSearch.js';
 import {WEB_FETCH_TOOL} from '../util/fetchBatch.js';
 import {READ_ATTACHMENT_TOOL} from '../embeddings/attachmentReader.js';
 import {SAVE_MEMORY_TOOL} from '../memoryTool.js';
-import {VISUALIZATION_TOOL} from '../visualization.js';
-import {PLAN_TOOL, SPEC_TOOL} from '../core/planning.js';
+import {DOCUMENT_TOOL} from '../core/planning.js';
 import {CREATE_SITE_TOOL} from '../siteCreation.js';
 import {
   ARXIV_TOOL,
@@ -55,10 +54,6 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
        must not overlap an in-flight agent run. */
     { name: 'workspace_agent', modelDefinition: WORKSPACE_AGENT_TOOL, enabled: PI_AGENT_ENABLED, pure: false, sessionSerial: 'workspace' },
     { name: 'initialize_workspace', modelDefinition: INITIALIZE_WORKSPACE_TOOL, enabled: PI_AGENT_ENABLED, pure: false, sessionSerial: 'workspace' },
-    /* Legacy flat-spec route. Keep its schema/executor readable for older
-       server-side compatibility code, but stop offering a second model-facing
-       visualization tool; all new visuals use render_intelligent_ui. */
-    { name: 'render_visualization', modelDefinition: VISUALIZATION_TOOL, enabled: false, pure: true, sessionSerial: false },
     /* Tutor and Chat share the same native capability surface. Pedagogical
        search restraint belongs in the Tutor system policy; hiding the schema
        here made the client prompt promise a tool the model could not call. */
@@ -81,8 +76,7 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
     { name: 'render_intelligent_ui', modelDefinition: INTELLIGENT_UI_TOOL, enabled: true, pure: true, sessionSerial: 'intelligent-ui' },
     { name: 'patch_intelligent_ui', modelDefinition: PATCH_INTELLIGENT_UI_TOOL, enabled: true, pure: true, sessionSerial: 'intelligent-ui' },
     { name: 'cite_sources', modelDefinition: CITE_SOURCES_TOOL, enabled: true, pure: true, sessionSerial: 'citations' },
-    { name: 'create_plan', modelDefinition: PLAN_TOOL, enabled: true, pure: true, sessionSerial: false },
-    { name: 'create_spec', modelDefinition: SPEC_TOOL, enabled: true, pure: true, sessionSerial: false },
+    { name: 'create_document', modelDefinition: DOCUMENT_TOOL, enabled: true, pure: true, sessionSerial: false },
     /* Sites the agent builds land in the same artifacts store the Sites
        page lists; publishing mints the /s/<token> share URL. */
     { name: 'create_site', modelDefinition: CREATE_SITE_TOOL, enabled: true, pure: false, sessionSerial: false },

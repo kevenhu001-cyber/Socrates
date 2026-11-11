@@ -2,8 +2,7 @@
  * Universal App's isolated artifact islands.
  *
  * A message can carry heavy content two ways:
- *   - a native visualization tool result (legacy `tool.visualization` or
- *     the v1 specs extracted from Intelligent UI source), and
+ *   - a native visualization tool result (the v1 specs extracted from Intelligent UI source), and
  *   - a fenced code block whose language is an island kind (```html /
  *     ```mermaid / ```three / ```viz), which the model is told not to emit
  *     but which still appears in older history.
@@ -20,7 +19,6 @@ import {
   buildVisualizationDocument,
   isVisualizationSpec,
   islandKindForTemplate,
-  visualizationSpecOf,
   type VisualizationSpec,
 } from './visualization';
 
@@ -106,10 +104,10 @@ export function artifactsFromToolCalls(toolCalls: ToolCall[] | undefined, mode: 
   (toolCalls || []).forEach((tool, index) => {
     const phase = String(tool.progressPhase || '').toLowerCase();
     if (tool.isError === true || ['failed', 'cancelled', 'stopped', 'aborted'].includes(phase)) return;
-    const candidates = [
-      visualizationSpecOf(tool),
-      ...(Array.isArray(tool.visualizations) ? tool.visualizations.filter(isVisualizationSpec) : []),
-    ].filter((spec): spec is VisualizationSpec => spec !== null);
+    const candidates: VisualizationSpec[] = [];
+    for (const value of tool.visualizations ?? []) {
+      if (isVisualizationSpec(value)) candidates.push(value);
+    }
     const seen = new Set<string>();
     const specs = candidates.filter((spec) => {
       const key = JSON.stringify(spec);

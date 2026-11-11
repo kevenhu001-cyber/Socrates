@@ -48,7 +48,6 @@ export interface PersistedToolCall {
   artifacts?: Array<{ id?: unknown; mimeType?: string | null; name?: string | null }> | null;
   results?: unknown[];
   textOffset?: unknown;
-  visualization?: unknown;
   outputs?: unknown;
   status?: unknown;
   durationMs?: unknown;
@@ -132,12 +131,10 @@ function restoredToolArtifacts(value: unknown): unknown[] {
 }
 
 function restoredToolVisualFields(call: PersistedToolCall): Record<string, unknown> {
-  const visualization = call.visualization as { version?: number } | null | undefined;
   return {
     /* Preserve the split offset and versioned visualization spec so
        inline tool layout survives a reload. */
     textOffset: typeof call.textOffset === 'number' ? call.textOffset : undefined,
-    visualization: (visualization && visualization.version === 1) ? visualization : undefined,
     visualizations: Array.isArray(call.visualizations) ? call.visualizations.slice(0, 8) : undefined,
     /* Keep the normalized output list when present. The renderer
        validates entries and can fall back to legacy output fields. */

@@ -132,7 +132,6 @@ export interface ToolCallRecord extends ToolCallLike {
   detail?: unknown;
   errorCode?: string | null;
   retryable?: boolean;
-  visualization?: Record<string, unknown> | null;
   visualizations?: unknown[];
   /**
    * Normalized outputs, when the writer emits the protocol. Absent on every

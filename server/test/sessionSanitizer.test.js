@@ -91,7 +91,7 @@ test('embedded visualizations are capped while preserving unknown spec fields', 
 
 test('structured detail is stringified instead of failing z.string()', () => {
   const toolCall = {
-    id: 'c1', name: 'create_plan',
+    id: 'c1', name: 'create_document',
     detail: [{ path: 'steps', message: 'required' }],
   };
   const out = sanitizeSessionPayload(payloadWithToolCall(toolCall));

@@ -16,7 +16,7 @@ test('whiteboard roots render and dispose with their message output', async ({ p
   };
   await prepareChatWorkbench(page, { messages: [{
     clientId: 'whiteboard-turn', role: 'assistant', type: 'assistant', rawText: 'A note for this conversation.',
-    toolCalls: [{ id: 'whiteboard-tool', name: 'render_visualization', input: spec, status: 'completed', textOffset: 0, output: 'Ready' }],
+    toolCalls: [{ id: 'whiteboard-tool', name: 'render_intelligent_ui', input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]}, status: 'completed', textOffset: 0, output: 'Ready' }],
   }] });
   const card = page.locator('.visualization-card');
   await expect(card.locator('.tl-container')).toBeVisible({ timeout: 20000 });

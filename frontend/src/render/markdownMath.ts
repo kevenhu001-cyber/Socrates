@@ -8,6 +8,7 @@ interface KatexLike {
     math: string,
     opts: {
       displayMode: boolean;
+      output?: 'htmlAndMathml' | 'mathml' | 'html';
       throwOnError: boolean;
       macros?: Record<string, string>;
       strict?: 'ignore' | 'warn' | 'error';

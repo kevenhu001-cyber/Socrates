@@ -12,7 +12,6 @@ const {
   deleteUserMessage,
   findMessageIndex,
   reseatSavedArtifact,
-  restorePersistedMessageExtras,
   rollbackMessagesAfter,
 } = await import('../src/ui/messageActions.ts');
 const { stateStore } = await import('../src/state/store.ts');
@@ -71,15 +70,6 @@ test('deleteUserMessage removes the entry and its row', () => {
   assert.ok(!ids.includes('del-u1'));
 });
 
-test('restorePersistedMessageExtras is idempotent via its data marker', () => {
-  const body = dom.window.document.createElement('div');
-  const entry = { clientId: 'px-1', toolCalls: [] };
-  restorePersistedMessageExtras(body, entry, 'px');
-  assert.equal(body.dataset.persistedExtrasFor, 'px-1');
-  const firstHtml = body.innerHTML;
-  restorePersistedMessageExtras(body, entry, 'px');
-  assert.equal(body.innerHTML, firstHtml);
-});
 
 test('reseatSavedArtifact anchors nodes after their inline row', () => {
   const container = dom.window.document.createElement('div');

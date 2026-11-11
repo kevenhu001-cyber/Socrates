@@ -9,10 +9,10 @@ import { shutdownPubsub } from '../src/lib/pubsub.js';
 after(async () => { await shutdownPubsub(); });
 
 function prepared(id = 'plan-1') {
-  const args = { title: 'Test plan', steps: [{ title: 'One step' }] };
+  const args = { kind:'plan', content:{ title: 'Test plan', steps: [{ title: 'One step' }] } };
   return {
-    call: { id, type: 'function', function: { name: 'create_plan', arguments: JSON.stringify(args) } },
-    toolName: 'create_plan', args, rejection: null, registryEntry: null,
+    call: { id, type: 'function', function: { name: 'create_document', arguments: JSON.stringify(args) } },
+    toolName: 'create_document', args, rejection: null, registryEntry: null,
   };
 }
 
@@ -50,10 +50,10 @@ test('already stopped runner does not execute a tool or consume its retry budget
   const ac = new AbortController();
   ac.abort();
   const f = fixture(ac.signal);
-  const message = await f.runner(prepared(), ['create_plan']);
+  const message = await f.runner(prepared(), ['create_document']);
   assertCancelled(f, 'plan-1');
   assert.equal(message.tool_call_id, 'plan-1');
-  assert.equal(message.name, 'create_plan');
+  assert.equal(message.name, 'create_document');
   assert.match(message.content, /cancelled/);
 });
 
@@ -61,7 +61,7 @@ test('stopping during backoff cleans listener and timer without executing the to
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const ac = new AbortController();
   const f = fixture(ac.signal, 30_000);
-  const pending = f.runner(prepared(), ['create_plan']);
+  const pending = f.runner(prepared(), ['create_document']);
   assert.equal(getEventListeners(ac.signal, 'abort').length, 1);
   ac.abort();
   await pending;
@@ -76,7 +76,7 @@ test('normal backoff completion removes listeners across repeated successful cal
   const ac = new AbortController();
   const f = fixture(ac.signal, 100);
   for (let i = 0; i < 12; i += 1) {
-    const pending = f.runner(prepared(`plan-${i}`), ['create_plan']);
+    const pending = f.runner(prepared(`plan-${i}`), ['create_document']);
     assert.equal(getEventListeners(ac.signal, 'abort').length, 1);
     t.mock.timers.tick(100);
     await pending;
@@ -105,7 +105,7 @@ for (const serial of [false, 'workspace']) {
             await gate;
             return { tool_call_id: 'first', content: 'completed' };
           }
-          return f.runner(entry, ['create_plan']);
+          return f.runner(entry, ['create_document']);
         });
       await firstStarted;
       ac.abort();
@@ -114,7 +114,7 @@ for (const serial of [false, 'workspace']) {
       assert.deepEqual(result.map((m) => m.tool_call_id), ['first', 'queued']);
       assertCancelled(f, 'queued');
       const healthy = fixture(new AbortController().signal);
-      await healthy.runner(prepared('next'), ['create_plan']);
+      await healthy.runner(prepared('next'), ['create_document']);
       assert.equal(healthy.results[0].status, 'completed');
     } finally {
       releaseFirst();

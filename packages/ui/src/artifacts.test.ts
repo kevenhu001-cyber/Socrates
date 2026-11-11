@@ -29,7 +29,7 @@ test('a viz fence holding a v1 spec renders a chart document', () => {
 
 test('visualization tool calls yield descriptors once per call', () => {
   const descriptors = artifactsFromToolCalls([
-    { id: 't1', name: 'render_visualization', visualization: { version: 1, template: 'pie', title: 'Share', accessibilitySummary: 's', payload: { series: [{ data: [1, 2] }] } } },
+    { id: 't1', name: 'render_intelligent_ui', visualizations: [{ version: 1, template: 'pie', title: 'Share', accessibilitySummary: 's', payload: { series: [{ data: [1, 2] }] } }] },
     { id: 't2', name: 'web_search' },
   ], 'light');
   assert.equal(descriptors.length, 1);
