@@ -369,13 +369,13 @@ test('settings utility links reach Plugins and Library, while account actions st
   const overlay = page.locator('#settingsOverlay');
 
   await overlay.locator('.settings-nav [data-section="apps"]').click();
-  await overlay.getByRole('button', { name: 'Open plugins', exact: true }).click();
+  await overlay.getByRole('button', { name: 'Manage connections', exact: true }).click();
   await expect(overlay).toBeHidden();
   await expect(page.locator('.plugin-directory')).toBeVisible();
 
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await overlay.locator('.settings-nav [data-section="data"]').click();
-  await overlay.getByRole('button', { name: 'Open library', exact: true }).click();
+  await overlay.getByRole('button', { name: 'Open Library', exact: true }).click();
   await expect(overlay).toBeHidden();
   await expect(page.locator('.library-directory')).toBeVisible();
 
@@ -625,7 +625,7 @@ test('settings mounts only visited categories and preserves provider drafts acro
   await expect(draft).toHaveValue('Keep this draft');
   await overlay.locator('.settings-nav input').fill('Account');
   await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
-  await expect(overlay.locator('.settings-nav button')).toHaveText('Account');
+  await expect(overlay.locator('.settings-nav button .settings-category-name')).toHaveText('Account');
 });
 
 test('settings category load failure stays local and can be retried', async ({ page }) => {
