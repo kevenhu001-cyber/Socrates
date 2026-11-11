@@ -111,11 +111,12 @@ function SidebarToggle() {
 /**
  * The top-left model switcher opens the shared chat-configuration popover
  * (model · reasoning effort · speed). The visible model name is part of the
- * accessible name (WCAG 2.5.3). Phones never show it: like the reference,
- * the composer's effort pill (always drawn on phones) opens the same
- * popover, and the header's trailing slot belongs to the incognito chat.
+ * accessible name (WCAG 2.5.3). Phones show the compact model chip on the
+ * new-chat screen. During a conversation the header has no room beside the
+ * centred mode switch and session actions, so the composer effort pill stays
+ * the model-settings path.
  */
-function ModelSwitcher({ phone }: { phone: boolean }) {
+function ModelSwitcher({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
   const snapshot = useChatConfigurationSnapshot();
   const modelLabel = useActiveModelLabel();
   const effort = useStoredReasoningEffort();
@@ -130,7 +131,7 @@ function ModelSwitcher({ phone }: { phone: boolean }) {
       accessibilityLabel={`${visibleLabel} — ${purpose}${modelLabel ? '' : ` · ${effortLabel(effort)}`}`}
       expanded={snapshot.open && snapshot.triggerId === 'topModelSwitcher'}
       compact={phone}
-      visible={!phone}
+      visible={!phone || !conversationActive}
       onPress={() => {
         const trigger = anchor('topModelSwitcher');
         if (trigger) openChatConfiguration(trigger);
@@ -218,11 +219,11 @@ function TopBarLeft({ phone, conversationActive }: { phone: boolean; conversatio
             onPress={() => { void startNewChat(); }}
           />
         </span>
-        {/* 手机对话中不显示模型 chip。槽位让页面按
-            body[data-conversation-active] 同步隐藏（与 RN-7 前一致），
-            不必等 store 推导后的下一次渲染。 */}
+        {/* 新聊天页显示模型 chip；手机对话中隐藏它以给标题和会话操作留空间。
+            样式槽位按 body[data-conversation-active] 同步隐藏，不必等待
+            store 推导后的下一次 React 渲染。 */}
         <span className="top-model-slot" data-topbar-slot="model">
-          <ModelSwitcher phone={phone} />
+          <ModelSwitcher phone={phone} conversationActive={conversationActive} />
         </span>
         <PracticeProgress phone={phone} conversationActive={conversationActive} />
         <StageProgress phone={phone} conversationActive={conversationActive} />
@@ -278,10 +279,10 @@ function ModeSwitch({ phone, conversationActive }: { phone: boolean; conversatio
   );
 }
 
-/* ── Right: incognito (phone home) · find · share ─────────────────────── */
+/* ── Right: find · share ──────────────────────────────────────────────── */
 
-/** The reference's trailing "temporary chat": Socrates' incognito chat. */
-function IncognitoAction({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+/** Incognito is opened from More; this hidden state mirror stays in sync with that action. */
+function IncognitoAction() {
   const on = useIncognito();
   return (
     <TopBarAction
@@ -290,18 +291,18 @@ function IncognitoAction({ phone, conversationActive }: { phone: boolean; conver
       label={t('sidebar.nav.incognito', 'Incognito chat')}
       pressed={on}
       touch
-      visible={phone && !conversationActive}
+      visible={false}
       onPress={() => { void toggleIncognito(); }}
     />
   );
 }
 
-function TopBarRight({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+function TopBarRight({ phone }: { phone: boolean }) {
   const { conversationActions, sharedView } = useTopbarState();
   return (
     <div className="top-bar-right">
       <WebUiTheme>
-        <IncognitoAction phone={phone} conversationActive={conversationActive} />
+        <IncognitoAction />
         <TopBarAction
           id="findBtn"
           icon="search"
@@ -346,7 +347,7 @@ export function TopBar() {
       <PluginWorkspaceTabs />
       <TopBarLeft phone={phone} conversationActive={conversationActive} />
       <ModeSwitch phone={phone} conversationActive={conversationActive} />
-      <TopBarRight phone={phone} conversationActive={conversationActive} />
+      <TopBarRight phone={phone} />
     </>
   );
 }

@@ -93,7 +93,8 @@ test('settings modal opens with React-owned providers and tones, and closes', as
   await expect(overlay.locator('#stgToggleTrack')).toBeVisible();
   await expect(overlay.locator('#addProviderBtn')).toBeVisible();
   await expect(overlay.locator('#clearSettingsBtn')).toBeVisible();
-  await expect(overlay.locator('#cancelSettingsBtn')).toBeVisible();
+  await expect(overlay.locator('#settingsCloseBtn')).toBeVisible();
+  await expect(overlay.locator('#cancelSettingsBtn')).toHaveCount(0);
   await expect(overlay.locator('#saveSettingsBtn')).toBeVisible();
 
   // React owns both provider rows and tone preset buttons.
@@ -190,20 +191,25 @@ test('all settings categories render their own pane and mobile search reaches hi
   const search = overlay.getByRole('searchbox', { name: 'Search settings' });
   await expect(search).toBeVisible();
   const categories = overlay.locator('.settings-nav-categories');
-  expect(await categories.evaluate((element) => getComputedStyle(element).flexDirection)).toBe('row');
-  expect(await categories.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  await expect(overlay.locator('.settings-nav')).toBeVisible();
+  await expect(overlay.locator('.settings-body')).toBeHidden();
+  expect(await categories.evaluate((element) => getComputedStyle(element).flexDirection)).toBe('column');
+  expect(await categories.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  expect(await categories.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+  await expect(overlay.locator('.settings-nav [data-section]')).toHaveCount(8);
   await overlay.locator('.settings-nav [data-section="general"]').click();
+  await expect(overlay.locator('.settings-body')).toBeVisible();
+  await overlay.locator('#settingsMobileBack').click();
+  await expect(overlay.locator('.settings-nav')).toBeVisible();
   const accountTab = overlay.locator('.settings-nav [data-section="account"]');
   await accountTab.click();
   await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Account');
-  expect(await accountTab.evaluate((element) => {
-    const item = element.getBoundingClientRect();
-    const strip = element.parentElement.getBoundingClientRect();
-    return item.left >= strip.left && item.right <= strip.right;
-  })).toBe(true);
+  await overlay.locator('#settingsMobileBack').click();
   await search.fill('字号');
   await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
   await expect(overlay.locator('.settings-nav [data-section="display"]')).toBeVisible();
+  await expect(overlay.locator('.settings-body')).toBeHidden();
+  await overlay.locator('.settings-nav [data-section="display"]').click();
   await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Display');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
@@ -214,11 +220,12 @@ test('model provider actions stay inside the settings pane on mobile', async ({ 
   const overlay = page.locator('#settingsOverlay');
   await page.setViewportSize({ width: 390, height: 844 });
   await overlay.locator('.settings-nav [data-section="models"]').click();
-  const actions = overlay.locator('.settings-provider-actions');
+  const actions = overlay.locator('#addProviderBtn');
   await actions.scrollIntoViewIfNeeded();
-  const bounds = await actions.evaluate((element) => {
+  const bounds = await overlay.locator('.settings-provider-actions').evaluate((element) => {
     const body = element.closest('.settings-body').getBoundingClientRect();
-    const buttons = [...element.querySelectorAll('button')].map((button) => {
+    const controls = [document.getElementById('addProviderBtn'), ...element.querySelectorAll('button')].filter(Boolean);
+    const buttons = controls.map((button) => {
       const rect = button.getBoundingClientRect();
       return { left: rect.left, right: rect.right };
     });
@@ -228,6 +235,19 @@ test('model provider actions stay inside the settings pane on mobile', async ({ 
     expect(button.left).toBeGreaterThanOrEqual(bounds.bodyLeft);
     expect(button.right).toBeLessThanOrEqual(bounds.bodyRight);
   }
+});
+
+test('model menu opens the model settings detail directly on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('#topModelSwitcher').click();
+  const menu = page.locator('.chat-config-pop');
+  await menu.getByRole('button', { name: 'Manage models', exact: true }).click();
+
+  const overlay = page.locator('#settingsOverlay');
+  await expect(overlay).toBeVisible();
+  await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Models & voice');
+  await expect(overlay.locator('#settingsMobileBack')).toBeVisible();
+  await expect(overlay.locator('#addProviderBtn')).toBeVisible();
 });
 
 test('display settings persist text size, content width, grid, and background colors', async ({ page }) => {

@@ -159,9 +159,8 @@ html[data-main-view$="Panel"] #appShell .mobile-newchat-btn {
   display: none;
 }
 
-/* Phones: the model chip sits at the trailing edge of the landing header
-   (the centred mode track leaves ~119px either side). The RN chip sizes
-   itself; only its placement is the page's. */
+/* Phones: the model chip sits at the trailing edge of the landing header.
+   The RN chip sizes itself; only its placement is the page's. */
 @media (max-width: 768px) {
   #appShell #topModelSwitcher {
     position: absolute;

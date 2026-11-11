@@ -239,10 +239,27 @@ html.site-menu-open { overflow: hidden; }
   .site-footer-social { margin-right: auto; }
 }
 
+/* The mobile home header gets out of the reading path on a downward scroll,
+   then returns on an upward scroll. Only the bar layers move: transforming
+   .site-header itself would make its fixed mobile menu use the wrong origin. */
+@media (max-width: 760px) {
+  .home-refresh .site-header-inner,
+  .home-refresh .site-header::before {
+    transition: transform 180ms var(--site-ease), opacity 300ms var(--site-ease);
+  }
+  .home-refresh .site-header.is-hidden-on-scroll { pointer-events: none; }
+  .home-refresh .site-header.is-hidden-on-scroll .site-header-inner,
+  .home-refresh .site-header.is-hidden-on-scroll::before { transform: translateY(-100%); }
+  .home-refresh .site-header.is-hidden-on-scroll::before { opacity: 0; }
+  html.site-menu-open .home-refresh .site-header.is-hidden-on-scroll { pointer-events: auto; }
+  html.site-menu-open .home-refresh .site-header.is-hidden-on-scroll .site-header-inner,
+  html.site-menu-open .home-refresh .site-header.is-hidden-on-scroll::before { transform: translateY(0); }
+}
+
 /* Reading progress line retired to keep the header minimal and non-distracting. */
 .site-header[data-reading-progress]::after { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .site-header, .site-header::before, .site-nav a::before, .site-try svg, .site-menu-toggle span, .site-header :is(.site-login, .site-try, .site-search), .site-footer-group a, .site-footer-summary::after { transition: none; }
+  .site-header, .site-header::before, .home-refresh .site-header-inner, .home-refresh .site-header::before, .site-nav a::before, .site-try svg, .site-menu-toggle span, .site-header :is(.site-login, .site-try, .site-search), .site-footer-group a, .site-footer-summary::after { transition: none; }
   .site-try:hover svg { transform: none; }
 }
 

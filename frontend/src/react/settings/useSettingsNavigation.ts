@@ -35,13 +35,18 @@ function normalizeQuery(value: string): string {
   return value.trim().toLocaleLowerCase().replace(/\s+/g, ' ');
 }
 
-type SettingsCategory = [SettingsSection, string];
+export interface SettingsCategory {
+  key: SettingsSection;
+  name: string;
+  description: string;
+}
 
 function searchCategories(categories: SettingsCategory[], query: string): SettingsCategory[] {
   const normalizedQuery = normalizeQuery(query);
   if (!normalizedQuery) return categories;
-  return categories.filter(([key, name]) =>
+  return categories.filter(({ key, name, description }) =>
     normalizeQuery(name).includes(normalizedQuery) ||
+    normalizeQuery(description).includes(normalizedQuery) ||
     SETTINGS_SEARCH_TERMS[key].some((term) => normalizeQuery(term).includes(normalizedQuery)),
   );
 }
@@ -58,15 +63,15 @@ export function useSettingsNavigation(label: SettingsLabel) {
     return () => document.removeEventListener('socrates:settings-section', selectSection);
   }, []);
 
-  const categories: Array<[SettingsSection, string]> = [
-    ['general', label('通用', 'General')],
-    ['display', label('外观', 'Display')],
-    ['notifications', label('通知', 'Notifications')],
-    ['personalization', label('个性化', 'Personalization')],
-    ['models', label('模型与语音', 'Models & voice')],
-    ['apps', label('应用与连接', 'Apps & connections')],
-    ['data', label('数据管理', 'Data controls')],
-    ['account', label('账户', 'Account')],
+  const categories: SettingsCategory[] = [
+    { key: 'general', name: label('通用', 'General'), description: label('主题与语言', 'Theme and language') },
+    { key: 'display', name: label('显示', 'Display'), description: label('字号、内容宽度和背景', 'Text size, content width, and background') },
+    { key: 'notifications', name: label('通知', 'Notifications'), description: label('Android 通知权限', 'Android notification permissions') },
+    { key: 'personalization', name: label('个性化', 'Personalization'), description: label('助手语气、指令和记忆', 'Assistant tone, instructions, and memory') },
+    { key: 'models', name: label('模型与语音', 'Models & voice'), description: label('模型服务商、图片和语音', 'Providers, image models, and voice') },
+    { key: 'apps', name: label('应用与连接', 'Apps & connections'), description: label('管理插件和服务连接', 'Manage plugins and service connections') },
+    { key: 'data', name: label('数据管理', 'Data controls'), description: label('管理文件和资料库', 'Manage files and your library') },
+    { key: 'account', name: label('账户', 'Account'), description: label('个人资料和账户安全', 'Profile and account security') },
   ];
   const normalizedQuery = normalizeQuery(query);
   const matchingCategories = searchCategories(categories, query);
@@ -74,16 +79,19 @@ export function useSettingsNavigation(label: SettingsLabel) {
     setQuery(nextQuery);
     if (!normalizeQuery(nextQuery)) return;
     const matches = searchCategories(categories, nextQuery);
-    if (matches.length > 0 && !matches.some(([key]) => key === section)) {
-      setSection(matches[0][0]);
+    if (matches.length > 0 && !matches.some((category) => category.key === section)) {
+      setSection(matches[0].key);
     }
   };
+
+  const setQueryOnly = (nextQuery: string) => setQuery(nextQuery);
 
   return {
     section,
     setSection,
     query,
     setQuery: changeQuery,
+    setQueryOnly,
     categories: matchingCategories,
     hasNoSearchResults: normalizedQuery.length > 0 && matchingCategories.length === 0,
   };

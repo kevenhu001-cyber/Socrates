@@ -112,7 +112,7 @@ export function TopBarModelSwitcher({ brand, model, accessibilityLabel, expanded
         gap: uiStep[50] + (compact ? 0 : 2),
         flexShrink: 1,
         minWidth: 0,
-        maxWidth: narrow ? 68 : compact ? 104 : 360,
+        maxWidth: narrow ? 68 : compact ? 76 : 360,
         height: PILL,
         paddingLeft: showSettings ? 0 : compact ? uiStep[100] - 2 : uiControl.padNav,
         paddingRight: showSettings ? 0 : uiStep[75] + (compact ? 0 : 2),

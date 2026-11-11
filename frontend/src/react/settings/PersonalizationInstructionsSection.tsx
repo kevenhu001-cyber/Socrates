@@ -1,5 +1,4 @@
 import { Textarea as ShadcnTextarea } from '../ui/shadcn/textarea';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/shadcn/card';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
 import { useEffect, useRef } from 'react';
 import { buildCustomInstructionsString } from '../../config/customInstructions.ts';
@@ -46,27 +45,28 @@ export function PersonalizationInstructionsSection({
   };
 
   return (
-    <Card className="settings-section">
-      <CardHeader className="settings-section-head">
-        <CardTitle>{label('自定义指令', 'Custom instructions')}</CardTitle>
-        <CardDescription>{label(
+    <section className="settings-section">
+      <div className="settings-section-head">
+        <h3>{label('自定义指令', 'Custom instructions')}</h3>
+        <p id="settings-custom-instructions-description">{label(
           '希望助手了解你什么，或者以怎样的风格与格式回答。',
           'What would you like the assistant to know about you to provide better responses.',
-        )}</CardDescription>
-      </CardHeader>
-      <CardContent><FieldGroup><Field>
-      <FieldLabel className="sr-only" htmlFor="settings-custom-instructions">{label('自定义指令', 'Custom instructions')}</FieldLabel>
-      <ShadcnTextarea
-        id="settings-custom-instructions"
-        className="settings-textarea"
-        rows={3}
-        value={value}
-        placeholder={language === 'zh'
-          ? '例如：我是高中物理老师，喜欢结构化、带有举例说明的清晰回答。'
-          : 'e.g. I am a physics student; prefer concise, step-by-step explanations with examples.'}
-        onChange={(event) => handleChange(event.target.value)}
-      />
-      </Field></FieldGroup></CardContent>
-    </Card>
+        )}</p>
+      </div>
+      <FieldGroup><Field>
+        <FieldLabel className="sr-only" htmlFor="settings-custom-instructions">{label('自定义指令', 'Custom instructions')}</FieldLabel>
+        <ShadcnTextarea
+          id="settings-custom-instructions"
+          aria-describedby="settings-custom-instructions-description"
+          className="settings-textarea"
+          rows={3}
+          value={value}
+          placeholder={language === 'zh'
+            ? '例如：我是高中物理老师，喜欢结构化、带有举例说明的清晰回答。'
+            : 'e.g. I am a physics student; prefer concise, step-by-step explanations with examples.'}
+          onChange={(event) => handleChange(event.target.value)}
+        />
+      </Field></FieldGroup>
+    </section>
   );
 }

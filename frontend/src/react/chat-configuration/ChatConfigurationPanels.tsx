@@ -87,7 +87,13 @@ export function EffortPanel({ effort, speed, supportsInstant = true, onBack, onC
   const sliderIndex = stops.indexOf(effort);
   return (
     <>
-      <UiButton type="button" className="chat-config-row" data-initial-focus="true" onClick={onBack}>
+      <UiButton
+        type="button"
+        className="chat-config-row"
+        data-initial-focus="true"
+        aria-label={`${i18n('chatconfig.backToModels', 'Back to model list')} · ${effortLabel(effort)}`}
+        onClick={onBack}
+      >
         <span><strong>{effortLabel(effort)}</strong></span>
         <span className="chat-config-value"><ChevronIcon /></span>
       </UiButton>

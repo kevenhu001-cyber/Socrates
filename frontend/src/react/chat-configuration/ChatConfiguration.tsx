@@ -109,9 +109,10 @@ export function ChatConfiguration() {
     closeChatConfiguration();
   };
 
-  const openSettings = () => {
+  const openSettings = async () => {
     closeChatConfiguration(false);
-    getLegacyActions().navigation.openSettings();
+    await getLegacyActions().navigation.openSettings();
+    document.dispatchEvent(new CustomEvent('socrates:settings-section', { detail: 'models' }));
   };
 
   return (

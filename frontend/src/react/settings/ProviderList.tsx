@@ -48,14 +48,12 @@ export function ProviderList({
                 aria-label={builtIn.isActive ? i18n('settings.activeModel', 'Active model') : i18n('settings.setActiveModel', 'Set as active')}
               />
               </CardAction></CardHeader>
-              <CardContent>{builtIn.isActive ? <Badge variant="secondary">{i18n('settings.builtInTag', 'Built-in · Active')}</Badge> : null}
-                <p>{i18n('settings.builtInHint', 'Your built-in AI is ready to use. Add a custom provider below if you want to use your own API key.')}</p>
-              </CardContent>
+              <CardContent>{builtIn.isActive ? <Badge variant="secondary">{i18n('settings.builtInTag', 'Built-in · Active')}</Badge> : null}</CardContent>
             </Card>
-            <div className="provider-empty">{i18n('settings.noCustomProviders', 'No custom providers. Click “+ Add” to use your own API key.')}</div>
+            <div className="provider-empty">{i18n('settings.noCustomProviders', 'No custom providers yet.')}</div>
           </>
         ) : (
-          <div className="provider-empty">{language === 'zh' ? '还没有模型。点击“+ Add”配置第一个模型。' : 'No models yet. Click “+ Add” to configure your first one.'}</div>
+          <div className="provider-empty">{i18n('settings.noProviders', 'No providers configured yet.')}</div>
         )}
       </div>
     </RadioGroup>

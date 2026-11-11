@@ -6,6 +6,7 @@
   if (!header || !main) return;
 
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var mobileViewport = window.matchMedia('(max-width: 760px)');
   var running = new Set();
   var observer;
 
@@ -143,9 +144,43 @@
   var reading = !!main.querySelector('article');
   if (reading) header.setAttribute('data-reading-progress', '');
   var scheduled = false;
+  var previousScrollY = window.scrollY;
+  var downwardDistance = 0;
+  var upwardDistance = 0;
+  var keyboardNavigation = false;
   function updateScroll() {
     scheduled = false;
-    header.classList.toggle('is-scrolled', window.scrollY > 12);
+    var scrollY = window.scrollY;
+    header.classList.toggle('is-scrolled', scrollY > 12);
+
+    // On the narrow home page, keep the chapter content clear while reading:
+    // the sticky bar retreats after a deliberate downward scroll and returns
+    // as soon as the reader scrolls up. The sticky slot stays in layout, so
+    // this never shifts the page. Anchor targets already reserve header+24px.
+    if (!document.body.classList.contains('home-refresh') || !mobileViewport.matches) {
+      header.classList.remove('is-hidden-on-scroll');
+      downwardDistance = 0;
+      upwardDistance = 0;
+    } else {
+      var delta = scrollY - previousScrollY;
+      var keepVisible = scrollY <= 12
+        || document.documentElement.classList.contains('site-menu-open')
+        || (keyboardNavigation && header.contains(document.activeElement));
+      if (keepVisible) {
+        header.classList.remove('is-hidden-on-scroll');
+        downwardDistance = 0;
+        upwardDistance = 0;
+      } else if (delta > 0) {
+        downwardDistance += delta;
+        upwardDistance = 0;
+        if (scrollY > 140 && downwardDistance >= 24) header.classList.add('is-hidden-on-scroll');
+      } else if (delta < 0) {
+        upwardDistance += -delta;
+        downwardDistance = 0;
+        if (upwardDistance >= 12) header.classList.remove('is-hidden-on-scroll');
+      }
+    }
+    previousScrollY = scrollY;
     if (words.length) updateWords();
     if (!reading) return;
     var start = main.getBoundingClientRect().top + window.scrollY;
@@ -161,6 +196,10 @@
   window.addEventListener('scroll', scheduleScroll, { passive: true });
   window.addEventListener('resize', scheduleScroll, { passive: true });
   window.addEventListener('pageshow', scheduleScroll);
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Tab') keyboardNavigation = true;
+  });
+  document.addEventListener('pointerdown', function () { keyboardNavigation = false; }, { passive: true });
   updateScroll();
 
   // Plan cards: on hover a hairline is drawn around the card from its top
@@ -206,6 +245,11 @@
   });
   // A keyboard action should never wait for an entrance animation.
   document.addEventListener('focusin', function (event) {
+    if (header.contains(event.target)) {
+      header.classList.remove('is-hidden-on-scroll');
+      downwardDistance = 0;
+      upwardDistance = 0;
+    }
     running.forEach(function (animation) {
       var target = animation.effect && animation.effect.target;
       if (target && target.contains(event.target)) animation.cancel();

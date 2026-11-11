@@ -4,7 +4,7 @@ import { useProviderListState } from './useProviderListState';
 import { useProviderConfigStore } from '../../config/providerConfig.store';
 import { toggleExternalApi } from './settings.service';
 import { ModelsProviderSection } from './ModelsProviderSection';
-import { ImageVoiceSettingsSection, SettingsModelActions } from './ModelsPreferenceSections';
+import { ImageVoiceSettingsSection } from './ModelsPreferenceSections';
 import type { SettingsLabel, SaveSettingsPreference } from './settings.types';
 
 interface ModelsSettingsPaneProps {
@@ -56,8 +56,9 @@ export function ModelsSettingsPane({
         providerErrors={providerConfig.errors}
         providerState={providerState}
         label={label}
+        saving={providerConfig.saving}
+        onSave={providerState.saveProviders}
       />
-      <SettingsModelActions label={label} saving={providerConfig.saving} onSave={providerState.saveProviders} />
       <div id="stgStatus" />
       <ImageVoiceSettingsSection label={label} savePreference={savePreference} />
     </div>

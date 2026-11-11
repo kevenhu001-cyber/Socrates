@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../site/', import.meta.url));
 // locale.js change: the site serves them with `cache-control: immutable,
 // max-age=604800`, so a returning browser keeps the old bytes for a week
 // unless the query string changes.
-const version = '20261108q12';
+const version = '20261111q1';
 const appURL = 'https://app.topodrive.top';
 const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const globe = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M3.2 10h13.6M10 3c2.2 2.3 3.2 4.6 3.2 7s-1 4.7-3.2 7c-2.2-2.3-3.2-4.6-3.2-7S7.8 5.3 10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';

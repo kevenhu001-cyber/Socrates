@@ -164,9 +164,12 @@
 }
 .auth-gate .auth-btn.secondary:hover { background: var(--accent); color: var(--accent-foreground); }
 
-.auth-view-separator { color: var(--ui-text-muted); }
-.auth-foot, .auth-footnote { color: var(--ui-text-muted); }
-.auth-foot a, .auth-inline-link { color: var(--muted-foreground); }
+.auth-gate .auth-lede,
+.auth-gate .auth-view-separator,
+.auth-gate .auth-foot,
+.auth-gate .auth-footnote { color: var(--ui-text-secondary); }
+.auth-gate .auth-foot a,
+.auth-gate .auth-inline-link { color: var(--ui-text-secondary); }
 .auth-foot a:hover, .auth-inline-link:hover { color: var(--foreground); }
 
 .auth-error { border-radius: var(--ui-radius-control); }

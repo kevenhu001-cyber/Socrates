@@ -5,7 +5,6 @@ import { Field, FieldLabel } from '../ui/shadcn/field';
 import { useState } from 'react';
 import { getCurrentUser } from '../legacy/gateway.ts';
 import { confirmClearSettings } from '../../ui/dangerConfirms.js';
-import { closeSettings } from './settings.service';
 import type { SettingsLabel, SaveSettingsPreference } from './settings.types';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
@@ -62,10 +61,12 @@ export function ImageVoiceSettingsSection({
           <h3>{label('图片模型', 'Image model')}</h3>
           <p>{label('填写当前图片服务支持的模型 ID。', 'Enter the model ID supported by your image provider.')}</p>
         </div>
-        <Field>
+        <Field className="settings-image-model-field">
           <FieldLabel htmlFor="settings-image-model">{label('模型 ID', 'Model ID')}</FieldLabel>
-          <ShadcnInput id="settings-image-model" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
-          <Button variant="outline" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</Button>
+          <div className="settings-inline-action">
+            <ShadcnInput id="settings-image-model" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
+            <Button variant="outline" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</Button>
+          </div>
         </Field>
       </section>
       <section className="settings-section">
@@ -89,11 +90,8 @@ export function SettingsModelActions({
 }) {
   return (
     <div className="settings-actions settings-provider-actions">
-      <Button variant="destructive" type="button" id="clearSettingsBtn" onClick={confirmClearSettings}>
+      <Button variant="ghost" type="button" className="settings-clear-api" id="clearSettingsBtn" onClick={confirmClearSettings}>
         {label('清除 API 设置', 'Clear API settings')}
-      </Button>
-      <Button variant="outline" type="button" id="cancelSettingsBtn" onClick={closeSettings}>
-        {label('关闭设置', 'Close settings')}
       </Button>
       <Button type="button" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
         {saving ? label('正在保存…', 'Saving…') : label('保存服务商', 'Save providers')}

@@ -124,7 +124,7 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   const modelLabel = useActiveModelLabel();
   const effort = useStoredReasoningEffort();
   const effortValue = effortLabel(effort);
-  const effortAccessibleLabel = modelLabel ? `${modelLabel} · ${effortValue}` : effortValue;
+  const effortAccessibleLabel = `${modelLabel ? `${modelLabel} · ` : ''}${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortValue}`;
   const canSend = hasDraft || attachments.length > 0;
   const { primaryLabel, toolsLabel, voiceLabel } = controlLabels(streaming);
   const composerLabel = surface === 'chat'

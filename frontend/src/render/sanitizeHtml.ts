@@ -1,7 +1,6 @@
 /* Shared HTML sanitizer for rendered Markdown and Canvas content. */
 import { escHTML } from './helpers.ts';
 import bundledDomPurify from 'dompurify';
-import { normalizeChineseFragment } from './chineseTypography.ts';
 
 /* ── DOMPurify configuration ──────────────────────────────────────
    Used by both formatMsg and formatMsgProgressive to sanitise the
@@ -89,13 +88,10 @@ export function sanitizeHtml(html: string, options: SanitizeHtmlOptions = {}): s
   for (const dp of candidates) {
     if (!dp || typeof dp.sanitize !== 'function') continue;
     try {
-      const normalize = options.chineseProse && /\p{Script=Han}/u.test(html) && typeof document !== 'undefined';
-      const clean = dp.sanitize(html, normalize ? { ...config, RETURN_DOM_FRAGMENT: true } : config);
-      if (!normalize && typeof clean === 'string') return withLazyImages(clean);
+      const clean = dp.sanitize(html, config);
+      if (typeof clean === 'string') return withLazyImages(clean);
       const host = document.createElement('template');
-      if (typeof clean === 'string') host.innerHTML = clean;
-      else host.content.appendChild(clean);
-      if (normalize) normalizeChineseFragment(host.content);
+      host.content.appendChild(clean);
       return withLazyImages(host.innerHTML);
     } catch (e) {
       console.warn('[sanitizeHtml] DOMPurify instance failed:', e && (e as Error).message);
