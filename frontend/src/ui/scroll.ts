@@ -1,5 +1,5 @@
 import type { ScrollOwner } from './scrollCoordinator.ts';
-interface ScrollPlan { duration: number; snap?: boolean; ease?: (progress: number) => number }
+interface ScrollPlan { duration: number; snap?: boolean; ease?: (progress: number) => number; distance?: number }
 interface ScrollOptions {
  smooth?: boolean; owner?: ScrollOwner; retarget?: boolean; target?: () => number;
  plan?: ScrollPlan; motion?: Parameters<typeof planMotionForUser>[1];
@@ -202,14 +202,15 @@ function startScroll(list: HTMLElement, targetTop: number, options: ScrollOption
   const injectedPlan=options.plan&&typeof options.plan==='object'?options.plan:null;
   /* A live target grows between planning and execution: the send path plans
      a glide for the prompt's slot, then the answer reserve/layout lands and
-     the reachable target moves several hundred px further. Judging "snap"
-     by the stale distance teleported to the live target in one frame — the
-     send looked like a jump even though a glide was planned. Measure the
-     target that will actually be used, and drop a zero-duration plan when
-     the distance no longer justifies it (the velocity planner animates). */
-  const liveResolved=liveTarget?resolveTarget():null;
-  const liveDistance=liveTarget?Math.abs((liveResolved as number)-startTop):absDistance;
-  const usablePlan=injectedPlan&&injectedPlan.duration>0?injectedPlan:null;
+     the reachable target moves several hundred px further. A snap plan
+     computed from the stale distance would teleport to the live target in
+     one frame. Only drop the plan when it is both a snap and measurably
+     shorter than the live distance; an explicit snap plan without a
+     distance (the unit contract) still snaps. */
+  const liveDistance=liveTarget?Math.abs(resolveTarget()-startTop):absDistance;
+  const plannedDistance=injectedPlan&&typeof injectedPlan.distance==='number'?injectedPlan.distance:null;
+  const staleSnapPlan=!!(injectedPlan&&injectedPlan.snap&&plannedDistance!==null&&liveDistance>plannedDistance+24);
+  const usablePlan=injectedPlan&&!staleSnapPlan?injectedPlan:null;
   const snap=shouldSnapScroll(options,reduced,liveDistance,usablePlan);
   if (snap) {
     snapScrollToTarget(list, liveTarget ? resolveTarget() : targetTop, owner, ownerToken);

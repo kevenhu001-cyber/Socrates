@@ -769,6 +769,11 @@ function startNormalTurnMotion(context: NormalTurnMotionContext): void {
   if (settlingSeq === settlingOwner) list.dataset.turnAnchorSettling = 'true';
   const plan = planSendGlide(Math.abs(target - list.scrollTop), list.clientHeight);
   const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
+  /* A snap has no animation to protect, so the send owns the viewport
+     immediately. A real glide stays on `turnAnchorSettling` until the hold
+     starts aligning (claiming the owner here aborts the glide's first
+     frame in ui/scroll.ts). */
+  if (plan.snap) markTurnViewportOwner(list);
   startTurnViewportHold(list, row, holdClientId, targetOffset, false);
   if (!plan.snap) {
     const promptRows = list.querySelectorAll('.msg.user');
